@@ -20,7 +20,10 @@
 
 use super::prelude::*;
 use crate::models::known_user::{self, Model as KnownUserModel};
-use crate::models::user::{self, Entity as User, Model as UserModel};
+use crate::models::user::{self, Entity as WikijumpUser, Model as WikijumpUserModel};
+use crate::models::wikidot_user::{
+    self, Entity as WikidotUser, Model as WikidotUserModel,
+};
 use crate::services::alias::CreateAlias;
 use crate::services::audit::{AuditEvent, AuditService};
 use crate::services::blob::{BlobService, FinalizeBlobUploadOutput};
@@ -131,7 +134,7 @@ impl UserService {
         Self::validate_locales(user_type, &locales).or_raise(make_error)?;
 
         // Check for name conflicts
-        let result = User::find()
+        let result = WikijumpUser::find()
             .filter(
                 Condition::all()
                     .add(
@@ -169,7 +172,7 @@ impl UserService {
         // Check for email conflicts, if a regular user
         // Other kinds of accounts do not need unique emails
         if user_type == UserType::Regular {
-            let result = User::find()
+            let result = WikijumpUser::find()
                 .filter(
                     Condition::all()
                         .add(user::Column::Email.eq(email.as_str()))
@@ -287,7 +290,7 @@ impl UserService {
             ..Default::default()
         };
 
-        let user_id = User::insert(user)
+        let user_id = WikijumpUser::insert(user)
             .exec(txn)
             .await
             .or_raise(make_error)?
@@ -323,7 +326,7 @@ impl UserService {
     pub async fn get_optional(
         ctx: &ServiceContext<'_>,
         mut reference: Reference<'_>,
-    ) -> Result<Option<UserModel>> {
+    ) -> Result<Option<User>> {
         let txn = ctx.transaction();
         let make_error = || Error::new("failed to get user", ErrorType::User);
 
@@ -352,14 +355,16 @@ impl UserService {
             reference = Reference::Id(alias.target_id);
         }
 
-        let user = match reference {
-            Reference::Id(id) => {
-                User::find_by_id(id).one(txn).await.or_raise(make_error)?
-            }
-            Reference::Slug(slug) => User::find()
+        let wikijump_user = match reference {
+            Reference::Id(id) => WikijumpUser::find_by_id(id)
+                .one(txn)
+                .await
+                .or_raise(make_error)?,
+
+            Reference::Slug(ref slug) => WikijumpUser::find()
                 .filter(
                     Condition::all()
-                        .add(user::Column::Slug.eq(slug))
+                        .add(user::Column::Slug.eq(slug.as_ref()))
                         .add(user::Column::DeletedAt.is_null()),
                 )
                 .one(txn)
@@ -367,14 +372,46 @@ impl UserService {
                 .or_raise(make_error)?,
         };
 
-        Ok(user)
+        if let Some(user) = wikijump_user {
+            debug!("Found Wikijump user '{}' (ID {})", user.slug, user.user_id);
+            return Ok(Some(User::Wikijump(user)));
+        }
+
+        // No Wikijump user found, check Wikidot users and return what we find
+
+        fn i64_to_i32(value: i64) -> Option<i32> {
+            value.try_into().ok()
+        }
+
+        let wikidot_user = match reference {
+            Reference::Id(id) => match i64_to_i32(id) {
+                // If it doesn't fit into a 32-bit int,
+                // there's no way it's a real Wikidot user.
+                None => None,
+
+                // Could be a valid ID
+                Some(id) => WikidotUser::find_by_id(id)
+                    .one(txn)
+                    .await
+                    .or_raise(make_error)?,
+            },
+
+            Reference::Slug(ref slug) => WikidotUser::find()
+                .filter(
+                    Condition::all()
+                        .add(wikidot_user::Column::Slug.eq(slug.as_ref()))
+                        .add(wikidot_user::Column::IsDeleted.eq(true)),
+                )
+                .one(txn)
+                .await
+                .or_raise(make_error)?,
+        };
+
+        Ok(wikidot_user.map(User::Wikidot))
     }
 
     #[inline]
-    pub async fn get(
-        ctx: &ServiceContext<'_>,
-        reference: Reference<'_>,
-    ) -> Result<UserModel> {
+    pub async fn get(ctx: &ServiceContext<'_>, reference: Reference<'_>) -> Result<User> {
         find_or_error!(Self::get_optional(ctx, reference), "user", User)
     }
 
@@ -383,7 +420,7 @@ impl UserService {
         reference: Reference<'_>,
         ip_address: IpAddr,
         input: UpdateUserBody,
-    ) -> Result<UserModel> {
+    ) -> Result<WikijumpUserModel> {
         use crate::services::audit::UserFields;
 
         let txn = ctx.transaction();
@@ -612,7 +649,7 @@ impl UserService {
     async fn update_name(
         ctx: &ServiceContext<'_>,
         new_name: String,
-        user: &UserModel,
+        user: &WikijumpUserModel,
         model: &mut user::ActiveModel,
         should_check_filter: bool,
     ) -> Result<()> {
@@ -732,7 +769,7 @@ impl UserService {
         };
 
         let txn = ctx.transaction();
-        let users = User::find()
+        let users = WikijumpUser::find()
             .filter(user::Column::LastNameChangeAddedAt.gte(needs_token_time))
             .all(txn)
             .await
@@ -758,7 +795,7 @@ impl UserService {
     /// The current number of rename tokens the user has.
     pub async fn add_name_change_token(
         ctx: &ServiceContext<'_>,
-        user: &UserModel,
+        user: &WikijumpUserModel,
     ) -> Result<i16> {
         let txn = ctx.transaction();
         let max_name_changes = ctx.config().maximum_name_changes;
@@ -818,7 +855,7 @@ impl UserService {
     /// Removes a recovery code from the list provided for a user.
     pub async fn remove_recovery_code(
         ctx: &ServiceContext<'_>,
-        user: &UserModel,
+        user: &WikijumpUserModel,
         recovery_code: &str,
     ) -> Result<()> {
         let txn = ctx.transaction();
@@ -851,7 +888,7 @@ impl UserService {
     pub async fn delete(
         ctx: &ServiceContext<'_>,
         reference: Reference<'_>,
-    ) -> Result<UserModel> {
+    ) -> Result<WikijumpUserModel> {
         let txn = ctx.transaction();
         let user = Self::get(ctx, reference)
             .await
