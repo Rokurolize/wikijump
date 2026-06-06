@@ -60,7 +60,7 @@ impl ImportService {
             karma,
             is_pro,
         }: ImportUser,
-    ) -> Result<()> {
+    ) -> Result<ImportUserOutput> {
         info!(
             "Importing Wikidot user (user ID {}, created {}, karma {})",
             user_id,
@@ -134,7 +134,7 @@ impl ImportService {
             .await
             .or_raise(make_error)?;
 
-        Ok(())
+        Ok(ImportUserOutput { user_id })
     }
 
     pub async fn add_site(
@@ -146,7 +146,7 @@ impl ImportService {
             slug,
             locale,
         }: ImportSite,
-    ) -> Result<()> {
+    ) -> Result<ImportSiteOutput> {
         info!("Importing site (name '{name}', slug '{slug}', locale '{locale}')");
 
         let make_error = || {
@@ -171,7 +171,7 @@ impl ImportService {
         };
 
         Site::insert(site).exec(txn).await.or_raise(make_error)?;
-        Ok(())
+        Ok(ImportSiteOutput { site_id })
     }
 
     pub async fn add_page(
@@ -184,9 +184,10 @@ impl ImportService {
             locked,
             discussion_thread_id,
         }: ImportPage,
-    ) -> Result<()> {
+    ) -> Result<ImportPageOutput> {
         info!("Creating page '{slug}' in site ID {site_id}");
 
+        let txn = ctx.transaction();
         let make_error = || {
             Error::new(
                 format!(
@@ -196,8 +197,6 @@ impl ImportService {
                 ErrorType::DatabaseImport,
             )
         };
-
-        let txn = ctx.transaction();
 
         // Create category if not already present
         let PageCategoryModel { category_id, .. } =
@@ -223,7 +222,7 @@ impl ImportService {
         }
 
         Page::insert(page).exec(txn).await.or_raise(make_error)?;
-        Ok(())
+        Ok(ImportPageOutput { site_id, page_id })
     }
 
     // TODO page_revision
