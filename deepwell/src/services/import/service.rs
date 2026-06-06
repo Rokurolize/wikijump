@@ -30,6 +30,7 @@
 #![allow(dead_code)]
 
 use super::prelude::*;
+use crate::models::known_user::{self, Model as KnownUserModel};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::site::{self, Entity as Site};
@@ -67,6 +68,7 @@ impl ImportService {
             karma.value(),
         );
 
+        let txn = ctx.transaction();
         let make_error = || {
             Error::new(
                 format!("failed to import wikidot user (user ID {user_id})"),
@@ -98,7 +100,17 @@ impl ImportService {
             }
         };
 
-        let txn = ctx.transaction();
+        // Add known user ID
+
+        known_user::ActiveModel {
+            user_id: Set(i64::from(user_id)),
+        }
+        .insert(txn)
+        .await
+        .or_raise(make_error)?;
+
+        // Now add the actual Wikidot record itself
+
         let model = wikidot_user::ActiveModel {
             user_id: Set(user_id),
             created_at: Set(created_at),
