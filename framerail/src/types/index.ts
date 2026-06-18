@@ -34,6 +34,14 @@ export interface Locales {
   error: string
   files: string
   footer: string
+  forum: string
+  "forum-route": string
+  "forum-route.index": string
+  "forum-route.invalid": string
+  "forum-category": string
+  "forum-category.loaded": string
+  "forum-thread": string
+  "forum-thread.loaded": string
   general: string
   header: string
   help: string
