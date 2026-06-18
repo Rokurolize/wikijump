@@ -35,13 +35,30 @@ const SECURITY_HEADERS = {
 }
 
 const HSTS_HEADER = "max-age=31536000; includeSubDomains"
+const SITE_CONTEXT_EXEMPT_PATHS = new Set(["/xml-rpc-api.php"])
 
 function shouldSetHsts() {
   return !isLocalEnvironment()
 }
 
+function applySecurityHeaders(response: Response) {
+  for (const [header, value] of Object.entries(SECURITY_HEADERS)) {
+    response.headers.set(header, value)
+  }
+
+  if (shouldSetHsts()) {
+    response.headers.set("strict-transport-security", HSTS_HEADER)
+  }
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
   const { request, cookies, locals, params } = event
+
+  if (SITE_CONTEXT_EXEMPT_PATHS.has(event.url.pathname)) {
+    const response = await resolve(event)
+    applySecurityHeaders(response)
+    return response
+  }
 
   // Gather common request metadata into a shared context.
   const { siteId } = loadSiteInfo(request.headers)
@@ -53,13 +70,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   // Continue processing the request
   const response = await resolve(event)
 
-  for (const [header, value] of Object.entries(SECURITY_HEADERS)) {
-    response.headers.set(header, value)
-  }
-
-  if (shouldSetHsts()) {
-    response.headers.set("strict-transport-security", HSTS_HEADER)
-  }
+  applySecurityHeaders(response)
 
   return response
 }
