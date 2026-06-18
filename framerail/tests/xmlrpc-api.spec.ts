@@ -242,6 +242,107 @@ function xmlRpcPagesSaveOneRequest({
 </methodCall>`
 }
 
+function xmlRpcFilesSelectRequest(page: string) {
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>files.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>page</name><value><string>${page}</string></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+}
+
+function xmlRpcFilesGetMetaRequest(page: string, files: string[]) {
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>files.get_meta</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>page</name><value><string>${page}</string></value></member>
+          <member><name>files</name><value><array><data>${files
+            .map((file) => `<value><string>${file}</string></value>`)
+            .join("")}</data></array></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+}
+
+function xmlRpcFilesGetOneRequest(page: string, file: string) {
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>files.get_one</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>page</name><value><string>${page}</string></value></member>
+          <member><name>file</name><value><string>${file}</string></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+}
+
+function xmlRpcFilesSaveOneRequest({
+  page,
+  file,
+  content,
+  comment,
+  saveMode,
+  revisionComment
+}: {
+  page: string
+  file: string
+  content: string
+  comment?: string
+  saveMode?: string
+  revisionComment?: string
+}) {
+  const optionalMembers = [
+    comment
+      ? `<member><name>comment</name><value><string>${comment}</string></value></member>`
+      : "",
+    saveMode
+      ? `<member><name>save_mode</name><value><string>${saveMode}</string></value></member>`
+      : "",
+    revisionComment
+      ? `<member><name>revision_comment</name><value><string>${revisionComment}</string></value></member>`
+      : ""
+  ].join("")
+
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>files.save_one</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>page</name><value><string>${page}</string></value></member>
+          <member><name>file</name><value><string>${file}</string></value></member>
+          <member><name>content</name><value><string>${content}</string></value></member>
+          ${optionalMembers}
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+}
+
 const xmlRpcHeaders = {
   authorization: `Basic ${Buffer.from("test-app:test-key").toString("base64")}`,
   "content-type": "text/xml"
@@ -531,6 +632,111 @@ test("XML-RPC endpoint saves pages with tags, parent updates, and rename", async
     "<name>parent_fullname</name><value><string>main</string></value>"
   )
   expect(renameBody).toContain("<value><string>xmlrpc-save-renamed</string></value>")
+})
+
+test("XML-RPC endpoint saves and reads small page attachments", async ({ request }) => {
+  const pageSlug = `fixture-xmlrpc-file-${Date.now()}`
+  const fileName = "proof.txt"
+  const initialText = "XML-RPC file proof initial content."
+  const updatedText = "XML-RPC file proof updated content."
+  const initialContent = Buffer.from(initialText).toString("base64")
+  const updatedContent = Buffer.from(updatedText).toString("base64")
+
+  const pageResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: pageSlug,
+      title: "XML-RPC File Proof",
+      content: "Page for XML-RPC file proof.",
+      tags: ["verification", "xmlrpc-file"],
+      saveMode: "create",
+      revisionComment: "xmlrpc file page create proof"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(pageResponse.status()).toBe(200)
+  expect(await pageResponse.text()).toContain(
+    `<name>fullname</name><value><string>${pageSlug}</string></value>`
+  )
+
+  const saveResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesSaveOneRequest({
+      page: pageSlug,
+      file: fileName,
+      content: initialContent,
+      comment: "initial file proof",
+      saveMode: "create",
+      revisionComment: "xmlrpc file create proof"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(saveResponse.status()).toBe(200)
+
+  const saveBody = await saveResponse.text()
+  expect(saveBody).toContain("<methodResponse>")
+  expect(saveBody).toContain("<name>size</name><value><int>35</int></value>")
+  expect(saveBody).toContain(
+    "<name>comment</name><value><string>initial file proof</string></value>"
+  )
+  expect(saveBody).toContain("<name>mime_type</name><value><string>")
+
+  const selectResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesSelectRequest(pageSlug),
+    headers: xmlRpcHeaders
+  })
+  expect(selectResponse.status()).toBe(200)
+  expect(await selectResponse.text()).toContain("<string>proof.txt</string>")
+
+  const metaResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetMetaRequest(pageSlug, [fileName]),
+    headers: xmlRpcHeaders
+  })
+  expect(metaResponse.status()).toBe(200)
+  const metaBody = await metaResponse.text()
+  expect(metaBody).toContain("<name>proof.txt</name>")
+  expect(metaBody).toContain("<name>size</name><value><int>35</int></value>")
+  expect(metaBody).toContain(
+    "<name>comment</name><value><string>initial file proof</string></value>"
+  )
+  expect(metaBody).not.toContain(initialContent)
+
+  const oneResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetOneRequest(pageSlug, fileName),
+    headers: xmlRpcHeaders
+  })
+  expect(oneResponse.status()).toBe(200)
+  const oneBody = await oneResponse.text()
+  expect(oneBody).toContain(
+    `<name>content</name><value><string>${initialContent}</string>`
+  )
+
+  const updateResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesSaveOneRequest({
+      page: pageSlug,
+      file: fileName,
+      content: updatedContent,
+      comment: "updated file proof",
+      saveMode: "update",
+      revisionComment: "xmlrpc file update proof"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(updateResponse.status()).toBe(200)
+  const updateBody = await updateResponse.text()
+  expect(updateBody).toContain("<name>size</name><value><int>35</int></value>")
+  expect(updateBody).toContain(
+    "<name>comment</name><value><string>updated file proof</string></value>"
+  )
+
+  const updatedOneResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetOneRequest(pageSlug, fileName),
+    headers: xmlRpcHeaders
+  })
+  expect(updatedOneResponse.status()).toBe(200)
+  const updatedOneBody = await updatedOneResponse.text()
+  expect(updatedOneBody).toContain(
+    `<name>content</name><value><string>${updatedContent}</string>`
+  )
+  expect(updatedOneBody).not.toContain(initialContent)
 })
 
 test("XML-RPC endpoint returns XML-RPC faults for unauthenticated requests", async ({

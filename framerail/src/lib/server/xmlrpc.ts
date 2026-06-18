@@ -1,4 +1,6 @@
 import { Buffer } from "node:buffer"
+import { request as httpRequest } from "node:http"
+import { request as httpsRequest } from "node:https"
 
 import { client } from "$lib/server/deepwell"
 
@@ -35,6 +37,7 @@ interface DeepwellSite {
 }
 
 interface DeepwellPage {
+  page_id: number
   revision_id: number
   page_created_at: string
   page_updated_at: string | null
@@ -51,6 +54,25 @@ interface DeepwellPage {
 
 interface DeepwellLoginOutput {
   session_token: string
+}
+
+interface DeepwellBlobUpload {
+  pending_blob_id: string
+  presign_url: string
+}
+
+interface DeepwellFile {
+  file_id: number
+  file_created_at: string
+  file_updated_at: string | null
+  revision_id: number
+  revision_created_at: string
+  revision_user_id: number
+  name: string
+  data?: number[] | string | null
+  mime: string
+  size: number
+  revision_comments: string
 }
 
 type DeepwellStringParams = {
@@ -204,6 +226,14 @@ async function dispatchXmlRpcCall(
       return getPageOne(call)
     case "pages.save_one":
       return savePageOne(call, auth)
+    case "files.select":
+      return selectFiles(call)
+    case "files.get_meta":
+      return getFilesMeta(call)
+    case "files.get_one":
+      return getFileOne(call)
+    case "files.save_one":
+      return saveFileOne(call, auth)
     default:
       if (METHOD_DEFINITIONS[call.methodName]) {
         throw new XmlRpcFault(
@@ -468,6 +498,133 @@ async function savePageOne(
   return buildXmlRpcPage(site, siteId, finalPageReference)
 }
 
+async function selectFiles(call: XmlRpcCall): Promise<string[]> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const pageReference = getRequiredStructString(params, "page")
+  const siteId = await getDeepwellSiteId(site)
+  const page = await requireDeepwellPage(siteId, pageReference, false)
+  const files = await getDeepwellPageFiles(siteId, page.page_id)
+
+  return files.map((file) => file.name)
+}
+
+async function getFilesMeta(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcValue }> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const pageReference = getRequiredStructString(params, "page")
+  const files = getRequiredStructStringArray(params, "files")
+
+  if (files.length > 10) {
+    throw new XmlRpcFault(-32602, "files.get_meta files is limited to 10 entries")
+  }
+  if (files.length === 0) {
+    return {}
+  }
+
+  const siteId = await getDeepwellSiteId(site)
+  const page = await requireDeepwellPage(siteId, pageReference, false)
+  const entries = await Promise.all(
+    files.map(async (fileName): Promise<[string, XmlRpcValue] | null> => {
+      const file = await getDeepwellFile(siteId, page.page_id, fileName, false)
+      return file ? [file.name, buildXmlRpcFileMeta(site, page.slug, file)] : null
+    })
+  )
+
+  return Object.fromEntries(
+    entries.filter((entry): entry is [string, XmlRpcValue] => entry !== null)
+  )
+}
+
+async function getFileOne(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcValue }> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const pageReference = getRequiredStructString(params, "page")
+  const fileName = getRequiredStructString(params, "file")
+  const siteId = await getDeepwellSiteId(site)
+  const page = await requireDeepwellPage(siteId, pageReference, false)
+  const file = await getDeepwellFile(siteId, page.page_id, fileName, true)
+  if (!file) {
+    throw new XmlRpcFault(406, "Argument file invalid: file does not exist")
+  }
+
+  return {
+    ...buildXmlRpcFileMeta(site, page.slug, file),
+    content: deepwellFileContentBase64(file)
+  }
+}
+
+async function saveFileOne(
+  call: XmlRpcCall,
+  auth: BasicAuthCredentials
+): Promise<{ [key: string]: XmlRpcValue }> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const pageReference = getRequiredStructString(params, "page")
+  const fileName = getRequiredStructString(params, "file")
+  const content = getRequiredStructString(params, "content")
+  const comment = getOptionalStructString(params, "comment") ?? ""
+  const saveMode = getOptionalStructString(params, "save_mode") ?? "create_or_update"
+  const revisionComment =
+    getOptionalStructString(params, "revision_comment") ?? "XML-RPC file save"
+
+  if (!["create", "update", "create_or_update"].includes(saveMode)) {
+    throw new XmlRpcFault(-32602, `Unsupported files.save_one save_mode: ${saveMode}`)
+  }
+
+  const siteId = await getDeepwellSiteId(site)
+  const page = await requireDeepwellPage(siteId, pageReference, false)
+  const writeContext = await getXmlRpcWriteContext(auth, siteId, page.slug)
+  const existing = await getDeepwellFile(siteId, page.page_id, fileName, false)
+
+  if (saveMode === "create" && existing) {
+    throw new XmlRpcFault(409, "Argument file invalid: file already exists")
+  }
+  if (saveMode === "update" && !existing) {
+    throw new XmlRpcFault(406, "Argument file invalid: file does not exist")
+  }
+
+  const contentBytes = Buffer.from(content, "base64")
+  const pendingBlobId = await uploadXmlRpcFileContent(contentBytes)
+
+  if (existing) {
+    await requestDeepwell(
+      "file_edit",
+      {
+        site_id: siteId,
+        page_id: page.page_id,
+        user_id: XML_RPC_WRITE_USER_ID,
+        file_id: existing.file_id,
+        last_revision_id: existing.revision_id,
+        uploaded_blob_id: pendingBlobId,
+        revision_comments: comment || revisionComment,
+        bypass_filter: true
+      },
+      writeContext
+    )
+  } else {
+    await requestDeepwell(
+      "file_create",
+      {
+        site_id: siteId,
+        page_id: page.page_id,
+        user_id: XML_RPC_WRITE_USER_ID,
+        name: fileName,
+        uploaded_blob_id: pendingBlobId,
+        revision_comments: comment || revisionComment,
+        bypass_filter: true
+      },
+      writeContext
+    )
+  }
+
+  const saved = await getDeepwellFile(siteId, page.page_id, fileName, false)
+  if (!saved) {
+    throw new XmlRpcFault(406, "Argument file invalid: file does not exist")
+  }
+  return buildXmlRpcFileMeta(site, page.slug, saved)
+}
+
 async function buildXmlRpcPage(
   site: string,
   siteId: number,
@@ -502,6 +659,78 @@ async function buildXmlRpcPage(
 async function getDeepwellSiteId(site: string): Promise<number> {
   const deepwellSite = (await client.request("site_get", { site })) as DeepwellSite
   return deepwellSite.site_id
+}
+
+async function uploadXmlRpcFileContent(content: Buffer): Promise<string> {
+  const upload = (await requestDeepwell("blob_upload", {
+    user_id: XML_RPC_WRITE_USER_ID,
+    blob_size: content.length
+  })) as DeepwellBlobUpload
+
+  await putPresignedBlob(upload.presign_url, content)
+  return upload.pending_blob_id
+}
+
+async function putPresignedBlob(url: string, content: Buffer): Promise<void> {
+  const signed = new URL(url)
+  const target = localPresignConnectBase(signed) ?? signed
+  const requestUrl = new URL(
+    `${target.protocol}//${target.host}${signed.pathname}${signed.search}`
+  )
+  const transport = requestUrl.protocol === "https:" ? httpsRequest : httpRequest
+
+  await new Promise<void>((resolve, reject) => {
+    const request = transport(
+      requestUrl,
+      {
+        method: "PUT",
+        headers: {
+          Host: signed.host,
+          "Content-Length": String(content.length)
+        }
+      },
+      (response) => {
+        const chunks: Buffer[] = []
+        response.on("data", (chunk: Buffer) => chunks.push(chunk))
+        response.on("end", () => {
+          if (
+            response.statusCode &&
+            response.statusCode >= 200 &&
+            response.statusCode < 300
+          ) {
+            resolve()
+            return
+          }
+
+          const body = Buffer.concat(chunks).toString("utf8")
+          reject(
+            new Error(
+              `Blob upload failed: HTTP ${response.statusCode} connect=${requestUrl.origin} signed_host=${signed.host} ${body.slice(0, 500)}`
+            )
+          )
+        })
+      }
+    )
+
+    request.setTimeout(30_000, () => {
+      request.destroy(
+        new Error(
+          `Blob upload timed out: connect=${requestUrl.origin} signed_host=${signed.host}`
+        )
+      )
+    })
+    request.on("error", (error) => reject(error))
+    request.end(content)
+  }).catch((error) => {
+    throw new XmlRpcFault(-32603, deepwellErrorMessage(error))
+  })
+}
+
+function localPresignConnectBase(url: URL): URL | null {
+  if (url.hostname !== "files") {
+    return null
+  }
+  return new URL(`http://127.0.0.1:${url.port || "9000"}`)
 }
 
 async function getXmlRpcWriteContext(
@@ -564,6 +793,33 @@ async function requireDeepwellPage(
     throw new XmlRpcFault(406, "Argument page invalid: page does not exist")
   }
   return deepwellPage
+}
+
+async function getDeepwellPageFiles(
+  siteId: number,
+  pageId: number
+): Promise<DeepwellFile[]> {
+  return (await client.request("page_get_files", {
+    site_id: siteId,
+    page_id: pageId,
+    deleted: false
+  })) as DeepwellFile[]
+}
+
+async function getDeepwellFile(
+  siteId: number,
+  pageId: number,
+  file: string,
+  includeData: boolean
+): Promise<DeepwellFile | null> {
+  return (await client.request("file_get", {
+    site_id: siteId,
+    page_id: pageId,
+    file,
+    details: {
+      data: includeData
+    }
+  })) as DeepwellFile | null
 }
 
 async function getDeepwellParentFullname(
@@ -634,6 +890,32 @@ function buildXmlRpcPageMeta(
     commented_at: null,
     commented_by: null
   }
+}
+
+function buildXmlRpcFileMeta(
+  site: string,
+  page: string,
+  file: DeepwellFile
+): { [key: string]: XmlRpcValue } {
+  return {
+    size: file.size,
+    comment: file.revision_comments,
+    mime_type: file.mime,
+    mime_description: file.mime,
+    uploaded_by: String(file.revision_user_id),
+    uploaded_at: file.revision_created_at,
+    download_url: `/local--files/${site}/${page}/${encodeURIComponent(file.name)}`
+  }
+}
+
+function deepwellFileContentBase64(file: DeepwellFile): string {
+  if (file.data === null || file.data === undefined) {
+    return ""
+  }
+  if (typeof file.data === "string") {
+    return Buffer.from(file.data, "hex").toString("base64")
+  }
+  return Buffer.from(file.data).toString("base64")
 }
 
 function getMethodDefinition(methodName: string): MethodDefinition {
