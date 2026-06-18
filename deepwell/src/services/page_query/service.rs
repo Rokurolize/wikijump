@@ -25,8 +25,9 @@ use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::{self, Entity as PageCategory};
 use crate::models::page_connection::{self, Entity as PageConnection};
 use crate::models::page_parent::{self, Entity as PageParent};
-use crate::models::{page_revision, text};
+use crate::models::{page_revision, page_vote, text};
 use crate::services::{PageService, ParentService};
+use sea_orm::FromQueryResult;
 use sea_query::extension::postgres::PgBinOper;
 use sea_query::{Expr, Query};
 use std::collections::BTreeMap;
@@ -499,7 +500,9 @@ impl PageQueryService {
 
         debug!("Query returned {} pages, building FoundPages", pages.len());
 
-        let revision_fields_requested = fields.title || fields.alt_title || fields.tags;
+        let page_ids = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
+        let revision_fields_requested =
+            fields.title || fields.alt_title || fields.tags || fields.updated_by;
         let revisions_by_id: BTreeMap<i64, page_revision::Model> =
             if revision_fields_requested {
                 let revision_ids = pages
@@ -522,6 +525,51 @@ impl PageQueryService {
             } else {
                 BTreeMap::new()
             };
+
+        let created_by_by_page_id: BTreeMap<i64, i64> =
+            if fields.created_by && !page_ids.is_empty() {
+                page_revision::Entity::find()
+                    .select_only()
+                    .column(page_revision::Column::PageId)
+                    .column(page_revision::Column::UserId)
+                    .filter(page_revision::Column::PageId.is_in(page_ids.clone()))
+                    .filter(page_revision::Column::RevisionNumber.eq(0))
+                    .into_tuple::<(i64, i64)>()
+                    .all(txn)
+                    .await
+                    .or_raise(make_error)?
+                    .into_iter()
+                    .collect()
+            } else {
+                BTreeMap::new()
+            };
+
+        #[derive(FromQueryResult, Debug)]
+        struct PageScoreRow {
+            page_id: i64,
+            score: Option<i64>,
+        }
+
+        let score_by_page_id: BTreeMap<i64, f32> = if fields.score && !page_ids.is_empty()
+        {
+            page_vote::Entity::find()
+                .select_only()
+                .column(page_vote::Column::PageId)
+                .column_as(Expr::col(page_vote::Column::Value).sum(), "score")
+                .filter(page_vote::Column::PageId.is_in(page_ids))
+                .filter(page_vote::Column::DeletedAt.is_null())
+                .filter(page_vote::Column::DisabledAt.is_null())
+                .group_by(page_vote::Column::PageId)
+                .into_model::<PageScoreRow>()
+                .all(txn)
+                .await
+                .or_raise(make_error)?
+                .into_iter()
+                .map(|row| (row.page_id, row.score.unwrap_or_default() as f32))
+                .collect()
+        } else {
+            BTreeMap::new()
+        };
 
         let rows = pages
             .into_iter()
@@ -569,9 +617,21 @@ impl PageQueryService {
                     } else {
                         None
                     },
-                    created_by: None, // TODO: requires author semantics, not just latest editor
-                    updated_by: None, // TODO: requires author semantics, not just latest editor
-                    score: None,      // TODO: requires vote join
+                    created_by: if fields.created_by {
+                        created_by_by_page_id.get(&page.page_id).copied()
+                    } else {
+                        None
+                    },
+                    updated_by: if fields.updated_by {
+                        revision.map(|revision| revision.user_id)
+                    } else {
+                        None
+                    },
+                    score: if fields.score {
+                        score_by_page_id.get(&page.page_id).copied().or(Some(0.0))
+                    } else {
+                        None
+                    },
                 }
             })
             .collect();

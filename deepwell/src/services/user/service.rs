@@ -132,7 +132,10 @@ impl UserService {
             .or_raise(make_error)?
         {
             error!("User with conflicting ID already exists, cannot create");
-            error!("Checked user ID {user_id}, found {found_user:#?}");
+            error!(
+                "Checked user ID {user_id}, found existing user slug '{}'",
+                found_user.slug,
+            );
             bail!(Error::new(
                 format!(
                     "cannot create user, another with ID {} already exists. found user '{}' (slug '{}')",

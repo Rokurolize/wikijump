@@ -1231,6 +1231,8 @@ impl RenderService {
             IncludedCategories::List(&categories)
         };
 
+        let wants_created_by = list_pages_body_uses_variable(body, "created_by")
+            || list_pages_body_uses_variable(body, "createdby");
         let query = PageQuery {
             current_page_id,
             current_site_id,
@@ -1275,8 +1277,7 @@ impl RenderService {
             fields: FoundPageFields {
                 title: true,
                 slug: true,
-                created_by: list_pages_body_uses_variable(body, "created_by")
-                    || list_pages_body_uses_variable(body, "createdby"),
+                created_by: wants_created_by,
                 score: list_pages_body_uses_variable(body, "rating"),
                 ..Default::default()
             },
@@ -1284,7 +1285,7 @@ impl RenderService {
 
         let pages = PageQueryService::find(ctx, query).await?;
         let total = pages.total();
-        let created_by_names = if list_pages_body_uses_variable(body, "created_by") {
+        let created_by_names = if wants_created_by {
             Self::load_wikidot_user_names(ctx, &pages.pages).await?
         } else {
             BTreeMap::new()

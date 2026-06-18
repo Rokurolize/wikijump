@@ -4,76 +4,11 @@ import { storeRequestContext } from "$lib/server/load/request-ctx"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import type { Handle } from "@sveltejs/kit"
 
-const LOCAL_FILE_IMAGE_SOURCES = ["https://*.wjfiles.localhost"]
-const LOCAL_FILE_STYLE_SOURCES = ["https://*.wjfiles.localhost"]
-const WIKIDOT_IMAGE_SOURCES = [
-  "https://*.wdfiles.com",
-  "https://cdn.scpwiki.com",
-  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
-]
-const WIKIDOT_STYLE_SOURCES = [
-  "https://*.wdfiles.com",
-  "https://cdn.scpwiki.com",
-  "https://d3g0gp89917ko0.cloudfront.net",
-  "https://fonts.bunny.net",
-  "https://maxcdn.bootstrapcdn.com",
-  "https://rsms.me",
-  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
-]
-const WIKIDOT_FONT_SOURCES = [
-  "https://*.wdfiles.com",
-  "https://cdn.scpwiki.com",
-  "https://fonts.bunny.net",
-  "https://maxcdn.bootstrapcdn.com",
-  "https://rsms.me",
-  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
-]
-
 function isLocalEnvironment() {
   return process.env.FRAMERAIL_ENV === "local" || process.env.NODE_ENV === "development"
 }
 
-function imageSources() {
-  const sources = ["'self'", "data:", "blob:", ...WIKIDOT_IMAGE_SOURCES]
-
-  if (isLocalEnvironment()) {
-    sources.push(...LOCAL_FILE_IMAGE_SOURCES)
-  }
-
-  return sources.join(" ")
-}
-
-function styleSources() {
-  const sources = ["'self'", "'unsafe-inline'", ...WIKIDOT_STYLE_SOURCES]
-
-  if (isLocalEnvironment()) {
-    sources.push(...LOCAL_FILE_STYLE_SOURCES)
-  }
-
-  return sources.join(" ")
-}
-
-function fontSources() {
-  return ["'self'", "data:", ...WIKIDOT_FONT_SOURCES].join(" ")
-}
-
-const CSP_DIRECTIVES = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  "form-action 'self'",
-  `img-src ${imageSources()}`,
-  `font-src ${fontSources()}`,
-  `style-src ${styleSources()}`,
-  "script-src 'self'",
-  "connect-src 'self'",
-  "worker-src 'self' blob:",
-  "manifest-src 'self'"
-]
-
 const SECURITY_HEADERS = {
-  "content-security-policy": CSP_DIRECTIVES.join("; "),
   "cross-origin-opener-policy": "same-origin",
   "permissions-policy": [
     "accelerometer=()",

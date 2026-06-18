@@ -210,7 +210,7 @@ pub async fn page_edit(
     let can_edit = PageService::check_user_permission(
         ctx,
         &CheckPermissionContext {
-            user_id: Some(input.user_id),
+            user_id: None,
             site_id: input.site_id,
             page_reference: Some(input.page.clone()),
         },

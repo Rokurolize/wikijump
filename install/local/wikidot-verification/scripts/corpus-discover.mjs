@@ -37,7 +37,7 @@ function parseArgs(argv) {
     }
   }
 
-  if (!Number.isFinite(args.canaryCount)) args.canaryCount = CANARY_COUNT;
+  if (args.canaryCount === undefined) args.canaryCount = CANARY_COUNT;
   if (!Number.isInteger(args.canaryCount) || args.canaryCount < 1) {
     throw new Error("--canary-count must be a positive integer");
   }
