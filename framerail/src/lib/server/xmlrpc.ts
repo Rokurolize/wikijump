@@ -30,6 +30,24 @@ interface DeepwellCategory {
   slug: string
 }
 
+interface DeepwellSite {
+  site_id: number
+}
+
+interface DeepwellPage {
+  page_created_at: string
+  page_updated_at: string | null
+  page_revision_count: number
+  revision_created_at: string
+  revision_user_id: number
+  title: string
+  slug: string
+  tags: string[]
+  rating: number
+  wikitext?: string | null
+  compiled_body_html?: string | null
+}
+
 type DeepwellStringParams = {
   [key: string]: string | string[] | undefined
 }
@@ -172,6 +190,10 @@ async function dispatchXmlRpcCall(
       return selectTags(call)
     case "pages.select":
       return selectPages(call)
+    case "pages.get_meta":
+      return getPagesMeta(call)
+    case "pages.get_one":
+      return getPageOne(call)
     default:
       if (METHOD_DEFINITIONS[call.methodName]) {
         throw new XmlRpcFault(
@@ -289,6 +311,122 @@ async function selectPages(call: XmlRpcCall): Promise<string[]> {
   return (await client.request("page_select", deepwellParams)) as string[]
 }
 
+async function getPagesMeta(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcValue }> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const pages = getRequiredStructStringArray(params, "pages")
+
+  if (pages.length > 10) {
+    throw new XmlRpcFault(-32602, "pages.get_meta pages is limited to 10 entries")
+  }
+  if (pages.length === 0) {
+    return {}
+  }
+
+  const siteId = await getDeepwellSiteId(site)
+  const entries = await Promise.all(
+    pages.map(async (pageReference): Promise<[string, XmlRpcValue] | null> => {
+      const page = await getDeepwellPage(siteId, pageReference, false)
+      if (!page) {
+        return null
+      }
+
+      const parentFullname = await getDeepwellParentFullname(siteId, page.slug)
+      return [page.slug, buildXmlRpcPageMeta(page, parentFullname)]
+    })
+  )
+
+  return Object.fromEntries(
+    entries.filter((entry): entry is [string, XmlRpcValue] => entry !== null)
+  )
+}
+
+async function getPageOne(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcValue }> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const pageReference = getRequiredStructString(params, "page")
+  const siteId = await getDeepwellSiteId(site)
+  const page = await getDeepwellPage(siteId, pageReference, true)
+  if (!page) {
+    throw new XmlRpcFault(406, "Argument page invalid: page does not exist")
+  }
+
+  const parentFullname = await getDeepwellParentFullname(siteId, page.slug)
+  const parentTitle = parentFullname
+    ? ((await getDeepwellPage(siteId, parentFullname, false))?.title ?? null)
+    : null
+  const children = await client.request("page_select", {
+    site,
+    parent: page.slug
+  })
+
+  return {
+    ...buildXmlRpcPageMeta(page, parentFullname),
+    parent_title: parentTitle,
+    children: Array.isArray(children) ? children.length : 0,
+    content: page.wikitext ?? "",
+    html: page.compiled_body_html ?? "",
+    comments: 0,
+    commented_at: null,
+    commented_by: null
+  }
+}
+
+async function getDeepwellSiteId(site: string): Promise<number> {
+  const deepwellSite = (await client.request("site_get", { site })) as DeepwellSite
+  return deepwellSite.site_id
+}
+
+async function getDeepwellPage(
+  siteId: number,
+  page: string,
+  includeBody: boolean
+): Promise<DeepwellPage | null> {
+  return (await client.request("page_get", {
+    site_id: siteId,
+    page,
+    details: {
+      wikitext: includeBody,
+      compiled_html: includeBody
+    }
+  })) as DeepwellPage | null
+}
+
+async function getDeepwellParentFullname(
+  siteId: number,
+  page: string
+): Promise<string | null> {
+  const parents = (await client.request("parent_get_all", {
+    site_id: siteId,
+    page
+  })) as string[]
+
+  return parents[0] ?? null
+}
+
+function buildXmlRpcPageMeta(
+  page: DeepwellPage,
+  parentFullname: string | null
+): { [key: string]: XmlRpcValue } {
+  const userId = String(page.revision_user_id)
+
+  return {
+    fullname: page.slug,
+    title: page.title,
+    created_at: page.page_created_at,
+    created_by: userId,
+    updated_at: page.page_updated_at ?? page.revision_created_at ?? page.page_created_at,
+    updated_by: userId,
+    parent_fullname: parentFullname,
+    tags: page.tags,
+    rating: Math.round(page.rating),
+    revisions: page.page_revision_count,
+    comments: 0,
+    commented_at: null,
+    commented_by: null
+  }
+}
+
 function getMethodDefinition(methodName: string): MethodDefinition {
   const definition = METHOD_DEFINITIONS[methodName]
   if (!definition) {
@@ -324,6 +462,17 @@ function getRequiredStructString(
   const value = params[name]
   if (typeof value !== "string" || value.length === 0) {
     throw new XmlRpcFault(-32602, `Expected string field: ${name}`)
+  }
+  return value
+}
+
+function getRequiredStructStringArray(
+  params: { [key: string]: XmlRpcValue },
+  name: string
+): string[] {
+  const value = getOptionalStructStringArray(params, name)
+  if (value === null) {
+    throw new XmlRpcFault(-32602, `Expected string array field: ${name}`)
   }
   return value
 }
