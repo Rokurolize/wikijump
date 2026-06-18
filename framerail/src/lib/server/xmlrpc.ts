@@ -1,5 +1,7 @@
 import { Buffer } from "node:buffer"
 
+import { client } from "$lib/server/deepwell"
+
 type XmlRpcScalar = string | number | boolean | null
 export type XmlRpcValue = XmlRpcScalar | XmlRpcValue[] | { [key: string]: XmlRpcValue }
 
@@ -22,6 +24,10 @@ interface BasicAuthCredentials {
 interface MethodDefinition {
   help: string
   signatures: string[][]
+}
+
+interface DeepwellCategory {
+  slug: string
 }
 
 const XML_RPC_HEADERS = {
@@ -156,6 +162,10 @@ async function dispatchXmlRpcCall(
         throw new XmlRpcFault(-32600, "Nested system.multicall calls are not supported")
       }
       return dispatchMulticall(call, auth)
+    case "categories.select":
+      return selectCategories(call)
+    case "tags.select":
+      return selectTags(call)
     default:
       if (METHOD_DEFINITIONS[call.methodName]) {
         throw new XmlRpcFault(
@@ -209,6 +219,41 @@ async function dispatchMulticall(
   return results
 }
 
+async function selectCategories(call: XmlRpcCall): Promise<string[]> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const categories = (await client.request("category_get_all", {
+    site
+  })) as DeepwellCategory[]
+
+  return categories.map((category) => category.slug)
+}
+
+async function selectTags(call: XmlRpcCall): Promise<string[]> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const categories = getOptionalStructStringArray(params, "categories")
+  const pages = getOptionalStructStringArray(params, "pages")
+
+  if (pages && pages.length > 10) {
+    throw new XmlRpcFault(-32602, "tags.select pages is limited to 10 entries")
+  }
+
+  const deepwellParams: {
+    site: string
+    categories?: string[]
+    pages?: string[]
+  } = { site }
+  if (categories) {
+    deepwellParams.categories = categories
+  }
+  if (pages) {
+    deepwellParams.pages = pages
+  }
+
+  return (await client.request("page_tags_select", deepwellParams)) as string[]
+}
+
 function getMethodDefinition(methodName: string): MethodDefinition {
   const definition = METHOD_DEFINITIONS[methodName]
   if (!definition) {
@@ -221,6 +266,43 @@ function getStringParam(call: XmlRpcCall, index: number, name: string): string {
   const value = call.params[index]
   if (typeof value !== "string") {
     throw new XmlRpcFault(-32602, `Expected string parameter: ${name}`)
+  }
+  return value
+}
+
+function getStructParam(
+  call: XmlRpcCall,
+  index: number,
+  name: string
+): { [key: string]: XmlRpcValue } {
+  const value = call.params[index]
+  if (!isXmlRpcStruct(value)) {
+    throw new XmlRpcFault(-32602, `Expected struct parameter: ${name}`)
+  }
+  return value
+}
+
+function getRequiredStructString(
+  params: { [key: string]: XmlRpcValue },
+  name: string
+): string {
+  const value = params[name]
+  if (typeof value !== "string" || value.length === 0) {
+    throw new XmlRpcFault(-32602, `Expected string field: ${name}`)
+  }
+  return value
+}
+
+function getOptionalStructStringArray(
+  params: { [key: string]: XmlRpcValue },
+  name: string
+): string[] | null {
+  const value = params[name]
+  if (value === undefined || value === null) {
+    return null
+  }
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    throw new XmlRpcFault(-32602, `Expected string array field: ${name}`)
   }
   return value
 }
