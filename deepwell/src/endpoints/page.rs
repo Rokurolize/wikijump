@@ -21,7 +21,7 @@
 use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::page::{self, Entity as Page, Model as PageModel};
-use crate::models::page_revision;
+use crate::models::{page_parent, page_revision, page_vote};
 use crate::services::TextService;
 use crate::services::file::{GetFileOutput, GetPageFiles};
 use crate::services::page::{
@@ -34,11 +34,13 @@ use crate::services::page::{
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::CheckPermissionContext;
 use crate::types::{
-    Action, Bytes, FileOrder, PageDetails, PageId, Reference, RerenderDepth,
+    Action, AliasType, Bytes, FileOrder, PageDetails, PageId, Reference, RerenderDepth,
 };
 use futures::future::try_join_all;
+use sea_orm::prelude::TimeDateTimeWithTimeZone;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-use std::collections::BTreeSet;
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub async fn page_create(
     ctx: &ServiceContext<'_>,
@@ -286,6 +288,450 @@ pub async fn page_tags_select(
         .collect();
 
     Ok(tags)
+}
+
+pub async fn page_select(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<String>> {
+    #[derive(Deserialize, Debug)]
+    struct Input<'a> {
+        site: Reference<'a>,
+        pagetype: Option<String>,
+        categories: Option<Vec<String>>,
+        tags_any: Option<Vec<String>>,
+        tags_all: Option<Vec<String>>,
+        tags_none: Option<Vec<String>>,
+        parent: Option<String>,
+        created_by: Option<String>,
+        rating: Option<String>,
+        order: Option<String>,
+    }
+
+    let Input {
+        site,
+        pagetype,
+        categories,
+        tags_any,
+        tags_all,
+        tags_none,
+        parent,
+        created_by,
+        rating,
+        order,
+    } = parse!(params, Page);
+
+    let make_error = || Error::new("failed to select pages", ErrorType::Page);
+    let site_id = SiteService::get_id(ctx, site).await.or_raise(make_error)?;
+    info!("Selecting XML-RPC page list in site ID {site_id}");
+
+    let page_type = parse_page_select_type(pagetype.as_deref())?;
+    let rating_filter = match rating {
+        Some(rating) => Some(parse_page_select_rating(&rating)?),
+        None => None,
+    };
+    let order = parse_page_select_order(order.as_deref())?;
+
+    if matches!(categories, Some(ref categories) if categories.is_empty())
+        || matches!(tags_any, Some(ref tags) if tags.is_empty())
+        || matches!(tags_all, Some(ref tags) if tags.is_empty())
+        || matches!(tags_none, Some(ref tags) if tags.is_empty())
+    {
+        return Ok(Vec::new());
+    }
+
+    let selected_categories =
+        categories.map(|categories| categories.into_iter().collect::<BTreeSet<_>>());
+    let tags_any = tags_any
+        .unwrap_or_default()
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    let tags_all = tags_all
+        .unwrap_or_default()
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    let tags_none = tags_none
+        .unwrap_or_default()
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+
+    let txn = ctx.transaction();
+    let categories_by_id = CategoryService::get_all(ctx, site_id)
+        .await
+        .or_raise(make_error)?
+        .into_iter()
+        .map(|category| (category.category_id, category.slug))
+        .collect::<BTreeMap<_, _>>();
+
+    let pages = Page::find()
+        .filter(page::Column::SiteId.eq(site_id))
+        .filter(page::Column::DeletedAt.is_null())
+        .all(txn)
+        .await
+        .or_raise(make_error)?;
+
+    let page_ids = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
+    let latest_revision_ids = pages
+        .iter()
+        .filter_map(|page| page.latest_revision_id)
+        .collect::<Vec<_>>();
+
+    let latest_revisions = if latest_revision_ids.is_empty() {
+        BTreeMap::new()
+    } else {
+        page_revision::Entity::find()
+            .filter(page_revision::Column::RevisionId.is_in(latest_revision_ids))
+            .all(txn)
+            .await
+            .or_raise(make_error)?
+            .into_iter()
+            .map(|revision| (revision.revision_id, revision))
+            .collect::<BTreeMap<_, _>>()
+    };
+
+    let created_by_by_page_id = if page_ids.is_empty() {
+        BTreeMap::new()
+    } else {
+        page_revision::Entity::find()
+            .filter(page_revision::Column::SiteId.eq(site_id))
+            .filter(page_revision::Column::PageId.is_in(page_ids.clone()))
+            .filter(page_revision::Column::RevisionNumber.eq(0))
+            .all(txn)
+            .await
+            .or_raise(make_error)?
+            .into_iter()
+            .map(|revision| (revision.page_id, revision.user_id))
+            .collect::<BTreeMap<_, _>>()
+    };
+
+    let parent_links = if page_ids.is_empty() {
+        Vec::new()
+    } else {
+        page_parent::Entity::find()
+            .filter(page_parent::Column::ChildPageId.is_in(page_ids.clone()))
+            .all(txn)
+            .await
+            .or_raise(make_error)?
+    };
+    let child_parent_ids = parent_links
+        .iter()
+        .map(|link| (link.child_page_id, link.parent_page_id))
+        .collect::<BTreeSet<_>>();
+
+    let rating_by_page_id = if page_ids.is_empty() {
+        BTreeMap::new()
+    } else {
+        let mut ratings = BTreeMap::<i64, i64>::new();
+        for vote in page_vote::Entity::find()
+            .filter(page_vote::Column::PageId.is_in(page_ids.clone()))
+            .filter(page_vote::Column::DeletedAt.is_null())
+            .filter(page_vote::Column::DisabledAt.is_null())
+            .all(txn)
+            .await
+            .or_raise(make_error)?
+        {
+            *ratings.entry(vote.page_id).or_default() += i64::from(vote.value);
+        }
+        ratings
+    };
+
+    let created_by_user_ids = match created_by {
+        None => None,
+        Some(created_by) => {
+            let user_id = match created_by.parse::<i64>() {
+                Ok(user_id) => Some(user_id),
+                Err(_) => AliasService::get_optional(ctx, AliasType::User, &created_by)
+                    .await
+                    .or_raise(make_error)?
+                    .map(|alias| alias.target_id),
+            };
+
+            match user_id {
+                Some(user_id) => Some(BTreeSet::from([user_id])),
+                None => return Ok(Vec::new()),
+            }
+        }
+    };
+
+    let parent_filter = match parent {
+        None => None,
+        Some(parent) if parent == "-" => Some(PageSelectParentFilter::NoParent),
+        Some(parent) => {
+            let parent_id = pages
+                .iter()
+                .find(|page| page.slug == parent)
+                .map(|page| page.page_id)
+                .ok_or_else(|| {
+                    Error::new(
+                        format!("unknown parent page for pages.select: {parent}"),
+                        ErrorType::Page,
+                    )
+                })?;
+            Some(PageSelectParentFilter::Parent(parent_id))
+        }
+    };
+
+    let mut rows = pages
+        .into_iter()
+        .filter_map(|page| {
+            let category = categories_by_id.get(&page.page_category_id)?;
+            let revision = page
+                .latest_revision_id
+                .and_then(|revision_id| latest_revisions.get(&revision_id));
+            let empty_tags = Vec::new();
+            let tags = revision
+                .map(|revision| &revision.tags)
+                .unwrap_or(&empty_tags);
+            let tag_set = tags.iter().cloned().collect::<BTreeSet<_>>();
+            let created_by = created_by_by_page_id.get(&page.page_id).copied();
+            let rating = rating_by_page_id
+                .get(&page.page_id)
+                .copied()
+                .unwrap_or_default();
+
+            if !page_type.matches(&page.slug)
+                || selected_categories
+                    .as_ref()
+                    .is_some_and(|categories| !categories.contains(category))
+                || (!tags_any.is_empty() && tags_any.is_disjoint(&tag_set))
+                || !tags_all.is_subset(&tag_set)
+                || !tags_none.is_disjoint(&tag_set)
+                || rating_filter
+                    .as_ref()
+                    .is_some_and(|filter| !filter.matches(rating))
+                || created_by_user_ids.as_ref().is_some_and(|user_ids| {
+                    created_by.is_none_or(|user_id| !user_ids.contains(&user_id))
+                })
+                || parent_filter.as_ref().is_some_and(|filter| {
+                    !filter.matches(page.page_id, &child_parent_ids)
+                })
+            {
+                return None;
+            }
+
+            Some(PageSelectRow {
+                slug: page.slug,
+                created_at: page.created_at,
+                updated_at: page.updated_at,
+                title: revision
+                    .map(|revision| revision.title.clone())
+                    .unwrap_or_default(),
+                rating,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    rows.sort_by(|left, right| order.compare(left, right));
+
+    Ok(rows.into_iter().map(|row| row.slug).collect())
+}
+
+#[derive(Debug, Copy, Clone)]
+enum PageSelectType {
+    All,
+    Normal,
+    Hidden,
+}
+
+impl PageSelectType {
+    fn matches(self, slug: &str) -> bool {
+        match self {
+            PageSelectType::All => true,
+            PageSelectType::Normal => !slug.starts_with('_'),
+            PageSelectType::Hidden => slug.starts_with('_'),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+enum PageSelectParentFilter {
+    NoParent,
+    Parent(i64),
+}
+
+impl PageSelectParentFilter {
+    fn matches(self, page_id: i64, child_parent_ids: &BTreeSet<(i64, i64)>) -> bool {
+        match self {
+            PageSelectParentFilter::NoParent => child_parent_ids
+                .iter()
+                .all(|(child_page_id, _)| *child_page_id != page_id),
+            PageSelectParentFilter::Parent(parent_page_id) => {
+                child_parent_ids.contains(&(page_id, parent_page_id))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct PageSelectRow {
+    slug: String,
+    created_at: TimeDateTimeWithTimeZone,
+    updated_at: Option<TimeDateTimeWithTimeZone>,
+    title: String,
+    rating: i64,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum PageSelectOrderField {
+    CreatedAt,
+    UpdatedAt,
+    Fullname,
+    Title,
+    Rating,
+}
+
+#[derive(Debug, Copy, Clone)]
+struct PageSelectOrder {
+    field: PageSelectOrderField,
+    ascending: bool,
+}
+
+impl PageSelectOrder {
+    fn compare(self, left: &PageSelectRow, right: &PageSelectRow) -> Ordering {
+        let primary = match self.field {
+            PageSelectOrderField::CreatedAt => left.created_at.cmp(&right.created_at),
+            PageSelectOrderField::UpdatedAt => left.updated_at.cmp(&right.updated_at),
+            PageSelectOrderField::Fullname => left.slug.cmp(&right.slug),
+            PageSelectOrderField::Title => left.title.cmp(&right.title),
+            PageSelectOrderField::Rating => left.rating.cmp(&right.rating),
+        };
+
+        let primary = if self.ascending {
+            primary
+        } else {
+            primary.reverse()
+        };
+
+        primary.then_with(|| left.slug.cmp(&right.slug))
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+enum PageSelectComparison {
+    GreaterThan,
+    GreaterOrEqual,
+    LessThan,
+    LessOrEqual,
+    Equal,
+    NotEqual,
+}
+
+#[derive(Debug, Copy, Clone)]
+struct PageSelectRatingFilter {
+    comparison: PageSelectComparison,
+    value: i64,
+}
+
+impl PageSelectRatingFilter {
+    fn matches(&self, rating: i64) -> bool {
+        match self.comparison {
+            PageSelectComparison::GreaterThan => rating > self.value,
+            PageSelectComparison::GreaterOrEqual => rating >= self.value,
+            PageSelectComparison::LessThan => rating < self.value,
+            PageSelectComparison::LessOrEqual => rating <= self.value,
+            PageSelectComparison::Equal => rating == self.value,
+            PageSelectComparison::NotEqual => rating != self.value,
+        }
+    }
+}
+
+fn parse_page_select_type(value: Option<&str>) -> Result<PageSelectType> {
+    match value.unwrap_or("*").trim().to_ascii_lowercase().as_str() {
+        "" | "*" | "all" => Ok(PageSelectType::All),
+        "normal" | "page" | "pages" => Ok(PageSelectType::Normal),
+        "hidden" => Ok(PageSelectType::Hidden),
+        other => Err(Error::new(
+            format!("unsupported pages.select pagetype: {other}"),
+            ErrorType::Page,
+        )
+        .into()),
+    }
+}
+
+fn parse_page_select_rating(value: &str) -> Result<PageSelectRatingFilter> {
+    let value = value.trim();
+    let (comparison, number) = if let Some(number) = value.strip_prefix(">=") {
+        (PageSelectComparison::GreaterOrEqual, number)
+    } else if let Some(number) = value.strip_prefix("<=") {
+        (PageSelectComparison::LessOrEqual, number)
+    } else if let Some(number) = value.strip_prefix("!=") {
+        (PageSelectComparison::NotEqual, number)
+    } else if let Some(number) = value.strip_prefix("==") {
+        (PageSelectComparison::Equal, number)
+    } else if let Some(number) = value.strip_prefix('>') {
+        (PageSelectComparison::GreaterThan, number)
+    } else if let Some(number) = value.strip_prefix('<') {
+        (PageSelectComparison::LessThan, number)
+    } else if let Some(number) = value.strip_prefix('=') {
+        (PageSelectComparison::Equal, number)
+    } else {
+        (PageSelectComparison::Equal, value)
+    };
+
+    let value = match number.trim().parse::<i64>() {
+        Ok(value) => value,
+        Err(_) => {
+            return Err(Error::new(
+                format!("invalid pages.select rating filter: {value}"),
+                ErrorType::Page,
+            )
+            .into());
+        }
+    };
+
+    Ok(PageSelectRatingFilter { comparison, value })
+}
+
+fn parse_page_select_order(value: Option<&str>) -> Result<PageSelectOrder> {
+    let value = value.unwrap_or("created_at asc").trim();
+    if value.is_empty() {
+        return Ok(PageSelectOrder {
+            field: PageSelectOrderField::CreatedAt,
+            ascending: true,
+        });
+    }
+
+    let parts = value.split_whitespace().collect::<Vec<_>>();
+    let (field, direction) = match parts.as_slice() {
+        [field] => (*field, "asc"),
+        [field, direction] => (*field, *direction),
+        _ => {
+            return Err(Error::new(
+                format!("invalid pages.select order expression: {value}"),
+                ErrorType::Page,
+            )
+            .into());
+        }
+    };
+
+    let field = match field.to_ascii_lowercase().as_str() {
+        "created_at" | "created" => PageSelectOrderField::CreatedAt,
+        "updated_at" | "updated" => PageSelectOrderField::UpdatedAt,
+        "fullname" | "full_name" | "slug" | "name" => PageSelectOrderField::Fullname,
+        "title" => PageSelectOrderField::Title,
+        "rating" | "score" => PageSelectOrderField::Rating,
+        other => {
+            return Err(Error::new(
+                format!("unsupported pages.select order field: {other}"),
+                ErrorType::Page,
+            )
+            .into());
+        }
+    };
+
+    let ascending = match direction.to_ascii_lowercase().as_str() {
+        "asc" | "ascending" => true,
+        "desc" | "descending" => false,
+        other => {
+            return Err(Error::new(
+                format!("unsupported pages.select order direction: {other}"),
+                ErrorType::Page,
+            )
+            .into());
+        }
+    };
+
+    Ok(PageSelectOrder { field, ascending })
 }
 
 pub async fn page_edit(

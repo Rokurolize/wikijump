@@ -100,6 +100,29 @@ const xmlRpcTagsSelectCategoryRequest = `<?xml version="1.0"?>
   </params>
 </methodCall>`
 
+const xmlRpcPagesSelectRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>pagetype</name><value><string>normal</string></value></member>
+          <member><name>categories</name><value><array><data><value><string>_default</string></value></data></array></value></member>
+          <member><name>tags_any</name><value><array><data><value><string>verification-list</string></value></data></array></value></member>
+          <member><name>tags_all</name><value><array><data><value><string>verification</string></value><value><string>verification-list</string></value></data></array></value></member>
+          <member><name>tags_none</name><value><array><data><value><string>verification-excluded</string></value></data></array></value></member>
+          <member><name>parent</name><value><string>fixture-parent-root</string></value></member>
+          <member><name>created_by</name><value><string>-1</string></value></member>
+          <member><name>rating</name><value><string>=0</string></value></member>
+          <member><name>order</name><value><string>created_at desc</string></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+
 const xmlRpcHeaders = {
   authorization: `Basic ${Buffer.from("test-app:test-key").toString("base64")}`,
   "content-type": "text/xml"
@@ -199,6 +222,28 @@ test("XML-RPC endpoint selects local categories and tags", async ({ request }) =
   const categoryTagsBody = await categoryTagsResponse.text()
   expect(categoryTagsBody).toContain("<string>navigation</string>")
   expect(categoryTagsBody).toContain("<string>verification</string>")
+})
+
+test("XML-RPC endpoint selects pages with documented filters and ordering", async ({
+  request
+}) => {
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSelectRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(response.status()).toBe(200)
+
+  const body = await response.text()
+  expect(body).toContain("<string>fixture-listpages-target-c</string>")
+  expect(body).toContain("<string>fixture-listpages-target-b</string>")
+  expect(body).toContain("<string>fixture-listpages-target-a</string>")
+  expect(body).not.toContain("<string>fixture-listpages-excluded</string>")
+  expect(body.indexOf("fixture-listpages-target-c")).toBeLessThan(
+    body.indexOf("fixture-listpages-target-b")
+  )
+  expect(body.indexOf("fixture-listpages-target-b")).toBeLessThan(
+    body.indexOf("fixture-listpages-target-a")
+  )
 })
 
 test("XML-RPC endpoint returns XML-RPC faults for unauthenticated requests", async ({

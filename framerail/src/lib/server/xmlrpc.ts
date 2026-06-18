@@ -30,6 +30,10 @@ interface DeepwellCategory {
   slug: string
 }
 
+type DeepwellStringParams = {
+  [key: string]: string | string[] | undefined
+}
+
 const XML_RPC_HEADERS = {
   "content-type": "text/xml; charset=utf-8"
 }
@@ -166,6 +170,8 @@ async function dispatchXmlRpcCall(
       return selectCategories(call)
     case "tags.select":
       return selectTags(call)
+    case "pages.select":
+      return selectPages(call)
     default:
       if (METHOD_DEFINITIONS[call.methodName]) {
         throw new XmlRpcFault(
@@ -254,6 +260,35 @@ async function selectTags(call: XmlRpcCall): Promise<string[]> {
   return (await client.request("page_tags_select", deepwellParams)) as string[]
 }
 
+async function selectPages(call: XmlRpcCall): Promise<string[]> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const deepwellParams: DeepwellStringParams & {
+    site: string
+    pagetype?: string
+    categories?: string[]
+    tags_any?: string[]
+    tags_all?: string[]
+    tags_none?: string[]
+    parent?: string
+    created_by?: string
+    rating?: string
+    order?: string
+  } = { site }
+
+  addOptionalStringField(deepwellParams, params, "pagetype")
+  addOptionalStringArrayField(deepwellParams, params, "categories")
+  addOptionalStringArrayField(deepwellParams, params, "tags_any")
+  addOptionalStringArrayField(deepwellParams, params, "tags_all")
+  addOptionalStringArrayField(deepwellParams, params, "tags_none")
+  addOptionalStringField(deepwellParams, params, "parent")
+  addOptionalStringField(deepwellParams, params, "created_by")
+  addOptionalStringField(deepwellParams, params, "rating")
+  addOptionalStringField(deepwellParams, params, "order")
+
+  return (await client.request("page_select", deepwellParams)) as string[]
+}
+
 function getMethodDefinition(methodName: string): MethodDefinition {
   const definition = METHOD_DEFINITIONS[methodName]
   if (!definition) {
@@ -304,7 +339,43 @@ function getOptionalStructStringArray(
   if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
     throw new XmlRpcFault(-32602, `Expected string array field: ${name}`)
   }
+  return value.filter((entry): entry is string => typeof entry === "string")
+}
+
+function getOptionalStructString(
+  params: { [key: string]: XmlRpcValue },
+  name: string
+): string | null {
+  const value = params[name]
+  if (value === undefined || value === null) {
+    return null
+  }
+  if (typeof value !== "string") {
+    throw new XmlRpcFault(-32602, `Expected string field: ${name}`)
+  }
   return value
+}
+
+function addOptionalStringField(
+  target: DeepwellStringParams,
+  params: { [key: string]: XmlRpcValue },
+  name: string
+): void {
+  const value = getOptionalStructString(params, name)
+  if (value !== null) {
+    target[name] = value
+  }
+}
+
+function addOptionalStringArrayField(
+  target: DeepwellStringParams,
+  params: { [key: string]: XmlRpcValue },
+  name: string
+): void {
+  const value = getOptionalStructStringArray(params, name)
+  if (value !== null) {
+    target[name] = value
+  }
 }
 
 function getArrayParam(call: XmlRpcCall, index: number, name: string): XmlRpcValue[] {
