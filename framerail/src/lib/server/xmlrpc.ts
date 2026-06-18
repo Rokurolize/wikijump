@@ -56,6 +56,16 @@ interface DeepwellLoginOutput {
   session_token: string
 }
 
+interface DeepwellSession {
+  user_id: number
+}
+
+interface DeepwellUser {
+  user_id: number
+  slug: string
+  name: string
+}
+
 interface DeepwellBlobUpload {
   pending_blob_id: string
   presign_url: string
@@ -73,6 +83,23 @@ interface DeepwellFile {
   mime: string
   size: number
   revision_comments: string
+}
+
+interface DeepwellForumPostSummary {
+  comments: number
+  commented_at: string | null
+  commented_by: string | null
+}
+
+interface DeepwellForumPost {
+  id: number
+  fullname: string
+  reply_to: number | null
+  title: string
+  content: string
+  html: string
+  created_by: string
+  created_at: string
 }
 
 type DeepwellStringParams = {
@@ -234,6 +261,12 @@ async function dispatchXmlRpcCall(
       return getFileOne(call)
     case "files.save_one":
       return saveFileOne(call, auth)
+    case "users.get_me":
+      return getUserMe(call, auth)
+    case "posts.select":
+      return selectPosts(call)
+    case "posts.get":
+      return getPosts(call)
     default:
       if (METHOD_DEFINITIONS[call.methodName]) {
         throw new XmlRpcFault(
@@ -372,7 +405,8 @@ async function getPagesMeta(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcVa
       }
 
       const parentFullname = await getDeepwellParentFullname(siteId, page.slug)
-      return [page.slug, buildXmlRpcPageMeta(page, parentFullname)]
+      const postSummary = await getDeepwellForumPostSummary(siteId, page.slug)
+      return [page.slug, buildXmlRpcPageMeta(page, parentFullname, postSummary)]
     })
   )
 
@@ -625,6 +659,73 @@ async function saveFileOne(
   return buildXmlRpcFileMeta(site, page.slug, saved)
 }
 
+async function getUserMe(
+  call: XmlRpcCall,
+  auth: BasicAuthCredentials
+): Promise<{ [key: string]: XmlRpcValue }> {
+  if (
+    call.params.length > 1 ||
+    (call.params.length === 1 && !isXmlRpcStruct(call.params[0]))
+  ) {
+    throw new XmlRpcFault(-32602, "users.get_me accepts no parameters or an empty struct")
+  }
+
+  const user = await getAuthenticatedUser(auth)
+  return {
+    name: user.slug,
+    title: user.name,
+    id: user.user_id
+  }
+}
+
+async function selectPosts(call: XmlRpcCall): Promise<number[]> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const page = getOptionalStructString(params, "page")
+  const replyTo = getOptionalStructStringOrInt(params, "reply_to")
+  const createdBy = getOptionalStructString(params, "created_by")
+  const siteId = await getDeepwellSiteId(site)
+
+  return (await requestDeepwell("forum_post_select", {
+    site_id: siteId,
+    page: page ?? undefined,
+    reply_to: replyTo ?? undefined,
+    created_by: createdBy ?? undefined
+  })) as number[]
+}
+
+async function getPosts(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcValue }> {
+  const params = getStructParam(call, 0, "params")
+  const site = getRequiredStructString(params, "site")
+  const posts = getRequiredStructStringArray(params, "posts")
+
+  if (posts.length > 10) {
+    throw new XmlRpcFault(-32602, "posts.get posts is limited to 10 entries")
+  }
+
+  const siteId = await getDeepwellSiteId(site)
+  const result = (await requestDeepwell("forum_post_get", {
+    site_id: siteId,
+    posts
+  })) as DeepwellForumPost[]
+
+  return Object.fromEntries(
+    result.map((post) => [
+      String(post.id),
+      {
+        id: post.id,
+        fullname: post.fullname,
+        reply_to: post.reply_to,
+        title: post.title,
+        content: post.content,
+        html: post.html,
+        created_by: post.created_by,
+        created_at: post.created_at
+      }
+    ])
+  )
+}
+
 async function buildXmlRpcPage(
   site: string,
   siteId: number,
@@ -635,24 +736,24 @@ async function buildXmlRpcPage(
     throw new XmlRpcFault(406, "Argument page invalid: page does not exist")
   }
 
-  const parentFullname = await getDeepwellParentFullname(siteId, page.slug)
+  const [parentFullname, children, postSummary] = await Promise.all([
+    getDeepwellParentFullname(siteId, page.slug),
+    client.request("page_select", {
+      site,
+      parent: page.slug
+    }),
+    getDeepwellForumPostSummary(siteId, page.slug)
+  ])
   const parentTitle = parentFullname
     ? ((await getDeepwellPage(siteId, parentFullname, false))?.title ?? null)
     : null
-  const children = await client.request("page_select", {
-    site,
-    parent: page.slug
-  })
 
   return {
-    ...buildXmlRpcPageMeta(page, parentFullname),
+    ...buildXmlRpcPageMeta(page, parentFullname, postSummary),
     parent_title: parentTitle,
     children: Array.isArray(children) ? children.length : 0,
     content: page.wikitext ?? "",
-    html: page.compiled_body_html ?? "",
-    comments: 0,
-    commented_at: null,
-    commented_by: null
+    html: page.compiled_body_html ?? ""
   }
 }
 
@@ -752,6 +853,31 @@ async function getXmlRpcWriteContext(
   }
 }
 
+async function getAuthenticatedUser(auth: BasicAuthCredentials): Promise<DeepwellUser> {
+  const login = (await requestDeepwell("login", {
+    name_or_email: auth.username,
+    password: auth.password,
+    ip_address: XML_RPC_WRITE_IP_ADDRESS,
+    user_agent: "wikijump-xmlrpc-api/0.1"
+  })) as DeepwellLoginOutput
+
+  const session = (await requestDeepwell("session_get", [
+    login.session_token
+  ])) as DeepwellSession | null
+  if (!session) {
+    throw new XmlRpcFault(-32603, "Authenticated XML-RPC session was not found")
+  }
+
+  const user = (await requestDeepwell("user_get", {
+    user: session.user_id
+  })) as DeepwellUser | null
+  if (!user) {
+    throw new XmlRpcFault(-32603, "Authenticated XML-RPC user was not found")
+  }
+
+  return user
+}
+
 async function requestDeepwell(
   method: string,
   params: unknown,
@@ -822,6 +948,16 @@ async function getDeepwellFile(
   })) as DeepwellFile | null
 }
 
+async function getDeepwellForumPostSummary(
+  siteId: number,
+  page: string
+): Promise<DeepwellForumPostSummary> {
+  return (await requestDeepwell("forum_post_page_summary", {
+    site_id: siteId,
+    page
+  })) as DeepwellForumPostSummary
+}
+
 async function getDeepwellParentFullname(
   siteId: number,
   page: string
@@ -871,7 +1007,8 @@ async function replaceDeepwellParents(
 
 function buildXmlRpcPageMeta(
   page: DeepwellPage,
-  parentFullname: string | null
+  parentFullname: string | null,
+  postSummary?: DeepwellForumPostSummary
 ): { [key: string]: XmlRpcValue } {
   const userId = String(page.revision_user_id)
 
@@ -886,9 +1023,9 @@ function buildXmlRpcPageMeta(
     tags: page.tags,
     rating: Math.round(page.rating),
     revisions: page.page_revision_count,
-    comments: 0,
-    commented_at: null,
-    commented_by: null
+    comments: postSummary?.comments ?? 0,
+    commented_at: postSummary?.commented_at ?? null,
+    commented_by: postSummary?.commented_by ?? null
   }
 }
 
@@ -994,6 +1131,23 @@ function getOptionalStructString(
     throw new XmlRpcFault(-32602, `Expected string field: ${name}`)
   }
   return value
+}
+
+function getOptionalStructStringOrInt(
+  params: { [key: string]: XmlRpcValue },
+  name: string
+): string | null {
+  const value = params[name]
+  if (value === undefined || value === null) {
+    return null
+  }
+  if (typeof value === "string") {
+    return value
+  }
+  if (typeof value === "number" && Number.isInteger(value)) {
+    return String(value)
+  }
+  throw new XmlRpcFault(-32602, `Expected string or integer field: ${name}`)
 }
 
 function addOptionalStringField(
