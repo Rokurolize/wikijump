@@ -111,8 +111,24 @@ const xmlRpcPagesSelectRequest = `<?xml version="1.0"?>
           <member><name>pagetype</name><value><string>normal</string></value></member>
           <member><name>categories</name><value><array><data><value><string>_default</string></value></data></array></value></member>
           <member><name>created_by</name><value><string>-1</string></value></member>
-          <member><name>rating</name><value><string>=0</string></value></member>
           <member><name>order</name><value><string>created_at desc</string></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+
+const xmlRpcPagesSelectRatingRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>categories</name><value><array><data><value><string>_default</string></value></data></array></value></member>
+          <member><name>created_by</name><value><string>-1</string></value></member>
+          <member><name>rating</name><value><string>&gt;999999</string></value></member>
         </struct>
       </value>
     </param>
@@ -241,6 +257,20 @@ test("XML-RPC endpoint selects pages with documented filters and ordering", asyn
   expect(body.indexOf("scp-anthology-2024")).toBeLessThan(
     body.indexOf("scp-8566")
   )
+
+  const ratingResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSelectRatingRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(ratingResponse.status()).toBe(200)
+
+  const ratingBody = await ratingResponse.text()
+  expect(ratingBody).toContain("<methodResponse>")
+  expect(ratingBody).toContain("<array><data></data></array>")
+  expect(ratingBody).not.toContain("<fault>")
+  expect(ratingBody).not.toContain("<string>scp-173</string>")
+  expect(ratingBody).not.toContain("<string>scp-anthology-2024</string>")
+  expect(ratingBody).not.toContain("<string>scp-8566</string>")
 })
 
 test("XML-RPC endpoint returns XML-RPC faults for unauthenticated requests", async ({
