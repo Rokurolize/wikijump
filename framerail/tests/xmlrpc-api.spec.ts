@@ -135,6 +135,51 @@ const xmlRpcPagesSelectRatingRequest = `<?xml version="1.0"?>
   </params>
 </methodCall>`
 
+const xmlRpcPagesGetMetaRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.get_meta</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>pages</name><value><array><data><value><string>scp-9506</string></value><value><string>scp-173</string></value></data></array></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+
+const xmlRpcPagesGetOneRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.get_one</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>page</name><value><string>scp-9506</string></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+
+const xmlRpcPagesGetMetaTooManyRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.get_meta</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>pages</name><value><array><data><value><string>page-01</string></value><value><string>page-02</string></value><value><string>page-03</string></value><value><string>page-04</string></value><value><string>page-05</string></value><value><string>page-06</string></value><value><string>page-07</string></value><value><string>page-08</string></value><value><string>page-09</string></value><value><string>page-10</string></value><value><string>page-11</string></value></data></array></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+
 const xmlRpcHeaders = {
   authorization: `Basic ${Buffer.from("test-app:test-key").toString("base64")}`,
   "content-type": "text/xml"
@@ -251,12 +296,8 @@ test("XML-RPC endpoint selects pages with documented filters and ordering", asyn
   expect(body).toContain("<string>scp-8566</string>")
   expect(body).not.toContain("<string>nav:side</string>")
   expect(body).not.toContain("<string>main</string>")
-  expect(body.indexOf("scp-173")).toBeLessThan(
-    body.indexOf("scp-anthology-2024")
-  )
-  expect(body.indexOf("scp-anthology-2024")).toBeLessThan(
-    body.indexOf("scp-8566")
-  )
+  expect(body.indexOf("scp-173")).toBeLessThan(body.indexOf("scp-anthology-2024"))
+  expect(body.indexOf("scp-anthology-2024")).toBeLessThan(body.indexOf("scp-8566"))
 
   const ratingResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcPagesSelectRatingRequest,
@@ -271,6 +312,64 @@ test("XML-RPC endpoint selects pages with documented filters and ordering", asyn
   expect(ratingBody).not.toContain("<string>scp-173</string>")
   expect(ratingBody).not.toContain("<string>scp-anthology-2024</string>")
   expect(ratingBody).not.toContain("<string>scp-8566</string>")
+})
+
+test("XML-RPC endpoint returns page metadata and bodies for corpus clients", async ({
+  request
+}) => {
+  const metaResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetMetaRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(metaResponse.status()).toBe(200)
+
+  const metaBody = await metaResponse.text()
+  expect(metaBody).toContain("<methodResponse>")
+  expect(metaBody).toContain("<name>scp-9506</name>")
+  expect(metaBody).toContain("<name>scp-173</name>")
+  expect(metaBody).toContain(
+    "<name>fullname</name><value><string>scp-9506</string></value>"
+  )
+  expect(metaBody).toContain(
+    "<name>title</name><value><string>National Fog Safety Initiative</string></value>"
+  )
+  expect(metaBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(metaBody).toContain("<name>tags</name><value><array><data>")
+  expect(metaBody).toContain("<name>rating</name><value><int>0</int></value>")
+  expect(metaBody).toContain("<name>revisions</name><value><int>1</int></value>")
+  expect(metaBody).not.toContain("Official United States government website")
+
+  const oneResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(oneResponse.status()).toBe(200)
+
+  const oneBody = await oneResponse.text()
+  expect(oneBody).toContain("<methodResponse>")
+  expect(oneBody).toContain(
+    "<name>fullname</name><value><string>scp-9506</string></value>"
+  )
+  expect(oneBody).toContain("<name>content</name><value><string>")
+  expect(oneBody).toContain("component:preview")
+  expect(oneBody).toContain("<name>html</name><value><string>")
+  expect(oneBody).toContain("NFSI.png")
+  expect(oneBody).toContain("<name>parent_title</name><value><nil /></value>")
+  expect(oneBody).toContain("<name>children</name><value><int>0</int></value>")
+  expect(oneBody).toContain("<name>comments</name><value><int>0</int></value>")
+  expect(oneBody).toContain("<name>commented_at</name><value><nil /></value>")
+  expect(oneBody).toContain("<name>commented_by</name><value><nil /></value>")
+
+  const tooManyResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetMetaTooManyRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(tooManyResponse.status()).toBe(200)
+
+  const tooManyBody = await tooManyResponse.text()
+  expect(tooManyBody).toContain("<fault>")
+  expect(tooManyBody).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(tooManyBody).toContain("pages.get_meta pages is limited to 10 entries")
 })
 
 test("XML-RPC endpoint returns XML-RPC faults for unauthenticated requests", async ({
