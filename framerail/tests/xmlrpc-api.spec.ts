@@ -55,6 +55,51 @@ const xmlRpcMulticallRequest = `<?xml version="1.0"?>
   </params>
 </methodCall>`
 
+const xmlRpcCategoriesSelectRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>categories.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+
+const xmlRpcTagsSelectRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>tags.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>categories</name><value><array><data><value><string>nav</string></value></data></array></value></member>
+          <member><name>pages</name><value><array><data><value><string>nav:side</string></value></data></array></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+
+const xmlRpcTagsSelectCategoryRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>tags.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>categories</name><value><array><data><value><string>nav</string></value></data></array></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+
 const xmlRpcHeaders = {
   authorization: `Basic ${Buffer.from("test-app:test-key").toString("base64")}`,
   "content-type": "text/xml"
@@ -125,6 +170,35 @@ test("XML-RPC endpoint supports system.multicall with partial faults", async ({
   expect(body).toContain("<string>system.listMethods</string>")
   expect(body).toContain("<name>faultCode</name><value><int>-32601</int></value>")
   expect(body).toContain("<name>faultString</name>")
+})
+
+test("XML-RPC endpoint selects local categories and tags", async ({ request }) => {
+  const categoriesResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcCategoriesSelectRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(categoriesResponse.status()).toBe(200)
+  const categoriesBody = await categoriesResponse.text()
+  expect(categoriesBody).toContain("<string>_default</string>")
+  expect(categoriesBody).toContain("<string>nav</string>")
+
+  const tagsResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcTagsSelectRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(tagsResponse.status()).toBe(200)
+  const tagsBody = await tagsResponse.text()
+  expect(tagsBody).toContain("<array>")
+  expect(tagsBody).toContain("<data>")
+
+  const categoryTagsResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcTagsSelectCategoryRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(categoryTagsResponse.status()).toBe(200)
+  const categoryTagsBody = await categoryTagsResponse.text()
+  expect(categoryTagsBody).toContain("<array>")
+  expect(categoryTagsBody).toContain("<data>")
 })
 
 test("XML-RPC endpoint returns XML-RPC faults for unauthenticated requests", async ({

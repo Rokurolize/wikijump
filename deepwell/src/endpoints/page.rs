@@ -20,7 +20,8 @@
 
 use super::prelude::*;
 use crate::models::file::Model as FileModel;
-use crate::models::page::Model as PageModel;
+use crate::models::page::{self, Entity as Page, Model as PageModel};
+use crate::models::page_revision;
 use crate::services::TextService;
 use crate::services::file::{GetFileOutput, GetPageFiles};
 use crate::services::page::{
@@ -36,6 +37,8 @@ use crate::types::{
     Action, Bytes, FileOrder, PageDetails, PageId, Reference, RerenderDepth,
 };
 use futures::future::try_join_all;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use std::collections::BTreeSet;
 
 pub async fn page_create(
     ctx: &ServiceContext<'_>,
@@ -198,6 +201,91 @@ pub async fn page_get_files(
         .collect();
 
     Ok(result)
+}
+
+pub async fn page_tags_select(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<String>> {
+    #[derive(Deserialize, Debug)]
+    struct Input<'a> {
+        site: Reference<'a>,
+        categories: Option<Vec<String>>,
+        pages: Option<Vec<String>>,
+    }
+
+    let Input {
+        site,
+        categories,
+        pages,
+    } = parse!(params, Page);
+
+    let make_error = || Error::new("failed to select page tags", ErrorType::Page);
+    let site_id = SiteService::get_id(ctx, site).await.or_raise(make_error)?;
+    info!("Selecting page tags in site ID {site_id}");
+
+    if matches!(categories, Some(ref categories) if categories.is_empty())
+        || matches!(pages, Some(ref pages) if pages.is_empty())
+    {
+        return Ok(Vec::new());
+    }
+
+    let category_ids = match categories {
+        None => None,
+        Some(categories) => {
+            let selected_categories = categories.into_iter().collect::<BTreeSet<_>>();
+            let category_ids = CategoryService::get_all(ctx, site_id)
+                .await
+                .or_raise(make_error)?
+                .into_iter()
+                .filter(|category| selected_categories.contains(&category.slug))
+                .map(|category| category.category_id)
+                .collect::<Vec<_>>();
+
+            if category_ids.is_empty() {
+                return Ok(Vec::new());
+            }
+
+            Some(category_ids)
+        }
+    };
+
+    let txn = ctx.transaction();
+    let mut page_query = Page::find()
+        .filter(page::Column::SiteId.eq(site_id))
+        .filter(page::Column::DeletedAt.is_null());
+
+    if let Some(category_ids) = category_ids {
+        page_query = page_query.filter(page::Column::PageCategoryId.is_in(category_ids));
+    }
+    if let Some(pages) = pages {
+        page_query = page_query.filter(page::Column::Slug.is_in(pages));
+    }
+
+    let revision_ids = page_query
+        .all(txn)
+        .await
+        .or_raise(make_error)?
+        .into_iter()
+        .filter_map(|page| page.latest_revision_id)
+        .collect::<Vec<_>>();
+
+    if revision_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let tags = page_revision::Entity::find()
+        .filter(page_revision::Column::RevisionId.is_in(revision_ids))
+        .all(txn)
+        .await
+        .or_raise(make_error)?
+        .into_iter()
+        .flat_map(|revision| revision.tags.into_iter())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+
+    Ok(tags)
 }
 
 pub async fn page_edit(
