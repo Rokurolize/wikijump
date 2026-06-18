@@ -19,11 +19,87 @@ interface BasicAuthCredentials {
   password: string
 }
 
+interface MethodDefinition {
+  help: string
+  signatures: string[][]
+}
+
 const XML_RPC_HEADERS = {
   "content-type": "text/xml; charset=utf-8"
 }
 
-const SYSTEM_METHODS = ["system.listMethods"]
+const METHOD_DEFINITIONS: Record<string, MethodDefinition> = {
+  "system.listMethods": {
+    help: "List XML-RPC methods exposed by this Wikijump endpoint.",
+    signatures: [["array"]]
+  },
+  "system.methodHelp": {
+    help: "Return help text for an XML-RPC method.",
+    signatures: [["string", "string"]]
+  },
+  "system.methodSignature": {
+    help: "Return XML-RPC signature metadata for a method.",
+    signatures: [["array", "string"]]
+  },
+  "system.multicall": {
+    help: "Execute multiple XML-RPC calls and return per-call results or faults.",
+    signatures: [["array", "array"]]
+  },
+  "categories.select": {
+    help: "Select categories from a Wikidot-compatible site.",
+    signatures: [["array", "struct"]]
+  },
+  "tags.select": {
+    help: "Select tags from a Wikidot-compatible site.",
+    signatures: [["array", "struct"]]
+  },
+  "pages.select": {
+    help: "Select pages from a Wikidot-compatible site.",
+    signatures: [["array", "struct"]]
+  },
+  "pages.get_meta": {
+    help: "Fetch metadata for a batch of Wikidot-compatible pages.",
+    signatures: [["struct", "struct"]]
+  },
+  "pages.get_one": {
+    help: "Fetch one Wikidot-compatible page.",
+    signatures: [["struct", "struct"]]
+  },
+  "pages.save_one": {
+    help: "Create or update one Wikidot-compatible page.",
+    signatures: [["struct", "struct"]]
+  },
+  "files.select": {
+    help: "Select files attached to a Wikidot-compatible page.",
+    signatures: [["array", "struct"]]
+  },
+  "files.get_meta": {
+    help: "Fetch metadata for Wikidot-compatible page files.",
+    signatures: [["struct", "struct"]]
+  },
+  "files.get_one": {
+    help: "Fetch one Wikidot-compatible page file.",
+    signatures: [["struct", "struct"]]
+  },
+  "files.save_one": {
+    help: "Create or update one Wikidot-compatible page file.",
+    signatures: [["struct", "struct"]]
+  },
+  "users.get_me": {
+    help: "Return the authenticated Wikidot-compatible API user.",
+    signatures: [["struct"]]
+  },
+  "posts.select": {
+    help: "Select Wikidot-compatible forum posts.",
+    signatures: [["array", "struct"]]
+  },
+  "posts.get": {
+    help: "Fetch one Wikidot-compatible forum post.",
+    signatures: [["struct", "struct"]]
+  }
+}
+
+const METHOD_NAMES = Object.keys(METHOD_DEFINITIONS)
 
 class XmlRpcFault extends Error {
   constructor(
@@ -65,14 +141,100 @@ export async function handleXmlRpcRequest(request: Request): Promise<Response> {
 
 async function dispatchXmlRpcCall(
   call: XmlRpcCall,
-  _auth: BasicAuthCredentials
+  auth: BasicAuthCredentials,
+  options = { allowMulticall: true }
 ): Promise<XmlRpcValue> {
   switch (call.methodName) {
     case "system.listMethods":
-      return SYSTEM_METHODS
+      return METHOD_NAMES
+    case "system.methodHelp":
+      return getMethodDefinition(getStringParam(call, 0, "methodName")).help
+    case "system.methodSignature":
+      return getMethodDefinition(getStringParam(call, 0, "methodName")).signatures
+    case "system.multicall":
+      if (!options.allowMulticall) {
+        throw new XmlRpcFault(-32600, "Nested system.multicall calls are not supported")
+      }
+      return dispatchMulticall(call, auth)
     default:
+      if (METHOD_DEFINITIONS[call.methodName]) {
+        throw new XmlRpcFault(
+          -32601,
+          `XML-RPC method is not implemented yet: ${call.methodName}`
+        )
+      }
+
       throw new XmlRpcFault(-32601, `Unsupported XML-RPC method: ${call.methodName}`)
   }
+}
+
+async function dispatchMulticall(
+  call: XmlRpcCall,
+  auth: BasicAuthCredentials
+): Promise<XmlRpcValue[]> {
+  const calls = getArrayParam(call, 0, "calls")
+  const results: XmlRpcValue[] = []
+
+  for (const child of calls) {
+    try {
+      if (!isXmlRpcStruct(child)) {
+        throw new XmlRpcFault(-32602, "Each system.multicall entry must be a struct")
+      }
+
+      const methodName = child.methodName
+      const params = child.params ?? []
+      if (typeof methodName !== "string") {
+        throw new XmlRpcFault(-32602, "Each system.multicall entry needs a methodName")
+      }
+      if (!Array.isArray(params)) {
+        throw new XmlRpcFault(-32602, "system.multicall params must be an array")
+      }
+
+      const value = await dispatchXmlRpcCall({ methodName, params }, auth, {
+        allowMulticall: false
+      })
+      results.push([value])
+    } catch (error) {
+      const fault =
+        error instanceof XmlRpcFault
+          ? error
+          : new XmlRpcFault(-32603, "system.multicall child call failed")
+      results.push({
+        faultCode: fault.faultCode,
+        faultString: fault.faultString
+      })
+    }
+  }
+
+  return results
+}
+
+function getMethodDefinition(methodName: string): MethodDefinition {
+  const definition = METHOD_DEFINITIONS[methodName]
+  if (!definition) {
+    throw new XmlRpcFault(-32601, `Unsupported XML-RPC method: ${methodName}`)
+  }
+  return definition
+}
+
+function getStringParam(call: XmlRpcCall, index: number, name: string): string {
+  const value = call.params[index]
+  if (typeof value !== "string") {
+    throw new XmlRpcFault(-32602, `Expected string parameter: ${name}`)
+  }
+  return value
+}
+
+function getArrayParam(call: XmlRpcCall, index: number, name: string): XmlRpcValue[] {
+  const value = call.params[index]
+  if (!Array.isArray(value)) {
+    throw new XmlRpcFault(-32602, `Expected array parameter: ${name}`)
+  }
+  return value
+}
+
+function isXmlRpcStruct(value: XmlRpcValue): value is { [key: string]: XmlRpcValue } {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function parseBasicAuth(header: string | null): BasicAuthCredentials | null {
