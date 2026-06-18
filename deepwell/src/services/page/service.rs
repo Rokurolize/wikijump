@@ -977,7 +977,8 @@ impl PageService {
             ..Default::default()
         };
 
-        model.update(txn).await.or_raise(make_error)?;
+        let page = model.update(txn).await.or_raise(make_error)?;
+        assert_latest_revision(&page);
 
         AuditService::log(
             ctx,

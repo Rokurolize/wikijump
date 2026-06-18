@@ -1304,7 +1304,13 @@ impl RenderService {
         let wikidot_user_ids = pages
             .iter()
             .filter_map(|page| page.created_by)
-            .filter_map(|user_id| i32::try_from(user_id).ok())
+            .filter_map(|user_id| match i32::try_from(user_id) {
+                Ok(user_id) => Some(user_id),
+                Err(error) => {
+                    warn!("Skipping Wikidot user ID {user_id} while rendering ListPages: {error}");
+                    None
+                }
+            })
             .collect::<BTreeSet<_>>();
 
         if wikidot_user_ids.is_empty() {
@@ -1450,13 +1456,20 @@ fn parse_list_pages_order(value: &str) -> Option<OrderBySelector> {
 fn list_pages_body_variables_supported(body: &str) -> bool {
     LISTPAGES_VARIABLE_REGEX
         .captures_iter(body)
-        .all(
-            |captures| match captures["name"].to_ascii_lowercase().as_str() {
-                "title_linked" | "title" | "name" | "slug" | "page_unix_name"
-                | "fullname" | "full_slug" | "index" | "total" => true,
-                _ => false,
-            },
-        )
+        .all(|captures| {
+            matches!(
+                captures["name"].to_ascii_lowercase().as_str(),
+                "title_linked"
+                    | "title"
+                    | "name"
+                    | "slug"
+                    | "page_unix_name"
+                    | "fullname"
+                    | "full_slug"
+                    | "index"
+                    | "total"
+            )
+        })
 }
 
 fn list_pages_body_uses_variable(body: &str, variable: &str) -> bool {
