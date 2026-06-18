@@ -1,4 +1,9 @@
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
+
 import { expect, test } from "@playwright/test"
+
+const execFileAsync = promisify(execFile)
 
 const xmlRpcListMethodsRequest = `<?xml version="1.0"?>
 <methodCall>
@@ -53,6 +58,12 @@ const xmlRpcMulticallRequest = `<?xml version="1.0"?>
       </value>
     </param>
   </params>
+</methodCall>`
+
+const xmlRpcUsersGetMeRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>users.get_me</methodName>
+  <params />
 </methodCall>`
 
 const xmlRpcCategoriesSelectRequest = `<?xml version="1.0"?>
@@ -170,6 +181,23 @@ const xmlRpcPagesGetOneRequest = `<?xml version="1.0"?>
     </param>
   </params>
 </methodCall>`
+
+function xmlRpcPagesGetOneForPageRequest(page: string) {
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.get_one</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>page</name><value><string>${page}</string></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+}
 
 const xmlRpcPagesGetMetaTooManyRequest = `<?xml version="1.0"?>
 <methodCall>
@@ -349,6 +377,48 @@ function xmlRpcFilesSaveOneRequest({
 </methodCall>`
 }
 
+function xmlRpcPostsSelectRequest(page: string, replyTo?: string) {
+  const replyToMember =
+    replyTo !== undefined
+      ? `<member><name>reply_to</name><value><string>${replyTo}</string></value></member>`
+      : ""
+
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>posts.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>page</name><value><string>${page}</string></value></member>
+          ${replyToMember}
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+}
+
+function xmlRpcPostsGetRequest(posts: string[]) {
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>posts.get</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>posts</name><value><array><data>${posts
+            .map((post) => `<value><string>${post}</string></value>`)
+            .join("")}</data></array></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+}
+
 const xmlRpcHeaders = {
   authorization: `Basic ${Buffer.from("test-app:test-key").toString("base64")}`,
   "content-type": "text/xml"
@@ -361,6 +431,157 @@ const xmlRpcWriteHeaders = {
     }`
   ).toString("base64")}`,
   "content-type": "text/xml"
+}
+
+async function deepwellRequest(method: string, params: unknown) {
+  const response = await fetch("http://127.0.0.1:2747/jsonrpc", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params })
+  })
+  const payload = await response.json()
+  if (payload.error) {
+    throw new Error(`${method} failed: ${JSON.stringify(payload.error)}`)
+  }
+  return payload.result
+}
+
+async function seedForumCommentFixture({
+  page,
+  title,
+  content
+}: {
+  page: string
+  title: string
+  content: string
+}) {
+  const site = await deepwellRequest("site_get", { site: "scp-wiki" })
+  const pageRecord = await deepwellRequest("page_get", {
+    site_id: site.site_id,
+    page,
+    details: {}
+  })
+  const wikitextHash = await deepwellRequest("text_create", [content])
+  const htmlHash = await deepwellRequest("text_create", [`<p>${content}</p>`])
+  const fixtureName = `xmlrpc-post-${page}`
+
+  const sql = `
+WITH forum_group_row AS (
+  INSERT INTO forum_group (site_id, created_by, name, description, visible, sort_index)
+  VALUES (${site.site_id}, -1, ${sqlString(fixtureName)}, 'XML-RPC post fixture group', true, 900000000)
+  ON CONFLICT (site_id, sort_index) WHERE deleted_at IS NULL
+  DO UPDATE SET name = EXCLUDED.name
+  RETURNING forum_group_id
+),
+forum_category_row AS (
+  INSERT INTO forum_category (forum_group_id, site_id, created_by, name, description, sort_index, per_page_discussion)
+  SELECT forum_group_id, ${site.site_id}, -1, ${sqlString(fixtureName)}, 'XML-RPC post fixture category', 900000000, true
+  FROM forum_group_row
+  ON CONFLICT (forum_group_id, sort_index) WHERE deleted_at IS NULL
+  DO UPDATE SET name = EXCLUDED.name
+  RETURNING forum_category_id, forum_group_id
+),
+forum_thread_row AS (
+  INSERT INTO forum_thread (forum_category_id, forum_group_id, site_id, page_id, created_by, title, description)
+  SELECT forum_category_id, forum_group_id, ${site.site_id}, ${pageRecord.page_id}, -1, ${sqlString(title)}, 'XML-RPC post fixture thread'
+  FROM forum_category_row
+  ON CONFLICT (page_id)
+  DO UPDATE SET title = EXCLUDED.title
+  RETURNING forum_thread_id, forum_category_id, forum_group_id
+),
+page_thread_update AS (
+  UPDATE page
+  SET discussion_thread_id = (SELECT forum_thread_id FROM forum_thread_row)
+  WHERE page_id = ${pageRecord.page_id}
+  RETURNING page_id
+),
+forum_post_row AS (
+  INSERT INTO forum_post (forum_thread_id, forum_category_id, forum_group_id, site_id, user_id)
+  SELECT forum_thread_id, forum_category_id, forum_group_id, ${site.site_id}, -1
+  FROM forum_thread_row
+  RETURNING forum_post_id, forum_thread_id, forum_category_id, forum_group_id
+),
+forum_revision_row AS (
+  INSERT INTO forum_post_revision (
+    forum_post_id,
+    forum_thread_id,
+    forum_category_id,
+    forum_group_id,
+    site_id,
+    user_id,
+    revision_number,
+    title,
+    wikitext_hash,
+    compiled_html_hash,
+    compiled_at,
+    compiled_generator,
+    comments
+  )
+  SELECT
+    forum_post_id,
+    forum_thread_id,
+    forum_category_id,
+    forum_group_id,
+    ${site.site_id},
+    -1,
+    0,
+    ${sqlString(title)},
+    decode(${sqlString(wikitextHash)}, 'hex'),
+    decode(${sqlString(htmlHash)}, 'hex'),
+    now(),
+    'xmlrpc-api.spec.ts',
+    'XML-RPC post fixture'
+  FROM forum_post_row
+  RETURNING forum_post_revision_id, forum_post_id
+)
+SELECT forum_post_id, forum_post_revision_id FROM forum_revision_row;
+`
+
+  const result = await execDatabaseSql(sql)
+  const [postId, revisionId] = result.split("|")
+  if (!postId || !revisionId) {
+    throw new Error(
+      `Forum comment fixture did not return post and revision IDs: ${result}`
+    )
+  }
+
+  const postIdNumber = Number(postId)
+  const revisionIdNumber = Number(revisionId)
+  if (!Number.isInteger(postIdNumber) || !Number.isInteger(revisionIdNumber)) {
+    throw new Error(`Forum comment fixture returned invalid IDs: ${result}`)
+  }
+
+  await execDatabaseSql(`
+UPDATE forum_post
+SET latest_revision_id = ${revisionIdNumber}
+WHERE forum_post_id = ${postIdNumber}
+RETURNING forum_post_id;
+`)
+  return postId
+}
+
+async function execDatabaseSql(sql: string) {
+  const { stdout } = await execFileAsync("docker", [
+    "exec",
+    "-e",
+    "PGPASSWORD=wikijump",
+    "local-database-1",
+    "psql",
+    "-h",
+    "127.0.0.1",
+    "-U",
+    "wikijump",
+    "-d",
+    "wikijump",
+    "-At",
+    "-c",
+    sql
+  ])
+  return stdout.trim()
+}
+
+function sqlString(value: string) {
+  return `'${value.replaceAll("'", "''")}'`
 }
 
 test("XML-RPC endpoint accepts Basic-authenticated system.listMethods calls", async ({
@@ -650,6 +871,87 @@ test("XML-RPC endpoint saves pages with tags, parent updates, and rename", async
     "<name>parent_fullname</name><value><string>fixture-parent-root</string></value>"
   )
   expect(renameBody).toContain("<value><string>xmlrpc-save-renamed</string></value>")
+})
+
+test("XML-RPC endpoint returns user identity and page comments", async ({ request }) => {
+  const meResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcUsersGetMeRequest,
+    headers: xmlRpcWriteHeaders
+  })
+  expect(meResponse.status()).toBe(200)
+  const meBody = await meResponse.text()
+  expect(meBody).toContain("<name>name</name><value><string>administrator</string>")
+  expect(meBody).toContain("<name>title</name><value><string>Administrator</string>")
+  expect(meBody).toContain("<name>id</name><value><int>-1</int></value>")
+
+  const pageSlug = `fixture-xmlrpc-post-${Date.now()}`
+  const postTitle = "XML-RPC comment proof"
+  const postContent = "XML-RPC page comment proof body."
+  const pageResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: pageSlug,
+      title: "XML-RPC Post Proof",
+      content: "Page for XML-RPC post proof.",
+      tags: ["verification", "xmlrpc-post"],
+      saveMode: "create",
+      revisionComment: "xmlrpc post page create proof"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(pageResponse.status()).toBe(200)
+  const postId = await seedForumCommentFixture({
+    page: pageSlug,
+    title: postTitle,
+    content: postContent
+  })
+
+  const pageOneResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(pageSlug),
+    headers: xmlRpcHeaders
+  })
+  expect(pageOneResponse.status()).toBe(200)
+  const pageOneBody = await pageOneResponse.text()
+  expect(pageOneBody).toContain("<name>comments</name><value><int>1</int></value>")
+  expect(pageOneBody).toContain(
+    "<name>commented_by</name><value><string>administrator</string></value>"
+  )
+
+  const selectResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsSelectRequest(pageSlug),
+    headers: xmlRpcHeaders
+  })
+  expect(selectResponse.status()).toBe(200)
+  expect(await selectResponse.text()).toContain(`<value><int>${postId}</int></value>`)
+
+  const topLevelResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsSelectRequest(pageSlug, "-"),
+    headers: xmlRpcHeaders
+  })
+  expect(topLevelResponse.status()).toBe(200)
+  expect(await topLevelResponse.text()).toContain(`<value><int>${postId}</int></value>`)
+
+  const postsGetResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsGetRequest([postId]),
+    headers: xmlRpcHeaders
+  })
+  expect(postsGetResponse.status()).toBe(200)
+  const postsGetBody = await postsGetResponse.text()
+  expect(postsGetBody).toContain(`<name>${postId}</name>`)
+  expect(postsGetBody).toContain(`<name>id</name><value><int>${postId}</int></value>`)
+  expect(postsGetBody).toContain(
+    `<name>fullname</name><value><string>${pageSlug}</string></value>`
+  )
+  expect(postsGetBody).toContain("<name>reply_to</name><value><nil /></value>")
+  expect(postsGetBody).toContain(
+    `<name>title</name><value><string>${postTitle}</string></value>`
+  )
+  expect(postsGetBody).toContain(
+    `<name>content</name><value><string>${postContent}</string></value>`
+  )
+  expect(postsGetBody).toContain(
+    "<name>created_by</name><value><string>administrator</string></value>"
+  )
+  expect(postsGetBody).toContain("<name>created_at</name><value><string>")
 })
 
 test("XML-RPC endpoint saves and reads small page attachments", async ({ request }) => {
