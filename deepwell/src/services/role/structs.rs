@@ -48,6 +48,7 @@ pub struct GetRoleInput<'a> {
     pub site_id: i64,
     pub role_reference: Reference<'a>,
 
+    /// User whose permissions authorize the read; omit for internal/system callers.
     #[serde(default)]
     pub acting_user_id: Option<i64>,
 }
@@ -86,6 +87,7 @@ pub struct DeleteRoleInput {
 pub struct ListSiteRolesInput {
     pub site_id: i64,
 
+    /// User whose permissions authorize the read; omit for internal/system callers.
     #[serde(default)]
     pub acting_user_id: Option<i64>,
 }
@@ -134,6 +136,7 @@ pub struct GetUserRolesInput<'a> {
     pub user_id: Option<i64>,
     pub page_reference: Option<Reference<'a>>,
 
+    /// User whose permissions authorize the read; omit for internal/system callers.
     #[serde(default)]
     pub acting_user_id: Option<i64>,
 }
@@ -143,6 +146,7 @@ pub struct GetRolePermissionsInput<'a> {
     pub site_id: i64,
     pub role_reference: Reference<'a>,
 
+    /// User whose permissions authorize the read; omit for internal/system callers.
     #[serde(default)]
     pub acting_user_id: Option<i64>,
 

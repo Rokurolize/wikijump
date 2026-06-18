@@ -887,6 +887,18 @@ impl PageService {
             ));
         }
 
+        for field in ["title", "alt_title", "tags", "wikitext"] {
+            if revision_changed(&target_revision, field)
+                && (revision_hidden(&target_revision, field)
+                    || revision_hidden(&previous_revision, field))
+            {
+                bail!(Error::new(
+                    format!("cannot undo revision with hidden {field} change"),
+                    ErrorType::Page,
+                ));
+            }
+        }
+
         let title = if revision_changed(&target_revision, "title") {
             if latest_revision.title != target_revision.title {
                 bail!(Error::new(
@@ -1415,7 +1427,7 @@ impl PageService {
             -1 => ctx.request().site_id().or_raise(make_error)?,
             _ => return Err(make_error().into()),
         };
-        let user_id = ctx.request().user_id.or(permission_context.user_id);
+        let user_id = permission_context.user_id.or(ctx.request().user_id);
 
         info!(
             "Checking edit permission for page {:?} in site ID {:?}",
@@ -1488,6 +1500,10 @@ fn check_last_revision(
 
 fn revision_changed(revision: &PageRevisionModel, field: &str) -> bool {
     revision.changes.iter().any(|change| change == field)
+}
+
+fn revision_hidden(revision: &PageRevisionModel, field: &str) -> bool {
+    revision.hidden.iter().any(|hidden| hidden == field)
 }
 
 /// Ensure that the page has a properly-set `latest_revision_id` column.

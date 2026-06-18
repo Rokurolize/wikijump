@@ -7,7 +7,7 @@ This directory contains a reusable local verification corpus for the Wikijump st
 Start the local stack from the repository root:
 
 ```bash
-cd /home/roku/src/scpwiki/wikijump/install/local
+cd install/local
 docker compose up -d --build
 ```
 
@@ -21,9 +21,9 @@ Rendered site:      https://scpwiki.localhost
 ## Seed Or Update The Corpus
 
 ```bash
-cd /home/roku/src/scpwiki/wikijump
+cd <wikijump-repo>
 node install/local/wikidot-verification/scripts/seed-or-import.mjs \
-  --output-dir /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v3-verifier-run
+  --output-dir ./artifacts/wikidot-verification/v3-verifier-run
 ```
 
 Useful environment variables:
@@ -38,10 +38,10 @@ WIKIDOT_VERIFY_ADMIN_PASS   seeded local admin password, default wikijumpadmin1
 ## Run Browser Proof Matrix
 
 ```bash
-cd /home/roku/src/scpwiki/wikijump
+cd <wikijump-repo>
 node install/local/wikidot-verification/scripts/browser-proof-matrix.mjs \
   --base-url https://scpwiki.localhost \
-  --output-dir /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v3-browser-proof
+  --output-dir ./artifacts/wikidot-verification/v3-browser-proof
 ```
 
 The browser proof writes `browser-summary.json`, `fixture-results.tsv`, `screenshots/*.png`, and `network/*.json`. A non-zero exit means at least one required compatibility fixture failed.
@@ -49,10 +49,10 @@ The browser proof writes `browser-summary.json`, `fixture-results.tsv`, `screens
 ## Discover A Real Corpus
 
 ```bash
-cd /home/roku/src/scpwiki/wikijump
+cd <wikijump-repo>
 node install/local/wikidot-verification/scripts/corpus-discover.mjs \
-  --corpus /home/roku/src/Rokurolize/scp-wiki-translation/corpus/en \
-  --output-dir /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-plan-state \
+  --corpus ../scp-wiki-translation/corpus/en \
+  --output-dir ./artifacts/wikidot-verification/v5-plan-state \
   --canary-count 100
 ```
 
@@ -61,14 +61,14 @@ The discovery command writes `corpus-file-inventory.tsv`, `corpus-manifest.tsv`,
 ## Batch Render Real Corpus Pages
 
 ```bash
-cd /home/roku/src/scpwiki/wikijump
+cd <wikijump-repo>
 node install/local/wikidot-verification/scripts/corpus-render-batch.mjs \
-  --manifest /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-plan-state/corpus-manifest.tsv \
-  --output-dir /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-render-batch-0000-0024-deps \
+  --manifest ./artifacts/wikidot-verification/v5-plan-state/corpus-manifest.tsv \
+  --output-dir ./artifacts/wikidot-verification/v5-render-batch-0000-0024-deps \
   --offset 0 \
   --limit 25 \
   --batch-size 25 \
-  --rpc-url http://127.0.0.1:12748/jsonrpc \
+  --rpc-url http://127.0.0.1:2747/jsonrpc \
   --rpc-timeout-ms 30000 \
   --preload-dependencies \
   --max-dependencies 80
@@ -79,12 +79,12 @@ The batch command writes page-level diagnostics, rendered HTML, `compatibility-r
 ## Preview One Source File
 
 ```bash
-cd /home/roku/src/scpwiki/wikijump
+cd <wikijump-repo>
 node install/local/wikidot-verification/scripts/preview-source.mjs \
-  --source /home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/11-mr-feather/source.wikidot.txt \
-  --manifest /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-plan-state/corpus-manifest.tsv \
-  --output-dir /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-preview-smoke-11-mr-feather \
-  --rpc-url http://127.0.0.1:12748/jsonrpc \
+  --source ../scp-wiki-translation/corpus/en/pages/11-mr-feather/source.wikidot.txt \
+  --manifest ./artifacts/wikidot-verification/v5-plan-state/corpus-manifest.tsv \
+  --output-dir ./artifacts/wikidot-verification/v5-preview-smoke-11-mr-feather \
+  --rpc-url http://127.0.0.1:2747/jsonrpc \
   --rpc-timeout-ms 30000 \
   --preload-dependencies \
   --dependency-depth 2 \
@@ -96,14 +96,14 @@ The preview command writes `preview-result.json` and rendered HTML. The JSON con
 ## Preview A Canary Batch
 
 ```bash
-cd /home/roku/src/scpwiki/wikijump
+cd <wikijump-repo>
 node install/local/wikidot-verification/scripts/preview-batch.mjs \
-  --input /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-plan-state/canary-pages.tsv \
-  --manifest /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-plan-state/corpus-manifest.tsv \
-  --output-dir /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-preview-canary-100 \
+  --input ./artifacts/wikidot-verification/v5-plan-state/canary-pages.tsv \
+  --manifest ./artifacts/wikidot-verification/v5-plan-state/corpus-manifest.tsv \
+  --output-dir ./artifacts/wikidot-verification/v5-preview-canary-100 \
   --offset 0 \
   --limit 100 \
-  --rpc-url http://127.0.0.1:12748/jsonrpc \
+  --rpc-url http://127.0.0.1:2747/jsonrpc \
   --rpc-timeout-ms 30000 \
   --slug-prefix preview-canary- \
   --preload-dependencies \
@@ -116,10 +116,10 @@ The preview batch command writes `preview-results.tsv`, `preview-summary.json`, 
 ## Browser-Proof Real Corpus Preview Pages
 
 ```bash
-cd /home/roku/src/scpwiki/wikijump
+cd <wikijump-repo>
 node install/local/wikidot-verification/scripts/browser-proof-corpus-pages.mjs \
-  --input /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-preview-canary-100/preview-results.tsv \
-  --output-dir /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-browser-canary-100 \
+  --input ./artifacts/wikidot-verification/v5-preview-canary-100/preview-results.tsv \
+  --output-dir ./artifacts/wikidot-verification/v5-browser-canary-100 \
   --base-url https://scpwiki.localhost \
   --offset 0 \
   --limit 100 \
@@ -131,10 +131,10 @@ The browser proof command reads preview or compatibility TSV rows, opens each re
 ## Browser-Proof Real Corpus Authoring Workflows
 
 ```bash
-cd /home/roku/src/scpwiki/wikijump
+cd <wikijump-repo>
 node install/local/wikidot-verification/scripts/browser-authoring-corpus-workflow.mjs \
-  --input /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-plan-state/canary-pages.tsv \
-  --output-dir /home/roku/codex-thread-workspaces/019ebf4b-585e-7b93-bd6d-cdba089c8084/artifacts/wikijump/v5-ui-authoring-corpus-10 \
+  --input ./artifacts/wikidot-verification/v5-plan-state/canary-pages.tsv \
+  --output-dir ./artifacts/wikidot-verification/v5-ui-authoring-corpus-10 \
   --base-url https://scpwiki.localhost \
   --offset 0 \
   --limit 10 \

@@ -9,7 +9,7 @@
   ],
   "file_count": 618,
   "purpose": "Local verifier durability only; removable once FTML is released/upstreamed and Deepwell can consume it normally.",
-  "refresh_command": "rm -rf install/local/wikidot-verification/vendor/ftml && mkdir -p install/local/wikidot-verification/vendor/ftml && (cd /home/roku/src/scpwiki/ftml && git ls-files -z | while IFS= read -r -d '' path; do case \"$path\" in .git/*|target/*|pkg/*|codex-progress-*|*.log) continue ;; esac; mkdir -p /home/roku/src/scpwiki/wikijump/install/local/wikidot-verification/vendor/ftml/$(dirname \"$path\"); cp -p \"$path\" /home/roku/src/scpwiki/wikijump/install/local/wikidot-verification/vendor/ftml/\"$path\"; done) && regenerate this manifest",
+  "refresh_command": "Set FTML_REPO to a local FTML checkout and WIKIJUMP_REPO to this repository, then copy tracked FTML files into install/local/wikidot-verification/vendor/ftml and regenerate this manifest.",
   "required_commits": [
     {
       "commit": "386e08741",
@@ -3124,6 +3124,6 @@
   "source_branch": "codex/ftml-wikidot-verification-v3-20260614T0252JST",
   "source_head": "8459e64c73fc5739625782f5c9a9cc186352b683",
   "source_head_summary": "Grow parser stack for deep Wikidot nesting",
-  "source_repo_path": "/home/roku/src/scpwiki/ftml",
-  "vendor_path": "/home/roku/src/scpwiki/wikijump/install/local/wikidot-verification/vendor/ftml"
+  "source_repo_path": "../ftml",
+  "vendor_path": "install/local/wikidot-verification/vendor/ftml"
 }

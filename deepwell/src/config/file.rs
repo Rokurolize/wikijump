@@ -398,8 +398,11 @@ impl ConfigFile {
         let public_url_scheme = public_url_scheme.to_ascii_lowercase();
         assert!(
             matches!(public_url_scheme.as_str(), "http" | "https"),
-            "Unsupported public URL scheme",
+            "Unsupported public URL scheme: '{public_url_scheme}' (expected 'http' or 'https')",
         );
+        if let Some(port) = public_url_port {
+            assert!(port > 0, "Public URL port cannot be zero");
+        }
 
         // Treats empty strings (which aren't valid paths anyways)
         // as null for the purpose of pid_file.
@@ -561,7 +564,39 @@ fn test_public_url_defaults_to_https_without_port() {
 
 #[test]
 fn test_local_public_url_config_uses_http_public_port() {
-    let toml = r#"
+    let config = config_from_domain_toml("http", Some(18443));
+
+    assert_eq!(config.public_url_scheme, "http");
+    assert_eq!(config.public_url_port, Some(18443));
+}
+
+#[test]
+#[should_panic(expected = "Unsupported public URL scheme: 'ftp'")]
+fn test_public_url_config_rejects_unsupported_scheme() {
+    config_from_domain_toml("ftp", Some(18443));
+}
+
+#[test]
+fn test_public_url_config_normalizes_scheme_to_lowercase() {
+    let config = config_from_domain_toml("HTTPS", None);
+
+    assert_eq!(config.public_url_scheme, "https");
+    assert_eq!(config.public_url_port, None);
+}
+
+#[test]
+#[should_panic(expected = "Public URL port cannot be zero")]
+fn test_public_url_config_rejects_zero_port() {
+    config_from_domain_toml("http", Some(0));
+}
+
+#[cfg(test)]
+fn config_from_domain_toml(public_scheme: &str, public_port: Option<u16>) -> Config {
+    let port_line = public_port
+        .map(|port| format!("        public-port = {port}\n"))
+        .unwrap_or_default();
+    let toml = format!(
+        r#"
         [logger]
         enable = true
         level = "Info"
@@ -592,8 +627,8 @@ fn test_local_public_url_config_uses_http_public_port() {
         [domain]
         main = "wikijump.localhost"
         files = "wjfiles.localhost"
-        public-scheme = "http"
-        public-port = 18443
+        public-scheme = "{public_scheme}"
+{port_line}
 
         [job]
         workers = 2
@@ -649,14 +684,12 @@ fn test_local_public_url_config_uses_http_public_port() {
         maximum-subject-bytes = 256
         maximum-body-bytes = 16384
         maximum-recipients = 20
-    "#;
+    "#
+    );
 
-    let config_file: ConfigFile = toml::from_str(toml).expect("config parses");
-    let config = config_file.into_config(ExtraConfig {
-        raw_toml: toml.to_owned(),
+    let config_file: ConfigFile = toml::from_str(&toml).expect("config parses");
+    config_file.into_config(ExtraConfig {
+        raw_toml: toml,
         raw_toml_path: PathBuf::from("config.toml"),
-    });
-
-    assert_eq!(config.public_url_scheme, "http");
-    assert_eq!(config.public_url_port, Some(18443));
+    })
 }

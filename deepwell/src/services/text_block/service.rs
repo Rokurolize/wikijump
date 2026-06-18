@@ -255,9 +255,10 @@ impl TextBlockService {
         };
 
         let txn = ctx.transaction();
-        let index: Option<i16> = TextBlockTable::find()
+        let block: Option<(i16, String)> = TextBlockTable::find()
             .select_only()
             .column(text_block::Column::BlockIndex)
+            .column(text_block::Column::S3Filename)
             .filter(
                 Condition::all()
                     .add(text_block::Column::PageId.eq(page_id))
@@ -269,13 +270,9 @@ impl TextBlockService {
             .await
             .or_raise(make_error)?;
 
-        match index {
+        match block {
             None => Ok(None),
-            Some(index) => {
-                let mut s3_filename = String::new();
-                format_filename!(s3_filename, page_id, index, block_type);
-                Ok(Some(TextBlockIndex { index, s3_filename }))
-            }
+            Some((index, s3_filename)) => Ok(Some(TextBlockIndex { index, s3_filename })),
         }
     }
 

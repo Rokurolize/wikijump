@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -12,8 +13,7 @@ const chromium = loadPlaywrightChromium();
 function loadPlaywrightChromium() {
   const candidates = [
     { base: path.join(repoRoot, "framerail", "package.json"), names: ["@playwright/test", "playwright"] },
-    { base: "/home/roku/.npm-global/lib/node_modules/playwright/package.json", names: ["playwright"] },
-    { base: path.join(process.env.HOME || "/home/roku", ".npm-global/lib/node_modules/playwright/package.json"), names: ["playwright"] },
+    { base: path.join(os.homedir(), ".npm-global/lib/node_modules/playwright/package.json"), names: ["playwright"] },
   ];
 
   const failures = [];

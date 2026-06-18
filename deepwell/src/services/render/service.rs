@@ -49,6 +49,8 @@ use tokio::time::timeout;
 pub struct RenderService;
 
 const MAX_INCLUDE_EXPANSION_DEPTH: usize = 8;
+const DEFAULT_LISTPAGES_RENDER_LIMIT: u64 = 100;
+const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
 const INCLUDE_VARIABLE_OPEN_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_OPEN__";
 const INCLUDE_VARIABLE_CLOSE_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_CLOSE__";
 const WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTEMBEDIFRAME";
@@ -101,13 +103,13 @@ static WIKIDOT_INTERWIKI_FRAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 });
 static WIKIDOT_LOCAL_FILE_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?P<quote>["'])https?://(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code)/[^"'<>\s]+)"#,
+        r#"(?P<quote>["'])(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code)/[^"'<>\s]+)"#,
     )
     .unwrap()
 });
 static WIKIDOT_LOCAL_FILE_CSS_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?i)(?P<prefix>url\(\s*["']?)https?://(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code)/[^"')<>\s]+)"#,
+        r#"(?i)(?P<prefix>url\(\s*["']?)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code)/[^"')<>\s]+)"#,
     )
     .unwrap()
 });
@@ -115,11 +117,11 @@ static CSS_IMPORT_LINE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?im)^(?P<indent>[ \t]*)@import(?P<body>[^\n]*)$"#).unwrap()
 });
 static CSS_ABSOLUTE_URL_HOST_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?i)https?://(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?"#).unwrap()
+    Regex::new(r#"(?i)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?"#).unwrap()
 });
 static CSS_EXTERNAL_URL_FUNCTION_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?i)url\(\s*(?P<quote>["']?)https?://(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>[^"')\s]*)["']?\s*\)"#,
+        r#"(?i)url\(\s*(?P<quote>["']?)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>[^"')\s]*)["']?\s*\)"#,
     )
     .unwrap()
 });
@@ -374,8 +376,18 @@ impl RenderService {
             debug_assert_eq!(settings.mode, WikitextMode::Page);
 
             // [[html]]
-            let html_blocks: Vec<TextBlock> = tree
+            let html_block_texts: Vec<String> = tree
                 .html_blocks
+                .iter()
+                .map(|html| {
+                    Self::localize_wikidot_local_file_urls(
+                        html,
+                        current_site.as_ref(),
+                        config,
+                    )
+                })
+                .collect();
+            let html_blocks: Vec<TextBlock> = html_block_texts
                 .iter()
                 .map(|html| TextBlock {
                     text: html,
@@ -1251,7 +1263,11 @@ impl RenderService {
             data_form_fields: &[],
             order,
             pagination: PaginationSelector {
-                limit,
+                limit: Some(
+                    limit
+                        .unwrap_or(DEFAULT_LISTPAGES_RENDER_LIMIT)
+                        .min(MAX_LISTPAGES_RENDER_LIMIT),
+                ),
                 per_page: PaginationSelector::default().per_page,
                 reversed: false,
             },
@@ -1259,8 +1275,9 @@ impl RenderService {
             fields: FoundPageFields {
                 title: true,
                 slug: true,
-                created_by: false,
-                score: false,
+                created_by: list_pages_body_uses_variable(body, "created_by")
+                    || list_pages_body_uses_variable(body, "createdby"),
+                score: list_pages_body_uses_variable(body, "rating"),
                 ..Default::default()
             },
         };
@@ -1466,6 +1483,9 @@ fn list_pages_body_variables_supported(body: &str) -> bool {
                     | "page_unix_name"
                     | "fullname"
                     | "full_slug"
+                    | "created_by"
+                    | "createdby"
+                    | "rating"
                     | "index"
                     | "total"
             )
@@ -1502,19 +1522,28 @@ fn substitute_list_pages_variables(
         })
         .unwrap_or_default();
     let rating = format_list_pages_rating(page.score);
+    let index = index.to_string();
+    let total = total.to_string();
 
-    template
-        .replace("%%title_linked%%", &title_linked)
-        .replace("%%title%%", title)
-        .replace("%%name%%", slug)
-        .replace("%%slug%%", slug)
-        .replace("%%page_unix_name%%", slug)
-        .replace("%%fullname%%", slug)
-        .replace("%%full_slug%%", slug)
-        .replace("%%created_by%%", &created_by)
-        .replace("%%rating%%", &rating)
-        .replace("%%index%%", &index.to_string())
-        .replace("%%total%%", &total.to_string())
+    LISTPAGES_VARIABLE_REGEX
+        .replace_all(template, |captures: &regex::Captures<'_>| {
+            match captures["name"].to_ascii_lowercase().as_str() {
+                "title_linked" => title_linked.clone(),
+                "title" => title.to_owned(),
+                "name" | "slug" | "page_unix_name" | "fullname" | "full_slug" => {
+                    slug.to_owned()
+                }
+                "created_by" | "createdby" => created_by.clone(),
+                "rating" => rating.clone(),
+                "index" => index.clone(),
+                "total" => total.clone(),
+                _ => captures
+                    .get(0)
+                    .map_or("", |matched| matched.as_str())
+                    .to_owned(),
+            }
+        })
+        .into_owned()
 }
 
 fn format_list_pages_rating(score: Option<f32>) -> String {

@@ -3,8 +3,11 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const DEFAULT_CORPUS = "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, "../../../..");
+const DEFAULT_CORPUS = path.resolve(repoRoot, "install/local/wikidot-verification/corpus");
 const CANARY_COUNT = 100;
 
 function parseArgs(argv) {
@@ -16,11 +19,17 @@ function parseArgs(argv) {
   for (let index = 2; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--corpus") {
-      args.corpus = path.resolve(argv[++index]);
+      const value = argv[++index];
+      if (!value || value.startsWith("--")) throw new Error("--corpus requires a directory path");
+      args.corpus = path.resolve(value);
     } else if (arg === "--output-dir") {
-      args.outputDir = path.resolve(argv[++index]);
+      const value = argv[++index];
+      if (!value || value.startsWith("--")) throw new Error("--output-dir requires a directory path");
+      args.outputDir = path.resolve(value);
     } else if (arg === "--canary-count") {
-      args.canaryCount = Number.parseInt(argv[++index], 10);
+      const value = argv[++index];
+      if (!value || value.startsWith("--")) throw new Error("--canary-count requires a value");
+      args.canaryCount = Number.parseInt(value, 10);
     } else if (arg === "--help") {
       printHelpAndExit();
     } else {
@@ -29,6 +38,9 @@ function parseArgs(argv) {
   }
 
   if (!Number.isFinite(args.canaryCount)) args.canaryCount = CANARY_COUNT;
+  if (!Number.isInteger(args.canaryCount) || args.canaryCount < 1) {
+    throw new Error("--canary-count must be a positive integer");
+  }
   return args;
 }
 

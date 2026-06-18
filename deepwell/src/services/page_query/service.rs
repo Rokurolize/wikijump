@@ -408,11 +408,11 @@ impl PageQueryService {
                     query = query.order_by(page::Column::Slug, order);
                 }
                 OrderProperty::Title => {
-                    error!("Ordering by title, not yet implemented");
+                    debug!("Ordering by title");
                     query = query.order_by(page_revision::Column::Title, order);
                 }
                 OrderProperty::AltTitle => {
-                    error!("Ordering by alt title, not yet implemented");
+                    debug!("Ordering by alt title");
                     query = query.order_by(page_revision::Column::AltTitle, order);
                 }
                 OrderProperty::CreatedBy => {
@@ -431,7 +431,7 @@ impl PageQueryService {
                     query = query.order_by(page::Column::UpdatedAt, order);
                 }
                 OrderProperty::Size => {
-                    error!("Ordering by page size, not yet implemented");
+                    debug!("Ordering by page size");
                     join_text!();
                     let col = Expr::col(text::Column::Contents);
                     let expr = SimpleExpr::FunctionCall(Func::char_length(col));

@@ -106,13 +106,22 @@ function runPreview(commandArgs, cwd, timeoutMs) {
     let stdout = "";
     let stderr = "";
     let timedOut = false;
+    let killFallback;
+    const killChild = (signal) => {
+      if (child.pid) {
+        try {
+          process.kill(-child.pid, signal);
+          return;
+        } catch {
+          // Fall back to killing only the child process below.
+        }
+      }
+      child.kill(signal);
+    };
     const timeout = setTimeout(() => {
       timedOut = true;
-      try {
-        process.kill(-child.pid, "SIGTERM");
-      } catch {
-        child.kill("SIGTERM");
-      }
+      killChild("SIGTERM");
+      killFallback = setTimeout(() => killChild("SIGKILL"), 2000);
     }, timeoutMs);
     child.stdout.on("data", (chunk) => {
       stdout += chunk.toString();
@@ -120,8 +129,14 @@ function runPreview(commandArgs, cwd, timeoutMs) {
     child.stderr.on("data", (chunk) => {
       stderr += chunk.toString();
     });
+    child.on("error", (error) => {
+      clearTimeout(timeout);
+      if (killFallback) clearTimeout(killFallback);
+      resolve({ code: null, stdout, stderr: `${stderr}${error.message}`, timedOut });
+    });
     child.on("close", (code) => {
       clearTimeout(timeout);
+      if (killFallback) clearTimeout(killFallback);
       resolve({ code, stdout, stderr, timedOut });
     });
   });

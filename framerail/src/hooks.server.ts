@@ -6,6 +6,11 @@ import type { Handle } from "@sveltejs/kit"
 
 const LOCAL_FILE_IMAGE_SOURCES = ["https://*.wjfiles.localhost"]
 const LOCAL_FILE_STYLE_SOURCES = ["https://*.wjfiles.localhost"]
+const WIKIDOT_IMAGE_SOURCES = [
+  "https://*.wdfiles.com",
+  "https://cdn.scpwiki.com",
+  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
+]
 const WIKIDOT_STYLE_SOURCES = [
   "https://*.wdfiles.com",
   "https://cdn.scpwiki.com",
@@ -29,7 +34,7 @@ function isLocalEnvironment() {
 }
 
 function imageSources() {
-  const sources = ["'self'", "data:", "blob:", "https:"]
+  const sources = ["'self'", "data:", "blob:", ...WIKIDOT_IMAGE_SOURCES]
 
   if (isLocalEnvironment()) {
     sources.push(...LOCAL_FILE_IMAGE_SOURCES)
@@ -61,7 +66,7 @@ const CSP_DIRECTIVES = [
   `img-src ${imageSources()}`,
   `font-src ${fontSources()}`,
   `style-src ${styleSources()}`,
-  "script-src 'self' 'unsafe-inline'",
+  "script-src 'self'",
   "connect-src 'self'",
   "worker-src 'self' blob:",
   "manifest-src 'self'"

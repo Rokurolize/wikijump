@@ -126,6 +126,22 @@ impl UserService {
             }
         };
 
+        if let Some(found_user) = User::find_by_id(user_id)
+            .one(txn)
+            .await
+            .or_raise(make_error)?
+        {
+            error!("User with conflicting ID already exists, cannot create");
+            error!("Checked user ID {user_id}, found {found_user:#?}");
+            bail!(Error::new(
+                format!(
+                    "cannot create user, another with ID {} already exists. found user '{}' (slug '{}')",
+                    user_id, found_user.name, found_user.slug,
+                ),
+                ErrorType::UserExists,
+            ));
+        }
+
         check_user_name(ctx.config(), &slug, &name)?;
 
         // Perform filter validation
