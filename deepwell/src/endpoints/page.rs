@@ -21,7 +21,7 @@
 use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::page::{self, Entity as Page, Model as PageModel};
-use crate::models::{page_parent, page_revision, page_vote};
+use crate::models::{page_parent, page_revision};
 use crate::services::TextService;
 use crate::services::file::{GetFileOutput, GetPageFiles};
 use crate::services::page::{
@@ -418,22 +418,13 @@ pub async fn page_select(
         .map(|link| (link.child_page_id, link.parent_page_id))
         .collect::<BTreeSet<_>>();
 
-    let rating_by_page_id = if page_ids.is_empty() {
-        BTreeMap::new()
-    } else {
-        let mut ratings = BTreeMap::<i64, i64>::new();
-        for vote in page_vote::Entity::find()
-            .filter(page_vote::Column::PageId.is_in(page_ids.clone()))
-            .filter(page_vote::Column::DeletedAt.is_null())
-            .filter(page_vote::Column::DisabledAt.is_null())
-            .all(txn)
+    let mut rating_by_page_id = BTreeMap::<i64, i64>::new();
+    for page_id in &page_ids {
+        let rating = ScoreService::score(ctx, *page_id)
             .await
-            .or_raise(make_error)?
-        {
-            *ratings.entry(vote.page_id).or_default() += i64::from(vote.value);
-        }
-        ratings
-    };
+            .or_raise(make_error)?;
+        rating_by_page_id.insert(*page_id, page_select_rating_value(rating));
+    }
 
     let created_by_user_ids = match created_by {
         None => None,
@@ -680,6 +671,13 @@ fn parse_page_select_rating(value: &str) -> Result<PageSelectRatingFilter> {
     };
 
     Ok(PageSelectRatingFilter { comparison, value })
+}
+
+fn page_select_rating_value(score: crate::services::score::ScoreValue) -> i64 {
+    match score {
+        crate::services::score::ScoreValue::Integer(value) => value,
+        crate::services::score::ScoreValue::Float(value) => value.round() as i64,
+    }
 }
 
 fn parse_page_select_order(value: Option<&str>) -> Result<PageSelectOrder> {
