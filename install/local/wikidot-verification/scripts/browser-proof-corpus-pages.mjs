@@ -136,6 +136,7 @@ async function readTsv(filePath) {
 }
 
 function slugFromRow(row, slugColumn) {
+  const hasColumn = (name) => Object.prototype.hasOwnProperty.call(row, name);
   if (slugColumn) return row[slugColumn] || "";
   if (row.preview_slug) return row.preview_slug;
   if (row.import_slug) return row.import_slug;
@@ -143,7 +144,13 @@ function slugFromRow(row, slugColumn) {
     const match = row.notes.match(/(?:^|;)import_slug:([^;]+)/);
     if (match) return match[1];
   }
-  return "";
+  const resultShapedRow =
+    hasColumn("preview_slug") ||
+    hasColumn("import_slug") ||
+    hasColumn("import_status") ||
+    hasColumn("render_status") ||
+    (hasColumn("status") && row.status !== "discovered");
+  return resultShapedRow ? "" : row.slug || "";
 }
 
 async function runBrowserProof(browser, row, args, dirs, absoluteIndex) {

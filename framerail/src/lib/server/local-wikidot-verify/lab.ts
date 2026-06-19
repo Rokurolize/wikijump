@@ -189,7 +189,8 @@ export async function renderPreviewPage(
     slug: previewSlug,
     title: `${input.title || input.slug} Preview`,
     wikitext: input.wikitext,
-    tags: ["preview", "ui-authoring", "verification"]
+    tags: ["preview", "ui-authoring", "verification"],
+    parent: input.parent ?? ""
   })
   const rendered = await rerenderPage(previewSlug)
 
@@ -322,21 +323,30 @@ export async function savePage(input: SavePageInput): Promise<SavePageOutput> {
     parserErrors = [...parserErrors, ...(output?.parser_errors ?? [])]
   }
 
-  if (input.parent) {
-    await client.request(
-      "parent_update",
-      {
-        site_id: siteId,
-        child: input.slug,
-        add: [input.parent],
-        remove: null
-      },
-      {
-        sessionToken: session.sessionToken,
-        siteId,
-        page: input.slug
-      }
-    )
+  if (input.parent !== undefined) {
+    const currentParents = await getParents(siteId, input.slug)
+    const parent = input.parent.trim()
+    const add = parent && !currentParents.includes(parent) ? [parent] : []
+    const remove = parent
+      ? currentParents.filter((currentParent) => currentParent !== parent)
+      : currentParents
+
+    if (add.length || remove.length) {
+      await client.request(
+        "parent_update",
+        {
+          site_id: siteId,
+          child: input.slug,
+          add: add.length ? add : null,
+          remove: remove.length ? remove : null
+        },
+        {
+          sessionToken: session.sessionToken,
+          siteId,
+          page: input.slug
+        }
+      )
+    }
   }
 
   const page = await requirePage(siteId, input.slug)

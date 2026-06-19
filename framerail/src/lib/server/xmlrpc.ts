@@ -30,6 +30,7 @@ interface MethodDefinition {
 }
 
 interface MethodSignature {
+  [key: string]: XmlRpcValue
   returnType: string
   parameters: string[]
 }
@@ -557,8 +558,7 @@ async function savePageOne(
       rename_as: renameAs,
       revision_comments: revisionComment,
       user_id: writeContext.userId,
-      ip_address: XML_RPC_WRITE_IP_ADDRESS,
-      bypass_filter: true
+      ip_address: XML_RPC_WRITE_IP_ADDRESS
     },
     writeContext
   )) as { slug: string }
@@ -1045,7 +1045,7 @@ async function preflightPageSave(
       )
     }
 
-    const parent = await getDeepwellPage(siteId, parentFullname, false)
+    const parent = await getDeepwellPage(siteId, normalizedParent, false)
     if (!parent) {
       throw new XmlRpcFault(
         406,
@@ -1457,7 +1457,7 @@ function parseXmlRpcValue(valueContent: string, depth: number): XmlRpcValue {
       throw new XmlRpcFault(-32602, "Invalid XML-RPC integer value")
     }
     const value = Number.parseInt(text, 10)
-    if (!Number.isFinite(value)) {
+    if (!Number.isSafeInteger(value) || value < -2_147_483_648 || value > 2_147_483_647) {
       throw new XmlRpcFault(-32602, "Invalid XML-RPC integer value")
     }
     return value

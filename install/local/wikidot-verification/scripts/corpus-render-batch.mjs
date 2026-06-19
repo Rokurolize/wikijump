@@ -123,7 +123,7 @@ function requireEnv(name) {
 
 function requireSiteResult(result, siteSlug) {
   const site = result?.site ?? result;
-  if (!site || !Number.isFinite(Number(site.site_id))) {
+  if (!site || !Number.isSafeInteger(site.site_id)) {
     throw new Error(`site_get did not return a usable site_id for ${siteSlug}`);
   }
   return site;

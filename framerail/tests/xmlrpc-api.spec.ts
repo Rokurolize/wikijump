@@ -1056,6 +1056,9 @@ test("XML-RPC page saves preflight parent and rename failures without mutation",
     expect(afterFault.status()).toBe(200)
     const afterFaultBody = await afterFault.text()
     expect(afterFaultBody).toContain(
+      "<name>title</name><value><string>XML-RPC Preflight Proof</string></value>"
+    )
+    expect(afterFaultBody).toContain(
       "<name>content</name><value><string>Original preflight content.</string></value>"
     )
     expect(afterFaultBody).toContain("<value><string>xmlrpc-preflight</string></value>")

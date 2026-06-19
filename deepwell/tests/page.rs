@@ -26,13 +26,12 @@ use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::prelude::*;
 use deepwell::models::audit_log::Entity as AuditLog;
 use deepwell::models::page::{self, Entity as PageTable};
-use deepwell::services::page::UndoPage;
+use deepwell::services::RequestContext;
 use deepwell::services::page_query::{
     CategoriesSelector, DateSelector, FoundPageFields, IncludedCategories,
     OrderBySelector, OrderProperty, PageParentSelector, PageQuery, PageQueryService,
     PageTypeSelector, PaginationSelector, RangeSelector, TagCondition,
 };
-use deepwell::services::{PageService, RequestContext};
 use deepwell::types::{PageRevisionType, Reference};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter, Set,
@@ -1023,11 +1022,11 @@ async fn page_undo_reverses_selected_revision_and_preserves_later_changes() {
     let slug = "undo-target";
 
     runner.set_request_context(RequestContext {
+        is_external: true,
         session: None,
         user_id: Some(ADMIN_USER_ID),
         site_id: Some(site_id),
         page_reference: Some(Reference::Slug(slug.into())),
-        ..Default::default()
     });
 
     let created = run_endpoint!(
@@ -1076,20 +1075,19 @@ async fn page_undo_reverses_selected_revision_and_preserves_later_changes() {
     )
     .expect("body edit should create a revision");
 
-    let undo = PageService::undo(
-        runner.context(),
-        UndoPage {
-            site_id,
-            page: Reference::Id(created.page_id),
-            last_revision_id: body_edit.revision_id,
-            revision_number: 1,
-            revision_comments: "undo the title change".to_owned(),
-            user_id: SYSTEM_USER_ID,
-            ip_address: common::IP_ADDRESS,
-        },
-    )
-    .await
-    .expect("undo should reverse the title edit");
+    let undo = run_endpoint!(
+        runner,
+        page_undo,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": body_edit.revision_id,
+            "revision_number": 1,
+            "revision_comments": "undo the title change",
+            "user_id": SYSTEM_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
 
     assert!(undo.revision_id > body_edit.revision_id);
     assert_eq!(undo.revision_number, 3);
@@ -1109,7 +1107,7 @@ async fn page_undo_reverses_selected_revision_and_preserves_later_changes() {
 
     assert_eq!(page.revision_type, PageRevisionType::Undo);
     assert_eq!(page.revision_number, 3);
-    assert_eq!(page.revision_user_id, SYSTEM_USER_ID);
+    assert_eq!(page.revision_user_id, ADMIN_USER_ID);
     assert_eq!(page.title, "Title version 0");
     assert_eq!(
         page.wikitext.as_deref(),
@@ -1124,7 +1122,7 @@ async fn page_undo_reverses_selected_revision_and_preserves_later_changes() {
         .await
         .expect("audit lookup should succeed")
         .expect("undo should be audited");
-    assert_eq!(audit.user_id, Some(SYSTEM_USER_ID));
+    assert_eq!(audit.user_id, Some(ADMIN_USER_ID));
     assert_eq!(audit.site_id, Some(site_id));
     assert_eq!(audit.page_id, Some(created.page_id));
     assert_eq!(audit.extra_number, Some(1));

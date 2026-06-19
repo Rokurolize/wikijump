@@ -72,9 +72,6 @@ struct XmlRpcPageSaveInput {
     revision_comments: String,
     user_id: i64,
     ip_address: IpAddr,
-
-    #[serde(default)]
-    bypass_filter: bool,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -1025,7 +1022,6 @@ pub async fn xmlrpc_page_save(
         revision_comments,
         user_id,
         ip_address,
-        bypass_filter,
     } = parse!(params, Page);
     let make_error = || Error::new("failed to save XML-RPC page", ErrorType::Page);
     let acting_user_id = resolve_page_write_user_id(ctx, user_id)?;
@@ -1148,7 +1144,7 @@ pub async fn xmlrpc_page_save(
                     layout: Some(Layout::Wikidot),
                     revision_comments: revision_comments.clone(),
                     user_id: acting_user_id,
-                    bypass_filter,
+                    bypass_filter: false,
                     ip_address,
                 },
             )

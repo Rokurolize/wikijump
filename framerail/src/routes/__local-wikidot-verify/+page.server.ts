@@ -21,14 +21,65 @@ import {
 } from "$lib/server/local-wikidot-verify/lab"
 import { error, fail } from "@sveltejs/kit"
 
+import type { LabBundle } from "$lib/server/local-wikidot-verify/lab"
 import type { Actions } from "./$types"
+
+class BundleValidationError extends Error {}
+
+function bundleValidationError(message: string): BundleValidationError {
+  return new BundleValidationError(message)
+}
+
+function parseImportBundle(text: string): LabBundle {
+  const trimmed = text.trim()
+  if (!trimmed) throw bundleValidationError("Bundle JSON is required.")
+  if (text.length > 2_000_000) throw bundleValidationError("Bundle JSON is too large.")
+
+  let value: unknown
+  try {
+    value = JSON.parse(text)
+  } catch {
+    throw bundleValidationError("Bundle JSON is malformed.")
+  }
+
+  if (!value || typeof value !== "object") {
+    throw bundleValidationError("Bundle JSON must be an object.")
+  }
+
+  const bundle = value as Partial<LabBundle>
+  if (bundle.manifest?.format !== "wikijump-local-authoring-lab-v1") {
+    throw bundleValidationError("Bundle JSON has an unsupported format.")
+  }
+  if (!Array.isArray(bundle.pages)) {
+    throw bundleValidationError("Bundle JSON must contain a pages array.")
+  }
+  if (bundle.pages.length > 500) {
+    throw bundleValidationError("Bundle JSON contains too many pages.")
+  }
+
+  for (const [index, page] of bundle.pages.entries()) {
+    if (
+      !page ||
+      typeof page !== "object" ||
+      typeof page.slug !== "string" ||
+      typeof page.title !== "string" ||
+      typeof page.wikitext !== "string" ||
+      !Array.isArray(page.tags) ||
+      !page.tags.every((tag) => typeof tag === "string")
+    ) {
+      throw bundleValidationError(`Bundle page ${index + 1} is invalid.`)
+    }
+  }
+
+  return bundle as LabBundle
+}
 
 function assertLocalVerificationEnabled() {
   if (process.env.FRAMERAIL_ENV === "local" || process.env.NODE_ENV === "development") {
     return
   }
 
-  throw error(404, "Not found")
+  throw error(404)
 }
 
 function editorFormState(formData: FormData) {
@@ -89,7 +140,8 @@ export const actions: Actions = {
         slug: state.slug,
         title: state.title || state.slug,
         wikitext: state.wikitext,
-        tags: state.tags
+        tags: state.tags,
+        parent: state.parent
       })
       return {
         type: "preview",
@@ -127,7 +179,7 @@ export const actions: Actions = {
         title: state.title,
         wikitext: state.wikitext,
         tags: state.tags,
-        parent: state.parent || undefined
+        parent: state.parent
       })
 
       return {
@@ -296,11 +348,11 @@ export const actions: Actions = {
     try {
       const formData = await request.formData()
       state = importFormState(formData)
-      const bundle = JSON.parse(state.bundleText)
+      const bundle = parseImportBundle(state.bundleText)
       const imported = await importBundle(bundle, state.prefix)
       return { type: "importBundle", ...state, imported }
     } catch (error) {
-      return fail(500, {
+      return fail(error instanceof BundleValidationError ? 400 : 500, {
         type: "importBundle",
         ...(state ?? {}),
         message: error instanceof Error ? error.message : String(error)

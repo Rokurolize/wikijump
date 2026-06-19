@@ -1160,7 +1160,7 @@ impl RenderService {
         let can_view = PermissionService::check_user_can(
             ctx,
             &CheckPermissionContext {
-                user_id: ctx.request().user_id,
+                user_id: None,
                 site_id,
                 page_reference: Some(page_ref),
             },
