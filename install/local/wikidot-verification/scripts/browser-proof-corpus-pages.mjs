@@ -143,7 +143,7 @@ function slugFromRow(row, slugColumn) {
     const match = row.notes.match(/(?:^|;)import_slug:([^;]+)/);
     if (match) return match[1];
   }
-  return row.slug || "";
+  return "";
 }
 
 async function runBrowserProof(browser, row, args, dirs, absoluteIndex) {

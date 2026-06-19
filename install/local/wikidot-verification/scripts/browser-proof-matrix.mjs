@@ -52,6 +52,12 @@ function loadPlaywrightChromium() {
   );
 }
 
+function tsv(value) {
+  if (Array.isArray(value)) value = value.join("|");
+  if (value === null || value === undefined) return "";
+  return String(value).replace(/\t/g, " ").replace(/\r?\n/g, "\\n");
+}
+
 function parseArgs(argv) {
   const args = {
     baseUrl: (
@@ -416,7 +422,9 @@ async function main() {
             .filter((check) => !check.pass)
             .map((check) => `${check.name}:${check.detail}`)
             .join(" | "),
-        ].join("\t"),
+        ]
+          .map(tsv)
+          .join("\t"),
       ),
       "",
     ].join("\n"),

@@ -22,26 +22,65 @@ use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::page::{self, Entity as Page, Model as PageModel};
 use crate::models::{page_parent, page_revision};
-use crate::services::TextService;
 use crate::services::file::{GetFileOutput, GetPageFiles};
 use crate::services::page::{
-    CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
-    GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
-    GetPageReferenceDetails, GetPageScoreOutput, GetPageSlug, MovePage, MovePageOutput,
-    PageEditPermissionOutput, RestorePage, RestorePageOutput, RollbackPage,
-    SetPageLayout,
+    CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageBody,
+    EditPageOutput, GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput,
+    GetPageReference, GetPageReferenceDetails, GetPageScoreOutput, GetPageSlug, MovePage,
+    MovePageOutput, PageEditPermissionOutput, RestorePage, RestorePageOutput,
+    RollbackPage, SetPageLayout, UndoPage,
 };
 use crate::services::page_revision::RerenderType;
+use crate::services::parent::ParentDescription;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::{CategoryService, ParentService, TextService};
 use crate::types::{
-    Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
-    Resource,
+    Action, Bytes, FileOrder, Maybe, PageDetails, PageId, Permission, Reference,
+    RerenderDepth, Resource,
 };
+use crate::utils::get_category_name;
+use ftml::layout::Layout;
 use futures::future::try_join_all;
 use sea_orm::prelude::TimeDateTimeWithTimeZone;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
+use std::net::IpAddr;
+use wikidot_normalize::normalize;
+
+#[derive(Deserialize, Debug, Clone)]
+struct PagePermissionCheckInput<'a> {
+    site_id: i64,
+    page: Reference<'a>,
+    action: Action,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PagePermissionCheckOutput {
+    pub allowed: bool,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+struct XmlRpcPageSaveInput {
+    site_id: i64,
+    page: String,
+    title: Option<String>,
+    wikitext: Option<String>,
+    tags: Option<Vec<String>>,
+    parent_fullname: Option<String>,
+    rename_as: Option<String>,
+    revision_comments: String,
+    user_id: i64,
+    ip_address: IpAddr,
+
+    #[serde(default)]
+    bypass_filter: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct XmlRpcPageSaveOutput {
+    pub slug: String,
+}
 
 pub async fn page_create(
     ctx: &ServiceContext<'_>,
@@ -281,10 +320,11 @@ pub async fn page_tags_select(
         page_query = page_query.filter(page::Column::Slug.is_in(pages));
     }
 
-    let revision_ids = page_query
-        .all(txn)
+    let pages = page_query.all(txn).await.or_raise(make_error)?;
+    let pages = filter_viewable_pages(ctx, site_id, pages)
         .await
-        .or_raise(make_error)?
+        .or_raise(make_error)?;
+    let revision_ids = pages
         .into_iter()
         .filter_map(|page| page.latest_revision_id)
         .collect::<Vec<_>>();
@@ -436,6 +476,9 @@ pub async fn page_select(
     }
 
     let pages = page_query.all(txn).await.or_raise(make_error)?;
+    let pages = filter_viewable_pages(ctx, site_id, pages)
+        .await
+        .or_raise(make_error)?;
 
     let page_ids = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
     let latest_revision_ids = pages
@@ -598,6 +641,37 @@ async fn viewable_page_category_ids(
 
         if can_view {
             viewable.insert(category_id);
+        }
+    }
+
+    Ok(viewable)
+}
+
+async fn filter_viewable_pages(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    pages: Vec<PageModel>,
+) -> Result<Vec<PageModel>> {
+    let mut viewable = Vec::with_capacity(pages.len());
+
+    for page in pages {
+        let can_view = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: ctx.request().user_id,
+                site_id,
+                page_reference: Some(Reference::Id(page.page_id)),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(page.page_category_id)),
+                action: Action::View,
+            },
+        )
+        .await?;
+
+        if can_view {
+            viewable.push(page);
         }
     }
 
@@ -823,28 +897,21 @@ pub async fn page_edit(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<Option<EditPageOutput>> {
-    let input: EditPage = parse!(params, Page);
+    let mut input: EditPage = parse!(params, Page);
     info!("Editing page {:?} in site ID {}", input.page, input.site_id);
 
-    let can_edit = PageService::check_user_permission(
+    let editing_user_id = resolve_page_write_user_id(ctx, input.user_id)?;
+    ensure_page_permission(
         ctx,
-        &CheckPermissionContext {
-            user_id: None,
-            site_id: input.site_id,
-            page_reference: Some(input.page.clone()),
-        },
+        input.site_id,
+        input.page.clone(),
+        editing_user_id,
         Action::Edit,
     )
     .await
     .or_raise(|| Error::new("failed to check edit permission", ErrorType::Page))?;
 
-    if !can_edit {
-        return Err(Error::new(
-            "user does not have permission to edit this page",
-            ErrorType::PermissionDenied,
-        )
-        .into());
-    }
+    input.user_id = editing_user_id;
     PageService::edit(ctx, input)
         .await
         .or_raise(|| Error::new("failed to edit page", ErrorType::Page))
@@ -869,6 +936,462 @@ pub async fn page_edit_permission(
     .or_raise(|| Error::new("failed to check page edit permission", ErrorType::Page))?;
 
     Ok(PageEditPermissionOutput { can_edit })
+}
+
+pub async fn page_permission_check(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<PagePermissionCheckOutput> {
+    let PagePermissionCheckInput {
+        site_id,
+        page,
+        action,
+    } = parse!(params, Page);
+    let make_error = || Error::new("failed to check page permission", ErrorType::Page);
+
+    let allowed = match action {
+        Action::Create => {
+            let Reference::Slug(slug) = page else {
+                return Err(Error::new(
+                    "page:create permission check requires a page slug",
+                    ErrorType::Request,
+                )
+                .into());
+            };
+            let mut slug = slug.into_owned();
+            normalize(&mut slug);
+            let category = CategoryService::get_optional(
+                ctx,
+                site_id,
+                Reference::from(get_category_name(&slug)),
+            )
+            .await
+            .or_raise(make_error)?;
+
+            PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: ctx.request().user_id,
+                    site_id,
+                    page_reference: None,
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: category
+                        .map(|category| Reference::Id(category.category_id)),
+                    action,
+                },
+            )
+            .await
+            .or_raise(make_error)?
+        }
+        Action::Edit | Action::Rename | Action::Delete | Action::BypassLock => {
+            PageService::check_user_permission(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: ctx.request().user_id,
+                    site_id,
+                    page_reference: Some(page),
+                },
+                action,
+            )
+            .await
+            .or_raise(make_error)?
+        }
+        Action::View | Action::Assign => {
+            return Err(Error::new(
+                "unsupported page permission check action",
+                ErrorType::Request,
+            )
+            .into());
+        }
+    };
+
+    Ok(PagePermissionCheckOutput { allowed })
+}
+
+pub async fn xmlrpc_page_save(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<XmlRpcPageSaveOutput> {
+    let XmlRpcPageSaveInput {
+        site_id,
+        mut page,
+        title,
+        wikitext,
+        tags,
+        parent_fullname,
+        rename_as,
+        revision_comments,
+        user_id,
+        ip_address,
+        bypass_filter,
+    } = parse!(params, Page);
+    let make_error = || Error::new("failed to save XML-RPC page", ErrorType::Page);
+    let acting_user_id = resolve_page_write_user_id(ctx, user_id)?;
+
+    normalize(&mut page);
+    let existing_page =
+        PageService::get_optional(ctx, site_id, Reference::from(page.as_str()))
+            .await
+            .or_raise(make_error)?;
+    let should_create = existing_page.is_none();
+
+    let mut normalized_parent = parent_fullname;
+    if let Some(parent) = normalized_parent.as_mut()
+        && parent != "-"
+    {
+        normalize(parent);
+    }
+
+    let mut normalized_rename = rename_as;
+    if let Some(rename) = normalized_rename.as_mut() {
+        normalize(rename);
+        if rename.is_empty() {
+            return Err(Error::new(
+                "rename_as target page is empty",
+                ErrorType::BadRequest,
+            )
+            .into());
+        }
+    }
+
+    if existing_page.is_none() && normalized_rename.is_some() {
+        return Err(Error::new(
+            "cannot rename while creating a page",
+            ErrorType::BadRequest,
+        )
+        .into());
+    }
+
+    if let Some(parent) = normalized_parent.as_deref()
+        && parent != "-"
+    {
+        if parent == page {
+            return Err(
+                Error::new("page cannot parent itself", ErrorType::BadRequest).into(),
+            );
+        }
+
+        PageService::get(ctx, site_id, Reference::from(parent))
+            .await
+            .or_raise(make_error)?;
+    }
+
+    if let Some(rename) = normalized_rename.as_deref() {
+        if rename == page {
+            return Err(Error::new(
+                "rename_as target page is unchanged",
+                ErrorType::PageSlugExists,
+            )
+            .into());
+        }
+
+        if PageService::get_optional(ctx, site_id, Reference::from(rename))
+            .await
+            .or_raise(make_error)?
+            .is_some()
+        {
+            return Err(Error::new(
+                "rename_as target page already exists",
+                ErrorType::PageSlugExists,
+            )
+            .into());
+        }
+    }
+
+    if let Some(ref existing_page) = existing_page {
+        if wikitext.is_some()
+            || title.is_some()
+            || tags.is_some()
+            || normalized_parent.is_some()
+        {
+            ensure_page_permission(
+                ctx,
+                site_id,
+                Reference::Id(existing_page.page_id),
+                acting_user_id,
+                Action::Edit,
+            )
+            .await
+            .or_raise(make_error)?;
+        }
+
+        if normalized_rename.is_some() {
+            ensure_page_permission(
+                ctx,
+                site_id,
+                Reference::Id(existing_page.page_id),
+                acting_user_id,
+                Action::Rename,
+            )
+            .await
+            .or_raise(make_error)?;
+        }
+    } else {
+        ensure_create_permission(ctx, site_id, &page, acting_user_id)
+            .await
+            .or_raise(make_error)?;
+    }
+
+    let mut current_page = match existing_page {
+        Some(page_model) => page_model,
+        None => {
+            PageService::create(
+                ctx,
+                CreatePage {
+                    site_id,
+                    wikitext: wikitext.clone().unwrap_or_default(),
+                    title: title.clone().unwrap_or_else(|| page.clone()),
+                    alt_title: None,
+                    slug: page.clone(),
+                    layout: Some(Layout::Wikidot),
+                    revision_comments: revision_comments.clone(),
+                    user_id: acting_user_id,
+                    bypass_filter,
+                    ip_address,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+
+            PageService::get(ctx, site_id, Reference::from(page.as_str()))
+                .await
+                .or_raise(make_error)?
+        }
+    };
+
+    if !should_create || tags.is_some() {
+        let mut body = EditPageBody::default();
+        let mut has_edit = false;
+
+        if !should_create && let Some(wikitext) = wikitext {
+            body.wikitext = Maybe::Set(wikitext);
+            has_edit = true;
+        }
+        if !should_create && let Some(title) = title {
+            body.title = Maybe::Set(title);
+            has_edit = true;
+        }
+        if let Some(tags) = tags {
+            body.tags = Maybe::Set(tags);
+            has_edit = true;
+        }
+
+        if has_edit {
+            let last_revision_id =
+                current_page.latest_revision_id.ok_or_raise(make_error)?;
+            PageService::edit(
+                ctx,
+                EditPage {
+                    site_id,
+                    page: Reference::Id(current_page.page_id),
+                    last_revision_id,
+                    revision_comments: revision_comments.clone(),
+                    user_id: acting_user_id,
+                    body,
+                    ip_address,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+
+            current_page =
+                PageService::get(ctx, site_id, Reference::Id(current_page.page_id))
+                    .await
+                    .or_raise(make_error)?;
+        }
+    }
+
+    if let Some(parent) = normalized_parent.as_deref() {
+        update_single_parent(ctx, site_id, current_page.page_id, parent)
+            .await
+            .or_raise(make_error)?;
+    }
+
+    let mut final_slug = current_page.slug.clone();
+    if let Some(rename) = normalized_rename {
+        let last_revision_id = current_page.latest_revision_id.ok_or_raise(make_error)?;
+        let output = PageService::r#move(
+            ctx,
+            MovePage {
+                site_id,
+                page: Reference::Id(current_page.page_id),
+                last_revision_id,
+                new_slug: rename,
+                revision_comments,
+                user_id: acting_user_id,
+                ip_address,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+        final_slug = output.new_slug;
+    }
+
+    Ok(XmlRpcPageSaveOutput { slug: final_slug })
+}
+
+async fn ensure_create_permission(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    slug: &str,
+    user_id: i64,
+) -> Result<()> {
+    let make_error =
+        || Error::new("failed to check page create permission", ErrorType::Page);
+    let category = CategoryService::get_optional(
+        ctx,
+        site_id,
+        Reference::from(get_category_name(slug)),
+    )
+    .await
+    .or_raise(make_error)?;
+
+    let allowed = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: Some(user_id),
+            site_id,
+            page_reference: None,
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: category
+                .map(|category| Reference::Id(category.category_id)),
+            action: Action::Create,
+        },
+    )
+    .await
+    .or_raise(make_error)?;
+
+    if !allowed {
+        return Err(Error::new(
+            "user does not have permission to create this page",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+
+    Ok(())
+}
+
+async fn ensure_page_permission(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page: Reference<'_>,
+    user_id: i64,
+    action: Action,
+) -> Result<()> {
+    let allowed = PageService::check_user_permission(
+        ctx,
+        &CheckPermissionContext {
+            user_id: Some(user_id),
+            site_id,
+            page_reference: Some(page),
+        },
+        action,
+    )
+    .await
+    .or_raise(|| Error::new("failed to check page permission", ErrorType::Page))?;
+
+    if !allowed {
+        return Err(Error::new(
+            format!("user does not have page:{action} permission"),
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+
+    Ok(())
+}
+
+fn resolve_page_write_user_id(
+    ctx: &ServiceContext<'_>,
+    input_user_id: i64,
+) -> Result<i64> {
+    match (ctx.request().is_external, ctx.request().user_id) {
+        (true, Some(user_id)) => Ok(user_id),
+        (true, None) => Err(Error::new(
+            "authenticated user session required for page write",
+            ErrorType::PermissionDenied,
+        )
+        .into()),
+        (false, Some(user_id)) => Ok(user_id),
+        (false, None) => Ok(input_user_id),
+    }
+}
+
+async fn update_single_parent(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    child_page_id: i64,
+    parent: &str,
+) -> Result<()> {
+    let make_error = || {
+        Error::new(
+            "failed to update XML-RPC page parent",
+            ErrorType::PageParent,
+        )
+    };
+    let current_parents =
+        ParentService::get_parents(ctx, site_id, Reference::Id(child_page_id))
+            .await
+            .or_raise(make_error)?;
+
+    if parent == "-" {
+        for current_parent in current_parents {
+            ParentService::remove(
+                ctx,
+                ParentDescription {
+                    site_id,
+                    parent: Reference::Id(current_parent.parent_page_id),
+                    child: Reference::Id(child_page_id),
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+        }
+        return Ok(());
+    }
+
+    let parent_page = PageService::get(ctx, site_id, Reference::from(parent))
+        .await
+        .or_raise(make_error)?;
+
+    for current_parent in current_parents
+        .iter()
+        .filter(|current_parent| current_parent.parent_page_id != parent_page.page_id)
+    {
+        ParentService::remove(
+            ctx,
+            ParentDescription {
+                site_id,
+                parent: Reference::Id(current_parent.parent_page_id),
+                child: Reference::Id(child_page_id),
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+    }
+
+    if !current_parents
+        .iter()
+        .any(|current_parent| current_parent.parent_page_id == parent_page.page_id)
+    {
+        ParentService::create(
+            ctx,
+            ParentDescription {
+                site_id,
+                parent: Reference::Id(parent_page.page_id),
+                child: Reference::Id(child_page_id),
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+    }
+
+    Ok(())
 }
 
 pub async fn page_delete(
@@ -948,6 +1471,34 @@ pub async fn page_rollback(
     PageService::rollback(ctx, input)
         .await
         .or_raise(|| Error::new("failed to rollback page", ErrorType::Page))
+}
+
+pub async fn page_undo(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<EditPageOutput> {
+    let mut input: UndoPage = parse!(params, Page);
+
+    info!(
+        "Undoing page {:?} in site ID {} at revision number {}",
+        input.page, input.site_id, input.revision_number,
+    );
+
+    let undo_user_id = resolve_page_write_user_id(ctx, input.user_id)?;
+    ensure_page_permission(
+        ctx,
+        input.site_id,
+        input.page.clone(),
+        undo_user_id,
+        Action::Edit,
+    )
+    .await
+    .or_raise(|| Error::new("failed to check undo permission", ErrorType::Page))?;
+
+    input.user_id = undo_user_id;
+    PageService::undo(ctx, input)
+        .await
+        .or_raise(|| Error::new("failed to undo page revision", ErrorType::Page))
 }
 
 pub async fn page_set_layout(

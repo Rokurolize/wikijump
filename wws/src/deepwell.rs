@@ -132,6 +132,24 @@ impl Deepwell {
         Ok(block_info)
     }
 
+    pub async fn get_text_block_at_index(
+        &self,
+        page_id: i64,
+        block_type: TextBlockType,
+        index: NonZeroU16,
+    ) -> Result<Option<TextBlockIndex>> {
+        let params = rpc_object! {
+            "page_id" => page_id,
+            "block_type" => block_type.value(),
+            "index" => index,
+        };
+
+        let block_info: Option<TextBlockIndex> =
+            self.client.request("text_block_get_index", params).await?;
+
+        Ok(block_info)
+    }
+
     // Basic errors
 
     pub async fn basic_error_missing_site_slug(

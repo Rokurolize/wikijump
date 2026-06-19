@@ -27,12 +27,15 @@ use crate::services::page_query::{
     OrderBySelector, OrderProperty, PageParentSelector, PageQuery, PageTypeSelector,
     PaginationSelector, RangeSelector, TagCondition,
 };
+use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::settings::{NavigationPageWikitext, SettingsService};
 use crate::services::text_block::{
     MIME_HTML, TextBlock, TextBlockService, mime_for_language,
 };
-use crate::services::{PageQueryService, PageRevisionService, SiteService, TextService};
-use crate::types::{PageId, TextBlockType};
+use crate::services::{
+    PageQueryService, PageRevisionService, PageService, SiteService, TextService,
+};
+use crate::types::{Action, PageId, Permission, Resource, TextBlockType};
 use ftml::data::PageRef;
 use ftml::includes::{FetchedPage, IncludeRef};
 use ftml::prelude::*;
@@ -1147,10 +1150,35 @@ impl RenderService {
         site_slug: &str,
         page_slug: &str,
     ) -> Result<Option<IncludeSource>> {
+        let page_ref = Reference::from(page_slug);
+        let Some(page) =
+            PageService::get_optional(ctx, site_id, page_ref.clone()).await?
+        else {
+            return Ok(None);
+        };
+
+        let can_view = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: ctx.request().user_id,
+                site_id,
+                page_reference: Some(page_ref),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(page.page_category_id)),
+                action: Action::View,
+            },
+        )
+        .await?;
+        if !can_view {
+            return Ok(None);
+        }
+
         if let Some(wikitext) = PageRevisionService::get_wikitext_optional(
             ctx,
             site_id,
-            Reference::from(page_slug),
+            Reference::Id(page.page_id),
         )
         .await?
         {

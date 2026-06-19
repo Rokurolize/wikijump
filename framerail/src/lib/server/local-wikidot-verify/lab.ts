@@ -268,17 +268,25 @@ export async function savePage(input: SavePageInput): Promise<SavePageOutput> {
   let parserErrors: unknown[] = []
 
   if (!existing) {
-    const output = (await client.request("page_create", {
-      site_id: siteId,
-      wikitext: input.wikitext,
-      title: input.title,
-      alt_title: null,
-      slug: input.slug,
-      layout: Layout.WIKIDOT,
-      revision_comments: "local authoring lab create",
-      user_id: ADMIN_USER_ID,
-      ip_address: IP_ADDRESS
-    })) as { parser_errors?: unknown[] }
+    const output = (await client.request(
+      "page_create",
+      {
+        site_id: siteId,
+        wikitext: input.wikitext,
+        title: input.title,
+        alt_title: null,
+        slug: input.slug,
+        layout: Layout.WIKIDOT,
+        revision_comments: "local authoring lab create",
+        user_id: ADMIN_USER_ID,
+        ip_address: IP_ADDRESS
+      },
+      {
+        sessionToken: session.sessionToken,
+        siteId,
+        page: input.slug
+      }
+    )) as { parser_errors?: unknown[] }
     created = true
     parserErrors = output.parser_errors ?? []
   }
@@ -315,12 +323,20 @@ export async function savePage(input: SavePageInput): Promise<SavePageOutput> {
   }
 
   if (input.parent) {
-    await client.request("parent_update", {
-      site_id: siteId,
-      child: input.slug,
-      add: [input.parent],
-      remove: null
-    })
+    await client.request(
+      "parent_update",
+      {
+        site_id: siteId,
+        child: input.slug,
+        add: [input.parent],
+        remove: null
+      },
+      {
+        sessionToken: session.sessionToken,
+        siteId,
+        page: input.slug
+      }
+    )
   }
 
   const page = await requirePage(siteId, input.slug)
@@ -550,11 +566,19 @@ export async function runProofSummary(selectedSlug: string): Promise<ProofSummar
 export async function rerenderPage(slug: string): Promise<LabPage> {
   const session = await openLabSession()
   const page = await requirePage(session.site.site_id, slug)
-  await client.request("page_rerender", {
-    site_id: session.site.site_id,
-    category_id: page.page_category_id,
-    page_id: page.page_id
-  })
+  await client.request(
+    "page_rerender",
+    {
+      site_id: session.site.site_id,
+      category_id: page.page_category_id,
+      page_id: page.page_id
+    },
+    {
+      sessionToken: session.sessionToken,
+      siteId: session.site.site_id,
+      page: slug
+    }
+  )
   return requirePage(session.site.site_id, slug)
 }
 

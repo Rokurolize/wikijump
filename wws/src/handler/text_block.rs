@@ -30,7 +30,6 @@ use axum::http::header::{self, HeaderMap};
 use axum::http::status::StatusCode;
 use axum::response::{IntoResponse, Response};
 use std::collections::HashMap;
-use std::num::NonZeroU16;
 
 pub async fn handle_html_block(
     State(state): State<ServerState>,
@@ -88,10 +87,50 @@ async fn handle_text_block(
     let (index, s3_filename) = match block_id {
         // Parse the index value if numeric
         BlockId::Index(value) => match value.parse() {
-            Ok(index) => {
-                let s3_filename = format_filename(block_type, page_id, index);
-                (index, s3_filename)
-            }
+            Ok(index) => match state
+                .deepwell
+                .get_text_block_at_index(page_id, block_type, index)
+                .await
+            {
+                Ok(Some(TextBlockIndex { index, s3_filename })) => (index, s3_filename),
+                Ok(None) => {
+                    error!(
+                        page_id = page_id,
+                        block_type = block_type.value(),
+                        index = value,
+                        "No text block found with given index",
+                    );
+                    return build_basic_error_response(
+                        state,
+                        headers,
+                        BasicError::TextBlock {
+                            site_id,
+                            index: &value,
+                            block_type,
+                            reason: TextBlockErrorReason::Missing,
+                        },
+                    )
+                    .await;
+                }
+                Err(error) => {
+                    error!(
+                        page_id = page_id,
+                        block_type = block_type.value(),
+                        "Unable to retrieve S3 filename for indexed text block from DEEPWELL: {error}",
+                    );
+                    return build_basic_error_response(
+                        state,
+                        headers,
+                        BasicError::TextBlock {
+                            site_id,
+                            index: &value,
+                            block_type,
+                            reason: TextBlockErrorReason::Fetch,
+                        },
+                    )
+                    .await;
+                }
+            },
             Err(_) => {
                 error!(
                     index = value,
@@ -228,14 +267,6 @@ enum BlockId {
 struct Headers {
     content_type: String,
     etag: String,
-}
-
-/// Formats the S3 filename for a hosted text block.
-/// See `service/text_block/service.rs` for how this value is formatted.
-#[inline]
-fn format_filename(block_type: TextBlockType, page_id: i64, index: NonZeroU16) -> String {
-    let block_type = block_type.value();
-    format!("{page_id}_{block_type}_{index}")
 }
 
 // Since this thing isn't returning a case-insensitive map...

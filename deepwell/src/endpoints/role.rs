@@ -21,21 +21,70 @@
 use super::prelude::*;
 use crate::models::role::Model as RoleModel;
 use crate::models::user_role;
-use crate::services::permission::{DecoratedPermission, PermissionService};
+use crate::services::permission::{
+    CheckPermissionContext, DecoratedPermission, PermissionService,
+};
 use crate::services::role::{
     CreateRoleInput, DeleteRoleInput, GetRoleInput, GetRolePermissionsInput,
     GetUserRolesInput, GrantUserRoleInput, InternalCreateRoleInput,
     InternalReparentRoleInput, ListSiteRolesInput, ReparentRoleInput,
     RevokeUserRoleInput, RoleService, UpdateRoleInput, UpdateRolePermissionsInput,
 };
-use crate::types::Permission;
+use crate::types::{Action, Permission, Resource};
 
 pub async fn list_site_roles(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<Vec<RoleModel>> {
-    let ListSiteRolesInput { site_id, .. } = parse!(params, Role);
+    let ListSiteRolesInput {
+        site_id,
+        acting_user_id,
+    } = parse!(params, Role);
     info!("Listing roles in site ID {site_id}");
+
+    let permission_user_id = if ctx.request().is_external {
+        let request_user_id = ctx.request().user_id;
+
+        if let Some(acting_user_id) = acting_user_id
+            && Some(acting_user_id) != request_user_id
+        {
+            return Err(Error::new(
+                "acting user does not match authenticated request user",
+                ErrorType::PermissionDenied,
+            )
+            .into());
+        }
+
+        request_user_id
+    } else {
+        ctx.request().user_id.or(acting_user_id)
+    };
+
+    if !ctx.request().is_external && permission_user_id.is_none() {
+        return RoleService::get_all_roles_for_site(ctx, site_id)
+            .await
+            .or_raise(|| Error::new("failed to list site roles", ErrorType::Role));
+    }
+
+    let can_view_roles = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: permission_user_id,
+            site_id,
+            page_reference: None,
+        },
+        Permission::new(Resource::Role, Action::View).expect("role:view is valid"),
+    )
+    .await
+    .or_raise(|| Error::new("failed to check role view permission", ErrorType::Role))?;
+
+    if !can_view_roles {
+        return Err(Error::new(
+            "user does not have permission to list roles",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
 
     RoleService::get_all_roles_for_site(ctx, site_id)
         .await

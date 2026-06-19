@@ -1048,6 +1048,23 @@ test("XML-RPC page saves preflight parent and rename failures without mutation",
   })
   expect(collisionResponse.status()).toBe(200)
 
+  const expectOriginalPage = async () => {
+    const afterFault = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesGetOneForPageRequest(slug),
+      headers: xmlRpcHeaders
+    })
+    expect(afterFault.status()).toBe(200)
+    const afterFaultBody = await afterFault.text()
+    expect(afterFaultBody).toContain(
+      "<name>content</name><value><string>Original preflight content.</string></value>"
+    )
+    expect(afterFaultBody).toContain("<value><string>xmlrpc-preflight</string></value>")
+    expect(afterFaultBody).toContain(
+      "<name>parent_fullname</name><value><string>fixture-parent-root</string></value>"
+    )
+    return afterFaultBody
+  }
+
   const renameFaultResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcPagesSaveOneRequest({
       page: slug,
@@ -1065,20 +1082,58 @@ test("XML-RPC page saves preflight parent and rename failures without mutation",
   expect(renameFaultBody).toContain("<fault>")
   expect(renameFaultBody).toContain("target page already exists")
 
-  const afterRenameFault = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcPagesGetOneForPageRequest(slug),
-    headers: xmlRpcHeaders
-  })
-  expect(afterRenameFault.status()).toBe(200)
-  const afterRenameBody = await afterRenameFault.text()
-  expect(afterRenameBody).toContain(
-    "<name>content</name><value><string>Original preflight content.</string></value>"
-  )
-  expect(afterRenameBody).toContain("<value><string>xmlrpc-preflight</string></value>")
+  const afterRenameBody = await expectOriginalPage()
   expect(afterRenameBody).not.toContain("Mutated content should not persist")
   expect(afterRenameBody).not.toContain("<value><string>xmlrpc-mutated</string></value>")
-  expect(afterRenameBody).toContain(
-    "<name>parent_fullname</name><value><string>fixture-parent-root</string></value>"
+
+  const normalizedCollisionFaultResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: slug,
+      title: "Normalized collision title should not persist",
+      content: "Normalized collision content should not persist.",
+      tags: ["verification", "xmlrpc-normalized-collision"],
+      saveMode: "update",
+      renameAs: collisionSlug.toUpperCase(),
+      revisionComment: "xmlrpc preflight normalized collision fault"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(normalizedCollisionFaultResponse.status()).toBe(200)
+  const normalizedCollisionFaultBody = await normalizedCollisionFaultResponse.text()
+  expect(normalizedCollisionFaultBody).toContain("<fault>")
+  expect(normalizedCollisionFaultBody).toContain("target page already exists")
+
+  const afterNormalizedCollisionBody = await expectOriginalPage()
+  expect(afterNormalizedCollisionBody).not.toContain(
+    "Normalized collision content should not persist"
+  )
+  expect(afterNormalizedCollisionBody).not.toContain(
+    "<value><string>xmlrpc-normalized-collision</string></value>"
+  )
+
+  const normalizedNoopFaultResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: slug,
+      title: "Normalized noop title should not persist",
+      content: "Normalized noop content should not persist.",
+      tags: ["verification", "xmlrpc-normalized-noop"],
+      saveMode: "update",
+      renameAs: slug.toUpperCase(),
+      revisionComment: "xmlrpc preflight normalized noop fault"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(normalizedNoopFaultResponse.status()).toBe(200)
+  const normalizedNoopFaultBody = await normalizedNoopFaultResponse.text()
+  expect(normalizedNoopFaultBody).toContain("<fault>")
+  expect(normalizedNoopFaultBody).toContain("target page is unchanged")
+
+  const afterNormalizedNoopBody = await expectOriginalPage()
+  expect(afterNormalizedNoopBody).not.toContain(
+    "Normalized noop content should not persist"
+  )
+  expect(afterNormalizedNoopBody).not.toContain(
+    "<value><string>xmlrpc-normalized-noop</string></value>"
   )
 
   const parentFaultResponse = await request.post("/xml-rpc-api.php", {
@@ -1098,22 +1153,33 @@ test("XML-RPC page saves preflight parent and rename failures without mutation",
   expect(parentFaultBody).toContain("<fault>")
   expect(parentFaultBody).toContain("parent page does not exist")
 
-  const afterParentFault = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcPagesGetOneForPageRequest(slug),
-    headers: xmlRpcHeaders
-  })
-  expect(afterParentFault.status()).toBe(200)
-  const afterParentBody = await afterParentFault.text()
-  expect(afterParentBody).toContain(
-    "<name>content</name><value><string>Original preflight content.</string></value>"
-  )
-  expect(afterParentBody).toContain("<value><string>xmlrpc-preflight</string></value>")
+  const afterParentBody = await expectOriginalPage()
   expect(afterParentBody).not.toContain("Parent fault content should not persist")
   expect(afterParentBody).not.toContain(
     "<value><string>xmlrpc-parent-mutated</string></value>"
   )
-  expect(afterParentBody).toContain(
-    "<name>parent_fullname</name><value><string>fixture-parent-root</string></value>"
+
+  const selfParentFaultResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: slug,
+      title: "Self parent title should not persist",
+      content: "Self parent content should not persist.",
+      tags: ["verification", "xmlrpc-self-parent"],
+      parentFullname: slug.toUpperCase(),
+      saveMode: "update",
+      revisionComment: "xmlrpc preflight self parent fault"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(selfParentFaultResponse.status()).toBe(200)
+  const selfParentFaultBody = await selfParentFaultResponse.text()
+  expect(selfParentFaultBody).toContain("<fault>")
+  expect(selfParentFaultBody).toContain("page cannot parent itself")
+
+  const afterSelfParentBody = await expectOriginalPage()
+  expect(afterSelfParentBody).not.toContain("Self parent content should not persist")
+  expect(afterSelfParentBody).not.toContain(
+    "<value><string>xmlrpc-self-parent</string></value>"
   )
 })
 

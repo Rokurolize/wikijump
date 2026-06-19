@@ -40,24 +40,18 @@ use crate::models::text_block::{
 };
 use crate::types::TextBlockType;
 use sea_orm::ActiveEnum;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
+use uuid::Uuid;
 
 /// Write out the S3 filename for this hosted text block.
 ///
 /// This allows reusing a buffer, since we need to write out several
 /// and don't need the string other than for running the S3 operation.
 ///
-/// They all take the format of `<PAGE ID>_<BLOCK TYPE>_<BLOCK INDEX>`.
+/// They all take the format of `<PAGE ID>_<BLOCK TYPE>_<BLOCK INDEX>_<UUID>`.
 /// These are always 1-indexed, since that's how they're addressed via URL.
-/// To give some examples of filenames, consider we have a page with ID
-/// 12345 which has 2 code blocks and 3 html blocks. The objects in the bucket
-/// would be:
 ///
-/// * `12345_code_1`
-/// * `12345_code_2`
-/// * `12345_html_1`
-/// * `12345_html_2`
-/// * `12345_html_3`
+/// Older rows may use the legacy `<PAGE ID>_<BLOCK TYPE>_<BLOCK INDEX>` form.
 macro_rules! format_filename {
     ($buffer:expr, $page_id:expr, $index:expr, $block_type:expr $(,)?) => {{
         let buffer = &mut $buffer;
@@ -67,7 +61,8 @@ macro_rules! format_filename {
 
         buffer.clear();
         assert_ne!(index, 0, "Text block indices must be 1-indexed!");
-        str_write!(buffer, "{page_id}_{block_type}_{index}");
+        let uuid = Uuid::new_v4();
+        str_write!(buffer, "{page_id}_{block_type}_{index}_{uuid}");
     }};
 }
 
@@ -118,52 +113,38 @@ impl TextBlockService {
             }};
         }
 
-        let existing_blocks = TextBlockTable::find()
+        let existing_filenames = TextBlockTable::find()
             .select_only()
-            .column(text_block::Column::BlockIndex)
             .column(text_block::Column::S3Filename)
             .filter(
                 Condition::all()
                     .add(text_block::Column::PageId.eq(page_id))
                     .add(text_block::Column::BlockType.eq(block_type)),
             )
-            .into_tuple::<(i16, String)>()
+            .into_tuple::<String>()
             .all(txn)
             .await
-            .or_raise(make_error)?
-            .into_iter()
-            .collect::<BTreeMap<_, _>>();
-        let max_index = blocks.len().add(1).try_into_i16().or_raise(make_error)?;
+            .or_raise(make_error)?;
 
         // If there's no additional work for us, quit early
 
-        if blocks.is_empty() && existing_blocks.is_empty() {
+        if blocks.is_empty() && existing_filenames.is_empty() {
             debug!("Not inserting any blocks, no prior blocks to remove");
             return Ok(());
         }
 
-        // As described above, we delete these extra blocks from S3.
-        // If there are more or the same number of blocks now,
-        // then this will do nothing.
-
-        for filename in existing_blocks
-            .range(max_index..)
-            .map(|(_, filename)| filename)
-        {
-            debug!("Deleting now-out-of-range S3 text block {filename}");
-            bucket.delete_object(filename).await.or_raise(make_error)?;
-        }
-
         // Upload the new text blocks to S3.
-        // This also replaces the existing S3 objects,
-        // which is why we don't have to delete everything above.
+        // These use fresh object names instead of replacing the existing S3
+        // objects. The surrounding request transaction may still roll back
+        // after this method returns, so keeping the old objects intact is what
+        // prevents committed rows from pointing at overwritten or deleted data.
         //
         // While we're at it, we can also create the models to be
         // inserted to the database.
 
-        let max_index_usize = max_index.try_into_usize().or_raise(make_error)?;
-        let mut models = Vec::with_capacity(max_index_usize);
-        let mut previous_block_names = HashSet::with_capacity(max_index_usize);
+        let mut models = Vec::with_capacity(blocks.len());
+        let mut uploaded_filenames = Vec::with_capacity(blocks.len());
+        let mut previous_block_names = HashSet::with_capacity(blocks.len());
         for (index, block) in blocks.iter().enumerate() {
             let &TextBlock {
                 text,
@@ -176,16 +157,18 @@ impl TextBlockService {
             let index = index.add(1).try_into_i16().or_raise(make_error)?;
 
             // Upload text block to S3
-            let existing_filename = existing_blocks.get(&index);
-            let filename = match existing_filename {
-                Some(filename) => filename.as_str(),
-                None => filename!(index),
-            };
+            let filename = filename!(index).to_owned();
             debug!("Uploading new S3 text block {filename} ({mime})");
-            bucket
-                .put_object_with_content_type(filename, text.as_bytes(), mime)
+            match bucket
+                .put_object_with_content_type(&filename, text.as_bytes(), mime)
                 .await
-                .or_raise(make_error)?;
+            {
+                Ok(_) => uploaded_filenames.push(filename.clone()),
+                Err(error) => {
+                    cleanup_uploaded_text_blocks(bucket, &uploaded_filenames).await;
+                    return StdResult::<(), _>::Err(error).or_raise(make_error);
+                }
+            }
 
             // Deny invalid block names
             if let Some(mut value) = name {
@@ -199,7 +182,7 @@ impl TextBlockService {
                 block_type: Set(block_type),
                 page_id: Set(page_id),
                 block_index: Set(index),
-                s3_filename: Set(filename.to_owned()),
+                s3_filename: Set(filename),
                 block_name: Set(name.map(String::from)),
                 text_type: Set(text_type.map(String::from)),
             });
@@ -210,7 +193,7 @@ impl TextBlockService {
         // This doesn't require us to know which need to be kept
         // because we're just INSERTing over all of it.
 
-        let DeleteResult { rows_affected } = TextBlockTable::delete_many()
+        let DeleteResult { rows_affected } = match TextBlockTable::delete_many()
             .filter(
                 Condition::all()
                     .add(text_block::Column::BlockType.eq(block_type))
@@ -218,20 +201,34 @@ impl TextBlockService {
             )
             .exec(txn)
             .await
-            .or_raise(make_error)?;
+        {
+            Ok(result) => result,
+            Err(error) => {
+                cleanup_uploaded_text_blocks(bucket, &uploaded_filenames).await;
+                return StdResult::<(), _>::Err(error).or_raise(make_error);
+            }
+        };
 
         debug_assert_eq!(
             rows_affected,
-            existing_blocks.len() as u64,
+            existing_filenames.len() as u64,
             "Deleted row count does not match previous text block row count",
         );
 
+        if !existing_filenames.is_empty() {
+            debug!(
+                "Replaced {} text block rows for page ID {}; stale S3 objects are preserved until post-commit cleanup is available",
+                existing_filenames.len(),
+                page_id,
+            );
+        }
+
         // Finally, insert the batch of new text block rows, then return.
         if !models.is_empty() {
-            TextBlockTable::insert_many(models)
-                .exec(txn)
-                .await
-                .or_raise(make_error)?;
+            if let Err(error) = TextBlockTable::insert_many(models).exec(txn).await {
+                cleanup_uploaded_text_blocks(bucket, &uploaded_filenames).await;
+                return StdResult::<(), _>::Err(error).or_raise(make_error);
+            }
         }
 
         Ok(())
@@ -285,6 +282,53 @@ impl TextBlockService {
         }
     }
 
+    /// Gets the index and associated S3 name for a block accessed via index.
+    pub async fn get_block_at_index(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+        block_type: TextBlockType,
+        index: i16,
+    ) -> Result<Option<TextBlockIndex>> {
+        info!(
+            "Looking for a {} text block on page ID {} with index {}",
+            block_type_name(block_type),
+            page_id,
+            index,
+        );
+
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to find a {} text block on page ID {} with index {}",
+                    block_type_name(block_type),
+                    page_id,
+                    index,
+                ),
+                ErrorType::TextBlock,
+            )
+        };
+
+        let block = TextBlockTable::find()
+            .select_only()
+            .column(text_block::Column::BlockIndex)
+            .column(text_block::Column::S3Filename)
+            .filter(
+                Condition::all()
+                    .add(text_block::Column::PageId.eq(page_id))
+                    .add(text_block::Column::BlockType.eq(block_type))
+                    .add(text_block::Column::BlockIndex.eq(index)),
+            )
+            .into_tuple::<(i16, String)>()
+            .one(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        match block {
+            None => Ok(None),
+            Some((index, s3_filename)) => Ok(Some(TextBlockIndex { index, s3_filename })),
+        }
+    }
+
     /// Delete all hosted text blocks stored for a page.
     ///
     /// This is run when a page is deleted, since the page
@@ -292,7 +336,6 @@ impl TextBlockService {
     /// becomes unnecessary.
     pub async fn delete_blocks(ctx: &ServiceContext<'_>, page_id: i64) -> Result<()> {
         let txn = ctx.transaction();
-        let bucket = ctx.s3_tblocks_bucket();
 
         let make_error = || {
             Error::new(
@@ -310,20 +353,33 @@ impl TextBlockService {
             .await
             .or_raise(make_error)?;
 
-        for filename in &filenames {
-            debug!("Deleting text block {filename}");
-            bucket.delete_object(filename).await.or_raise(make_error)?;
-        }
-
-        // Now that S3 is cleared out, we can delete all the
-        // database rows in one sweep.
+        // Delete the database rows in one sweep. Keep the S3 objects intact
+        // because the outer page-delete transaction may still roll back after
+        // this method returns, and there is no post-commit cleanup hook here.
         TextBlockTable::delete_many()
             .filter(text_block::Column::PageId.eq(page_id))
             .exec(txn)
             .await
             .or_raise(make_error)?;
 
+        if !filenames.is_empty() {
+            debug!(
+                "Deleted {} text block rows for page ID {}; stale S3 objects are preserved until post-commit cleanup is available",
+                filenames.len(),
+                page_id,
+            );
+        }
+
         Ok(())
+    }
+}
+
+async fn cleanup_uploaded_text_blocks(bucket: &s3::bucket::Bucket, filenames: &[String]) {
+    for filename in filenames {
+        debug!("Cleaning up staged S3 text block {filename}");
+        if let Err(error) = bucket.delete_object(filename).await {
+            warn!("Failed to clean up staged S3 text block {filename}: {error}");
+        }
     }
 }
 

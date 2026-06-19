@@ -37,6 +37,7 @@ use tokio::sync::OnceCell;
 /// Per-request context derived from HTTP headers by the middleware layer.
 #[derive(Debug, Clone, Default)]
 pub struct RequestContext {
+    pub is_external: bool,
     pub session: Option<SessionModel>,
     pub user_id: Option<i64>,
     pub site_id: Option<i64>,

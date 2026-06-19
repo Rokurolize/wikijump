@@ -368,6 +368,11 @@ function resultRow(result) {
 
 async function main() {
   const args = parseArgs(process.argv);
+  if (args.assetFile) {
+    await fs.access(args.assetFile).catch(() => {
+      throw new Error(`--asset-file does not exist: ${args.assetFile}`);
+    });
+  }
   const chromium = loadPlaywrightChromium();
   const rows = await readTsv(args.input);
   const selected = rows.slice(args.offset, args.offset + args.limit);

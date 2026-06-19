@@ -349,9 +349,12 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("page_select", page_select);
     register!("page_edit", page_edit);
     register!("page_edit_permission", page_edit_permission);
+    register!("page_permission_check", page_permission_check);
+    register!("xmlrpc_page_save", xmlrpc_page_save);
     register!("page_delete", page_delete);
     register!("page_move", page_move);
     register!("page_rollback", page_rollback);
+    register!("page_undo", page_undo);
     register!("page_rerender", page_rerender);
     register!("page_restore", page_restore);
     register!("page_set_layout", page_set_layout);
@@ -488,6 +491,7 @@ async fn build_request(
     };
 
     Ok(RequestContext {
+        is_external: true,
         session,
         user_id,
         site_id: headers.site_id,

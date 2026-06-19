@@ -26,7 +26,8 @@ use crate::types::TextBlockType;
 struct GetIndexInput {
     page_id: i64,
     block_type: TextBlockType,
-    name: String,
+    name: Option<String>,
+    index: Option<i16>,
 }
 
 pub async fn text_block_get_index(
@@ -37,17 +38,40 @@ pub async fn text_block_get_index(
         page_id,
         block_type,
         name,
+        index,
     } = parse!(params);
 
-    TextBlockService::get_block_index(ctx, page_id, block_type, &name)
-        .await
-        .or_raise(|| {
-            Error::new(
-                format!(
-                    "failed to get text block {:?} '{}' for page ID {}",
-                    block_type, name, page_id,
-                ),
-                ErrorType::Request,
-            )
-        })
+    match (name, index) {
+        (Some(name), None) => {
+            TextBlockService::get_block_index(ctx, page_id, block_type, &name)
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        format!(
+                            "failed to get text block {:?} '{}' for page ID {}",
+                            block_type, name, page_id,
+                        ),
+                        ErrorType::Request,
+                    )
+                })
+        }
+        (None, Some(index)) => {
+            TextBlockService::get_block_at_index(ctx, page_id, block_type, index)
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        format!(
+                            "failed to get text block {:?} index {} for page ID {}",
+                            block_type, index, page_id,
+                        ),
+                        ErrorType::Request,
+                    )
+                })
+        }
+        _ => Err(Error::new(
+            "text block lookup requires exactly one of name or index",
+            ErrorType::Request,
+        )
+        .into()),
+    }
 }

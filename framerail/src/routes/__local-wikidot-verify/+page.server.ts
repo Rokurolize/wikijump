@@ -31,6 +31,23 @@ function assertLocalVerificationEnabled() {
   throw error(404, "Not found")
 }
 
+function editorFormState(formData: FormData) {
+  return {
+    slug: normalizeSlug(formData.get("slug")),
+    title: String(formData.get("title") ?? "").trim(),
+    tags: normalizeTags(formData.get("tags")),
+    parent: normalizeSlug(formData.get("parent")),
+    wikitext: String(formData.get("wikitext") ?? "")
+  }
+}
+
+function importFormState(formData: FormData) {
+  return {
+    prefix: normalizeSlug(formData.get("prefix")) || "ui-authoring-import-",
+    bundleText: String(formData.get("bundle") ?? "")
+  }
+}
+
 export async function load({ url }) {
   assertLocalVerificationEnabled()
 
@@ -64,33 +81,27 @@ export const actions: Actions = {
   preview: async ({ request }) => {
     assertLocalVerificationEnabled()
 
+    let state: ReturnType<typeof editorFormState> | null = null
     try {
       const formData = await request.formData()
-      const slug = normalizeSlug(formData.get("slug"))
-      const title = String(formData.get("title") ?? "").trim()
-      const tags = normalizeTags(formData.get("tags"))
-      const parent = normalizeSlug(formData.get("parent"))
-      const wikitext = String(formData.get("wikitext") ?? "")
+      state = editorFormState(formData)
       const preview = await renderPreviewPage({
-        slug,
-        title: title || slug,
-        wikitext,
-        tags
+        slug: state.slug,
+        title: state.title || state.slug,
+        wikitext: state.wikitext,
+        tags: state.tags
       })
       return {
         type: "preview",
-        slug,
-        title,
-        tags,
-        parent,
-        wikitext,
+        ...state,
         preview,
         previewHtml: preview.html,
-        warnings: previewWarnings(wikitext)
+        warnings: previewWarnings(state.wikitext)
       }
     } catch (error) {
       return fail(500, {
         type: "preview",
+        ...(state ?? {}),
         message: error instanceof Error ? error.message : String(error)
       })
     }
@@ -99,37 +110,36 @@ export const actions: Actions = {
   savePage: async ({ request }) => {
     assertLocalVerificationEnabled()
 
+    let state: ReturnType<typeof editorFormState> | null = null
     try {
       const formData = await request.formData()
-      const slug = normalizeSlug(formData.get("slug"))
-      const title = String(formData.get("title") ?? "").trim()
-      const wikitext = String(formData.get("wikitext") ?? "")
-      const parent = normalizeSlug(formData.get("parent"))
-      if (!slug || !title)
-        return fail(400, { type: "savePage", message: "Slug and title are required." })
+      state = editorFormState(formData)
+      if (!state.slug || !state.title) {
+        return fail(400, {
+          type: "savePage",
+          ...state,
+          message: "Slug and title are required."
+        })
+      }
 
-      const tags = normalizeTags(formData.get("tags"))
       const saved = await savePage({
-        slug,
-        title,
-        wikitext,
-        tags,
-        parent: parent || undefined
+        slug: state.slug,
+        title: state.title,
+        wikitext: state.wikitext,
+        tags: state.tags,
+        parent: state.parent || undefined
       })
 
       return {
         type: "savePage",
-        slug,
-        title,
-        tags,
-        parent,
-        wikitext,
+        ...state,
         saved,
         history: await getHistory(saved.page.site_id, saved.page.page_id)
       }
     } catch (error) {
       return fail(500, {
         type: "savePage",
+        ...(state ?? {}),
         message: error instanceof Error ? error.message : String(error)
       })
     }
@@ -282,16 +292,17 @@ export const actions: Actions = {
   importBundle: async ({ request }) => {
     assertLocalVerificationEnabled()
 
+    let state: ReturnType<typeof importFormState> | null = null
     try {
       const formData = await request.formData()
-      const prefix = normalizeSlug(formData.get("prefix")) || "ui-authoring-import-"
-      const bundleText = String(formData.get("bundle") ?? "")
-      const bundle = JSON.parse(bundleText)
-      const imported = await importBundle(bundle, prefix)
-      return { type: "importBundle", imported }
+      state = importFormState(formData)
+      const bundle = JSON.parse(state.bundleText)
+      const imported = await importBundle(bundle, state.prefix)
+      return { type: "importBundle", ...state, imported }
     } catch (error) {
       return fail(500, {
         type: "importBundle",
+        ...(state ?? {}),
         message: error instanceof Error ? error.message : String(error)
       })
     }

@@ -62,6 +62,7 @@ async fn basic_edit() {
         user_id: Some(ADMIN_USER_ID),
         site_id: Some(site_id),
         page_reference: Some(Reference::Slug(PAGE_SLUG.into())),
+        ..Default::default()
     });
 
     // Create page
@@ -138,6 +139,7 @@ async fn basic_edit() {
         user_id: Some(ADMIN_USER_ID),
         site_id: None,
         page_reference: None,
+        ..Default::default()
     });
 
     let output = run_endpoint!(
@@ -479,6 +481,7 @@ async fn set_listpages_test_tags(
         user_id: Some(ADMIN_USER_ID),
         site_id: Some(site_id),
         page_reference: Some(Reference::Slug(std::borrow::Cow::Owned(slug.to_owned()))),
+        ..Default::default()
     });
 
     let output = run_endpoint!(
@@ -1024,6 +1027,7 @@ async fn page_undo_reverses_selected_revision_and_preserves_later_changes() {
         user_id: Some(ADMIN_USER_ID),
         site_id: Some(site_id),
         page_reference: Some(Reference::Slug(slug.into())),
+        ..Default::default()
     });
 
     let created = run_endpoint!(
@@ -1219,6 +1223,7 @@ async fn basic_move() {
         user_id: Some(ADMIN_USER_ID),
         site_id: Some(site_id),
         page_reference: Some(Reference::Slug(PAGE_SLUG_1.into())),
+        ..Default::default()
     });
 
     // Create page
@@ -1326,6 +1331,7 @@ async fn basic_move() {
         user_id: Some(ADMIN_USER_ID),
         site_id: Some(site_id),
         page_reference: Some(Reference::Slug(PAGE_SLUG_2.into())),
+        ..Default::default()
     });
 
     let output = run_endpoint!(

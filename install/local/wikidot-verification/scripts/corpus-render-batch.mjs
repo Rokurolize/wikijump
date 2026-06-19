@@ -121,6 +121,28 @@ function requireEnv(name) {
   return value;
 }
 
+function requireSiteResult(result, siteSlug) {
+  const site = result?.site ?? result;
+  if (!site || !Number.isFinite(Number(site.site_id))) {
+    throw new Error(`site_get did not return a usable site_id for ${siteSlug}`);
+  }
+  return site;
+}
+
+function requireLoginResult(result) {
+  if (
+    !result ||
+    typeof result.session_token !== "string" ||
+    !result.session_token
+  ) {
+    throw new Error("login did not return a usable session_token");
+  }
+  if (result.needs_mfa) {
+    throw new Error("login requires MFA and cannot run this batch");
+  }
+  return result;
+}
+
 function normalizeTags(value) {
   return splitPipe(value)
     .filter((tag) => !tag.startsWith("_"))
@@ -815,13 +837,18 @@ async function main() {
 
   try {
     await client.call("ping", {});
-    site = await client.call("site_get", { site: siteSlug });
-    login = await client.call("login", {
-      name_or_email: adminEmail,
-      password: adminPassword,
-      ip_address: IP_ADDRESS,
-      user_agent: "wikidot-corpus-render-batch/0.1",
-    });
+    site = requireSiteResult(
+      await client.call("site_get", { site: siteSlug }),
+      siteSlug,
+    );
+    login = requireLoginResult(
+      await client.call("login", {
+        name_or_email: adminEmail,
+        password: adminPassword,
+        ip_address: IP_ADDRESS,
+        user_agent: "wikidot-corpus-render-batch/0.1",
+      }),
+    );
   } catch (error) {
     await writeSetupFailureOutputs({
       args,
