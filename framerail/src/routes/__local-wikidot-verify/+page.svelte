@@ -6,21 +6,16 @@
   const defaultSource =
     "+ UI Authoring Basic\n\nThis page was created through the local authoring lab.\n\n[[include ui-authoring-fragment-alpha]]\n"
 
-  const formTagText = () =>
-    Array.isArray(form?.tags) ? form.tags.join(" ") : form?.tags
+  const formTagText = () => (Array.isArray(form?.tags) ? form.tags.join(" ") : form?.tags)
   const currentPage = () => form?.saved?.page ?? form?.page ?? data.lab.page
   const currentParents = () => form?.saved?.parents ?? form?.parents ?? data.lab.parents
   const currentHistory = () => form?.history ?? data.lab.history
 
   let slug = $state((() => data.lab.selectedSlug)())
   let title = $state((() => data.lab.page?.title ?? defaultTitle)())
-  let tags = $state(
-    (() => data.lab.page?.tags?.join(" ") ?? defaultTags)()
-  )
+  let tags = $state((() => data.lab.page?.tags?.join(" ") ?? defaultTags)())
   let parent = $state((() => data.lab.parents?.[0] ?? "")())
-  let wikitext = $state(
-    (() => data.lab.page?.wikitext ?? defaultSource)()
-  )
+  let wikitext = $state((() => data.lab.page?.wikitext ?? defaultSource)())
 
   $effect(() => {
     slug = form?.slug ?? data.lab.selectedSlug
@@ -272,7 +267,10 @@
       <ul class="page-list">
         {#each data.lab.scenarioPages as page}
           <li>
-            <a class:missing={!page.exists} href={`/__local-wikidot-verify?slug=${page.slug}`}>
+            <a
+              class:missing={!page.exists}
+              href={`/__local-wikidot-verify?slug=${page.slug}`}
+            >
               {page.slug}
             </a>
             <span>{page.exists ? `r${page.revisionNumber}` : "missing"}</span>

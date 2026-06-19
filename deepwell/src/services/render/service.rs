@@ -1069,17 +1069,16 @@ impl RenderService {
                     .as_ref()
                     .is_some_and(|site| site_matches_wikidot_slug(site, site_slug));
 
-                if current_site_matches {
-                    if let Some(source) = Self::fetch_include_source_from_site(
+                if current_site_matches
+                    && let Some(source) = Self::fetch_include_source_from_site(
                         ctx,
                         current_site_id,
                         current_site_slug,
                         page_ref.page(),
                     )
                     .await?
-                    {
-                        return Ok(Some(source));
-                    }
+                {
+                    return Ok(Some(source));
                 }
 
                 let Some(site) =
@@ -1483,9 +1482,6 @@ fn list_pages_body_variables_supported(body: &str) -> bool {
                     | "page_unix_name"
                     | "fullname"
                     | "full_slug"
-                    | "created_by"
-                    | "createdby"
-                    | "rating"
                     | "index"
                     | "total"
             )
