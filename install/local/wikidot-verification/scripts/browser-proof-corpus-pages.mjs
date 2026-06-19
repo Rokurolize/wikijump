@@ -47,20 +47,29 @@ function parseArgs(argv) {
 
   for (let index = 2; index < argv.length; index += 1) {
     const arg = argv[index];
+    const nextValue = (flag) => {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error(`${flag} requires a value`);
+      }
+      index += 1;
+      return value;
+    };
+
     if (arg === "--input") {
-      args.input = path.resolve(argv[++index]);
+      args.input = path.resolve(nextValue(arg));
     } else if (arg === "--base-url") {
-      args.baseUrl = argv[++index].replace(/\/$/, "");
+      args.baseUrl = nextValue(arg).replace(/\/$/, "");
     } else if (arg === "--output-dir") {
-      args.outputDir = path.resolve(argv[++index]);
+      args.outputDir = path.resolve(nextValue(arg));
     } else if (arg === "--offset") {
-      args.offset = Number.parseInt(argv[++index], 10);
+      args.offset = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--limit") {
-      args.limit = Number.parseInt(argv[++index], 10);
+      args.limit = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--timeout-ms") {
-      args.timeoutMs = Number.parseInt(argv[++index], 10);
+      args.timeoutMs = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--slug-column") {
-      args.slugColumn = argv[++index];
+      args.slugColumn = nextValue(arg);
     } else if (arg === "--headed") {
       args.headed = true;
     } else if (arg === "--help") {

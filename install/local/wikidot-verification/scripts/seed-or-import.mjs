@@ -430,7 +430,7 @@ async function runEditProof(client, siteId, sessionToken, editProof) {
     }
     current = await maybeGetPage(client, siteId, editProof.slug);
   } else {
-    await editPage(
+    const edited = await editPage(
       client,
       siteId,
       initialPage,
@@ -443,6 +443,11 @@ async function runEditProof(client, siteId, sessionToken, editProof) {
       sessionToken,
       "local wikidot compatibility verifier reset for edit proof",
     );
+    if (edited.parser_errors?.length) {
+      throw new Error(
+        `Parser errors while resetting ${editProof.slug}: ${JSON.stringify(edited.parser_errors)}`,
+      );
+    }
     actions.push("reset-initial");
     current = await maybeGetPage(client, siteId, editProof.slug);
   }

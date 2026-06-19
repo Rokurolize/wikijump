@@ -464,10 +464,10 @@ function xmlRpcFilesSaveOneRequest({
 </methodCall>`
 }
 
-function xmlRpcPostsSelectRequest(page: string, replyTo?: string) {
+function xmlRpcPostsSelectRequest(page: string, replyTo?: string | number) {
   const replyToMember =
     replyTo !== undefined
-      ? `<member><name>reply_to</name><value><string>${replyTo}</string></value></member>`
+      ? `<member><name>reply_to</name><value>${xmlRpcStringOrInt(replyTo)}</value></member>`
       : ""
 
   return `<?xml version="1.0"?>
@@ -487,7 +487,7 @@ function xmlRpcPostsSelectRequest(page: string, replyTo?: string) {
 </methodCall>`
 }
 
-function xmlRpcPostsGetRequest(posts: string[]) {
+function xmlRpcPostsGetRequest(posts: (string | number)[]) {
   return `<?xml version="1.0"?>
 <methodCall>
   <methodName>posts.get</methodName>
@@ -497,13 +497,17 @@ function xmlRpcPostsGetRequest(posts: string[]) {
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
           <member><name>posts</name><value><array><data>${posts
-            .map((post) => `<value><string>${post}</string></value>`)
+            .map((post) => `<value>${xmlRpcStringOrInt(post)}</value>`)
             .join("")}</data></array></value></member>
         </struct>
       </value>
     </param>
   </params>
 </methodCall>`
+}
+
+function xmlRpcStringOrInt(value: string | number) {
+  return typeof value === "number" ? `<int>${value}</int>` : `<string>${value}</string>`
 }
 
 const xmlRpcHeaders = {
@@ -1249,6 +1253,13 @@ test("XML-RPC endpoint returns user identity and page comments", async ({ reques
   })
   expect(topLevelResponse.status()).toBe(200)
   expect(await topLevelResponse.text()).toContain(`<value><int>${postId}</int></value>`)
+
+  const numericReplyToResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsSelectRequest(pageSlug, postId),
+    headers: xmlRpcHeaders
+  })
+  expect(numericReplyToResponse.status()).toBe(200)
+  expect(await numericReplyToResponse.text()).toContain("<array><data></data></array>")
 
   const postsGetResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcPostsGetRequest([postId]),

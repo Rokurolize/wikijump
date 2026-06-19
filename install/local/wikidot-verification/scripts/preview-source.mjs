@@ -279,6 +279,29 @@ async function createOrUpdatePreviewPage(
     });
     parserErrors = created.parser_errors ?? [];
     action = "created";
+    if (preview.tags.length > 0) {
+      const tagged = await client.call(
+        "page_edit",
+        {
+          site_id: siteId,
+          page: created.page_id,
+          last_revision_id: created.revision_id,
+          revision_comments: "v5 preview-source apply initial tags",
+          user_id: ADMIN_USER_ID,
+          ip_address: IP_ADDRESS,
+          wikitext: source,
+          title: preview.title,
+          tags: preview.tags,
+        },
+        {
+          sessionToken,
+          siteId,
+          page: preview.slug,
+        },
+      );
+      parserErrors = parserErrors.concat(tagged?.parser_errors ?? []);
+      action = "created-tagged";
+    }
   } else if (
     existing.wikitext !== source ||
     existing.title !== preview.title ||
@@ -578,9 +601,7 @@ async function main() {
   const sourceSlug =
     args.slug ||
     manifestRow?.slug ||
-    slugify(
-      path.basename(path.dirname(args.source)) || path.basename(args.source),
-    );
+    slugify(path.basename(args.source, path.extname(args.source)));
   const previewSlug = `${args.slugPrefix}${slugify(sourceSlug)}`;
   const title = args.title || manifestRow?.title || sourceSlug;
   const tags = normalizeTags(manifestRow?.tags || "");

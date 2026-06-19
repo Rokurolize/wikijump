@@ -227,7 +227,7 @@ async fn wikidot_site_include_uses_local_dependency_page_for_site_qualified_incl
         page_create,
         json!({
             "site_id": site.site.site_id,
-            "wikitext": "[[include :scp-wiki:theme:codex-include-fallback | hidetitle=a]]\nbody\n",
+            "wikitext": "[[include :scp-wiki:theme:codex-include-fallback | hidetitle=a]]\nInclude consumer body marker.\n",
             "title": "Include Consumer",
             "alt_title": null,
             "slug": "include-consumer",
@@ -259,7 +259,7 @@ async fn wikidot_site_include_uses_local_dependency_page_for_site_qualified_incl
         "compiled page should include CSS from the local theme dependency: {html}"
     );
     assert!(
-        html.contains("body"),
+        html.contains("Include consumer body marker."),
         "compiled page should retain the consumer page body"
     );
     assert!(

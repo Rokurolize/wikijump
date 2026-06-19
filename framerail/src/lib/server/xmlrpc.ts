@@ -246,18 +246,23 @@ export async function handleXmlRpcRequest(request: Request): Promise<Response> {
 
 async function readXmlRpcRequestBody(request: Request): Promise<string> {
   const contentLength = request.headers.get("content-length")
+  let tooLarge = false
   if (contentLength !== null) {
+    const trimmedContentLength = contentLength.trim()
     const length = Number.parseInt(contentLength, 10)
     if (
-      !/^\d+$/.test(contentLength.trim()) ||
+      !/^\d+$/.test(trimmedContentLength) ||
       !Number.isFinite(length) ||
       length > XML_RPC_MAX_BODY_BYTES
     ) {
-      throw new XmlRpcFault(-32600, "XML-RPC request body is too large")
+      tooLarge = true
     }
   }
 
   if (!request.body) {
+    if (tooLarge) {
+      throw new XmlRpcFault(-32600, "XML-RPC request body is too large")
+    }
     return ""
   }
 
@@ -276,9 +281,15 @@ async function readXmlRpcRequestBody(request: Request): Promise<string> {
 
     byteLength += value.byteLength
     if (byteLength > XML_RPC_MAX_BODY_BYTES) {
-      throw new XmlRpcFault(-32600, "XML-RPC request body is too large")
+      tooLarge = true
     }
-    chunks.push(Buffer.from(value))
+    if (!tooLarge) {
+      chunks.push(Buffer.from(value))
+    }
+  }
+
+  if (tooLarge) {
+    throw new XmlRpcFault(-32600, "XML-RPC request body is too large")
   }
 
   return Buffer.concat(chunks).toString("utf8")
@@ -766,7 +777,7 @@ async function selectPosts(call: XmlRpcCall): Promise<number[]> {
 async function getPosts(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcValue }> {
   const params = getStructParam(call, 0, "params")
   const site = getRequiredStructString(params, "site")
-  const posts = getRequiredStructStringArray(params, "posts")
+  const posts = getRequiredStructStringOrIntArray(params, "posts")
 
   if (posts.length > 10) {
     throw new XmlRpcFault(-32602, "posts.get posts is limited to 10 entries")
@@ -1275,6 +1286,26 @@ function getRequiredStructStringArray(
     throw new XmlRpcFault(-32602, `Expected string array field: ${name}`)
   }
   return value
+}
+
+function getRequiredStructStringOrIntArray(
+  params: { [key: string]: XmlRpcValue },
+  name: string
+): string[] {
+  const value = params[name]
+  if (!Array.isArray(value)) {
+    throw new XmlRpcFault(-32602, `Expected string or integer array field: ${name}`)
+  }
+
+  return value.map((entry) => {
+    if (typeof entry === "string") {
+      return entry
+    }
+    if (typeof entry === "number" && Number.isInteger(entry)) {
+      return String(entry)
+    }
+    throw new XmlRpcFault(-32602, `Expected string or integer array field: ${name}`)
+  })
 }
 
 function getOptionalStructStringArray(

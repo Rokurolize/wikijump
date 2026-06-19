@@ -32,9 +32,10 @@ use crate::services::page::{
     SetPageLayout,
 };
 use crate::services::page_revision::RerenderType;
-use crate::services::permission::CheckPermissionContext;
+use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::types::{
-    Action, Bytes, FileOrder, PageDetails, PageId, Reference, RerenderDepth,
+    Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
+    Resource,
 };
 use futures::future::try_join_all;
 use sea_orm::prelude::TimeDateTimeWithTimeZone;
@@ -232,16 +233,31 @@ pub async fn page_tags_select(
         return Ok(Vec::new());
     }
 
+    let categories_by_id = CategoryService::get_all(ctx, site_id)
+        .await
+        .or_raise(make_error)?
+        .into_iter()
+        .map(|category| (category.category_id, category.slug))
+        .collect::<BTreeMap<_, _>>();
+    let viewable_category_ids =
+        viewable_page_category_ids(ctx, site_id, categories_by_id.keys().copied())
+            .await
+            .or_raise(make_error)?;
+    if viewable_category_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
     let category_ids = match categories {
         None => None,
         Some(categories) => {
             let selected_categories = categories.into_iter().collect::<BTreeSet<_>>();
-            let category_ids = CategoryService::get_all(ctx, site_id)
-                .await
-                .or_raise(make_error)?
-                .into_iter()
-                .filter(|category| selected_categories.contains(&category.slug))
-                .map(|category| category.category_id)
+            let category_ids = categories_by_id
+                .iter()
+                .filter_map(|(category_id, category)| {
+                    selected_categories
+                        .contains(category)
+                        .then_some(*category_id)
+                })
                 .collect::<Vec<_>>();
 
             if category_ids.is_empty() {
@@ -255,7 +271,8 @@ pub async fn page_tags_select(
     let txn = ctx.transaction();
     let mut page_query = Page::find()
         .filter(page::Column::SiteId.eq(site_id))
-        .filter(page::Column::DeletedAt.is_null());
+        .filter(page::Column::DeletedAt.is_null())
+        .filter(page::Column::PageCategoryId.is_in(viewable_category_ids));
 
     if let Some(category_ids) = category_ids {
         page_query = page_query.filter(page::Column::PageCategoryId.is_in(category_ids));
@@ -333,6 +350,7 @@ pub async fn page_select(
     let order = parse_page_select_order(order.as_deref())?;
     let needs_rating =
         rating_filter.is_some() || matches!(order.field, PageSelectOrderField::Rating);
+    let needs_created_by = created_by.is_some();
 
     if matches!(categories, Some(ref categories) if categories.is_empty())
         || matches!(tags_any, Some(ref tags) if tags.is_empty())
@@ -364,6 +382,13 @@ pub async fn page_select(
         .into_iter()
         .map(|category| (category.category_id, category.slug))
         .collect::<BTreeMap<_, _>>();
+    let viewable_category_ids =
+        viewable_page_category_ids(ctx, site_id, categories_by_id.keys().copied())
+            .await
+            .or_raise(make_error)?;
+    if viewable_category_ids.is_empty() {
+        return Ok(Vec::new());
+    }
 
     let selected_category_ids = selected_categories.as_ref().map(|selected_categories| {
         categories_by_id
@@ -404,7 +429,8 @@ pub async fn page_select(
 
     let mut page_query = Page::find()
         .filter(page::Column::SiteId.eq(site_id))
-        .filter(page::Column::DeletedAt.is_null());
+        .filter(page::Column::DeletedAt.is_null())
+        .filter(page::Column::PageCategoryId.is_in(viewable_category_ids));
     if let Some(category_ids) = selected_category_ids {
         page_query = page_query.filter(page::Column::PageCategoryId.is_in(category_ids));
     }
@@ -430,9 +456,7 @@ pub async fn page_select(
             .collect::<BTreeMap<_, _>>()
     };
 
-    let created_by_by_page_id = if page_ids.is_empty() {
-        BTreeMap::new()
-    } else {
+    let created_by_by_page_id = if needs_created_by && !page_ids.is_empty() {
         page_revision::Entity::find()
             .filter(page_revision::Column::SiteId.eq(site_id))
             .filter(page_revision::Column::PageId.is_in(page_ids.clone()))
@@ -443,21 +467,22 @@ pub async fn page_select(
             .into_iter()
             .map(|revision| (revision.page_id, revision.user_id))
             .collect::<BTreeMap<_, _>>()
+    } else {
+        BTreeMap::new()
     };
 
-    let parent_links = if page_ids.is_empty() {
-        Vec::new()
-    } else {
+    let child_parent_ids = if parent_filter.is_some() && !page_ids.is_empty() {
         page_parent::Entity::find()
             .filter(page_parent::Column::ChildPageId.is_in(page_ids.clone()))
             .all(txn)
             .await
             .or_raise(make_error)?
+            .into_iter()
+            .map(|link| (link.child_page_id, link.parent_page_id))
+            .collect::<BTreeSet<_>>()
+    } else {
+        BTreeSet::new()
     };
-    let child_parent_ids = parent_links
-        .iter()
-        .map(|link| (link.child_page_id, link.parent_page_id))
-        .collect::<BTreeSet<_>>();
 
     let rating_by_page_id = if needs_rating && !page_ids.is_empty() {
         ScoreService::scores_bulk(ctx, &page_ids)
@@ -543,6 +568,38 @@ pub async fn page_select(
     rows.sort_by(|left, right| order.compare(left, right));
 
     Ok(rows.into_iter().map(|row| row.slug).collect())
+}
+
+async fn viewable_page_category_ids(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    category_ids: impl IntoIterator<Item = i64>,
+) -> Result<BTreeSet<i64>> {
+    let permission_context = CheckPermissionContext {
+        user_id: ctx.request().user_id,
+        site_id,
+        page_reference: None,
+    };
+    let mut viewable = BTreeSet::new();
+
+    for category_id in category_ids {
+        let can_view = PermissionService::check_user_can(
+            ctx,
+            &permission_context,
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(category_id)),
+                action: Action::View,
+            },
+        )
+        .await?;
+
+        if can_view {
+            viewable.insert(category_id);
+        }
+    }
+
+    Ok(viewable)
 }
 
 #[derive(Debug, Copy, Clone)]

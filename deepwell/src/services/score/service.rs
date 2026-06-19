@@ -104,8 +104,8 @@ impl ScoreService {
         _ctx: &ServiceContext<'_>,
         _page_id: i64,
     ) -> Result<impl Scorer> {
-        // TODO
-        Ok(TestScorer)
+        // TODO: Select the scorer from site/page settings when those exist.
+        Ok(SumScorer)
     }
 
     /// Helper method for retrieving a `VoteMap` for a page.
@@ -134,6 +134,7 @@ impl ScoreService {
         }
 
         let counts = PageVote::find()
+            .select_only()
             .column(page_vote::Column::Value)
             .column_as(page_vote::Column::Value.count(), "count")
             .filter(condition)

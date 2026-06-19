@@ -33,17 +33,46 @@ use sea_orm::{
 };
 
 #[derive(Deserialize, Debug)]
+#[serde(untagged)]
+enum StringOrInteger {
+    String(String),
+    Integer(i64),
+}
+
+impl StringOrInteger {
+    fn into_string(self) -> String {
+        match self {
+            Self::String(value) => value,
+            Self::Integer(value) => value.to_string(),
+        }
+    }
+
+    fn into_integer(self, field: &str) -> Result<i64> {
+        match self {
+            Self::Integer(value) => Ok(value),
+            Self::String(value) => value.parse::<i64>().map_err(|_| {
+                Error::new(
+                    format!("invalid forum post {field} value '{value}'"),
+                    ErrorType::BadRequest,
+                )
+                .into()
+            }),
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
 pub struct ForumPostSelectInput {
     site_id: i64,
     page: Option<String>,
-    reply_to: Option<String>,
+    reply_to: Option<StringOrInteger>,
     created_by: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ForumPostGetInput {
     site_id: i64,
-    posts: Vec<String>,
+    posts: Vec<StringOrInteger>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -103,6 +132,7 @@ pub async fn forum_post_select(
         return Ok(Vec::new());
     };
 
+    let reply_to = reply_to.map(StringOrInteger::into_string);
     let parent_filter = parse_parent_post_filter(reply_to.as_deref())?;
     let mut condition = Condition::all()
         .add(forum_post::Column::SiteId.eq(site_id))
@@ -148,7 +178,7 @@ pub async fn forum_post_get(
         .into());
     }
 
-    let post_ids = parse_post_ids(&posts)?;
+    let post_ids = parse_post_ids(posts)?;
     if post_ids.is_empty() {
         return Ok(Vec::new());
     }
@@ -367,18 +397,10 @@ fn parse_parent_post_filter(reply_to: Option<&str>) -> Result<ParentPostFilter> 
     }
 }
 
-fn parse_post_ids(posts: &[String]) -> Result<Vec<i64>> {
+fn parse_post_ids(posts: Vec<StringOrInteger>) -> Result<Vec<i64>> {
     posts
-        .iter()
-        .map(|post| {
-            post.parse::<i64>().map_err(|_| {
-                Error::new(
-                    format!("invalid forum post ID '{post}'"),
-                    ErrorType::BadRequest,
-                )
-                .into()
-            })
-        })
+        .into_iter()
+        .map(|post| post.into_integer("ID"))
         .collect()
 }
 
