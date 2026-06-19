@@ -117,7 +117,7 @@ function tsv(value) {
 
 function safeName(value) {
   return String(value || "page")
-    .replace(/[^a-zA-Z0-9._:-]+/g, "_")
+    .replace(/[^a-zA-Z0-9._-]+/g, "_")
     .slice(0, 180);
 }
 

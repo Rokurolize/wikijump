@@ -450,6 +450,29 @@ async function runEditProof(client, siteId, sessionToken, editProof) {
       );
     }
     current = await maybeGetPage(client, siteId, editProof.slug);
+    const initialTags = normalizeTags(editProof.initialTags);
+    if (!sameTags(current.tags, initialTags)) {
+      const tagged = await editPage(
+        client,
+        siteId,
+        initialPage,
+        current,
+        {
+          wikitext: initialSource,
+          title: editProof.title,
+          tags: initialTags,
+        },
+        sessionToken,
+        "local wikidot compatibility verifier apply initial tags for edit proof",
+      );
+      if (tagged.parser_errors?.length) {
+        throw new Error(
+          `Parser errors while tagging ${editProof.slug}: ${JSON.stringify(tagged.parser_errors)}`,
+        );
+      }
+      actions.push("tagged-initial");
+      current = await maybeGetPage(client, siteId, editProof.slug);
+    }
   } else {
     const edited = await editPage(
       client,

@@ -108,11 +108,12 @@ export const actions: Actions = {
       if (!slug || !title)
         return fail(400, { type: "savePage", message: "Slug and title are required." })
 
+      const tags = normalizeTags(formData.get("tags"))
       const saved = await savePage({
         slug,
         title,
         wikitext,
-        tags: normalizeTags(formData.get("tags")),
+        tags,
         parent: parent || undefined
       })
 
@@ -120,7 +121,7 @@ export const actions: Actions = {
         type: "savePage",
         slug,
         title,
-        tags: normalizeTags(formData.get("tags")),
+        tags,
         parent,
         wikitext,
         saved,

@@ -356,6 +356,7 @@ async fn find_page_thread(
             .filter(
                 Condition::all()
                     .add(forum_thread::Column::SiteId.eq(site_id))
+                    .add(forum_thread::Column::PageId.eq(page.page_id))
                     .add(forum_thread::Column::DeletedAt.is_null()),
             )
             .one(ctx.transaction())

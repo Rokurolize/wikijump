@@ -125,6 +125,10 @@ function slugSegment(value) {
   );
 }
 
+function fileSegment(value) {
+  return slugSegment(value).replace(/[:<>"/\\|?*\x00-\x1F]+/g, "-");
+}
+
 async function readTsv(filePath) {
   const text = await fs.readFile(filePath, "utf8");
   const lines = text.split(/\r?\n/).filter(Boolean);
@@ -211,7 +215,7 @@ async function runWorkflow(browser, row, args, dirs, absoluteIndex) {
       .filter((tag) => !tag.startsWith("_"))
       .slice(0, 6),
   ].join(" ");
-  const fileBase = `${String(absoluteIndex).padStart(4, "0")}-${slugSegment(row.slug)}`;
+  const fileBase = `${String(absoluteIndex).padStart(4, "0")}-${fileSegment(row.slug)}`;
   const labUrl = `${args.baseUrl}/__local-wikidot-verify?slug=${encodeURIComponent(slug)}`;
   const stages = [];
   const record = (name, ok, detail = "") => stages.push({ name, ok, detail });

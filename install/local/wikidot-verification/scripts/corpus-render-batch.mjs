@@ -530,7 +530,7 @@ async function preloadDependencies({
   const results = [];
   for (const slug of pending) {
     const row = manifestBySlug.get(slug);
-    const importSlug = `${slugPrefix}${row.slug}`;
+    const importSlug = row.slug;
     const start = performance.now();
     try {
       const source = await fs.readFile(row.source_path, "utf8");
