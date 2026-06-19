@@ -35,6 +35,8 @@ function parseArgs(argv) {
       const value = argv[++index];
       if (!value || value.startsWith("--"))
         throw new Error("--canary-count requires a value");
+      if (!/^\d+$/.test(value))
+        throw new Error("--canary-count must be a positive integer");
       args.canaryCount = Number.parseInt(value, 10);
     } else if (arg === "--help") {
       printHelpAndExit();

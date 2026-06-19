@@ -28,28 +28,44 @@ function parseArgs(argv) {
 
   for (let index = 2; index < argv.length; index += 1) {
     const arg = argv[index];
+    const nextValue = (flag) => {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error(`${flag} requires a value`);
+      }
+      index += 1;
+      return value;
+    };
+    const nextInteger = (flag) => {
+      const value = nextValue(flag);
+      if (!/^\d+$/.test(value)) {
+        throw new Error(`${flag} requires a non-negative integer`);
+      }
+      return Number.parseInt(value, 10);
+    };
+
     if (arg === "--manifest") {
-      args.manifest = path.resolve(argv[++index]);
+      args.manifest = path.resolve(nextValue(arg));
     } else if (arg === "--output-dir") {
-      args.outputDir = path.resolve(argv[++index]);
+      args.outputDir = path.resolve(nextValue(arg));
     } else if (arg === "--batch-size") {
-      args.batchSize = Number.parseInt(argv[++index], 10);
+      args.batchSize = nextInteger(arg);
     } else if (arg === "--offset") {
-      args.offset = Number.parseInt(argv[++index], 10);
+      args.offset = nextInteger(arg);
     } else if (arg === "--limit") {
-      args.limit = Number.parseInt(argv[++index], 10);
+      args.limit = nextInteger(arg);
     } else if (arg === "--rpc-url") {
-      args.rpcUrl = argv[++index];
+      args.rpcUrl = nextValue(arg);
     } else if (arg === "--site") {
-      args.siteSlug = argv[++index];
+      args.siteSlug = nextValue(arg);
     } else if (arg === "--slug-prefix") {
-      args.slugPrefix = argv[++index];
+      args.slugPrefix = nextValue(arg);
     } else if (arg === "--preload-dependencies") {
       args.preloadDependencies = true;
     } else if (arg === "--max-dependencies") {
-      args.maxDependencies = Number.parseInt(argv[++index], 10);
+      args.maxDependencies = nextInteger(arg);
     } else if (arg === "--rpc-timeout-ms") {
-      args.rpcTimeoutMs = Number.parseInt(argv[++index], 10);
+      args.rpcTimeoutMs = nextInteger(arg);
     } else if (arg === "--help") {
       printHelpAndExit();
     } else {

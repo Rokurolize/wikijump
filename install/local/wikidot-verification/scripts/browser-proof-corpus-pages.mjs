@@ -11,8 +11,17 @@ const repoRoot = path.resolve(scriptDir, "../../../..");
 
 function loadPlaywrightChromium() {
   const candidates = [
-    { base: path.join(repoRoot, "framerail", "package.json"), names: ["@playwright/test", "playwright"] },
-    { base: path.join(os.homedir(), ".npm-global/lib/node_modules/playwright/package.json"), names: ["playwright"] },
+    {
+      base: path.join(repoRoot, "framerail", "package.json"),
+      names: ["@playwright/test", "playwright"],
+    },
+    {
+      base: path.join(
+        os.homedir(),
+        ".npm-global/lib/node_modules/playwright/package.json",
+      ),
+      names: ["playwright"],
+    },
   ];
 
   const failures = [];
@@ -24,7 +33,9 @@ function loadPlaywrightChromium() {
           const mod = candidateRequire(name);
           if (mod.chromium) return mod.chromium;
         } catch (error) {
-          failures.push(`${candidate.base} -> ${name}: ${error.code || error.message}`);
+          failures.push(
+            `${candidate.base} -> ${name}: ${error.code || error.message}`,
+          );
         }
       }
     } catch (error) {
@@ -32,7 +43,9 @@ function loadPlaywrightChromium() {
     }
   }
 
-  throw new Error(`Unable to load Playwright chromium. Tried:\n${failures.join("\n")}`);
+  throw new Error(
+    `Unable to load Playwright chromium. Tried:\n${failures.join("\n")}`,
+  );
 }
 
 function parseArgs(argv) {
@@ -82,12 +95,15 @@ function parseArgs(argv) {
   if (!args.input) throw new Error("--input is required");
   if (!Number.isFinite(args.offset) || args.offset < 0) args.offset = 0;
   if (!Number.isFinite(args.limit) || args.limit < 0) args.limit = 100;
-  if (!Number.isFinite(args.timeoutMs) || args.timeoutMs <= 0) args.timeoutMs = 45000;
+  if (!Number.isFinite(args.timeoutMs) || args.timeoutMs <= 0)
+    args.timeoutMs = 45000;
   return args;
 }
 
 function printHelpAndExit() {
-  console.log("Usage: node install/local/wikidot-verification/scripts/browser-proof-corpus-pages.mjs --input preview-results.tsv --output-dir DIR [--base-url URL] [--offset 0] [--limit 100] [--timeout-ms 45000] [--slug-column preview_slug] [--headed]");
+  console.log(
+    "Usage: node install/local/wikidot-verification/scripts/browser-proof-corpus-pages.mjs --input preview-results.tsv --output-dir DIR [--base-url URL] [--offset 0] [--limit 100] [--timeout-ms 45000] [--slug-column preview_slug] [--headed]",
+  );
   process.exit(0);
 }
 
@@ -98,7 +114,9 @@ function tsv(value) {
 }
 
 function safeName(value) {
-  return String(value || "page").replace(/[^a-zA-Z0-9._:-]+/g, "_").slice(0, 180);
+  return String(value || "page")
+    .replace(/[^a-zA-Z0-9._:-]+/g, "_")
+    .slice(0, 180);
 }
 
 async function readTsv(filePath) {
@@ -116,7 +134,7 @@ async function readTsv(filePath) {
 }
 
 function slugFromRow(row, slugColumn) {
-  if (slugColumn && row[slugColumn]) return row[slugColumn];
+  if (slugColumn) return row[slugColumn] || "";
   if (row.preview_slug) return row.preview_slug;
   if (row.import_slug) return row.import_slug;
   if (row.notes) {
@@ -142,7 +160,11 @@ async function runBrowserProof(browser, row, args, dirs, absoluteIndex) {
   const consoleMessages = [];
 
   page.on("request", (request) => {
-    network.requests.push({ method: request.method(), url: request.url(), resourceType: request.resourceType() });
+    network.requests.push({
+      method: request.method(),
+      url: request.url(),
+      resourceType: request.resourceType(),
+    });
   });
   page.on("requestfailed", (request) => {
     network.failedRequests.push({
@@ -154,7 +176,10 @@ async function runBrowserProof(browser, row, args, dirs, absoluteIndex) {
   });
   page.on("response", (response) => {
     if (response.status() >= 400) {
-      network.badResponses.push({ status: response.status(), url: response.url() });
+      network.badResponses.push({
+        status: response.status(),
+        url: response.url(),
+      });
     }
   });
   page.on("console", (message) => {
@@ -171,15 +196,31 @@ async function runBrowserProof(browser, row, args, dirs, absoluteIndex) {
   let title = "";
   let error = "";
   try {
-    if (!renderedSlug) throw new Error("No rendered slug found; provide --slug-column or preview/import rows.");
-    const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: args.timeoutMs });
+    if (!renderedSlug)
+      throw new Error(
+        "No rendered slug found; provide --slug-column or preview/import rows.",
+      );
+    const response = await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: args.timeoutMs,
+    });
     httpStatus = response?.status() ?? null;
     title = await page.title().catch(() => "");
-    bodyText = await page.locator("body").innerText({ timeout: Math.min(10000, args.timeoutMs) }).catch(() => "");
-    await page.screenshot({ path: path.join(dirs.screenshots, `${fileBase}.png`), fullPage: true });
+    bodyText = await page
+      .locator("body")
+      .innerText({ timeout: Math.min(10000, args.timeoutMs) })
+      .catch(() => "");
+    await page.screenshot({
+      path: path.join(dirs.screenshots, `${fileBase}.png`),
+      fullPage: true,
+    });
 
-    const hasErrorPage = /Internal Server Error|Application error|Not Found|Page not found/i.test(bodyText);
-    ok = Boolean(response && response.ok()) &&
+    const hasErrorPage =
+      /Internal Server Error|Application error|Not Found|Page not found/i.test(
+        bodyText,
+      );
+    ok =
+      Boolean(response && response.ok()) &&
       bodyText.trim().length > 0 &&
       !hasErrorPage &&
       network.failedRequests.length === 0 &&
@@ -187,7 +228,12 @@ async function runBrowserProof(browser, row, args, dirs, absoluteIndex) {
     status = ok ? "pass" : "failed-browser";
   } catch (caught) {
     error = caught.stack || caught.message || String(caught);
-    await page.screenshot({ path: path.join(dirs.screenshots, `${fileBase}-error.png`), fullPage: true }).catch(() => {});
+    await page
+      .screenshot({
+        path: path.join(dirs.screenshots, `${fileBase}-error.png`),
+        fullPage: true,
+      })
+      .catch(() => {});
   } finally {
     await page.close().catch(() => {});
   }
@@ -239,7 +285,9 @@ function resultRow(result) {
     result.consoleMessageCount,
     result.detailPath,
     result.error,
-  ].map(tsv).join("\t");
+  ]
+    .map(tsv)
+    .join("\t");
 }
 
 async function main() {
@@ -258,7 +306,15 @@ async function main() {
   const results = [];
   try {
     for (const [relativeIndex, row] of selected.entries()) {
-      results.push(await runBrowserProof(browser, row, args, dirs, args.offset + relativeIndex));
+      results.push(
+        await runBrowserProof(
+          browser,
+          row,
+          args,
+          dirs,
+          args.offset + relativeIndex,
+        ),
+      );
     }
   } finally {
     await browser.close();
@@ -275,17 +331,28 @@ async function main() {
     pageCount: results.length,
     passed: results.filter((result) => result.ok).length,
     failed: results.filter((result) => !result.ok).length,
-    statusCounts: Object.fromEntries([...new Set(results.map((result) => result.status))]
-      .sort()
-      .map((status) => [status, results.filter((result) => result.status === status).length])),
+    statusCounts: Object.fromEntries(
+      [...new Set(results.map((result) => result.status))]
+        .sort()
+        .map((status) => [
+          status,
+          results.filter((result) => result.status === status).length,
+        ]),
+    ),
   };
 
-  await fs.writeFile(path.join(args.outputDir, "browser-results.tsv"), [
-    "index\tsource_slug\trendered_slug\turl\tstatus\tok\thttp_status\tbody_text_bytes\tduration_ms\tfailed_requests\tbad_responses\tconsole_messages\tdetail_path\terror",
-    ...results.map(resultRow),
-    "",
-  ].join("\n"));
-  await fs.writeFile(path.join(args.outputDir, "browser-summary.json"), JSON.stringify(summary, null, 2) + "\n");
+  await fs.writeFile(
+    path.join(args.outputDir, "browser-results.tsv"),
+    [
+      "index\tsource_slug\trendered_slug\turl\tstatus\tok\thttp_status\tbody_text_bytes\tduration_ms\tfailed_requests\tbad_responses\tconsole_messages\tdetail_path\terror",
+      ...results.map(resultRow),
+      "",
+    ].join("\n"),
+  );
+  await fs.writeFile(
+    path.join(args.outputDir, "browser-summary.json"),
+    JSON.stringify(summary, null, 2) + "\n",
+  );
   console.log(JSON.stringify(summary, null, 2));
   if (summary.failed > 0) process.exit(1);
 }

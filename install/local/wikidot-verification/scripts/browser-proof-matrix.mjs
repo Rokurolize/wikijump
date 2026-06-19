@@ -54,7 +54,9 @@ function loadPlaywrightChromium() {
 
 function parseArgs(argv) {
   const args = {
-    baseUrl: process.env.WIKIDOT_VERIFY_BASE_URL || "https://scpwiki.localhost",
+    baseUrl: (
+      process.env.WIKIDOT_VERIFY_BASE_URL || "https://scpwiki.localhost"
+    ).replace(/\/$/, ""),
     outputDir: path.resolve(process.cwd(), "wikidot-browser-proof"),
   };
 
@@ -100,6 +102,9 @@ function proofEntries(manifest) {
   const pages = manifest.pages
     .filter((page) => page.proof)
     .map((page) => ({ ...page, proof: page.proof }));
+  if (!manifest.editProof) {
+    return pages;
+  }
   return [
     ...pages,
     {
@@ -114,6 +119,8 @@ function isLocalUrl(url) {
   const parsed = new URL(url);
   return (
     parsed.hostname === "127.0.0.1" ||
+    parsed.hostname === "::1" ||
+    parsed.hostname === "[::1]" ||
     parsed.hostname === "localhost" ||
     parsed.hostname.endsWith(".localhost") ||
     parsed.hostname === "0.0.0.0"
@@ -121,9 +128,10 @@ function isLocalUrl(url) {
 }
 
 function isAllowedExternalUrl(url, proof) {
+  const parsed = new URL(url);
+  if (!["http:", "https:"].includes(parsed.protocol)) return true;
   if (isLocalUrl(url)) return true;
 
-  const parsed = new URL(url);
   const allowedHosts = new Set([
     "d3g0gp89917ko0.cloudfront.net",
     "cdn.scpwiki.com",

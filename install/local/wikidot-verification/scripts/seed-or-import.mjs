@@ -14,6 +14,8 @@ const corpusRoot = path.join(verifierRoot, "corpus");
 const manifestPath = path.join(corpusRoot, "manifest.json");
 const ADMIN_USER_ID = -1;
 const IP_ADDRESS = "127.0.0.1";
+const RPC_TIMEOUT_MS = 30000;
+const PRESIGNED_PUT_TIMEOUT_MS = 30000;
 
 function parseArgs(argv) {
   const args = {
@@ -22,16 +24,25 @@ function parseArgs(argv) {
 
   for (let index = 2; index < argv.length; index += 1) {
     const arg = argv[index];
+    const nextValue = (flag) => {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error(`${flag} requires a value`);
+      }
+      index += 1;
+      return value;
+    };
+
     if (arg === "--output-dir") {
-      args.outputDir = path.resolve(argv[++index]);
+      args.outputDir = path.resolve(nextValue(arg));
     } else if (arg === "--rpc-url") {
-      args.rpcUrl = argv[++index];
+      args.rpcUrl = nextValue(arg);
     } else if (arg === "--site") {
-      args.siteSlug = argv[++index];
+      args.siteSlug = nextValue(arg);
     } else if (arg === "--force-files") {
       args.forceFiles = true;
     } else if (arg === "--presigned-connect-url") {
-      args.presignedConnectUrl = argv[++index];
+      args.presignedConnectUrl = nextValue(arg);
     } else if (arg === "--help") {
       printHelpAndExit();
     } else {
@@ -94,16 +105,19 @@ class DeepwellClient {
     if (context.siteId) headers["X-Deepwell-Site-Id"] = String(context.siteId);
     if (context.page) headers["X-Deepwell-Page"] = String(context.page);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
     const response = await fetch(this.rpcUrl, {
       method: "POST",
       headers,
+      signal: controller.signal,
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: this.nextId++,
         method,
         params,
       }),
-    });
+    }).finally(() => clearTimeout(timeout));
 
     const bodyText = await response.text();
     let body;
@@ -389,6 +403,13 @@ async function putPresigned(presignUrl, buffer) {
       reject(
         new Error(
           `Presigned PUT connection failed: connect=${requestUrl.origin} signed_host=${signed.host} ${error.message}`,
+        ),
+      );
+    });
+    request.setTimeout(PRESIGNED_PUT_TIMEOUT_MS, () => {
+      request.destroy(
+        new Error(
+          `Presigned PUT timed out: connect=${requestUrl.origin} signed_host=${signed.host}`,
         ),
       );
     });
