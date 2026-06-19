@@ -700,6 +700,14 @@ async function createXmlRpcFixtureUser(stamp: number) {
     bypass_email_verification: true,
     ip_address: "127.0.0.1"
   })
+  await execDatabaseSql(`
+INSERT INTO user_role (user_id, role_id, site_id, assigned_by)
+SELECT ${Number(user.user_id)}, role_id, site_id, -1
+FROM role
+WHERE site_id = (SELECT site_id FROM site WHERE slug = 'scp-wiki')
+  AND name = 'member'
+ON CONFLICT DO NOTHING;
+`)
 
   return { ...user, email, password }
 }
