@@ -171,10 +171,11 @@ jobs:
       - name: System Dependencies
         run: sudo apt update && sudo apt install libmagic-dev
 
+      - name: Install cargo-machete
+        run: cargo install cargo-machete --version 0.9.1 --locked
+
       - name: Machete
-        uses: bnjbvr/cargo-machete@main
-        with:
-          args: 'deepwell'
+        run: cargo machete deepwell
 
       - name: Rustfmt
         run: cd deepwell && cargo fmt --all -- --check
