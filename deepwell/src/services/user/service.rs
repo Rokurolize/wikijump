@@ -98,7 +98,7 @@ impl UserService {
                         .do_nothing()
                         .to_owned(),
                 )
-                .exec(txn)
+                .exec_without_returning(txn)
                 .await
                 .or_raise(make_error)?;
                 debug!("Ensured known_user foreign key entry exists for ID {user_id}");
