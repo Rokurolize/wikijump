@@ -224,11 +224,11 @@ impl TextBlockService {
         }
 
         // Finally, insert the batch of new text block rows, then return.
-        if !models.is_empty() {
-            if let Err(error) = TextBlockTable::insert_many(models).exec(txn).await {
-                cleanup_uploaded_text_blocks(bucket, &uploaded_filenames).await;
-                return StdResult::<(), _>::Err(error).or_raise(make_error);
-            }
+        if !models.is_empty()
+            && let Err(error) = TextBlockTable::insert_many(models).exec(txn).await
+        {
+            cleanup_uploaded_text_blocks(bucket, &uploaded_filenames).await;
+            return StdResult::<(), _>::Err(error).or_raise(make_error);
         }
 
         Ok(())
