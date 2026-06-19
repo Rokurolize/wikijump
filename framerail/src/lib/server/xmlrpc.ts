@@ -14,6 +14,7 @@ interface XmlRpcCall {
 
 interface XmlElement {
   content: string
+  start: number
   end: number
   selfClosing: boolean
 }
@@ -25,7 +26,12 @@ interface BasicAuthCredentials {
 
 interface MethodDefinition {
   help: string
-  signatures: string[][]
+  signatures: MethodSignature[]
+}
+
+interface MethodSignature {
+  returnType: string
+  parameters: string[]
 }
 
 interface DeepwellCategory {
@@ -52,12 +58,18 @@ interface DeepwellPage {
   compiled_body_html?: string | null
 }
 
+interface DeepwellPageRevision {
+  user_id: number
+}
+
 interface DeepwellLoginOutput {
   session_token: string
+  needs_mfa: boolean
 }
 
 interface DeepwellSession {
   user_id: number
+  restricted: boolean
 }
 
 interface DeepwellUser {
@@ -106,81 +118,88 @@ type DeepwellStringParams = {
   [key: string]: string | string[] | undefined
 }
 
-const XML_RPC_WRITE_USER_ID = -1
 const XML_RPC_WRITE_IP_ADDRESS = "127.0.0.1"
+const XML_RPC_MAX_BODY_BYTES = 1_000_000
+const XML_RPC_MAX_NESTING_DEPTH = 32
+const XML_RPC_MAX_NODE_COUNT = 10_000
+const XML_RPC_MAX_SCALAR_BYTES = 262_144
 
 const XML_RPC_HEADERS = {
   "content-type": "text/xml; charset=utf-8"
 }
 
+function methodSignature(returnType: string, ...parameters: string[]): MethodSignature[] {
+  return [{ returnType, parameters }]
+}
+
 const METHOD_DEFINITIONS: Record<string, MethodDefinition> = {
   "system.listMethods": {
     help: "List XML-RPC methods exposed by this Wikijump endpoint.",
-    signatures: [["array"]]
+    signatures: methodSignature("array")
   },
   "system.methodHelp": {
     help: "Return help text for an XML-RPC method.",
-    signatures: [["string", "string"]]
+    signatures: methodSignature("string", "string")
   },
   "system.methodSignature": {
     help: "Return XML-RPC signature metadata for a method.",
-    signatures: [["array", "string"]]
+    signatures: methodSignature("array", "string")
   },
   "system.multicall": {
     help: "Execute multiple XML-RPC calls and return per-call results or faults.",
-    signatures: [["array", "array"]]
+    signatures: methodSignature("array", "array")
   },
   "categories.select": {
     help: "Select categories from a Wikidot-compatible site.",
-    signatures: [["array", "struct"]]
+    signatures: methodSignature("array", "struct")
   },
   "tags.select": {
     help: "Select tags from a Wikidot-compatible site.",
-    signatures: [["array", "struct"]]
+    signatures: methodSignature("array", "struct")
   },
   "pages.select": {
     help: "Select pages from a Wikidot-compatible site.",
-    signatures: [["array", "struct"]]
+    signatures: methodSignature("array", "struct")
   },
   "pages.get_meta": {
     help: "Fetch metadata for a batch of Wikidot-compatible pages.",
-    signatures: [["struct", "struct"]]
+    signatures: methodSignature("struct", "struct")
   },
   "pages.get_one": {
     help: "Fetch one Wikidot-compatible page.",
-    signatures: [["struct", "struct"]]
+    signatures: methodSignature("struct", "struct")
   },
   "pages.save_one": {
     help: "Create or update one Wikidot-compatible page.",
-    signatures: [["struct", "struct"]]
+    signatures: methodSignature("struct", "struct")
   },
   "files.select": {
     help: "Select files attached to a Wikidot-compatible page.",
-    signatures: [["array", "struct"]]
+    signatures: methodSignature("array", "struct")
   },
   "files.get_meta": {
     help: "Fetch metadata for Wikidot-compatible page files.",
-    signatures: [["struct", "struct"]]
+    signatures: methodSignature("struct", "struct")
   },
   "files.get_one": {
     help: "Fetch one Wikidot-compatible page file.",
-    signatures: [["struct", "struct"]]
+    signatures: methodSignature("struct", "struct")
   },
   "files.save_one": {
     help: "Create or update one Wikidot-compatible page file.",
-    signatures: [["struct", "struct"]]
+    signatures: methodSignature("struct", "struct")
   },
   "users.get_me": {
     help: "Return the authenticated Wikidot-compatible API user.",
-    signatures: [["struct"]]
+    signatures: methodSignature("struct")
   },
   "posts.select": {
     help: "Select Wikidot-compatible forum posts.",
-    signatures: [["array", "struct"]]
+    signatures: methodSignature("array", "struct")
   },
   "posts.get": {
     help: "Fetch one Wikidot-compatible forum post.",
-    signatures: [["struct", "struct"]]
+    signatures: methodSignature("struct", "struct")
   }
 }
 
@@ -212,7 +231,12 @@ export async function handleXmlRpcRequest(request: Request): Promise<Response> {
   }
 
   try {
-    const call = parseXmlRpcCall(await request.text())
+    const body = await request.text()
+    if (Buffer.byteLength(body, "utf8") > XML_RPC_MAX_BODY_BYTES) {
+      throw new XmlRpcFault(-32600, "XML-RPC request body is too large")
+    }
+
+    const call = parseXmlRpcCall(body)
     const result = await dispatchXmlRpcCall(call, auth)
     return xmlResponse(serializeMethodResponse(result))
   } catch (error) {
@@ -231,12 +255,16 @@ async function dispatchXmlRpcCall(
 ): Promise<XmlRpcValue> {
   switch (call.methodName) {
     case "system.listMethods":
+      assertParamCount(call, 0)
       return METHOD_NAMES
     case "system.methodHelp":
+      assertParamCount(call, 1)
       return getMethodDefinition(getStringParam(call, 0, "methodName")).help
     case "system.methodSignature":
+      assertParamCount(call, 1)
       return getMethodDefinition(getStringParam(call, 0, "methodName")).signatures
     case "system.multicall":
+      assertParamCount(call, 1)
       if (!options.allowMulticall) {
         throw new XmlRpcFault(-32600, "Nested system.multicall calls are not supported")
       }
@@ -406,7 +434,10 @@ async function getPagesMeta(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcVa
 
       const parentFullname = await getDeepwellParentFullname(siteId, page.slug)
       const postSummary = await getDeepwellForumPostSummary(siteId, page.slug)
-      return [page.slug, buildXmlRpcPageMeta(page, parentFullname, postSummary)]
+      return [
+        page.slug,
+        await buildXmlRpcPageMeta(siteId, page, parentFullname, postSummary)
+      ]
     })
   )
 
@@ -459,6 +490,8 @@ async function savePageOne(
     throw new XmlRpcFault(406, "Argument page invalid: page does not exist")
   }
 
+  await preflightPageSave(siteId, page?.slug ?? pageReference, parentFullname, renameAs)
+
   if (!page) {
     await requestDeepwell(
       "page_create",
@@ -470,7 +503,7 @@ async function savePageOne(
         slug: pageReference,
         layout: "wikidot",
         revision_comments: revisionComment,
-        user_id: XML_RPC_WRITE_USER_ID,
+        user_id: writeContext.userId,
         ip_address: XML_RPC_WRITE_IP_ADDRESS,
         bypass_filter: true
       },
@@ -498,7 +531,7 @@ async function savePageOne(
         page: page.slug,
         last_revision_id: page.revision_id,
         revision_comments: revisionComment,
-        user_id: XML_RPC_WRITE_USER_ID,
+        user_id: writeContext.userId,
         ip_address: XML_RPC_WRITE_IP_ADDRESS,
         ...editBody
       },
@@ -521,7 +554,7 @@ async function savePageOne(
         last_revision_id: page.revision_id,
         new_slug: renameAs,
         revision_comments: revisionComment,
-        user_id: XML_RPC_WRITE_USER_ID,
+        user_id: writeContext.userId,
         ip_address: XML_RPC_WRITE_IP_ADDRESS
       },
       { ...writeContext, page: page.slug }
@@ -561,7 +594,7 @@ async function getFilesMeta(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcVa
   const entries = await Promise.all(
     files.map(async (fileName): Promise<[string, XmlRpcValue] | null> => {
       const file = await getDeepwellFile(siteId, page.page_id, fileName, false)
-      return file ? [file.name, buildXmlRpcFileMeta(site, page.slug, file)] : null
+      return file ? [file.name, await buildXmlRpcFileMeta(page.slug, file)] : null
     })
   )
 
@@ -583,7 +616,7 @@ async function getFileOne(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcValu
   }
 
   return {
-    ...buildXmlRpcFileMeta(site, page.slug, file),
+    ...(await buildXmlRpcFileMeta(page.slug, file)),
     content: deepwellFileContentBase64(file)
   }
 }
@@ -618,8 +651,8 @@ async function saveFileOne(
     throw new XmlRpcFault(406, "Argument file invalid: file does not exist")
   }
 
-  const contentBytes = Buffer.from(content, "base64")
-  const pendingBlobId = await uploadXmlRpcFileContent(contentBytes)
+  const contentBytes = decodeStrictBase64(content, "content")
+  const pendingBlobId = await uploadXmlRpcFileContent(contentBytes, writeContext.userId)
 
   if (existing) {
     await requestDeepwell(
@@ -627,7 +660,7 @@ async function saveFileOne(
       {
         site_id: siteId,
         page_id: page.page_id,
-        user_id: XML_RPC_WRITE_USER_ID,
+        user_id: writeContext.userId,
         file_id: existing.file_id,
         last_revision_id: existing.revision_id,
         uploaded_blob_id: pendingBlobId,
@@ -642,7 +675,7 @@ async function saveFileOne(
       {
         site_id: siteId,
         page_id: page.page_id,
-        user_id: XML_RPC_WRITE_USER_ID,
+        user_id: writeContext.userId,
         name: fileName,
         uploaded_blob_id: pendingBlobId,
         revision_comments: comment || revisionComment,
@@ -656,7 +689,7 @@ async function saveFileOne(
   if (!saved) {
     throw new XmlRpcFault(406, "Argument file invalid: file does not exist")
   }
-  return buildXmlRpcFileMeta(site, page.slug, saved)
+  return buildXmlRpcFileMeta(page.slug, saved)
 }
 
 async function getUserMe(
@@ -749,7 +782,7 @@ async function buildXmlRpcPage(
     : null
 
   return {
-    ...buildXmlRpcPageMeta(page, parentFullname, postSummary),
+    ...(await buildXmlRpcPageMeta(siteId, page, parentFullname, postSummary)),
     parent_title: parentTitle,
     children: Array.isArray(children) ? children.length : 0,
     content: page.wikitext ?? "",
@@ -762,9 +795,9 @@ async function getDeepwellSiteId(site: string): Promise<number> {
   return deepwellSite.site_id
 }
 
-async function uploadXmlRpcFileContent(content: Buffer): Promise<string> {
+async function uploadXmlRpcFileContent(content: Buffer, userId: number): Promise<string> {
   const upload = (await requestDeepwell("blob_upload", {
-    user_id: XML_RPC_WRITE_USER_ID,
+    user_id: userId,
     blob_size: content.length
   })) as DeepwellBlobUpload
 
@@ -838,34 +871,54 @@ async function getXmlRpcWriteContext(
   auth: BasicAuthCredentials,
   siteId: number,
   page: string
-): Promise<{ sessionToken: string; siteId: number; page: string }> {
-  const login = (await requestDeepwell("login", {
-    name_or_email: auth.username,
-    password: auth.password,
-    ip_address: XML_RPC_WRITE_IP_ADDRESS,
-    user_agent: "wikijump-xmlrpc-api/0.1"
-  })) as DeepwellLoginOutput
+): Promise<{ sessionToken: string; siteId: number; page: string; userId: number }> {
+  const authenticated = await authenticateXmlRpcUser(auth)
 
   return {
-    sessionToken: login.session_token,
+    sessionToken: authenticated.sessionToken,
+    userId: authenticated.user.user_id,
     siteId,
     page
   }
 }
 
-async function getAuthenticatedUser(auth: BasicAuthCredentials): Promise<DeepwellUser> {
-  const login = (await requestDeepwell("login", {
-    name_or_email: auth.username,
-    password: auth.password,
-    ip_address: XML_RPC_WRITE_IP_ADDRESS,
-    user_agent: "wikijump-xmlrpc-api/0.1"
-  })) as DeepwellLoginOutput
+async function authenticateXmlRpcUser(auth: BasicAuthCredentials): Promise<{
+  sessionToken: string
+  session: DeepwellSession
+  user: DeepwellUser
+}> {
+  let login: DeepwellLoginOutput
+  try {
+    login = (await client.request("login", {
+      name_or_email: auth.username,
+      password: auth.password,
+      ip_address: XML_RPC_WRITE_IP_ADDRESS,
+      user_agent: "wikijump-xmlrpc-api/0.1"
+    })) as DeepwellLoginOutput
+  } catch (_) {
+    throw new XmlRpcFault(401, "Invalid HTTP Basic authentication", 401, {
+      "www-authenticate": 'Basic realm="Wikijump XML-RPC"'
+    })
+  }
+
+  if (login.needs_mfa) {
+    throw new XmlRpcFault(401, "XML-RPC Basic authentication does not support MFA", 401, {
+      "www-authenticate": 'Basic realm="Wikijump XML-RPC"'
+    })
+  }
 
   const session = (await requestDeepwell("session_get", [
     login.session_token
   ])) as DeepwellSession | null
-  if (!session) {
-    throw new XmlRpcFault(-32603, "Authenticated XML-RPC session was not found")
+  if (!session || session.restricted) {
+    throw new XmlRpcFault(
+      401,
+      "XML-RPC Basic authentication did not create a full session",
+      401,
+      {
+        "www-authenticate": 'Basic realm="Wikijump XML-RPC"'
+      }
+    )
   }
 
   const user = (await requestDeepwell("user_get", {
@@ -875,7 +928,11 @@ async function getAuthenticatedUser(auth: BasicAuthCredentials): Promise<Deepwel
     throw new XmlRpcFault(-32603, "Authenticated XML-RPC user was not found")
   }
 
-  return user
+  return { sessionToken: login.session_token, session, user }
+}
+
+async function getAuthenticatedUser(auth: BasicAuthCredentials): Promise<DeepwellUser> {
+  return (await authenticateXmlRpcUser(auth)).user
 }
 
 async function requestDeepwell(
@@ -975,6 +1032,30 @@ async function getDeepwellParents(siteId: number, page: string): Promise<string[
   return parents
 }
 
+async function preflightPageSave(
+  siteId: number,
+  page: string,
+  parentFullname: string | null,
+  renameAs: string | null
+): Promise<void> {
+  if (parentFullname !== null && parentFullname !== "-") {
+    const parent = await getDeepwellPage(siteId, parentFullname, false)
+    if (!parent) {
+      throw new XmlRpcFault(
+        406,
+        "Argument parent_fullname invalid: parent page does not exist"
+      )
+    }
+  }
+
+  if (renameAs !== null && renameAs !== page) {
+    const existing = await getDeepwellPage(siteId, renameAs, false)
+    if (existing) {
+      throw new XmlRpcFault(409, "Argument rename_as invalid: target page already exists")
+    }
+  }
+}
+
 async function replaceDeepwellParents(
   siteId: number,
   page: string,
@@ -1005,20 +1086,24 @@ async function replaceDeepwellParents(
   )
 }
 
-function buildXmlRpcPageMeta(
+async function buildXmlRpcPageMeta(
+  siteId: number,
   page: DeepwellPage,
   parentFullname: string | null,
   postSummary?: DeepwellForumPostSummary
-): { [key: string]: XmlRpcValue } {
-  const userId = String(page.revision_user_id)
+): Promise<{ [key: string]: XmlRpcValue }> {
+  const createdBy = await getDeepwellUserSlug(
+    await getDeepwellPageCreatorId(siteId, page.page_id, page.revision_user_id)
+  )
+  const updatedBy = await getDeepwellUserSlug(page.revision_user_id)
 
   return {
     fullname: page.slug,
     title: page.title,
     created_at: page.page_created_at,
-    created_by: userId,
+    created_by: createdBy,
     updated_at: page.page_updated_at ?? page.revision_created_at ?? page.page_created_at,
-    updated_by: userId,
+    updated_by: updatedBy,
     parent_fullname: parentFullname,
     tags: page.tags,
     rating: Math.round(page.rating),
@@ -1029,19 +1114,43 @@ function buildXmlRpcPageMeta(
   }
 }
 
-function buildXmlRpcFileMeta(
-  site: string,
+async function getDeepwellPageCreatorId(
+  siteId: number,
+  pageId: number,
+  fallbackUserId: number
+): Promise<number> {
+  const revision = (await requestDeepwell("page_revision_get", {
+    site_id: siteId,
+    page_id: pageId,
+    revision_number: 0,
+    details: {}
+  })) as DeepwellPageRevision | null
+
+  return revision?.user_id ?? fallbackUserId
+}
+
+async function getDeepwellUserSlug(userId: number): Promise<string> {
+  const user = (await requestDeepwell("user_get", {
+    user: userId
+  })) as DeepwellUser | null
+
+  return user?.slug ?? String(userId)
+}
+
+async function buildXmlRpcFileMeta(
   page: string,
   file: DeepwellFile
-): { [key: string]: XmlRpcValue } {
+): Promise<{ [key: string]: XmlRpcValue }> {
+  const uploadedBy = await getDeepwellUserSlug(file.revision_user_id)
+
   return {
     size: file.size,
     comment: file.revision_comments,
     mime_type: file.mime,
     mime_description: file.mime,
-    uploaded_by: String(file.revision_user_id),
+    uploaded_by: uploadedBy,
     uploaded_at: file.revision_created_at,
-    download_url: `/local--files/${site}/${page}/${encodeURIComponent(file.name)}`
+    download_url: `/local--files/${page}/${encodeURIComponent(file.name)}`
   }
 }
 
@@ -1053,6 +1162,23 @@ function deepwellFileContentBase64(file: DeepwellFile): string {
     return Buffer.from(file.data, "hex").toString("base64")
   }
   return Buffer.from(file.data).toString("base64")
+}
+
+function decodeStrictBase64(value: string, fieldName: string): Buffer {
+  const normalized = value.replace(/\s+/g, "")
+  if (normalized.length === 0) {
+    return Buffer.alloc(0)
+  }
+  if (normalized.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(normalized)) {
+    throw new XmlRpcFault(-32602, `Expected valid base64 field: ${fieldName}`)
+  }
+
+  const decoded = Buffer.from(normalized, "base64")
+  if (decoded.toString("base64") !== normalized) {
+    throw new XmlRpcFault(-32602, `Expected valid base64 field: ${fieldName}`)
+  }
+
+  return decoded
 }
 
 function getMethodDefinition(methodName: string): MethodDefinition {
@@ -1076,11 +1202,21 @@ function getStructParam(
   index: number,
   name: string
 ): { [key: string]: XmlRpcValue } {
+  assertParamCount(call, index + 1)
   const value = call.params[index]
   if (!isXmlRpcStruct(value)) {
     throw new XmlRpcFault(-32602, `Expected struct parameter: ${name}`)
   }
   return value
+}
+
+function assertParamCount(call: XmlRpcCall, expected: number): void {
+  if (call.params.length !== expected) {
+    throw new XmlRpcFault(
+      -32602,
+      `${call.methodName} expects ${expected} parameter${expected === 1 ? "" : "s"}`
+    )
+  }
 }
 
 function getRequiredStructString(
@@ -1207,16 +1343,48 @@ function parseBasicAuth(header: string | null): BasicAuthCredentials | null {
 
 function parseXmlRpcCall(xml: string): XmlRpcCall {
   const normalized = stripIgnorableXml(xml)
+  assertXmlRpcNodeCount(normalized)
   const methodCall = extractRequiredElement(normalized, "methodCall")
-  const methodName = decodeXmlText(
-    extractRequiredElement(methodCall.content, "methodName").content
-  ).trim()
+  assertWhitespaceOnly(
+    normalized.slice(0, methodCall.start),
+    "Unexpected content before XML-RPC <methodCall>"
+  )
+  assertWhitespaceOnly(
+    normalized.slice(methodCall.end),
+    "Unexpected content after XML-RPC <methodCall>"
+  )
+
+  const methodNameElement = extractRequiredElement(methodCall.content, "methodName")
+  assertWhitespaceOnly(
+    methodCall.content.slice(0, methodNameElement.start),
+    "Unexpected content in XML-RPC <methodCall>"
+  )
+  const methodName = decodeXmlText(methodNameElement.content).trim()
   if (methodName.length === 0) {
     throw new XmlRpcFault(-32600, "XML-RPC methodName must not be empty")
   }
 
-  const paramsElement = extractOptionalElement(methodCall.content, "params")
-  if (!paramsElement || paramsElement.selfClosing) {
+  const paramsElement = extractOptionalElement(
+    methodCall.content,
+    "params",
+    methodNameElement.end
+  )
+  if (!paramsElement) {
+    assertWhitespaceOnly(
+      methodCall.content.slice(methodNameElement.end),
+      "Unexpected content in XML-RPC <methodCall>"
+    )
+    return { methodName, params: [] }
+  }
+  assertWhitespaceOnly(
+    methodCall.content.slice(methodNameElement.end, paramsElement.start),
+    "Unexpected content in XML-RPC <methodCall>"
+  )
+  assertWhitespaceOnly(
+    methodCall.content.slice(paramsElement.end),
+    "Unexpected content in XML-RPC <methodCall>"
+  )
+  if (paramsElement.selfClosing) {
     return { methodName, params: [] }
   }
 
@@ -1228,15 +1396,35 @@ function parseXmlRpcCall(xml: string): XmlRpcCall {
       break
     }
 
+    assertWhitespaceOnly(
+      paramsElement.content.slice(offset, param.start),
+      "Unexpected content in XML-RPC <params>"
+    )
     const value = extractRequiredElement(param.content, "value")
-    params.push(parseXmlRpcValue(value.content))
+    assertWhitespaceOnly(
+      param.content.slice(0, value.start),
+      "Unexpected content in XML-RPC <param>"
+    )
+    assertWhitespaceOnly(
+      param.content.slice(value.end),
+      "Unexpected content in XML-RPC <param>"
+    )
+    params.push(parseXmlRpcValue(value.content, 0))
     offset = param.end
   }
+  assertWhitespaceOnly(
+    paramsElement.content.slice(offset),
+    "Unexpected content in XML-RPC <params>"
+  )
 
   return { methodName, params }
 }
 
-function parseXmlRpcValue(valueContent: string): XmlRpcValue {
+function parseXmlRpcValue(valueContent: string, depth: number): XmlRpcValue {
+  if (depth > XML_RPC_MAX_NESTING_DEPTH) {
+    throw new XmlRpcFault(-32602, "XML-RPC value nesting is too deep")
+  }
+
   const text = valueContent.trim()
   if (!text.startsWith("<")) {
     return decodeXmlText(text)
@@ -1248,6 +1436,7 @@ function parseXmlRpcValue(valueContent: string): XmlRpcValue {
 
   const stringElement = extractFirstDirectElement(text, "string")
   if (stringElement) {
+    assertXmlRpcScalarSize(stringElement.content, "string")
     return decodeXmlText(stringElement.content)
   }
 
@@ -1280,17 +1469,27 @@ function parseXmlRpcValue(valueContent: string): XmlRpcValue {
 
   const base64Element = extractFirstDirectElement(text, "base64")
   if (base64Element) {
+    assertXmlRpcScalarSize(base64Element.content, "base64")
     return decodeXmlText(base64Element.content).trim()
   }
 
   const dateElement = extractFirstDirectElement(text, "dateTime.iso8601")
   if (dateElement) {
+    assertXmlRpcScalarSize(dateElement.content, "dateTime.iso8601")
     return decodeXmlText(dateElement.content).trim()
   }
 
   const arrayElement = extractFirstDirectElement(text, "array")
   if (arrayElement) {
     const dataElement = extractRequiredElement(arrayElement.content, "data")
+    assertWhitespaceOnly(
+      arrayElement.content.slice(0, dataElement.start),
+      "Unexpected content in XML-RPC <array>"
+    )
+    assertWhitespaceOnly(
+      arrayElement.content.slice(dataElement.end),
+      "Unexpected content in XML-RPC <array>"
+    )
     const values: XmlRpcValue[] = []
     let offset = 0
     while (true) {
@@ -1298,9 +1497,17 @@ function parseXmlRpcValue(valueContent: string): XmlRpcValue {
       if (!item) {
         break
       }
-      values.push(parseXmlRpcValue(item.content))
+      assertWhitespaceOnly(
+        dataElement.content.slice(offset, item.start),
+        "Unexpected content in XML-RPC <array>"
+      )
+      values.push(parseXmlRpcValue(item.content, depth + 1))
       offset = item.end
     }
+    assertWhitespaceOnly(
+      dataElement.content.slice(offset),
+      "Unexpected content in XML-RPC <array>"
+    )
     return values
   }
 
@@ -1314,11 +1521,32 @@ function parseXmlRpcValue(valueContent: string): XmlRpcValue {
         break
       }
 
-      const name = decodeXmlText(extractRequiredElement(member.content, "name").content)
-      const value = extractRequiredElement(member.content, "value")
-      values[name] = parseXmlRpcValue(value.content)
+      assertWhitespaceOnly(
+        structElement.content.slice(offset, member.start),
+        "Unexpected content in XML-RPC <struct>"
+      )
+      const nameElement = extractRequiredElement(member.content, "name")
+      assertWhitespaceOnly(
+        member.content.slice(0, nameElement.start),
+        "Unexpected content in XML-RPC <member>"
+      )
+      const name = decodeXmlText(nameElement.content)
+      const value = extractRequiredElement(member.content, "value", nameElement.end)
+      assertWhitespaceOnly(
+        member.content.slice(nameElement.end, value.start),
+        "Unexpected content in XML-RPC <member>"
+      )
+      assertWhitespaceOnly(
+        member.content.slice(value.end),
+        "Unexpected content in XML-RPC <member>"
+      )
+      values[name] = parseXmlRpcValue(value.content, depth + 1)
       offset = member.end
     }
+    assertWhitespaceOnly(
+      structElement.content.slice(offset),
+      "Unexpected content in XML-RPC <struct>"
+    )
     return values
   }
 
@@ -1333,7 +1561,8 @@ function extractFirstDirectElement(text: string, tagName: string): XmlElement | 
   }
 
   const prefix = trimmed.slice(0, trimmed.indexOf(`<${tagName}`)).trim()
-  return prefix.length === 0 ? element : null
+  const suffix = trimmed.slice(element.end).trim()
+  return prefix.length === 0 && suffix.length === 0 ? element : null
 }
 
 function extractRequiredElement(text: string, tagName: string, offset = 0): XmlElement {
@@ -1362,7 +1591,7 @@ function extractOptionalElement(
   const opening = match[0]
   const contentStart = match.index + opening.length
   if (opening.endsWith("/>")) {
-    return { content: "", end: contentStart, selfClosing: true }
+    return { content: "", start: match.index, end: contentStart, selfClosing: true }
   }
 
   const tagPattern = new RegExp(
@@ -1384,6 +1613,7 @@ function extractOptionalElement(
       if (depth === 0) {
         return {
           content: text.slice(contentStart, tagMatch.index),
+          start: match.index,
           end: tagPattern.lastIndex,
           selfClosing: false
         }
@@ -1391,6 +1621,25 @@ function extractOptionalElement(
     } else if (!tag.endsWith("/>")) {
       depth += 1
     }
+  }
+}
+
+function assertWhitespaceOnly(value: string, message: string): void {
+  if (value.trim().length > 0) {
+    throw new XmlRpcFault(-32600, message)
+  }
+}
+
+function assertXmlRpcNodeCount(xml: string): void {
+  const nodeCount = xml.match(/<[^!?][^>]*>/g)?.length ?? 0
+  if (nodeCount > XML_RPC_MAX_NODE_COUNT) {
+    throw new XmlRpcFault(-32600, "XML-RPC request has too many elements")
+  }
+}
+
+function assertXmlRpcScalarSize(value: string, fieldName: string): void {
+  if (Buffer.byteLength(value, "utf8") > XML_RPC_MAX_SCALAR_BYTES) {
+    throw new XmlRpcFault(-32602, `XML-RPC ${fieldName} value is too large`)
   }
 }
 

@@ -11,6 +11,58 @@ const xmlRpcListMethodsRequest = `<?xml version="1.0"?>
   <params />
 </methodCall>`
 
+const xmlRpcListMethodsWithParamRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>system.listMethods</methodName>
+  <params>
+    <param><value><string>unexpected</string></value></param>
+  </params>
+</methodCall>`
+
+const xmlRpcMalformedParamsRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>system.listMethods</methodName>
+  <params>
+    <value><string>silently ignored before strict parsing</string></value>
+  </params>
+</methodCall>`
+
+const xmlRpcUnexpectedMethodCallContentRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>system.listMethods</methodName>
+  <extra />
+  <params />
+</methodCall>`
+
+const xmlRpcUnexpectedParamContentRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>system.methodHelp</methodName>
+  <params>
+    <param>
+      <value><string>pages.select</string></value>
+      <extra />
+    </param>
+  </params>
+</methodCall>`
+
+const xmlRpcUnexpectedMemberContentRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member>
+            <name>site</name>
+            <value><string>scp-wiki</string></value>
+            <extra />
+          </member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+
 const xmlRpcUnknownMethodRequest = `<?xml version="1.0"?>
 <methodCall>
   <methodName>not.realMethod</methodName>
@@ -181,6 +233,25 @@ const xmlRpcPagesGetOneRequest = `<?xml version="1.0"?>
     </param>
   </params>
 </methodCall>`
+
+function xmlRpcPagesGetMetaForPagesRequest(pages: string[]) {
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.get_meta</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>pages</name><value><array><data>${pages
+            .map((page) => `<value><string>${page}</string></value>`)
+            .join("")}</data></array></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+}
 
 function xmlRpcPagesGetOneForPageRequest(page: string) {
   return `<?xml version="1.0"?>
@@ -424,13 +495,33 @@ const xmlRpcHeaders = {
   "content-type": "text/xml"
 }
 
+function xmlRpcBasicHeaders(username: string, password: string) {
+  return {
+    authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
+    "content-type": "text/xml"
+  }
+}
+
+function xmlRpcDeepArrayRequest(depth: number) {
+  let value = "<value><string>leaf</string></value>"
+  for (let i = 0; i < depth; i += 1) {
+    value = `<value><array><data>${value}</data></array></value>`
+  }
+
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>system.multicall</methodName>
+  <params>
+    <param>${value}</param>
+  </params>
+</methodCall>`
+}
+
 const xmlRpcWriteHeaders = {
-  authorization: `Basic ${Buffer.from(
-    `${process.env.WIKIDOT_VERIFY_ADMIN_EMAIL ?? "admin@wikijump"}:${
-      process.env.WIKIDOT_VERIFY_ADMIN_PASS ?? "wikijumpadmin1"
-    }`
-  ).toString("base64")}`,
-  "content-type": "text/xml"
+  ...xmlRpcBasicHeaders(
+    process.env.WIKIDOT_VERIFY_ADMIN_EMAIL ?? "admin@wikijump",
+    process.env.WIKIDOT_VERIFY_ADMIN_PASS ?? "wikijumpadmin1"
+  )
 }
 
 async function deepwellRequest(method: string, params: unknown) {
@@ -560,6 +651,33 @@ RETURNING forum_post_id;
   return postId
 }
 
+async function createXmlRpcFixtureUser(stamp: number) {
+  const password = "wikijumpuser1"
+  const name = `XMLRPC Fixture User ${stamp}`
+  const user = await deepwellRequest("user_create", {
+    user_type: "regular",
+    name,
+    email: `xmlrpc-fixture-${stamp}@example.test`,
+    locales: ["en_GB"],
+    password,
+    bypass_filter: true,
+    bypass_email_verification: true,
+    ip_address: "127.0.0.1"
+  })
+
+  return { ...user, password }
+}
+
+async function enableMfaForFixtureUser(userId: number) {
+  await execDatabaseSql(`
+UPDATE "user"
+SET
+  multi_factor_secret = 'JBSWY3DPEHPK3PXP',
+  multi_factor_recovery_codes = ARRAY['xmlrpc-fixture-recovery-code-hash']::text[]
+WHERE user_id = ${userId};
+`)
+}
+
 async function execDatabaseSql(sql: string) {
   const { stdout } = await execFileAsync("docker", [
     "exec",
@@ -630,7 +748,11 @@ test("XML-RPC endpoint exposes system method discovery, help, and signatures", a
   })
   const signatureBody = await signatureResponse.text()
   expect(signatureResponse.status()).toBe(200)
-  expect(signatureBody).toContain("<string>array</string>")
+  expect(signatureBody).toContain(
+    "<name>returnType</name><value><string>array</string></value>"
+  )
+  expect(signatureBody).toContain("<name>parameters</name><value><array><data>")
+  expect(signatureBody).toContain("<value><string>array</string></value>")
 })
 
 test("XML-RPC endpoint supports system.multicall with partial faults", async ({
@@ -873,6 +995,190 @@ test("XML-RPC endpoint saves pages with tags, parent updates, and rename", async
   expect(renameBody).toContain("<value><string>xmlrpc-save-renamed</string></value>")
 })
 
+test("XML-RPC page saves preflight parent and rename failures without mutation", async ({
+  request
+}) => {
+  const slug = `fixture-xmlrpc-preflight-${Date.now()}`
+  const collisionSlug = `${slug}-collision`
+
+  const createResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: slug,
+      title: "XML-RPC Preflight Proof",
+      content: "Original preflight content.",
+      tags: ["verification", "xmlrpc-preflight"],
+      parentFullname: "fixture-parent-root",
+      saveMode: "create",
+      revisionComment: "xmlrpc preflight create proof"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(createResponse.status()).toBe(200)
+
+  const collisionResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: collisionSlug,
+      title: "XML-RPC Preflight Collision",
+      content: "Collision target.",
+      saveMode: "create",
+      revisionComment: "xmlrpc preflight collision proof"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(collisionResponse.status()).toBe(200)
+
+  const renameFaultResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: slug,
+      title: "Mutated title should not persist",
+      content: "Mutated content should not persist.",
+      tags: ["verification", "xmlrpc-mutated"],
+      saveMode: "update",
+      renameAs: collisionSlug,
+      revisionComment: "xmlrpc preflight rename fault"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(renameFaultResponse.status()).toBe(200)
+  const renameFaultBody = await renameFaultResponse.text()
+  expect(renameFaultBody).toContain("<fault>")
+  expect(renameFaultBody).toContain("target page already exists")
+
+  const afterRenameFault = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(slug),
+    headers: xmlRpcHeaders
+  })
+  expect(afterRenameFault.status()).toBe(200)
+  const afterRenameBody = await afterRenameFault.text()
+  expect(afterRenameBody).toContain(
+    "<name>content</name><value><string>Original preflight content.</string></value>"
+  )
+  expect(afterRenameBody).toContain("<value><string>xmlrpc-preflight</string></value>")
+  expect(afterRenameBody).not.toContain("Mutated content should not persist")
+  expect(afterRenameBody).not.toContain("<value><string>xmlrpc-mutated</string></value>")
+  expect(afterRenameBody).toContain(
+    "<name>parent_fullname</name><value><string>fixture-parent-root</string></value>"
+  )
+
+  const parentFaultResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: slug,
+      title: "Parent fault title should not persist",
+      content: "Parent fault content should not persist.",
+      tags: ["verification", "xmlrpc-parent-mutated"],
+      parentFullname: `${slug}-missing-parent`,
+      saveMode: "update",
+      revisionComment: "xmlrpc preflight parent fault"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(parentFaultResponse.status()).toBe(200)
+  const parentFaultBody = await parentFaultResponse.text()
+  expect(parentFaultBody).toContain("<fault>")
+  expect(parentFaultBody).toContain("parent page does not exist")
+
+  const afterParentFault = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(slug),
+    headers: xmlRpcHeaders
+  })
+  expect(afterParentFault.status()).toBe(200)
+  const afterParentBody = await afterParentFault.text()
+  expect(afterParentBody).toContain(
+    "<name>content</name><value><string>Original preflight content.</string></value>"
+  )
+  expect(afterParentBody).toContain("<value><string>xmlrpc-preflight</string></value>")
+  expect(afterParentBody).not.toContain("Parent fault content should not persist")
+  expect(afterParentBody).not.toContain(
+    "<value><string>xmlrpc-parent-mutated</string></value>"
+  )
+  expect(afterParentBody).toContain(
+    "<name>parent_fullname</name><value><string>fixture-parent-root</string></value>"
+  )
+})
+
+test("XML-RPC writes use the authenticated user for page and file attribution", async ({
+  request
+}) => {
+  const stamp = Date.now()
+  const fixtureUser = await createXmlRpcFixtureUser(stamp)
+  const fixtureHeaders = xmlRpcBasicHeaders(
+    `xmlrpc-fixture-user-${stamp}`,
+    fixtureUser.password
+  )
+  const pageSlug = `fixture-xmlrpc-attribution-${stamp}`
+  const fileName = "attribution.txt"
+  const fileContent = Buffer.from("XML-RPC attributed file content.").toString("base64")
+
+  const createResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: pageSlug,
+      title: "XML-RPC Attribution Proof",
+      content: "Created by fixture user.",
+      tags: ["verification", "xmlrpc-attribution"],
+      saveMode: "create",
+      revisionComment: "xmlrpc attribution create proof"
+    }),
+    headers: fixtureHeaders
+  })
+  expect(createResponse.status()).toBe(200)
+
+  const updateResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: pageSlug,
+      title: "XML-RPC Attribution Proof Updated",
+      content: "Updated by administrator.",
+      tags: ["verification", "xmlrpc-attribution-updated"],
+      saveMode: "update",
+      revisionComment: "xmlrpc attribution update proof"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(updateResponse.status()).toBe(200)
+
+  const pageOneResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(pageSlug),
+    headers: xmlRpcHeaders
+  })
+  expect(pageOneResponse.status()).toBe(200)
+  const pageOneBody = await pageOneResponse.text()
+  expect(pageOneBody).toContain(
+    `<name>created_by</name><value><string>xmlrpc-fixture-user-${stamp}</string></value>`
+  )
+  expect(pageOneBody).toContain(
+    "<name>updated_by</name><value><string>administrator</string></value>"
+  )
+
+  const pageMetaResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetMetaForPagesRequest([pageSlug]),
+    headers: xmlRpcHeaders
+  })
+  expect(pageMetaResponse.status()).toBe(200)
+  const pageMetaBody = await pageMetaResponse.text()
+  expect(pageMetaBody).toContain(
+    `<name>created_by</name><value><string>xmlrpc-fixture-user-${stamp}</string></value>`
+  )
+  expect(pageMetaBody).toContain(
+    "<name>updated_by</name><value><string>administrator</string></value>"
+  )
+
+  const fileSaveResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesSaveOneRequest({
+      page: pageSlug,
+      file: fileName,
+      content: fileContent,
+      comment: "attribution file proof",
+      saveMode: "create",
+      revisionComment: "xmlrpc attribution file proof"
+    }),
+    headers: fixtureHeaders
+  })
+  expect(fileSaveResponse.status()).toBe(200)
+  const fileSaveBody = await fileSaveResponse.text()
+  expect(fileSaveBody).toContain(
+    `<name>uploaded_by</name><value><string>xmlrpc-fixture-user-${stamp}</string></value>`
+  )
+})
+
 test("XML-RPC endpoint returns user identity and page comments", async ({ request }) => {
   const meResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcUsersGetMeRequest,
@@ -954,7 +1260,79 @@ test("XML-RPC endpoint returns user identity and page comments", async ({ reques
   expect(postsGetBody).toContain("<name>created_at</name><value><string>")
 })
 
-test("XML-RPC endpoint saves and reads small page attachments", async ({ request }) => {
+test("XML-RPC read methods use the documented public-read policy", async ({
+  request
+}) => {
+  const pageSlug = `fixture-xmlrpc-public-read-${Date.now()}`
+  const fileName = "public-read.txt"
+  const fileText = "XML-RPC public read file content."
+  const fileContent = Buffer.from(fileText).toString("base64")
+  const publicReadHeaders = xmlRpcBasicHeaders("syntactically-valid", "wrong-secret")
+
+  const pageResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: pageSlug,
+      title: "XML-RPC Public Read Proof",
+      content: "Public read page body.",
+      tags: ["verification", "xmlrpc-public-read"],
+      saveMode: "create",
+      revisionComment: "xmlrpc public read page create proof"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(pageResponse.status()).toBe(200)
+
+  const fileResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesSaveOneRequest({
+      page: pageSlug,
+      file: fileName,
+      content: fileContent,
+      comment: "public read file proof",
+      saveMode: "create",
+      revisionComment: "xmlrpc public read file proof"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(fileResponse.status()).toBe(200)
+
+  const postId = await seedForumCommentFixture({
+    page: pageSlug,
+    title: "XML-RPC public read comment",
+    content: "Public read comment body."
+  })
+
+  const pageReadResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(pageSlug),
+    headers: publicReadHeaders
+  })
+  expect(pageReadResponse.status()).toBe(200)
+  expect(await pageReadResponse.text()).toContain(
+    "<name>content</name><value><string>Public read page body.</string></value>"
+  )
+
+  const fileReadResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetOneRequest(pageSlug, fileName),
+    headers: publicReadHeaders
+  })
+  expect(fileReadResponse.status()).toBe(200)
+  expect(await fileReadResponse.text()).toContain(
+    `<name>content</name><value><string>${fileContent}</string>`
+  )
+
+  const postReadResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsGetRequest([postId]),
+    headers: publicReadHeaders
+  })
+  expect(postReadResponse.status()).toBe(200)
+  expect(await postReadResponse.text()).toContain(
+    "<name>content</name><value><string>Public read comment body.</string></value>"
+  )
+})
+
+test("XML-RPC endpoint saves and reads small page attachments", async ({
+  request,
+  playwright
+}) => {
   const pageSlug = `fixture-xmlrpc-file-${Date.now()}`
   const fileName = "proof.txt"
   const initialText = "XML-RPC file proof initial content."
@@ -1017,6 +1395,9 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   expect(metaBody).toContain(
     "<name>comment</name><value><string>initial file proof</string></value>"
   )
+  expect(metaBody).toContain(
+    `<name>download_url</name><value><string>/local--files/${pageSlug}/proof.txt</string></value>`
+  )
   expect(metaBody).not.toContain(initialContent)
 
   const oneResponse = await request.post("/xml-rpc-api.php", {
@@ -1047,6 +1428,22 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
     "<name>comment</name><value><string>updated file proof</string></value>"
   )
 
+  const invalidUpdateResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesSaveOneRequest({
+      page: pageSlug,
+      file: fileName,
+      content: "not base64!!",
+      comment: "invalid file proof",
+      saveMode: "update",
+      revisionComment: "xmlrpc invalid file update proof"
+    }),
+    headers: xmlRpcWriteHeaders
+  })
+  expect(invalidUpdateResponse.status()).toBe(200)
+  const invalidUpdateBody = await invalidUpdateResponse.text()
+  expect(invalidUpdateBody).toContain("<fault>")
+  expect(invalidUpdateBody).toContain("Expected valid base64 field: content")
+
   const updatedOneResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcFilesGetOneRequest(pageSlug, fileName),
     headers: xmlRpcHeaders
@@ -1056,7 +1453,23 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   expect(updatedOneBody).toContain(
     `<name>content</name><value><string>${updatedContent}</string>`
   )
+  expect(updatedOneBody).toContain(
+    `<name>download_url</name><value><string>/local--files/${pageSlug}/proof.txt</string></value>`
+  )
   expect(updatedOneBody).not.toContain(initialContent)
+  expect(updatedOneBody).not.toContain("invalid file proof")
+
+  const wwsRequest = await playwright.request.newContext({
+    baseURL: "https://scpwiki.localhost",
+    ignoreHTTPSErrors: true
+  })
+  try {
+    const downloadedFile = await wwsRequest.get(`/local--files/${pageSlug}/${fileName}`)
+    expect(downloadedFile.status()).toBe(200)
+    expect(await downloadedFile.text()).toBe(updatedText)
+  } finally {
+    await wwsRequest.dispose()
+  }
 })
 
 test("XML-RPC endpoint returns XML-RPC faults for unauthenticated requests", async ({
@@ -1080,6 +1493,68 @@ test("XML-RPC endpoint returns XML-RPC faults for unauthenticated requests", asy
   expect(body).not.toContain("test-key")
 })
 
+test("XML-RPC endpoint rejects invalid credentials for identity and write calls", async ({
+  request
+}) => {
+  const invalidHeaders = xmlRpcBasicHeaders("administrator", "wrong-password")
+
+  const identityResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcUsersGetMeRequest,
+    headers: invalidHeaders
+  })
+  expect(identityResponse.status()).toBe(401)
+  expect(identityResponse.headers()["www-authenticate"]).toBe(
+    'Basic realm="Wikijump XML-RPC"'
+  )
+  expect(await identityResponse.text()).toContain("Invalid HTTP Basic authentication")
+
+  const writeResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: `fixture-invalid-auth-${Date.now()}`,
+      content: "This should not be written.",
+      saveMode: "create"
+    }),
+    headers: invalidHeaders
+  })
+  expect(writeResponse.status()).toBe(401)
+  expect(await writeResponse.text()).toContain("Invalid HTTP Basic authentication")
+})
+
+test("XML-RPC endpoint rejects MFA-required Basic sessions", async ({ request }) => {
+  const stamp = Date.now()
+  const fixtureUser = await createXmlRpcFixtureUser(stamp)
+  await enableMfaForFixtureUser(fixtureUser.user_id)
+  const mfaHeaders = xmlRpcBasicHeaders(
+    `xmlrpc-fixture-user-${stamp}`,
+    fixtureUser.password
+  )
+
+  const identityResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcUsersGetMeRequest,
+    headers: mfaHeaders
+  })
+  expect(identityResponse.status()).toBe(401)
+  expect(identityResponse.headers()["www-authenticate"]).toBe(
+    'Basic realm="Wikijump XML-RPC"'
+  )
+  expect(await identityResponse.text()).toContain(
+    "XML-RPC Basic authentication does not support MFA"
+  )
+
+  const writeResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: `fixture-mfa-auth-${stamp}`,
+      content: "MFA-required users should not write through Basic auth.",
+      saveMode: "create"
+    }),
+    headers: mfaHeaders
+  })
+  expect(writeResponse.status()).toBe(401)
+  expect(await writeResponse.text()).toContain(
+    "XML-RPC Basic authentication does not support MFA"
+  )
+})
+
 test("XML-RPC endpoint returns XML-RPC faults for malformed XML", async ({ request }) => {
   const response = await request.post("/xml-rpc-api.php", {
     data: "<methodCall>",
@@ -1093,6 +1568,81 @@ test("XML-RPC endpoint returns XML-RPC faults for malformed XML", async ({ reque
   expect(body).toContain("<methodResponse>")
   expect(body).toContain("<fault>")
   expect(body).toContain("<name>faultCode</name><value><int>-32600</int></value>")
+})
+
+test("XML-RPC endpoint rejects malformed params and unexpected parameter counts", async ({
+  request
+}) => {
+  const malformedResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcMalformedParamsRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(malformedResponse.status()).toBe(200)
+  const malformedBody = await malformedResponse.text()
+  expect(malformedBody).toContain("<fault>")
+  expect(malformedBody).toContain("Unexpected content in XML-RPC &lt;params&gt;")
+
+  const extraParamResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcListMethodsWithParamRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(extraParamResponse.status()).toBe(200)
+  const extraParamBody = await extraParamResponse.text()
+  expect(extraParamBody).toContain("<fault>")
+  expect(extraParamBody).toContain("system.listMethods expects 0 parameters")
+})
+
+test("XML-RPC endpoint rejects unexpected envelope content", async ({ request }) => {
+  const methodCallResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcUnexpectedMethodCallContentRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(methodCallResponse.status()).toBe(200)
+  const methodCallBody = await methodCallResponse.text()
+  expect(methodCallBody).toContain("<fault>")
+  expect(methodCallBody).toContain("Unexpected content in XML-RPC &lt;methodCall&gt;")
+
+  const paramResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcUnexpectedParamContentRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(paramResponse.status()).toBe(200)
+  const paramBody = await paramResponse.text()
+  expect(paramBody).toContain("<fault>")
+  expect(paramBody).toContain("Unexpected content in XML-RPC &lt;param&gt;")
+
+  const memberResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcUnexpectedMemberContentRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(memberResponse.status()).toBe(200)
+  const memberBody = await memberResponse.text()
+  expect(memberBody).toContain("<fault>")
+  expect(memberBody).toContain("Unexpected content in XML-RPC &lt;member&gt;")
+})
+
+test("XML-RPC endpoint rejects oversized and deeply nested requests", async ({
+  request
+}) => {
+  const oversizedResponse = await request.post("/xml-rpc-api.php", {
+    data: `<?xml version="1.0"?><methodCall><methodName>system.methodHelp</methodName><params><param><value><string>${"x".repeat(
+      1_000_001
+    )}</string></value></param></params></methodCall>`,
+    headers: xmlRpcHeaders
+  })
+  expect(oversizedResponse.status()).toBe(200)
+  const oversizedBody = await oversizedResponse.text()
+  expect(oversizedBody).toContain("<fault>")
+  expect(oversizedBody).toContain("XML-RPC request body is too large")
+
+  const deepResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcDeepArrayRequest(34),
+    headers: xmlRpcHeaders
+  })
+  expect(deepResponse.status()).toBe(200)
+  const deepBody = await deepResponse.text()
+  expect(deepBody).toContain("<fault>")
+  expect(deepBody).toContain("XML-RPC value nesting is too deep")
 })
 
 test("XML-RPC endpoint returns XML-RPC faults for unsupported methods", async ({
