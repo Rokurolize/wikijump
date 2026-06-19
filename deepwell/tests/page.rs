@@ -915,53 +915,52 @@ async fn page_query_score_order_returns_results() {
     }
 
     let all_tags = [Cow::Borrowed(tag)];
-    let pages = PageQueryService::find(
-        runner.context(),
-        PageQuery {
-            current_page_id: 0,
-            current_site_id: site_id,
-            queried_site_id: Some(site_id),
-            page_type: PageTypeSelector::All,
-            categories: CategoriesSelector {
-                included_categories: IncludedCategories::All,
-                excluded_categories: &[],
-            },
-            tags: TagCondition {
-                any_present: &[],
-                all_present: &all_tags,
-                none_present: &[],
-            },
-            page_parent: PageParentSelector::NoParent,
-            contains_outgoing_links: &[],
-            creation_date: DateSelector::FromPresent {
-                start: OffsetDateTime::UNIX_EPOCH,
-            },
-            update_date: DateSelector::FromPresent {
-                start: OffsetDateTime::UNIX_EPOCH,
-            },
-            author: &[],
-            score: &[],
-            votes: &[],
-            offset: 0,
-            range: RangeSelector::Current,
-            name: None,
-            slug: None,
-            data_form_fields: &[],
-            order: Some(OrderBySelector {
-                property: OrderProperty::Score,
-                ascending: true,
-            }),
-            pagination: PaginationSelector::default(),
-            variables: &[],
-            fields: FoundPageFields {
-                slug: true,
-                score: true,
-                ..Default::default()
-            },
+    let base_query = PageQuery {
+        current_page_id: 0,
+        current_site_id: site_id,
+        queried_site_id: Some(site_id),
+        page_type: PageTypeSelector::All,
+        categories: CategoriesSelector {
+            included_categories: IncludedCategories::All,
+            excluded_categories: &[],
         },
-    )
-    .await
-    .expect("score ordering should not fail");
+        tags: TagCondition {
+            any_present: &[],
+            all_present: &all_tags,
+            none_present: &[],
+        },
+        page_parent: PageParentSelector::NoParent,
+        contains_outgoing_links: &[],
+        creation_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        update_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        author: &[],
+        score: &[],
+        votes: &[],
+        offset: 0,
+        range: RangeSelector::Current,
+        name: None,
+        slug: None,
+        data_form_fields: &[],
+        order: Some(OrderBySelector {
+            property: OrderProperty::Score,
+            ascending: true,
+        }),
+        pagination: PaginationSelector::default(),
+        variables: &[],
+        fields: FoundPageFields {
+            slug: true,
+            score: true,
+            ..Default::default()
+        },
+    };
+
+    let pages = PageQueryService::find(runner.context(), base_query.clone())
+        .await
+        .expect("score ordering should not fail");
 
     let ordered = pages
         .pages
@@ -982,6 +981,32 @@ async fn page_query_score_order_returns_results() {
             ("fixture-score-order-high".to_owned(), 5.0),
         ],
         "score order query should return pages sorted by computed score",
+    );
+
+    let mut limited_query = base_query;
+    limited_query.pagination.limit = Some(2);
+    let limited_pages = PageQueryService::find(runner.context(), limited_query)
+        .await
+        .expect("limited score ordering should not fail");
+
+    let limited_ordered = limited_pages
+        .pages
+        .into_iter()
+        .map(|row| {
+            (
+                row.slug.expect("slug field should be requested"),
+                row.score.expect("score field should be requested"),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        limited_ordered,
+        [
+            ("fixture-score-order-low".to_owned(), -2.0),
+            ("fixture-score-order-zero".to_owned(), 0.0),
+        ],
+        "limited score order should truncate after computed-score sorting",
     );
 }
 

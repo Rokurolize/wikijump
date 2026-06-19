@@ -489,10 +489,7 @@ impl PageQueryService {
         }
 
         if score_order {
-            let candidate_limit = pagination
-                .limit
-                .map(|limit| limit.min(SCORE_ORDER_CANDIDATE_CAP))
-                .unwrap_or(SCORE_ORDER_CANDIDATE_CAP);
+            let candidate_limit = SCORE_ORDER_CANDIDATE_CAP;
             debug!(
                 "Limiting score-ordered ListPages candidate evaluation to {candidate_limit} pages",
             );

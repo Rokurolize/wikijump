@@ -19,7 +19,7 @@ async function loadForumLabels(parentData: PreloadData, translateKeys: Translate
 
 function validateForumRouteId(routeId: number) {
   if (!Number.isInteger(routeId) || routeId <= 0) {
-    throw error(404, "Invalid forum route ID")
+    throw error(404)
   }
 }
 
