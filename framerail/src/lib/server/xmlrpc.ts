@@ -865,6 +865,9 @@ function localPresignConnectBase(url: URL): URL | null {
   if (url.hostname !== "files") {
     return null
   }
+  if (process.env.DEEPWELL_HOST === "deepwell") {
+    return null
+  }
   return new URL(`http://127.0.0.1:${url.port || "9000"}`)
 }
 
