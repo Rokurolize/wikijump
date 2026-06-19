@@ -7,10 +7,10 @@ caddyfile="$(mktemp /tmp/Caddyfile.XXXXXX)"
 trap 'rm -f "$deepwell_response" "$caddyfile"' EXIT
 
 # Send DEEPWELL request
-curl -f http://deepwell:2747/jsonrpc \
+curl -f --connect-timeout 2 --max-time 20 http://deepwell:2747/jsonrpc \
 	-X POST \
 	--json @/etc/caddy-request.json \
-		> "$deepwell_response"
+	> "$deepwell_response"
 
 # Determine if it's an error
 error="$(jq .error "$deepwell_response")"

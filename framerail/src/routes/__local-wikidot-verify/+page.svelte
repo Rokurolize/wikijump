@@ -84,7 +84,9 @@
       </label>
       <div class="button-row">
         <button type="submit" data-testid="preview-button">Preview</button>
-        <button formaction="?/savePage" data-testid="save-button">Save page</button>
+        <button type="submit" formaction="?/savePage" data-testid="save-button"
+          >Save page</button
+        >
       </div>
     </form>
 
@@ -125,7 +127,7 @@
         Tag set
         <input name="tags" bind:value={tags} data-testid="tag-editor-input" />
       </label>
-      <button data-testid="tag-save-button">Save tags</button>
+      <button type="submit" data-testid="tag-save-button">Save tags</button>
       <p class="metadata" data-testid="current-tags">
         Current: {currentPage()?.tags?.join(", ") || "none"}
       </p>
@@ -148,7 +150,7 @@
         Upload
         <input name="file" type="file" data-testid="file-input" />
       </label>
-      <button data-testid="file-upload-button">Upload file</button>
+      <button type="submit" data-testid="file-upload-button">Upload file</button>
       {#if form?.type === "uploadFile"}
         <pre data-testid="file-result">{JSON.stringify(form.files, null, 2)}</pre>
       {/if}
@@ -201,7 +203,9 @@
       <p class="metadata">
         Creates a fragment, a component page, and a host page that includes both.
       </p>
-      <button data-testid="dependency-create-button">Create include pages</button>
+      <button type="submit" data-testid="dependency-create-button"
+        >Create include pages</button
+      >
       {#if form?.type === "createDependencies"}
         <div class="rendered compact" data-testid="dependency-result">
           {@html form.dependencies?.hostHtml ?? ""}
@@ -220,7 +224,9 @@
     >
       <h2>ListPages</h2>
       <p class="metadata">Creates three tagged targets and an index module.</p>
-      <button data-testid="listpages-create-button">Create ListPages set</button>
+      <button type="submit" data-testid="listpages-create-button"
+        >Create ListPages set</button
+      >
       {#if form?.type === "createListPages"}
         <div class="rendered compact" data-testid="listpages-result">
           {@html form.listPages?.indexHtml ?? ""}
@@ -241,7 +247,8 @@
       <p class="metadata">
         Removes the ListPages tag from the gamma target and rerenders the index.
       </p>
-      <button data-testid="listpages-remove-button">Remove gamma tag</button>
+      <button type="submit" data-testid="listpages-remove-button">Remove gamma tag</button
+      >
       {#if form?.type === "removeListPagesGamma"}
         <div class="rendered compact" data-testid="listpages-after-remove">
           {@html form.indexHtml}
@@ -259,7 +266,7 @@
       <p class="metadata">
         Updates local nav pages and creates a CSS proof page rendered by the shell.
       </p>
-      <button data-testid="theme-nav-css-button">Create theme proof</button>
+      <button type="submit" data-testid="theme-nav-css-button">Create theme proof</button>
       {#if form?.type === "createThemeNavCss"}
         <div class="rendered compact" data-testid="theme-nav-css-result">
           {@html form.themeNavCss?.proofHtml ?? ""}
@@ -298,7 +305,7 @@
       <h2>Proof Runner</h2>
       <input type="hidden" name="slug" value={slug} />
       <p class="metadata">Checks the selected page and generated local scenarios.</p>
-      <button data-testid="proof-runner-button">Run proof summary</button>
+      <button type="submit" data-testid="proof-runner-button">Run proof summary</button>
       {#if form?.type === "runProofSummary"}
         <div class="proof-summary" data-testid="proof-runner-result">
           <p>
@@ -326,7 +333,7 @@
         Slugs
         <input name="slugs" value={slug} data-testid="export-slugs-input" />
       </label>
-      <button data-testid="export-button">Export bundle</button>
+      <button type="submit" data-testid="export-button">Export bundle</button>
       {#if form?.type === "exportBundle"}
         <textarea readonly rows="12" data-testid="bundle-output"
           >{form.bundleText}</textarea
@@ -350,7 +357,7 @@
           >{form?.bundleText ?? ""}</textarea
         >
       </label>
-      <button data-testid="import-button">Import bundle</button>
+      <button type="submit" data-testid="import-button">Import bundle</button>
       {#if form?.type === "importBundle"}
         <pre data-testid="import-result">{JSON.stringify(form.imported, null, 2)}</pre>
       {/if}

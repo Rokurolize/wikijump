@@ -28,7 +28,7 @@ use crate::services::{PageService, SiteService};
 use crate::types::ConnectionType;
 use ftml::data::{Backlinks, PageRef};
 use sea_orm::NotSet;
-use sea_orm::sea_query::OnConflict;
+use sea_orm::sea_query::{Expr, OnConflict};
 use std::collections::HashMap;
 
 /// Forms an optional `Condition` from a list of connection types.
@@ -448,6 +448,10 @@ async fn update_connections(
                     page_connection::Column::ConnectionType,
                 ])
                 .update_column(page_connection::Column::Count)
+                .value(
+                    page_connection::Column::UpdatedAt,
+                    Expr::current_timestamp(),
+                )
                 .to_owned(),
             )
             .exec(txn)
@@ -543,6 +547,10 @@ async fn update_connections_missing(
                     page_connection_missing::Column::ConnectionType,
                 ])
                 .update_column(page_connection_missing::Column::Count)
+                .value(
+                    page_connection_missing::Column::UpdatedAt,
+                    Expr::current_timestamp(),
+                )
                 .to_owned(),
             )
             .exec(txn)
@@ -617,6 +625,7 @@ async fn update_external_links(
             .on_conflict(
                 OnConflict::columns([page_link::Column::PageId, page_link::Column::Url])
                     .update_column(page_link::Column::Count)
+                    .value(page_link::Column::UpdatedAt, Expr::current_timestamp())
                     .to_owned(),
             )
             .exec(txn)

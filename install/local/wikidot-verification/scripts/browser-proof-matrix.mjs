@@ -12,12 +12,20 @@ const verifierRoot = path.resolve(__dirname, "..");
 const corpusRoot = path.join(verifierRoot, "corpus");
 const manifestPath = path.join(corpusRoot, "manifest.json");
 const repoRoot = path.resolve(verifierRoot, "../../..");
-const chromium = loadPlaywrightChromium();
 
 function loadPlaywrightChromium() {
   const candidates = [
-    { base: path.join(repoRoot, "framerail", "package.json"), names: ["@playwright/test", "playwright"] },
-    { base: path.join(os.homedir(), ".npm-global/lib/node_modules/playwright/package.json"), names: ["playwright"] },
+    {
+      base: path.join(repoRoot, "framerail", "package.json"),
+      names: ["@playwright/test", "playwright"],
+    },
+    {
+      base: path.join(
+        os.homedir(),
+        ".npm-global/lib/node_modules/playwright/package.json",
+      ),
+      names: ["playwright"],
+    },
   ];
 
   const failures = [];
@@ -29,7 +37,9 @@ function loadPlaywrightChromium() {
           const mod = candidateRequire(name);
           if (mod.chromium) return mod.chromium;
         } catch (error) {
-          failures.push(`${candidate.base} -> ${name}: ${error.code || error.message}`);
+          failures.push(
+            `${candidate.base} -> ${name}: ${error.code || error.message}`,
+          );
         }
       }
     } catch (error) {
@@ -37,7 +47,9 @@ function loadPlaywrightChromium() {
     }
   }
 
-  throw new Error(`Unable to load Playwright chromium. Tried:\n${failures.join("\n")}`);
+  throw new Error(
+    `Unable to load Playwright chromium. Tried:\n${failures.join("\n")}`,
+  );
 }
 
 function parseArgs(argv) {
@@ -46,12 +58,21 @@ function parseArgs(argv) {
     outputDir: path.resolve(process.cwd(), "wikidot-browser-proof"),
   };
 
-  for (let index = 2; index < argv.length; index += 1) {
+  let index = 2;
+  const nextValue = (flag) => {
+    const value = argv[++index];
+    if (!value || value.startsWith("--")) {
+      throw new Error(`${flag} requires a value`);
+    }
+    return value;
+  };
+
+  for (; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--base-url") {
-      args.baseUrl = argv[++index].replace(/\/$/, "");
+      args.baseUrl = nextValue(arg).replace(/\/$/, "");
     } else if (arg === "--output-dir") {
-      args.outputDir = path.resolve(argv[++index]);
+      args.outputDir = path.resolve(nextValue(arg));
     } else if (arg === "--headed") {
       args.headed = true;
     } else if (arg === "--help") {
@@ -65,7 +86,9 @@ function parseArgs(argv) {
 }
 
 function printHelpAndExit() {
-  console.log("Usage: node browser-proof-matrix.mjs [--base-url URL] [--output-dir DIR] [--headed]");
+  console.log(
+    "Usage: node browser-proof-matrix.mjs [--base-url URL] [--output-dir DIR] [--headed]",
+  );
   process.exit(0);
 }
 
@@ -77,19 +100,24 @@ function proofEntries(manifest) {
   const pages = manifest.pages
     .filter((page) => page.proof)
     .map((page) => ({ ...page, proof: page.proof }));
-  return [...pages, {
-    slug: manifest.editProof.slug,
-    title: manifest.editProof.title,
-    proof: manifest.editProof.proof,
-  }];
+  return [
+    ...pages,
+    {
+      slug: manifest.editProof.slug,
+      title: manifest.editProof.title,
+      proof: manifest.editProof.proof,
+    },
+  ];
 }
 
 function isLocalUrl(url) {
   const parsed = new URL(url);
-  return parsed.hostname === "127.0.0.1" ||
+  return (
+    parsed.hostname === "127.0.0.1" ||
     parsed.hostname === "localhost" ||
     parsed.hostname.endsWith(".localhost") ||
-    parsed.hostname === "0.0.0.0";
+    parsed.hostname === "0.0.0.0"
+  );
 }
 
 function isAllowedExternalUrl(url, proof) {
@@ -114,7 +142,10 @@ async function evaluateImages(page) {
     const images = Array.from(document.images);
     return {
       imageCount: images.length,
-      loadedImages: images.filter((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0).length,
+      loadedImages: images.filter(
+        (image) =>
+          image.complete && image.naturalWidth > 0 && image.naturalHeight > 0,
+      ).length,
       sources: images.map((image) => ({
         src: image.currentSrc || image.src,
         complete: image.complete,
@@ -128,6 +159,7 @@ async function evaluateImages(page) {
 async function runProofForPage(browser, entry, args, dirs) {
   const pageUrl = `${args.baseUrl}/${entry.slug}`;
   const page = await browser.newPage({
+    ignoreHTTPSErrors: true,
     viewport: { width: 1366, height: 900 },
   });
   const network = {
@@ -139,9 +171,20 @@ async function runProofForPage(browser, entry, args, dirs) {
 
   page.on("request", (request) => {
     const url = request.url();
-    network.requests.push({ method: request.method(), url, resourceType: request.resourceType() });
-    if (entry.proof.requireLocalNetworkOnly && !isAllowedExternalUrl(url, entry.proof)) {
-      network.externalRequests.push({ method: request.method(), url, resourceType: request.resourceType() });
+    network.requests.push({
+      method: request.method(),
+      url,
+      resourceType: request.resourceType(),
+    });
+    if (
+      entry.proof.requireLocalNetworkOnly &&
+      !isAllowedExternalUrl(url, entry.proof)
+    ) {
+      network.externalRequests.push({
+        method: request.method(),
+        url,
+        resourceType: request.resourceType(),
+      });
     }
   });
   page.on("requestfailed", (request) => {
@@ -167,8 +210,15 @@ async function runProofForPage(browser, entry, args, dirs) {
   };
 
   try {
-    const response = await page.goto(pageUrl, { waitUntil: "networkidle", timeout: 45000 });
-    check("http-status", Boolean(response && response.ok()), response ? String(response.status()) : "no response");
+    const response = await page.goto(pageUrl, {
+      waitUntil: "networkidle",
+      timeout: 45000,
+    });
+    check(
+      "http-status",
+      Boolean(response && response.ok()),
+      response ? String(response.status()) : "no response",
+    );
 
     const bodyText = await page.locator("body").innerText({ timeout: 10000 });
     for (const text of entry.proof.requiredText || []) {
@@ -179,42 +229,91 @@ async function runProofForPage(browser, entry, args, dirs) {
     }
 
     for (const selector of entry.proof.requireSelectors || []) {
-      check(`selector:${selector}`, await page.locator(selector).count() > 0);
+      check(`selector:${selector}`, (await page.locator(selector).count()) > 0);
     }
     for (const selectorText of entry.proof.selectorText || []) {
-      const text = await page.locator(selectorText.selector).first().innerText({ timeout: 5000 }).catch(() => "");
-      check(`selector-text:${selectorText.selector}`, text.includes(selectorText.text), text);
+      const text = await page
+        .locator(selectorText.selector)
+        .first()
+        .innerText({ timeout: 5000 })
+        .catch(() => "");
+      check(
+        `selector-text:${selectorText.selector}`,
+        text.includes(selectorText.text),
+        text,
+      );
     }
 
     if (entry.proof.cssColor) {
-      const color = await page.locator(entry.proof.cssColor.selector).first().evaluate((element, property) => {
-        return getComputedStyle(element).getPropertyValue(property);
-      }, entry.proof.cssColor.property).catch((error) => `ERROR:${error.message}`);
-      check(`css:${entry.proof.cssColor.selector}:${entry.proof.cssColor.property}`, color.trim() === entry.proof.cssColor.expected, color.trim());
+      const color = await page
+        .locator(entry.proof.cssColor.selector)
+        .first()
+        .evaluate((element, property) => {
+          return getComputedStyle(element).getPropertyValue(property);
+        }, entry.proof.cssColor.property)
+        .catch((error) => `ERROR:${error.message}`);
+      check(
+        `css:${entry.proof.cssColor.selector}:${entry.proof.cssColor.property}`,
+        color.trim() === entry.proof.cssColor.expected,
+        color.trim(),
+      );
     }
 
     const images = await evaluateImages(page);
     if (entry.proof.minImages !== undefined) {
-      check("image-count", images.imageCount >= entry.proof.minImages, String(images.imageCount));
+      check(
+        "image-count",
+        images.imageCount >= entry.proof.minImages,
+        String(images.imageCount),
+      );
     }
     if (entry.proof.expectedLoadedImages !== undefined) {
-      check("loaded-images", images.loadedImages >= entry.proof.expectedLoadedImages, `${images.loadedImages}/${images.imageCount}`);
+      check(
+        "loaded-images",
+        images.loadedImages >= entry.proof.expectedLoadedImages,
+        `${images.loadedImages}/${images.imageCount}`,
+      );
     }
 
-    check("network-failed-requests", network.failedRequests.length === 0, String(network.failedRequests.length));
-    check("network-bad-responses", network.badResponses.length === 0, String(network.badResponses.length));
+    check(
+      "network-failed-requests",
+      network.failedRequests.length === 0,
+      String(network.failedRequests.length),
+    );
+    check(
+      "network-bad-responses",
+      network.badResponses.length === 0,
+      String(network.badResponses.length),
+    );
     if (entry.proof.requireLocalNetworkOnly) {
-      check("network-local-only", network.externalRequests.length === 0, String(network.externalRequests.length));
+      check(
+        "network-local-only",
+        network.externalRequests.length === 0,
+        String(network.externalRequests.length),
+      );
     }
 
-    await page.screenshot({ path: path.join(dirs.screenshots, `${entry.slug.replaceAll(":", "_")}.png`), fullPage: true });
-    await fs.writeFile(path.join(dirs.network, `${entry.slug.replaceAll(":", "_")}.json`), JSON.stringify({
-      slug: entry.slug,
-      url: pageUrl,
-      checks,
-      images,
-      network,
-    }, null, 2));
+    await page.screenshot({
+      path: path.join(
+        dirs.screenshots,
+        `${entry.slug.replaceAll(":", "_")}.png`,
+      ),
+      fullPage: true,
+    });
+    await fs.writeFile(
+      path.join(dirs.network, `${entry.slug.replaceAll(":", "_")}.json`),
+      JSON.stringify(
+        {
+          slug: entry.slug,
+          url: pageUrl,
+          checks,
+          images,
+          network,
+        },
+        null,
+        2,
+      ),
+    );
 
     return {
       slug: entry.slug,
@@ -228,12 +327,26 @@ async function runProofForPage(browser, entry, args, dirs) {
       externalRequestCount: network.externalRequests.length,
     };
   } catch (error) {
-    await page.screenshot({ path: path.join(dirs.screenshots, `${entry.slug.replaceAll(":", "_")}-error.png`), fullPage: true }).catch(() => {});
+    await page
+      .screenshot({
+        path: path.join(
+          dirs.screenshots,
+          `${entry.slug.replaceAll(":", "_")}-error.png`,
+        ),
+        fullPage: true,
+      })
+      .catch(() => {});
     return {
       slug: entry.slug,
       url: pageUrl,
       ok: false,
-      checks: [{ name: "exception", pass: false, detail: error.stack || error.message }],
+      checks: [
+        {
+          name: "exception",
+          pass: false,
+          detail: error.stack || error.message,
+        },
+      ],
       imageCount: 0,
       loadedImages: 0,
       failedRequestCount: network.failedRequests.length,
@@ -247,6 +360,7 @@ async function runProofForPage(browser, entry, args, dirs) {
 
 async function main() {
   const args = parseArgs(process.argv);
+  const chromium = loadPlaywrightChromium();
   const manifest = await readJson(manifestPath);
   const dirs = {
     root: args.outputDir,
@@ -278,19 +392,27 @@ async function main() {
   };
   const summaryPath = path.join(args.outputDir, "browser-summary.json");
   await fs.writeFile(summaryPath, JSON.stringify(summary, null, 2));
-  await fs.writeFile(path.join(args.outputDir, "fixture-results.tsv"), [
-    "slug\tok\timages\tfailed_requests\tbad_responses\texternal_requests\tfailed_checks",
-    ...results.map((result) => [
-      result.slug,
-      result.ok ? "PASS" : "FAIL",
-      `${result.loadedImages}/${result.imageCount}`,
-      result.failedRequestCount,
-      result.badResponseCount,
-      result.externalRequestCount,
-      result.checks.filter((check) => !check.pass).map((check) => `${check.name}:${check.detail}`).join(" | "),
-    ].join("\t")),
-    "",
-  ].join("\n"));
+  await fs.writeFile(
+    path.join(args.outputDir, "fixture-results.tsv"),
+    [
+      "slug\tok\timages\tfailed_requests\tbad_responses\texternal_requests\tfailed_checks",
+      ...results.map((result) =>
+        [
+          result.slug,
+          result.ok ? "PASS" : "FAIL",
+          `${result.loadedImages}/${result.imageCount}`,
+          result.failedRequestCount,
+          result.badResponseCount,
+          result.externalRequestCount,
+          result.checks
+            .filter((check) => !check.pass)
+            .map((check) => `${check.name}:${check.detail}`)
+            .join(" | "),
+        ].join("\t"),
+      ),
+      "",
+    ].join("\n"),
+  );
 
   console.log(`Browser proof: ${summary.passed}/${summary.pageCount} passed.`);
   console.log(`Summary: ${summaryPath}`);

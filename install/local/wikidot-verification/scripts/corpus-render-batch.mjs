@@ -248,6 +248,7 @@ async function createOrUpdatePage(
       title,
       alt_title: null,
       slug: importSlug,
+      tags,
       layout: "wikidot",
       revision_comments: "v5 corpus render batch create",
       user_id: ADMIN_USER_ID,
@@ -839,12 +840,13 @@ async function main() {
     const dependencyHints = splitPipe(row.dependency_hints);
     const assetHints = splitPipe(row.asset_paths);
     const importSlug = `${args.slugPrefix}${row.slug}`;
-    const source = await fs.readFile(row.source_path, "utf8");
     let imported = null;
     let classification;
-    let sourceSha256 = sha256Text(source);
+    let sourceSha256 = "";
 
     try {
+      const source = await fs.readFile(row.source_path, "utf8");
+      sourceSha256 = sha256Text(source);
       imported = await createOrUpdatePage(
         client,
         site.site_id,

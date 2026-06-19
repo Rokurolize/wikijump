@@ -7,7 +7,7 @@ trap 'rm -f "$caddyfile"' EXIT
 wikijump-generate-caddyfile "$caddyfile"
 
 # Have Caddy install it
-curl -f http://localhost:2019/load \
+curl -f --connect-timeout 2 --max-time 20 http://localhost:2019/load \
 	-X POST \
 	-H 'Content-Type: text/caddyfile' \
 	--data-binary @"$caddyfile"

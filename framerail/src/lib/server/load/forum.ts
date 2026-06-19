@@ -18,8 +18,8 @@ async function loadForumLabels(parentData: PreloadData, translateKeys: Translate
 }
 
 function validateForumRouteId(routeId: number) {
-  if (Number.isNaN(routeId)) {
-    error(404)
+  if (!Number.isInteger(routeId) || routeId <= 0) {
+    error(404, "Invalid forum route ID")
   }
 }
 

@@ -26,6 +26,7 @@ use crate::models::{
     page::Model as PageModel,
 };
 use crate::types::Reference;
+use futures::future::try_join_all;
 use sea_orm::prelude::TimeDateTimeWithTimeZone;
 use sea_orm::{
     ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
@@ -165,14 +166,14 @@ pub async fn forum_post_get(
         .await
         .or_raise(|| Error::new("failed to get forum posts", ErrorType::ForumPost))?;
 
-    let mut output = Vec::with_capacity(models.len());
-    for post in models {
-        if let Some(item) = build_wikidot_forum_post(ctx, post).await? {
-            output.push(item);
-        }
-    }
+    let posts = try_join_all(
+        models
+            .into_iter()
+            .map(|post| build_wikidot_forum_post(ctx, post)),
+    )
+    .await?;
 
-    Ok(output)
+    Ok(posts.into_iter().flatten().collect())
 }
 
 pub async fn forum_post_page_summary(

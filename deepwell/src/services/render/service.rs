@@ -49,6 +49,7 @@ use tokio::time::timeout;
 pub struct RenderService;
 
 const MAX_INCLUDE_EXPANSION_DEPTH: usize = 8;
+const MAX_INCLUDE_EXPANSION_TOTAL: usize = 64;
 const DEFAULT_LISTPAGES_RENDER_LIMIT: u64 = 100;
 const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
 const INCLUDE_VARIABLE_OPEN_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_OPEN__";
@@ -937,6 +938,7 @@ impl RenderService {
             current_site_slug.to_owned(),
             settings,
             0,
+            MAX_INCLUDE_EXPANSION_TOTAL,
         )
         .await?;
         unprotect_include_variables(&mut expansion.wikitext);
@@ -951,6 +953,7 @@ impl RenderService {
         current_site_slug: String,
         settings: &'a WikitextSettings,
         depth: usize,
+        mut remaining_includes: usize,
     ) -> Pin<Box<dyn Future<Output = Result<IncludeExpansion>> + Send + 'a>> {
         Box::pin(async move {
             let mut includes = Vec::new();
@@ -987,6 +990,18 @@ impl RenderService {
             let mut nested_included_pages = Vec::with_capacity(includes.len());
 
             for include in &includes {
+                if remaining_includes == 0 {
+                    return Err(Error::new(
+                        format!(
+                            "include expansion exceeded maximum total includes {}",
+                            MAX_INCLUDE_EXPANSION_TOTAL,
+                        ),
+                        ErrorType::Render,
+                    )
+                    .into());
+                }
+                remaining_includes -= 1;
+
                 let source = Self::fetch_include_source(
                     ctx,
                     current_site_id,
@@ -1011,8 +1026,20 @@ impl RenderService {
                     source.site_slug,
                     settings,
                     depth + 1,
+                    remaining_includes,
                 )
                 .await?;
+                if expansion.included_pages.len() > remaining_includes {
+                    return Err(Error::new(
+                        format!(
+                            "include expansion exceeded maximum total includes {}",
+                            MAX_INCLUDE_EXPANSION_TOTAL,
+                        ),
+                        ErrorType::Render,
+                    )
+                    .into());
+                }
+                remaining_includes -= expansion.included_pages.len();
 
                 fetched_pages.push(Some(expansion.wikitext));
                 nested_included_pages.push(expansion.included_pages);
@@ -1482,6 +1509,9 @@ fn list_pages_body_variables_supported(body: &str) -> bool {
                     | "page_unix_name"
                     | "fullname"
                     | "full_slug"
+                    | "created_by"
+                    | "createdby"
+                    | "rating"
                     | "index"
                     | "total"
             )

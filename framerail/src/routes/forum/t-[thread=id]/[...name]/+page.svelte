@@ -8,5 +8,5 @@
   let { data }: Props = $props()
 </script>
 
-<h1>{data.internationalization?.["forum-thread"]}</h1>
-<p>{data.internationalization?.["forum-thread.loaded"]}</p>
+<h1>{data.internationalization?.["forum-thread"] ?? "Forum thread"}</h1>
+<p>{data.internationalization?.["forum-thread.loaded"] ?? "Thread loaded."}</p>

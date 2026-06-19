@@ -551,20 +551,15 @@ fn test_prefix_domain() {
 
 #[test]
 fn test_public_url_defaults_to_https_without_port() {
-    let domain = Domain {
-        main: str!("wikijump.com"),
-        files: str!("wjfiles.com"),
-        public_scheme: default_public_url_scheme(),
-        public_port: None,
-    };
+    let config = config_from_domain_toml(None, None);
 
-    assert_eq!(domain.public_scheme, "https");
-    assert_eq!(domain.public_port, None);
+    assert_eq!(config.public_url_scheme, "https");
+    assert_eq!(config.public_url_port, None);
 }
 
 #[test]
 fn test_local_public_url_config_uses_http_public_port() {
-    let config = config_from_domain_toml("http", Some(18443));
+    let config = config_from_domain_toml(Some("http"), Some(18443));
 
     assert_eq!(config.public_url_scheme, "http");
     assert_eq!(config.public_url_port, Some(18443));
@@ -573,12 +568,12 @@ fn test_local_public_url_config_uses_http_public_port() {
 #[test]
 #[should_panic(expected = "Unsupported public URL scheme: 'ftp'")]
 fn test_public_url_config_rejects_unsupported_scheme() {
-    config_from_domain_toml("ftp", Some(18443));
+    config_from_domain_toml(Some("ftp"), Some(18443));
 }
 
 #[test]
 fn test_public_url_config_normalizes_scheme_to_lowercase() {
-    let config = config_from_domain_toml("HTTPS", None);
+    let config = config_from_domain_toml(Some("HTTPS"), None);
 
     assert_eq!(config.public_url_scheme, "https");
     assert_eq!(config.public_url_port, None);
@@ -587,11 +582,17 @@ fn test_public_url_config_normalizes_scheme_to_lowercase() {
 #[test]
 #[should_panic(expected = "Public URL port cannot be zero")]
 fn test_public_url_config_rejects_zero_port() {
-    config_from_domain_toml("http", Some(0));
+    config_from_domain_toml(Some("http"), Some(0));
 }
 
 #[cfg(test)]
-fn config_from_domain_toml(public_scheme: &str, public_port: Option<u16>) -> Config {
+fn config_from_domain_toml(
+    public_scheme: Option<&str>,
+    public_port: Option<u16>,
+) -> Config {
+    let scheme_line = public_scheme
+        .map(|scheme| format!("        public-scheme = \"{scheme}\"\n"))
+        .unwrap_or_default();
     let port_line = public_port
         .map(|port| format!("        public-port = {port}\n"))
         .unwrap_or_default();
@@ -627,8 +628,7 @@ fn config_from_domain_toml(public_scheme: &str, public_port: Option<u16>) -> Con
         [domain]
         main = "wikijump.localhost"
         files = "wjfiles.localhost"
-        public-scheme = "{public_scheme}"
-{port_line}
+{scheme_line}{port_line}
 
         [job]
         workers = 2

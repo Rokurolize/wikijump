@@ -27,10 +27,17 @@ pub struct ScoreService;
 
 impl ScoreService {
     pub async fn score(ctx: &ServiceContext<'_>, page_id: i64) -> Result<ScoreValue> {
-        Ok(Self::scores_bulk(ctx, &[page_id])
-            .await?
-            .remove(&page_id)
-            .unwrap_or(ScoreValue::Integer(0)))
+        let txn = ctx.transaction();
+        let make_error = || {
+            Error::new(
+                format!("failed to evaluate score for page ID {page_id}"),
+                ErrorType::PageVote,
+            )
+        };
+
+        let condition = Self::build_condition(page_id);
+        let scorer = Self::get_scorer(ctx, page_id).await.or_raise(make_error)?;
+        scorer.score(txn, condition).await.or_raise(make_error)
     }
 
     pub async fn scores_bulk(
@@ -144,5 +151,12 @@ impl ScoreService {
         }
 
         Ok(map)
+    }
+
+    fn build_condition(page_id: i64) -> Condition {
+        Condition::all()
+            .add(page_vote::Column::PageId.eq(page_id))
+            .add(page_vote::Column::DeletedAt.is_null())
+            .add(page_vote::Column::DisabledAt.is_null())
     }
 }

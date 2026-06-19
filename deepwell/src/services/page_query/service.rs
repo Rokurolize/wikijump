@@ -33,8 +33,6 @@ use sea_query::{Expr, Query};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
-const MAX_SCORE_ORDER_CANDIDATES: u64 = 1000;
-
 #[derive(Debug)]
 pub struct PageQueryService;
 
@@ -488,17 +486,7 @@ impl PageQueryService {
             };
         }
 
-        let query_limit = if score_order {
-            Some(
-                pagination
-                    .limit
-                    .unwrap_or(MAX_SCORE_ORDER_CANDIDATES)
-                    .min(MAX_SCORE_ORDER_CANDIDATES),
-            )
-        } else {
-            pagination.limit
-        };
-        if let Some(limit) = query_limit {
+        if let Some(limit) = pagination.limit.filter(|_| !score_order) {
             debug!("Limiting ListPages to a maximum of {limit} pages total");
             query = query.limit(limit);
         }

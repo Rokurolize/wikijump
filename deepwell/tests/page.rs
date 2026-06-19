@@ -1139,18 +1139,6 @@ async fn listpages_deferred_forms_remain_unsupported() {
             "created_by=&quot;=&quot;",
         ),
         (
-            "created-by-variable",
-            r#"tags="+verification-list-negative-created-by-variable" limit="10" order="name""#,
-            "* %%created_by%%",
-            "%%created_by%%",
-        ),
-        (
-            "rating-variable",
-            r#"tags="+verification-list-negative-rating-variable" limit="10" order="name""#,
-            "* %%rating%%",
-            "%%rating%%",
-        ),
-        (
             "tag-exclusion",
             r#"tag="-verification-list-negative-tag-exclusion" limit="10" order="name""#,
             "* %%title%% :: %%slug%%",
