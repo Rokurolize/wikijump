@@ -144,10 +144,13 @@ impl TextBlockService {
         // If there are more or the same number of blocks now,
         // then this will do nothing.
 
+        let mut stale_filenames = Vec::new();
         for index in max_index..=prev_max_index {
-            let filename = filename!(index);
-            debug!("Deleting now-out-of-range S3 text block {filename}");
-            bucket.delete_object(filename).await.or_raise(make_error)?;
+            let filename = filename!(index).to_owned();
+            debug!(
+                "Queueing now-out-of-range S3 text block {filename} for post-commit cleanup"
+            );
+            stale_filenames.push(filename);
         }
 
         // Upload the new text blocks to S3.
@@ -215,6 +218,16 @@ impl TextBlockService {
             rows_affected, prev_max_index as u64,
             "Deleted row count do not match previous maximum block index",
         );
+
+        if !stale_filenames.is_empty() {
+            debug!(
+                "Queueing {} replaced text block S3 objects for page ID {} after transaction commit",
+                stale_filenames.len(),
+                page_id,
+            );
+            ctx.post_commit_actions()
+                .delete_text_block_objects(stale_filenames);
+        }
 
         // Finally, insert the batch of new text block rows, then return.
         if !models.is_empty() {
@@ -320,8 +333,8 @@ impl TextBlockService {
     /// becomes unnecessary.
     pub async fn delete_blocks(ctx: &ServiceContext<'_>, page_id: i64) -> Result<()> {
         let txn = ctx.transaction();
-        let bucket = ctx.s3_tblocks_bucket();
         let mut buffer = String::new();
+        let mut filenames = Vec::new();
 
         let make_error = || {
             Error::new(
@@ -330,8 +343,8 @@ impl TextBlockService {
             )
         };
 
-        // For each kind of text block type, find out how many
-        // blocks exist and then delete the objects in S3.
+        // For each kind of text block type, find out how many blocks exist
+        // and queue their S3 objects for post-commit deletion.
         for block_type in TextBlockType::iter() {
             macro_rules! filename {
                 ($index:expr) => {{
@@ -345,19 +358,29 @@ impl TextBlockService {
                 .or_raise(make_error)?;
 
             for index in 1..=max_index {
-                let filename = filename!(index);
-                debug!("Deleting text block {filename}");
-                bucket.delete_object(filename).await.or_raise(make_error)?;
+                let filename = filename!(index).to_owned();
+                debug!("Queueing text block {filename} for post-commit cleanup");
+                filenames.push(filename);
             }
         }
 
-        // Now that S3 is cleared out, we can delete all the
-        // database rows in one sweep.
+        // Delete the database rows in one sweep. The S3 objects are queued for
+        // deletion only after the outer transaction commits.
         TextBlockTable::delete_many()
             .filter(text_block::Column::PageId.eq(page_id))
             .exec(txn)
             .await
             .or_raise(make_error)?;
+
+        if !filenames.is_empty() {
+            debug!(
+                "Queueing {} deleted text block S3 objects for page ID {} after transaction commit",
+                filenames.len(),
+                page_id,
+            );
+            ctx.post_commit_actions()
+                .delete_text_block_objects(filenames);
+        }
 
         Ok(())
     }

@@ -31,8 +31,82 @@ use rsmq_async::Rsmq;
 use s3::bucket::Bucket;
 use sea_orm::DatabaseTransaction;
 use std::collections::HashSet;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tokio::sync::OnceCell;
+
+#[derive(Debug)]
+enum PostCommitAction {
+    DeleteTextBlockObjects(Vec<String>),
+}
+
+/// Request-scoped work that must only run after the database transaction commits.
+///
+/// These actions protect transaction consistency: database rollback must not
+/// delete external objects that still describe committed rows. The queue is
+/// intentionally best-effort and in-memory; guaranteed reclamation across
+/// process crashes or persistent S3 failures requires a separate durable
+/// cleanup outbox.
+#[derive(Debug, Clone, Default)]
+pub struct PostCommitActions {
+    actions: Arc<Mutex<Vec<PostCommitAction>>>,
+}
+
+impl PostCommitActions {
+    pub fn delete_text_block_objects<I>(&self, filenames: I)
+    where
+        I: IntoIterator<Item = String>,
+    {
+        let filenames: Vec<String> = filenames
+            .into_iter()
+            .filter(|filename| !filename.is_empty())
+            .collect();
+        if filenames.is_empty() {
+            return;
+        }
+
+        self.actions
+            .lock()
+            .expect("post-commit actions mutex poisoned")
+            .push(PostCommitAction::DeleteTextBlockObjects(filenames));
+    }
+
+    pub fn pending_count(&self) -> usize {
+        self.actions
+            .lock()
+            .expect("post-commit actions mutex poisoned")
+            .len()
+    }
+
+    pub async fn run_after_commit(&self, state: &ServerState) {
+        let actions = {
+            let mut actions = self
+                .actions
+                .lock()
+                .expect("post-commit actions mutex poisoned");
+            std::mem::take(&mut *actions)
+        };
+
+        for action in actions {
+            match action {
+                PostCommitAction::DeleteTextBlockObjects(filenames) => {
+                    delete_text_block_objects_after_commit(state, filenames).await;
+                }
+            }
+        }
+    }
+}
+
+async fn delete_text_block_objects_after_commit(
+    state: &ServerState,
+    filenames: Vec<String>,
+) {
+    let bucket = &state.s3_tblocks_bucket;
+    for filename in filenames {
+        if let Err(error) = bucket.delete_object(&filename).await {
+            warn!("Failed to delete committed stale S3 text block {filename}: {error}");
+        }
+    }
+}
 
 /// Per-request context derived from HTTP headers by the middleware layer.
 #[derive(Debug, Clone, Default)]
@@ -84,6 +158,7 @@ pub struct ServiceContext<'txn> {
     state: ServerState,
     transaction: &'txn DatabaseTransaction,
     request_ctx: RequestContext,
+    post_commit_actions: PostCommitActions,
     user_permissions: OnceCell<HashSet<Permission<'static>>>,
 }
 
@@ -97,6 +172,7 @@ impl<'txn> ServiceContext<'txn> {
             state: Arc::clone(state),
             transaction,
             request_ctx: RequestContext::default(),
+            post_commit_actions: PostCommitActions::default(),
             user_permissions: OnceCell::new(),
         }
     }
@@ -105,6 +181,17 @@ impl<'txn> ServiceContext<'txn> {
     pub fn with_request(self, request_ctx: RequestContext) -> Self {
         Self {
             request_ctx,
+            ..self
+        }
+    }
+
+    #[inline]
+    pub fn with_post_commit_actions(
+        self,
+        post_commit_actions: PostCommitActions,
+    ) -> Self {
+        Self {
+            post_commit_actions,
             ..self
         }
     }
@@ -162,6 +249,11 @@ impl<'txn> ServiceContext<'txn> {
     #[inline]
     pub fn transaction(&self) -> &'txn DatabaseTransaction {
         self.transaction
+    }
+
+    #[inline]
+    pub fn post_commit_actions(&self) -> &PostCommitActions {
+        &self.post_commit_actions
     }
 
     #[inline]
