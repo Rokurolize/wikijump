@@ -33,6 +33,7 @@ use sea_orm::{
     ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
     QuerySelect,
 };
+use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
@@ -205,18 +206,31 @@ async fn select_sitewide_forum_posts(
         }
     }
 
-    let candidates = ForumPost::find()
+    let candidates: Vec<(i64, i64)> = ForumPost::find()
+        .select_only()
+        .column(forum_post::Column::ForumPostId)
+        .column(forum_post::Column::ForumThreadId)
         .filter(condition)
         .order_by_asc(forum_post::Column::CreatedAt)
         .order_by_asc(forum_post::Column::ForumPostId)
+        .into_tuple()
         .all(ctx.transaction())
         .await
         .or_raise(|| Error::new("failed to select forum posts", ErrorType::ForumPost))?;
 
     let mut posts = Vec::with_capacity(candidates.len());
-    for post in candidates {
-        if can_view_forum_post(ctx, site_id, &post).await? {
-            posts.push(post.forum_post_id);
+    let mut visibility_cache: HashMap<i64, bool> = HashMap::new();
+    for (post_id, thread_id) in candidates {
+        let can_view = match visibility_cache.get(&thread_id) {
+            Some(value) => *value,
+            None => {
+                let value = can_view_forum_thread(ctx, site_id, thread_id).await?;
+                visibility_cache.insert(thread_id, value);
+                value
+            }
+        };
+        if can_view {
+            posts.push(post_id);
         }
     }
     Ok(posts)
@@ -312,19 +326,19 @@ pub async fn forum_post_page_summary(
     })
 }
 
-async fn can_view_forum_post(
+async fn can_view_forum_thread(
     ctx: &ServiceContext<'_>,
     site_id: i64,
-    post: &ForumPostModel,
+    thread_id: i64,
 ) -> Result<bool> {
     let make_error = || {
         Error::new(
-            "failed to check forum post visibility",
+            "failed to check forum thread visibility",
             ErrorType::ForumPost,
         )
     };
 
-    let thread = ForumThread::find_by_id(post.forum_thread_id)
+    let thread = ForumThread::find_by_id(thread_id)
         .filter(
             Condition::all()
                 .add(forum_thread::Column::SiteId.eq(site_id))
