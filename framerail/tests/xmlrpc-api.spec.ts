@@ -464,11 +464,25 @@ function xmlRpcFilesSaveOneRequest({
 </methodCall>`
 }
 
-function xmlRpcPostsSelectRequest(page: string, replyTo?: string | number) {
+function xmlRpcPostsSelectRequest({
+  page,
+  replyTo,
+  createdBy
+}: {
+  page?: string
+  replyTo?: string | number
+  createdBy?: string
+}) {
+  const pageMember = page
+    ? `<member><name>page</name><value><string>${page}</string></value></member>`
+    : ""
   const replyToMember =
     replyTo !== undefined
       ? `<member><name>reply_to</name><value>${xmlRpcStringOrInt(replyTo)}</value></member>`
       : ""
+  const createdByMember = createdBy
+    ? `<member><name>created_by</name><value><string>${createdBy}</string></value></member>`
+    : ""
 
   return `<?xml version="1.0"?>
 <methodCall>
@@ -478,8 +492,9 @@ function xmlRpcPostsSelectRequest(page: string, replyTo?: string | number) {
       <value>
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
-          <member><name>page</name><value><string>${page}</string></value></member>
+          ${pageMember}
           ${replyToMember}
+          ${createdByMember}
         </struct>
       </value>
     </param>
@@ -1310,21 +1325,37 @@ test("XML-RPC endpoint returns user identity and page comments", async ({ reques
   )
 
   const selectResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcPostsSelectRequest(pageSlug),
+    data: xmlRpcPostsSelectRequest({ page: pageSlug }),
     headers: xmlRpcHeaders
   })
   expect(selectResponse.status()).toBe(200)
   expect(await selectResponse.text()).toContain(`<value><int>${postId}</int></value>`)
 
   const topLevelResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcPostsSelectRequest(pageSlug, "-"),
+    data: xmlRpcPostsSelectRequest({ page: pageSlug, replyTo: "-" }),
     headers: xmlRpcHeaders
   })
   expect(topLevelResponse.status()).toBe(200)
   expect(await topLevelResponse.text()).toContain(`<value><int>${postId}</int></value>`)
 
+  const sitewideResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsSelectRequest({}),
+    headers: xmlRpcHeaders
+  })
+  expect(sitewideResponse.status()).toBe(200)
+  expect(await sitewideResponse.text()).toContain(`<value><int>${postId}</int></value>`)
+
+  const sitewideCreatedByResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsSelectRequest({ createdBy: "administrator", replyTo: "-" }),
+    headers: xmlRpcHeaders
+  })
+  expect(sitewideCreatedByResponse.status()).toBe(200)
+  expect(await sitewideCreatedByResponse.text()).toContain(
+    `<value><int>${postId}</int></value>`
+  )
+
   const numericReplyToResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcPostsSelectRequest(pageSlug, postId),
+    data: xmlRpcPostsSelectRequest({ page: pageSlug, replyTo: postId }),
     headers: xmlRpcHeaders
   })
   expect(numericReplyToResponse.status()).toBe(200)

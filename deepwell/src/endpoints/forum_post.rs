@@ -121,16 +121,6 @@ pub async fn forum_post_select(
         created_by,
     } = parse!(params, ForumPost);
 
-    let Some(page) = page else {
-        return Ok(Vec::new());
-    };
-    let Some((page, thread)) = find_page_thread(ctx, site_id, &page).await? else {
-        return Ok(Vec::new());
-    };
-    if !can_view_forum_page(ctx, site_id, &page).await? {
-        return Ok(Vec::new());
-    }
-
     let Some(created_by_user_id) =
         resolve_optional_user_filter(ctx, created_by.as_deref()).await?
     else {
@@ -139,6 +129,23 @@ pub async fn forum_post_select(
 
     let reply_to = reply_to.map(StringOrInteger::into_string);
     let parent_filter = parse_parent_post_filter(reply_to.as_deref())?;
+
+    let Some(page) = page else {
+        return select_sitewide_forum_posts(
+            ctx,
+            site_id,
+            parent_filter,
+            created_by_user_id,
+        )
+        .await;
+    };
+    let Some((page, thread)) = find_page_thread(ctx, site_id, &page).await? else {
+        return Ok(Vec::new());
+    };
+    if !can_view_forum_page(ctx, site_id, &page).await? {
+        return Ok(Vec::new());
+    }
+
     let mut condition = Condition::all()
         .add(forum_post::Column::SiteId.eq(site_id))
         .add(forum_post::Column::ForumThreadId.eq(thread.forum_thread_id))
@@ -170,6 +177,48 @@ pub async fn forum_post_select(
         .await
         .or_raise(|| Error::new("failed to select forum posts", ErrorType::ForumPost))?;
 
+    Ok(posts)
+}
+
+async fn select_sitewide_forum_posts(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    parent_filter: ParentPostFilter,
+    created_by_user_id: Option<i64>,
+) -> Result<Vec<i64>> {
+    let mut condition = Condition::all()
+        .add(forum_post::Column::SiteId.eq(site_id))
+        .add(forum_post::Column::DeletedAt.is_null());
+
+    if let Some(user_id) = created_by_user_id {
+        condition = condition.add(forum_post::Column::UserId.eq(user_id));
+    }
+
+    match parent_filter {
+        ParentPostFilter::All => {}
+        ParentPostFilter::TopLevel => {
+            condition = condition.add(forum_post::Column::ParentPostId.is_null());
+        }
+        ParentPostFilter::Direct(parent_post_id) => {
+            condition =
+                condition.add(forum_post::Column::ParentPostId.eq(parent_post_id));
+        }
+    }
+
+    let candidates = ForumPost::find()
+        .filter(condition)
+        .order_by_asc(forum_post::Column::CreatedAt)
+        .order_by_asc(forum_post::Column::ForumPostId)
+        .all(ctx.transaction())
+        .await
+        .or_raise(|| Error::new("failed to select forum posts", ErrorType::ForumPost))?;
+
+    let mut posts = Vec::with_capacity(candidates.len());
+    for post in candidates {
+        if can_view_forum_post(ctx, site_id, &post).await? {
+            posts.push(post.forum_post_id);
+        }
+    }
     Ok(posts)
 }
 
@@ -261,6 +310,50 @@ pub async fn forum_post_page_summary(
         commented_at: Some(latest.created_at),
         commented_by: Some(commented_by),
     })
+}
+
+async fn can_view_forum_post(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    post: &ForumPostModel,
+) -> Result<bool> {
+    let make_error = || {
+        Error::new(
+            "failed to check forum post visibility",
+            ErrorType::ForumPost,
+        )
+    };
+
+    let thread = ForumThread::find_by_id(post.forum_thread_id)
+        .filter(
+            Condition::all()
+                .add(forum_thread::Column::SiteId.eq(site_id))
+                .add(forum_thread::Column::DeletedAt.is_null()),
+        )
+        .one(ctx.transaction())
+        .await
+        .or_raise(make_error)?;
+    let Some(thread) = thread else {
+        return Ok(false);
+    };
+    let Some(page_id) = thread.page_id else {
+        return Ok(false);
+    };
+
+    let page = page::Entity::find_by_id(page_id)
+        .filter(
+            Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::DeletedAt.is_null()),
+        )
+        .one(ctx.transaction())
+        .await
+        .or_raise(make_error)?;
+
+    match page {
+        Some(page) => can_view_forum_page(ctx, site_id, &page).await,
+        None => Ok(false),
+    }
 }
 
 async fn build_wikidot_forum_post(
