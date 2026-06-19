@@ -419,7 +419,7 @@ impl PageQueryService {
                         .order_by(Expr::col((Page, page::Column::Slug)), order);
                 }
                 OrderProperty::FullSlug => {
-                    debug!("Ordering by page slug (with category");
+                    debug!("Ordering by page slug (with category)");
                     query = query.order_by(page::Column::Slug, order);
                 }
                 OrderProperty::Title => {

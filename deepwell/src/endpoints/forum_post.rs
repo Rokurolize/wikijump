@@ -30,6 +30,7 @@ use futures::future::try_join_all;
 use sea_orm::prelude::TimeDateTimeWithTimeZone;
 use sea_orm::{
     ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+    QuerySelect,
 };
 
 #[derive(Deserialize, Debug)]
@@ -154,15 +155,18 @@ pub async fn forum_post_select(
         }
     }
 
-    let posts = ForumPost::find()
+    let posts: Vec<i64> = ForumPost::find()
+        .select_only()
+        .column(forum_post::Column::ForumPostId)
         .filter(condition)
         .order_by_asc(forum_post::Column::CreatedAt)
         .order_by_asc(forum_post::Column::ForumPostId)
+        .into_tuple()
         .all(ctx.transaction())
         .await
         .or_raise(|| Error::new("failed to select forum posts", ErrorType::ForumPost))?;
 
-    Ok(posts.into_iter().map(|post| post.forum_post_id).collect())
+    Ok(posts)
 }
 
 pub async fn forum_post_get(

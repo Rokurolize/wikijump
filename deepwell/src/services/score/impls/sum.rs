@@ -24,6 +24,12 @@ use crate::services::ScoreService;
 #[derive(Debug)]
 pub struct SumScorer;
 
+impl SumScorer {
+    pub(crate) fn score_votes(votes: &VoteMap) -> ScoreValue {
+        ScoreValue::Integer(votes.sum())
+    }
+}
+
 impl Scorer for SumScorer {
     #[inline]
     fn score_type(&self) -> ScoreType {
@@ -44,6 +50,6 @@ impl Scorer for SumScorer {
             .await
             .or_raise(|| make_error("sum"))?;
 
-        Ok(ScoreValue::Integer(votes.sum()))
+        Ok(Self::score_votes(&votes))
     }
 }

@@ -582,6 +582,8 @@ async fn viewable_page_category_ids(
     };
     let mut viewable = BTreeSet::new();
 
+    // Page category counts are small in current Wikijump sites, and the
+    // permission service does not expose a bulk category check.
     for category_id in category_ids {
         let can_view = PermissionService::check_user_can(
             ctx,

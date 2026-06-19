@@ -50,7 +50,9 @@ function loadPlaywrightChromium() {
 
 function parseArgs(argv) {
   const args = {
-    baseUrl: process.env.WIKIDOT_VERIFY_BASE_URL || "https://scpwiki.localhost",
+    baseUrl: (
+      process.env.WIKIDOT_VERIFY_BASE_URL || "https://scpwiki.localhost"
+    ).replace(/\/+$/, ""),
     outputDir: path.resolve(process.cwd(), "corpus-browser-proof"),
     offset: 0,
     limit: 100,
@@ -72,7 +74,7 @@ function parseArgs(argv) {
     if (arg === "--input") {
       args.input = path.resolve(nextValue(arg));
     } else if (arg === "--base-url") {
-      args.baseUrl = nextValue(arg).replace(/\/$/, "");
+      args.baseUrl = nextValue(arg).replace(/\/+$/, "");
     } else if (arg === "--output-dir") {
       args.outputDir = path.resolve(nextValue(arg));
     } else if (arg === "--offset") {
