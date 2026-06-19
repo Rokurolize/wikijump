@@ -514,12 +514,11 @@ async function preloadDependencies({
 }) {
   const pending = [];
   const queued = new Set();
-  const selectedSlugs = new Set(selected.map((row) => row.slug));
 
   for (const row of selected) {
     for (const hint of splitPipe(row.dependency_hints)) {
       const slug = normalizeIncludeSlug(hint);
-      if (!slug || selectedSlugs.has(slug) || queued.has(slug)) continue;
+      if (!slug || queued.has(slug)) continue;
       if (!manifestBySlug.has(slug)) continue;
       queued.add(slug);
       pending.push(slug);

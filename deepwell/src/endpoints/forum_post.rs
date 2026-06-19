@@ -25,7 +25,8 @@ use crate::models::{
     forum_thread::Entity as ForumThread, forum_thread::Model as ForumThreadModel, page,
     page::Model as PageModel,
 };
-use crate::types::Reference;
+use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::types::{Action, Permission, Reference, Resource};
 use futures::future::try_join_all;
 use sea_orm::prelude::TimeDateTimeWithTimeZone;
 use sea_orm::{
@@ -123,9 +124,12 @@ pub async fn forum_post_select(
     let Some(page) = page else {
         return Ok(Vec::new());
     };
-    let Some((_page, thread)) = find_page_thread(ctx, site_id, &page).await? else {
+    let Some((page, thread)) = find_page_thread(ctx, site_id, &page).await? else {
         return Ok(Vec::new());
     };
+    if !can_view_forum_page(ctx, site_id, &page).await? {
+        return Ok(Vec::new());
+    }
 
     let Some(created_by_user_id) =
         resolve_optional_user_filter(ctx, created_by.as_deref()).await?
@@ -215,9 +219,12 @@ pub async fn forum_post_page_summary(
     params: Params<'static>,
 ) -> Result<ForumPostPageSummary> {
     let ForumPostPageSummaryInput { site_id, page } = parse!(params, ForumPost);
-    let Some((_page, thread)) = find_page_thread(ctx, site_id, &page).await? else {
+    let Some((page, thread)) = find_page_thread(ctx, site_id, &page).await? else {
         return Ok(empty_page_summary());
     };
+    if !can_view_forum_page(ctx, site_id, &page).await? {
+        return Ok(empty_page_summary());
+    }
 
     let condition = Condition::all()
         .add(forum_post::Column::SiteId.eq(site_id))
@@ -301,6 +308,9 @@ async fn build_wikidot_forum_post(
     let Some(page) = page else {
         return Ok(None);
     };
+    if !can_view_forum_page(ctx, post.site_id, &page).await? {
+        return Ok(None);
+    }
 
     let (content, html) = join!(
         TextService::get(ctx, &revision.wikitext_hash),
@@ -412,6 +422,33 @@ fn parse_post_ids(posts: Vec<StringOrInteger>) -> Result<Vec<i64>> {
         .into_iter()
         .map(|post| post.into_integer("ID"))
         .collect()
+}
+
+async fn can_view_forum_page(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page: &PageModel,
+) -> Result<bool> {
+    PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to check forum page view permission",
+            ErrorType::ForumPost,
+        )
+    })
 }
 
 async fn user_slug(ctx: &ServiceContext<'_>, user_id: i64) -> Result<String> {

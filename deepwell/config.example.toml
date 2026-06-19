@@ -238,8 +238,9 @@ main = "wikijump.com"
 # and other potentially-insecure data.
 files = "wjfiles.com"
 
-# Scheme and optional port used when rendering absolute public URLs.
-# Local HTTPS-terminating proxies may set these to http and their exposed port.
+# Scheme and optional port used when rendering absolute public URLs. Keep
+# public-scheme = "https" when a local proxy terminates HTTPS and forwards to
+# Deepwell. Set it to "http" only when clients directly use an exposed HTTP port.
 public-scheme = "https"
 # public-port = 443
 

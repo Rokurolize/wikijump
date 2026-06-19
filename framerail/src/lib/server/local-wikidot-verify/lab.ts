@@ -246,18 +246,18 @@ export async function getScenarioPages(
   selectedSlug: string
 ): Promise<ScenarioPageSummary[]> {
   const slugs = [...new Set([selectedSlug, ...PROOF_SCENARIO_SLUGS])]
-  const summaries = []
-  for (const slug of slugs) {
-    const page = await getPage(siteId, slug)
-    summaries.push({
-      slug,
-      title: page?.title ?? slug,
-      exists: Boolean(page),
-      revisionNumber: page?.revision_number,
-      tags: page?.tags ?? []
+  return Promise.all(
+    slugs.map(async (slug) => {
+      const page = await getPage(siteId, slug)
+      return {
+        slug,
+        title: page?.title ?? slug,
+        exists: Boolean(page),
+        revisionNumber: page?.revision_number,
+        tags: page?.tags ?? []
+      }
     })
-  }
-  return summaries
+  )
 }
 
 export async function savePage(input: SavePageInput): Promise<SavePageOutput> {

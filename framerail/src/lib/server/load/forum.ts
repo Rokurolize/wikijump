@@ -19,13 +19,13 @@ async function loadForumLabels(parentData: PreloadData, translateKeys: Translate
 
 function validateForumRouteId(routeId: number) {
   if (!Number.isInteger(routeId) || routeId <= 0) {
-    error(404, "Invalid forum route ID")
+    throw error(404, "Invalid forum route ID")
   }
 }
 
 export function parseForumRouteId(routeId: string) {
   if (!/^\d+$/.test(routeId)) {
-    error(404)
+    throw error(404)
   }
 
   const parsedRouteId = Number.parseInt(routeId, 10)
