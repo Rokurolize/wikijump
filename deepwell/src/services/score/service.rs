@@ -20,6 +20,7 @@
 
 use super::impls::*;
 use super::prelude::*;
+use std::collections::BTreeMap;
 
 #[derive(Debug)]
 pub struct ScoreService;
@@ -38,6 +39,18 @@ impl ScoreService {
         let scorer = Self::get_scorer(ctx, page_id).await.or_raise(make_error)?;
         let score = scorer.score(txn, condition).await.or_raise(make_error)?;
         Ok(score)
+    }
+
+    pub async fn scores_bulk(
+        ctx: &ServiceContext<'_>,
+        page_ids: &[i64],
+    ) -> Result<BTreeMap<i64, ScoreValue>> {
+        let mut scores = BTreeMap::new();
+        for page_id in page_ids {
+            let score = Self::score(ctx, *page_id).await?;
+            scores.insert(*page_id, score);
+        }
+        Ok(scores)
     }
 
     /// Gets the correct `Scorer` implementation for this page.

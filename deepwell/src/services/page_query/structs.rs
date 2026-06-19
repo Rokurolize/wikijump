@@ -67,6 +67,9 @@ pub struct TagCondition<'a> {
 /// The relationship of the pages being queried to their parent/child pages.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PageParentSelector<'a> {
+    /// Pages with any parent relationship.
+    All,
+
     /// Pages which have no parent page.
     NoParent,
 

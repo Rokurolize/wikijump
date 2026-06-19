@@ -1247,7 +1247,7 @@ impl RenderService {
                 all_present: &all_tags,
                 none_present: &no_tags,
             },
-            page_parent: PageParentSelector::DifferentParents,
+            page_parent: PageParentSelector::All,
             contains_outgoing_links: &[],
             creation_date: DateSelector::FromPresent {
                 start: time::OffsetDateTime::UNIX_EPOCH,
@@ -1453,9 +1453,8 @@ fn parse_list_pages_order(value: &str) -> Option<OrderBySelector> {
     };
 
     let property = match value.to_ascii_lowercase().as_str() {
-        "name" | "slug" | "fullname" | "fullslug" | "full_slug" => {
-            OrderProperty::FullSlug
-        }
+        "name" | "slug" => OrderProperty::PageSlug,
+        "fullname" | "fullslug" | "full_slug" => OrderProperty::FullSlug,
         "title" => OrderProperty::Title,
         "alt_title" | "alttitle" => OrderProperty::AltTitle,
         "created_at" | "createdat" | "created" | "date" => OrderProperty::CreatedAt,

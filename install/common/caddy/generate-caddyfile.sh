@@ -1,21 +1,24 @@
 #!/bin/sh
 set -e
 
-rm -f /tmp/deepwell.json /tmp/Caddyfile
+output="${1:-/tmp/Caddyfile}"
+deepwell_response="$(mktemp /tmp/deepwell.XXXXXX.json)"
+caddyfile="$(mktemp /tmp/Caddyfile.XXXXXX)"
+trap 'rm -f "$deepwell_response" "$caddyfile"' EXIT
 
 # Send DEEPWELL request
 curl -f http://deepwell:2747/jsonrpc \
 	-X POST \
 	--json @/etc/caddy-request.json \
-		> /tmp/deepwell.json
+		> "$deepwell_response"
 
 # Determine if it's an error
-error="$(jq .error /tmp/deepwell.json)"
+error="$(jq .error "$deepwell_response")"
 if [ "$error" != null ]; then
-	cat /tmp/deepwell.json
+	cat "$deepwell_response"
 	exit 1
 fi
 
 # Call was a success, extract the Caddyfile
-jq -r .result /tmp/deepwell.json > /tmp/Caddyfile
-rm /tmp/deepwell.json
+jq -r .result "$deepwell_response" > "$caddyfile"
+mv "$caddyfile" "$output"

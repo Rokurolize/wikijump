@@ -58,18 +58,26 @@ function parseArgs(argv) {
   }
 
   if (!args.manifest) throw new Error("--manifest is required");
-  if (!Number.isFinite(args.batchSize) || args.batchSize <= 0) args.batchSize = 250;
+  if (!Number.isFinite(args.batchSize) || args.batchSize <= 0)
+    args.batchSize = 250;
   if (!Number.isFinite(args.offset) || args.offset < 0) args.offset = 0;
-  if (args.limit !== undefined && (!Number.isFinite(args.limit) || args.limit < 0)) {
+  if (
+    args.limit !== undefined &&
+    (!Number.isFinite(args.limit) || args.limit < 0)
+  ) {
     throw new Error("--limit must be a non-negative integer");
   }
-  if (!Number.isFinite(args.maxDependencies) || args.maxDependencies < 0) args.maxDependencies = 500;
-  if (!Number.isFinite(args.rpcTimeoutMs) || args.rpcTimeoutMs <= 0) args.rpcTimeoutMs = 30000;
+  if (!Number.isFinite(args.maxDependencies) || args.maxDependencies < 0)
+    args.maxDependencies = 500;
+  if (!Number.isFinite(args.rpcTimeoutMs) || args.rpcTimeoutMs <= 0)
+    args.rpcTimeoutMs = 30000;
   return args;
 }
 
 function printHelpAndExit() {
-  console.log(`Usage: node install/local/wikidot-verification/scripts/corpus-render-batch.mjs --manifest FILE --output-dir DIR [--offset 0] [--limit N] [--batch-size 250] [--rpc-url URL] [--rpc-timeout-ms 30000] [--site scp-wiki] [--slug-prefix PREFIX] [--preload-dependencies] [--max-dependencies 500]`);
+  console.log(
+    `Usage: node install/local/wikidot-verification/scripts/corpus-render-batch.mjs --manifest FILE --output-dir DIR [--offset 0] [--limit N] [--batch-size 250] [--rpc-url URL] [--rpc-timeout-ms 30000] [--site scp-wiki] [--slug-prefix PREFIX] [--preload-dependencies] [--max-dependencies 500]`,
+  );
   process.exit(0);
 }
 
@@ -81,15 +89,26 @@ function tsv(value) {
 
 function splitPipe(value) {
   if (!value) return [];
-  return value.split("|").map((part) => part.trim()).filter(Boolean);
+  return value
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean);
 }
 
 function sha256Text(text) {
   return crypto.createHash("sha256").update(text).digest("hex");
 }
 
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is required`);
+  return value;
+}
+
 function normalizeTags(value) {
-  return splitPipe(value).filter((tag) => !tag.startsWith("_")).sort();
+  return splitPipe(value)
+    .filter((tag) => !tag.startsWith("_"))
+    .sort();
 }
 
 function sameTags(left = [], right = []) {
@@ -135,7 +154,8 @@ class DeepwellClient {
 
   async call(method, params = {}, context = {}) {
     const headers = { "content-type": "application/json" };
-    if (context.sessionToken) headers["X-Deepwell-Session-Token"] = context.sessionToken;
+    if (context.sessionToken)
+      headers["X-Deepwell-Session-Token"] = context.sessionToken;
     if (context.siteId) headers["X-Deepwell-Site-Id"] = String(context.siteId);
     if (context.page) headers["X-Deepwell-Page"] = String(context.page);
 
@@ -155,8 +175,12 @@ class DeepwellClient {
         }),
       });
     } catch (error) {
-      const detail = controller.signal.aborted ? `timed out after ${this.timeoutMs} ms` : describeError(error);
-      throw new Error(`JSON-RPC ${method} fetch failed for ${this.rpcUrl}: ${detail}`);
+      const detail = controller.signal.aborted
+        ? `timed out after ${this.timeoutMs} ms`
+        : describeError(error);
+      throw new Error(
+        `JSON-RPC ${method} fetch failed for ${this.rpcUrl}: ${detail}`,
+      );
     } finally {
       clearTimeout(timeout);
     }
@@ -166,12 +190,16 @@ class DeepwellClient {
     try {
       body = JSON.parse(bodyText);
     } catch {
-      throw new Error(`Invalid JSON-RPC response for ${method}: HTTP ${response.status} ${bodyText.slice(0, 300)}`);
+      throw new Error(
+        `Invalid JSON-RPC response for ${method}: HTTP ${response.status} ${bodyText.slice(0, 300)}`,
+      );
     }
 
     if (!response.ok || body.error) {
       const message = body.error ? JSON.stringify(body.error) : bodyText;
-      throw new Error(`JSON-RPC ${method} failed: HTTP ${response.status} ${message}`);
+      throw new Error(
+        `JSON-RPC ${method} failed: HTTP ${response.status} ${message}`,
+      );
     }
 
     return body.result;
@@ -189,21 +217,31 @@ async function maybeGetPage(client, siteId, slug) {
       },
     });
   } catch (error) {
-    if (String(error.message).includes("PageMissing") || String(error.message).includes("not found")) {
+    if (
+      String(error.message).includes("PageMissing") ||
+      String(error.message).includes("not found")
+    ) {
       return null;
     }
     throw error;
   }
 }
 
-async function createOrUpdatePage(client, siteId, sessionToken, row, source, importSlug) {
+async function createOrUpdatePage(
+  client,
+  siteId,
+  sessionToken,
+  row,
+  source,
+  importSlug,
+) {
   const title = row.title || row.slug;
   const tags = normalizeTags(row.tags);
-  const existing = await maybeGetPage(client, siteId, importSlug);
+  let current = await maybeGetPage(client, siteId, importSlug);
   let parserErrors = [];
   let action = "unchanged";
 
-  if (!existing) {
+  if (!current) {
     const created = await client.call("page_create", {
       site_id: siteId,
       wikitext: source,
@@ -215,26 +253,39 @@ async function createOrUpdatePage(client, siteId, sessionToken, row, source, imp
       user_id: ADMIN_USER_ID,
       ip_address: IP_ADDRESS,
     });
-    parserErrors = created.parser_errors ?? [];
+    parserErrors.push(...(created.parser_errors ?? []));
     action = "created";
-  } else if (existing.wikitext !== source || existing.title !== title || !sameTags(existing.tags, tags)) {
-    const edited = await client.call("page_edit", {
-      site_id: siteId,
-      page: existing.page_id,
-      last_revision_id: existing.revision_id,
-      revision_comments: "v5 corpus render batch update",
-      user_id: ADMIN_USER_ID,
-      ip_address: IP_ADDRESS,
-      wikitext: source,
-      title,
-      tags,
-    }, {
-      sessionToken,
-      siteId,
-      page: importSlug,
-    });
-    parserErrors = edited?.parser_errors ?? [];
-    action = "edited";
+    current = await maybeGetPage(client, siteId, importSlug);
+  }
+
+  if (!current) throw new Error(`Page missing after create: ${importSlug}`);
+
+  if (
+    current.wikitext !== source ||
+    current.title !== title ||
+    !sameTags(current.tags, tags)
+  ) {
+    const edited = await client.call(
+      "page_edit",
+      {
+        site_id: siteId,
+        page: current.page_id,
+        last_revision_id: current.revision_id,
+        revision_comments: "v5 corpus render batch update",
+        user_id: ADMIN_USER_ID,
+        ip_address: IP_ADDRESS,
+        wikitext: source,
+        title,
+        tags,
+      },
+      {
+        sessionToken,
+        siteId,
+        page: importSlug,
+      },
+    );
+    parserErrors.push(...(edited?.parser_errors ?? []));
+    action = action === "created" ? "created+edited" : "edited";
   }
 
   const page = await maybeGetPage(client, siteId, importSlug);
@@ -271,7 +322,9 @@ function findRawSyntaxLeaks(html) {
 function findMissingIncludes(html, dependencyHints) {
   if (!/No such page|no such page|Missing include/i.test(html)) return [];
 
-  const includeHints = dependencyHints.filter((hint) => hint.startsWith("include:"));
+  const includeHints = dependencyHints.filter((hint) =>
+    hint.startsWith("include:"),
+  );
   const missingSlugs = new Set();
   const noSuchPagePattern = /No such page:\s*([^<\n]+)/gi;
   for (const match of html.matchAll(noSuchPagePattern)) {
@@ -280,11 +333,21 @@ function findMissingIncludes(html, dependencyHints) {
   }
 
   if (!missingSlugs.size) return includeHints;
-  const exact = includeHints.filter((hint) => missingSlugs.has(normalizeIncludeSlug(hint)));
-  return exact.length ? exact : [...missingSlugs].map((slug) => `include:${slug}`);
+  const exact = includeHints.filter((hint) =>
+    missingSlugs.has(normalizeIncludeSlug(hint)),
+  );
+  return exact.length
+    ? exact
+    : [...missingSlugs].map((slug) => `include:${slug}`);
 }
 
-function classifyResult({ parserErrors, html, dependencyHints, assetHints, importError }) {
+function classifyResult({
+  parserErrors,
+  html,
+  dependencyHints,
+  assetHints,
+  importError,
+}) {
   if (importError) {
     return {
       status: "failed-import",
@@ -313,21 +376,30 @@ function classifyResult({ parserErrors, html, dependencyHints, assetHints, impor
 
   const rawSyntaxLeaks = findRawSyntaxLeaks(html);
   const missingIncludes = findMissingIncludes(html, dependencyHints);
-  const missingAssets = assetHints.filter((asset) => asset && !html.includes(asset) && !asset.startsWith("http"));
+  const missingAssets = assetHints.filter(
+    (asset) => asset && !html.includes(asset) && !asset.startsWith("http"),
+  );
   const warnings = [];
   const errors = [];
 
-  if (parserErrors.length) warnings.push(`${parserErrors.length} parser warning(s)`);
-  if (assetHints.some((asset) => /^https?:\/\//i.test(asset))) warnings.push("external asset reference(s)");
-  if (rawSyntaxLeaks.length) errors.push(`${rawSyntaxLeaks.length} raw syntax leak(s)`);
-  if (missingIncludes.length) errors.push(`${missingIncludes.length} missing include hint(s)`);
-  if (missingAssets.length) warnings.push(`${missingAssets.length} unresolved local asset hint(s)`);
+  if (parserErrors.length)
+    warnings.push(`${parserErrors.length} parser warning(s)`);
+  if (assetHints.some((asset) => /^https?:\/\//i.test(asset)))
+    warnings.push("external asset reference(s)");
+  if (rawSyntaxLeaks.length)
+    errors.push(`${rawSyntaxLeaks.length} raw syntax leak(s)`);
+  if (missingIncludes.length)
+    errors.push(`${missingIncludes.length} missing include hint(s)`);
+  if (missingAssets.length)
+    warnings.push(`${missingAssets.length} unresolved local asset hint(s)`);
 
   if (rawSyntaxLeaks.length || missingIncludes.length) {
     return {
       status: "failed-renderer",
       severity: "S3",
-      category: rawSyntaxLeaks.length ? "ftml-renderer" : "wikijump-include-fragment",
+      category: rawSyntaxLeaks.length
+        ? "ftml-renderer"
+        : "wikijump-include-fragment",
       warnings,
       errors,
       rawSyntaxLeaks,
@@ -398,7 +470,9 @@ function compatibilityRow(result) {
     result.durationMs,
     result.artifact,
     result.notes,
-  ].map(tsv).join("\t");
+  ]
+    .map(tsv)
+    .join("\t");
 }
 
 function normalizeIncludeSlug(hint) {
@@ -444,7 +518,14 @@ async function preloadDependencies({
     const start = performance.now();
     try {
       const source = await fs.readFile(row.source_path, "utf8");
-      const imported = await createOrUpdatePage(client, siteId, sessionToken, row, source, importSlug);
+      const imported = await createOrUpdatePage(
+        client,
+        siteId,
+        sessionToken,
+        row,
+        source,
+        importSlug,
+      );
       results.push({
         slug,
         importSlug,
@@ -491,16 +572,34 @@ function batchLedgerRow(summary) {
     summary.skipped,
     summary.status,
     summary.next,
-  ].map(tsv).join("\t");
+  ]
+    .map(tsv)
+    .join("\t");
 }
 
-async function writeBatchOutputs({ args, batchId, rpcUrl, siteSlug, selected, results, dependencyPreload = [], status, next, exitCode = 0 }) {
+async function writeBatchOutputs({
+  args,
+  batchId,
+  rpcUrl,
+  siteSlug,
+  selected,
+  results,
+  dependencyPreload = [],
+  status,
+  next,
+  exitCode = 0,
+}) {
   const counts = {
     pass: results.filter((result) => result.status === "pass").length,
-    warning: results.filter((result) => result.status === "pass-with-warnings").length,
-    unsupported: results.filter((result) => result.status === "unsupported-known").length,
-    failed: results.filter((result) => result.status.startsWith("failed")).length,
-    skipped: results.filter((result) => result.status.startsWith("skipped")).length,
+    warning: results.filter((result) => result.status === "pass-with-warnings")
+      .length,
+    unsupported: results.filter(
+      (result) => result.status === "unsupported-known",
+    ).length,
+    failed: results.filter((result) => result.status.startsWith("failed"))
+      .length,
+    skipped: results.filter((result) => result.status.startsWith("skipped"))
+      .length,
   };
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -515,17 +614,21 @@ async function writeBatchOutputs({ args, batchId, rpcUrl, siteSlug, selected, re
     dependencyPreload: {
       enabled: Boolean(args.preloadDependencies),
       requested: dependencyPreload.length,
-      passed: dependencyPreload.filter((result) => result.status === "pass").length,
-      failed: dependencyPreload.filter((result) => result.status === "failed").length,
+      passed: dependencyPreload.filter((result) => result.status === "pass")
+        .length,
+      failed: dependencyPreload.filter((result) => result.status === "failed")
+        .length,
     },
     manifest: args.manifest,
     outputDir: args.outputDir,
     pageCount: selected.length,
     counts,
-    severityCounts: Object.fromEntries(["S0", "S1", "S2", "S3", "S4"].map((severity) => [
-      severity,
-      results.filter((result) => result.severity === severity).length,
-    ])),
+    severityCounts: Object.fromEntries(
+      ["S0", "S1", "S2", "S3", "S4"].map((severity) => [
+        severity,
+        results.filter((result) => result.severity === severity).length,
+      ]),
+    ),
     categoryCounts: results.reduce((acc, result) => {
       acc[result.category] = (acc[result.category] || 0) + 1;
       return acc;
@@ -533,35 +636,55 @@ async function writeBatchOutputs({ args, batchId, rpcUrl, siteSlug, selected, re
   };
 
   await writeJson(path.join(args.outputDir, "batch-summary.json"), summary);
-  await fs.writeFile(path.join(args.outputDir, "compatibility-results.tsv"), [
-    "page_id\tslug\tbatch_id\tparse_status\trender_status\timport_status\tbrowser_status\tseverity\tcategory\twarnings\terrors\traw_syntax_leaks\tmissing_includes\tmissing_assets\tduration_ms\tartifact\tnotes",
-    ...results.map(compatibilityRow),
-    "",
-  ].join("\n"));
+  await fs.writeFile(
+    path.join(args.outputDir, "compatibility-results.tsv"),
+    [
+      "page_id\tslug\tbatch_id\tparse_status\trender_status\timport_status\tbrowser_status\tseverity\tcategory\twarnings\terrors\traw_syntax_leaks\tmissing_includes\tmissing_assets\tduration_ms\tartifact\tnotes",
+      ...results.map(compatibilityRow),
+      "",
+    ].join("\n"),
+  );
 
   const ledger = {
     batchId,
     startIndex: args.offset,
     endIndex: args.offset + selected.length - 1,
     pageCount: selected.length,
-    command: process.argv.map((part) => part.includes(" ") ? JSON.stringify(part) : part).join(" "),
+    command: process.argv
+      .map((part) => (part.includes(" ") ? JSON.stringify(part) : part))
+      .join(" "),
     artifactDir: args.outputDir,
     ...counts,
-    status: status ?? (counts.failed > 0 ? "complete-with-failures" : "complete"),
-    next: next ?? (counts.failed > 0 ? "Review S3/S4 diagnostics and fix highest-impact categories." : "Continue next deterministic batch."),
+    status:
+      status ?? (counts.failed > 0 ? "complete-with-failures" : "complete"),
+    next:
+      next ??
+      (counts.failed > 0
+        ? "Review S3/S4 diagnostics and fix highest-impact categories."
+        : "Continue next deterministic batch."),
   };
-  await fs.writeFile(path.join(args.outputDir, "corpus-batch-ledger.tsv"), [
-    "batch_id\tstart_index\tend_index\tpage_count\tcommand\tartifact_dir\tpass\twarning\tunsupported\tfailed\tskipped\tstatus\tnext",
-    batchLedgerRow(ledger),
-    "",
-  ].join("\n"));
+  await fs.writeFile(
+    path.join(args.outputDir, "corpus-batch-ledger.tsv"),
+    [
+      "batch_id\tstart_index\tend_index\tpage_count\tcommand\tartifact_dir\tpass\twarning\tunsupported\tfailed\tskipped\tstatus\tnext",
+      batchLedgerRow(ledger),
+      "",
+    ].join("\n"),
+  );
 
   console.log(JSON.stringify(summary, null, 2));
   if (exitCode) process.exitCode = exitCode;
   return summary;
 }
 
-async function writeSetupFailureOutputs({ args, batchId, rpcUrl, siteSlug, selected, error }) {
+async function writeSetupFailureOutputs({
+  args,
+  batchId,
+  rpcUrl,
+  siteSlug,
+  selected,
+  error,
+}) {
   const message = describeError(error);
   const results = [];
   for (const [relativeIndex, row] of selected.entries()) {
@@ -590,7 +713,9 @@ async function writeSetupFailureOutputs({ args, batchId, rpcUrl, siteSlug, selec
         action: "skipped",
       },
       dependencies: {
-        includes: splitPipe(row.dependency_hints).filter((hint) => hint.startsWith("include:")),
+        includes: splitPipe(row.dependency_hints).filter((hint) =>
+          hint.startsWith("include:"),
+        ),
         missingIncludes: [],
         assets: splitPipe(row.asset_paths),
         missingAssets: [],
@@ -602,7 +727,11 @@ async function writeSetupFailureOutputs({ args, batchId, rpcUrl, siteSlug, selec
       warnings: [],
       errors: [message],
     };
-    const diagnosticPath = path.join(args.outputDir, "diagnostics", `${encodeURIComponent(importSlug)}.json`);
+    const diagnosticPath = path.join(
+      args.outputDir,
+      "diagnostics",
+      `${encodeURIComponent(importSlug)}.json`,
+    );
     await writeJson(diagnosticPath, diagnostic);
     results.push({
       pageId: row.page_id,
@@ -646,13 +775,24 @@ async function main() {
   await fs.mkdir(path.join(args.outputDir, "html"), { recursive: true });
 
   const manifest = await readTsv(args.manifest);
-  const selected = manifest.slice(args.offset, args.limit === undefined ? args.offset + args.batchSize : args.offset + args.limit);
-  const manifestBySlug = new Map(manifest.map((row) => [row.slug.toLowerCase(), row]));
+  const selected = manifest.slice(
+    args.offset,
+    args.limit === undefined
+      ? args.offset + args.batchSize
+      : args.offset + args.limit,
+  );
+  const manifestBySlug = new Map(
+    manifest.map((row) => [row.slug.toLowerCase(), row]),
+  );
   const batchId = `v5-corpus-${args.offset}-${args.offset + selected.length - 1}`;
-  const rpcUrl = args.rpcUrl || process.env.WIKIDOT_VERIFY_RPC_URL || "http://127.0.0.1:2747/jsonrpc";
-  const siteSlug = args.siteSlug || process.env.WIKIDOT_VERIFY_SITE_SLUG || "scp-wiki";
-  const adminEmail = process.env.WIKIDOT_VERIFY_ADMIN_EMAIL || "admin@wikijump";
-  const adminPassword = process.env.WIKIDOT_VERIFY_ADMIN_PASS || "wikijumpadmin1";
+  const rpcUrl =
+    args.rpcUrl ||
+    process.env.WIKIDOT_VERIFY_RPC_URL ||
+    "http://127.0.0.1:2747/jsonrpc";
+  const siteSlug =
+    args.siteSlug || process.env.WIKIDOT_VERIFY_SITE_SLUG || "scp-wiki";
+  const adminEmail = requireEnv("WIKIDOT_VERIFY_ADMIN_EMAIL");
+  const adminPassword = requireEnv("WIKIDOT_VERIFY_ADMIN_PASS");
   const client = new DeepwellClient(rpcUrl, args.rpcTimeoutMs);
   let site;
   let login;
@@ -667,7 +807,14 @@ async function main() {
       user_agent: "wikidot-corpus-render-batch/0.1",
     });
   } catch (error) {
-    await writeSetupFailureOutputs({ args, batchId, rpcUrl, siteSlug, selected, error });
+    await writeSetupFailureOutputs({
+      args,
+      batchId,
+      rpcUrl,
+      siteSlug,
+      selected,
+      error,
+    });
     return;
   }
 
@@ -698,7 +845,14 @@ async function main() {
     let sourceSha256 = sha256Text(source);
 
     try {
-      imported = await createOrUpdatePage(client, site.site_id, login.session_token, row, source, importSlug);
+      imported = await createOrUpdatePage(
+        client,
+        site.site_id,
+        login.session_token,
+        row,
+        source,
+        importSlug,
+      );
       const html = imported.page.compiled_body_html || "";
       classification = classifyResult({
         parserErrors: imported.parserErrors,
@@ -708,7 +862,14 @@ async function main() {
       });
 
       if (html) {
-        await fs.writeFile(path.join(args.outputDir, "html", `${encodeURIComponent(importSlug)}.html`), html);
+        await fs.writeFile(
+          path.join(
+            args.outputDir,
+            "html",
+            `${encodeURIComponent(importSlug)}.html`,
+          ),
+          html,
+        );
       }
     } catch (error) {
       classification = classifyResult({
@@ -721,6 +882,12 @@ async function main() {
     }
 
     const durationMs = Math.round(performance.now() - start);
+    const parseStatus =
+      classification.status === "failed-import"
+        ? "skipped"
+        : classification.warnings.some((warning) => warning.includes("parser"))
+          ? "warning"
+          : "pass";
     const diagnostic = {
       pageId: row.page_id,
       slug: row.slug,
@@ -729,17 +896,27 @@ async function main() {
       sourceSha256,
       manifestIndex,
       parse: {
-        status: classification.warnings.some((warning) => warning.includes("parser")) ? "warning" : "pass",
+        status: parseStatus,
         warnings: imported?.parserErrors ?? [],
         errors: [],
       },
       render: {
-        status: classification.severity === "S4" || classification.severity === "S3" ? "failed" : "pass",
-        htmlPath: imported?.page?.compiled_body_html ? path.join(args.outputDir, "html", `${encodeURIComponent(importSlug)}.html`) : "",
+        status:
+          classification.severity === "S4" || classification.severity === "S3"
+            ? "failed"
+            : "pass",
+        htmlPath: imported?.page?.compiled_body_html
+          ? path.join(
+              args.outputDir,
+              "html",
+              `${encodeURIComponent(importSlug)}.html`,
+            )
+          : "",
         rawSyntaxLeaks: classification.rawSyntaxLeaks,
       },
       wikijump: {
-        importStatus: classification.status === "failed-import" ? "failed" : "pass",
+        importStatus:
+          classification.status === "failed-import" ? "failed" : "pass",
         url: `/${importSlug}`,
         httpStatus: null,
         action: imported?.action ?? "failed",
@@ -759,7 +936,11 @@ async function main() {
       warnings: classification.warnings,
       errors: classification.errors,
     };
-    const diagnosticPath = path.join(args.outputDir, "diagnostics", `${encodeURIComponent(importSlug)}.json`);
+    const diagnosticPath = path.join(
+      args.outputDir,
+      "diagnostics",
+      `${encodeURIComponent(importSlug)}.json`,
+    );
     await writeJson(diagnosticPath, diagnostic);
 
     results.push({
@@ -784,7 +965,15 @@ async function main() {
     });
   }
 
-  await writeBatchOutputs({ args, batchId, rpcUrl, siteSlug, selected, results, dependencyPreload });
+  await writeBatchOutputs({
+    args,
+    batchId,
+    rpcUrl,
+    siteSlug,
+    selected,
+    results,
+    dependencyPreload,
+  });
 }
 
 main().catch((error) => {

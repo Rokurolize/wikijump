@@ -25,11 +25,12 @@ use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::{self, Entity as PageCategory};
 use crate::models::page_connection::{self, Entity as PageConnection};
 use crate::models::page_parent::{self, Entity as PageParent};
-use crate::models::{page_revision, page_vote, text};
-use crate::services::{PageService, ParentService};
-use sea_orm::FromQueryResult;
+use crate::models::{page_revision, text};
+use crate::services::score::ScoreValue;
+use crate::services::{PageService, ParentService, ScoreService};
 use sea_query::extension::postgres::PgBinOper;
 use sea_query::{Expr, Query};
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
 #[derive(Debug)]
@@ -196,17 +197,21 @@ impl PageQueryService {
         }
 
         let page_parent_condition = match page_parent {
+            PageParentSelector::All => None,
+
             // Pages with no parents.
             // This means that there should be no rows in `page_parent`
             // where they are the child page.
             PageParentSelector::NoParent => {
                 debug!("Selecting pages with no parents");
 
-                page::Column::PageId.not_in_subquery(
-                    Query::select()
-                        .column(page_parent::Column::ChildPageId)
-                        .from(PageParent)
-                        .to_owned(),
+                Some(
+                    page::Column::PageId.not_in_subquery(
+                        Query::select()
+                            .column(page_parent::Column::ChildPageId)
+                            .from(PageParent)
+                            .to_owned(),
+                    ),
                 )
             }
 
@@ -215,14 +220,16 @@ impl PageQueryService {
             PageParentSelector::SameParents => {
                 debug!("Selecting pages are siblings under the given parents");
 
-                page::Column::PageId.in_subquery(
-                    Query::select()
-                        .column(page_parent::Column::ChildPageId)
-                        .from(PageParent)
-                        .and_where(
-                            page_parent::Column::ParentPageId.is_in(get_parents!()),
-                        )
-                        .to_owned(),
+                Some(
+                    page::Column::PageId.in_subquery(
+                        Query::select()
+                            .column(page_parent::Column::ChildPageId)
+                            .from(PageParent)
+                            .and_where(
+                                page_parent::Column::ParentPageId.is_in(get_parents!()),
+                            )
+                            .to_owned(),
+                    ),
                 )
             }
 
@@ -231,24 +238,17 @@ impl PageQueryService {
             PageParentSelector::DifferentParents => {
                 debug!("Selecting pages which are not siblings under the given parents");
 
-                let parents = ParentService::get_parents(
-                    ctx,
-                    current_site_id,
-                    Reference::Id(current_page_id),
-                )
-                .await
-                .or_raise(make_error)?
-                .into_iter()
-                .map(|parent| parent.parent_page_id);
-
-                page::Column::PageId.in_subquery(
-                    Query::select()
-                        .column(page_parent::Column::ChildPageId)
-                        .from(PageParent)
-                        .and_where(
-                            page_parent::Column::ParentPageId.is_not_in(get_parents!()),
-                        )
-                        .to_owned(),
+                Some(
+                    page::Column::PageId.in_subquery(
+                        Query::select()
+                            .column(page_parent::Column::ChildPageId)
+                            .from(PageParent)
+                            .and_where(
+                                page_parent::Column::ParentPageId
+                                    .is_not_in(get_parents!()),
+                            )
+                            .to_owned(),
+                    ),
                 )
             }
 
@@ -256,12 +256,16 @@ impl PageQueryService {
             PageParentSelector::ChildOf => {
                 debug!("Selecting pages which are children of the current page");
 
-                page::Column::PageId.in_subquery(
-                    Query::select()
-                        .column(page_parent::Column::ChildPageId)
-                        .from(PageParent)
-                        .and_where(page_parent::Column::ParentPageId.eq(current_page_id))
-                        .to_owned(),
+                Some(
+                    page::Column::PageId.in_subquery(
+                        Query::select()
+                            .column(page_parent::Column::ChildPageId)
+                            .from(PageParent)
+                            .and_where(
+                                page_parent::Column::ParentPageId.eq(current_page_id),
+                            )
+                            .to_owned(),
+                    ),
                 )
             }
 
@@ -277,16 +281,22 @@ impl PageQueryService {
                     .into_iter()
                     .map(|page| page.page_id);
 
-                page::Column::PageId.in_subquery(
-                    Query::select()
-                        .column(page_parent::Column::ChildPageId)
-                        .from(PageParent)
-                        .and_where(page_parent::Column::ParentPageId.is_in(parent_ids))
-                        .to_owned(),
+                Some(
+                    page::Column::PageId.in_subquery(
+                        Query::select()
+                            .column(page_parent::Column::ChildPageId)
+                            .from(PageParent)
+                            .and_where(
+                                page_parent::Column::ParentPageId.is_in(parent_ids),
+                            )
+                            .to_owned(),
+                    ),
                 )
             }
         };
-        condition = condition.add(page_parent_condition);
+        if let Some(page_parent_condition) = page_parent_condition {
+            condition = condition.add(page_parent_condition);
+        }
 
         // Slug
         if let Some(slug) = slug {
@@ -379,6 +389,7 @@ impl PageQueryService {
         }
 
         // Add on at the query-level (ORDER BY, LIMIT)
+        let score_order = matches!(order.property, OrderProperty::Score);
         {
             use sea_orm::query::Order;
             use sea_query::SimpleExpr;
@@ -439,11 +450,7 @@ impl PageQueryService {
                     query = query.order_by(expr, order);
                 }
                 OrderProperty::Score => {
-                    debug!("Ordering by page score");
-                    let expr = SimpleExpr::Custom(
-                        "COALESCE((SELECT SUM(pv.value) FROM page_vote pv WHERE pv.page_id = page.page_id AND pv.deleted_at IS NULL AND pv.disabled_at IS NULL), 0)".into(),
-                    );
-                    query = query.order_by(expr, order);
+                    debug!("Ordering by page score after ScoreService evaluation");
                 }
                 OrderProperty::Votes => {
                     debug!("Ordering by page vote count");
@@ -478,7 +485,7 @@ impl PageQueryService {
             };
         }
 
-        if let Some(limit) = pagination.limit {
+        if !score_order && let Some(limit) = pagination.limit {
             debug!("Limiting ListPages to a maximum of {limit} pages total");
             query = query.limit(limit);
         }
@@ -496,11 +503,45 @@ impl PageQueryService {
         //      3. [14, 13, 12, 11, 10]
 
         // Execute it!
-        let pages = query.all(txn).await.or_raise(make_error)?;
+        let mut pages = query.all(txn).await.or_raise(make_error)?;
 
         debug!("Query returned {} pages, building FoundPages", pages.len());
 
-        let page_ids = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
+        let mut page_ids = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
+        let score_by_page_id: BTreeMap<i64, f32> =
+            if (fields.score || score_order) && !page_ids.is_empty() {
+                ScoreService::scores_bulk(ctx, &page_ids)
+                    .await
+                    .or_raise(make_error)?
+                    .into_iter()
+                    .map(|(page_id, score)| (page_id, score_to_f32(score)))
+                    .collect()
+            } else {
+                BTreeMap::new()
+            };
+
+        if score_order {
+            pages.sort_by(|left, right| {
+                let left_score =
+                    score_by_page_id.get(&left.page_id).copied().unwrap_or(0.0);
+                let right_score =
+                    score_by_page_id.get(&right.page_id).copied().unwrap_or(0.0);
+                let ordering = left_score
+                    .partial_cmp(&right_score)
+                    .unwrap_or(Ordering::Equal);
+                let ordering = if order.ascending {
+                    ordering
+                } else {
+                    ordering.reverse()
+                };
+                ordering.then_with(|| left.slug.cmp(&right.slug))
+            });
+            if let Some(limit) = pagination.limit {
+                pages.truncate(limit.min(usize::MAX as u64) as usize);
+            }
+            page_ids = pages.iter().map(|page| page.page_id).collect();
+        }
+
         let revision_fields_requested =
             fields.title || fields.alt_title || fields.tags || fields.updated_by;
         let revisions_by_id: BTreeMap<i64, page_revision::Model> =
@@ -543,33 +584,6 @@ impl PageQueryService {
             } else {
                 BTreeMap::new()
             };
-
-        #[derive(FromQueryResult, Debug)]
-        struct PageScoreRow {
-            page_id: i64,
-            score: Option<i64>,
-        }
-
-        let score_by_page_id: BTreeMap<i64, f32> = if fields.score && !page_ids.is_empty()
-        {
-            page_vote::Entity::find()
-                .select_only()
-                .column(page_vote::Column::PageId)
-                .column_as(Expr::col(page_vote::Column::Value).sum(), "score")
-                .filter(page_vote::Column::PageId.is_in(page_ids))
-                .filter(page_vote::Column::DeletedAt.is_null())
-                .filter(page_vote::Column::DisabledAt.is_null())
-                .group_by(page_vote::Column::PageId)
-                .into_model::<PageScoreRow>()
-                .all(txn)
-                .await
-                .or_raise(make_error)?
-                .into_iter()
-                .map(|row| (row.page_id, row.score.unwrap_or_default() as f32))
-                .collect()
-        } else {
-            BTreeMap::new()
-        };
 
         let rows = pages
             .into_iter()
@@ -637,5 +651,12 @@ impl PageQueryService {
             .collect();
 
         Ok(FoundPages { pages: rows })
+    }
+}
+
+fn score_to_f32(score: ScoreValue) -> f32 {
+    match score {
+        ScoreValue::Integer(value) => value as f32,
+        ScoreValue::Float(value) => value as f32,
     }
 }

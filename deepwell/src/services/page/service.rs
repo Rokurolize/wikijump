@@ -890,7 +890,8 @@ impl PageService {
         for field in ["title", "alt_title", "tags", "wikitext"] {
             if revision_changed(&target_revision, field)
                 && (revision_hidden(&target_revision, field)
-                    || revision_hidden(&previous_revision, field))
+                    || revision_hidden(&previous_revision, field)
+                    || revision_hidden(&latest_revision, field))
             {
                 bail!(Error::new(
                     format!("cannot undo revision with hidden {field} change"),

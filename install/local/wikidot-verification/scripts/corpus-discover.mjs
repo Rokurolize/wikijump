@@ -7,7 +7,10 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../../..");
-const DEFAULT_CORPUS = path.resolve(repoRoot, "install/local/wikidot-verification/corpus");
+const DEFAULT_CORPUS = path.resolve(
+  repoRoot,
+  "install/local/wikidot-verification/corpus",
+);
 const CANARY_COUNT = 100;
 
 function parseArgs(argv) {
@@ -20,15 +23,18 @@ function parseArgs(argv) {
     const arg = argv[index];
     if (arg === "--corpus") {
       const value = argv[++index];
-      if (!value || value.startsWith("--")) throw new Error("--corpus requires a directory path");
+      if (!value || value.startsWith("--"))
+        throw new Error("--corpus requires a directory path");
       args.corpus = path.resolve(value);
     } else if (arg === "--output-dir") {
       const value = argv[++index];
-      if (!value || value.startsWith("--")) throw new Error("--output-dir requires a directory path");
+      if (!value || value.startsWith("--"))
+        throw new Error("--output-dir requires a directory path");
       args.outputDir = path.resolve(value);
     } else if (arg === "--canary-count") {
       const value = argv[++index];
-      if (!value || value.startsWith("--")) throw new Error("--canary-count requires a value");
+      if (!value || value.startsWith("--"))
+        throw new Error("--canary-count requires a value");
       args.canaryCount = Number.parseInt(value, 10);
     } else if (arg === "--help") {
       printHelpAndExit();
@@ -45,7 +51,9 @@ function parseArgs(argv) {
 }
 
 function printHelpAndExit() {
-  console.log(`Usage: node install/local/wikidot-verification/scripts/corpus-discover.mjs --corpus DIR --output-dir DIR [--canary-count 100]`);
+  console.log(
+    `Usage: node install/local/wikidot-verification/scripts/corpus-discover.mjs --corpus DIR --output-dir DIR [--canary-count 100]`,
+  );
   process.exit(0);
 }
 
@@ -107,26 +115,37 @@ function extensionFor(relativePath) {
 
 function classifyFile(relativePath) {
   if (relativePath === "index.json") return "metadata";
-  if (/^pages\/[^/]+\/source\.wikidot\.txt$/.test(relativePath)) return "page-source";
+  if (relativePath === "manifest.json") return "metadata";
+  if (/^pages\/[^/]+\/source\.wikidot\.txt$/.test(relativePath))
+    return "page-source";
+  if (/^pages\/[^/]+\.ftml$/i.test(relativePath)) return "page-source";
   if (/^pages\/[^/]+\/meta\.json$/.test(relativePath)) return "metadata";
   if (/^pages\/[^/]+\/entity_id\.txt$/.test(relativePath)) return "metadata";
-  if (/^by-uuid\/[^/]+\/observations\.ndjson$/.test(relativePath)) return "metadata";
+  if (/^by-uuid\/[^/]+\/observations\.ndjson$/.test(relativePath))
+    return "metadata";
   if (/^posts\/[^/]+\/state\.json$/.test(relativePath)) return "metadata";
   if (/^posts\/[^/]+\/comments\.ndjson$/.test(relativePath)) return "metadata";
   if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(relativePath)) return "image";
   if (/\.(css|less|scss)$/i.test(relativePath)) return "style";
   if (/\.(woff2?|ttf|otf|eot)$/i.test(relativePath)) return "asset";
-  if (/\.(json|ndjson|txt|md|html|xml|csv|tsv)$/i.test(relativePath)) return "unknown-text";
+  if (/\.(json|ndjson|txt|md|html|xml|csv|tsv)$/i.test(relativePath))
+    return "unknown-text";
   return "unknown-binary";
 }
 
 function pageSlugGuess(relativePath) {
+  const flatMatch = relativePath.match(/^pages\/([^/]+)\.ftml$/i);
+  if (flatMatch) return flatMatch[1];
   const match = relativePath.match(/^pages\/([^/]+)\//);
   return match ? match[1] : "";
 }
 
 function hashNumber(value) {
-  const hash = crypto.createHash("sha256").update(value).digest("hex").slice(0, 12);
+  const hash = crypto
+    .createHash("sha256")
+    .update(value)
+    .digest("hex")
+    .slice(0, 12);
   return Number.parseInt(hash, 16);
 }
 
@@ -146,30 +165,49 @@ function detectConstructs(source, slug, meta) {
 
   if (/\[\[include\b/i.test(source)) hints.push("include");
   if (/\[\[module\s+ListPages\b/i.test(source)) hints.push("module-listpages");
-  if (/\[\[module\s+(?!ListPages\b)[^\]]+/i.test(source)) hints.push("module-other");
-  if (/\[\[image\b/i.test(source) || /<img\b/i.test(source)) hints.push("image");
+  if (/\[\[module\s+(?!ListPages\b)[^\]]+/i.test(source))
+    hints.push("module-other");
+  if (/\[\[image\b/i.test(source) || /<img\b/i.test(source))
+    hints.push("image");
   if (/\[\[module\s+CSS\b/i.test(source)) hints.push("css-module");
-  if (/<style\b/i.test(source) || /@import\s+url/i.test(source)) hints.push("style-block");
+  if (/<style\b/i.test(source) || /@import\s+url/i.test(source))
+    hints.push("style-block");
   if (/\[\[collapsible\b/i.test(source)) hints.push("collapsible");
   if (/\[\[tabview\b|\[\[tab\b/i.test(source)) hints.push("tabs");
   if (/\|\|/.test(source)) hints.push("table");
   if (/@@|``|<code\b|\[\[code\b/i.test(source)) hints.push("code-block");
   if (/\[\[math\b|\[math\]|\$\$/.test(source)) hints.push("math");
   if (/\[\[footnote\b/i.test(source)) hints.push("footnote");
-  if (/<iframe\b|<embed\b|<object\b|<html\b|\[\[html\b/i.test(source)) hints.push("iframe/html/embed");
-  if (/^(fragment|component):/.test(lowerSlug) || /\[\[include\s+[^]]*(fragment|component):/i.test(source)) hints.push("fragment/component");
+  if (/<iframe\b|<embed\b|<object\b|<html\b|\[\[html\b/i.test(source))
+    hints.push("iframe/html/embed");
+  if (
+    /^(fragment|component):/.test(lowerSlug) ||
+    /\[\[include\s+[^]]*(fragment|component):/i.test(source)
+  )
+    hints.push("fragment/component");
   if (/\[\[[^\]]+\]\]|https?:\/\//i.test(source)) hints.push("links");
   if (slug.includes(":") || slug.includes("/")) hints.push("category/path");
-  if (Array.isArray(meta?.tags) && meta.tags.length) hints.push("metadata/tags");
+  if (Array.isArray(meta?.tags) && meta.tags.length)
+    hints.push("metadata/tags");
   if (/^(nav|theme):/i.test(slug)) hints.push("navigation");
 
   return uniqueSorted(hints);
 }
 
 function extractDependencyHints(source) {
-  const includes = collectRegex(source, /\[\[include\s+([^\]\s|]+)[^\]]*\]\]/gi);
-  const moduleRefs = collectRegex(source, /\[\[module\s+([A-Za-z0-9_-]+)/g, (match) => `module:${match[1]}`);
-  return uniqueSorted([...includes.map((value) => `include:${value}`), ...moduleRefs]);
+  const includes = collectRegex(
+    source,
+    /\[\[include\s+([^\]\s|]+)[^\]]*\]\]/gi,
+  );
+  const moduleRefs = collectRegex(
+    source,
+    /\[\[module\s+([A-Za-z0-9_-]+)/g,
+    (match) => `module:${match[1]}`,
+  );
+  return uniqueSorted([
+    ...includes.map((value) => `include:${value}`),
+    ...moduleRefs,
+  ]);
 }
 
 function extractAssetHints(source) {
@@ -206,7 +244,9 @@ async function buildFileInventory(corpusRoot, files) {
       extension: extensionFor(relativePath),
       candidate_type: candidateType,
       page_slug_guess: pageSlugGuess(relativePath),
-      asset_guess: ["asset", "image", "style"].includes(candidateType) ? filePath : "",
+      asset_guess: ["asset", "image", "style"].includes(candidateType)
+        ? filePath
+        : "",
       metadata_guess: candidateType === "metadata" ? filePath : "",
       notes: relativePath,
     });
@@ -218,7 +258,22 @@ async function buildFileInventory(corpusRoot, files) {
 async function buildManifest(corpusRoot) {
   const pagesRoot = path.join(corpusRoot, "pages");
   const entries = await fs.readdir(pagesRoot, { withFileTypes: true });
-  const pageDirs = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+  const pageDirs = entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  const flatFtmlFiles = entries
+    .filter(
+      (entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".ftml"),
+    )
+    .map((entry) => entry.name)
+    .sort();
+  const sourceManifest = await readJsonIfPresent(
+    path.join(corpusRoot, "manifest.json"),
+  );
+  const sourceMetadata = new Map(
+    (sourceManifest?.pages ?? []).map((page) => [page.source, page]),
+  );
   const rows = [];
 
   for (const slug of pageDirs) {
@@ -260,6 +315,45 @@ async function buildManifest(corpusRoot) {
     });
   }
 
+  for (const fileName of flatFtmlFiles) {
+    const sourcePath = path.join(pagesRoot, fileName);
+    const relativeSource = `pages/${fileName}`;
+    const source = await fs.readFile(sourcePath, "utf8");
+    const manifestPage = sourceMetadata.get(relativeSource) ?? {};
+    const fallbackSlug = path.basename(fileName, path.extname(fileName));
+    const slug = manifestPage.slug || fallbackSlug;
+    const bytes = Buffer.byteLength(source);
+    const lineCount = source.length ? source.split(/\r?\n/).length : 0;
+    const tags = uniqueSorted(
+      Array.isArray(manifestPage.tags) ? manifestPage.tags : [],
+    );
+    const constructHints = detectConstructs(source, slug, manifestPage);
+    const dependencyHints = extractDependencyHints(source);
+    const assetPaths = uniqueSorted([
+      ...extractAssetHints(source),
+      ...(manifestPage.files ?? []).map((file) => file.path),
+    ]);
+    const notes = ["flat-ftml", ...statusNotes(manifestPage, "")];
+
+    rows.push({
+      page_id: "",
+      slug,
+      title: inferTitle(slug, manifestPage),
+      source_path: sourcePath,
+      metadata_path: sourceMetadata.has(relativeSource)
+        ? path.join(corpusRoot, "manifest.json")
+        : "",
+      tags,
+      asset_paths: assetPaths,
+      dependency_hints: dependencyHints,
+      construct_hints: constructHints,
+      bytes,
+      line_count: lineCount,
+      status: "discovered",
+      notes,
+    });
+  }
+
   return rows;
 }
 
@@ -280,32 +374,48 @@ function chooseCanaries(manifestRows, targetCount) {
   }
 
   for (const construct of [...byConstruct.keys()].sort()) {
-    const candidates = byConstruct.get(construct).sort((left, right) => right.bytes - left.bytes);
-    for (const row of candidates.slice(0, 4)) add(row, `construct:${construct}`, "high");
+    const candidates = byConstruct
+      .get(construct)
+      .sort((left, right) => right.bytes - left.bytes);
+    for (const row of candidates.slice(0, 4))
+      add(row, `construct:${construct}`, "high");
   }
 
-  for (const row of [...manifestRows].sort((left, right) => right.bytes - left.bytes).slice(0, 25)) {
+  for (const row of [...manifestRows]
+    .sort((left, right) => right.bytes - left.bytes)
+    .slice(0, 25)) {
     add(row, "large-page", "high");
   }
 
-  for (const row of manifestRows.filter((row) => /^scp-\d+$/i.test(row.slug)).slice(0, 20)) {
+  for (const row of manifestRows
+    .filter((row) => /^scp-\d+$/i.test(row.slug))
+    .slice(0, 20)) {
     add(row, "scp-sample", "medium");
   }
 
-  const randomOrder = [...manifestRows].sort((left, right) => hashNumber(left.slug) - hashNumber(right.slug));
+  const randomOrder = [...manifestRows].sort(
+    (left, right) => hashNumber(left.slug) - hashNumber(right.slug),
+  );
   for (const row of randomOrder) {
     if (selected.size >= Math.min(targetCount, manifestRows.length)) break;
     add(row, "deterministic-random", "medium");
   }
 
-  return [...selected.values()].slice(0, Math.min(targetCount, manifestRows.length));
+  return [...selected.values()].slice(
+    0,
+    Math.min(targetCount, manifestRows.length),
+  );
 }
 
 function writeTsv(rows, columns) {
-  return [
-    columns.join("\t"),
-    ...rows.map((row) => columns.map((column) => tsv(row[column])).join("\t")),
-  ].join("\n") + "\n";
+  return (
+    [
+      columns.join("\t"),
+      ...rows.map((row) =>
+        columns.map((column) => tsv(row[column])).join("\t"),
+      ),
+    ].join("\n") + "\n"
+  );
 }
 
 function summarizeCounts(rows, key) {
@@ -314,7 +424,9 @@ function summarizeCounts(rows, key) {
     const value = row[key] || "";
     counts.set(value, (counts.get(value) || 0) + 1);
   }
-  return [...counts.entries()].sort((left, right) => left[0].localeCompare(right[0]));
+  return [...counts.entries()].sort((left, right) =>
+    left[0].localeCompare(right[0]),
+  );
 }
 
 function summarizeConstructs(manifestRows) {
@@ -324,7 +436,9 @@ function summarizeConstructs(manifestRows) {
       counts.set(construct, (counts.get(construct) || 0) + 1);
     }
   }
-  return [...counts.entries()].sort((left, right) => left[0].localeCompare(right[0]));
+  return [...counts.entries()].sort((left, right) =>
+    left[0].localeCompare(right[0]),
+  );
 }
 
 function summaryMarkdown(args, fileInventory, manifestRows, canaries) {
@@ -373,8 +487,8 @@ ${constructCounts}
 
 Notes:
 
-* Page sources are pages/<slug>/source.wikidot.txt.
-* Metadata joins use pages/<slug>/meta.json and pages/<slug>/entity_id.txt.
+* Page sources are pages/<slug>/source.wikidot.txt or flat pages/*.ftml.
+* Metadata joins use pages/<slug>/meta.json, pages/<slug>/entity_id.txt, or manifest.json entries for flat pages/*.ftml.
 * by-uuid observations and posts comment state are inventoried as metadata, not page-source rows.
 * Canary selection is deterministic and combines construct coverage, large pages, SCP samples, and hash-ordered random pages.
 `;
@@ -389,50 +503,58 @@ async function main() {
   const manifestRows = await buildManifest(args.corpus);
   const canaries = chooseCanaries(manifestRows, args.canaryCount);
 
-  await fs.writeFile(path.join(args.outputDir, "corpus-file-inventory.tsv"), writeTsv(fileInventory.rows, [
-    "path",
-    "size_bytes",
-    "extension",
-    "candidate_type",
-    "page_slug_guess",
-    "asset_guess",
-    "metadata_guess",
-    "notes",
-  ]));
+  await fs.writeFile(
+    path.join(args.outputDir, "corpus-file-inventory.tsv"),
+    writeTsv(fileInventory.rows, [
+      "path",
+      "size_bytes",
+      "extension",
+      "candidate_type",
+      "page_slug_guess",
+      "asset_guess",
+      "metadata_guess",
+      "notes",
+    ]),
+  );
 
-  await fs.writeFile(path.join(args.outputDir, "corpus-manifest.tsv"), writeTsv(manifestRows, [
-    "page_id",
-    "slug",
-    "title",
-    "source_path",
-    "metadata_path",
-    "tags",
-    "asset_paths",
-    "dependency_hints",
-    "construct_hints",
-    "bytes",
-    "line_count",
-    "status",
-    "notes",
-  ]));
+  await fs.writeFile(
+    path.join(args.outputDir, "corpus-manifest.tsv"),
+    writeTsv(manifestRows, [
+      "page_id",
+      "slug",
+      "title",
+      "source_path",
+      "metadata_path",
+      "tags",
+      "asset_paths",
+      "dependency_hints",
+      "construct_hints",
+      "bytes",
+      "line_count",
+      "status",
+      "notes",
+    ]),
+  );
 
-  await fs.writeFile(path.join(args.outputDir, "canary-pages.tsv"), writeTsv(canaries.map(({ row, reason, priority }) => ({
-    page_id: row.page_id,
-    slug: row.slug,
-    source_path: row.source_path,
-    reason,
-    constructs: row.construct_hints,
-    priority,
-  })), [
-    "page_id",
-    "slug",
-    "source_path",
-    "reason",
-    "constructs",
-    "priority",
-  ]));
+  await fs.writeFile(
+    path.join(args.outputDir, "canary-pages.tsv"),
+    writeTsv(
+      canaries.map(({ row, reason, priority }) => ({
+        page_id: row.page_id,
+        slug: row.slug,
+        source_path: row.source_path,
+        reason,
+        constructs: row.construct_hints,
+        priority,
+      })),
+      ["page_id", "slug", "source_path", "reason", "constructs", "priority"],
+    ),
+  );
 
-  await fs.writeFile(path.join(args.outputDir, "corpus-discovery-summary.md"), summaryMarkdown(args, fileInventory, manifestRows, canaries));
+  await fs.writeFile(
+    path.join(args.outputDir, "corpus-discovery-summary.md"),
+    summaryMarkdown(args, fileInventory, manifestRows, canaries),
+  );
 
   const summary = {
     corpus: args.corpus,
@@ -440,12 +562,19 @@ async function main() {
     filesInventoried: fileInventory.rows.length,
     pageSourceCandidates: manifestRows.length,
     canaryRows: canaries.length,
-    candidateTypeCounts: Object.fromEntries(summarizeCounts(fileInventory.rows, "candidate_type")),
-    extensionCounts: Object.fromEntries(summarizeCounts(fileInventory.rows, "extension")),
+    candidateTypeCounts: Object.fromEntries(
+      summarizeCounts(fileInventory.rows, "candidate_type"),
+    ),
+    extensionCounts: Object.fromEntries(
+      summarizeCounts(fileInventory.rows, "extension"),
+    ),
     constructCounts: Object.fromEntries(summarizeConstructs(manifestRows)),
   };
 
-  await fs.writeFile(path.join(args.outputDir, "corpus-discovery-summary.json"), JSON.stringify(summary, null, 2) + "\n");
+  await fs.writeFile(
+    path.join(args.outputDir, "corpus-discovery-summary.json"),
+    JSON.stringify(summary, null, 2) + "\n",
+  );
   console.log(JSON.stringify(summary, null, 2));
 }
 

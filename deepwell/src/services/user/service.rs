@@ -31,6 +31,7 @@ use crate::types::{AliasType, UserType};
 use crate::utils::regex_replace_in_place;
 use regex::Regex;
 use sea_orm::ActiveValue;
+use sea_orm::sea_query::OnConflict;
 use serde_json::Value as JsonValue;
 use std::borrow::Cow;
 use std::cmp;
@@ -89,24 +90,18 @@ impl UserService {
             Some(user_id) => {
                 info!("Attempting to create user '{name}' ('{slug}', ID {user_id})");
 
-                if KnownUser::find_by_id(user_id)
-                    .one(txn)
-                    .await
-                    .or_raise(make_error)?
-                    .is_some()
-                {
-                    debug!("Reusing existing known_user entry for ID {user_id}");
-                } else {
-                    // Insert user ID into known_user for foreign key.
-                    known_user::ActiveModel {
-                        user_id: ActiveValue::Set(user_id),
-                    }
-                    .insert(txn)
-                    .await
-                    .or_raise(make_error)?;
-
-                    debug!("Inserted foreign key entry into known_user for ID {user_id}");
-                }
+                KnownUser::insert(known_user::ActiveModel {
+                    user_id: ActiveValue::Set(user_id),
+                })
+                .on_conflict(
+                    OnConflict::column(known_user::Column::UserId)
+                        .do_nothing()
+                        .to_owned(),
+                )
+                .exec(txn)
+                .await
+                .or_raise(make_error)?;
+                debug!("Ensured known_user foreign key entry exists for ID {user_id}");
 
                 user_id
             }

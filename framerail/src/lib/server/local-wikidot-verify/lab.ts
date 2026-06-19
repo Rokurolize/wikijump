@@ -4,9 +4,13 @@ import { Layout } from "$lib/types"
 
 import type { Nullable, SiteModel } from "$lib/types"
 
+function requireEnv(name: string) {
+  const value = process.env[name]
+  if (!value) throw new Error(`${name} is required`)
+  return value
+}
+
 const SITE_SLUG = process.env.WIKIDOT_VERIFY_SITE_SLUG || "scp-wiki"
-const ADMIN_EMAIL = process.env.WIKIDOT_VERIFY_ADMIN_EMAIL || "admin@wikijump"
-const ADMIN_PASSWORD = process.env.WIKIDOT_VERIFY_ADMIN_PASS || "wikijumpadmin1"
 const ADMIN_USER_ID = -1
 const IP_ADDRESS = "127.0.0.1"
 const USER_AGENT = "wikijump-local-authoring-lab/0.1"
@@ -177,7 +181,9 @@ export function localPreviewHtml(wikitext: string): string {
   return `<div class="local-preview">${paragraphs || "<p></p>"}</div>`
 }
 
-export async function renderPreviewPage(input: SavePageInput): Promise<PreviewPageOutput> {
+export async function renderPreviewPage(
+  input: SavePageInput
+): Promise<PreviewPageOutput> {
   const previewSlug = `ui-authoring-preview-${input.slug}`
   const preview = await savePage({
     slug: previewSlug,
@@ -204,9 +210,11 @@ export function previewWarnings(wikitext: string): string[] {
 
 export async function openLabSession(): Promise<LabSession> {
   const site = await getSite()
+  const adminEmail = requireEnv("WIKIDOT_VERIFY_ADMIN_EMAIL")
+  const adminPassword = requireEnv("WIKIDOT_VERIFY_ADMIN_PASS")
   const login = (await client.request("login", {
-    name_or_email: ADMIN_EMAIL,
-    password: ADMIN_PASSWORD,
+    name_or_email: adminEmail,
+    password: adminPassword,
     ip_address: IP_ADDRESS,
     user_agent: USER_AGENT
   })) as LoginOutput
@@ -437,14 +445,14 @@ export async function createThemeNavCssScenario(): Promise<ThemeNavCssScenarioOu
     slug: "nav:side",
     title: "Side Navigation",
     wikitext:
-      "= Local Verification\n* [[[ui-authoring-theme-nav-css | Theme Nav CSS]]]\n* [[[ui-authoring-listpages-index | ListPages Index]]]\n\n[[div class=\"ui-authoring-side-nav-marker\"]]\nUI Authoring Side Nav Marker\n[[/div]]\n\n[[div style=\"text-align: center;\"]]\n[[size 80%]][[[nav:side | edit this panel]]][[/size]]\n[[/div]]\n",
+      '= Local Verification\n* [[[ui-authoring-theme-nav-css | Theme Nav CSS]]]\n* [[[ui-authoring-listpages-index | ListPages Index]]]\n\n[[div class="ui-authoring-side-nav-marker"]]\nUI Authoring Side Nav Marker\n[[/div]]\n\n[[div style="text-align: center;"]]\n[[size 80%]][[[nav:side | edit this panel]]][[/size]]\n[[/div]]\n',
     tags: ["navigation", "ui-authoring", "verification"]
   })
   const proof = await savePage({
     slug: "ui-authoring-theme-nav-css",
     title: "UI Authoring Theme Navigation CSS",
     wikitext:
-      "[[module CSS]]\n.ui-authoring-theme-css-marker { color: rgb(12, 98, 140); border: 2px solid rgb(12, 98, 140); padding: 0.5rem; }\n[[/module]]\n\n+ UI Authoring Theme Navigation CSS\n\n[[div class=\"ui-authoring-theme-css-marker\"]]\nUI Authoring Theme CSS Applied Marker.\n[[/div]]\n\nUI Authoring Nav Target marker.\n",
+      '[[module CSS]]\n.ui-authoring-theme-css-marker { color: rgb(12, 98, 140); border: 2px solid rgb(12, 98, 140); padding: 0.5rem; }\n[[/module]]\n\n+ UI Authoring Theme Navigation CSS\n\n[[div class="ui-authoring-theme-css-marker"]]\nUI Authoring Theme CSS Applied Marker.\n[[/div]]\n\nUI Authoring Nav Target marker.\n',
     tags: ["theme-nav-css", "ui-authoring", "verification"]
   })
   const refreshedProof = await rerenderPage(proof.page.slug)
@@ -503,11 +511,13 @@ export async function runProofSummary(selectedSlug: string): Promise<ProofSummar
     pass:
       listPages?.compiled_body_html?.includes("ui-authoring-list-target-alpha") ===
         true &&
-      listPages?.compiled_body_html?.includes("ui-authoring-list-target-beta") ===
-        true &&
-      listPages?.compiled_body_html?.includes("ui-authoring-list-target-gamma") !==
-        true,
-    detail: listPages?.compiled_body_html?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() ?? "ListPages index missing"
+      listPages?.compiled_body_html?.includes("ui-authoring-list-target-beta") === true &&
+      listPages?.compiled_body_html?.includes("ui-authoring-list-target-gamma") !== true,
+    detail:
+      listPages?.compiled_body_html
+        ?.replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim() ?? "ListPages index missing"
   })
   checks.push({
     name: "theme-navigation-css",

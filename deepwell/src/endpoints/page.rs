@@ -363,12 +363,29 @@ pub async fn page_select(
         .map(|category| (category.category_id, category.slug))
         .collect::<BTreeMap<_, _>>();
 
-    let pages = Page::find()
+    let selected_category_ids = selected_categories.as_ref().map(|selected_categories| {
+        categories_by_id
+            .iter()
+            .filter_map(|(category_id, category)| {
+                selected_categories
+                    .contains(category)
+                    .then_some(*category_id)
+            })
+            .collect::<Vec<_>>()
+    });
+    if matches!(selected_category_ids, Some(ref category_ids) if category_ids.is_empty())
+    {
+        return Ok(Vec::new());
+    }
+
+    let mut page_query = Page::find()
         .filter(page::Column::SiteId.eq(site_id))
-        .filter(page::Column::DeletedAt.is_null())
-        .all(txn)
-        .await
-        .or_raise(make_error)?;
+        .filter(page::Column::DeletedAt.is_null());
+    if let Some(category_ids) = selected_category_ids {
+        page_query = page_query.filter(page::Column::PageCategoryId.is_in(category_ids));
+    }
+
+    let pages = page_query.all(txn).await.or_raise(make_error)?;
 
     let page_ids = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
     let latest_revision_ids = pages
@@ -418,13 +435,12 @@ pub async fn page_select(
         .map(|link| (link.child_page_id, link.parent_page_id))
         .collect::<BTreeSet<_>>();
 
-    let mut rating_by_page_id = BTreeMap::<i64, i64>::new();
-    for page_id in &page_ids {
-        let rating = ScoreService::score(ctx, *page_id)
-            .await
-            .or_raise(make_error)?;
-        rating_by_page_id.insert(*page_id, page_select_rating_value(rating));
-    }
+    let rating_by_page_id = ScoreService::scores_bulk(ctx, &page_ids)
+        .await
+        .or_raise(make_error)?
+        .into_iter()
+        .map(|(page_id, rating)| (page_id, page_select_rating_value(rating)))
+        .collect::<BTreeMap<_, _>>();
 
     let created_by_user_ids = match created_by {
         None => None,

@@ -12,18 +12,28 @@ import {
   normalizeSlug,
   normalizeTags,
   previewWarnings,
-  renderPreviewPage,
   removeListPagesGamma,
+  renderPreviewPage,
   runProofSummary,
   savePage,
   updateTags,
   uploadPageFile
 } from "$lib/server/local-wikidot-verify/lab"
-import { fail } from "@sveltejs/kit"
+import { error, fail } from "@sveltejs/kit"
 
 import type { Actions } from "./$types"
 
+function assertLocalVerificationEnabled() {
+  if (process.env.FRAMERAIL_ENV === "local" || process.env.NODE_ENV === "development") {
+    return
+  }
+
+  throw error(404, "Not found")
+}
+
 export async function load({ url }) {
+  assertLocalVerificationEnabled()
+
   const site = await getSite()
   const slug = normalizeSlug(url.searchParams.get("slug") || "ui-authoring-basic")
   const page = await getPage(site.site_id, slug)
@@ -52,6 +62,8 @@ export async function load({ url }) {
 
 export const actions: Actions = {
   preview: async ({ request }) => {
+    assertLocalVerificationEnabled()
+
     try {
       const formData = await request.formData()
       const slug = normalizeSlug(formData.get("slug"))
@@ -85,6 +97,8 @@ export const actions: Actions = {
   },
 
   savePage: async ({ request }) => {
+    assertLocalVerificationEnabled()
+
     try {
       const formData = await request.formData()
       const slug = normalizeSlug(formData.get("slug"))
@@ -121,6 +135,8 @@ export const actions: Actions = {
   },
 
   updateTags: async ({ request }) => {
+    assertLocalVerificationEnabled()
+
     try {
       const formData = await request.formData()
       const slug = normalizeSlug(formData.get("slug"))
@@ -142,6 +158,8 @@ export const actions: Actions = {
   },
 
   uploadFile: async ({ request }) => {
+    assertLocalVerificationEnabled()
+
     try {
       const formData = await request.formData()
       const slug = normalizeSlug(formData.get("slug"))
@@ -161,6 +179,8 @@ export const actions: Actions = {
   },
 
   createDependencies: async () => {
+    assertLocalVerificationEnabled()
+
     try {
       const dependencies = await createDependencyScenario()
       return { type: "createDependencies", dependencies }
@@ -173,6 +193,8 @@ export const actions: Actions = {
   },
 
   createListPages: async () => {
+    assertLocalVerificationEnabled()
+
     try {
       const listPages = await createListPagesScenario()
       return { type: "createListPages", listPages }
@@ -185,6 +207,8 @@ export const actions: Actions = {
   },
 
   removeListPagesGamma: async () => {
+    assertLocalVerificationEnabled()
+
     try {
       const target = await removeListPagesGamma()
       const site = await getSite()
@@ -203,6 +227,8 @@ export const actions: Actions = {
   },
 
   createThemeNavCss: async () => {
+    assertLocalVerificationEnabled()
+
     try {
       const themeNavCss = await createThemeNavCssScenario()
       return { type: "createThemeNavCss", themeNavCss }
@@ -215,6 +241,8 @@ export const actions: Actions = {
   },
 
   runProofSummary: async ({ request }) => {
+    assertLocalVerificationEnabled()
+
     try {
       const formData = await request.formData()
       const slug = normalizeSlug(formData.get("slug"))
@@ -229,6 +257,8 @@ export const actions: Actions = {
   },
 
   exportBundle: async ({ request }) => {
+    assertLocalVerificationEnabled()
+
     try {
       const formData = await request.formData()
       const slugs = String(formData.get("slugs") ?? "")
@@ -249,6 +279,8 @@ export const actions: Actions = {
   },
 
   importBundle: async ({ request }) => {
+    assertLocalVerificationEnabled()
+
     try {
       const formData = await request.formData()
       const prefix = normalizeSlug(formData.get("prefix")) || "ui-authoring-import-"

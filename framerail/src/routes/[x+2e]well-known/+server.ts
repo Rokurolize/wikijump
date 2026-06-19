@@ -1,7 +1,7 @@
 import type { RequestHandler } from "./$types"
 
 const WELL_KNOWN_NOT_CONFIGURED =
-  "No .well-known resource is configured for this Framerail target.\n"
+  "No .well-known resource is configured for this WWS target.\n"
 
 const WELL_KNOWN_HEADERS = {
   "content-type": "text/plain; charset=utf-8"

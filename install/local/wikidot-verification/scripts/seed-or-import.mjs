@@ -43,12 +43,20 @@ function parseArgs(argv) {
 }
 
 function printHelpAndExit() {
-  console.log(`Usage: node seed-or-import.mjs [--output-dir DIR] [--rpc-url URL] [--site SLUG] [--force-files] [--presigned-connect-url URL]`);
+  console.log(
+    `Usage: node seed-or-import.mjs [--output-dir DIR] [--rpc-url URL] [--site SLUG] [--force-files] [--presigned-connect-url URL]`,
+  );
   process.exit(0);
 }
 
 async function readJson(file) {
   return JSON.parse(await fs.readFile(file, "utf8"));
+}
+
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is required`);
+  return value;
 }
 
 async function readCorpusText(relativePath) {
@@ -81,7 +89,8 @@ class DeepwellClient {
 
   async call(method, params = {}, context = {}) {
     const headers = { "content-type": "application/json" };
-    if (context.sessionToken) headers["X-Deepwell-Session-Token"] = context.sessionToken;
+    if (context.sessionToken)
+      headers["X-Deepwell-Session-Token"] = context.sessionToken;
     if (context.siteId) headers["X-Deepwell-Site-Id"] = String(context.siteId);
     if (context.page) headers["X-Deepwell-Page"] = String(context.page);
 
@@ -101,12 +110,16 @@ class DeepwellClient {
     try {
       body = JSON.parse(bodyText);
     } catch (error) {
-      throw new Error(`Invalid JSON-RPC response for ${method}: HTTP ${response.status} ${bodyText.slice(0, 300)}`);
+      throw new Error(
+        `Invalid JSON-RPC response for ${method}: HTTP ${response.status} ${bodyText.slice(0, 300)}`,
+      );
     }
 
     if (!response.ok || body.error) {
       const message = body.error ? JSON.stringify(body.error) : bodyText;
-      throw new Error(`JSON-RPC ${method} failed: HTTP ${response.status} ${message}`);
+      throw new Error(
+        `JSON-RPC ${method} failed: HTTP ${response.status} ${message}`,
+      );
     }
 
     return body.result;
@@ -128,10 +141,13 @@ async function getExistingPage(client, siteId, slug) {
   try {
     return await maybeGetPage(client, siteId, slug);
   } catch (error) {
-    if (String(error.message).includes("PageMissing") || String(error.message).includes("not found")) {
+    if (
+      String(error.message).includes("PageMissing") ||
+      String(error.message).includes("not found")
+    ) {
       return null;
     }
-    return null;
+    throw error;
   }
 }
 
@@ -149,22 +165,34 @@ async function createPage(client, siteId, page, source) {
   });
 }
 
-async function editPage(client, siteId, page, current, body, sessionToken, comment = "local wikidot compatibility verifier edit") {
-  const output = await client.call("page_edit", {
-    site_id: siteId,
-    page: page.slug,
-    last_revision_id: current.revision_id,
-    revision_comments: comment,
-    user_id: ADMIN_USER_ID,
-    ip_address: IP_ADDRESS,
-    ...body,
-  }, {
-    sessionToken,
-    siteId,
-    page: page.slug,
-  });
+async function editPage(
+  client,
+  siteId,
+  page,
+  current,
+  body,
+  sessionToken,
+  comment = "local wikidot compatibility verifier edit",
+) {
+  const output = await client.call(
+    "page_edit",
+    {
+      site_id: siteId,
+      page: page.slug,
+      last_revision_id: current.revision_id,
+      revision_comments: comment,
+      user_id: ADMIN_USER_ID,
+      ip_address: IP_ADDRESS,
+      ...body,
+    },
+    {
+      sessionToken,
+      siteId,
+      page: page.slug,
+    },
+  );
 
-  return output || await maybeGetPage(client, siteId, page.slug);
+  return output || (await maybeGetPage(client, siteId, page.slug));
 }
 
 async function ensurePage(client, siteId, sessionToken, page, source) {
@@ -175,25 +203,37 @@ async function ensurePage(client, siteId, sessionToken, page, source) {
     const created = await createPage(client, siteId, page, source);
     actions.push(`created:${page.slug}`);
     if (created.parser_errors?.length) {
-      throw new Error(`Parser errors while creating ${page.slug}: ${JSON.stringify(created.parser_errors)}`);
+      throw new Error(
+        `Parser errors while creating ${page.slug}: ${JSON.stringify(created.parser_errors)}`,
+      );
     }
     current = await maybeGetPage(client, siteId, page.slug);
   }
 
   const expectedTags = normalizeTags(page.tags || []);
-  const needsEdit = current.wikitext !== source ||
+  const needsEdit =
+    current.wikitext !== source ||
     current.title !== page.title ||
     !sameTags(current.tags, expectedTags);
 
   if (needsEdit) {
-    const edited = await editPage(client, siteId, page, current, {
-      wikitext: source,
-      title: page.title,
-      tags: expectedTags,
-    }, sessionToken);
+    const edited = await editPage(
+      client,
+      siteId,
+      page,
+      current,
+      {
+        wikitext: source,
+        title: page.title,
+        tags: expectedTags,
+      },
+      sessionToken,
+    );
     actions.push(`edited:${page.slug}`);
     if (edited.parser_errors?.length) {
-      throw new Error(`Parser errors while editing ${page.slug}: ${JSON.stringify(edited.parser_errors)}`);
+      throw new Error(
+        `Parser errors while editing ${page.slug}: ${JSON.stringify(edited.parser_errors)}`,
+      );
     }
     current = await maybeGetPage(client, siteId, page.slug);
   } else {
@@ -233,9 +273,16 @@ async function uploadFile(client, siteId, page, file, forceFiles) {
     deleted: false,
   });
 
-  const existing = existingFiles.find((candidate) => candidate.name === file.name);
+  const existing = existingFiles.find(
+    (candidate) => candidate.name === file.name,
+  );
   if (existing && !forceFiles) {
-    return { name: file.name, action: "skipped-existing", sha256: hash, fileId: existing.file_id };
+    return {
+      name: file.name,
+      action: "skipped-existing",
+      sha256: hash,
+      fileId: existing.file_id,
+    };
   }
 
   const upload = await client.call("blob_upload", {
@@ -244,6 +291,27 @@ async function uploadFile(client, siteId, page, file, forceFiles) {
   });
 
   await putPresigned(upload.presign_url, buffer);
+
+  if (existing && forceFiles) {
+    const edited = await client.call("file_edit", {
+      site_id: siteId,
+      page_id: page.page_id,
+      file_id: existing.file_id,
+      user_id: ADMIN_USER_ID,
+      last_revision_id: existing.revision_id,
+      revision_comments: "local wikidot compatibility verifier file refresh",
+      uploaded_blob_id: upload.pending_blob_id,
+      bypass_filter: true,
+    });
+
+    return {
+      name: file.name,
+      action: "refreshed",
+      sha256: hash,
+      fileId: existing.file_id,
+      revisionId: edited?.file_revision_id,
+    };
+  }
 
   const created = await client.call("file_create", {
     site_id: siteId,
@@ -255,7 +323,12 @@ async function uploadFile(client, siteId, page, file, forceFiles) {
     bypass_filter: true,
   });
 
-  return { name: file.name, action: "uploaded", sha256: hash, fileId: created.file_id };
+  return {
+    name: file.name,
+    action: "uploaded",
+    sha256: hash,
+    fileId: created.file_id,
+  };
 }
 
 function presignedConnectUrlFor(presignUrl) {
@@ -275,31 +348,49 @@ async function putPresigned(presignUrl, buffer) {
   const signed = new URL(presignUrl);
   const connectBase = presignedConnectUrlFor(presignUrl);
   const target = connectBase || signed;
-  const requestUrl = new URL(`${target.protocol}//${target.host}${signed.pathname}${signed.search}`);
+  const requestUrl = new URL(
+    `${target.protocol}//${target.host}${signed.pathname}${signed.search}`,
+  );
   const transport = requestUrl.protocol === "https:" ? https : http;
 
   await new Promise((resolve, reject) => {
-    const request = transport.request(requestUrl, {
-      method: "PUT",
-      headers: {
-        Host: signed.host,
-        "Content-Length": String(buffer.length),
+    const request = transport.request(
+      requestUrl,
+      {
+        method: "PUT",
+        headers: {
+          Host: signed.host,
+          "Content-Length": String(buffer.length),
+        },
       },
-    }, (response) => {
-      const chunks = [];
-      response.on("data", (chunk) => chunks.push(chunk));
-      response.on("end", () => {
-        if (response.statusCode && response.statusCode >= 200 && response.statusCode < 300) {
-          resolve();
-        } else {
-          const body = Buffer.concat(chunks).toString("utf8");
-          reject(new Error(`Presigned PUT failed: HTTP ${response.statusCode} connect=${requestUrl.origin} signed_host=${signed.host} ${body.slice(0, 500)}`));
-        }
-      });
-    });
+      (response) => {
+        const chunks = [];
+        response.on("data", (chunk) => chunks.push(chunk));
+        response.on("end", () => {
+          if (
+            response.statusCode &&
+            response.statusCode >= 200 &&
+            response.statusCode < 300
+          ) {
+            resolve();
+          } else {
+            const body = Buffer.concat(chunks).toString("utf8");
+            reject(
+              new Error(
+                `Presigned PUT failed: HTTP ${response.statusCode} connect=${requestUrl.origin} signed_host=${signed.host} ${body.slice(0, 500)}`,
+              ),
+            );
+          }
+        });
+      },
+    );
 
     request.on("error", (error) => {
-      reject(new Error(`Presigned PUT connection failed: connect=${requestUrl.origin} signed_host=${signed.host} ${error.message}`));
+      reject(
+        new Error(
+          `Presigned PUT connection failed: connect=${requestUrl.origin} signed_host=${signed.host} ${error.message}`,
+        ),
+      );
     });
     request.end(buffer);
   });
@@ -325,18 +416,33 @@ async function runEditProof(client, siteId, sessionToken, editProof) {
   let current = await getExistingPage(client, siteId, editProof.slug);
   const actions = [];
   if (!current) {
-    const created = await createPage(client, siteId, initialPage, initialSource);
+    const created = await createPage(
+      client,
+      siteId,
+      initialPage,
+      initialSource,
+    );
     actions.push("created-initial");
     if (created.parser_errors?.length) {
-      throw new Error(`Parser errors while creating ${editProof.slug}: ${JSON.stringify(created.parser_errors)}`);
+      throw new Error(
+        `Parser errors while creating ${editProof.slug}: ${JSON.stringify(created.parser_errors)}`,
+      );
     }
     current = await maybeGetPage(client, siteId, editProof.slug);
   } else {
-    await editPage(client, siteId, initialPage, current, {
-      wikitext: initialSource,
-      title: editProof.title,
-      tags: normalizeTags(editProof.initialTags),
-    }, sessionToken, "local wikidot compatibility verifier reset for edit proof");
+    await editPage(
+      client,
+      siteId,
+      initialPage,
+      current,
+      {
+        wikitext: initialSource,
+        title: editProof.title,
+        tags: normalizeTags(editProof.initialTags),
+      },
+      sessionToken,
+      "local wikidot compatibility verifier reset for edit proof",
+    );
     actions.push("reset-initial");
     current = await maybeGetPage(client, siteId, editProof.slug);
   }
@@ -348,13 +454,23 @@ async function runEditProof(client, siteId, sessionToken, editProof) {
     sourceSha256: sha256Buffer(Buffer.from(current.wikitext || "", "utf8")),
   };
 
-  const edited = await editPage(client, siteId, editedPage, current, {
-    wikitext: editedSource,
-    title: editProof.title,
-    tags: normalizeTags(editProof.editedTags),
-  }, sessionToken, "local wikidot compatibility verifier final edit proof");
+  const edited = await editPage(
+    client,
+    siteId,
+    editedPage,
+    current,
+    {
+      wikitext: editedSource,
+      title: editProof.title,
+      tags: normalizeTags(editProof.editedTags),
+    },
+    sessionToken,
+    "local wikidot compatibility verifier final edit proof",
+  );
   if (edited.parser_errors?.length) {
-    throw new Error(`Parser errors while editing ${editProof.slug}: ${JSON.stringify(edited.parser_errors)}`);
+    throw new Error(
+      `Parser errors while editing ${editProof.slug}: ${JSON.stringify(edited.parser_errors)}`,
+    );
   }
   actions.push("saved-edited");
 
@@ -369,13 +485,22 @@ async function runEditProof(client, siteId, sessionToken, editProof) {
 
   const expectedTags = normalizeTags(editProof.editedTags);
   if (!sameTags(after.tags, expectedTags)) {
-    throw new Error(`Edit proof tags mismatch for ${editProof.slug}: expected ${expectedTags.join(",")} got ${normalizeTags(after.tags).join(",")}`);
+    throw new Error(
+      `Edit proof tags mismatch for ${editProof.slug}: expected ${expectedTags.join(",")} got ${normalizeTags(after.tags).join(",")}`,
+    );
   }
   if (!parents.includes(editProof.parent)) {
-    throw new Error(`Edit proof parent mismatch for ${editProof.slug}: missing ${editProof.parent}`);
+    throw new Error(
+      `Edit proof parent mismatch for ${editProof.slug}: missing ${editProof.parent}`,
+    );
   }
-  if (!after.wikitext?.includes("Metadata After Edit Marker") || after.wikitext.includes("Metadata Before Edit Marker")) {
-    throw new Error(`Edit proof source did not persist expected final marker for ${editProof.slug}`);
+  if (
+    !after.wikitext?.includes("Metadata After Edit Marker") ||
+    after.wikitext.includes("Metadata Before Edit Marker")
+  ) {
+    throw new Error(
+      `Edit proof source did not persist expected final marker for ${editProof.slug}`,
+    );
   }
 
   return {
@@ -397,13 +522,17 @@ async function main() {
   await fs.mkdir(args.outputDir, { recursive: true });
 
   const manifest = await readJson(manifestPath);
-  const rpcUrl = args.rpcUrl || process.env.WIKIDOT_VERIFY_RPC_URL || "http://127.0.0.1:2747/jsonrpc";
+  const rpcUrl =
+    args.rpcUrl ||
+    process.env.WIKIDOT_VERIFY_RPC_URL ||
+    "http://127.0.0.1:2747/jsonrpc";
   if (args.presignedConnectUrl) {
     process.env.WIKIDOT_VERIFY_PRESIGNED_CONNECT_URL = args.presignedConnectUrl;
   }
-  const siteSlug = args.siteSlug || process.env.WIKIDOT_VERIFY_SITE_SLUG || manifest.siteSlug;
-  const adminEmail = process.env.WIKIDOT_VERIFY_ADMIN_EMAIL || manifest.admin.email;
-  const adminPassword = process.env.WIKIDOT_VERIFY_ADMIN_PASS || manifest.admin.password;
+  const siteSlug =
+    args.siteSlug || process.env.WIKIDOT_VERIFY_SITE_SLUG || manifest.siteSlug;
+  const adminEmail = requireEnv("WIKIDOT_VERIFY_ADMIN_EMAIL");
+  const adminPassword = requireEnv("WIKIDOT_VERIFY_ADMIN_PASS");
   const client = new DeepwellClient(rpcUrl);
 
   await client.call("ping", {});
@@ -421,7 +550,13 @@ async function main() {
   const fileResults = [];
   for (const page of manifest.pages) {
     const source = await readCorpusText(page.source);
-    const ensured = await ensurePage(client, siteId, sessionToken, page, source);
+    const ensured = await ensurePage(
+      client,
+      siteId,
+      sessionToken,
+      page,
+      source,
+    );
     results.push({
       slug: page.slug,
       pageId: ensured.page.page_id,
@@ -433,15 +568,27 @@ async function main() {
     });
 
     for (const file of page.files || []) {
-      const uploaded = await uploadFile(client, siteId, ensured.page, file, Boolean(args.forceFiles));
+      const uploaded = await uploadFile(
+        client,
+        siteId,
+        ensured.page,
+        file,
+        Boolean(args.forceFiles),
+      );
       fileResults.push({ page: page.slug, ...uploaded });
     }
   }
 
-  const editProof = await runEditProof(client, siteId, sessionToken, manifest.editProof);
+  const editProof = await runEditProof(
+    client,
+    siteId,
+    sessionToken,
+    manifest.editProof,
+  );
   results.push({
     slug: manifest.editProof.slug,
-    pageId: (await maybeGetPage(client, siteId, manifest.editProof.slug)).page_id,
+    pageId: (await maybeGetPage(client, siteId, manifest.editProof.slug))
+      .page_id,
     revisionId: editProof.after.revisionId,
     revisionNumber: editProof.after.revisionNumber,
     tags: editProof.after.tags,
@@ -464,20 +611,27 @@ async function main() {
 
   const summaryPath = path.join(args.outputDir, "seed-summary.json");
   await fs.writeFile(summaryPath, JSON.stringify(summary, null, 2));
-  await fs.writeFile(path.join(args.outputDir, "seed-results.tsv"), [
-    "slug\tpage_id\trevision_id\trevision_number\ttags\tactions",
-    ...results.map((result) => [
-      result.slug,
-      result.pageId,
-      result.revisionId,
-      result.revisionNumber,
-      result.tags.join(","),
-      result.actions.join(","),
-    ].join("\t")),
-    "",
-  ].join("\n"));
+  await fs.writeFile(
+    path.join(args.outputDir, "seed-results.tsv"),
+    [
+      "slug\tpage_id\trevision_id\trevision_number\ttags\tactions",
+      ...results.map((result) =>
+        [
+          result.slug,
+          result.pageId,
+          result.revisionId,
+          result.revisionNumber,
+          result.tags.join(","),
+          result.actions.join(","),
+        ].join("\t"),
+      ),
+      "",
+    ].join("\n"),
+  );
 
-  console.log(`Seeded ${results.length} pages and checked ${fileResults.length} files.`);
+  console.log(
+    `Seeded ${results.length} pages and checked ${fileResults.length} files.`,
+  );
   console.log(`Summary: ${summaryPath}`);
 }
 

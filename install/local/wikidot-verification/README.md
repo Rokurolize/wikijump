@@ -31,8 +31,8 @@ Useful environment variables:
 ```text
 WIKIDOT_VERIFY_RPC_URL      JSON-RPC URL, default http://127.0.0.1:2747/jsonrpc
 WIKIDOT_VERIFY_SITE_SLUG    site slug, default scp-wiki
-WIKIDOT_VERIFY_ADMIN_EMAIL  seeded local admin email, default admin@wikijump
-WIKIDOT_VERIFY_ADMIN_PASS   seeded local admin password, default wikijumpadmin1
+WIKIDOT_VERIFY_ADMIN_EMAIL  seeded local admin email, required
+WIKIDOT_VERIFY_ADMIN_PASS   seeded local admin password, required
 ```
 
 ## Run Browser Proof Matrix

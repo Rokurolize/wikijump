@@ -1,9 +1,5 @@
 {
   "siteSlug": "scp-wiki",
-  "admin": {
-    "email": "admin@wikijump",
-    "password": "wikijumpadmin1"
-  },
   "pages": [
     {
       "slug": "fragment:fixture-alpha",
@@ -74,7 +70,10 @@
         { "name": "alert-card.svg", "path": "assets/alert-card.svg" }
       ],
       "proof": {
-        "requiredText": ["National Fog Safety Initiative", "SCP-9506 image grid complete marker"],
+        "requiredText": [
+          "National Fog Safety Initiative",
+          "SCP-9506 image grid complete marker"
+        ],
         "minImages": 20,
         "expectedLoadedImages": 20,
         "requireLocalNetworkOnly": true
@@ -87,9 +86,18 @@
       "layout": "wikidot",
       "tags": ["verification", "source-basic"],
       "proof": {
-        "requiredText": ["Fixture source basic marker", "Quoted compatibility block marker", "Literal escaped source marker", "<escaped> & source block marker", "Fixture basic CSS marker"],
+        "requiredText": [
+          "Fixture source basic marker",
+          "Quoted compatibility block marker",
+          "Literal escaped source marker",
+          "<escaped> & source block marker",
+          "Fixture basic CSS marker"
+        ],
         "selectorText": [
-          { "selector": ".fixture-basic-marker", "text": "Fixture basic CSS marker" }
+          {
+            "selector": ".fixture-basic-marker",
+            "text": "Fixture basic CSS marker"
+          }
         ],
         "requireLocalNetworkOnly": true
       }
@@ -101,7 +109,13 @@
       "layout": "wikidot",
       "tags": ["verification", "include-host"],
       "proof": {
-        "requiredText": ["Before include marker", "Fragment Alpha Included Marker", "Component Card Included Marker", "Included variable text", "After include marker"],
+        "requiredText": [
+          "Before include marker",
+          "Fragment Alpha Included Marker",
+          "Component Card Included Marker",
+          "Included variable text",
+          "After include marker"
+        ],
         "absentText": ["[[include fragment:fixture-alpha]]"],
         "requireLocalNetworkOnly": true
       }
@@ -113,7 +127,13 @@
       "layout": "wikidot",
       "tags": ["verification", "listpages-index"],
       "proof": {
-        "requiredText": ["ListPages start marker", "fixture-listpages-target-a", "fixture-listpages-target-b", "fixture-listpages-target-c", "ListPages end marker"],
+        "requiredText": [
+          "ListPages start marker",
+          "fixture-listpages-target-a",
+          "fixture-listpages-target-b",
+          "fixture-listpages-target-c",
+          "ListPages end marker"
+        ],
         "absentText": ["Fixture ListPages Excluded"],
         "requireLocalNetworkOnly": true
       }
@@ -125,9 +145,24 @@
       "layout": "wikidot",
       "tags": ["verification", "theme-nav-css"],
       "proof": {
-        "requiredText": ["Theme CSS Applied Marker", "Fixture Nav Target marker", "Homepage"],
-        "requireSelectors": ["#header", "#top-bar", "#side-bar", "#page-content", "#footer", "#license-area"],
-        "cssColor": { "selector": ".v3-theme-css-marker", "property": "color", "expected": "rgb(12, 98, 140)" },
+        "requiredText": [
+          "Theme CSS Applied Marker",
+          "Fixture Nav Target marker",
+          "Homepage"
+        ],
+        "requireSelectors": [
+          "#header",
+          "#top-bar",
+          "#side-bar",
+          "#page-content",
+          "#footer",
+          "#license-area"
+        ],
+        "cssColor": {
+          "selector": ".v3-theme-css-marker",
+          "property": "color",
+          "expected": "rgb(12, 98, 140)"
+        },
         "requireLocalNetworkOnly": true
       }
     },
@@ -143,7 +178,10 @@
         { "name": "alert-card.svg", "path": "assets/alert-card.svg" }
       ],
       "proof": {
-        "requiredText": ["Fixture assets network marker", "All three page-file assets above must load"],
+        "requiredText": [
+          "Fixture assets network marker",
+          "All three page-file assets above must load"
+        ],
         "minImages": 3,
         "expectedLoadedImages": 3,
         "requireLocalNetworkOnly": true

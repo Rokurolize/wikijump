@@ -22,6 +22,7 @@ const LOCAL_FILE_STYLE_SOURCES = ["https://*.wjfiles.localhost"]
 const WIKIDOT_IMAGE_SOURCES = [
   "https://*.wdfiles.com",
   "https://cdn.scpwiki.com",
+  "https://d3g0gp89917ko0.cloudfront.net",
   "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
 ]
 const WIKIDOT_STYLE_SOURCES = [
@@ -36,6 +37,7 @@ const WIKIDOT_STYLE_SOURCES = [
 const WIKIDOT_FONT_SOURCES = [
   "https://*.wdfiles.com",
   "https://cdn.scpwiki.com",
+  "https://d3g0gp89917ko0.cloudfront.net",
   "https://fonts.bunny.net",
   "https://maxcdn.bootstrapcdn.com",
   "https://rsms.me",

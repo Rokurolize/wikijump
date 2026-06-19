@@ -231,11 +231,7 @@ export async function handleXmlRpcRequest(request: Request): Promise<Response> {
   }
 
   try {
-    const body = await request.text()
-    if (Buffer.byteLength(body, "utf8") > XML_RPC_MAX_BODY_BYTES) {
-      throw new XmlRpcFault(-32600, "XML-RPC request body is too large")
-    }
-
+    const body = await readXmlRpcRequestBody(request)
     const call = parseXmlRpcCall(body)
     const result = await dispatchXmlRpcCall(call, auth)
     return xmlResponse(serializeMethodResponse(result))
@@ -244,8 +240,48 @@ export async function handleXmlRpcRequest(request: Request): Promise<Response> {
       return faultResponse(error)
     }
 
-    return faultResponse(new XmlRpcFault(-32700, "Malformed XML-RPC request"))
+    return faultResponse(new XmlRpcFault(-32603, "XML-RPC internal error"))
   }
+}
+
+async function readXmlRpcRequestBody(request: Request): Promise<string> {
+  const contentLength = request.headers.get("content-length")
+  if (contentLength !== null) {
+    const length = Number.parseInt(contentLength, 10)
+    if (
+      !/^\d+$/.test(contentLength.trim()) ||
+      !Number.isFinite(length) ||
+      length > XML_RPC_MAX_BODY_BYTES
+    ) {
+      throw new XmlRpcFault(-32600, "XML-RPC request body is too large")
+    }
+  }
+
+  if (!request.body) {
+    return ""
+  }
+
+  const reader = request.body.getReader()
+  const chunks: Buffer[] = []
+  let byteLength = 0
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) {
+      break
+    }
+    if (!value) {
+      continue
+    }
+
+    byteLength += value.byteLength
+    if (byteLength > XML_RPC_MAX_BODY_BYTES) {
+      throw new XmlRpcFault(-32600, "XML-RPC request body is too large")
+    }
+    chunks.push(Buffer.from(value))
+  }
+
+  return Buffer.concat(chunks).toString("utf8")
 }
 
 async function dispatchXmlRpcCall(
@@ -1443,7 +1479,11 @@ function parseXmlRpcValue(valueContent: string, depth: number): XmlRpcValue {
   const intElement =
     extractFirstDirectElement(text, "int") ?? extractFirstDirectElement(text, "i4")
   if (intElement) {
-    const value = Number.parseInt(decodeXmlText(intElement.content).trim(), 10)
+    const text = decodeXmlText(intElement.content).trim()
+    if (!/^[+-]?\d+$/.test(text)) {
+      throw new XmlRpcFault(-32602, "Invalid XML-RPC integer value")
+    }
+    const value = Number.parseInt(text, 10)
     if (!Number.isFinite(value)) {
       throw new XmlRpcFault(-32602, "Invalid XML-RPC integer value")
     }
@@ -1460,7 +1500,11 @@ function parseXmlRpcValue(valueContent: string, depth: number): XmlRpcValue {
 
   const doubleElement = extractFirstDirectElement(text, "double")
   if (doubleElement) {
-    const value = Number.parseFloat(decodeXmlText(doubleElement.content).trim())
+    const text = decodeXmlText(doubleElement.content).trim()
+    if (!/^[+-]?(?:\d+\.?\d*|\.\d+)$/.test(text)) {
+      throw new XmlRpcFault(-32602, "Invalid XML-RPC double value")
+    }
+    const value = Number.parseFloat(text)
     if (!Number.isFinite(value)) {
       throw new XmlRpcFault(-32602, "Invalid XML-RPC double value")
     }

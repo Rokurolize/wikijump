@@ -61,14 +61,19 @@ function parseArgs(argv) {
   }
 
   if (!args.source) throw new Error("--source is required");
-  if (!Number.isFinite(args.maxDependencies) || args.maxDependencies < 0) args.maxDependencies = 50;
-  if (!Number.isFinite(args.dependencyDepth) || args.dependencyDepth < 0) args.dependencyDepth = 1;
-  if (!Number.isFinite(args.rpcTimeoutMs) || args.rpcTimeoutMs <= 0) args.rpcTimeoutMs = 30000;
+  if (!Number.isFinite(args.maxDependencies) || args.maxDependencies < 0)
+    args.maxDependencies = 50;
+  if (!Number.isFinite(args.dependencyDepth) || args.dependencyDepth < 0)
+    args.dependencyDepth = 1;
+  if (!Number.isFinite(args.rpcTimeoutMs) || args.rpcTimeoutMs <= 0)
+    args.rpcTimeoutMs = 30000;
   return args;
 }
 
 function printHelpAndExit() {
-  console.log(`Usage: node install/local/wikidot-verification/scripts/preview-source.mjs --source FILE [--manifest corpus-manifest.tsv] [--output-dir DIR] [--rpc-url URL] [--rpc-timeout-ms 30000] [--site scp-wiki] [--slug SLUG] [--title TITLE] [--slug-prefix preview-] [--preload-dependencies] [--max-dependencies 50] [--dependency-depth 1] [--json]`);
+  console.log(
+    `Usage: node install/local/wikidot-verification/scripts/preview-source.mjs --source FILE [--manifest corpus-manifest.tsv] [--output-dir DIR] [--rpc-url URL] [--rpc-timeout-ms 30000] [--site scp-wiki] [--slug SLUG] [--title TITLE] [--slug-prefix preview-] [--preload-dependencies] [--max-dependencies 50] [--dependency-depth 1] [--json]`,
+  );
   process.exit(0);
 }
 
@@ -76,13 +81,24 @@ function sha256Text(text) {
   return crypto.createHash("sha256").update(text).digest("hex");
 }
 
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is required`);
+  return value;
+}
+
 function splitPipe(value) {
   if (!value) return [];
-  return value.split("|").map((part) => part.trim()).filter(Boolean);
+  return value
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean);
 }
 
 function normalizeTags(value) {
-  return splitPipe(value).filter((tag) => !tag.startsWith("_")).sort();
+  return splitPipe(value)
+    .filter((tag) => !tag.startsWith("_"))
+    .sort();
 }
 
 function sameTags(left = [], right = []) {
@@ -92,17 +108,21 @@ function sameTags(left = [], right = []) {
 }
 
 function slugify(value) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9:_-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 120) || "source";
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9:_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 120) || "source"
+  );
 }
 
 function rowForSource(manifest, sourcePath) {
   if (!manifest.length) return null;
   const normalized = path.resolve(sourcePath);
-  return manifest.find((row) => path.resolve(row.source_path) === normalized) ?? null;
+  return (
+    manifest.find((row) => path.resolve(row.source_path) === normalized) ?? null
+  );
 }
 
 function normalizeIncludeSlug(hint) {
@@ -152,7 +172,8 @@ class DeepwellClient {
 
   async call(method, params = {}, context = {}) {
     const headers = { "content-type": "application/json" };
-    if (context.sessionToken) headers["X-Deepwell-Session-Token"] = context.sessionToken;
+    if (context.sessionToken)
+      headers["X-Deepwell-Session-Token"] = context.sessionToken;
     if (context.siteId) headers["X-Deepwell-Site-Id"] = String(context.siteId);
     if (context.page) headers["X-Deepwell-Page"] = String(context.page);
 
@@ -172,8 +193,12 @@ class DeepwellClient {
         }),
       });
     } catch (error) {
-      const detail = controller.signal.aborted ? `timed out after ${this.timeoutMs} ms` : describeError(error);
-      throw new Error(`JSON-RPC ${method} fetch failed for ${this.rpcUrl}: ${detail}`);
+      const detail = controller.signal.aborted
+        ? `timed out after ${this.timeoutMs} ms`
+        : describeError(error);
+      throw new Error(
+        `JSON-RPC ${method} fetch failed for ${this.rpcUrl}: ${detail}`,
+      );
     } finally {
       clearTimeout(timeout);
     }
@@ -183,12 +208,16 @@ class DeepwellClient {
     try {
       body = JSON.parse(bodyText);
     } catch {
-      throw new Error(`Invalid JSON-RPC response for ${method}: HTTP ${response.status} ${bodyText.slice(0, 300)}`);
+      throw new Error(
+        `Invalid JSON-RPC response for ${method}: HTTP ${response.status} ${bodyText.slice(0, 300)}`,
+      );
     }
 
     if (!response.ok || body.error) {
       const message = body.error ? JSON.stringify(body.error) : bodyText;
-      throw new Error(`JSON-RPC ${method} failed: HTTP ${response.status} ${message}`);
+      throw new Error(
+        `JSON-RPC ${method} failed: HTTP ${response.status} ${message}`,
+      );
     }
 
     return body.result;
@@ -206,14 +235,23 @@ async function maybeGetPage(client, siteId, slug) {
       },
     });
   } catch (error) {
-    if (String(error.message).includes("PageMissing") || String(error.message).includes("not found")) {
+    if (
+      String(error.message).includes("PageMissing") ||
+      String(error.message).includes("not found")
+    ) {
       return null;
     }
     throw error;
   }
 }
 
-async function createOrUpdatePreviewPage(client, siteId, sessionToken, preview, source) {
+async function createOrUpdatePreviewPage(
+  client,
+  siteId,
+  sessionToken,
+  preview,
+  source,
+) {
   const existing = await maybeGetPage(client, siteId, preview.slug);
   let parserErrors = [];
   let action = "unchanged";
@@ -232,28 +270,37 @@ async function createOrUpdatePreviewPage(client, siteId, sessionToken, preview, 
     });
     parserErrors = created.parser_errors ?? [];
     action = "created";
-  } else if (existing.wikitext !== source || existing.title !== preview.title || !sameTags(existing.tags, preview.tags)) {
-    const edited = await client.call("page_edit", {
-      site_id: siteId,
-      page: existing.page_id,
-      last_revision_id: existing.revision_id,
-      revision_comments: "v5 preview-source update",
-      user_id: ADMIN_USER_ID,
-      ip_address: IP_ADDRESS,
-      wikitext: source,
-      title: preview.title,
-      tags: preview.tags,
-    }, {
-      sessionToken,
-      siteId,
-      page: preview.slug,
-    });
+  } else if (
+    existing.wikitext !== source ||
+    existing.title !== preview.title ||
+    !sameTags(existing.tags, preview.tags)
+  ) {
+    const edited = await client.call(
+      "page_edit",
+      {
+        site_id: siteId,
+        page: existing.page_id,
+        last_revision_id: existing.revision_id,
+        revision_comments: "v5 preview-source update",
+        user_id: ADMIN_USER_ID,
+        ip_address: IP_ADDRESS,
+        wikitext: source,
+        title: preview.title,
+        tags: preview.tags,
+      },
+      {
+        sessionToken,
+        siteId,
+        page: preview.slug,
+      },
+    );
     parserErrors = edited?.parser_errors ?? [];
     action = "edited";
   }
 
   const page = await maybeGetPage(client, siteId, preview.slug);
-  if (!page) throw new Error(`Page missing after preview import: ${preview.slug}`);
+  if (!page)
+    throw new Error(`Page missing after preview import: ${preview.slug}`);
 
   await client.call("page_rerender", {
     site_id: siteId,
@@ -262,7 +309,8 @@ async function createOrUpdatePreviewPage(client, siteId, sessionToken, preview, 
   });
 
   const rendered = await maybeGetPage(client, siteId, preview.slug);
-  if (!rendered) throw new Error(`Page missing after preview rerender: ${preview.slug}`);
+  if (!rendered)
+    throw new Error(`Page missing after preview rerender: ${preview.slug}`);
   return { action, parserErrors, page: rendered };
 }
 
@@ -287,17 +335,27 @@ async function preloadDependencies({
   }
 
   const results = [];
-  for (let index = 0; index < queue.length && results.length < maxDependencies; index += 1) {
+  for (
+    let index = 0;
+    index < queue.length && results.length < maxDependencies;
+    index += 1
+  ) {
     const { slug, depth } = queue[index];
     const row = manifestBySlug.get(slug);
     const start = performance.now();
     try {
       const source = await fs.readFile(row.source_path, "utf8");
-      const imported = await createOrUpdatePreviewPage(client, siteId, sessionToken, {
-        slug: row.slug,
-        title: row.title || row.slug,
-        tags: normalizeTags(row.tags),
-      }, source);
+      const imported = await createOrUpdatePreviewPage(
+        client,
+        siteId,
+        sessionToken,
+        {
+          slug: row.slug,
+          title: row.title || row.slug,
+          tags: normalizeTags(row.tags),
+        },
+        source,
+      );
       results.push({
         slug: row.slug,
         status: "pass",
@@ -306,7 +364,9 @@ async function preloadDependencies({
         parserErrorCount: imported.parserErrors.length,
       });
       if (depth < dependencyDepth) {
-        for (const include of splitPipe(row.dependency_hints).filter((hint) => hint.startsWith("include:"))) {
+        for (const include of splitPipe(row.dependency_hints).filter((hint) =>
+          hint.startsWith("include:"),
+        )) {
           const nestedSlug = normalizeIncludeSlug(include);
           if (!nestedSlug || seen.has(nestedSlug)) continue;
           if (!manifestBySlug.has(nestedSlug)) continue;
@@ -375,11 +435,21 @@ function findMissingIncludes(html, includes) {
   }
 
   if (!missingSlugs.size) return includes;
-  const exact = includes.filter((include) => missingSlugs.has(normalizeIncludeSlug(include)));
-  return exact.length ? exact : [...missingSlugs].map((slug) => `include:${slug}`);
+  const exact = includes.filter((include) =>
+    missingSlugs.has(normalizeIncludeSlug(include)),
+  );
+  return exact.length
+    ? exact
+    : [...missingSlugs].map((slug) => `include:${slug}`);
 }
 
-function classifyPreview({ html, parserErrors, includes, assets, importError }) {
+function classifyPreview({
+  html,
+  parserErrors,
+  includes,
+  assets,
+  importError,
+}) {
   if (importError) {
     return {
       status: "failed-import",
@@ -408,21 +478,30 @@ function classifyPreview({ html, parserErrors, includes, assets, importError }) 
 
   const rawSyntaxLeaks = findRawSyntaxLeaks(html);
   const missingIncludes = findMissingIncludes(html, includes);
-  const missingAssets = assets.filter((asset) => asset && !html.includes(asset) && !asset.startsWith("http"));
+  const missingAssets = assets.filter(
+    (asset) => asset && !html.includes(asset) && !asset.startsWith("http"),
+  );
   const warnings = [];
   const errors = [];
 
-  if (parserErrors.length) warnings.push(`${parserErrors.length} parser warning(s)`);
-  if (assets.some((asset) => /^https?:\/\//i.test(asset))) warnings.push("external asset reference(s)");
-  if (rawSyntaxLeaks.length) errors.push(`${rawSyntaxLeaks.length} raw syntax leak(s)`);
-  if (missingIncludes.length) errors.push(`${missingIncludes.length} missing include hint(s)`);
-  if (missingAssets.length) warnings.push(`${missingAssets.length} unresolved local asset hint(s)`);
+  if (parserErrors.length)
+    warnings.push(`${parserErrors.length} parser warning(s)`);
+  if (assets.some((asset) => /^https?:\/\//i.test(asset)))
+    warnings.push("external asset reference(s)");
+  if (rawSyntaxLeaks.length)
+    errors.push(`${rawSyntaxLeaks.length} raw syntax leak(s)`);
+  if (missingIncludes.length)
+    errors.push(`${missingIncludes.length} missing include hint(s)`);
+  if (missingAssets.length)
+    warnings.push(`${missingAssets.length} unresolved local asset hint(s)`);
 
   if (rawSyntaxLeaks.length || missingIncludes.length) {
     return {
       status: "failed-renderer",
       severity: "S3",
-      category: rawSyntaxLeaks.length ? "ftml-renderer" : "wikijump-include-fragment",
+      category: rawSyntaxLeaks.length
+        ? "ftml-renderer"
+        : "wikijump-include-fragment",
       warnings,
       errors,
       rawSyntaxLeaks,
@@ -484,17 +563,34 @@ async function main() {
   const sourceSha256 = sha256Text(source);
   const manifest = args.manifest ? await readTsv(args.manifest) : [];
   const manifestRow = rowForSource(manifest, args.source);
-  const manifestBySlug = new Map(manifest.map((row) => [row.slug.toLowerCase(), row]));
-  const sourceSlug = args.slug || manifestRow?.slug || slugify(path.basename(path.dirname(args.source)) || path.basename(args.source));
+  const manifestBySlug = new Map(
+    manifest.map((row) => [row.slug.toLowerCase(), row]),
+  );
+  const sourceSlug =
+    args.slug ||
+    manifestRow?.slug ||
+    slugify(
+      path.basename(path.dirname(args.source)) || path.basename(args.source),
+    );
   const previewSlug = `${args.slugPrefix}${slugify(sourceSlug)}`;
   const title = args.title || manifestRow?.title || sourceSlug;
   const tags = normalizeTags(manifestRow?.tags || "");
-  const includes = manifestRow ? splitPipe(manifestRow.dependency_hints).filter((hint) => hint.startsWith("include:")) : inferIncludes(source);
-  const assets = manifestRow ? splitPipe(manifestRow.asset_paths) : inferAssets(source);
-  const rpcUrl = args.rpcUrl || process.env.WIKIDOT_VERIFY_RPC_URL || "http://127.0.0.1:2747/jsonrpc";
-  const siteSlug = args.siteSlug || process.env.WIKIDOT_VERIFY_SITE_SLUG || "scp-wiki";
-  const adminEmail = process.env.WIKIDOT_VERIFY_ADMIN_EMAIL || "admin@wikijump";
-  const adminPassword = process.env.WIKIDOT_VERIFY_ADMIN_PASS || "wikijumpadmin1";
+  const includes = manifestRow
+    ? splitPipe(manifestRow.dependency_hints).filter((hint) =>
+        hint.startsWith("include:"),
+      )
+    : inferIncludes(source);
+  const assets = manifestRow
+    ? splitPipe(manifestRow.asset_paths)
+    : inferAssets(source);
+  const rpcUrl =
+    args.rpcUrl ||
+    process.env.WIKIDOT_VERIFY_RPC_URL ||
+    "http://127.0.0.1:2747/jsonrpc";
+  const siteSlug =
+    args.siteSlug || process.env.WIKIDOT_VERIFY_SITE_SLUG || "scp-wiki";
+  const adminEmail = requireEnv("WIKIDOT_VERIFY_ADMIN_EMAIL");
+  const adminPassword = requireEnv("WIKIDOT_VERIFY_ADMIN_PASS");
   const client = new DeepwellClient(rpcUrl, args.rpcTimeoutMs);
   const timings = {};
   let imported = null;
@@ -528,11 +624,17 @@ async function main() {
     }
 
     const importStart = performance.now();
-    imported = await createOrUpdatePreviewPage(client, site.site_id, login.session_token, {
-      slug: previewSlug,
-      title,
-      tags,
-    }, source);
+    imported = await createOrUpdatePreviewPage(
+      client,
+      site.site_id,
+      login.session_token,
+      {
+        slug: previewSlug,
+        title,
+        tags,
+      },
+      source,
+    );
     timings.importMs = Math.round(performance.now() - importStart);
 
     classification = classifyPreview({
@@ -552,7 +654,13 @@ async function main() {
   }
 
   const html = imported?.page?.compiled_body_html || "";
-  const htmlPath = html ? path.join(args.outputDir, "html", `${encodeURIComponent(previewSlug)}.html`) : "";
+  const htmlPath = html
+    ? path.join(
+        args.outputDir,
+        "html",
+        `${encodeURIComponent(previewSlug)}.html`,
+      )
+    : "";
   if (html) await fs.writeFile(htmlPath, html);
 
   timings.totalMs = Math.round(performance.now() - totalStart);
@@ -596,8 +704,10 @@ async function main() {
       preload: {
         enabled: Boolean(args.preloadDependencies),
         requested: dependencyPreload.length,
-        passed: dependencyPreload.filter((result) => result.status === "pass").length,
-        failed: dependencyPreload.filter((result) => result.status === "failed").length,
+        passed: dependencyPreload.filter((result) => result.status === "pass")
+          .length,
+        failed: dependencyPreload.filter((result) => result.status === "failed")
+          .length,
         results: dependencyPreload,
       },
     },

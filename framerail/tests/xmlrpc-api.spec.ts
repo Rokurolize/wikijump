@@ -27,6 +27,22 @@ const xmlRpcMalformedParamsRequest = `<?xml version="1.0"?>
   </params>
 </methodCall>`
 
+const xmlRpcInvalidIntegerRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>system.methodHelp</methodName>
+  <params>
+    <param><value><int>12junk</int></value></param>
+  </params>
+</methodCall>`
+
+const xmlRpcInvalidDoubleRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>system.methodHelp</methodName>
+  <params>
+    <param><value><double>1.5junk</double></value></param>
+  </params>
+</methodCall>`
+
 const xmlRpcUnexpectedMethodCallContentRequest = `<?xml version="1.0"?>
 <methodCall>
   <methodName>system.listMethods</methodName>
@@ -654,10 +670,11 @@ RETURNING forum_post_id;
 async function createXmlRpcFixtureUser(stamp: number) {
   const password = "wikijumpuser1"
   const name = `XMLRPC Fixture User ${stamp}`
+  const email = `xmlrpc-fixture-${stamp}@example.test`
   const user = await deepwellRequest("user_create", {
     user_type: "regular",
     name,
-    email: `xmlrpc-fixture-${stamp}@example.test`,
+    email,
     locales: ["en_GB"],
     password,
     bypass_filter: true,
@@ -665,7 +682,7 @@ async function createXmlRpcFixtureUser(stamp: number) {
     ip_address: "127.0.0.1"
   })
 
-  return { ...user, password }
+  return { ...user, email, password }
 }
 
 async function enableMfaForFixtureUser(userId: number) {
@@ -1101,10 +1118,7 @@ test("XML-RPC writes use the authenticated user for page and file attribution", 
 }) => {
   const stamp = Date.now()
   const fixtureUser = await createXmlRpcFixtureUser(stamp)
-  const fixtureHeaders = xmlRpcBasicHeaders(
-    `xmlrpc-fixture-user-${stamp}`,
-    fixtureUser.password
-  )
+  const fixtureHeaders = xmlRpcBasicHeaders(fixtureUser.email, fixtureUser.password)
   const pageSlug = `fixture-xmlrpc-attribution-${stamp}`
   const fileName = "attribution.txt"
   const fileContent = Buffer.from("XML-RPC attributed file content.").toString("base64")
@@ -1590,6 +1604,24 @@ test("XML-RPC endpoint rejects malformed params and unexpected parameter counts"
   const extraParamBody = await extraParamResponse.text()
   expect(extraParamBody).toContain("<fault>")
   expect(extraParamBody).toContain("system.listMethods expects 0 parameters")
+
+  const invalidIntegerResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcInvalidIntegerRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(invalidIntegerResponse.status()).toBe(200)
+  const invalidIntegerBody = await invalidIntegerResponse.text()
+  expect(invalidIntegerBody).toContain("<fault>")
+  expect(invalidIntegerBody).toContain("Invalid XML-RPC integer value")
+
+  const invalidDoubleResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcInvalidDoubleRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(invalidDoubleResponse.status()).toBe(200)
+  const invalidDoubleBody = await invalidDoubleResponse.text()
+  expect(invalidDoubleBody).toContain("<fault>")
+  expect(invalidDoubleBody).toContain("Invalid XML-RPC double value")
 })
 
 test("XML-RPC endpoint rejects unexpected envelope content", async ({ request }) => {
