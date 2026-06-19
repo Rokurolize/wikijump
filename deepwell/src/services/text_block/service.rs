@@ -137,7 +137,7 @@ impl TextBlockService {
 
         // If there's no additional work for us, quit early
 
-        if max_index == 0 && existing_blocks.is_empty() {
+        if blocks.is_empty() && existing_blocks.is_empty() {
             debug!("Not inserting any blocks, no prior blocks to remove");
             return Ok(());
         }
