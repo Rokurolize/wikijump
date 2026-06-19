@@ -1,6 +1,6 @@
 # Local Wikidot Compatibility Verifier
 
-This directory contains a reusable local verification corpus for the Wikijump stack. It seeds Wikidot-shaped pages into the local `scp-wiki` site, then runs a browser proof matrix against the rendered Framerail pages.
+This directory contains a reusable local verification corpus for the Wikijump stack. It seeds Wikidot-shaped pages into the local `scp-wiki` site, then runs a browser-proof matrix against the rendered Framerail pages.
 
 ## Prerequisites
 

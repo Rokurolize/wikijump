@@ -27,30 +27,39 @@ function parseArgs(argv) {
 
   for (let index = 2; index < argv.length; index += 1) {
     const arg = argv[index];
+    const nextValue = (flag) => {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error(`${flag} requires a value`);
+      }
+      index += 1;
+      return value;
+    };
+
     if (arg === "--source") {
-      args.source = path.resolve(argv[++index]);
+      args.source = path.resolve(nextValue(arg));
     } else if (arg === "--manifest") {
-      args.manifest = path.resolve(argv[++index]);
+      args.manifest = path.resolve(nextValue(arg));
     } else if (arg === "--output-dir") {
-      args.outputDir = path.resolve(argv[++index]);
+      args.outputDir = path.resolve(nextValue(arg));
     } else if (arg === "--rpc-url") {
-      args.rpcUrl = argv[++index];
+      args.rpcUrl = nextValue(arg);
     } else if (arg === "--rpc-timeout-ms") {
-      args.rpcTimeoutMs = Number.parseInt(argv[++index], 10);
+      args.rpcTimeoutMs = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--site") {
-      args.siteSlug = argv[++index];
+      args.siteSlug = nextValue(arg);
     } else if (arg === "--slug") {
-      args.slug = argv[++index];
+      args.slug = nextValue(arg);
     } else if (arg === "--title") {
-      args.title = argv[++index];
+      args.title = nextValue(arg);
     } else if (arg === "--slug-prefix") {
-      args.slugPrefix = argv[++index];
+      args.slugPrefix = nextValue(arg);
     } else if (arg === "--preload-dependencies") {
       args.preloadDependencies = true;
     } else if (arg === "--max-dependencies") {
-      args.maxDependencies = Number.parseInt(argv[++index], 10);
+      args.maxDependencies = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--dependency-depth") {
-      args.dependencyDepth = Number.parseInt(argv[++index], 10);
+      args.dependencyDepth = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--json") {
       args.jsonOnly = true;
     } else if (arg === "--help") {

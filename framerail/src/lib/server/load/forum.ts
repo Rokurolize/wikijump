@@ -24,6 +24,10 @@ function validateForumRouteId(routeId: number) {
 }
 
 export function parseForumRouteId(routeId: string) {
+  if (!/^\d+$/.test(routeId)) {
+    error(404)
+  }
+
   const parsedRouteId = Number.parseInt(routeId, 10)
   validateForumRouteId(parsedRouteId)
   return parsedRouteId

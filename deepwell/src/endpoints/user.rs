@@ -52,6 +52,14 @@ pub async fn user_import(
         .into());
     };
 
+    if user_id <= 0 {
+        return Err(Error::new(
+            format!("Wikidot user ID {user_id} must be a positive integer"),
+            ErrorType::BadRequest,
+        )
+        .into());
+    }
+
     let wikidot_user_id = i32::try_from(user_id).map_err(|_| {
         Error::new(
             format!("Wikidot user ID {user_id} is outside the importable range"),

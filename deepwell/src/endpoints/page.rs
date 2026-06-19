@@ -34,7 +34,7 @@ use crate::services::page::{
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::CheckPermissionContext;
 use crate::types::{
-    Action, AliasType, Bytes, FileOrder, PageDetails, PageId, Reference, RerenderDepth,
+    Action, Bytes, FileOrder, PageDetails, PageId, Reference, RerenderDepth,
 };
 use futures::future::try_join_all;
 use sea_orm::prelude::TimeDateTimeWithTimeZone;
@@ -331,6 +331,8 @@ pub async fn page_select(
         None => None,
     };
     let order = parse_page_select_order(order.as_deref())?;
+    let needs_rating =
+        rating_filter.is_some() || matches!(order.field, PageSelectOrderField::Rating);
 
     if matches!(categories, Some(ref categories) if categories.is_empty())
         || matches!(tags_any, Some(ref tags) if tags.is_empty())
@@ -377,6 +379,28 @@ pub async fn page_select(
     {
         return Ok(Vec::new());
     }
+
+    let parent_filter = match parent.as_deref() {
+        None => None,
+        Some("-") => Some(PageSelectParentFilter::NoParent),
+        Some(parent) => {
+            let parent_id = Page::find()
+                .filter(page::Column::SiteId.eq(site_id))
+                .filter(page::Column::DeletedAt.is_null())
+                .filter(page::Column::Slug.eq(parent))
+                .one(ctx.transaction())
+                .await
+                .or_raise(make_error)?
+                .map(|page| page.page_id)
+                .ok_or_else(|| {
+                    Error::new(
+                        format!("unknown parent page for pages.select: {parent}"),
+                        ErrorType::Page,
+                    )
+                })?;
+            Some(PageSelectParentFilter::Parent(parent_id))
+        }
+    };
 
     let mut page_query = Page::find()
         .filter(page::Column::SiteId.eq(site_id))
@@ -435,46 +459,34 @@ pub async fn page_select(
         .map(|link| (link.child_page_id, link.parent_page_id))
         .collect::<BTreeSet<_>>();
 
-    let rating_by_page_id = ScoreService::scores_bulk(ctx, &page_ids)
-        .await
-        .or_raise(make_error)?
-        .into_iter()
-        .map(|(page_id, rating)| (page_id, page_select_rating_value(rating)))
-        .collect::<BTreeMap<_, _>>();
+    let rating_by_page_id = if needs_rating && !page_ids.is_empty() {
+        ScoreService::scores_bulk(ctx, &page_ids)
+            .await
+            .or_raise(make_error)?
+            .into_iter()
+            .map(|(page_id, rating)| (page_id, page_select_rating_value(rating)))
+            .collect::<BTreeMap<_, _>>()
+    } else {
+        BTreeMap::new()
+    };
 
     let created_by_user_ids = match created_by {
         None => None,
         Some(created_by) => {
             let user_id = match created_by.parse::<i64>() {
                 Ok(user_id) => Some(user_id),
-                Err(_) => AliasService::get_optional(ctx, AliasType::User, &created_by)
-                    .await
-                    .or_raise(make_error)?
-                    .map(|alias| alias.target_id),
+                Err(_) => {
+                    UserService::get_optional(ctx, Reference::from(created_by.as_str()))
+                        .await
+                        .or_raise(make_error)?
+                        .map(|user| user.user_id)
+                }
             };
 
             match user_id {
                 Some(user_id) => Some(BTreeSet::from([user_id])),
                 None => return Ok(Vec::new()),
             }
-        }
-    };
-
-    let parent_filter = match parent {
-        None => None,
-        Some(parent) if parent == "-" => Some(PageSelectParentFilter::NoParent),
-        Some(parent) => {
-            let parent_id = pages
-                .iter()
-                .find(|page| page.slug == parent)
-                .map(|page| page.page_id)
-                .ok_or_else(|| {
-                    Error::new(
-                        format!("unknown parent page for pages.select: {parent}"),
-                        ErrorType::Page,
-                    )
-                })?;
-            Some(PageSelectParentFilter::Parent(parent_id))
         }
     };
 

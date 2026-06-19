@@ -33,6 +33,8 @@ use sea_query::{Expr, Query};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
+const MAX_SCORE_ORDER_CANDIDATES: u64 = 1000;
+
 #[derive(Debug)]
 pub struct PageQueryService;
 
@@ -239,13 +241,12 @@ impl PageQueryService {
                 debug!("Selecting pages which are not siblings under the given parents");
 
                 Some(
-                    page::Column::PageId.in_subquery(
+                    page::Column::PageId.not_in_subquery(
                         Query::select()
                             .column(page_parent::Column::ChildPageId)
                             .from(PageParent)
                             .and_where(
-                                page_parent::Column::ParentPageId
-                                    .is_not_in(get_parents!()),
+                                page_parent::Column::ParentPageId.is_in(get_parents!()),
                             )
                             .to_owned(),
                     ),
@@ -336,7 +337,9 @@ impl PageQueryService {
         }
 
         // Build the final query
-        let mut query = Page::find().filter(condition);
+        let mut query = Page::find()
+            .filter(page::Column::DeletedAt.is_null())
+            .filter(condition);
         let order = order.unwrap_or_default();
         let needs_tag_filter =
             !all_tags.is_empty() || !any_tags.is_empty() || !no_tags.is_empty();
@@ -485,7 +488,17 @@ impl PageQueryService {
             };
         }
 
-        if !score_order && let Some(limit) = pagination.limit {
+        let query_limit = if score_order {
+            Some(
+                pagination
+                    .limit
+                    .unwrap_or(MAX_SCORE_ORDER_CANDIDATES)
+                    .min(MAX_SCORE_ORDER_CANDIDATES),
+            )
+        } else {
+            pagination.limit
+        };
+        if let Some(limit) = query_limit {
             debug!("Limiting ListPages to a maximum of {limit} pages total");
             query = query.limit(limit);
         }

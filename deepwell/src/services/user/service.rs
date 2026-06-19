@@ -317,11 +317,16 @@ impl UserService {
             ..Default::default()
         };
 
-        let user_id = User::insert(user)
-            .exec(txn)
-            .await
-            .or_raise(make_error)?
-            .last_insert_id;
+        let insert_result = User::insert(user).exec(txn).await;
+        if let Err(error) = &insert_result
+            && is_user_id_conflict(error)
+        {
+            bail!(Error::new(
+                format!("cannot create user, another with ID {user_id} already exists"),
+                ErrorType::UserExists,
+            ));
+        }
+        let user_id = insert_result.or_raise(make_error)?.last_insert_id;
 
         AuditService::log(ctx, ip_address, AuditEvent::UserCreate { user_id })
             .await
@@ -995,6 +1000,14 @@ impl UserService {
             ));
         }
     }
+}
+
+fn is_user_id_conflict(error: &sea_orm::DbErr) -> bool {
+    let message = error.to_string();
+    message.contains("duplicate key")
+        && (message.contains("user_pkey")
+            || message.contains("user_user_id")
+            || message.contains("user_id"))
 }
 
 fn get_user_slug(name: &str, user_type: UserType) -> String {

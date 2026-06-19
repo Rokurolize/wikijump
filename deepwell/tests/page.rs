@@ -25,6 +25,7 @@ use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::prelude::*;
 use deepwell::models::audit_log::Entity as AuditLog;
+use deepwell::models::page::{self, Entity as PageTable};
 use deepwell::services::page::UndoPage;
 use deepwell::services::page_query::{
     CategoriesSelector, DateSelector, FoundPageFields, IncludedCategories,
@@ -33,10 +34,12 @@ use deepwell::services::page_query::{
 };
 use deepwell::services::{PageService, RequestContext};
 use deepwell::types::{PageRevisionType, Reference};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter, Set,
+};
 use serde_json::json;
 use std::borrow::Cow;
-use time::OffsetDateTime;
+use time::{Duration, OffsetDateTime};
 
 #[tokio::test]
 async fn basic_edit() {
@@ -524,10 +527,44 @@ async fn render_listpages_test_fixture(
     module_head: &str,
     body: &str,
 ) -> String {
+    render_listpages_test_fixture_with_targets(
+        runner,
+        site_id,
+        slug_prefix,
+        tag,
+        module_head,
+        body,
+        &[
+            (
+                "target-a",
+                "Fixture ListPages Target Alpha",
+                "Fixture ListPages Target Alpha marker.",
+            ),
+            (
+                "target-b",
+                "Fixture ListPages Target Beta",
+                "Fixture ListPages Target Beta marker.",
+            ),
+            (
+                "target-c",
+                "Fixture ListPages Target Gamma",
+                "Fixture ListPages Target Gamma marker.",
+            ),
+        ],
+    )
+    .await
+}
+
+async fn render_listpages_test_fixture_with_targets(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug_prefix: &str,
+    tag: &str,
+    module_head: &str,
+    body: &str,
+    targets: &[(&str, &str, &str)],
+) -> String {
     let parent_slug = format!("{slug_prefix}-parent-root");
-    let target_a_slug = format!("{slug_prefix}-target-a");
-    let target_b_slug = format!("{slug_prefix}-target-b");
-    let target_c_slug = format!("{slug_prefix}-target-c");
     let excluded_slug = format!("{slug_prefix}-excluded");
     let index_slug = format!("{slug_prefix}-index");
 
@@ -540,28 +577,20 @@ async fn render_listpages_test_fixture(
     )
     .await;
 
-    for (slug, title, source) in [
-        (
-            target_a_slug.as_str(),
-            "Fixture ListPages Target Alpha",
-            "Fixture ListPages Target Alpha marker.",
-        ),
-        (
-            target_b_slug.as_str(),
-            "Fixture ListPages Target Beta",
-            "Fixture ListPages Target Beta marker.",
-        ),
-        (
-            target_c_slug.as_str(),
-            "Fixture ListPages Target Gamma",
-            "Fixture ListPages Target Gamma marker.",
-        ),
-    ] {
+    for (index, &(slug_suffix, title, source)) in targets.iter().enumerate() {
+        let slug = format!("{slug_prefix}-{slug_suffix}");
         let revision =
-            create_listpages_test_page(runner, site_id, slug, title, source).await;
-        set_listpages_test_tags(runner, site_id, slug, revision, &["verification", tag])
+            create_listpages_test_page(runner, site_id, &slug, title, source).await;
+        set_listpages_test_created_at(
+            runner,
+            site_id,
+            &slug,
+            OffsetDateTime::UNIX_EPOCH + Duration::seconds(index as i64 + 1),
+        )
+        .await;
+        set_listpages_test_tags(runner, site_id, &slug, revision, &["verification", tag])
             .await;
-        set_listpages_test_parent(runner, site_id, slug, &parent_slug).await;
+        set_listpages_test_parent(runner, site_id, &slug, &parent_slug).await;
     }
 
     let excluded_revision = create_listpages_test_page(
@@ -607,6 +636,30 @@ async fn render_listpages_test_fixture(
 
     page.compiled_body_html
         .expect("compiled body should be included in page_get details")
+}
+
+async fn set_listpages_test_created_at(
+    runner: &TestRunner,
+    site_id: i64,
+    slug: &str,
+    created_at: OffsetDateTime,
+) {
+    let page = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(slug)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("created_at test page lookup should not fail")
+        .expect("created_at test page should exist");
+    let mut model = page.into_active_model();
+    model.created_at = Set(created_at);
+    model
+        .update(runner.context().transaction())
+        .await
+        .expect("created_at test page update should not fail");
 }
 
 #[tokio::test]
@@ -668,23 +721,40 @@ async fn listpages_created_at_order_renders_results() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
-    let html = render_listpages_test_fixture(
+    let html = render_listpages_test_fixture_with_targets(
         &mut runner,
         site.site.site_id,
         "fixture-listpages-created-at",
         "verification-list-created-at",
         r#"tags="+verification-list-created-at" limit="3" order="created_at""#,
         "* %%title%% :: %%slug%%",
+        &[
+            (
+                "target-z",
+                "Fixture ListPages Created Zulu",
+                "Fixture ListPages Created Zulu marker.",
+            ),
+            (
+                "target-a",
+                "Fixture ListPages Created Alpha",
+                "Fixture ListPages Created Alpha marker.",
+            ),
+            (
+                "target-m",
+                "Fixture ListPages Created Middle",
+                "Fixture ListPages Created Middle marker.",
+            ),
+        ],
     )
     .await;
 
     for expected in [
-        "Fixture ListPages Target Alpha",
-        "Fixture ListPages Target Beta",
-        "Fixture ListPages Target Gamma",
+        "Fixture ListPages Created Zulu",
+        "Fixture ListPages Created Alpha",
+        "Fixture ListPages Created Middle",
+        "fixture-listpages-created-at-target-z",
         "fixture-listpages-created-at-target-a",
-        "fixture-listpages-created-at-target-b",
-        "fixture-listpages-created-at-target-c",
+        "fixture-listpages-created-at-target-m",
     ] {
         assert!(
             html.contains(expected),
@@ -695,6 +765,21 @@ async fn listpages_created_at_order_renders_results() {
     assert!(
         !html.contains("[[module ListPages") && !html.contains("%%title%%"),
         "created_at ListPages fixture should render instead of remaining raw:\n{html}",
+    );
+
+    let positions = [
+        "fixture-listpages-created-at-target-z",
+        "fixture-listpages-created-at-target-a",
+        "fixture-listpages-created-at-target-m",
+    ]
+    .map(|slug| {
+        html.find(slug).unwrap_or_else(|| {
+            panic!("created_at ListPages fixture should contain {slug:?}")
+        })
+    });
+    assert!(
+        positions[0] < positions[1] && positions[1] < positions[2],
+        "created_at ListPages fixture should render in creation order, not lexical slug/title order:\n{html}"
     );
 }
 
@@ -788,13 +873,54 @@ async fn page_query_orders_by_page_slug_without_category_prefix() {
 
 #[tokio::test]
 async fn page_query_score_order_returns_results() {
-    let runner = TestRunner::setup().await;
-    PageQueryService::find(
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "verification-page-score-order";
+
+    for (slug, title, vote) in [
+        ("fixture-score-order-high", "Score Order High", 5),
+        ("fixture-score-order-low", "Score Order Low", -2),
+        ("fixture-score-order-zero", "Score Order Zero", 0),
+    ] {
+        let output = run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": "Score order marker.",
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "create score order test page",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        set_listpages_test_tags(&mut runner, site_id, slug, output.revision_id, &[tag])
+            .await;
+        if vote != 0 {
+            run_endpoint!(
+                runner,
+                vote_set,
+                json!({
+                    "page_id": output.page_id,
+                    "user_id": ADMIN_USER_ID,
+                    "value": vote,
+                }),
+            );
+        }
+    }
+
+    let all_tags = [Cow::Borrowed(tag)];
+    let pages = PageQueryService::find(
         runner.context(),
         PageQuery {
             current_page_id: 0,
-            current_site_id: 0,
-            queried_site_id: Some(0),
+            current_site_id: site_id,
+            queried_site_id: Some(site_id),
             page_type: PageTypeSelector::All,
             categories: CategoriesSelector {
                 included_categories: IncludedCategories::All,
@@ -802,7 +928,7 @@ async fn page_query_score_order_returns_results() {
             },
             tags: TagCondition {
                 any_present: &[],
-                all_present: &[],
+                all_present: &all_tags,
                 none_present: &[],
             },
             page_parent: PageParentSelector::NoParent,
@@ -827,11 +953,36 @@ async fn page_query_score_order_returns_results() {
             }),
             pagination: PaginationSelector::default(),
             variables: &[],
-            fields: FoundPageFields::default(),
+            fields: FoundPageFields {
+                slug: true,
+                score: true,
+                ..Default::default()
+            },
         },
     )
     .await
     .expect("score ordering should not fail");
+
+    let ordered = pages
+        .pages
+        .into_iter()
+        .map(|row| {
+            (
+                row.slug.expect("slug field should be requested"),
+                row.score.expect("score field should be requested"),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        ordered,
+        [
+            ("fixture-score-order-low".to_owned(), -2.0),
+            ("fixture-score-order-zero".to_owned(), 0.0),
+            ("fixture-score-order-high".to_owned(), 5.0),
+        ],
+        "score order query should return pages sorted by computed score",
+    );
 }
 
 #[tokio::test]

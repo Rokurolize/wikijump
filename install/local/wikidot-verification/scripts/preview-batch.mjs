@@ -19,32 +19,41 @@ function parseArgs(argv) {
 
   for (let index = 2; index < argv.length; index += 1) {
     const arg = argv[index];
+    const nextValue = (flag) => {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error(`${flag} requires a value`);
+      }
+      index += 1;
+      return value;
+    };
+
     if (arg === "--input") {
-      args.input = path.resolve(argv[++index]);
+      args.input = path.resolve(nextValue(arg));
     } else if (arg === "--manifest") {
-      args.manifest = path.resolve(argv[++index]);
+      args.manifest = path.resolve(nextValue(arg));
     } else if (arg === "--output-dir") {
-      args.outputDir = path.resolve(argv[++index]);
+      args.outputDir = path.resolve(nextValue(arg));
     } else if (arg === "--offset") {
-      args.offset = Number.parseInt(argv[++index], 10);
+      args.offset = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--limit") {
-      args.limit = Number.parseInt(argv[++index], 10);
+      args.limit = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--rpc-url") {
-      args.rpcUrl = argv[++index];
+      args.rpcUrl = nextValue(arg);
     } else if (arg === "--rpc-timeout-ms") {
-      args.rpcTimeoutMs = Number.parseInt(argv[++index], 10);
+      args.rpcTimeoutMs = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--site") {
-      args.siteSlug = argv[++index];
+      args.siteSlug = nextValue(arg);
     } else if (arg === "--slug-prefix") {
-      args.slugPrefix = argv[++index];
+      args.slugPrefix = nextValue(arg);
     } else if (arg === "--preload-dependencies") {
       args.preloadDependencies = true;
     } else if (arg === "--max-dependencies") {
-      args.maxDependencies = Number.parseInt(argv[++index], 10);
+      args.maxDependencies = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--dependency-depth") {
-      args.dependencyDepth = Number.parseInt(argv[++index], 10);
+      args.dependencyDepth = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--timeout-ms") {
-      args.timeoutMs = Number.parseInt(argv[++index], 10);
+      args.timeoutMs = Number.parseInt(nextValue(arg), 10);
     } else if (arg === "--help") {
       printHelpAndExit();
     } else {
@@ -56,15 +65,21 @@ function parseArgs(argv) {
   if (!args.manifest) throw new Error("--manifest is required");
   if (!Number.isFinite(args.offset) || args.offset < 0) args.offset = 0;
   if (!Number.isFinite(args.limit) || args.limit < 0) args.limit = 100;
-  if (!Number.isFinite(args.maxDependencies) || args.maxDependencies < 0) args.maxDependencies = 50;
-  if (!Number.isFinite(args.dependencyDepth) || args.dependencyDepth < 0) args.dependencyDepth = 1;
-  if (!Number.isFinite(args.timeoutMs) || args.timeoutMs <= 0) args.timeoutMs = 120000;
-  if (!Number.isFinite(args.rpcTimeoutMs) || args.rpcTimeoutMs <= 0) args.rpcTimeoutMs = 30000;
+  if (!Number.isFinite(args.maxDependencies) || args.maxDependencies < 0)
+    args.maxDependencies = 50;
+  if (!Number.isFinite(args.dependencyDepth) || args.dependencyDepth < 0)
+    args.dependencyDepth = 1;
+  if (!Number.isFinite(args.timeoutMs) || args.timeoutMs <= 0)
+    args.timeoutMs = 120000;
+  if (!Number.isFinite(args.rpcTimeoutMs) || args.rpcTimeoutMs <= 0)
+    args.rpcTimeoutMs = 30000;
   return args;
 }
 
 function printHelpAndExit() {
-  console.log(`Usage: node install/local/wikidot-verification/scripts/preview-batch.mjs --input canary-pages.tsv --manifest corpus-manifest.tsv --output-dir DIR [--offset 0] [--limit 100] [--rpc-url URL] [--rpc-timeout-ms 30000] [--site scp-wiki] [--slug-prefix preview-batch-] [--preload-dependencies] [--max-dependencies 50] [--dependency-depth 1] [--timeout-ms 120000]`);
+  console.log(
+    `Usage: node install/local/wikidot-verification/scripts/preview-batch.mjs --input canary-pages.tsv --manifest corpus-manifest.tsv --output-dir DIR [--offset 0] [--limit 100] [--rpc-url URL] [--rpc-timeout-ms 30000] [--site scp-wiki] [--slug-prefix preview-batch-] [--preload-dependencies] [--max-dependencies 50] [--dependency-depth 1] [--timeout-ms 120000]`,
+  );
   process.exit(0);
 }
 
@@ -75,11 +90,13 @@ function tsv(value) {
 }
 
 function slugSegment(value) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9:_-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 140) || "source";
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9:_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 140) || "source"
+  );
 }
 
 async function readTsv(filePath) {
@@ -132,7 +149,12 @@ function runPreview(commandArgs, cwd, timeoutMs) {
     child.on("error", (error) => {
       clearTimeout(timeout);
       if (killFallback) clearTimeout(killFallback);
-      resolve({ code: null, stdout, stderr: `${stderr}${error.message}`, timedOut });
+      resolve({
+        code: null,
+        stdout,
+        stderr: `${stderr}${error.message}`,
+        timedOut,
+      });
     });
     child.on("close", (code) => {
       clearTimeout(timeout);
@@ -175,42 +197,64 @@ function resultRow(result) {
     result.dependencyPreloadFailed,
     result.timedOut,
     result.notes,
-  ].map(tsv).join("\t");
+  ]
+    .map(tsv)
+    .join("\t");
 }
 
 async function main() {
   const args = parseArgs(process.argv);
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
   const repoRoot = path.resolve(scriptDir, "../../../..");
-  const previewScript = path.join(repoRoot, "install/local/wikidot-verification/scripts/preview-source.mjs");
+  const previewScript = path.join(
+    repoRoot,
+    "install/local/wikidot-verification/scripts/preview-source.mjs",
+  );
   await fs.mkdir(args.outputDir, { recursive: true });
   await fs.mkdir(path.join(args.outputDir, "pages"), { recursive: true });
 
   const rows = await readTsv(args.input);
   const selected = rows.slice(args.offset, args.offset + args.limit);
-  const rpcUrl = args.rpcUrl || process.env.WIKIDOT_VERIFY_RPC_URL || "http://127.0.0.1:2747/jsonrpc";
-  const siteSlug = args.siteSlug || process.env.WIKIDOT_VERIFY_SITE_SLUG || "scp-wiki";
+  const rpcUrl =
+    args.rpcUrl ||
+    process.env.WIKIDOT_VERIFY_RPC_URL ||
+    "http://127.0.0.1:2747/jsonrpc";
+  const siteSlug =
+    args.siteSlug || process.env.WIKIDOT_VERIFY_SITE_SLUG || "scp-wiki";
   const results = [];
 
   for (const [relativeIndex, row] of selected.entries()) {
     const index = args.offset + relativeIndex;
-    const pageOutputDir = path.join(args.outputDir, "pages", `${String(index).padStart(4, "0")}-${slugSegment(row.slug)}`);
+    const pageOutputDir = path.join(
+      args.outputDir,
+      "pages",
+      `${String(index).padStart(4, "0")}-${slugSegment(row.slug)}`,
+    );
     const commandArgs = [
       previewScript,
-      "--source", row.source_path,
-      "--manifest", args.manifest,
-      "--output-dir", pageOutputDir,
-      "--rpc-url", rpcUrl,
-      "--rpc-timeout-ms", String(args.rpcTimeoutMs),
-      "--site", siteSlug,
-      "--slug-prefix", args.slugPrefix,
+      "--source",
+      row.source_path,
+      "--manifest",
+      args.manifest,
+      "--output-dir",
+      pageOutputDir,
+      "--rpc-url",
+      rpcUrl,
+      "--rpc-timeout-ms",
+      String(args.rpcTimeoutMs),
+      "--site",
+      siteSlug,
+      "--slug-prefix",
+      args.slugPrefix,
       "--json",
     ];
     if (args.preloadDependencies) {
       commandArgs.push(
         "--preload-dependencies",
-        "--max-dependencies", String(args.maxDependencies),
-        "--dependency-depth", String(args.dependencyDepth),
+        "--max-dependencies",
+        String(args.maxDependencies),
+        "--dependency-depth",
+        String(args.dependencyDepth),
       );
     }
     const run = await runPreview(commandArgs, repoRoot, args.timeoutMs);
@@ -250,7 +294,8 @@ async function main() {
       missingIncludeCount: preview?.dependencies?.missingIncludes?.length ?? 0,
       missingAssetCount: preview?.assets?.missingAssets?.length ?? 0,
       rawSyntaxLeakCount: preview?.diagnostics?.rawSyntaxLeaks?.length ?? 0,
-      dependencyPreloadRequested: preview?.dependencies?.preload?.requested ?? 0,
+      dependencyPreloadRequested:
+        preview?.dependencies?.preload?.requested ?? 0,
       dependencyPreloadPassed: preview?.dependencies?.preload?.passed ?? 0,
       dependencyPreloadFailed: preview?.dependencies?.preload?.failed ?? 0,
       timedOut: run.timedOut,
@@ -258,14 +303,23 @@ async function main() {
     });
   }
 
-  const timingValues = results.map((result) => result.totalMs).filter((value) => Number.isFinite(value));
-  const severityCounts = Object.fromEntries(["S0", "S1", "S2", "S3", "S4"].map((severity) => [
-    severity,
-    results.filter((result) => result.severity === severity).length,
-  ]));
-  const statusCounts = Object.fromEntries([...new Set(results.map((result) => result.status))]
-    .sort()
-    .map((status) => [status, results.filter((result) => result.status === status).length]));
+  const timingValues = results
+    .map((result) => result.totalMs)
+    .filter((value) => Number.isFinite(value));
+  const severityCounts = Object.fromEntries(
+    ["S0", "S1", "S2", "S3", "S4"].map((severity) => [
+      severity,
+      results.filter((result) => result.severity === severity).length,
+    ]),
+  );
+  const statusCounts = Object.fromEntries(
+    [...new Set(results.map((result) => result.status))]
+      .sort()
+      .map((status) => [
+        status,
+        results.filter((result) => result.status === status).length,
+      ]),
+  );
 
   const header = [
     "index",
@@ -293,7 +347,10 @@ async function main() {
     "timed_out",
     "notes",
   ].join("\t");
-  await fs.writeFile(path.join(args.outputDir, "preview-results.tsv"), `${header}\n${results.map(resultRow).join("\n")}\n`);
+  await fs.writeFile(
+    path.join(args.outputDir, "preview-results.tsv"),
+    `${header}\n${results.map(resultRow).join("\n")}\n`,
+  );
 
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -320,13 +377,25 @@ async function main() {
       maxMs: timingValues.length ? Math.max(...timingValues) : null,
     },
     dependencyPreload: {
-      requested: results.reduce((sum, result) => sum + result.dependencyPreloadRequested, 0),
-      passed: results.reduce((sum, result) => sum + result.dependencyPreloadPassed, 0),
-      failed: results.reduce((sum, result) => sum + result.dependencyPreloadFailed, 0),
+      requested: results.reduce(
+        (sum, result) => sum + result.dependencyPreloadRequested,
+        0,
+      ),
+      passed: results.reduce(
+        (sum, result) => sum + result.dependencyPreloadPassed,
+        0,
+      ),
+      failed: results.reduce(
+        (sum, result) => sum + result.dependencyPreloadFailed,
+        0,
+      ),
     },
     timedOut: results.filter((result) => result.timedOut).length,
   };
-  await fs.writeFile(path.join(args.outputDir, "preview-summary.json"), JSON.stringify(summary, null, 2) + "\n");
+  await fs.writeFile(
+    path.join(args.outputDir, "preview-summary.json"),
+    JSON.stringify(summary, null, 2) + "\n",
+  );
   console.log(JSON.stringify(summary, null, 2));
 }
 

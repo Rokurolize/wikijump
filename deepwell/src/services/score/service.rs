@@ -27,30 +27,67 @@ pub struct ScoreService;
 
 impl ScoreService {
     pub async fn score(ctx: &ServiceContext<'_>, page_id: i64) -> Result<ScoreValue> {
-        let txn = ctx.transaction();
-        let make_error = || {
-            Error::new(
-                format!("failed to evaluate score for page ID {}", page_id),
-                ErrorType::PageVote,
-            )
-        };
-
-        let condition = Self::build_condition(page_id);
-        let scorer = Self::get_scorer(ctx, page_id).await.or_raise(make_error)?;
-        let score = scorer.score(txn, condition).await.or_raise(make_error)?;
-        Ok(score)
+        Ok(Self::scores_bulk(ctx, &[page_id])
+            .await?
+            .remove(&page_id)
+            .unwrap_or(ScoreValue::Integer(0)))
     }
 
     pub async fn scores_bulk(
         ctx: &ServiceContext<'_>,
         page_ids: &[i64],
     ) -> Result<BTreeMap<i64, ScoreValue>> {
-        let mut scores = BTreeMap::new();
-        for page_id in page_ids {
-            let score = Self::score(ctx, *page_id).await?;
-            scores.insert(*page_id, score);
+        if page_ids.is_empty() {
+            return Ok(BTreeMap::new());
         }
-        Ok(scores)
+
+        let txn = ctx.transaction();
+        let make_error =
+            || Error::new("failed to evaluate page scores", ErrorType::PageVote);
+
+        #[derive(FromQueryResult, Debug)]
+        struct PageVoteCountRow {
+            page_id: i64,
+            value: VoteValue,
+            count: i64,
+        }
+
+        let counts = PageVote::find()
+            .select_only()
+            .column(page_vote::Column::PageId)
+            .column(page_vote::Column::Value)
+            .column_as(page_vote::Column::Value.count(), "count")
+            .filter(page_vote::Column::PageId.is_in(page_ids.iter().copied()))
+            .filter(page_vote::Column::DeletedAt.is_null())
+            .filter(page_vote::Column::DisabledAt.is_null())
+            .group_by(page_vote::Column::PageId)
+            .group_by(page_vote::Column::Value)
+            .into_model::<PageVoteCountRow>()
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+
+        let mut votes_by_page_id = page_ids
+            .iter()
+            .map(|page_id| (*page_id, VoteMap::new()))
+            .collect::<BTreeMap<_, _>>();
+
+        for PageVoteCountRow {
+            page_id,
+            value,
+            count,
+        } in counts
+        {
+            votes_by_page_id
+                .entry(page_id)
+                .or_default()
+                .insert(value, count as u64);
+        }
+
+        Ok(votes_by_page_id
+            .into_iter()
+            .map(|(page_id, votes)| (page_id, ScoreValue::Integer(votes.sum())))
+            .collect())
     }
 
     /// Gets the correct `Scorer` implementation for this page.
@@ -107,12 +144,5 @@ impl ScoreService {
         }
 
         Ok(map)
-    }
-
-    fn build_condition(page_id: i64) -> Condition {
-        Condition::all()
-            .add(page_vote::Column::PageId.eq(page_id))
-            .add(page_vote::Column::DeletedAt.is_null())
-            .add(page_vote::Column::DisabledAt.is_null())
     }
 }

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { resolve } from "$app/paths"
+
   let { data, form } = $props()
 
   const defaultTitle = "UI Authoring Basic"
@@ -36,7 +38,7 @@
       <p class="eyebrow">Local-only Wikidot Verification Lab</p>
       <h1>Authoring and verification</h1>
     </div>
-    <a class="page-link" href={`/${slug}`} data-testid="rendered-page-link"
+    <a class="page-link" href={resolve(`/${slug}`, {})} data-testid="rendered-page-link"
       >Open rendered page</a
     >
   </header>
@@ -92,13 +94,15 @@
         {#if form.preview?.slug}
           <p class="metadata" data-testid="preview-source">
             Renderer preview page:
-            <a class="text-link" href={`/${form.preview.slug}`}>{form.preview.slug}</a>
+            <a class="text-link" href={resolve(`/${form.preview.slug}`, {})}>
+              {form.preview.slug}
+            </a>
           </p>
         {/if}
         <div class="rendered" data-testid="preview-html">{@html form.previewHtml}</div>
         {#if form.warnings?.length}
           <ul class="warnings" data-testid="preview-warnings">
-            {#each form.warnings as warning}
+            {#each form.warnings as warning (warning)}
               <li>{warning}</li>
             {/each}
           </ul>
@@ -154,7 +158,7 @@
       <h2>History</h2>
       {#if currentHistory()?.length}
         <ol>
-          {#each currentHistory() as revision}
+          {#each currentHistory() as revision (revision.revision_id)}
             <li>
               <span>#{revision.revision_number}</span>
               <code>{revision.revision_id}</code>
@@ -202,7 +206,9 @@
         <div class="rendered compact" data-testid="dependency-result">
           {@html form.dependencies?.hostHtml ?? ""}
         </div>
-        <a class="text-link" href="/ui-authoring-include-host">Open include host</a>
+        <a class="text-link" href={resolve("/ui-authoring-include-host", {})}>
+          Open include host
+        </a>
       {/if}
     </form>
 
@@ -219,7 +225,9 @@
         <div class="rendered compact" data-testid="listpages-result">
           {@html form.listPages?.indexHtml ?? ""}
         </div>
-        <a class="text-link" href="/ui-authoring-listpages-index">Open ListPages index</a>
+        <a class="text-link" href={resolve("/ui-authoring-listpages-index", {})}>
+          Open ListPages index
+        </a>
       {/if}
     </form>
 
@@ -256,7 +264,9 @@
         <div class="rendered compact" data-testid="theme-nav-css-result">
           {@html form.themeNavCss?.proofHtml ?? ""}
         </div>
-        <a class="text-link" href="/ui-authoring-theme-nav-css">Open theme proof</a>
+        <a class="text-link" href={resolve("/ui-authoring-theme-nav-css", {})}>
+          Open theme proof
+        </a>
       {/if}
     </form>
   </section>
@@ -265,11 +275,11 @@
     <section class="panel" data-testid="page-list-panel">
       <h2>Page List</h2>
       <ul class="page-list">
-        {#each data.lab.scenarioPages as page}
+        {#each data.lab.scenarioPages as page (page.slug)}
           <li>
             <a
               class:missing={!page.exists}
-              href={`/__local-wikidot-verify?slug=${page.slug}`}
+              href={resolve(`/__local-wikidot-verify?slug=${page.slug}`, {})}
             >
               {page.slug}
             </a>
@@ -296,7 +306,7 @@
             checks passed
           </p>
           <ul>
-            {#each form.proofSummary?.checks ?? [] as check}
+            {#each form.proofSummary?.checks ?? [] as check (check.name)}
               <li class:failed={!check.pass}>
                 <span>{check.pass ? "PASS" : "FAIL"}</span>
                 <code>{check.name}</code>
