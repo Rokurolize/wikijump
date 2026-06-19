@@ -33,7 +33,9 @@ use crate::locales::Localizations;
 use crate::middleware::{RequestContextHeaders, RequestContextLayer};
 use crate::services::blob::MimeAnalyzer;
 use crate::services::job::JobWorker;
-use crate::services::{RequestContext, ServiceContext, SessionService};
+use crate::services::{
+    PostCommitActions, RequestContext, ServiceContext, SessionService,
+};
 use crate::utils::debug_pointer;
 use crate::{database, info, redis as redis_db};
 use jsonrpsee::server::{RpcModule, Server, ServerHandle};
@@ -222,11 +224,15 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
                 //
                 // At this level, we take the database-or-RPC error and make it just an RPC error.
                 let db_state = Arc::clone(&state);
-                db_state
+                let post_commit_actions = PostCommitActions::default();
+                let transaction_actions = post_commit_actions.clone();
+                let result = db_state
                     .database
                     .transaction(move |txn| {
+                        let post_commit_actions = transaction_actions.clone();
                         Box::pin(async move {
-                            let ctx = ServiceContext::new(&state, &txn);
+                            let ctx = ServiceContext::new(&state, &txn)
+                                .with_post_commit_actions(post_commit_actions);
                             let make_error = || Error::new(
                                 format!("method '{}' failed", $name),
                                 ErrorType::Request,
@@ -252,7 +258,13 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
                     .await
                     .map_err(unwrap_transaction_error)
                     .inspect_err(|error| error!("JSONRPC method {} failed: {}", $name, error))
-                    .map_err(exn_error_to_rpc_error)
+                    .map_err(exn_error_to_rpc_error);
+
+                if result.is_ok() {
+                    post_commit_actions.run_after_commit(&db_state).await;
+                }
+
+                result
             })
             .or_raise(|| Error::new(
                 format!("failed to register JSONRPC method '{}'", $name),

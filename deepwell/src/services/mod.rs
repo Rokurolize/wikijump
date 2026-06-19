@@ -37,7 +37,7 @@
 //! services or by route implementations found in the `methods` module.
 
 mod prelude {
-    pub use super::context::{RequestContext, ServiceContext};
+    pub use super::context::{PostCommitActions, RequestContext, ServiceContext};
     pub use crate::config::Config;
     pub use crate::error::prelude::*;
     pub use crate::types::{Maybe, Reference};
@@ -110,7 +110,7 @@ pub use self::blob::BlobService;
 pub use self::blueprint::BlueprintPageService;
 pub use self::caddy::CaddyService;
 pub use self::category::CategoryService;
-pub use self::context::{RequestContext, ServiceContext};
+pub use self::context::{PostCommitActions, RequestContext, ServiceContext};
 pub use self::domain::DomainService;
 pub use self::file::FileService;
 pub use self::file_revision::FileRevisionService;

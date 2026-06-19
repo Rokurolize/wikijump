@@ -217,10 +217,12 @@ impl TextBlockService {
 
         if !existing_filenames.is_empty() {
             debug!(
-                "Replaced {} text block rows for page ID {}; stale S3 objects are preserved until post-commit cleanup is available",
+                "Queueing {} replaced text block S3 objects for page ID {} after transaction commit",
                 existing_filenames.len(),
                 page_id,
             );
+            ctx.post_commit_actions()
+                .delete_text_block_objects(existing_filenames);
         }
 
         // Finally, insert the batch of new text block rows, then return.
@@ -353,9 +355,8 @@ impl TextBlockService {
             .await
             .or_raise(make_error)?;
 
-        // Delete the database rows in one sweep. Keep the S3 objects intact
-        // because the outer page-delete transaction may still roll back after
-        // this method returns, and there is no post-commit cleanup hook here.
+        // Delete the database rows in one sweep. The S3 objects are queued for
+        // deletion only after the outer transaction commits.
         TextBlockTable::delete_many()
             .filter(text_block::Column::PageId.eq(page_id))
             .exec(txn)
@@ -364,10 +365,12 @@ impl TextBlockService {
 
         if !filenames.is_empty() {
             debug!(
-                "Deleted {} text block rows for page ID {}; stale S3 objects are preserved until post-commit cleanup is available",
+                "Queueing {} deleted text block S3 objects for page ID {} after transaction commit",
                 filenames.len(),
                 page_id,
             );
+            ctx.post_commit_actions()
+                .delete_text_block_objects(filenames);
         }
 
         Ok(())
