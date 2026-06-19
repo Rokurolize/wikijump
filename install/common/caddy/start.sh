@@ -6,9 +6,8 @@
 #
 # Note that the caddy health check will return failure during that time.
 caddyfile="$(mktemp /tmp/Caddyfile.XXXXXX)"
-if nc -z deepwell 2747 && wikijump-generate-caddyfile "$caddyfile"; then
+if nc -z deepwell 2747 && wikijump-generate-caddyfile "$caddyfile" && mv "$caddyfile" /etc/caddy/Caddyfile; then
 	echo 'Installing generated Caddyfile...'
-	mv "$caddyfile" /etc/caddy/Caddyfile
 else
 	rm -f "$caddyfile"
 	echo 'Cannot reach DEEPWELL, using provisional Caddyfile to start'

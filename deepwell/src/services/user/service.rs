@@ -52,6 +52,27 @@ pub struct UserService;
 impl UserService {
     pub async fn create(
         ctx: &ServiceContext<'_>,
+        input: CreateUser,
+    ) -> Result<CreateUserOutput> {
+        if input.override_user_id.is_some() {
+            bail!(Error::new(
+                "override_user_id is only allowed for trusted user import paths",
+                ErrorType::BadRequest,
+            ));
+        }
+
+        Self::create_inner(ctx, input, false).await
+    }
+
+    pub async fn create_with_trusted_id_override(
+        ctx: &ServiceContext<'_>,
+        input: CreateUser,
+    ) -> Result<CreateUserOutput> {
+        Self::create_inner(ctx, input, true).await
+    }
+
+    async fn create_inner(
+        ctx: &ServiceContext<'_>,
         CreateUser {
             user_type,
             mut name,
@@ -63,6 +84,7 @@ impl UserService {
             override_user_id,
             ip_address,
         }: CreateUser,
+        allow_override_user_id: bool,
     ) -> Result<CreateUserOutput> {
         let txn = ctx.transaction();
         let slug = get_user_slug(&name, user_type);
@@ -78,6 +100,12 @@ impl UserService {
         };
 
         let user_id = match override_user_id {
+            Some(_) if !allow_override_user_id => {
+                bail!(Error::new(
+                    "override_user_id is only allowed for trusted user import paths",
+                    ErrorType::BadRequest,
+                ));
+            }
             Some(0) => {
                 error!(
                     "Caller attempted to create a user with ID 0, which is reserved (never a valid user ID)",

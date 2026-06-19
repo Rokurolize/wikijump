@@ -81,7 +81,9 @@ pub async fn user_import(
     {
         Some(user) if !user.is_deleted => {
             info!("Importing Wikidot user ID {user_id} into a Wikijump account");
-            UserService::create(ctx, input).await.or_raise(make_error)
+            UserService::create_with_trusted_id_override(ctx, input)
+                .await
+                .or_raise(make_error)
         }
         Some(_) => Err(Error::new(
             format!("cannot import deleted Wikidot user ID {user_id}"),

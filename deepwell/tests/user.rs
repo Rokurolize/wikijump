@@ -85,6 +85,121 @@ async fn user_import_reclaims_existing_wikidot_user() {
 }
 
 #[tokio::test]
+async fn user_create_rejects_override_user_id() {
+    let runner = TestRunner::setup().await;
+
+    let error = run_endpoint_err!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Override Attempt",
+            "email": "override-attempt@example.invalid",
+            "locales": ["en"],
+            "password": "hunter2",
+            "override_user_id": 700_010,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    assert_contains_error!(error, ErrorType::BadRequest);
+}
+
+#[tokio::test]
+async fn user_import_rejects_invalid_override_user_id() {
+    let runner = TestRunner::setup().await;
+
+    let missing_override = run_endpoint_err!(
+        runner,
+        user_import,
+        json!({
+            "user_type": "regular",
+            "name": "Missing Override",
+            "email": "missing-override@example.invalid",
+            "locales": ["en"],
+            "password": "hunter2",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(missing_override, ErrorType::BadRequest);
+
+    for user_id in [0_i64, -1, i64::from(i32::MAX) + 1] {
+        let error = run_endpoint_err!(
+            runner,
+            user_import,
+            json!({
+                "user_type": "regular",
+                "name": format!("Invalid Import {user_id}"),
+                "email": format!("invalid-import-{user_id}@example.invalid"),
+                "locales": ["en"],
+                "password": "hunter2",
+                "override_user_id": user_id,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::BadRequest);
+    }
+
+    let missing_wikidot = run_endpoint_err!(
+        runner,
+        user_import,
+        json!({
+            "user_type": "regular",
+            "name": "Missing Wikidot Row",
+            "email": "missing-wikidot-row@example.invalid",
+            "locales": ["en"],
+            "password": "hunter2",
+            "override_user_id": 700_011,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(missing_wikidot, ErrorType::User);
+
+    let deleted_user_id = 700_012_i64;
+    known_user::ActiveModel {
+        user_id: Set(deleted_user_id),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("deleted known_user fixture should insert");
+
+    wikidot_user::ActiveModel {
+        user_id: Set(i32::try_from(deleted_user_id).expect("fixture ID should fit i32")),
+        created_at: Set(OffsetDateTime::UNIX_EPOCH),
+        fetched_at: Set(OffsetDateTime::UNIX_EPOCH + time::Duration::seconds(1)),
+        is_deleted: Set(true),
+        name: Set(Some("Deleted Wikidot User".to_owned())),
+        slug: Set(Some("deleted-wikidot-user".to_owned())),
+        real_name: Set(None),
+        gender: Set(None),
+        birthday: Set(None),
+        location: Set(None),
+        biography: Set(None),
+        website: Set(None),
+        karma: Set(0),
+        is_pro: Set(false),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("deleted wikidot_user fixture should insert");
+
+    let deleted_wikidot = run_endpoint_err!(
+        runner,
+        user_import,
+        json!({
+            "user_type": "regular",
+            "name": "Deleted Wikidot User",
+            "email": "deleted-wikidot-user@example.invalid",
+            "locales": ["en"],
+            "password": "hunter2",
+            "override_user_id": deleted_user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(deleted_wikidot, ErrorType::User);
+}
+
+#[tokio::test]
 async fn basic_update() {
     let runner = TestRunner::setup().await;
 

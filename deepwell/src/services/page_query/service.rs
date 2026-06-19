@@ -36,6 +36,8 @@ use std::collections::BTreeMap;
 #[derive(Debug)]
 pub struct PageQueryService;
 
+const SCORE_ORDER_CANDIDATE_CAP: u64 = 1_000;
+
 impl PageQueryService {
     pub async fn find(
         ctx: &ServiceContext<'_>,
@@ -486,7 +488,16 @@ impl PageQueryService {
             };
         }
 
-        if let Some(limit) = pagination.limit.filter(|_| !score_order) {
+        if score_order {
+            let candidate_limit = pagination
+                .limit
+                .map(|limit| limit.max(SCORE_ORDER_CANDIDATE_CAP))
+                .unwrap_or(SCORE_ORDER_CANDIDATE_CAP);
+            debug!(
+                "Limiting score-ordered ListPages candidate evaluation to {candidate_limit} pages",
+            );
+            query = query.limit(candidate_limit);
+        } else if let Some(limit) = pagination.limit {
             debug!("Limiting ListPages to a maximum of {limit} pages total");
             query = query.limit(limit);
         }

@@ -149,22 +149,23 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         }
 
         // Create users
-        let CreateUserOutput { user_id, slug } = UserService::create(
-            &ctx,
-            CreateUser {
-                user_type: user.user_type,
-                name: user.name,
-                email: user.email,
-                password: user.password.unwrap_or_default(),
-                locales: user.locales,
-                bypass_filter: true,
-                bypass_email_verification: true,
-                override_user_id: Some(user.id),
-                ip_address: SEED_IP_ADDRESS,
-            },
-        )
-        .await
-        .or_raise(make_error)?;
+        let CreateUserOutput { user_id, slug } =
+            UserService::create_with_trusted_id_override(
+                &ctx,
+                CreateUser {
+                    user_type: user.user_type,
+                    name: user.name,
+                    email: user.email,
+                    password: user.password.unwrap_or_default(),
+                    locales: user.locales,
+                    bypass_filter: true,
+                    bypass_email_verification: true,
+                    override_user_id: Some(user.id),
+                    ip_address: SEED_IP_ADDRESS,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
 
         assert_eq!(
             user_id, user.id,
