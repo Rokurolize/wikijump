@@ -704,7 +704,7 @@ impl RenderService {
                 .find(INNER_OPEN_MARKER)
                 .map(|offset| outer_body_start + offset + INNER_OPEN_MARKER.len())
             else {
-                search_start = block_end;
+                search_start = outer_body_start;
                 continue;
             };
             let replacement = wikitext[inner_body_start..first_body_end].to_owned();
@@ -2585,6 +2585,40 @@ mod tests {
                 ">[[iftags -]]\n",
                 "unsupported body\n",
                 ">[[/iftags]]\n",
+                ">[[/iftags]]\n",
+                "middle\n",
+                "\n",
+                "kept body\n",
+                "after\n",
+            ),
+        );
+    }
+
+    #[test]
+    fn continues_after_single_close_unsupported_collapsed_empty_negative_iftags_block() {
+        let mut wikitext = concat!(
+            "before\n",
+            ">[[iftags -]]\n",
+            "unsupported body\n",
+            ">[[/iftags]]\n",
+            "middle\n",
+            ">[[iftags -]]\n",
+            ">[[iftags]]\n",
+            "kept body\n",
+            ">[[/iftags]]\n",
+            ">[[/iftags]]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        RenderService::remove_unresolved_variable_iftags_blocks(&mut wikitext);
+
+        assert_eq!(
+            wikitext,
+            concat!(
+                "before\n",
+                ">[[iftags -]]\n",
+                "unsupported body\n",
                 ">[[/iftags]]\n",
                 "middle\n",
                 "\n",
