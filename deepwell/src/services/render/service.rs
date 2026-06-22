@@ -507,6 +507,7 @@ impl RenderService {
             wikitext.replace_range(block_start..block_end, &replacement);
         }
 
+        Self::remove_collapsed_empty_negative_iftags_blocks(wikitext);
         Self::remove_collapsed_basalt_iftags_blocks(wikitext);
     }
 
@@ -659,6 +660,51 @@ impl RenderService {
                 .map_or(wikitext.len(), |offset| close_marker_end + offset + 1);
 
             wikitext.replace_range(block_start..block_end, "");
+        }
+    }
+
+    fn remove_collapsed_empty_negative_iftags_blocks(wikitext: &mut String) {
+        const ACTIVE_OPEN_MARKER: &str = "[[iftags -]]";
+        const ACTIVE_CLOSE_MARKER: &str = "[[/iftags]]";
+        const INNER_OPEN_MARKER: &str = "[[iftags]]";
+
+        while let Some(open_marker_start) = wikitext.find(ACTIVE_OPEN_MARKER) {
+            let outer_body_start = open_marker_start + ACTIVE_OPEN_MARKER.len();
+            let Some(first_close_offset) =
+                wikitext[outer_body_start..].find(ACTIVE_CLOSE_MARKER)
+            else {
+                break;
+            };
+            let first_close_start = outer_body_start + first_close_offset;
+            let next_close_start = first_close_start + ACTIVE_CLOSE_MARKER.len();
+            let Some(second_close_offset) =
+                wikitext[next_close_start..].find(ACTIVE_CLOSE_MARKER)
+            else {
+                break;
+            };
+            let second_close_start = next_close_start + second_close_offset;
+            let second_close_end = second_close_start + ACTIVE_CLOSE_MARKER.len();
+            let block_start = wikitext[..open_marker_start]
+                .rfind('\n')
+                .map_or(0, |index| index + 1);
+            let block_end = wikitext[second_close_end..]
+                .find('\n')
+                .map_or(wikitext.len(), |offset| second_close_end + offset + 1);
+            let first_body_end = Self::quoted_marker_body_end(
+                wikitext,
+                outer_body_start,
+                first_close_start,
+            );
+            let outer_body = &wikitext[outer_body_start..first_body_end];
+            let Some(inner_body_start) = outer_body
+                .find(INNER_OPEN_MARKER)
+                .map(|offset| outer_body_start + offset + INNER_OPEN_MARKER.len())
+            else {
+                break;
+            };
+            let replacement = wikitext[inner_body_start..first_body_end].to_owned();
+
+            wikitext.replace_range(block_start..block_end, &replacement);
         }
     }
 
@@ -2470,6 +2516,36 @@ mod tests {
                 "[[module CSS]]\n",
                 "@import url(https://scp-wiki.wdfiles.com/local--code/theme%3Abasalt/3)\n",
                 "[[/module]]\n",
+                "after\n",
+            ),
+        );
+    }
+
+    #[test]
+    fn unwraps_active_collapsed_empty_negative_iftags_block() {
+        let mut wikitext = concat!(
+            "before\n",
+            ">[[iftags -]]\n",
+            ">[[iftags]]\n",
+            ">================= end ========================\n",
+            "[[include :scp-jp:user-component:ta-badge-smooth-base-base name=v-1|v-1={$v-1}|type=false]]\n",
+            "[[/div]]\n",
+            ">[[/iftags]]\n",
+            ">[[/iftags]]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        RenderService::remove_unresolved_variable_iftags_blocks(&mut wikitext);
+
+        assert_eq!(
+            wikitext,
+            concat!(
+                "before\n",
+                "\n",
+                ">================= end ========================\n",
+                "[[include :scp-jp:user-component:ta-badge-smooth-base-base name=v-1|v-1={$v-1}|type=false]]\n",
+                "[[/div]]\n",
                 "after\n",
             ),
         );
