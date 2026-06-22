@@ -36,18 +36,28 @@ const SECURITY_HEADERS = {
 
 const HSTS_HEADER = "max-age=31536000; includeSubDomains"
 const SITE_CONTEXT_EXEMPT_PATHS = new Set(["/xml-rpc-api.php"])
+const LOCAL_WIKIDOT_INTERWIKI_PREFIX = "/-/wikidot-interwiki/"
 
 function shouldSetHsts() {
   return !isLocalEnvironment()
 }
 
-function applySecurityHeaders(response: Response) {
+function allowsLocalWikidotInterwikiFrame(pathname: string) {
+  return isLocalEnvironment() && pathname.startsWith(LOCAL_WIKIDOT_INTERWIKI_PREFIX)
+}
+
+function applySecurityHeaders(response: Response, pathname: string) {
   for (const [header, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(header, value)
   }
 
   if (shouldSetHsts()) {
     response.headers.set("strict-transport-security", HSTS_HEADER)
+  }
+
+  if (allowsLocalWikidotInterwikiFrame(pathname)) {
+    response.headers.delete("content-security-policy")
+    response.headers.delete("x-frame-options")
   }
 }
 
@@ -56,7 +66,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   if (SITE_CONTEXT_EXEMPT_PATHS.has(event.url.pathname)) {
     const response = await resolve(event)
-    applySecurityHeaders(response)
+    applySecurityHeaders(response, event.url.pathname)
     return response
   }
 
@@ -70,7 +80,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   // Continue processing the request
   const response = await resolve(event)
 
-  applySecurityHeaders(response)
+  applySecurityHeaders(response, event.url.pathname)
 
   return response
 }

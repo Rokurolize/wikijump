@@ -668,7 +668,11 @@ impl RenderService {
         const ACTIVE_CLOSE_MARKER: &str = "[[/iftags]]";
         const INNER_OPEN_MARKER: &str = "[[iftags]]";
 
-        while let Some(open_marker_start) = wikitext.find(ACTIVE_OPEN_MARKER) {
+        let mut search_start = 0;
+        while let Some(open_marker_offset) =
+            wikitext[search_start..].find(ACTIVE_OPEN_MARKER)
+        {
+            let open_marker_start = search_start + open_marker_offset;
             let outer_body_start = open_marker_start + ACTIVE_OPEN_MARKER.len();
             let Some(first_close_offset) =
                 wikitext[outer_body_start..].find(ACTIVE_CLOSE_MARKER)
@@ -700,11 +704,14 @@ impl RenderService {
                 .find(INNER_OPEN_MARKER)
                 .map(|offset| outer_body_start + offset + INNER_OPEN_MARKER.len())
             else {
-                break;
+                search_start = block_end;
+                continue;
             };
             let replacement = wikitext[inner_body_start..first_body_end].to_owned();
+            let replacement_len = replacement.len();
 
             wikitext.replace_range(block_start..block_end, &replacement);
+            search_start = block_start + replacement_len;
         }
     }
 
@@ -2546,6 +2553,42 @@ mod tests {
                 ">================= end ========================\n",
                 "[[include :scp-jp:user-component:ta-badge-smooth-base-base name=v-1|v-1={$v-1}|type=false]]\n",
                 "[[/div]]\n",
+                "after\n",
+            ),
+        );
+    }
+
+    #[test]
+    fn continues_after_unsupported_collapsed_empty_negative_iftags_block() {
+        let mut wikitext = concat!(
+            "before\n",
+            ">[[iftags -]]\n",
+            "unsupported body\n",
+            ">[[/iftags]]\n",
+            ">[[/iftags]]\n",
+            "middle\n",
+            ">[[iftags -]]\n",
+            ">[[iftags]]\n",
+            "kept body\n",
+            ">[[/iftags]]\n",
+            ">[[/iftags]]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        RenderService::remove_unresolved_variable_iftags_blocks(&mut wikitext);
+
+        assert_eq!(
+            wikitext,
+            concat!(
+                "before\n",
+                ">[[iftags -]]\n",
+                "unsupported body\n",
+                ">[[/iftags]]\n",
+                ">[[/iftags]]\n",
+                "middle\n",
+                "\n",
+                "kept body\n",
                 "after\n",
             ),
         );
