@@ -83,8 +83,9 @@ static LISTPAGES_ARGUMENT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)(?P<key>[A-Za-z][A-Za-z0-9_\-]*)\s*=\s*(?:"(?P<double>[^"]*)"|'(?P<single>[^']*)'|(?P<bare>[^\s\]]+))"#)
         .unwrap()
 });
-static LISTPAGES_VARIABLE_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"%%(?P<name>[A-Za-z0-9_]+)%%").unwrap());
+static LISTPAGES_VARIABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"%%(?P<name>[A-Za-z0-9_]+)(?:\{(?P<section>[0-9]+)\})?%%").unwrap()
+});
 static WIKIDOT_USER_INLINE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[\[\*user\s+(?P<name>[^\]]+)\]\]").unwrap());
 static WIKIDOT_LABELED_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -370,12 +371,19 @@ impl RenderService {
         .or_raise(make_error)?;
         wikitext = expanded_wikitext;
         Self::remove_unresolved_variable_iftags_blocks(&mut wikitext);
+        let current_page_wikitext =
+            if text_block_page_id.is_some() && text_block_page_id == current_page_id {
+                Some(wikitext.clone())
+            } else {
+                None
+            };
         wikitext = Self::expand_list_pages(
             ctx,
             wikitext,
             settings,
             current_site_id,
             current_page_id,
+            current_page_wikitext.as_deref(),
         )
         .await
         .or_raise(make_error)?;
@@ -1503,6 +1511,7 @@ impl RenderService {
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
         current_page_id: Option<i64>,
+        current_page_wikitext: Option<&str>,
     ) -> Result<String> {
         let (Some(current_site_id), Some(current_page_id)) =
             (current_site_id, current_page_id)
@@ -1542,6 +1551,7 @@ impl RenderService {
                 current_page_id,
                 arguments,
                 body,
+                current_page_wikitext,
             )
             .await?;
             expanded.push_str(&replacement);
@@ -1573,6 +1583,7 @@ impl RenderService {
         current_page_id: i64,
         arguments: ListPagesArguments,
         body: &str,
+        current_page_wikitext: Option<&str>,
     ) -> Result<String> {
         let ListPagesArguments {
             category_all,
@@ -1649,9 +1660,22 @@ impl RenderService {
         } else {
             BTreeMap::new()
         };
+        let wants_content = list_pages_body_uses_content_variable(body);
         let mut output = String::from("[[div class=\"list-pages-box\"]]\n");
 
         for (index, page) in pages.pages.iter().enumerate() {
+            let page_wikitext = if wants_content {
+                Self::load_list_pages_row_wikitext(
+                    ctx,
+                    current_site_id,
+                    current_page_id,
+                    current_page_wikitext,
+                    page,
+                )
+                .await?
+            } else {
+                None
+            };
             output.push_str("[[div class=\"list-pages-item\"]]\n");
             output.push_str(&substitute_list_pages_variables(
                 body,
@@ -1659,12 +1683,37 @@ impl RenderService {
                 index + 1,
                 total,
                 &created_by_names,
+                page_wikitext.as_deref(),
             ));
             output.push_str("\n[[/div]]\n");
         }
 
         output.push_str("[[/div]]");
         Ok(output)
+    }
+
+    async fn load_list_pages_row_wikitext(
+        ctx: &ServiceContext<'_>,
+        current_site_id: i64,
+        current_page_id: i64,
+        current_page_wikitext: Option<&str>,
+        page: &FoundPageRow,
+    ) -> Result<Option<String>> {
+        let wikitext = PageRevisionService::get_wikitext_optional(
+            ctx,
+            page.site_id,
+            Reference::Id(page.page_id),
+        )
+        .await?;
+        if wikitext.is_some() {
+            return Ok(wikitext);
+        }
+
+        if page.site_id == current_site_id && page.page_id == current_page_id {
+            return Ok(current_page_wikitext.map(str::to_owned));
+        }
+
+        Ok(None)
     }
 
     async fn load_wikidot_user_names(
@@ -1845,6 +1894,7 @@ fn list_pages_body_variables_supported(body: &str) -> bool {
                     | "created_by"
                     | "createdby"
                     | "rating"
+                    | "content"
                     | "index"
                     | "total"
             )
@@ -1857,12 +1907,51 @@ fn list_pages_body_uses_variable(body: &str, variable: &str) -> bool {
         .any(|captures| captures["name"].eq_ignore_ascii_case(variable))
 }
 
+fn list_pages_body_uses_content_variable(body: &str) -> bool {
+    list_pages_body_uses_variable(body, "content")
+}
+
+fn is_wikidot_content_separator_line(line: &str) -> bool {
+    let trimmed = line.trim();
+    trimmed.starts_with("====") && trimmed.ends_with("====")
+}
+
+fn wikidot_content_section(wikitext: &str, section: Option<usize>) -> String {
+    let Some(section) = section else {
+        return wikitext.to_owned();
+    };
+    if section == 0 {
+        return String::new();
+    }
+
+    let mut sections = vec![String::new()];
+    for line in wikitext.lines() {
+        if is_wikidot_content_separator_line(line) {
+            sections.push(String::new());
+            continue;
+        }
+
+        if let Some(current) = sections.last_mut() {
+            if !current.is_empty() {
+                current.push('\n');
+            }
+            current.push_str(line);
+        }
+    }
+
+    sections
+        .get(section - 1)
+        .map(|content| content.trim().to_owned())
+        .unwrap_or_default()
+}
+
 fn substitute_list_pages_variables(
     template: &str,
     page: &FoundPageRow,
     index: usize,
     total: usize,
     created_by_names: &BTreeMap<i64, String>,
+    page_wikitext: Option<&str>,
 ) -> String {
     let slug = page.slug.as_deref().unwrap_or("");
     let title = page.title.as_deref().unwrap_or(slug);
@@ -1894,6 +1983,14 @@ fn substitute_list_pages_variables(
                 }
                 "created_by" | "createdby" => created_by.clone(),
                 "rating" => rating.clone(),
+                "content" => page_wikitext
+                    .map(|wikitext| {
+                        let section = captures
+                            .name("section")
+                            .and_then(|section| section.as_str().parse::<usize>().ok());
+                        wikidot_content_section(wikitext, section)
+                    })
+                    .unwrap_or_default(),
                 "index" => index.clone(),
                 "total" => total.clone(),
                 _ => captures
@@ -2388,10 +2485,12 @@ mod tests {
     use super::{
         CollectingIncluder, RenderContext, RenderService,
         WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_CSS_MODULE_SENTINEL_PREFIX,
-        include_error, parse_list_pages_arguments,
+        include_error, list_pages_body_variables_supported, parse_list_pages_arguments,
+        substitute_list_pages_variables, wikidot_content_section,
     };
     use crate::config::Config;
     use crate::models::site::Model as SiteModel;
+    use crate::services::page_query::FoundPageRow;
     use crate::types::License;
     use crate::utils::now;
     use ftml::data::PageRef;
@@ -2452,6 +2551,57 @@ mod tests {
             parse_list_pages_arguments(r#"tag="-excluded" limit="10" order="name""#)
                 .is_none()
         );
+    }
+
+    #[test]
+    fn extracts_wikidot_list_pages_content_sections() {
+        let wikitext = concat!(
+            "lead\n",
+            "====\n",
+            "first section\n",
+            "====\n",
+            "second section\n",
+        );
+
+        assert!(list_pages_body_variables_supported(
+            "%%title%% -- %%content{2}%%"
+        ));
+        assert_eq!(wikidot_content_section(wikitext, None), wikitext);
+        assert_eq!(wikidot_content_section(wikitext, Some(1)), "lead");
+        assert_eq!(wikidot_content_section(wikitext, Some(2)), "first section");
+        assert_eq!(wikidot_content_section(wikitext, Some(3)), "second section");
+        assert_eq!(wikidot_content_section(wikitext, Some(4)), "");
+    }
+
+    #[test]
+    fn substitutes_wikidot_list_pages_content_variables() {
+        let page = FoundPageRow {
+            page_id: 10,
+            site_id: 20,
+            title: Some("Draft Page".to_owned()),
+            alt_title: None,
+            slug: Some("draft-page".to_owned()),
+            page_category_id: None,
+            page_revision_id: None,
+            tags: None,
+            created_at: None,
+            created_by: None,
+            updated_at: None,
+            updated_by: None,
+            score: None,
+        };
+        let wikitext = concat!("intro\n", "====\n", "body\n", "====\n", "notes\n");
+
+        let rendered = substitute_list_pages_variables(
+            "**%%title%%** %%content{2}%%",
+            &page,
+            1,
+            1,
+            &Default::default(),
+            Some(wikitext),
+        );
+
+        assert_eq!(rendered, "**Draft Page** body");
     }
 
     #[test]
