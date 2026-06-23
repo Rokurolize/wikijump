@@ -2063,7 +2063,24 @@ fn site_matches_wikidot_slug(site: &SiteModel, site_slug: &str) -> bool {
 
 fn site_accepts_wikidot_local_asset_slug(site: &SiteModel, site_slug: &str) -> bool {
     site_matches_wikidot_slug(site, site_slug)
+        || corpus_site_slug_matches_wikidot_slug(site, site_slug)
         || translated_scp_site_uses_scp_wiki_source_assets(site, site_slug)
+}
+
+fn corpus_site_slug_matches_wikidot_slug(site: &SiteModel, site_slug: &str) -> bool {
+    if !site.from_wikidot {
+        return false;
+    }
+
+    let site_slug = site_slug.to_ascii_lowercase();
+    let slug = site.slug.to_ascii_lowercase();
+    let Some(remainder) = slug.strip_prefix(&format!("{site_slug}-")) else {
+        return false;
+    };
+
+    remainder == "corpus"
+        || remainder.starts_with("corpus-")
+        || remainder.contains("-corpus-")
 }
 
 fn translated_scp_site_uses_scp_wiki_source_assets(
@@ -2282,6 +2299,23 @@ mod tests {
         assert_eq!(
             RenderService::localize_wikidot_local_file_urls(html, Some(&site), &config,),
             r#"<img src="https://scp-wiki.wjfiles.com/local--files/scp-9506/NFSI.png">"#,
+        );
+    }
+
+    #[test]
+    fn localizes_wikidot_local_file_urls_for_corpus_site_slug() {
+        let site = wikidot_site("scp-wiki-en-corpus-scp9506-slice-v2", None);
+        let mut config = Config::integration_testing();
+        config.files_domain = ".wjfiles.localhost".to_owned();
+        config.files_domain_no_dot = "wjfiles.localhost".to_owned();
+        config.public_url_scheme = "https".to_owned();
+        config.public_url_port = None;
+        let html =
+            r#"<img src="http://scp-wiki.wikidot.com/local--files/scp-9506/NFSI.png">"#;
+
+        assert_eq!(
+            RenderService::localize_wikidot_local_file_urls(html, Some(&site), &config,),
+            r#"<img src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NFSI.png">"#,
         );
     }
 
