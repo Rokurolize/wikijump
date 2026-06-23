@@ -208,7 +208,7 @@ async fn seeded_scp3352_exists_and_compiles_without_listpages_markup() {
     .await
     {
         Ok(Some(page)) => page,
-        Ok(None) | Err(_) => {
+        Ok(None) => {
             let _ = run_endpoint!(
                 runner,
                 page_create,
@@ -239,6 +239,7 @@ async fn seeded_scp3352_exists_and_compiles_without_listpages_markup() {
             .expect("scp-3352 fallback page_get should succeed")
             .expect("scp-3352 fallback page_get should return page data")
         }
+        Err(error) => panic!("initial scp-3352 page_get failed unexpectedly: {error}"),
     };
     let html = page
         .compiled_body_html
