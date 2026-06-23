@@ -268,7 +268,17 @@ async fn select_fragment(
         return Ok(None);
     };
 
-    debug_assert_eq!(selected.site_id, page_id.site_id);
+    if selected.site_id != page_id.site_id {
+        error!(
+            "ListPages selected child page ID {} from site ID {}, but parent page ID {} is in site ID {}",
+            selected.page_id, selected.site_id, page_id.page_id, page_id.site_id,
+        );
+        return Err(Error::new(
+            "ListPages selected a child page from the wrong site",
+            ErrorType::Render,
+        )
+        .into());
+    }
 
     let page_category_id = selected
         .page_category_id
