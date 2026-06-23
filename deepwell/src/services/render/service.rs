@@ -59,6 +59,7 @@ const LONG_NATIVE_LIST_RENDER_MIN_ITEMS: usize = 8;
 const INCLUDE_VARIABLE_OPEN_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_OPEN__";
 const INCLUDE_VARIABLE_CLOSE_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_CLOSE__";
 const WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTEMBEDIFRAME";
+const WIKIDOT_CSS_MODULE_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCSSMODULE";
 const WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOMPATHTML";
 const WIKIDOT_LOCAL_INTERWIKI_BASE: &str = "/-/wikidot-interwiki";
 
@@ -72,6 +73,9 @@ static LISTPAGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static RATE_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[module\s+Rate(?P<head>[^\]]*)\]\]").unwrap());
+static CSS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)\[\[module\s+css[^\]]*\]\](?P<body>.*?)\[\[/module\]\]").unwrap()
+});
 static GENERATED_COMPAT_HTML_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)<ul data-wikijump-compat-list="1">.*?</ul>"#).unwrap()
 });
@@ -377,6 +381,8 @@ impl RenderService {
         .or_raise(make_error)?;
         wikitext = Self::expand_rate_modules(wikitext, page_info, settings);
         wikitext = Self::render_long_native_list_runs(wikitext);
+        let wikidot_css_modules =
+            Self::protect_wikidot_css_modules(&mut wikitext, settings);
         let wikidot_compat_html =
             Self::protect_generated_wikidot_compat_html(&mut wikitext, settings);
         let wikidot_embed_iframes = Self::protect_wikidot_embed_iframes(&mut wikitext);
@@ -408,6 +414,10 @@ impl RenderService {
             html_output.body = Self::restore_protected_wikidot_embed_iframes(
                 html_output.body,
                 &wikidot_embed_iframes,
+            );
+            html_output.body = Self::restore_protected_wikidot_css_modules(
+                html_output.body,
+                &wikidot_css_modules,
             );
             html_output.body = Self::restore_protected_generated_wikidot_compat_html(
                 html_output.body,
@@ -948,6 +958,40 @@ impl RenderService {
         }
 
         output
+    }
+
+    fn protect_wikidot_css_modules(
+        wikitext: &mut String,
+        settings: &WikitextSettings,
+    ) -> Vec<String> {
+        if !settings.enable_page_syntax {
+            return Vec::new();
+        }
+
+        let mut styles = Vec::new();
+        let protected = CSS_MODULE_REGEX
+            .replace_all(wikitext, |captures: &regex::Captures<'_>| {
+                let body = captures.name("body").map_or("", |mtch| mtch.as_str());
+                let body = body.trim_matches('\n');
+                let marker =
+                    format!("{WIKIDOT_CSS_MODULE_SENTINEL_PREFIX}{}X", styles.len());
+                styles.push(format!("<style>\n{body}\n</style>"));
+                marker
+            })
+            .into_owned();
+        *wikitext = protected;
+        styles
+    }
+
+    fn restore_protected_wikidot_css_modules(
+        mut html: String,
+        styles: &[String],
+    ) -> String {
+        for (index, style) in styles.iter().enumerate() {
+            let marker = format!("{WIKIDOT_CSS_MODULE_SENTINEL_PREFIX}{index}X");
+            html = html.replace(&marker, style);
+        }
+        html
     }
 
     fn restore_wikidot_rendered_embed_iframes(html: &str) -> String {
@@ -2195,11 +2239,14 @@ fn apply_basalt_shell_compatibility(html: &mut String) {
     html.push_str(
         r#"<style>
 #side-bar {
-    left: calc(var(--side-bar-width, 17rem) * -1) !important;
+    display: none !important;
+    visibility: hidden !important;
+    left: -9999px !important;
 }
 #main-content {
     margin-left: auto !important;
     margin-right: auto !important;
+    margin-top: -12rem !important;
 }
 </style>"#,
     );
@@ -2340,7 +2387,8 @@ fn public_url_port_suffix(port: Option<u16>) -> String {
 mod tests {
     use super::{
         CollectingIncluder, RenderContext, RenderService,
-        WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, include_error, parse_list_pages_arguments,
+        WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_CSS_MODULE_SENTINEL_PREFIX,
+        include_error, parse_list_pages_arguments,
     };
     use crate::config::Config;
     use crate::models::site::Model as SiteModel;
@@ -2664,6 +2712,46 @@ mod tests {
         );
         assert!(restored.starts_with("<ul>"));
         assert!(!restored.contains("data-wikijump-compat-list"));
+    }
+
+    #[test]
+    fn renders_css_modules_before_ftml_parsing() {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut source = concat!(
+            "before\n",
+            "[[module css]]\n",
+            "#u-change{\n",
+            "    display:none;\n",
+            "}\n",
+            "[[/module]]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        let styles = RenderService::protect_wikidot_css_modules(&mut source, &settings);
+
+        assert_eq!(styles.len(), 1);
+        assert!(styles[0].contains("<style>\n#u-change{"));
+        assert!(styles[0].contains("display:none;"));
+        assert!(source.contains(WIKIDOT_CSS_MODULE_SENTINEL_PREFIX));
+        assert!(!source.contains("[[module css]]"));
+        assert!(!source.contains("#u-change"));
+
+        let restored =
+            RenderService::restore_protected_wikidot_css_modules(source, &styles);
+        assert!(restored.contains("<style>\n#u-change{"));
+    }
+
+    #[test]
+    fn adds_basalt_shell_compatibility_style() {
+        let mut html = r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?theme=https://scp-wiki.wdfiles.com/local--code/theme%3Abasalt/1&css={$css}" style="display: none"></iframe></p>"#.to_owned();
+
+        super::apply_basalt_shell_compatibility(&mut html);
+
+        assert!(html.contains("#side-bar"));
+        assert!(html.contains("display: none !important"));
+        assert!(html.contains("visibility: hidden !important"));
+        assert!(html.contains("margin-top: -12rem !important"));
     }
 
     #[test]
