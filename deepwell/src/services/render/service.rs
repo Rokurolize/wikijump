@@ -55,9 +55,11 @@ const MAX_INCLUDE_EXPANSION_DEPTH: usize = 8;
 const MAX_INCLUDE_EXPANSION_TOTAL: usize = 64;
 const DEFAULT_LISTPAGES_RENDER_LIMIT: u64 = 100;
 const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
+const LONG_NATIVE_LIST_RENDER_MIN_ITEMS: usize = 8;
 const INCLUDE_VARIABLE_OPEN_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_OPEN__";
 const INCLUDE_VARIABLE_CLOSE_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_CLOSE__";
 const WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTEMBEDIFRAME";
+const WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOMPATHTML";
 const WIKIDOT_LOCAL_INTERWIKI_BASE: &str = "/-/wikidot-interwiki";
 
 static INCLUDE_VARIABLE_REGEX: LazyLock<Regex> =
@@ -70,12 +72,25 @@ static LISTPAGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static RATE_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[module\s+Rate(?P<head>[^\]]*)\]\]").unwrap());
+static GENERATED_COMPAT_HTML_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)<ul data-wikijump-compat-list="1">.*?</ul>"#).unwrap()
+});
 static LISTPAGES_ARGUMENT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)(?P<key>[A-Za-z][A-Za-z0-9_\-]*)\s*=\s*(?:"(?P<double>[^"]*)"|'(?P<single>[^']*)'|(?P<bare>[^\s\]]+))"#)
         .unwrap()
 });
 static LISTPAGES_VARIABLE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"%%(?P<name>[A-Za-z0-9_]+)%%").unwrap());
+static WIKIDOT_USER_INLINE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\[\[\*user\s+(?P<name>[^\]]+)\]\]").unwrap());
+static WIKIDOT_LABELED_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\[\[\[(?P<target>[^\]|\n]+)\|(?P<label>[^\]\n]*)\]\]\]").unwrap()
+});
+static WIKIDOT_UNLABELED_LINK_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\[\[\[(?P<target>[^\]\n]+)\]\]\]").unwrap());
+static WIKIDOT_EXTERNAL_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\[\*?(?P<url>https?://[^\s\]]+)\s+(?P<label>[^\]]+)\]").unwrap()
+});
 static WIKIDOT_EMAIL_SPAN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"<span class="wiki-email" style="visibility: visible;"><a href="mailto:([^"]+)">([^<]+)</a></span>"#,
@@ -361,6 +376,9 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = Self::expand_rate_modules(wikitext, page_info, settings);
+        wikitext = Self::render_long_native_list_runs(wikitext);
+        let wikidot_compat_html =
+            Self::protect_generated_wikidot_compat_html(&mut wikitext, settings);
         let wikidot_embed_iframes = Self::protect_wikidot_embed_iframes(&mut wikitext);
 
         // We isolate the actual tasks for rendering,
@@ -390,6 +408,10 @@ impl RenderService {
             html_output.body = Self::restore_protected_wikidot_embed_iframes(
                 html_output.body,
                 &wikidot_embed_iframes,
+            );
+            html_output.body = Self::restore_protected_generated_wikidot_compat_html(
+                html_output.body,
+                &wikidot_compat_html,
             );
             html_output.body = Self::restore_wikidot_render_compatibility(
                 &html_output.body,
@@ -861,6 +883,71 @@ impl RenderService {
             html = html.replace(&marker, iframe);
         }
         html
+    }
+
+    fn protect_generated_wikidot_compat_html(
+        wikitext: &mut String,
+        settings: &WikitextSettings,
+    ) -> Vec<String> {
+        if !settings.enable_page_syntax {
+            return Vec::new();
+        }
+
+        let mut fragments = Vec::new();
+        let protected = GENERATED_COMPAT_HTML_REGEX
+            .replace_all(wikitext, |captures: &regex::Captures<'_>| {
+                let marker =
+                    format!("{WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX}{}X", fragments.len());
+                fragments
+                    .push(captures[0].replace(r#" data-wikijump-compat-list="1""#, ""));
+                marker
+            })
+            .into_owned();
+        *wikitext = protected;
+        fragments
+    }
+
+    fn restore_protected_generated_wikidot_compat_html(
+        mut html: String,
+        fragments: &[String],
+    ) -> String {
+        for (index, fragment) in fragments.iter().enumerate() {
+            let marker = format!("{WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX}{index}X");
+            html = html.replace(&marker, fragment);
+        }
+        html
+    }
+
+    fn render_long_native_list_runs(wikitext: String) -> String {
+        let lines = wikitext.split_inclusive('\n').collect::<Vec<_>>();
+        let mut output = String::with_capacity(wikitext.len());
+        let mut index = 0;
+
+        while index < lines.len() {
+            let mut end = index;
+            while end < lines.len() && native_bullet_list_content(lines[end]).is_some() {
+                end += 1;
+            }
+
+            if end - index >= LONG_NATIVE_LIST_RENDER_MIN_ITEMS {
+                output.push_str(r#"<ul data-wikijump-compat-list="1">"#);
+                output.push('\n');
+                for line in &lines[index..end] {
+                    if let Some(content) = native_bullet_list_content(line) {
+                        output.push_str("<li>");
+                        output.push_str(&render_native_list_inline_html(content));
+                        output.push_str("</li>\n");
+                    }
+                }
+                output.push_str("</ul>\n");
+                index = end;
+            } else {
+                output.push_str(lines[index]);
+                index += 1;
+            }
+        }
+
+        output
     }
 
     fn restore_wikidot_rendered_embed_iframes(html: &str) -> String {
@@ -1774,6 +1861,75 @@ fn substitute_list_pages_variables(
         .into_owned()
 }
 
+fn native_bullet_list_content(line: &str) -> Option<&str> {
+    let trimmed = line.trim_start_matches(' ');
+    trimmed
+        .strip_prefix("* ")
+        .map(|content| content.trim_end_matches(['\r', '\n']))
+}
+
+fn render_native_list_inline_html(value: &str) -> String {
+    let escaped = escape_native_list_html_text(value);
+    let with_labeled_links = WIKIDOT_LABELED_LINK_REGEX
+        .replace_all(&escaped, |captures: &regex::Captures<'_>| {
+            render_native_list_page_link(&captures["target"], Some(&captures["label"]))
+        })
+        .into_owned();
+    let with_unlabeled_links = WIKIDOT_UNLABELED_LINK_REGEX
+        .replace_all(&with_labeled_links, |captures: &regex::Captures<'_>| {
+            render_native_list_page_link(&captures["target"], None)
+        })
+        .into_owned();
+    let with_user_links = WIKIDOT_USER_INLINE_REGEX
+        .replace_all(&with_unlabeled_links, |captures: &regex::Captures<'_>| {
+            render_native_list_wikidot_user(&captures["name"])
+        })
+        .into_owned();
+
+    WIKIDOT_EXTERNAL_LINK_REGEX
+        .replace_all(&with_user_links, |captures: &regex::Captures<'_>| {
+            format!(
+                r#"<a href="{url}">{label}</a>"#,
+                url = escape_native_list_html_attr(&captures["url"]),
+                label = captures["label"].to_owned(),
+            )
+        })
+        .into_owned()
+}
+
+fn render_native_list_page_link(target: &str, label: Option<&str>) -> String {
+    let label = label.filter(|label| !label.is_empty()).unwrap_or(target);
+    format!(
+        r#"<a href="/{target}">{label}</a>"#,
+        target = escape_native_list_html_attr(target),
+        label = label,
+    )
+}
+
+fn render_native_list_wikidot_user(name: &str) -> String {
+    let name = name.trim();
+    format!(
+        concat!(
+            r#"<span class="printuser">"#,
+            r#"<a href="http://www.wikidot.com/user:info/{slug}">{name}</a>"#,
+            r#"</span>"#
+        ),
+        slug = escape_native_list_html_attr(name),
+        name = escape_native_list_html_text(name),
+    )
+}
+
+fn escape_native_list_html_text(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+fn escape_native_list_html_attr(value: &str) -> String {
+    escape_native_list_html_text(value).replace('"', "&quot;")
+}
+
 fn format_list_pages_rating(score: Option<f32>) -> String {
     let Some(score) = score else {
         return String::new();
@@ -2183,8 +2339,8 @@ fn public_url_port_suffix(port: Option<u16>) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        CollectingIncluder, RenderContext, RenderService, include_error,
-        parse_list_pages_arguments,
+        CollectingIncluder, RenderContext, RenderService,
+        WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, include_error, parse_list_pages_arguments,
     };
     use crate::config::Config;
     use crate::models::site::Model as SiteModel;
@@ -2465,6 +2621,49 @@ mod tests {
                 text_block_page_id: Some(11),
             },
         );
+    }
+
+    #[test]
+    fn renders_long_native_list_runs_before_ftml_parsing() {
+        let source = [
+            "* [[[tokyo-incidents|Tokyo Incidents]]] -- by [[*user Ryu JP]]\n",
+            "* [[[scp-2408-jp|SCP-2408-JP]]] -- by [[*user O-92_Mallet]]\n",
+            "* [*http://scp-jp.wikidot.com/example Example] -- by [[*user Example]]\n",
+            "* [[[empty-label|]]] -- by [[*user seafield13]]\n",
+            "* [[[qingtan-what-is-odse|ODSE Zone]]]\n",
+            "* [[[meltrose002|Reserved Seat]]]\n",
+            "* [[[confessio-natorum|Confession]]]\n",
+            "* [[[souyamisaki014-12|Food is Good]]]\n",
+        ]
+        .join("");
+
+        let rendered = RenderService::render_long_native_list_runs(source);
+
+        assert!(rendered.starts_with(r#"<ul data-wikijump-compat-list="1">"#));
+        assert!(
+            rendered
+                .contains(r#"<li><a href="/tokyo-incidents">Tokyo Incidents</a> -- by "#)
+        );
+        assert!(rendered.contains(r#"<span class="printuser"><a href="http://www.wikidot.com/user:info/Ryu JP">Ryu JP</a></span>"#));
+        assert!(
+            rendered
+                .contains(r#"<a href="http://scp-jp.wikidot.com/example">Example</a>"#)
+        );
+        assert!(rendered.contains(r#"<a href="/empty-label">empty-label</a>"#));
+        assert!(!rendered.contains("[[*user"));
+
+        let mut protected = rendered.clone();
+        let fragments = RenderService::protect_generated_wikidot_compat_html(
+            &mut protected,
+            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+        );
+        assert_eq!(fragments.len(), 1);
+        assert!(protected.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+        let restored = RenderService::restore_protected_generated_wikidot_compat_html(
+            protected, &fragments,
+        );
+        assert!(restored.starts_with("<ul>"));
+        assert!(!restored.contains("data-wikijump-compat-list"));
     }
 
     #[test]
