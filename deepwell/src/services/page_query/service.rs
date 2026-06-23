@@ -92,7 +92,10 @@ impl PageQueryService {
 
         // Page Type
         // TODO track https://github.com/SeaQL/sea-orm/issues/1746
-        let hidden_condition = page::Column::Slug.starts_with("_");
+        let hidden_condition = Expr::cust_with_expr(
+            r#"$1 LIKE '\_%' ESCAPE '\'"#,
+            Expr::col((Page, page::Column::Slug)),
+        );
         match page_type {
             PageTypeSelector::Hidden => {
                 // Hidden pages are any which have slugs that start with '_'.
@@ -123,17 +126,19 @@ impl PageQueryService {
             IncludedCategories::All => {
                 debug!("Selecting all categories with exclusions");
 
-                page::Column::PageCategoryId.in_subquery(
-                    Query::select()
-                        .column(page_category::Column::CategoryId)
-                        .from(PageCategory)
-                        .and_where(page_category::Column::SiteId.eq(queried_site_id))
-                        .and_where(
-                            page_category::Column::Slug
-                                .is_not_in(cat_slugs!(excluded_categories)),
-                        )
-                        .to_owned(),
-                )
+                let mut query = Query::select();
+                query
+                    .column(page_category::Column::CategoryId)
+                    .from(PageCategory)
+                    .and_where(page_category::Column::SiteId.eq(queried_site_id));
+                if !excluded_categories.is_empty() {
+                    query.and_where(
+                        page_category::Column::Slug
+                            .is_not_in(cat_slugs!(excluded_categories)),
+                    );
+                }
+
+                page::Column::PageCategoryId.in_subquery(query.to_owned())
             }
 
             // If a specific list of categories is provided, filter by site_id, inclusion in the
@@ -146,21 +151,23 @@ impl PageQueryService {
             IncludedCategories::List(included_categories) => {
                 debug!("Selecting included categories only");
 
-                page::Column::PageCategoryId.in_subquery(
-                    Query::select()
-                        .column(page_category::Column::CategoryId)
-                        .from(PageCategory)
-                        .and_where(page_category::Column::SiteId.eq(queried_site_id))
-                        .and_where(
-                            page_category::Column::Slug
-                                .is_in(cat_slugs!(included_categories)),
-                        )
-                        .and_where(
-                            page_category::Column::Slug
-                                .is_not_in(cat_slugs!(excluded_categories)),
-                        )
-                        .to_owned(),
-                )
+                let mut query = Query::select();
+                query
+                    .column(page_category::Column::CategoryId)
+                    .from(PageCategory)
+                    .and_where(page_category::Column::SiteId.eq(queried_site_id))
+                    .and_where(
+                        page_category::Column::Slug
+                            .is_in(cat_slugs!(included_categories)),
+                    );
+                if !excluded_categories.is_empty() {
+                    query.and_where(
+                        page_category::Column::Slug
+                            .is_not_in(cat_slugs!(excluded_categories)),
+                    );
+                }
+
+                page::Column::PageCategoryId.in_subquery(query.to_owned())
             }
         };
         condition = condition.add(page_category_condition);
@@ -498,7 +505,6 @@ impl PageQueryService {
             debug!("Limiting ListPages to a maximum of {limit} pages total");
             query = query.limit(limit);
         }
-
         // TODO pagination
         //      the "reverse" field means that, for each page, it is reversed.
         //

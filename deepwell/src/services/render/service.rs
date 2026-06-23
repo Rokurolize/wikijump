@@ -380,6 +380,7 @@ impl RenderService {
         wikitext = Self::expand_list_pages(
             ctx,
             wikitext,
+            page_info,
             settings,
             current_site_id,
             current_page_id,
@@ -1508,6 +1509,7 @@ impl RenderService {
     async fn expand_list_pages(
         ctx: &ServiceContext<'_>,
         wikitext: String,
+        page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
         current_page_id: Option<i64>,
@@ -1549,6 +1551,7 @@ impl RenderService {
                 ctx,
                 current_site_id,
                 current_page_id,
+                page_info,
                 arguments,
                 body,
                 current_page_wikitext,
@@ -1581,11 +1584,13 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
         current_page_id: i64,
+        page_info: &PageInfo<'_>,
         arguments: ListPagesArguments,
         body: &str,
         current_page_wikitext: Option<&str>,
     ) -> Result<String> {
         let ListPagesArguments {
+            current_page_only,
             category_all,
             categories,
             excluded_categories,
@@ -1654,8 +1659,22 @@ impl RenderService {
             },
         };
 
-        let pages = PageQueryService::find(ctx, query).await?;
-        let pages = Self::filter_viewable_list_pages_rows(ctx, pages.pages).await?;
+        let pages =
+            if current_page_only && should_render_current_page_list_pages_row(limit) {
+                Self::current_page_list_pages_row(
+                    ctx,
+                    current_site_id,
+                    current_page_id,
+                    page_info,
+                    &query.fields,
+                )
+                .await?
+            } else if current_page_only {
+                Vec::new()
+            } else {
+                PageQueryService::find(ctx, query).await?.pages
+            };
+        let pages = Self::filter_viewable_list_pages_rows(ctx, pages).await?;
         let total = pages.len();
         let created_by_names = if wants_created_by {
             Self::load_wikidot_user_names(ctx, &pages).await?
@@ -1692,6 +1711,115 @@ impl RenderService {
 
         output.push_str("[[/div]]");
         Ok(output)
+    }
+
+    async fn current_page_list_pages_row(
+        ctx: &ServiceContext<'_>,
+        current_site_id: i64,
+        current_page_id: i64,
+        page_info: &PageInfo<'_>,
+        fields: &FoundPageFields,
+    ) -> Result<Vec<FoundPageRow>> {
+        let make_error = || {
+            Error::new(
+                "failed to load current page for ListPages render",
+                ErrorType::Render,
+            )
+        };
+
+        let page = PageService::get(ctx, current_site_id, Reference::Id(current_page_id))
+            .await
+            .or_raise(make_error)?;
+        let revision = if fields.title
+            || fields.alt_title
+            || fields.tags
+            || fields.updated_by
+            || fields.created_by
+        {
+            match page.latest_revision_id {
+                Some(_) => Some(
+                    PageRevisionService::get_latest(
+                        ctx,
+                        current_site_id,
+                        current_page_id,
+                    )
+                    .await
+                    .or_raise(make_error)?,
+                ),
+                None => None,
+            }
+        } else {
+            None
+        };
+
+        Ok(vec![FoundPageRow {
+            page_id: page.page_id,
+            site_id: page.site_id,
+            title: if fields.title {
+                Some(
+                    revision
+                        .as_ref()
+                        .map(|revision| revision.title.clone())
+                        .unwrap_or_else(|| page_info.title.to_string()),
+                )
+            } else {
+                None
+            },
+            alt_title: if fields.alt_title {
+                revision
+                    .as_ref()
+                    .and_then(|revision| revision.alt_title.clone())
+                    .or_else(|| {
+                        page_info.alt_title.as_ref().map(|title| title.to_string())
+                    })
+            } else {
+                None
+            },
+            slug: if fields.slug { Some(page.slug) } else { None },
+            page_category_id: if fields.page_category_id {
+                Some(page.page_category_id)
+            } else {
+                None
+            },
+            page_revision_id: if fields.page_revision_id {
+                page.latest_revision_id
+            } else {
+                None
+            },
+            tags: if fields.tags {
+                Some(
+                    revision
+                        .as_ref()
+                        .map(|revision| revision.tags.clone())
+                        .unwrap_or_else(|| {
+                            page_info.tags.iter().map(|tag| tag.to_string()).collect()
+                        }),
+                )
+            } else {
+                None
+            },
+            created_at: if fields.created_at {
+                Some(page.created_at)
+            } else {
+                None
+            },
+            created_by: if fields.created_by {
+                revision.as_ref().map(|revision| revision.user_id)
+            } else {
+                None
+            },
+            updated_at: if fields.updated_at {
+                page.updated_at
+            } else {
+                None
+            },
+            updated_by: if fields.updated_by {
+                revision.as_ref().map(|revision| revision.user_id)
+            } else {
+                None
+            },
+            score: None,
+        }])
     }
 
     async fn filter_viewable_list_pages_rows(
@@ -1794,6 +1922,7 @@ impl RenderService {
 
 #[derive(Debug)]
 struct ListPagesArguments {
+    current_page_only: bool,
     category_all: bool,
     categories: Vec<Cow<'static, str>>,
     excluded_categories: Vec<Cow<'static, str>>,
@@ -1816,6 +1945,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
     let any_tags = Vec::new();
     let mut all_tags = Vec::new();
     let no_tags = Vec::new();
+    let mut current_page_only = false;
     let mut order = None;
     let mut limit = None;
 
@@ -1854,12 +1984,19 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
             "order" => {
                 order = Some(parse_list_pages_order(value)?);
             }
+            "range" => {
+                if value != "." {
+                    return None;
+                }
+                current_page_only = true;
+                limit = Some(1);
+            }
             // These inputs need additional data or Wikidot semantics that are not
             // implemented by PageQueryService yet. Leaving the module untouched is
             // safer than silently returning a wrong list.
             "category" | "created_by" | "createdby" | "rating" | "score" | "votes"
             | "form" | "parent" | "link_to" | "linkto" | "perpage" | "per_page"
-            | "range" | "separate" => {
+            | "separate" => {
                 return None;
             }
             _ => return None,
@@ -1867,6 +2004,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
     }
 
     Some(ListPagesArguments {
+        current_page_only,
         category_all,
         categories,
         excluded_categories,
@@ -1876,6 +2014,10 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
         order,
         limit,
     })
+}
+
+fn should_render_current_page_list_pages_row(limit: Option<u64>) -> bool {
+    limit.unwrap_or(1) > 0
 }
 
 fn split_list_pages_values(value: &str) -> Vec<String> {
@@ -2531,8 +2673,8 @@ mod tests {
         WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_CSS_MODULE_SENTINEL_PREFIX,
         include_error, list_pages_body_variables_supported,
         list_pages_row_view_permission, parse_list_pages_arguments,
-        simple_list_pages_page_type, substitute_list_pages_variables,
-        wikidot_content_section,
+        should_render_current_page_list_pages_row, simple_list_pages_page_type,
+        substitute_list_pages_variables, wikidot_content_section,
     };
     use crate::config::Config;
     use crate::models::site::Model as SiteModel;
@@ -2599,6 +2741,26 @@ mod tests {
             parse_list_pages_arguments(r#"tag="-excluded" limit="10" order="name""#)
                 .is_none()
         );
+    }
+
+    #[test]
+    fn accepts_current_page_list_pages_range() {
+        let arguments = parse_list_pages_arguments(r#"range=".""#).unwrap();
+
+        assert!(arguments.current_page_only);
+        assert_eq!(arguments.limit, Some(1));
+    }
+
+    #[test]
+    fn rejects_unsupported_list_pages_ranges() {
+        assert!(parse_list_pages_arguments(r#"range="before""#).is_none());
+    }
+
+    #[test]
+    fn skips_current_page_list_pages_row_when_limit_is_zero() {
+        assert!(should_render_current_page_list_pages_row(Some(1)));
+        assert!(should_render_current_page_list_pages_row(None));
+        assert!(!should_render_current_page_list_pages_row(Some(0)));
     }
 
     #[test]

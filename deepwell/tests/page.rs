@@ -443,6 +443,71 @@ async fn listpages_fixture_subset_renders_titles_slugs_order_and_tag_filter() {
     );
 }
 
+#[tokio::test]
+async fn first_revision_current_page_listpages_uses_render_page_info() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": concat!(
+                "Before first revision ListPages.\n\n",
+                "[[module ListPages range=\".\"]]\n",
+                "**%%title%%** :: %%fullname%%\n",
+                "[[/module]]\n\n",
+                "After first revision ListPages."
+            ),
+            "title": "Fixture First Revision Current Page",
+            "alt_title": null,
+            "slug": "fixture-first-revision-current-page-listpages",
+            "layout": "wikidot",
+            "revision_comments": "create page with current-page ListPages",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-first-revision-current-page-listpages",
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("first-revision ListPages page should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    for expected in [
+        "Before first revision ListPages.",
+        "Fixture First Revision Current Page",
+        "fixture-first-revision-current-page-listpages",
+        "After first revision ListPages.",
+    ] {
+        assert!(
+            html.contains(expected),
+            "compiled first-revision ListPages page should contain {expected:?}:\n{html}"
+        );
+    }
+
+    for forbidden in ["[[module ListPages", "%%title%%", "%%fullname%%"] {
+        assert!(
+            !html.contains(forbidden),
+            "compiled first-revision ListPages page should not contain {forbidden:?}:\n{html}"
+        );
+    }
+}
+
 async fn create_listpages_test_page(
     runner: &TestRunner,
     site_id: i64,
