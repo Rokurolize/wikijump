@@ -1599,6 +1599,7 @@ impl RenderService {
             no_tags,
             order,
             limit,
+            slug,
         } = arguments;
         let included_categories = if category_all {
             IncludedCategories::All
@@ -1636,7 +1637,7 @@ impl RenderService {
             offset: 0,
             range: RangeSelector::Current,
             name: None,
-            slug: None,
+            slug,
             data_form_fields: &[],
             order,
             pagination: PaginationSelector {
@@ -1931,6 +1932,7 @@ struct ListPagesArguments {
     no_tags: Vec<Cow<'static, str>>,
     order: Option<OrderBySelector>,
     limit: Option<u64>,
+    slug: Option<Cow<'static, str>>,
 }
 
 fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
@@ -1948,6 +1950,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
     let mut current_page_only = false;
     let mut order = None;
     let mut limit = None;
+    let mut slug = None;
 
     for captures in LISTPAGES_ARGUMENT_REGEX.captures_iter(head) {
         let key = captures["key"].to_ascii_lowercase();
@@ -1991,12 +1994,26 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                 current_page_only = true;
                 limit = Some(1);
             }
+            "category" => {
+                for category in split_list_pages_values(value) {
+                    if category != "*" {
+                        return None;
+                    }
+                }
+            }
+            "name" | "fullname" | "full_slug" | "fullslug" => {
+                if value == "=" {
+                    current_page_only = true;
+                    limit = Some(1);
+                } else if !is_dynamic_list_pages_value(value) {
+                    slug = Some(Cow::Owned(wikidot_list_pages_name_slug(value)));
+                }
+            }
             // These inputs need additional data or Wikidot semantics that are not
             // implemented by PageQueryService yet. Leaving the module untouched is
             // safer than silently returning a wrong list.
-            "category" | "created_by" | "createdby" | "rating" | "score" | "votes"
-            | "form" | "parent" | "link_to" | "linkto" | "perpage" | "per_page"
-            | "separate" => {
+            "created_by" | "createdby" | "rating" | "score" | "votes" | "form"
+            | "parent" | "link_to" | "linkto" | "perpage" | "per_page" | "separate" => {
                 return None;
             }
             _ => return None,
@@ -2013,6 +2030,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
         no_tags,
         order,
         limit,
+        slug,
     })
 }
 
@@ -2026,6 +2044,17 @@ fn split_list_pages_values(value: &str) -> Vec<String> {
         .filter(|part| !part.is_empty())
         .map(str::to_owned)
         .collect()
+}
+
+fn is_dynamic_list_pages_value(value: &str) -> bool {
+    value.eq_ignore_ascii_case("@url")
+        || value
+            .split_once('|')
+            .is_some_and(|(selector, _)| selector.eq_ignore_ascii_case("@url"))
+}
+
+fn wikidot_list_pages_name_slug(value: &str) -> String {
+    value.trim().to_ascii_lowercase().replace(' ', "-")
 }
 
 fn parse_list_pages_order(value: &str) -> Option<OrderBySelector> {
@@ -2482,6 +2511,7 @@ fn trim_include_variable_value(value: &str) -> &str {
 fn default_include_variable_value(name: &str) -> Option<String> {
     match name.to_ascii_lowercase().as_str() {
         "author" => Some("%%created_by%%".to_owned()),
+        "shadow" => Some("no".to_owned()),
         _ => None,
     }
 }

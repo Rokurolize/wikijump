@@ -508,6 +508,125 @@ async fn first_revision_current_page_listpages_uses_render_page_info() {
     }
 }
 
+#[tokio::test]
+async fn included_author_tool_coauthored_branch_renders_named_page_box() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let target_revision = create_listpages_test_page(
+        &runner,
+        site_id,
+        "fixture-coauthored-target",
+        "Fixture Coauthored Target",
+        "Fixture Coauthored Target marker.",
+    )
+    .await;
+    set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        "fixture-coauthored-target",
+        target_revision,
+        &["verification", "verification-coauthored-target"],
+    )
+    .await;
+
+    create_listpages_test_page(
+        &runner,
+        site_id,
+        "component:coauthored-listpages-emitter",
+        "Fixture Author Tool Component",
+        concat!(
+            "[!-- {$inc-coauthored}\n\n",
+            "[[module Listpages fullname=\"{$name}\" category=\"*\"]]\n",
+            "[[div class=\"content-box {$shadow}\"]]\n",
+            "++ **%%title_linked%%** (//feat.// {$feat})\n",
+            "[[div class=\"content-section\"]]\n",
+            "------\n",
+            "**Rating:** +%%rating%%\n",
+            "[[/div]]\n",
+            "[[div class=\"content-section\"]]\n",
+            "------\n",
+            "[[div class=\"translations\"]]\n",
+            "[[collapsible show=\"+ Translations\" hide=\"- Translations\"]]\n",
+            "[[div class=\"scpnet-interwiki-wrapper interwiki-stylable\"]]\n",
+            "[[embed]]\n",
+            "<iframe src=\"//interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=%%fullname%%\" allowtransparency=\"true\" class=\"html-block-iframe scpnet-interwiki-frame\"></iframe>\n",
+            "[[/embed]]\n",
+            "[[/div]]\n",
+            "[[/collapsible]]\n",
+            "[[/div]]\n",
+            "[[/div]]\n",
+            "[[/div]]\n",
+            "[[/module]]\n\n",
+            "[!----]\n",
+        ),
+    )
+    .await;
+
+    create_listpages_test_page(
+        &runner,
+        site_id,
+        "fixture-coauthored-index",
+        "Fixture Coauthored Index",
+        concat!(
+            "Before coauthored include.\n\n",
+            "[[include component:coauthored-listpages-emitter |inc-coauthored= --]\n",
+            "|name=fixture-coauthored-target\n",
+            "|feat=Collaborator\n",
+            "|language=en\n",
+            "]]\n\n",
+            "After coauthored include.",
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-coauthored-index",
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("coauthored ListPages index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    for expected in [
+        "Before coauthored include.",
+        "Fixture Coauthored Target",
+        "Collaborator",
+        "content-box",
+        "content-section",
+        "scpnet-interwiki-frame",
+        "After coauthored include.",
+    ] {
+        assert!(
+            html.contains(expected),
+            "compiled coauthored author-tool fixture should contain {expected:?}:\n{html}"
+        );
+    }
+
+    for forbidden in [
+        "[[module Listpages",
+        "[[module ListPages",
+        "%%title_linked%%",
+        "%%fullname%%",
+        "{$shadow}",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "compiled coauthored author-tool fixture should not contain {forbidden:?}:\n{html}"
+        );
+    }
+}
+
 async fn create_listpages_test_page(
     runner: &TestRunner,
     site_id: i64,
