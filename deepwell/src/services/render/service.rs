@@ -20,6 +20,8 @@
 
 use super::prelude::*;
 use crate::hash::TextHash;
+use crate::models::page::{self, Entity as Page};
+use crate::models::page_revision;
 use crate::models::site::Model as SiteModel;
 use crate::models::wikidot_user::{self, Entity as WikidotUser};
 use crate::services::page_query::{
@@ -73,6 +75,9 @@ static LISTPAGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static RATE_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[module\s+Rate(?P<head>[^\]]*)\]\]").unwrap());
+static TAGCLOUD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)\[\[module\s+TagCloud(?P<head>[^\]]*)\]\]").unwrap()
+});
 static CSS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+css[^\]]*\]\](?P<body>.*?)\[\[/module\]\]").unwrap()
 });
@@ -389,6 +394,15 @@ impl RenderService {
             current_site_id,
             current_page_id,
             current_page_wikitext.as_deref(),
+        )
+        .await
+        .or_raise(make_error)?;
+        wikitext = Self::expand_tag_cloud_modules(
+            ctx,
+            wikitext,
+            page_info,
+            current_site_id,
+            current_page_id,
         )
         .await
         .or_raise(make_error)?;
@@ -1621,6 +1635,87 @@ impl RenderService {
             .into_owned()
     }
 
+    async fn expand_tag_cloud_modules(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        page_info: &PageInfo<'_>,
+        current_site_id: Option<i64>,
+        current_page_id: Option<i64>,
+    ) -> Result<String> {
+        if !TAGCLOUD_MODULE_REGEX.is_match(&wikitext) {
+            return Ok(wikitext);
+        }
+
+        let (Some(current_site_id), Some(current_page_id)) =
+            (current_site_id, current_page_id)
+        else {
+            return Ok(wikitext);
+        };
+
+        let current_branch_tag = page_info
+            .tags
+            .iter()
+            .find(|tag| tag.starts_with("branch-"))
+            .map(Cow::as_ref);
+        let tags = Self::load_tag_cloud_counts(
+            ctx,
+            current_site_id,
+            current_page_id,
+            current_branch_tag,
+        )
+        .await?;
+        let replacement = render_tag_cloud_box(&tags);
+        Ok(TAGCLOUD_MODULE_REGEX
+            .replace_all(&wikitext, replacement.as_str())
+            .into_owned())
+    }
+
+    async fn load_tag_cloud_counts(
+        ctx: &ServiceContext<'_>,
+        current_site_id: i64,
+        _current_page_id: i64,
+        current_branch_tag: Option<&str>,
+    ) -> Result<Vec<(String, usize)>> {
+        let make_error =
+            || Error::new("failed to render TagCloud module", ErrorType::Render);
+        let txn = ctx.transaction();
+        let pages = Page::find()
+            .filter(page::Column::SiteId.eq(current_site_id))
+            .filter(page::Column::DeletedAt.is_null())
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        let revision_ids = pages
+            .iter()
+            .filter_map(|page| page.latest_revision_id)
+            .collect::<Vec<_>>();
+        if revision_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let revisions = page_revision::Entity::find()
+            .filter(page_revision::Column::RevisionId.is_in(revision_ids))
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        let mut counts = BTreeMap::<String, usize>::new();
+        for revision in revisions {
+            if let Some(branch_tag) = current_branch_tag
+                && !revision.tags.iter().any(|tag| tag == branch_tag)
+            {
+                continue;
+            }
+            for tag in revision.tags {
+                if !is_tag_cloud_visible_tag(&tag) {
+                    continue;
+                }
+                *counts.entry(tag).or_default() += 1;
+            }
+        }
+
+        Ok(counts.into_iter().collect())
+    }
+
     async fn render_list_pages_block(
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
@@ -2351,6 +2446,46 @@ fn render_list_pages_tags(tags: &[String]) -> String {
         .join(" ")
 }
 
+fn render_tag_cloud_box(tags: &[(String, usize)]) -> String {
+    let max_count = tags.iter().map(|(_, count)| *count).max().unwrap_or(1);
+    let mut output = String::from("[[div class=\"pages-tag-cloud-box\"]]\n");
+
+    for (tag, count) in tags {
+        let weight = if max_count <= 1 {
+            1.0
+        } else {
+            0.5 + ((*count as f32 / max_count as f32) * 2.5)
+        };
+        output.push_str(&format!(
+            r#"[[span class="tag" style="font-size: {weight:.2}em;"]][{tag_path} {tag_text}][[/span]] "#,
+            tag_path = format!("/system:page-tags/tag/{}", escape_native_list_html_attr(tag)),
+            tag_text = escape_native_list_html_text(tag),
+        ));
+    }
+
+    output.push_str("\n[[/div]]");
+    output
+}
+
+fn is_tag_cloud_visible_tag(tag: &str) -> bool {
+    let tag = tag.trim();
+    !tag.is_empty()
+        && !tag.starts_with('_')
+        && !tag.starts_with("codex-")
+        && !tag.starts_with("branch-")
+        && !tag.starts_with("feature-")
+        && !matches!(
+            tag,
+            "declared-universe"
+                | "declared-universe-include-support"
+                | "verification"
+                | "preview"
+                | "ui-authoring"
+                | "edited"
+                | "fragment"
+        )
+}
+
 fn format_list_pages_date_span(date: Option<time::OffsetDateTime>) -> String {
     format_list_pages_date_span_with_format(date, None)
 }
@@ -2923,7 +3058,7 @@ mod tests {
         CollectingIncluder, RenderContext, RenderService,
         WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_CSS_MODULE_SENTINEL_PREFIX,
         WikidotUserDisplay, include_error, list_pages_body_variables_supported,
-        list_pages_row_view_permission, parse_list_pages_arguments,
+        list_pages_row_view_permission, parse_list_pages_arguments, render_tag_cloud_box,
         should_render_current_page_list_pages_row, simple_list_pages_page_type,
         substitute_list_pages_variables, wikidot_content_section,
     };
@@ -3153,6 +3288,21 @@ mod tests {
                 r#"<a href="/system:page-tags/tag/alpha">alpha</a> <a href="/system:page-tags/tag/needs review">needs review</a>||"#,
             ),
         );
+    }
+
+    #[test]
+    fn renders_wikidot_tag_cloud_box_links() {
+        let html = render_tag_cloud_box(&[
+            ("scp".to_owned(), 10),
+            ("needs<escape".to_owned(), 1),
+        ]);
+
+        assert!(html.contains(r#"[[div class="pages-tag-cloud-box"]]"#));
+        assert!(html.contains(r#"class="tag""#));
+        assert!(html.contains(r#"[/system:page-tags/tag/scp scp]"#));
+        assert!(html.contains("needs&lt;escape"));
+        assert!(!html.contains("[[module TagCloud"));
+        assert!(!html.contains("<a class="));
     }
 
     #[test]
