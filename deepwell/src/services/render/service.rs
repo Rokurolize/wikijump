@@ -1607,7 +1607,7 @@ impl RenderService {
             current_page_id,
             current_site_id,
             queried_site_id: None,
-            page_type: PageTypeSelector::All,
+            page_type: simple_list_pages_page_type(),
             categories: CategoriesSelector {
                 included_categories,
                 excluded_categories: &excluded_categories,
@@ -1647,6 +1647,7 @@ impl RenderService {
             fields: FoundPageFields {
                 title: true,
                 slug: true,
+                page_category_id: true,
                 created_by: wants_created_by,
                 score: list_pages_body_uses_variable(body, "rating"),
                 ..Default::default()
@@ -1654,16 +1655,17 @@ impl RenderService {
         };
 
         let pages = PageQueryService::find(ctx, query).await?;
-        let total = pages.total();
+        let pages = Self::filter_viewable_list_pages_rows(ctx, pages.pages).await?;
+        let total = pages.len();
         let created_by_names = if wants_created_by {
-            Self::load_wikidot_user_names(ctx, &pages.pages).await?
+            Self::load_wikidot_user_names(ctx, &pages).await?
         } else {
             BTreeMap::new()
         };
         let wants_content = list_pages_body_uses_content_variable(body);
         let mut output = String::from("[[div class=\"list-pages-box\"]]\n");
 
-        for (index, page) in pages.pages.iter().enumerate() {
+        for (index, page) in pages.iter().enumerate() {
             let page_wikitext = if wants_content {
                 Self::load_list_pages_row_wikitext(
                     ctx,
@@ -1690,6 +1692,36 @@ impl RenderService {
 
         output.push_str("[[/div]]");
         Ok(output)
+    }
+
+    async fn filter_viewable_list_pages_rows(
+        ctx: &ServiceContext<'_>,
+        pages: Vec<FoundPageRow>,
+    ) -> Result<Vec<FoundPageRow>> {
+        let mut viewable = Vec::with_capacity(pages.len());
+        for page in pages {
+            if Self::list_pages_row_can_view(ctx, &page).await? {
+                viewable.push(page);
+            }
+        }
+
+        Ok(viewable)
+    }
+
+    async fn list_pages_row_can_view(
+        ctx: &ServiceContext<'_>,
+        page: &FoundPageRow,
+    ) -> Result<bool> {
+        PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: None,
+                site_id: page.site_id,
+                page_reference: Some(Reference::Id(page.page_id)),
+            },
+            list_pages_row_view_permission(page),
+        )
+        .await
     }
 
     async fn load_list_pages_row_wikitext(
@@ -1876,6 +1908,18 @@ fn parse_list_pages_order(value: &str) -> Option<OrderBySelector> {
         property,
         ascending,
     })
+}
+
+fn simple_list_pages_page_type() -> PageTypeSelector {
+    PageTypeSelector::Normal
+}
+
+fn list_pages_row_view_permission(page: &FoundPageRow) -> Permission<'static> {
+    Permission {
+        resource_type: Resource::Page,
+        resource_category: page.page_category_id.map(Reference::Id),
+        action: Action::View,
+    }
 }
 
 fn list_pages_body_variables_supported(body: &str) -> bool {
@@ -2485,13 +2529,17 @@ mod tests {
     use super::{
         CollectingIncluder, RenderContext, RenderService,
         WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_CSS_MODULE_SENTINEL_PREFIX,
-        include_error, list_pages_body_variables_supported, parse_list_pages_arguments,
-        substitute_list_pages_variables, wikidot_content_section,
+        include_error, list_pages_body_variables_supported,
+        list_pages_row_view_permission, parse_list_pages_arguments,
+        simple_list_pages_page_type, substitute_list_pages_variables,
+        wikidot_content_section,
     };
     use crate::config::Config;
     use crate::models::site::Model as SiteModel;
     use crate::services::page_query::FoundPageRow;
+    use crate::services::page_query::PageTypeSelector;
     use crate::types::License;
+    use crate::types::{Action, Reference, Resource};
     use crate::utils::now;
     use ftml::data::PageRef;
     use ftml::includes::IncludeRef;
@@ -2551,6 +2599,36 @@ mod tests {
             parse_list_pages_arguments(r#"tag="-excluded" limit="10" order="name""#)
                 .is_none()
         );
+    }
+
+    #[test]
+    fn simple_list_pages_selects_normal_pages_by_default() {
+        assert_eq!(simple_list_pages_page_type(), PageTypeSelector::Normal);
+    }
+
+    #[test]
+    fn list_pages_rows_are_checked_against_page_view_permission() {
+        let page = FoundPageRow {
+            page_id: 10,
+            site_id: 20,
+            title: Some("Restricted Page".to_owned()),
+            alt_title: None,
+            slug: Some("restricted:page".to_owned()),
+            page_category_id: Some(30),
+            page_revision_id: None,
+            tags: None,
+            created_at: None,
+            created_by: None,
+            updated_at: None,
+            updated_by: None,
+            score: None,
+        };
+
+        let permission = list_pages_row_view_permission(&page);
+
+        assert_eq!(permission.resource_type, Resource::Page);
+        assert_eq!(permission.resource_category, Some(Reference::Id(30)));
+        assert_eq!(permission.action, Action::View);
     }
 
     #[test]
