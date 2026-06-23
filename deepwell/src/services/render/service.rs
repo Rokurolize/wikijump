@@ -165,6 +165,47 @@ impl RenderService {
         })
     }
 
+    pub async fn render_site(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        site_id: i64,
+    ) -> Result<RenderOutput> {
+        let wikitext_len = wikitext.len();
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to run site-context parse and render for site ID {} (wikitext {} bytes, info {:?}, settings {:?})",
+                    site_id, wikitext_len, page_info, settings,
+                ),
+                ErrorType::Render,
+            )
+        };
+
+        let RenderInnerOutput {
+            html_output,
+            errors,
+            compiled_hash,
+        } = Self::render_inner(
+            ctx,
+            wikitext,
+            page_info,
+            settings,
+            RenderContext::site(site_id),
+        )
+        .await
+        .or_raise(make_error)?;
+
+        Ok(RenderOutput {
+            html_output,
+            errors,
+            compiled_hash,
+            compiled_at: now(),
+            compiled_generator: FTML_VERSION.clone(),
+        })
+    }
+
     pub async fn render_page(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -1744,6 +1785,14 @@ impl RenderContext {
         }
     }
 
+    fn site(site_id: i64) -> Self {
+        Self {
+            current_site_id: Some(site_id),
+            current_page_id: None,
+            text_block_page_id: None,
+        }
+    }
+
     fn page_nav(site_id: i64, current_page_id: i64) -> Self {
         Self {
             current_site_id: Some(site_id),
@@ -2261,6 +2310,18 @@ mod tests {
             RenderContext {
                 current_site_id: Some(7),
                 current_page_id: Some(11),
+                text_block_page_id: None,
+            },
+        );
+    }
+
+    #[test]
+    fn site_render_context_keeps_site_without_page_or_text_block_target() {
+        assert_eq!(
+            RenderContext::site(7),
+            RenderContext {
+                current_site_id: Some(7),
+                current_page_id: None,
                 text_block_page_id: None,
             },
         );

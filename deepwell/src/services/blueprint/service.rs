@@ -117,10 +117,15 @@ impl BlueprintPageService {
         // For this reason, we are not using render_page(), as there is
         // no "real" page ID.
         let settings = WikitextSettings::from_mode(WikitextMode::Page, layout);
-        let render_output =
-            RenderService::render(ctx, wikitext.clone(), &page_info, &settings)
-                .await
-                .or_raise(make_error)?;
+        let render_output = RenderService::render_site(
+            ctx,
+            wikitext.clone(),
+            &page_info,
+            &settings,
+            site.site_id,
+        )
+        .await
+        .or_raise(make_error)?;
 
         Ok(GetBlueprintPageOutput {
             wikitext,
