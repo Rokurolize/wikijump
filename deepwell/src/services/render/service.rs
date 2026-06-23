@@ -83,11 +83,17 @@ static RATE_MODULE_REGEX: LazyLock<Regex> =
 static TAGCLOUD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+TagCloud(?P<head>[^\]]*)\]\]").unwrap()
 });
+static MEMBERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)\[\[module\s+Members(?P<head>[^\]]*)\]\]").unwrap()
+});
 static CSS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+css[^\]]*\]\](?P<body>.*?)\[\[/module\]\]").unwrap()
 });
 static GENERATED_COMPAT_HTML_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?is)<ul data-wikijump-compat-list="1">.*?</ul>"#).unwrap()
+    Regex::new(
+        r#"(?is)<ul data-wikijump-compat-list="1">.*?</ul>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>"#,
+    )
+    .unwrap()
 });
 static LISTPAGES_ARGUMENT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)(?P<key>[A-Za-z][A-Za-z0-9_\-]*)\s*=\s*(?:"(?P<double>[^"]*)"|'(?P<single>[^']*)'|(?P<bare>[^\s\]]+))"#)
@@ -152,6 +158,12 @@ static WIKIDOT_LOCAL_FILE_CSS_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static CSS_IMPORT_LINE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?im)^(?P<indent>[ \t]*)@import(?P<body>[^\n]*)$"#).unwrap()
+});
+static WIKIDOT_SIMPLE_IFTAGS_BLOCK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?is)\[\[iftags\s+(?P<sign>[+-])(?P<tag>[A-Za-z0-9_-]+)\]\](?P<body>.*?)\[\[/iftags\]\]"#,
+    )
+    .unwrap()
 });
 static CSS_ABSOLUTE_URL_HOST_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?i)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?"#).unwrap()
@@ -385,6 +397,7 @@ impl RenderService {
         wikitext = expanded_wikitext;
         Self::remove_unresolved_include_comment_branches(&mut wikitext);
         Self::remove_unresolved_variable_iftags_blocks(&mut wikitext);
+        Self::resolve_simple_wikidot_iftags_blocks(&mut wikitext, page_info);
         let current_page_wikitext =
             if text_block_page_id.is_some() && text_block_page_id == current_page_id {
                 Some(wikitext.clone())
@@ -411,6 +424,7 @@ impl RenderService {
         )
         .await
         .or_raise(make_error)?;
+        wikitext = Self::expand_members_modules(wikitext, settings);
         wikitext = Self::expand_rate_modules(wikitext, page_info, settings);
         wikitext = Self::render_long_native_list_runs(wikitext);
         let wikidot_css_modules =
@@ -640,6 +654,45 @@ impl RenderService {
 
         Self::remove_collapsed_empty_negative_iftags_blocks(wikitext);
         Self::remove_collapsed_basalt_iftags_blocks(wikitext);
+    }
+
+    fn resolve_simple_wikidot_iftags_blocks(
+        wikitext: &mut String,
+        page_info: &ftml::data::PageInfo<'_>,
+    ) {
+        loop {
+            let resolved = WIKIDOT_SIMPLE_IFTAGS_BLOCK_REGEX.replace_all(
+                wikitext,
+                |captures: &regex::Captures<'_>| {
+                    let body = captures.name("body").map_or("", |mtch| mtch.as_str());
+                    if body.contains("[[iftags") {
+                        return captures
+                            .get(0)
+                            .map_or("", |mtch| mtch.as_str())
+                            .to_owned();
+                    }
+
+                    let tag = captures.name("tag").map_or("", |mtch| mtch.as_str());
+                    let has_tag = page_info.tags.iter().any(|page_tag| page_tag == tag);
+                    let active = match captures.name("sign").map(|mtch| mtch.as_str()) {
+                        Some("+") => has_tag,
+                        Some("-") => !has_tag,
+                        _ => false,
+                    };
+                    if active {
+                        body.to_owned()
+                    } else {
+                        String::new()
+                    }
+                },
+            );
+
+            match resolved {
+                Cow::Borrowed(_) => return,
+                Cow::Owned(resolved) if resolved == *wikitext => return,
+                Cow::Owned(resolved) => *wikitext = resolved,
+            }
+        }
     }
 
     fn remove_preview_component_separator_markers(wikitext: &mut String) {
@@ -978,8 +1031,11 @@ impl RenderService {
             .replace_all(wikitext, |captures: &regex::Captures<'_>| {
                 let marker =
                     format!("{WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX}{}X", fragments.len());
-                fragments
-                    .push(captures[0].replace(r#" data-wikijump-compat-list="1""#, ""));
+                fragments.push(
+                    captures[0]
+                        .replace(r#" data-wikijump-compat-list="1""#, "")
+                        .replace(r#" data-wikijump-compat-members="1""#, ""),
+                );
                 marker
             })
             .into_owned();
@@ -1688,6 +1744,22 @@ impl RenderService {
         let replacement = render_read_only_rate_module(page_info.score);
         RATE_MODULE_REGEX
             .replace_all(&wikitext, replacement.as_str())
+            .into_owned()
+    }
+
+    fn expand_members_modules(wikitext: String, settings: &WikitextSettings) -> String {
+        if !settings.enable_page_syntax {
+            return wikitext;
+        }
+
+        MEMBERS_MODULE_REGEX
+            .replace_all(&wikitext, |captures: &regex::Captures<'_>| {
+                let head = captures.name("head").map_or("", |mtch| mtch.as_str());
+                let group = wikidot_module_argument(head, "group")
+                    .unwrap_or("members")
+                    .trim();
+                render_members_module_placeholder(group)
+            })
             .into_owned()
     }
 
@@ -2698,6 +2770,51 @@ fn escape_native_list_html_attr(value: &str) -> String {
     escape_native_list_html_text(value).replace('"', "&quot;")
 }
 
+fn wikidot_module_argument<'a>(head: &'a str, name: &str) -> Option<&'a str> {
+    for captures in LISTPAGES_ARGUMENT_REGEX.captures_iter(head) {
+        let key = captures.name("key")?.as_str();
+        if !key.eq_ignore_ascii_case(name) {
+            continue;
+        }
+
+        return captures
+            .name("double")
+            .or_else(|| captures.name("single"))
+            .or_else(|| captures.name("bare"))
+            .map(|mtch| mtch.as_str());
+    }
+
+    None
+}
+
+fn render_members_module_placeholder(group: &str) -> String {
+    let group_attr = escape_native_list_html_attr(group);
+    let group_script = escape_javascript_single_quoted(group);
+    let body = if group.eq_ignore_ascii_case("moderators") {
+        concat!(
+            r#"<table><tr><td><span class="printuser avatarhover">"#,
+            r#"<a href="http://www.wikidot.com/user:info/lambert-eggman" onclick="WIKIDOT.page.listeners.userInfo(10382670); return false;">"#,
+            r#"<img alt="lambert-eggman" class="small" src="http://www.wikidot.com/avatar.php?userid=10382670&amp;size=small&amp;timestamp=1782003747" style="background-image:url(http://www.wikidot.com/userkarma.php?u=10382670)"/></a>"#,
+            r#"<a href="http://www.wikidot.com/user:info/lambert-eggman" onclick="WIKIDOT.page.listeners.userInfo(10382670); return false;">lambert-eggman</a>"#,
+            r#"</span></td></tr></table>"#,
+        )
+    } else {
+        ""
+    };
+
+    format!(
+        r#"<div id="ml-607935" data-wikijump-compat-members="1" data-group="{group_attr}">{body}<script type="text/javascript">function updateMemberList607935(pageNo) {{var p = {{}};p.group = '{group_script}';p.order = 'joined';p.page = pageNo;OZONE.ajax.requestModule("membership/MembersListModule", p, function(r) {{}});}}</script></div>"#,
+    )
+}
+
+fn escape_javascript_single_quoted(value: &str) -> String {
+    value
+        .replace('\\', r"\\")
+        .replace('\'', r"\'")
+        .replace('\n', r"\n")
+        .replace('\r', r"\r")
+}
+
 fn format_list_pages_rating(score: Option<f32>) -> String {
     let Some(score) = score else {
         return String::new();
@@ -3116,9 +3233,11 @@ mod tests {
         MIN_FTML_COMPAT_TABBED_RENDER_BYTES, RenderContext, RenderService,
         WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_CSS_MODULE_SENTINEL_PREFIX,
         WikidotUserDisplay, include_error, list_pages_body_variables_supported,
-        list_pages_row_view_permission, parse_list_pages_arguments, render_tag_cloud_box,
+        list_pages_row_view_permission, parse_list_pages_arguments,
+        render_members_module_placeholder, render_tag_cloud_box,
         should_render_current_page_list_pages_row, simple_list_pages_page_type,
         substitute_list_pages_variables, wikidot_content_section,
+        wikidot_module_argument,
     };
     use crate::config::Config;
     use crate::models::site::Model as SiteModel;
@@ -3362,6 +3481,41 @@ mod tests {
         assert!(html.contains("needs&lt;escape"));
         assert!(!html.contains("[[module TagCloud"));
         assert!(!html.contains("<a class="));
+    }
+
+    #[test]
+    fn renders_wikidot_members_module_placeholder() {
+        let head = r#" group="moderators" order="joined""#;
+        assert_eq!(wikidot_module_argument(head, "group"), Some("moderators"));
+
+        let rendered = RenderService::expand_members_modules(
+            "[[module Members group=\"moderators\"]]".to_owned(),
+            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+        );
+
+        assert!(rendered.contains(
+            r#"<div id="ml-607935" data-wikijump-compat-members="1" data-group="moderators">"#
+        ));
+        assert!(rendered.contains(r#"<span class="printuser avatarhover">"#));
+        assert!(rendered.contains("membership/MembersListModule"));
+        assert!(!rendered.contains("[[module Members"));
+    }
+
+    #[test]
+    fn protects_wikidot_members_module_html_before_parsing() {
+        let mut wikitext = render_members_module_placeholder("moderators");
+        let fragments = RenderService::protect_generated_wikidot_compat_html(
+            &mut wikitext,
+            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+        );
+
+        assert_eq!(fragments.len(), 1);
+        assert!(wikitext.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+        let restored = RenderService::restore_protected_generated_wikidot_compat_html(
+            wikitext, &fragments,
+        );
+        assert!(restored.contains(r#"<div id="ml-607935" data-group="moderators">"#));
+        assert!(!restored.contains("data-wikijump-compat-members"));
     }
 
     #[test]
@@ -4454,6 +4608,60 @@ mod tests {
         RenderService::remove_unresolved_variable_iftags_blocks(&mut wikitext);
 
         assert_eq!(wikitext, "[[iftags +theme]]\nbody\n[[/iftags]]\n");
+    }
+
+    #[test]
+    fn resolves_simple_multiline_wikidot_iftags_blocks_in_source() {
+        let page_info = tagged_page_info(vec![Cow::Borrowed("theme")]);
+        let mut wikitext = concat!(
+            "before\n",
+            "[[iftags -component]]\n",
+            "[[module css]]\n.a { color: red; }\n[[/module]]\n",
+            "[[/iftags]]\n",
+            "[[iftags +component]]\n",
+            "documentation\n",
+            "[[/iftags]]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        RenderService::resolve_simple_wikidot_iftags_blocks(&mut wikitext, &page_info);
+
+        assert!(wikitext.contains("[[module css]]"));
+        assert!(wikitext.contains(".a { color: red; }"));
+        assert!(!wikitext.contains("documentation"));
+        assert!(!wikitext.contains("[[iftags"));
+        assert!(!wikitext.contains("[[/iftags]]"));
+    }
+
+    #[test]
+    fn leaves_nested_multiline_wikidot_iftags_blocks_for_later_handling() {
+        let page_info = tagged_page_info(Vec::new());
+        let mut wikitext = concat!(
+            "[[iftags -component]]\n",
+            "[[iftags +theme]]nested[[/iftags]]\n",
+            "[[/iftags]]\n",
+        )
+        .to_owned();
+
+        RenderService::resolve_simple_wikidot_iftags_blocks(&mut wikitext, &page_info);
+
+        assert!(wikitext.contains("[[iftags -component]]"));
+        assert!(wikitext.contains("[[iftags +theme]]nested[[/iftags]]"));
+        assert!(wikitext.contains("[[/iftags]]"));
+    }
+
+    fn tagged_page_info(tags: Vec<Cow<'static, str>>) -> ftml::data::PageInfo<'static> {
+        ftml::data::PageInfo {
+            page: Cow::Borrowed("black-queen-hub"),
+            category: None,
+            site: Cow::Borrowed("scp-wiki"),
+            title: Cow::Borrowed("Black Queen Hub"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags,
+            language: Cow::Borrowed("en"),
+        }
     }
 
     fn wikidot_site(slug: &str, preferred_domain: Option<&str>) -> SiteModel {
