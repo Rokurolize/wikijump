@@ -370,6 +370,7 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = expanded_wikitext;
+        Self::remove_unresolved_include_comment_branches(&mut wikitext);
         Self::remove_unresolved_variable_iftags_blocks(&mut wikitext);
         let current_page_wikitext =
             if text_block_page_id.is_some() && text_block_page_id == current_page_id {
@@ -629,6 +630,43 @@ impl RenderService {
             cleaned.push_str(&wikitext[before_end..after_start]);
             cleaned.push_str(&wikitext[after_end..]);
             *wikitext = cleaned;
+        }
+    }
+
+    fn remove_unresolved_include_comment_branches(wikitext: &mut String) {
+        const HIDDEN_BRANCH_MARKER: &str = "[!-- {$";
+        const COMMENT_BOUNDARY_MARKER: &str = "[!----]";
+        const SELECTED_BRANCH_MARKER: &str = "[!-- --]";
+
+        while let Some(marker_start) = wikitext.find(HIDDEN_BRANCH_MARKER) {
+            let removal_start = wikitext[..marker_start]
+                .rfind('\n')
+                .map_or(marker_start, |index| index + 1);
+            let Some(boundary_offset) =
+                wikitext[marker_start..].find(COMMENT_BOUNDARY_MARKER)
+            else {
+                break;
+            };
+            let boundary_start = marker_start + boundary_offset;
+            let boundary_end = boundary_start + COMMENT_BOUNDARY_MARKER.len();
+            let removal_end = wikitext[boundary_end..]
+                .find('\n')
+                .map_or(boundary_end, |offset| boundary_end + offset + 1);
+
+            wikitext.replace_range(removal_start..removal_end, "");
+        }
+
+        for marker in [SELECTED_BRANCH_MARKER, COMMENT_BOUNDARY_MARKER] {
+            while let Some(marker_start) = wikitext.find(marker) {
+                let removal_start = wikitext[..marker_start]
+                    .rfind('\n')
+                    .map_or(marker_start, |index| index + 1);
+                let marker_end = marker_start + marker.len();
+                let removal_end = wikitext[marker_end..]
+                    .find('\n')
+                    .map_or(marker_end, |offset| marker_end + offset + 1);
+                wikitext.replace_range(removal_start..removal_end, "");
+            }
         }
     }
 
@@ -1609,6 +1647,13 @@ impl RenderService {
 
         let wants_created_by = list_pages_body_uses_variable(body, "created_by")
             || list_pages_body_uses_variable(body, "createdby");
+        let wants_updated_by = list_pages_body_uses_variable(body, "updated_by")
+            || list_pages_body_uses_variable(body, "updatedby");
+        let wants_updated_at = list_pages_body_uses_variable(body, "updated_at")
+            || list_pages_body_uses_variable(body, "updatedat");
+        let wants_tags = list_pages_body_uses_variable(body, "tags")
+            || list_pages_body_uses_variable(body, "tags_linked")
+            || list_pages_body_uses_variable(body, "tagslinked");
         let query = PageQuery {
             current_page_id,
             current_site_id,
@@ -1655,6 +1700,9 @@ impl RenderService {
                 slug: true,
                 page_category_id: true,
                 created_by: wants_created_by,
+                tags: wants_tags,
+                updated_by: wants_updated_by,
+                updated_at: wants_updated_at,
                 score: list_pages_body_uses_variable(body, "rating"),
                 ..Default::default()
             },
@@ -1677,7 +1725,7 @@ impl RenderService {
             };
         let pages = Self::filter_viewable_list_pages_rows(ctx, pages).await?;
         let total = pages.len();
-        let created_by_names = if wants_created_by {
+        let wikidot_user_names = if wants_created_by || wants_updated_by {
             Self::load_wikidot_user_names(ctx, &pages).await?
         } else {
             BTreeMap::new()
@@ -1704,7 +1752,7 @@ impl RenderService {
                 page,
                 index + 1,
                 total,
-                &created_by_names,
+                &wikidot_user_names,
                 page_wikitext.as_deref(),
             ));
             output.push_str("\n[[/div]]\n");
@@ -1890,7 +1938,8 @@ impl RenderService {
 
         let wikidot_user_ids = pages
             .iter()
-            .filter_map(|page| page.created_by)
+            .flat_map(|page| [page.created_by, page.updated_by])
+            .flatten()
             .filter_map(|user_id| match i32::try_from(user_id) {
                 Ok(user_id) => Some(user_id),
                 Err(error) => {
@@ -1985,7 +2034,9 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                 limit = Some(value.parse().ok()?);
             }
             "order" => {
-                order = Some(parse_list_pages_order(value)?);
+                if !value.is_empty() {
+                    order = Some(parse_list_pages_order(value)?);
+                }
             }
             "range" => {
                 if value != "." {
@@ -2108,6 +2159,18 @@ fn list_pages_body_variables_supported(body: &str) -> bool {
                     | "full_slug"
                     | "created_by"
                     | "createdby"
+                    | "updated_by"
+                    | "updatedby"
+                    | "updated_at"
+                    | "updatedat"
+                    | "commented_by"
+                    | "commentedby"
+                    | "commented_at"
+                    | "commentedat"
+                    | "tags"
+                    | "tags_linked"
+                    | "tagslinked"
+                    | "link"
                     | "rating"
                     | "content"
                     | "index"
@@ -2184,6 +2247,19 @@ fn substitute_list_pages_variables(
                 .unwrap_or_else(|| user_id.to_string())
         })
         .unwrap_or_default();
+    let updated_by = page
+        .updated_by
+        .map(|user_id| {
+            created_by_names
+                .get(&user_id)
+                .cloned()
+                .unwrap_or_else(|| user_id.to_string())
+        })
+        .unwrap_or_default();
+    let updated_at = format_list_pages_date_span(page.updated_at);
+    let tags = page.tags.as_deref().unwrap_or(&[]);
+    let tags_text = tags.join(" ");
+    let tags_linked = render_list_pages_tags(tags);
     let rating = format_list_pages_rating(page.score);
     let index = index.to_string();
     let total = total.to_string();
@@ -2193,10 +2269,15 @@ fn substitute_list_pages_variables(
             match captures["name"].to_ascii_lowercase().as_str() {
                 "title_linked" => title_linked.clone(),
                 "title" => title.to_owned(),
-                "name" | "slug" | "page_unix_name" | "fullname" | "full_slug" => {
-                    slug.to_owned()
-                }
+                "name" | "slug" | "page_unix_name" | "fullname" | "full_slug"
+                | "link" => slug.to_owned(),
                 "created_by" | "createdby" => created_by.clone(),
+                "updated_by" | "updatedby" => updated_by.clone(),
+                "updated_at" | "updatedat" => updated_at.clone(),
+                "commented_by" | "commentedby" => String::new(),
+                "commented_at" | "commentedat" => String::new(),
+                "tags" => tags_text.clone(),
+                "tags_linked" | "tagslinked" => tags_linked.clone(),
                 "rating" => rating.clone(),
                 "content" => page_wikitext
                     .map(|wikitext| {
@@ -2215,6 +2296,77 @@ fn substitute_list_pages_variables(
             }
         })
         .into_owned()
+}
+
+fn render_list_pages_tags(tags: &[String]) -> String {
+    tags.iter()
+        .map(|tag| {
+            format!(
+                r#"<a href="/system:page-tags/tag/{tag_attr}">{tag_text}</a>"#,
+                tag_attr = escape_native_list_html_attr(tag),
+                tag_text = escape_native_list_html_text(tag),
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn format_list_pages_date_span(date: Option<time::OffsetDateTime>) -> String {
+    let Some(date) = date else {
+        return String::new();
+    };
+    let format = "%e %b %Y %H:%M";
+    let text = format_wikidot_list_pages_date(date, format);
+    let encoded_format = percent_encode_list_pages_class(format);
+    format!(
+        r#"<span class="odate time_{} format_{}">{}</span>"#,
+        date.unix_timestamp(),
+        encoded_format,
+        escape_native_list_html_text(&text),
+    )
+}
+
+fn format_wikidot_list_pages_date(date: time::OffsetDateTime, format: &str) -> String {
+    let month = [
+        "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
+        "Dec",
+    ][date.month() as usize];
+    let mut output = String::new();
+    let mut chars = format.chars();
+    while let Some(ch) = chars.next() {
+        if ch != '%' {
+            output.push(ch);
+            continue;
+        }
+
+        match chars.next() {
+            Some('d') => output.push_str(&format!("{:02}", date.day())),
+            Some('e') => output.push_str(&date.day().to_string()),
+            Some('b') => output.push_str(month),
+            Some('Y') => output.push_str(&date.year().to_string()),
+            Some('H') => output.push_str(&format!("{:02}", date.hour())),
+            Some('M') => output.push_str(&format!("{:02}", date.minute())),
+            Some('%') => output.push('%'),
+            Some(other) => {
+                output.push('%');
+                output.push(other);
+            }
+            None => output.push('%'),
+        }
+    }
+    output
+}
+
+fn percent_encode_list_pages_class(value: &str) -> String {
+    value
+        .bytes()
+        .map(|byte| match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-' | b'.' => {
+                (byte as char).to_string()
+            }
+            _ => format!("%{byte:02X}"),
+        })
+        .collect()
 }
 
 fn native_bullet_list_content(line: &str) -> Option<&str> {
@@ -2718,6 +2870,7 @@ mod tests {
     use ftml::layout::Layout;
     use ftml::settings::{WikitextMode, WikitextSettings};
     use std::borrow::Cow;
+    use std::collections::BTreeMap;
 
     #[test]
     fn restores_wikidot_email_obfuscation() {
@@ -2784,6 +2937,14 @@ mod tests {
     #[test]
     fn rejects_unsupported_list_pages_ranges() {
         assert!(parse_list_pages_arguments(r#"range="before""#).is_none());
+    }
+
+    #[test]
+    fn ignores_blank_wikidot_list_pages_order_argument() {
+        let arguments = parse_list_pages_arguments(r#"order="" limit="10""#).unwrap();
+
+        assert!(arguments.order.is_none());
+        assert_eq!(arguments.limit, Some(10));
     }
 
     #[test]
@@ -2872,6 +3033,69 @@ mod tests {
         );
 
         assert_eq!(rendered, "**Draft Page** body");
+    }
+
+    #[test]
+    fn substitutes_wikidot_list_pages_author_tool_variables() {
+        let updated_at =
+            time::OffsetDateTime::from_unix_timestamp(1_700_000_000).unwrap();
+        let page = FoundPageRow {
+            page_id: 10,
+            site_id: 20,
+            title: Some("Tagged Page".to_owned()),
+            alt_title: None,
+            slug: Some("tagged-page".to_owned()),
+            page_category_id: None,
+            page_revision_id: None,
+            tags: Some(vec!["alpha".to_owned(), "needs review".to_owned()]),
+            created_at: None,
+            created_by: None,
+            updated_at: Some(updated_at),
+            updated_by: Some(42),
+            score: None,
+        };
+        let user_names = BTreeMap::from([(42, "Updater".to_owned())]);
+
+        assert!(list_pages_body_variables_supported(
+            "%%link%% %%updated_by%% %%updated_at%% %%tags%% %%tags_linked%% %%commented_by%% %%commented_at%%"
+        ));
+        let rendered = substitute_list_pages_variables(
+            "%%link%%|%%updated_by%%|%%updated_at%%|%%tags%%|%%tags_linked%%|%%commented_by%%|%%commented_at%%",
+            &page,
+            1,
+            1,
+            &user_names,
+            None,
+        );
+
+        assert_eq!(
+            rendered,
+            concat!(
+                "tagged-page|Updater|",
+                r#"<span class="odate time_1700000000 format_%25e%20%25b%20%25Y%20%25H%3A%25M">14 Nov 2023 22:13</span>"#,
+                r#"|alpha needs review|"#,
+                r#"<a href="/system:page-tags/tag/alpha">alpha</a> <a href="/system:page-tags/tag/needs review">needs review</a>||"#,
+            ),
+        );
+    }
+
+    #[test]
+    fn removes_unselected_include_comment_branches() {
+        let mut wikitext = concat!(
+            "before\n",
+            "[!-- {$selected}\n",
+            "hidden\n",
+            "[!----]\n",
+            "[!-- --]\n",
+            "selected\n",
+            "[!----]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        RenderService::remove_unresolved_include_comment_branches(&mut wikitext);
+
+        assert_eq!(wikitext, "before\nselected\nafter\n");
     }
 
     #[test]
