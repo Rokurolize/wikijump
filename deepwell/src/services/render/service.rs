@@ -827,7 +827,6 @@ impl RenderService {
     fn allowed_wikidot_embed_iframe(iframe: &str) -> Option<String> {
         if let Some(captures) = WIKIDOT_STYLEFRAME_IFRAME_REGEX.captures(iframe) {
             return Some(Self::rewrite_wikidot_interwiki_iframe_src(
-                iframe,
                 &captures["src"],
                 "styleFrame.html",
             ));
@@ -835,7 +834,6 @@ impl RenderService {
 
         if let Some(captures) = WIKIDOT_INTERWIKI_FRAME_IFRAME_REGEX.captures(iframe) {
             return Some(Self::rewrite_wikidot_interwiki_iframe_src(
-                iframe,
                 &captures["src"],
                 "interwikiFrame.html",
             ));
@@ -845,15 +843,31 @@ impl RenderService {
     }
 
     fn rewrite_wikidot_interwiki_iframe_src(
-        iframe: &str,
         original_src: &str,
         local_file_name: &str,
     ) -> String {
         let query = original_src.split_once('?').map_or("", |(_, query)| query);
         let local_src =
             format!("{WIKIDOT_LOCAL_INTERWIKI_BASE}/{local_file_name}?{query}");
+        let local_src = Self::escape_html_attribute(&local_src);
 
-        iframe.replace(original_src, &local_src)
+        match local_file_name {
+            "styleFrame.html" => {
+                format!(r#"<iframe src="{local_src}" style="display: none"></iframe>"#)
+            }
+            "interwikiFrame.html" => format!(
+                r#"<iframe src="{local_src}" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#
+            ),
+            _ => unreachable!("unsupported Wikidot interwiki frame"),
+        }
+    }
+
+    fn escape_html_attribute(value: &str) -> String {
+        value
+            .replace('&', "&amp;")
+            .replace('"', "&quot;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
     }
 
     fn decode_rendered_embed_block(block: &str) -> String {
@@ -2353,7 +2367,7 @@ mod tests {
         assert_eq!(
             iframes,
             vec![
-                r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=en&community=scp&pagename=scp-9506" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#
+                r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=en&amp;community=scp&amp;pagename=scp-9506" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#
                     .to_owned()
             ],
         );
@@ -2362,7 +2376,7 @@ mod tests {
                 "<p>WIKIJUMPWIKIDOTEMBEDIFRAME0X</p>".to_owned(),
                 &iframes,
             ),
-            r#"<p><iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=en&community=scp&pagename=scp-9506" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe></p>"#,
+            r#"<p><iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=en&amp;community=scp&amp;pagename=scp-9506" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe></p>"#,
         );
     }
 
@@ -2395,8 +2409,8 @@ mod tests {
             RenderService::restore_wikidot_rendered_embed_iframes(html),
             concat!(
                 r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1"#,
-                r#"&theme=https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css"#,
-                r#"&css={$css}" style="display: none"></iframe></p>"#,
+                r#"&amp;theme=https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css"#,
+                r#"&amp;css={$css}" style="display: none"></iframe></p>"#,
             ),
         );
     }
@@ -2412,8 +2426,23 @@ mod tests {
 
         assert_eq!(
             RenderService::restore_wikidot_rendered_embed_iframes(html),
-            r#"<p><iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=en&community=scp&pagename=scp-9506" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe></p>"#,
+            r#"<p><iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=en&amp;community=scp&amp;pagename=scp-9506" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe></p>"#,
         );
+    }
+
+    #[test]
+    fn rebuilds_wikidot_interwiki_iframe_from_allowlist() {
+        let iframe = RenderService::rewrite_wikidot_interwiki_iframe_src(
+            r#"//interwiki.scpwiki.com/interwikiFrame.html?lang=en&bad=" onload="alert(1)"#,
+            "interwikiFrame.html",
+        );
+
+        assert_eq!(
+            iframe,
+            r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=en&amp;bad=&quot; onload=&quot;alert(1)" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#
+        );
+        assert!(!iframe.contains("srcdoc"));
+        assert!(!iframe.contains(r#" onload=""#));
     }
 
     #[test]
