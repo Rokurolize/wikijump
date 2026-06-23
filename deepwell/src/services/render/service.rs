@@ -503,28 +503,34 @@ impl RenderService {
     }
 
     fn remove_unresolved_variable_iftags_blocks(wikitext: &mut String) {
-        while let Some(open_marker_start) = wikitext.find("[[ift{$") {
+        let mut search_start = 0;
+        while let Some(open_marker_offset) = wikitext[search_start..].find("[[ift{$") {
+            let open_marker_start = search_start + open_marker_offset;
             let name_start = open_marker_start + "[[ift{$".len();
             let Some(name_end_offset) = wikitext[name_start..].find("}gs") else {
-                break;
+                search_start = name_start;
+                continue;
             };
             let name_end = name_start + name_end_offset;
             let name = &wikitext[name_start..name_end];
 
             if !is_include_variable_name(name) {
-                break;
+                search_start = name_start;
+                continue;
             }
 
             let open_end_search_start = name_end + "}gs".len();
             let Some(open_end_offset) = wikitext[open_end_search_start..].find("]]")
             else {
-                break;
+                search_start = open_end_search_start;
+                continue;
             };
             let body_start = open_end_search_start + open_end_offset + "]]".len();
             let close_marker = format!("[[/ift{{${name}}}gs]]");
             let Some(close_marker_offset) = wikitext[body_start..].find(&close_marker)
             else {
-                break;
+                search_start = body_start;
+                continue;
             };
 
             let block_start = wikitext[..open_marker_start]
@@ -545,7 +551,9 @@ impl RenderService {
                 body.to_owned()
             };
 
+            let replacement_len = replacement.len();
             wikitext.replace_range(block_start..block_end, &replacement);
+            search_start = block_start + replacement_len;
         }
 
         Self::remove_collapsed_empty_negative_iftags_blocks(wikitext);
@@ -847,6 +855,7 @@ impl RenderService {
         local_file_name: &str,
     ) -> String {
         let query = original_src.split_once('?').map_or("", |(_, query)| query);
+        let query = Self::decode_html_query_separators(query);
         let local_src =
             format!("{WIKIDOT_LOCAL_INTERWIKI_BASE}/{local_file_name}?{query}");
         let local_src = Self::escape_html_attribute(&local_src);
@@ -868,6 +877,10 @@ impl RenderService {
             .replace('"', "&quot;")
             .replace('<', "&lt;")
             .replace('>', "&gt;")
+    }
+
+    fn decode_html_query_separators(value: &str) -> String {
+        value.replace("&amp;", "&")
     }
 
     fn decode_rendered_embed_block(block: &str) -> String {
@@ -2431,6 +2444,20 @@ mod tests {
     }
 
     #[test]
+    fn rewrites_escaped_interwiki_query_without_double_escape() {
+        let iframe = RenderService::rewrite_wikidot_interwiki_iframe_src(
+            "//interwiki.scpwiki.com/styleFrame.html?priority=1&amp;css={$css}",
+            "styleFrame.html",
+        );
+
+        assert_eq!(
+            iframe,
+            r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&amp;css={$css}" style="display: none"></iframe>"#
+        );
+        assert!(!iframe.contains("&amp;amp;"));
+    }
+
+    #[test]
     fn rebuilds_wikidot_interwiki_iframe_from_allowlist() {
         let iframe = RenderService::rewrite_wikidot_interwiki_iframe_src(
             r#"//interwiki.scpwiki.com/interwikiFrame.html?lang=en&bad=" onload="alert(1)"#,
@@ -2774,6 +2801,38 @@ mod tests {
             wikitext,
             concat!(
                 "before\n",
+                "\n",
+                "[[include :scp-wiki:component:acs-animation]]\n",
+                "after\n",
+            ),
+        );
+    }
+
+    #[test]
+    fn continues_after_unsupported_variable_iftags_marker() {
+        let mut wikitext = concat!(
+            "before\n",
+            ">[[ift{$not a variable}gs +theme]]\n",
+            "unsupported body\n",
+            ">[[/ift{$not a variable}gs]]\n",
+            "middle\n",
+            ">[[ift{$disable-acs-anim}gs +theme]]\n",
+            "[[include :scp-wiki:component:acs-animation]]\n",
+            ">[[/ift{$disable-acs-anim}gs]]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        RenderService::remove_unresolved_variable_iftags_blocks(&mut wikitext);
+
+        assert_eq!(
+            wikitext,
+            concat!(
+                "before\n",
+                ">[[ift{$not a variable}gs +theme]]\n",
+                "unsupported body\n",
+                ">[[/ift{$not a variable}gs]]\n",
+                "middle\n",
                 "\n",
                 "[[include :scp-wiki:component:acs-animation]]\n",
                 "after\n",
