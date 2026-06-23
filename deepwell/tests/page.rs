@@ -56,7 +56,7 @@ const ISSUE5_AI_TRANSLATION_FIXTURE: Issue5SiteFixture = Issue5SiteFixture {
         ("ai-translation.wikijump.dev", false),
         ("ai-translation.localhost", false),
     ],
-    boundary_title: "Issue 5 Boundary Check: AI Translation QA",
+    boundary_title: "Boundary Check: AI Translation QA",
     boundary_wikitext: "== Issue 5 boundary check ==\nThis fixture ensures AI translation pages stay isolated from SCP-JP.",
 };
 
@@ -73,129 +73,47 @@ const ISSUE5_SCP_JP_FIXTURE: Issue5SiteFixture = Issue5SiteFixture {
         ("scp-jp.wikijump.dev", false),
         ("scp-jp.localhost", false),
     ],
-    boundary_title: "Issue 5 Boundary Check: SCP-JP Mirror",
+    boundary_title: "Boundary Check: SCP-JP Mirror",
     boundary_wikitext: "== Issue 5 boundary check ==\nThis fixture ensures mirror pages stay isolated from editable AI translations.",
 };
 
-async fn ensure_issue5_boundary_site(runner: &mut TestRunner, fixture: &Issue5SiteFixture) {
-    let existing_site = run_endpoint!(runner, site_get, json!({"site": fixture.slug}));
-    let site_output = if let Some(site) = existing_site {
-        site
-    } else {
-        let created_site = run_endpoint!(
-            runner,
-            site_create,
-            json!({
-                "slug": fixture.slug,
-                "name": fixture.name,
-                "tagline": fixture.tagline,
-                "description": fixture.description,
-                "default_page": null,
-                "layout": null,
-                "license": "cc-by-sa-3.0",
-                "locale": fixture.locale,
-                "ip_address": common::IP_ADDRESS,
-            }),
-        );
-
-        run_endpoint!(
-            runner,
-            site_get,
-            json!({"site": created_site.slug}),
-        )
-        .expect("Unable to fetch issue5 site after creation")
-    };
-
-    let site_id = site_output.site.site_id;
-
-    for &(domain, www_redirect) in fixture.custom_domains {
-        if !site_output
-            .domains
-            .iter()
-            .any(|entry| entry.domain == domain)
-        {
-            run_endpoint!(
-                runner,
-                site_custom_domain_create,
-                json!({
-                    "domain": domain,
-                    "site_id": site_id,
-                    "www_redirect": www_redirect,
-                }),
-            );
-        }
-    }
-
-    let site_output = run_endpoint!(
+async fn ensure_issue5_sites(runner: &mut TestRunner) -> (i64, i64) {
+    let ai_site_output = run_endpoint!(
         runner,
         site_get,
-        json!({"site": fixture.slug}),
+        json!({"site": ISSUE5_AI_TRANSLATION_FIXTURE.slug}),
     )
-    .expect("Unable to fetch refreshed issue5 site");
+    .expect("Seeded ai-translation site not found");
 
-    if site_output
-        .site
-        .preferred_domain
-        .as_deref()
-        != Some(fixture.preferred_domain)
-    {
-        run_endpoint!(
-            runner,
-            site_update,
-            json!({
-                "site": fixture.slug,
-                "user_id": ADMIN_USER_ID,
-                "preferred_domain": fixture.preferred_domain,
-                "ip_address": common::IP_ADDRESS,
-            }),
-        );
-    }
+    let scp_site_output = run_endpoint!(
+        runner,
+        site_get,
+        json!({"site": ISSUE5_SCP_JP_FIXTURE.slug}),
+    )
+    .expect("Seeded scp-jp site not found");
 
-    let boundary_output = run_endpoint!(
+    let ai_boundary_output = run_endpoint!(
         runner,
         page_get,
         json!({
-            "site_id": site_id,
+            "site_id": ai_site_output.site.site_id,
             "page": "boundary-check",
         }),
-    );
+    )
+    .expect("ai-translation boundary fixture missing");
 
-    if boundary_output.is_none() {
-        runner.set_request_context(RequestContext {
-            session: None,
-            user_id: Some(ADMIN_USER_ID),
-            site_id: Some(site_id),
-            page_reference: Some(Reference::Slug("boundary-check".into())),
-        });
+    let scp_boundary_output = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": scp_site_output.site.site_id,
+            "page": "boundary-check",
+        }),
+    )
+    .expect("scp-jp boundary fixture missing");
 
-        run_endpoint!(
-            runner,
-            page_create,
-            json!({
-                "site_id": site_id,
-                "wikitext": fixture.boundary_wikitext,
-                "title": fixture.boundary_title,
-                "alt_title": null,
-                "slug": "boundary-check",
-                "layout": null,
-                "revision_comments": "issue5 boundary fixture bootstrapped",
-                "user_id": ADMIN_USER_ID,
-                "ip_address": common::IP_ADDRESS,
-            }),
-        );
-
-        return;
-    }
-}
-
-async fn ensure_issue5_sites(runner: &mut TestRunner) -> (i64, i64) {
-    ensure_issue5_boundary_site(runner, &ISSUE5_AI_TRANSLATION_FIXTURE).await;
-    ensure_issue5_boundary_site(runner, &ISSUE5_SCP_JP_FIXTURE).await;
-
-    let ai_site_output = run_endpoint!(runner, site_get, json!({"site": ISSUE5_AI_TRANSLATION_FIXTURE.slug}))
-        .expect("Unable to bootstrap ai-translation site for issue5 tests");
-    let scp_site_output = run_endpoint!(runner, site_get, json!({"site": ISSUE5_SCP_JP_FIXTURE.slug}))
-        .expect("Unable to bootstrap scp-jp site for issue5 tests");
+    assert_eq!(ai_boundary_output.title, ISSUE5_AI_TRANSLATION_FIXTURE.boundary_title);
+    assert_eq!(scp_boundary_output.title, ISSUE5_SCP_JP_FIXTURE.boundary_title);
 
     (ai_site_output.site.site_id, scp_site_output.site.site_id)
 }
