@@ -88,3 +88,58 @@ test("non-local external URLs are ignored or out-of-scope", () => {
   assert.equal(result.out_of_scope.length, 1);
   assert.equal(result.out_of_scope[0].site, "example.com");
 });
+
+test("trims sentence-ending punctuation from bare local--files URLs", () => {
+  const sourceText =
+    "See https://scp-wiki.wikidot.com/local--files/scp-8980/fractal.webp.";
+
+  const result = scanForFixtureLocalResources({
+    sourceText,
+    fixtureSlug: "fixture-6",
+    sourcePath: "samples/punctuation.txt",
+  });
+
+  assert.equal(result.manifest.length, 1);
+  assert.equal(result.manifest[0].filename, "fractal.webp");
+  assert.equal(
+    result.manifest[0].original_url,
+    "https://scp-wiki.wikidot.com/local--files/scp-8980/fractal.webp",
+  );
+});
+
+test("canonicalization preserves path double slashes", () => {
+  const sourceText =
+    "https://scp-wiki.wikidot.com/local--files/scp-8980//fractal.webp\n" +
+    "https://scp-wiki.wikidot.com/local--files/scp-8980/fractal.webp";
+
+  const result = scanForFixtureLocalResources({
+    sourceText,
+    fixtureSlug: "fixture-7",
+    sourcePath: "samples/double-slash.txt",
+  });
+
+  assert.equal(result.manifest.length, 2);
+  assert.deepEqual(
+    result.manifest.map((item) => item.wikidot_path).sort(),
+    [
+      "/local--files/scp-8980//fractal.webp",
+      "/local--files/scp-8980/fractal.webp",
+    ],
+  );
+});
+
+test("deduplicates repeated out-of-scope local--files URLs", () => {
+  const sourceText = [
+    "https://example.com/local--files/scp-8980/fractal.webp",
+    "https://example.com/local--files/scp-8980/fractal.webp",
+  ].join("\n");
+
+  const result = scanForFixtureLocalResources({
+    sourceText,
+    fixtureSlug: "fixture-8",
+    sourcePath: "samples/oos-dup.txt",
+  });
+
+  assert.equal(result.manifest.length, 0);
+  assert.equal(result.out_of_scope.length, 1);
+});

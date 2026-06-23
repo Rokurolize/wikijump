@@ -41,16 +41,18 @@ function isWikidotHost(host) {
 }
 
 function sanitizeOriginalUrl(rawUrl) {
-  return rawUrl.replace(/^[\"'`]+/, "").replace(/[\"'`;,\)\]]+$/, "");
+  return rawUrl
+    .replace(/^[\"'`]+/, "")
+    .replace(/[\"'`;,\)\].:!?]+$/, "");
 }
 
 function canonicalizeUrl(url) {
   const normalized = sanitizeOriginalUrl(url);
   const parsed = new URL(normalized);
-  const encodedPath = parsed.pathname.replaceAll("//", "/");
+  const encodedPath = parsed.pathname;
   const search = parsed.search || "";
   return `${parsed.origin}${encodedPath}${search}`;
-  }
+}
 
 function kindFromFilename(filename) {
   const extension = (filename.includes(".")
@@ -106,15 +108,16 @@ export function scanForFixtureLocalResources({
       sha256: null,
     };
 
+    if (seen.has(canonical)) {
+      continue;
+    }
+    seen.add(canonical);
+
     if (!isWikidotHost(site)) {
       outOfScope.push(normalizedSource);
       continue;
     }
 
-    if (seen.has(canonical)) {
-      continue;
-    }
-    seen.add(canonical);
     manifest.push(normalizedSource);
   }
 
