@@ -181,9 +181,18 @@ impl RenderService {
             || Error::new("failed to perform render operation", ErrorType::Render);
 
         if let Some(ref page_id) = page_id {
-            wikitext = expand_list_pages(ctx, wikitext, page_id)
-                .await
-                .or_raise(make_error)?;
+            wikitext = timeout(
+                config.render_timeout,
+                expand_list_pages(ctx, wikitext, page_id),
+            )
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to expand ListPages due to timeout",
+                    ErrorType::RenderTimeout,
+                )
+            })?
+            .or_raise(make_error)?;
         }
 
         // We isolate the actual tasks for rendering,

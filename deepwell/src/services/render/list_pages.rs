@@ -25,7 +25,7 @@ use crate::services::page_query::{
     PaginationSelector, RangeSelector, TagCondition,
 };
 use crate::services::{PageQueryService, PageRevisionService};
-use crate::types::PageId;
+use crate::types::{Action, PageId, Permission, Resource};
 use regex::Regex;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -252,7 +252,10 @@ async fn select_fragment(
                 reversed: false,
             },
             variables: &[],
-            fields: FoundPageFields::default(),
+            fields: FoundPageFields {
+                page_category_id: true,
+                ..FoundPageFields::default()
+            },
         },
     )
     .await?;
@@ -264,6 +267,27 @@ async fn select_fragment(
         );
         return Ok(None);
     };
+
+    debug_assert_eq!(selected.site_id, page_id.site_id);
+
+    let page_category_id = selected
+        .page_category_id
+        .expect("ListPages query requested selected page category IDs");
+    let has_read_permission = ctx
+        .user_has_permission(Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page_category_id)),
+            action: Action::View,
+        })
+        .await?;
+
+    if !has_read_permission {
+        warn!(
+            "Skipping ListPages child page ID {} for page ID {} because the current user cannot view category ID {}",
+            selected.page_id, page_id.page_id, page_category_id,
+        );
+        return Ok(None);
+    }
 
     debug!(
         "ListPages selected child page ID {} for page ID {}",
