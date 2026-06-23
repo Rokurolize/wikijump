@@ -679,6 +679,14 @@ impl RenderService {
             else {
                 break;
             };
+            if let Some(next_open_offset) =
+                wikitext[outer_body_start..].find(ACTIVE_OPEN_MARKER)
+            {
+                if next_open_offset < first_close_offset {
+                    search_start = outer_body_start + next_open_offset;
+                    continue;
+                }
+            }
             let first_close_start = outer_body_start + first_close_offset;
             let next_close_start = first_close_start + ACTIVE_CLOSE_MARKER.len();
             let Some(second_close_offset) =
@@ -2620,6 +2628,38 @@ mod tests {
                 ">[[iftags -]]\n",
                 "unsupported body\n",
                 ">[[/iftags]]\n",
+                "middle\n",
+                "\n",
+                "kept body\n",
+                "after\n",
+            ),
+        );
+    }
+
+    #[test]
+    fn collapsed_empty_negative_iftags_skips_malformed_opener_before_valid_block() {
+        let mut wikitext = concat!(
+            "before\n",
+            ">[[iftags -]]\n",
+            "malformed body without close\n",
+            "middle\n",
+            ">[[iftags -]]\n",
+            ">[[iftags]]\n",
+            "kept body\n",
+            ">[[/iftags]]\n",
+            ">[[/iftags]]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        RenderService::remove_unresolved_variable_iftags_blocks(&mut wikitext);
+
+        assert_eq!(
+            wikitext,
+            concat!(
+                "before\n",
+                ">[[iftags -]]\n",
+                "malformed body without close\n",
                 "middle\n",
                 "\n",
                 "kept body\n",
