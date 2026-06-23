@@ -129,6 +129,10 @@ static CSS_EXTERNAL_URL_FUNCTION_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     )
     .unwrap()
 });
+static WIKIDOT_USERKARMA_BACKGROUND_STYLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"\sstyle="background-image:\s*url\(https?://www\.wikidot\.com/userkarma\.php\?u=[0-9]+\)""#)
+        .unwrap()
+});
 
 impl RenderService {
     pub async fn render(
@@ -490,7 +494,14 @@ impl RenderService {
     ) -> String {
         let html = Self::restore_wikidot_rendered_embed_iframes(html);
         let html = Self::restore_wikidot_email_obfuscation(&html);
+        let html = Self::remove_wikidot_userkarma_background_styles(&html);
         Self::localize_wikidot_local_file_urls(&html, current_site, config)
+    }
+
+    fn remove_wikidot_userkarma_background_styles(html: &str) -> String {
+        WIKIDOT_USERKARMA_BACKGROUND_STYLE_REGEX
+            .replace_all(html, "")
+            .into_owned()
     }
 
     fn restore_wikidot_code_block_compatibility(
@@ -2363,6 +2374,27 @@ mod tests {
             "http://scp-wiki-cn-corpus-scp9506-translation-seed.wjfiles.localhost:18443/local--files/scp-9506/NFSI.png"
         ));
         assert!(restored.contains(r#"url("data:,")"#));
+    }
+
+    #[test]
+    fn removes_wikidot_userkarma_background_styles_after_render() {
+        let html = concat!(
+            r#"<span class="printuser avatarhover">"#,
+            r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid=4598089&amp;size=small" style="background-image: url(https://www.wikidot.com/userkarma.php?u=4598089)">"#,
+            r#"</span>"#,
+        );
+
+        let restored = RenderService::remove_wikidot_userkarma_background_styles(html);
+
+        assert_eq!(
+            restored,
+            concat!(
+                r#"<span class="printuser avatarhover">"#,
+                r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid=4598089&amp;size=small">"#,
+                r#"</span>"#,
+            ),
+        );
+        assert!(!restored.contains("userkarma.php"));
     }
 
     #[test]
