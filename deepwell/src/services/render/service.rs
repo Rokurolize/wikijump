@@ -84,7 +84,10 @@ static LISTPAGES_ARGUMENT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         .unwrap()
 });
 static LISTPAGES_VARIABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"%%(?P<name>[A-Za-z0-9_]+)(?:\{(?P<section>[0-9]+)\})?%%").unwrap()
+    Regex::new(
+        r"%%(?P<name>[A-Za-z0-9_]+)(?:\{(?P<section>[0-9]+)\})?(?:\|(?P<format>.*?))?%%",
+    )
+    .unwrap()
 });
 static WIKIDOT_USER_INLINE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[\[\*user\s+(?P<name>[^\]]+)\]\]").unwrap());
@@ -1646,7 +1649,11 @@ impl RenderService {
         };
 
         let wants_created_by = list_pages_body_uses_variable(body, "created_by")
-            || list_pages_body_uses_variable(body, "createdby");
+            || list_pages_body_uses_variable(body, "createdby")
+            || list_pages_body_uses_variable(body, "author");
+        let wants_created_at = list_pages_body_uses_variable(body, "created_at")
+            || list_pages_body_uses_variable(body, "createdat")
+            || list_pages_body_uses_variable(body, "date");
         let wants_updated_by = list_pages_body_uses_variable(body, "updated_by")
             || list_pages_body_uses_variable(body, "updatedby");
         let wants_updated_at = list_pages_body_uses_variable(body, "updated_at")
@@ -1700,6 +1707,7 @@ impl RenderService {
                 slug: true,
                 page_category_id: true,
                 created_by: wants_created_by,
+                created_at: wants_created_at,
                 tags: wants_tags,
                 updated_by: wants_updated_by,
                 updated_at: wants_updated_at,
@@ -1725,8 +1733,8 @@ impl RenderService {
             };
         let pages = Self::filter_viewable_list_pages_rows(ctx, pages).await?;
         let total = pages.len();
-        let wikidot_user_names = if wants_created_by || wants_updated_by {
-            Self::load_wikidot_user_names(ctx, &pages).await?
+        let wikidot_users = if wants_created_by || wants_updated_by {
+            Self::load_wikidot_user_displays(ctx, &pages).await?
         } else {
             BTreeMap::new()
         };
@@ -1752,7 +1760,7 @@ impl RenderService {
                 page,
                 index + 1,
                 total,
-                &wikidot_user_names,
+                &wikidot_users,
                 page_wikitext.as_deref(),
             ));
             output.push_str("\n[[/div]]\n");
@@ -1925,10 +1933,10 @@ impl RenderService {
         Ok(None)
     }
 
-    async fn load_wikidot_user_names(
+    async fn load_wikidot_user_displays(
         ctx: &ServiceContext<'_>,
         pages: &[FoundPageRow],
-    ) -> Result<BTreeMap<i64, String>> {
+    ) -> Result<BTreeMap<i64, WikidotUserDisplay>> {
         let make_error = || {
             Error::new(
                 "failed to load Wikidot user names for ListPages render",
@@ -1962,12 +1970,25 @@ impl RenderService {
         Ok(users
             .into_iter()
             .filter_map(|user| {
-                user.name
-                    .or(user.slug)
-                    .map(|name| (i64::from(user.user_id), name))
+                let name = user.name.or_else(|| user.slug.clone())?;
+                Some((
+                    i64::from(user.user_id),
+                    WikidotUserDisplay {
+                        user_id: i64::from(user.user_id),
+                        name,
+                        slug: user.slug,
+                    },
+                ))
             })
             .collect())
     }
+}
+
+#[derive(Debug, Clone)]
+struct WikidotUserDisplay {
+    user_id: i64,
+    name: String,
+    slug: Option<String>,
 }
 
 #[derive(Debug)]
@@ -2151,6 +2172,7 @@ fn list_pages_body_variables_supported(body: &str) -> bool {
             matches!(
                 captures["name"].to_ascii_lowercase().as_str(),
                 "title_linked"
+                    | "linked_title"
                     | "title"
                     | "name"
                     | "slug"
@@ -2159,6 +2181,10 @@ fn list_pages_body_variables_supported(body: &str) -> bool {
                     | "full_slug"
                     | "created_by"
                     | "createdby"
+                    | "author"
+                    | "created_at"
+                    | "createdat"
+                    | "date"
                     | "updated_by"
                     | "updatedby"
                     | "updated_at"
@@ -2228,7 +2254,7 @@ fn substitute_list_pages_variables(
     page: &FoundPageRow,
     index: usize,
     total: usize,
-    created_by_names: &BTreeMap<i64, String>,
+    wikidot_users: &BTreeMap<i64, WikidotUserDisplay>,
     page_wikitext: Option<&str>,
 ) -> String {
     let slug = page.slug.as_deref().unwrap_or("");
@@ -2241,18 +2267,24 @@ fn substitute_list_pages_variables(
     let created_by = page
         .created_by
         .map(|user_id| {
-            created_by_names
+            wikidot_users
                 .get(&user_id)
-                .cloned()
+                .map(|user| user.name.clone())
                 .unwrap_or_else(|| user_id.to_string())
+        })
+        .unwrap_or_default();
+    let created_by_linked = page
+        .created_by
+        .map(|user_id| {
+            render_list_pages_wikidot_user(user_id, wikidot_users.get(&user_id))
         })
         .unwrap_or_default();
     let updated_by = page
         .updated_by
         .map(|user_id| {
-            created_by_names
+            wikidot_users
                 .get(&user_id)
-                .cloned()
+                .map(|user| user.name.clone())
                 .unwrap_or_else(|| user_id.to_string())
         })
         .unwrap_or_default();
@@ -2268,10 +2300,18 @@ fn substitute_list_pages_variables(
         .replace_all(template, |captures: &regex::Captures<'_>| {
             match captures["name"].to_ascii_lowercase().as_str() {
                 "title_linked" => title_linked.clone(),
+                "linked_title" => title_linked.clone(),
                 "title" => title.to_owned(),
                 "name" | "slug" | "page_unix_name" | "fullname" | "full_slug"
                 | "link" => slug.to_owned(),
                 "created_by" | "createdby" => created_by.clone(),
+                "author" => created_by_linked.clone(),
+                "created_at" | "createdat" | "date" => {
+                    format_list_pages_date_span_with_format(
+                        page.created_at,
+                        captures.name("format").map(|matched| matched.as_str()),
+                    )
+                }
                 "updated_by" | "updatedby" => updated_by.clone(),
                 "updated_at" | "updatedat" => updated_at.clone(),
                 "commented_by" | "commentedby" => String::new(),
@@ -2312,10 +2352,17 @@ fn render_list_pages_tags(tags: &[String]) -> String {
 }
 
 fn format_list_pages_date_span(date: Option<time::OffsetDateTime>) -> String {
+    format_list_pages_date_span_with_format(date, None)
+}
+
+fn format_list_pages_date_span_with_format(
+    date: Option<time::OffsetDateTime>,
+    format: Option<&str>,
+) -> String {
     let Some(date) = date else {
         return String::new();
     };
-    let format = "%e %b %Y %H:%M";
+    let format = format.unwrap_or("%e %b %Y %H:%M");
     let text = format_wikidot_list_pages_date(date, format);
     let encoded_format = percent_encode_list_pages_class(format);
     format!(
@@ -2323,6 +2370,28 @@ fn format_list_pages_date_span(date: Option<time::OffsetDateTime>) -> String {
         date.unix_timestamp(),
         encoded_format,
         escape_native_list_html_text(&text),
+    )
+}
+
+fn render_list_pages_wikidot_user(
+    user_id: i64,
+    user: Option<&WikidotUserDisplay>,
+) -> String {
+    let Some(user) = user else {
+        return user_id.to_string();
+    };
+    let slug = user.slug.as_deref().unwrap_or(&user.name);
+    format!(
+        concat!(
+            r#"<span class="printuser avatarhover">"#,
+            r#"<a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
+            r#"<img alt="{name}" class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;size=small"/>"#,
+            r#"</a><a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">{name}</a>"#,
+            r#"</span>"#
+        ),
+        slug = escape_native_list_html_attr(slug),
+        user_id = user.user_id,
+        name = escape_native_list_html_text(&user.name),
     )
 }
 
@@ -2853,7 +2922,7 @@ mod tests {
     use super::{
         CollectingIncluder, RenderContext, RenderService,
         WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_CSS_MODULE_SENTINEL_PREFIX,
-        include_error, list_pages_body_variables_supported,
+        WikidotUserDisplay, include_error, list_pages_body_variables_supported,
         list_pages_row_view_permission, parse_list_pages_arguments,
         should_render_current_page_list_pages_row, simple_list_pages_page_type,
         substitute_list_pages_variables, wikidot_content_section,
@@ -3028,7 +3097,7 @@ mod tests {
             &page,
             1,
             1,
-            &Default::default(),
+            &BTreeMap::new(),
             Some(wikitext),
         );
 
@@ -3054,7 +3123,14 @@ mod tests {
             updated_by: Some(42),
             score: None,
         };
-        let user_names = BTreeMap::from([(42, "Updater".to_owned())]);
+        let wikidot_users = BTreeMap::from([(
+            42,
+            WikidotUserDisplay {
+                user_id: 42,
+                name: "Updater".to_owned(),
+                slug: Some("updater".to_owned()),
+            },
+        )]);
 
         assert!(list_pages_body_variables_supported(
             "%%link%% %%updated_by%% %%updated_at%% %%tags%% %%tags_linked%% %%commented_by%% %%commented_at%%"
@@ -3064,7 +3140,7 @@ mod tests {
             &page,
             1,
             1,
-            &user_names,
+            &wikidot_users,
             None,
         );
 
@@ -3076,6 +3152,56 @@ mod tests {
                 r#"|alpha needs review|"#,
                 r#"<a href="/system:page-tags/tag/alpha">alpha</a> <a href="/system:page-tags/tag/needs review">needs review</a>||"#,
             ),
+        );
+    }
+
+    #[test]
+    fn substitutes_wikidot_list_pages_author_and_created_at_aliases() {
+        let created_at =
+            time::OffsetDateTime::from_unix_timestamp(1_782_003_564).unwrap();
+        let page = FoundPageRow {
+            page_id: 10,
+            site_id: 20,
+            title: Some("Codex virtual Wikidot DOM 001".to_owned()),
+            alt_title: None,
+            slug: Some("dom-001".to_owned()),
+            page_category_id: None,
+            page_revision_id: None,
+            tags: None,
+            created_at: Some(created_at),
+            created_by: Some(8_955_132),
+            updated_at: None,
+            updated_by: None,
+            score: None,
+        };
+        let wikidot_users = BTreeMap::from([(
+            8_955_132,
+            WikidotUserDisplay {
+                user_id: 8_955_132,
+                name: "scpaiueouiuiuiui".to_owned(),
+                slug: Some("scpaiueouiuiuiui".to_owned()),
+            },
+        )]);
+
+        assert!(list_pages_body_variables_supported(
+            "%%linked_title%% %%author%% %%date|%r|agohover%%"
+        ));
+
+        let rendered = substitute_list_pages_variables(
+            "%%linked_title%%|%%author%%|%%date|%r|agohover%%",
+            &page,
+            1,
+            1,
+            &wikidot_users,
+            None,
+        );
+
+        assert!(rendered.contains("[/dom-001 Codex virtual Wikidot DOM 001]"));
+        assert!(rendered.contains("printuser avatarhover"));
+        assert!(rendered.contains("user:info/scpaiueouiuiuiui"));
+        assert!(rendered.contains("WIKIDOT.page.listeners.userInfo(8955132)"));
+        assert!(
+            rendered.contains(r#"class="odate time_1782003564 format_%25r%7Cagohover""#)
         );
     }
 

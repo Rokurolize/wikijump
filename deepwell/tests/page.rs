@@ -26,6 +26,7 @@ use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::prelude::*;
 use deepwell::models::audit_log::Entity as AuditLog;
 use deepwell::models::page::{self, Entity as PageTable};
+use deepwell::models::page_revision::Entity as PageRevisionTable;
 use deepwell::services::RequestContext;
 use deepwell::services::page_query::{
     CategoriesSelector, DateSelector, FoundPageFields, IncludedCategories,
@@ -848,6 +849,24 @@ async fn set_listpages_test_created_at(
         .expect("created_at test page update should not fail");
 }
 
+async fn set_listpages_test_revision_number(
+    runner: &TestRunner,
+    revision_id: i64,
+    revision_number: i32,
+) {
+    let revision = PageRevisionTable::find_by_id(revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("revision-number test lookup should not fail")
+        .expect("revision-number test revision should exist");
+    let mut model = revision.into_active_model();
+    model.revision_number = Set(revision_number);
+    model
+        .update(runner.context().transaction())
+        .await
+        .expect("revision-number test update should not fail");
+}
+
 #[tokio::test]
 async fn listpages_limit_two_caps_ordered_results() {
     let mut runner = TestRunner::setup().await;
@@ -1054,6 +1073,90 @@ async fn page_query_orders_by_page_slug_without_category_prefix() {
         slugs,
         ["zcategory:alpha", "acategory:beta", "mcategory:gamma"],
         "PageSlug order should sort by page slug, not by full category-qualified slug",
+    );
+}
+
+#[tokio::test]
+async fn page_query_created_by_uses_earliest_available_revision() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "verification-page-query-created-by-earliest";
+    let slug = "fixture-page-query-created-by-earliest";
+
+    let revision_id = create_listpages_test_page(
+        &runner,
+        site_id,
+        slug,
+        "Fixture PageQuery CreatedBy Earliest",
+        "Fixture PageQuery CreatedBy Earliest marker.",
+    )
+    .await;
+    set_listpages_test_revision_number(&runner, revision_id, 42).await;
+    set_listpages_test_tags(&mut runner, site_id, slug, revision_id, &[tag]).await;
+
+    let all_tags = [Cow::Borrowed(tag)];
+    let pages = PageQueryService::find(
+        runner.context(),
+        PageQuery {
+            current_page_id: 0,
+            current_site_id: site_id,
+            queried_site_id: Some(site_id),
+            page_type: PageTypeSelector::All,
+            categories: CategoriesSelector {
+                included_categories: IncludedCategories::All,
+                excluded_categories: &[],
+            },
+            tags: TagCondition {
+                any_present: &[],
+                all_present: &all_tags,
+                none_present: &[],
+            },
+            page_parent: PageParentSelector::All,
+            contains_outgoing_links: &[],
+            creation_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            update_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            author: &[],
+            score: &[],
+            votes: &[],
+            offset: 0,
+            range: RangeSelector::Current,
+            name: None,
+            slug: None,
+            data_form_fields: &[],
+            order: Some(OrderBySelector {
+                property: OrderProperty::PageSlug,
+                ascending: true,
+            }),
+            pagination: PaginationSelector {
+                limit: Some(10),
+                ..Default::default()
+            },
+            variables: &[],
+            fields: FoundPageFields {
+                slug: true,
+                created_by: true,
+                ..Default::default()
+            },
+        },
+    )
+    .await
+    .expect("created_by query should not fail");
+
+    let page = pages
+        .pages
+        .iter()
+        .find(|page| page.slug.as_deref() == Some(slug))
+        .expect("created_by query should include the fixture page");
+    assert_eq!(
+        page.created_by,
+        Some(ADMIN_USER_ID),
+        "created_by should come from the earliest available revision, even when it is not revision 0",
     );
 }
 

@@ -584,18 +584,22 @@ impl PageQueryService {
 
         let created_by_by_page_id: BTreeMap<i64, i64> =
             if fields.created_by && !page_ids.is_empty() {
-                page_revision::Entity::find()
+                let mut created_by_by_page_id = BTreeMap::new();
+                for (page_id, user_id) in page_revision::Entity::find()
                     .select_only()
                     .column(page_revision::Column::PageId)
                     .column(page_revision::Column::UserId)
                     .filter(page_revision::Column::PageId.is_in(page_ids.clone()))
-                    .filter(page_revision::Column::RevisionNumber.eq(0))
+                    .order_by_asc(page_revision::Column::PageId)
+                    .order_by_asc(page_revision::Column::RevisionNumber)
                     .into_tuple::<(i64, i64)>()
                     .all(txn)
                     .await
                     .or_raise(make_error)?
-                    .into_iter()
-                    .collect()
+                {
+                    created_by_by_page_id.entry(page_id).or_insert(user_id);
+                }
+                created_by_by_page_id
             } else {
                 BTreeMap::new()
             };
