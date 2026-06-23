@@ -681,11 +681,10 @@ impl RenderService {
             };
             if let Some(next_open_offset) =
                 wikitext[outer_body_start..].find(ACTIVE_OPEN_MARKER)
+                && next_open_offset < first_close_offset
             {
-                if next_open_offset < first_close_offset {
-                    search_start = outer_body_start + next_open_offset;
-                    continue;
-                }
+                search_start = outer_body_start + next_open_offset;
+                continue;
             }
             let first_close_start = outer_body_start + first_close_offset;
             let next_close_start = first_close_start + ACTIVE_CLOSE_MARKER.len();
