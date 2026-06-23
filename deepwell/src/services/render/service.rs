@@ -532,6 +532,12 @@ impl RenderService {
                 search_start = body_start;
                 continue;
             };
+            if let Some(next_open_offset) = wikitext[body_start..].find("[[ift{$")
+                && next_open_offset < close_marker_offset
+            {
+                search_start = body_start + next_open_offset;
+                continue;
+            }
 
             let block_start = wikitext[..open_marker_start]
                 .rfind('\n')
@@ -651,19 +657,39 @@ impl RenderService {
         const ACTIVE_CLOSE_MARKER: &str = "[[/iftags]]";
         const INNER_OPEN_MARKER: &str = "[[iftags]]";
 
-        while let Some(open_marker_start) = wikitext.find(ACTIVE_OPEN_MARKER) {
+        let mut search_start = 0;
+        while let Some(open_marker_offset) =
+            wikitext[search_start..].find(ACTIVE_OPEN_MARKER)
+        {
+            let open_marker_start = search_start + open_marker_offset;
             let outer_body_start = open_marker_start + ACTIVE_OPEN_MARKER.len();
             let Some(first_close_offset) =
                 wikitext[outer_body_start..].find(ACTIVE_CLOSE_MARKER)
             else {
-                break;
+                search_start = outer_body_start;
+                continue;
             };
+            if let Some(next_open_offset) =
+                wikitext[outer_body_start..].find(ACTIVE_OPEN_MARKER)
+                && next_open_offset < first_close_offset
+            {
+                search_start = outer_body_start + next_open_offset;
+                continue;
+            }
             let first_close_start = outer_body_start + first_close_offset;
             let next_close_start = first_close_start + ACTIVE_CLOSE_MARKER.len();
             let Some(second_close_offset) =
                 wikitext[next_close_start..].find(ACTIVE_CLOSE_MARKER)
             else {
-                break;
+                search_start = next_close_start;
+                continue;
+            };
+            if let Some(next_open_offset) =
+                wikitext[next_close_start..].find(ACTIVE_OPEN_MARKER)
+                && next_open_offset < second_close_offset
+            {
+                search_start = next_close_start + next_open_offset;
+                continue;
             };
             let second_close_start = next_close_start + second_close_offset;
             let second_close_end = second_close_start + ACTIVE_CLOSE_MARKER.len();
@@ -685,8 +711,10 @@ impl RenderService {
                 .map(|offset| outer_body_start + offset + INNER_OPEN_MARKER.len())
                 .unwrap_or(outer_body_start);
             let replacement = wikitext[inner_body_start..first_body_end].to_owned();
+            let replacement_len = replacement.len();
 
             wikitext.replace_range(block_start..block_end, &replacement);
+            search_start = block_start + replacement_len;
         }
 
         const MALFORMED_OPEN_MARKER: &str = "[[ifta gs -basalt-override]]";
@@ -742,6 +770,13 @@ impl RenderService {
             else {
                 break;
             };
+            if let Some(next_open_offset) =
+                wikitext[next_close_start..].find(ACTIVE_OPEN_MARKER)
+                && next_open_offset < second_close_offset
+            {
+                search_start = next_close_start + next_open_offset;
+                continue;
+            }
             let second_close_start = next_close_start + second_close_offset;
             let second_close_end = second_close_start + ACTIVE_CLOSE_MARKER.len();
             let block_start = wikitext[..open_marker_start]
@@ -2653,6 +2688,42 @@ mod tests {
     }
 
     #[test]
+    fn collapsed_basalt_iftags_skips_single_close_before_valid_block() {
+        let mut wikitext = concat!(
+            "before\n",
+            ">[[iftags -basalt-override]]\n",
+            ">[[iftags]]\n",
+            "malformed basalt body\n",
+            ">[[/iftags]]\n",
+            "middle\n",
+            ">[[iftags -basalt-override]]\n",
+            ">[[iftags]]\n",
+            "kept basalt body\n",
+            ">[[/iftags]]\n",
+            ">[[/iftags]]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        RenderService::remove_unresolved_variable_iftags_blocks(&mut wikitext);
+
+        assert_eq!(
+            wikitext,
+            concat!(
+                "before\n",
+                ">[[iftags -basalt-override]]\n",
+                ">[[iftags]]\n",
+                "malformed basalt body\n",
+                ">[[/iftags]]\n",
+                "middle\n",
+                "\n",
+                "kept basalt body\n",
+                "after\n",
+            ),
+        );
+    }
+
+    #[test]
     fn unwraps_active_collapsed_empty_negative_iftags_block() {
         let mut wikitext = concat!(
             "before\n",
@@ -2677,6 +2748,42 @@ mod tests {
                 ">================= end ========================\n",
                 "[[include :scp-jp:user-component:ta-badge-smooth-base-base name=v-1|v-1={$v-1}|type=false]]\n",
                 "[[/div]]\n",
+                "after\n",
+            ),
+        );
+    }
+
+    #[test]
+    fn collapsed_empty_negative_iftags_skips_single_close_before_valid_block() {
+        let mut wikitext = concat!(
+            "before\n",
+            ">[[iftags -]]\n",
+            ">[[iftags]]\n",
+            "malformed body\n",
+            ">[[/iftags]]\n",
+            "middle\n",
+            ">[[iftags -]]\n",
+            ">[[iftags]]\n",
+            "kept body\n",
+            ">[[/iftags]]\n",
+            ">[[/iftags]]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        RenderService::remove_unresolved_variable_iftags_blocks(&mut wikitext);
+
+        assert_eq!(
+            wikitext,
+            concat!(
+                "before\n",
+                ">[[iftags -]]\n",
+                ">[[iftags]]\n",
+                "malformed body\n",
+                ">[[/iftags]]\n",
+                "middle\n",
+                "\n",
+                "kept body\n",
                 "after\n",
             ),
         );
@@ -2835,6 +2942,36 @@ mod tests {
                 "middle\n",
                 "\n",
                 "[[include :scp-wiki:component:acs-animation]]\n",
+                "after\n",
+            ),
+        );
+    }
+
+    #[test]
+    fn unresolved_variable_iftags_skips_later_block_close() {
+        let mut wikitext = concat!(
+            "before\n",
+            ">[[ift{$wide}gs -basalt-override]]\n",
+            "malformed variable body\n",
+            "middle\n",
+            ">[[ift{$wide}gs -basalt-override]]\n",
+            "kept variable body\n",
+            ">[[/ift{$wide}gs]]\n",
+            "after\n",
+        )
+        .to_owned();
+
+        RenderService::remove_unresolved_variable_iftags_blocks(&mut wikitext);
+
+        assert_eq!(
+            wikitext,
+            concat!(
+                "before\n",
+                ">[[ift{$wide}gs -basalt-override]]\n",
+                "malformed variable body\n",
+                "middle\n",
+                "\n",
+                "kept variable body\n",
                 "after\n",
             ),
         );
