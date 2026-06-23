@@ -36,6 +36,7 @@ use sea_orm::{ConnectionTrait, Statement};
 use serde_json::json;
 use std::path::Path;
 
+#[allow(dead_code)]
 struct Issue5SiteFixture {
     slug: &'static str,
     name: &'static str,
