@@ -48,6 +48,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::LazyLock;
+use std::time::Duration;
 use tokio::time::timeout;
 
 #[derive(Debug)]
@@ -58,6 +59,10 @@ const MAX_INCLUDE_EXPANSION_TOTAL: usize = 64;
 const DEFAULT_LISTPAGES_RENDER_LIMIT: u64 = 100;
 const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
 const LONG_NATIVE_LIST_RENDER_MIN_ITEMS: usize = 8;
+const MAX_FTML_COMPAT_DENSE_PARSE_SCORE: usize = 180_000;
+const MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS: u64 = 150;
+const MIN_FTML_COMPAT_TABBED_RENDER_BYTES: usize = 100_000;
+const MIN_FTML_COMPAT_TABBED_MARKERS: usize = 10;
 const INCLUDE_VARIABLE_OPEN_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_OPEN__";
 const INCLUDE_VARIABLE_CLOSE_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_CLOSE__";
 const WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTEMBEDIFRAME";
@@ -421,6 +426,7 @@ impl RenderService {
         // since we want to do the processing for non-ftml work
         // outside the timeout guards.
 
+        let render_timeout = Self::ftml_compat_render_timeout(config, &wikitext);
         let tokens = timeout(config.preprocess_timeout, async {
             // TODO include
             ftml::preprocess(&mut wikitext);
@@ -434,7 +440,7 @@ impl RenderService {
             )
         })?;
 
-        let (tree, html_output, errors) = timeout(config.render_timeout, async {
+        let (tree, html_output, errors) = timeout(render_timeout, async {
             let result = ftml::parse(&tokens, page_info, settings);
             let (tree, errors) = result.into();
             let mut html_output = HtmlRender.render(&tree, page_info, settings);
@@ -1022,6 +1028,56 @@ impl RenderService {
         }
 
         output
+    }
+
+    fn ftml_compat_render_timeout(config: &Config, wikitext: &str) -> Duration {
+        let configured_timeout = config.render_timeout;
+        let dense_compat_timeout =
+            Duration::from_secs(MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS);
+
+        if Self::wikidot_compat_needs_extended_render_deadline(wikitext) {
+            configured_timeout.max(dense_compat_timeout)
+        } else {
+            configured_timeout
+        }
+    }
+
+    fn wikidot_compat_needs_extended_render_deadline(wikitext: &str) -> bool {
+        if Self::wikidot_compat_parse_complexity_score(wikitext)
+            > MAX_FTML_COMPAT_DENSE_PARSE_SCORE
+        {
+            return true;
+        }
+
+        wikitext.len() >= MIN_FTML_COMPAT_TABBED_RENDER_BYTES
+            && wikitext.matches("[[tab").count() >= MIN_FTML_COMPAT_TABBED_MARKERS
+    }
+
+    fn wikidot_compat_parse_complexity_score(wikitext: &str) -> usize {
+        let mut score = 0;
+
+        for line in wikitext.lines() {
+            let trimmed_start = line.trim_start();
+            if trimmed_start.starts_with('*')
+                || trimmed_start.starts_with('-')
+                || trimmed_start.starts_with('#')
+            {
+                score += 100;
+            }
+
+            if line.contains('{')
+                || line.contains('}')
+                || line.contains(';')
+                || line.contains("--")
+            {
+                score += 200;
+            }
+
+            score += line.matches("[[include").count() * 500;
+            score += line.matches("[[").count() * 50;
+        }
+
+        score
     }
 
     fn protect_wikidot_css_modules(
@@ -3055,7 +3111,9 @@ fn public_url_port_suffix(port: Option<u16>) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        CollectingIncluder, RenderContext, RenderService,
+        CollectingIncluder, MAX_FTML_COMPAT_DENSE_PARSE_SCORE,
+        MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS, MIN_FTML_COMPAT_TABBED_MARKERS,
+        MIN_FTML_COMPAT_TABBED_RENDER_BYTES, RenderContext, RenderService,
         WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_CSS_MODULE_SENTINEL_PREFIX,
         WikidotUserDisplay, include_error, list_pages_body_variables_supported,
         list_pages_row_view_permission, parse_list_pages_arguments, render_tag_cloud_box,
@@ -3075,6 +3133,7 @@ mod tests {
     use ftml::settings::{WikitextMode, WikitextSettings};
     use std::borrow::Cow;
     use std::collections::BTreeMap;
+    use std::time::Duration;
 
     #[test]
     fn restores_wikidot_email_obfuscation() {
@@ -3632,6 +3691,50 @@ mod tests {
         );
         assert!(restored.starts_with("<ul>"));
         assert!(!restored.contains("data-wikijump-compat-list"));
+    }
+
+    #[test]
+    fn dense_parse_eligible_wikidot_pages_get_extended_render_deadline() {
+        let config = Config::integration_testing();
+        let source = (0..260)
+            .map(|index| format!("[[include component:dense-{index}]] {{ --x: y; }}\n"))
+            .collect::<String>();
+
+        assert!(
+            RenderService::wikidot_compat_parse_complexity_score(&source)
+                > MAX_FTML_COMPAT_DENSE_PARSE_SCORE
+        );
+        assert_eq!(
+            RenderService::ftml_compat_render_timeout(&config, &source),
+            Duration::from_secs(MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS)
+        );
+    }
+
+    #[test]
+    fn large_tabbed_wikidot_pages_get_extended_render_deadline() {
+        let config = Config::integration_testing();
+        let mut source = String::with_capacity(MIN_FTML_COMPAT_TABBED_RENDER_BYTES + 512);
+        for index in 0..MIN_FTML_COMPAT_TABBED_MARKERS {
+            source.push_str(&format!("[[tab Tab {index}]]\nBody\n"));
+        }
+        source.push_str(&"padding\n".repeat(MIN_FTML_COMPAT_TABBED_RENDER_BYTES / 8));
+
+        assert!(source.len() >= MIN_FTML_COMPAT_TABBED_RENDER_BYTES);
+        assert_eq!(
+            RenderService::ftml_compat_render_timeout(&config, &source),
+            Duration::from_secs(MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS)
+        );
+    }
+
+    #[test]
+    fn ordinary_wikidot_pages_keep_configured_render_deadline() {
+        let config = Config::integration_testing();
+        let source = "ordinary page\nwith a little text\n";
+
+        assert_eq!(
+            RenderService::ftml_compat_render_timeout(&config, source),
+            config.render_timeout
+        );
     }
 
     #[test]
