@@ -178,3 +178,22 @@ test("keeps wdfiles.com resources out-of-scope for the anthology follow-up", () 
   assert.equal(result.out_of_scope[0].filename, "INTRO.mp3");
   assert.equal(result.out_of_scope[0].kind_guess, "audio");
 });
+
+test("unsafe in-scope resource paths do not abort later scan results", () => {
+  const sourceText = [
+    "https://scp-wiki.wikidot.com/local--files/scp-8980/bad%00secret.png",
+    "https://scp-wiki.wikidot.com/local--files/scp-8980/fractal.webp",
+  ].join("\n");
+
+  const result = scanForFixtureLocalResources({
+    sourceText,
+    fixtureSlug: "fixture-10",
+    sourcePath: "samples/unsafe-path.txt",
+  });
+
+  assert.equal(result.manifest.length, 1);
+  assert.equal(result.manifest[0].filename, "fractal.webp");
+  assert.equal(result.out_of_scope.length, 1);
+  assert.equal(result.out_of_scope[0].wikidot_path, "/local--files/scp-8980/bad%00secret.png");
+  assert.equal(result.out_of_scope[0].local_target_path, null);
+});

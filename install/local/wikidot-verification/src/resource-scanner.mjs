@@ -85,11 +85,6 @@ export function scanForFixtureLocalResources({
       wikidot_path: wikidotPath,
       filename,
       kind_guess: kindFromFilename(filename),
-      local_target_path: buildFixtureResourceTargetPath({
-        fixtureSlug,
-        site,
-        wikidotPath,
-      }),
       sha256: null,
     };
 
@@ -99,11 +94,23 @@ export function scanForFixtureLocalResources({
     seen.add(canonical);
 
     if (!isWikidotResourceHost(site)) {
-      outOfScope.push(normalizedSource);
+      outOfScope.push({...normalizedSource, local_target_path: null});
       continue;
     }
 
-    manifest.push(normalizedSource);
+    let localTargetPath;
+    try {
+      localTargetPath = buildFixtureResourceTargetPath({
+        fixtureSlug,
+        site,
+        wikidotPath,
+      });
+    } catch {
+      outOfScope.push({...normalizedSource, local_target_path: null});
+      continue;
+    }
+
+    manifest.push({...normalizedSource, local_target_path: localTargetPath});
   }
 
   manifest.sort((a, b) =>
