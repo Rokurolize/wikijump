@@ -194,6 +194,8 @@ test("unsafe in-scope resource paths do not abort later scan results", () => {
   assert.equal(result.manifest.length, 1);
   assert.equal(result.manifest[0].filename, "fractal.webp");
   assert.equal(result.out_of_scope.length, 1);
+  assert.equal(result.out_of_scope[0].site, "scp-wiki.wikidot.com");
+  assert.equal(result.out_of_scope[0].filename, "bad%00secret.png");
   assert.equal(result.out_of_scope[0].wikidot_path, "/local--files/scp-8980/bad%00secret.png");
   assert.equal(result.out_of_scope[0].local_target_path, null);
 });
