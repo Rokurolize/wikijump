@@ -7,6 +7,7 @@ import test from "node:test";
 import {
   acquireLocks,
   acquireLocksWithEvents,
+  appendLockEvent,
   classifyBaseFreshness,
   locksConflict,
   readLockEvents,
@@ -137,12 +138,12 @@ test("generated event time cannot be overridden by payload data", async (t) => {
   const root = await tempDir(t);
   const eventLogPath = path.join(root, "events.jsonl");
 
-  await acquireLocksWithEvents({
+  await appendLockEvent({
     eventLogPath,
-    existingLeases: [],
-    requestedLeases: [lease("artifact:proof", "write", "a1")],
+    event: {event: "TEST", time: "1999-01-01T00:00:00.000Z"},
   });
 
   const events = await readLockEvents(eventLogPath);
   assert.match(events[0].time, /^\d{4}-\d{2}-\d{2}T/);
+  assert.notEqual(events[0].time, "1999-01-01T00:00:00.000Z");
 });

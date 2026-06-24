@@ -75,3 +75,10 @@ test("treats null evidence collections as empty", () => {
 
   assert.equal(result.classification, "NEEDS_PROOF");
 });
+
+test("treats null top-level input as empty evidence", () => {
+  const result = reconcileIssueClosure(null);
+
+  assert.equal(result.issue_number, null);
+  assert.equal(result.classification, "NEEDS_PROOF");
+});

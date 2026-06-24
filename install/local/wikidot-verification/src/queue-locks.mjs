@@ -154,6 +154,9 @@ export function classifyBaseFreshness({
   if (typeof mutable !== "boolean") {
     throw new Error("mutable must be a boolean");
   }
+  if (typeof allowHistoricalBase !== "boolean") {
+    throw new Error("allowHistoricalBase must be a boolean");
+  }
   if (taskBaseSha === observedDevelopSha) {
     return {state: "CURRENT", stale: false};
   }

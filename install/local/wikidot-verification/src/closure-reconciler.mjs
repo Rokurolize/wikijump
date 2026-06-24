@@ -78,15 +78,16 @@ function classifyIssue(input = {}) {
 }
 
 export function reconcileIssueClosure(input = {}) {
-  const classification = classifyIssue(input);
+  const normalizedInput = input ?? {};
+  const classification = classifyIssue(normalizedInput);
   if (!STATES.has(classification)) {
     throw new Error(`unsupported classification: ${classification}`);
   }
   return {
     schema_version: 1,
-    issue_number: input.issue?.number ?? null,
+    issue_number: normalizedInput.issue?.number ?? null,
     classification,
-    proposed_comment: proposeComment({classification, issue: input.issue}),
+    proposed_comment: proposeComment({classification, issue: normalizedInput.issue}),
   };
 }
 

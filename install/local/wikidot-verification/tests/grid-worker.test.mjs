@@ -106,6 +106,25 @@ test("quarantines invalid artifacts instead of marking the lane reusable", async
   assert.ok(events.some((event) => event.event === "ARTIFACT_SCHEMA_FAIL"));
 });
 
+test("rejects malformed inbox JSON before it can block a lane", async (t) => {
+  const stateRoot = await temporaryDirectory(t);
+  const campaignId = "wj-reject-json";
+  await initializeGridCampaign({stateRoot, campaignId, laneCount: 1});
+  const inbox = path.join(stateRoot, "campaigns", campaignId, "lanes", "lane-01", "inbox");
+  await writeFile(path.join(inbox, "bad.json"), "{not json\n");
+
+  const status = await runLaneWorkerOnce({
+    stateRoot,
+    campaignId,
+    lane: 1,
+    executeAssignment: successfulExecutor,
+  });
+
+  assert.equal(status.state, "BLOCKED_INPUT");
+  assert.match(status.rejected_path, /rejected/);
+  assert.deepEqual(await readdir(inbox), []);
+});
+
 test("rejects unsafe assignment records before path construction", async (t) => {
   const stateRoot = await temporaryDirectory(t);
   const campaignId = "wj-reject-unsafe";

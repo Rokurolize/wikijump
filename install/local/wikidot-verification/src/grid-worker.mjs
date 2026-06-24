@@ -293,9 +293,10 @@ export async function runLaneWorkerOnce({
     });
   }
 
-  const rawAssignment = await readJsonFile(inboxPath);
+  let rawAssignment;
   let assignment;
   try {
+    rawAssignment = await readJsonFile(inboxPath);
     assignment = normalizeAssignment(rawAssignment);
   } catch (error) {
     const rejectedPath = await rejectInboxAssignment({
