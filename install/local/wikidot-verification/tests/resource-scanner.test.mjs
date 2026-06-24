@@ -143,3 +143,38 @@ test("deduplicates repeated out-of-scope local--files URLs", () => {
   assert.equal(result.manifest.length, 0);
   assert.equal(result.out_of_scope.length, 1);
 });
+
+test("trims a Wikidot image-option pipe after a local--files URL", () => {
+  const sourceText =
+    "[[image https://scp-wiki.wikidot.com/local--files/scp-8980/femalescientist.png|width=300]]";
+
+  const result = scanForFixtureLocalResources({
+    sourceText,
+    fixtureSlug: "fixture-9",
+    sourcePath: "samples/image-options.txt",
+  });
+
+  assert.equal(result.manifest.length, 1);
+  assert.equal(result.manifest[0].filename, "femalescientist.png");
+  assert.equal(result.manifest[0].kind_guess, "image");
+  assert.equal(
+    result.manifest[0].original_url,
+    "https://scp-wiki.wikidot.com/local--files/scp-8980/femalescientist.png",
+  );
+});
+
+test("keeps wdfiles.com resources out-of-scope for the anthology follow-up", () => {
+  const sourceText =
+    "https://scp-sandbox-3.wdfiles.com/local--files/test544/INTRO.mp3";
+
+  const result = scanForFixtureLocalResources({
+    sourceText,
+    fixtureSlug: "scp-anthology-2024",
+    sourcePath: "corpus/en/pages/scp-anthology-2024/source.wikidot.txt",
+  });
+
+  assert.equal(result.manifest.length, 0);
+  assert.equal(result.out_of_scope.length, 1);
+  assert.equal(result.out_of_scope[0].filename, "INTRO.mp3");
+  assert.equal(result.out_of_scope[0].kind_guess, "audio");
+});
