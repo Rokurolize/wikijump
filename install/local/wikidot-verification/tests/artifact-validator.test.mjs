@@ -3,6 +3,7 @@ import {execFile} from "node:child_process";
 import {createHash} from "node:crypto";
 import {mkdir, mkdtemp, rm, writeFile} from "node:fs/promises";
 import {promisify} from "node:util";
+import {fileURLToPath} from "node:url";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -13,6 +14,10 @@ import {
 } from "../src/artifact-validator.mjs";
 
 const execFileAsync = promisify(execFile);
+const cliScriptPath = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../scripts/validate-artifact.mjs",
+);
 
 async function temporaryDirectory(t, prefix = "wikijump-artifact-") {
   const directory = await mkdtemp(path.join(os.tmpdir(), prefix));
@@ -338,7 +343,7 @@ test("CLI rejects a missing expected task ID before validation", async (t) => {
 
   await assert.rejects(
     execFileAsync(process.execPath, [
-      "scripts/validate-artifact.mjs",
+      cliScriptPath,
       root,
       "--kind",
       "codex",
