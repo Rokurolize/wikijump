@@ -44,6 +44,23 @@ test("captures post-merge review findings after the merge timestamp", async () =
   assert.equal(report.findings[0].controller_disposition, "unverified");
 });
 
+test("does not include events exactly at the merge timestamp", async () => {
+  const report = await collectPostMergeFindings({
+    pr: pr25,
+    reviews: [
+      {
+        id: 102,
+        state: "COMMENTED",
+        submitted_at: pr25.merged_at,
+        user: {login: "coderabbitai[bot]"},
+        body: "same-time event",
+      },
+    ],
+  });
+
+  assert.equal(report.findings.length, 0);
+});
+
 test("captures post-merge inline comments and schedules the next hourly watch", async () => {
   const report = await collectPostMergeFindings({
     pr: pr36,
@@ -63,6 +80,15 @@ test("captures post-merge inline comments and schedules the next hourly watch", 
   assert.equal(report.findings[0].type, "inline_comment");
   assert.equal(report.findings[0].path, "install/local/wikidot-verification/src/resource-manifest.mjs");
   assert.equal(report.delayed_watch_after, "2026-06-24T04:00:00.000Z");
+});
+
+test("rejects a malformed merge timestamp", async () => {
+  await assert.rejects(
+    collectPostMergeFindings({
+      pr: {...pr36, merged_at: "not-a-date"},
+    }),
+    /valid ISO-8601 timestamp/,
+  );
 });
 
 test("deduplicates findings already seen by an immediate watch", async () => {

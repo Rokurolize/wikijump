@@ -14,9 +14,15 @@ async function sha256Hex(text) {
   return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function assertValidTimestamp(value, name) {
+  if (typeof value !== "string" || Number.isNaN(Date.parse(value))) {
+    throw new Error(`${name} must be a valid ISO-8601 timestamp`);
+  }
+}
+
 function isAfterMerge(item, mergeAt) {
   const timestamp = item.submitted_at ?? item.created_at ?? item.updated_at;
-  return typeof timestamp === "string" && new Date(timestamp) >= new Date(mergeAt);
+  return typeof timestamp === "string" && new Date(timestamp) > new Date(mergeAt);
 }
 
 function nextHourlyWatchAfter(mergeAt) {
@@ -66,9 +72,7 @@ export async function collectPostMergeFindings({
   if (typeof pr?.number !== "number") {
     throw new Error("pr.number is required");
   }
-  if (typeof pr?.merged_at !== "string") {
-    throw new Error("pr.merged_at is required");
-  }
+  assertValidTimestamp(pr?.merged_at, "pr.merged_at");
 
   const seen = new Set(previousFindingKeys);
   const findings = [];

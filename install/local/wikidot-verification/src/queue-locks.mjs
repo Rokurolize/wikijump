@@ -1,4 +1,4 @@
-import {readFile, writeFile, mkdir} from "node:fs/promises";
+import {mkdir, readFile, writeFile} from "node:fs/promises";
 import path from "node:path";
 
 const LOCK_RE = /^(repo|path|behavior|database|runtime|github|artifact):[^\0]+$/;
@@ -46,15 +46,25 @@ function normalizeLease(lease) {
   };
 }
 
+function targetIsBelow(target, prefix) {
+  return target === prefix || target.startsWith(`${prefix}/`);
+}
+
+function wildcardCovers(wildcardTarget, candidateTarget) {
+  if (!wildcardTarget.endsWith("/**")) {
+    return false;
+  }
+  return targetIsBelow(candidateTarget, wildcardTarget.slice(0, -3));
+}
+
 function pathPrefixesOverlap(left, right) {
   const leftTarget = lockTarget(left);
   const rightTarget = lockTarget(right);
   return (
-    leftTarget === rightTarget ||
-    leftTarget.startsWith(`${rightTarget}/`) ||
-    rightTarget.startsWith(`${leftTarget}/`) ||
-    leftTarget.endsWith("/**") && rightTarget.startsWith(leftTarget.slice(0, -3)) ||
-    rightTarget.endsWith("/**") && leftTarget.startsWith(rightTarget.slice(0, -3))
+    targetIsBelow(leftTarget, rightTarget) ||
+    targetIsBelow(rightTarget, leftTarget) ||
+    wildcardCovers(leftTarget, rightTarget) ||
+    wildcardCovers(rightTarget, leftTarget)
   );
 }
 
@@ -80,10 +90,28 @@ export function locksConflict(left, right) {
 
 export function findLockConflicts(existingLeases, requestedLeases) {
   const conflicts = [];
-  for (const requested of requestedLeases.map(normalizeLease)) {
-    for (const existing of existingLeases.map(normalizeLease)) {
+  const normalizedExisting = existingLeases.map(normalizeLease);
+  const normalizedRequested = requestedLeases.map(normalizeLease);
+  for (const requested of normalizedRequested) {
+    for (const existing of normalizedExisting) {
       if (locksConflict(existing, requested)) {
         conflicts.push({existing, requested});
+      }
+    }
+  }
+  return conflicts;
+}
+
+function findRequestedBatchConflicts(requestedLeases) {
+  const conflicts = [];
+  const normalizedRequested = requestedLeases.map(normalizeLease);
+  for (let left = 0; left < normalizedRequested.length; left += 1) {
+    for (let right = left + 1; right < normalizedRequested.length; right += 1) {
+      if (locksConflict(normalizedRequested[left], normalizedRequested[right])) {
+        conflicts.push({
+          existing: normalizedRequested[left],
+          requested: normalizedRequested[right],
+        });
       }
     }
   }
@@ -93,7 +121,10 @@ export function findLockConflicts(existingLeases, requestedLeases) {
 export function acquireLocks({existingLeases = [], requestedLeases = []} = {}) {
   const normalizedExisting = existingLeases.map(normalizeLease);
   const normalizedRequested = requestedLeases.map(normalizeLease);
-  const conflicts = findLockConflicts(normalizedExisting, normalizedRequested);
+  const conflicts = [
+    ...findLockConflicts(normalizedExisting, normalizedRequested),
+    ...findRequestedBatchConflicts(normalizedRequested),
+  ];
   if (conflicts.length > 0) {
     return {
       acquired: false,
@@ -120,6 +151,9 @@ export function classifyBaseFreshness({
   if (typeof observedDevelopSha !== "string" || !SHA_RE.test(observedDevelopSha)) {
     throw new Error("observedDevelopSha must be a 40-character SHA1");
   }
+  if (typeof mutable !== "boolean") {
+    throw new Error("mutable must be a boolean");
+  }
   if (taskBaseSha === observedDevelopSha) {
     return {state: "CURRENT", stale: false};
   }
@@ -132,8 +166,8 @@ export function classifyBaseFreshness({
 export async function appendLockEvent({eventLogPath, event}) {
   await mkdir(path.dirname(eventLogPath), {recursive: true});
   const record = {
-    time: nowIso(),
     ...event,
+    time: nowIso(),
   };
   await writeFile(eventLogPath, `${JSON.stringify(record)}\n`, {flag: "a"});
   return record;

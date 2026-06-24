@@ -1,6 +1,7 @@
 import {createHash} from "node:crypto";
 import {
   mkdir,
+  open,
   readFile,
   readdir,
   rename,
@@ -47,7 +48,12 @@ function laneDirectory(stateRoot, campaignId, lane) {
 
 async function appendJsonLine(filePath, record) {
   await mkdir(path.dirname(filePath), {recursive: true});
-  await writeFile(filePath, `${JSON.stringify(record)}\n`, {flag: "a"});
+  const handle = await open(filePath, "a");
+  try {
+    await handle.write(`${JSON.stringify(record)}\n`);
+  } finally {
+    await handle.close();
+  }
 }
 
 async function writeJsonFile(filePath, value) {
@@ -90,6 +96,7 @@ export async function initializeGridCampaign({
     const laneRoot = laneDirectory(stateRoot, campaignId, lane);
     await mkdir(path.join(laneRoot, "inbox"), {recursive: true});
     await mkdir(path.join(laneRoot, "assignments"), {recursive: true});
+    await mkdir(path.join(laneRoot, "rejected"), {recursive: true});
     const statusPath = path.join(laneRoot, "status.json");
     if (!(await regularFileExists(statusPath))) {
       await writeJsonFile(statusPath, {
@@ -123,9 +130,9 @@ export async function initializeGridCampaign({
 
 export async function appendGridEvent({stateRoot, campaignId, ...event}) {
   const record = {
-    time: nowIso(),
     campaign_id: campaignId,
     ...event,
+    time: nowIso(),
   };
   await appendJsonLine(path.join(campaignDirectory(stateRoot, campaignId), "events.jsonl"), record);
   return record;
@@ -182,6 +189,20 @@ async function nextAssignmentPath(laneRoot) {
     return null;
   }
   return path.join(inbox, entries[0]);
+}
+
+async function rejectInboxAssignment({laneRoot, inboxPath, reason, rawAssignment}) {
+  const rejectedRoot = path.join(laneRoot, "rejected");
+  await mkdir(rejectedRoot, {recursive: true});
+  const rejectedPath = path.join(rejectedRoot, `${Date.now()}-${path.basename(inboxPath)}`);
+  await rename(inboxPath, rejectedPath);
+  await writeJsonFile(`${rejectedPath}.reason.json`, {
+    schema_version: 1,
+    reason,
+    raw_assignment_id: rawAssignment?.assignment_id ?? null,
+    rejected_at: nowIso(),
+  });
+  return rejectedPath;
 }
 
 async function updateLaneStatus({stateRoot, campaignId, lane, status}) {
@@ -272,19 +293,66 @@ export async function runLaneWorkerOnce({
     });
   }
 
-  const assignment = await readJsonFile(inboxPath);
-  if (assignment.campaign_id !== campaignId || assignment.lane !== lane) {
-    await updateLaneStatus({
+  const rawAssignment = await readJsonFile(inboxPath);
+  let assignment;
+  try {
+    assignment = normalizeAssignment(rawAssignment);
+  } catch (error) {
+    const rejectedPath = await rejectInboxAssignment({
+      laneRoot,
+      inboxPath,
+      reason: error.message,
+      rawAssignment,
+    });
+    await appendGridEvent({
+      stateRoot,
+      campaignId,
+      event: "ASSIGNMENT_REJECTED",
+      lane,
+      reason: error.message,
+      rejected_path: rejectedPath,
+    });
+    return updateLaneStatus({
       stateRoot,
       campaignId,
       lane,
       status: {
         state: "BLOCKED_INPUT",
-        assignment_id: assignment.assignment_id ?? null,
-        reason: "assignment campaign or lane mismatch",
+        assignment_id: null,
+        reason: error.message,
+        rejected_path: rejectedPath,
       },
     });
-    throw new Error("assignment campaign or lane mismatch");
+  }
+
+  if (assignment.campaign_id !== campaignId || assignment.lane !== lane) {
+    const rejectedPath = await rejectInboxAssignment({
+      laneRoot,
+      inboxPath,
+      reason: "assignment campaign or lane mismatch",
+      rawAssignment,
+    });
+    await appendGridEvent({
+      stateRoot,
+      campaignId,
+      event: "ASSIGNMENT_REJECTED",
+      lane,
+      task_id: assignment.task_id,
+      assignment_id: assignment.assignment_id,
+      reason: "assignment campaign or lane mismatch",
+      rejected_path: rejectedPath,
+    });
+    return updateLaneStatus({
+      stateRoot,
+      campaignId,
+      lane,
+      status: {
+        state: "BLOCKED_INPUT",
+        assignment_id: assignment.assignment_id,
+        reason: "assignment campaign or lane mismatch",
+        rejected_path: rejectedPath,
+      },
+    });
   }
 
   const assignmentRoot = path.join(laneRoot, "assignments", assignment.assignment_id);

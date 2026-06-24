@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
+import {mkdtemp, readFile, readdir, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -104,6 +104,62 @@ test("quarantines invalid artifacts instead of marking the lane reusable", async
   assert.equal(status.state, "SCHEMA_INVALID");
   const events = await readGridEvents({stateRoot, campaignId});
   assert.ok(events.some((event) => event.event === "ARTIFACT_SCHEMA_FAIL"));
+});
+
+test("rejects unsafe assignment records before path construction", async (t) => {
+  const stateRoot = await temporaryDirectory(t);
+  const campaignId = "wj-reject-unsafe";
+  await initializeGridCampaign({stateRoot, campaignId, laneCount: 1});
+  const inbox = path.join(stateRoot, "campaigns", campaignId, "lanes", "lane-01", "inbox");
+  await writeFile(
+    path.join(inbox, "bad.json"),
+    `${JSON.stringify({...assignment("WJ-OPS-BAD"), campaign_id: campaignId, lane: 1, assignment_id: "../escape"})}\n`,
+  );
+
+  const status = await runLaneWorkerOnce({
+    stateRoot,
+    campaignId,
+    lane: 1,
+    executeAssignment: successfulExecutor,
+  });
+
+  assert.equal(status.state, "BLOCKED_INPUT");
+  assert.match(status.rejected_path, /rejected/);
+  assert.deepEqual(await readdir(inbox), []);
+});
+
+test("rejects lane mismatches once and allows the next assignment to run", async (t) => {
+  const stateRoot = await temporaryDirectory(t);
+  const campaignId = "wj-reject-mismatch";
+  await initializeGridCampaign({stateRoot, campaignId, laneCount: 1});
+  const inbox = path.join(stateRoot, "campaigns", campaignId, "lanes", "lane-01", "inbox");
+  await writeFile(
+    path.join(inbox, "000-bad.json"),
+    `${JSON.stringify({...assignment("WJ-OPS-WRONG"), campaign_id: campaignId, lane: 2})}\n`,
+  );
+  await enqueueGridAssignment({
+    stateRoot,
+    campaignId,
+    lane: 1,
+    assignment: assignment("WJ-OPS-NEXT"),
+  });
+
+  const rejected = await runLaneWorkerOnce({
+    stateRoot,
+    campaignId,
+    lane: 1,
+    executeAssignment: successfulExecutor,
+  });
+  assert.equal(rejected.state, "BLOCKED_INPUT");
+
+  const completed = await runLaneWorkerOnce({
+    stateRoot,
+    campaignId,
+    lane: 1,
+    executeAssignment: successfulExecutor,
+  });
+  assert.equal(completed.state, "DONE_REUSABLE");
+  assert.equal(completed.task_id, "WJ-OPS-NEXT");
 });
 
 test("uses exact structured stop code instead of scanning prompt/log text", async (t) => {

@@ -7,6 +7,10 @@ const STATES = new Set([
   "STATE_CONTRADICTION",
 ]);
 
+function collection(value) {
+  return Array.isArray(value) ? value : [];
+}
+
 function hasAcceptedProof(proofBundles) {
   return proofBundles.some((proof) => proof?.status === "accepted" || proof?.status === "pass");
 }
@@ -24,7 +28,7 @@ function hasUnresolvedPostMergeFinding(postMergeFindings) {
 }
 
 function ownerCommentContradictsClosure(issue) {
-  const comments = issue?.owner_comments ?? [];
+  const comments = collection(issue?.owner_comments);
   return comments.some((comment) => {
     const body = String(comment?.body ?? "").toLowerCase();
     return (
@@ -45,7 +49,13 @@ function isOpen(issue) {
   return String(issue?.state ?? "").toUpperCase() === "OPEN";
 }
 
-function classifyIssue({issue, children = [], proofBundles = [], gapLedger = [], postMergeFindings = []}) {
+function classifyIssue(input = {}) {
+  const issue = input?.issue;
+  const children = collection(input?.children);
+  const proofBundles = collection(input?.proofBundles);
+  const gapLedger = collection(input?.gapLedger);
+  const postMergeFindings = collection(input?.postMergeFindings);
+
   if (ownerCommentContradictsClosure(issue)) {
     return "STATE_CONTRADICTION";
   }
@@ -67,7 +77,7 @@ function classifyIssue({issue, children = [], proofBundles = [], gapLedger = [],
   return "NEEDS_PROOF";
 }
 
-export function reconcileIssueClosure(input) {
+export function reconcileIssueClosure(input = {}) {
   const classification = classifyIssue(input);
   if (!STATES.has(classification)) {
     throw new Error(`unsupported classification: ${classification}`);

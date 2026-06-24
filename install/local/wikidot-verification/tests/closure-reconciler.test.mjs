@@ -63,3 +63,15 @@ test("classifies closed issues with proof and disposed gaps as accepted closed",
 
   assert.equal(result.classification, "ACCEPTED_CLOSED");
 });
+
+test("treats null evidence collections as empty", () => {
+  const result = reconcileIssueClosure({
+    issue: issue(99, "OPEN"),
+    children: null,
+    proofBundles: null,
+    gapLedger: null,
+    postMergeFindings: null,
+  });
+
+  assert.equal(result.classification, "NEEDS_PROOF");
+});
