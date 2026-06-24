@@ -42,7 +42,7 @@ function detectArtifactKind({kind, result}) {
   if (kind !== "auto") {
     return kind;
   }
-  if (typeof result?.assignment_id === "string" || typeof result?.task_id === "string") {
+  if (typeof result?.assignment_id === "string") {
     return "codex";
   }
   return "pro";
@@ -66,7 +66,12 @@ function isSafeRelativeArtifactPath(artifactPath) {
     return false;
   }
   const normalized = path.posix.normalize(artifactPath);
-  return normalized === artifactPath && normalized !== "." && !normalized.startsWith("../");
+  return (
+    normalized === artifactPath &&
+    normalized !== "." &&
+    normalized !== ".." &&
+    !normalized.startsWith("../")
+  );
 }
 
 function resolveContained(rootPath, artifactPath) {

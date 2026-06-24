@@ -15,6 +15,14 @@ function usage() {
   ].join("\n");
 }
 
+function readOptionValue(argv, index, optionName) {
+  const value = argv.at(index + 1);
+  if (typeof value !== "string" || value.length === 0 || value.startsWith("--")) {
+    throw new Error(`${optionName} needs a value`);
+  }
+  return value;
+}
+
 function parseArguments(argv) {
   const options = {
     artifactRoot: null,
@@ -30,22 +38,26 @@ function parseArguments(argv) {
       return {help: true, options};
     }
     if (argument === "--kind") {
-      options.kind = argv.at(index + 1);
+      options.kind = readOptionValue(argv, index, "--kind");
       index += 1;
       continue;
     }
     if (argument === "--expected-task-id") {
-      options.expectedTaskId = argv.at(index + 1);
+      options.expectedTaskId = readOptionValue(argv, index, "--expected-task-id");
       index += 1;
       continue;
     }
     if (argument === "--expected-assignment-id") {
-      options.expectedAssignmentId = argv.at(index + 1);
+      options.expectedAssignmentId = readOptionValue(
+        argv,
+        index,
+        "--expected-assignment-id",
+      );
       index += 1;
       continue;
     }
     if (argument === "--require") {
-      options.requiredFiles.push(argv.at(index + 1));
+      options.requiredFiles.push(readOptionValue(argv, index, "--require"));
       index += 1;
       continue;
     }

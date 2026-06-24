@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import {execFile} from "node:child_process";
 import {createHash} from "node:crypto";
 import {mkdir, mkdtemp, rm, writeFile} from "node:fs/promises";
+import {promisify} from "node:util";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -9,6 +11,8 @@ import {
   artifactValidatorExitCode,
   validateArtifactDirectory,
 } from "../src/artifact-validator.mjs";
+
+const execFileAsync = promisify(execFile);
 
 async function temporaryDirectory(t, prefix = "wikijump-artifact-") {
   const directory = await mkdtemp(path.join(os.tmpdir(), prefix));
@@ -59,6 +63,34 @@ async function createValidProArtifact(t) {
   const resultEntry = await writeArtifactFile(root, "result.json", `${JSON.stringify(result, null, 2)}\n`);
   const reportEntry = await writeArtifactFile(root, "report.md", "strategy report\n");
   await writeManifest(root, [resultEntry, reportEntry]);
+  return root;
+}
+
+async function createValidProPatchArtifact(t) {
+  const root = await temporaryDirectory(t);
+  const result = {
+    schema_version: 1,
+    status: "patch_ready",
+    repository: "Rokurolize/wikijump",
+    base_commit: "1672120d758755382ae3e9c174c49e5ee1cd543b",
+    task_id: "WJ-OPS-001",
+    changed_files: [],
+    validation: {
+      executed: [],
+      not_run: [],
+    },
+    environment: {
+      network_used: false,
+      browser_used: false,
+      database_used: false,
+      live_github_checked: false,
+    },
+    closure_claims: {},
+    limitations: [],
+  };
+  const resultEntry = await writeArtifactFile(root, "result.json", `${JSON.stringify(result, null, 2)}\n`);
+  const patchEntry = await writeArtifactFile(root, "patches/task.patch", "diff --git a/x b/x\n");
+  await writeManifest(root, [resultEntry, patchEntry]);
   return root;
 }
 
@@ -124,6 +156,33 @@ test("validates a Codex artifact with matching task and assignment IDs", async (
   assert.equal(artifactValidatorExitCode(report), 0);
 });
 
+test("auto-detects Pro strategy artifacts", async (t) => {
+  const root = await createValidProArtifact(t);
+
+  const report = await validateArtifactDirectory({artifactRoot: root, kind: "auto"});
+
+  assert.equal(report.status, "pass");
+  assert.equal(report.artifact_kind, "pro");
+});
+
+test("auto-detects Pro patch artifacts without treating task_id as Codex-only", async (t) => {
+  const root = await createValidProPatchArtifact(t);
+
+  const report = await validateArtifactDirectory({artifactRoot: root, kind: "auto"});
+
+  assert.equal(report.status, "pass");
+  assert.equal(report.artifact_kind, "pro");
+});
+
+test("auto-detects Codex artifacts from assignment_id", async (t) => {
+  const root = await createValidCodexArtifact(t);
+
+  const report = await validateArtifactDirectory({artifactRoot: root, kind: "auto"});
+
+  assert.equal(report.status, "pass");
+  assert.equal(report.artifact_kind, "codex");
+});
+
 test("quarantines invalid result JSON without trusting textual completion", async (t) => {
   const root = await temporaryDirectory(t);
   const resultEntry = await writeArtifactFile(root, "result.json", "{not valid json\n");
@@ -163,6 +222,23 @@ test("quarantines manifest path traversal", async (t) => {
   };
   const resultEntry = await writeArtifactFile(root, "result.json", `${JSON.stringify(result, null, 2)}\n`);
   await writeManifest(root, [resultEntry, {path: "../outside.txt", size: 1, sha256: "0".repeat(64)}]);
+
+  const report = await validateArtifactDirectory({artifactRoot: root, kind: "pro"});
+
+  assert.equal(report.status, "quarantine");
+  assert.ok(findingCodes(report).includes("manifest_path_invalid"));
+});
+
+test("quarantines a bare parent-directory manifest path", async (t) => {
+  const root = await temporaryDirectory(t);
+  const result = {
+    schema_version: 1,
+    status: "strategy_ready",
+    repository: "Rokurolize/wikijump",
+    outputs: ["report.md"],
+  };
+  const resultEntry = await writeArtifactFile(root, "result.json", `${JSON.stringify(result, null, 2)}\n`);
+  await writeManifest(root, [resultEntry, {path: "..", size: 1, sha256: "0".repeat(64)}]);
 
   const report = await validateArtifactDirectory({artifactRoot: root, kind: "pro"});
 
@@ -255,4 +331,21 @@ test("quarantines additional required files that are absent", async (t) => {
 
   assert.equal(report.status, "quarantine");
   assert.ok(findingCodes(report).includes("required_file_missing"));
+});
+
+test("CLI rejects a missing expected task ID before validation", async (t) => {
+  const root = await createValidCodexArtifact(t);
+
+  await assert.rejects(
+    execFileAsync(process.execPath, [
+      "scripts/validate-artifact.mjs",
+      root,
+      "--kind",
+      "codex",
+      "--expected-task-id",
+    ]),
+    {
+      code: 1,
+    },
+  );
 });
