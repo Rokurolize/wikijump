@@ -599,19 +599,20 @@ async function importRow(args, row, importRunId) {
   let action;
 
   if (args.createMode === 'db') {
-    if (args.dryRun) return { slug: row.fullname, action: 'would_db_create' };
     const existing = existingActivePage(args, row.fullname);
     if (existing !== null) {
       const existingSnapshotStatus = pageSnapshotStatus(args, row, existing.page_id);
       if (existingSnapshotStatus === 'absent' && !args.adoptExisting) {
-        runPsql(args, recordItemSql(row, existing.page_id, importRunId, 'failed', { collision: 'existing_page_requires_adopt' }));
+        if (!args.dryRun) runPsql(args, recordItemSql(row, existing.page_id, importRunId, 'failed', { collision: 'existing_page_requires_adopt' }));
         return { slug: row.fullname, action: 'collision_existing_page', page_id: existing.page_id };
       }
       if (existingSnapshotStatus === 'mismatched') {
-        runPsql(args, recordItemSql(row, existing.page_id, importRunId, 'failed', { collision: 'existing_page_snapshot_mismatch_update_not_implemented' }));
+        if (!args.dryRun) runPsql(args, recordItemSql(row, existing.page_id, importRunId, 'failed', { collision: 'existing_page_snapshot_mismatch_update_not_implemented' }));
         return { slug: row.fullname, action: 'collision_existing_snapshot_mismatch', page_id: existing.page_id };
       }
+      if (args.dryRun) return { slug: row.fullname, action: 'would_adopt', page_id: existing.page_id };
     }
+    if (args.dryRun) return { slug: row.fullname, action: 'would_db_create' };
     const created = shellCreatePage(args, row);
     pageId = created.page_id;
     revisionId = created.revision_id;
