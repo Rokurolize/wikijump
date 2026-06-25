@@ -487,11 +487,34 @@ async fn set_page_deleted_at(runner: &TestRunner, page_id: i64, deleted_at: &str
         .expect("failed to set deterministic page deletion timestamp");
 }
 
+async fn set_page_category_slug(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    category_slug: &str,
+) {
+    let transaction = runner.context().transaction();
+    let statement = Statement::from_string(
+        transaction.get_database_backend(),
+        format!(
+            "UPDATE \"page\" SET page_category_id = (SELECT category_id FROM page_category WHERE site_id = {site_id} AND slug = '{category_slug}') WHERE page_id = {page_id}",
+        ),
+    );
+
+    transaction
+        .execute(statement)
+        .await
+        .expect("failed to set deterministic page category");
+}
+
 #[tokio::test]
 async fn scp8980_listpages_expands_first_child_in_page_get_compiled_html() {
     const MAIN_SLUG: &str = "scp-8980";
     const FRAGMENT_1_SLUG: &str = "fragment:scp-8980-1";
     const FRAGMENT_2_SLUG: &str = "fragment:scp-8980-2";
+    const HIDDEN_FRAGMENT_SLUG: &str = "_hidden-listpages-fragment";
+    const HIDDEN_FRAGMENT_MARKER: &str = "HIDDEN LISTPAGES FRAGMENT SHOULD NOT RENDER";
+    const HIDDEN_FRAGMENT_CREATED_AT: &str = "2024-10-06T16:01:36Z";
     const FRAGMENT_1_CREATED_AT: &str = "2024-10-06T16:01:41Z";
     const FRAGMENT_2_CREATED_AT: &str = "2024-10-06T16:01:46Z";
 
@@ -594,8 +617,35 @@ async fn scp8980_listpages_expands_first_child_in_page_get_compiled_html() {
         }),
     );
 
-    // The corpus metadata is deterministic: fragment 1 precedes fragment 2 by
-    // five seconds, so created_at ascending with offset 0 must select fragment 1.
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(HIDDEN_FRAGMENT_SLUG.into())),
+    });
+    let hidden_fragment = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": HIDDEN_FRAGMENT_MARKER,
+            "title": "SCP-8980 (Hidden Fragment)",
+            "alt_title": null,
+            "slug": HIDDEN_FRAGMENT_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "local SCP-8980 hidden fragment fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // The corpus metadata is deterministic: the hidden-page fixture predates
+    // both normal fragments. ListPages default selection must still skip it and
+    // pick fragment 1, matching Wikidot's normal-page default.
+    set_page_category_slug(&runner, site_id, hidden_fragment.page_id, "fragment").await;
+    set_page_created_at(&runner, hidden_fragment.page_id, HIDDEN_FRAGMENT_CREATED_AT)
+        .await;
     set_page_created_at(&runner, fragment_1.page_id, FRAGMENT_1_CREATED_AT).await;
     set_page_created_at(&runner, fragment_2.page_id, FRAGMENT_2_CREATED_AT).await;
 
@@ -611,9 +661,16 @@ async fn scp8980_listpages_expands_first_child_in_page_get_compiled_html() {
         json!({"site_id": site_id, "page": fragment_2.page_id}),
     )
     .expect("fragment 2 page should exist");
+    let hidden_fragment_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": hidden_fragment.page_id}),
+    )
+    .expect("hidden fragment page should exist");
 
     assert_eq!(fragment_1_page.page_category_slug, "fragment");
     assert_eq!(fragment_2_page.page_category_slug, "fragment");
+    assert_eq!(hidden_fragment_page.page_category_slug, "fragment");
     assert_eq!(
         fragment_1_page.page_created_at.unix_timestamp(),
         1_728_230_501
@@ -622,9 +679,14 @@ async fn scp8980_listpages_expands_first_child_in_page_get_compiled_html() {
         fragment_2_page.page_created_at.unix_timestamp(),
         1_728_230_506
     );
+    assert!(hidden_fragment_page.page_created_at < fragment_1_page.page_created_at);
     assert!(fragment_1_page.page_created_at < fragment_2_page.page_created_at);
 
-    for child_page_id in [fragment_1.page_id, fragment_2.page_id] {
+    for child_page_id in [
+        hidden_fragment.page_id,
+        fragment_1.page_id,
+        fragment_2.page_id,
+    ] {
         let relationship = ParentService::create(
             runner.context(),
             ParentDescription {
@@ -697,6 +759,7 @@ async fn scp8980_listpages_expands_first_child_in_page_get_compiled_html() {
         "%%content%%",
         "height:55vh",
         "You are currently reading the accessibility mode of SCP-8980",
+        HIDDEN_FRAGMENT_MARKER,
     ] {
         assert!(
             !html.contains(unexpected),
@@ -751,6 +814,10 @@ async fn scp8980_listpages_expands_first_child_in_page_get_compiled_html() {
     assert!(
         !html_after_delete.contains("height:70vh"),
         "compiled SCP-8980 should not include deleted fragment 1 layout marker:\n{html_after_delete}",
+    );
+    assert!(
+        !html_after_delete.contains(HIDDEN_FRAGMENT_MARKER),
+        "compiled SCP-8980 should still not include hidden fragment after fragment 1 deletion:\n{html_after_delete}",
     );
 }
 

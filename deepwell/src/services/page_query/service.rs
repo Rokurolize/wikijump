@@ -88,8 +88,8 @@ impl PageQueryService {
         debug!("Excluding deleted pages from ListPages query results");
 
         // Page Type
-        // TODO track https://github.com/SeaQL/sea-orm/issues/1746
-        let hidden_condition = page::Column::Slug.starts_with("_");
+        // Use an escaped LIKE pattern because '_' is a wildcard in SQL LIKE.
+        let hidden_condition = Expr::col(page::Column::Slug).like(r"\_%");
         match page_type {
             PageTypeSelector::Hidden => {
                 // Hidden pages are any which have slugs that start with '_'.
