@@ -25,6 +25,10 @@ export function sha256Hex(bufferOrString) {
   return crypto.createHash('sha256').update(bufferOrString).digest('hex');
 }
 
+function codePointCompare(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 export function stableStringify(value) {
   if (value === null || typeof value !== 'object') {
     return JSON.stringify(value);
@@ -32,7 +36,7 @@ export function stableStringify(value) {
   if (Array.isArray(value)) {
     return `[${value.map((item) => stableStringify(item)).join(',')}]`;
   }
-  const entries = Object.entries(value).sort(([left], [right]) => left.localeCompare(right));
+  const entries = Object.entries(value).sort(([left], [right]) => codePointCompare(left, right));
   return `{${entries.map(([key, entryValue]) => `${JSON.stringify(key)}:${stableStringify(entryValue)}`).join(',')}}`;
 }
 
@@ -68,6 +72,12 @@ function assertInteger(value, field, rowPath) {
   }
 }
 
+function assertNonNegativeInteger(value, field, rowPath) {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(`${rowPath}: meta.${field} must be a non-negative integer`);
+  }
+}
+
 function validateMeta(meta, rowPath) {
   for (const key of REQUIRED_META_KEYS) {
     if (!Object.hasOwn(meta, key)) {
@@ -86,10 +96,10 @@ function validateMeta(meta, rowPath) {
   assertNullableString(meta.title_shown, 'title_shown', rowPath);
   assertNullableString(meta.commented_at, 'commented_at', rowPath);
   assertNullableString(meta.commented_by, 'commented_by', rowPath);
-  assertInteger(meta.children, 'children', rowPath);
-  assertInteger(meta.comments, 'comments', rowPath);
+  assertNonNegativeInteger(meta.children, 'children', rowPath);
+  assertNonNegativeInteger(meta.comments, 'comments', rowPath);
   assertInteger(meta.rating, 'rating', rowPath);
-  assertInteger(meta.revisions, 'revisions', rowPath);
+  assertNonNegativeInteger(meta.revisions, 'revisions', rowPath);
 
   if (!Array.isArray(meta.tags) || meta.tags.some((tag) => typeof tag !== 'string')) {
     throw new Error(`${rowPath}: meta.tags must be an array of strings`);
@@ -107,7 +117,7 @@ export function buildCorpusImportManifest({ corpusRoot, branch, sourceSite = bra
   const entries = fs.readdirSync(pagesRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .sort((left, right) => left.localeCompare(right));
+    .sort(codePointCompare);
 
   const rows = [];
   const entityIds = new Map();
@@ -163,7 +173,7 @@ export function buildCorpusImportManifest({ corpusRoot, branch, sourceSite = bra
       comments: meta.comments,
       rating: meta.rating,
       revisions: meta.revisions,
-      tags: [...meta.tags].sort((left, right) => left.localeCompare(right)),
+      tags: [...meta.tags].sort(codePointCompare),
       source_sha256: sha256Hex(source),
       meta_sha256: sha256Hex(metaRaw),
       source_bytes: Buffer.byteLength(source),
@@ -187,8 +197,8 @@ export function buildManifestSummary(rows, jsonl) {
     row_count: rows.length,
     manifest_sha256: sha256Hex(jsonl),
     parent_count: parentCount,
-    source_sites: [...new Set(rows.map((row) => row.source_site))].sort(),
-    source_branches: [...new Set(rows.map((row) => row.source_branch))].sort(),
+    source_sites: [...new Set(rows.map((row) => row.source_site))].sort(codePointCompare),
+    source_branches: [...new Set(rows.map((row) => row.source_branch))].sort(codePointCompare),
     first_fullname: rows[0]?.fullname ?? null,
     last_fullname: rows.at(-1)?.fullname ?? null,
   };

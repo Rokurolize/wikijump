@@ -184,8 +184,8 @@ async function rpc(args, method, params) {
   return data.result;
 }
 
-function readRows(manifestPath) {
-  return fs.readFileSync(manifestPath, 'utf8')
+function parseRows(manifestText) {
+  return manifestText
     .split('\n')
     .filter((line) => line.trim().length > 0)
     .map((line) => JSON.parse(line));
@@ -222,9 +222,16 @@ function metaJsonText(row) {
   return fs.readFileSync(row.meta_path, 'utf8');
 }
 
-function ensureImportRun(args, rows, completeInventory) {
-  const manifestSha = rows.length === 0 ? '0'.repeat(64) : pseudoManifestSha(rows);
-  const summary = JSON.stringify({ selected_row_count: rows.length, complete_inventory: completeInventory });
+function ensureImportRun(args, manifestText, manifestRows, selectedRows, completeInventory) {
+  const manifestSha = crypto.createHash('sha256').update(manifestText).digest('hex');
+  const sourceSites = new Set(manifestRows.map((row) => row.source_site));
+  const sourceBranches = new Set(manifestRows.map((row) => row.source_branch));
+  if (sourceSites.size > 1 || sourceBranches.size > 1) {
+    throw new Error('manifest must contain a single source_site/source_branch');
+  }
+  const [sourceSite = args.sourceSite] = sourceSites;
+  const [sourceBranch = args.sourceBranch] = sourceBranches;
+  const summary = JSON.stringify({ selected_row_count: selectedRows.length, complete_inventory: completeInventory });
   const sql = `
 INSERT INTO wikidot_corpus_import_run (
   site_id,
@@ -237,10 +244,10 @@ INSERT INTO wikidot_corpus_import_run (
   summary
 ) VALUES (
   ${sqlInt(args.siteId)},
-  ${sqlQuote(args.sourceBranch)},
-  ${sqlQuote(args.sourceSite)},
+  ${sqlQuote(sourceBranch)},
+  ${sqlQuote(sourceSite)},
   ${sqlByteaFromHex(manifestSha)},
-  ${sqlInt(rows.length)},
+  ${sqlInt(manifestRows.length)},
   ${completeInventory ? 'true' : 'false'},
   'running',
   ${sqlQuote(summary)}::jsonb
@@ -248,15 +255,6 @@ INSERT INTO wikidot_corpus_import_run (
 RETURNING import_run_id;
 `;
   return Number.parseInt(runPsql(args, sql, { capture: true }), 10);
-}
-
-function pseudoManifestSha(rows) {
-  // The canonical full-manifest SHA is produced by the manifest generator. For
-  // selected ad-hoc subsets we derive an operator-run hash from stable source
-  // row hashes so reruns of the same subset are still auditable.
-  const hash = crypto.createHash('sha256');
-  for (const row of rows) hash.update(`${row.source_entity_id}\t${row.source_sha256}\t${row.meta_sha256}\n`);
-  return hash.digest('hex');
 }
 
 async function getPage(args, slug) {
@@ -568,8 +566,8 @@ async function importRow(args, row, importRunId) {
   if (args.skipExistingDone) {
     const snapshotPageId = existingSnapshotPageId(args, row);
     if (snapshotPageId !== null) {
-      runPsql(args, recordItemSql(row, snapshotPageId, importRunId, 'done'));
-      return { slug: row.fullname, action: 'skipped_existing_done', page_id: snapshotPageId };
+      if (!args.dryRun) runPsql(args, recordItemSql(row, snapshotPageId, importRunId, 'done'));
+      return { slug: row.fullname, action: args.dryRun ? 'would_skip_existing_done' : 'skipped_existing_done', page_id: snapshotPageId };
     }
   }
 
@@ -585,6 +583,10 @@ async function importRow(args, row, importRunId) {
     revisionId = created.revision_id;
     categoryId = created.page_category_id;
     const snapshotStatus = pageSnapshotStatus(args, row, pageId);
+    if (!created.created_page && !created.created_revision && snapshotStatus === 'absent' && !args.adoptExisting) {
+      runPsql(args, recordItemSql(row, pageId, importRunId, 'failed', { collision: 'existing_page_requires_adopt' }));
+      return { slug: row.fullname, action: 'collision_existing_page', page_id: pageId };
+    }
     if (snapshotStatus === 'mismatched') {
       runPsql(args, recordItemSql(row, pageId, importRunId, 'failed', { collision: 'existing_page_snapshot_mismatch_update_not_implemented' }));
       return { slug: row.fullname, action: 'collision_existing_snapshot_mismatch', page_id: pageId };
@@ -597,7 +599,8 @@ async function importRow(args, row, importRunId) {
       if (args.dryRun) return { slug: row.fullname, action: 'would_create' };
       const created = await createPage(args, row);
       const pageAfterCreate = await getPage(args, row.fullname);
-      pageId = created.page_id;
+      if (pageAfterCreate === null) throw new Error(`created page not found after page_create: ${row.fullname}`);
+      pageId = pageAfterCreate.page_id;
       revisionId = created.revision_id;
       categoryId = pageAfterCreate.page_category_id;
       action = 'created';
@@ -640,7 +643,8 @@ WHERE import_run_id = ${sqlInt(importRunId)};
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const allRows = readRows(args.manifest);
+  const manifestText = fs.readFileSync(args.manifest, 'utf8');
+  const allRows = parseRows(manifestText);
   const selectedRows = filterRows(args, allRows);
   const completeInventory = selectedRows.length === allRows.length && args.limit === null && args.slug.length === 0 && args.slugFile === null;
 
@@ -650,7 +654,7 @@ async function main() {
     return;
   }
 
-  const importRunId = ensureImportRun(args, selectedRows, completeInventory);
+  const importRunId = ensureImportRun(args, manifestText, allRows, selectedRows, completeInventory);
   const results = [];
   const summary = { created: 0, created_db_snapshot_ready: 0, adopted: 0, created_snapshot_ready: 0, adopted_snapshot_ready: 0, skipped_existing_done: 0, collision_existing_page: 0, collision_existing_snapshot_mismatch: 0, failed: 0, import_run_id: importRunId };
 
