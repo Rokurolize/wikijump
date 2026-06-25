@@ -38,12 +38,12 @@ export function shouldUseWikidotShell(data: ShellViewData | null | undefined): b
   const pageLayout = data?.page?.layout
   const siteLayout = data?.site?.layout
 
-  if (pageLayout === Layout.WIKIDOT || siteLayout === Layout.WIKIDOT) {
-    return true
-  }
-
   if (pageLayout === Layout.WIKIJUMP) {
     return false
+  }
+
+  if (pageLayout === Layout.WIKIDOT || siteLayout === Layout.WIKIDOT) {
+    return true
   }
 
   const hasCompiledShellHtml =

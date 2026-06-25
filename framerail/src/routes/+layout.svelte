@@ -25,7 +25,7 @@
       // this is a special page, use Wikijump layout
       pageLayoutState.current = Layout.WIKIJUMP
     } else {
-      pageLayoutState.current = resolveShellLayout(page.data ?? page.error)
+      pageLayoutState.current = resolveShellLayout(page.error ?? page.data)
     }
   }
   $effect(() => {
