@@ -130,6 +130,10 @@ function textHashHex(args, contents) {
   return hash.toLowerCase();
 }
 
+function sqlTextFromBase64(value) {
+  return `convert_from(decode(${sqlQuote(Buffer.from(value, 'utf8').toString('base64'))}, 'base64'), 'UTF8')`;
+}
+
 function sqlTextArray(values) {
   return `ARRAY[${values.map((value) => sqlQuote(value)).join(',')}]::text[]`;
 }
@@ -290,13 +294,13 @@ function shellCreatePage(args, row) {
   const bodyHash = textHashHex(args, bodyHtml);
   const title = fallbackTitle(row);
   const category = categoryName(row.fullname);
-  const sql = `
+  const pageSql = `
 INSERT INTO text (hash, contents)
-VALUES (${sqlTextHash(wikitextHash)}, ${sqlQuote(wikitext)})
+VALUES (${sqlTextHash(wikitextHash)}, ${sqlTextFromBase64(wikitext)})
 ON CONFLICT (hash) DO NOTHING;
 
 INSERT INTO text (hash, contents)
-VALUES (${sqlTextHash(bodyHash)}, ${sqlQuote(bodyHtml)})
+VALUES (${sqlTextHash(bodyHash)}, ${sqlTextFromBase64(bodyHtml)})
 ON CONFLICT (hash) DO NOTHING;
 
 WITH category AS (
@@ -305,25 +309,43 @@ WITH category AS (
   ON CONFLICT (site_id, slug) DO UPDATE SET slug = EXCLUDED.slug
   RETURNING category_id
 ), target_page AS (
-  SELECT page_id, page_category_id, latest_revision_id
+  SELECT page_id, page_category_id, latest_revision_id, true AS existed
   FROM page
   WHERE site_id = ${sqlInt(args.siteId)}
     AND slug = ${sqlQuote(row.fullname)}
     AND deleted_at IS NULL
   ORDER BY page_id
   LIMIT 1
-), new_page AS (
+), inserted_page AS (
   INSERT INTO page (created_at, updated_at, from_wikidot, site_id, page_category_id, slug)
   SELECT ${sqlTimestamp(row.created_at)}, ${sqlTimestamp(row.updated_at)}, true, ${sqlInt(args.siteId)}, category_id, ${sqlQuote(row.fullname)}
   FROM category
   WHERE NOT EXISTS (SELECT 1 FROM target_page)
-  RETURNING page_id, page_category_id, latest_revision_id
+  RETURNING page_id, page_category_id, latest_revision_id, false AS existed
 ), page_row AS (
-  SELECT page_id, page_category_id, latest_revision_id FROM target_page
+  SELECT page_id, page_category_id, latest_revision_id, existed FROM target_page
   UNION ALL
-  SELECT page_id, page_category_id, latest_revision_id FROM new_page
+  SELECT page_id, page_category_id, latest_revision_id, existed FROM inserted_page
   LIMIT 1
-), new_revision AS (
+)
+SELECT page_id || '|' || page_category_id || '|' || COALESCE(latest_revision_id::text, '') || '|' || existed::text FROM page_row;
+`;
+  const pageOutput = runPsql(args, pageSql, { capture: true });
+  const [pageIdText, categoryIdText, existingRevisionIdText = '', pageExistedText = ''] = pageOutput.split('|');
+  const pageId = Number.parseInt(pageIdText, 10);
+  const categoryId = Number.parseInt(categoryIdText, 10);
+  const existingRevisionId = existingRevisionIdText === '' ? null : Number.parseInt(existingRevisionIdText, 10);
+  const pageExisted = pageExistedText === 'true';
+  if (!Number.isInteger(pageId) || !Number.isInteger(categoryId) || (existingRevisionId !== null && !Number.isInteger(existingRevisionId)) || !['true', 'false'].includes(pageExistedText)) {
+    throw new Error(`invalid DB page import output: ${pageOutput}`);
+  }
+
+  if (existingRevisionId !== null) {
+    return { page_id: pageId, page_category_id: categoryId, revision_id: existingRevisionId, created_page: false, created_revision: false };
+  }
+
+  const revisionSql = `
+WITH new_revision AS (
   INSERT INTO page_revision (
     revision_type,
     created_at,
@@ -345,12 +367,11 @@ WITH category AS (
     alt_title,
     slug,
     tags
-  )
-  SELECT
+  ) VALUES (
     'create',
     ${sqlTimestamp(row.updated_at)},
     0,
-    page_id,
+    ${sqlInt(pageId)},
     ${sqlInt(args.siteId)},
     ${sqlInt(args.userId)},
     true,
@@ -367,35 +388,27 @@ WITH category AS (
     NULL,
     ${sqlQuote(row.fullname)},
     ${sqlTextArray(row.tags)}
-  FROM page_row
-  WHERE latest_revision_id IS NULL
-  RETURNING revision_id, page_id
-), revision_row AS (
-  SELECT latest_revision_id AS revision_id, page_id
-  FROM page_row
-  WHERE latest_revision_id IS NOT NULL
-  UNION ALL
-  SELECT revision_id, page_id FROM new_revision
-  LIMIT 1
+  )
+  RETURNING revision_id
 ), updated_page AS (
   UPDATE page
   SET
-    latest_revision_id = (SELECT revision_id FROM revision_row),
+    latest_revision_id = (SELECT revision_id FROM new_revision),
     created_at = ${sqlTimestamp(row.created_at)},
     updated_at = ${sqlTimestamp(row.updated_at)},
     from_wikidot = true,
-    page_category_id = (SELECT category_id FROM category)
-  WHERE page_id = (SELECT page_id FROM page_row)
+    page_category_id = ${sqlInt(categoryId)}
+  WHERE page_id = ${sqlInt(pageId)}
   RETURNING page_id, page_category_id, latest_revision_id
 )
 SELECT page_id || '|' || page_category_id || '|' || latest_revision_id FROM updated_page;
 `;
-  const output = runPsql(args, sql, { capture: true });
-  const [pageId, categoryId, revisionId] = output.split('|').map((value) => Number.parseInt(value, 10));
-  if (![pageId, categoryId, revisionId].every(Number.isInteger)) {
-    throw new Error(`invalid DB import output: ${output}`);
+  const revisionOutput = runPsql(args, revisionSql, { capture: true });
+  const [updatedPageId, updatedCategoryId, revisionId] = revisionOutput.split('|').map((value) => Number.parseInt(value, 10));
+  if (![updatedPageId, updatedCategoryId, revisionId].every(Number.isInteger)) {
+    throw new Error(`invalid DB revision import output: ${revisionOutput}`);
   }
-  return { page_id: pageId, page_category_id: categoryId, revision_id: revisionId };
+  return { page_id: updatedPageId, page_category_id: updatedCategoryId, revision_id: revisionId, created_page: !pageExisted, created_revision: true };
 }
 
 async function rerenderPage(args, pageId, categoryId) {
@@ -560,43 +573,50 @@ async function importRow(args, row, importRunId) {
     }
   }
 
-  const existing = await getPage(args, row.fullname);
   let pageId;
   let revisionId;
   let categoryId;
   let action;
 
-  if (existing === null) {
-    if (args.dryRun) return { slug: row.fullname, action: args.createMode === 'db' ? 'would_db_create' : 'would_create' };
-    if (args.createMode === 'db') {
-      const created = shellCreatePage(args, row);
-      pageId = created.page_id;
-      revisionId = created.revision_id;
-      categoryId = created.page_category_id;
-      action = 'created_db';
-    } else {
+  if (args.createMode === 'db') {
+    if (args.dryRun) return { slug: row.fullname, action: 'would_db_create' };
+    const created = shellCreatePage(args, row);
+    pageId = created.page_id;
+    revisionId = created.revision_id;
+    categoryId = created.page_category_id;
+    const snapshotStatus = pageSnapshotStatus(args, row, pageId);
+    if (snapshotStatus === 'mismatched') {
+      runPsql(args, recordItemSql(row, pageId, importRunId, 'failed', { collision: 'existing_page_snapshot_mismatch_update_not_implemented' }));
+      return { slug: row.fullname, action: 'collision_existing_snapshot_mismatch', page_id: pageId };
+    }
+    action = created.created_page || created.created_revision ? 'created_db' : 'adopted';
+  } else {
+    const existing = await getPage(args, row.fullname);
+
+    if (existing === null) {
+      if (args.dryRun) return { slug: row.fullname, action: 'would_create' };
       const created = await createPage(args, row);
       const pageAfterCreate = await getPage(args, row.fullname);
       pageId = created.page_id;
       revisionId = created.revision_id;
       categoryId = pageAfterCreate.page_category_id;
       action = 'created';
+    } else {
+      if (!args.adoptExisting) {
+        if (!args.dryRun) runPsql(args, recordItemSql(row, existing.page_id ?? null, importRunId, 'failed', { collision: 'existing_page_requires_adopt' }));
+        return { slug: row.fullname, action: 'collision_existing_page', page_id: existing.page_id };
+      }
+      if (args.dryRun) return { slug: row.fullname, action: 'would_adopt', page_id: existing.page_id };
+      const snapshotStatus = pageSnapshotStatus(args, row, existing.page_id);
+      if (snapshotStatus === 'mismatched') {
+        runPsql(args, recordItemSql(row, existing.page_id, importRunId, 'failed', { collision: 'existing_page_snapshot_mismatch_update_not_implemented' }));
+        return { slug: row.fullname, action: 'collision_existing_snapshot_mismatch', page_id: existing.page_id };
+      }
+      pageId = existing.page_id;
+      revisionId = existing.revision_id;
+      categoryId = existing.page_category_id;
+      action = 'adopted';
     }
-  } else {
-    if (!args.adoptExisting) {
-      if (!args.dryRun) runPsql(args, recordItemSql(row, existing.page_id ?? null, importRunId, 'failed', { collision: 'existing_page_requires_adopt' }));
-      return { slug: row.fullname, action: 'collision_existing_page', page_id: existing.page_id };
-    }
-    if (args.dryRun) return { slug: row.fullname, action: 'would_adopt', page_id: existing.page_id };
-    const snapshotStatus = pageSnapshotStatus(args, row, existing.page_id);
-    if (snapshotStatus === 'mismatched') {
-      runPsql(args, recordItemSql(row, existing.page_id, importRunId, 'failed', { collision: 'existing_page_snapshot_mismatch_update_not_implemented' }));
-      return { slug: row.fullname, action: 'collision_existing_snapshot_mismatch', page_id: existing.page_id };
-    }
-    pageId = existing.page_id;
-    revisionId = existing.revision_id;
-    categoryId = existing.page_category_id;
-    action = 'adopted';
   }
 
   runPsql(args, upsertSnapshotSql(args, row, pageId, revisionId, importRunId));
