@@ -583,7 +583,7 @@ async function importRow(args, row, importRunId) {
     revisionId = created.revision_id;
     categoryId = created.page_category_id;
     const snapshotStatus = pageSnapshotStatus(args, row, pageId);
-    if (!created.created_page && !created.created_revision && snapshotStatus === 'absent' && !args.adoptExisting) {
+    if (!created.created_page && snapshotStatus === 'absent' && !args.adoptExisting) {
       runPsql(args, recordItemSql(row, pageId, importRunId, 'failed', { collision: 'existing_page_requires_adopt' }));
       return { slug: row.fullname, action: 'collision_existing_page', page_id: pageId };
     }
@@ -657,21 +657,25 @@ async function main() {
   const importRunId = ensureImportRun(args, manifestText, allRows, selectedRows, completeInventory);
   const results = [];
   const summary = { created: 0, created_db_snapshot_ready: 0, adopted: 0, created_snapshot_ready: 0, adopted_snapshot_ready: 0, skipped_existing_done: 0, collision_existing_page: 0, collision_existing_snapshot_mismatch: 0, failed: 0, import_run_id: importRunId };
+  let finalState = 'failed';
 
-  for (const row of selectedRows) {
-    try {
-      const result = await importRow(args, row, importRunId);
-      results.push(result);
-      summary[result.action] = (summary[result.action] ?? 0) + 1;
-      console.log(JSON.stringify(result));
-    } catch (error) {
-      summary.failed += 1;
-      runPsql(args, recordItemSql(row, null, importRunId, 'failed', { message: error.message }));
-      console.error(JSON.stringify({ slug: row.fullname, action: 'failed', error: error.message }));
+  try {
+    for (const row of selectedRows) {
+      try {
+        const result = await importRow(args, row, importRunId);
+        results.push(result);
+        summary[result.action] = (summary[result.action] ?? 0) + 1;
+        console.log(JSON.stringify(result));
+      } catch (error) {
+        summary.failed += 1;
+        runPsql(args, recordItemSql(row, null, importRunId, 'failed', { message: error.message }));
+        console.error(JSON.stringify({ slug: row.fullname, action: 'failed', error: error.message }));
+      }
     }
+    finalState = summary.failed > 0 ? 'failed' : 'done';
+  } finally {
+    finishRun(args, importRunId, summary, finalState);
   }
-
-  finishRun(args, importRunId, summary, summary.failed > 0 ? 'failed' : 'done');
   console.log(JSON.stringify({ summary }, null, 2));
 }
 
