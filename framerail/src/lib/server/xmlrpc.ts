@@ -860,11 +860,16 @@ async function putPresignedBlob(url: string, content: Buffer): Promise<void> {
   })
 }
 
+function isLocalEnvironment(): boolean {
+  return process.env.FRAMERAIL_ENV === "local" || process.env.NODE_ENV === "development"
+}
+
 function localPresignConnectBase(url: URL): URL | null {
-  if (url.hostname !== "files") {
-    return null
-  }
-  if (process.env.DEEPWELL_HOST === "deepwell") {
+  if (
+    !isLocalEnvironment() ||
+    url.hostname !== "files" ||
+    process.env.DEEPWELL_HOST === "deepwell"
+  ) {
     return null
   }
   return new URL(`http://127.0.0.1:${url.port || "9000"}`)
@@ -1516,7 +1521,7 @@ function parseXmlRpcValue(valueContent: string, depth: number): XmlRpcValue {
 
   const structElement = extractFirstDirectElement(text, "struct")
   if (structElement) {
-    const values: { [key: string]: XmlRpcValue } = {}
+    const values: { [key: string]: XmlRpcValue } = Object.create(null)
     let offset = 0
     while (true) {
       const member = extractOptionalElement(structElement.content, "member", offset)
@@ -1534,6 +1539,9 @@ function parseXmlRpcValue(valueContent: string, depth: number): XmlRpcValue {
         "Unexpected content in XML-RPC <member>"
       )
       const name = decodeXmlText(nameElement.content)
+      if (Object.prototype.hasOwnProperty.call(values, name)) {
+        throw new XmlRpcFault(-32602, `Duplicate XML-RPC struct member: ${name}`)
+      }
       const value = extractRequiredElement(member.content, "value", nameElement.end)
       assertWhitespaceOnly(
         member.content.slice(nameElement.end, value.start),
@@ -1733,12 +1741,50 @@ function escapeXmlText(value: string): string {
 }
 
 function decodeXmlText(value: string): string {
-  return value
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, "&")
+  return value.replace(
+    /&(?:#x([0-9a-fA-F]+)|#([0-9]+)|lt|gt|quot|apos|amp);/g,
+    (match, hexDigits?: string, decimalDigits?: string) => {
+      if (hexDigits !== undefined) {
+        return decodeNumericXmlReference(hexDigits, 16)
+      }
+      if (decimalDigits !== undefined) {
+        return decodeNumericXmlReference(decimalDigits, 10)
+      }
+      switch (match) {
+        case "&lt;":
+          return "<"
+        case "&gt;":
+          return ">"
+        case "&quot;":
+          return '"'
+        case "&apos;":
+          return "'"
+        case "&amp;":
+          return "&"
+        default:
+          return match
+      }
+    }
+  )
+}
+
+function decodeNumericXmlReference(digits: string, radix: 10 | 16): string {
+  const value = Number.parseInt(digits, radix)
+  if (!Number.isInteger(value) || !isValidXmlCodePoint(value)) {
+    throw new XmlRpcFault(-32602, "Invalid XML character reference")
+  }
+  return String.fromCodePoint(value)
+}
+
+function isValidXmlCodePoint(value: number): boolean {
+  return (
+    value === 0x09 ||
+    value === 0x0a ||
+    value === 0x0d ||
+    (value >= 0x20 && value <= 0xd7ff) ||
+    (value >= 0xe000 && value <= 0xfffd) ||
+    (value >= 0x10000 && value <= 0x10ffff)
+  )
 }
 
 function escapeRegExp(value: string): string {

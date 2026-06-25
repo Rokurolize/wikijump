@@ -63,6 +63,21 @@ const xmlRpcUnexpectedMemberContentRequest = `<?xml version="1.0"?>
   </params>
 </methodCall>`
 
+const xmlRpcDuplicateStructMemberRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>site</name><value><string>scp-wiki</string></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+
 const xmlRpcUnknownMethodRequest = `<?xml version="1.0"?>
 <methodCall>
   <methodName>not.realMethod</methodName>
@@ -648,10 +663,11 @@ RETURNING forum_post_id;
 async function createXmlRpcFixtureUser(stamp: number) {
   const password = "wikijumpuser1"
   const name = `XMLRPC Fixture User ${stamp}`
+  const email = `xmlrpc-fixture-${stamp}@example.test`
   const user = await deepwellRequest("user_create", {
     user_type: "regular",
     name,
-    email: `xmlrpc-fixture-${stamp}@example.test`,
+    email,
     locales: ["en_GB"],
     password,
     bypass_filter: true,
@@ -666,8 +682,27 @@ WHERE site_id = (SELECT site_id FROM site WHERE slug = 'scp-wiki')
   AND name = 'member'
 ON CONFLICT DO NOTHING;
 `)
+  const memberRoleAssigned = await execDatabaseSql(`
+SELECT EXISTS (
+  SELECT 1
+  FROM user_role ur
+  JOIN role r
+    ON r.role_id = ur.role_id
+   AND r.site_id = ur.site_id
+  JOIN site s
+    ON s.site_id = r.site_id
+  WHERE ur.user_id = ${Number(user.user_id)}
+    AND s.slug = 'scp-wiki'
+    AND r.name = 'member'
+);
+`)
+  if (memberRoleAssigned !== "t") {
+    throw new Error(
+      `Failed to assign member role to XML-RPC fixture user ${user.user_id}`
+    )
+  }
 
-  return { ...user, password }
+  return { ...user, email, password }
 }
 
 async function enableMfaForFixtureUser(userId: number) {
@@ -721,6 +756,13 @@ test("XML-RPC endpoint accepts Basic-authenticated system.listMethods calls", as
   expect(body).toContain("<string>system.listMethods</string>")
 })
 
+test("XML-RPC endpoint exposes only the POST route", async ({ request }) => {
+  for (const method of ["get", "head"] as const) {
+    const response = await request[method]("/xml-rpc-api.php")
+    expect(response.status()).toBe(405)
+  }
+})
+
 test("XML-RPC endpoint exposes system method discovery, help, and signatures", async ({
   request
 }) => {
@@ -755,6 +797,39 @@ test("XML-RPC endpoint exposes system method discovery, help, and signatures", a
   )
   expect(signatureBody).toContain("<name>parameters</name><value><array><data>")
   expect(signatureBody).toContain("<value><string>array</string></value>")
+})
+
+test("XML-RPC endpoint decodes numeric XML character references once", async ({
+  request
+}) => {
+  for (const methodName of ["p&#97;ges.select", "p&#x61;ges.select"]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcMethodHelpRequest.replace("pages.select", methodName),
+      headers: xmlRpcHeaders
+    })
+    expect(response.status()).toBe(200)
+    expect(await response.text()).toContain("Select pages from a Wikidot-compatible site")
+  }
+
+  for (const methodName of ["p&amp;#97;ges.select", "p&#38;#97;ges.select"]) {
+    const singlePassResponse = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcMethodHelpRequest.replace("pages.select", methodName),
+      headers: xmlRpcHeaders
+    })
+    expect(singlePassResponse.status()).toBe(200)
+    const singlePassBody = await singlePassResponse.text()
+    expect(singlePassBody).toContain("<fault>")
+    expect(singlePassBody).toContain("Unsupported XML-RPC method")
+  }
+
+  const invalidResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcMethodHelpRequest.replace("pages.select", "&#x110000;"),
+    headers: xmlRpcHeaders
+  })
+  expect(invalidResponse.status()).toBe(200)
+  const invalidBody = await invalidResponse.text()
+  expect(invalidBody).toContain("<fault>")
+  expect(invalidBody).toContain("Invalid XML character reference")
 })
 
 test("XML-RPC endpoint supports system.multicall with partial faults", async ({
@@ -1501,10 +1576,7 @@ test("XML-RPC endpoint rejects MFA-required Basic sessions", async ({ request })
   const stamp = Date.now()
   const fixtureUser = await createXmlRpcFixtureUser(stamp)
   await enableMfaForFixtureUser(fixtureUser.user_id)
-  const mfaHeaders = xmlRpcBasicHeaders(
-    `xmlrpc-fixture-user-${stamp}`,
-    fixtureUser.password
-  )
+  const mfaHeaders = xmlRpcBasicHeaders(fixtureUser.email, fixtureUser.password)
 
   const identityResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcUsersGetMeRequest,
@@ -1567,6 +1639,15 @@ test("XML-RPC endpoint rejects malformed params and unexpected parameter counts"
   const extraParamBody = await extraParamResponse.text()
   expect(extraParamBody).toContain("<fault>")
   expect(extraParamBody).toContain("system.listMethods expects 0 parameters")
+
+  const duplicateMemberResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcDuplicateStructMemberRequest,
+    headers: xmlRpcHeaders
+  })
+  expect(duplicateMemberResponse.status()).toBe(200)
+  const duplicateMemberBody = await duplicateMemberResponse.text()
+  expect(duplicateMemberBody).toContain("<fault>")
+  expect(duplicateMemberBody).toContain("Duplicate XML-RPC struct member: site")
 })
 
 test("XML-RPC endpoint rejects unexpected envelope content", async ({ request }) => {
