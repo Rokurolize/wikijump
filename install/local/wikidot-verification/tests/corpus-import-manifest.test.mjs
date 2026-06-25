@@ -111,6 +111,42 @@ test('buildCorpusImportManifest rejects incomplete page records', () => {
   );
 });
 
+test('apply-corpus-import-manifest rejects DB create mode without a text hash command', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
+  writePage(root, 'en', 'scp-173', {
+    entityId: '66666666-6666-4666-8666-666666666666',
+    source: 'SCP-173',
+  });
+  const rows = buildCorpusImportManifest({
+    corpusRoot: root,
+    branch: 'en',
+    sourceSite: 'scp-wiki',
+    sourceBranch: 'en',
+  });
+  const manifestPath = path.join(root, 'manifest.jsonl');
+  fs.writeFileSync(manifestPath, formatJsonl(rows));
+
+  const { spawnSync } = await import('node:child_process');
+  const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const result = spawnSync(process.execPath, [
+    path.join(packageRoot, 'scripts/apply-corpus-import-manifest.mjs'),
+    '--manifest',
+    manifestPath,
+    '--slug',
+    'scp-173',
+    '--create-mode',
+    'db',
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    env: { ...process.env, DEEPWELL_TEXT_HASH_COMMAND: '' },
+    maxBuffer: 1024 * 1024,
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /text-hash-command|DEEPWELL_TEXT_HASH_COMMAND/);
+});
+
 test('apply-corpus-import-manifest dry-run filters by slug without touching services', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
   writePage(root, 'en', 'scp-173', {
