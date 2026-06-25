@@ -15,6 +15,17 @@ async function writeJson(filePath, value) {
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+async function runDiscover(args) {
+  return execFileAsync(process.execPath, [scriptPath, ...args]);
+}
+
+async function assertDiscoverFails(args, messagePattern) {
+  await assert.rejects(runDiscover(args), (error) => {
+    assert.match(error.stderr, messagePattern);
+    return true;
+  });
+}
+
 test("corpus-discover inventories files and writes deterministic canaries", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-corpus-discover-"));
   const corpus = path.join(root, "corpus");
@@ -50,8 +61,7 @@ test("corpus-discover inventories files and writes deterministic canaries", asyn
   });
   await fs.writeFile(path.join(assetDir, "example.svg"), "<svg />\n");
 
-  const { stdout } = await execFileAsync(process.execPath, [
-    scriptPath,
+  const { stdout } = await runDiscover([
     "--corpus",
     corpus,
     "--output-dir",
@@ -80,4 +90,38 @@ test("corpus-discover inventories files and writes deterministic canaries", asyn
 
   const markdown = await fs.readFile(path.join(outputDir, "corpus-discovery-summary.md"), "utf8");
   assert.match(markdown, /files inventoried: 6/);
+});
+
+test("corpus-discover rejects missing option values and invalid canary counts", async () => {
+  await assertDiscoverFails(["--corpus"], /Missing value for --corpus/);
+  await assertDiscoverFails(["--output-dir", "--canary-count", "1"], /Missing value for --output-dir/);
+  await assertDiscoverFails(["--canary-count", "0"], /--canary-count must be a positive integer/);
+  await assertDiscoverFails(["--canary-count", "-2"], /--canary-count must be a positive integer/);
+});
+
+test("corpus-discover handles a corpus without pages directory", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-corpus-discover-no-pages-"));
+  const corpus = path.join(root, "corpus");
+  const outputDir = path.join(root, "out");
+
+  await fs.mkdir(path.join(corpus, "assets"), { recursive: true });
+  await fs.writeFile(path.join(corpus, "assets", "example.svg"), "<svg />\n");
+
+  const { stdout } = await runDiscover([
+    "--corpus",
+    corpus,
+    "--output-dir",
+    outputDir,
+    "--canary-count",
+    "1"
+  ]);
+  const summary = JSON.parse(stdout);
+
+  assert.equal(summary.filesInventoried, 1);
+  assert.equal(summary.pageSourceCandidates, 0);
+  assert.equal(summary.canaryRows, 0);
+  assert.equal(summary.candidateTypeCounts.image, 1);
+
+  const manifest = await fs.readFile(path.join(outputDir, "corpus-manifest.tsv"), "utf8");
+  assert.equal(manifest, "page_id\tslug\ttitle\tsource_path\tmetadata_path\ttags\tasset_paths\tdependency_hints\tconstruct_hints\tbytes\tline_count\tstatus\tnotes\n");
 });

@@ -11,16 +11,28 @@ function parseArgs(argv) {
   const args = {
     corpus: DEFAULT_CORPUS,
     outputDir: path.resolve(process.cwd(), "corpus-discovery"),
+    canaryCount: CANARY_COUNT,
   };
+
+  function nextValue(index, optionName) {
+    const value = argv[index + 1];
+    if (!value || value.startsWith("--")) {
+      throw new Error(`Missing value for ${optionName}`);
+    }
+    return value;
+  }
 
   for (let index = 2; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--corpus") {
-      args.corpus = path.resolve(argv[++index]);
+      args.corpus = path.resolve(nextValue(index, arg));
+      index += 1;
     } else if (arg === "--output-dir") {
-      args.outputDir = path.resolve(argv[++index]);
+      args.outputDir = path.resolve(nextValue(index, arg));
+      index += 1;
     } else if (arg === "--canary-count") {
-      args.canaryCount = Number.parseInt(argv[++index], 10);
+      args.canaryCount = Number.parseInt(nextValue(index, arg), 10);
+      index += 1;
     } else if (arg === "--help") {
       printHelpAndExit();
     } else {
@@ -28,7 +40,9 @@ function parseArgs(argv) {
     }
   }
 
-  if (!Number.isFinite(args.canaryCount)) args.canaryCount = CANARY_COUNT;
+  if (!Number.isInteger(args.canaryCount) || args.canaryCount <= 0) {
+    throw new Error("--canary-count must be a positive integer");
+  }
   return args;
 }
 
@@ -205,6 +219,7 @@ async function buildFileInventory(corpusRoot, files) {
 
 async function buildManifest(corpusRoot) {
   const pagesRoot = path.join(corpusRoot, "pages");
+  if (!(await pathExists(pagesRoot))) return [];
   const entries = await fs.readdir(pagesRoot, { withFileTypes: true });
   const pageDirs = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
   const rows = [];
