@@ -520,6 +520,28 @@ LIMIT 1;
   return pageId;
 }
 
+function existingActivePage(args, slug) {
+  const sql = `
+SELECT page_id || '|' || page_category_id || '|' || COALESCE(latest_revision_id::text, '')
+FROM page
+WHERE site_id = ${sqlInt(args.siteId)}
+  AND slug = ${sqlQuote(slug)}
+  AND deleted_at IS NULL
+ORDER BY page_id
+LIMIT 1;
+`;
+  const output = runPsql(args, sql, { capture: true });
+  if (!output) return null;
+  const [pageIdText, categoryIdText, revisionIdText = ''] = output.split('|');
+  const pageId = Number.parseInt(pageIdText, 10);
+  const categoryId = Number.parseInt(categoryIdText, 10);
+  const revisionId = revisionIdText === '' ? null : Number.parseInt(revisionIdText, 10);
+  if (!Number.isInteger(pageId) || !Number.isInteger(categoryId) || (revisionId !== null && !Number.isInteger(revisionId))) {
+    throw new Error(`invalid existing page output: ${output}`);
+  }
+  return { page_id: pageId, page_category_id: categoryId, revision_id: revisionId };
+}
+
 function pageSnapshotStatus(args, row, pageId) {
   const sql = `
 SELECT encode(source_sha256, 'hex') || '|' || encode(meta_sha256, 'hex')
@@ -578,6 +600,18 @@ async function importRow(args, row, importRunId) {
 
   if (args.createMode === 'db') {
     if (args.dryRun) return { slug: row.fullname, action: 'would_db_create' };
+    const existing = existingActivePage(args, row.fullname);
+    if (existing !== null) {
+      const existingSnapshotStatus = pageSnapshotStatus(args, row, existing.page_id);
+      if (existingSnapshotStatus === 'absent' && !args.adoptExisting) {
+        runPsql(args, recordItemSql(row, existing.page_id, importRunId, 'failed', { collision: 'existing_page_requires_adopt' }));
+        return { slug: row.fullname, action: 'collision_existing_page', page_id: existing.page_id };
+      }
+      if (existingSnapshotStatus === 'mismatched') {
+        runPsql(args, recordItemSql(row, existing.page_id, importRunId, 'failed', { collision: 'existing_page_snapshot_mismatch_update_not_implemented' }));
+        return { slug: row.fullname, action: 'collision_existing_snapshot_mismatch', page_id: existing.page_id };
+      }
+    }
     const created = shellCreatePage(args, row);
     pageId = created.page_id;
     revisionId = created.revision_id;
