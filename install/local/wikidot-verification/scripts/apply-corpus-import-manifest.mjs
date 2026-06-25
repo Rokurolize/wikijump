@@ -21,6 +21,7 @@ function parseArgs(argv) {
     userId: DEFAULT_USER_ID,
     ipAddress: DEFAULT_IP_ADDRESS,
     rpcTimeoutMs: 120_000,
+    textHashCommand: process.env.DEEPWELL_TEXT_HASH_COMMAND ?? null,
     slug: [],
     slugFile: null,
     limit: null,
@@ -49,6 +50,7 @@ function parseArgs(argv) {
     else if (arg === '--user-id') args.userId = Number.parseInt(next(), 10);
     else if (arg === '--ip-address') args.ipAddress = next();
     else if (arg === '--rpc-timeout-ms') args.rpcTimeoutMs = Number.parseInt(next(), 10);
+    else if (arg === '--text-hash-command') args.textHashCommand = next();
     else if (arg === '--slug') args.slug.push(next());
     else if (arg === '--slug-file') args.slugFile = next();
     else if (arg === '--limit') args.limit = Number.parseInt(next(), 10);
@@ -77,6 +79,9 @@ Imports current corpus snapshot pages into a local Wikijump mirror. This is an o
   if (!Number.isInteger(args.userId)) throw new Error('--user-id must be an integer');
   if (!Number.isInteger(args.rpcTimeoutMs) || args.rpcTimeoutMs <= 0) throw new Error('--rpc-timeout-ms must be a positive integer');
   if (!['rpc', 'db'].includes(args.createMode)) throw new Error('--create-mode must be rpc or db');
+  if (args.createMode === 'db' && !args.dryRun && !args.textHashCommand) {
+    throw new Error('--create-mode db requires --text-hash-command or DEEPWELL_TEXT_HASH_COMMAND');
+  }
   if (args.limit !== null && (!Number.isInteger(args.limit) || args.limit < 0)) {
     throw new Error('--limit must be a non-negative integer');
   }
@@ -108,8 +113,21 @@ function sqlTextHash(hex) {
   return `decode(${sqlQuote(hex.toLowerCase())}, 'hex')`;
 }
 
-function textHashHex(contents) {
-  return crypto.createHash('md5').update(contents).digest('hex');
+function textHashHex(args, contents) {
+  const result = spawnSync(args.textHashCommand, {
+    input: contents,
+    shell: true,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+  if (result.status !== 0) {
+    throw new Error(`text hash command failed (${result.status})\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+  }
+  const hash = result.stdout.trim();
+  if (!/^[0-9a-f]{32}$/iu.test(hash)) {
+    throw new Error(`text hash command returned invalid 16-byte hex hash: ${hash}`);
+  }
+  return hash.toLowerCase();
 }
 
 function sqlTextArray(values) {
@@ -123,7 +141,8 @@ function runPsql(args, sql, { capture = false } = {}) {
     { input: sql, encoding: 'utf8' },
   );
   if (result.status !== 0) {
-    throw new Error(`psql failed (${result.status})\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}\nSQL:\n${sql}`);
+    const sqlPreview = sql.length > 2000 ? `${sql.slice(0, 2000)}\n... <truncated ${sql.length - 2000} bytes>` : sql;
+    throw new Error(`psql failed (${result.status})\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}\nSQL preview:\n${sqlPreview}`);
   }
   return capture ? result.stdout.trim() : null;
 }
@@ -267,8 +286,8 @@ function categoryName(slug) {
 function shellCreatePage(args, row) {
   const wikitext = sourceText(row);
   const bodyHtml = '<div class="wj-proof-stub corpus-shell-import">Content not rendered yet for local Wikidot corpus snapshot import.</div>';
-  const wikitextHash = textHashHex(wikitext);
-  const bodyHash = textHashHex(bodyHtml);
+  const wikitextHash = textHashHex(args, wikitext);
+  const bodyHash = textHashHex(args, bodyHtml);
   const title = fallbackTitle(row);
   const category = categoryName(row.fullname);
   const sql = `
@@ -541,7 +560,7 @@ async function importRow(args, row, importRunId) {
       pageId = created.page_id;
       revisionId = created.revision_id;
       categoryId = created.page_category_id;
-      action = 'created_shell';
+      action = 'created_db';
     } else {
       const created = await createPage(args, row);
       const pageAfterCreate = await getPage(args, row.fullname);
@@ -595,7 +614,7 @@ async function main() {
 
   const importRunId = ensureImportRun(args, selectedRows, completeInventory);
   const results = [];
-  const summary = { created: 0, created_shell_snapshot_ready: 0, adopted: 0, created_snapshot_ready: 0, adopted_snapshot_ready: 0, skipped_existing_done: 0, collision_existing_page: 0, failed: 0, import_run_id: importRunId };
+  const summary = { created: 0, created_db_snapshot_ready: 0, adopted: 0, created_snapshot_ready: 0, adopted_snapshot_ready: 0, skipped_existing_done: 0, collision_existing_page: 0, failed: 0, import_run_id: importRunId };
 
   for (const row of selectedRows) {
     try {
