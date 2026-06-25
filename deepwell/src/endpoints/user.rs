@@ -19,6 +19,7 @@
  */
 
 use super::prelude::*;
+use crate::constants::ADMIN_USER_ID;
 use crate::models::user::Model as UserModel;
 use crate::models::wikidot_user::Entity as WikidotUser;
 use crate::services::user::{
@@ -58,6 +59,14 @@ pub async fn user_import(
             ErrorType::BadRequest,
         )
     })?;
+
+    if ctx.request().user_id().ok() != Some(ADMIN_USER_ID) {
+        return Err(Error::new(
+            "Wikidot user import requires an admin request context",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
 
     let make_error = || {
         Error::new(
