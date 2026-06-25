@@ -145,6 +145,8 @@ test('apply-corpus-import-manifest dry-run filters by slug without touching serv
     '--slug',
     'scp-173',
     '--dry-run',
+    '--create-mode',
+    'db',
   ], {
     cwd: packageRoot,
     encoding: 'utf8',

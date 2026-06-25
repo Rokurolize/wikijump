@@ -20,10 +20,14 @@ function parseArgs(argv) {
     siteId: DEFAULT_SITE_ID,
     userId: DEFAULT_USER_ID,
     ipAddress: DEFAULT_IP_ADDRESS,
+    rpcTimeoutMs: 120_000,
     slug: [],
     slugFile: null,
     limit: null,
     adoptExisting: false,
+    skipExistingDone: false,
+    skipRerender: false,
+    createMode: 'rpc',
     dryRun: false,
     sourceSite: 'scp-wiki',
     sourceBranch: 'en',
@@ -44,15 +48,22 @@ function parseArgs(argv) {
     else if (arg === '--site-id') args.siteId = Number.parseInt(next(), 10);
     else if (arg === '--user-id') args.userId = Number.parseInt(next(), 10);
     else if (arg === '--ip-address') args.ipAddress = next();
+    else if (arg === '--rpc-timeout-ms') args.rpcTimeoutMs = Number.parseInt(next(), 10);
     else if (arg === '--slug') args.slug.push(next());
     else if (arg === '--slug-file') args.slugFile = next();
     else if (arg === '--limit') args.limit = Number.parseInt(next(), 10);
     else if (arg === '--adopt-existing') args.adoptExisting = true;
+    else if (arg === '--skip-existing-done') args.skipExistingDone = true;
+    else if (arg === '--skip-rerender') args.skipRerender = true;
+    else if (arg === '--create-mode') {
+      args.createMode = next();
+      if (args.createMode === 'db') args.skipRerender = true;
+    }
     else if (arg === '--dry-run') args.dryRun = true;
     else if (arg === '--source-site') args.sourceSite = next();
     else if (arg === '--source-branch') args.sourceBranch = next();
     else if (arg === '--help' || arg === '-h') {
-      console.log(`Usage: apply-corpus-import-manifest.mjs --manifest <manifest.jsonl> [--apply-migration] [--slug <slug>...] [--adopt-existing] [--dry-run]
+      console.log(`Usage: apply-corpus-import-manifest.mjs --manifest <manifest.jsonl> [--apply-migration] [--slug <slug>...] [--adopt-existing] [--skip-existing-done] [--skip-rerender] [--create-mode rpc|db] [--dry-run]
 
 Imports current corpus snapshot pages into a local Wikijump mirror. This is an operator-only local tool: it uses Deepwell JSON-RPC for page create/rerender and direct Postgres SQL for corpus snapshot metadata, timestamps, and tags.`);
       process.exit(0);
@@ -64,6 +75,8 @@ Imports current corpus snapshot pages into a local Wikijump mirror. This is an o
   if (!args.manifest) throw new Error('--manifest is required');
   if (!Number.isInteger(args.siteId)) throw new Error('--site-id must be an integer');
   if (!Number.isInteger(args.userId)) throw new Error('--user-id must be an integer');
+  if (!Number.isInteger(args.rpcTimeoutMs) || args.rpcTimeoutMs <= 0) throw new Error('--rpc-timeout-ms must be a positive integer');
+  if (!['rpc', 'db'].includes(args.createMode)) throw new Error('--create-mode must be rpc or db');
   if (args.limit !== null && (!Number.isInteger(args.limit) || args.limit < 0)) {
     throw new Error('--limit must be a non-negative integer');
   }
@@ -90,6 +103,15 @@ function sqlByteaFromHex(hex) {
   return `decode(${sqlQuote(hex.toLowerCase())}, 'hex')`;
 }
 
+function sqlTextHash(hex) {
+  if (!/^[0-9a-f]{32}$/iu.test(hex)) throw new Error(`expected 16-byte text hash hex, got ${hex}`);
+  return `decode(${sqlQuote(hex.toLowerCase())}, 'hex')`;
+}
+
+function textHashHex(contents) {
+  return crypto.createHash('md5').update(contents).digest('hex');
+}
+
 function sqlTextArray(values) {
   return `ARRAY[${values.map((value) => sqlQuote(value)).join(',')}]::text[]`;
 }
@@ -114,11 +136,24 @@ function applyMigration(args) {
 let rpcSequence = 0;
 async function rpc(args, method, params) {
   rpcSequence += 1;
-  const response = await fetch(args.apiUrl, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: rpcSequence, method, params }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), args.rpcTimeoutMs);
+  let response;
+  try {
+    response = await fetch(args.apiUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: rpcSequence, method, params }),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error(`${method} timed out after ${args.rpcTimeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
   const data = await response.json();
   if (data.error) {
     throw new Error(`${method} failed: ${JSON.stringify(data.error)}`);
@@ -224,6 +259,126 @@ async function createPage(args, row) {
   });
 }
 
+function categoryName(slug) {
+  const index = slug.lastIndexOf(':');
+  return index === -1 ? '_default' : slug.slice(0, index);
+}
+
+function shellCreatePage(args, row) {
+  const wikitext = sourceText(row);
+  const bodyHtml = '<div class="wj-proof-stub corpus-shell-import">Content not rendered yet for local Wikidot corpus snapshot import.</div>';
+  const wikitextHash = textHashHex(wikitext);
+  const bodyHash = textHashHex(bodyHtml);
+  const title = fallbackTitle(row);
+  const category = categoryName(row.fullname);
+  const sql = `
+INSERT INTO text (hash, contents)
+VALUES (${sqlTextHash(wikitextHash)}, ${sqlQuote(wikitext)})
+ON CONFLICT (hash) DO NOTHING;
+
+INSERT INTO text (hash, contents)
+VALUES (${sqlTextHash(bodyHash)}, ${sqlQuote(bodyHtml)})
+ON CONFLICT (hash) DO NOTHING;
+
+WITH category AS (
+  INSERT INTO page_category (site_id, slug)
+  VALUES (${sqlInt(args.siteId)}, ${sqlQuote(category)})
+  ON CONFLICT (site_id, slug) DO UPDATE SET slug = EXCLUDED.slug
+  RETURNING category_id
+), target_page AS (
+  SELECT page_id, page_category_id, latest_revision_id
+  FROM page
+  WHERE site_id = ${sqlInt(args.siteId)}
+    AND slug = ${sqlQuote(row.fullname)}
+    AND deleted_at IS NULL
+  ORDER BY page_id
+  LIMIT 1
+), new_page AS (
+  INSERT INTO page (created_at, updated_at, from_wikidot, site_id, page_category_id, slug)
+  SELECT ${sqlTimestamp(row.created_at)}, ${sqlTimestamp(row.updated_at)}, true, ${sqlInt(args.siteId)}, category_id, ${sqlQuote(row.fullname)}
+  FROM category
+  WHERE NOT EXISTS (SELECT 1 FROM target_page)
+  RETURNING page_id, page_category_id, latest_revision_id
+), page_row AS (
+  SELECT page_id, page_category_id, latest_revision_id FROM target_page
+  UNION ALL
+  SELECT page_id, page_category_id, latest_revision_id FROM new_page
+  LIMIT 1
+), new_revision AS (
+  INSERT INTO page_revision (
+    revision_type,
+    created_at,
+    revision_number,
+    page_id,
+    site_id,
+    user_id,
+    from_wikidot,
+    changes,
+    wikitext_hash,
+    compiled_body_html_hash,
+    compiled_top_bar_html_hash,
+    compiled_side_bar_html_hash,
+    compiled_at,
+    compiled_generator,
+    comments,
+    hidden,
+    title,
+    alt_title,
+    slug,
+    tags
+  )
+  SELECT
+    'create',
+    ${sqlTimestamp(row.updated_at)},
+    0,
+    page_id,
+    ${sqlInt(args.siteId)},
+    ${sqlInt(args.userId)},
+    true,
+    ARRAY['wikitext', 'title', 'alt_title', 'slug', 'tags']::text[],
+    ${sqlTextHash(wikitextHash)},
+    ${sqlTextHash(bodyHash)},
+    NULL,
+    NULL,
+    NOW(),
+    'corpus db import',
+    'local scp-wiki mirror DB import from scp-wiki-translation corpus',
+    ARRAY[]::text[],
+    ${sqlQuote(title)},
+    NULL,
+    ${sqlQuote(row.fullname)},
+    ${sqlTextArray(row.tags)}
+  FROM page_row
+  WHERE latest_revision_id IS NULL
+  RETURNING revision_id, page_id
+), revision_row AS (
+  SELECT latest_revision_id AS revision_id, page_id
+  FROM page_row
+  WHERE latest_revision_id IS NOT NULL
+  UNION ALL
+  SELECT revision_id, page_id FROM new_revision
+  LIMIT 1
+), updated_page AS (
+  UPDATE page
+  SET
+    latest_revision_id = (SELECT revision_id FROM revision_row),
+    created_at = ${sqlTimestamp(row.created_at)},
+    updated_at = ${sqlTimestamp(row.updated_at)},
+    from_wikidot = true,
+    page_category_id = (SELECT category_id FROM category)
+  WHERE page_id = (SELECT page_id FROM page_row)
+  RETURNING page_id, page_category_id, latest_revision_id
+)
+SELECT page_id || '|' || page_category_id || '|' || latest_revision_id FROM updated_page;
+`;
+  const output = runPsql(args, sql, { capture: true });
+  const [pageId, categoryId, revisionId] = output.split('|').map((value) => Number.parseInt(value, 10));
+  if (![pageId, categoryId, revisionId].every(Number.isInteger)) {
+    throw new Error(`invalid DB import output: ${output}`);
+  }
+  return { page_id: pageId, page_category_id: categoryId, revision_id: revisionId };
+}
+
 async function rerenderPage(args, pageId, categoryId) {
   return await rpc(args, 'page_rerender', {
     site_id: args.siteId,
@@ -318,6 +473,23 @@ ON CONFLICT (page_id) DO UPDATE SET
 `;
 }
 
+function existingSnapshotPageId(args, row) {
+  const sql = `
+SELECT page_id
+FROM wikidot_page_snapshot
+WHERE source_site = ${sqlQuote(row.source_site)}
+  AND source_entity_id = ${sqlQuote(row.source_entity_id)}
+  AND encode(source_sha256, 'hex') = ${sqlQuote(row.source_sha256)}
+  AND encode(meta_sha256, 'hex') = ${sqlQuote(row.meta_sha256)}
+LIMIT 1;
+`;
+  const output = runPsql(args, sql, { capture: true });
+  if (!output) return null;
+  const pageId = Number.parseInt(output, 10);
+  if (!Number.isInteger(pageId)) throw new Error(`invalid snapshot page_id output: ${output}`);
+  return pageId;
+}
+
 function recordItemSql(row, pageId, importRunId, state, error = null) {
   return `
 INSERT INTO wikidot_corpus_import_item (
@@ -348,6 +520,14 @@ ON CONFLICT (import_run_id, source_entity_id) DO UPDATE SET
 }
 
 async function importRow(args, row, importRunId) {
+  if (args.skipExistingDone) {
+    const snapshotPageId = existingSnapshotPageId(args, row);
+    if (snapshotPageId !== null) {
+      runPsql(args, recordItemSql(row, snapshotPageId, importRunId, 'done'));
+      return { slug: row.fullname, action: 'skipped_existing_done', page_id: snapshotPageId };
+    }
+  }
+
   const existing = await getPage(args, row.fullname);
   let pageId;
   let revisionId;
@@ -355,13 +535,21 @@ async function importRow(args, row, importRunId) {
   let action;
 
   if (existing === null) {
-    if (args.dryRun) return { slug: row.fullname, action: 'would_create' };
-    const created = await createPage(args, row);
-    const pageAfterCreate = await getPage(args, row.fullname);
-    pageId = created.page_id;
-    revisionId = created.revision_id;
-    categoryId = pageAfterCreate.page_category_id;
-    action = 'created';
+    if (args.dryRun) return { slug: row.fullname, action: args.createMode === 'db' ? 'would_db_create' : 'would_create' };
+    if (args.createMode === 'db') {
+      const created = shellCreatePage(args, row);
+      pageId = created.page_id;
+      revisionId = created.revision_id;
+      categoryId = created.page_category_id;
+      action = 'created_shell';
+    } else {
+      const created = await createPage(args, row);
+      const pageAfterCreate = await getPage(args, row.fullname);
+      pageId = created.page_id;
+      revisionId = created.revision_id;
+      categoryId = pageAfterCreate.page_category_id;
+      action = 'created';
+    }
   } else {
     if (!args.adoptExisting) {
       if (!args.dryRun) runPsql(args, recordItemSql(row, existing.page_id ?? null, importRunId, 'failed', { collision: 'existing_page_requires_adopt' }));
@@ -375,6 +563,11 @@ async function importRow(args, row, importRunId) {
   }
 
   runPsql(args, upsertSnapshotSql(args, row, pageId, revisionId, importRunId));
+  if (args.skipRerender) {
+    runPsql(args, recordItemSql(row, pageId, importRunId, 'render_pending'));
+    return { slug: row.fullname, action: `${action}_snapshot_ready`, page_id: pageId, revision_id: revisionId, rating: row.rating, tags: row.tags.length };
+  }
+
   await rerenderPage(args, pageId, categoryId);
   runPsql(args, recordItemSql(row, pageId, importRunId, 'done'));
   return { slug: row.fullname, action, page_id: pageId, revision_id: revisionId, rating: row.rating, tags: row.tags.length };
@@ -402,7 +595,7 @@ async function main() {
 
   const importRunId = ensureImportRun(args, selectedRows, completeInventory);
   const results = [];
-  const summary = { created: 0, adopted: 0, collision_existing_page: 0, failed: 0, import_run_id: importRunId };
+  const summary = { created: 0, created_shell_snapshot_ready: 0, adopted: 0, created_snapshot_ready: 0, adopted_snapshot_ready: 0, skipped_existing_done: 0, collision_existing_page: 0, failed: 0, import_run_id: importRunId };
 
   for (const row of selectedRows) {
     try {
