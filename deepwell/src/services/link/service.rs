@@ -425,6 +425,7 @@ async fn update_connections(
     }
 
     // Insert new connections
+    let updated_at = Some(now());
     let to_insert = counts
         .iter()
         .map(
@@ -433,7 +434,7 @@ async fn update_connections(
                 to_page_id: Set(to_page_id),
                 connection_type: Set(connection_type),
                 created_at: NotSet,
-                updated_at: NotSet,
+                updated_at: Set(updated_at),
                 count: Set(*count),
             },
         )
@@ -447,7 +448,10 @@ async fn update_connections(
                     page_connection::Column::ToPageId,
                     page_connection::Column::ConnectionType,
                 ])
-                .update_column(page_connection::Column::Count)
+                .update_columns([
+                    page_connection::Column::Count,
+                    page_connection::Column::UpdatedAt,
+                ])
                 .to_owned(),
             )
             .exec(txn)
@@ -516,6 +520,7 @@ async fn update_connections_missing(
     }
 
     // Insert new connections
+    let updated_at = Some(now());
     let to_insert = counts
         .iter()
         .map(
@@ -526,7 +531,7 @@ async fn update_connections_missing(
                     to_page_slug: Set(str!(to_page_slug)),
                     connection_type: Set(connection_type),
                     created_at: NotSet,
-                    updated_at: NotSet,
+                    updated_at: Set(updated_at),
                     count: Set(*count),
                 }
             },
@@ -542,7 +547,10 @@ async fn update_connections_missing(
                     page_connection_missing::Column::ToPageSlug,
                     page_connection_missing::Column::ConnectionType,
                 ])
-                .update_column(page_connection_missing::Column::Count)
+                .update_columns([
+                    page_connection_missing::Column::Count,
+                    page_connection_missing::Column::UpdatedAt,
+                ])
                 .to_owned(),
             )
             .exec(txn)
@@ -601,13 +609,14 @@ async fn update_external_links(
     }
 
     // Insert new links
+    let updated_at = Some(now());
     let to_insert = counts
         .iter()
         .map(|(ref url, count)| page_link::ActiveModel {
             page_id: Set(from_page_id),
             url: Set(str!(url)),
             created_at: NotSet,
-            updated_at: NotSet,
+            updated_at: Set(updated_at),
             count: Set(*count),
         })
         .collect::<Vec<_>>();
@@ -616,7 +625,10 @@ async fn update_external_links(
         PageLink::insert_many(to_insert)
             .on_conflict(
                 OnConflict::columns([page_link::Column::PageId, page_link::Column::Url])
-                    .update_column(page_link::Column::Count)
+                    .update_columns([
+                        page_link::Column::Count,
+                        page_link::Column::UpdatedAt,
+                    ])
                     .to_owned(),
             )
             .exec(txn)
