@@ -509,10 +509,10 @@ async fn set_page_category_slug(
 
 #[tokio::test]
 async fn scp8980_listpages_expands_first_child_in_page_get_compiled_html() {
-    const MAIN_SLUG: &str = "scp-8980";
-    const FRAGMENT_1_SLUG: &str = "fragment:scp-8980-1";
-    const FRAGMENT_2_SLUG: &str = "fragment:scp-8980-2";
-    const HIDDEN_FRAGMENT_SLUG: &str = "_hidden-listpages-fragment";
+    const MAIN_SLUG: &str = "listpages-proof-scp-8980";
+    const FRAGMENT_1_SLUG: &str = "fragment:listpages-proof-scp-8980-1";
+    const FRAGMENT_2_SLUG: &str = "fragment:listpages-proof-scp-8980-2";
+    const HIDDEN_FRAGMENT_SLUG: &str = "_hidden-listpages-proof-fragment";
     const HIDDEN_FRAGMENT_MARKER: &str = "HIDDEN LISTPAGES FRAGMENT SHOULD NOT RENDER";
     const HIDDEN_FRAGMENT_CREATED_AT: &str = "2024-10-06T16:01:36Z";
     const FRAGMENT_1_CREATED_AT: &str = "2024-10-06T16:01:41Z";
@@ -766,6 +766,104 @@ async fn scp8980_listpages_expands_first_child_in_page_get_compiled_html() {
             "compiled SCP-8980 should not contain {unexpected:?}:\n{html}",
         );
     }
+
+    const WRAPPED_MAIN_SLUG: &str = "scp-8980-listpages-wrapped";
+    let wrapped_main_source = r#"[[module ListPages parent="." category="fragment" order="created_at desc" limit="2" offset="0" pagetype="normal"]]
+<section data-listpages-proof="wrapped">%%content%%</section>
+[[/module]]"#;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(WRAPPED_MAIN_SLUG.into())),
+    });
+    let wrapped_main = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": wrapped_main_source,
+            "title": "SCP-8980 ListPages Wrapped Proof",
+            "alt_title": null,
+            "slug": WRAPPED_MAIN_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "local SCP-8980 wrapped ListPages proof fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    for child_page_id in [
+        hidden_fragment.page_id,
+        fragment_1.page_id,
+        fragment_2.page_id,
+    ] {
+        let relationship = ParentService::create(
+            runner.context(),
+            ParentDescription {
+                site_id,
+                parent: Reference::Id(wrapped_main.page_id),
+                child: Reference::Id(child_page_id),
+            },
+        )
+        .await
+        .expect("failed to parent SCP-8980 fragment to the wrapped ListPages proof page");
+        assert!(relationship.is_some());
+    }
+
+    let wrapped_rerender = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": wrapped_main.page_id,
+            "last_revision_id": wrapped_main.revision_id,
+            "revision_comments": "rerender wrapped ListPages after attaching children",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(
+        wrapped_rerender.is_none(),
+        "wrapped ListPages relationship-only rerender should not create a page revision",
+    );
+
+    let wrapped_page = deepwell::endpoints::all::page_get(
+        runner.context(),
+        common::make_params(json!({
+            "site_id": site_id,
+            "page": WRAPPED_MAIN_SLUG,
+            "details": {
+                "compiled": true
+            },
+        })),
+    )
+    .await
+    .expect("wrapped ListPages page_get should succeed")
+    .expect("wrapped ListPages page_get should return page data");
+    let wrapped_html = wrapped_page
+        .compiled_body_html
+        .expect("compiled body should be included for wrapped ListPages proof");
+
+    let second_fragment_index = wrapped_html
+        .find("height:55vh")
+        .expect("wrapped ListPages should include fragment 2 first");
+    let first_fragment_index = wrapped_html
+        .find("height:70vh")
+        .expect("wrapped ListPages should include fragment 1 second");
+    assert!(
+        second_fragment_index < first_fragment_index,
+        "wrapped ListPages should order fragments by created_at desc:\n{wrapped_html}",
+    );
+    assert!(
+        wrapped_html.contains("data-listpages-proof"),
+        "wrapped ListPages should preserve body template markup:\n{wrapped_html}",
+    );
+    assert!(
+        !wrapped_html.contains(HIDDEN_FRAGMENT_MARKER),
+        "wrapped ListPages should keep normal pagetype default safety and skip hidden child:\n{wrapped_html}",
+    );
 
     set_page_deleted_at(&runner, fragment_1.page_id, "2024-10-06T16:02:00Z").await;
     let rerender_after_delete = run_endpoint!(
