@@ -165,10 +165,9 @@ fn collect_named_slugs(occurrences: &[ListPagesOccurrence]) -> Vec<String> {
         if let Some(SupportedListPages::NamedPageMetadata {
             normalized_slug, ..
         }) = &occurrence.specification
+            && seen.insert(normalized_slug.clone())
         {
-            if seen.insert(normalized_slug.clone()) {
-                slugs.push(normalized_slug.clone());
-            }
+            slugs.push(normalized_slug.clone());
         }
     }
 
@@ -306,20 +305,20 @@ fn parse_supported_specification(
         }));
     }
 
-    if attributes.len() == 1 {
-        if let Some(requested_name) = attributes.get("name") {
-            let mut normalized_slug = (*requested_name).to_owned();
-            normalize(&mut normalized_slug);
-            if normalized_slug.is_empty() {
-                return Ok(None);
-            }
-            ensure_named_body_variables_are_supported(body)?;
-            return Ok(Some(SupportedListPages::NamedPageMetadata {
-                body_template: body.to_owned(),
-                requested_name: (*requested_name).to_owned(),
-                normalized_slug,
-            }));
+    if attributes.len() == 1
+        && let Some(requested_name) = attributes.get("name")
+    {
+        let mut normalized_slug = (*requested_name).to_owned();
+        normalize(&mut normalized_slug);
+        if normalized_slug.is_empty() {
+            return Ok(None);
         }
+        ensure_named_body_variables_are_supported(body)?;
+        return Ok(Some(SupportedListPages::NamedPageMetadata {
+            body_template: body.to_owned(),
+            requested_name: (*requested_name).to_owned(),
+            normalized_slug,
+        }));
     }
 
     Ok(None)
