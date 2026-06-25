@@ -44,9 +44,6 @@ CREATE TABLE wikidot_page_snapshot (
     UNIQUE(source_site, source_fullname)
 );
 
-CREATE INDEX wikidot_page_snapshot_fullname_idx
-    ON wikidot_page_snapshot(source_site, source_fullname);
-
 CREATE INDEX wikidot_page_snapshot_updated_idx
     ON wikidot_page_snapshot(source_site, source_updated_at);
 

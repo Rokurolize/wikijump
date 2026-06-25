@@ -44,7 +44,7 @@ impl ScoreService {
 
         match imported_rating {
             Some(imported_rating) => {
-                Ok(Self::combine_imported_rating(imported_rating, local_score))
+                Self::combine_imported_rating(imported_rating, local_score)
             }
             None => Ok(local_score),
         }
@@ -123,7 +123,7 @@ impl ScoreService {
         let txn = ctx.transaction();
         let table_exists_statement = Statement::from_string(
             txn.get_database_backend(),
-            "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'wikidot_page_snapshot') AS exists",
+            "SELECT to_regclass('wikidot_page_snapshot') IS NOT NULL AS exists",
         );
         let table_exists = TableExistsRow::find_by_statement(table_exists_statement)
             .one(txn)
@@ -162,10 +162,20 @@ impl ScoreService {
     fn combine_imported_rating(
         imported_rating: i64,
         local_score: ScoreValue,
-    ) -> ScoreValue {
+    ) -> Result<ScoreValue> {
         match local_score {
-            ScoreValue::Integer(value) => ScoreValue::Integer(imported_rating + value),
-            ScoreValue::Float(value) => ScoreValue::Float(imported_rating as f64 + value),
+            ScoreValue::Integer(value) => {
+                let combined = imported_rating.checked_add(value).ok_or_else(|| {
+                    Error::new(
+                        "imported page rating overflowed while combining local votes",
+                        ErrorType::PageVote,
+                    )
+                })?;
+                Ok(ScoreValue::Integer(combined))
+            }
+            ScoreValue::Float(value) => {
+                Ok(ScoreValue::Float(imported_rating as f64 + value))
+            }
         }
     }
 

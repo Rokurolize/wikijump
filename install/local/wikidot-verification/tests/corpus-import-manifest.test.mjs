@@ -111,6 +111,35 @@ test('buildCorpusImportManifest rejects incomplete page records', () => {
   );
 });
 
+test('buildCorpusImportManifest uses locale-independent code point ordering', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-manifest-'));
+  writePage(root, 'en', '_404', {
+    entityId: '77777777-7777-4777-8777-777777777777',
+    meta: { fullname: '_404', title: '404', title_shown: '404' },
+  });
+  writePage(root, 'en', '0-texts-found', {
+    entityId: '88888888-8888-4888-8888-888888888888',
+    meta: { fullname: '0-texts-found', title: '0 Texts Found', title_shown: '0 Texts Found' },
+  });
+
+  const rows = buildCorpusImportManifest({ corpusRoot: root, branch: 'en' });
+
+  assert.deepEqual(rows.map((row) => row.fullname), ['0-texts-found', '_404']);
+});
+
+test('buildCorpusImportManifest rejects negative counts before apply', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-manifest-'));
+  writePage(root, 'en', 'scp-173', {
+    entityId: '99999999-9999-4999-8999-999999999999',
+    meta: { comments: -1 },
+  });
+
+  assert.throws(
+    () => buildCorpusImportManifest({ corpusRoot: root, branch: 'en' }),
+    /meta\.comments must be a non-negative integer/,
+  );
+});
+
 test('apply-corpus-import-manifest rejects DB create mode without a text hash command', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
   writePage(root, 'en', 'scp-173', {
