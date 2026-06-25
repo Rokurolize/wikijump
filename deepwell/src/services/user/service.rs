@@ -51,6 +51,20 @@ pub struct UserService;
 impl UserService {
     pub async fn create(
         ctx: &ServiceContext<'_>,
+        input: CreateUser,
+    ) -> Result<CreateUserOutput> {
+        Self::create_internal(ctx, input, false).await
+    }
+
+    pub async fn import_wikidot(
+        ctx: &ServiceContext<'_>,
+        input: CreateUser,
+    ) -> Result<CreateUserOutput> {
+        Self::create_internal(ctx, input, true).await
+    }
+
+    async fn create_internal(
+        ctx: &ServiceContext<'_>,
         CreateUser {
             user_type,
             mut name,
@@ -62,6 +76,7 @@ impl UserService {
             override_user_id,
             ip_address,
         }: CreateUser,
+        reuse_existing_known_user: bool,
     ) -> Result<CreateUserOutput> {
         let txn = ctx.transaction();
         let slug = get_user_slug(&name, user_type);
@@ -89,13 +104,23 @@ impl UserService {
             Some(user_id) => {
                 info!("Attempting to create user '{name}' ('{slug}', ID {user_id})");
 
-                if KnownUser::find_by_id(user_id)
+                let known_user_exists = KnownUser::find_by_id(user_id)
                     .one(txn)
                     .await
                     .or_raise(make_error)?
-                    .is_some()
-                {
-                    debug!("Reusing existing known_user entry for ID {user_id}");
+                    .is_some();
+
+                if known_user_exists {
+                    if reuse_existing_known_user {
+                        debug!("Reusing existing known_user entry for ID {user_id}");
+                    } else {
+                        bail!(Error::new(
+                            format!(
+                                "cannot create user with ID {user_id}, known_user entry already exists",
+                            ),
+                            ErrorType::BadRequest,
+                        ));
+                    }
                 } else {
                     // Insert user ID into known_user for foreign key.
                     known_user::ActiveModel {

@@ -85,6 +85,36 @@ async fn user_import_reclaims_existing_wikidot_user() {
 }
 
 #[tokio::test]
+async fn user_create_rejects_existing_override_user_id() {
+    let runner = TestRunner::setup().await;
+    let user_id = 700_002_i64;
+
+    known_user::ActiveModel {
+        user_id: Set(user_id),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("known_user fixture should insert");
+
+    let error = run_endpoint_err!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Plain Override User",
+            "email": "plain-override-user@example.invalid",
+            "locales": ["en"],
+            "password": "test-password",
+            "bypass_email_verification": true,
+            "override_user_id": user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    assert_contains_error!(error, ErrorType::BadRequest);
+}
+
+#[tokio::test]
 async fn basic_update() {
     let runner = TestRunner::setup().await;
 
