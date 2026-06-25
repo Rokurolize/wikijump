@@ -509,6 +509,19 @@ LIMIT 1;
   return pageId;
 }
 
+function pageSnapshotStatus(args, row, pageId) {
+  const sql = `
+SELECT encode(source_sha256, 'hex') || '|' || encode(meta_sha256, 'hex')
+FROM wikidot_page_snapshot
+WHERE page_id = ${sqlInt(pageId)}
+LIMIT 1;
+`;
+  const output = runPsql(args, sql, { capture: true });
+  if (!output) return 'absent';
+  const [sourceSha, metaSha] = output.split('|');
+  return sourceSha === row.source_sha256 && metaSha === row.meta_sha256 ? 'matching' : 'mismatched';
+}
+
 function recordItemSql(row, pageId, importRunId, state, error = null) {
   return `
 INSERT INTO wikidot_corpus_import_item (
@@ -575,6 +588,11 @@ async function importRow(args, row, importRunId) {
       return { slug: row.fullname, action: 'collision_existing_page', page_id: existing.page_id };
     }
     if (args.dryRun) return { slug: row.fullname, action: 'would_adopt', page_id: existing.page_id };
+    const snapshotStatus = pageSnapshotStatus(args, row, existing.page_id);
+    if (snapshotStatus === 'mismatched') {
+      runPsql(args, recordItemSql(row, existing.page_id, importRunId, 'failed', { collision: 'existing_page_snapshot_mismatch_update_not_implemented' }));
+      return { slug: row.fullname, action: 'collision_existing_snapshot_mismatch', page_id: existing.page_id };
+    }
     pageId = existing.page_id;
     revisionId = existing.revision_id;
     categoryId = existing.page_category_id;
@@ -614,7 +632,7 @@ async function main() {
 
   const importRunId = ensureImportRun(args, selectedRows, completeInventory);
   const results = [];
-  const summary = { created: 0, created_db_snapshot_ready: 0, adopted: 0, created_snapshot_ready: 0, adopted_snapshot_ready: 0, skipped_existing_done: 0, collision_existing_page: 0, failed: 0, import_run_id: importRunId };
+  const summary = { created: 0, created_db_snapshot_ready: 0, adopted: 0, created_snapshot_ready: 0, adopted_snapshot_ready: 0, skipped_existing_done: 0, collision_existing_page: 0, collision_existing_snapshot_mismatch: 0, failed: 0, import_run_id: importRunId };
 
   for (const row of selectedRows) {
     try {
