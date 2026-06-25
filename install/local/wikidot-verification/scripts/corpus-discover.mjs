@@ -389,6 +389,12 @@ Notes:
 
 async function main() {
   const args = parseArgs(process.argv);
+  const relativeOutput = path.relative(args.corpus, args.outputDir);
+  const outputInsideCorpus =
+    relativeOutput === "" || (!relativeOutput.startsWith("..") && !path.isAbsolute(relativeOutput));
+  if (outputInsideCorpus) {
+    throw new Error("--output-dir must be outside --corpus to avoid self-inventory");
+  }
   await fs.mkdir(args.outputDir, { recursive: true });
 
   const files = await walkFiles(args.corpus);

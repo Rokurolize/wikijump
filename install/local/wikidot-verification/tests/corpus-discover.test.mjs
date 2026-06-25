@@ -101,6 +101,21 @@ test("corpus-discover rejects missing option values and invalid canary counts", 
   await assertDiscoverFails(["--canary-count", "2abc"], /--canary-count must be a positive integer/);
 });
 
+test("corpus-discover rejects output directories inside the corpus", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-corpus-discover-self-inventory-"));
+  const corpus = path.join(root, "corpus");
+  const outputDir = path.join(corpus, "out");
+
+  await fs.mkdir(corpus, { recursive: true });
+
+  await assertDiscoverFails([
+    "--corpus",
+    corpus,
+    "--output-dir",
+    outputDir
+  ], /--output-dir must be outside --corpus/);
+});
+
 test("corpus-discover handles a corpus without pages directory", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-corpus-discover-no-pages-"));
   const corpus = path.join(root, "corpus");
