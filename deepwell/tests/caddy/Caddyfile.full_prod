@@ -70,7 +70,6 @@ deploy.wjfiles.test {
 		path /robots.txt
 		path /.well-known
 		path /.well-known/*
-		path /.well-known/*/*
 		path /-/health-check
 	}
 	handle @proxy {
