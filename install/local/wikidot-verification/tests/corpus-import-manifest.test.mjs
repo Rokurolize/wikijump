@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import {
@@ -108,4 +109,54 @@ test('buildCorpusImportManifest rejects incomplete page records', () => {
     () => buildCorpusImportManifest({ corpusRoot: root, branch: 'en' }),
     /missing entity_id.txt/,
   );
+});
+
+test('apply-corpus-import-manifest dry-run filters by slug without touching services', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
+  writePage(root, 'en', 'scp-173', {
+    entityId: '44444444-4444-4444-8444-444444444444',
+    source: 'SCP-173',
+  });
+  writePage(root, 'en', 'scp-174', {
+    entityId: '55555555-5555-4555-8555-555555555555',
+    meta: {
+      fullname: 'scp-174',
+      title: 'SCP-174',
+      title_shown: 'SCP-174',
+    },
+    source: 'SCP-174',
+  });
+
+  const rows = buildCorpusImportManifest({
+    corpusRoot: root,
+    branch: 'en',
+    sourceSite: 'scp-wiki',
+    sourceBranch: 'en',
+  });
+  const manifestPath = path.join(root, 'manifest.jsonl');
+  fs.writeFileSync(manifestPath, formatJsonl(rows));
+
+  const { spawnSync } = await import('node:child_process');
+  const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const result = spawnSync(process.execPath, [
+    path.join(packageRoot, 'scripts/apply-corpus-import-manifest.mjs'),
+    '--manifest',
+    manifestPath,
+    '--slug',
+    'scp-173',
+    '--dry-run',
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 0, result.stderr);
+  const output = JSON.parse(result.stdout);
+  assert.deepEqual(output, {
+    dry_run: true,
+    selected_rows: 1,
+    complete_inventory: false,
+  });
 });
