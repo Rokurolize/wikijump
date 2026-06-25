@@ -97,6 +97,8 @@ test("corpus-discover rejects missing option values and invalid canary counts", 
   await assertDiscoverFails(["--output-dir", "--canary-count", "1"], /Missing value for --output-dir/);
   await assertDiscoverFails(["--canary-count", "0"], /--canary-count must be a positive integer/);
   await assertDiscoverFails(["--canary-count", "-2"], /--canary-count must be a positive integer/);
+  await assertDiscoverFails(["--canary-count", "1.5"], /--canary-count must be a positive integer/);
+  await assertDiscoverFails(["--canary-count", "2abc"], /--canary-count must be a positive integer/);
 });
 
 test("corpus-discover handles a corpus without pages directory", async () => {

@@ -31,7 +31,11 @@ function parseArgs(argv) {
       args.outputDir = path.resolve(nextValue(index, arg));
       index += 1;
     } else if (arg === "--canary-count") {
-      args.canaryCount = Number.parseInt(nextValue(index, arg), 10);
+      const raw = nextValue(index, arg);
+      if (!/^[1-9]\d*$/.test(raw)) {
+        throw new Error("--canary-count must be a positive integer");
+      }
+      args.canaryCount = Number(raw);
       index += 1;
     } else if (arg === "--help") {
       printHelpAndExit();
