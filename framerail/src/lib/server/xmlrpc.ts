@@ -223,8 +223,11 @@ export async function handleXmlRpcRequest(request: Request): Promise<Response> {
 
   const contentLength = request.headers.get("content-length")
   if (contentLength !== null) {
+    if (!/^\d+$/u.test(contentLength)) {
+      return faultResponse(new XmlRpcFault(-32600, "Invalid XML-RPC Content-Length"))
+    }
     const contentLengthBytes = Number.parseInt(contentLength, 10)
-    if (!Number.isFinite(contentLengthBytes) || contentLengthBytes < 0) {
+    if (!Number.isSafeInteger(contentLengthBytes)) {
       return faultResponse(new XmlRpcFault(-32600, "Invalid XML-RPC Content-Length"))
     }
     if (contentLengthBytes > XML_RPC_MAX_BODY_BYTES) {
