@@ -394,7 +394,7 @@ function xmlRpcPostsSelectRequest(page: string, replyTo?: string) {
 </methodCall>`
 }
 
-function xmlRpcPostsGetRequest(posts: string[]) {
+function xmlRpcPostsGetRequest(posts: string[], valueType: "string" | "int" = "string") {
   return `<?xml version="1.0"?>
 <methodCall>
   <methodName>posts.get</methodName>
@@ -404,7 +404,11 @@ function xmlRpcPostsGetRequest(posts: string[]) {
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
           <member><name>posts</name><value><array><data>${posts
-            .map((post) => `<value><string>${post}</string></value>`)
+            .map((post) =>
+              valueType === "int"
+                ? `<value><int>${post}</int></value>`
+                : `<value><string>${post}</string></value>`
+            )
             .join("")}</data></array></value></member>
         </struct>
       </value>
@@ -903,7 +907,12 @@ test("XML-RPC endpoint returns user identity and page comments", async ({ reques
     headers: xmlRpcHeaders
   })
   expect(selectResponse.status()).toBe(200)
-  expect(await selectResponse.text()).toContain(`<value><int>${postId}</int></value>`)
+  const selectBody = await selectResponse.text()
+  expect(
+    [...selectBody.matchAll(/<value><int>(-?\d+)<\/int><\/value>/g)].map(
+      ([, id]) => id
+    )
+  ).toEqual([postId])
 
   const topLevelResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcPostsSelectRequest(pageSlug, "-"),
@@ -913,7 +922,7 @@ test("XML-RPC endpoint returns user identity and page comments", async ({ reques
   expect(await topLevelResponse.text()).toContain(`<value><int>${postId}</int></value>`)
 
   const postsGetResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcPostsGetRequest([postId]),
+    data: xmlRpcPostsGetRequest([postId], "int"),
     headers: xmlRpcHeaders
   })
   expect(postsGetResponse.status()).toBe(200)

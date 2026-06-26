@@ -234,7 +234,13 @@ async fn build_wikidot_forum_post(
 
     let (revision, thread) = join!(
         ForumPostRevision::find_by_id(revision_id).one(ctx.transaction()),
-        ForumThread::find_by_id(post.forum_thread_id).one(ctx.transaction()),
+        ForumThread::find_by_id(post.forum_thread_id)
+            .filter(
+                Condition::all()
+                    .add(forum_thread::Column::SiteId.eq(post.site_id))
+                    .add(forum_thread::Column::DeletedAt.is_null()),
+            )
+            .one(ctx.transaction()),
     );
     let (revision, thread) = raise_multiple!(revision, thread; make_error);
 
@@ -305,6 +311,7 @@ async fn find_page_thread(
             .filter(
                 Condition::all()
                     .add(forum_thread::Column::SiteId.eq(site_id))
+                    .add(forum_thread::Column::PageId.eq(page.page_id))
                     .add(forum_thread::Column::DeletedAt.is_null()),
             )
             .one(ctx.transaction())
