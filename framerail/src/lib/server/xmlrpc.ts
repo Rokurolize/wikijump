@@ -221,6 +221,17 @@ export async function handleXmlRpcRequest(request: Request): Promise<Response> {
     return faultResponse(new XmlRpcFault(405, "XML-RPC endpoint requires POST", 405))
   }
 
+  const contentLength = request.headers.get("content-length")
+  if (contentLength !== null) {
+    const contentLengthBytes = Number.parseInt(contentLength, 10)
+    if (!Number.isFinite(contentLengthBytes) || contentLengthBytes < 0) {
+      return faultResponse(new XmlRpcFault(-32600, "Invalid XML-RPC Content-Length"))
+    }
+    if (contentLengthBytes > XML_RPC_MAX_BODY_BYTES) {
+      return faultResponse(new XmlRpcFault(-32600, "XML-RPC request body is too large"))
+    }
+  }
+
   const auth = parseBasicAuth(request.headers.get("authorization"))
   if (!auth) {
     return faultResponse(
@@ -1560,7 +1571,7 @@ function extractFirstDirectElement(text: string, tagName: string): XmlElement | 
     return null
   }
 
-  const prefix = trimmed.slice(0, trimmed.indexOf(`<${tagName}`)).trim()
+  const prefix = trimmed.slice(0, element.start).trim()
   const suffix = trimmed.slice(element.end).trim()
   return prefix.length === 0 && suffix.length === 0 ? element : null
 }
