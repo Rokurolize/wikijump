@@ -19,38 +19,45 @@ function parseArgs(argv) {
     sheetManifest: null
   };
 
+  const nextValue = (flag, index) => {
+    const value = argv[index + 1];
+    if (!value || value.startsWith("--")) {
+      throw new Error(`${flag} requires a value`);
+    }
+    return value;
+  };
+
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    const next = argv[i + 1];
     if (arg === "--source") {
-      args.source = next;
+      args.source = nextValue(arg, i);
       i += 1;
     } else if (arg === "--sheet-manifest") {
-      args.sheetManifest = next;
+      args.sheetManifest = nextValue(arg, i);
       i += 1;
     } else if (arg === "--output") {
-      args.output = next;
+      args.output = nextValue(arg, i);
       i += 1;
     } else if (arg === "--manifest") {
-      args.manifest = next;
+      args.manifest = nextValue(arg, i);
       i += 1;
     } else if (arg === "--mirror-origin") {
-      args.mirrorOrigin = next;
+      args.mirrorOrigin = nextValue(arg, i);
       i += 1;
     } else if (arg === "--mirror-host") {
-      args.mirrorOrigin = next;
+      args.mirrorOrigin = nextValue(arg, i);
       i += 1;
     } else if (arg === "--source-label") {
-      args.sourceLabel = next;
+      args.sourceLabel = nextValue(arg, i);
       i += 1;
     } else if (arg === "--source-role") {
-      args.sourceRole = next;
+      args.sourceRole = nextValue(arg, i);
       i += 1;
     } else if (arg === "--source-name") {
-      args.sourceName = next;
+      args.sourceName = nextValue(arg, i);
       i += 1;
     } else if (arg === "--source-gid") {
-      args.sourceGid = next;
+      args.sourceGid = nextValue(arg, i);
       i += 1;
     } else if (arg === "--help" || arg === "-h") {
       args.help = true;
@@ -103,7 +110,9 @@ async function loadSheetManifest(path) {
   for (const [index, sheet] of parsed.sheets.entries()) {
     const csvPath = requireValue(sheet.csv ?? sheet.source ?? sheet.path, `Sheet ${index + 1} is missing csv/source/path`);
     const csvText = await readFile(csvPath, "utf8");
+    const { csv, source, path: sourcePath, ...metadata } = sheet;
     sheets.push({
+      ...metadata,
       csvText,
       csvPath,
       role: sheet.role,
@@ -112,7 +121,8 @@ async function loadSheetManifest(path) {
       label: sheet.label
     });
   }
-  return sheets;
+  const { sheets: _sheets, ...metadata } = parsed;
+  return { sheets, metadata };
 }
 
 async function main() {
@@ -131,10 +141,19 @@ async function main() {
   let rows;
   let manifest;
   if (args.sheetManifest) {
-    const sheets = await loadSheetManifest(args.sheetManifest);
-    ({ rows, manifest } = extractRokurokubiReservationsFromSheets(sheets, {
+    const sheetManifest = await loadSheetManifest(args.sheetManifest);
+    ({ rows, manifest } = extractRokurokubiReservationsFromSheets(sheetManifest.sheets, {
       mirrorOrigin: args.mirrorOrigin
     }));
+    manifest = {
+      ...sheetManifest.metadata,
+      ...manifest,
+      source_sheets: manifest.source_sheets.map((summary, index) => ({
+        ...sheetManifest.sheets[index],
+        csvText: undefined,
+        ...summary
+      }))
+    };
     manifest.source_sheet_manifest = args.sheetManifest;
   } else if (args.source) {
     const csvText = await readFile(args.source, "utf8");

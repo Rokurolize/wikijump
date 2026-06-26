@@ -77,7 +77,7 @@ export function parseCsv(text) {
     rows.push(row);
   }
 
-  return rows.filter((candidate) => candidate.some((value) => value !== ""));
+  return rows;
 }
 
 export function formatCsv(rows, headers = OUTPUT_HEADERS) {
@@ -118,20 +118,30 @@ function normalizeMirrorOrigin(value = DEFAULT_CANONICAL_MIRROR_ORIGIN) {
 }
 
 function normalizePathname(pathname) {
-  return decodeURIComponent(pathname.replace(/^\/+|\/+$/gu, ""));
+  const trimmed = pathname.replace(/^\/+|\/+$/gu, "");
+  try {
+    return decodeURIComponent(trimmed);
+  } catch {
+    return null;
+  }
 }
 
-function normalizeSourceKey(sourceUrl, slug, status) {
+function normalizeSourceKey({ sourceUrl, slug, status, sheetRole, sheetName, sheetGid, sourceRow }) {
   if (status === "mapped_scp-wiki" && slug) {
     return `scp-wiki/${slug.toLowerCase()}`;
   }
 
   try {
     const parsed = new URL(sourceUrl);
-    return `${parsed.hostname.toLowerCase()}/${normalizePathname(parsed.pathname).toLowerCase()}`;
+    const normalizedPathname = normalizePathname(parsed.pathname);
+    if (normalizedPathname) {
+      return `${parsed.hostname.toLowerCase()}/${normalizedPathname.toLowerCase()}`;
+    }
   } catch {
-    return sourceUrl.trim().toLowerCase();
+    // Fall through to provenance key when the URL has no stable normalized identity.
   }
+
+  return `unmapped/${sheetRole}/${sheetName}/${sheetGid}/${sourceRow}`.toLowerCase();
 }
 
 function appendJoined(existing, next) {
@@ -158,6 +168,9 @@ export function mapWikidotUrl(sourceUrl, mirrorOrigin = DEFAULT_CANONICAL_MIRROR
   }
 
   const slug = normalizePathname(parsed.pathname);
+  if (slug === null) {
+    return { slug: "", mirrorUrl: "", status: "unmapped_invalid_slug_encoding" };
+  }
   if (!slug) {
     return { slug: "", mirrorUrl: "", status: "unmapped_missing_slug" };
   }
@@ -189,18 +202,23 @@ function extractRowsFromSheet(sheet, options) {
   const sheetGid = sheetValue(sheet, "gid", "unknown");
 
   rows.slice(1).forEach((row, offset) => {
+    if (!row.some((value) => value !== "")) {
+      return;
+    }
+
     const translator = getValue(row, index, "翻訳者名");
     if (translator.toLowerCase() !== "rokurokubi") {
       return;
     }
 
     const sourceUrl = getValue(row, index, "記事のURL");
+    const sourceRow = String(offset + 2);
     const { slug, mirrorUrl, status } = mapWikidotUrl(sourceUrl, mirrorOrigin);
     outputRows.push({
       sheet_roles: sheetRole,
       sheet_names: sheetName,
       sheet_gids: sheetGid,
-      source_rows: String(offset + 2),
+      source_rows: sourceRow,
       timestamps: getValue(row, index, "タイムスタンプ"),
       translators: translator,
       source_url: sourceUrl,
@@ -212,7 +230,7 @@ function extractRowsFromSheet(sheet, options) {
       wikijump_mirror_url: mirrorUrl,
       mirror_url_status: status,
       provenance_count: "1",
-      source_key: normalizeSourceKey(sourceUrl, slug, status)
+      source_key: normalizeSourceKey({ sourceUrl, slug, status, sheetRole, sheetName, sheetGid, sourceRow })
     });
   });
 
