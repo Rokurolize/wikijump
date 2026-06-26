@@ -31,9 +31,8 @@
 
   const currentLayout = $derived.by(resolveCurrentLayout)
 
-  // Keep existing child components synchronized while making the top-level
-  // shell decision available during SSR instead of only after hydration.
-  pageLayoutState.current = resolveCurrentLayout()
+  // Keep existing child components synchronized after hydration while the
+  // top-level shell decision is available during SSR through currentLayout.
   $effect(() => {
     pageLayoutState.current = currentLayout
   })
