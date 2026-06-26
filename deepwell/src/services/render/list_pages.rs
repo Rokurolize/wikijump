@@ -161,7 +161,7 @@ fn parse_supported_specification(
             *name,
             "category" | "limit" | "offset" | "order" | "pagetype" | "parent"
         )
-    }) || attributes.get("parent").copied().unwrap_or(".") != "."
+    }) || attributes.get("parent").copied() != Some(".")
         || !body.contains(CONTENT_VARIABLE)
     {
         return None;
@@ -432,6 +432,10 @@ mod tests {
 
     #[test]
     fn rejects_unknown_or_unsafe_attributes() {
+        assert!(
+            parse_supported_specification(r#" category="fragment""#, CONTENT_VARIABLE)
+                .is_none()
+        );
         assert!(
             parse_supported_specification(
                 r#" parent="other" category="fragment""#,
