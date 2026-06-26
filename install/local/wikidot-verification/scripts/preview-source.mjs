@@ -44,8 +44,12 @@ function parseArgs(argv) {
     } else if (arg === "--rpc-url") {
       args.rpcUrl = nextValue(arg);
     } else if (arg === "--rpc-timeout-ms") {
-      const value = Number.parseInt(nextValue(arg), 10);
-      if (!Number.isInteger(value) || value <= 0) {
+      const rawValue = nextValue(arg);
+      if (!/^\d+$/u.test(rawValue)) {
+        throw new Error("--rpc-timeout-ms must be a positive integer");
+      }
+      const value = Number.parseInt(rawValue, 10);
+      if (!Number.isSafeInteger(value) || value <= 0) {
         throw new Error("--rpc-timeout-ms must be a positive integer");
       }
       args.rpcTimeoutMs = value;

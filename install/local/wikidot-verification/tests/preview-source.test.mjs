@@ -143,5 +143,8 @@ test("preview-source rejects missing required option values", async () => {
   await assertPreviewFails(["--source"], /--source requires a value/);
   await assertPreviewFails(["--source", "--output-dir"], /--source requires a value/);
   await assertPreviewFails(["--source", "fixture", "--rpc-url"], /--rpc-url requires a value/);
+  await assertPreviewFails(["--source", "fixture", "--rpc-timeout-ms"], /--rpc-timeout-ms requires a value/);
+  await assertPreviewFails(["--source", "fixture", "--rpc-timeout-ms", "--json"], /--rpc-timeout-ms requires a value/);
   await assertPreviewFails(["--source", "fixture", "--rpc-timeout-ms", "0"], /--rpc-timeout-ms must be a positive integer/);
+  await assertPreviewFails(["--source", "fixture", "--rpc-timeout-ms", "10ms"], /--rpc-timeout-ms must be a positive integer/);
 });
