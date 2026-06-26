@@ -9,6 +9,9 @@ const DEFAULT_DB_CONTAINER = 'local-database-1';
 const DEFAULT_SITE_ID = 6000005;
 const DEFAULT_USER_ID = -1;
 const DEFAULT_IP_ADDRESS = '127.0.0.1';
+const SHELL_COMPILED_GENERATOR = 'corpus shell import';
+const SHELL_IMPORT_MARKER = 'corpus-shell-import';
+const SHELL_IMPORT_MESSAGE = 'Content not rendered yet for local Wikidot corpus snapshot import';
 
 function parseArgs(argv) {
   const args = {
@@ -287,7 +290,7 @@ function categoryName(slug) {
 
 function shellCreatePage(args, row) {
   const wikitext = sourceText(row);
-  const bodyHtml = '<div class="wj-proof-stub corpus-shell-import">Content not rendered yet for local Wikidot corpus snapshot import.</div>';
+  const bodyHtml = `<div class="wj-proof-stub ${SHELL_IMPORT_MARKER}">${SHELL_IMPORT_MESSAGE}.</div>`;
   const wikitextHash = textHashHex(args, wikitext);
   const bodyHash = textHashHex(args, bodyHtml);
   const title = fallbackTitle(row);
@@ -503,21 +506,58 @@ ON CONFLICT (page_id) DO UPDATE SET
 `;
 }
 
-function existingSnapshotPageId(args, row) {
+function existingSnapshotPageStatus(args, row) {
   const sql = `
-SELECT page_id
-FROM wikidot_page_snapshot
-WHERE source_site = ${sqlQuote(row.source_site)}
-  AND source_entity_id = ${sqlQuote(row.source_entity_id)}
-  AND encode(source_sha256, 'hex') = ${sqlQuote(row.source_sha256)}
-  AND encode(meta_sha256, 'hex') = ${sqlQuote(row.meta_sha256)}
-LIMIT 1;
+WITH matching_snapshot AS (
+  SELECT page_id
+  FROM wikidot_page_snapshot
+  WHERE source_site = ${sqlQuote(row.source_site)}
+    AND source_entity_id = ${sqlQuote(row.source_entity_id)}
+    AND encode(source_sha256, 'hex') = ${sqlQuote(row.source_sha256)}
+    AND encode(meta_sha256, 'hex') = ${sqlQuote(row.meta_sha256)}
+  LIMIT 1
+), active_page AS (
+  SELECT p.page_id, p.page_category_id
+  FROM page p
+  JOIN matching_snapshot snapshot ON snapshot.page_id = p.page_id
+  WHERE p.deleted_at IS NULL
+  LIMIT 1
+), latest_revision AS (
+  SELECT
+    pr.revision_id,
+    pr.compiled_generator,
+    body.contents AS compiled_body
+  FROM page_revision pr
+  JOIN active_page p ON p.page_id = pr.page_id
+  LEFT JOIN text body ON body.hash = pr.compiled_body_html_hash
+  ORDER BY pr.revision_number DESC, pr.revision_id DESC
+  LIMIT 1
+)
+SELECT
+  p.page_id || '|' ||
+  p.page_category_id || '|' ||
+  COALESCE((SELECT revision_id::text FROM latest_revision), '') || '|' ||
+  CASE
+    WHEN (SELECT revision_id FROM latest_revision) IS NOT NULL
+      AND COALESCE((SELECT compiled_generator FROM latest_revision), '') <> ${sqlQuote(SHELL_COMPILED_GENERATOR)}
+      AND POSITION(${sqlQuote(SHELL_IMPORT_MARKER)} IN COALESCE((SELECT compiled_body FROM latest_revision), '')) = 0
+      AND POSITION(${sqlQuote(SHELL_IMPORT_MESSAGE)} IN COALESCE((SELECT compiled_body FROM latest_revision), '')) = 0
+    THEN 'true'
+    ELSE 'false'
+  END
+FROM active_page p;
 `;
   const output = runPsql(args, sql, { capture: true });
   if (!output) return null;
-  const pageId = Number.parseInt(output, 10);
-  if (!Number.isInteger(pageId)) throw new Error(`invalid snapshot page_id output: ${output}`);
-  return pageId;
+  const [pageIdText, categoryIdText, revisionIdText = '', renderCompleteText = ''] = output.split('|');
+  const pageId = Number.parseInt(pageIdText, 10);
+  const categoryId = Number.parseInt(categoryIdText, 10);
+  const revisionId = revisionIdText === '' ? null : Number.parseInt(revisionIdText, 10);
+  const renderComplete = renderCompleteText === 'true';
+  if (!Number.isInteger(pageId) || !Number.isInteger(categoryId) || (revisionId !== null && !Number.isInteger(revisionId)) || !['true', 'false'].includes(renderCompleteText)) {
+    throw new Error(`invalid matching snapshot page status output: ${output}`);
+  }
+  return { page_id: pageId, page_category_id: categoryId, revision_id: revisionId, render_complete: renderComplete };
 }
 
 function existingActivePage(args, slug) {
@@ -586,10 +626,16 @@ ON CONFLICT (import_run_id, source_entity_id) DO UPDATE SET
 
 async function importRow(args, row, importRunId) {
   if (args.skipExistingDone) {
-    const snapshotPageId = existingSnapshotPageId(args, row);
-    if (snapshotPageId !== null) {
-      if (!args.dryRun) runPsql(args, recordItemSql(row, snapshotPageId, importRunId, 'done'));
-      return { slug: row.fullname, action: args.dryRun ? 'would_skip_existing_done' : 'skipped_existing_done', page_id: snapshotPageId };
+    const snapshotStatus = existingSnapshotPageStatus(args, row);
+    if (snapshotStatus !== null && snapshotStatus.render_complete) {
+      if (!args.dryRun) runPsql(args, recordItemSql(row, snapshotStatus.page_id, importRunId, 'done'));
+      return { slug: row.fullname, action: args.dryRun ? 'would_skip_existing_done' : 'skipped_existing_done', page_id: snapshotStatus.page_id };
+    }
+    if (snapshotStatus !== null && args.skipRerender) {
+      if (!args.dryRun) {
+        runPsql(args, recordItemSql(row, snapshotStatus.page_id, importRunId, 'render_pending', { render: 'matching_snapshot_still_shell_or_pending' }));
+      }
+      return { slug: row.fullname, action: args.dryRun ? 'would_keep_existing_render_pending' : 'kept_existing_render_pending', page_id: snapshotStatus.page_id, revision_id: snapshotStatus.revision_id };
     }
   }
 
