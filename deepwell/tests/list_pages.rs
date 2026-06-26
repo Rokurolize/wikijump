@@ -45,7 +45,7 @@ async fn set_page_created_at(runner: &TestRunner, page_id: i64, created_at: &str
 
 #[tokio::test]
 async fn exact_name_listpages_expands_created_at_and_rating() {
-    const TARGET_SLUG: &str = "scp-3034";
+    const TARGET_SLUG: &str = "great-hippo-exact-name-target-3034";
     const SOURCE_SLUG: &str = "great-hippo-exact-name-smoke";
 
     let mut runner = TestRunner::setup().await;
@@ -65,7 +65,7 @@ async fn exact_name_listpages_expands_created_at_and_rating() {
         json!({
             "site_id": site_id,
             "wikitext": "Target page body",
-            "title": "SCP-3034",
+            "title": "Great Hippo Exact Name Target 3034",
             "alt_title": null,
             "slug": TARGET_SLUG,
             "layout": "wikidot",
@@ -90,7 +90,7 @@ async fn exact_name_listpages_expands_created_at_and_rating() {
     assert_eq!(vote.value, 1135);
 
     let source = r#"Before
-[[module ListPages name="SCP-3034"]]
+[[module ListPages name="great-hippo-exact-name-target-3034"]]
 %%created_at%% +%%rating%%
 **[##grey|%%created_at%%##] [##green|+%%rating%%##]**
 [[/module]]

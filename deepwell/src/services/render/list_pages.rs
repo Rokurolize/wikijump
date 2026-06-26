@@ -86,7 +86,7 @@ pub(super) async fn expand_list_pages(
     wikitext: String,
     page_id: &PageId,
 ) -> Result<String> {
-    if !wikitext.contains("[[module ListPages") {
+    if !wikitext.contains(MODULE_OPEN) {
         return Ok(wikitext);
     }
 
