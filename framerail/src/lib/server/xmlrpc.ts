@@ -554,6 +554,19 @@ async function getFileOne(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcValu
   }
 }
 
+function decodeXmlRpcBase64(content: string): Buffer {
+  const normalized = content.replace(/\s+/g, "")
+  if (
+    normalized.length % 4 !== 0 ||
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(
+      normalized
+    )
+  ) {
+    throw new XmlRpcFault(-32602, "Argument content invalid: malformed base64")
+  }
+  return Buffer.from(normalized, "base64")
+}
+
 async function saveFileOne(
   call: XmlRpcCall,
   auth: BasicAuthCredentials
@@ -563,10 +576,10 @@ async function saveFileOne(
   const pageReference = getRequiredStructString(params, "page")
   const fileName = getRequiredStructString(params, "file")
   const content = getRequiredStructString(params, "content")
-  const comment = getOptionalStructString(params, "comment") ?? ""
+  const comment = getOptionalStructString(params, "comment")
   const saveMode = getOptionalStructString(params, "save_mode") ?? "create_or_update"
   const revisionComment =
-    getOptionalStructString(params, "revision_comment") ?? "XML-RPC file save"
+    getOptionalStructString(params, "revision_comment") ?? comment ?? "XML-RPC file save"
 
   if (!["create", "update", "create_or_update"].includes(saveMode)) {
     throw new XmlRpcFault(-32602, `Unsupported files.save_one save_mode: ${saveMode}`)
@@ -584,7 +597,7 @@ async function saveFileOne(
     throw new XmlRpcFault(406, "Argument file invalid: file does not exist")
   }
 
-  const contentBytes = Buffer.from(content, "base64")
+  const contentBytes = decodeXmlRpcBase64(content)
   const pendingBlobId = await uploadXmlRpcFileContent(contentBytes)
 
   if (existing) {
@@ -597,7 +610,7 @@ async function saveFileOne(
         file_id: existing.file_id,
         last_revision_id: existing.revision_id,
         uploaded_blob_id: pendingBlobId,
-        revision_comments: comment || revisionComment,
+        revision_comments: revisionComment,
         bypass_filter: true
       },
       writeContext
@@ -611,7 +624,7 @@ async function saveFileOne(
         user_id: XML_RPC_WRITE_USER_ID,
         name: fileName,
         uploaded_blob_id: pendingBlobId,
-        revision_comments: comment || revisionComment,
+        revision_comments: revisionComment,
         bypass_filter: true
       },
       writeContext
@@ -799,7 +812,7 @@ async function getDeepwellPageFiles(
   siteId: number,
   pageId: number
 ): Promise<DeepwellFile[]> {
-  return (await client.request("page_get_files", {
+  return (await requestDeepwell("page_get_files", {
     site_id: siteId,
     page_id: pageId,
     deleted: false
@@ -812,7 +825,7 @@ async function getDeepwellFile(
   file: string,
   includeData: boolean
 ): Promise<DeepwellFile | null> {
-  return (await client.request("file_get", {
+  return (await requestDeepwell("file_get", {
     site_id: siteId,
     page_id: pageId,
     file,
