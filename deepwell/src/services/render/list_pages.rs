@@ -92,10 +92,12 @@ pub(super) async fn expand_list_pages(
 
     let occurrences = find_occurrences(&wikitext)?;
     if occurrences.is_empty() {
-        warn!(
-            "Page ID {} contains ListPages text, but no complete block was recognized",
-            page_id.page_id,
-        );
+        if wikitext.contains("ListPages") {
+            warn!(
+                "Page ID {} contains ListPages text, but no complete block was recognized",
+                page_id.page_id,
+            );
+        }
         return Ok(wikitext);
     }
 
