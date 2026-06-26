@@ -536,12 +536,17 @@ async function getXmlRpcWriteContext(
   page: string,
   requestIp: string
 ): Promise<XmlRpcWriteContext> {
-  const login = (await requestDeepwell("login", {
+  let login: DeepwellLoginOutput
+  try {
+    login = (await client.request("login", {
     name_or_email: auth.username,
     password: auth.password,
     ip_address: requestIp,
     user_agent: "wikijump-xmlrpc-api/0.1"
   })) as DeepwellLoginOutput
+  } catch {
+    throw new XmlRpcFault(403, "Invalid XML-RPC authentication", 403)
+  }
   const session = (await requestDeepwell("session_get", login.session_token)) as
     | DeepwellSession
     | null
