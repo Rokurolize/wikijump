@@ -207,7 +207,7 @@ function extractRowsFromSheet(sheet, options) {
     }
 
     const translator = getValue(row, index, "翻訳者名");
-    if (translator.toLowerCase() !== "rokurokubi") {
+    if (translator.trim().toLowerCase() !== "rokurokubi") {
       return;
     }
 
