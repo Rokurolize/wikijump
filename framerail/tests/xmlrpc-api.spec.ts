@@ -675,7 +675,7 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   expect(saveBody).toContain("<methodResponse>")
   expect(saveBody).toContain("<name>size</name><value><int>35</int></value>")
   expect(saveBody).toContain(
-    "<name>comment</name><value><string>initial file proof</string></value>"
+    "<name>comment</name><value><string>xmlrpc file create proof</string></value>"
   )
   expect(saveBody).toContain("<name>mime_type</name><value><string>")
 
@@ -695,7 +695,7 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   expect(metaBody).toContain("<name>proof.txt</name>")
   expect(metaBody).toContain("<name>size</name><value><int>35</int></value>")
   expect(metaBody).toContain(
-    "<name>comment</name><value><string>initial file proof</string></value>"
+    "<name>comment</name><value><string>xmlrpc file create proof</string></value>"
   )
   expect(metaBody).not.toContain(initialContent)
 
@@ -724,7 +724,7 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   const updateBody = await updateResponse.text()
   expect(updateBody).toContain("<name>size</name><value><int>35</int></value>")
   expect(updateBody).toContain(
-    "<name>comment</name><value><string>updated file proof</string></value>"
+    "<name>comment</name><value><string>xmlrpc file update proof</string></value>"
   )
 
   const updatedOneResponse = await request.post("/xml-rpc-api.php", {
