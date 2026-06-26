@@ -53,11 +53,27 @@ interface DeepwellLoginOutput {
   session_token: string
 }
 
+interface DeepwellSession {
+  user_id: number
+}
+
+interface XmlRpcDispatchOptions {
+  allowMulticall: boolean
+  requestIp: string
+}
+
+interface XmlRpcWriteContext {
+  sessionToken: string
+  siteId: number
+  page: string
+  userId: number
+  ipAddress: string
+}
+
 type DeepwellStringParams = {
   [key: string]: string | string[] | undefined
 }
 
-const XML_RPC_WRITE_USER_ID = -1
 const XML_RPC_WRITE_IP_ADDRESS = "127.0.0.1"
 
 const XML_RPC_HEADERS = {
@@ -148,7 +164,10 @@ class XmlRpcFault extends Error {
   }
 }
 
-export async function handleXmlRpcRequest(request: Request): Promise<Response> {
+export async function handleXmlRpcRequest(
+  request: Request,
+  requestIp = XML_RPC_WRITE_IP_ADDRESS
+): Promise<Response> {
   if (request.method !== "POST") {
     return faultResponse(new XmlRpcFault(405, "XML-RPC endpoint requires POST", 405))
   }
@@ -164,7 +183,10 @@ export async function handleXmlRpcRequest(request: Request): Promise<Response> {
 
   try {
     const call = parseXmlRpcCall(await request.text())
-    const result = await dispatchXmlRpcCall(call, auth)
+    const result = await dispatchXmlRpcCall(call, auth, {
+      allowMulticall: true,
+      requestIp
+    })
     return xmlResponse(serializeMethodResponse(result))
   } catch (error) {
     if (error instanceof XmlRpcFault) {
@@ -178,7 +200,7 @@ export async function handleXmlRpcRequest(request: Request): Promise<Response> {
 async function dispatchXmlRpcCall(
   call: XmlRpcCall,
   auth: BasicAuthCredentials,
-  options = { allowMulticall: true }
+  options: XmlRpcDispatchOptions
 ): Promise<XmlRpcValue> {
   switch (call.methodName) {
     case "system.listMethods":
@@ -191,7 +213,7 @@ async function dispatchXmlRpcCall(
       if (!options.allowMulticall) {
         throw new XmlRpcFault(-32600, "Nested system.multicall calls are not supported")
       }
-      return dispatchMulticall(call, auth)
+      return dispatchMulticall(call, auth, options.requestIp)
     case "categories.select":
       return selectCategories(call)
     case "tags.select":
@@ -203,7 +225,7 @@ async function dispatchXmlRpcCall(
     case "pages.get_one":
       return getPageOne(call)
     case "pages.save_one":
-      return savePageOne(call, auth)
+      return savePageOne(call, auth, options.requestIp)
     default:
       if (METHOD_DEFINITIONS[call.methodName]) {
         throw new XmlRpcFault(
@@ -218,7 +240,8 @@ async function dispatchXmlRpcCall(
 
 async function dispatchMulticall(
   call: XmlRpcCall,
-  auth: BasicAuthCredentials
+  auth: BasicAuthCredentials,
+  requestIp: string
 ): Promise<XmlRpcValue[]> {
   const calls = getArrayParam(call, 0, "calls")
   const results: XmlRpcValue[] = []
@@ -239,7 +262,8 @@ async function dispatchMulticall(
       }
 
       const value = await dispatchXmlRpcCall({ methodName, params }, auth, {
-        allowMulticall: false
+        allowMulticall: false,
+        requestIp
       })
       results.push([value])
     } catch (error) {
@@ -362,7 +386,8 @@ async function getPageOne(call: XmlRpcCall): Promise<{ [key: string]: XmlRpcValu
 
 async function savePageOne(
   call: XmlRpcCall,
-  auth: BasicAuthCredentials
+  auth: BasicAuthCredentials,
+  requestIp: string
 ): Promise<{ [key: string]: XmlRpcValue }> {
   const params = getStructParam(call, 0, "params")
   const site = getRequiredStructString(params, "site")
@@ -385,7 +410,8 @@ async function savePageOne(
   const writeContext = await getXmlRpcWriteContext(
     auth,
     siteId,
-    page?.slug ?? pageReference
+    page?.slug ?? pageReference,
+    requestIp
   )
 
   if (saveMode === "create" && page) {
@@ -395,6 +421,7 @@ async function savePageOne(
     throw new XmlRpcFault(406, "Argument page invalid: page does not exist")
   }
 
+  const createdPage = !page
   if (!page) {
     await requestDeepwell(
       "page_create",
@@ -406,9 +433,8 @@ async function savePageOne(
         slug: pageReference,
         layout: "wikidot",
         revision_comments: revisionComment,
-        user_id: XML_RPC_WRITE_USER_ID,
-        ip_address: XML_RPC_WRITE_IP_ADDRESS,
-        bypass_filter: true
+        user_id: writeContext.userId,
+        ip_address: writeContext.ipAddress
       },
       writeContext
     )
@@ -416,10 +442,10 @@ async function savePageOne(
   }
 
   const editBody: { wikitext?: string; title?: string; tags?: string[] } = {}
-  if (content !== null) {
+  if (!createdPage && content !== null) {
     editBody.wikitext = content
   }
-  if (title !== null) {
+  if (!createdPage && title !== null) {
     editBody.title = title
   }
   if (tags !== null) {
@@ -434,8 +460,8 @@ async function savePageOne(
         page: page.slug,
         last_revision_id: page.revision_id,
         revision_comments: revisionComment,
-        user_id: XML_RPC_WRITE_USER_ID,
-        ip_address: XML_RPC_WRITE_IP_ADDRESS,
+        user_id: writeContext.userId,
+        ip_address: writeContext.ipAddress,
         ...editBody
       },
       { ...writeContext, page: page.slug }
@@ -457,8 +483,8 @@ async function savePageOne(
         last_revision_id: page.revision_id,
         new_slug: renameAs,
         revision_comments: revisionComment,
-        user_id: XML_RPC_WRITE_USER_ID,
-        ip_address: XML_RPC_WRITE_IP_ADDRESS
+        user_id: writeContext.userId,
+        ip_address: writeContext.ipAddress
       },
       { ...writeContext, page: page.slug }
     )
@@ -507,19 +533,29 @@ async function getDeepwellSiteId(site: string): Promise<number> {
 async function getXmlRpcWriteContext(
   auth: BasicAuthCredentials,
   siteId: number,
-  page: string
-): Promise<{ sessionToken: string; siteId: number; page: string }> {
+  page: string,
+  requestIp: string
+): Promise<XmlRpcWriteContext> {
   const login = (await requestDeepwell("login", {
     name_or_email: auth.username,
     password: auth.password,
-    ip_address: XML_RPC_WRITE_IP_ADDRESS,
+    ip_address: requestIp,
     user_agent: "wikijump-xmlrpc-api/0.1"
   })) as DeepwellLoginOutput
+  const session = (await requestDeepwell("session_get", login.session_token)) as
+    | DeepwellSession
+    | null
+
+  if (!session) {
+    throw new XmlRpcFault(-32603, "XML-RPC login did not return a usable session")
+  }
 
   return {
     sessionToken: login.session_token,
     siteId,
-    page
+    page,
+    userId: session.user_id,
+    ipAddress: requestIp
   }
 }
 
