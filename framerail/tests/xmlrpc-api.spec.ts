@@ -638,7 +638,7 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   const pageSlug = `fixture-xmlrpc-file-${Date.now()}`
   const fileName = "proof.txt"
   const initialText = "XML-RPC file proof initial content."
-  const updatedText = "XML-RPC file proof updated content."
+  const updatedText = "XML-RPC file proof updated content with extra bytes."
   const initialContent = Buffer.from(initialText).toString("base64")
   const updatedContent = Buffer.from(updatedText).toString("base64")
 
@@ -722,7 +722,7 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   })
   expect(updateResponse.status()).toBe(200)
   const updateBody = await updateResponse.text()
-  expect(updateBody).toContain("<name>size</name><value><int>35</int></value>")
+  expect(updateBody).toContain("<name>size</name><value><int>52</int></value>")
   expect(updateBody).toContain(
     "<name>comment</name><value><string>xmlrpc file update proof</string></value>"
   )

@@ -770,7 +770,11 @@ async function putPresignedBlob(url: string, content: Buffer): Promise<void> {
 }
 
 function localPresignConnectBase(url: URL): URL | null {
-  if (url.hostname !== "files") {
+  const localRewriteEnabled =
+    process.env.WIKIJUMP_XMLRPC_LOCAL_FILE_UPLOAD === "1" ||
+    process.env.FRAMERAIL_ENV === "local" ||
+    process.env.NODE_ENV === "development"
+  if (!localRewriteEnabled || url.hostname !== "files") {
     return null
   }
   return new URL(`http://127.0.0.1:${url.port || "9000"}`)
