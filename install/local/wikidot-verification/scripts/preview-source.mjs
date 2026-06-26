@@ -6,6 +6,7 @@ import path from "node:path";
 
 const ADMIN_USER_ID = -1;
 const IP_ADDRESS = "127.0.0.1";
+const DEFAULT_RPC_TIMEOUT_MS = 10_000;
 const RAW_SYNTAX_PATTERNS = [
   /\[\[include\b/gi,
   /\[\[module\s+ListPages\b/gi,
@@ -19,6 +20,7 @@ const RAW_SYNTAX_PATTERNS = [
 function parseArgs(argv) {
   const args = {
     outputDir: path.resolve(process.cwd(), "preview-source-output"),
+    rpcTimeoutMs: DEFAULT_RPC_TIMEOUT_MS,
     slugPrefix: "preview-",
   };
 
@@ -41,6 +43,12 @@ function parseArgs(argv) {
       args.outputDir = path.resolve(nextValue(arg));
     } else if (arg === "--rpc-url") {
       args.rpcUrl = nextValue(arg);
+    } else if (arg === "--rpc-timeout-ms") {
+      const value = Number.parseInt(nextValue(arg), 10);
+      if (!Number.isInteger(value) || value <= 0) {
+        throw new Error("--rpc-timeout-ms must be a positive integer");
+      }
+      args.rpcTimeoutMs = value;
     } else if (arg === "--site") {
       args.siteSlug = nextValue(arg);
     } else if (arg === "--slug") {
@@ -63,7 +71,7 @@ function parseArgs(argv) {
 }
 
 function printHelpAndExit() {
-  console.log(`Usage: node install/local/wikidot-verification/scripts/preview-source.mjs --source FILE [--manifest corpus-manifest.tsv] [--output-dir DIR] [--rpc-url URL] [--site scp-wiki] [--slug SLUG] [--title TITLE] [--slug-prefix preview-] [--json]`);
+  console.log(`Usage: node install/local/wikidot-verification/scripts/preview-source.mjs --source FILE [--manifest corpus-manifest.tsv] [--output-dir DIR] [--rpc-url URL] [--rpc-timeout-ms MS] [--site scp-wiki] [--slug SLUG] [--title TITLE] [--slug-prefix preview-] [--json]`);
   process.exit(0);
 }
 
@@ -115,8 +123,9 @@ async function readTsv(filePath) {
 }
 
 class DeepwellClient {
-  constructor(rpcUrl) {
+  constructor(rpcUrl, timeoutMs = DEFAULT_RPC_TIMEOUT_MS) {
     this.rpcUrl = rpcUrl;
+    this.timeoutMs = timeoutMs;
     this.nextId = 1;
   }
 
@@ -126,6 +135,8 @@ class DeepwellClient {
     if (context.siteId) headers["X-Deepwell-Site-Id"] = String(context.siteId);
     if (context.page) headers["X-Deepwell-Page"] = String(context.page);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
     let response;
     try {
       response = await fetch(this.rpcUrl, {
@@ -137,10 +148,16 @@ class DeepwellClient {
           method,
           params,
         }),
+        signal: controller.signal,
       });
     } catch (error) {
+      if (error.name === "AbortError") {
+        throw new Error(`JSON-RPC ${method} timed out after ${this.timeoutMs}ms for ${this.rpcUrl}`);
+      }
       const cause = error.cause?.message ? ` cause=${error.cause.message}` : "";
       throw new Error(`JSON-RPC ${method} fetch failed for ${this.rpcUrl}: ${error.message}${cause}`);
+    } finally {
+      clearTimeout(timeout);
     }
 
     const bodyText = await response.text();
@@ -194,6 +211,7 @@ async function createOrUpdatePreviewPage(client, siteId, sessionToken, preview, 
       revision_comments: "v5 preview-source create",
       user_id: ADMIN_USER_ID,
       ip_address: IP_ADDRESS,
+      tags: preview.tags,
     });
     parserErrors = created.parser_errors ?? [];
     action = "created";
@@ -383,7 +401,7 @@ async function main() {
   const siteSlug = args.siteSlug || process.env.WIKIDOT_VERIFY_SITE_SLUG || "scp-wiki";
   const adminEmail = process.env.WIKIDOT_VERIFY_ADMIN_EMAIL || "admin@wikijump";
   const adminPassword = process.env.WIKIDOT_VERIFY_ADMIN_PASS || "wikijumpadmin1";
-  const client = new DeepwellClient(rpcUrl);
+  const client = new DeepwellClient(rpcUrl, args.rpcTimeoutMs);
   const timings = {};
   let imported = null;
   let classification;
@@ -445,6 +463,7 @@ async function main() {
       title,
       previewSlug,
       slugPrefix: args.slugPrefix,
+      rpcTimeoutMs: args.rpcTimeoutMs,
     },
     html: {
       path: htmlPath,
