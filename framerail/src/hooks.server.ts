@@ -36,14 +36,17 @@ const SECURITY_HEADERS = {
 
 const HSTS_HEADER = "max-age=31536000; includeSubDomains"
 const SITE_CONTEXT_EXEMPT_PATHS = new Set(["/xml-rpc-api.php"])
-const LOCAL_WIKIDOT_INTERWIKI_PREFIX = "/-/wikidot-interwiki/"
+const LOCAL_WIKIDOT_INTERWIKI_FRAME_PATHS = new Set([
+  "/-/wikidot-interwiki/interwikiFrame.html",
+  "/-/wikidot-interwiki/styleFrame.html"
+])
 
 function shouldSetHsts() {
   return !isLocalEnvironment()
 }
 
 function allowsLocalWikidotInterwikiFrame(pathname: string) {
-  return isLocalEnvironment() && pathname.startsWith(LOCAL_WIKIDOT_INTERWIKI_PREFIX)
+  return isLocalEnvironment() && LOCAL_WIKIDOT_INTERWIKI_FRAME_PATHS.has(pathname)
 }
 
 function applySecurityHeaders(response: Response, pathname: string) {
