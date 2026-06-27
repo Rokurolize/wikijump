@@ -135,7 +135,7 @@ impl TextBlockService {
 
         // If there's no additional work for us, quit early
 
-        if max_index == 0 && prev_max_index == 0 {
+        if blocks.is_empty() && prev_max_index == 0 {
             debug!("Not inserting any blocks, no prior blocks to remove");
             return Ok(());
         }
@@ -191,6 +191,7 @@ impl TextBlockService {
                 block_type: Set(block_type),
                 page_id: Set(page_id),
                 block_index: Set(index),
+                s3_filename: Set(filename.to_owned()),
                 block_name: Set(name.map(String::from)),
                 text_type: Set(text_type.map(String::from)),
             });
