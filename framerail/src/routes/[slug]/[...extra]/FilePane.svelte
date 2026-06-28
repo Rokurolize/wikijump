@@ -1,7 +1,8 @@
 <script lang="ts">
   import { deserialize } from "$app/forms"
   import { invalidateAll } from "$app/navigation"
-  import { errorPopupState, pageLayoutState } from "$lib/stores.svelte"
+  import { errorPopupState } from "$lib/stores.svelte"
+  import { getPageLayoutContext } from "$lib/page-layout-context"
   import { Layout } from "$lib/types"
   import { SvelteMap } from "svelte/reactivity"
   import { fileProxy, superForm } from "sveltekit-superforms"
@@ -12,6 +13,8 @@
   import type { FileRevisionModel, Optional } from "$lib/types"
 
   let { data }: PageProps = $props()
+
+  const pageLayoutContext = getPageLayoutContext()
 
   type FileAction = "upload" | "edit" | "move" | "restore" | "history"
   let activeFileAction = $state<FileAction | null>(null)
@@ -282,7 +285,7 @@
   })
 </script>
 
-{#if pageLayoutState.current === Layout.WIKIDOT}
+{#if pageLayoutContext.current === Layout.WIKIDOT}
   <h1 class="page-file-header">
     {data.internationalization?.["wiki-page-file"]}
   </h1>
@@ -293,7 +296,7 @@
 {/if}
 
 <div class="file-panel">
-  {#if pageLayoutState.current === Layout.WIKIDOT}
+  {#if pageLayoutContext.current === Layout.WIKIDOT}
     <div class="buttons">
       <input
         class="btn btn-primary"
@@ -339,7 +342,7 @@
         <div class="file-attribute updated-at">
           {data.internationalization?.["wiki-page-file.updated-at"]}
         </div>
-        {#if pageLayoutState.current !== Layout.WIKIDOT}
+        {#if pageLayoutContext.current !== Layout.WIKIDOT}
           <div class="file-attribute mime">
             {data.internationalization?.["wiki-page-file.mime"]}
           </div>
@@ -365,7 +368,7 @@
           <div class="file-attribute updated-at">
             {file.file_updated_at ? new Date(file.file_updated_at).toLocaleString() : "-"}
           </div>
-          {#if pageLayoutState.current !== Layout.WIKIDOT}
+          {#if pageLayoutContext.current !== Layout.WIKIDOT}
             <div class="file-attribute mime">
               {file.mime}
             </div>
@@ -374,7 +377,7 @@
             {file.size}
           </div>
           <div class="file-attribute action">
-            {#if pageLayoutState.current === Layout.WIKIDOT}
+            {#if pageLayoutContext.current === Layout.WIKIDOT}
               {#if file.revision_type === "delete"}
                 <!-- svelte-ignore a11y_invalid_attribute -->
                 <a
@@ -530,9 +533,8 @@
         name="comments"
         class="file-form-field file-comments"
         placeholder={data.internationalization?.["wiki-page-revision-comments"]}
-        bind:value={$uploadForm.comments}
-      ></textarea>
-      {#if pageLayoutState.current === Layout.WIKIDOT}
+        bind:value={$uploadForm.comments}></textarea>
+      {#if pageLayoutContext.current === Layout.WIKIDOT}
         <div class="buttons">
           <input
             class="btn btn-default"
@@ -608,9 +610,8 @@
         name="comments"
         class="file-form-field file-comments"
         placeholder={data.internationalization?.["wiki-page-revision-comments"]}
-        bind:value={$editForm.comments}
-      ></textarea>
-      {#if pageLayoutState.current === Layout.WIKIDOT}
+        bind:value={$editForm.comments}></textarea>
+      {#if pageLayoutContext.current === Layout.WIKIDOT}
         <div class="buttons">
           <input
             class="btn btn-default"
@@ -669,9 +670,8 @@
         name="comments"
         class="file-move-comments"
         placeholder={data.internationalization?.["wiki-page-revision-comments"]}
-        bind:value={$moveForm.comments}
-      ></textarea>
-      {#if pageLayoutState.current === Layout.WIKIDOT}
+        bind:value={$moveForm.comments}></textarea>
+      {#if pageLayoutContext.current === Layout.WIKIDOT}
         <div class="buttons">
           <input
             class="btn btn-default"
@@ -737,9 +737,8 @@
         name="comments"
         class="file-restore-comments"
         placeholder={data.internationalization?.["wiki-page-revision-comments"]}
-        bind:value={$restoreForm.comments}
-      ></textarea>
-      {#if pageLayoutState.current === Layout.WIKIDOT}
+        bind:value={$restoreForm.comments}></textarea>
+      {#if pageLayoutContext.current === Layout.WIKIDOT}
         <div class="buttons">
           <input
             class="btn btn-default"
@@ -816,7 +815,7 @@
         <div class="revision-row" data-id={revisionItem.revision_id}>
           <div class="revision-attribute action">
             {#if ["create", "regular"].includes(revisionItem.revision_type)}
-              {#if pageLayoutState.current === Layout.WIKIDOT}
+              {#if pageLayoutContext.current === Layout.WIKIDOT}
                 <!-- svelte-ignore a11y_invalid_attribute -->
                 <a
                   class="btn btn-primary btn-sm btn-small"
