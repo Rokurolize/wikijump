@@ -127,10 +127,19 @@ function normalizePathname(pathname) {
 }
 
 function encodeMirrorPath(pathname) {
-  return pathname
-    .split("/")
-    .map((segment) => encodeURIComponent(segment))
-    .join("/");
+  const segments = pathname.split("/");
+  if (segments.some((segment) => segment === "." || segment === "..")) {
+    return null;
+  }
+  return segments.map((segment) => encodeURIComponent(segment)).join("/");
+}
+
+function rawPathnameFromUrl(sourceUrl) {
+  const match = String(sourceUrl).match(/^[a-z][a-z0-9+.-]*:\/\/[^/?#]*([^?#]*)/iu);
+  if (!match) {
+    return null;
+  }
+  return match[1] || "/";
 }
 
 function normalizeSourceKey({ sourceUrl, slug, status, sheetRole, sheetName, sheetGid, sourceRow }) {
@@ -140,7 +149,7 @@ function normalizeSourceKey({ sourceUrl, slug, status, sheetRole, sheetName, she
 
   try {
     const parsed = new URL(sourceUrl);
-    const normalizedPathname = normalizePathname(parsed.pathname);
+    const normalizedPathname = normalizePathname(rawPathnameFromUrl(sourceUrl) ?? parsed.pathname);
     if (normalizedPathname) {
       return `${parsed.hostname.toLowerCase()}/${normalizedPathname.toLowerCase()}`;
     }
@@ -174,7 +183,7 @@ export function mapWikidotUrl(sourceUrl, mirrorOrigin = DEFAULT_CANONICAL_MIRROR
     return { slug: "", mirrorUrl: "", status: "unmapped_invalid_url" };
   }
 
-  const slug = normalizePathname(parsed.pathname);
+  const slug = normalizePathname(rawPathnameFromUrl(sourceUrl) ?? parsed.pathname);
   if (slug === null) {
     return { slug: "", mirrorUrl: "", status: "unmapped_invalid_slug_encoding" };
   }
@@ -186,9 +195,14 @@ export function mapWikidotUrl(sourceUrl, mirrorOrigin = DEFAULT_CANONICAL_MIRROR
     return { slug, mirrorUrl: "", status: `unmapped_${parsed.hostname}` };
   }
 
+  const mirrorPath = encodeMirrorPath(slug);
+  if (mirrorPath === null) {
+    return { slug, mirrorUrl: "", status: "unmapped_invalid_slug_dot_segment" };
+  }
+
   return {
     slug,
-    mirrorUrl: `${normalizeMirrorOrigin(mirrorOrigin)}/${encodeMirrorPath(slug)}`,
+    mirrorUrl: `${normalizeMirrorOrigin(mirrorOrigin)}/${mirrorPath}`,
     status: "mapped_scp-wiki"
   };
 }

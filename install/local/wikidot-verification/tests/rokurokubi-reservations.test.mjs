@@ -235,6 +235,16 @@ test("maps only scp-wiki Wikidot URLs to the canonical mirror origin", () => {
     mirrorUrl: "https://scp-wiki.wikijump.localhost/foo%23bar/baz%3Fqux",
     status: "mapped_scp-wiki"
   });
+  assert.deepEqual(mapWikidotUrl("https://scp-wiki.wikidot.com/%2E%2E/admin"), {
+    slug: "../admin",
+    mirrorUrl: "",
+    status: "unmapped_invalid_slug_dot_segment"
+  });
+  assert.deepEqual(mapWikidotUrl("https://scp-wiki.wikidot.com/foo/%2E/bar"), {
+    slug: "foo/./bar",
+    mirrorUrl: "",
+    status: "unmapped_invalid_slug_dot_segment"
+  });
   assert.equal(
     mapWikidotUrl("https://scp-jp.wikidot.com/scp-173").status,
     "unmapped_scp-jp.wikidot.com"
