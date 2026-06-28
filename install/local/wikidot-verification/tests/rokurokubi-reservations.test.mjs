@@ -114,6 +114,21 @@ test("does not deduplicate unrelated blank or malformed source URLs", () => {
   assert.equal(rows[2].mirror_url_status, "unmapped_invalid_slug_encoding");
 });
 
+test("uses the first non-empty CSV row as the header", () => {
+  const { rows, manifest } = extractRokurokubiReservations(`\n   \n${SAMPLE_CSV}`, {
+    sourceRole: "active",
+    sourceName: "Main",
+    sourceGid: "1325361212"
+  });
+
+  assert.equal(rows.length, 3);
+  assert.deepEqual(
+    rows.map((row) => row.source_rows),
+    ["6", "7", "8"]
+  );
+  assert.equal(manifest.source_row_count_excluding_header, 5);
+});
+
 test("formats extracted rows as round-trippable CSV", () => {
   const { rows } = extractRokurokubiReservations(SAMPLE_CSV);
   const output = formatCsv(rows);
@@ -213,6 +228,11 @@ test("maps only scp-wiki Wikidot URLs to the canonical mirror origin", () => {
   assert.deepEqual(mapWikidotUrl("https://scp-wiki.wikidot.com/scp-9506", "scp-wiki.wikijump.localhost:18443"), {
     slug: "scp-9506",
     mirrorUrl: "https://scp-wiki.wikijump.localhost:18443/scp-9506",
+    status: "mapped_scp-wiki"
+  });
+  assert.deepEqual(mapWikidotUrl("https://scp-wiki.wikidot.com/foo%23bar/baz%3Fqux"), {
+    slug: "foo#bar/baz?qux",
+    mirrorUrl: "https://scp-wiki.wikijump.localhost/foo%23bar/baz%3Fqux",
     status: "mapped_scp-wiki"
   });
   assert.equal(

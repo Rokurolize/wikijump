@@ -18,10 +18,28 @@ function parseArgs(argv) {
     sourceGid: null,
     sheetManifest: null
   };
+  const optionTokens = new Set([
+    "--source",
+    "--sheet-manifest",
+    "--output",
+    "--manifest",
+    "--mirror-origin",
+    "--mirror-host",
+    "--source-label",
+    "--source-role",
+    "--source-name",
+    "--source-gid",
+    "--help",
+    "-h"
+  ]);
 
   const nextValue = (flag, index) => {
-    const value = argv[index + 1];
-    if (!value || value.startsWith("--")) {
+    let value = argv[index + 1];
+    if (value === "--") {
+      argv.splice(index + 1, 1);
+      value = argv[index + 1];
+    }
+    if (!value || optionTokens.has(value) || value.startsWith("--")) {
       throw new Error(`${flag} requires a value`);
     }
     return value;
@@ -180,7 +198,13 @@ async function main() {
   await writeEnsuringParent(args.output, outputCsv);
   await writeEnsuringParent(args.manifest, `${JSON.stringify(enrichedManifest, null, 2)}\n`);
 
-  console.log(`wrote ${rows.length} rokurokubi reservation rows to ${args.output}`);
+  console.log(JSON.stringify({
+    output: args.output,
+    manifest: args.manifest,
+    rokurokubi_row_count: enrichedManifest.rokurokubi_row_count,
+    mapped_scp_wiki_count: enrichedManifest.mapped_scp_wiki_count,
+    unmapped_count: enrichedManifest.unmapped_count
+  }));
 }
 
 main().catch((error) => {

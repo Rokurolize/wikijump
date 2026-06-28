@@ -126,6 +126,13 @@ function normalizePathname(pathname) {
   }
 }
 
+function encodeMirrorPath(pathname) {
+  return pathname
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
 function normalizeSourceKey({ sourceUrl, slug, status, sheetRole, sheetName, sheetGid, sourceRow }) {
   if (status === "mapped_scp-wiki" && slug) {
     return `scp-wiki/${slug.toLowerCase()}`;
@@ -181,7 +188,7 @@ export function mapWikidotUrl(sourceUrl, mirrorOrigin = DEFAULT_CANONICAL_MIRROR
 
   return {
     slug,
-    mirrorUrl: `${normalizeMirrorOrigin(mirrorOrigin)}/${encodeURI(slug)}`,
+    mirrorUrl: `${normalizeMirrorOrigin(mirrorOrigin)}/${encodeMirrorPath(slug)}`,
     status: "mapped_scp-wiki"
   };
 }
@@ -194,15 +201,21 @@ function extractRowsFromSheet(sheet, options) {
     throw new Error(`CSV is empty: ${sheetValue(sheet, "name", sheet.csvPath)}`);
   }
 
-  const headers = rows[0];
+  const hasContent = (row) => row.some((value) => value.trim() !== "");
+  const headerRowIndex = rows.findIndex(hasContent);
+  if (headerRowIndex === -1) {
+    throw new Error("CSV is empty");
+  }
+
+  const headers = rows[headerRowIndex];
   const index = headerIndex(headers);
   const outputRows = [];
   const sheetRole = sheetValue(sheet, "role");
   const sheetName = sheetValue(sheet, "name", sheetValue(sheet, "label", sheet.csvPath));
   const sheetGid = sheetValue(sheet, "gid", "unknown");
 
-  rows.slice(1).forEach((row, offset) => {
-    if (!row.some((value) => value !== "")) {
+  rows.slice(headerRowIndex + 1).forEach((row, offset) => {
+    if (!hasContent(row)) {
       return;
     }
 
@@ -212,7 +225,7 @@ function extractRowsFromSheet(sheet, options) {
     }
 
     const sourceUrl = getValue(row, index, "記事のURL");
-    const sourceRow = String(offset + 2);
+    const sourceRow = String(headerRowIndex + offset + 2);
     const { slug, mirrorUrl, status } = mapWikidotUrl(sourceUrl, mirrorOrigin);
     outputRows.push({
       sheet_roles: sheetRole,
@@ -244,7 +257,7 @@ function extractRowsFromSheet(sheet, options) {
       label: sheetValue(sheet, "label", sheet.csvPath),
       csv: sheet.csvPath,
       source_csv_sha256: sha256Hex(csvText),
-      source_row_count_excluding_header: rows.length - 1,
+      source_row_count_excluding_header: rows.length - headerRowIndex - 1,
       rokurokubi_row_count: outputRows.length,
       mapped_scp_wiki_count: mappedCount,
       unmapped_count: outputRows.length - mappedCount
