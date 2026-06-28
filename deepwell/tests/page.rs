@@ -647,6 +647,15 @@ async fn listpages_fragment_content_skips_hidden_pages_by_default() {
     )
     .await;
 
+    create_listpages_test_page(
+        &runner,
+        site_id,
+        "fragment:fixture-listpages-fragment-category-primer",
+        "Fixture Fragment Category Primer",
+        "Fixture fragment category primer.",
+    )
+    .await;
+
     let hidden_revision = create_listpages_test_page(
         &runner,
         site_id,
