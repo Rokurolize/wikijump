@@ -668,6 +668,19 @@ const server = createServer((request, response) => {
         params: rpcRequest.params
       })
       const pageFiles = (filesByPageId[rpcRequest.params.page_id] ??= {})
+      if (pageFiles[rpcRequest.params.name]) {
+        response.writeHead(200, { "content-type": "application/json" }).end(
+          JSON.stringify({
+            error: {
+              code: -32602,
+              message: "Unexpected fixture duplicate file_create target"
+            },
+            id: rpcRequest.id,
+            jsonrpc: "2.0"
+          })
+        )
+        return
+      }
       const content = pendingUploads[rpcRequest.params.uploaded_blob_id]
       delete pendingUploads[rpcRequest.params.uploaded_blob_id]
       const file = createFixtureFile(

@@ -863,7 +863,16 @@ async function uploadXmlRpcFileContent(
 }
 
 async function putPresignedBlob(url: string, content: Buffer): Promise<void> {
-  const signed = new URL(url)
+  let signed: URL
+  try {
+    signed = new URL(url)
+  } catch {
+    throw new XmlRpcFault(-32603, "Malformed Deepwell response: blob_upload presign_url")
+  }
+  if (signed.protocol !== "http:" && signed.protocol !== "https:") {
+    throw new XmlRpcFault(-32603, `Unsupported blob upload protocol: ${signed.protocol}`)
+  }
+
   const target = localPresignConnectBase(signed) ?? signed
   const requestUrl = new URL(
     `${target.protocol}//${target.host}${signed.pathname}${signed.search}`
@@ -1287,7 +1296,10 @@ function isDeepwellFile(value: unknown, includeData: boolean): value is Deepwell
       value.data === undefined ||
       typeof value.data === "string" ||
       (Array.isArray(value.data) &&
-        value.data.every((byte) => typeof byte === "number" && Number.isInteger(byte))))
+        value.data.every(
+          (byte) =>
+            typeof byte === "number" && Number.isInteger(byte) && byte >= 0 && byte <= 255
+        )))
   )
 }
 

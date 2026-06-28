@@ -4,6 +4,8 @@ import { expect, test } from "@playwright/test"
 
 import { parseXmlRpcCall, serializeMethodResponse } from "../src/lib/server/xmlrpc"
 
+test.describe.configure({ mode: "serial" })
+
 const xmlRpcListMethodsRequest = `<?xml version="1.0"?>
 <methodCall>
   <methodName>system.listMethods</methodName>
@@ -276,6 +278,15 @@ function xmlRpcPagesSaveOneRequest({
 </methodCall>`
 }
 
+function xmlEscape(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;")
+}
+
 function xmlRpcFilesSelectRequest(page: string): string {
   return `<?xml version="1.0"?>
 <methodCall>
@@ -285,7 +296,7 @@ function xmlRpcFilesSelectRequest(page: string): string {
       <value>
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
-          <member><name>page</name><value><string>${page}</string></value></member>
+          <member><name>page</name><value><string>${xmlEscape(page)}</string></value></member>
         </struct>
       </value>
     </param>
@@ -302,9 +313,9 @@ function xmlRpcFilesGetMetaRequest(page: string, files: string[]): string {
       <value>
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
-          <member><name>page</name><value><string>${page}</string></value></member>
+          <member><name>page</name><value><string>${xmlEscape(page)}</string></value></member>
           <member><name>files</name><value><array><data>${files
-            .map((file) => `<value><string>${file}</string></value>`)
+            .map((file) => `<value><string>${xmlEscape(file)}</string></value>`)
             .join("")}</data></array></value></member>
         </struct>
       </value>
@@ -322,8 +333,8 @@ function xmlRpcFilesGetOneRequest(page: string, file: string): string {
       <value>
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
-          <member><name>page</name><value><string>${page}</string></value></member>
-          <member><name>file</name><value><string>${file}</string></value></member>
+          <member><name>page</name><value><string>${xmlEscape(page)}</string></value></member>
+          <member><name>file</name><value><string>${xmlEscape(file)}</string></value></member>
         </struct>
       </value>
     </param>
@@ -348,13 +359,13 @@ function xmlRpcFilesSaveOneRequest({
 }): string {
   const optionalMembers = [
     comment !== undefined
-      ? `<member><name>comment</name><value><string>${comment}</string></value></member>`
+      ? `<member><name>comment</name><value><string>${xmlEscape(comment)}</string></value></member>`
       : "",
     saveMode !== undefined
-      ? `<member><name>save_mode</name><value><string>${saveMode}</string></value></member>`
+      ? `<member><name>save_mode</name><value><string>${xmlEscape(saveMode)}</string></value></member>`
       : "",
     revisionComment !== undefined
-      ? `<member><name>revision_comment</name><value><string>${revisionComment}</string></value></member>`
+      ? `<member><name>revision_comment</name><value><string>${xmlEscape(revisionComment)}</string></value></member>`
       : ""
   ].join("")
 
@@ -366,9 +377,9 @@ function xmlRpcFilesSaveOneRequest({
       <value>
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
-          <member><name>page</name><value><string>${page}</string></value></member>
-          <member><name>file</name><value><string>${file}</string></value></member>
-          <member><name>content</name><value><string>${content}</string></value></member>
+          <member><name>page</name><value><string>${xmlEscape(page)}</string></value></member>
+          <member><name>file</name><value><string>${xmlEscape(file)}</string></value></member>
+          <member><name>content</name><value><string>${xmlEscape(content)}</string></value></member>
           ${optionalMembers}
         </struct>
       </value>
