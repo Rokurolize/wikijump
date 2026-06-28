@@ -17,6 +17,10 @@ on:
       - develop
       - prod
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test_and_coverage:
     name: Build, Test and Coverage
@@ -171,10 +175,11 @@ jobs:
       - name: System Dependencies
         run: sudo apt update && sudo apt install libmagic-dev
 
+      - name: Install cargo-machete
+        run: cargo install cargo-machete --version 0.9.1 --locked
+
       - name: Machete
-        uses: bnjbvr/cargo-machete@main
-        with:
-          args: 'deepwell'
+        run: cargo machete deepwell
 
       - name: Rustfmt
         run: cd deepwell && cargo fmt --all -- --check
