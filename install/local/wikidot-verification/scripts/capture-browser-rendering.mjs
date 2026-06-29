@@ -4,6 +4,7 @@ import {createRequire} from "node:module";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import {fileURLToPath} from "node:url";
 import {
   buildEvidenceRecord,
   readJson,
@@ -123,14 +124,15 @@ function requirePlaywright(browserRoot) {
   }
 }
 
-async function openBrowser({chromium, cdpEndpoint, browserExecutable, ignoreHttpsErrors}) {
+export async function openBrowser({chromium, cdpEndpoint, browserExecutable, ignoreHttpsErrors}) {
   if (cdpEndpoint) {
     const browser = await chromium.connectOverCDP(cdpEndpoint);
-    const context = browser.contexts()[0] ?? await browser.newContext({ignoreHTTPSErrors: ignoreHttpsErrors});
+    const context = await browser.newContext({ignoreHTTPSErrors: ignoreHttpsErrors});
     return {
       browser,
       context,
       async close() {
+        await context.close().catch(() => {});
         await browser.close().catch(() => {});
       },
     };
@@ -341,9 +343,11 @@ async function run() {
   return captureErrors.length === 0 ? 0 : 1;
 }
 
-run().then((code) => {
-  process.exitCode = code;
-}).catch((error) => {
-  console.error(error.message);
-  process.exitCode = 1;
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  run().then((code) => {
+    process.exitCode = code;
+  }).catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+}

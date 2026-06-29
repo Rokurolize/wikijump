@@ -6,6 +6,7 @@ import path from "node:path";
 import {test} from "node:test";
 import {fileURLToPath} from "node:url";
 import {promisify} from "node:util";
+import {openBrowser} from "../scripts/capture-browser-rendering.mjs";
 import {
   buildEvidenceRecord,
   compactVisibleText,
@@ -108,6 +109,44 @@ test("row URL helpers skip blank preferred fields before falling back", () => {
     rowLocalUrl({local_https_url: "", local_http_url: "http://local.example/page"}),
     "http://local.example/page"
   );
+});
+
+test("openBrowser applies HTTPS ignore settings to a fresh CDP context", async () => {
+  let newContextOptions = null;
+  let closedContext = false;
+  let closedBrowser = false;
+  const context = {
+    async close() {
+      closedContext = true;
+    },
+  };
+  const browser = {
+    async newContext(options) {
+      newContextOptions = options;
+      return context;
+    },
+    async close() {
+      closedBrowser = true;
+    },
+  };
+  const chromium = {
+    async connectOverCDP(endpoint) {
+      assert.equal(endpoint, "http://127.0.0.1:9222");
+      return browser;
+    },
+  };
+
+  const session = await openBrowser({
+    chromium,
+    cdpEndpoint: "http://127.0.0.1:9222",
+    ignoreHttpsErrors: true,
+  });
+  assert.equal(session.context, context);
+  assert.deepEqual(newContextOptions, {ignoreHTTPSErrors: true});
+
+  await session.close();
+  assert.equal(closedContext, true);
+  assert.equal(closedBrowser, true);
 });
 
 test("capture CLI rejects an empty row selection before launching a browser", async () => {
