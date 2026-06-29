@@ -98,6 +98,48 @@
             "wikitext": "page-tags"
         }
     ],
+    "sandbox-for-codex": [
+        {
+            "slug": "start",
+            "title": "Sandbox for Codex",
+            "wikitext": "sandbox-for-codex-start"
+        },
+        {
+            "slug": "nav:side",
+            "title": "Sidebar",
+            "wikitext": "sidebar"
+        },
+        {
+            "slug": "nav:top",
+            "title": "Topbar",
+            "wikitext": "topbar"
+        },
+        {
+            "slug": "_admin",
+            "title": "Admin Panel",
+            "wikitext": "_admin"
+        },
+        {
+            "slug": "system:join",
+            "title": "Join this site",
+            "wikitext": "join"
+        },
+        {
+            "slug": "system:members",
+            "title": "Site Members",
+            "wikitext": "members"
+        },
+        {
+            "slug": "system:recent-changes",
+            "title": "Recent Changes",
+            "wikitext": "recent-changes"
+        },
+        {
+            "slug": "system:page-tags",
+            "title": "Page Tags",
+            "wikitext": "page-tags"
+        }
+    ],
     "scpaiueouiuiuiui": [
         {
             "slug": "boundary-check",
