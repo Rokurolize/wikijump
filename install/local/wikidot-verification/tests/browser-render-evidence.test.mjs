@@ -6,7 +6,7 @@ import path from "node:path";
 import {test} from "node:test";
 import {fileURLToPath} from "node:url";
 import {promisify} from "node:util";
-import {openBrowser} from "../scripts/capture-browser-rendering.mjs";
+import {capturePage, defaultBrowserRoot, openBrowser} from "../scripts/capture-browser-rendering.mjs";
 import {
   buildEvidenceRecord,
   compactVisibleText,
@@ -111,6 +111,16 @@ test("row URL helpers skip blank preferred fields before falling back", () => {
   );
 });
 
+test("default browser root is resolved from the repository, not cwd", () => {
+  const originalCwd = process.cwd();
+  process.chdir(__dirname);
+  try {
+    assert.equal(defaultBrowserRoot(), path.resolve(__dirname, "../../../..", "framerail"));
+  } finally {
+    process.chdir(originalCwd);
+  }
+});
+
 test("openBrowser applies HTTPS ignore settings to a fresh CDP context", async () => {
   let newContextOptions = null;
   let closedContext = false;
@@ -147,6 +157,67 @@ test("openBrowser applies HTTPS ignore settings to a fresh CDP context", async (
   await session.close();
   assert.equal(closedContext, true);
   assert.equal(closedBrowser, true);
+});
+
+test("capturePage records page errors and failed subframe responses", async () => {
+  const handlers = new Map();
+  const mainFrame = {name: "main"};
+  const childFrame = {name: "child"};
+  const page = {
+    on(event, handler) {
+      handlers.set(event, handler);
+    },
+    mainFrame() {
+      return mainFrame;
+    },
+    async goto() {
+      handlers.get("pageerror")?.(new Error("client render failed"));
+      handlers.get("response")?.({
+        status: () => 500,
+        url: () => "https://local.example/main",
+        request: () => ({
+          isNavigationRequest: () => true,
+          frame: () => mainFrame,
+          resourceType: () => "document",
+        }),
+      });
+      handlers.get("response")?.({
+        status: () => 500,
+        url: () => "https://local.example/frame",
+        request: () => ({
+          isNavigationRequest: () => true,
+          frame: () => childFrame,
+          resourceType: () => "document",
+        }),
+      });
+      return {status: () => 200};
+    },
+    async waitForLoadState() {},
+    async evaluate() {
+      return "visible";
+    },
+    async content() {
+      return "<html>visible</html>";
+    },
+    url() {
+      return "https://local.example/page";
+    },
+  };
+
+  const result = await capturePage(page, "https://local.example/page", {
+    timeoutMs: 100,
+    waitUntil: "domcontentloaded",
+    screenshotPath: null,
+  });
+
+  assert.deepEqual(result.consoleErrors, ["client render failed"]);
+  assert.deepEqual(result.failedRequests, [
+    {
+      url: "https://local.example/frame",
+      status: 500,
+      resourceType: "document",
+    },
+  ]);
 });
 
 test("capture CLI rejects an empty row selection before launching a browser", async () => {

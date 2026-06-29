@@ -17,6 +17,8 @@ import {
 } from "../src/browser-render-evidence.mjs";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+const SCRIPT_PATH = fileURLToPath(import.meta.url);
+const SCRIPT_DIR = path.dirname(SCRIPT_PATH);
 
 function nextArg(argv, index, flag) {
   const value = argv[index + 1];
@@ -110,8 +112,12 @@ Writes validator-compatible browser rendering evidence JSON plus DOM/screenshot 
   process.exit(0);
 }
 
+export function defaultBrowserRoot() {
+  return path.resolve(SCRIPT_DIR, "../../../..", "framerail");
+}
+
 function requirePlaywright(browserRoot) {
-  const root = browserRoot ?? path.resolve(process.cwd(), "framerail");
+  const root = browserRoot ?? defaultBrowserRoot();
   const requireFromRoot = createRequire(path.join(root, "package.json"));
   try {
     return requireFromRoot("playwright");
@@ -152,7 +158,7 @@ export async function openBrowser({chromium, cdpEndpoint, browserExecutable, ign
   };
 }
 
-async function capturePage(page, url, {timeoutMs, waitUntil, screenshotPath}) {
+export async function capturePage(page, url, {timeoutMs, waitUntil, screenshotPath}) {
   const consoleErrors = [];
   const failedRequests = [];
   const badResponses = [];
@@ -160,6 +166,9 @@ async function capturePage(page, url, {timeoutMs, waitUntil, screenshotPath}) {
     if (message.type() === "error") {
       consoleErrors.push(message.text());
     }
+  });
+  page.on("pageerror", (error) => {
+    consoleErrors.push(error.message ?? String(error));
   });
   page.on("requestfailed", (request) => {
     failedRequests.push({
@@ -171,7 +180,13 @@ async function capturePage(page, url, {timeoutMs, waitUntil, screenshotPath}) {
     const status = response.status();
     if (status < 400) return;
     const request = response.request();
-    if (request.isNavigationRequest()) return;
+    let frame = null;
+    try {
+      frame = request.frame();
+    } catch {
+      // Some request kinds do not have a frame; keep their HTTP failure evidence.
+    }
+    if (request.isNavigationRequest() && frame === page.mainFrame()) return;
     badResponses.push({
       url: response.url(),
       status,
@@ -343,7 +358,7 @@ async function run() {
   return captureErrors.length === 0 ? 0 : 1;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === SCRIPT_PATH) {
   run().then((code) => {
     process.exitCode = code;
   }).catch((error) => {
