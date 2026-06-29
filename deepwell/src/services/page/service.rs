@@ -55,6 +55,7 @@ impl PageService {
             wikitext,
             title,
             alt_title,
+            tags,
             mut slug,
             layout,
             revision_comments: comments,
@@ -120,6 +121,7 @@ impl PageService {
             wikitext,
             title,
             alt_title,
+            tags,
             slug: slug.clone(),
             layout,
         };
