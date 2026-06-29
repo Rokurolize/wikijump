@@ -166,27 +166,6 @@
             "wikitext": "scp-main"
         },
         {
-            "slug": "scp-002",
-            "title": "SCP-002",
-            "alt-title": "The Living Room",
-            "wikitext": "scp-002"
-        },
-        {
-            "slug": "scp-3352",
-            "title": "SCP-3352",
-            "wikitext": "scp-3352"
-        },
-        {
-            "slug": "scp-3922",
-            "title": "SCP-3922",
-            "wikitext": "scp-3922"
-        },
-        {
-            "slug": "scp-9506",
-            "title": "National Fog Safety Initiative",
-            "wikitext": "scp-9506"
-        },
-        {
             "slug": "component:image-block",
             "title": "Standard Image Block",
             "wikitext": "component-image-block"
@@ -240,6 +219,27 @@
             "slug": "component:acs-animation",
             "title": "ACS Animation",
             "wikitext": "component-acs-animation"
+        },
+        {
+            "slug": "scp-002",
+            "title": "SCP-002",
+            "alt-title": "The Living Room",
+            "wikitext": "scp-002"
+        },
+        {
+            "slug": "scp-3352",
+            "title": "SCP-3352",
+            "wikitext": "scp-3352"
+        },
+        {
+            "slug": "scp-3922",
+            "title": "SCP-3922",
+            "wikitext": "scp-3922"
+        },
+        {
+            "slug": "scp-9506",
+            "title": "National Fog Safety Initiative",
+            "wikitext": "scp-9506"
         },
         {
             "slug": "nav:side",

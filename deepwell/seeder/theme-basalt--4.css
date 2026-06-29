@@ -1,0 +1,10 @@
+#page-title,
+.meta-title,
+#breadcrumbs,
+.pseudocrumbs {
+    text-align: center;
+}
+
+.pseudocrumbs {
+    justify-content: center;
+}

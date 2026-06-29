@@ -1,0 +1,8 @@
+:root {
+    --main-content-width: 70rem;
+    --posX: 4vw;
+}
+
+#page-content div.modal {
+    max-width: 100%;
+}
