@@ -217,6 +217,9 @@ impl PermissionService {
         )
         .await
         .or_raise(make_error)?;
+        PermissionCache::invalidate_site(ctx, site_id)
+            .await
+            .or_raise(make_error)?;
 
         Ok(())
     }

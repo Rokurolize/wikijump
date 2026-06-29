@@ -28,11 +28,12 @@ use crate::models::role_permission;
 use crate::services::ServiceContext;
 use crate::types::{Action, Resource};
 use ftml::info;
-use redis::AsyncCommands;
+use redis::{AsyncCommands, AsyncIter};
 
 pub const DEFAULT_CATEGORY_KEY: &str = "_default";
 pub const SITE_NOT_SET_KEY: &str = "platform";
 pub const USER_NOT_SET_KEY: &str = "anonymous";
+const PERMISSION_CACHE_TTL_SECONDS: i64 = 300;
 
 #[derive(Debug, Clone, Copy)]
 pub struct PermissionCache;
@@ -125,6 +126,13 @@ impl PermissionCache {
                 );
                 Error::new("permission cache write error", ErrorType::Permission)
             })?;
+        let _: bool = redis
+            .expire(&key, PERMISSION_CACHE_TTL_SECONDS)
+            .await
+            .or_raise(|| {
+                warn!("Failed to set permission cache TTL for key '{}'", key);
+                Error::new("permission cache TTL error", ErrorType::Permission)
+            })?;
 
         Ok(())
     }
@@ -140,7 +148,13 @@ impl PermissionCache {
             )
         };
 
-        let keys: Vec<String> = redis.keys(&pattern).await.or_raise(make_error)?;
+        let mut iter: AsyncIter<String> =
+            redis.scan_match(&pattern).await.or_raise(make_error)?;
+        let mut keys = Vec::new();
+        while let Some(key) = iter.next_item().await {
+            keys.push(key.or_raise(make_error)?);
+        }
+        drop(iter);
 
         if keys.is_empty() {
             debug!(

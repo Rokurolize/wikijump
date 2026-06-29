@@ -30,7 +30,8 @@ use crate::models::user_role::{Entity as UserRole, Model as UserRoleModel};
 use crate::models::{page, user_role};
 use crate::services::audit::{AuditEvent, AuditService};
 use crate::services::permission::{
-    CheckPermissionContext, PermissionService, resolve_category_reference,
+    CheckPermissionContext, PermissionCache, PermissionService,
+    resolve_category_reference,
 };
 use crate::services::relation::{
     GetPageAttributions, GetSiteBan, GetSiteMember, SiteMemberAccepted,
@@ -104,6 +105,9 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
+        PermissionCache::invalidate_site(ctx, created_role.site_id)
+            .await
+            .or_raise(make_error)?;
 
         Ok(created_role)
     }
@@ -278,6 +282,9 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
+        PermissionCache::invalidate_site(ctx, site_id)
+            .await
+            .or_raise(make_error)?;
 
         Ok(deleted_role)
     }
@@ -382,6 +389,9 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
+        PermissionCache::invalidate_site(ctx, role.site_id)
+            .await
+            .or_raise(make_error)?;
 
         Ok(user_role)
     }
@@ -433,6 +443,9 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
+        PermissionCache::invalidate_site(ctx, role.site_id)
+            .await
+            .or_raise(make_error)?;
 
         Ok(deleted_user_role)
     }
@@ -578,6 +591,9 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
+        PermissionCache::invalidate_site(ctx, site_id)
+            .await
+            .or_raise(make_error)?;
 
         Ok(())
     }
