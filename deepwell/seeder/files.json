@@ -60,44 +60,6 @@
                 "path": "scp-main.ftml",
                 "overwrite": "scp-002.ftml"
             }
-        ],
-        "theme:basalt": [
-            {
-                "name": "1",
-                "path": "theme-basalt--1.css"
-            },
-            {
-                "name": "2",
-                "path": "theme-basalt--2.css"
-            },
-            {
-                "name": "3",
-                "path": "theme-basalt--3.css"
-            },
-            {
-                "name": "4",
-                "path": "theme-basalt--4.css"
-            },
-            {
-                "name": "5",
-                "path": "theme-basalt--5.css"
-            },
-            {
-                "name": "6",
-                "path": "theme-basalt--6.css"
-            }
-        ],
-        "component:betterfootnotes": [
-            {
-                "name": "1",
-                "path": "component-betterfootnotes--1.css"
-            }
-        ],
-        "component:acs-animation": [
-            {
-                "name": "1",
-                "path": "component-acs-animation--1.css"
-            }
         ]
     }
 }

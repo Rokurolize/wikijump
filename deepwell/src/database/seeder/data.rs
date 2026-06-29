@@ -19,7 +19,7 @@
  */
 
 use crate::error::prelude::*;
-use crate::types::{License, UserType};
+use crate::types::{License, TextBlockType, UserType};
 use ftml::layout::Layout;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -33,6 +33,7 @@ pub struct SeedData {
     pub sites: Vec<Site>,
     pub pages: HashMap<String, Vec<Page>>,
     pub files: HashMap<String, HashMap<String, Vec<File>>>,
+    pub text_blocks: HashMap<String, HashMap<String, Vec<TextBlock>>>,
     pub filters: Vec<Filter>,
     pub roles: Vec<Role>,
 }
@@ -74,6 +75,10 @@ impl SeedData {
         let files: HashMap<String, HashMap<String, Vec<File>>> =
             Self::load_json(&mut path, "files").or_raise(make_error)?;
 
+        // Load hosted text block data
+        let text_blocks: HashMap<String, HashMap<String, Vec<TextBlock>>> =
+            Self::load_json(&mut path, "text-blocks").or_raise(make_error)?;
+
         // Load filter data
         let filters: Vec<Filter> =
             Self::load_json(&mut path, "filters").or_raise(make_error)?;
@@ -88,6 +93,7 @@ impl SeedData {
             sites,
             pages: site_pages,
             files,
+            text_blocks,
             filters,
             roles,
         })
@@ -254,6 +260,20 @@ pub struct File {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
+pub struct TextBlock {
+    #[serde(rename = "type")]
+    pub block_type: TextBlockType,
+    pub path: PathBuf,
+
+    #[serde(default)]
+    pub text_type: Option<String>,
+
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
 pub struct Role {
     pub name: String,
     pub description: String,
@@ -292,5 +312,18 @@ mod tests {
         assert_eq!(scp_9506.title, "National Fog Safety Initiative");
         assert!(scp_9506.wikitext.contains("National Fog Safety Initiative"));
         assert!(scp_9506.wikitext.contains("local--files/scp-9506/NFSI.png"));
+
+        let text_blocks = seed
+            .text_blocks
+            .get("scp-wiki")
+            .expect("scp-wiki text blocks")
+            .get("theme:basalt")
+            .expect("theme:basalt text blocks");
+        assert_eq!(text_blocks.len(), 6);
+        assert!(
+            text_blocks
+                .iter()
+                .all(|block| block.text_type.as_deref() == Some("css"))
+        );
     }
 }

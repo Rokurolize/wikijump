@@ -1,0 +1,50 @@
+{
+    "scp-wiki": {
+        "theme:basalt": [
+            {
+                "type": "code",
+                "text-type": "css",
+                "path": "theme-basalt--1.css"
+            },
+            {
+                "type": "code",
+                "text-type": "css",
+                "path": "theme-basalt--2.css"
+            },
+            {
+                "type": "code",
+                "text-type": "css",
+                "path": "theme-basalt--3.css"
+            },
+            {
+                "type": "code",
+                "text-type": "css",
+                "path": "theme-basalt--4.css"
+            },
+            {
+                "type": "code",
+                "text-type": "css",
+                "path": "theme-basalt--5.css"
+            },
+            {
+                "type": "code",
+                "text-type": "css",
+                "path": "theme-basalt--6.css"
+            }
+        ],
+        "component:betterfootnotes": [
+            {
+                "type": "code",
+                "text-type": "css",
+                "path": "component-betterfootnotes--1.css"
+            }
+        ],
+        "component:acs-animation": [
+            {
+                "type": "code",
+                "text-type": "css",
+                "path": "component-acs-animation--1.css"
+            }
+        ]
+    }
+}

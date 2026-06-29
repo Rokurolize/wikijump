@@ -41,8 +41,13 @@ use crate::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
 use crate::services::site::{CreateSite, CreateSiteOutput, SiteService, UpdateSiteBody};
+use crate::services::text_block::{
+    TextBlock as HostedTextBlock, TextBlockService, mime_for_language,
+};
 use crate::services::user::{CreateUser, CreateUserOutput, UpdateUserBody, UserService};
-use crate::types::{Action, AliasType, Maybe, Permission, Reference, Resource};
+use crate::types::{
+    Action, AliasType, Maybe, Permission, Reference, Resource, TextBlockType,
+};
 use crate::utils::now;
 use arrayvec::ArrayVec;
 use sea_orm::{
@@ -133,6 +138,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         sites,
         pages,
         files,
+        text_blocks,
         filters,
         roles,
     } = SeedData::load(&state.config.seeder_path).or_raise(make_error)?;
@@ -351,6 +357,100 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             .or_raise(make_error)?;
 
             page_ids.insert((site_id, model.slug), model.page_id);
+        }
+    }
+
+    // Seed hosted text blocks
+    {
+        struct LoadedTextBlock {
+            text: String,
+            text_type: Option<String>,
+            name: Option<String>,
+        }
+
+        let mut path_buffer = state.config.seeder_path.clone();
+
+        fn load_text_block(buffer: &mut PathBuf, file_path: &Path) -> Result<String> {
+            let make_error = || {
+                Error::new(
+                    "failed to load seeder text block",
+                    ErrorType::DatabaseSeeder,
+                )
+            };
+
+            assert_eq!(
+                file_path.parent(),
+                Some(Path::new("")),
+                "Text block paths must not contain any directory component",
+            );
+
+            buffer.push(file_path);
+            let text = fs::read_to_string(&buffer).or_raise(make_error)?;
+            buffer.pop();
+            Ok(text)
+        }
+
+        for (site_slug, pages) in text_blocks {
+            let site_id = site_ids[&site_slug];
+
+            for (page_slug, blocks) in pages {
+                info!(
+                    "Creating hosted text blocks within site {site_slug} page {page_slug}"
+                );
+                let page_id = page_ids[&(site_id, page_slug)];
+
+                let mut code_block_data = Vec::new();
+                let mut html_block_data = Vec::new();
+                for block in blocks {
+                    let text = load_text_block(&mut path_buffer, &block.path)
+                        .or_raise(make_error)?;
+                    let loaded_block = LoadedTextBlock {
+                        text,
+                        text_type: block.text_type,
+                        name: block.name,
+                    };
+                    match block.block_type {
+                        TextBlockType::Code => code_block_data.push(loaded_block),
+                        TextBlockType::Html => html_block_data.push(loaded_block),
+                    }
+                }
+
+                let code_blocks: Vec<HostedTextBlock> = code_block_data
+                    .iter()
+                    .map(|block| HostedTextBlock {
+                        text: &block.text,
+                        text_type: block.text_type.as_deref(),
+                        mime: mime_for_language(&block.text_type),
+                        name: block.name.as_deref(),
+                    })
+                    .collect();
+                let html_blocks: Vec<HostedTextBlock> = html_block_data
+                    .iter()
+                    .map(|block| HostedTextBlock {
+                        text: &block.text,
+                        text_type: block.text_type.as_deref(),
+                        mime: mime_for_language(&block.text_type),
+                        name: block.name.as_deref(),
+                    })
+                    .collect();
+
+                TextBlockService::add_blocks(
+                    &ctx,
+                    page_id,
+                    TextBlockType::Code,
+                    &code_blocks,
+                )
+                .await
+                .or_raise(make_error)?;
+                TextBlockService::add_blocks(
+                    &ctx,
+                    page_id,
+                    TextBlockType::Html,
+                    &html_blocks,
+                )
+                .await
+                .or_raise(make_error)?;
+            }
         }
     }
 
