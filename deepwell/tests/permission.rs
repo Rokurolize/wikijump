@@ -28,8 +28,13 @@ use deepwell::services::category::CategoryService;
 use deepwell::services::permission::{
     CheckPermissionContext, DecoratedPermission, PermissionService,
 };
+use deepwell::services::relation::{
+    CreateSiteBan, CreateSiteMember, RelationService, SiteBanData, SiteMemberAccepted,
+    SiteMemberData,
+};
 use deepwell::services::role::{
-    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+    GetUserRolesInput, GrantUserRoleInput, InternalCreateRoleInput, RoleService,
+    UpdateRolePermissionsInput,
 };
 use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::user::{CreateUser, UserService};
@@ -216,6 +221,39 @@ async fn grant_role(ctx: &ServiceContext<'_>, site_id: i64, user_id: i64, role_i
     .expect("Failed to grant role to user");
 }
 
+async fn create_site_member(ctx: &ServiceContext<'_>, site_id: i64, user_id: i64) {
+    RelationService::create_site_member(
+        ctx,
+        CreateSiteMember {
+            site_id,
+            user_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("Failed to create site member");
+}
+
+async fn ban_site_user(ctx: &ServiceContext<'_>, site_id: i64, user_id: i64) {
+    RelationService::create_site_ban(
+        ctx,
+        CreateSiteBan {
+            site_id,
+            user_id,
+            metadata: SiteBanData {
+                banned_until: None,
+                reason: str!("test ban"),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("Failed to create site ban");
+}
+
 async fn create_user(ctx: &ServiceContext<'_>, fixture_n: u64, label: &str) -> i64 {
     UserService::create(
         ctx,
@@ -358,6 +396,59 @@ async fn check_user_can() {
     assert!(
         !check(&runner, a, f.site_id, Resource::Page, cat, Action::Edit).await,
         "user_a: should fail page:edit check in test-category"
+    );
+}
+
+#[tokio::test]
+async fn banned_user_does_not_retain_explicit_role_permissions() {
+    let runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    let ctx = runner.context();
+
+    assert!(
+        check(
+            &runner,
+            Some(f.user_a),
+            f.site_id,
+            Resource::Page,
+            None,
+            Action::Edit,
+        )
+        .await,
+        "precondition: user_a should initially have RoleA page:edit"
+    );
+
+    create_site_member(ctx, f.site_id, f.user_a).await;
+    ban_site_user(ctx, f.site_id, f.user_a).await;
+
+    assert!(
+        !check(
+            &runner,
+            Some(f.user_a),
+            f.site_id,
+            Resource::Page,
+            None,
+            Action::Edit,
+        )
+        .await,
+        "banned user should not retain page:edit from explicit RoleA"
+    );
+
+    let roles = RoleService::get_all_roles_for_user_and_site(
+        ctx,
+        GetUserRolesInput {
+            user_id: Some(f.user_a),
+            site_id: f.site_id,
+            page_reference: None,
+        },
+    )
+    .await
+    .expect("Failed to get roles for banned user");
+
+    assert!(
+        roles.iter().all(|role| role.name != "RoleA"),
+        "banned user should not retain explicit RoleA in effective roles: {:?}",
+        roles.iter().map(|role| &role.name).collect::<Vec<_>>()
     );
 }
 
