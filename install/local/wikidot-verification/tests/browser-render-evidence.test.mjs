@@ -59,6 +59,14 @@ test("selectInventoryRows intersects explicit fixture ids with shard membership"
   assert.deepEqual(selected.map((row) => row.fixture_id), ["EN:beta"]);
 });
 
+test("selectInventoryRows rejects absent requested fixture ids", () => {
+  const rows = inventoryRows(inventory);
+  assert.throws(
+    () => selectInventoryRows({rows, fixtureIds: ["EN:alpha", "EN:missing"]}),
+    /requested fixture IDs were not found: EN:missing/
+  );
+});
+
 test("buildEvidenceRecord emits fields accepted by the browser rendering validator", () => {
   const record = buildEvidenceRecord({
     row: inventory.rows[0],
@@ -206,8 +214,11 @@ test("capturePage records page errors and failed subframe responses", async () =
       return {status: () => 200};
     },
     async waitForLoadState() {},
-    async evaluate() {
-      return "visible";
+    frames() {
+      return [
+        {async evaluate() { return "visible"; }},
+        {async evaluate() { return "child frame text"; }},
+      ];
     },
     async content() {
       return "<html>visible</html>";
@@ -220,10 +231,12 @@ test("capturePage records page errors and failed subframe responses", async () =
   const result = await capturePage(page, "https://local.example/page", {
     timeoutMs: 100,
     waitUntil: "domcontentloaded",
+    settleMs: 0,
     screenshotPath: null,
   });
 
   assert.deepEqual(result.consoleErrors, ["client render failed"]);
+  assert.equal(result.visibleText, "visible\nchild frame text");
   assert.deepEqual(result.failedRequests, [
     {
       url: "https://local.example/frame",
@@ -250,7 +263,7 @@ test("capture CLI rejects an empty row selection before launching a browser", as
       "--json",
     ]),
     (error) => {
-      assert.match(error.stderr, /no inventory rows selected/);
+      assert.match(error.stderr, /requested fixture IDs were not found: EN:missing/);
       return true;
     }
   );

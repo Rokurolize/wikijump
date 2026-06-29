@@ -17,6 +17,7 @@ import {
 } from "../src/browser-render-evidence.mjs";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_SETTLE_MS = 1_000;
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const SCRIPT_DIR = path.dirname(SCRIPT_PATH);
 
@@ -32,6 +33,7 @@ function parseArgs(argv) {
   const args = {
     fixtureIds: [],
     timeoutMs: DEFAULT_TIMEOUT_MS,
+    settleMs: DEFAULT_SETTLE_MS,
     localUrlField: "local_https_url",
     screenshot: true,
     ignoreHttpsErrors: false,
@@ -81,6 +83,13 @@ function parseArgs(argv) {
       }
       args.timeoutMs = Number.parseInt(raw, 10);
       index += 1;
+    } else if (arg === "--settle-ms") {
+      const raw = nextArg(argv, index, arg);
+      if (!/^\d+$/u.test(raw)) {
+        throw new Error("--settle-ms must be a non-negative integer");
+      }
+      args.settleMs = Number.parseInt(raw, 10);
+      index += 1;
     } else if (arg === "--wait-until") {
       args.waitUntil = nextArg(argv, index, arg);
       index += 1;
@@ -103,7 +112,7 @@ function parseArgs(argv) {
 }
 
 function printHelpAndExit() {
-  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--local-url-field local_https_url] [--ignore-https-errors] [--no-screenshot] [--json]
+  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--local-url-field local_https_url] [--timeout-ms 30000] [--settle-ms 1000] [--ignore-https-errors] [--no-screenshot] [--json]
 
 Writes validator-compatible browser rendering evidence JSON plus DOM/screenshot artifacts for selected corpus inventory rows. The output directory should live under one of the render validator evidence roots, for example:
 
@@ -158,7 +167,21 @@ export async function openBrowser({chromium, cdpEndpoint, browserExecutable, ign
   };
 }
 
-export async function capturePage(page, url, {timeoutMs, waitUntil, screenshotPath}) {
+async function collectVisibleText(page) {
+  const frames = typeof page.frames === "function" ? page.frames() : [page];
+  const texts = [];
+  for (const frame of frames) {
+    try {
+      const text = await frame.evaluate(() => document.body?.innerText ?? "");
+      if (text) texts.push(text);
+    } catch {
+      // Detached or inaccessible frames should not abort page-level capture.
+    }
+  }
+  return texts.join("\n");
+}
+
+export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = DEFAULT_SETTLE_MS, screenshotPath}) {
   const consoleErrors = [];
   const failedRequests = [];
   const badResponses = [];
@@ -207,7 +230,11 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, screenshotPa
 
   try {
     await page.waitForLoadState("domcontentloaded", {timeout: timeoutMs}).catch(() => {});
-    visibleText = await page.evaluate(() => document.body?.innerText ?? "");
+    await page.waitForLoadState("load", {timeout: timeoutMs}).catch(() => {});
+    if (settleMs > 0 && typeof page.waitForTimeout === "function") {
+      await page.waitForTimeout(settleMs).catch(() => {});
+    }
+    visibleText = await collectVisibleText(page);
     html = await page.content();
   } catch (error) {
     if (!navigationError) navigationError = error;
@@ -302,11 +329,13 @@ async function run() {
       const source = await captureOptionalPage(context, sourceUrl, "missing source URL", {
         timeoutMs: args.timeoutMs,
         waitUntil: args.waitUntil,
+        settleMs: args.settleMs,
         screenshotPath: artifacts.sourceScreenshot,
       });
       const local = await captureOptionalPage(context, localUrl, "missing local URL", {
         timeoutMs: args.timeoutMs,
         waitUntil: args.waitUntil,
+        settleMs: args.settleMs,
         screenshotPath: artifacts.localScreenshot,
       });
 
@@ -336,6 +365,7 @@ async function run() {
     evidence: records,
     capture: {
       timeout_ms: args.timeoutMs,
+      settle_ms: args.settleMs,
       wait_until: args.waitUntil,
       ignore_https_errors: args.ignoreHttpsErrors,
       screenshot: args.screenshot,

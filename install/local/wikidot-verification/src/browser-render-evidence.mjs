@@ -58,6 +58,11 @@ export function selectInventoryRows({rows, fixtureIds = [], shardManifest = null
   if (fixtureIds.length > 0) {
     const wanted = new Set(fixtureIds);
     selected = selected.filter((row) => wanted.has(row.fixture_id));
+    const selectedIds = new Set(selected.map((row) => row.fixture_id));
+    const missing = fixtureIds.filter((fixtureId) => !selectedIds.has(fixtureId));
+    if (missing.length > 0) {
+      throw new Error(`requested fixture IDs were not found: ${missing.join(", ")}`);
+    }
   }
 
   if (shardId) {
