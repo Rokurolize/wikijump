@@ -68,6 +68,9 @@ function parseArgs(argv) {
     } else if (arg === "--browser-executable") {
       args.browserExecutable = path.resolve(nextArg(argv, index, arg));
       index += 1;
+    } else if (arg === "--cdp-endpoint") {
+      args.cdpEndpoint = nextArg(argv, index, arg);
+      index += 1;
     } else if (arg === "--timeout-ms") {
       const raw = nextArg(argv, index, arg);
       if (!/^\d+$/u.test(raw) || Number.parseInt(raw, 10) <= 0) {
@@ -97,7 +100,7 @@ function parseArgs(argv) {
 }
 
 function printHelpAndExit() {
-  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome] [--local-url-field local_https_url] [--ignore-https-errors] [--no-screenshot] [--json]
+  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--local-url-field local_https_url] [--ignore-https-errors] [--no-screenshot] [--json]
 
 Writes validator-compatible browser rendering evidence JSON plus DOM/screenshot artifacts for selected corpus inventory rows. The output directory should live under one of the render validator evidence roots, for example:
 
@@ -114,6 +117,33 @@ function requirePlaywright(browserRoot) {
   } catch (error) {
     throw new Error(`could not load playwright from ${root}; pass --browser-root pointing at a package with playwright installed (${error.message})`);
   }
+}
+
+async function openBrowser({chromium, cdpEndpoint, browserExecutable, ignoreHttpsErrors}) {
+  if (cdpEndpoint) {
+    const browser = await chromium.connectOverCDP(cdpEndpoint);
+    const context = browser.contexts()[0] ?? await browser.newContext({ignoreHTTPSErrors: ignoreHttpsErrors});
+    return {
+      browser,
+      context,
+      async close() {
+        await browser.close().catch(() => {});
+      },
+    };
+  }
+
+  const browser = await chromium.launch({
+    executablePath: browserExecutable,
+  });
+  const context = await browser.newContext({ignoreHTTPSErrors: ignoreHttpsErrors});
+  return {
+    browser,
+    context,
+    async close() {
+      await context.close().catch(() => {});
+      await browser.close().catch(() => {});
+    },
+  };
 }
 
 async function capturePage(page, url, {timeoutMs, waitUntil, screenshotPath}) {
@@ -178,10 +208,13 @@ async function run() {
 
   await fs.mkdir(args.outputDir, {recursive: true});
   const {chromium} = requirePlaywright(args.browserRoot);
-  const browser = await chromium.launch({
-    executablePath: args.browserExecutable,
+  const browserSession = await openBrowser({
+    chromium,
+    cdpEndpoint: args.cdpEndpoint,
+    browserExecutable: args.browserExecutable,
+    ignoreHttpsErrors: args.ignoreHttpsErrors,
   });
-  const context = await browser.newContext({ignoreHTTPSErrors: args.ignoreHttpsErrors});
+  const {context} = browserSession;
   const records = [];
 
   try {
@@ -238,8 +271,7 @@ async function run() {
       }));
     }
   } finally {
-    await context.close().catch(() => {});
-    await browser.close().catch(() => {});
+    await browserSession.close();
   }
 
   const result = {
@@ -255,6 +287,7 @@ async function run() {
       ignore_https_errors: args.ignoreHttpsErrors,
       screenshot: args.screenshot,
       browser_executable: args.browserExecutable ?? null,
+      cdp_endpoint: args.cdpEndpoint ?? null,
     },
   };
   const resultPath = path.join(args.outputDir, "records.json");
