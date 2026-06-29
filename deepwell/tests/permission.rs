@@ -480,6 +480,33 @@ async fn banned_user_does_not_retain_explicit_role_permissions() {
             f.site_id,
             Resource::Page,
             None,
+            Action::View,
+        )
+        .await,
+        "banned user should not retain page:view from cached explicit RoleA"
+    );
+    assert_eq!(
+        PermissionCache::check_user_permission(
+            ctx,
+            Some(f.site_id),
+            Some(f.user_a),
+            Resource::Page,
+            None,
+            Action::View,
+        )
+        .await
+        .expect("Failed to read permission cache"),
+        None,
+        "active site ban should not cache denied page:view decisions"
+    );
+
+    assert!(
+        !check(
+            &runner,
+            Some(f.user_a),
+            f.site_id,
+            Resource::Page,
+            None,
             Action::Edit,
         )
         .await,
@@ -505,6 +532,90 @@ async fn banned_user_does_not_retain_explicit_role_permissions() {
 }
 
 #[tokio::test]
+async fn active_timed_site_ban_does_not_cache_denied_view_permission() {
+    let runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    let ctx = runner.context();
+
+    assert!(
+        check(
+            &runner,
+            Some(f.user_a),
+            f.site_id,
+            Resource::Page,
+            None,
+            Action::View,
+        )
+        .await,
+        "precondition: user_a should initially have RoleA page:view"
+    );
+    assert_eq!(
+        PermissionCache::check_user_permission(
+            ctx,
+            Some(f.site_id),
+            Some(f.user_a),
+            Resource::Page,
+            None,
+            Action::View,
+        )
+        .await
+        .expect("Failed to read permission cache"),
+        Some(true),
+        "precondition: page:view should be cached before the timed ban"
+    );
+
+    create_site_member(ctx, f.site_id, f.user_a).await;
+    ban_site_user_until(
+        ctx,
+        f.site_id,
+        f.user_a,
+        Some(Date::from_calendar_date(9999, Month::January, 1).unwrap()),
+    )
+    .await;
+
+    assert_eq!(
+        PermissionCache::check_user_permission(
+            ctx,
+            Some(f.site_id),
+            Some(f.user_a),
+            Resource::Page,
+            None,
+            Action::View,
+        )
+        .await
+        .expect("Failed to read permission cache"),
+        None,
+        "timed site ban should invalidate cached page:view decisions"
+    );
+    assert!(
+        !check(
+            &runner,
+            Some(f.user_a),
+            f.site_id,
+            Resource::Page,
+            None,
+            Action::View,
+        )
+        .await,
+        "active timed site ban should deny page:view"
+    );
+    assert_eq!(
+        PermissionCache::check_user_permission(
+            ctx,
+            Some(f.site_id),
+            Some(f.user_a),
+            Resource::Page,
+            None,
+            Action::View,
+        )
+        .await
+        .expect("Failed to read permission cache"),
+        None,
+        "active timed site ban should not cache denied page:view decisions"
+    );
+}
+
+#[tokio::test]
 async fn expired_site_ban_does_not_suppress_explicit_role_permissions() {
     let runner = TestRunner::setup().await;
     let f = PermissionFixture::setup(&runner).await;
@@ -518,6 +629,19 @@ async fn expired_site_ban_does_not_suppress_explicit_role_permissions() {
         Some(Date::from_calendar_date(2000, Month::January, 1).unwrap()),
     )
     .await;
+
+    assert!(
+        check(
+            &runner,
+            Some(f.user_a),
+            f.site_id,
+            Resource::Page,
+            None,
+            Action::View,
+        )
+        .await,
+        "expired site ban should not suppress explicit RoleA page:view"
+    );
 
     assert!(
         check(
