@@ -740,7 +740,7 @@ impl RoleService {
         input: &GetUserRolesInput<'_>,
     ) -> Result<bool> {
         if let Some(user_id) = input.user_id {
-            RelationService::site_ban_exists(
+            RelationService::active_site_ban_exists(
                 ctx,
                 GetSiteBan {
                     site_id: input.site_id,
