@@ -24,7 +24,9 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::prelude::*;
+use deepwell::models::blob_blacklist::Entity as BlobBlacklistTable;
 use deepwell::services::RequestContext;
+use sea_orm::EntityTrait;
 use serde_json::json;
 
 const TEST_BLOB_HASH: &str = "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111";
@@ -71,4 +73,12 @@ async fn blob_hard_delete_uses_admin_request_actor() {
     );
     assert_eq!(confirm.total_revisions, 0);
     assert_eq!(confirm.total_files, 0);
+
+    let hash = hex::decode(TEST_BLOB_HASH).expect("valid test blob hash");
+    let blacklist = BlobBlacklistTable::find_by_id(hash)
+        .one(runner.context().transaction())
+        .await
+        .expect("blob blacklist lookup should succeed")
+        .expect("hard delete should blacklist the blob hash");
+    assert_eq!(blacklist.created_by, ADMIN_USER_ID);
 }
