@@ -67,6 +67,14 @@ interface DeepwellSession {
   user_id: number
 }
 
+interface DeepwellUser {
+  user: {
+    user_id: number
+    name: string
+    slug: string
+  }
+}
+
 interface DeepwellBlobUpload {
   pending_blob_id: string
   presign_url: string
@@ -364,6 +372,9 @@ async function dispatchXmlRpcCall(
     case "files.save_one":
       expectParamCount(call, 1)
       return saveFileOne(call, options.requestIp)
+    case "users.get_me":
+      expectParamCount(call, 0)
+      return getAuthenticatedUser(options.requestIp)
     case "posts.select":
       expectParamCount(call, 1)
       return selectPosts(call)
@@ -1066,6 +1077,40 @@ async function getXmlRpcWriteContext(
   page: string,
   requestIp: string
 ): Promise<XmlRpcWriteContext> {
+  const principal = await getXmlRpcWritePrincipal(requestIp)
+
+  return {
+    sessionToken: principal.sessionToken,
+    siteId,
+    page,
+    userId: principal.userId,
+    ipAddress: requestIp
+  }
+}
+
+async function getAuthenticatedUser(
+  requestIp: string
+): Promise<Record<string, XmlRpcValue>> {
+  const principal = await getXmlRpcWritePrincipal(requestIp)
+  const user = await requestDeepwell(
+    "user_get",
+    { user: principal.userId },
+    { sessionToken: principal.sessionToken }
+  )
+  if (!isDeepwellUser(user)) {
+    throw new XmlRpcFault(-32603, "Malformed Deepwell response: user_get")
+  }
+
+  return {
+    name: user.user.slug,
+    title: user.user.name,
+    id: user.user.user_id
+  }
+}
+
+async function getXmlRpcWritePrincipal(
+  requestIp: string
+): Promise<{ sessionToken: string; userId: number }> {
   if (!XML_RPC_WRITE_USERNAME || !XML_RPC_WRITE_PASSWORD) {
     throw new XmlRpcFault(
       403,
@@ -1097,10 +1142,7 @@ async function getXmlRpcWriteContext(
 
   return {
     sessionToken: login.session_token,
-    siteId,
-    page,
-    userId: session.user_id,
-    ipAddress: requestIp
+    userId: session.user_id
   }
 }
 
@@ -1361,6 +1403,17 @@ function isDeepwellSession(value: unknown): value is DeepwellSession {
     isXmlRpcStruct(value) &&
     typeof value.user_id === "number" &&
     Number.isInteger(value.user_id)
+  )
+}
+
+function isDeepwellUser(value: unknown): value is DeepwellUser {
+  return (
+    isXmlRpcStruct(value) &&
+    isXmlRpcStruct(value.user) &&
+    typeof value.user.user_id === "number" &&
+    Number.isInteger(value.user.user_id) &&
+    typeof value.user.name === "string" &&
+    typeof value.user.slug === "string"
   )
 }
 
@@ -1796,8 +1849,11 @@ function isXmlRpcStruct(value: unknown): value is Record<string, XmlRpcValue> {
 }
 
 function isAuthorizedBasicAuth(credentials: BasicAuthCredentials): boolean {
-  const username = process.env.XML_RPC_USERNAME
-  const password = process.env.XML_RPC_PASSWORD
+  const xmlRpcUsername = process.env.XML_RPC_USERNAME
+  const xmlRpcPassword = process.env.XML_RPC_PASSWORD
+  const useXmlRpcCredentials = Boolean(xmlRpcUsername && xmlRpcPassword)
+  const username = useXmlRpcCredentials ? xmlRpcUsername : process.env.WIKIDOT_APP_NAME
+  const password = useXmlRpcCredentials ? xmlRpcPassword : process.env.WIKIDOT_API_KEY
   if (!username || !password) {
     return false
   }

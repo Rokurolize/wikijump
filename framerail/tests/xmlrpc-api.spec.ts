@@ -90,12 +90,10 @@ const xmlRpcNestedMulticallRequest = `<?xml version="1.0"?>
   </params>
 </methodCall>`
 
-const xmlRpcAdvertisedUnimplementedRequest = `<?xml version="1.0"?>
+const xmlRpcUsersGetMeRequest = `<?xml version="1.0"?>
 <methodCall>
-  <methodName>pages.select</methodName>
-  <params>
-    <param><value><struct /></value></param>
-  </params>
+  <methodName>users.get_me</methodName>
+  <params />
 </methodCall>`
 
 const xmlRpcCategoriesSelectRequest = `<?xml version="1.0"?>
@@ -1382,11 +1380,46 @@ test("XML-RPC endpoint accepts tags.select category filters at the cap", async (
   expect(body).toContain("<string>tale</string>")
 })
 
-test("XML-RPC endpoint reports advertised but unimplemented methods", async ({
+test("XML-RPC endpoint returns the authenticated XML-RPC principal", async ({
   request
 }) => {
+  const resetWriteRequests = await request.get(
+    "http://127.0.0.1:42747/last-page-write-requests"
+  )
+  expect(resetWriteRequests.status()).toBe(200)
+
   const response = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcAdvertisedUnimplementedRequest.replace("pages.select", "users.get_me"),
+    data: xmlRpcUsersGetMeRequest,
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  expect(response.headers()["content-type"]).toContain("text/xml")
+
+  const body = await response.text()
+  expect(body).toContain("<methodResponse>")
+  expect(body).not.toContain("<fault>")
+  expect(body).toContain("<name>name</name><value><string>rokurokubi</string></value>")
+  expect(body).toContain("<name>title</name><value><string>Rokurokubi</string></value>")
+  expect(body).toContain("<name>id</name><value><int>123</int></value>")
+  expect(body).not.toContain("test-key")
+  expect(body).not.toContain("wikijumpadmin1")
+  expect(body).not.toContain("fixture-session-token")
+
+  const writeRequests = await request
+    .get("http://127.0.0.1:42747/last-page-write-requests")
+    .then((response) => response.json())
+  expect(writeRequests.sessionGet).toHaveLength(1)
+  expect(writeRequests.userGet).toHaveLength(1)
+  expect(writeRequests.userGet[0]).toMatchObject({
+    headers: { sessionToken: "fixture-session-token" },
+    params: { user: 123 }
+  })
+})
+
+test("XML-RPC endpoint reports unsupported unknown methods", async ({ request }) => {
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcUnknownMethodRequest,
     headers: xmlRpcHeaders
   })
 
@@ -1396,7 +1429,7 @@ test("XML-RPC endpoint reports advertised but unimplemented methods", async ({
   const body = await response.text()
   expect(body).toContain("<methodResponse>")
   expect(body).toContain("<name>faultCode</name><value><int>-32601</int></value>")
-  expect(body).toContain("XML-RPC method is not implemented yet: users.get_me")
+  expect(body).toContain("Unsupported XML-RPC method: not.realMethod")
 })
 
 test("XML-RPC endpoint accepts Basic auth scheme case-insensitively", async ({
