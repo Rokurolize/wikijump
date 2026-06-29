@@ -68,11 +68,9 @@ interface DeepwellSession {
 }
 
 interface DeepwellUser {
-  user: {
-    user_id: number
-    name: string
-    slug: string
-  }
+  user_id: number
+  name: string
+  slug: string
 }
 
 interface DeepwellBlobUpload {
@@ -150,6 +148,8 @@ const PAGE_SELECT_DECIMAL_RATING_PATTERN =
 const XML_RPC_DEFAULT_REQUEST_IP = "127.0.0.1"
 const XML_RPC_WRITE_USERNAME = process.env.XML_RPC_WRITE_USERNAME
 const XML_RPC_WRITE_PASSWORD = process.env.XML_RPC_WRITE_PASSWORD
+const WIKIDOT_XMLRPC_OWNER_USERNAME =
+  process.env.WIKIDOT_XMLRPC_OWNER_USERNAME?.trim() || undefined
 const XML_WHITESPACE = "[ \\t\\r\\n]"
 const METHOD_DEFINITIONS: Record<string, MethodDefinition> = {
   "system.listMethods": {
@@ -373,7 +373,7 @@ async function dispatchXmlRpcCall(
       expectParamCount(call, 1)
       return saveFileOne(call, options.requestIp)
     case "users.get_me":
-      expectParamCount(call, 0)
+      expectUsersGetMeParams(call)
       return getAuthenticatedUser(options.requestIp)
     case "posts.select":
       expectParamCount(call, 1)
@@ -1091,20 +1091,36 @@ async function getXmlRpcWriteContext(
 async function getAuthenticatedUser(
   requestIp: string
 ): Promise<Record<string, XmlRpcValue>> {
-  const principal = await getXmlRpcWritePrincipal(requestIp)
+  const principal = WIKIDOT_XMLRPC_OWNER_USERNAME
+    ? {
+        context: undefined,
+        user: WIKIDOT_XMLRPC_OWNER_USERNAME
+      }
+    : await getXmlRpcWriteUserLookup(requestIp)
   const user = await requestDeepwell(
     "user_get",
-    { user: principal.userId },
-    { sessionToken: principal.sessionToken }
+    { user: principal.user },
+    principal.context
   )
   if (!isDeepwellUser(user)) {
     throw new XmlRpcFault(-32603, "Malformed Deepwell response: user_get")
   }
 
   return {
-    name: user.user.slug,
-    title: user.user.name,
-    id: user.user.user_id
+    name: user.slug,
+    title: user.name,
+    id: user.user_id
+  }
+}
+
+async function getXmlRpcWriteUserLookup(
+  requestIp: string
+): Promise<{ context: DeepwellRequestContext; user: number }> {
+  const principal = await getXmlRpcWritePrincipal(requestIp)
+
+  return {
+    context: { sessionToken: principal.sessionToken },
+    user: principal.userId
   }
 }
 
@@ -1409,11 +1425,10 @@ function isDeepwellSession(value: unknown): value is DeepwellSession {
 function isDeepwellUser(value: unknown): value is DeepwellUser {
   return (
     isXmlRpcStruct(value) &&
-    isXmlRpcStruct(value.user) &&
-    typeof value.user.user_id === "number" &&
-    Number.isInteger(value.user.user_id) &&
-    typeof value.user.name === "string" &&
-    typeof value.user.slug === "string"
+    typeof value.user_id === "number" &&
+    Number.isInteger(value.user_id) &&
+    typeof value.name === "string" &&
+    typeof value.slug === "string"
   )
 }
 
@@ -1604,6 +1619,27 @@ function expectParamCount(call: XmlRpcCall, expectedCount: number): void {
       `${call.methodName} expects ${expectedCount} parameter${expectedCount === 1 ? "" : "s"}`
     )
   }
+}
+
+function expectUsersGetMeParams(call: XmlRpcCall): void {
+  if (call.params.length === 0) {
+    return
+  }
+
+  if (call.params.length === 1) {
+    const value = call.params[0]
+    if (
+      (Array.isArray(value) && value.length === 0) ||
+      (isXmlRpcStruct(value) && Object.keys(value).length === 0)
+    ) {
+      return
+    }
+  }
+
+  throw new XmlRpcFault(
+    -32602,
+    "users.get_me expects no parameters or one empty struct/array parameter"
+  )
 }
 
 function getMethodDefinition(methodName: string): MethodDefinition {
@@ -1851,6 +1887,9 @@ function isXmlRpcStruct(value: unknown): value is Record<string, XmlRpcValue> {
 function isAuthorizedBasicAuth(credentials: BasicAuthCredentials): boolean {
   const xmlRpcUsername = process.env.XML_RPC_USERNAME
   const xmlRpcPassword = process.env.XML_RPC_PASSWORD
+  if (Boolean(xmlRpcUsername) !== Boolean(xmlRpcPassword)) {
+    return false
+  }
   const useXmlRpcCredentials = Boolean(xmlRpcUsername && xmlRpcPassword)
   const username = useXmlRpcCredentials ? xmlRpcUsername : process.env.WIKIDOT_APP_NAME
   const password = useXmlRpcCredentials ? xmlRpcPassword : process.env.WIKIDOT_API_KEY

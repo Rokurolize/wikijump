@@ -372,8 +372,9 @@ const server = createServer((request, response) => {
     } else if (
       rpcRequest.method === "user_get" &&
       hasExactKeys(rpcRequest.params, ["user"]) &&
-      rpcRequest.params.user === 123 &&
-      request.headers["x-deepwell-session-token"] === "fixture-session-token"
+      ((rpcRequest.params.user === 123 &&
+        request.headers["x-deepwell-session-token"] === "fixture-session-token") ||
+        rpcRequest.params.user === "rokurokubi")
     ) {
       pageWriteRequests.userGet.push({
         headers: requestContextHeaders(request),
@@ -381,11 +382,9 @@ const server = createServer((request, response) => {
       })
       result = {
         aliases: [],
-        user: {
-          user_id: 123,
-          name: "Rokurokubi",
-          slug: "rokurokubi"
-        }
+        user_id: 123,
+        name: "Rokurokubi",
+        slug: "rokurokubi"
       }
     } else if (
       rpcRequest.method === "category_get_all" &&

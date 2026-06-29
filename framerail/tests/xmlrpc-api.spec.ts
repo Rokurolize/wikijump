@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto"
 
 import { expect, test } from "@playwright/test"
 
-import { parseXmlRpcCall, serializeMethodResponse } from "../src/lib/server/xmlrpc"
+import {
+  handleXmlRpcRequest,
+  parseXmlRpcCall,
+  serializeMethodResponse
+} from "../src/lib/server/xmlrpc"
 
 test.describe.configure({ mode: "serial" })
 
@@ -94,6 +98,22 @@ const xmlRpcUsersGetMeRequest = `<?xml version="1.0"?>
 <methodCall>
   <methodName>users.get_me</methodName>
   <params />
+</methodCall>`
+
+const xmlRpcUsersGetMeEmptyStructRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>users.get_me</methodName>
+  <params>
+    <param><value><struct /></value></param>
+  </params>
+</methodCall>`
+
+const xmlRpcUsersGetMeEmptyArrayRequest = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>users.get_me</methodName>
+  <params>
+    <param><value><array><data /></array></value></param>
+  </params>
 </methodCall>`
 
 const xmlRpcCategoriesSelectRequest = `<?xml version="1.0"?>
@@ -546,10 +566,29 @@ function xmlRpcMulticallWithChildCount(count: number): string {
 }
 
 const basicAuth = `Basic ${Buffer.from("test-app:test-key").toString("base64")}`
+const legacyBasicAuth = `Basic ${Buffer.from("legacy-app:legacy-key").toString("base64")}`
 
 const xmlRpcHeaders = {
   authorization: basicAuth,
   "content-type": "text/xml"
+}
+
+const xmlRpcHandlerRequest = (authorization: string): Request =>
+  new Request("http://127.0.0.1/xml-rpc-api.php", {
+    body: xmlRpcListMethodsRequest,
+    headers: {
+      authorization,
+      "content-type": "text/xml"
+    },
+    method: "POST"
+  })
+
+const restoreEnv = (name: string, value: string | undefined): void => {
+  if (value === undefined) {
+    delete process.env[name]
+  } else {
+    process.env[name] = value
+  }
 }
 
 test("XML-RPC serializer preserves tiny non-zero doubles", () => {
@@ -586,6 +625,45 @@ test("XML-RPC endpoint accepts Basic-authenticated system.listMethods calls", as
   expect(body).toContain("<string>system.methodSignature</string>")
   expect(body).toContain("<string>system.multicall</string>")
   expect(body).toContain("<string>pages.select</string>")
+})
+
+test("XML-RPC handler prefers complete legacy Basic auth and rejects partial legacy config", async () => {
+  const previousEnv = {
+    WIKIDOT_API_KEY: process.env.WIKIDOT_API_KEY,
+    WIKIDOT_APP_NAME: process.env.WIKIDOT_APP_NAME,
+    XML_RPC_PASSWORD: process.env.XML_RPC_PASSWORD,
+    XML_RPC_USERNAME: process.env.XML_RPC_USERNAME
+  }
+
+  try {
+    process.env.WIKIDOT_APP_NAME = "test-app"
+    process.env.WIKIDOT_API_KEY = "test-key"
+    process.env.XML_RPC_USERNAME = "legacy-app"
+    process.env.XML_RPC_PASSWORD = "legacy-key"
+
+    const legacyResponse = await handleXmlRpcRequest(
+      xmlRpcHandlerRequest(legacyBasicAuth)
+    )
+    expect(legacyResponse.status).toBe(200)
+    expect(await legacyResponse.text()).toContain("<string>system.listMethods</string>")
+
+    const fallbackResponse = await handleXmlRpcRequest(xmlRpcHandlerRequest(basicAuth))
+    expect(fallbackResponse.status).toBe(401)
+
+    delete process.env.XML_RPC_PASSWORD
+    const partialLegacyResponse = await handleXmlRpcRequest(
+      xmlRpcHandlerRequest(basicAuth)
+    )
+    expect(partialLegacyResponse.status).toBe(401)
+    expect(await partialLegacyResponse.text()).toContain(
+      "<name>faultCode</name><value><int>401</int></value>"
+    )
+  } finally {
+    restoreEnv("WIKIDOT_API_KEY", previousEnv.WIKIDOT_API_KEY)
+    restoreEnv("WIKIDOT_APP_NAME", previousEnv.WIKIDOT_APP_NAME)
+    restoreEnv("XML_RPC_PASSWORD", previousEnv.XML_RPC_PASSWORD)
+    restoreEnv("XML_RPC_USERNAME", previousEnv.XML_RPC_USERNAME)
+  }
 })
 
 test("XML-RPC endpoint exposes system method help and signatures", async ({
@@ -1388,33 +1466,42 @@ test("XML-RPC endpoint returns the authenticated XML-RPC principal", async ({
   )
   expect(resetWriteRequests.status()).toBe(200)
 
-  const response = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcUsersGetMeRequest,
-    headers: xmlRpcHeaders
-  })
+  for (const data of [
+    xmlRpcUsersGetMeRequest,
+    xmlRpcUsersGetMeEmptyStructRequest,
+    xmlRpcUsersGetMeEmptyArrayRequest
+  ]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data,
+      headers: xmlRpcHeaders
+    })
 
-  expect(response.status()).toBe(200)
-  expect(response.headers()["content-type"]).toContain("text/xml")
+    expect(response.status()).toBe(200)
+    expect(response.headers()["content-type"]).toContain("text/xml")
 
-  const body = await response.text()
-  expect(body).toContain("<methodResponse>")
-  expect(body).not.toContain("<fault>")
-  expect(body).toContain("<name>name</name><value><string>rokurokubi</string></value>")
-  expect(body).toContain("<name>title</name><value><string>Rokurokubi</string></value>")
-  expect(body).toContain("<name>id</name><value><int>123</int></value>")
-  expect(body).not.toContain("test-key")
-  expect(body).not.toContain("wikijumpadmin1")
-  expect(body).not.toContain("fixture-session-token")
+    const body = await response.text()
+    expect(body).toContain("<methodResponse>")
+    expect(body).not.toContain("<fault>")
+    expect(body).toContain("<name>name</name><value><string>rokurokubi</string></value>")
+    expect(body).toContain("<name>title</name><value><string>Rokurokubi</string></value>")
+    expect(body).toContain("<name>id</name><value><int>123</int></value>")
+    expect(body).not.toContain("test-key")
+    expect(body).not.toContain("wikijumpadmin1")
+    expect(body).not.toContain("fixture-session-token")
+  }
 
   const writeRequests = await request
     .get("http://127.0.0.1:42747/last-page-write-requests")
     .then((response) => response.json())
-  expect(writeRequests.sessionGet).toHaveLength(1)
-  expect(writeRequests.userGet).toHaveLength(1)
-  expect(writeRequests.userGet[0]).toMatchObject({
-    headers: { sessionToken: "fixture-session-token" },
-    params: { user: 123 }
-  })
+  expect(writeRequests.login).toHaveLength(0)
+  expect(writeRequests.sessionGet).toHaveLength(0)
+  expect(writeRequests.userGet).toHaveLength(3)
+  for (const userGetRequest of writeRequests.userGet) {
+    expect(userGetRequest).toMatchObject({
+      params: { user: "rokurokubi" }
+    })
+    expect(userGetRequest.headers).not.toHaveProperty("sessionToken")
+  }
 })
 
 test("XML-RPC endpoint reports unsupported unknown methods", async ({ request }) => {

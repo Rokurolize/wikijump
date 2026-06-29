@@ -9,6 +9,7 @@ const config: PlaywrightTestConfig = {
       XML_RPC_WRITE_USERNAME: "admin@wikijump",
       WIKIDOT_API_KEY: "test-key",
       WIKIDOT_APP_NAME: "test-app",
+      WIKIDOT_XMLRPC_OWNER_USERNAME: "rokurokubi",
       WIKIJUMP_XMLRPC_LOCAL_FILE_UPLOAD: "1"
     },
     port: 4173
