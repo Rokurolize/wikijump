@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -6,10 +7,13 @@ export function isObject(value) {
 }
 
 export function safePathSegment(value) {
-  return String(value)
+  const original = String(value);
+  const hash = crypto.createHash("sha256").update(original).digest("hex").slice(0, 12);
+  const prefix = original
     .replace(/[^A-Za-z0-9._:-]+/g, "_")
     .replace(/^_+|_+$/g, "")
-    .slice(0, 160) || "row";
+    .slice(0, 140) || "row";
+  return `${prefix}-${hash}`;
 }
 
 export function compactVisibleText(value) {
@@ -67,11 +71,20 @@ export function selectInventoryRows({rows, fixtureIds = [], shardManifest = null
 }
 
 export function rowSourceUrl(row) {
-  return row.source_url ?? row.live_url ?? row.wikidot_url ?? "";
+  return firstNonEmptyString(row.source_url, row.live_url, row.wikidot_url);
 }
 
 export function rowLocalUrl(row, localUrlField = "local_https_url") {
-  return row[localUrlField] ?? row.local_https_url ?? row.local_http_url ?? row.local_url ?? "";
+  return firstNonEmptyString(row[localUrlField], row.local_https_url, row.local_http_url, row.local_url);
+}
+
+function firstNonEmptyString(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value;
+    }
+  }
+  return "";
 }
 
 export function buildEvidenceRecord({row, source, local, sourceArtifact, localArtifact, sourceScreenshot, localScreenshot, localUrlField}) {

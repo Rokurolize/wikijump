@@ -32,7 +32,7 @@ function parseArgs(argv) {
     localUrlField: "local_https_url",
     screenshot: true,
     ignoreHttpsErrors: false,
-    waitUntil: "networkidle",
+    waitUntil: "domcontentloaded",
   };
 
   for (let index = 2; index < argv.length; index += 1) {
@@ -115,7 +115,11 @@ function requirePlaywright(browserRoot) {
   try {
     return requireFromRoot("playwright");
   } catch (error) {
-    throw new Error(`could not load playwright from ${root}; pass --browser-root pointing at a package with playwright installed (${error.message})`);
+    try {
+      return requireFromRoot("@playwright/test");
+    } catch (fallbackError) {
+      throw new Error(`could not load playwright or @playwright/test from ${root}; pass --browser-root pointing at a package with Playwright installed (${error.message}; ${fallbackError.message})`);
+    }
   }
 }
 
@@ -149,6 +153,7 @@ async function openBrowser({chromium, cdpEndpoint, browserExecutable, ignoreHttp
 async function capturePage(page, url, {timeoutMs, waitUntil, screenshotPath}) {
   const consoleErrors = [];
   const failedRequests = [];
+  const badResponses = [];
   page.on("console", (message) => {
     if (message.type() === "error") {
       consoleErrors.push(message.text());
@@ -160,34 +165,68 @@ async function capturePage(page, url, {timeoutMs, waitUntil, screenshotPath}) {
       failure: request.failure()?.errorText ?? "unknown",
     });
   });
+  page.on("response", (response) => {
+    const status = response.status();
+    if (status < 400) return;
+    const request = response.request();
+    if (request.isNavigationRequest()) return;
+    badResponses.push({
+      url: response.url(),
+      status,
+      resourceType: request.resourceType(),
+    });
+  });
+
+  let response = null;
+  let navigationError = null;
+  let visibleText = "";
+  let html = "";
+  let writtenScreenshotPath = null;
+  try {
+    response = await page.goto(url, {timeout: timeoutMs, waitUntil});
+  } catch (error) {
+    navigationError = error;
+  }
 
   try {
-    const response = await page.goto(url, {timeout: timeoutMs, waitUntil});
     await page.waitForLoadState("domcontentloaded", {timeout: timeoutMs}).catch(() => {});
-    const visibleText = await page.evaluate(() => document.body?.innerText ?? "");
-    const html = await page.content();
-    if (screenshotPath) {
+    visibleText = await page.evaluate(() => document.body?.innerText ?? "");
+    html = await page.content();
+  } catch (error) {
+    if (!navigationError) navigationError = error;
+  }
+
+  if (screenshotPath && html) {
+    try {
       await page.screenshot({path: screenshotPath, fullPage: true});
+      writtenScreenshotPath = screenshotPath;
+    } catch (error) {
+      if (!navigationError) navigationError = error;
     }
+  }
+
+  if (!navigationError) {
     return {
       status: response?.status() ?? null,
       finalUrl: page.url(),
       visibleText,
       html,
       consoleErrors,
-      failedRequests,
-    };
-  } catch (error) {
-    return {
-      status: null,
-      finalUrl: page.url(),
-      visibleText: "",
-      html: "",
-      consoleErrors,
-      failedRequests,
-      error: error.message,
+      failedRequests: [...failedRequests, ...badResponses],
+      screenshotPath: writtenScreenshotPath,
     };
   }
+
+  return {
+    status: response?.status() ?? null,
+    finalUrl: page.url(),
+    visibleText,
+    html,
+    consoleErrors,
+    failedRequests: [...failedRequests, ...badResponses],
+    screenshotPath: writtenScreenshotPath,
+    error: navigationError.message,
+  };
 }
 
 async function run() {
@@ -265,8 +304,8 @@ async function run() {
         local,
         sourceArtifact: artifacts.sourceArtifact,
         localArtifact: artifacts.localArtifact,
-        sourceScreenshot: artifacts.sourceScreenshot,
-        localScreenshot: artifacts.localScreenshot,
+        sourceScreenshot: source.screenshotPath,
+        localScreenshot: local.screenshotPath,
         localUrlField: args.localUrlField,
       }));
     }

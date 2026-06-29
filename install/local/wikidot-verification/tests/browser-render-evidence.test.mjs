@@ -10,6 +10,8 @@ import {
   buildEvidenceRecord,
   compactVisibleText,
   inventoryRows,
+  rowLocalUrl,
+  rowSourceUrl,
   safePathSegment,
   selectInventoryRows,
   writeEvidenceArtifacts,
@@ -90,6 +92,22 @@ test("writeEvidenceArtifacts keeps row artifacts under a safe fixture directory"
   assert.equal(await fs.readFile(artifacts.sourceArtifact, "utf8"), "<html>live</html>");
   assert.equal(await fs.readFile(artifacts.localArtifact, "utf8"), "<html>local</html>");
   assert.equal(compactVisibleText(" one\n\t two "), "one two");
+});
+
+test("safePathSegment keeps colliding fixture IDs distinct", () => {
+  assert.notEqual(safePathSegment("EN:a/b"), safePathSegment("EN:a_b"));
+  assert.notEqual(
+    safePathSegment(`EN:${"a".repeat(180)}1`),
+    safePathSegment(`EN:${"a".repeat(180)}2`)
+  );
+});
+
+test("row URL helpers skip blank preferred fields before falling back", () => {
+  assert.equal(rowSourceUrl({source_url: "", live_url: "https://live.example/page"}), "https://live.example/page");
+  assert.equal(
+    rowLocalUrl({local_https_url: "", local_http_url: "http://local.example/page"}),
+    "http://local.example/page"
+  );
 });
 
 test("capture CLI rejects an empty row selection before launching a browser", async () => {
