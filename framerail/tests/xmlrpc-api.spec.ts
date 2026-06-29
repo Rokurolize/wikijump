@@ -674,14 +674,22 @@ async function createXmlRpcFixtureUser(stamp: number) {
     bypass_email_verification: true,
     ip_address: "127.0.0.1"
   })
-  await execDatabaseSql(`
+  const memberGrantCount = await execDatabaseSql(`
+WITH inserted AS (
 INSERT INTO user_role (user_id, role_id, site_id, assigned_by)
-SELECT ${Number(user.user_id)}, role_id, site_id, -1
+SELECT ${Number(user.user_id)}, role_id, site_id, ${Number(user.user_id)}
 FROM role
 WHERE site_id = (SELECT site_id FROM site WHERE slug = 'scp-wiki')
   AND name = 'member'
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING
+RETURNING 1
+)
+SELECT COUNT(*) FROM inserted;
 `)
+  if (memberGrantCount !== "1") {
+    throw new Error(`Failed to grant member role to XML-RPC fixture user ${user.user_id}`)
+  }
+
   const memberRoleAssigned = await execDatabaseSql(`
 SELECT EXISTS (
   SELECT 1
