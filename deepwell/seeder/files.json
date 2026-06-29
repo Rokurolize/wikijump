@@ -60,6 +60,84 @@
                 "path": "scp-main.ftml",
                 "overwrite": "scp-002.ftml"
             }
+        ],
+        "scp-9506": [
+            {
+                "name": "AFTER_FOG.png",
+                "path": "scp-9506--AFTER_FOG.png"
+            },
+            {
+                "name": "DEAD_BABY.png",
+                "path": "scp-9506--DEAD_BABY.png"
+            },
+            {
+                "name": "DONT_PANIC.png",
+                "path": "scp-9506--DONT_PANIC.png"
+            },
+            {
+                "name": "ESTAB_COMMS.png",
+                "path": "scp-9506--ESTAB_COMMS.png"
+            },
+            {
+                "name": "NFSI.png",
+                "path": "scp-9506--NFSI.png"
+            },
+            {
+                "name": "PRAC_OFT.png",
+                "path": "scp-9506--PRAC_OFT.png"
+            },
+            {
+                "name": "REC_ALERT.png",
+                "path": "scp-9506--REC_ALERT.png"
+            },
+            {
+                "name": "Sam.jpg",
+                "path": "scp-9506--Sam.jpg"
+            },
+            {
+                "name": "WHEN_ALERT.png",
+                "path": "scp-9506--WHEN_ALERT.png"
+            },
+            {
+                "name": "alert.jpg",
+                "path": "scp-9506--alert.jpg"
+            },
+            {
+                "name": "cold.jpg",
+                "path": "scp-9506--cold.jpg"
+            },
+            {
+                "name": "earth.jpg",
+                "path": "scp-9506--earth.jpg"
+            },
+            {
+                "name": "emigration.jpg",
+                "path": "scp-9506--emigration.jpg"
+            },
+            {
+                "name": "fog.jpg",
+                "path": "scp-9506--fog.jpg"
+            },
+            {
+                "name": "hunt.jpg",
+                "path": "scp-9506--hunt.jpg"
+            },
+            {
+                "name": "memorial.jpg",
+                "path": "scp-9506--memorial.jpg"
+            },
+            {
+                "name": "opening.jpg",
+                "path": "scp-9506--opening.jpg"
+            },
+            {
+                "name": "podium.jpg",
+                "path": "scp-9506--podium.jpg"
+            },
+            {
+                "name": "weathermap.gif",
+                "path": "scp-9506--weathermap.gif"
+            }
         ]
     }
 }
