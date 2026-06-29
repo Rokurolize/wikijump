@@ -187,6 +187,61 @@
             "wikitext": "scp-9506"
         },
         {
+            "slug": "component:image-block",
+            "title": "Standard Image Block",
+            "wikitext": "component-image-block"
+        },
+        {
+            "slug": "component:image-block-base",
+            "title": "Image Block Base",
+            "wikitext": "component-image-block-base"
+        },
+        {
+            "slug": "component:preview",
+            "title": "Page Preview Component",
+            "wikitext": "component-preview"
+        },
+        {
+            "slug": "theme:basalt",
+            "title": "Basalt Theme",
+            "wikitext": "theme-basalt"
+        },
+        {
+            "slug": "component:wikimodule",
+            "title": "Wikimodule Component",
+            "wikitext": "component-wikimodule"
+        },
+        {
+            "slug": "component:license-box",
+            "title": "License Box",
+            "wikitext": "component-license-box"
+        },
+        {
+            "slug": "component:license-box-end",
+            "title": "License Box End",
+            "wikitext": "component-license-box-end"
+        },
+        {
+            "slug": "component:license-box-backend",
+            "title": "License Box Backend",
+            "wikitext": "component-license-box-backend"
+        },
+        {
+            "slug": "component:interwiki-style",
+            "title": "Interwiki Style",
+            "wikitext": "component-interwiki-style"
+        },
+        {
+            "slug": "component:betterfootnotes",
+            "title": "BetterFootnotes",
+            "wikitext": "component-betterfootnotes"
+        },
+        {
+            "slug": "component:acs-animation",
+            "title": "ACS Animation",
+            "wikitext": "component-acs-animation"
+        },
+        {
             "slug": "nav:side",
             "title": "Sidebar",
             "wikitext": "sidebar"
