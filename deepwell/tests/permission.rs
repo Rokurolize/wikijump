@@ -26,7 +26,8 @@ use deepwell::constants::SYSTEM_USER_ID;
 use deepwell::license::License;
 use deepwell::services::category::CategoryService;
 use deepwell::services::permission::{
-    CheckPermissionContext, DecoratedPermission, PermissionCache, PermissionService,
+    CheckPermissionContext, DecoratedPermission, PERMISSION_CACHE_TTL_SECONDS,
+    PermissionCache, PermissionService,
 };
 use deepwell::services::relation::{
     CreateSiteBan, CreateSiteMember, RelationService, RemoveSiteMember, SiteBanData,
@@ -492,8 +493,8 @@ async fn cached_view_permissions_have_ttl() {
         .expect("Failed to read permission cache TTL");
 
     assert!(
-        ttl > 0,
-        "permission cache key should expire, but TTL was {ttl}"
+        (1..=PERMISSION_CACHE_TTL_SECONDS).contains(&ttl),
+        "permission cache key TTL should be between 1 and {PERMISSION_CACHE_TTL_SECONDS} seconds, but was {ttl}"
     );
 }
 

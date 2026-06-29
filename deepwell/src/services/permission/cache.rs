@@ -33,7 +33,7 @@ use redis::{AsyncCommands, AsyncIter};
 pub const DEFAULT_CATEGORY_KEY: &str = "_default";
 pub const SITE_NOT_SET_KEY: &str = "platform";
 pub const USER_NOT_SET_KEY: &str = "anonymous";
-const PERMISSION_CACHE_TTL_SECONDS: i64 = 300;
+pub const PERMISSION_CACHE_TTL_SECONDS: i64 = 300;
 
 #[derive(Debug, Clone, Copy)]
 pub struct PermissionCache;
@@ -116,8 +116,18 @@ impl PermissionCache {
         let field = Self::permission_key(resource_type, resource_category_id, action);
 
         let mut redis = ctx.redis();
-        let _: () = redis
-            .hset(&key, &field, if has_permission { "1" } else { "0" })
+        let _: () = redis::pipe()
+            .atomic()
+            .cmd("HSET")
+            .arg(&key)
+            .arg(&field)
+            .arg(if has_permission { "1" } else { "0" })
+            .ignore()
+            .cmd("EXPIRE")
+            .arg(&key)
+            .arg(PERMISSION_CACHE_TTL_SECONDS)
+            .ignore()
+            .query_async(&mut redis)
             .await
             .or_raise(|| {
                 warn!(
@@ -126,14 +136,29 @@ impl PermissionCache {
                 );
                 Error::new("permission cache write error", ErrorType::Permission)
             })?;
-        let _: bool = redis
-            .expire(&key, PERMISSION_CACHE_TTL_SECONDS)
-            .await
-            .or_raise(|| {
-                warn!("Failed to set permission cache TTL for key '{}'", key);
-                Error::new("permission cache TTL error", ErrorType::Permission)
-            })?;
 
+        Ok(())
+    }
+
+    /// Invalidate the cache for a specific user on a specific site.
+    pub async fn invalidate_user(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        user_id: i64,
+    ) -> Result<()> {
+        let mut redis = ctx.redis();
+        let key = Self::site_user_key(Some(site_id), Some(user_id));
+        let make_error = || {
+            Error::new(
+                format!(
+                    "Failed to invalidate permission cache for user {} on site {}",
+                    user_id, site_id,
+                ),
+                ErrorType::Permission,
+            )
+        };
+
+        let _: usize = redis.del(key).await.or_raise(make_error)?;
         Ok(())
     }
 

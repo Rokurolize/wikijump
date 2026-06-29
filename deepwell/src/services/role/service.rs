@@ -389,7 +389,7 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
-        PermissionCache::invalidate_site(ctx, role.site_id)
+        PermissionCache::invalidate_user(ctx, role.site_id, user_id)
             .await
             .or_raise(make_error)?;
 
@@ -443,7 +443,7 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
-        PermissionCache::invalidate_site(ctx, role.site_id)
+        PermissionCache::invalidate_user(ctx, role.site_id, user_id)
             .await
             .or_raise(make_error)?;
 
