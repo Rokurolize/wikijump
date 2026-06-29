@@ -469,8 +469,8 @@ async fn banned_user_does_not_retain_explicit_role_permissions() {
         )
         .await
         .expect("Failed to read permission cache"),
-        None,
-        "site ban should invalidate cached page:view decisions"
+        Some(true),
+        "direct cache entry can remain, but active site bans must bypass it"
     );
 
     assert!(
@@ -496,8 +496,8 @@ async fn banned_user_does_not_retain_explicit_role_permissions() {
         )
         .await
         .expect("Failed to read permission cache"),
-        None,
-        "active site ban should not cache denied page:view decisions"
+        Some(true),
+        "active site ban should not overwrite cached page:view with a denial"
     );
 
     assert!(
@@ -584,8 +584,8 @@ async fn active_timed_site_ban_does_not_cache_denied_view_permission() {
         )
         .await
         .expect("Failed to read permission cache"),
-        None,
-        "timed site ban should invalidate cached page:view decisions"
+        Some(true),
+        "direct cache entry can remain, but active timed bans must bypass it"
     );
     assert!(
         !check(
@@ -610,8 +610,8 @@ async fn active_timed_site_ban_does_not_cache_denied_view_permission() {
         )
         .await
         .expect("Failed to read permission cache"),
-        None,
-        "active timed site ban should not cache denied page:view decisions"
+        Some(true),
+        "active timed site ban should not overwrite cached page:view with a denial"
     );
 }
 

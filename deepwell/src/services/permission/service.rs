@@ -458,7 +458,8 @@ impl PermissionService {
             user_id, site_id, resource, resource_category, action,
         );
 
-        // Check if this permission is cacheable
+        // Active bans are time-dependent and may lapse without a write, so
+        // cached view decisions must be bypassed while a ban is active.
         let cacheable = PermissionCache::is_cacheable(resource, action)
             && !Self::active_site_ban_suppresses_cache(ctx, site_id, user_id)
                 .await

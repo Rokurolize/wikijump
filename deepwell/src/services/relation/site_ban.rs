@@ -20,7 +20,6 @@
 
 use super::prelude::*;
 use super::site_member::RemoveSiteMember;
-use crate::services::permission::PermissionCache;
 use time::Date;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -105,15 +104,10 @@ impl RelationService {
         // TODO: remove site member applications
         // TODO: remove site roles
 
-        let created: Result<()> = create_operation!(
+        create_operation!(
             ctx, SiteBan, Site, site_id, User, user_id, created_by, &metadata,
             make_error,
-        );
-        created?;
-
-        PermissionCache::invalidate_site(ctx, site_id)
-            .await
-            .or_raise(make_error)
+        )
     }
 
     /// Helper method for rejecting an relation if the user is banned.
