@@ -10,7 +10,8 @@ export function safePathSegment(value) {
   const original = String(value);
   const hash = crypto.createHash("sha256").update(original).digest("hex").slice(0, 12);
   const prefix = original
-    .replace(/[^A-Za-z0-9._:-]+/g, "_")
+    .replace(/[^A-Za-z0-9._-]+/g, "_")
+    .replace(/[. ]+$/g, "")
     .replace(/^_+|_+$/g, "")
     .slice(0, 140) || "row";
   return `${prefix}-${hash}`;
@@ -31,7 +32,12 @@ export function inventoryRows(inventory) {
   if (!Array.isArray(inventory.rows)) {
     throw new Error("inventory.rows must be an array");
   }
-  return inventory.rows.filter(isObject);
+  for (const [index, row] of inventory.rows.entries()) {
+    if (!isObject(row) || typeof row.fixture_id !== "string" || row.fixture_id.trim().length === 0) {
+      throw new Error(`inventory.rows[${index}] must be an object with a non-empty fixture_id`);
+    }
+  }
+  return inventory.rows;
 }
 
 export function rowsForShard({rows, shardManifest, shardId}) {

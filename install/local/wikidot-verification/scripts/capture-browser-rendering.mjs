@@ -246,6 +246,19 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, screenshotPa
   };
 }
 
+async function captureOptionalPage(context, url, missingMessage, options) {
+  if (!url) {
+    return {error: missingMessage, html: "", consoleErrors: [], failedRequests: []};
+  }
+
+  const page = await context.newPage();
+  try {
+    return await capturePage(page, url, options);
+  } finally {
+    await page.close();
+  }
+}
+
 async function run() {
   const args = parseArgs(process.argv);
   const inventory = await readJson(args.inventory);
@@ -277,18 +290,6 @@ async function run() {
     for (const row of selectedRows) {
       const sourceUrl = rowSourceUrl(row);
       const localUrl = rowLocalUrl(row, args.localUrlField);
-      if (!sourceUrl || !localUrl) {
-        records.push(buildEvidenceRecord({
-          row,
-          source: {error: sourceUrl ? null : "missing source URL"},
-          local: {error: localUrl ? null : "missing local URL"},
-          sourceArtifact: "",
-          localArtifact: "",
-          localUrlField: args.localUrlField,
-        }));
-        continue;
-      }
-
       const rowDir = path.join(args.outputDir, safePathSegment(row.fixture_id));
       await fs.mkdir(rowDir, {recursive: true});
       const artifacts = await writeEvidenceArtifacts({
@@ -298,20 +299,16 @@ async function run() {
         local: {},
         screenshot: args.screenshot,
       });
-      const sourcePage = await context.newPage();
-      const localPage = await context.newPage();
-      const source = await capturePage(sourcePage, sourceUrl, {
+      const source = await captureOptionalPage(context, sourceUrl, "missing source URL", {
         timeoutMs: args.timeoutMs,
         waitUntil: args.waitUntil,
         screenshotPath: artifacts.sourceScreenshot,
       });
-      const local = await capturePage(localPage, localUrl, {
+      const local = await captureOptionalPage(context, localUrl, "missing local URL", {
         timeoutMs: args.timeoutMs,
         waitUntil: args.waitUntil,
         screenshotPath: artifacts.localScreenshot,
       });
-      await sourcePage.close();
-      await localPage.close();
 
       await fs.writeFile(artifacts.sourceArtifact, source.html ?? "", "utf8");
       await fs.writeFile(artifacts.localArtifact, local.html ?? "", "utf8");

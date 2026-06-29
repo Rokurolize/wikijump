@@ -97,9 +97,22 @@ test("writeEvidenceArtifacts keeps row artifacts under a safe fixture directory"
 
 test("safePathSegment keeps colliding fixture IDs distinct", () => {
   assert.notEqual(safePathSegment("EN:a/b"), safePathSegment("EN:a_b"));
+  assert.doesNotMatch(safePathSegment("EN:alpha"), /:/);
+  assert.doesNotMatch(safePathSegment("EN:alpha."), /\.-[a-f0-9]{12}$/);
   assert.notEqual(
     safePathSegment(`EN:${"a".repeat(180)}1`),
     safePathSegment(`EN:${"a".repeat(180)}2`)
+  );
+});
+
+test("inventoryRows rejects malformed rows before browser capture starts", () => {
+  assert.throws(
+    () => inventoryRows({schema: inventory.schema, rows: [{slug: "missing-fixture"}]}),
+    /inventory\.rows\[0\] must be an object with a non-empty fixture_id/
+  );
+  assert.throws(
+    () => inventoryRows({schema: inventory.schema, rows: [null]}),
+    /inventory\.rows\[0\] must be an object with a non-empty fixture_id/
   );
 });
 
@@ -241,4 +254,82 @@ test("capture CLI rejects an empty row selection before launching a browser", as
       return true;
     }
   );
+});
+
+test("capture CLI keeps source evidence when local URL is missing", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-partial-capture-"));
+  const browserRoot = path.join(root, "browser-root");
+  const inventoryPath = path.join(root, "inventory.json");
+  const outputDir = path.join(root, "out");
+  await fs.mkdir(browserRoot);
+  await fs.writeFile(path.join(browserRoot, "package.json"), "{}", "utf8");
+  await fs.mkdir(path.join(browserRoot, "node_modules", "@playwright", "test"), {recursive: true});
+  await fs.writeFile(
+    path.join(browserRoot, "node_modules", "@playwright", "test", "index.js"),
+    `
+const sourceHtml = "<html><body>source ok</body></html>";
+class Page {
+  constructor() {
+    this.handlers = new Map();
+    this.currentUrl = "about:blank";
+  }
+  on(event, handler) { this.handlers.set(event, handler); }
+  async goto(url) { this.currentUrl = url; return {status: () => 200}; }
+  async waitForLoadState() {}
+  async evaluate() { return "source ok"; }
+  async content() { return sourceHtml; }
+  async screenshot({path}) { require("node:fs").writeFileSync(path, "png"); }
+  url() { return this.currentUrl; }
+  async close() {}
+}
+exports.chromium = {
+  async launch() {
+    return {
+      async newContext() {
+        return {async newPage() { return new Page(); }, async close() {}};
+      },
+      async close() {},
+    };
+  },
+};
+`,
+    "utf8"
+  );
+  await fs.writeFile(
+    inventoryPath,
+    JSON.stringify({
+      schema: inventory.schema,
+      rows: [{
+        fixture_id: "EN:partial",
+        family: "EN",
+        slug: "partial",
+        source_url: "https://live.example/partial",
+        local_https_url: "",
+        required_browser: true,
+      }],
+    }),
+    "utf8"
+  );
+
+  await assert.rejects(
+    execFileAsync(process.execPath, [
+      scriptPath,
+      "--inventory",
+      inventoryPath,
+      "--output-dir",
+      outputDir,
+      "--browser-root",
+      browserRoot,
+      "--json",
+    ]),
+    (error) => {
+      assert.match(error.stdout, /"selected_count":1/);
+      return true;
+    }
+  );
+  const records = JSON.parse(await fs.readFile(path.join(outputDir, "records.json"), "utf8"));
+  const [record] = records.evidence;
+  assert.equal(record.source_visible_text, "source ok");
+  assert.equal(record.local_visible_text, "");
+  assert.deepEqual(record.capture_errors, [{side: "local", message: "missing local URL"}]);
 });
