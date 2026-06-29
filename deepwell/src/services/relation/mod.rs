@@ -213,10 +213,11 @@ impl RelationService {
                 RelationType::SiteBan | RelationType::SiteMember,
                 RelationObjectType::Site,
                 RelationObjectType::User,
-            ) => {
-                PermissionCache::invalidate_user(ctx, relation.dest_id, relation.from_id)
-                    .await
-            }
+            ) => PermissionCache::defer_invalidate_user(
+                ctx,
+                relation.dest_id,
+                relation.from_id,
+            ),
             _ => Ok(()),
         }
     }

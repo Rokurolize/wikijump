@@ -105,8 +105,7 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
-        PermissionCache::invalidate_site(ctx, created_role.site_id)
-            .await
+        PermissionCache::defer_invalidate_site(ctx, created_role.site_id)
             .or_raise(make_error)?;
 
         Ok(created_role)
@@ -282,9 +281,7 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
-        PermissionCache::invalidate_site(ctx, site_id)
-            .await
-            .or_raise(make_error)?;
+        PermissionCache::defer_invalidate_site(ctx, site_id).or_raise(make_error)?;
 
         Ok(deleted_role)
     }
@@ -389,8 +386,7 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
-        PermissionCache::invalidate_user(ctx, role.site_id, user_id)
-            .await
+        PermissionCache::defer_invalidate_user(ctx, role.site_id, user_id)
             .or_raise(make_error)?;
 
         Ok(user_role)
@@ -443,8 +439,7 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
-        PermissionCache::invalidate_user(ctx, role.site_id, user_id)
-            .await
+        PermissionCache::defer_invalidate_user(ctx, role.site_id, user_id)
             .or_raise(make_error)?;
 
         Ok(deleted_user_role)
@@ -591,9 +586,7 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
-        PermissionCache::invalidate_site(ctx, site_id)
-            .await
-            .or_raise(make_error)?;
+        PermissionCache::defer_invalidate_site(ctx, site_id).or_raise(make_error)?;
 
         Ok(())
     }
