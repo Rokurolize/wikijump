@@ -26,7 +26,7 @@ use deepwell::constants::SYSTEM_USER_ID;
 use deepwell::license::License;
 use deepwell::services::category::CategoryService;
 use deepwell::services::permission::{
-    CheckPermissionContext, DecoratedPermission, PermissionService,
+    CheckPermissionContext, DecoratedPermission, PermissionCache, PermissionService,
 };
 use deepwell::services::relation::{
     CreateSiteBan, CreateSiteMember, RelationService, SiteBanData, SiteMemberAccepted,
@@ -422,6 +422,33 @@ async fn banned_user_does_not_retain_explicit_role_permissions() {
             f.site_id,
             Resource::Page,
             None,
+            Action::View,
+        )
+        .await,
+        "precondition: user_a should initially have RoleA page:view"
+    );
+    assert_eq!(
+        PermissionCache::check_user_permission(
+            ctx,
+            Some(f.site_id),
+            Some(f.user_a),
+            Resource::Page,
+            None,
+            Action::View,
+        )
+        .await
+        .expect("Failed to read permission cache"),
+        Some(true),
+        "precondition: page:view should be cached before banning user_a"
+    );
+
+    assert!(
+        check(
+            &runner,
+            Some(f.user_a),
+            f.site_id,
+            Resource::Page,
+            None,
             Action::Edit,
         )
         .await,
@@ -430,6 +457,21 @@ async fn banned_user_does_not_retain_explicit_role_permissions() {
 
     create_site_member(ctx, f.site_id, f.user_a).await;
     ban_site_user(ctx, f.site_id, f.user_a).await;
+
+    assert_eq!(
+        PermissionCache::check_user_permission(
+            ctx,
+            Some(f.site_id),
+            Some(f.user_a),
+            Resource::Page,
+            None,
+            Action::View,
+        )
+        .await
+        .expect("Failed to read permission cache"),
+        None,
+        "site ban should invalidate cached page:view decisions"
+    );
 
     assert!(
         !check(
