@@ -84,7 +84,7 @@
 [[/module]]
 
 [[iftags +component]]
-[[module CSS]] 
+[[module CSS]]
 @import url("https://nu-scptheme.github.io/Black-Highlighter/stable/styles/normalize.min.css");
 @import url("https://nu-scptheme.github.io/Black-Highlighter/stable/styles/black-highlighter.min.css");
 [[/module]]
@@ -97,7 +97,7 @@ Hi, I'm [[*user ROUNDERHOUSE]] and this is a component you can plug in at the bo
 ++ How to Include:
 Stick the appropriate include onto the bottom of your page, above the licensebox and wikiwalk footers. That's mandatory. I suggest you put it below anything else you may have at the bottom, such as footnote blocks. That's just my advice.
 ----
-Clean Version: 
+Clean Version:
 > @@[[include component:wikimodule |normal= --]]]@@
 [[div class="collection"]]
 [[collapsible show="More From This Author" hide="More From This Author"]]
@@ -145,7 +145,7 @@ Other
 
 ----
 
-Rating Version: 
+Rating Version:
 > @@[[include component:wikimodule |ratings= --]]]@@
 [[div class="collection"]]
 [[collapsible show="More From This Author" hide="More From This Author"]]
@@ -209,7 +209,7 @@ root: {
 
 **A:** No, it will only show the pages for the person who actually //created// the page that it's on.
 
-**Q:** Can it show my ratings? 
+**Q:** Can it show my ratings?
 
 **A:** There is both a clean and a rating version. You can use either.
 

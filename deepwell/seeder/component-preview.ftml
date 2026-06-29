@@ -14,7 +14,7 @@ To add a preview to your article,  copy the following onto the top of your page 
 @@=====@@
 [[/div]]
 
-This text can then be queried and shown on other pages. This short blurb may be any text which accurately or usefully describes an article at a glance or in summary. However, there are limitations to ensure standardization and avoid issues with site technical policy. See the [[[Technical Content Policy]]] for a full and up-to-date outline of the requirements. 
+This text can then be queried and shown on other pages. This short blurb may be any text which accurately or usefully describes an article at a glance or in summary. However, there are limitations to ensure standardization and avoid issues with site technical policy. See the [[[Technical Content Policy]]] for a full and up-to-date outline of the requirements.
 
 * Blurbs must be primarily composed of plain text.
 * Syntax blocks (e.g. {{[[div]]}}), custom CSS (inline or through modules), and use of components are prohibited.

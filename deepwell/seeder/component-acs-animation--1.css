@@ -2,7 +2,7 @@
     --timeScale: 1;
     --timeDelay: 0s;
 }
- 
+
 /* Converting middle divider from box-shadow to ::before pseudo-element */
 .anom-bar > div.bottom-box { box-shadow: none; position: relative; }
 .anom-bar > div.bottom-box::before {
@@ -13,7 +13,7 @@
     bottom: 100%; left: 0;
     background-color: rgb(var(--swatch-menubg-black-color, 12, 12, 12));
 }
- 
+
 /* DIVIDER */
 .anom-bar > .bottom-box::before {
     animation-name: divider;
@@ -23,7 +23,7 @@
     animation-timing-function: cubic-bezier(.32,.38,.39,.94);
     animation-fill-mode: backwards;
 }
- 
+
 /* CLASSIFIED LEVEL BARS */
 div.top-center-box  > * {
     animation-name: bar;
@@ -38,12 +38,12 @@ div.top-center-box > :nth-child(3) { animation-delay: calc(0.45s * var(--timeSca
 div.top-center-box > :nth-child(4) { animation-delay: calc(0.61s * var(--timeScale) + var(--timeDelay)); }
 div.top-center-box > :nth-child(5) { animation-delay: calc(0.75s * var(--timeScale) + var(--timeDelay)); }
 div.top-center-box > :nth-child(6) { animation-delay: calc(0.95s * var(--timeScale) + var(--timeDelay)); }
- 
+
 /* TOP TEXT */
 div.top-left-box, div.top-right-box {
     clip-path: polygon( 0% -50%, 150% -50%, 150% 100%, 0% 100%);
 }
- 
+
 div.top-left-box > *, div.top-right-box > * {
     position: relative;
     animation-name: bottomup;
@@ -53,10 +53,10 @@ div.top-left-box > *, div.top-right-box > * {
     animation-timing-function: ease-out;
     animation-fill-mode: backwards;
 }
- 
+
 /*-----------------------------------*/
 /*-----------------------------------*/
- 
+
 /* CONTAINMENT, DISRUPTION, RISK CLASSES */
 div.text-part > * {
     clip-path: polygon( 0% 0%, 100% 0%, 100% 100%, 0% 100%);
@@ -72,7 +72,7 @@ div.text-part > :nth-child(1) {
 div.text-part > :nth-child(1) { animation-delay: calc(0.6s * var(--timeScale) + var(--timeDelay)); }
 div.text-part > :nth-child(2) { animation-delay: calc(0.75s * var(--timeScale) + var(--timeDelay)); }
 div.text-part > :nth-child(3) { animation-delay: calc(0.86s * var(--timeScale) + var(--timeDelay)); }
- 
+
 div.main-class::before, div.main-class::after {
     animation-name: iconslide;
     animation-duration: calc(0.45s * var(--timeScale));
@@ -91,10 +91,10 @@ div.main-class > *,  div.disrupt-class > *, div.risk-class > * {
     animation-timing-function: ease-out;
     animation-fill-mode: backwards;
 }
- 
+
 /*-----------------------------------*/
 /*-----------------------------------*/
- 
+
 /* DIAMOND */
 div.arrows {
     animation-name: arrowspin;
@@ -104,7 +104,7 @@ div.arrows {
     animation-timing-function: cubic-bezier(.12,.41,.27,.99);
     animation-fill-mode: backwards;
 }
- 
+
 div.quadrants > * {
     animation-name: fade;
     animation-duration: calc(0.3s * var(--timeScale));
@@ -113,7 +113,7 @@ div.quadrants > * {
     animation-timing-function: cubic-bezier(.12,.41,.27,.99);
     animation-fill-mode: backwards;
 }
- 
+
 div.top-icon, div.right-icon, div.left-icon, div.bottom-icon {
     animation-name: nodegrow;
     animation-duration: calc(0.4s * var(--timeScale));
@@ -153,21 +153,21 @@ div.top-icon, div.right-icon, div.left-icon, div.bottom-icon {
     div.top-center-box > :nth-child(4) { animation-delay: calc(0.4s * var(--timeScale) + var(--timeDelay)); }
     div.top-center-box > :nth-child(5) { animation-delay: calc(0.5s * var(--timeScale) + var(--timeDelay)); }
     div.top-center-box > :nth-child(6) { animation-delay: calc(0.6s * var(--timeScale) + var(--timeDelay)); }
- 
+
 }
- 
+
 /*--- Motion Accessibility ---*/
 @media screen and (prefers-reduced-motion: reduce) {
     div.anom-bar-container { --timeScale: 0!important; }
 }
- 
+
 /*-------------------------*/
- 
+
 @keyframes divider {
     from { max-width: 0%;  }
     to { max-width: 100%; }
 }
- 
+
 @keyframes bar {
     from { max-width: 0%; }
     to { max-width: 100%; }
@@ -176,12 +176,12 @@ div.top-icon, div.right-icon, div.left-icon, div.bottom-icon {
     from { max-height: 0%; }
     to { max-height: 100%; }
 }
- 
+
 @keyframes bottomup {
     from { top: 100px; }
     to { top: 0; }
 }
- 
+
 @keyframes expand1 {
     from { opacity: 0; clip-path: inset(0 calc(100% - 0.75rem) 0 0); }
     to { opacity: 1; clip-path: inset(0); }
@@ -190,7 +190,7 @@ div.top-icon, div.right-icon, div.left-icon, div.bottom-icon {
     from { opacity: 0; transform: translateX(-5rem); }
     to { opacity: 1; transform: translateX(0); }
 }
- 
+
 @keyframes expand2 {
     from { opacity: 0; width: 1%; }
     to { opacity: 1; width: calc(100% - 0.25rem); }
@@ -199,12 +199,12 @@ div.top-icon, div.right-icon, div.left-icon, div.bottom-icon {
     from { opacity: 0; }
     to { opacity: 1; }
 }
- 
+
 @keyframes flowIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
- 
+
 @keyframes arrowspin {
     from { clip-path: circle(0%); transform: rotate(135deg); }
     to { clip-path: circle(75%); transform: rotate(0deg); }

@@ -301,7 +301,7 @@ div.darkdocument::after {
 
     div:is(.document, .darkdocument)::before,
     div:is(.document, .darkdocument)::after {
-    	display: none;
+	display: none;
     }
 }
 
@@ -443,9 +443,9 @@ span:is(.specialtext, .st) {
 
 @media only screen and (max-width: 640px) {
     #page-content div:is(.floatbox, .floatbox.right) {
-    	float: none;
-    	margin: 0.5rem auto;
-    	width: 100%;
+	float: none;
+	margin: 0.5rem auto;
+	width: 100%;
     }
 }
 
@@ -474,8 +474,8 @@ p {
     *,
     *::before,
     *::after {
-    	font-feature-settings:
-    		"zero" var(--zero, 0);
+	font-feature-settings:
+		"zero" var(--zero, 0);
     }
 
 }
@@ -958,7 +958,7 @@ div.item1>div {
 
 @media only screen and (max-width: 1279px) {
     .fncon {
-    	left: 10%;
+	left: 10%;
     }
 }
 
@@ -1023,9 +1023,9 @@ sup {
 @supports (-webkit-touch-callout: none) /* Targets iOS only */ {
 
     :is(#page-content table:not(.form), table.wiki-content-table) {
-    	max-width: none;
-    	width: auto;
-    	min-width: 100%;
+	max-width: none;
+	width: auto;
+	min-width: 100%;
     }
 
 }
