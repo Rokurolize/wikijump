@@ -360,100 +360,6 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         }
     }
 
-    // Seed hosted text blocks
-    {
-        struct LoadedTextBlock {
-            text: String,
-            text_type: Option<String>,
-            name: Option<String>,
-        }
-
-        let mut path_buffer = state.config.seeder_path.clone();
-
-        fn load_text_block(buffer: &mut PathBuf, file_path: &Path) -> Result<String> {
-            let make_error = || {
-                Error::new(
-                    "failed to load seeder text block",
-                    ErrorType::DatabaseSeeder,
-                )
-            };
-
-            assert_eq!(
-                file_path.parent(),
-                Some(Path::new("")),
-                "Text block paths must not contain any directory component",
-            );
-
-            buffer.push(file_path);
-            let text = fs::read_to_string(&buffer).or_raise(make_error)?;
-            buffer.pop();
-            Ok(text)
-        }
-
-        for (site_slug, pages) in text_blocks {
-            let site_id = site_ids[&site_slug];
-
-            for (page_slug, blocks) in pages {
-                info!(
-                    "Creating hosted text blocks within site {site_slug} page {page_slug}"
-                );
-                let page_id = page_ids[&(site_id, page_slug)];
-
-                let mut code_block_data = Vec::new();
-                let mut html_block_data = Vec::new();
-                for block in blocks {
-                    let text = load_text_block(&mut path_buffer, &block.path)
-                        .or_raise(make_error)?;
-                    let loaded_block = LoadedTextBlock {
-                        text,
-                        text_type: block.text_type,
-                        name: block.name,
-                    };
-                    match block.block_type {
-                        TextBlockType::Code => code_block_data.push(loaded_block),
-                        TextBlockType::Html => html_block_data.push(loaded_block),
-                    }
-                }
-
-                let code_blocks: Vec<HostedTextBlock> = code_block_data
-                    .iter()
-                    .map(|block| HostedTextBlock {
-                        text: &block.text,
-                        text_type: block.text_type.as_deref(),
-                        mime: mime_for_language(&block.text_type),
-                        name: block.name.as_deref(),
-                    })
-                    .collect();
-                let html_blocks: Vec<HostedTextBlock> = html_block_data
-                    .iter()
-                    .map(|block| HostedTextBlock {
-                        text: &block.text,
-                        text_type: block.text_type.as_deref(),
-                        mime: mime_for_language(&block.text_type),
-                        name: block.name.as_deref(),
-                    })
-                    .collect();
-
-                TextBlockService::add_blocks(
-                    &ctx,
-                    page_id,
-                    TextBlockType::Code,
-                    &code_blocks,
-                )
-                .await
-                .or_raise(make_error)?;
-                TextBlockService::add_blocks(
-                    &ctx,
-                    page_id,
-                    TextBlockType::Html,
-                    &html_blocks,
-                )
-                .await
-                .or_raise(make_error)?;
-            }
-        }
-    }
-
     // Seed files
     {
         // Reused buffer for prepending the seeder path
@@ -640,7 +546,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
     }
 
     // Seed roles (done after pages/categories are seeded)
-    for (_site_slug, site_id) in site_ids {
+    for (_site_slug, &site_id) in &site_ids {
         info!("Creating roles for site '{}'", site_id);
 
         for role_template in &roles {
@@ -732,6 +638,101 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                         expires_at: None,
                         ip_address: SEED_IP_ADDRESS,
                     },
+                )
+                .await
+                .or_raise(make_error)?;
+            }
+        }
+    }
+
+    // Seed hosted text blocks after page/file outdating has settled so later re-renders
+    // do not replace seeded Wikidot local--code assets with empty generated block lists.
+    {
+        struct LoadedTextBlock {
+            text: String,
+            text_type: Option<String>,
+            name: Option<String>,
+        }
+
+        let mut path_buffer = state.config.seeder_path.clone();
+
+        fn load_text_block(buffer: &mut PathBuf, file_path: &Path) -> Result<String> {
+            let make_error = || {
+                Error::new(
+                    "failed to load seeder text block",
+                    ErrorType::DatabaseSeeder,
+                )
+            };
+
+            assert_eq!(
+                file_path.parent(),
+                Some(Path::new("")),
+                "Text block paths must not contain any directory component",
+            );
+
+            buffer.push(file_path);
+            let text = fs::read_to_string(&buffer).or_raise(make_error)?;
+            buffer.pop();
+            Ok(text)
+        }
+
+        for (site_slug, pages) in text_blocks {
+            let site_id = site_ids[&site_slug];
+
+            for (page_slug, blocks) in pages {
+                info!(
+                    "Creating hosted text blocks within site {site_slug} page {page_slug}"
+                );
+                let page_id = page_ids[&(site_id, page_slug)];
+
+                let mut code_block_data = Vec::new();
+                let mut html_block_data = Vec::new();
+                for block in blocks {
+                    let text = load_text_block(&mut path_buffer, &block.path)
+                        .or_raise(make_error)?;
+                    let loaded_block = LoadedTextBlock {
+                        text,
+                        text_type: block.text_type,
+                        name: block.name,
+                    };
+                    match block.block_type {
+                        TextBlockType::Code => code_block_data.push(loaded_block),
+                        TextBlockType::Html => html_block_data.push(loaded_block),
+                    }
+                }
+
+                let code_blocks: Vec<HostedTextBlock> = code_block_data
+                    .iter()
+                    .map(|block| HostedTextBlock {
+                        text: &block.text,
+                        text_type: block.text_type.as_deref(),
+                        mime: mime_for_language(&block.text_type),
+                        name: block.name.as_deref(),
+                    })
+                    .collect();
+                let html_blocks: Vec<HostedTextBlock> = html_block_data
+                    .iter()
+                    .map(|block| HostedTextBlock {
+                        text: &block.text,
+                        text_type: block.text_type.as_deref(),
+                        mime: mime_for_language(&block.text_type),
+                        name: block.name.as_deref(),
+                    })
+                    .collect();
+
+                TextBlockService::add_blocks(
+                    &ctx,
+                    page_id,
+                    TextBlockType::Code,
+                    &code_blocks,
+                )
+                .await
+                .or_raise(make_error)?;
+                TextBlockService::add_blocks(
+                    &ctx,
+                    page_id,
+                    TextBlockType::Html,
+                    &html_blocks,
                 )
                 .await
                 .or_raise(make_error)?;
