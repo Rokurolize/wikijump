@@ -166,17 +166,18 @@ test("default browser root is resolved from the repository, not cwd", () => {
 });
 
 test("openBrowser applies HTTPS ignore settings to a fresh CDP context", async () => {
-  let newContextOptions = null;
-  let closedContext = false;
+  const newContextOptions = [];
+  const closedContexts = [];
   let closedBrowser = false;
-  const context = {
-    async close() {
-      closedContext = true;
-    },
-  };
   const browser = {
     async newContext(options) {
-      newContextOptions = options;
+      const context = {
+        id: newContextOptions.length,
+        async close() {
+          closedContexts.push(this.id);
+        },
+      };
+      newContextOptions.push(options);
       return context;
     },
     async close() {
@@ -195,11 +196,15 @@ test("openBrowser applies HTTPS ignore settings to a fresh CDP context", async (
     cdpEndpoint: "http://127.0.0.1:9222",
     ignoreHttpsErrors: true,
   });
-  assert.equal(session.context, context);
-  assert.deepEqual(newContextOptions, {ignoreHTTPSErrors: true});
+  assert.equal(session.context, session.sourceContext);
+  assert.notEqual(session.sourceContext, session.localContext);
+  assert.deepEqual(newContextOptions, [
+    {ignoreHTTPSErrors: true},
+    {ignoreHTTPSErrors: true},
+  ]);
 
   await session.close();
-  assert.equal(closedContext, true);
+  assert.deepEqual(closedContexts, [1, 0]);
   assert.equal(closedBrowser, true);
 });
 
@@ -364,6 +369,67 @@ test("capturePage records page errors and failed subframe responses", async () =
   ]);
 });
 
+test("capturePage records delayed main-frame navigation failures", async () => {
+  const handlers = new Map();
+  const mainFrame = {name: "main"};
+  const page = {
+    on(event, handler) {
+      handlers.set(event, handler);
+    },
+    mainFrame() {
+      return mainFrame;
+    },
+    async goto() {
+      handlers.get("response")?.({
+        status: () => 200,
+        url: () => "https://local.example/initial",
+        request: () => ({
+          isNavigationRequest: () => true,
+          frame: () => mainFrame,
+          resourceType: () => "document",
+        }),
+      });
+      return {status: () => 200};
+    },
+    async waitForLoadState(state) {
+      if (state !== "load") return;
+      handlers.get("response")?.({
+        status: () => 404,
+        url: () => "https://local.example/not-found",
+        request: () => ({
+          isNavigationRequest: () => true,
+          frame: () => mainFrame,
+          resourceType: () => "document",
+        }),
+      });
+    },
+    frames() {
+      return [{async evaluate() { return "visible"; }}];
+    },
+    async content() {
+      return "<html>visible</html>";
+    },
+    url() {
+      return "https://local.example/not-found";
+    },
+  };
+
+  const result = await capturePage(page, "https://local.example/page", {
+    timeoutMs: 100,
+    waitUntil: "domcontentloaded",
+    settleMs: 0,
+    screenshotPath: null,
+  });
+
+  assert.deepEqual(result.failedRequests, [
+    {
+      url: "https://local.example/not-found",
+      status: 404,
+      resourceType: "document",
+    },
+  ]);
+});
+
 test("capturePage bounds post-navigation load-state waits", async () => {
   const loadStateTimeouts = [];
   const page = {
@@ -416,6 +482,31 @@ test("capture CLI rejects an empty row selection before launching a browser", as
     ]),
     (error) => {
       assert.match(error.stderr, /requested fixture IDs were not found: EN:missing/);
+      return true;
+    }
+  );
+});
+
+test("capture CLI rejects shard manifests without a shard id", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-missing-shard-id-"));
+  const inventoryPath = path.join(root, "inventory.json");
+  const shardManifestPath = path.join(root, "shards.json");
+  await fs.writeFile(inventoryPath, JSON.stringify(inventory), "utf8");
+  await fs.writeFile(shardManifestPath, JSON.stringify({shards: []}), "utf8");
+
+  await assert.rejects(
+    execFileAsync(process.execPath, [
+      scriptPath,
+      "--inventory",
+      inventoryPath,
+      "--output-dir",
+      path.join(root, "out"),
+      "--shard-manifest",
+      shardManifestPath,
+      "--json",
+    ]),
+    (error) => {
+      assert.match(error.stderr, /--shard-id is required when --shard-manifest is provided/);
       return true;
     }
   );

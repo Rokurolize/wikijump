@@ -173,11 +173,9 @@ async function newContextPair({browser, ignoreHttpsErrors, sourceStorageState, l
     sourceContext = await browser.newContext(
       browserContextOptions({ignoreHttpsErrors, storageState: sourceStorageState})
     );
-    localContext = localStorageState === sourceStorageState
-      ? sourceContext
-      : await browser.newContext(
-        browserContextOptions({ignoreHttpsErrors, storageState: localStorageState})
-      );
+    localContext = await browser.newContext(
+      browserContextOptions({ignoreHttpsErrors, storageState: localStorageState})
+    );
     return {sourceContext, localContext};
   } catch (error) {
     if (localContext && localContext !== sourceContext) {
@@ -265,6 +263,7 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
   const consoleErrors = [];
   const failedRequests = [];
   const badResponses = [];
+  let sawInitialMainFrameNavigationResponse = false;
   page.on("console", (message) => {
     if (message.type() === "error") {
       consoleErrors.push(message.text());
@@ -280,8 +279,6 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
     });
   });
   page.on("response", (response) => {
-    const status = response.status();
-    if (status < 400) return;
     const request = response.request();
     let frame = null;
     try {
@@ -289,7 +286,14 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
     } catch {
       // Some request kinds do not have a frame; keep their HTTP failure evidence.
     }
-    if (request.isNavigationRequest() && frame === page.mainFrame()) return;
+    const isMainFrameNavigation = request.isNavigationRequest() && frame === page.mainFrame();
+    if (isMainFrameNavigation && !sawInitialMainFrameNavigationResponse) {
+      sawInitialMainFrameNavigationResponse = true;
+      return;
+    }
+
+    const status = response.status();
+    if (status < 400) return;
     badResponses.push({
       url: response.url(),
       status,
@@ -369,6 +373,9 @@ async function captureOptionalPage(context, url, missingMessage, options) {
 
 async function run() {
   const args = parseArgs(process.argv);
+  if (args.shardManifest && !args.shardId) {
+    throw new Error("--shard-id is required when --shard-manifest is provided");
+  }
   const inventory = await readJson(args.inventory);
   const rows = inventoryRows(inventory);
   const shardManifest = args.shardManifest ? await readJson(args.shardManifest) : null;
