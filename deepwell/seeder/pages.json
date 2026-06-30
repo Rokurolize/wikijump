@@ -235,21 +235,25 @@
             "slug": "scp-002",
             "title": "SCP-002",
             "alt-title": "The Living Room",
+            "tags": ["scp"],
             "wikitext": "scp-002"
         },
         {
             "slug": "scp-3352",
             "title": "SCP-3352",
+            "tags": ["scp"],
             "wikitext": "scp-3352"
         },
         {
             "slug": "scp-3922",
             "title": "SCP-3922",
+            "tags": ["scp"],
             "wikitext": "scp-3922"
         },
         {
             "slug": "scp-9506",
             "title": "National Fog Safety Initiative",
+            "tags": ["scp"],
             "wikitext": "scp-9506"
         },
         {

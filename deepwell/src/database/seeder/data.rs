@@ -286,6 +286,7 @@ mod tests {
             .find(|page| page.slug == "scp-3922")
             .expect("scp-3922 seed page");
         assert_eq!(scp_3922.title, "SCP-3922");
+        assert_eq!(scp_3922.tags, ["scp"]);
         assert!(scp_3922.wikitext.contains("**Item #:** SCP-3922"));
 
         let scp_9506 = pages
@@ -293,8 +294,26 @@ mod tests {
             .find(|page| page.slug == "scp-9506")
             .expect("scp-9506 seed page");
         assert_eq!(scp_9506.title, "National Fog Safety Initiative");
+        assert_eq!(scp_9506.tags, ["scp"]);
         assert!(scp_9506.wikitext.contains("National Fog Safety Initiative"));
         assert!(scp_9506.wikitext.contains("local--files/scp-9506/NFSI.png"));
+
+        let files = seed.files.get("scp-wiki").expect("scp-wiki files");
+        let scp_3922_files = files.get("scp-3922").expect("scp-3922 files");
+        assert!(scp_3922_files.iter().any(|file| file.name == "theend.jpg"
+            && file.path == Path::new("scp-3922--theend.jpg")));
+
+        let basalt_files = files.get("theme:basalt").expect("theme:basalt files");
+        assert!(
+            basalt_files
+                .iter()
+                .any(|file| file.name == "basalt_scp_logo-for_lightmode.svg")
+        );
+        assert!(
+            basalt_files
+                .iter()
+                .any(|file| file.name == "O5_DARKLOGO.png")
+        );
 
         let theme_basalt = pages
             .iter()

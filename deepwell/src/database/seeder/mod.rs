@@ -32,6 +32,7 @@ use crate::services::file::{
 };
 use crate::services::filter::{CreateFilter, FilterService};
 use crate::services::page::{CreatePage, PageService};
+use crate::services::page_revision::{PageRevisionService, RerenderType};
 use crate::services::permission::PermissionService;
 use crate::services::relation::{
     PageAttributionEntry, PageAttributionKind, PageAttributionMetadata, RelationService,
@@ -42,7 +43,9 @@ use crate::services::role::{
 };
 use crate::services::site::{CreateSite, CreateSiteOutput, SiteService, UpdateSiteBody};
 use crate::services::user::{CreateUser, CreateUserOutput, UpdateUserBody, UserService};
-use crate::types::{Action, AliasType, Maybe, Permission, Reference, Resource};
+use crate::types::{
+    Action, AliasType, Maybe, PageId, Permission, Reference, RerenderDepth, Resource,
+};
 use crate::utils::now;
 use arrayvec::ArrayVec;
 use sea_orm::{
@@ -304,6 +307,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
 
     // Seed page data
     let mut page_ids = HashMap::new();
+    let mut seeded_page_ids = Vec::new();
     for (site_slug, pages) in pages {
         info!("Creating pages in site {site_slug}");
         let site_id = site_ids[&site_slug];
@@ -352,6 +356,11 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             .or_raise(make_error)?;
 
             page_ids.insert((site_id, model.slug), model.page_id);
+            let page_model =
+                PageService::get(&ctx, site_id, Reference::Id(model.page_id))
+                    .await
+                    .or_raise(make_error)?;
+            seeded_page_ids.push(PageId::from_page_model(&page_model));
         }
     }
 
@@ -379,7 +388,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             buffer.push(file_path);
 
             let file_path = &buffer;
-            let stat = fs::metadata(file_path).or_raise(make_error)?;
+            let stat = fs::symlink_metadata(file_path).or_raise(make_error)?;
 
             assert!(
                 stat.file_type().is_file(),
@@ -490,6 +499,19 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                 }
             }
         }
+    }
+
+    // Fresh pages are first compiled while later pages/files may still be absent.
+    // Recompile once after all pages and files exist so seeded mirrors start coherent.
+    for page_id in seeded_page_ids {
+        PageRevisionService::rerender(
+            &ctx,
+            page_id,
+            RerenderDepth::default(),
+            RerenderType::Full,
+        )
+        .await
+        .or_raise(make_error)?;
     }
 
     // Seed filters
