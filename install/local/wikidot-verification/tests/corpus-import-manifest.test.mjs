@@ -227,3 +227,82 @@ test('apply-corpus-import-manifest dry-run filters by slug without touching serv
     complete_inventory: false,
   });
 });
+
+test('apply-corpus-import-manifest accepts opt-in DB rerender dry-run', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
+  writePage(root, 'en', 'scp-173', {
+    entityId: '77777777-7777-4777-8777-777777777777',
+    source: 'SCP-173',
+  });
+  const rows = buildCorpusImportManifest({
+    corpusRoot: root,
+    branch: 'en',
+    sourceSite: 'scp-wiki',
+    sourceBranch: 'en',
+  });
+  const manifestPath = path.join(root, 'manifest.jsonl');
+  fs.writeFileSync(manifestPath, formatJsonl(rows));
+
+  const { spawnSync } = await import('node:child_process');
+  const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const result = spawnSync(process.execPath, [
+    path.join(packageRoot, 'scripts/apply-corpus-import-manifest.mjs'),
+    '--manifest',
+    manifestPath,
+    '--slug',
+    'scp-173',
+    '--dry-run',
+    '--create-mode',
+    'db',
+    '--rerender-after-db-create',
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 0, result.stderr);
+  const output = JSON.parse(result.stdout);
+  assert.deepEqual(output, {
+    dry_run: true,
+    selected_rows: 1,
+    complete_inventory: false,
+  });
+});
+
+test('apply-corpus-import-manifest rejects conflicting DB rerender flags', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
+  writePage(root, 'en', 'scp-173', {
+    entityId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    source: 'SCP-173',
+  });
+  const rows = buildCorpusImportManifest({
+    corpusRoot: root,
+    branch: 'en',
+    sourceSite: 'scp-wiki',
+    sourceBranch: 'en',
+  });
+  const manifestPath = path.join(root, 'manifest.jsonl');
+  fs.writeFileSync(manifestPath, formatJsonl(rows));
+
+  const { spawnSync } = await import('node:child_process');
+  const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const result = spawnSync(process.execPath, [
+    path.join(packageRoot, 'scripts/apply-corpus-import-manifest.mjs'),
+    '--manifest',
+    manifestPath,
+    '--dry-run',
+    '--create-mode',
+    'db',
+    '--rerender-after-db-create',
+    '--skip-rerender',
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /rerender-after-db-create cannot be combined with --skip-rerender/);
+});

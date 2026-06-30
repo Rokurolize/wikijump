@@ -32,6 +32,7 @@ function parseArgs(argv) {
     adoptExisting: false,
     skipExistingDone: false,
     skipRerender: false,
+    rerenderAfterDbCreate: false,
     createMode: 'rpc',
     dryRun: false,
     sourceSite: 'scp-wiki',
@@ -61,15 +62,15 @@ function parseArgs(argv) {
     else if (arg === '--adopt-existing') args.adoptExisting = true;
     else if (arg === '--skip-existing-done') args.skipExistingDone = true;
     else if (arg === '--skip-rerender') args.skipRerender = true;
+    else if (arg === '--rerender-after-db-create') args.rerenderAfterDbCreate = true;
     else if (arg === '--create-mode') {
       args.createMode = next();
-      if (args.createMode === 'db') args.skipRerender = true;
     }
     else if (arg === '--dry-run') args.dryRun = true;
     else if (arg === '--source-site') args.sourceSite = next();
     else if (arg === '--source-branch') args.sourceBranch = next();
     else if (arg === '--help' || arg === '-h') {
-      console.log(`Usage: apply-corpus-import-manifest.mjs --manifest <manifest.jsonl> [--apply-migration] [--slug <slug>...] [--adopt-existing] [--skip-existing-done] [--skip-rerender] [--create-mode rpc|db] [--dry-run]
+      console.log(`Usage: apply-corpus-import-manifest.mjs --manifest <manifest.jsonl> [--apply-migration] [--slug <slug>...] [--adopt-existing] [--skip-existing-done] [--skip-rerender] [--create-mode rpc|db] [--rerender-after-db-create] [--dry-run]
 
 Imports current corpus snapshot pages into a local Wikijump mirror. This is an operator-only local tool: it uses Deepwell JSON-RPC for page create/rerender and direct Postgres SQL for corpus snapshot metadata, timestamps, and tags.`);
       process.exit(0);
@@ -83,6 +84,13 @@ Imports current corpus snapshot pages into a local Wikijump mirror. This is an o
   if (!Number.isInteger(args.userId)) throw new Error('--user-id must be an integer');
   if (!Number.isInteger(args.rpcTimeoutMs) || args.rpcTimeoutMs <= 0) throw new Error('--rpc-timeout-ms must be a positive integer');
   if (!['rpc', 'db'].includes(args.createMode)) throw new Error('--create-mode must be rpc or db');
+  if (args.rerenderAfterDbCreate && args.createMode !== 'db') {
+    throw new Error('--rerender-after-db-create requires --create-mode db');
+  }
+  if (args.rerenderAfterDbCreate && args.skipRerender) {
+    throw new Error('--rerender-after-db-create cannot be combined with --skip-rerender');
+  }
+  if (args.createMode === 'db' && !args.rerenderAfterDbCreate) args.skipRerender = true;
   if (args.createMode === 'db' && !args.dryRun && !args.textHashCommand) {
     throw new Error('--create-mode db requires --text-hash-command or DEEPWELL_TEXT_HASH_COMMAND');
   }
