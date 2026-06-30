@@ -481,9 +481,9 @@ jobs:
               }
 
               return {
-                ready: true,
+                ready: false,
                 terminal: false,
-                message: `CodeRabbit status succeeded for latest head ${shortHead}.`,
+                message: `Waiting for CodeRabbit review summary for latest head ${shortHead}.`,
               };
             }
 
@@ -533,9 +533,8 @@ jobs:
               const deadline = Date.now() + maxWaitMs;
               let lastMessage = "";
               while (true) {
-                const { pull, reviews, comments, statuses } = await fetchPullState(
-                  eventPull.number,
-                );
+                const { pull, reviews, comments, statuses, headArrivedAt } =
+                  await fetchPullState(eventPull.number);
                 const headSha = pull.head.sha;
                 const shortHead = headSha.slice(0, 10);
                 if (context.eventName === "status" && headSha !== context.payload.sha) {
@@ -552,6 +551,14 @@ jobs:
                   await setGateStatus("pending", "Waiting for automated reviews");
                 }
                 const coderabbit = evaluateCodeRabbit(reviews, comments, statuses, headSha, shortHead);
+                const codex = evaluateCodex(
+                  reviews,
+                  comments,
+                  headSha,
+                  shortHead,
+                  headArrivedAt,
+                );
+                const unresolvedCodexThreads = await collectUnresolvedCodexThreads(pull.number);
 
                 if (coderabbit.terminal) {
                   await setGateStatus("failure", coderabbit.message);
@@ -559,15 +566,30 @@ jobs:
                   return;
                 }
 
-                if (coderabbit.ready) {
-                  await setGateStatus("success", "CodeRabbit gate completed");
+                if (unresolvedCodexThreads.length > 0) {
+                  const unresolvedMessage = `Unresolved Codex review thread(s): ${unresolvedCodexThreads
+                    .slice(0, 5)
+                    .join(", ")}${unresolvedCodexThreads.length > 5 ? ", ..." : ""}`;
+                  await setGateStatus("failure", unresolvedMessage);
+                  core.setFailed(unresolvedMessage);
+                  return;
+                }
+
+                if (coderabbit.ready && codex.ready) {
+                  await setGateStatus("success", "Automated reviews completed");
+                  core.info(codex.message);
                   core.info(coderabbit.message);
                   return;
                 }
 
-                const message = coderabbit.message;
+                const message = [
+                  codex.ready ? null : codex.message,
+                  coderabbit.ready ? null : coderabbit.message,
+                ]
+                  .filter(Boolean)
+                  .join(" ");
                 if (Date.now() >= deadline) {
-                  const timeoutMessage = `Timed out waiting for CodeRabbit. ${message}`;
+                  const timeoutMessage = `Timed out waiting for automated reviews. ${message}`;
                   await setGateStatus("failure", timeoutMessage);
                   core.setFailed(timeoutMessage);
                   return;
