@@ -48,6 +48,7 @@ use regex::Regex;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
+use std::ops::Range;
 use std::pin::Pin;
 use std::sync::LazyLock;
 use std::time::Duration;
@@ -174,9 +175,9 @@ static WIKIDOT_SIMPLE_IF_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[#if\s+(?P<cond>1|0|true|false)\s*\|\s*(?P<when_true>.*?)\s*\|\s*(?P<when_false>.*?)\s*\]\]"#)
         .unwrap()
 });
-static WIKIDOT_IMAGE_BLOCK_INCLUDE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+static WIKIDOT_IMAGE_BLOCK_INCLUDE_START_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)\[\[include\s+(?::[A-Za-z0-9_-]+:)?component:image-block(?P<args>(?:\s|\|)[^\]]*)?\]\]"#,
+        r#"(?is)\[\[include\s+(?::(?P<site>[A-Za-z0-9_-]+):)?component:image-block(?P<after>\s|\||\]\])"#,
     )
     .unwrap()
 });
@@ -462,11 +463,12 @@ impl RenderService {
         };
 
         Self::remove_preview_component_separator_markers(&mut wikitext);
-        Self::expand_wikidot_image_block_includes(&mut wikitext, page_info);
+        let mut included_pages =
+            Self::expand_wikidot_image_block_includes(&mut wikitext, page_info);
 
         let IncludeExpansion {
             wikitext: expanded_wikitext,
-            included_pages,
+            included_pages: expanded_included_pages,
         } = Self::expand_includes(
             ctx,
             wikitext,
@@ -477,6 +479,7 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = expanded_wikitext;
+        included_pages.extend(expanded_included_pages);
         Self::remove_wikidot_metacomponent_documentation(&mut wikitext);
         Self::remove_unresolved_include_comment_branches(&mut wikitext);
         Self::remove_unresolved_variable_iftags_blocks(&mut wikitext);
@@ -723,51 +726,21 @@ impl RenderService {
     }
 
     fn restore_wikidot_collapsible_compatibility(html: &str) -> String {
-        html.replace(r#"<details class="wj-collapsible""#, r#"<div class="collapsible-block collapsible-block-folded collapsible-block-unfolded""#)
-            .replace("</details>", "</div>")
+        html.replace(r#"<details class="wj-collapsible""#, r#"<details class="collapsible-block collapsible-block-folded collapsible-block-unfolded""#)
             .replace(
                 r#"<summary class="wj-collapsible-button wj-collapsible-button-top">"#,
-                "<div>",
+                r#"<summary class="collapsible-block-link">"#,
             )
-            .replace("</summary>", "</div>")
             .replace(
                 r#"<wj-collapsible-button-bottom class="wj-collapsible-button wj-collapsible-button-bottom">"#,
-                "<div>",
+                r#"<div class="collapsible-block-unfolded-link"><span class="collapsible-block-link">"#,
             )
-            .replace("</wj-collapsible-button-bottom>", "</div>")
+            .replace("</wj-collapsible-button-bottom>", "</span></div>")
             .replace("wj-collapsible-content", "collapsible-block-content")
             .replace("wj-collapsible-show-text", "collapsible-block-link")
             .replace(
                 "wj-collapsible-hide-text",
                 "collapsible-block-link collapsible-block-unfolded-link",
-            )
-            .replace(
-                r#"<span class="collapsible-block-link">"#,
-                concat!(
-                    r#"<span class="collapsible-block-link" onclick=""#,
-                    "var block=this.closest('.collapsible-block');",
-                    "block.querySelector('.collapsible-block-content').style.display='block';",
-                    "this.style.display='none';",
-                    "var hide=block.querySelector('.collapsible-block-unfolded-link');",
-                    "if(hide)hide.style.display='inline';",
-                    r#"">"#,
-                ),
-            )
-            .replace(
-                r#"<span class="collapsible-block-link collapsible-block-unfolded-link">"#,
-                concat!(
-                    r#"<span class="collapsible-block-link collapsible-block-unfolded-link" onclick=""#,
-                    "var block=this.closest('.collapsible-block');",
-                    "block.querySelector('.collapsible-block-content').style.display='none';",
-                    "this.style.display='none';",
-                    "var show=block.querySelector('.collapsible-block-link:not(.collapsible-block-unfolded-link)');",
-                    "if(show)show.style.display='inline';",
-                    r#"" style="display:none">"#,
-                ),
-            )
-            .replace(
-                r#"<div class="collapsible-block-content">"#,
-                r#"<div class="collapsible-block-content" style="display:none">"#,
             )
     }
 
@@ -1159,68 +1132,147 @@ impl RenderService {
     fn expand_wikidot_image_block_includes(
         wikitext: &mut String,
         page_info: &PageInfo<'_>,
-    ) {
+    ) -> Vec<PageRef> {
         let source = wikitext.clone();
-        *wikitext = WIKIDOT_IMAGE_BLOCK_INCLUDE_REGEX
-            .replace_all(&source, |captures: &regex::Captures<'_>| {
-                if Self::should_skip_wikidot_image_block_include_expansion(
-                    &source,
-                    captures.get(0).expect("match exists").start(),
-                ) {
-                    return captures[0].to_owned();
+        let mut replacements: Vec<(Range<usize>, String)> = Vec::new();
+        let mut included_pages = Vec::new();
+        let mut search_start = 0;
+
+        while let Some(captures) =
+            WIKIDOT_IMAGE_BLOCK_INCLUDE_START_REGEX.captures(&source[search_start..])
+        {
+            let include_start =
+                search_start + captures.get(0).expect("whole match exists").start();
+            let match_end =
+                search_start + captures.get(0).expect("whole match exists").end();
+            let after = captures
+                .name("after")
+                .expect("after delimiter exists")
+                .as_str();
+            let (args_start, include_end) = if after == "]]" {
+                (match_end - 2, match_end)
+            } else {
+                let args_start = match_end - after.len();
+                let Some(include_end) =
+                    Self::find_wikidot_include_end(&source, match_end)
+                else {
+                    search_start = match_end;
+                    continue;
+                };
+                (args_start, include_end)
+            };
+
+            search_start = include_end;
+
+            if Self::should_skip_wikidot_image_block_include_expansion(
+                &source,
+                include_start,
+            ) {
+                continue;
+            }
+
+            let args = Self::parse_wikidot_include_arguments(
+                &source[args_start..include_end - 2],
+            );
+            let Some(name) = args.get("name").filter(|value| !value.is_empty()) else {
+                continue;
+            };
+
+            let caption = args.get("caption").map_or("", String::as_str);
+            let width = args.get("width").map_or("300px", String::as_str);
+            let align = args.get("align").map_or("right", String::as_str);
+            let link = args.get("link").map_or("#", String::as_str);
+            let image_source = Self::wikidot_image_block_source(name, page_info);
+            let image_attribute = args
+                .get("alt")
+                .filter(|attribute| is_include_variable_name(attribute))
+                .zip(args.get("alt-text"))
+                .map(|(attribute, value)| {
+                    format!(r#" {attribute}="{}""#, value.replace('"', "&quot;"))
+                })
+                .unwrap_or_default();
+            let link_attribute = if link == "#" {
+                String::new()
+            } else {
+                format!(" link={link}")
+            };
+
+            let replacement = format!(
+                concat!(
+                    r#"[[div class="scp-image-block block-{align}" style="width:{width};"]]"#,
+                    "\n",
+                    r#"[[image {image_source}{image_attribute}{link_attribute}]]"#,
+                    "\n",
+                    r#"[[div class="scp-image-caption"]]"#,
+                    "\n",
+                    "{caption}\n",
+                    "[[/div]]\n",
+                    "[[/div]]"
+                ),
+                align = align,
+                width = width,
+                image_source = image_source,
+                image_attribute = image_attribute,
+                link_attribute = link_attribute,
+                caption = caption,
+            );
+
+            Self::push_wikidot_image_block_include_refs(
+                &mut included_pages,
+                captures.name("site").map(|site| site.as_str()),
+            );
+            replacements.push((include_start..include_end, replacement));
+        }
+
+        for (range, replacement) in replacements.into_iter().rev() {
+            wikitext.replace_range(range, &replacement);
+        }
+
+        included_pages
+    }
+
+    fn find_wikidot_include_end(source: &str, mut offset: usize) -> Option<usize> {
+        let bytes = source.as_bytes();
+        while offset + 1 < bytes.len() {
+            if bytes[offset..].starts_with(b"[[[") {
+                if let Some(close_offset) = source[offset + 3..].find("]]]") {
+                    offset += 3 + close_offset + 3;
+                    continue;
                 }
+            } else if bytes[offset..].starts_with(b"[[") {
+                if let Some(close_offset) = source[offset + 2..].find("]]") {
+                    offset += 2 + close_offset + 2;
+                    continue;
+                }
+            } else if bytes[offset..].starts_with(b"]]") {
+                return Some(offset + 2);
+            }
 
-                let args = Self::parse_wikidot_include_arguments(
-                    captures.name("args").map_or("", |mtch| mtch.as_str()),
-                );
-                let Some(name) = args.get("name").filter(|value| !value.is_empty()) else {
-                    return captures[0].to_owned();
-                };
+            offset += 1;
+        }
 
-                let caption = args.get("caption").map_or("", String::as_str);
-                let width = args.get("width").map_or("300px", String::as_str);
-                let align = args.get("align").map_or("right", String::as_str);
-                let link = args.get("link").map_or("#", String::as_str);
-                let image_source =
-                    Self::wikidot_image_block_source(name, page_info);
-                let image_attribute = args
-                    .get("alt")
-                    .filter(|attribute| is_include_variable_name(attribute))
-                    .zip(args.get("alt-text"))
-                    .map(|(attribute, value)| {
-                        format!(
-                            r#" {attribute}="{}""#,
-                            value.replace('"', "&quot;")
-                        )
-                    })
-                    .unwrap_or_default();
-                let link_attribute = if link == "#" {
-                    String::new()
-                } else {
-                    format!(" link={link}")
-                };
+        None
+    }
 
-                format!(
-                    concat!(
-                        r#"[[div class="scp-image-block block-{align}" style="width:{width};"]]"#,
-                        "\n",
-                        r#"[[image {image_source}{image_attribute}{link_attribute}]]"#,
-                        "\n",
-                        r#"[[div class="scp-image-caption"]]"#,
-                        "\n",
-                        "{caption}\n",
-                        "[[/div]]\n",
-                        "[[/div]]"
-                    ),
-                    align = align,
-                    width = width,
-                    image_source = image_source,
-                    image_attribute = image_attribute,
-                    link_attribute = link_attribute,
-                    caption = caption,
-                )
-            })
-            .into_owned();
+    fn push_wikidot_image_block_include_refs(
+        included_pages: &mut Vec<PageRef>,
+        site: Option<&str>,
+    ) {
+        included_pages.push(Self::wikidot_image_block_page_ref(
+            site,
+            "component:image-block",
+        ));
+        included_pages.push(Self::wikidot_image_block_page_ref(
+            site,
+            "component:image-block-base",
+        ));
+    }
+
+    fn wikidot_image_block_page_ref(site: Option<&str>, page: &str) -> PageRef {
+        match site {
+            Some(site) => PageRef::page_and_site(site, page),
+            None => PageRef::page_only(page),
+        }
     }
 
     fn should_skip_wikidot_image_block_include_expansion(
@@ -7070,7 +7122,8 @@ mod tests {
         .to_owned();
 
         let page_info = fallback_test_page_info("scp-3922", "SCP-3922");
-        RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info);
+        let included_pages =
+            RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info);
 
         assert!(wikitext.contains(
             r#"[[div class="scp-image-block block-right" style="width:300px;"]]"#
@@ -7087,12 +7140,46 @@ mod tests {
         ));
         assert!(wikitext.contains("[[include component:image-block-base name=raw.jpg]]"));
         assert!(!wikitext.contains("[[include component:image-block\n"));
+        assert_eq!(
+            included_pages,
+            vec![
+                PageRef::page_only("component:image-block"),
+                PageRef::page_only("component:image-block-base"),
+                PageRef::page_only("component:image-block"),
+                PageRef::page_only("component:image-block-base"),
+            ],
+        );
 
         let mut category_page_info = fallback_test_page_info("basalt", "Basalt Theme");
         category_page_info.category = Some(Cow::Borrowed("theme"));
         assert_eq!(
             RenderService::wikidot_image_block_source("logo.svg", &category_page_info),
             "http://scp-wiki.wikidot.com/local--files/theme:basalt/logo.svg"
+        );
+    }
+
+    #[test]
+    fn expands_wikidot_image_block_includes_with_nested_caption_markup() {
+        let mut wikitext = concat!(
+            "[[include :scp-wiki:component:image-block ",
+            "name=linked.jpg|caption=See [[[SCP-173]]] for details.]]\n",
+        )
+        .to_owned();
+        let page_info = fallback_test_page_info("scp-3922", "SCP-3922");
+
+        let included_pages =
+            RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info);
+
+        assert!(wikitext.contains("See [[[SCP-173]]] for details."));
+        assert!(wikitext.contains(
+            "[[image http://scp-wiki.wikidot.com/local--files/scp-3922/linked.jpg]]"
+        ));
+        assert_eq!(
+            included_pages,
+            vec![
+                PageRef::page_and_site("scp-wiki", "component:image-block"),
+                PageRef::page_and_site("scp-wiki", "component:image-block-base"),
+            ],
         );
     }
 
@@ -7109,7 +7196,8 @@ mod tests {
         .to_owned();
         let page_info = fallback_test_page_info("scp-3922", "SCP-3922");
 
-        RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info);
+        let included_pages =
+            RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info);
 
         assert!(wikitext.contains("[[include component:image-block name=code.jpg]]"));
         assert!(wikitext.contains("[[include component:image-block name=escaped.jpg]]"));
@@ -7117,6 +7205,13 @@ mod tests {
         assert!(wikitext.contains(
             "[[image http://scp-wiki.wikidot.com/local--files/scp-3922/live.jpg]]"
         ));
+        assert_eq!(
+            included_pages,
+            vec![
+                PageRef::page_only("component:image-block"),
+                PageRef::page_only("component:image-block-base"),
+            ],
+        );
     }
 
     #[test]
@@ -7331,15 +7426,10 @@ mod tests {
         assert!(restored.contains("collapsible-block-content"));
         assert!(restored.contains("collapsible-block-link"));
         assert!(restored.contains("collapsible-block-unfolded-link"));
-        assert!(restored.contains("onclick="));
-        assert!(restored.contains("style=\"display:none\""));
-        assert!(
-            restored.contains(
-                r#"<div class="collapsible-block-content" style="display:none">"#
-            )
-        );
-        assert!(!restored.contains("details"));
-        assert!(!restored.contains("summary"));
+        assert!(restored.contains("<details"));
+        assert!(restored.contains("<summary"));
+        assert!(!restored.contains("onclick="));
+        assert!(!restored.contains("style=\"display:none\""));
         assert!(!restored.contains("wj-collapsible"));
     }
 

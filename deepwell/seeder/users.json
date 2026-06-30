@@ -138,5 +138,22 @@
         "user_page": null,
         "aliases": [
         ]
+    },
+    {
+        "id": -21,
+        "type": "regular",
+        "name": "daveyoufool",
+        "slug": "daveyoufool",
+        "email": "daveyoufool@wikijump",
+        "password": "wikijumpseed1",
+        "locales": ["en"],
+        "real_name": "daveyoufool",
+        "gender": null,
+        "birthday": null,
+        "location": null,
+        "biography": "Seeded mirror author for SCP Wiki rendering fixtures",
+        "user_page": null,
+        "aliases": [
+        ]
     }
 ]
