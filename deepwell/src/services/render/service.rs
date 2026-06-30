@@ -1304,6 +1304,7 @@ impl RenderService {
     ) -> bool {
         Self::is_inside_wikidot_code_block(source, start)
             || Self::is_inside_wikidot_escape(source, start)
+            || Self::is_inside_wikidot_html_block(source, start)
             || Self::is_inside_wikidot_comment(source, start)
     }
 
@@ -1328,6 +1329,19 @@ impl RenderService {
         in_code
     }
 
+    fn is_inside_wikidot_html_block(source: &str, start: usize) -> bool {
+        let mut in_html = false;
+        for line in source[..start].lines() {
+            let marker = line.trim_start().to_ascii_lowercase();
+            if marker.starts_with("[[html") {
+                in_html = true;
+            } else if marker.starts_with("[[/html]]") {
+                in_html = false;
+            }
+        }
+        in_html
+    }
+
     fn is_inside_wikidot_escape(source: &str, start: usize) -> bool {
         source[..start].matches("@@").count() % 2 == 1
     }
@@ -1335,6 +1349,7 @@ impl RenderService {
     fn is_inside_wikidot_literal_region(source: &str, start: usize) -> bool {
         Self::is_inside_wikidot_code_block(source, start)
             || Self::is_inside_wikidot_escape(source, start)
+            || Self::is_inside_wikidot_html_block(source, start)
             || Self::is_inside_wikidot_comment(source, start)
     }
 
@@ -3834,18 +3849,31 @@ impl RenderService {
         let page = PageService::get(ctx, current_site_id, Reference::Id(current_page_id))
             .await
             .or_raise(make_error)?;
-        let revision = if fields.title
-            || fields.alt_title
-            || fields.tags
-            || fields.updated_by
-            || fields.created_by
-        {
+        let latest_revision =
+            if fields.title || fields.alt_title || fields.tags || fields.updated_by {
+                match page.latest_revision_id {
+                    Some(_) => Some(
+                        PageRevisionService::get_latest(
+                            ctx,
+                            current_site_id,
+                            current_page_id,
+                        )
+                        .await
+                        .or_raise(make_error)?,
+                    ),
+                    None => None,
+                }
+            } else {
+                None
+            };
+        let creation_revision = if fields.created_by {
             match page.latest_revision_id {
                 Some(_) => Some(
-                    PageRevisionService::get_latest(
+                    PageRevisionService::get_optional(
                         ctx,
                         current_site_id,
                         current_page_id,
+                        0,
                     )
                     .await
                     .or_raise(make_error)?,
@@ -3854,7 +3882,10 @@ impl RenderService {
             }
         } else {
             None
-        };
+        }
+        .flatten();
+        let latest_revision = latest_revision.as_ref();
+        let creation_revision = creation_revision.as_ref();
 
         Ok(FoundPages {
             pages: vec![FoundPageRow {
@@ -3873,8 +3904,7 @@ impl RenderService {
                 },
                 tags: if fields.tags {
                     Some(
-                        revision
-                            .as_ref()
+                        latest_revision
                             .map(|revision| revision.tags.clone())
                             .unwrap_or_else(|| {
                                 page_info.tags.iter().map(|tag| tag.to_string()).collect()
@@ -3889,7 +3919,7 @@ impl RenderService {
                     None
                 },
                 created_by: if fields.created_by {
-                    revision.as_ref().map(|revision| revision.user_id)
+                    creation_revision.map(|revision| revision.user_id)
                 } else {
                     None
                 },
@@ -3899,14 +3929,13 @@ impl RenderService {
                     None
                 },
                 updated_by: if fields.updated_by {
-                    revision.as_ref().map(|revision| revision.user_id)
+                    latest_revision.map(|revision| revision.user_id)
                 } else {
                     None
                 },
                 title: if fields.title {
                     Some(
-                        revision
-                            .as_ref()
+                        latest_revision
                             .map(|revision| revision.title.clone())
                             .unwrap_or_else(|| page_info.title.to_string()),
                     )
@@ -3914,8 +3943,7 @@ impl RenderService {
                     None
                 },
                 alt_title: if fields.alt_title {
-                    revision
-                        .as_ref()
+                    latest_revision
                         .and_then(|revision| revision.alt_title.clone())
                         .or_else(|| {
                             page_info.alt_title.as_ref().map(|title| title.to_string())
@@ -4177,9 +4205,12 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
 
         match key.as_str() {
             "tags" => {
-                if is_dynamic_list_pages_value(value) {
+                let Some(value) = static_list_pages_selector(
+                    value,
+                    &mut unsupported_count_pages_filter,
+                ) else {
                     continue;
-                }
+                };
                 for tag in split_list_pages_values(value) {
                     if is_current_page_tag_selector(&tag) {
                         unsupported_count_pages_filter = true;
@@ -4194,9 +4225,12 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                 }
             }
             "tag" => {
-                if is_dynamic_list_pages_value(value) {
+                let Some(value) = static_list_pages_selector(
+                    value,
+                    &mut unsupported_count_pages_filter,
+                ) else {
                     continue;
-                }
+                };
                 for tag in split_list_pages_values(value) {
                     if is_current_page_tag_selector(&tag) {
                         unsupported_count_pages_filter = true;
@@ -4213,7 +4247,12 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
             "category" => {
                 category_selector_present = true;
                 let mut saw_included_category = false;
-                let value = list_pages_url_fallback(value).unwrap_or(value);
+                let Some(value) = static_list_pages_selector(
+                    value,
+                    &mut unsupported_count_pages_filter,
+                ) else {
+                    continue;
+                };
                 for category in split_list_pages_values(value) {
                     if category == "*" {
                         category_all = true;
@@ -4270,6 +4309,12 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                 order = Some(parse_list_pages_order(value)?);
             }
             "name" | "fullname" | "full_slug" | "fullslug" => {
+                let Some(value) = static_list_pages_selector(
+                    value,
+                    &mut unsupported_count_pages_filter,
+                ) else {
+                    continue;
+                };
                 if value == "=" {
                     current_page_only = true;
                     limit = Some(1);
@@ -4289,9 +4334,12 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                 }
             }
             "created_by" | "createdby" => {
-                if is_dynamic_list_pages_value(value) {
+                let Some(value) = static_list_pages_selector(
+                    value,
+                    &mut unsupported_count_pages_filter,
+                ) else {
                     continue;
-                }
+                };
                 let author = value
                     .trim()
                     .trim_start_matches('[')
@@ -4357,6 +4405,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
 
 fn count_pages_should_remain_literal(arguments: &ListPagesArguments) -> bool {
     arguments.unsupported_count_pages_filter
+        || (arguments.limit.is_none() && !arguments.current_page_only)
         || arguments.limit.is_some_and(|limit| {
             limit
                 .saturating_add(u64::from(arguments.offset))
@@ -4406,6 +4455,20 @@ fn list_pages_url_fallback(value: &str) -> Option<&str> {
     value.split_once('|').and_then(|(selector, fallback)| {
         selector.eq_ignore_ascii_case("@url").then_some(fallback)
     })
+}
+
+fn static_list_pages_selector<'a>(
+    value: &'a str,
+    unsupported_count_pages_filter: &mut bool,
+) -> Option<&'a str> {
+    if let Some(fallback) = list_pages_url_fallback(value) {
+        Some(fallback)
+    } else if is_dynamic_list_pages_value(value) {
+        *unsupported_count_pages_filter = true;
+        None
+    } else {
+        Some(value)
+    }
 }
 
 fn list_pages_has_unsupported_parent_selector(head: &str) -> bool {
