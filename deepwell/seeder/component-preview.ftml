@@ -9,7 +9,7 @@ div.preview { display: none; }
 To add a preview to your article,  copy the following onto the top of your page and replace "preview" with your own text:
 [[div class="code"]]
 @@=====@@
-@@[[include component:preview@@
+@@[[include component:preview@@
 @@text=preview]]@@
 @@=====@@
 [[/div]]

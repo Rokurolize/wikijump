@@ -307,5 +307,26 @@ mod tests {
             .find(|page| page.slug == "component:betterfootnotes")
             .expect("component:betterfootnotes seed page");
         assert_eq!(component_betterfootnotes.tags, ["component"]);
+
+        let page_index = |slug: &str| {
+            pages
+                .iter()
+                .position(|page| page.slug == slug)
+                .unwrap_or_else(|| panic!("missing seeded page {slug}"))
+        };
+        assert!(
+            page_index("component:image-block-base")
+                < page_index("component:image-block")
+        );
+        assert!(page_index("component:interwiki-style") < page_index("theme:basalt"));
+        assert!(page_index("component:betterfootnotes") < page_index("theme:basalt"));
+        assert!(page_index("component:acs-animation") < page_index("theme:basalt"));
+        assert!(
+            page_index("component:license-box-backend")
+                < page_index("component:license-box")
+        );
+        assert!(
+            page_index("component:license-box-end") < page_index("component:license-box")
+        );
     }
 }

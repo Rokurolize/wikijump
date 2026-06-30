@@ -195,7 +195,7 @@ Other
 This module uses three variables, that you can set to your liking to customize the appearance of the module. Be sure to put the CSS module for these **after** the module include.
 [[code type="css"]]
 
-root: {
+:root {
 --wm-bg: /* Accepts an RGB value; determines the background color of the module (white by default) */;
 --wm-border: /* Accepts an RGB value; determines the border color of the module (black by default) */;
 --wm-accent: /* Accepts an RGB value; determines the accent color of the module (red by default) */;

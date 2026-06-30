@@ -166,52 +166,22 @@
             "wikitext": "scp-main"
         },
         {
-            "slug": "component:image-block",
-            "title": "Standard Image Block",
-            "tags": ["component"],
-            "wikitext": "component-image-block"
-        },
-        {
             "slug": "component:image-block-base",
             "title": "Image Block Base",
             "tags": ["component"],
             "wikitext": "component-image-block-base"
         },
         {
+            "slug": "component:image-block",
+            "title": "Standard Image Block",
+            "tags": ["component"],
+            "wikitext": "component-image-block"
+        },
+        {
             "slug": "component:preview",
             "title": "Page Preview Component",
             "tags": ["component"],
             "wikitext": "component-preview"
-        },
-        {
-            "slug": "theme:basalt",
-            "title": "Basalt Theme",
-            "tags": ["theme"],
-            "wikitext": "theme-basalt"
-        },
-        {
-            "slug": "component:wikimodule",
-            "title": "Wikimodule Component",
-            "tags": ["component"],
-            "wikitext": "component-wikimodule"
-        },
-        {
-            "slug": "component:license-box",
-            "title": "License Box",
-            "tags": ["component"],
-            "wikitext": "component-license-box"
-        },
-        {
-            "slug": "component:license-box-end",
-            "title": "License Box End",
-            "tags": ["component"],
-            "wikitext": "component-license-box-end"
-        },
-        {
-            "slug": "component:license-box-backend",
-            "title": "License Box Backend",
-            "tags": ["component"],
-            "wikitext": "component-license-box-backend"
         },
         {
             "slug": "component:interwiki-style",
@@ -230,6 +200,36 @@
             "title": "ACS Animation",
             "tags": ["component"],
             "wikitext": "component-acs-animation"
+        },
+        {
+            "slug": "component:wikimodule",
+            "title": "Wikimodule Component",
+            "tags": ["component"],
+            "wikitext": "component-wikimodule"
+        },
+        {
+            "slug": "component:license-box-backend",
+            "title": "License Box Backend",
+            "tags": ["component"],
+            "wikitext": "component-license-box-backend"
+        },
+        {
+            "slug": "component:license-box-end",
+            "title": "License Box End",
+            "tags": ["component"],
+            "wikitext": "component-license-box-end"
+        },
+        {
+            "slug": "component:license-box",
+            "title": "License Box",
+            "tags": ["component"],
+            "wikitext": "component-license-box"
+        },
+        {
+            "slug": "theme:basalt",
+            "title": "Basalt Theme",
+            "tags": ["theme"],
+            "wikitext": "theme-basalt"
         },
         {
             "slug": "scp-002",
