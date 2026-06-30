@@ -256,6 +256,7 @@ test('buildCorpusImportManifest accepts CRLF source bundle manifests', () => {
 
   const rows = buildCorpusImportManifest({
     sourceBundleRoot: root,
+    sourceSite: '',
     branch: 'SANDBOX',
     sourceBranch: 'SANDBOX',
   });
@@ -263,6 +264,20 @@ test('buildCorpusImportManifest accepts CRLF source bundle manifests', () => {
   assert.equal(rows.length, 1);
   assert.equal(rows[0].fullname, 'start');
   assert.equal(rows[0].source_site, 'sandbox-for-codex');
+});
+
+test('buildCorpusImportManifest falls back when source bundle manifest site is blank', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start', { site: '' });
+
+  const rows = buildCorpusImportManifest({
+    sourceBundleRoot: root,
+    branch: 'SANDBOX',
+    sourceBranch: 'SANDBOX',
+  });
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].source_site, 'SANDBOX');
 });
 
 test('buildCorpusImportManifest keeps source bundle browser-visible rows browser-required', () => {

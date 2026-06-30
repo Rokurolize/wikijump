@@ -477,7 +477,9 @@ export function buildSourceBundleImportManifest({ sourceBundleRoot, sourceSite =
       throw new Error(`${pageDir}: missing row in corpus-manifest.tsv for ${meta.fullname}`);
     }
     unconsumedManifestFullnames.delete(meta.fullname);
-    const rowSourceSite = sourceSite ?? manifestRow?.site ?? sourceBranch;
+    const explicitSourceSite = optionalNonEmptyString(sourceSite);
+    const manifestSourceSite = optionalNonEmptyString(manifestRow?.site);
+    const rowSourceSite = explicitSourceSite ?? manifestSourceSite ?? sourceBranch;
     const sourceSha256 = sha256Hex(sourceFile.buffer);
     const sourceEntityId = fs.existsSync(entityIdPath)
       ? readText(entityIdPath).trim()
