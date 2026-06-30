@@ -512,6 +512,99 @@ test("capture CLI rejects shard manifests without a shard id", async () => {
   );
 });
 
+test("capture CLI uses fresh source and local contexts for each row", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-row-contexts-"));
+  const browserRoot = path.join(root, "browser-root");
+  const inventoryPath = path.join(root, "inventory.json");
+  const outputDir = path.join(root, "out");
+  const tracePath = path.join(root, "contexts.jsonl");
+  await fs.mkdir(browserRoot);
+  await fs.writeFile(path.join(browserRoot, "package.json"), "{}", "utf8");
+  await fs.mkdir(path.join(browserRoot, "node_modules", "@playwright", "test"), {recursive: true});
+  await fs.writeFile(
+    path.join(browserRoot, "node_modules", "@playwright", "test", "index.js"),
+    `
+const fs = require("node:fs");
+let nextContextId = 0;
+function trace(entry) {
+  fs.appendFileSync(process.env.WIKIJUMP_CONTEXT_TRACE, JSON.stringify(entry) + "\\n");
+}
+class Page {
+  constructor(contextId) {
+    this.contextId = contextId;
+    this.handlers = new Map();
+    this.currentUrl = "about:blank";
+  }
+  on(event, handler) { this.handlers.set(event, handler); }
+  async goto(url) { this.currentUrl = url; return {status: () => 200}; }
+  async waitForLoadState() {}
+  frames() { return [{evaluate: async () => "context-" + this.contextId}]; }
+  async content() { return "<html>context-" + this.contextId + "</html>"; }
+  async screenshot({path}) { fs.writeFileSync(path, "png"); }
+  url() { return this.currentUrl; }
+  async close() {}
+}
+exports.chromium = {
+  async launch() {
+    return {
+      async newContext(options) {
+        const id = nextContextId++;
+        trace({event: "newContext", id, options});
+        return {
+          async newPage() { trace({event: "newPage", id}); return new Page(id); },
+          async close() { trace({event: "closeContext", id}); },
+        };
+      },
+      async close() {},
+    };
+  },
+};
+`,
+    "utf8"
+  );
+  await fs.writeFile(inventoryPath, JSON.stringify(inventory), "utf8");
+
+  await execFileAsync(
+    process.execPath,
+    [
+      scriptPath,
+      "--inventory",
+      inventoryPath,
+      "--output-dir",
+      outputDir,
+      "--browser-root",
+      browserRoot,
+      "--json",
+    ],
+    {env: {...process.env, WIKIJUMP_CONTEXT_TRACE: tracePath}}
+  );
+
+  const trace = (await fs.readFile(tracePath, "utf8"))
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+  const records = JSON.parse(await fs.readFile(path.join(outputDir, "records.json"), "utf8"));
+  assert.deepEqual(
+    trace.filter((entry) => entry.event === "newContext").map((entry) => entry.id),
+    [0, 1, 2, 3]
+  );
+  assert.deepEqual(
+    trace.filter((entry) => entry.event === "closeContext").map((entry) => entry.id),
+    [1, 0, 3, 2]
+  );
+  assert.deepEqual(
+    records.evidence.map((record) => [
+      record.fixture_id,
+      record.source_visible_text,
+      record.local_visible_text,
+    ]),
+    [
+      ["EN:alpha", "context-0", "context-1"],
+      ["EN:beta", "context-2", "context-3"],
+    ]
+  );
+});
+
 test("capture CLI keeps source evidence when local URL is missing", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-partial-capture-"));
   const browserRoot = path.join(root, "browser-root");

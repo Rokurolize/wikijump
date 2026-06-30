@@ -188,17 +188,31 @@ async function newContextPair({browser, ignoreHttpsErrors, sourceStorageState, l
   }
 }
 
-function browserSession({browser, sourceContext, localContext}) {
+async function closeContextPair({sourceContext, localContext}) {
+  if (localContext && localContext !== sourceContext) {
+    await localContext.close().catch(() => {});
+  }
+  if (sourceContext) {
+    await sourceContext.close().catch(() => {});
+  }
+}
+
+function browserSession({browser, sourceContext, localContext, ignoreHttpsErrors, sourceStorageState, localStorageState}) {
   return {
     browser,
     context: sourceContext,
     sourceContext,
     localContext,
+    async newContextPair() {
+      return await newContextPair({
+        browser,
+        ignoreHttpsErrors,
+        sourceStorageState,
+        localStorageState,
+      });
+    },
     async close() {
-      if (localContext !== sourceContext) {
-        await localContext.close().catch(() => {});
-      }
-      await sourceContext.close().catch(() => {});
+      await closeContextPair({sourceContext, localContext});
       await browser.close().catch(() => {});
     },
   };
@@ -212,6 +226,7 @@ export async function openBrowser({
   storageState = null,
   sourceStorageState = null,
   localStorageState = null,
+  createInitialContexts = true,
 }) {
   const resolvedStates = resolveStorageStates({storageState, sourceStorageState, localStorageState});
   let browser = null;
@@ -224,13 +239,21 @@ export async function openBrowser({
   }
 
   try {
-    const contexts = await newContextPair({
+    const contexts = createInitialContexts
+      ? await newContextPair({
+          browser,
+          ignoreHttpsErrors,
+          sourceStorageState: resolvedStates.sourceStorageState,
+          localStorageState: resolvedStates.localStorageState,
+        })
+      : {sourceContext: null, localContext: null};
+    return browserSession({
       browser,
+      ...contexts,
       ignoreHttpsErrors,
       sourceStorageState: resolvedStates.sourceStorageState,
       localStorageState: resolvedStates.localStorageState,
     });
-    return browserSession({browser, ...contexts});
   } catch (error) {
     if (browser) {
       await browser.close().catch(() => {});
@@ -400,8 +423,8 @@ async function run() {
     storageState: args.storageState,
     sourceStorageState: args.sourceStorageState,
     localStorageState: args.localStorageState,
+    createInitialContexts: false,
   });
-  const {sourceContext, localContext} = browserSession;
   const resolvedStorageStates = resolveStorageStates({
     storageState: args.storageState,
     sourceStorageState: args.sourceStorageState,
@@ -411,6 +434,7 @@ async function run() {
 
   try {
     for (const row of selectedRows) {
+      const rowContexts = await browserSession.newContextPair();
       const sourceUrl = rowSourceUrl(row);
       const localUrl = rowLocalUrl(row, args.localUrlField);
       const rowDir = path.join(args.outputDir, safePathSegment(row.fixture_id));
@@ -422,35 +446,39 @@ async function run() {
         local: {},
         screenshot: args.screenshot,
       });
-      const source = await captureOptionalPage(sourceContext, sourceUrl, "missing source URL", {
-        timeoutMs: args.timeoutMs,
-        waitUntil: args.waitUntil,
-        settleMs: args.settleMs,
-        screenshotPath: artifacts.sourceScreenshot,
-      });
-      const local = await captureOptionalPage(localContext, localUrl, "missing local URL", {
-        timeoutMs: args.timeoutMs,
-        waitUntil: args.waitUntil,
-        settleMs: args.settleMs,
-        screenshotPath: artifacts.localScreenshot,
-      });
+      try {
+        const source = await captureOptionalPage(rowContexts.sourceContext, sourceUrl, "missing source URL", {
+          timeoutMs: args.timeoutMs,
+          waitUntil: args.waitUntil,
+          settleMs: args.settleMs,
+          screenshotPath: artifacts.sourceScreenshot,
+        });
+        const local = await captureOptionalPage(rowContexts.localContext, localUrl, "missing local URL", {
+          timeoutMs: args.timeoutMs,
+          waitUntil: args.waitUntil,
+          settleMs: args.settleMs,
+          screenshotPath: artifacts.localScreenshot,
+        });
 
-      await fs.writeFile(artifacts.sourceArtifact, source.html ?? "", "utf8");
-      await fs.writeFile(artifacts.localArtifact, local.html ?? "", "utf8");
-      const record = buildEvidenceRecord({
-        row,
-        source,
-        local,
-        sourceArtifact: artifacts.sourceArtifact,
-        localArtifact: artifacts.localArtifact,
-        sourceScreenshot: source.screenshotPath,
-        localScreenshot: local.screenshotPath,
-        localUrlField: args.localUrlField,
-      });
-      if (args.actorLabel) record.capture_actor = args.actorLabel;
-      record.source_storage_state = Boolean(resolvedStorageStates.sourceStorageState);
-      record.local_storage_state = Boolean(resolvedStorageStates.localStorageState);
-      records.push(record);
+        await fs.writeFile(artifacts.sourceArtifact, source.html ?? "", "utf8");
+        await fs.writeFile(artifacts.localArtifact, local.html ?? "", "utf8");
+        const record = buildEvidenceRecord({
+          row,
+          source,
+          local,
+          sourceArtifact: artifacts.sourceArtifact,
+          localArtifact: artifacts.localArtifact,
+          sourceScreenshot: source.screenshotPath,
+          localScreenshot: local.screenshotPath,
+          localUrlField: args.localUrlField,
+        });
+        if (args.actorLabel) record.capture_actor = args.actorLabel;
+        record.source_storage_state = Boolean(resolvedStorageStates.sourceStorageState);
+        record.local_storage_state = Boolean(resolvedStorageStates.localStorageState);
+        records.push(record);
+      } finally {
+        await closeContextPair(rowContexts);
+      }
     }
   } finally {
     await browserSession.close();
