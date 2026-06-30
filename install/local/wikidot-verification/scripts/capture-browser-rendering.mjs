@@ -18,6 +18,7 @@ import {
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_SETTLE_MS = 1_000;
+const POST_NAVIGATION_STATE_TIMEOUT_MS = 2_000;
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const SCRIPT_DIR = path.dirname(SCRIPT_PATH);
 
@@ -181,6 +182,12 @@ async function collectVisibleText(page) {
   return texts.join("\n");
 }
 
+async function waitForLoadStateWithinBudget(page, state, timeoutMs, startedAt) {
+  const remainingMs = timeoutMs - (Date.now() - startedAt);
+  if (remainingMs <= 0) return;
+  await page.waitForLoadState(state, {timeout: Math.min(POST_NAVIGATION_STATE_TIMEOUT_MS, remainingMs)}).catch(() => {});
+}
+
 export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = DEFAULT_SETTLE_MS, screenshotPath}) {
   const consoleErrors = [];
   const failedRequests = [];
@@ -222,6 +229,7 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
   let visibleText = "";
   let html = "";
   let writtenScreenshotPath = null;
+  const startedAt = Date.now();
   try {
     response = await page.goto(url, {timeout: timeoutMs, waitUntil});
   } catch (error) {
@@ -229,8 +237,8 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
   }
 
   try {
-    await page.waitForLoadState("domcontentloaded", {timeout: timeoutMs}).catch(() => {});
-    await page.waitForLoadState("load", {timeout: timeoutMs}).catch(() => {});
+    await waitForLoadStateWithinBudget(page, "domcontentloaded", timeoutMs, startedAt);
+    await waitForLoadStateWithinBudget(page, "load", timeoutMs, startedAt);
     if (settleMs > 0 && typeof page.waitForTimeout === "function") {
       await page.waitForTimeout(settleMs).catch(() => {});
     }

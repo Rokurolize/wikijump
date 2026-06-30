@@ -32,10 +32,15 @@ export function inventoryRows(inventory) {
   if (!Array.isArray(inventory.rows)) {
     throw new Error("inventory.rows must be an array");
   }
+  const fixtureIds = new Set();
   for (const [index, row] of inventory.rows.entries()) {
     if (!isObject(row) || typeof row.fixture_id !== "string" || row.fixture_id.trim().length === 0) {
       throw new Error(`inventory.rows[${index}] must be an object with a non-empty fixture_id`);
     }
+    if (fixtureIds.has(row.fixture_id)) {
+      throw new Error(`inventory.rows[${index}] duplicates fixture_id: ${row.fixture_id}`);
+    }
+    fixtureIds.add(row.fixture_id);
   }
   return inventory.rows;
 }
@@ -48,7 +53,15 @@ export function rowsForShard({rows, shardManifest, shardId}) {
   if (!shard) {
     throw new Error(`shard not found: ${shardId}`);
   }
-  const wanted = new Set(shard.fixture_ids ?? []);
+  if (!Array.isArray(shard.fixture_ids)) {
+    throw new Error(`shard ${shardId} fixture_ids must be an array`);
+  }
+  const rowIds = new Set(rows.map((row) => row.fixture_id));
+  const missing = shard.fixture_ids.filter((fixtureId) => !rowIds.has(fixtureId));
+  if (missing.length > 0) {
+    throw new Error(`shard ${shardId} fixture IDs were not found in inventory: ${missing.join(", ")}`);
+  }
+  const wanted = new Set(shard.fixture_ids);
   return rows.filter((row) => wanted.has(row.fixture_id));
 }
 

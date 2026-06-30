@@ -67,6 +67,29 @@ test("selectInventoryRows rejects absent requested fixture ids", () => {
   );
 });
 
+test("inventoryRows rejects duplicate fixture ids", () => {
+  assert.throws(
+    () => inventoryRows({schema: inventory.schema, rows: [inventory.rows[0], {...inventory.rows[1], fixture_id: "EN:alpha"}]}),
+    /inventory\.rows\[1\] duplicates fixture_id: EN:alpha/
+  );
+});
+
+test("selectInventoryRows rejects shard fixture ids missing from the inventory", () => {
+  const rows = inventoryRows(inventory);
+  assert.throws(
+    () =>
+      selectInventoryRows({
+        rows,
+        shardId: "en-0001",
+        shardManifest: {
+          schema: "wikijump_full_parity.corpus_shard_manifest.v1",
+          shards: [{shard_id: "en-0001", fixture_ids: ["EN:alpha", "EN:missing"]}],
+        },
+      }),
+    /shard en-0001 fixture IDs were not found in inventory: EN:missing/
+  );
+});
+
 test("buildEvidenceRecord emits fields accepted by the browser rendering validator", () => {
   const record = buildEvidenceRecord({
     row: inventory.rows[0],
@@ -244,6 +267,40 @@ test("capturePage records page errors and failed subframe responses", async () =
       resourceType: "document",
     },
   ]);
+});
+
+test("capturePage bounds post-navigation load-state waits", async () => {
+  const loadStateTimeouts = [];
+  const page = {
+    on() {},
+    mainFrame() {
+      return {};
+    },
+    async goto() {
+      return {status: () => 200};
+    },
+    async waitForLoadState(_state, options) {
+      loadStateTimeouts.push(options.timeout);
+    },
+    frames() {
+      return [{async evaluate() { return "visible"; }}];
+    },
+    async content() {
+      return "<html>visible</html>";
+    },
+    url() {
+      return "https://local.example/page";
+    },
+  };
+
+  await capturePage(page, "https://local.example/page", {
+    timeoutMs: 30_000,
+    waitUntil: "domcontentloaded",
+    settleMs: 0,
+    screenshotPath: null,
+  });
+
+  assert.deepEqual(loadStateTimeouts, [2_000, 2_000]);
 });
 
 test("capture CLI rejects an empty row selection before launching a browser", async () => {
