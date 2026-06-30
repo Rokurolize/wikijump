@@ -353,33 +353,57 @@ async fn direct_message_render_leaves_image_block_include_literal() {
 
 #[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
-    let runner = TestRunner::setup().await;
-    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
-    let page_info = PageInfo {
-        page: Cow::Borrowed("image-block-html-literal"),
-        category: None,
-        site: Cow::Borrowed("scp-wiki"),
-        title: Cow::Borrowed("Image Block HTML Literal"),
-        alt_title: None,
-        score: ScoreValue::Integer(0),
-        tags: Vec::new(),
-        language: Cow::Borrowed("en"),
-    };
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let slug = "fixture-image-block-html-literal";
 
-    let output = RenderService::render(
-        runner.context(),
-        concat!(
-            "[[html]]\n",
-            "<template>[[include component:image-block name=raw-html.jpg]]</template>\n",
-            "[[/html]]\n",
-        )
-        .to_owned(),
-        &page_info,
-        &settings,
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(slug)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": concat!(
+                "[[html]]\n",
+                "<template>[[include component:image-block name=raw-html.jpg]]</template>\n",
+                "[[/html]]\n",
+            ),
+            "title": "Fixture Image Block HTML Literal",
+            "alt_title": null,
+            "slug": slug,
+            "layout": "wikidot",
+            "revision_comments": "create image-block HTML literal fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let html_block = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "block_type": "html",
+            "index": 1,
+        }),
     )
-    .await
-    .expect("HTML block render should succeed");
-    let html = output.html_output.body;
+    .expect("HTML block should be stored");
+    let response = runner
+        .context()
+        .s3_tblocks_bucket()
+        .get_object(&html_block.s3_filename)
+        .await
+        .expect("HTML block object should be readable");
+    let html =
+        String::from_utf8(response.into()).expect("HTML block object should be UTF-8");
 
     for forbidden in ["scp-image-block", "local--files/image-block-html-literal"] {
         assert!(
@@ -388,14 +412,8 @@ async fn html_block_render_leaves_image_block_include_literal() {
         );
     }
     assert!(
-        output
-            .html_output
-            .backlinks
-            .included_pages
-            .iter()
-            .all(|page| !page.page.contains("image-block")),
-        "HTML block image-block include should not register component backlinks: {:?}",
-        output.html_output.backlinks.included_pages,
+        html.contains("[[include component:image-block name=raw-html.jpg]]"),
+        "HTML block should retain the literal image-block include:\n{html}"
     );
 }
 
@@ -4353,6 +4371,38 @@ async fn countpages_current_page_tag_selectors_remain_literal() {
 }
 
 #[tokio::test]
+async fn countpages_no_tags_selector_remains_literal() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let html = render_countpages_test_fixture_with_targets(
+        &mut runner,
+        site.site.site_id,
+        "fixture-countpages-no-tags-literal",
+        "verification-count-no-tags-literal",
+        r#"tags="-" limit="20""#,
+        "NO_TAGS_COUNT=%%total%%",
+        &[(
+            "target-a",
+            "Fixture CountPages No Tags Target",
+            "Fixture CountPages no-tags marker.",
+        )],
+    )
+    .await;
+
+    assert!(
+        html.contains("NO_TAGS_COUNT=%%total%%")
+            || html.contains("[[module CountPages")
+            || html.contains("module CountPages"),
+        "CountPages tags=\"-\" should remain literal/degraded:\n{html}"
+    );
+    assert!(
+        !html.contains("NO_TAGS_COUNT=1"),
+        "CountPages tags=\"-\" must not count tagged pages as no-tag pages:\n{html}"
+    );
+}
+
+#[tokio::test]
 async fn countpages_not_current_author_selector_remains_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -4551,6 +4601,127 @@ async fn first_revision_countpages_unsupported_filter_remains_literal() {
     assert!(
         !html.contains("FIRST_REVISION_UNSUPPORTED_COUNT=1"),
         "unsupported CountPages filters must not substitute a partial first-revision count:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn first_revision_rerenders_included_countpages() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let component_slug = "component:fixture-first-revision-included-countpages";
+    let page_slug = "fixture-first-revision-included-countpages";
+    let tag = "verification-first-revision-included-countpages";
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        component_slug,
+        "Fixture First Revision Included CountPages Component",
+        &format!(
+            "[[module CountPages tags=\"+{tag}\" limit=\"20\"]]\nINCLUDED_COUNT=%%total%%\n[[/module]]"
+        ),
+    )
+    .await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(page_slug)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("[[include {component_slug}]]"),
+            "title": "Fixture First Revision Included CountPages",
+            "alt_title": null,
+            "tags": [tag],
+            "slug": page_slug,
+            "layout": "wikidot",
+            "revision_comments": "create first revision include CountPages fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": page_slug,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("first-revision included CountPages page should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(
+        html.contains("INCLUDED_COUNT=1"),
+        "included CountPages should be rerendered after the first revision is attached:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn first_revision_rerenders_tagcloud() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let page_slug = "fixture-first-revision-tagcloud";
+    let tag = "verification-first-revision-tagcloud";
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(page_slug)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "[[module TagCloud]]",
+            "title": "Fixture First Revision TagCloud",
+            "alt_title": null,
+            "tags": [tag],
+            "slug": page_slug,
+            "layout": "wikidot",
+            "revision_comments": "create first revision TagCloud fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": page_slug,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("first-revision TagCloud page should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(
+        html.contains(&format!(r#"/system:page-tags/tag/{tag}">"#))
+            && html.contains(&format!(">{tag}<")),
+        "TagCloud should be rerendered after the first revision is attached:\n{html}"
     );
 }
 

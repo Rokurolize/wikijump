@@ -1308,7 +1308,10 @@ impl PageService {
 
 fn needs_latest_revision_for_first_render(wikitext: &str) -> bool {
     let lower = wikitext.to_ascii_lowercase();
-    lower.contains("[[module countpages") || lower.contains("[[module listpages")
+    lower.contains("[[module countpages")
+        || lower.contains("[[module listpages")
+        || lower.contains("[[module tagcloud")
+        || lower.contains("[[include")
 }
 
 /// Verifies that a `last_revision_id` passed into this function is actually the latest.

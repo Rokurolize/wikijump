@@ -4212,6 +4212,10 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                     continue;
                 };
                 for tag in split_list_pages_values(value) {
+                    if is_no_tags_selector(&tag) {
+                        unsupported_count_pages_filter = true;
+                        continue;
+                    }
                     if is_current_page_tag_selector(&tag) {
                         unsupported_count_pages_filter = true;
                     }
@@ -4232,6 +4236,10 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                     continue;
                 };
                 for tag in split_list_pages_values(value) {
+                    if is_no_tags_selector(&tag) {
+                        unsupported_count_pages_filter = true;
+                        continue;
+                    }
                     if is_current_page_tag_selector(&tag) {
                         unsupported_count_pages_filter = true;
                     }
@@ -4529,6 +4537,10 @@ fn split_list_pages_values(value: &str) -> Vec<String> {
 
 fn is_current_page_tag_selector(value: &str) -> bool {
     matches!(value.trim().trim_start_matches(['+', '-']), "=" | "==")
+}
+
+fn is_no_tags_selector(value: &str) -> bool {
+    value.trim() == "-"
 }
 
 fn normalize_list_pages_user_selector(value: &str) -> String {
