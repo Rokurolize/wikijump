@@ -351,6 +351,50 @@ async fn direct_message_render_leaves_image_block_include_literal() {
 }
 
 #[tokio::test]
+async fn non_scp_page_render_does_not_hardcode_scp_image_block_include() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    assert!(
+        settings.enable_page_syntax,
+        "page rendering should exercise normal include handling"
+    );
+    let page_info = PageInfo {
+        page: Cow::Borrowed("image-block-consumer"),
+        category: None,
+        site: Cow::Borrowed("sandbox-for-codex"),
+        title: Cow::Borrowed("Image Block Consumer"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+
+    let output = RenderService::render(
+        runner.context(),
+        concat!(
+            "[[include component:image-block name=custom.jpg|caption=Custom block.]]\n",
+            "[[include :sandbox-for-codex:component:image-block name=custom.jpg]]\n",
+        )
+        .to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("non-SCP page render should succeed");
+    let html = output.html_output.body;
+
+    for forbidden in [
+        "scp-image-block",
+        "local--files/image-block-consumer/custom.jpg",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "non-SCP page render should use normal include handling, not the SCP image-block prepass:\n{html}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn listpages_fixture_subset_renders_titles_slugs_order_and_tag_filter() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -3941,6 +3985,66 @@ async fn countpages_broad_category_without_limit_remains_literal() {
     assert!(
         !html.contains("BROAD_CATEGORY_COUNT=1"),
         "CountPages category=* without a limit must not materialize the whole site:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn countpages_current_author_without_creation_revision_counts_no_matches() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "verification-count-current-author-create";
+
+    for slug in [
+        "fixture-countpages-current-author-target-a",
+        "fixture-countpages-current-author-target-b",
+    ] {
+        let revision = create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            "Fixture CountPages Current Author Target",
+            "Fixture CountPages current author target marker.",
+        )
+        .await;
+        set_listpages_test_tags(&mut runner, site_id, slug, revision, &[tag]).await;
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-countpages-current-author-index",
+        "Fixture CountPages Current Author Index",
+        &format!(
+            "CountPages current author marker.\n\n[[module CountPages created_by=\"=\" tags=\"+{tag}\" limit=\"20\"]]\nCURRENT_AUTHOR_COUNT=%%total%%\n[[/module]]"
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-countpages-current-author-index",
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("CountPages current-author index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(
+        html.contains("CURRENT_AUTHOR_COUNT=0"),
+        "created_by=\"=\" should not widen to every author before revision 0 exists:\n{html}"
+    );
+    assert!(
+        !html.contains("CURRENT_AUTHOR_COUNT=2"),
+        "created_by=\"=\" must not count all matching pages before revision 0 exists:\n{html}"
     );
 }
 

@@ -23,6 +23,7 @@ use crate::hash::TextHash;
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_revision;
 use crate::models::site::Model as SiteModel;
+use crate::models::user::{self, Entity as UserTable};
 use crate::models::wikidot_user::{self, Entity as WikidotUser};
 use crate::services::page_query::{
     CategoriesSelector, DateSelector, FoundPageFields, FoundPageRow, FoundPages,
@@ -70,6 +71,7 @@ const MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS: usize = 48;
 const MIN_FTML_COMPAT_TABBED_RENDER_BYTES: usize = 100_000;
 const MIN_FTML_COMPAT_TABBED_MARKERS: usize = 10;
 const MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS: u64 = 150;
+const LISTPAGES_NO_MATCH_AUTHOR_ID: &str = "-9223372036854775808";
 const INCLUDE_VARIABLE_OPEN_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_OPEN__";
 const INCLUDE_VARIABLE_CLOSE_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_CLOSE__";
 const WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTEMBEDIFRAME";
@@ -1185,6 +1187,9 @@ impl RenderService {
             if Self::should_skip_wikidot_image_block_include_expansion(
                 &source,
                 include_start,
+            ) || !Self::should_expand_wikidot_image_block_include(
+                captures.name("site").map(|site| site.as_str()),
+                page_info,
             ) {
                 continue;
             }
@@ -1300,6 +1305,14 @@ impl RenderService {
         Self::is_inside_wikidot_code_block(source, start)
             || Self::is_inside_wikidot_escape(source, start)
             || Self::is_inside_wikidot_comment(source, start)
+    }
+
+    fn should_expand_wikidot_image_block_include(
+        include_site: Option<&str>,
+        page_info: &PageInfo<'_>,
+    ) -> bool {
+        page_info.site.as_ref() == "scp-wiki"
+            && include_site.is_none_or(|site| site == "scp-wiki")
     }
 
     fn is_inside_wikidot_code_block(source: &str, start: usize) -> bool {
@@ -3692,7 +3705,12 @@ impl RenderService {
             data_form_fields: &[],
             order,
             pagination: PaginationSelector {
-                limit: None,
+                limit: limit.map(|limit| {
+                    limit
+                        .saturating_add(u64::from(offset))
+                        .saturating_add(u64::from(exclude_current_page))
+                        .min(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
+                }),
                 per_page: PaginationSelector::default().per_page,
                 reversed: false,
             },
@@ -3716,6 +3734,11 @@ impl RenderService {
             .await?
         } else if current_page_only {
             FoundPages { pages: Vec::new() }
+        } else if let Some(limit) = limit {
+            let target_count = (offset as usize)
+                .saturating_add(limit.min(usize::MAX as u64) as usize)
+                .saturating_add(usize::from(exclude_current_page));
+            Self::find_viewable_list_pages_rows(ctx, query, target_count).await?
         } else {
             let found = PageQueryService::find(ctx, query).await?;
             FoundPages {
@@ -3916,10 +3939,15 @@ impl RenderService {
             )
         };
 
-        let wikidot_user_ids = pages
+        let user_ids = pages
             .iter()
             .flat_map(|page| [page.created_by, page.updated_by])
             .flatten()
+            .collect::<BTreeSet<_>>();
+
+        let wikidot_user_ids = user_ids
+            .iter()
+            .copied()
             .filter_map(|user_id| match i32::try_from(user_id) {
                 Ok(user_id) => Some(user_id),
                 Err(error) => {
@@ -3929,19 +3957,19 @@ impl RenderService {
             })
             .collect::<BTreeSet<_>>();
 
-        if wikidot_user_ids.is_empty() {
+        if user_ids.is_empty() {
             return Ok(BTreeMap::new());
         }
 
-        let users = WikidotUser::find()
-            .filter(wikidot_user::Column::UserId.is_in(wikidot_user_ids.clone()))
-            .all(ctx.transaction())
-            .await
-            .or_raise(make_error)?;
+        let mut displays = BTreeMap::new();
+        if !wikidot_user_ids.is_empty() {
+            let users = WikidotUser::find()
+                .filter(wikidot_user::Column::UserId.is_in(wikidot_user_ids.clone()))
+                .all(ctx.transaction())
+                .await
+                .or_raise(make_error)?;
 
-        let displays = users
-            .into_iter()
-            .filter_map(|user| {
+            displays.extend(users.into_iter().filter_map(|user| {
                 let name = user.name.or_else(|| user.slug.clone())?;
                 Some((
                     i64::from(user.user_id),
@@ -3949,10 +3977,35 @@ impl RenderService {
                         user_id: i64::from(user.user_id),
                         name,
                         slug: user.slug,
+                        wikidot_profile: true,
                     },
                 ))
-            })
-            .collect::<BTreeMap<_, _>>();
+            }));
+        }
+
+        let missing_user_ids = user_ids
+            .into_iter()
+            .filter(|user_id| !displays.contains_key(user_id))
+            .collect::<Vec<_>>();
+        if !missing_user_ids.is_empty() {
+            let users = UserTable::find()
+                .filter(user::Column::UserId.is_in(missing_user_ids))
+                .all(ctx.transaction())
+                .await
+                .or_raise(make_error)?;
+
+            displays.extend(users.into_iter().map(|user| {
+                (
+                    user.user_id,
+                    WikidotUserDisplay {
+                        user_id: user.user_id,
+                        name: user.name,
+                        slug: Some(user.slug),
+                        wikidot_profile: false,
+                    },
+                )
+            }));
+        }
 
         Ok(displays)
     }
@@ -4000,6 +4053,8 @@ impl RenderService {
             .or_raise(make_error)?;
             if let Some(revision) = creation_revision {
                 author_ids.push(Cow::Owned(revision.user_id.to_string()));
+            } else if literal_authors.is_empty() {
+                author_ids.push(Cow::Borrowed(LISTPAGES_NO_MATCH_AUTHOR_ID));
             }
         }
 
@@ -4044,7 +4099,7 @@ impl RenderService {
             .collect::<Vec<_>>();
 
         if author_ids.is_empty() {
-            Ok(vec![Cow::Borrowed("-9223372036854775808")])
+            Ok(vec![Cow::Borrowed(LISTPAGES_NO_MATCH_AUTHOR_ID)])
         } else {
             Ok(author_ids)
         }
@@ -4056,6 +4111,7 @@ struct WikidotUserDisplay {
     user_id: i64,
     name: String,
     slug: Option<String>,
+    wikidot_profile: bool,
 }
 
 #[derive(Debug)]
@@ -4706,6 +4762,9 @@ fn render_list_pages_wikidot_user(
     let Some(user) = user else {
         return user_id.to_string();
     };
+    if !user.wikidot_profile {
+        return escape_list_pages_html_text(&user.name);
+    }
     let slug = user.slug.as_deref().unwrap_or(&user.name);
     format!(
         concat!(
@@ -6303,6 +6362,7 @@ mod tests {
                 user_id: 8_955_132,
                 name: "scpaiueouiuiuiui".to_owned(),
                 slug: Some("scpaiueouiuiuiui".to_owned()),
+                wikidot_profile: true,
             },
         );
 
@@ -6366,6 +6426,31 @@ mod tests {
         );
         assert_eq!(rendered, ADMIN_USER_ID.to_string());
         assert!(!rendered.contains("wikidot.com/user:info"));
+
+        let mut local_users = BTreeMap::new();
+        local_users.insert(
+            -20,
+            WikidotUserDisplay {
+                user_id: -20,
+                name: "SeekGull".to_owned(),
+                slug: Some("seekgull".to_owned()),
+                wikidot_profile: false,
+            },
+        );
+        let local_mirror_author = FoundPageRow {
+            created_by: Some(-20),
+            ..local_author
+        };
+        let rendered = substitute_list_pages_variables(
+            "%%created_by%% / %%author%%",
+            &local_mirror_author,
+            1,
+            1,
+            &local_users,
+            None,
+        );
+        assert_eq!(rendered, "SeekGull / SeekGull");
+        assert!(!rendered.contains("wikidot.com/user:info"));
     }
 
     #[test]
@@ -6394,6 +6479,7 @@ mod tests {
                 user_id: 954_000_337,
                 name: "Calibold".to_owned(),
                 slug: Some("calibold".to_owned()),
+                wikidot_profile: true,
             },
         );
 
@@ -7522,6 +7608,32 @@ mod tests {
                 PageRef::page_and_site("scp-wiki", "component:image-block-base"),
             ],
         );
+    }
+
+    #[test]
+    fn leaves_image_block_includes_on_non_scp_wiki_sites_for_normal_expansion() {
+        let mut wikitext = concat!(
+            "[[include component:image-block name=custom.jpg|caption=Custom block.]]\n",
+            "[[include :sandbox-for-codex:component:image-block name=custom.jpg]]\n",
+        )
+        .to_owned();
+        let page_info = ftml::data::PageInfo {
+            site: Cow::Borrowed("sandbox-for-codex"),
+            page: Cow::Borrowed("start"),
+            title: Cow::Borrowed("Sandbox"),
+            alt_title: None,
+            tags: Vec::new(),
+            category: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            language: Cow::Borrowed("en"),
+        };
+
+        let included_pages =
+            RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info);
+
+        assert!(included_pages.is_empty());
+        assert!(wikitext.contains("[[include component:image-block name=custom.jpg"));
+        assert!(wikitext.contains("[[include :sandbox-for-codex:component:image-block"));
     }
 
     #[test]
