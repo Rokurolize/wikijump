@@ -1320,6 +1320,12 @@ impl RenderService {
         source[..start].matches("@@").count() % 2 == 1
     }
 
+    fn is_inside_wikidot_literal_region(source: &str, start: usize) -> bool {
+        Self::is_inside_wikidot_code_block(source, start)
+            || Self::is_inside_wikidot_escape(source, start)
+            || Self::is_inside_wikidot_comment(source, start)
+    }
+
     fn is_inside_wikidot_comment(source: &str, start: usize) -> bool {
         let before = &source[..start];
         let last_open = before.rfind("[!--");
@@ -2244,6 +2250,11 @@ impl RenderService {
         for captures in COUNTPAGES_MODULE_REGEX.captures_iter(&wikitext) {
             let mtch = captures.get(0).unwrap();
             expanded.push_str(&wikitext[cursor..mtch.start()]);
+            if Self::is_inside_wikidot_literal_region(&wikitext, mtch.start()) {
+                expanded.push_str(mtch.as_str());
+                cursor = mtch.end();
+                continue;
+            }
             let head = captures.name("head").unwrap().as_str();
             let body = captures.name("body").unwrap().as_str();
 
@@ -2260,6 +2271,11 @@ impl RenderService {
                 cursor = mtch.end();
                 continue;
             };
+            if count_pages_should_remain_literal(&arguments) {
+                expanded.push_str(mtch.as_str());
+                cursor = mtch.end();
+                continue;
+            }
 
             let replacement = Self::render_count_pages_block(
                 ctx,
@@ -3373,7 +3389,8 @@ impl RenderService {
             categories,
             excluded_categories,
             any_tags,
-            all_tags,
+            mut all_tags,
+            default_tags,
             no_tags,
             authors,
             order,
@@ -3384,7 +3401,9 @@ impl RenderService {
             page_parent,
             slug,
             prepend_line,
+            unsupported_count_pages_filter: _,
         } = arguments;
+        all_tags.extend(default_tags);
         let categories = if include_current_category && !category_all {
             let make_error = || {
                 Error::new(
@@ -3583,8 +3602,9 @@ impl RenderService {
             include_current_category,
             categories,
             excluded_categories,
-            any_tags,
+            mut any_tags,
             all_tags,
+            default_tags,
             no_tags,
             authors,
             order,
@@ -3595,7 +3615,9 @@ impl RenderService {
             page_parent,
             slug,
             prepend_line: _,
+            unsupported_count_pages_filter: _,
         } = arguments;
+        any_tags.extend(default_tags);
         let (category_all, include_current_category) = if category_selector_present {
             (category_all, include_current_category)
         } else {
@@ -4069,6 +4091,7 @@ struct ListPagesArguments {
     categories: Vec<Cow<'static, str>>,
     excluded_categories: Vec<Cow<'static, str>>,
     any_tags: Vec<Cow<'static, str>>,
+    default_tags: Vec<Cow<'static, str>>,
     all_tags: Vec<Cow<'static, str>>,
     no_tags: Vec<Cow<'static, str>>,
     authors: Vec<Cow<'static, str>>,
@@ -4080,6 +4103,7 @@ struct ListPagesArguments {
     page_parent: PageParentSelector<'static>,
     slug: Option<Cow<'static, str>>,
     prepend_line: Option<String>,
+    unsupported_count_pages_filter: bool,
 }
 
 fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
@@ -4095,6 +4119,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
     let mut categories = Vec::new();
     let mut excluded_categories = Vec::new();
     let any_tags = Vec::new();
+    let mut default_tags = Vec::new();
     let mut all_tags = Vec::new();
     let mut no_tags = Vec::new();
     let mut authors = Vec::new();
@@ -4106,6 +4131,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
     let mut page_parent = PageParentSelector::All;
     let mut slug = None;
     let mut prepend_line = None;
+    let mut unsupported_count_pages_filter = false;
 
     for captures in LISTPAGES_ARGUMENT_REGEX.captures_iter(head) {
         let key = captures["key"].to_ascii_lowercase();
@@ -4128,7 +4154,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                     } else if let Some(tag) = tag.strip_prefix('+') {
                         all_tags.push(Cow::Owned(tag.to_owned()));
                     } else {
-                        all_tags.push(Cow::Owned(tag));
+                        default_tags.push(Cow::Owned(tag));
                     }
                 }
             }
@@ -4139,9 +4165,10 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                 for tag in split_list_pages_values(value) {
                     if let Some(tag) = tag.strip_prefix('-') {
                         no_tags.push(Cow::Owned(tag.to_owned()));
-                    } else {
-                        let tag = tag.strip_prefix('+').unwrap_or(&tag);
+                    } else if let Some(tag) = tag.strip_prefix('+') {
                         all_tags.push(Cow::Owned(tag.to_owned()));
+                    } else {
+                        default_tags.push(Cow::Owned(tag));
                     }
                 }
             }
@@ -4249,6 +4276,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
             "rating" | "score" | "votes" | "form" | "link_to" | "linkto"
             | "urlattrprefix" | "wrapper" | "created_at" | "createdat" | "updated_at"
             | "updatedat" => {
+                unsupported_count_pages_filter = true;
                 // These filters need Wikidot-specific query semantics that are not
                 // fully implemented here. Parsing them keeps real corpus modules
                 // out of FTML's generic module path, which otherwise panics on
@@ -4266,6 +4294,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
         categories,
         excluded_categories,
         any_tags,
+        default_tags,
         all_tags,
         no_tags,
         authors,
@@ -4277,7 +4306,23 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
         page_parent,
         slug,
         prepend_line,
+        unsupported_count_pages_filter,
     })
+}
+
+fn count_pages_should_remain_literal(arguments: &ListPagesArguments) -> bool {
+    arguments.unsupported_count_pages_filter
+        || (arguments.category_selector_present
+            && arguments.category_all
+            && arguments.limit.is_none())
+        || (arguments.current_page_only
+            && (!arguments.default_tags.is_empty()
+                || !arguments.any_tags.is_empty()
+                || !arguments.all_tags.is_empty()
+                || !arguments.no_tags.is_empty()
+                || !arguments.authors.is_empty()
+                || !arguments.excluded_categories.is_empty()
+                || arguments.slug.is_some()))
 }
 
 fn should_render_current_page_list_pages_row(
@@ -5777,7 +5822,7 @@ mod tests {
         assert!(!arguments.category_all);
         assert!(arguments.include_current_category);
         assert_eq!(arguments.categories, vec![Cow::Borrowed("theme")]);
-        assert_eq!(arguments.all_tags, vec![Cow::Borrowed("1998")]);
+        assert_eq!(arguments.default_tags, vec![Cow::Borrowed("1998")]);
         assert_eq!(arguments.limit, Some(5));
     }
 
@@ -5793,7 +5838,7 @@ mod tests {
             arguments.excluded_categories,
             vec![Cow::Borrowed("deleted")]
         );
-        assert_eq!(arguments.all_tags, vec![Cow::Borrowed("地下東京奇譚")]);
+        assert_eq!(arguments.default_tags, vec![Cow::Borrowed("地下東京奇譚")]);
         assert_eq!(arguments.no_tags, vec![Cow::Borrowed("ハブ")]);
     }
 
@@ -5832,7 +5877,7 @@ mod tests {
             arguments.excluded_categories,
             vec![Cow::Borrowed("deleted")]
         );
-        assert_eq!(arguments.all_tags, vec![Cow::Borrowed("1998")]);
+        assert_eq!(arguments.default_tags, vec![Cow::Borrowed("1998")]);
         assert_eq!(arguments.limit, Some(100));
         assert_eq!(
             arguments.prepend_line.as_deref(),

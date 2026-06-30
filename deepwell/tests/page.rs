@@ -3694,6 +3694,225 @@ async fn countpages_without_limit_counts_past_render_scan_cap() {
 }
 
 #[tokio::test]
+async fn countpages_inside_code_block_remains_literal() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "verification-count-code-literal";
+    let revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-countpages-code-literal-target",
+        "Fixture CountPages Code Literal Target",
+        "Fixture CountPages code literal marker.",
+    )
+    .await;
+    set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        "fixture-countpages-code-literal-target",
+        revision,
+        &[tag],
+    )
+    .await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-countpages-code-literal-index",
+        "Fixture CountPages Code Literal Index",
+        &format!(
+            "CountPages code literal marker.\n\n[[code]]\n[[module CountPages tags=\"+{tag}\" limit=\"20\"]]\nCODE_LITERAL_COUNT=%%total%%\n[[/module]]\n[[/code]]"
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-countpages-code-literal-index",
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("CountPages code literal index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(
+        html.contains("CODE_LITERAL_COUNT=%%total%%"),
+        "CountPages inside code blocks should remain literal:\n{html}"
+    );
+    assert!(
+        !html.contains("CODE_LITERAL_COUNT=1"),
+        "CountPages inside code blocks must not substitute totals:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn countpages_unprefixed_tags_use_or_semantics() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag_a = "verification-count-any-alpha";
+    let tag_b = "verification-count-any-beta";
+
+    for (slug, tags) in [
+        ("fixture-countpages-any-target-alpha", vec![tag_a]),
+        ("fixture-countpages-any-target-beta", vec![tag_b]),
+        ("fixture-countpages-any-target-both", vec![tag_a, tag_b]),
+    ] {
+        let revision = create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            "Fixture CountPages Any Tag Target",
+            "Fixture CountPages any tag marker.",
+        )
+        .await;
+        set_listpages_test_tags(&mut runner, site_id, slug, revision, &tags).await;
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-countpages-any-index",
+        "Fixture CountPages Any Tag Index",
+        &format!(
+            "CountPages any tag marker.\n\n[[module CountPages tags=\"{tag_a} {tag_b}\" order=\"name\" limit=\"20\"]]\nANY_TAG_COUNT=%%total%%\n[[/module]]"
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-countpages-any-index",
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("CountPages any-tag index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(
+        html.contains("ANY_TAG_COUNT=3"),
+        "unprefixed CountPages tags should match pages with any listed tag:\n{html}"
+    );
+    assert!(
+        !html.contains("ANY_TAG_COUNT=1"),
+        "unprefixed CountPages tags must not require every listed tag:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn countpages_unsupported_filters_remain_literal() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let html = render_countpages_test_fixture_with_targets(
+        &mut runner,
+        site.site.site_id,
+        "fixture-countpages-rating-literal",
+        "verification-count-rating-literal",
+        r#"tags="+verification-count-rating-literal" rating=">0" limit="20""#,
+        "RATING_FILTER_COUNT=%%total%%",
+        &[(
+            "target-a",
+            "Fixture CountPages Rating Literal Target",
+            "Fixture CountPages rating literal marker.",
+        )],
+    )
+    .await;
+
+    assert!(
+        html.contains("RATING_FILTER_COUNT=%%total%%")
+            || html.contains("[[module CountPages")
+            || html.contains("module CountPages"),
+        "CountPages with unsupported filters should remain literal/degraded:\n{html}"
+    );
+    assert!(
+        !html.contains("RATING_FILTER_COUNT=1"),
+        "CountPages with unsupported filters must not substitute a partial count:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn countpages_current_page_filters_remain_literal() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let html = render_countpages_test_fixture_with_targets(
+        &mut runner,
+        site.site.site_id,
+        "fixture-countpages-range-filter-literal",
+        "verification-count-range-filter-literal",
+        r#"range="." tags="+verification-count-range-filter-literal""#,
+        "RANGE_FILTER_COUNT=%%total%%",
+        &[(
+            "target-a",
+            "Fixture CountPages Range Filter Literal Target",
+            "Fixture CountPages range filter literal marker.",
+        )],
+    )
+    .await;
+
+    assert!(
+        html.contains("RANGE_FILTER_COUNT=%%total%%")
+            || html.contains("[[module CountPages")
+            || html.contains("module CountPages"),
+        "CountPages range=. with additional filters should remain literal/degraded:\n{html}"
+    );
+    assert!(
+        !html.contains("RANGE_FILTER_COUNT=1"),
+        "CountPages range=. with filters must not ignore filters and count the current page:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn countpages_broad_category_without_limit_remains_literal() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let html = render_countpages_test_fixture_with_targets(
+        &mut runner,
+        site.site.site_id,
+        "fixture-countpages-broad-category-literal",
+        "verification-count-broad-category-literal",
+        r#"category="*""#,
+        "BROAD_CATEGORY_COUNT=%%total%%",
+        &[(
+            "target-a",
+            "Fixture CountPages Broad Category Literal Target",
+            "Fixture CountPages broad category literal marker.",
+        )],
+    )
+    .await;
+
+    assert!(
+        html.contains("BROAD_CATEGORY_COUNT=%%total%%")
+            || html.contains("[[module CountPages")
+            || html.contains("module CountPages"),
+        "CountPages category=* without a limit should remain literal/degraded:\n{html}"
+    );
+    assert!(
+        !html.contains("BROAD_CATEGORY_COUNT=1"),
+        "CountPages category=* without a limit must not materialize the whole site:\n{html}"
+    );
+}
+
+#[tokio::test]
 async fn listpages_created_at_order_renders_results() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
