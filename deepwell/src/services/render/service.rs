@@ -1332,7 +1332,8 @@ impl RenderService {
     }
 
     fn parse_wikidot_include_arguments(args: &str) -> BTreeMap<String, String> {
-        args.split('|')
+        Self::split_wikidot_include_argument_segments(args)
+            .into_iter()
             .filter_map(|segment| {
                 let (key, value) = segment.trim().split_once('=')?;
                 let key = key.trim().to_ascii_lowercase();
@@ -1342,6 +1343,40 @@ impl RenderService {
                 Some((key, value.trim().to_owned()))
             })
             .collect()
+    }
+
+    fn split_wikidot_include_argument_segments(args: &str) -> Vec<&str> {
+        let mut segments = Vec::new();
+        let mut segment_start = 0;
+        let mut offset = 0;
+
+        while offset < args.len() {
+            if args[offset..].starts_with("[[[") {
+                if let Some(close_offset) = args[offset + 3..].find("]]]") {
+                    offset += 3 + close_offset + 3;
+                    continue;
+                }
+            } else if args[offset..].starts_with("[[") {
+                if let Some(close_offset) = args[offset + 2..].find("]]") {
+                    offset += 2 + close_offset + 2;
+                    continue;
+                }
+            } else if args[offset..].starts_with('|') {
+                segments.push(&args[segment_start..offset]);
+                offset += 1;
+                segment_start = offset;
+                continue;
+            }
+
+            let ch = args[offset..]
+                .chars()
+                .next()
+                .expect("offset is inside argument string");
+            offset += ch.len_utf8();
+        }
+
+        segments.push(&args[segment_start..]);
+        segments
     }
 
     fn remove_unresolved_include_comment_branches(wikitext: &mut String) {
@@ -7162,7 +7197,7 @@ mod tests {
     fn expands_wikidot_image_block_includes_with_nested_caption_markup() {
         let mut wikitext = concat!(
             "[[include :scp-wiki:component:image-block ",
-            "name=linked.jpg|caption=See [[[SCP-173]]] for details.]]\n",
+            "name=linked.jpg|caption=See [[[SCP-173|the statue]]] for details.]]\n",
         )
         .to_owned();
         let page_info = fallback_test_page_info("scp-3922", "SCP-3922");
@@ -7170,7 +7205,7 @@ mod tests {
         let included_pages =
             RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info);
 
-        assert!(wikitext.contains("See [[[SCP-173]]] for details."));
+        assert!(wikitext.contains("See [[[SCP-173|the statue]]] for details."));
         assert!(wikitext.contains(
             "[[image http://scp-wiki.wikidot.com/local--files/scp-3922/linked.jpg]]"
         ));
