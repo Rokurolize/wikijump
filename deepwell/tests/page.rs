@@ -44,7 +44,9 @@ use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
 use deepwell::services::session::CreateSession;
-use deepwell::services::{FileRevisionService, RequestContext, SessionService};
+use deepwell::services::{
+    FileRevisionService, RenderService, RequestContext, SessionService,
+};
 use deepwell::types::{
     Action, PageRevisionType, Permission, Reference, Resource, TextBlockType,
 };
@@ -55,6 +57,10 @@ use serde_json::json;
 use std::borrow::Cow;
 use std::collections::BTreeSet;
 use time::{Duration, OffsetDateTime};
+
+use ftml::data::{PageInfo, ScoreValue};
+use ftml::layout::Layout;
+use ftml::settings::{WikitextMode, WikitextSettings};
 
 fn set_mutation_request_context(
     runner: &mut TestRunner,
@@ -300,6 +306,48 @@ async fn wikidot_site_include_uses_local_dependency_page_for_site_qualified_incl
         html.contains("#side-bar") && html.contains("display: none !important"),
         "compiled Basalt page should include Wikidot shell sidebar compatibility CSS: {html}"
     );
+}
+
+#[tokio::test]
+async fn direct_message_render_leaves_image_block_include_literal() {
+    let runner = TestRunner::setup().await;
+    let settings =
+        WikitextSettings::from_mode(WikitextMode::DirectMessage, Layout::Wikidot);
+    assert!(
+        !settings.enable_page_syntax,
+        "DirectMessage rendering should have page syntax disabled"
+    );
+    let page_info = PageInfo {
+        page: Cow::Borrowed(""),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed(""),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+
+    let output = RenderService::render(
+        runner.context(),
+        "[[include component:image-block name=direct-message.jpg]]".to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("direct message render should succeed");
+    let html = output.html_output.body;
+
+    assert!(
+        html.contains("component:image-block"),
+        "direct message render should keep literal include text inert:\n{html}"
+    );
+    for forbidden in ["scp-image-block", "local--files"] {
+        assert!(
+            !html.contains(forbidden),
+            "direct message image-block include should not be pre-expanded into page markup:\n{html}"
+        );
+    }
 }
 
 #[tokio::test]
@@ -3517,6 +3565,132 @@ async fn countpages_category_filter_counts_matching_pages() {
             "CountPages category fixture should not contain {forbidden:?}:\n{html}"
         );
     }
+}
+
+#[tokio::test]
+async fn countpages_without_category_defaults_to_current_category() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "verification-count-default-category";
+    let category_slug = "countpages-current-category-default";
+
+    for slug in [
+        format!("{category_slug}:target-a"),
+        format!("{category_slug}:target-b"),
+        "fixture-countpages-default-category-excluded".to_owned(),
+    ] {
+        let revision = create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &slug,
+            "Fixture CountPages Default Category Target",
+            "Fixture CountPages default category marker.",
+        )
+        .await;
+        set_listpages_test_tags(&mut runner, site_id, &slug, revision, &[tag]).await;
+    }
+
+    let index_slug = format!("{category_slug}:index");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        &index_slug,
+        "Fixture CountPages Default Category Index",
+        &format!(
+            "CountPages default category marker.\n\n[[module CountPages tags=\"+{tag}\" order=\"name\"]]\nDEFAULT_CATEGORY_COUNT=%%total%%\n[[/module]]"
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": index_slug,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("CountPages default category index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(
+        html.contains("DEFAULT_CATEGORY_COUNT=2"),
+        "CountPages without category should count current category only:\n{html}"
+    );
+    assert!(
+        !html.contains("[[module CountPages") && !html.contains("%%total%%"),
+        "CountPages default category fixture should render completely:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn countpages_without_limit_counts_past_render_scan_cap() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let category_slug = "countpages-exact-scan-cap";
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, category_slug)
+            .await
+            .expect("CountPages scan cap test category should be created");
+
+    for chunk_start in (0..5001).step_by(500) {
+        let pages = (chunk_start..(chunk_start + 500).min(5001))
+            .map(|index| page::ActiveModel {
+                site_id: Set(site_id),
+                page_category_id: Set(category.category_id),
+                slug: Set(format!("{category_slug}:target-{index:04}")),
+                ..Default::default()
+            })
+            .collect::<Vec<_>>();
+        PageTable::insert_many(pages)
+            .exec(runner.context().transaction())
+            .await
+            .expect("CountPages scan cap test pages should insert");
+    }
+
+    let index_slug = format!("{category_slug}:index");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        &index_slug,
+        "Fixture CountPages Exact Scan Cap Index",
+        "CountPages exact scan cap marker.\n\n[[module CountPages]]\nEXACT_SCAN_CAP_COUNT=%%total%%\n[[/module]]",
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": index_slug,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("CountPages scan cap index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(
+        html.contains("EXACT_SCAN_CAP_COUNT=5002"),
+        "CountPages should produce the exact count beyond the render scan cap:\n{html}"
+    );
+    assert!(
+        !html.contains("EXACT_SCAN_CAP_COUNT=5000"),
+        "CountPages must not silently report the scan cap:\n{html}"
+    );
 }
 
 #[tokio::test]

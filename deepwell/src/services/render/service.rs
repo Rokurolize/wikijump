@@ -469,8 +469,11 @@ impl RenderService {
         };
 
         Self::remove_preview_component_separator_markers(&mut wikitext);
-        let mut included_pages =
-            Self::expand_wikidot_image_block_includes(&mut wikitext, page_info);
+        let mut included_pages = if settings.enable_page_syntax {
+            Self::expand_wikidot_image_block_includes(&mut wikitext, page_info)
+        } else {
+            Vec::new()
+        };
 
         let IncludeExpansion {
             wikitext: expanded_wikitext,
@@ -3364,6 +3367,7 @@ impl RenderService {
     ) -> Result<String> {
         let ListPagesArguments {
             current_page_only,
+            category_selector_present: _,
             category_all,
             include_current_category,
             categories,
@@ -3574,6 +3578,7 @@ impl RenderService {
     ) -> Result<String> {
         let ListPagesArguments {
             current_page_only,
+            category_selector_present,
             category_all,
             include_current_category,
             categories,
@@ -3591,6 +3596,11 @@ impl RenderService {
             slug,
             prepend_line: _,
         } = arguments;
+        let (category_all, include_current_category) = if category_selector_present {
+            (category_all, include_current_category)
+        } else {
+            (false, true)
+        };
         let categories = if include_current_category && !category_all {
             let make_error = || {
                 Error::new(
@@ -3617,10 +3627,6 @@ impl RenderService {
         } else {
             categories
         };
-        let requested_count = limit
-            .unwrap_or(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
-            .min(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
-            as usize;
         let included_categories = if category_all {
             IncludedCategories::All
         } else {
@@ -3665,7 +3671,7 @@ impl RenderService {
             data_form_fields: &[],
             order,
             pagination: PaginationSelector {
-                limit: Some(MAX_LISTPAGES_RENDER_LIMIT),
+                limit: None,
                 per_page: PaginationSelector::default().per_page,
                 reversed: false,
             },
@@ -3690,20 +3696,20 @@ impl RenderService {
         } else if current_page_only {
             FoundPages { pages: Vec::new() }
         } else {
-            Self::find_viewable_list_pages_rows(
-                ctx,
-                query,
-                offset as usize + requested_count + usize::from(exclude_current_page),
-            )
-            .await?
+            let found = PageQueryService::find(ctx, query).await?;
+            FoundPages {
+                pages: Self::filter_viewable_list_pages_rows(ctx, found.pages).await?,
+            }
         };
-        let total = pages
+        let pages = pages
             .pages
             .into_iter()
             .filter(|page| !exclude_current_page || page.page_id != current_page_id)
-            .skip(offset as usize)
-            .take(requested_count)
-            .count();
+            .skip(offset as usize);
+        let total = match limit {
+            Some(limit) => pages.take(limit.min(usize::MAX as u64) as usize).count(),
+            None => pages.count(),
+        };
 
         Ok(substitute_count_pages_variables(body, total))
     }
@@ -4057,6 +4063,7 @@ struct WikidotUserDisplay {
 #[derive(Debug)]
 struct ListPagesArguments {
     current_page_only: bool,
+    category_selector_present: bool,
     category_all: bool,
     include_current_category: bool,
     categories: Vec<Cow<'static, str>>,
@@ -4082,6 +4089,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
     }
 
     let mut category_all = true;
+    let mut category_selector_present = false;
     let mut current_page_only = false;
     let mut include_current_category = false;
     let mut categories = Vec::new();
@@ -4138,6 +4146,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                 }
             }
             "category" => {
+                category_selector_present = true;
                 let mut saw_included_category = false;
                 let value = list_pages_url_fallback(value).unwrap_or(value);
                 for category in split_list_pages_values(value) {
@@ -4251,6 +4260,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
 
     Some(ListPagesArguments {
         current_page_only,
+        category_selector_present,
         category_all,
         include_current_category,
         categories,
