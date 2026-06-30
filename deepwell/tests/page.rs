@@ -3881,6 +3881,38 @@ async fn countpages_current_page_filters_remain_literal() {
 }
 
 #[tokio::test]
+async fn countpages_current_page_category_filters_remain_literal() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let html = render_countpages_test_fixture_with_targets(
+        &mut runner,
+        site.site.site_id,
+        "fixture-countpages-range-category-literal",
+        "verification-count-range-category-literal",
+        r#"range="." category="other-category""#,
+        "RANGE_CATEGORY_COUNT=%%total%%",
+        &[(
+            "target-a",
+            "Fixture CountPages Range Category Literal Target",
+            "Fixture CountPages range category literal marker.",
+        )],
+    )
+    .await;
+
+    assert!(
+        html.contains("RANGE_CATEGORY_COUNT=%%total%%")
+            || html.contains("[[module CountPages")
+            || html.contains("module CountPages"),
+        "CountPages range=. with category filters should remain literal/degraded:\n{html}"
+    );
+    assert!(
+        !html.contains("RANGE_CATEGORY_COUNT=1"),
+        "CountPages range=. with category filters must not ignore filters and count the current page:\n{html}"
+    );
+}
+
+#[tokio::test]
 async fn countpages_broad_category_without_limit_remains_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

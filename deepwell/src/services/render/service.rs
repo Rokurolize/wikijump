@@ -23,7 +23,6 @@ use crate::hash::TextHash;
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_revision;
 use crate::models::site::Model as SiteModel;
-use crate::models::user::{self, Entity as User};
 use crate::models::wikidot_user::{self, Entity as WikidotUser};
 use crate::services::page_query::{
     CategoriesSelector, DateSelector, FoundPageFields, FoundPageRow, FoundPages,
@@ -3940,7 +3939,7 @@ impl RenderService {
             .await
             .or_raise(make_error)?;
 
-        let mut displays = users
+        let displays = users
             .into_iter()
             .filter_map(|user| {
                 let name = user.name.or_else(|| user.slug.clone())?;
@@ -3954,29 +3953,6 @@ impl RenderService {
                 ))
             })
             .collect::<BTreeMap<_, _>>();
-
-        let missing_user_ids = wikidot_user_ids
-            .into_iter()
-            .map(i64::from)
-            .filter(|user_id| !displays.contains_key(user_id))
-            .collect::<Vec<_>>();
-        if !missing_user_ids.is_empty() {
-            let local_users = User::find()
-                .filter(user::Column::UserId.is_in(missing_user_ids))
-                .all(ctx.transaction())
-                .await
-                .or_raise(make_error)?;
-            for user in local_users {
-                displays.insert(
-                    user.user_id,
-                    WikidotUserDisplay {
-                        user_id: user.user_id,
-                        name: user.name,
-                        slug: Some(user.slug),
-                    },
-                );
-            }
-        }
 
         Ok(displays)
     }
@@ -4316,7 +4292,10 @@ fn count_pages_should_remain_literal(arguments: &ListPagesArguments) -> bool {
             && arguments.category_all
             && arguments.limit.is_none())
         || (arguments.current_page_only
-            && (!arguments.default_tags.is_empty()
+            && (arguments.category_selector_present
+                || arguments.page_type != PageTypeSelector::Normal
+                || arguments.page_parent != PageParentSelector::All
+                || !arguments.default_tags.is_empty()
                 || !arguments.any_tags.is_empty()
                 || !arguments.all_tags.is_empty()
                 || !arguments.no_tags.is_empty()
@@ -5724,6 +5703,7 @@ mod tests {
         wikidot_module_argument,
     };
     use crate::config::Config;
+    use crate::constants::ADMIN_USER_ID;
     use crate::models::site::Model as SiteModel;
     use crate::services::page_query::FoundPageRow;
     use crate::types::License;
@@ -6371,6 +6351,21 @@ mod tests {
             substitute_list_pages_variables("%%author%%", &page, 1, 1, &users, None);
         assert!(rendered.contains("printuser avatarhover"));
         assert!(rendered.contains("user:info/scpaiueouiuiuiui"));
+
+        let local_author = FoundPageRow {
+            created_by: Some(ADMIN_USER_ID),
+            ..page
+        };
+        let rendered = substitute_list_pages_variables(
+            "%%author%%",
+            &local_author,
+            1,
+            1,
+            &BTreeMap::new(),
+            None,
+        );
+        assert_eq!(rendered, ADMIN_USER_ID.to_string());
+        assert!(!rendered.contains("wikidot.com/user:info"));
     }
 
     #[test]
