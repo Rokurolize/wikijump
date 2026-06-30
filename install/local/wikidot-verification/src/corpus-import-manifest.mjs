@@ -22,6 +22,12 @@ const REQUIRED_META_KEYS = [
 ];
 const FATAL_UTF8_DECODER = new TextDecoder('utf-8', { fatal: true });
 const SOURCE_BUNDLE_FALLBACK_TIMESTAMP = '1970-01-01T00:00:00+00:00';
+const SOURCE_BROWSER_VISIBILITIES = new Set([
+  'browser_visible',
+  'actor_required',
+  'source_only',
+  'fail_closed',
+]);
 
 export function sha256Hex(bufferOrString) {
   return crypto.createHash('sha256').update(bufferOrString).digest('hex');
@@ -174,11 +180,7 @@ function readSourceBundleManifest(sourceBundleRoot) {
     const fullname = columns[indexByHeader.get('fullname')];
     if (!fullname) throw new Error(`${manifestPath}: manifest row missing fullname`);
     if (rows.has(fullname)) throw new Error(`${manifestPath}: duplicate fullname ${fullname}`);
-    rows.set(fullname, {
-      site: columns[indexByHeader.get('site')],
-      source_bytes: columns[indexByHeader.get('source_bytes')],
-      source_sha256: columns[indexByHeader.get('source_sha256')],
-    });
+    rows.set(fullname, Object.fromEntries(headers.map((header, index) => [header, columns[index] ?? ''])));
   }
   return { exists: true, rows };
 }
@@ -222,6 +224,104 @@ function normalizeSourceBundleMeta(meta, rowPath) {
     tags: meta.tags,
     source_bytes: Object.hasOwn(meta, 'source_bytes') ? coerceNonNegativeInteger(meta.source_bytes, 'source_bytes', rowPath) : null,
     source_sha256: meta.source_sha256 ?? null,
+    capture_method: meta.capture_method ?? null,
+    source_browser_visibility: firstNonEmptyValue(meta.source_browser_visibility, meta.browser_visibility),
+    source_browser_status: firstNonEmptyValue(meta.source_browser_status, meta.browser_status),
+    source_required_actor: firstNonEmptyValue(meta.source_required_actor, meta.required_actor),
+  };
+}
+
+function firstNonEmptyValue(...values) {
+  for (const value of values) {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) return trimmed;
+    } else if (value !== null && value !== undefined) {
+      return value;
+    }
+  }
+  return null;
+}
+
+function optionalNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function optionalInteger(value, field, rowPath) {
+  if (value === null || value === undefined || value === '') return null;
+  return coerceInteger(value, field, rowPath);
+}
+
+function normalizeSourceBrowserVisibility(value, rowPath) {
+  if (value !== null && value !== undefined && typeof value !== 'string') {
+    throw new Error(`${rowPath}: source browser visibility must be a string`);
+  }
+  const normalized = optionalNonEmptyString(value)?.toLowerCase().replaceAll('-', '_') ?? null;
+  if (normalized === null) return null;
+  if (normalized === 'visible' || normalized === 'public' || normalized === 'browser_required') {
+    return 'browser_visible';
+  }
+  if (normalized === 'actor' || normalized === 'auth_required' || normalized === 'authenticated') {
+    return 'actor_required';
+  }
+  if (!SOURCE_BROWSER_VISIBILITIES.has(normalized)) {
+    throw new Error(`${rowPath}: source browser visibility must be one of ${[...SOURCE_BROWSER_VISIBILITIES].join(', ')}`);
+  }
+  return normalized;
+}
+
+function classifySourceBrowserEvidence({ meta, manifestRow, rowPath }) {
+  const visibility = normalizeSourceBrowserVisibility(
+    firstNonEmptyValue(
+      manifestRow?.browser_visibility,
+      manifestRow?.source_browser_visibility,
+      meta.source_browser_visibility,
+    ),
+    rowPath,
+  );
+  const sourceRequiredActor = optionalNonEmptyString(
+    firstNonEmptyValue(
+      manifestRow?.required_actor,
+      manifestRow?.source_required_actor,
+      meta.source_required_actor,
+    ),
+  );
+  const sourceBrowserStatus = optionalInteger(
+    firstNonEmptyValue(
+      manifestRow?.source_browser_status,
+      manifestRow?.browser_status,
+      meta.source_browser_status,
+    ),
+    'source_browser_status',
+    rowPath,
+  );
+  const explicitReason = optionalNonEmptyString(
+    firstNonEmptyValue(
+      manifestRow?.source_visibility_reason,
+      manifestRow?.browser_visibility_reason,
+      meta.source_visibility_reason,
+    ),
+  );
+
+  if (visibility === 'actor_required' && sourceRequiredActor === null) {
+    throw new Error(`${rowPath}: actor_required source browser visibility requires required_actor`);
+  }
+
+  const classifiedVisibility = visibility ?? 'source_only';
+  const sourceVisibilityReason = explicitReason
+    ?? (visibility === null && meta.revisions === 0
+      ? 'zero_revisions_without_browser_visibility_proof'
+      : visibility === null
+        ? 'missing_browser_visibility_proof'
+        : 'declared_source_browser_visibility');
+
+  return {
+    source_capture_method: meta.capture_method,
+    source_browser_visibility: classifiedVisibility,
+    source_browser_status: sourceBrowserStatus,
+    source_required_actor: classifiedVisibility === 'actor_required' ? sourceRequiredActor : null,
+    required_browser: classifiedVisibility === 'browser_visible' || classifiedVisibility === 'actor_required',
+    source_visibility_reason: sourceVisibilityReason,
   };
 }
 
@@ -235,8 +335,9 @@ function rowFromRecord({
   metaFile,
   entityIdPath,
   meta,
+  sourceBrowser = null,
 }) {
-  return {
+  const row = {
     source_site: sourceSite,
     source_branch: sourceBranch,
     source_entity_id: sourceEntityId,
@@ -264,6 +365,10 @@ function rowFromRecord({
     meta_path: metaPath,
     entity_id_path: entityIdPath,
   };
+  if (sourceBrowser !== null) {
+    Object.assign(row, sourceBrowser);
+  }
+  return row;
 }
 
 export function buildCorpusImportManifest({ corpusRoot = null, sourceBundleRoot = null, branch, sourceSite = null, sourceBranch = null }) {
@@ -403,6 +508,8 @@ export function buildSourceBundleImportManifest({ sourceBundleRoot, sourceSite =
     entityIds.set(sourceEntityId, pageDir);
     fullnames.set(meta.fullname, pageDir);
 
+    const sourceBrowser = classifySourceBrowserEvidence({ meta, manifestRow, rowPath: pageDir });
+
     rows.push(rowFromRecord({
       sourceSite: rowSourceSite,
       sourceBranch,
@@ -413,6 +520,7 @@ export function buildSourceBundleImportManifest({ sourceBundleRoot, sourceSite =
       metaFile,
       entityIdPath: fs.existsSync(entityIdPath) ? entityIdPath : null,
       meta,
+      sourceBrowser,
     }));
   }
 
@@ -429,12 +537,21 @@ export function formatJsonl(rows) {
 
 export function buildManifestSummary(rows, jsonl) {
   const parentCount = rows.filter((row) => row.parent_fullname !== null).length;
+  const sourceBrowserVisibilityCounts = {};
+  for (const row of rows) {
+    if (row.source_browser_visibility !== undefined) {
+      sourceBrowserVisibilityCounts[row.source_browser_visibility] = (sourceBrowserVisibilityCounts[row.source_browser_visibility] ?? 0) + 1;
+    }
+  }
   return {
     row_count: rows.length,
     manifest_sha256: sha256Hex(jsonl),
     parent_count: parentCount,
     source_sites: [...new Set(rows.map((row) => row.source_site))].sort(codePointCompare),
     source_branches: [...new Set(rows.map((row) => row.source_branch))].sort(codePointCompare),
+    required_browser_count: rows.filter((row) => row.required_browser === true).length,
+    source_required_actor_count: rows.filter((row) => row.source_required_actor !== undefined && row.source_required_actor !== null).length,
+    source_browser_visibility_counts: sourceBrowserVisibilityCounts,
     first_fullname: rows[0]?.fullname ?? null,
     last_fullname: rows.at(-1)?.fullname ?? null,
   };

@@ -39,7 +39,7 @@ function writePage(root, branch, fullname, { entityId, meta = {}, source = 'cont
   fs.writeFileSync(path.join(pageDir, 'entity_id.txt'), `${entityId}\n`);
 }
 
-function writeSourceBundlePage(root, fullname, { entityId = null, site = 'sandbox-for-codex', meta = {}, source = 'content' } = {}) {
+function writeSourceBundlePage(root, fullname, { entityId = null, site = 'sandbox-for-codex', meta = {}, manifest = {}, source = 'content' } = {}) {
   const pageDir = path.join(root, 'pages', fullname);
   fs.mkdirSync(pageDir, { recursive: true });
   const sourceBytes = Buffer.byteLength(source);
@@ -68,20 +68,23 @@ function writeSourceBundlePage(root, fullname, { entityId = null, site = 'sandbo
   fs.writeFileSync(path.join(pageDir, 'meta.json'), `${JSON.stringify(completeMeta, null, 2)}\n`);
   if (entityId !== null) fs.writeFileSync(path.join(pageDir, 'entity_id.txt'), `${entityId}\n`);
   const manifestPath = path.join(root, 'corpus-manifest.tsv');
+  const baseHeaders = ['site', 'fullname', 'title', 'tags', 'source_path', 'source_bytes', 'source_sha256', 'meta_path', 'capture_method'];
+  const manifestHeaders = [...baseHeaders, ...Object.keys(manifest)];
   if (!fs.existsSync(manifestPath)) {
-    fs.writeFileSync(manifestPath, 'site\tfullname\ttitle\ttags\tsource_path\tsource_bytes\tsource_sha256\tmeta_path\tcapture_method\n');
+    fs.writeFileSync(manifestPath, `${manifestHeaders.join('\t')}\n`);
   }
-  fs.appendFileSync(manifestPath, [
+  const baseColumns = {
     site,
     fullname,
-    completeMeta.title,
-    completeMeta.tags.join('|'),
-    path.join(pageDir, 'source.wikidot.txt'),
-    String(sourceBytes),
-    sourceSha256,
-    path.join(pageDir, 'meta.json'),
-    completeMeta.capture_method,
-  ].join('\t') + '\n');
+    title: completeMeta.title,
+    tags: completeMeta.tags.join('|'),
+    source_path: path.join(pageDir, 'source.wikidot.txt'),
+    source_bytes: String(sourceBytes),
+    source_sha256: sourceSha256,
+    meta_path: path.join(pageDir, 'meta.json'),
+    capture_method: completeMeta.capture_method,
+  };
+  fs.appendFileSync(manifestPath, `${manifestHeaders.map((header) => baseColumns[header] ?? manifest[header] ?? '').join('\t')}\n`);
 }
 
 function cryptoSha256(value) {
@@ -231,6 +234,129 @@ test('buildCorpusImportManifest accepts source bundles without entity IDs', () =
   assert.equal(rows[0].entity_id_path, null);
   assert.equal(rows[0].source_path, path.join(root, 'pages', 'start', 'source.wikidot.txt'));
   assert.equal(rows[0].meta_path, path.join(root, 'pages', 'start', 'meta.json'));
+  assert.equal(rows[0].source_capture_method, 'wikidot_xmlrpc_pages.get_one');
+  assert.equal(rows[0].source_browser_visibility, 'source_only');
+  assert.equal(rows[0].source_visibility_reason, 'missing_browser_visibility_proof');
+  assert.equal(rows[0].required_browser, false);
+  assert.equal(rows[0].source_required_actor, null);
+});
+
+test('buildCorpusImportManifest keeps source bundle browser-visible rows browser-required', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start', {
+    manifest: {
+      browser_visibility: 'browser_visible',
+      source_browser_status: '200',
+    },
+  });
+
+  const rows = buildCorpusImportManifest({
+    sourceBundleRoot: root,
+    branch: 'SANDBOX',
+    sourceBranch: 'SANDBOX',
+  });
+  const summary = buildManifestSummary(rows, formatJsonl(rows));
+
+  assert.equal(rows[0].source_browser_visibility, 'browser_visible');
+  assert.equal(rows[0].source_browser_status, 200);
+  assert.equal(rows[0].source_visibility_reason, 'declared_source_browser_visibility');
+  assert.equal(rows[0].required_browser, true);
+  assert.equal(summary.required_browser_count, 1);
+  assert.deepEqual(summary.source_browser_visibility_counts, { browser_visible: 1 });
+});
+
+test('buildCorpusImportManifest requires actor metadata for actor-required source bundle rows', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'member-only', {
+    manifest: {
+      browser_visibility: 'actor_required',
+      required_actor: 'account_a',
+    },
+  });
+
+  const rows = buildCorpusImportManifest({
+    sourceBundleRoot: root,
+    branch: 'SANDBOX',
+    sourceBranch: 'SANDBOX',
+  });
+  const summary = buildManifestSummary(rows, formatJsonl(rows));
+
+  assert.equal(rows[0].source_browser_visibility, 'actor_required');
+  assert.equal(rows[0].source_required_actor, 'account_a');
+  assert.equal(rows[0].required_browser, true);
+  assert.equal(summary.source_required_actor_count, 1);
+  assert.deepEqual(summary.source_browser_visibility_counts, { actor_required: 1 });
+});
+
+test('buildCorpusImportManifest uses non-empty source browser aliases', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'member-only', {
+    manifest: {
+      browser_visibility: '',
+      source_browser_visibility: 'actor_required',
+      required_actor: '',
+      source_required_actor: 'account_b',
+      browser_status: '',
+      source_browser_status: '200',
+      browser_visibility_reason: '',
+      source_visibility_reason: 'authenticated source proof',
+    },
+  });
+
+  const rows = buildCorpusImportManifest({
+    sourceBundleRoot: root,
+    branch: 'SANDBOX',
+    sourceBranch: 'SANDBOX',
+  });
+
+  assert.equal(rows[0].source_browser_visibility, 'actor_required');
+  assert.equal(rows[0].source_required_actor, 'account_b');
+  assert.equal(rows[0].source_browser_status, 200);
+  assert.equal(rows[0].source_visibility_reason, 'authenticated source proof');
+  assert.equal(rows[0].required_browser, true);
+});
+
+test('buildCorpusImportManifest fails closed on invalid source bundle browser metadata', () => {
+  const missingActorRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(missingActorRoot, 'member-only', {
+    manifest: {
+      browser_visibility: 'actor_required',
+    },
+  });
+  assert.throws(
+    () => buildCorpusImportManifest({ sourceBundleRoot: missingActorRoot, branch: 'SANDBOX', sourceBranch: 'SANDBOX' }),
+    /actor_required source browser visibility requires required_actor/,
+  );
+
+  const invalidVisibilityRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(invalidVisibilityRoot, 'start', {
+    manifest: {
+      browser_visibility: 'maybe',
+    },
+  });
+  assert.throws(
+    () => buildCorpusImportManifest({ sourceBundleRoot: invalidVisibilityRoot, branch: 'SANDBOX', sourceBranch: 'SANDBOX' }),
+    /source browser visibility must be one of/,
+  );
+});
+
+test('buildCorpusImportManifest treats zero-revision source bundle rows without browser proof as source-only', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'xmlrpc-only', {
+    meta: {
+      revisions_count: 0,
+    },
+  });
+
+  const rows = buildCorpusImportManifest({
+    sourceBundleRoot: root,
+    branch: 'JP_TEST',
+    sourceBranch: 'JP_TEST',
+  });
+
+  assert.equal(rows[0].source_browser_visibility, 'source_only');
+  assert.equal(rows[0].source_visibility_reason, 'zero_revisions_without_browser_visibility_proof');
+  assert.equal(rows[0].required_browser, false);
 });
 
 test('buildCorpusImportManifest does not treat source bundle vote count as rating', () => {
