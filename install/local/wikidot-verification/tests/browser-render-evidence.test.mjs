@@ -6,7 +6,7 @@ import path from "node:path";
 import {test} from "node:test";
 import {fileURLToPath} from "node:url";
 import {promisify} from "node:util";
-import {capturePage, defaultBrowserRoot, openBrowser} from "../scripts/capture-browser-rendering.mjs";
+import {browserContextOptions, capturePage, defaultBrowserRoot, openBrowser, resolveStorageStates} from "../scripts/capture-browser-rendering.mjs";
 import {
   buildEvidenceRecord,
   compactVisibleText,
@@ -201,6 +201,62 @@ test("openBrowser applies HTTPS ignore settings to a fresh CDP context", async (
   await session.close();
   assert.equal(closedContext, true);
   assert.equal(closedBrowser, true);
+});
+
+test("openBrowser can isolate source and local storage states", async () => {
+  const newContextOptions = [];
+  const closedContexts = [];
+  let closedBrowser = false;
+  const browser = {
+    async newContext(options) {
+      const context = {
+        id: newContextOptions.length,
+        async close() {
+          closedContexts.push(this.id);
+        },
+      };
+      newContextOptions.push(options);
+      return context;
+    },
+    async close() {
+      closedBrowser = true;
+    },
+  };
+  const chromium = {
+    async launch(options) {
+      assert.deepEqual(options, {executablePath: "/usr/bin/google-chrome"});
+      return browser;
+    },
+  };
+
+  const session = await openBrowser({
+    chromium,
+    browserExecutable: "/usr/bin/google-chrome",
+    ignoreHttpsErrors: true,
+    sourceStorageState: "/private/source.json",
+    localStorageState: "/private/local.json",
+  });
+
+  assert.notEqual(session.sourceContext, session.localContext);
+  assert.deepEqual(newContextOptions, [
+    {ignoreHTTPSErrors: true, storageState: "/private/source.json"},
+    {ignoreHTTPSErrors: true, storageState: "/private/local.json"},
+  ]);
+  await session.close();
+  assert.deepEqual(closedContexts, [1, 0]);
+  assert.equal(closedBrowser, true);
+});
+
+test("browser context options do not expose unset storage state", () => {
+  assert.deepEqual(browserContextOptions({ignoreHttpsErrors: true}), {ignoreHTTPSErrors: true});
+  assert.deepEqual(
+    browserContextOptions({ignoreHttpsErrors: false, storageState: "/private/state.json"}),
+    {ignoreHTTPSErrors: false, storageState: "/private/state.json"}
+  );
+  assert.deepEqual(
+    resolveStorageStates({storageState: "/private/shared.json", sourceStorageState: "/private/source.json"}),
+    {sourceStorageState: "/private/source.json", localStorageState: "/private/shared.json"}
+  );
 });
 
 test("capturePage records page errors and failed subframe responses", async () => {

@@ -77,6 +77,18 @@ function parseArgs(argv) {
     } else if (arg === "--cdp-endpoint") {
       args.cdpEndpoint = nextArg(argv, index, arg);
       index += 1;
+    } else if (arg === "--storage-state") {
+      args.storageState = path.resolve(nextArg(argv, index, arg));
+      index += 1;
+    } else if (arg === "--source-storage-state") {
+      args.sourceStorageState = path.resolve(nextArg(argv, index, arg));
+      index += 1;
+    } else if (arg === "--local-storage-state") {
+      args.localStorageState = path.resolve(nextArg(argv, index, arg));
+      index += 1;
+    } else if (arg === "--actor-label") {
+      args.actorLabel = nextArg(argv, index, arg);
+      index += 1;
     } else if (arg === "--timeout-ms") {
       const raw = nextArg(argv, index, arg);
       if (!/^\d+$/u.test(raw) || Number.parseInt(raw, 10) <= 0) {
@@ -113,7 +125,7 @@ function parseArgs(argv) {
 }
 
 function printHelpAndExit() {
-  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--local-url-field local_https_url] [--timeout-ms 30000] [--settle-ms 1000] [--ignore-https-errors] [--no-screenshot] [--json]
+  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 30000] [--settle-ms 1000] [--ignore-https-errors] [--no-screenshot] [--json]
 
 Writes validator-compatible browser rendering evidence JSON plus DOM/screenshot artifacts for selected corpus inventory rows. The output directory should live under one of the render validator evidence roots, for example:
 
@@ -140,15 +152,50 @@ function requirePlaywright(browserRoot) {
   }
 }
 
-export async function openBrowser({chromium, cdpEndpoint, browserExecutable, ignoreHttpsErrors}) {
+export function resolveStorageStates({storageState = null, sourceStorageState = null, localStorageState = null}) {
+  return {
+    sourceStorageState: sourceStorageState ?? storageState ?? null,
+    localStorageState: localStorageState ?? storageState ?? null,
+  };
+}
+
+export function browserContextOptions({ignoreHttpsErrors, storageState = null}) {
+  return {
+    ignoreHTTPSErrors: ignoreHttpsErrors,
+    ...(storageState ? {storageState} : {}),
+  };
+}
+
+export async function openBrowser({
+  chromium,
+  cdpEndpoint,
+  browserExecutable,
+  ignoreHttpsErrors,
+  storageState = null,
+  sourceStorageState = null,
+  localStorageState = null,
+}) {
+  const resolvedStates = resolveStorageStates({storageState, sourceStorageState, localStorageState});
   if (cdpEndpoint) {
     const browser = await chromium.connectOverCDP(cdpEndpoint);
-    const context = await browser.newContext({ignoreHTTPSErrors: ignoreHttpsErrors});
+    const sourceContext = await browser.newContext(
+      browserContextOptions({ignoreHttpsErrors, storageState: resolvedStates.sourceStorageState})
+    );
+    const localContext = resolvedStates.localStorageState === resolvedStates.sourceStorageState
+      ? sourceContext
+      : await browser.newContext(
+        browserContextOptions({ignoreHttpsErrors, storageState: resolvedStates.localStorageState})
+      );
     return {
       browser,
-      context,
+      context: sourceContext,
+      sourceContext,
+      localContext,
       async close() {
-        await context.close().catch(() => {});
+        if (localContext !== sourceContext) {
+          await localContext.close().catch(() => {});
+        }
+        await sourceContext.close().catch(() => {});
         await browser.close().catch(() => {});
       },
     };
@@ -157,12 +204,24 @@ export async function openBrowser({chromium, cdpEndpoint, browserExecutable, ign
   const browser = await chromium.launch({
     executablePath: browserExecutable,
   });
-  const context = await browser.newContext({ignoreHTTPSErrors: ignoreHttpsErrors});
+  const sourceContext = await browser.newContext(
+    browserContextOptions({ignoreHttpsErrors, storageState: resolvedStates.sourceStorageState})
+  );
+  const localContext = resolvedStates.localStorageState === resolvedStates.sourceStorageState
+    ? sourceContext
+    : await browser.newContext(
+      browserContextOptions({ignoreHttpsErrors, storageState: resolvedStates.localStorageState})
+    );
   return {
     browser,
-    context,
+    context: sourceContext,
+    sourceContext,
+    localContext,
     async close() {
-      await context.close().catch(() => {});
+      if (localContext !== sourceContext) {
+        await localContext.close().catch(() => {});
+      }
+      await sourceContext.close().catch(() => {});
       await browser.close().catch(() => {});
     },
   };
@@ -317,8 +376,16 @@ async function run() {
     cdpEndpoint: args.cdpEndpoint,
     browserExecutable: args.browserExecutable,
     ignoreHttpsErrors: args.ignoreHttpsErrors,
+    storageState: args.storageState,
+    sourceStorageState: args.sourceStorageState,
+    localStorageState: args.localStorageState,
   });
-  const {context} = browserSession;
+  const {sourceContext, localContext} = browserSession;
+  const resolvedStorageStates = resolveStorageStates({
+    storageState: args.storageState,
+    sourceStorageState: args.sourceStorageState,
+    localStorageState: args.localStorageState,
+  });
   const records = [];
 
   try {
@@ -334,13 +401,13 @@ async function run() {
         local: {},
         screenshot: args.screenshot,
       });
-      const source = await captureOptionalPage(context, sourceUrl, "missing source URL", {
+      const source = await captureOptionalPage(sourceContext, sourceUrl, "missing source URL", {
         timeoutMs: args.timeoutMs,
         waitUntil: args.waitUntil,
         settleMs: args.settleMs,
         screenshotPath: artifacts.sourceScreenshot,
       });
-      const local = await captureOptionalPage(context, localUrl, "missing local URL", {
+      const local = await captureOptionalPage(localContext, localUrl, "missing local URL", {
         timeoutMs: args.timeoutMs,
         waitUntil: args.waitUntil,
         settleMs: args.settleMs,
@@ -349,7 +416,7 @@ async function run() {
 
       await fs.writeFile(artifacts.sourceArtifact, source.html ?? "", "utf8");
       await fs.writeFile(artifacts.localArtifact, local.html ?? "", "utf8");
-      records.push(buildEvidenceRecord({
+      const record = buildEvidenceRecord({
         row,
         source,
         local,
@@ -358,7 +425,11 @@ async function run() {
         sourceScreenshot: source.screenshotPath,
         localScreenshot: local.screenshotPath,
         localUrlField: args.localUrlField,
-      }));
+      });
+      if (args.actorLabel) record.capture_actor = args.actorLabel;
+      record.source_storage_state = Boolean(resolvedStorageStates.sourceStorageState);
+      record.local_storage_state = Boolean(resolvedStorageStates.localStorageState);
+      records.push(record);
     }
   } finally {
     await browserSession.close();
@@ -379,6 +450,10 @@ async function run() {
       screenshot: args.screenshot,
       browser_executable: args.browserExecutable ?? null,
       cdp_endpoint: args.cdpEndpoint ?? null,
+      actor_label: args.actorLabel ?? null,
+      storage_state: Boolean(args.storageState),
+      source_storage_state: Boolean(resolvedStorageStates.sourceStorageState),
+      local_storage_state: Boolean(resolvedStorageStates.localStorageState),
     },
   };
   const resultPath = path.join(args.outputDir, "records.json");
