@@ -318,6 +318,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         for page in pages {
             info!("Creating page '{}' (slug {})", page.title, page.slug);
             let page_created_by = page.created_by.unwrap_or(SYSTEM_USER_ID);
+            let page_attribution_user_id = page.created_by.unwrap_or(site_user_id);
 
             let model = PageService::create(
                 &ctx,
@@ -345,7 +346,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                     page: Reference::Id(model.page_id),
                     updated_by: SYSTEM_USER_ID,
                     attributions: vec![PageAttributionEntry {
-                        user_id: site_user_id,
+                        user_id: page_attribution_user_id,
                         metadata: PageAttributionMetadata {
                             attribution_type: PageAttributionKind::Author,
                             attribution_date: now().date(),
@@ -502,19 +503,6 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         }
     }
 
-    // Fresh pages are first compiled while later pages/files may still be absent.
-    // Recompile once after all pages and files exist so seeded mirrors start coherent.
-    for page_id in seeded_page_ids {
-        PageRevisionService::rerender(
-            &ctx,
-            page_id,
-            RerenderDepth::default(),
-            RerenderType::Full,
-        )
-        .await
-        .or_raise(make_error)?;
-    }
-
     // Seed filters
     for filter in filters {
         // Get site (if any)
@@ -661,6 +649,19 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                 .or_raise(make_error)?;
             }
         }
+    }
+
+    // Fresh pages are first compiled while later pages/files/roles may still be absent.
+    // Recompile once after dependencies and virtual role permissions exist.
+    for page_id in seeded_page_ids {
+        PageRevisionService::rerender(
+            &ctx,
+            page_id,
+            RerenderDepth::default(),
+            RerenderType::Full,
+        )
+        .await
+        .or_raise(make_error)?;
     }
 
     txn.commit().await.or_raise(make_error)?;

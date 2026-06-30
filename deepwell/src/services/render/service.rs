@@ -3301,6 +3301,7 @@ impl RenderService {
             order,
             limit,
             offset,
+            exclude_current_page,
             page_type,
             page_parent,
             slug,
@@ -3431,13 +3432,16 @@ impl RenderService {
             Self::find_viewable_list_pages_rows(
                 ctx,
                 query,
-                offset as usize + requested_limit as usize,
+                offset as usize
+                    + requested_limit as usize
+                    + usize::from(exclude_current_page),
             )
             .await?
         };
         let pages = pages
             .pages
             .into_iter()
+            .filter(|page| !exclude_current_page || page.page_id != current_page_id)
             .skip(offset as usize)
             .take(requested_limit as usize)
             .collect::<Vec<_>>();
@@ -3846,6 +3850,7 @@ struct ListPagesArguments {
     order: Option<OrderBySelector>,
     limit: Option<u64>,
     offset: u32,
+    exclude_current_page: bool,
     page_type: PageTypeSelector,
     page_parent: PageParentSelector<'static>,
     slug: Option<Cow<'static, str>>,
@@ -3870,6 +3875,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
     let mut order = None;
     let mut limit = None;
     let mut offset = 0;
+    let mut exclude_current_page = false;
     let mut page_type = PageTypeSelector::Normal;
     let mut page_parent = PageParentSelector::All;
     let mut slug = None;
@@ -4003,12 +4009,16 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                     authors.push(Cow::Owned(author.to_owned()));
                 }
             }
-            "range" => {
-                if value == "." {
+            "range" => match value {
+                "." => {
                     current_page_only = true;
                     limit = Some(1);
                 }
-            }
+                "others" | "other" => {
+                    exclude_current_page = true;
+                }
+                _ => {}
+            },
             "rating" | "score" | "votes" | "form" | "link_to" | "linkto"
             | "urlattrprefix" | "wrapper" | "created_at" | "createdat" | "updated_at"
             | "updatedat" => {
@@ -4034,6 +4044,7 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
         order,
         limit,
         offset,
+        exclude_current_page,
         page_type,
         page_parent,
         slug,
@@ -5487,6 +5498,18 @@ mod tests {
 
         assert!(arguments.current_page_only);
         assert_eq!(arguments.limit, Some(1));
+    }
+
+    #[test]
+    fn parses_other_pages_list_pages_range_selector() {
+        let arguments = parse_list_pages_arguments(
+            r#" category="*" created_by="=" tags="scp" perPage="15" range="others""#,
+        )
+        .expect("other pages range selector should parse");
+
+        assert!(!arguments.current_page_only);
+        assert!(arguments.exclude_current_page);
+        assert_eq!(arguments.limit, Some(15));
     }
 
     #[test]
