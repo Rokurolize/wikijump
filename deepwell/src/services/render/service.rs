@@ -88,6 +88,12 @@ static LISTPAGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     )
     .unwrap()
 });
+static COUNTPAGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?is)\[\[module\s+CountPages(?P<head>(?:"[^"]*"|'[^']*'|[^\]])*)\]\](?P<body>.*?)\[\[/module\]\]"#,
+    )
+    .unwrap()
+});
 static RATE_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[module\s+Rate(?P<head>[^\]]*)\]\]").unwrap());
 static TAGCLOUD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -486,6 +492,16 @@ impl RenderService {
         Self::resolve_single_line_wikidot_iftags_fragments(&mut wikitext, page_info);
         Self::resolve_simple_wikidot_iftags_blocks(&mut wikitext, page_info);
         wikitext = Self::expand_list_pages(
+            ctx,
+            wikitext,
+            page_info,
+            settings,
+            current_site_id,
+            current_page_id,
+        )
+        .await
+        .or_raise(make_error)?;
+        wikitext = Self::expand_count_pages(
             ctx,
             wikitext,
             page_info,
@@ -2201,6 +2217,64 @@ impl RenderService {
         Ok(expanded)
     }
 
+    async fn expand_count_pages(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        current_site_id: Option<i64>,
+        current_page_id: Option<i64>,
+    ) -> Result<String> {
+        let (Some(current_site_id), Some(current_page_id)) =
+            (current_site_id, current_page_id)
+        else {
+            return Ok(wikitext);
+        };
+
+        if !settings.enable_page_syntax {
+            return Ok(wikitext);
+        }
+
+        let mut expanded = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+
+        for captures in COUNTPAGES_MODULE_REGEX.captures_iter(&wikitext) {
+            let mtch = captures.get(0).unwrap();
+            expanded.push_str(&wikitext[cursor..mtch.start()]);
+            let head = captures.name("head").unwrap().as_str();
+            let body = captures.name("body").unwrap().as_str();
+
+            if list_pages_has_unsupported_parent_selector(head)
+                || list_pages_has_unsupported_page_type_selector(head)
+            {
+                expanded.push_str(mtch.as_str());
+                cursor = mtch.end();
+                continue;
+            }
+
+            let Some(arguments) = parse_list_pages_arguments(head) else {
+                expanded.push_str(mtch.as_str());
+                cursor = mtch.end();
+                continue;
+            };
+
+            let replacement = Self::render_count_pages_block(
+                ctx,
+                current_site_id,
+                current_page_id,
+                page_info,
+                arguments,
+                body,
+            )
+            .await?;
+            expanded.push_str(&replacement);
+            cursor = mtch.end();
+        }
+
+        expanded.push_str(&wikitext[cursor..]);
+        Ok(expanded)
+    }
+
     fn expand_rate_modules(
         wikitext: String,
         page_info: &PageInfo<'_>,
@@ -3490,6 +3564,150 @@ impl RenderService {
         Ok(output)
     }
 
+    async fn render_count_pages_block(
+        ctx: &ServiceContext<'_>,
+        current_site_id: i64,
+        current_page_id: i64,
+        page_info: &PageInfo<'_>,
+        arguments: ListPagesArguments,
+        body: &str,
+    ) -> Result<String> {
+        let ListPagesArguments {
+            current_page_only,
+            category_all,
+            include_current_category,
+            categories,
+            excluded_categories,
+            any_tags,
+            all_tags,
+            no_tags,
+            authors,
+            order,
+            limit,
+            offset,
+            exclude_current_page,
+            page_type,
+            page_parent,
+            slug,
+            prepend_line: _,
+        } = arguments;
+        let categories = if include_current_category && !category_all {
+            let make_error = || {
+                Error::new(
+                    "failed to load current page category for CountPages render",
+                    ErrorType::Render,
+                )
+            };
+            let page =
+                PageService::get(ctx, current_site_id, Reference::Id(current_page_id))
+                    .await
+                    .or_raise(make_error)?;
+            let category = CategoryService::get(
+                ctx,
+                current_site_id,
+                Reference::Id(page.page_category_id),
+            )
+            .await
+            .or_raise(make_error)?;
+            let mut categories = categories;
+            if !categories.iter().any(|slug| slug.as_ref() == category.slug) {
+                categories.push(Cow::Owned(category.slug));
+            }
+            categories
+        } else {
+            categories
+        };
+        let requested_count = limit
+            .unwrap_or(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
+            .min(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
+            as usize;
+        let included_categories = if category_all {
+            IncludedCategories::All
+        } else {
+            IncludedCategories::List(&categories)
+        };
+        let author_ids = Self::resolve_list_pages_author_ids(
+            ctx,
+            current_site_id,
+            current_page_id,
+            &authors,
+        )
+        .await?;
+        let query = PageQuery {
+            current_page_id,
+            current_site_id,
+            queried_site_id: None,
+            page_type,
+            categories: CategoriesSelector {
+                included_categories,
+                excluded_categories: &excluded_categories,
+            },
+            tags: TagCondition {
+                any_present: &any_tags,
+                all_present: &all_tags,
+                none_present: &no_tags,
+            },
+            page_parent,
+            contains_outgoing_links: &[],
+            creation_date: DateSelector::FromPresent {
+                start: time::OffsetDateTime::UNIX_EPOCH,
+            },
+            update_date: DateSelector::FromPresent {
+                start: time::OffsetDateTime::UNIX_EPOCH,
+            },
+            author: &author_ids,
+            score: &[],
+            votes: &[],
+            offset: 0,
+            range: RangeSelector::Current,
+            name: None,
+            slug,
+            data_form_fields: &[],
+            order,
+            pagination: PaginationSelector {
+                limit: Some(MAX_LISTPAGES_RENDER_LIMIT),
+                per_page: PaginationSelector::default().per_page,
+                reversed: false,
+            },
+            variables: &[],
+            fields: FoundPageFields {
+                page_category_id: true,
+                ..Default::default()
+            },
+        };
+
+        let pages = if current_page_only
+            && should_render_current_page_list_pages_row(current_page_only, limit, offset)
+        {
+            Self::current_page_list_pages_row(
+                ctx,
+                current_site_id,
+                current_page_id,
+                page_info,
+                &query.fields,
+            )
+            .await?
+        } else if current_page_only {
+            FoundPages { pages: Vec::new() }
+        } else {
+            Self::find_viewable_list_pages_rows(
+                ctx,
+                query,
+                offset as usize + requested_count + usize::from(exclude_current_page),
+            )
+            .await?
+        };
+        let total = pages
+            .pages
+            .into_iter()
+            .filter(|page| !exclude_current_page || page.page_id != current_page_id)
+            .skip(offset as usize)
+            .take(requested_count)
+            .count();
+
+        Ok(substitute_count_pages_variables(body, total))
+    }
+
     async fn filter_viewable_list_pages_rows(
         ctx: &ServiceContext<'_>,
         pages: Vec<FoundPageRow>,
@@ -4369,6 +4587,21 @@ fn substitute_list_pages_variables(
                     .unwrap_or_default(),
                 "index" => index.clone(),
                 "total" => total.clone(),
+                _ => captures
+                    .get(0)
+                    .map_or("", |matched| matched.as_str())
+                    .to_owned(),
+            }
+        })
+        .into_owned()
+}
+
+fn substitute_count_pages_variables(template: &str, total: usize) -> String {
+    let total = total.to_string();
+    LISTPAGES_VARIABLE_REGEX
+        .replace_all(template, |captures: &regex::Captures<'_>| {
+            match captures["name"].to_ascii_lowercase().as_str() {
+                "total" | "count" => total.clone(),
                 _ => captures
                     .get(0)
                     .map_or("", |matched| matched.as_str())

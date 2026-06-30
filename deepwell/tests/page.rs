@@ -3186,6 +3186,52 @@ async fn render_listpages_test_fixture_with_targets(
     body: &str,
     targets: &[(&str, &str, &str)],
 ) -> String {
+    render_page_module_test_fixture_with_targets(
+        runner,
+        site_id,
+        slug_prefix,
+        tag,
+        "ListPages",
+        module_head,
+        body,
+        targets,
+    )
+    .await
+}
+
+async fn render_countpages_test_fixture_with_targets(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug_prefix: &str,
+    tag: &str,
+    module_head: &str,
+    body: &str,
+    targets: &[(&str, &str, &str)],
+) -> String {
+    render_page_module_test_fixture_with_targets(
+        runner,
+        site_id,
+        slug_prefix,
+        tag,
+        "CountPages",
+        module_head,
+        body,
+        targets,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn render_page_module_test_fixture_with_targets(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug_prefix: &str,
+    tag: &str,
+    module_name: &str,
+    module_head: &str,
+    body: &str,
+    targets: &[(&str, &str, &str)],
+) -> String {
     let parent_slug = format!("{slug_prefix}-parent-root");
     let excluded_slug = format!("{slug_prefix}-excluded");
     let index_slug = format!("{slug_prefix}-index");
@@ -3236,9 +3282,9 @@ async fn render_listpages_test_fixture_with_targets(
         runner,
         site_id,
         &index_slug,
-        "Fixture ListPages Index",
+        &format!("Fixture {module_name} Index"),
         &format!(
-            "ListPages start marker.\n\n[[module ListPages {module_head}]]\n{body}\n[[/module]]\n\nListPages end marker."
+            "{module_name} start marker.\n\n[[module {module_name} {module_head}]]\n{body}\n[[/module]]\n\n{module_name} end marker."
         ),
     )
     .await;
@@ -3254,7 +3300,7 @@ async fn render_listpages_test_fixture_with_targets(
             },
         }),
     )
-    .expect("ListPages index should exist");
+    .expect("page module index should exist");
 
     page.compiled_body_html
         .expect("compiled body should be included in page_get details")
@@ -3354,6 +3400,123 @@ async fn listpages_limit_two_caps_ordered_results() {
         target_a < target_b,
         "limit=2 target slugs should render in order a, b:\n{html}"
     );
+}
+
+#[tokio::test]
+async fn countpages_substitutes_total_for_tagged_pages() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let html = render_countpages_test_fixture_with_targets(
+        &mut runner,
+        site.site.site_id,
+        "fixture-countpages-total",
+        "verification-count-total",
+        r#"category="*" tags="+verification-count-total" order="name" limit="20""#,
+        "ORACLE_COUNT_SHARED=%%total%%",
+        &[
+            (
+                "target-a",
+                "Fixture CountPages Target Alpha",
+                "Fixture CountPages Target Alpha marker.",
+            ),
+            (
+                "target-b",
+                "Fixture CountPages Target Beta",
+                "Fixture CountPages Target Beta marker.",
+            ),
+            (
+                "target-c",
+                "Fixture CountPages Target Gamma",
+                "Fixture CountPages Target Gamma marker.",
+            ),
+        ],
+    )
+    .await;
+
+    assert!(
+        html.contains("ORACLE_COUNT_SHARED=3"),
+        "CountPages fixture should substitute %%total%% with the matching page count:\n{html}"
+    );
+    for forbidden in [
+        "[[module CountPages",
+        "%%total%%",
+        "Fixture ListPages Excluded",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "CountPages fixture should not contain {forbidden:?}:\n{html}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn countpages_category_filter_counts_matching_pages() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "verification-count-category";
+    let category_slug = "countpages-test-category";
+    let index_slug = "fixture-countpages-category-index";
+    CategoryService::get_or_create(runner.context(), site_id, category_slug)
+        .await
+        .expect("CountPages test category should be created");
+
+    for (slug, category) in [
+        ("fixture-countpages-category-fragment-a", category_slug),
+        ("fixture-countpages-category-fragment-b", category_slug),
+        ("fixture-countpages-category-default", "_default"),
+    ] {
+        let revision = create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            "Fixture CountPages Category Target",
+            "Fixture CountPages category marker.",
+        )
+        .await;
+        set_listpages_test_category_slug(&runner, site_id, slug, category).await;
+        set_listpages_test_tags(&mut runner, site_id, slug, revision, &[tag]).await;
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        index_slug,
+        "Fixture CountPages Category Index",
+        &format!(
+            "CountPages category marker.\n\n[[module CountPages category=\"{category_slug}\" tags=\"+{tag}\" order=\"name\" limit=\"20\"]]\nFRAGMENT_COUNT=%%total%%\n[[/module]]"
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": index_slug,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("CountPages category index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(
+        html.contains("FRAGMENT_COUNT=2"),
+        "CountPages fixture should count only matching category pages:\n{html}"
+    );
+    for forbidden in ["[[module CountPages", "%%total%%"] {
+        assert!(
+            !html.contains(forbidden),
+            "CountPages category fixture should not contain {forbidden:?}:\n{html}"
+        );
+    }
 }
 
 #[tokio::test]
