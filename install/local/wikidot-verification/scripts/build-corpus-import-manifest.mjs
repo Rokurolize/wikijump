@@ -48,19 +48,22 @@ function parseArgs(argv) {
   }
   if (!args.output) throw new Error('--output is required');
   if (!args.summary) throw new Error('--summary is required');
-  if (args.corpusRoot !== null) args.sourceSite ??= args.branch;
-  args.sourceBranch ??= args.branch;
+  if (args.corpusRoot !== null) {
+    args.sourceSite ??= args.branch;
+    args.sourceBranch ??= args.branch;
+  }
   return args;
 }
 
 const args = parseArgs(process.argv.slice(2));
-const rows = buildCorpusImportManifest({
+const manifestInput = {
   corpusRoot: args.corpusRoot === null ? null : path.resolve(args.corpusRoot),
   sourceBundleRoot: args.sourceBundle === null ? null : path.resolve(args.sourceBundle),
   branch: args.branch,
   sourceSite: args.sourceSite,
-  sourceBranch: args.sourceBranch,
-});
+};
+if (args.sourceBranch !== null) manifestInput.sourceBranch = args.sourceBranch;
+const rows = buildCorpusImportManifest(manifestInput);
 const jsonl = formatJsonl(rows);
 const summary = buildManifestSummary(rows, jsonl);
 fs.mkdirSync(path.dirname(path.resolve(args.output)), { recursive: true });

@@ -158,7 +158,7 @@ function deterministicUuid(input) {
 
 function readSourceBundleManifest(sourceBundleRoot) {
   const manifestPath = path.join(sourceBundleRoot, 'corpus-manifest.tsv');
-  if (!fs.existsSync(manifestPath)) return new Map();
+  if (!fs.existsSync(manifestPath)) return { exists: false, rows: new Map() };
   const manifestText = readText(manifestPath);
   const [headerLine, ...lines] = manifestText.split('\n').filter((line) => line.length > 0);
   const headers = headerLine.split('\t');
@@ -180,7 +180,7 @@ function readSourceBundleManifest(sourceBundleRoot) {
       source_sha256: columns[indexByHeader.get('source_sha256')],
     });
   }
-  return rows;
+  return { exists: true, rows };
 }
 
 function normalizeSourceBundleMeta(meta, rowPath) {
@@ -188,6 +188,11 @@ function normalizeSourceBundleMeta(meta, rowPath) {
   assertString(meta.title, 'title', rowPath);
   assertNullableString(meta.title_shown ?? null, 'title_shown', rowPath);
   assertNullableString(meta.parent_fullname ?? null, 'parent_fullname', rowPath);
+  assertNullableString(meta.parent_title ?? null, 'parent_title', rowPath);
+  assertNullableString(meta.created_by ?? null, 'created_by', rowPath);
+  assertNullableString(meta.updated_by ?? null, 'updated_by', rowPath);
+  assertNullableString(meta.commented_at ?? null, 'commented_at', rowPath);
+  assertNullableString(meta.commented_by ?? null, 'commented_by', rowPath);
   if (!Array.isArray(meta.tags) || meta.tags.some((tag) => typeof tag !== 'string')) {
     throw new Error(`${rowPath}: meta.tags must be an array of strings`);
   }
@@ -195,6 +200,8 @@ function normalizeSourceBundleMeta(meta, rowPath) {
 
   const createdAt = meta.created_at ?? meta.updated_at ?? SOURCE_BUNDLE_FALLBACK_TIMESTAMP;
   const updatedAt = meta.updated_at ?? meta.created_at ?? SOURCE_BUNDLE_FALLBACK_TIMESTAMP;
+  assertNonEmptyString(createdAt, 'created_at', rowPath);
+  assertNonEmptyString(updatedAt, 'updated_at', rowPath);
 
   return {
     fullname: meta.fullname,
@@ -259,16 +266,19 @@ function rowFromRecord({
   };
 }
 
-export function buildCorpusImportManifest({ corpusRoot = null, sourceBundleRoot = null, branch, sourceSite = null, sourceBranch = branch }) {
+export function buildCorpusImportManifest({ corpusRoot = null, sourceBundleRoot = null, branch, sourceSite = null, sourceBranch = null }) {
   if ((corpusRoot === null) === (sourceBundleRoot === null)) {
     throw new Error('exactly one of corpusRoot or sourceBundleRoot is required');
   }
   if (sourceBundleRoot !== null) {
-    return buildSourceBundleImportManifest({ sourceBundleRoot, sourceSite, sourceBranch });
+    const sourceBundleInput = { sourceBundleRoot, sourceSite };
+    if (sourceBranch !== null) sourceBundleInput.sourceBranch = sourceBranch;
+    return buildSourceBundleImportManifest(sourceBundleInput);
   }
 
   const pagesRoot = path.join(corpusRoot, branch, 'pages');
   const effectiveSourceSite = sourceSite ?? branch;
+  const effectiveSourceBranch = sourceBranch ?? branch;
   const entries = fs.readdirSync(pagesRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
@@ -311,7 +321,7 @@ export function buildCorpusImportManifest({ corpusRoot = null, sourceBundleRoot 
 
     rows.push(rowFromRecord({
       sourceSite: effectiveSourceSite,
-      sourceBranch,
+      sourceBranch: effectiveSourceBranch,
       sourceEntityId: entityId,
       sourcePath,
       sourceFile,
@@ -327,7 +337,8 @@ export function buildCorpusImportManifest({ corpusRoot = null, sourceBundleRoot 
 
 export function buildSourceBundleImportManifest({ sourceBundleRoot, sourceSite = null, sourceBranch = 'source-bundle' }) {
   const pagesRoot = path.join(sourceBundleRoot, 'pages');
-  const bundleManifestRows = readSourceBundleManifest(sourceBundleRoot);
+  const bundleManifest = readSourceBundleManifest(sourceBundleRoot);
+  const bundleManifestRows = bundleManifest.rows;
   const entries = fs.readdirSync(pagesRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
@@ -352,7 +363,13 @@ export function buildSourceBundleImportManifest({ sourceBundleRoot, sourceSite =
     const sourceFile = readUtf8File(sourcePath);
     const metaFile = readUtf8File(metaPath);
     const meta = normalizeSourceBundleMeta(JSON.parse(metaFile.text), pageDir);
+    if (meta.fullname !== directoryName) {
+      throw new Error(`${pageDir}: meta.fullname ${meta.fullname} does not match directory name ${directoryName}`);
+    }
     const manifestRow = bundleManifestRows.get(meta.fullname);
+    if (bundleManifest.exists && manifestRow === undefined) {
+      throw new Error(`${pageDir}: missing row in corpus-manifest.tsv for ${meta.fullname}`);
+    }
     const rowSourceSite = sourceSite ?? manifestRow?.site ?? sourceBranch;
     const sourceSha256 = sha256Hex(sourceFile.buffer);
     const sourceEntityId = fs.existsSync(entityIdPath)

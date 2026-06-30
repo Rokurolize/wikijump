@@ -254,6 +254,40 @@ test('buildCorpusImportManifest rejects negative source bundle counts', () => {
   );
 });
 
+test('buildCorpusImportManifest validates source bundle string metadata', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start', { meta: { created_by: 42 } });
+
+  assert.throws(
+    () => buildCorpusImportManifest({ sourceBundleRoot: root, branch: 'SANDBOX', sourceBranch: 'SANDBOX' }),
+    /meta\.created_by must be null or a string/,
+  );
+});
+
+test('buildCorpusImportManifest rejects mismatched source bundle fullnames', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start', { meta: { fullname: 'other' } });
+
+  assert.throws(
+    () => buildCorpusImportManifest({ sourceBundleRoot: root, branch: 'SANDBOX', sourceBranch: 'SANDBOX' }),
+    /meta\.fullname other does not match directory name start/,
+  );
+});
+
+test('buildCorpusImportManifest requires source bundle TSV rows when a TSV exists', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start');
+  fs.writeFileSync(
+    path.join(root, 'corpus-manifest.tsv'),
+    'site\tfullname\ttitle\ttags\tsource_path\tsource_bytes\tsource_sha256\tmeta_path\tcapture_method\n',
+  );
+
+  assert.throws(
+    () => buildCorpusImportManifest({ sourceBundleRoot: root, branch: 'SANDBOX', sourceBranch: 'SANDBOX' }),
+    /missing row in corpus-manifest\.tsv for start/,
+  );
+});
+
 test('build-corpus-import-manifest CLI accepts source bundles', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
   writeSourceBundlePage(root, 'start', { source: 'sandbox start' });
@@ -266,8 +300,6 @@ test('build-corpus-import-manifest CLI accepts source bundles', async () => {
     path.join(packageRoot, 'scripts/build-corpus-import-manifest.mjs'),
     '--source-bundle',
     root,
-    '--source-branch',
-    'SANDBOX',
     '--output',
     output,
     '--summary',
@@ -284,7 +316,7 @@ test('build-corpus-import-manifest CLI accepts source bundles', async () => {
   const summaryJson = JSON.parse(fs.readFileSync(summary, 'utf8'));
   assert.equal(rows.length, 1);
   assert.equal(rows[0].source_site, 'sandbox-for-codex');
-  assert.equal(rows[0].source_branch, 'SANDBOX');
+  assert.equal(rows[0].source_branch, 'source-bundle');
   assert.equal(summaryJson.row_count, 1);
 });
 
