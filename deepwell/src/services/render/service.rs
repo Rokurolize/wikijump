@@ -4181,6 +4181,9 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                     continue;
                 }
                 for tag in split_list_pages_values(value) {
+                    if is_current_page_tag_selector(&tag) {
+                        unsupported_count_pages_filter = true;
+                    }
                     if let Some(tag) = tag.strip_prefix('-') {
                         no_tags.push(Cow::Owned(tag.to_owned()));
                     } else if let Some(tag) = tag.strip_prefix('+') {
@@ -4195,6 +4198,9 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                     continue;
                 }
                 for tag in split_list_pages_values(value) {
+                    if is_current_page_tag_selector(&tag) {
+                        unsupported_count_pages_filter = true;
+                    }
                     if let Some(tag) = tag.strip_prefix('-') {
                         no_tags.push(Cow::Owned(tag.to_owned()));
                     } else if let Some(tag) = tag.strip_prefix('+') {
@@ -4291,6 +4297,10 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                     .trim_start_matches('[')
                     .trim_end_matches(']')
                     .trim();
+                if author == "-=" {
+                    unsupported_count_pages_filter = true;
+                    continue;
+                }
                 if !author.is_empty() {
                     authors.push(Cow::Owned(author.to_owned()));
                 }
@@ -4302,6 +4312,9 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
                 }
                 "others" | "other" => {
                     exclude_current_page = true;
+                }
+                "before" | "after" => {
+                    unsupported_count_pages_filter = true;
                 }
                 _ => {}
             },
@@ -4344,6 +4357,12 @@ fn parse_list_pages_arguments(head: &str) -> Option<ListPagesArguments> {
 
 fn count_pages_should_remain_literal(arguments: &ListPagesArguments) -> bool {
     arguments.unsupported_count_pages_filter
+        || arguments.limit.is_some_and(|limit| {
+            limit
+                .saturating_add(u64::from(arguments.offset))
+                .saturating_add(u64::from(arguments.exclude_current_page))
+                > u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS)
+        })
         || (arguments.category_selector_present
             && arguments.category_all
             && arguments.limit.is_none())
@@ -4443,6 +4462,10 @@ fn split_list_pages_values(value: &str) -> Vec<String> {
         .filter(|part| !part.is_empty())
         .map(str::to_owned)
         .collect()
+}
+
+fn is_current_page_tag_selector(value: &str) -> bool {
+    matches!(value.trim().trim_start_matches(['+', '-']), "=" | "==")
 }
 
 fn normalize_list_pages_user_selector(value: &str) -> String {
