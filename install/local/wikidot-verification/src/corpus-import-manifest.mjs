@@ -217,7 +217,7 @@ function normalizeSourceBundleMeta(meta, rowPath) {
     commented_by: meta.commented_by ?? null,
     children: coerceNonNegativeInteger(meta.children ?? meta.children_count ?? 0, 'children_count', rowPath),
     comments: coerceNonNegativeInteger(meta.comments ?? meta.comments_count ?? 0, 'comments_count', rowPath),
-    rating: coerceInteger(meta.rating ?? meta.votes_count ?? 0, 'rating', rowPath),
+    rating: Object.hasOwn(meta, 'rating') ? coerceInteger(meta.rating, 'rating', rowPath) : 0,
     revisions: coerceNonNegativeInteger(meta.revisions ?? meta.revisions_count ?? 0, 'revisions_count', rowPath),
     tags: meta.tags,
     source_bytes: Object.hasOwn(meta, 'source_bytes') ? coerceNonNegativeInteger(meta.source_bytes, 'source_bytes', rowPath) : null,
@@ -347,6 +347,7 @@ export function buildSourceBundleImportManifest({ sourceBundleRoot, sourceSite =
   const rows = [];
   const entityIds = new Map();
   const fullnames = new Map();
+  const unconsumedManifestFullnames = bundleManifest.exists ? new Set(bundleManifestRows.keys()) : new Set();
 
   for (const directoryName of entries) {
     const pageDir = path.join(pagesRoot, directoryName);
@@ -370,6 +371,7 @@ export function buildSourceBundleImportManifest({ sourceBundleRoot, sourceSite =
     if (bundleManifest.exists && manifestRow === undefined) {
       throw new Error(`${pageDir}: missing row in corpus-manifest.tsv for ${meta.fullname}`);
     }
+    unconsumedManifestFullnames.delete(meta.fullname);
     const rowSourceSite = sourceSite ?? manifestRow?.site ?? sourceBranch;
     const sourceSha256 = sha256Hex(sourceFile.buffer);
     const sourceEntityId = fs.existsSync(entityIdPath)
@@ -412,6 +414,10 @@ export function buildSourceBundleImportManifest({ sourceBundleRoot, sourceSite =
       entityIdPath: fs.existsSync(entityIdPath) ? entityIdPath : null,
       meta,
     }));
+  }
+
+  if (unconsumedManifestFullnames.size > 0) {
+    throw new Error(`${sourceBundleRoot}: corpus-manifest.tsv rows have no matching page directories: ${[...unconsumedManifestFullnames].sort(codePointCompare).slice(0, 20).join(', ')}`);
   }
 
   return rows;

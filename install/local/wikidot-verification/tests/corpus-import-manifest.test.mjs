@@ -233,6 +233,24 @@ test('buildCorpusImportManifest accepts source bundles without entity IDs', () =
   assert.equal(rows[0].meta_path, path.join(root, 'pages', 'start', 'meta.json'));
 });
 
+test('buildCorpusImportManifest does not treat source bundle vote count as rating', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start', {
+    meta: {
+      rating: undefined,
+      votes_count: 120,
+    },
+  });
+
+  const rows = buildCorpusImportManifest({
+    sourceBundleRoot: root,
+    branch: 'SANDBOX',
+    sourceBranch: 'SANDBOX',
+  });
+
+  assert.equal(rows[0].rating, 0);
+});
+
 test('buildCorpusImportManifest rejects invalid UTF-8 source bundle files', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
   writeSourceBundlePage(root, 'start');
@@ -285,6 +303,30 @@ test('buildCorpusImportManifest requires source bundle TSV rows when a TSV exist
   assert.throws(
     () => buildCorpusImportManifest({ sourceBundleRoot: root, branch: 'SANDBOX', sourceBranch: 'SANDBOX' }),
     /missing row in corpus-manifest\.tsv for start/,
+  );
+});
+
+test('buildCorpusImportManifest rejects source bundle TSV rows without page directories', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start');
+  fs.appendFileSync(
+    path.join(root, 'corpus-manifest.tsv'),
+    [
+      'sandbox-for-codex',
+      'missing-page',
+      'Missing Page',
+      'codex',
+      path.join(root, 'pages', 'missing-page', 'source.wikidot.txt'),
+      '7',
+      cryptoSha256('missing'),
+      path.join(root, 'pages', 'missing-page', 'meta.json'),
+      'wikidot_xmlrpc_pages.get_one',
+    ].join('\t') + '\n',
+  );
+
+  assert.throws(
+    () => buildCorpusImportManifest({ sourceBundleRoot: root, branch: 'SANDBOX', sourceBranch: 'SANDBOX' }),
+    /corpus-manifest\.tsv rows have no matching page directories: missing-page/,
   );
 });
 
