@@ -317,6 +317,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
 
         for page in pages {
             info!("Creating page '{}' (slug {})", page.title, page.slug);
+            let page_created_by = page.created_by.unwrap_or(SYSTEM_USER_ID);
 
             let model = PageService::create(
                 &ctx,
@@ -329,7 +330,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                     slug: page.slug,
                     layout: None,
                     revision_comments: str!(),
-                    user_id: SYSTEM_USER_ID,
+                    user_id: page_created_by,
                     bypass_filter: true,
                     ip_address: SEED_IP_ADDRESS,
                 },

@@ -209,6 +209,9 @@ pub struct Page {
     #[serde(default)]
     pub tags: Vec<String>,
 
+    #[serde(default)]
+    pub created_by: Option<i64>,
+
     #[serde(skip)]
     pub wikitext: String,
 

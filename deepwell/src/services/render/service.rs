@@ -23,6 +23,7 @@ use crate::hash::TextHash;
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_revision;
 use crate::models::site::Model as SiteModel;
+use crate::models::user::{self, Entity as User};
 use crate::models::wikidot_user::{self, Entity as WikidotUser};
 use crate::services::page_query::{
     CategoriesSelector, DateSelector, FoundPageFields, FoundPageRow, FoundPages,
@@ -741,8 +742,28 @@ impl RenderService {
                 "collapsible-block-link collapsible-block-unfolded-link",
             )
             .replace(
+                r#"<span class="collapsible-block-link">"#,
+                concat!(
+                    r#"<span class="collapsible-block-link" onclick=""#,
+                    "var block=this.closest('.collapsible-block');",
+                    "block.querySelector('.collapsible-block-content').style.display='block';",
+                    "this.style.display='none';",
+                    "var hide=block.querySelector('.collapsible-block-unfolded-link');",
+                    "if(hide)hide.style.display='inline';",
+                    r#"">"#,
+                ),
+            )
+            .replace(
                 r#"<span class="collapsible-block-link collapsible-block-unfolded-link">"#,
-                r#"<span class="collapsible-block-link collapsible-block-unfolded-link" style="display:none">"#,
+                concat!(
+                    r#"<span class="collapsible-block-link collapsible-block-unfolded-link" onclick=""#,
+                    "var block=this.closest('.collapsible-block');",
+                    "block.querySelector('.collapsible-block-content').style.display='none';",
+                    "this.style.display='none';",
+                    "var show=block.querySelector('.collapsible-block-link:not(.collapsible-block-unfolded-link)');",
+                    "if(show)show.style.display='inline';",
+                    r#"" style="display:none">"#,
+                ),
             )
             .replace(
                 r#"<div class="collapsible-block-content">"#,
@@ -1139,8 +1160,16 @@ impl RenderService {
         wikitext: &mut String,
         page_info: &PageInfo<'_>,
     ) {
+        let source = wikitext.clone();
         *wikitext = WIKIDOT_IMAGE_BLOCK_INCLUDE_REGEX
-            .replace_all(wikitext, |captures: &regex::Captures<'_>| {
+            .replace_all(&source, |captures: &regex::Captures<'_>| {
+                if Self::should_skip_wikidot_image_block_include_expansion(
+                    &source,
+                    captures.get(0).expect("match exists").start(),
+                ) {
+                    return captures[0].to_owned();
+                }
+
                 let args = Self::parse_wikidot_include_arguments(
                     captures.name("args").map_or("", |mtch| mtch.as_str()),
                 );
@@ -1192,6 +1221,43 @@ impl RenderService {
                 )
             })
             .into_owned();
+    }
+
+    fn should_skip_wikidot_image_block_include_expansion(
+        source: &str,
+        start: usize,
+    ) -> bool {
+        Self::is_inside_wikidot_code_block(source, start)
+            || Self::is_inside_wikidot_escape(source, start)
+            || Self::is_inside_wikidot_comment(source, start)
+    }
+
+    fn is_inside_wikidot_code_block(source: &str, start: usize) -> bool {
+        let mut in_code = false;
+        for line in source[..start].lines() {
+            let marker = line.trim_start().to_ascii_lowercase();
+            if marker.starts_with("[[code") {
+                in_code = true;
+            } else if marker.starts_with("[[/code]]") {
+                in_code = false;
+            }
+        }
+        in_code
+    }
+
+    fn is_inside_wikidot_escape(source: &str, start: usize) -> bool {
+        source[..start].matches("@@").count() % 2 == 1
+    }
+
+    fn is_inside_wikidot_comment(source: &str, start: usize) -> bool {
+        let before = &source[..start];
+        let last_open = before.rfind("[!--");
+        let last_close = before.rfind("--]");
+        match (last_open, last_close) {
+            (Some(open), Some(close)) => open > close,
+            (Some(_), None) => true,
+            _ => false,
+        }
     }
 
     fn wikidot_image_block_source(name: &str, page_info: &PageInfo<'_>) -> String {
@@ -3532,12 +3598,12 @@ impl RenderService {
         }
 
         let users = WikidotUser::find()
-            .filter(wikidot_user::Column::UserId.is_in(wikidot_user_ids))
+            .filter(wikidot_user::Column::UserId.is_in(wikidot_user_ids.clone()))
             .all(ctx.transaction())
             .await
             .or_raise(make_error)?;
 
-        Ok(users
+        let mut displays = users
             .into_iter()
             .filter_map(|user| {
                 let name = user.name.or_else(|| user.slug.clone())?;
@@ -3550,7 +3616,32 @@ impl RenderService {
                     },
                 ))
             })
-            .collect())
+            .collect::<BTreeMap<_, _>>();
+
+        let missing_user_ids = wikidot_user_ids
+            .into_iter()
+            .map(i64::from)
+            .filter(|user_id| !displays.contains_key(user_id))
+            .collect::<Vec<_>>();
+        if !missing_user_ids.is_empty() {
+            let local_users = User::find()
+                .filter(user::Column::UserId.is_in(missing_user_ids))
+                .all(ctx.transaction())
+                .await
+                .or_raise(make_error)?;
+            for user in local_users {
+                displays.insert(
+                    user.user_id,
+                    WikidotUserDisplay {
+                        user_id: user.user_id,
+                        name: user.name,
+                        slug: Some(user.slug),
+                    },
+                );
+            }
+        }
+
+        Ok(displays)
     }
 
     async fn resolve_list_pages_author_ids(
@@ -7006,6 +7097,29 @@ mod tests {
     }
 
     #[test]
+    fn leaves_literal_wikidot_image_block_includes_unexpanded() {
+        let mut wikitext = concat!(
+            "[[code]]\n",
+            "[[include component:image-block name=code.jpg]]\n",
+            "[[/code]]\n",
+            "@@[[include component:image-block name=escaped.jpg]]@@\n",
+            "[!-- [[include component:image-block name=comment.jpg]] --]\n",
+            "[[include component:image-block name=live.jpg]]\n",
+        )
+        .to_owned();
+        let page_info = fallback_test_page_info("scp-3922", "SCP-3922");
+
+        RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info);
+
+        assert!(wikitext.contains("[[include component:image-block name=code.jpg]]"));
+        assert!(wikitext.contains("[[include component:image-block name=escaped.jpg]]"));
+        assert!(wikitext.contains("[[include component:image-block name=comment.jpg]]"));
+        assert!(wikitext.contains(
+            "[[image http://scp-wiki.wikidot.com/local--files/scp-3922/live.jpg]]"
+        ));
+    }
+
+    #[test]
     fn collects_single_line_wikidot_include_variables() {
         let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
         let mut includes = Vec::new();
@@ -7217,9 +7331,8 @@ mod tests {
         assert!(restored.contains("collapsible-block-content"));
         assert!(restored.contains("collapsible-block-link"));
         assert!(restored.contains("collapsible-block-unfolded-link"));
-        assert!(restored.contains(
-            r#"<span class="collapsible-block-link collapsible-block-unfolded-link" style="display:none">"#
-        ));
+        assert!(restored.contains("onclick="));
+        assert!(restored.contains("style=\"display:none\""));
         assert!(
             restored.contains(
                 r#"<div class="collapsible-block-content" style="display:none">"#

@@ -121,5 +121,22 @@
         "user_page": null,
         "aliases": [
         ]
+    },
+    {
+        "id": -20,
+        "type": "regular",
+        "name": "SeekGull",
+        "slug": "seekgull",
+        "email": "seekgull@wikijump",
+        "password": "wikijumpseed1",
+        "locales": ["en"],
+        "real_name": "SeekGull",
+        "gender": null,
+        "birthday": null,
+        "location": null,
+        "biography": "Seeded mirror author for SCP Wiki rendering fixtures",
+        "user_page": null,
+        "aliases": [
+        ]
     }
 ]
