@@ -728,6 +728,20 @@ async function importRow(args, row, importRunId) {
       }
       return { slug: row.fullname, action: args.dryRun ? 'would_keep_existing_render_pending' : 'kept_existing_render_pending', page_id: snapshotStatus.page_id, revision_id: snapshotStatus.revision_id };
     }
+    if (snapshotStatus !== null) {
+      if (args.dryRun) {
+        return { slug: row.fullname, action: 'would_rerender_existing_pending', page_id: snapshotStatus.page_id, revision_id: snapshotStatus.revision_id };
+      }
+      runPsql(args, recordItemSql(row, snapshotStatus.page_id, importRunId, 'render_pending', { render: 'matching_snapshot_rerender_requested' }));
+      try {
+        await rerenderPage(args, snapshotStatus.page_id, snapshotStatus.page_category_id);
+      } catch (error) {
+        runPsql(args, recordItemSql(row, snapshotStatus.page_id, importRunId, 'render_failed', { message: error.message }));
+        return { slug: row.fullname, action: 'render_failed', page_id: snapshotStatus.page_id, revision_id: snapshotStatus.revision_id, error: error.message };
+      }
+      runPsql(args, recordItemSql(row, snapshotStatus.page_id, importRunId, 'done'));
+      return { slug: row.fullname, action: 'rerendered_existing_pending', page_id: snapshotStatus.page_id, revision_id: snapshotStatus.revision_id };
+    }
   }
 
   let pageId;
