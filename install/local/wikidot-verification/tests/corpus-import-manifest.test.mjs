@@ -241,6 +241,30 @@ test('buildCorpusImportManifest accepts source bundles without entity IDs', () =
   assert.equal(rows[0].source_required_actor, null);
 });
 
+test('buildCorpusImportManifest accepts CRLF source bundle manifests', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  const source = 'sandbox start';
+  writeSourceBundlePage(root, 'start', { source });
+  fs.writeFileSync(
+    path.join(root, 'corpus-manifest.tsv'),
+    [
+      'site\tfullname\tsource_bytes\tsource_sha256',
+      `sandbox-for-codex\tstart\t${Buffer.byteLength(source)}\t${cryptoSha256(source)}`,
+      '',
+    ].join('\r\n'),
+  );
+
+  const rows = buildCorpusImportManifest({
+    sourceBundleRoot: root,
+    branch: 'SANDBOX',
+    sourceBranch: 'SANDBOX',
+  });
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].fullname, 'start');
+  assert.equal(rows[0].source_site, 'sandbox-for-codex');
+});
+
 test('buildCorpusImportManifest keeps source bundle browser-visible rows browser-required', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
   writeSourceBundlePage(root, 'start', {

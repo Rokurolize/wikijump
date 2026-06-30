@@ -166,7 +166,7 @@ function readSourceBundleManifest(sourceBundleRoot) {
   const manifestPath = path.join(sourceBundleRoot, 'corpus-manifest.tsv');
   if (!fs.existsSync(manifestPath)) return { exists: false, rows: new Map() };
   const manifestText = readText(manifestPath);
-  const [headerLine, ...lines] = manifestText.split('\n').filter((line) => line.length > 0);
+  const [headerLine, ...lines] = manifestText.split(/\r?\n/u).filter((line) => line.length > 0);
   const headers = headerLine.split('\t');
   const indexByHeader = new Map(headers.map((header, index) => [header, index]));
   for (const required of ['site', 'fullname', 'source_bytes', 'source_sha256']) {
