@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -36,6 +37,55 @@ function writePage(root, branch, fullname, { entityId, meta = {}, source = 'cont
   fs.writeFileSync(path.join(pageDir, 'source.wikidot.txt'), source);
   fs.writeFileSync(path.join(pageDir, 'meta.json'), `${JSON.stringify(completeMeta, null, 2)}\n`);
   fs.writeFileSync(path.join(pageDir, 'entity_id.txt'), `${entityId}\n`);
+}
+
+function writeSourceBundlePage(root, fullname, { entityId = null, site = 'sandbox-for-codex', meta = {}, source = 'content' } = {}) {
+  const pageDir = path.join(root, 'pages', fullname);
+  fs.mkdirSync(pageDir, { recursive: true });
+  const sourceBytes = Buffer.byteLength(source);
+  const sourceSha256 = cryptoSha256(source);
+  const completeMeta = {
+    capture_method: 'wikidot_xmlrpc_pages.get_one',
+    category: '_default',
+    children_count: '0',
+    comments_count: 0,
+    fullname,
+    name: fullname,
+    parent_fullname: null,
+    rating: 0,
+    revisions_count: 1,
+    size: sourceBytes,
+    source_bytes: sourceBytes,
+    source_sha256: sourceSha256,
+    tags: ['codex'],
+    title: fullname,
+    title_shown: fullname,
+    votes_count: 0,
+    xmlrpc_fullname: fullname,
+    ...meta,
+  };
+  fs.writeFileSync(path.join(pageDir, 'source.wikidot.txt'), source);
+  fs.writeFileSync(path.join(pageDir, 'meta.json'), `${JSON.stringify(completeMeta, null, 2)}\n`);
+  if (entityId !== null) fs.writeFileSync(path.join(pageDir, 'entity_id.txt'), `${entityId}\n`);
+  const manifestPath = path.join(root, 'corpus-manifest.tsv');
+  if (!fs.existsSync(manifestPath)) {
+    fs.writeFileSync(manifestPath, 'site\tfullname\ttitle\ttags\tsource_path\tsource_bytes\tsource_sha256\tmeta_path\tcapture_method\n');
+  }
+  fs.appendFileSync(manifestPath, [
+    site,
+    fullname,
+    completeMeta.title,
+    completeMeta.tags.join('|'),
+    path.join(pageDir, 'source.wikidot.txt'),
+    String(sourceBytes),
+    sourceSha256,
+    path.join(pageDir, 'meta.json'),
+    completeMeta.capture_method,
+  ].join('\t') + '\n');
+}
+
+function cryptoSha256(value) {
+  return crypto.createHash('sha256').update(value).digest('hex');
 }
 
 test('buildCorpusImportManifest emits deterministic rows and summary', () => {
@@ -138,6 +188,104 @@ test('buildCorpusImportManifest rejects negative counts before apply', () => {
     () => buildCorpusImportManifest({ corpusRoot: root, branch: 'en' }),
     /meta\.comments must be a non-negative integer/,
   );
+});
+
+test('buildCorpusImportManifest accepts source bundles without entity IDs', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start', {
+    source: 'sandbox start',
+    meta: {
+      children_count: '2',
+      comments_count: 3,
+      revisions_count: 4,
+      rating: -1,
+      tags: ['beta', 'alpha'],
+      title: 'Start',
+      title_shown: 'Start',
+    },
+  });
+
+  const rows = buildCorpusImportManifest({
+    sourceBundleRoot: root,
+    branch: 'SANDBOX',
+    sourceBranch: 'SANDBOX',
+  });
+  const rowsAgain = buildCorpusImportManifest({
+    sourceBundleRoot: root,
+    branch: 'SANDBOX',
+    sourceBranch: 'SANDBOX',
+  });
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].source_site, 'sandbox-for-codex');
+  assert.equal(rows[0].source_branch, 'SANDBOX');
+  assert.match(rows[0].source_entity_id, /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  assert.equal(rows[0].source_entity_id, rowsAgain[0].source_entity_id);
+  assert.equal(rows[0].children, 2);
+  assert.equal(rows[0].comments, 3);
+  assert.equal(rows[0].revisions, 4);
+  assert.equal(rows[0].rating, -1);
+  assert.equal(rows[0].created_at, '1970-01-01T00:00:00+00:00');
+  assert.equal(rows[0].updated_at, '1970-01-01T00:00:00+00:00');
+  assert.deepEqual(rows[0].tags, ['alpha', 'beta']);
+  assert.equal(rows[0].entity_id_path, null);
+  assert.equal(rows[0].source_path, path.join(root, 'pages', 'start', 'source.wikidot.txt'));
+  assert.equal(rows[0].meta_path, path.join(root, 'pages', 'start', 'meta.json'));
+});
+
+test('buildCorpusImportManifest rejects invalid UTF-8 source bundle files', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start');
+  fs.writeFileSync(path.join(root, 'pages', 'start', 'source.wikidot.txt'), Buffer.from([0xff]));
+
+  assert.throws(
+    () => buildCorpusImportManifest({ sourceBundleRoot: root, branch: 'SANDBOX', sourceBranch: 'SANDBOX' }),
+    /invalid UTF-8/,
+  );
+});
+
+test('buildCorpusImportManifest rejects negative source bundle counts', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start', { meta: { comments_count: -1 } });
+
+  assert.throws(
+    () => buildCorpusImportManifest({ sourceBundleRoot: root, branch: 'SANDBOX', sourceBranch: 'SANDBOX' }),
+    /meta\.comments_count must be a non-negative integer/,
+  );
+});
+
+test('build-corpus-import-manifest CLI accepts source bundles', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'source-bundle-'));
+  writeSourceBundlePage(root, 'start', { source: 'sandbox start' });
+  const output = path.join(root, 'manifest.jsonl');
+  const summary = path.join(root, 'summary.json');
+
+  const { spawnSync } = await import('node:child_process');
+  const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const result = spawnSync(process.execPath, [
+    path.join(packageRoot, 'scripts/build-corpus-import-manifest.mjs'),
+    '--source-bundle',
+    root,
+    '--source-branch',
+    'SANDBOX',
+    '--output',
+    output,
+    '--summary',
+    summary,
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 0, result.stderr);
+  const rows = fs.readFileSync(output, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  const summaryJson = JSON.parse(fs.readFileSync(summary, 'utf8'));
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].source_site, 'sandbox-for-codex');
+  assert.equal(rows[0].source_branch, 'SANDBOX');
+  assert.equal(summaryJson.row_count, 1);
 });
 
 test('apply-corpus-import-manifest rejects DB create mode without a text hash command', async () => {
