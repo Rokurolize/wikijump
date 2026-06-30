@@ -1202,9 +1202,14 @@ impl RenderService {
             return name.to_owned();
         }
 
+        let page_slug = match page_info.category.as_deref() {
+            Some(category) => format!("{category}:{}", page_info.page),
+            None => page_info.page.to_string(),
+        };
+
         format!(
             "http://{}.wikidot.com/local--files/{}/{}",
-            page_info.site, page_info.page, name
+            page_info.site, page_slug, name
         )
     }
 
@@ -6991,6 +6996,13 @@ mod tests {
         ));
         assert!(wikitext.contains("[[include component:image-block-base name=raw.jpg]]"));
         assert!(!wikitext.contains("[[include component:image-block\n"));
+
+        let mut category_page_info = fallback_test_page_info("basalt", "Basalt Theme");
+        category_page_info.category = Some(Cow::Borrowed("theme"));
+        assert_eq!(
+            RenderService::wikidot_image_block_source("logo.svg", &category_page_info),
+            "http://scp-wiki.wikidot.com/local--files/theme:basalt/logo.svg"
+        );
     }
 
     #[test]

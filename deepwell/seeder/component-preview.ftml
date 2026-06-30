@@ -10,7 +10,7 @@ To add a preview to your article,  copy the following onto the top of your page 
 [[div class="code"]]
 @@=====@@
 @@[[include component:preview@@
-@@text=preview]]@@
+@@| text=preview]]@@
 @@=====@@
 [[/div]]
 
