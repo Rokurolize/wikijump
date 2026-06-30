@@ -41,3 +41,16 @@ test("seed data includes local sandbox-for-codex site required by parity probes"
     assert.ok(fs.existsSync(wikitextPath), `${page.slug} references missing ${wikitextPath}`);
   }
 });
+
+test("seeded mirror authors are non-login identities", () => {
+  const users = readJson("deepwell/seeder/users.json");
+  const mirrorAuthorNames = new Set(["SeekGull", "daveyoufool"]);
+  const mirrorAuthors = users.filter((user) => mirrorAuthorNames.has(user.name));
+
+  assert.equal(mirrorAuthors.length, mirrorAuthorNames.size);
+  for (const user of mirrorAuthors) {
+    assert.equal(user.type, "system");
+    assert.equal(user.password, null);
+    assert.deepEqual(user.locales, []);
+  }
+});
