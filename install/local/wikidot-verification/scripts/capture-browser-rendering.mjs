@@ -166,52 +166,31 @@ export function browserContextOptions({ignoreHttpsErrors, storageState = null}) 
   };
 }
 
-export async function openBrowser({
-  chromium,
-  cdpEndpoint,
-  browserExecutable,
-  ignoreHttpsErrors,
-  storageState = null,
-  sourceStorageState = null,
-  localStorageState = null,
-}) {
-  const resolvedStates = resolveStorageStates({storageState, sourceStorageState, localStorageState});
-  if (cdpEndpoint) {
-    const browser = await chromium.connectOverCDP(cdpEndpoint);
-    const sourceContext = await browser.newContext(
-      browserContextOptions({ignoreHttpsErrors, storageState: resolvedStates.sourceStorageState})
+async function newContextPair({browser, ignoreHttpsErrors, sourceStorageState, localStorageState}) {
+  let sourceContext = null;
+  let localContext = null;
+  try {
+    sourceContext = await browser.newContext(
+      browserContextOptions({ignoreHttpsErrors, storageState: sourceStorageState})
     );
-    const localContext = resolvedStates.localStorageState === resolvedStates.sourceStorageState
+    localContext = localStorageState === sourceStorageState
       ? sourceContext
       : await browser.newContext(
-        browserContextOptions({ignoreHttpsErrors, storageState: resolvedStates.localStorageState})
+        browserContextOptions({ignoreHttpsErrors, storageState: localStorageState})
       );
-    return {
-      browser,
-      context: sourceContext,
-      sourceContext,
-      localContext,
-      async close() {
-        if (localContext !== sourceContext) {
-          await localContext.close().catch(() => {});
-        }
-        await sourceContext.close().catch(() => {});
-        await browser.close().catch(() => {});
-      },
-    };
+    return {sourceContext, localContext};
+  } catch (error) {
+    if (localContext && localContext !== sourceContext) {
+      await localContext.close().catch(() => {});
+    }
+    if (sourceContext) {
+      await sourceContext.close().catch(() => {});
+    }
+    throw error;
   }
+}
 
-  const browser = await chromium.launch({
-    executablePath: browserExecutable,
-  });
-  const sourceContext = await browser.newContext(
-    browserContextOptions({ignoreHttpsErrors, storageState: resolvedStates.sourceStorageState})
-  );
-  const localContext = resolvedStates.localStorageState === resolvedStates.sourceStorageState
-    ? sourceContext
-    : await browser.newContext(
-      browserContextOptions({ignoreHttpsErrors, storageState: resolvedStates.localStorageState})
-    );
+function browserSession({browser, sourceContext, localContext}) {
   return {
     browser,
     context: sourceContext,
@@ -225,6 +204,41 @@ export async function openBrowser({
       await browser.close().catch(() => {});
     },
   };
+}
+
+export async function openBrowser({
+  chromium,
+  cdpEndpoint,
+  browserExecutable,
+  ignoreHttpsErrors,
+  storageState = null,
+  sourceStorageState = null,
+  localStorageState = null,
+}) {
+  const resolvedStates = resolveStorageStates({storageState, sourceStorageState, localStorageState});
+  let browser = null;
+  if (cdpEndpoint) {
+    browser = await chromium.connectOverCDP(cdpEndpoint);
+  } else {
+    browser = await chromium.launch({
+      executablePath: browserExecutable,
+    });
+  }
+
+  try {
+    const contexts = await newContextPair({
+      browser,
+      ignoreHttpsErrors,
+      sourceStorageState: resolvedStates.sourceStorageState,
+      localStorageState: resolvedStates.localStorageState,
+    });
+    return browserSession({browser, ...contexts});
+  } catch (error) {
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
+    throw error;
+  }
 }
 
 async function collectVisibleText(page) {

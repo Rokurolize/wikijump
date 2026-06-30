@@ -247,6 +247,45 @@ test("openBrowser can isolate source and local storage states", async () => {
   assert.equal(closedBrowser, true);
 });
 
+test("openBrowser closes partial resources when context creation fails", async () => {
+  let closedSourceContext = false;
+  let closedBrowser = false;
+  const browser = {
+    async newContext(options) {
+      if (options.storageState === "/private/source.json") {
+        return {
+          async close() {
+            closedSourceContext = true;
+          },
+        };
+      }
+      throw new Error("local context failed");
+    },
+    async close() {
+      closedBrowser = true;
+    },
+  };
+  const chromium = {
+    async launch() {
+      return browser;
+    },
+  };
+
+  await assert.rejects(
+    () =>
+      openBrowser({
+        chromium,
+        browserExecutable: "/usr/bin/google-chrome",
+        ignoreHttpsErrors: true,
+        sourceStorageState: "/private/source.json",
+        localStorageState: "/private/local.json",
+      }),
+    /local context failed/
+  );
+  assert.equal(closedSourceContext, true);
+  assert.equal(closedBrowser, true);
+});
+
 test("browser context options do not expose unset storage state", () => {
   assert.deepEqual(browserContextOptions({ignoreHttpsErrors: true}), {ignoreHTTPSErrors: true});
   assert.deepEqual(
