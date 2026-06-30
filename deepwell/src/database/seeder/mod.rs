@@ -653,6 +653,13 @@ pub async fn seed(state: &ServerState) -> Result<()> {
 
     // Fresh pages are first compiled while later pages/files/roles may still be absent.
     // Recompile once after dependencies and virtual role permissions exist.
+    //
+    // Role and permission mutations normally defer permission-cache invalidation
+    // until the API wrapper commits. The seeder owns the transaction manually, so
+    // drain those Redis-side invalidations before rerendering with the final role
+    // graph.
+    ctx.run_post_commit_actions().await.or_raise(make_error)?;
+
     for page_id in seeded_page_ids {
         PageRevisionService::rerender(
             &ctx,
