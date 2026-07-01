@@ -5974,6 +5974,7 @@ fn push_list_pages_table_inline_segment(output: &mut String, value: &str) {
 
 fn render_native_list_inline_html(value: &str) -> String {
     let escaped = render_native_list_inline_wikidot_spans(value);
+    let escaped = render_native_list_inline_wikidot_italics(&escaped);
     let with_quadruple_links = WIKIDOT_QUADRUPLE_LINK_REGEX
         .replace_all(&escaped, |captures: &regex::Captures<'_>| {
             render_native_list_page_link(&captures["target"], None)
@@ -6017,6 +6018,81 @@ fn render_native_list_inline_html(value: &str) -> String {
             )
         })
         .into_owned()
+}
+
+fn render_native_list_inline_wikidot_italics(value: &str) -> String {
+    let mut output = String::with_capacity(value.len());
+    let mut rest = value;
+
+    while let Some(tag_start) = rest.find('<') {
+        let (before, after_start) = rest.split_at(tag_start);
+        output.push_str(&render_native_list_text_italics(before));
+
+        let Some(tag_end) = after_start.find('>') else {
+            output.push_str(&render_native_list_text_italics(after_start));
+            return output;
+        };
+        let (tag, after_tag) = after_start.split_at(tag_end + 1);
+        output.push_str(tag);
+        rest = after_tag;
+    }
+
+    output.push_str(&render_native_list_text_italics(rest));
+    output
+}
+
+fn render_native_list_text_italics(value: &str) -> String {
+    let mut output = String::with_capacity(value.len());
+    let mut rest = value;
+
+    while let Some(open) = find_wikidot_italic_open(rest) {
+        output.push_str(&rest[..open]);
+        let after_open = &rest[open + "//".len()..];
+        let Some(close) = find_wikidot_italic_close(after_open) else {
+            output.push_str(&rest[open..]);
+            return output;
+        };
+
+        output.push_str("<em>");
+        output.push_str(&after_open[..close]);
+        output.push_str("</em>");
+        rest = &after_open[close + "//".len()..];
+    }
+
+    output.push_str(rest);
+    output
+}
+
+fn find_wikidot_italic_open(value: &str) -> Option<usize> {
+    let mut cursor = 0usize;
+    while let Some(offset) = value[cursor..].find("//") {
+        let marker = cursor + offset;
+        let previous = value[..marker].chars().next_back();
+        let next = value[marker + "//".len()..].chars().next();
+        if previous == Some(':')
+            || next.is_none_or(|character| character.is_whitespace() || character == '/')
+        {
+            cursor = marker + "//".len();
+            continue;
+        }
+        return Some(marker);
+    }
+    None
+}
+
+fn find_wikidot_italic_close(value: &str) -> Option<usize> {
+    let mut cursor = 0usize;
+    while let Some(offset) = value[cursor..].find("//") {
+        let marker = cursor + offset;
+        let previous = value[..marker].chars().next_back();
+        let next = value[marker + "//".len()..].chars().next();
+        if previous.is_none_or(char::is_whitespace) || next == Some('/') {
+            cursor = marker + "//".len();
+            continue;
+        }
+        return Some(marker);
+    }
+    None
 }
 
 fn render_native_list_inline_wikidot_spans(value: &str) -> String {
@@ -9706,6 +9782,28 @@ mod tests {
 
         assert!(rendered.contains(r#"<li>Source <a href="http://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical Bundle</a></li>"#));
         assert!(!rendered.contains("[wikipedia:Canonical_bundle"));
+    }
+
+    #[test]
+    fn renders_wikidot_italic_inside_preprocessed_native_list_runs() {
+        let wikitext = concat!(
+            "* Item 1\n",
+            "* Item 2\n",
+            "* Item 3\n",
+            "* Item 4\n",
+            "* Item 5\n",
+            "* Item 6\n",
+            "* Item 7\n",
+            "* All acroamatic material //in absentia// must be voided.\n",
+        )
+        .to_owned();
+
+        let rendered = RenderService::render_long_native_list_runs(wikitext);
+
+        assert!(rendered.contains(
+            r#"<li>All acroamatic material <em>in absentia</em> must be voided.</li>"#
+        ));
+        assert!(!rendered.contains("//in absentia//"));
     }
 
     #[test]
