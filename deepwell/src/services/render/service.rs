@@ -5900,11 +5900,17 @@ fn find_matching_wikidot_span_close(value: &str) -> Option<usize> {
             }
             (Some(open), _) => {
                 let marker_end = value[open..].find("]]")?;
-                let marker = &value[open..open + marker_end + 2];
+                let marker_end = open + marker_end + 2;
+                if next_close.is_some_and(|close| marker_end > close) {
+                    offset = open + "[[span".len();
+                    continue;
+                }
+
+                let marker = &value[open..marker_end];
                 if wikidot_inline_span_marker_open(marker).is_some() {
                     depth += 1;
                 }
-                offset = open + marker_end + 2;
+                offset = marker_end;
             }
             (None, None) => return None,
         }
@@ -9445,6 +9451,25 @@ mod tests {
         );
         assert!(!rendered.contains("[[span"));
         assert!(!rendered.contains("[[/span]]"));
+    }
+
+    #[test]
+    fn ignores_unterminated_span_like_text_before_native_list_span_close() {
+        let wikitext = concat!(
+            "* Item 1\n",
+            "* Item 2\n",
+            "* Item 3\n",
+            "* Item 4\n",
+            "* Item 5\n",
+            "* Item 6\n",
+            "* Item 7\n",
+            "* Literal [[span class=\"outer\"]]a [[span text[[/span]]\n",
+        )
+        .to_owned();
+
+        let rendered = RenderService::render_long_native_list_runs(wikitext);
+
+        assert!(rendered.contains(r#"<span class="outer">a [[span text</span>"#));
     }
 
     #[test]
