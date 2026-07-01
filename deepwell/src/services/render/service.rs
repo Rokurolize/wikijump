@@ -5974,7 +5974,6 @@ fn push_list_pages_table_inline_segment(output: &mut String, value: &str) {
 
 fn render_native_list_inline_html(value: &str) -> String {
     let escaped = render_native_list_inline_wikidot_spans(value);
-    let escaped = render_native_list_inline_wikidot_italics(&escaped);
     let with_quadruple_links = WIKIDOT_QUADRUPLE_LINK_REGEX
         .replace_all(&escaped, |captures: &regex::Captures<'_>| {
             render_native_list_page_link(&captures["target"], None)
@@ -6009,7 +6008,7 @@ fn render_native_list_inline_html(value: &str) -> String {
         })
         .into_owned();
 
-    WIKIDOT_EXTERNAL_LINK_REGEX
+    let with_external_links = WIKIDOT_EXTERNAL_LINK_REGEX
         .replace_all(&with_wikipedia_links, |captures: &regex::Captures<'_>| {
             format!(
                 r#"<a href="{url}">{label}</a>"#,
@@ -6017,7 +6016,9 @@ fn render_native_list_inline_html(value: &str) -> String {
                 label = captures["label"].to_owned(),
             )
         })
-        .into_owned()
+        .into_owned();
+
+    render_native_list_inline_wikidot_italics(&with_external_links)
 }
 
 fn render_native_list_inline_wikidot_italics(value: &str) -> String {
@@ -9804,6 +9805,27 @@ mod tests {
             r#"<li>All acroamatic material <em>in absentia</em> must be voided.</li>"#
         ));
         assert!(!rendered.contains("//in absentia//"));
+    }
+
+    #[test]
+    fn leaves_double_slashes_inside_native_list_external_link_urls() {
+        let wikitext = concat!(
+            "* Item 1\n",
+            "* Item 2\n",
+            "* Item 3\n",
+            "* Item 4\n",
+            "* Item 5\n",
+            "* Item 6\n",
+            "* Item 7\n",
+            "* Source [http://example.com/a//b//c label]\n",
+        )
+        .to_owned();
+
+        let rendered = RenderService::render_long_native_list_runs(wikitext);
+
+        assert!(rendered.contains(r#"<a href="http://example.com/a//b//c">label</a>"#));
+        assert!(!rendered.contains("a<em>b</em>c"));
+        assert!(!rendered.contains("a&lt;em&gt;b&lt;/em&gt;c"));
     }
 
     #[test]
