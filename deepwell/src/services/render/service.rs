@@ -824,7 +824,21 @@ impl RenderService {
             r#"<div class="wj-tabs-panel-list">"#,
             r#"<div class="yui-content">"#,
         );
-        let html = WIKIJUMP_TAB_PANEL_REGEX.replace_all(&html, "<div>");
+        let mut panel_index = 0usize;
+        let html = WIKIJUMP_TAB_PANEL_REGEX.replace_all(
+            &html,
+            |captures: &regex::Captures<'_>| {
+                let panel = captures.get(0).map_or("", |matched| matched.as_str());
+                let hidden = Self::wikijump_tab_panel_is_hidden(panel);
+                let replacement = if panel_index == 0 && !hidden {
+                    r#"<div style="display: block;">"#
+                } else {
+                    r#"<div style="display:none">"#
+                };
+                panel_index += 1;
+                replacement
+            },
+        );
         let html = WIKIJUMP_SELECTED_TAB_BUTTON_REGEX
             .replace_all(&html, r#"<li class="selected"><a href="javascript:;">"#);
         let html = WIKIJUMP_TAB_BUTTON_REGEX
@@ -833,6 +847,13 @@ impl RenderService {
             "</wj-tabs>",
             &format!("</div>{WIKIDOT_TABVIEW_INIT_SCRIPT}"),
         )
+    }
+
+    fn wikijump_tab_panel_is_hidden(panel_open_tag: &str) -> bool {
+        panel_open_tag
+            .trim_end_matches('>')
+            .split_ascii_whitespace()
+            .any(|attribute| attribute == "hidden" || attribute.starts_with("hidden="))
     }
 
     fn restore_residual_wikidot_div_paragraph_markers(html: &str) -> String {
@@ -9231,6 +9252,8 @@ mod tests {
         assert!(restored.contains(r#"<div class="yui-navset">"#));
         assert!(restored.contains(r#"<ul class="yui-nav">"#));
         assert!(restored.contains(r#"<div class="yui-content">"#));
+        assert!(restored.contains(r#"<div style="display: block;">First</div>"#));
+        assert!(restored.contains(r#"<div style="display:none">Second</div>"#));
         assert!(
             restored
                 .contains(r#"<li class="selected"><a href="javascript:;">One</a></li>"#)
@@ -9239,6 +9262,7 @@ mod tests {
         assert!(!restored.contains("wj-tabs"));
         assert!(!restored.contains("aria-selected"));
         assert!(!restored.contains("role=\"tab\""));
+        assert!(!restored.contains(" hidden"));
     }
 
     #[test]
