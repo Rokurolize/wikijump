@@ -163,6 +163,9 @@ static WIKIJUMP_TAB_BUTTON_LIST_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)<div class="wj-tabs-button-list"[^>]*>(?P<body>.*?)</div>"#)
         .unwrap()
 });
+static WIKIJUMP_TAB_PANEL_LIST_OPEN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)<div class="wj-tabs-panel-list"[^>]*>"#).unwrap()
+});
 static WIKIJUMP_SELECTED_TAB_BUTTON_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"(?is)<wj-tabs-button class="wj-tabs-button"[^>]*aria-selected="true"[^>]*>"#,
@@ -820,25 +823,9 @@ impl RenderService {
         );
         let html = WIKIJUMP_TAB_BUTTON_LIST_REGEX
             .replace_all(&html, r#"<ul class="yui-nav">$body</ul>"#);
-        let html = html.replace(
-            r#"<div class="wj-tabs-panel-list">"#,
-            r#"<div class="yui-content">"#,
-        );
-        let mut panel_index = 0usize;
-        let html = WIKIJUMP_TAB_PANEL_REGEX.replace_all(
-            &html,
-            |captures: &regex::Captures<'_>| {
-                let panel = captures.get(0).map_or("", |matched| matched.as_str());
-                let hidden = Self::wikijump_tab_panel_is_hidden(panel);
-                let replacement = if panel_index == 0 && !hidden {
-                    r#"<div style="display: block;">"#
-                } else {
-                    r#"<div style="display:none">"#
-                };
-                panel_index += 1;
-                replacement
-            },
-        );
+        let html = Self::restore_wikidot_tab_panel_visibility(&html);
+        let html = WIKIJUMP_TAB_PANEL_LIST_OPEN_REGEX
+            .replace_all(&html, r#"<div class="yui-content">"#);
         let html = WIKIJUMP_SELECTED_TAB_BUTTON_REGEX
             .replace_all(&html, r#"<li class="selected"><a href="javascript:;">"#);
         let html = WIKIJUMP_TAB_BUTTON_REGEX
@@ -847,6 +834,40 @@ impl RenderService {
             "</wj-tabs>",
             &format!("</div>{WIKIDOT_TABVIEW_INIT_SCRIPT}"),
         )
+    }
+
+    fn restore_wikidot_tab_panel_visibility(html: &str) -> String {
+        let mut panel_index = 0usize;
+        let mut last_copied = 0usize;
+        let mut group_scan_start = 0usize;
+        let mut restored = String::with_capacity(html.len());
+
+        for captures in WIKIJUMP_TAB_PANEL_REGEX.captures_iter(html) {
+            let Some(panel_match) = captures.get(0) else {
+                continue;
+            };
+
+            if WIKIJUMP_TAB_PANEL_LIST_OPEN_REGEX
+                .is_match(&html[group_scan_start..panel_match.start()])
+            {
+                panel_index = 0;
+            }
+
+            restored.push_str(&html[last_copied..panel_match.start()]);
+            let panel = panel_match.as_str();
+            let hidden = Self::wikijump_tab_panel_is_hidden(panel);
+            if panel_index == 0 && !hidden {
+                restored.push_str(r#"<div style="display: block;">"#);
+            } else {
+                restored.push_str(r#"<div style="display:none">"#);
+            }
+            panel_index += 1;
+            last_copied = panel_match.end();
+            group_scan_start = panel_match.end();
+        }
+
+        restored.push_str(&html[last_copied..]);
+        restored
     }
 
     fn wikijump_tab_panel_is_hidden(panel_open_tag: &str) -> bool {
@@ -9263,6 +9284,39 @@ mod tests {
         assert!(!restored.contains("aria-selected"));
         assert!(!restored.contains("role=\"tab\""));
         assert!(!restored.contains(" hidden"));
+    }
+
+    #[test]
+    fn restores_wikidot_tabview_panel_visibility_per_tabview() {
+        let html = concat!(
+            r#"<wj-tabs class="wj-tabs">"#,
+            r#"<div class="wj-tabs-button-list">"#,
+            r#"<wj-tabs-button class="wj-tabs-button" aria-selected="true">One</wj-tabs-button>"#,
+            r#"<wj-tabs-button class="wj-tabs-button" aria-selected="false">Two</wj-tabs-button>"#,
+            "</div>",
+            r#"<div class="wj-tabs-panel-list">"#,
+            r#"<div class="wj-tabs-panel">First A</div>"#,
+            r#"<div class="wj-tabs-panel" hidden>First B</div>"#,
+            "</div>",
+            "</wj-tabs>",
+            r#"<wj-tabs class="wj-tabs">"#,
+            r#"<div class="wj-tabs-button-list">"#,
+            r#"<wj-tabs-button class="wj-tabs-button" aria-selected="true">Three</wj-tabs-button>"#,
+            r#"<wj-tabs-button class="wj-tabs-button" aria-selected="false">Four</wj-tabs-button>"#,
+            "</div>",
+            r#"<div class="wj-tabs-panel-list">"#,
+            r#"<div class="wj-tabs-panel">Second A</div>"#,
+            r#"<div class="wj-tabs-panel" hidden>Second B</div>"#,
+            "</div>",
+            "</wj-tabs>",
+        );
+
+        let restored = RenderService::restore_wikidot_tabview_dom_compatibility(html);
+
+        assert!(restored.contains(r#"<div style="display: block;">First A</div>"#));
+        assert!(restored.contains(r#"<div style="display:none">First B</div>"#));
+        assert!(restored.contains(r#"<div style="display: block;">Second A</div>"#));
+        assert!(restored.contains(r#"<div style="display:none">Second B</div>"#));
     }
 
     #[test]
