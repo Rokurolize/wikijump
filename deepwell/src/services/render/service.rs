@@ -37,8 +37,7 @@ use crate::services::text_block::{
     MIME_HTML, TextBlock, TextBlockService, mime_for_language,
 };
 use crate::services::{
-    CategoryService, PageQueryService, PageRevisionService, PageService, SiteService,
-    TextService,
+    PageQueryService, PageRevisionService, PageService, SiteService, TextService,
 };
 use crate::types::{Action, PageId, Permission, Resource, TextBlockType};
 use ftml::data::PageRef;
@@ -4260,6 +4259,21 @@ impl RenderService {
         Some(rest[..end].to_owned())
     }
 
+    fn categories_with_current_page_category(
+        mut categories: Vec<Cow<'static, str>>,
+        page_info: &PageInfo<'_>,
+    ) -> Vec<Cow<'static, str>> {
+        let category = page_info
+            .category
+            .as_ref()
+            .map(Cow::as_ref)
+            .unwrap_or("_default");
+        if !categories.iter().any(|slug| slug.as_ref() == category) {
+            categories.push(Cow::Owned(category.to_owned()));
+        }
+        categories
+    }
+
     async fn render_list_pages_block(
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
@@ -4301,28 +4315,7 @@ impl RenderService {
             (false, true)
         };
         let categories = if include_current_category && !category_all {
-            let make_error = || {
-                Error::new(
-                    "failed to load current page category for ListPages render",
-                    ErrorType::Render,
-                )
-            };
-            let page =
-                PageService::get(ctx, current_site_id, Reference::Id(current_page_id))
-                    .await
-                    .or_raise(make_error)?;
-            let category = CategoryService::get(
-                ctx,
-                current_site_id,
-                Reference::Id(page.page_category_id),
-            )
-            .await
-            .or_raise(make_error)?;
-            let mut categories = categories;
-            if !categories.iter().any(|slug| slug.as_ref() == category.slug) {
-                categories.push(Cow::Owned(category.slug));
-            }
-            categories
+            Self::categories_with_current_page_category(categories, page_info)
         } else {
             categories
         };
@@ -4633,28 +4626,7 @@ impl RenderService {
             (false, true)
         };
         let categories = if include_current_category && !category_all {
-            let make_error = || {
-                Error::new(
-                    "failed to load current page category for CountPages render",
-                    ErrorType::Render,
-                )
-            };
-            let page =
-                PageService::get(ctx, current_site_id, Reference::Id(current_page_id))
-                    .await
-                    .or_raise(make_error)?;
-            let category = CategoryService::get(
-                ctx,
-                current_site_id,
-                Reference::Id(page.page_category_id),
-            )
-            .await
-            .or_raise(make_error)?;
-            let mut categories = categories;
-            if !categories.iter().any(|slug| slug.as_ref() == category.slug) {
-                categories.push(Cow::Owned(category.slug));
-            }
-            categories
+            Self::categories_with_current_page_category(categories, page_info)
         } else {
             categories
         };
@@ -4828,9 +4800,18 @@ impl RenderService {
             )
         };
 
-        let page = PageService::get(ctx, current_site_id, Reference::Id(current_page_id))
+        let page = PageService::get_direct(ctx, current_page_id, true)
             .await
             .or_raise(make_error)?;
+        if page.site_id != current_site_id {
+            bail!(Error::new(
+                format!(
+                    "current page ID {} is not in site ID {}",
+                    current_page_id, current_site_id,
+                ),
+                ErrorType::Render,
+            ));
+        }
         let latest_revision =
             if fields.title || fields.alt_title || fields.tags || fields.updated_by {
                 match page.latest_revision_id {
