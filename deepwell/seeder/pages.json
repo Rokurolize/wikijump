@@ -271,7 +271,7 @@
             "slug": "component:anomaly-class-bar",
             "title": "Anomaly Classification Bar",
             "tags": ["component"],
-            "wikitext": "empty"
+            "wikitext": "empty-page"
         },
         {
             "slug": "theme:basalt",
@@ -303,13 +303,13 @@
             "slug": "scp-5382",
             "title": "SCP-5382",
             "tags": ["scp"],
-            "wikitext": "empty"
+            "wikitext": "empty-page"
         },
         {
             "slug": "scp-7000",
             "title": "SCP-7000",
             "tags": ["scp"],
-            "wikitext": "empty"
+            "wikitext": "empty-page"
         },
         {
             "slug": "scp-9506",
