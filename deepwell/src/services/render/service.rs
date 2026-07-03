@@ -2090,9 +2090,45 @@ impl RenderService {
         links: &[ProtectedWikidotCompatLink],
     ) -> String {
         for link in links {
-            html = html.replace(&link.marker, &link.anchor);
+            html = Self::replace_html_text_marker(&html, &link.marker, &link.anchor);
         }
         html
+    }
+
+    fn replace_html_text_marker(html: &str, marker: &str, replacement: &str) -> String {
+        if marker.is_empty() || !html.contains(marker) {
+            return html.to_owned();
+        }
+
+        let mut output = String::with_capacity(html.len());
+        let mut last = 0;
+        let mut index = 0;
+        let mut in_tag = false;
+        let bytes = html.as_bytes();
+        let marker_bytes = marker.as_bytes();
+
+        while index < bytes.len() {
+            match bytes[index] {
+                b'<' => in_tag = true,
+                b'>' if in_tag => in_tag = false,
+                _ if !in_tag && bytes[index..].starts_with(marker_bytes) => {
+                    output.push_str(&html[last..index]);
+                    output.push_str(replacement);
+                    index += marker.len();
+                    last = index;
+                    continue;
+                }
+                _ => {}
+            }
+            index += 1;
+        }
+
+        if last == 0 {
+            return html.to_owned();
+        }
+
+        output.push_str(&html[last..]);
+        output
     }
 
     fn restore_protected_wikidot_wikipedia_links(
@@ -10104,6 +10140,39 @@ mod tests {
             rendered
                 .contains(r#"<span class="WIKIJUMPWIKIDOTCOMPATLINK0X">hover</span>"#)
         );
+        assert!(!rendered.contains(r#"<span class="<a name="#));
+    }
+
+    #[test]
+    fn wikidot_named_anchor_markers_do_not_restore_markers_inside_attributes() {
+        let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut wikitext = concat!(
+            "[[span class=\"[[# x onmouseover=alert(1) y]]\"]]",
+            "hover",
+            "[[/span]]",
+        )
+        .to_owned();
+
+        let links = RenderService::protect_wikidot_compat_links(&mut wikitext, &settings);
+
+        assert_eq!(links.len(), 1);
+        assert!(wikitext.contains(&links[0].marker));
+
+        ftml::preprocess(&mut wikitext);
+        let tokens = ftml::tokenize(&wikitext);
+        let result = ftml::parse(&tokens, &page_info, &settings);
+        let (tree, _) = result.into();
+        let rendered = RenderService::restore_protected_wikidot_compat_links(
+            HtmlRender.render(&tree, &page_info, &settings).body,
+            &links,
+        );
+
+        assert!(rendered.contains(&format!(
+            r#"<span class="{}">hover</span>"#,
+            links[0].marker,
+        )));
+        assert!(!rendered.contains("onmouseover"));
         assert!(!rendered.contains(r#"<span class="<a name="#));
     }
 
