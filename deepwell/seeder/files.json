@@ -54,6 +54,62 @@
         ]
     },
     "scp-wiki": {
+        "component:anomaly-class-bar": [
+            {
+                "name": "danger-icon.svg",
+                "path": "component-anomaly-class-bar--danger-icon.svg"
+            },
+            {
+                "name": "ekhi-icon.svg",
+                "path": "component-anomaly-class-bar--ekhi-icon.svg"
+            },
+            {
+                "name": "amida-icon.svg",
+                "path": "component-anomaly-class-bar--amida-icon.svg"
+            },
+            {
+                "name": "critical-icon.svg",
+                "path": "component-anomaly-class-bar--critical-icon.svg"
+            },
+            {
+                "name": "keter-icon.svg",
+                "path": "component-anomaly-class-bar--keter-icon.svg"
+            }
+        ],
+        "nav:side": [
+            {
+                "name": "black.png",
+                "path": "nav-side--black.png"
+            },
+            {
+                "name": "icon-Discord-2023.png",
+                "path": "nav-side--icon-Discord-2023.png"
+            },
+            {
+                "name": "social-bluesky.png",
+                "path": "nav-side--social-bluesky.png"
+            },
+            {
+                "name": "social-facebook.png",
+                "path": "nav-side--social-facebook.png"
+            },
+            {
+                "name": "social-instagram.png",
+                "path": "nav-side--social-instagram.png"
+            },
+            {
+                "name": "social-reddit.png",
+                "path": "nav-side--social-reddit.png"
+            },
+            {
+                "name": "social-tiktok.png",
+                "path": "nav-side--social-tiktok.png"
+            },
+            {
+                "name": "social-twitter.png",
+                "path": "nav-side--social-twitter.png"
+            }
+        ],
         "scp-002": [
             {
                 "name": "SCP.txt",
@@ -87,6 +143,136 @@
             {
                 "name": "theend.jpg",
                 "path": "scp-3922--theend.jpg"
+            }
+        ],
+        "scp-5382": [
+            {
+                "name": "thaumiel-icon-2.svg",
+                "path": "scp-5382--thaumiel-icon-2.svg"
+            }
+        ],
+        "scp-7000": [
+            {
+                "name": "inimical-icon.svg",
+                "path": "scp-7000--inimical-icon.svg"
+            }
+        ],
+        "scp-7243": [
+            {
+                "name": "5y46584875-1.webp",
+                "path": "scp-7243--5y46584875-1.webp"
+            },
+            {
+                "name": "ARsterisk.png",
+                "path": "scp-7243--ARsterisk.png"
+            },
+            {
+                "name": "Anaximander.png",
+                "path": "scp-7243--Anaximander.png"
+            },
+            {
+                "name": "DT.jpg",
+                "path": "scp-7243--DT.jpg"
+            },
+            {
+                "name": "DeeringsBW.jpg",
+                "path": "scp-7243--DeeringsBW.jpg"
+            },
+            {
+                "name": "Digamma.png",
+                "path": "scp-7243--Digamma.png"
+            },
+            {
+                "name": "PhilStock.jpg",
+                "path": "scp-7243--PhilStock.jpg"
+            },
+            {
+                "name": "Verne.jpg",
+                "path": "scp-7243--Verne.jpg"
+            },
+            {
+                "name": "absentia-icon-3.svg",
+                "path": "scp-7243--absentia-icon-3.svg"
+            },
+            {
+                "name": "admo-7243-abatement.jpg",
+                "path": "scp-7243--admo-7243-abatement.jpg"
+            },
+            {
+                "name": "admo-7243-amy-abstract.jpg",
+                "path": "scp-7243--admo-7243-amy-abstract.jpg"
+            },
+            {
+                "name": "admo-7243-amy-cafeteria.jpg",
+                "path": "scp-7243--admo-7243-amy-cafeteria.jpg"
+            },
+            {
+                "name": "admo-7243-amy-ceiling.jpg",
+                "path": "scp-7243--admo-7243-amy-ceiling.jpg"
+            },
+            {
+                "name": "admo-7243-amy-class.jpg",
+                "path": "scp-7243--admo-7243-amy-class.jpg"
+            },
+            {
+                "name": "admo-7243-amy-lights.jpg",
+                "path": "scp-7243--admo-7243-amy-lights.jpg"
+            },
+            {
+                "name": "admo-7243-amy-sky.jpg",
+                "path": "scp-7243--admo-7243-amy-sky.jpg"
+            },
+            {
+                "name": "admo-7243-amy-subway.jpg",
+                "path": "scp-7243--admo-7243-amy-subway.jpg"
+            },
+            {
+                "name": "admo-7243-amy-truss.jpg",
+                "path": "scp-7243--admo-7243-amy-truss.jpg"
+            },
+            {
+                "name": "admo-7243-amy-warehouse.jpg",
+                "path": "scp-7243--admo-7243-amy-warehouse.jpg"
+            },
+            {
+                "name": "admo-7243-bubble-evenmoredone.jpg",
+                "path": "scp-7243--admo-7243-bubble-evenmoredone.jpg"
+            },
+            {
+                "name": "admo-7243-exactus.jpg",
+                "path": "scp-7243--admo-7243-exactus.jpg"
+            },
+            {
+                "name": "admo-7243-oracle.png",
+                "path": "scp-7243--admo-7243-oracle.png"
+            },
+            {
+                "name": "admo-7243-resurgence.jpg",
+                "path": "scp-7243--admo-7243-resurgence.jpg"
+            },
+            {
+                "name": "bluepint2.jpg",
+                "path": "scp-7243--bluepint2.jpg"
+            },
+            {
+                "name": "chamber.jpg",
+                "path": "scp-7243--chamber.jpg"
+            },
+            {
+                "name": "fucksplosion-4.webp",
+                "path": "scp-7243--fucksplosion-4.webp"
+            },
+            {
+                "name": "metaamida-icon.svg",
+                "path": "scp-7243--metaamida-icon.svg"
+            },
+            {
+                "name": "paradoxysm-icon.svg",
+                "path": "scp-7243--paradoxysm-icon.svg"
+            },
+            {
+                "name": "timecrash.jpg",
+                "path": "scp-7243--timecrash.jpg"
             }
         ],
         "scp-9506": [
@@ -235,6 +421,66 @@
             {
                 "name": "MISCOMM_DARKLOGO.png",
                 "path": "theme-basalt--MISCOMM_DARKLOGO.png"
+            }
+        ],
+        "scp-8382": [
+            {
+                "name": "8382_Main.jpg",
+                "path": "scp-8382--8382_Main.jpg"
+            },
+            {
+                "name": "Avys.jpg",
+                "path": "scp-8382--Avys.jpg"
+            },
+            {
+                "name": "Boswell.jpg",
+                "path": "scp-8382--Boswell.jpg"
+            },
+            {
+                "name": "Bradbury.jpg",
+                "path": "scp-8382--Bradbury.jpg"
+            },
+            {
+                "name": "Brury.jpg",
+                "path": "scp-8382--Brury.jpg"
+            },
+            {
+                "name": "Buck.jpg",
+                "path": "scp-8382--Buck.jpg"
+            },
+            {
+                "name": "Hsieh.jpg",
+                "path": "scp-8382--Hsieh.jpg"
+            },
+            {
+                "name": "Lillihammer_Staff.jpg",
+                "path": "scp-8382--Lillihammer_Staff.jpg"
+            },
+            {
+                "name": "Sinclair.jpg",
+                "path": "scp-8382--Sinclair.jpg"
+            },
+            {
+                "name": "Zwist.jpg",
+                "path": "scp-8382--Zwist.jpg"
+            }
+        ],
+        "theme:blankstyle": [
+            {
+                "name": "43Head.png",
+                "path": "theme-blankstyle--43Head.png"
+            }
+        ],
+        "this-page-intentionally-left-blank": [
+            {
+                "name": "Mallet.png",
+                "path": "this-page-intentionally-left-blank--Mallet.png"
+            }
+        ],
+        "the-b-b-decommission": [
+            {
+                "name": "Asterisk43.png",
+                "path": "the-b-b-decommission--Asterisk43.png"
             }
         ]
     }

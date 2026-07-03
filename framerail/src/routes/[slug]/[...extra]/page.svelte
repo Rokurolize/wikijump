@@ -15,6 +15,7 @@
     DeletePane
   } from "."
   import { resolve } from "$app/paths"
+  import { wikidotTagSeparator } from "$lib/wikidot-page-tags"
 
   import type { PageProps } from "./$types"
   import type { Optional } from "$lib/types"
@@ -31,6 +32,7 @@
   let revision = $state<Optional<PageRevisionModelFiltered>>(undefined)
   let pagePaneState = $state<PagePane>(PagePane.None)
   let wikidotPageActions = $derived(data.wikidot_page_actions)
+  const breadcrumbSeparator = " » "
 
   async function navigateEdit() {
     // Check edit permission first
@@ -107,6 +109,17 @@
     <div id="page-title">{data.page_revision?.title}</div>
   {/if}
 
+  {#if !data.options?.debug && !showRevision && data.wikidot_breadcrumbs?.length}
+    <div id="breadcrumbs">
+      {#each data.wikidot_breadcrumbs as breadcrumb, index (breadcrumb.slug)}
+        {#if index > 0}
+          <span class="breadcrumb-separator">{breadcrumbSeparator}</span>
+        {/if}
+        <a href={resolve(`/${breadcrumb.slug}`, {})}>{breadcrumb.title}</a>
+      {/each}
+    </div>
+  {/if}
+
   <div id="page-content">
     {#if data.options?.debug}
       <textarea class="debug">{JSON.stringify(page, null, 2)}</textarea>
@@ -124,7 +137,8 @@
     {#if revision?.tags?.length}
       <div class="page-tags">
         <span
-          >{#each revision.tags as tag (tag)}
+          >{#each revision.tags as tag, index (tag)}
+            {wikidotTagSeparator(index)}
             <a href={resolve(`/system:page-tags/tag/${tag}`, {})}>{tag}</a>
           {/each}</span
         >
@@ -133,7 +147,8 @@
   {:else if data.page_revision?.tags?.length}
     <div class="page-tags">
       <span
-        >{#each data.page_revision?.tags as tag (tag)}
+        >{#each data.page_revision?.tags as tag, index (tag)}
+          {wikidotTagSeparator(index)}
           <a href={resolve(`/system:page-tags/tag/${tag}`, {})}>{tag}</a>
         {/each}</span
       >
@@ -190,7 +205,11 @@
           }}
           type="button"
         >
-          {wikidotPageActions?.rate ?? data.internationalization?.vote}
+          {#if wikidotPageActions?.ratingText}
+            Rate (<span>{wikidotPageActions.ratingText}</span>)
+          {:else}
+            {wikidotPageActions?.rate ?? data.internationalization?.vote}
+          {/if}
         </a>
         {#if wikidotPageActions}
           <!-- svelte-ignore a11y_invalid_attribute -->
