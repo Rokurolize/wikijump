@@ -8075,7 +8075,7 @@ mod tests {
 
         assert!(!arguments.current_page_only);
         assert!(arguments.exclude_current_page);
-        assert_eq!(arguments.limit, Some(15));
+        assert_eq!(arguments.count_pages_per_page, Some(15));
     }
 
     #[test]
@@ -8140,7 +8140,7 @@ mod tests {
             arguments.excluded_categories,
             vec![Cow::Borrowed("fragment")]
         );
-        assert_eq!(arguments.limit, Some(250));
+        assert_eq!(arguments.count_pages_per_page, Some(250));
     }
 
     #[test]
@@ -8156,7 +8156,7 @@ mod tests {
             vec![Cow::Borrowed("deleted")]
         );
         assert_eq!(arguments.default_tags, vec![Cow::Borrowed("1998")]);
-        assert_eq!(arguments.limit, Some(100));
+        assert_eq!(arguments.count_pages_per_page, Some(100));
         assert_eq!(
             arguments.prepend_line.as_deref(),
             Some("||~ ページ ||~ 投稿者 ||~ 投稿日 ||~ 評価 ||"),
@@ -8179,7 +8179,8 @@ mod tests {
         .expect("tag-search ListPages arguments should parse");
 
         assert!(arguments.category_all);
-        assert_eq!(arguments.limit, Some(20));
+        assert_eq!(arguments.limit, Some(0));
+        assert_eq!(arguments.count_pages_per_page, Some(20));
         assert_eq!(arguments.offset, 0);
         assert!(arguments.slug.is_none());
 
@@ -8289,7 +8290,7 @@ mod tests {
 
         assert_eq!(arguments.authors, vec![Cow::Borrowed("=")]);
         assert_eq!(arguments.order, None);
-        assert_eq!(arguments.limit, Some(250));
+        assert_eq!(arguments.count_pages_per_page, Some(250));
         assert_eq!(arguments.all_tags, vec![Cow::Borrowed("scp")]);
         assert_eq!(arguments.no_tags, vec![Cow::Borrowed("co-authored")]);
         assert_eq!(
