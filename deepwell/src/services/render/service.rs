@@ -3154,6 +3154,7 @@ impl RenderService {
             .replace_all(wikitext, |captures: &regex::Captures<'_>| {
                 let body = captures.name("body").map_or("", |mtch| mtch.as_str());
                 let body = body.trim_matches('\n');
+                let body = Self::escape_wikidot_css_module_body(body);
                 format!("<style data-wikijump-compat-css-module=\"1\">\n{body}\n</style>")
             })
             .into_owned()
@@ -9185,6 +9186,27 @@ mod tests {
         assert!(!html.contains("[[module CSS"));
         assert!(!html.contains("[[/module]]"));
         assert!(!html.contains("[[div"));
+    }
+
+    #[test]
+    fn wikidot_compatibility_fallback_escapes_css_module_style_end_tags() {
+        let source = RenderService::render_wikidot_compat_fallback_css_modules(concat!(
+            "[[module CSS]]\n",
+            "</style><img src=x onerror=alert(1)><style>\n",
+            "[[/module]]\n",
+            "[[collapsible]]\n",
+            "body\n",
+            "[[/collapsible]]\n",
+        ));
+
+        let html = RenderService::render_wikidot_compatibility_fallback_with_code_blocks(
+            &source,
+        );
+
+        assert!(html.contains(r#"<style data-wikijump-compat-css-module="1">"#));
+        assert!(html.contains(r"\3C /style>\3C img"));
+        assert!(!html.contains("</style><img"));
+        assert!(!html.contains("<img src=x"));
     }
 
     #[test]
