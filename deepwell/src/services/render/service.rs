@@ -37,7 +37,8 @@ use crate::services::text_block::{
     MIME_HTML, TextBlock, TextBlockService, mime_for_language,
 };
 use crate::services::{
-    PageQueryService, PageRevisionService, PageService, SiteService, TextService,
+    CategoryService, PageQueryService, PageRevisionService, PageService, SiteService,
+    TextService,
 };
 use crate::types::{Action, PageId, Permission, Resource, TextBlockType};
 use ftml::data::PageRef;
@@ -4274,6 +4275,22 @@ impl RenderService {
         categories
     }
 
+    fn page_info_category_slug<'a>(page_info: &'a PageInfo<'_>) -> Cow<'a, str> {
+        page_info
+            .category
+            .as_ref()
+            .map(|category| Cow::Borrowed(category.as_ref()))
+            .unwrap_or(Cow::Borrowed("_default"))
+    }
+
+    fn page_info_full_slug(page_info: &PageInfo<'_>) -> String {
+        let page = page_info.page.as_ref();
+        match Self::page_info_category_slug(page_info).as_ref() {
+            "_default" => page.to_owned(),
+            category => format!("{category}:{page}"),
+        }
+    }
+
     async fn render_list_pages_block(
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
@@ -4812,6 +4829,24 @@ impl RenderService {
                 ErrorType::Render,
             ));
         }
+        let page_category_id = if fields.page_category_id {
+            let category_slug = Self::page_info_category_slug(page_info);
+            let category = CategoryService::get(
+                ctx,
+                current_site_id,
+                Reference::Slug(Cow::Borrowed(category_slug.as_ref())),
+            )
+            .await
+            .or_raise(make_error)?;
+            Some(category.category_id)
+        } else {
+            None
+        };
+        let slug = if fields.slug {
+            Some(Self::page_info_full_slug(page_info))
+        } else {
+            None
+        };
         let latest_revision =
             if fields.title || fields.alt_title || fields.tags || fields.updated_by {
                 match page.latest_revision_id {
@@ -4854,12 +4889,8 @@ impl RenderService {
             pages: vec![FoundPageRow {
                 page_id: page.page_id,
                 site_id: page.site_id,
-                slug: if fields.slug { Some(page.slug) } else { None },
-                page_category_id: if fields.page_category_id {
-                    Some(page.page_category_id)
-                } else {
-                    None
-                },
+                slug,
+                page_category_id,
                 page_revision_id: if fields.page_revision_id {
                     page.latest_revision_id
                 } else {
@@ -7989,6 +8020,26 @@ mod tests {
             tags: Vec::new(),
             language: Cow::Borrowed("en"),
         }
+    }
+
+    #[test]
+    fn page_info_full_slug_uses_render_target_category() {
+        let default = fallback_test_page_info("restored", "Restored");
+        assert_eq!(RenderService::page_info_full_slug(&default), "restored");
+
+        let mut categorized = fallback_test_page_info("restored", "Restored");
+        categorized.category = Some(Cow::Borrowed("archive"));
+        assert_eq!(
+            RenderService::page_info_full_slug(&categorized),
+            "archive:restored",
+        );
+
+        let mut explicit_default = fallback_test_page_info("restored", "Restored");
+        explicit_default.category = Some(Cow::Borrowed("_default"));
+        assert_eq!(
+            RenderService::page_info_full_slug(&explicit_default),
+            "restored",
+        );
     }
 
     fn render_wikidot_page_body_after_compat_restore(wikitext: &str) -> String {
