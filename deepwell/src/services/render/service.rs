@@ -2889,6 +2889,7 @@ impl RenderService {
             .replace_all(wikitext, |captures: &regex::Captures<'_>| {
                 let body = captures.name("body").map_or("", |mtch| mtch.as_str());
                 let body = body.trim_matches('\n');
+                let body = Self::escape_wikidot_css_module_body(body);
                 let marker =
                     format!("{WIKIDOT_CSS_MODULE_SENTINEL_PREFIX}{}X", styles.len());
                 styles.push(format!("<style>\n{body}\n</style>"));
@@ -2897,6 +2898,10 @@ impl RenderService {
             .into_owned();
         *wikitext = protected;
         styles
+    }
+
+    fn escape_wikidot_css_module_body(body: &str) -> String {
+        body.replace('<', r"\3C ")
     }
 
     fn restore_protected_wikidot_css_modules(
@@ -8181,6 +8186,25 @@ mod tests {
         let restored =
             RenderService::restore_protected_wikidot_css_modules(source, &styles);
         assert!(restored.contains("<style>\n#u-change{"));
+    }
+
+    #[test]
+    fn escapes_css_module_style_end_tags() {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut source = concat!(
+            "[[module css]]\n",
+            "</style><img src=x onerror=alert(1)><style>\n",
+            "[[/module]]\n",
+        )
+        .to_owned();
+
+        let styles = RenderService::protect_wikidot_css_modules(&mut source, &settings);
+
+        assert_eq!(styles.len(), 1);
+        assert!(styles[0].starts_with("<style>\n"));
+        assert!(styles[0].ends_with("\n</style>"));
+        assert!(!styles[0].contains("</style><img"));
+        assert!(styles[0].contains(r"\3C /style>\3C img"));
     }
 
     #[test]
