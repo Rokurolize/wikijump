@@ -74,6 +74,31 @@ pub struct BasicErrorOutput {
     pub status: StatusCode,
 }
 
+impl BasicErrorOutput {
+    fn into_response(self) -> Response {
+        let BasicErrorOutput {
+            title,
+            body,
+            status,
+        } = self;
+
+        // SAFETY: Both string fields here come from DEEPWELL,
+        //         which in turn come from Fluent translation lines.
+        //         As such, they can be trusted to not contain malicious HTML.
+
+        const HTML_START: &str = r#"<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>"#;
+        const HTML_MIDDLE: &str = "</title></head><body><article>";
+        const HTML_END: &str = "</article></body></html>\n";
+
+        let html = format!("{HTML_START}{title}{HTML_MIDDLE}{body}{HTML_END}");
+        Response::builder()
+            .status(status)
+            .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+            .body(Body::from(html))
+            .expect("Unable to convert response data")
+    }
+}
+
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum TextBlockErrorReason {
     /// This hosted text block does not exist.
@@ -139,11 +164,7 @@ pub async fn build_basic_error_response(
         }};
     }
 
-    let BasicErrorOutput {
-        title,
-        body,
-        status,
-    } = match basic_error {
+    let output = match basic_error {
         BasicError::SiteSlug { site_slug } => {
             deepwell_fetch!(missing_site_slug, site_slug => NOT_FOUND)
         }
@@ -189,18 +210,43 @@ pub async fn build_basic_error_response(
         }
     };
 
-    // SAFETY: Both string fields here come from DEEPWELL,
-    //         which in turn come from Fluent translation lines.
-    //         As such, they can be trusted to not contain malicious HTML.
+    output.into_response()
+}
 
-    const HTML_START: &str = r#"<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>"#;
-    const HTML_MIDDLE: &str = "</title></head><body><article>";
-    const HTML_END: &str = "</article></body></html>\n";
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body;
 
-    let html = format!("{HTML_START}{title}{HTML_MIDDLE}{body}{HTML_END}");
-    Response::builder()
-        .status(status)
-        .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-        .body(Body::from(html))
-        .expect("Unable to convert response data")
+    #[test]
+    fn text_block_error_reasons_match_deepwell_fluent_values() {
+        assert_eq!(TextBlockErrorReason::Missing.value(), "missing");
+        assert_eq!(TextBlockErrorReason::Invalid.value(), "invalid");
+        assert_eq!(TextBlockErrorReason::Fetch.value(), "fetch");
+    }
+
+    #[tokio::test]
+    async fn basic_error_output_builds_html_response() {
+        let response = BasicErrorOutput {
+            title: "Missing page".to_string(),
+            body: "<p>No such page.</p>".to_string(),
+            status: StatusCode::NOT_FOUND,
+        }
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        assert_eq!(
+            response.headers().get(header::CONTENT_TYPE).unwrap(),
+            "text/html; charset=utf-8",
+        );
+
+        let body = body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert_eq!(
+            &body[..],
+            br#"<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Missing page</title></head><body><article><p>No such page.</p></article></body></html>
+"#,
+        );
+    }
 }

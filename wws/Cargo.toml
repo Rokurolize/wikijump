@@ -39,6 +39,11 @@ wikidot-normalize = "0.12"
 [build-dependencies]
 built = { version = "0.8", features = ["git2"] }
 
+[dev-dependencies]
+jsonrpsee-types = "0.26"
+serde_json = "1"
+tokio = { version = "1", features = ["io-util", "net"] }
+
 # Lints
 
 [lints.rust]
