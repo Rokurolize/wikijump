@@ -56,6 +56,7 @@ use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::task;
 use tokio::time::timeout;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct RenderService;
@@ -69,6 +70,7 @@ struct ProtectedWikidotWikipediaLink {
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ProtectedWikidotCompatLink {
     anchor: String,
+    marker: String,
 }
 
 const MAX_INCLUDE_EXPANSION_DEPTH: usize = 8;
@@ -1957,9 +1959,10 @@ impl RenderService {
                 continue;
             }
 
-            let marker = format!("{WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX}{}X", links.len());
+            let marker = wikidot_compat_link_marker();
             links.push(ProtectedWikidotCompatLink {
                 anchor: wikidot_named_anchor(name),
+                marker: marker.clone(),
             });
             output.push_str(&marker);
         }
@@ -2012,9 +2015,10 @@ impl RenderService {
                 continue;
             }
 
-            let marker = format!("{WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX}{}X", links.len());
+            let marker = wikidot_compat_link_marker();
             links.push(ProtectedWikidotCompatLink {
                 anchor: wikidot_current_page_anchor(label),
+                marker: marker.clone(),
             });
             output.push_str(&marker);
         }
@@ -2065,9 +2069,10 @@ impl RenderService {
                 continue;
             }
 
-            let marker = format!("{WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX}{}X", links.len());
+            let marker = wikidot_compat_link_marker();
             links.push(ProtectedWikidotCompatLink {
                 anchor: wikidot_star_local_anchor(target, label),
+                marker: marker.clone(),
             });
             output.push_str(&marker);
         }
@@ -2084,9 +2089,8 @@ impl RenderService {
         mut html: String,
         links: &[ProtectedWikidotCompatLink],
     ) -> String {
-        for (index, link) in links.iter().enumerate() {
-            let marker = format!("{WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX}{index}X");
-            html = html.replace(&marker, &link.anchor);
+        for link in links {
+            html = html.replace(&link.marker, &link.anchor);
         }
         html
     }
@@ -5840,6 +5844,13 @@ fn resolve_list_pages_signed_abs_expressions(value: &str) -> String {
 
 fn escape_wikidot_link_text(value: &str) -> String {
     value.replace(']', r"\]")
+}
+
+fn wikidot_compat_link_marker() -> String {
+    format!(
+        "{WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX}{}X",
+        Uuid::new_v4().as_simple(),
+    )
 }
 
 fn wikidot_named_anchor(name: &str) -> String {
@@ -10023,6 +10034,40 @@ mod tests {
         assert!(rendered.contains("Visible text"));
         assert!(!rendered.contains("[tabanchor]"));
         assert!(!rendered.contains("[# tabanchor]"));
+    }
+
+    #[test]
+    fn wikidot_named_anchor_markers_do_not_restore_predictable_literal_sentinels() {
+        let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut wikitext = concat!(
+            "[[# x onmouseover=alert(1) y]]\n",
+            "[[span class=\"WIKIJUMPWIKIDOTCOMPATLINK0X\"]]hover[[/span]]",
+        )
+        .to_owned();
+
+        let links = RenderService::protect_wikidot_compat_links(&mut wikitext, &settings);
+
+        assert_eq!(links.len(), 1);
+        assert_ne!(links[0].marker, "WIKIJUMPWIKIDOTCOMPATLINK0X");
+        assert!(wikitext.contains(&links[0].marker));
+        assert!(wikitext.contains("WIKIJUMPWIKIDOTCOMPATLINK0X"));
+
+        ftml::preprocess(&mut wikitext);
+        let tokens = ftml::tokenize(&wikitext);
+        let result = ftml::parse(&tokens, &page_info, &settings);
+        let (tree, _) = result.into();
+        let rendered = RenderService::restore_protected_wikidot_compat_links(
+            HtmlRender.render(&tree, &page_info, &settings).body,
+            &links,
+        );
+
+        assert!(rendered.contains(r#"<a name="x onmouseover=alert(1) y"></a>"#));
+        assert!(
+            rendered
+                .contains(r#"<span class="WIKIJUMPWIKIDOTCOMPATLINK0X">hover</span>"#)
+        );
+        assert!(!rendered.contains(r#"<span class="<a name="#));
     }
 
     #[test]
