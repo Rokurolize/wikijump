@@ -57,16 +57,83 @@ test("seed data names the EN mirror like live SCP Wiki chrome", () => {
   assert.equal(site["default-page"], "main");
 });
 
-test("imported page-local attachments are not repository seed fixtures", () => {
+test("non-shipped imported page-local attachments are not repository seed fixtures", () => {
   const filesBySite = readJson("deepwell/seeder/files.json");
   for (const page of [
-    "scp-3922",
     "scp-7243",
     "scp-8382",
-    "scp-9506",
-    "theme:basalt",
   ]) {
     assert.equal(filesBySite["scp-wiki"]?.[page], undefined);
+  }
+});
+
+test("shipped SCP Wiki seed pages include their local attachment fixtures", () => {
+  const filesBySite = readJson("deepwell/seeder/files.json");
+  const expectedByPage = new Map([
+    ["scp-3922", ["theend.jpg"]],
+    [
+      "scp-9506",
+      [
+        "AFTER_FOG.png",
+        "DEAD_BABY.png",
+        "DONT_PANIC.png",
+        "ESTAB_COMMS.png",
+        "NFSI.png",
+        "PRAC_OFT.png",
+        "REC_ALERT.png",
+        "Sam.jpg",
+        "WHEN_ALERT.png",
+        "alert.jpg",
+        "cold.jpg",
+        "earth.jpg",
+        "emigration.jpg",
+        "fog.jpg",
+        "hunt.jpg",
+        "memorial.jpg",
+        "opening.jpg",
+        "podium.jpg",
+        "weathermap.gif",
+      ],
+    ],
+    [
+      "theme:basalt",
+      [
+        "CLASSIFICATION_DARKLOGO.png",
+        "CLASSIFICATION_LIGHTLOGO.png",
+        "DELTA_T_DARKLOGO.png",
+        "DELTA_T_LIGHTLOGO.png",
+        "ETHICS_DARKLOGO.png",
+        "ETHICS_LIGHTLOGO.png",
+        "ETTRA_DARKLOGO.png",
+        "ETTRA_LIGHTLOGO.png",
+        "MISCOMM_DARKLOGO.png",
+        "MISCOMM_LIGHTLOGO.png",
+        "O5_DARKLOGO.png",
+        "O5_LIGHTLOGO.png",
+        "RAISA_DARKLOGO.png",
+        "RAISA_LIGHTLOGO.png",
+        "basalt-theme-logo.svg",
+        "basalt_scp_logo-for_darkmode.svg",
+        "basalt_scp_logo-for_lightmode.svg",
+      ],
+    ],
+  ]);
+
+  for (const [page, expectedNames] of expectedByPage) {
+    const files = filesBySite["scp-wiki"]?.[page] ?? [];
+    assert.deepEqual(files.map((file) => file.name).sort(), expectedNames);
+
+    for (const file of files) {
+      const seededPath = path.join(seederRoot, file.path);
+      assert.ok(
+        fs.existsSync(seededPath),
+        `${page}/${file.name} references missing ${seededPath}`,
+      );
+      assert.ok(
+        fs.statSync(seededPath).size > 0,
+        `${page}/${file.name} should not be empty`,
+      );
+    }
   }
 });
 
