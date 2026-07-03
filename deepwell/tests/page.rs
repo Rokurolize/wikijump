@@ -35,6 +35,9 @@ use deepwell::models::user::Entity as UserTable;
 use deepwell::services::blob::{EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
 use deepwell::services::category::CategoryService;
 use deepwell::services::file_revision::CreateFirstFileRevision;
+use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
+use deepwell::services::forum_post::CreateForumPost;
+use deepwell::services::forum_thread::CreateForumThread;
 use deepwell::services::page_query::{
     CategoriesSelector, DateSelector, FoundPageFields, IncludedCategories,
     OrderBySelector, OrderProperty, PageParentSelector, PageQuery, PageQueryService,
@@ -47,7 +50,8 @@ use deepwell::services::role::{
 use deepwell::services::session::CreateSession;
 use deepwell::services::view::GetPageViewOutput;
 use deepwell::services::{
-    FileRevisionService, RenderService, RequestContext, SessionService,
+    FileRevisionService, ForumPostService, ForumService, ForumThreadService,
+    RenderService, RequestContext, SessionService,
 };
 use deepwell::types::{
     Action, PageRevisionType, Permission, Reference, Resource, TextBlockType,
@@ -492,9 +496,9 @@ async fn html_block_render_leaves_image_block_include_literal() {
     let html =
         String::from_utf8(response.into()).expect("HTML block object should be UTF-8");
 
-    for forbidden in ["scp-image-block", "local--files/image-block-html-literal"] {
+    for forbidden in ["scp-image-block".to_owned(), format!("local--files/{slug}")] {
         assert!(
-            !html.contains(forbidden),
+            !html.contains(&forbidden),
             "HTML block image-block include should not be pre-expanded:\n{html}"
         );
     }
@@ -720,6 +724,102 @@ async fn listpages_fixture_subset_renders_titles_slugs_order_and_tag_filter() {
         target_a < target_b && target_b < target_c,
         "target slugs should render in order a, b, c:\n{html}"
     );
+}
+
+#[tokio::test]
+async fn listpages_default_category_and_bare_tags_follow_wikidot_semantics() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let category_slug = "fixture-listpages-default-category";
+    let tag_a = "fixture-listpages-bare-a";
+    let tag_b = "fixture-listpages-bare-b";
+    let target_a_slug = format!("{category_slug}:target-a");
+    let target_b_slug = format!("{category_slug}:target-b");
+
+    for (slug, title, tags) in [
+        (
+            target_a_slug.clone(),
+            "Fixture ListPages Bare Tag Target A",
+            vec![tag_a],
+        ),
+        (
+            target_b_slug.clone(),
+            "Fixture ListPages Bare Tag Target B",
+            vec![tag_b],
+        ),
+        (
+            "fixture-listpages-default-category-excluded".to_owned(),
+            "Fixture ListPages Bare Tag Excluded",
+            vec![tag_a],
+        ),
+    ] {
+        let revision = create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &slug,
+            title,
+            "Fixture ListPages bare tag target.",
+        )
+        .await;
+        set_listpages_test_tags(&mut runner, site_id, &slug, revision, &tags).await;
+    }
+
+    let index_slug = format!("{category_slug}:index");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        &index_slug,
+        "Fixture ListPages Default Category Index",
+        &format!(
+            "Default category ListPages start.\n\n[[module ListPages tags=\"{tag_a} {tag_b}\" limit=\"10\" order=\"name\"]]\n* %%title%% :: %%slug%%\n[[/module]]\n\nDefault category ListPages end."
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": index_slug,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("ListPages default-category index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    for expected in [
+        "Default category ListPages start.",
+        "Fixture ListPages Bare Tag Target A",
+        "Fixture ListPages Bare Tag Target B",
+        &target_a_slug,
+        &target_b_slug,
+        "Default category ListPages end.",
+    ] {
+        assert!(
+            html.contains(expected),
+            "ListPages should include current-category pages matching either bare tag {expected:?}:\n{html}"
+        );
+    }
+
+    for forbidden in [
+        "Fixture ListPages Bare Tag Excluded",
+        "fixture-listpages-default-category-excluded",
+        "[[module ListPages",
+        "%%title%%",
+        "%%slug%%",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "ListPages should default to the current category and render body variables, but found {forbidden:?}:\n{html}"
+        );
+    }
 }
 
 #[tokio::test]
@@ -1189,6 +1289,133 @@ async fn listpages_fragment_content_skips_hidden_pages_by_default() {
 }
 
 #[tokio::test]
+async fn listpages_fragment_content_expands_child_includes() {
+    const INDEX_SLUG: &str = "fixture-listpages-fragment-include-index";
+    const FRAGMENT_SLUG: &str = "fixture-listpages-fragment-include-child";
+    const INCLUDE_SLUG: &str = "fixture-listpages-fragment-include-target";
+    const INCLUDE_MARKER: &str = "Included fragment dependency should render.";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let index_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Fragment Include Index",
+        concat!(
+            "Before included fragment.\n\n",
+            "[[module ListPages parent=\".\" category=\"fragment\" order=\"created_at\" limit=\"1\"]]\n",
+            "%%content%%\n",
+            "[[/module]]\n\n",
+            "After included fragment."
+        ),
+    )
+    .await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fragment:fixture-listpages-fragment-include-primer",
+        "Fixture Fragment Include Category Primer",
+        "Fixture fragment include category primer.",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INCLUDE_SLUG,
+        "Fixture ListPages Fragment Include Target",
+        INCLUDE_MARKER,
+    )
+    .await;
+
+    let fragment_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        FRAGMENT_SLUG,
+        "Fixture ListPages Fragment Include Child",
+        &format!(
+            "Fragment before include.\n[[include {INCLUDE_SLUG}]]\nFragment after include."
+        ),
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, FRAGMENT_SLUG, "fragment").await;
+    set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        FRAGMENT_SLUG,
+        fragment_revision,
+        &["verification", "verification-fragment-include"],
+    )
+    .await;
+    set_listpages_test_created_at(
+        &runner,
+        site_id,
+        FRAGMENT_SLUG,
+        OffsetDateTime::UNIX_EPOCH + Duration::seconds(1),
+    )
+    .await;
+    set_listpages_test_parent(&mut runner, site_id, FRAGMENT_SLUG, INDEX_SLUG).await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(INDEX_SLUG))),
+    });
+    let rerender = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+            "last_revision_id": index_revision,
+            "revision_comments": "rerender after attaching include fragment",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(
+        rerender.is_none(),
+        "relationship-only rerender should not create a page revision",
+    );
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("fragment include ListPages index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    for expected in [
+        "Fragment before include.",
+        INCLUDE_MARKER,
+        "Fragment after include.",
+    ] {
+        assert!(
+            html.contains(expected),
+            "fragment ListPages content should contain {expected:?}:\n{html}"
+        );
+    }
+    assert!(
+        !html.contains("[[include"),
+        "fragment ListPages content should expand child includes before rendering:\n{html}"
+    );
+}
+
+#[tokio::test]
 async fn listpages_content_body_supports_bounded_ordered_child_results() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -1622,6 +1849,368 @@ async fn file_get_requires_parent_page_view_permission() {
     assert_eq!(output.mime, EMPTY_BLOB_MIME);
     assert_eq!(output.s3_hash.as_ref(), &EMPTY_BLOB_HASH);
     assert!(output.data.is_none());
+}
+
+#[tokio::test]
+async fn forum_post_reads_require_parent_page_view_permission() {
+    let mut runner = TestRunner::setup().await;
+    const SITE_SLUG: &str = "scp-wiki";
+    const PAGE_SLUG: &str = "fixture-private-forum-post-read";
+    const PUBLIC_PAGE_SLUG: &str = "fixture-public-forum-post-read";
+    const PRIVATE_CATEGORY: &str = "fixture-forum-post-read-private-view";
+
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("Seeded site not found");
+    let site_id = site.site.site_id;
+
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(PAGE_SLUG))),
+    });
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "private forum post parent page",
+            "title": "Private Forum Post Read",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create private forum post read fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(page.parser_errors.is_empty());
+    set_listpages_test_category_slug(&runner, site_id, PAGE_SLUG, PRIVATE_CATEGORY).await;
+
+    let public_page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "public forum post parent page",
+            "title": "Public Forum Post Read",
+            "alt_title": null,
+            "slug": PUBLIC_PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create public forum post read fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(public_page.parser_errors.is_empty());
+
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Forum Post Read ACL Group".to_owned(),
+            description: "Forum post read ACL fixture group".to_owned(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum group fixture should be created");
+    let forum_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Forum Post Read ACL Category".to_owned(),
+            description: "Forum post read ACL fixture category".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum category fixture should be created");
+
+    let private_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: forum_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(page.page_id),
+            title: "Private forum post read thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private forum thread fixture should be created");
+    let private_post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: private_thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Private forum post read title".to_owned(),
+            wikitext: "private forum post body marker".to_owned(),
+            comments: "create private forum post fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private forum post fixture should be created");
+    assert!(private_post.parser_errors.is_empty());
+
+    let public_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: forum_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(public_page.page_id),
+            title: "Public forum post read thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("public forum thread fixture should be created");
+    let public_post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: public_thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Public forum post read title".to_owned(),
+            wikitext: "public forum post body marker".to_owned(),
+            comments: "create public forum post fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("public forum post fixture should be created");
+    assert!(public_post.parser_errors.is_empty());
+
+    runner.set_request_context(RequestContext::default());
+
+    let public_selection = run_endpoint!(
+        runner,
+        forum_post_select,
+        json!({
+            "site_id": site_id,
+            "page": PUBLIC_PAGE_SLUG,
+        }),
+    );
+    assert_eq!(public_selection, vec![public_post.forum_post_id]);
+
+    let private_selection = run_endpoint!(
+        runner,
+        forum_post_select,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+        }),
+    );
+    assert!(private_selection.is_empty());
+
+    let visible_posts = run_endpoint!(
+        runner,
+        forum_post_get,
+        json!({
+            "site_id": site_id,
+            "posts": [private_post.forum_post_id, public_post.forum_post_id],
+        }),
+    );
+    assert_eq!(visible_posts.len(), 1);
+    let visible_post = serde_json::to_value(&visible_posts[0])
+        .expect("forum post output should serialize");
+    assert_eq!(visible_post["id"], json!(public_post.forum_post_id));
+    assert_eq!(
+        visible_post["content"],
+        json!("public forum post body marker")
+    );
+
+    let private_summary = run_endpoint!(
+        runner,
+        forum_post_page_summary,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+        }),
+    );
+    let private_summary_value = serde_json::to_value(private_summary)
+        .expect("private forum summary should serialize");
+    assert_eq!(private_summary_value["comments"], json!(0));
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(PAGE_SLUG))),
+    });
+
+    let admin_selection = run_endpoint!(
+        runner,
+        forum_post_select,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+        }),
+    );
+    assert_eq!(admin_selection, vec![private_post.forum_post_id]);
+
+    let admin_posts = run_endpoint!(
+        runner,
+        forum_post_get,
+        json!({
+            "site_id": site_id,
+            "posts": [private_post.forum_post_id],
+        }),
+    );
+    assert_eq!(admin_posts.len(), 1);
+    let admin_post = serde_json::to_value(&admin_posts[0])
+        .expect("admin forum post output should serialize");
+    assert_eq!(admin_post["id"], json!(private_post.forum_post_id));
+    assert_eq!(
+        admin_post["content"],
+        json!("private forum post body marker")
+    );
+
+    let admin_summary = run_endpoint!(
+        runner,
+        forum_post_page_summary,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+        }),
+    );
+    let admin_summary_value = serde_json::to_value(admin_summary)
+        .expect("admin forum summary should serialize");
+    assert_eq!(admin_summary_value["comments"], json!(1));
+}
+
+#[tokio::test]
+async fn page_get_files_requires_parent_page_view_permission() {
+    let mut runner = TestRunner::setup().await;
+    const SITE_SLUG: &str = "scp-wiki";
+    const PAGE_SLUG: &str = "fixture-private-file-list";
+    const PUBLIC_PAGE_SLUG: &str = "fixture-public-file-list";
+    const PRIVATE_CATEGORY: &str = "fixture-file-list-private-view";
+    const FILE_NAME: &str = "private-list-attachment.txt";
+    const PUBLIC_FILE_NAME: &str = "public-list-attachment.txt";
+
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("Seeded site not found");
+    let site_id = site.site.site_id;
+
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(PAGE_SLUG))),
+    });
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "private file list parent page",
+            "title": "Private File List",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create private file list fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(page.parser_errors.is_empty());
+    set_listpages_test_category_slug(&runner, site_id, PAGE_SLUG, PRIVATE_CATEGORY).await;
+
+    let file_id =
+        create_empty_file_fixture(&runner, site_id, page.page_id, FILE_NAME).await;
+
+    let public_page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "public file list parent page",
+            "title": "Public File List",
+            "alt_title": null,
+            "slug": PUBLIC_PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create public file list fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(public_page.parser_errors.is_empty());
+    let public_file_id = create_empty_file_fixture(
+        &runner,
+        site_id,
+        public_page.page_id,
+        PUBLIC_FILE_NAME,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext::default());
+
+    let public_output = run_endpoint!(
+        runner,
+        page_get_files,
+        json!({
+            "site_id": site_id,
+            "page_id": public_page.page_id,
+            "deleted": false,
+        }),
+    );
+    assert_eq!(public_output.len(), 1);
+    assert_eq!(public_output[0].file_id, public_file_id);
+    assert_eq!(public_output[0].name, PUBLIC_FILE_NAME);
+
+    let error = run_endpoint_err!(
+        runner,
+        page_get_files,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "deleted": false,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(PAGE_SLUG))),
+    });
+
+    let output = run_endpoint!(
+        runner,
+        page_get_files,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "deleted": false,
+        }),
+    );
+
+    assert_eq!(output.len(), 1);
+    assert_eq!(output[0].file_id, file_id);
+    assert_eq!(output[0].name, FILE_NAME);
+    assert_eq!(output[0].mime, EMPTY_BLOB_MIME);
+    assert_eq!(output[0].s3_hash.as_ref(), &EMPTY_BLOB_HASH);
+    assert!(output[0].data.is_none());
 }
 
 #[tokio::test]
@@ -3795,6 +4384,85 @@ async fn listpages_limit_two_caps_ordered_results() {
         target_a < target_b,
         "limit=2 target slugs should render in order a, b:\n{html}"
     );
+}
+
+#[tokio::test]
+async fn listpages_perpage_renders_wikidot_pager_controls() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "verification-list-pager";
+
+    for index in 0..45 {
+        let slug = format!("fixture-listpages-pager-target-{index:02}");
+        let title = format!("Fixture ListPages Pager Target {index:02}");
+        let revision = create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &slug,
+            &title,
+            &format!("Fixture ListPages Pager Target {index:02} marker."),
+        )
+        .await;
+        set_listpages_test_tags(&mut runner, site_id, &slug, revision, &[tag]).await;
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-listpages-pager-index",
+        "Fixture ListPages Pager Index",
+        &format!(
+            "ListPages pager marker.\n\n[[module ListPages category=\"*\" tags=\"+{tag}\" perPage=\"20\" order=\"name\"]]\n* %%title%% :: %%slug%%\n[[/module]]"
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-listpages-pager-index",
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("ListPages pager index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    for expected in [
+        "Fixture ListPages Pager Target 00",
+        "fixture-listpages-pager-target-00",
+        "Fixture ListPages Pager Target 19",
+        "fixture-listpages-pager-target-19",
+        r#"<div class="pager">"#,
+        r#"<span class="current">1</span>"#,
+        ">2</a>",
+        ">3</a>",
+        "next »",
+    ] {
+        assert!(
+            html.contains(expected),
+            "perPage ListPages fixture should contain {expected:?}:\n{html}",
+        );
+    }
+
+    for forbidden in [
+        "Fixture ListPages Pager Target 20",
+        "fixture-listpages-pager-target-20",
+        "[[module ListPages",
+        "%%title%%",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "perPage ListPages first page should not contain {forbidden:?}:\n{html}",
+        );
+    }
 }
 
 #[tokio::test]
