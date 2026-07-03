@@ -95,7 +95,7 @@ const WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOMPATHTML";
 const WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOMPATLINK";
 const WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTWIKIPEDIALINK";
 const WIKIDOT_LOCAL_INTERWIKI_BASE: &str = "/-/wikidot-interwiki";
-const WIKIDOT_TABVIEW_SCRIPT: &str = r#"<script src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js" type="text/javascript"></script>"#;
+const WIKIDOT_TABVIEW_SCRIPT: &str = "";
 const WIKIDOT_TABVIEW_INIT_SCRIPT: &str = r#"<script type="text/javascript"></script>"#;
 
 static INCLUDE_VARIABLE_REGEX: LazyLock<Regex> =
@@ -6721,12 +6721,15 @@ fn render_read_only_rate_module(score: ftml::data::ScoreValue) -> String {
             "[[span class=\"rate-points\"]]rating: ",
             "[[span class=\"number prw54353\"]]{}[[/span]]",
             "[[/span]]",
+            " ",
             "[[span class=\"rateup btn btn-default\"]]",
             "[[a href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\" title=\"I like it\"]]+[[/a]]",
             "[[/span]]",
+            " ",
             "[[span class=\"ratedown btn btn-default\"]]",
             "[[a href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\" title=\"I don't like it\"]]–[[/a]]",
             "[[/span]]",
+            " ",
             "[[span class=\"cancel btn btn-default\"]]",
             "[[a href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\" title=\"Cancel my vote\"]]x[[/a]]",
             "[[/span]]",
@@ -7087,10 +7090,28 @@ fn apply_basalt_shell_compatibility(html: &mut String) {
 
     html.push_str(
         r#"<style>
-#side-bar {
+#top-bar {
+    display: contents;
+}
+#top-bar ul ul {
+    display: flex !important;
+    visibility: visible !important;
+    position: static !important;
+}
+#top-bar > div > ul > li > a,
+.mobile-top-bar > p > ul > li > a {
+    text-transform: uppercase;
+}
+#header h2 {
     display: none !important;
-    visibility: hidden !important;
-    left: -9999px !important;
+}
+#side-bar {
+    display: block !important;
+    visibility: visible !important;
+    left: -272px !important;
+}
+#side-bar .heading p {
+    text-transform: uppercase;
 }
 #main-content {
     margin-left: auto !important;
@@ -7107,6 +7128,13 @@ fn apply_basalt_shell_compatibility(html: &mut String) {
 }
 #page-options-bottom.page-options-bottom > a {
     display: flex;
+}
+.admo-rate_splash .page-rate-widget-box .rate-points {
+    text-transform: uppercase;
+}
+.admo-rate_splash .page-rate-widget-box .cancel,
+.admo-rate_splash .page-rate-widget-box .cancel a {
+    text-transform: none;
 }
 </style>"#,
     );
@@ -7702,11 +7730,20 @@ mod tests {
         assert!(rendered.contains(r#"[[span class="number prw54353"]]+19[[/span]]"#));
         assert!(rendered.contains(r#"[[span class="rateup btn btn-default"]]"#));
         assert!(rendered.contains(r#"listeners.rate(event, 1)"#));
+        assert!(
+            rendered.contains(r#"]][[/span]] [[span class="rateup btn btn-default"]]"#)
+        );
         assert!(rendered.contains(r#"[[span class="ratedown btn btn-default"]]"#));
         assert!(rendered.contains(r#"listeners.rate(event, -1)"#));
+        assert!(
+            rendered.contains(r#"]][[/span]] [[span class="ratedown btn btn-default"]]"#)
+        );
         assert!(rendered.contains(r#"title="I don't like it"]]–[[/a]]"#));
         assert!(rendered.contains(r#"[[span class="cancel btn btn-default"]]"#));
         assert!(rendered.contains(r#"listeners.cancelVote(event)"#));
+        assert!(
+            rendered.contains(r#"]][[/span]] [[span class="cancel btn btn-default"]]"#)
+        );
     }
 
     #[test]
@@ -10425,8 +10462,7 @@ mod tests {
 
         let restored = RenderService::restore_wikidot_tabview_dom_compatibility(html);
 
-        assert!(restored.contains(super::WIKIDOT_TABVIEW_SCRIPT));
-        assert!(restored.contains(super::WIKIDOT_TABVIEW_INIT_SCRIPT));
+        assert!(!restored.contains("tabview-min.js"));
         assert!(restored.contains(r#"<div class="yui-navset">"#));
         assert!(restored.contains(r#"<ul class="yui-nav">"#));
         assert!(restored.contains(r#"<div class="yui-content">"#));
@@ -10632,12 +10668,23 @@ mod tests {
         let restored = RenderService::remove_wikidot_compat_style_blocks(&html);
 
         assert!(restored.contains("#side-bar"));
-        assert!(restored.contains("display: none !important"));
+        assert!(restored.contains("display: block !important"));
+        assert!(restored.contains("left: -272px !important"));
+        assert!(restored.contains("#top-bar"));
+        assert!(restored.contains("display: contents"));
+        assert!(restored.contains("#top-bar ul ul"));
+        assert!(restored.contains("display: flex !important"));
+        assert!(restored.contains("#header h2"));
+        assert!(restored.contains("#side-bar .heading p"));
         assert!(restored.contains("margin-top: -12rem !important"));
         assert!(restored.contains("#page-info"));
         assert!(restored.contains("text-transform: uppercase"));
         assert!(restored.contains("#page-options-bottom.page-options-bottom"));
         assert!(restored.contains("display: flex"));
+        assert!(
+            restored.contains(".admo-rate_splash .page-rate-widget-box .rate-points")
+        );
+        assert!(restored.contains(".admo-rate_splash .page-rate-widget-box .cancel"));
     }
 
     #[test]
