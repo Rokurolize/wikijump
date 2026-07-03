@@ -257,7 +257,7 @@ mod tests {
         assert_eq!(secrets.redis_url, "redis://cache:6379");
         assert_eq!(secrets.s3_files_bucket, "files");
         assert_eq!(secrets.s3_tblocks_bucket, "text-blocks");
-        assert_eq!(secrets.s3_path_style, true);
+        assert!(secrets.s3_path_style);
         assert!(matches!(
             secrets.s3_region,
             Region::Custom { ref region, ref endpoint }

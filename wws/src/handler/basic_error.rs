@@ -66,7 +66,7 @@ fn basic_error_from_request<'a>(
         // Required headers:
         // - x-wikijump-site-slug
         "site-slug" => {
-            let site_slug = get_site_slug(&headers);
+            let site_slug = get_site_slug(headers);
             BasicError::SiteSlug { site_slug }
         }
         // No required headers
@@ -74,24 +74,24 @@ fn basic_error_from_request<'a>(
         // Required headers:
         // - x-wikijump-page-slug
         "page-slug" => {
-            let site_id = get_site_id(&headers);
-            let page_slug = get_page_slug(&headers);
+            let site_id = get_site_id(headers);
+            let page_slug = get_page_slug(headers);
             BasicError::PageSlug { site_id, page_slug }
         }
         // Required headers:
         // - x-wikijump-page-slug
         "page-fetch" => {
-            let site_id = get_site_id(&headers);
-            let page_slug = get_page_slug(&headers);
+            let site_id = get_site_id(headers);
+            let page_slug = get_page_slug(headers);
             BasicError::PageFetch { site_id, page_slug }
         }
         // Required headers:
         // - x-wikijump-page-slug
         // - x-wikijump-filename
         "file-name" => {
-            let site_id = get_site_id(&headers);
-            let page_slug = get_page_slug(&headers);
-            let filename = get_filename(&headers);
+            let site_id = get_site_id(headers);
+            let page_slug = get_page_slug(headers);
+            let filename = get_filename(headers);
             BasicError::FileName {
                 site_id,
                 page_slug,
@@ -102,9 +102,9 @@ fn basic_error_from_request<'a>(
         // - x-wikijump-page-slug
         // - x-wikijump-filename
         "file-fetch" => {
-            let site_id = get_site_id(&headers);
-            let page_slug = get_page_slug(&headers);
-            let filename = get_filename(&headers);
+            let site_id = get_site_id(headers);
+            let page_slug = get_page_slug(headers);
+            let filename = get_filename(headers);
             BasicError::FileFetch {
                 site_id,
                 page_slug,
