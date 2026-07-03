@@ -3420,6 +3420,7 @@ dependencies = [
  "rand 0.10.1",
  "redis",
  "ref-map",
+ "reqwest",
  "rust-s3",
  "serde",
  "serde_json",

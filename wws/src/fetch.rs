@@ -266,7 +266,7 @@ mod tests {
     }
 
     async fn test_state(endpoint: &str) -> ServerState {
-        build_server_state(
+        let mut state = build_server_state(
             false,
             Secrets {
                 deepwell_url: str!("http://127.0.0.1:2747"),
@@ -289,7 +289,23 @@ mod tests {
             },
         )
         .await
-        .unwrap()
+        .unwrap();
+        disable_s3_proxies(&mut state);
+        state
+    }
+
+    fn disable_s3_proxies(state: &mut ServerState) {
+        let state = Arc::get_mut(state).expect("test state should have one owner");
+        let files_bucket = state
+            .s3_files_bucket
+            .set_proxy(reqwest::Proxy::custom(|_| None::<reqwest::Url>))
+            .unwrap();
+        let tblocks_bucket = state
+            .s3_tblocks_bucket
+            .set_proxy(reqwest::Proxy::custom(|_| None::<reqwest::Url>))
+            .unwrap();
+        *state.s3_files_bucket = files_bucket;
+        *state.s3_tblocks_bucket = tblocks_bucket;
     }
 
     #[tokio::test]
