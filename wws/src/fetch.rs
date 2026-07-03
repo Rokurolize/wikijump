@@ -233,13 +233,16 @@ mod tests {
                     .push(String::from_utf8_lossy(&raw).into_owned());
 
                 let response = format!(
-                    "HTTP/1.1 {status} OK\r\n\
-                     Content-Length: {}\r\n\
-                     Content-Type: application/octet-stream\r\n\
-                     ETag: \"test-etag\"\r\n\
-                     Connection: close\r\n\
-                     \r\n",
-                    body.len(),
+                    concat!(
+                        "HTTP/1.1 {status} OK\r\n",
+                        "Content-Length: {length}\r\n",
+                        "Content-Type: application/octet-stream\r\n",
+                        "ETag: \"test-etag\"\r\n",
+                        "Connection: close\r\n",
+                        "\r\n",
+                    ),
+                    status = status,
+                    length = body.len(),
                 );
                 stream.write_all(response.as_bytes()).unwrap();
                 stream.write_all(body).unwrap();

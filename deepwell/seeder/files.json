@@ -54,6 +54,28 @@
         ]
     },
     "scp-wiki": {
+        "component:anomaly-class-bar": [
+            {
+                "name": "danger-icon.svg",
+                "path": "component-anomaly-class-bar--danger-icon.svg"
+            },
+            {
+                "name": "ekhi-icon.svg",
+                "path": "component-anomaly-class-bar--ekhi-icon.svg"
+            },
+            {
+                "name": "amida-icon.svg",
+                "path": "component-anomaly-class-bar--amida-icon.svg"
+            },
+            {
+                "name": "critical-icon.svg",
+                "path": "component-anomaly-class-bar--critical-icon.svg"
+            },
+            {
+                "name": "keter-icon.svg",
+                "path": "component-anomaly-class-bar--keter-icon.svg"
+            }
+        ],
         "nav:side": [
             {
                 "name": "black.png",
@@ -115,6 +137,18 @@
             {
                 "name": "steel3.png",
                 "path": "scp-3352--steel3.png"
+            }
+        ],
+        "scp-5382": [
+            {
+                "name": "thaumiel-icon-2.svg",
+                "path": "scp-5382--thaumiel-icon-2.svg"
+            }
+        ],
+        "scp-7000": [
+            {
+                "name": "inimical-icon.svg",
+                "path": "scp-7000--inimical-icon.svg"
             }
         ]
     }
