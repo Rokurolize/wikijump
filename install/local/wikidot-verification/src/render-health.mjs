@@ -60,10 +60,10 @@ function maxSeverity(a, b) {
 // rendered code blocks (pre/code and Wikidot's .code div output).
 export function stripNonContent(html) {
   return html
-    .replace(/<script\b[\s\S]*?<\/script>/gi, '')
-    .replace(/<style\b[\s\S]*?<\/style>/gi, '')
-    .replace(/<pre\b[\s\S]*?<\/pre>/gi, '')
-    .replace(/<code\b[\s\S]*?<\/code>/gi, '');
+    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, '')
+    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, '')
+    .replace(/<pre\b[\s\S]*?<\/pre\s*>/gi, '')
+    .replace(/<code\b[\s\S]*?<\/code\s*>/gi, '');
 }
 
 // Count occurrences of a marker in the source that the author escaped for

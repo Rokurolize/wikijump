@@ -37,6 +37,7 @@ function parseArgs(argv) {
     previous: null,
     importSummary: null,
     dispositions: {},
+    insecureLocalTls: false,
   };
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -51,6 +52,7 @@ function parseArgs(argv) {
     else if (arg === '--address') args.address = next();
     else if (arg === '--http-port') args.port = Number(next());
     else if (arg === '--previous') args.previous = next();
+    else if (arg === '--insecure-local-tls') args.insecureLocalTls = true;
     else if (arg === '--import-summary') args.importSummary = next();
     else if (arg === '--disposition') {
       const [category, disposition] = next().split('=');
@@ -79,9 +81,9 @@ function fetchPage(args, slug) {
         path: `/${encodeURI(slug)}`,
         headers: { Host: args.host },
         servername: args.host,
-        // Local caddy uses a self-signed CA; this tool only ever talks to the
-        // local lab runtime.
-        rejectUnauthorized: false,
+        // TLS verification stays on by default; --insecure-local-tls opts in
+        // for the lab runtime's self-signed caddy CA on 127.0.0.1 only.
+        rejectUnauthorized: !(args.insecureLocalTls && args.address === '127.0.0.1'),
         timeout: 30000,
       },
       (res) => {
