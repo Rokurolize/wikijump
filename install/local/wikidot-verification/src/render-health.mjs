@@ -58,12 +58,25 @@ function maxSeverity(a, b) {
 
 // Strip regions that legitimately contain raw markup: scripts, styles, and
 // rendered code blocks (pre/code and Wikidot's .code div output).
+const NON_CONTENT_PATTERNS = [
+  /<script\b[\s\S]*?<\/script\b[^>]*>/gi,
+  /<style\b[\s\S]*?<\/style\b[^>]*>/gi,
+  /<pre\b[\s\S]*?<\/pre\b[^>]*>/gi,
+  /<code\b[\s\S]*?<\/code\b[^>]*>/gi,
+];
+
 export function stripNonContent(html) {
-  return html
-    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, '')
-    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, '')
-    .replace(/<pre\b[\s\S]*?<\/pre\s*>/gi, '')
-    .replace(/<code\b[\s\S]*?<\/code\s*>/gi, '');
+  // Iterate to a fixed point so removal cannot splice new open/close pairs
+  // back together (single-pass replace can leave residual markers).
+  let stripped = html;
+  for (;;) {
+    let next = stripped;
+    for (const pattern of NON_CONTENT_PATTERNS) {
+      next = next.replace(pattern, '');
+    }
+    if (next === stripped) return stripped;
+    stripped = next;
+  }
 }
 
 // Count occurrences of a marker in the source that the author escaped for
