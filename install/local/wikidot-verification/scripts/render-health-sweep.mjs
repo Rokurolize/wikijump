@@ -72,13 +72,13 @@ function parseArgs(argv) {
   return args;
 }
 
-function fetchPage(args, slug) {
+function fetchPage(args, slug, redirectsLeft = 5, pathOverride = null) {
   return new Promise((resolve) => {
     const req = https.request(
       {
         host: args.address,
         port: args.port,
-        path: `/${encodeURI(slug)}`,
+        path: pathOverride ?? `/${encodeURI(slug)}`,
         headers: { Host: args.host },
         servername: args.host,
         // TLS verification stays on by default; --insecure-local-tls opts in
@@ -89,9 +89,20 @@ function fetchPage(args, slug) {
       (res) => {
         // Follow same-host redirects (e.g. platform domain -> canonical domain).
         if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
-          const location = new URL(res.headers.location, `https://${args.host}`);
           res.resume();
-          resolve(fetchPage({ ...args, host: location.host }, slug));
+          if (redirectsLeft <= 0) {
+            resolve({ status: res.statusCode, body: '', error: 'too many redirects' });
+            return;
+          }
+          const location = new URL(res.headers.location, `https://${args.host}`);
+          resolve(
+            fetchPage(
+              { ...args, host: location.host },
+              slug,
+              redirectsLeft - 1,
+              `${location.pathname}${location.search}`,
+            ),
+          );
           return;
         }
         let body = '';
