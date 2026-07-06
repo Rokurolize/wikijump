@@ -20,7 +20,14 @@ export function domSignature(html) {
 
   const commentPattern = /<!--[\s\S]*?-->/g;
   commentCount = (html.match(commentPattern) ?? []).length;
-  const stripped = html.replace(commentPattern, '');
+  // Strip comments to a fixed point so removal cannot splice a new
+  // comment delimiter together out of the surrounding text.
+  let stripped = html;
+  for (;;) {
+    const next = stripped.replace(commentPattern, '');
+    if (next === stripped) break;
+    stripped = next;
+  }
 
   const tagPattern = /<([a-zA-Z][a-zA-Z0-9-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
   for (const match of stripped.matchAll(tagPattern)) {
