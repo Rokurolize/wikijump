@@ -190,6 +190,45 @@ mod tests {
         count_pages_exact_count_eligibility_diagnostics(input)
     }
 
+    fn apply_denial(
+        input: &mut CountPagesExactCountEligibilityInput,
+        reason: &CountPagesExactCountDenialReason,
+    ) {
+        match reason {
+            CountPagesExactCountDenialReason::Unsupported { reason } => {
+                input.metadata.unsupported_reason = Some(reason.clone());
+            }
+            CountPagesExactCountDenialReason::CapExceeded => {
+                input.metadata.cap_exceeded = true;
+            }
+            CountPagesExactCountDenialReason::FilteringDeferredToRust => {
+                input.metadata.filtering_deferred_to_rust = true;
+            }
+            CountPagesExactCountDenialReason::OrderingDeferredToRust => {
+                input.metadata.ordering_deferred_to_rust = true;
+            }
+            CountPagesExactCountDenialReason::NotExactCountSafe => {
+                input.metadata.exact_count_safe = false;
+            }
+            CountPagesExactCountDenialReason::UnsafeSqlWindow => {
+                input.metadata.sql_limit_offset_applied = true;
+                input.explicit_count_pages_bound_matches_sql_window = false;
+            }
+            CountPagesExactCountDenialReason::ViewPermissionFiltering => {
+                input.view_permission_filtering_applied = true;
+            }
+            CountPagesExactCountDenialReason::PostQueryFiltering => {
+                input.post_query_filtering_applied = true;
+            }
+            CountPagesExactCountDenialReason::PostQueryExclusion => {
+                input.post_query_exclusion_applied = true;
+            }
+            CountPagesExactCountDenialReason::PostQueryOffset => {
+                input.post_query_offset_applied = true;
+            }
+        }
+    }
+
     #[test]
     fn count_pages_exact_count_allows_plain_exact_metadata() {
         let decision = count_pages_exact_count_eligibility(input(exact_metadata()));
@@ -440,5 +479,33 @@ mod tests {
                 denied_reason_detail: Some("unsupported selector".to_owned()),
             },
         );
+    }
+
+    #[test]
+    fn count_pages_exact_count_diagnostics_keep_priority_order_below_unsupported() {
+        let priority = [
+            CountPagesExactCountDenialReason::CapExceeded,
+            CountPagesExactCountDenialReason::FilteringDeferredToRust,
+            CountPagesExactCountDenialReason::OrderingDeferredToRust,
+            CountPagesExactCountDenialReason::NotExactCountSafe,
+            CountPagesExactCountDenialReason::ViewPermissionFiltering,
+            CountPagesExactCountDenialReason::PostQueryFiltering,
+            CountPagesExactCountDenialReason::PostQueryExclusion,
+            CountPagesExactCountDenialReason::PostQueryOffset,
+            CountPagesExactCountDenialReason::UnsafeSqlWindow,
+        ];
+
+        for (index, expected) in priority.iter().enumerate() {
+            let mut input = input(exact_metadata());
+            for reason in &priority[index..] {
+                apply_denial(&mut input, reason);
+            }
+
+            assert_eq!(
+                diagnostics(input).denied_reason_code,
+                Some(expected.diagnostic_code()),
+                "{expected:?} should win over every lower-priority exact-count denial",
+            );
+        }
     }
 }
