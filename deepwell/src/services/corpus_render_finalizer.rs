@@ -48,7 +48,7 @@ pub struct RenderFinalizerSettings {
     pub dry_run: bool,
 }
 
-#[derive(Debug, Serialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct RenderFinalizerSummary {
     action: &'static str,
     dry_run: bool,
@@ -63,6 +63,8 @@ pub struct RenderFinalizerSummary {
     rendered: usize,
     done: usize,
     render_failed: usize,
+    elapsed_ms: u128,
+    rows_per_sec: f64,
     reason_counts: BTreeMap<String, usize>,
     items: Vec<RenderFinalizerItem>,
 }
@@ -234,6 +236,7 @@ impl CorpusRenderFinalizerService {
         state: &ServerState,
         settings: RenderFinalizerSettings,
     ) -> Result<RenderFinalizerSummary> {
+        let started_at = Instant::now();
         let import_run_id = match settings.import_run_id {
             Some(import_run_id) => Some(import_run_id),
             None => Self::select_latest_import_run(state, &settings).await?,
@@ -251,37 +254,12 @@ impl CorpusRenderFinalizerService {
             }
             None => Vec::new(),
         };
-        let rendered = items
-            .iter()
-            .filter(|item| item.outcome.as_deref() == Some("rendered"))
-            .count();
-        let done = items
-            .iter()
-            .filter(|item| item.outcome.as_deref() == Some("done"))
-            .count();
-        let render_failed = items
-            .iter()
-            .filter(|item| item.outcome.as_deref() == Some("render_failed"))
-            .count();
-        let reason_counts = reason_counts(&items);
-
-        Ok(RenderFinalizerSummary {
-            action: ACTION,
-            dry_run: settings.dry_run,
+        Ok(RenderFinalizerSummary::from_items(
+            &settings,
             import_run_id,
-            pass: settings.pass.as_str(),
-            batch_size: settings.batch_size,
-            concurrency: settings.concurrency,
-            lease_seconds: settings.lease_seconds,
-            max_attempts: settings.max_attempts,
-            candidates: items.len(),
-            claimed: if settings.dry_run { 0 } else { items.len() },
-            rendered,
-            done,
-            render_failed,
-            reason_counts,
             items,
-        })
+            started_at.elapsed().as_millis(),
+        ))
     }
 
     async fn select_latest_import_run(
@@ -744,6 +722,50 @@ fn duration_millis(duration: Duration) -> u64 {
     u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
 }
 
+impl RenderFinalizerSummary {
+    fn from_items(
+        settings: &RenderFinalizerSettings,
+        import_run_id: Option<i64>,
+        items: Vec<RenderFinalizerItem>,
+        elapsed_ms: u128,
+    ) -> Self {
+        let rendered = items
+            .iter()
+            .filter(|item| item.outcome.as_deref() == Some("rendered"))
+            .count();
+        let done = items
+            .iter()
+            .filter(|item| item.outcome.as_deref() == Some("done"))
+            .count();
+        let render_failed = items
+            .iter()
+            .filter(|item| item.outcome.as_deref() == Some("render_failed"))
+            .count();
+        let completed = rendered + done;
+        let reason_counts = reason_counts(&items);
+
+        Self {
+            action: ACTION,
+            dry_run: settings.dry_run,
+            import_run_id,
+            pass: settings.pass.as_str(),
+            batch_size: settings.batch_size,
+            concurrency: settings.concurrency,
+            lease_seconds: settings.lease_seconds,
+            max_attempts: settings.max_attempts,
+            candidates: items.len(),
+            claimed: if settings.dry_run { 0 } else { items.len() },
+            rendered,
+            done,
+            render_failed,
+            elapsed_ms,
+            rows_per_sec: calculate_rows_per_second(completed, elapsed_ms),
+            reason_counts,
+            items,
+        }
+    }
+}
+
 fn parse_optional_positive_i64(name: &str, value: Option<String>) -> Result<Option<i64>> {
     value
         .map(|value| parse_positive_i64(name, Some(value), 0))
@@ -756,6 +778,14 @@ fn reason_counts(items: &[RenderFinalizerItem]) -> BTreeMap<String, usize> {
         *counts.entry(reason.clone()).or_insert(0) += 1;
     }
     counts
+}
+
+fn calculate_rows_per_second(completed: usize, elapsed_ms: u128) -> f64 {
+    if completed == 0 || elapsed_ms == 0 {
+        0.0
+    } else {
+        completed as f64 / (elapsed_ms as f64 / 1_000.0)
+    }
 }
 
 fn parse_render_pass(name: &str, value: Option<String>) -> Result<RenderFinalizerPass> {
@@ -972,5 +1002,74 @@ mod tests {
         assert_eq!(value["duration_ms"], 123);
         assert!(value.get("import_run_id").is_none());
         assert!(value.get("source_entity_id").is_none());
+    }
+
+    #[test]
+    fn render_finalizer_rows_per_second_uses_rendered_and_done_counts() {
+        let summary = build_summary(
+            &RenderFinalizerSettings {
+                import_run_id: Some(42),
+                pass: RenderFinalizerPass::Pass2,
+                batch_size: 25,
+                concurrency: 8,
+                lease_seconds: 60,
+                max_attempts: 5,
+                dry_run: false,
+            },
+            vec![
+                test_item("alpha", Some("rendered"), &["source_query_module"]),
+                test_item("beta", Some("done"), &["nav_source"]),
+                test_item("gamma", Some("render_failed"), &["template_source"]),
+            ],
+            2_000,
+        );
+
+        assert_eq!(summary.elapsed_ms, 2_000);
+        assert_eq!(summary.rendered, 1);
+        assert_eq!(summary.done, 1);
+        assert_eq!(summary.rows_per_sec, 1.0);
+    }
+
+    #[test]
+    fn render_finalizer_rows_per_second_is_zero_for_zero_duration_or_zero_completed() {
+        let no_elapsed = calculate_rows_per_second(5, 0);
+        let no_completed = calculate_rows_per_second(0, 2_000);
+
+        assert_eq!(no_elapsed, 0.0);
+        assert_eq!(no_completed, 0.0);
+    }
+
+    fn build_summary(
+        settings: &RenderFinalizerSettings,
+        items: Vec<RenderFinalizerItem>,
+        elapsed_ms: u128,
+    ) -> RenderFinalizerSummary {
+        RenderFinalizerSummary::from_items(
+            settings,
+            settings.import_run_id,
+            items,
+            elapsed_ms,
+        )
+    }
+
+    fn test_item(
+        source_fullname: &str,
+        outcome: Option<&str>,
+        reasons: &[&str],
+    ) -> RenderFinalizerItem {
+        RenderFinalizerItem {
+            import_run_id: 1,
+            source_entity_id: str!("00000000-0000-4000-8000-000000000001"),
+            source_fullname: source_fullname.to_string(),
+            page_id: Some(10),
+            site_id: Some(20),
+            page_category_id: Some(30),
+            attempts: 1,
+            reasons: reasons.iter().map(|reason| reason.to_string()).collect(),
+            outcome: outcome.map(str::to_string),
+            error: None,
+            error_chain: None,
+            duration_ms: None,
+        }
     }
 }
