@@ -25,6 +25,7 @@ use crate::types::{PageId, RerenderDepth};
 use futures::{StreamExt, stream};
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, Value};
 use sea_orm::{DatabaseTransaction, TransactionTrait};
+use std::future::Future;
 use std::time::{Duration, Instant};
 use std::{collections::BTreeMap, env};
 
@@ -495,12 +496,29 @@ impl CorpusRenderFinalizerService {
         items: Vec<RenderFinalizerItem>,
     ) -> Vec<RenderFinalizerItem> {
         let pass = settings.pass;
+        Self::render_items_concurrently(state, settings.concurrency, items, |state, item| {
+            async move { Self::render_claimed_item(&state, pass, item).await }
+        })
+        .await
+    }
+
+    async fn render_items_concurrently<State, Item, Fut>(
+        state: &State,
+        concurrency: usize,
+        items: Vec<Item>,
+        render: impl Fn(State, Item) -> Fut + Clone,
+    ) -> Vec<Item>
+    where
+        State: Clone,
+        Fut: Future<Output = Item>,
+    {
         stream::iter(items)
             .map(|item| {
                 let state = state.clone();
-                async move { Self::render_claimed_item(&state, pass, item).await }
+                let render = render.clone();
+                async move { render(state, item).await }
             })
-            .buffered(settings.concurrency)
+            .buffer_unordered(concurrency)
             .collect()
             .await
     }
@@ -878,6 +896,8 @@ fn parse_boolish(name: &str, value: Option<String>) -> Result<Option<bool>> {
 mod tests {
     use super::*;
     use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
+    use tokio::sync::{mpsc, oneshot};
 
     fn settings_from_pairs(pairs: &[(&str, &str)]) -> Result<RenderFinalizerSettings> {
         let values: HashMap<&str, &str> = pairs.iter().copied().collect();
@@ -1061,6 +1081,57 @@ mod tests {
 
         assert_eq!(no_elapsed, 0.0);
         assert_eq!(no_completed, 0.0);
+    }
+
+    #[tokio::test]
+    async fn render_items_concurrently_yields_completion_order() {
+        let (started_tx, mut started_rx) = mpsc::unbounded_channel();
+        let mut release_senders = HashMap::new();
+        let mut release_receivers = HashMap::new();
+        for item in [1, 2, 3] {
+            let (tx, rx) = oneshot::channel();
+            release_senders.insert(item, tx);
+            release_receivers.insert(item, rx);
+        }
+        let release_receivers = Arc::new(Mutex::new(release_receivers));
+
+        let task = tokio::spawn({
+            let release_receivers = Arc::clone(&release_receivers);
+            async move {
+                CorpusRenderFinalizerService::render_items_concurrently(
+                    &(),
+                    3,
+                    vec![1, 2, 3],
+                    move |(), item| {
+                        let started_tx = started_tx.clone();
+                        let release_receivers = Arc::clone(&release_receivers);
+                        async move {
+                            started_tx.send(item).unwrap();
+                            let rx =
+                                release_receivers.lock().unwrap().remove(&item).unwrap();
+                            rx.await.unwrap();
+                            item
+                        }
+                    },
+                )
+                .await
+            }
+        });
+
+        let mut started = vec![
+            started_rx.recv().await.unwrap(),
+            started_rx.recv().await.unwrap(),
+            started_rx.recv().await.unwrap(),
+        ];
+        started.sort_unstable();
+        assert_eq!(started, vec![1, 2, 3]);
+
+        release_senders.remove(&3).unwrap().send(()).unwrap();
+        release_senders.remove(&2).unwrap().send(()).unwrap();
+        release_senders.remove(&1).unwrap().send(()).unwrap();
+
+        let rendered = task.await.unwrap();
+        assert_eq!(rendered, vec![3, 2, 1]);
     }
 
     fn build_summary(
