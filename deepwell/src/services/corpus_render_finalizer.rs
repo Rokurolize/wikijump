@@ -20,7 +20,7 @@
 
 use super::prelude::*;
 use crate::api::ServerState;
-use crate::services::PageRevisionService;
+use crate::services::{PageRevisionService, page_revision::RerenderType};
 use crate::types::{PageId, RerenderDepth};
 use futures::{StreamExt, stream};
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, Value};
@@ -186,6 +186,13 @@ impl RenderFinalizerPass {
         match self {
             Self::Pass1 => "rendered",
             Self::Pass2 => "done",
+        }
+    }
+
+    fn rerender_outdates_dependents(self) -> bool {
+        match self {
+            Self::Pass1 => false,
+            Self::Pass2 => true,
         }
     }
 }
@@ -514,7 +521,7 @@ impl CorpusRenderFinalizerService {
                         category_id: page_category_id,
                         page_id,
                     },
-                    pass.success_state(),
+                    pass,
                 )
                 .await
             }
@@ -557,7 +564,7 @@ impl CorpusRenderFinalizerService {
         state: &ServerState,
         item: &RenderFinalizerItem,
         id: PageId,
-        success_state: &'static str,
+        pass: RenderFinalizerPass,
     ) -> Result<()> {
         let make_error = || {
             Error::new(
@@ -571,14 +578,25 @@ impl CorpusRenderFinalizerService {
         let txn = state.database.begin().await.or_raise(make_error)?;
         let result = async {
             let ctx = ServiceContext::new(state, &txn);
-            PageRevisionService::rerender_without_outdating(
-                &ctx,
-                id,
-                RerenderDepth::default(),
-            )
-            .await
-            .or_raise(make_error)?;
-            Self::mark_item_rendered(&txn, item, success_state).await?;
+            if pass.rerender_outdates_dependents() {
+                PageRevisionService::rerender(
+                    &ctx,
+                    id,
+                    RerenderDepth::default(),
+                    RerenderType::Full,
+                )
+                .await
+                .or_raise(make_error)?;
+            } else {
+                PageRevisionService::rerender_without_outdating(
+                    &ctx,
+                    id,
+                    RerenderDepth::default(),
+                )
+                .await
+                .or_raise(make_error)?;
+            }
+            Self::mark_item_rendered(&txn, item, pass.success_state()).await?;
             ctx.drain_post_commit_actions().or_raise(make_error)
         }
         .await;
@@ -930,6 +948,12 @@ mod tests {
     fn render_finalizer_pass_success_state_tracks_pass_completion() {
         assert_eq!(RenderFinalizerPass::Pass1.success_state(), "rendered");
         assert_eq!(RenderFinalizerPass::Pass2.success_state(), "done");
+    }
+
+    #[test]
+    fn render_finalizer_pass_selects_rerender_outdating_mode() {
+        assert!(!RenderFinalizerPass::Pass1.rerender_outdates_dependents());
+        assert!(RenderFinalizerPass::Pass2.rerender_outdates_dependents());
     }
 
     #[test]
