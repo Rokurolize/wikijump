@@ -813,6 +813,98 @@ test('apply-corpus-import-manifest accepts opt-in DB rerender dry-run', async ()
   });
 });
 
+test('apply-corpus-import-manifest accepts empty-DB assumption for DB dry-runs', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
+  writePage(root, 'en', 'scp-173', {
+    entityId: '99999999-9999-4999-8999-999999999999',
+    source: 'SCP-173',
+  });
+  const rows = buildCorpusImportManifest({
+    corpusRoot: root,
+    branch: 'en',
+    sourceSite: 'scp-wiki',
+    sourceBranch: 'en',
+  });
+  const manifestPath = path.join(root, 'manifest.jsonl');
+  fs.writeFileSync(manifestPath, formatJsonl(rows));
+
+  const { spawnSync } = await import('node:child_process');
+  const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const result = spawnSync(process.execPath, [
+    path.join(packageRoot, 'scripts/apply-corpus-import-manifest.mjs'),
+    '--manifest',
+    manifestPath,
+    '--slug',
+    'scp-173',
+    '--dry-run',
+    '--create-mode',
+    'db',
+    '--assume-empty-db-import',
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 0, result.stderr);
+  const output = JSON.parse(result.stdout);
+  assert.deepEqual(output, {
+    dry_run: true,
+    selected_rows: 1,
+    complete_inventory: false,
+  });
+});
+
+test('apply-corpus-import-manifest rejects unsafe empty-DB assumption combinations', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
+  writePage(root, 'en', 'scp-173', {
+    entityId: '99999999-9999-4999-8999-999999999998',
+    source: 'SCP-173',
+  });
+  const rows = buildCorpusImportManifest({
+    corpusRoot: root,
+    branch: 'en',
+    sourceSite: 'scp-wiki',
+    sourceBranch: 'en',
+  });
+  const manifestPath = path.join(root, 'manifest.jsonl');
+  fs.writeFileSync(manifestPath, formatJsonl(rows));
+
+  const { spawnSync } = await import('node:child_process');
+  const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const rpcMode = spawnSync(process.execPath, [
+    path.join(packageRoot, 'scripts/apply-corpus-import-manifest.mjs'),
+    '--manifest',
+    manifestPath,
+    '--dry-run',
+    '--assume-empty-db-import',
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+  const adoptMode = spawnSync(process.execPath, [
+    path.join(packageRoot, 'scripts/apply-corpus-import-manifest.mjs'),
+    '--manifest',
+    manifestPath,
+    '--dry-run',
+    '--create-mode',
+    'db',
+    '--assume-empty-db-import',
+    '--adopt-existing',
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+
+  assert.notEqual(rpcMode.status, 0);
+  assert.match(rpcMode.stderr, /assume-empty-db-import requires --create-mode db/);
+  assert.notEqual(adoptMode.status, 0);
+  assert.match(adoptMode.stderr, /assume-empty-db-import cannot be combined with --adopt-existing or --replace-existing/);
+});
+
 test('apply-corpus-import-manifest rejects conflicting DB rerender flags', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
   writePage(root, 'en', 'scp-173', {
@@ -1049,12 +1141,25 @@ test('apply-corpus-import-manifest rejects unsafe direct attachment mode combina
   const { spawnSync } = await import('node:child_process');
   const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
   const scriptPath = path.join(packageRoot, 'scripts/apply-corpus-import-manifest.mjs');
-  const directWrite = spawnSync(process.execPath, [
+  const directWriteWithoutDb = spawnSync(process.execPath, [
     scriptPath,
     '--manifest',
     manifestPath,
     '--attachment-create-mode',
     'direct',
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+  const directWriteWithoutActor = spawnSync(process.execPath, [
+    scriptPath,
+    '--manifest',
+    manifestPath,
+    '--attachment-create-mode',
+    'direct',
+    '--db-url',
+    'postgres://wikijump:wikijump@127.0.0.1:1/wikijump',
   ], {
     cwd: packageRoot,
     encoding: 'utf8',
@@ -1074,8 +1179,10 @@ test('apply-corpus-import-manifest rejects unsafe direct attachment mode combina
     maxBuffer: 1024 * 1024,
   });
 
-  assert.notEqual(directWrite.status, 0);
-  assert.match(directWrite.stderr, /direct attachment materialization is not implemented in this slice/);
+  assert.notEqual(directWriteWithoutDb.status, 0);
+  assert.match(directWriteWithoutDb.stderr, /direct requires --db-url|direct requires --db-url or DEEPWELL_VERIFY_DB_URL/);
+  assert.notEqual(directWriteWithoutActor.status, 0);
+  assert.match(directWriteWithoutActor.stderr, /direct requires --attachment-user-id or non-default --user-id/);
   assert.notEqual(skippedDirect.status, 0);
   assert.match(skippedDirect.stderr, /skip-attachments cannot be combined with --attachment-create-mode direct/);
 });

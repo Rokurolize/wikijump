@@ -29,6 +29,7 @@
 //! The service also contains the core method `ViewService::get_viewer()`, which converts the
 //! requesting domain and session token into a site and user, respectively.
 
+use super::article_cache::ArticlePageCache;
 use super::prelude::*;
 use crate::models::page::Model as PageModel;
 use crate::models::page_revision::Model as PageRevisionModel;
@@ -62,6 +63,57 @@ use wikidot_normalize::normalize;
 pub struct ViewService;
 
 impl ViewService {
+    pub async fn article(
+        ctx: &ServiceContext<'_>,
+        mut input: GetPageView,
+    ) -> Result<GetArticleViewOutput> {
+        let preload = Self::preload(
+            ctx,
+            GetPreloadView {
+                site_id: input.site_id,
+                session_token: input.session_token.clone(),
+                locales: input.locales.clone(),
+            },
+        )
+        .await?;
+        if let Some(user_session) = &preload.viewer.user_session {
+            let mut locales = user_session.user.locales.clone();
+            locales.extend(
+                input
+                    .locales
+                    .iter()
+                    .filter(|locale| !user_session.user.locales.contains(locale))
+                    .cloned(),
+            );
+            input.locales = locales;
+        }
+        if !input.locales.contains(&preload.viewer.site.locale) {
+            input.locales.push(preload.viewer.site.locale.clone());
+        }
+        let cache_key = ArticlePageCache::key(ctx, &input).await?;
+        if let Some(cache_key) = &cache_key
+            && let Some(page) = ArticlePageCache::get(ctx, cache_key).await?
+        {
+            return Ok(GetArticleViewOutput {
+                viewer: preload.viewer,
+                page,
+            });
+        }
+
+        let page_view = Self::page(ctx, input).await?;
+        if let (Some(cache_key), GetPageViewOutput::Found { page, .. }) =
+            (&cache_key, &page_view)
+            && page.from_wikidot
+        {
+            ArticlePageCache::set(ctx, cache_key, &page_view).await?;
+        }
+
+        Ok(GetArticleViewOutput {
+            viewer: preload.viewer,
+            page: page_view,
+        })
+    }
+
     pub async fn preload(
         ctx: &ServiceContext<'_>,
         GetPreloadView {
