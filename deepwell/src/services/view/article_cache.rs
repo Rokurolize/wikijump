@@ -55,6 +55,7 @@ impl ArticlePageCache {
             compiled_body_html_hash: Option<Vec<u8>>,
             compiled_top_bar_html_hash: Option<Vec<u8>>,
             compiled_side_bar_html_hash: Option<Vec<u8>>,
+            source_contents: Option<String>,
         }
 
         let page_slug = input.route.as_ref().map(|route| route.slug.clone());
@@ -69,7 +70,8 @@ impl ArticlePageCache {
                     page.from_wikidot,
                     revision.compiled_body_html_hash,
                     revision.compiled_top_bar_html_hash,
-                    revision.compiled_side_bar_html_hash
+                    revision.compiled_side_bar_html_hash,
+                    source_text.contents AS source_contents
                 FROM site
                 JOIN page
                     ON page.site_id = site.site_id
@@ -77,6 +79,8 @@ impl ArticlePageCache {
                     AND page.deleted_at IS NULL
                 LEFT JOIN page_revision AS revision
                     ON revision.revision_id = page.latest_revision_id
+                LEFT JOIN text AS source_text
+                    ON source_text.hash = revision.wikitext_hash
                 WHERE site.site_id = $1
                 AND site.deleted_at IS NULL
                 "
@@ -111,7 +115,8 @@ impl ArticlePageCache {
         let route_slug = input.route.as_ref().map_or("", |route| route.slug.as_str());
         let locales = input.locales.join(",");
 
-        Ok(Some(format_article_page_cache_key(
+        Ok(format_article_page_cache_key_if_source_eligible(
+            row.source_contents.as_deref(),
             ArticlePageCacheKeyParts {
                 site_id: input.site_id,
                 page_id: row.page_id,
@@ -124,7 +129,7 @@ impl ArticlePageCache {
                 page_extra,
                 locales: &locales,
             },
-        )))
+        ))
     }
 
     pub(super) async fn get(
@@ -212,8 +217,18 @@ fn format_article_page_cache_key(parts: ArticlePageCacheKeyParts<'_>) -> String 
     )
 }
 
-// Scaffolding for a future cache gate; ArticlePageCache::key does not currently load source text.
-#[allow(dead_code)]
+fn format_article_page_cache_key_if_source_eligible(
+    source_contents: Option<&str>,
+    parts: ArticlePageCacheKeyParts<'_>,
+) -> Option<String> {
+    let source_contents = source_contents?;
+    if !anonymous_article_cache_source_eligible(source_contents) {
+        return None;
+    }
+
+    Some(format_article_page_cache_key(parts))
+}
+
 pub(super) fn anonymous_article_cache_source_eligible(source: &str) -> bool {
     let classes = classify_render_dependencies(source);
     classes.contains(RenderDependencyClass::RevisionLocal)
@@ -253,6 +268,83 @@ mod tests {
             key,
             "deepwell:article-view:page:v1:site=7:page=11:rev=13:updated=17:body=0123:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
         );
+    }
+
+    #[test]
+    fn article_page_cache_key_source_gate_allows_static_source() {
+        let key = format_article_page_cache_key_if_source_eligible(
+            Some("Plain imported page text.\n\n[[div]]Static[[/div]]"),
+            ArticlePageCacheKeyParts {
+                site_id: 7,
+                page_id: 11,
+                latest_revision_id: 13,
+                page_updated_at: 17,
+                compiled_body_html_hash: Some(&[0x01, 0x23]),
+                compiled_top_bar_html_hash: Some(&[0x45]),
+                compiled_side_bar_html_hash: Some(&[0x67]),
+                route_slug: "start",
+                page_extra: "noredirect",
+                locales: "en,ja",
+            },
+        );
+
+        assert_eq!(
+            key.as_deref(),
+            Some(
+                "deepwell:article-view:page:v1:site=7:page=11:rev=13:updated=17:body=0123:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
+            ),
+        );
+    }
+
+    #[test]
+    fn article_page_cache_key_source_gate_denies_missing_or_dynamic_source() {
+        let parts = ArticlePageCacheKeyParts {
+            site_id: 7,
+            page_id: 11,
+            latest_revision_id: 13,
+            page_updated_at: 17,
+            compiled_body_html_hash: None,
+            compiled_top_bar_html_hash: None,
+            compiled_side_bar_html_hash: None,
+            route_slug: "start",
+            page_extra: "",
+            locales: "en",
+        };
+
+        assert_eq!(
+            format_article_page_cache_key_if_source_eligible(None, parts),
+            None
+        );
+
+        for source in [
+            "[[include component:license-box]]",
+            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
+            "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "Request value @URL|0",
+            "[[*user example]]",
+            "[[module Rate]]",
+            "[[module UnknownWidget]]",
+            "[[[empty-label|]]]",
+        ] {
+            let parts = ArticlePageCacheKeyParts {
+                site_id: 7,
+                page_id: 11,
+                latest_revision_id: 13,
+                page_updated_at: 17,
+                compiled_body_html_hash: None,
+                compiled_top_bar_html_hash: None,
+                compiled_side_bar_html_hash: None,
+                route_slug: "start",
+                page_extra: "",
+                locales: "en",
+            };
+
+            assert_eq!(
+                format_article_page_cache_key_if_source_eligible(Some(source), parts),
+                None,
+                "{source}",
+            );
+        }
     }
 
     #[test]
