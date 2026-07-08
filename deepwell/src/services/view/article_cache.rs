@@ -231,10 +231,7 @@ fn format_article_page_cache_key_if_source_eligible(
 
 pub(super) fn anonymous_article_cache_source_eligible(source: &str) -> bool {
     let classes = classify_render_dependencies(source);
-    classes.contains(RenderDependencyClass::RevisionLocal)
-        && !classes.contains(RenderDependencyClass::SourceDependent)
-        && !classes.contains(RenderDependencyClass::QueryDependent)
-        && !classes.contains(RenderDependencyClass::ViewerDependent)
+    !classes.contains(RenderDependencyClass::ViewerDependent)
         && !classes.contains(RenderDependencyClass::RequestDependent)
         && !classes.contains(RenderDependencyClass::UnsupportedUnverified)
 }
@@ -271,33 +268,43 @@ mod tests {
     }
 
     #[test]
-    fn article_page_cache_key_source_gate_allows_static_source() {
-        let key = format_article_page_cache_key_if_source_eligible(
-            Some("Plain imported page text.\n\n[[div]]Static[[/div]]"),
-            ArticlePageCacheKeyParts {
-                site_id: 7,
-                page_id: 11,
-                latest_revision_id: 13,
-                page_updated_at: 17,
-                compiled_body_html_hash: Some(&[0x01, 0x23]),
-                compiled_top_bar_html_hash: Some(&[0x45]),
-                compiled_side_bar_html_hash: Some(&[0x67]),
-                route_slug: "start",
-                page_extra: "noredirect",
-                locales: "en,ja",
-            },
-        );
+    fn article_page_cache_key_source_gate_allows_anonymous_safe_sources() {
+        for source in [
+            "Plain imported page text.\n\n[[div]]Static[[/div]]",
+            "[[include component:license-box]]",
+            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
+            "[[module CountPages category=\"news\"]][[/module]]",
+            "[[*user example]]",
+            "[[[empty-label|]]]",
+        ] {
+            let key = format_article_page_cache_key_if_source_eligible(
+                Some(source),
+                ArticlePageCacheKeyParts {
+                    site_id: 7,
+                    page_id: 11,
+                    latest_revision_id: 13,
+                    page_updated_at: 17,
+                    compiled_body_html_hash: Some(&[0x01, 0x23]),
+                    compiled_top_bar_html_hash: Some(&[0x45]),
+                    compiled_side_bar_html_hash: Some(&[0x67]),
+                    route_slug: "start",
+                    page_extra: "noredirect",
+                    locales: "en,ja",
+                },
+            );
 
-        assert_eq!(
-            key.as_deref(),
-            Some(
-                "deepwell:article-view:page:v1:site=7:page=11:rev=13:updated=17:body=0123:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
-            ),
-        );
+            assert_eq!(
+                key.as_deref(),
+                Some(
+                    "deepwell:article-view:page:v1:site=7:page=11:rev=13:updated=17:body=0123:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
+                ),
+                "{source}",
+            );
+        }
     }
 
     #[test]
-    fn article_page_cache_key_source_gate_denies_missing_or_dynamic_source() {
+    fn article_page_cache_key_source_gate_denies_missing_or_unsafe_source() {
         let parts = ArticlePageCacheKeyParts {
             site_id: 7,
             page_id: 11,
@@ -317,14 +324,11 @@ mod tests {
         );
 
         for source in [
-            "[[include component:license-box]]",
-            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
             "Request value @URL|0",
-            "[[*user example]]",
             "[[module Rate]]",
             "[[module UnknownWidget]]",
-            "[[[empty-label|]]]",
+            "[[module]]",
         ] {
             let parts = ArticlePageCacheKeyParts {
                 site_id: 7,
@@ -348,20 +352,29 @@ mod tests {
     }
 
     #[test]
-    fn article_page_cache_eligibility_allows_revision_local_sources() {
-        assert!(anonymous_article_cache_source_eligible(
+    fn article_page_cache_eligibility_allows_anonymous_safe_sources() {
+        for source in [
             "Plain imported page text.\n\n[[div]]Static[[/div]]",
-        ));
+            "[[include component:license-box]]",
+            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
+            "[[module CountPages category=\"news\"]][[/module]]",
+            "[[*user example]]",
+        ] {
+            assert!(anonymous_article_cache_source_eligible(source), "{source}");
+        }
     }
 
     #[test]
-    fn article_page_cache_eligibility_denies_dynamic_or_unverified_sources() {
+    fn article_page_cache_eligibility_denies_unsafe_or_unverified_sources() {
         for source in [
-            "[[include component:license-box]]",
-            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "Request value @URL|0",
             "[[module Rate]]",
+            "[[module Members]]",
+            "[[module NewPage]]",
+            "[[module Clone]]",
             "[[module UnknownWidget]]",
+            "[[module]]",
         ] {
             assert!(!anonymous_article_cache_source_eligible(source));
         }

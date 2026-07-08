@@ -79,9 +79,9 @@ static REQUEST_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)@URL(?:\|[^\s\]]*)?")
         .expect("request marker regular expression should compile")
 });
-static VIEWER_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+static WIKIDOT_USER_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\[\[\*user\b")
-        .expect("viewer marker regular expression should compile")
+        .expect("Wikidot user link regular expression should compile")
 });
 
 pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
@@ -98,8 +98,8 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
         classes.insert(RenderDependencyClass::RequestDependent);
     }
 
-    if VIEWER_MARKER_REGEX.is_match(source) {
-        classes.insert(RenderDependencyClass::ViewerDependent);
+    if WIKIDOT_USER_LINK_REGEX.is_match(source) {
+        classes.insert(RenderDependencyClass::SourceDependent);
     }
 
     for captures in MODULE_MARKER_REGEX.captures_iter(source) {
@@ -196,11 +196,23 @@ mod tests {
 
     #[test]
     fn render_dependency_query_module_is_query_dependent() {
-        let classes = classify_render_dependencies(
+        for source in [
             "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
-        );
+            "[[module CountPages category=\"news\"]][[/module]]",
+        ] {
+            let classes = classify_render_dependencies(source);
 
-        assert!(classes.contains(RenderDependencyClass::QueryDependent));
+            assert!(classes.contains(RenderDependencyClass::QueryDependent));
+            assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+        }
+    }
+
+    #[test]
+    fn render_dependency_wikidot_user_link_is_source_dependent() {
+        let classes = classify_render_dependencies("[[*user example]]");
+
+        assert!(classes.contains(RenderDependencyClass::SourceDependent));
+        assert!(!classes.contains(RenderDependencyClass::ViewerDependent));
         assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
     }
 
@@ -242,10 +254,17 @@ mod tests {
 
     #[test]
     fn render_dependency_viewer_module_is_viewer_dependent() {
-        let classes = classify_render_dependencies("[[module Rate]]");
+        for source in [
+            "[[module Rate]]",
+            "[[module Members]]",
+            "[[module NewPage]]",
+            "[[module Clone]]",
+        ] {
+            let classes = classify_render_dependencies(source);
 
-        assert!(classes.contains(RenderDependencyClass::ViewerDependent));
-        assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+            assert!(classes.contains(RenderDependencyClass::ViewerDependent));
+            assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+        }
     }
 
     #[test]
