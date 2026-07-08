@@ -63,6 +63,10 @@ static INCLUDE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[include(?:\s|\]\])")
         .expect("include regular expression should compile")
 });
+static EMPTY_LABEL_WIKIDOT_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)\[\[\[[^\]\|]+?\|\s*\]\]\]")
+        .expect("empty-label Wikidot link regular expression should compile")
+});
 static SOURCE_PAGE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\b(?:nav:top|nav:side|_template)\b")
         .expect("source dependency page regular expression should compile")
@@ -83,7 +87,10 @@ static VIEWER_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
     let mut classes = RenderDependencyClasses::revision_local();
 
-    if INCLUDE_REGEX.is_match(source) || SOURCE_PAGE_REGEX.is_match(source) {
+    if INCLUDE_REGEX.is_match(source)
+        || EMPTY_LABEL_WIKIDOT_LINK_REGEX.is_match(source)
+        || SOURCE_PAGE_REGEX.is_match(source)
+    {
         classes.insert(RenderDependencyClass::SourceDependent);
     }
 
@@ -166,6 +173,22 @@ mod tests {
     fn render_dependency_include_source_is_source_dependent() {
         let classes =
             classify_render_dependencies("[[include component:license-box]]\nBody text.");
+
+        assert!(classes.contains(RenderDependencyClass::SourceDependent));
+        assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+    }
+
+    #[test]
+    fn render_dependency_empty_label_wikidot_link_is_source_dependent() {
+        let classes = classify_render_dependencies("[[[some-page|]]]");
+
+        assert!(classes.contains(RenderDependencyClass::SourceDependent));
+        assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+    }
+
+    #[test]
+    fn render_dependency_whitespace_empty_label_wikidot_link_is_source_dependent() {
+        let classes = classify_render_dependencies("[[[some-page | ]]]");
 
         assert!(classes.contains(RenderDependencyClass::SourceDependent));
         assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
