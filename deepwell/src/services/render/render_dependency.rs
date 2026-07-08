@@ -68,7 +68,7 @@ static SOURCE_PAGE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         .expect("source dependency page regular expression should compile")
 });
 static MODULE_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)\[\[module(?:\s+(?P<name>[A-Za-z][A-Za-z0-9_-]*)|\s*\]\]|\b)")
+    Regex::new(r"(?is)\[\[module(?P<tail>[^\]]*)")
         .expect("module regular expression should compile")
 });
 static REQUEST_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -96,12 +96,15 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
     }
 
     for captures in MODULE_MARKER_REGEX.captures_iter(source) {
-        let Some(name_match) = captures.name("name") else {
+        let Some(name) = captures
+            .name("tail")
+            .and_then(|tail| safely_parsed_module_name(tail.as_str()))
+        else {
             classes.insert(RenderDependencyClass::UnsupportedUnverified);
             continue;
         };
 
-        let name = name_match.as_str().to_ascii_lowercase();
+        let name = name.to_ascii_lowercase();
         if MODULE_QUERY_NAMES.contains(&name.as_str()) {
             classes.insert(RenderDependencyClass::QueryDependent);
             continue;
@@ -120,6 +123,26 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
     }
 
     classes
+}
+
+fn safely_parsed_module_name(tail: &str) -> Option<&str> {
+    let trimmed = tail.strip_prefix(char::is_whitespace)?;
+    let name_end = trimmed
+        .find(|character: char| {
+            !character.is_ascii_alphanumeric() && character != '_' && character != '-'
+        })
+        .unwrap_or(trimmed.len());
+    let name = &trimmed[..name_end];
+
+    if name
+        .chars()
+        .next()
+        .is_some_and(|character| character.is_ascii_alphabetic())
+    {
+        Some(name)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -180,7 +203,13 @@ mod tests {
 
     #[test]
     fn render_dependency_malformed_module_markers_are_unsupported() {
-        for source in ["[[module]]", "[[module 123]]"] {
+        for source in [
+            "[[module]]",
+            "[[module 123]]",
+            "[[moduleListPages]]",
+            "[[module123]]",
+            "[[module_unknown]]",
+        ] {
             let classes = classify_render_dependencies(source);
 
             assert!(classes.contains(RenderDependencyClass::UnsupportedUnverified));
