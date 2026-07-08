@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import test from "node:test";
 
-import { parseArgs, percentile, runPageLatency, summarizeSamples } from "../src/page-latency.mjs";
+import { parseArgs, percentile, runPageLatency, summarizeSamples, writeReport } from "../src/page-latency.mjs";
 
 function fakeResponse(body, status = 200) {
   return {
@@ -131,6 +131,25 @@ test("runPageLatency reports differing comparison body and bytes", async () => {
   assert.equal(report.summary.comparison.bytes, "baseline-body".length);
 });
 
+test("runPageLatency reports equal-length comparison body as different bytes", async () => {
+  const report = await runPageLatency({
+    url: "http://example.test/page",
+    compareUrl: "http://example.test/page?baseline=1",
+    warmups: 0,
+    requests: 2,
+    fetchImpl: async (url) => {
+      if (url.includes("baseline=1")) {
+        return fakeResponse("bravo");
+      }
+      return fakeResponse("alpha");
+    },
+  });
+  assert.equal(report.summary.body_stable, true);
+  assert.equal(report.summary.comparison.same_body, false);
+  assert.equal(report.summary.comparison.same_bytes, false);
+  assert.equal(report.summary.comparison.bytes, "bravo".length);
+});
+
 test("runPageLatency omits comparison block when compareUrl is not provided", async () => {
   const report = await runPageLatency({
     url: "http://example.test/page",
@@ -139,4 +158,18 @@ test("runPageLatency omits comparison block when compareUrl is not provided", as
     fetchImpl: async () => fakeResponse("alpha"),
   });
   assert.equal("comparison" in report.summary, false);
+});
+
+test("writeReport does not serialize raw response bodies", async () => {
+  const report = await runPageLatency({
+    url: "http://example.test/page",
+    compareUrl: "http://example.test/page?baseline=1",
+    warmups: 0,
+    requests: 1,
+    fetchImpl: async (url) => fakeResponse(url.includes("baseline=1") ? "bravo" : "alpha"),
+  });
+  const json = writeReport(report);
+  assert.equal(json.includes('"body"'), false);
+  assert.equal(json.includes("alpha"), false);
+  assert.equal(json.includes("bravo"), false);
 });

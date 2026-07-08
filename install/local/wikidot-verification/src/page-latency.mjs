@@ -109,11 +109,11 @@ async function oneFetch(fetchImpl, url, headers) {
     bytes: body.length,
     content_type: response.headers.get("content-type"),
     body_sha256: createHash("sha256").update(body).digest("hex"),
+    body,
   };
 }
 
 function summarizeComparison(measuredSamples, comparisonSample, compareUrl) {
-  const measuredBytes = [...new Set(measuredSamples.map((sample) => sample.bytes))];
   const measuredHashes = [...new Set(measuredSamples.map((sample) => sample.body_sha256))];
   return {
     url: compareUrl,
@@ -121,7 +121,7 @@ function summarizeComparison(measuredSamples, comparisonSample, compareUrl) {
     bytes: comparisonSample.bytes,
     body_sha256: comparisonSample.body_sha256,
     same_body: measuredHashes.length === 1 && comparisonSample.body_sha256 === measuredHashes[0],
-    same_bytes: measuredBytes.length === 1 && comparisonSample.bytes === measuredBytes[0],
+    same_bytes: measuredSamples.length > 0 && measuredSamples.every((sample) => sample.body.equals(comparisonSample.body)),
   };
 }
 
@@ -145,7 +145,7 @@ export async function runPageLatency({ url, compareUrl = null, requests = 20, wa
     url,
     warmups,
     summary,
-    samples: samples.map((sample, index) => ({ index: index + 1, ...sample, duration_ms: round(sample.duration_ms) })),
+    samples: samples.map(({ body, ...sample }, index) => ({ index: index + 1, ...sample, duration_ms: round(sample.duration_ms) })),
   };
 }
 
