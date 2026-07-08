@@ -61,6 +61,17 @@ pub struct GetPreloadViewOutput {
     pub viewer: Viewer,
 }
 
+/// Yield common preload data plus page view data for article routes.
+///
+/// This is a serving-latency helper for clients that need both payloads for the
+/// same request and want to avoid a second JSON-RPC round trip.
+#[derive(Serialize, Debug, Clone)]
+pub struct GetArticleViewOutput {
+    #[serde(flatten)]
+    pub viewer: Viewer,
+    pub page: GetPageViewOutput,
+}
+
 /// Yield information for a page view, depending on the status of the page.
 /// For instance, if a page is missing, there is no revision data but we do
 /// still need to display the "this page doesn't exist" content.
@@ -69,7 +80,7 @@ pub struct GetPreloadViewOutput {
 ///
 /// Note that compiled_xxx_bar_html is Option because None means that this page
 /// does not have that nav bar / it is disabled in this context.
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case", tag = "type", content = "data")]
 pub enum GetPageViewOutput {
     Found {
@@ -105,7 +116,7 @@ pub enum GetPageViewOutput {
     },
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WikidotPageSnapshotView {
     pub source_site: String,
     pub source_revision_count: i32,
@@ -117,7 +128,7 @@ pub struct WikidotPageSnapshotView {
     pub comments: Option<i32>,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WikidotPageBreadcrumbView {
     pub slug: String,
     pub title: String,
