@@ -459,6 +459,26 @@ impl PageQueryResultEnvelope {
         }
     }
 
+    pub fn deferred(
+        pages: FoundPages,
+        candidate_count: Option<usize>,
+        filtering_deferred_to_rust: bool,
+        ordering_deferred_to_rust: bool,
+        cap_exceeded: bool,
+    ) -> Self {
+        Self {
+            pages,
+            metadata: PageQueryResultMetadata {
+                candidate_count,
+                filtering_deferred_to_rust,
+                ordering_deferred_to_rust,
+                cap_exceeded,
+                exact_count_safe: false,
+                ..PageQueryResultMetadata::default()
+            },
+        }
+    }
+
     pub fn cap_exceeded(pages: FoundPages, candidate_count: usize) -> Self {
         Self {
             pages,
@@ -578,6 +598,25 @@ mod tests {
         assert!(!result.metadata.sql_limit_offset_applied);
         assert!(result.metadata.filtering_deferred_to_rust);
         assert!(!result.metadata.ordering_deferred_to_rust);
+        assert!(!result.metadata.exact_count_safe);
+        assert_eq!(result.metadata.unsupported_reason, None);
+    }
+
+    #[test]
+    fn page_query_result_envelope_describes_combined_deferred_results() {
+        let result = PageQueryResultEnvelope::deferred(
+            FoundPages { pages: Vec::new() },
+            Some(100),
+            true,
+            true,
+            true,
+        );
+
+        assert_eq!(result.metadata.candidate_count, Some(100));
+        assert!(result.metadata.filtering_deferred_to_rust);
+        assert!(result.metadata.ordering_deferred_to_rust);
+        assert!(result.metadata.cap_exceeded);
+        assert!(!result.metadata.sql_limit_offset_applied);
         assert!(!result.metadata.exact_count_safe);
         assert_eq!(result.metadata.unsupported_reason, None);
     }
