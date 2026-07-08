@@ -19,6 +19,7 @@
  */
 
 use super::PageQueryResultMetadata;
+use serde::Serialize;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CountPagesExactCountEligibilityInput {
@@ -36,6 +37,13 @@ pub struct CountPagesExactCountEligibilityDecision {
     pub denied_reason: Option<CountPagesExactCountDenialReason>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CountPagesExactCountEligibilityDiagnostics {
+    pub allowed: bool,
+    pub denied_reason_code: Option<&'static str>,
+    pub denied_reason_detail: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CountPagesExactCountDenialReason {
     Unsupported { reason: String },
@@ -48,6 +56,50 @@ pub enum CountPagesExactCountDenialReason {
     PostQueryFiltering,
     PostQueryExclusion,
     PostQueryOffset,
+}
+
+impl CountPagesExactCountDenialReason {
+    pub fn diagnostic_code(&self) -> &'static str {
+        match self {
+            CountPagesExactCountDenialReason::Unsupported { .. } => "unsupported",
+            CountPagesExactCountDenialReason::CapExceeded => "cap_exceeded",
+            CountPagesExactCountDenialReason::FilteringDeferredToRust => {
+                "filtering_deferred_to_rust"
+            }
+            CountPagesExactCountDenialReason::OrderingDeferredToRust => {
+                "ordering_deferred_to_rust"
+            }
+            CountPagesExactCountDenialReason::NotExactCountSafe => "not_exact_count_safe",
+            CountPagesExactCountDenialReason::UnsafeSqlWindow => "unsafe_sql_window",
+            CountPagesExactCountDenialReason::ViewPermissionFiltering => {
+                "view_permission_filtering"
+            }
+            CountPagesExactCountDenialReason::PostQueryFiltering => {
+                "post_query_filtering"
+            }
+            CountPagesExactCountDenialReason::PostQueryExclusion => {
+                "post_query_exclusion"
+            }
+            CountPagesExactCountDenialReason::PostQueryOffset => "post_query_offset",
+        }
+    }
+
+    pub fn diagnostic_detail(&self) -> Option<String> {
+        match self {
+            CountPagesExactCountDenialReason::Unsupported { reason } => {
+                Some(reason.clone())
+            }
+            CountPagesExactCountDenialReason::CapExceeded
+            | CountPagesExactCountDenialReason::FilteringDeferredToRust
+            | CountPagesExactCountDenialReason::OrderingDeferredToRust
+            | CountPagesExactCountDenialReason::NotExactCountSafe
+            | CountPagesExactCountDenialReason::UnsafeSqlWindow
+            | CountPagesExactCountDenialReason::ViewPermissionFiltering
+            | CountPagesExactCountDenialReason::PostQueryFiltering
+            | CountPagesExactCountDenialReason::PostQueryExclusion
+            | CountPagesExactCountDenialReason::PostQueryOffset => None,
+        }
+    }
 }
 
 pub fn count_pages_exact_count_eligibility(
@@ -85,6 +137,24 @@ pub fn count_pages_exact_count_eligibility(
     }
 }
 
+pub fn count_pages_exact_count_eligibility_diagnostics(
+    input: CountPagesExactCountEligibilityInput,
+) -> CountPagesExactCountEligibilityDiagnostics {
+    let decision = count_pages_exact_count_eligibility(input);
+
+    CountPagesExactCountEligibilityDiagnostics {
+        allowed: decision.allowed,
+        denied_reason_code: decision
+            .denied_reason
+            .as_ref()
+            .map(CountPagesExactCountDenialReason::diagnostic_code),
+        denied_reason_detail: decision
+            .denied_reason
+            .as_ref()
+            .and_then(CountPagesExactCountDenialReason::diagnostic_detail),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -112,6 +182,12 @@ mod tests {
         input: CountPagesExactCountEligibilityInput,
     ) -> Option<CountPagesExactCountDenialReason> {
         count_pages_exact_count_eligibility(input).denied_reason
+    }
+
+    fn diagnostics(
+        input: CountPagesExactCountEligibilityInput,
+    ) -> CountPagesExactCountEligibilityDiagnostics {
+        count_pages_exact_count_eligibility_diagnostics(input)
     }
 
     #[test]
@@ -248,6 +324,121 @@ mod tests {
         assert_eq!(
             reason(input(metadata)),
             Some(CountPagesExactCountDenialReason::NotExactCountSafe),
+        );
+    }
+
+    #[test]
+    fn count_pages_exact_count_diagnostics_allow_without_denial_fields() {
+        assert_eq!(
+            diagnostics(input(exact_metadata())),
+            CountPagesExactCountEligibilityDiagnostics {
+                allowed: true,
+                denied_reason_code: None,
+                denied_reason_detail: None,
+            },
+        );
+    }
+
+    #[test]
+    fn count_pages_exact_count_diagnostics_preserve_unsupported_detail() {
+        let mut metadata = exact_metadata();
+        metadata.unsupported_reason = Some("data form ordering".to_owned());
+
+        assert_eq!(
+            diagnostics(input(metadata)),
+            CountPagesExactCountEligibilityDiagnostics {
+                allowed: false,
+                denied_reason_code: Some("unsupported"),
+                denied_reason_detail: Some("data form ordering".to_owned()),
+            },
+        );
+    }
+
+    #[test]
+    fn count_pages_exact_count_diagnostics_map_every_denial_to_stable_code() {
+        let cases = [
+            (
+                CountPagesExactCountDenialReason::Unsupported {
+                    reason: "unsupported selector".to_owned(),
+                },
+                "unsupported",
+                Some("unsupported selector"),
+            ),
+            (
+                CountPagesExactCountDenialReason::CapExceeded,
+                "cap_exceeded",
+                None,
+            ),
+            (
+                CountPagesExactCountDenialReason::FilteringDeferredToRust,
+                "filtering_deferred_to_rust",
+                None,
+            ),
+            (
+                CountPagesExactCountDenialReason::OrderingDeferredToRust,
+                "ordering_deferred_to_rust",
+                None,
+            ),
+            (
+                CountPagesExactCountDenialReason::NotExactCountSafe,
+                "not_exact_count_safe",
+                None,
+            ),
+            (
+                CountPagesExactCountDenialReason::UnsafeSqlWindow,
+                "unsafe_sql_window",
+                None,
+            ),
+            (
+                CountPagesExactCountDenialReason::ViewPermissionFiltering,
+                "view_permission_filtering",
+                None,
+            ),
+            (
+                CountPagesExactCountDenialReason::PostQueryFiltering,
+                "post_query_filtering",
+                None,
+            ),
+            (
+                CountPagesExactCountDenialReason::PostQueryExclusion,
+                "post_query_exclusion",
+                None,
+            ),
+            (
+                CountPagesExactCountDenialReason::PostQueryOffset,
+                "post_query_offset",
+                None,
+            ),
+        ];
+
+        for (reason, code, detail) in cases {
+            assert_eq!(reason.diagnostic_code(), code);
+            assert_eq!(reason.diagnostic_detail().as_deref(), detail);
+        }
+    }
+
+    #[test]
+    fn count_pages_exact_count_diagnostics_keep_denial_priority_order() {
+        let mut metadata = exact_metadata();
+        metadata.unsupported_reason = Some("unsupported selector".to_owned());
+        metadata.cap_exceeded = true;
+        metadata.filtering_deferred_to_rust = true;
+        metadata.ordering_deferred_to_rust = true;
+        metadata.exact_count_safe = false;
+        metadata.sql_limit_offset_applied = true;
+        let mut input = input(metadata);
+        input.view_permission_filtering_applied = true;
+        input.post_query_filtering_applied = true;
+        input.post_query_exclusion_applied = true;
+        input.post_query_offset_applied = true;
+
+        assert_eq!(
+            diagnostics(input),
+            CountPagesExactCountEligibilityDiagnostics {
+                allowed: false,
+                denied_reason_code: Some("unsupported"),
+                denied_reason_detail: Some("unsupported selector".to_owned()),
+            },
         );
     }
 }
