@@ -67,8 +67,8 @@ static SOURCE_PAGE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\b(?:nav:top|nav:side|_template)\b")
         .expect("source dependency page regular expression should compile")
 });
-static MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)\[\[module\s+(?P<name>[A-Za-z][A-Za-z0-9_-]*)")
+static MODULE_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)\[\[module(?:\s+(?P<name>[A-Za-z][A-Za-z0-9_-]*)|\s*\]\]|\b)")
         .expect("module regular expression should compile")
 });
 static REQUEST_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -95,8 +95,13 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
         classes.insert(RenderDependencyClass::ViewerDependent);
     }
 
-    for captures in MODULE_REGEX.captures_iter(source) {
-        let name = captures["name"].to_ascii_lowercase();
+    for captures in MODULE_MARKER_REGEX.captures_iter(source) {
+        let Some(name_match) = captures.name("name") else {
+            classes.insert(RenderDependencyClass::UnsupportedUnverified);
+            continue;
+        };
+
+        let name = name_match.as_str().to_ascii_lowercase();
         if MODULE_QUERY_NAMES.contains(&name.as_str()) {
             classes.insert(RenderDependencyClass::QueryDependent);
             continue;
@@ -170,6 +175,24 @@ mod tests {
             classify_render_dependencies("[[module MagicWidget mode=\"live\"]]");
 
         assert!(classes.contains(RenderDependencyClass::UnsupportedUnverified));
+        assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+    }
+
+    #[test]
+    fn render_dependency_malformed_module_markers_are_unsupported() {
+        for source in ["[[module]]", "[[module 123]]"] {
+            let classes = classify_render_dependencies(source);
+
+            assert!(classes.contains(RenderDependencyClass::UnsupportedUnverified));
+            assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+        }
+    }
+
+    #[test]
+    fn render_dependency_viewer_module_is_viewer_dependent() {
+        let classes = classify_render_dependencies("[[module Rate]]");
+
+        assert!(classes.contains(RenderDependencyClass::ViewerDependent));
         assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
     }
 
