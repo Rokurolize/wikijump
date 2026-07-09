@@ -19,6 +19,7 @@
  */
 
 use super::prelude::*;
+use crate::api::ServerState;
 use redis::AsyncCommands;
 
 const PUBLIC_CONTENT_CACHE_PREFIX: &str = "deepwell:public-content:site";
@@ -45,8 +46,15 @@ impl PublicContentCache {
     }
 
     pub async fn invalidate_site(ctx: &ServiceContext<'_>, site_id: i64) -> Result<()> {
+        Self::invalidate_site_for_state(&ctx.state(), site_id).await
+    }
+
+    pub async fn invalidate_site_for_state(
+        state: &ServerState,
+        site_id: i64,
+    ) -> Result<()> {
         let key = Self::site_version_key(site_id);
-        let mut redis = ctx.redis();
+        let mut redis = state.redis.clone();
         let _: i64 = redis.incr(&key, 1).await.or_raise(|| {
             Error::new(
                 "public content cache fence invalidation error",

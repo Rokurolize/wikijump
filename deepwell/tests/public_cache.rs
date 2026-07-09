@@ -65,3 +65,35 @@ async fn public_content_cache_fence_defaults_to_zero_and_increments() {
 
     let _: usize = redis.del(&key).await.expect("failed to clean test key");
 }
+
+#[tokio::test]
+async fn public_content_cache_invalidation_can_be_deferred_until_post_commit() {
+    let runner = TestRunner::setup().await;
+    let ctx = runner.context();
+    let site_id = 9_900_002;
+    let key = PublicContentCache::site_version_key(site_id);
+    let mut redis = ctx.redis();
+    let _: usize = redis.del(&key).await.expect("failed to clear test key");
+
+    ctx.defer_public_content_cache_invalidate_site(site_id)
+        .expect("failed to defer public content cache invalidation");
+
+    assert_eq!(
+        PublicContentCache::cache_fence(ctx, site_id)
+            .await
+            .expect("failed to read deferred public content cache fence"),
+        "0"
+    );
+
+    ctx.run_post_commit_actions()
+        .await
+        .expect("failed to run deferred public content cache invalidation");
+    assert_eq!(
+        PublicContentCache::cache_fence(ctx, site_id)
+            .await
+            .expect("failed to read invalidated public content cache fence"),
+        "1"
+    );
+
+    let _: usize = redis.del(&key).await.expect("failed to clean test key");
+}
