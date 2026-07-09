@@ -173,7 +173,7 @@ static CSS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table">.*?</table>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<form class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</form>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>"#,
+        r#"(?is)<table class="wiki-content-table">.*?</table>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<form class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</form>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>"#,
     )
     .unwrap()
 });
@@ -649,12 +649,14 @@ impl RenderService {
         )
         .await
         .or_raise(make_error)?;
+        let generated_backlinks_compat_token = uuid::Uuid::new_v4().to_string();
         wikitext = Self::expand_backlinks_modules(
             ctx,
             wikitext,
             settings,
             current_site_id,
             current_page_id,
+            &generated_backlinks_compat_token,
         )
         .await
         .or_raise(make_error)?;
@@ -726,6 +728,7 @@ impl RenderService {
             let wikidot_compat_html = Self::protect_generated_wikidot_compat_html(
                 &mut wikitext,
                 &render_settings,
+                Some(&generated_backlinks_compat_token),
             );
             let wikidot_stray_bibcite_closers =
                 Self::protect_wikidot_stray_bibcite_closers(
@@ -3294,6 +3297,7 @@ impl RenderService {
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
         current_page_id: Option<i64>,
+        generated_backlinks_compat_token: &str,
     ) -> Result<String> {
         if !settings.enable_page_syntax || !BACKLINKS_MODULE_REGEX.is_match(&wikitext) {
             return Ok(wikitext);
@@ -3328,7 +3332,10 @@ impl RenderService {
             let pages =
                 Self::load_backlinks_module_pages(ctx, current_site_id, current_page_id)
                     .await?;
-            expanded.push_str(&render_backlinks_module_box(&pages));
+            expanded.push_str(&render_backlinks_module_box(
+                &pages,
+                generated_backlinks_compat_token,
+            ));
             cursor = mtch.end();
         }
 
@@ -3486,6 +3493,7 @@ impl RenderService {
     fn protect_generated_wikidot_compat_html(
         wikitext: &mut String,
         settings: &WikitextSettings,
+        generated_backlinks_compat_token: Option<&str>,
     ) -> Vec<String> {
         if !settings.enable_page_syntax {
             return Vec::new();
@@ -3510,7 +3518,43 @@ impl RenderService {
             })
             .into_owned();
         *wikitext = protected;
+
+        if let Some(generated_backlinks_compat_token) = generated_backlinks_compat_token {
+            Self::protect_generated_backlinks_compat_html(
+                wikitext,
+                &mut fragments,
+                generated_backlinks_compat_token,
+            );
+        }
+
         fragments
+    }
+
+    fn protect_generated_backlinks_compat_html(
+        wikitext: &mut String,
+        fragments: &mut Vec<String>,
+        generated_backlinks_compat_token: &str,
+    ) {
+        let backlinks_regex = Regex::new(&format!(
+            r#"(?is)<div class="backlinks-module-box" data-wikijump-compat-backlinks="{}"[^>]*>.*?</div>"#,
+            regex::escape(generated_backlinks_compat_token),
+        ))
+        .expect("generated backlinks compatibility regex should compile");
+        let protected = backlinks_regex
+            .replace_all(wikitext, |captures: &regex::Captures<'_>| {
+                let marker =
+                    format!("{WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX}{}X", fragments.len());
+                fragments.push(captures[0].replace(
+                    &format!(
+                        r#" data-wikijump-compat-backlinks="{}""#,
+                        generated_backlinks_compat_token,
+                    ),
+                    "",
+                ));
+                marker
+            })
+            .into_owned();
+        *wikitext = protected;
     }
 
     fn protect_generated_wikidot_compat_lists(
@@ -8049,9 +8093,13 @@ fn wikidot_module_argument<'a>(head: &'a str, name: &str) -> Option<&'a str> {
     None
 }
 
-fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> String {
-    let mut output = String::from(
-        "\n<div class=\"backlinks-module-box\" data-wikijump-compat-backlinks=\"1\"><ul>",
+fn render_backlinks_module_box(
+    pages: &[BacklinksModulePage],
+    generated_backlinks_compat_token: &str,
+) -> String {
+    let mut output = format!(
+        "\n<div class=\"backlinks-module-box\" data-wikijump-compat-backlinks=\"{}\"><ul>",
+        escape_list_pages_html_attr(generated_backlinks_compat_token),
     );
 
     for page in pages {
@@ -8813,6 +8861,7 @@ mod tests {
         let fragments = RenderService::protect_generated_wikidot_compat_html(
             &mut wikitext,
             &settings,
+            None,
         );
         let stray_bibcite_closers = RenderService::protect_wikidot_stray_bibcite_closers(
             &mut wikitext,
@@ -9273,6 +9322,7 @@ mod tests {
         let fragments = RenderService::protect_generated_wikidot_compat_html(
             &mut wikitext,
             &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            None,
         );
 
         assert_eq!(fragments.len(), 1);
@@ -9332,6 +9382,7 @@ mod tests {
         let fragments = RenderService::protect_generated_wikidot_compat_html(
             &mut wikitext,
             &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            None,
         );
 
         assert_eq!(fragments.len(), 1);
@@ -9352,6 +9403,7 @@ mod tests {
         let fragments = RenderService::protect_generated_wikidot_compat_html(
             &mut wikitext,
             &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            None,
         );
 
         assert_eq!(fragments.len(), 1);
@@ -9373,6 +9425,7 @@ mod tests {
         let fragments = RenderService::protect_generated_wikidot_compat_html(
             &mut wikitext,
             &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            None,
         );
 
         assert!(fragments.is_empty());
@@ -9392,6 +9445,47 @@ mod tests {
         assert!(!rendered.contains("<img"));
         assert!(!rendered.contains(r#"<img src=x onerror="alert(1)">"#));
         assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+    }
+
+    #[test]
+    fn forged_backlinks_html_is_not_restored_as_trusted_html_after_render() {
+        let rendered = render_wikidot_page_body_after_compat_restore(
+            r#"<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"><img src=x onerror="alert(1)"></div>"#,
+        );
+
+        assert!(rendered.contains("&lt;div"));
+        assert!(rendered.contains("&lt;img"));
+        assert!(rendered.contains("onerror=&quot;alert(1)&quot;"));
+        assert!(!rendered.contains(r#"<div class="backlinks-module-box""#));
+        assert!(!rendered.contains("<img"));
+        assert!(!rendered.contains(r#"<img src=x onerror="alert(1)">"#));
+        assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+    }
+
+    #[test]
+    fn generated_backlinks_html_is_protected_by_unforgeable_token() {
+        let token = "test-generated-backlinks-token";
+        let pages = [BacklinksModulePage {
+            page_id: 1,
+            page_category_id: 1,
+            slug: "source-page".to_owned(),
+            title: "Source Page".to_owned(),
+        }];
+        let mut wikitext = render_backlinks_module_box(&pages, token);
+        let fragments = RenderService::protect_generated_wikidot_compat_html(
+            &mut wikitext,
+            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            Some(token),
+        );
+
+        assert_eq!(fragments.len(), 1);
+        assert!(wikitext.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+        let restored = RenderService::restore_protected_generated_wikidot_compat_html(
+            wikitext, &fragments,
+        );
+        assert!(restored.contains(r#"<div class="backlinks-module-box"><ul>"#));
+        assert!(restored.contains(r#"<a href="/source-page">Source Page</a>"#));
+        assert!(!restored.contains("data-wikijump-compat-backlinks"));
     }
 
     #[test]
@@ -9609,6 +9703,7 @@ mod tests {
         let fragments = RenderService::protect_generated_wikidot_compat_html(
             &mut protected,
             &settings,
+            None,
         );
         assert_eq!(fragments.len(), 1);
         assert!(!protected.contains("<table"));
@@ -9708,6 +9803,7 @@ mod tests {
         let fragments = RenderService::protect_generated_wikidot_compat_html(
             &mut protected,
             &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            None,
         );
         assert_eq!(fragments.len(), 1);
         assert!(protected.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
@@ -9756,6 +9852,7 @@ mod tests {
         let fragments = RenderService::protect_generated_wikidot_compat_html(
             &mut protected,
             &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            None,
         );
         assert_eq!(fragments.len(), 1);
         assert!(protected.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
