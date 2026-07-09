@@ -31,8 +31,8 @@ use crate::services::page_revision::{
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{
-    CategoryService, FilterService, PageRevisionService, PublicContentCache, SiteService,
-    TextBlockService, TextService,
+    CategoryService, FilterService, PageRevisionService, SiteService, TextBlockService,
+    TextService,
 };
 use crate::types::{
     Action, PageId, PageOrder, PageRevisionType, Permission, Reference, RerenderDepth,
@@ -887,8 +887,7 @@ impl PageService {
             )
         };
 
-        PublicContentCache::invalidate_site(ctx, site_id)
-            .await
+        ctx.defer_public_content_cache_invalidate_site(site_id)
             .or_raise(make_error)?;
 
         // Update in database

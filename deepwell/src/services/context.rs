@@ -25,6 +25,7 @@ use crate::locales::Localizations;
 use crate::models::session::Model as SessionModel;
 use crate::services::blob::MimeAnalyzer;
 use crate::services::permission::{PermissionCache, PermissionService};
+use crate::services::public_cache::PublicContentCache;
 use crate::types::{Permission, Reference};
 use exn::ErrorExt;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
@@ -141,6 +142,7 @@ pub struct ServiceContext<'txn> {
 pub(crate) enum PostCommitAction {
     InvalidatePermissionUser { site_id: i64, user_id: i64 },
     InvalidatePermissionSite { site_id: i64 },
+    InvalidatePublicContentSite { site_id: i64 },
 }
 
 impl<'txn> ServiceContext<'txn> {
@@ -249,6 +251,18 @@ impl<'txn> ServiceContext<'txn> {
         Ok(())
     }
 
+    pub fn defer_public_content_cache_invalidate_site(&self, site_id: i64) -> Result<()> {
+        let mut actions = self.post_commit_actions.lock().map_err(|_| {
+            Error::new(
+                "failed to queue public content cache invalidation",
+                ErrorType::Page,
+            )
+            .raise()
+        })?;
+        actions.push(PostCommitAction::InvalidatePublicContentSite { site_id });
+        Ok(())
+    }
+
     pub(crate) fn drain_post_commit_actions(&self) -> Result<Vec<PostCommitAction>> {
         let mut actions = self.post_commit_actions.lock().map_err(|_| {
             Error::new(
@@ -272,6 +286,9 @@ impl<'txn> ServiceContext<'txn> {
                 }
                 PostCommitAction::InvalidatePermissionSite { site_id } => {
                     PermissionCache::invalidate_site_for_state(state, site_id).await?;
+                }
+                PostCommitAction::InvalidatePublicContentSite { site_id } => {
+                    PublicContentCache::invalidate_site_for_state(state, site_id).await?;
                 }
             }
         }

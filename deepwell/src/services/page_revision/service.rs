@@ -26,8 +26,8 @@ use crate::models::text::{self, Entity as Text, Model as TextModel};
 use crate::services::render::RenderPageOutput;
 use crate::services::score::ScoreValue;
 use crate::services::{
-    LinkService, OutdateService, PageService, ParentService, PublicContentCache,
-    RenderService, ScoreService, SettingsService, SiteService, TextService,
+    LinkService, OutdateService, PageService, ParentService, RenderService, ScoreService,
+    SettingsService, SiteService, TextService,
 };
 use crate::types::{FetchDirection, PageId, PageRevisionType, RerenderDepth};
 use crate::utils::{split_category, split_category_name, trim_default};
@@ -211,8 +211,7 @@ impl PageRevisionService {
         // If nothing has changed, then don't create a new revision
         if changes.is_empty() {
             debug!("No changes in edit, only rerendering the page");
-            PublicContentCache::invalidate_site(ctx, site_id)
-                .await
+            ctx.defer_public_content_cache_invalidate_site(site_id)
                 .or_raise(make_error)?;
             Self::rerender(ctx, id, RerenderDepth::default(), RerenderType::Full)
                 .await
@@ -221,8 +220,7 @@ impl PageRevisionService {
             return Ok(None);
         }
 
-        PublicContentCache::invalidate_site(ctx, site_id)
-            .await
+        ctx.defer_public_content_cache_invalidate_site(site_id)
             .or_raise(make_error)?;
 
         // Get ancillary page data
@@ -422,8 +420,7 @@ impl PageRevisionService {
             )
         };
 
-        PublicContentCache::invalidate_site(ctx, site_id)
-            .await
+        ctx.defer_public_content_cache_invalidate_site(site_id)
             .or_raise(make_error)?;
 
         // If the page creation doesn't specify a preferred layout,
@@ -553,8 +550,7 @@ impl PageRevisionService {
             ..
         } = previous;
 
-        PublicContentCache::invalidate_site(ctx, site_id)
-            .await
+        ctx.defer_public_content_cache_invalidate_site(site_id)
             .or_raise(make_error)?;
 
         // Run outdater
@@ -669,8 +665,7 @@ impl PageRevisionService {
             vec![str!("slug")]
         };
 
-        PublicContentCache::invalidate_site(ctx, site_id)
-            .await
+        ctx.defer_public_content_cache_invalidate_site(site_id)
             .or_raise(make_error)?;
 
         // Get ancillary page data
@@ -915,8 +910,7 @@ impl PageRevisionService {
             }
         }
 
-        PublicContentCache::invalidate_site(ctx, site_id)
-            .await
+        ctx.defer_public_content_cache_invalidate_site(site_id)
             .or_raise(make_error)?;
 
         // Get data for page

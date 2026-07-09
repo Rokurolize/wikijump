@@ -27,7 +27,7 @@ use crate::services::audit::{AuditEvent, AuditService, SiteFields};
 use crate::services::domain::{DEFAULT_SITE_SLUG, DomainService};
 use crate::services::relation::CreateSiteUser;
 use crate::services::user::{CreateUser, UpdateUserBody};
-use crate::services::{AliasService, PublicContentCache, RelationService, UserService};
+use crate::services::{AliasService, RelationService, UserService};
 use crate::types::{AliasType, UserType};
 use crate::utils::validate_locale;
 use ftml::layout::Layout;
@@ -347,8 +347,7 @@ impl SiteService {
             model.license = Set(license);
         }
 
-        PublicContentCache::invalidate_site(ctx, site.site_id)
-            .await
+        ctx.defer_public_content_cache_invalidate_site(site.site_id)
             .or_raise(make_error)?;
 
         // Update site
