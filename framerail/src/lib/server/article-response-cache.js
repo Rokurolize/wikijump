@@ -4,6 +4,8 @@ const ARTICLE_ROUTES = new Set(["/", "/[slug]/[...extra]"])
 const PERMISSION_FENCE = "anonymous-page-view-v1"
 const RESPONSE_CACHE_PREFIX = "framerail:article-response:v1"
 const SESSION_COOKIE = "wikijump_token"
+export const ARTICLE_RESPONSE_CACHE_MAX_ENTRIES = 1024
+export const ARTICLE_RESPONSE_CACHE_TTL_SECONDS = 60
 
 const utf8Hex = (value) => {
   return Buffer.from(value, "utf8").toString("hex")
@@ -100,6 +102,69 @@ export const serializeArticleResponseForCache = async (response) => {
   }
 }
 
+export const createMemoryArticleResponseCacheStore = ({
+  now = () => Date.now(),
+  maxEntries = ARTICLE_RESPONSE_CACHE_MAX_ENTRIES
+} = {}) => {
+  const entries = new Map()
+  const maxEntryCount =
+    Number.isInteger(maxEntries) && maxEntries > 0
+      ? maxEntries
+      : ARTICLE_RESPONSE_CACHE_MAX_ENTRIES
+
+  const pruneExpired = (nowMs) => {
+    for (const [key, entry] of entries) {
+      if (entry.expiresAt <= nowMs) {
+        entries.delete(key)
+      }
+    }
+  }
+
+  const pruneOverflow = () => {
+    while (entries.size > maxEntryCount) {
+      const oldest = entries.keys().next()
+      if (oldest.done) return
+      entries.delete(oldest.value)
+    }
+  }
+
+  return {
+    async get(key) {
+      const entry = entries.get(key)
+      if (!entry) return null
+
+      if (entry.expiresAt <= now()) {
+        entries.delete(key)
+        return null
+      }
+
+      return entry.value
+    },
+
+    async set(key, value, ttlSeconds = ARTICLE_RESPONSE_CACHE_TTL_SECONDS) {
+      const nowMs = now()
+      const expiresAt = nowMs + ttlSeconds * 1000
+
+      pruneExpired(nowMs)
+      if (expiresAt <= nowMs) {
+        entries.delete(key)
+        return
+      }
+
+      entries.delete(key)
+      entries.set(key, {
+        value,
+        expiresAt
+      })
+      pruneOverflow()
+    },
+
+    size() {
+      return entries.size
+    }
+  }
+}
+
 const isHeaderPair = (value) => {
   return (
     Array.isArray(value) &&
@@ -149,4 +214,28 @@ export const writeCachedArticleResponse = async (store, key, entry, ttlSeconds) 
   } catch {
     return false
   }
+}
+
+export const readAnonymousArticleResponseCache = async ({ store, metadata }) => {
+  if (!metadata) return null
+  return readCachedArticleResponse(store, buildAnonymousArticleResponseCacheKey(metadata))
+}
+
+export const writeAnonymousArticleResponseCache = async ({
+  store,
+  metadata,
+  response,
+  ttlSeconds = ARTICLE_RESPONSE_CACHE_TTL_SECONDS
+}) => {
+  if (!metadata) return false
+  if (response.status !== 200) return false
+  if (response.headers.has("set-cookie")) return false
+
+  const entry = await serializeArticleResponseForCache(response)
+  return writeCachedArticleResponse(
+    store,
+    buildAnonymousArticleResponseCacheKey(metadata),
+    entry,
+    ttlSeconds
+  )
 }

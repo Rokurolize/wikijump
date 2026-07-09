@@ -2,12 +2,16 @@ import { strict as assert } from "node:assert"
 import test from "node:test"
 
 import {
+  ARTICLE_RESPONSE_CACHE_MAX_ENTRIES,
   buildAnonymousArticleResponseCacheKey,
   buildAnonymousArticleResponseCacheMetadata,
   canConsiderAnonymousArticleResponseCache,
+  createMemoryArticleResponseCacheStore,
   deserializeCachedArticleResponse,
+  readAnonymousArticleResponseCache,
   readCachedArticleResponse,
   serializeArticleResponseForCache,
+  writeAnonymousArticleResponseCache,
   writeCachedArticleResponse
 } from "../src/lib/server/article-response-cache.js"
 
@@ -85,6 +89,30 @@ test("anonymous article response cache key requires Deepwell eligibility metadat
   )
 })
 
+test("anonymous article response cache key varies by Deepwell cache key", () => {
+  const baseMetadata = {
+    siteId: 6000005,
+    siteSlug: "scp-wiki",
+    requestLocales: ["en-US"],
+    backendLocales: ["en-US", "en"]
+  }
+  const first = buildAnonymousArticleResponseCacheMetadata({
+    ...baseMetadata,
+    deepwellArticlePageCacheKey:
+      "deepwell:article-view:page:v1:site=6000005:page=173:rev=9:updated=123:permission=site:3:user:anonymous:body=aa:top=bb:side=cc"
+  })
+  const second = buildAnonymousArticleResponseCacheMetadata({
+    ...baseMetadata,
+    deepwellArticlePageCacheKey:
+      "deepwell:article-view:page:v1:site=6000005:page=173:rev=10:updated=456:permission=site:3:user:anonymous:body=dd:top=ee:side=ff"
+  })
+
+  assert.notEqual(
+    buildAnonymousArticleResponseCacheKey(first),
+    buildAnonymousArticleResponseCacheKey(second)
+  )
+})
+
 test("anonymous article response cache serializes final response headers", async () => {
   const response = new Response("<!doctype html><html><body>cached</body></html>", {
     status: 200,
@@ -133,4 +161,90 @@ test("anonymous article response cache store helpers fail closed", async () => {
     ),
     false
   )
+})
+
+test("memory article response cache evicts oldest entries above max size", async () => {
+  assert.equal(Number.isInteger(ARTICLE_RESPONSE_CACHE_MAX_ENTRIES), true)
+  const store = createMemoryArticleResponseCacheStore({ maxEntries: 2 })
+
+  await store.set("first", "a")
+  await store.set("second", "b")
+  await store.set("third", "c")
+
+  assert.equal(await store.get("first"), null)
+  assert.equal(await store.get("second"), "b")
+  assert.equal(await store.get("third"), "c")
+  assert.equal(store.size(), 2)
+})
+
+test("memory article response cache prunes expired entries on write", async () => {
+  let now = 0
+  const store = createMemoryArticleResponseCacheStore({
+    now: () => now,
+    maxEntries: 2
+  })
+
+  await store.set("fresh", "a", 60)
+  await store.set("expired", "b", 1)
+  now = 2000
+  await store.set("new", "c", 60)
+
+  assert.equal(await store.get("fresh"), "a")
+  assert.equal(await store.get("expired"), null)
+  assert.equal(await store.get("new"), "c")
+  assert.equal(store.size(), 2)
+})
+
+test("anonymous article response cache read/write helpers gate final responses", async () => {
+  const metadata = buildAnonymousArticleResponseCacheMetadata({
+    siteId: 6000005,
+    siteSlug: "scp-wiki",
+    requestLocales: ["en-US"],
+    backendLocales: ["en-US", "en"],
+    deepwellArticlePageCacheKey:
+      "deepwell:article-view:page:v1:site=6000005:page=173:permission=site:3,user:5:body=aa"
+  })
+  const store = createMemoryArticleResponseCacheStore()
+
+  assert.equal(
+    await writeAnonymousArticleResponseCache({
+      store,
+      metadata: null,
+      response: new Response("missing metadata")
+    }),
+    false
+  )
+  assert.equal(
+    await writeAnonymousArticleResponseCache({
+      store,
+      metadata,
+      response: new Response("not found", { status: 404 })
+    }),
+    false
+  )
+  assert.equal(
+    await writeAnonymousArticleResponseCache({
+      store,
+      metadata,
+      response: new Response("session", { headers: { "set-cookie": "a=b" } })
+    }),
+    false
+  )
+
+  assert.equal(
+    await writeAnonymousArticleResponseCache({
+      store,
+      metadata,
+      response: new Response("cached body", {
+        status: 200,
+        headers: { "content-type": "text/html" }
+      })
+    }),
+    true
+  )
+
+  const cached = await readAnonymousArticleResponseCache({ store, metadata })
+  assert.equal(cached.status, 200)
+  assert.equal(cached.headers.get("content-type"), "text/html")
+  assert.equal(await cached.text(), "cached body")
 })
