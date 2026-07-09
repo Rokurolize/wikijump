@@ -4401,7 +4401,30 @@ impl RenderService {
                 continue;
             }
 
-            let Some(start) = rest.find("[!--") else {
+            let comment_start = rest.find("[!--");
+            let style_start = rest.find("<style data-wikijump-compat-css-module=\"1\">");
+
+            let style_before_comment = match (style_start, comment_start) {
+                (Some(style_start), Some(comment_start)) => style_start < comment_start,
+                (Some(_), None) => true,
+                _ => false,
+            };
+            if style_before_comment {
+                let style_start =
+                    style_start.expect("matched a generated CSS module start");
+                output.push_str(&rest[..style_start]);
+                let style_rest = &rest[style_start..];
+                let Some(style_end) = style_rest.find("\n</style>") else {
+                    output.push_str(style_rest);
+                    break;
+                };
+                let style_end = style_end + "\n</style>".len();
+                output.push_str(&style_rest[..style_end]);
+                rest = &style_rest[style_end..];
+                continue;
+            }
+
+            let Some(start) = comment_start else {
                 output.push_str(rest);
                 break;
             };
@@ -11228,6 +11251,29 @@ mod tests {
         assert!(html.contains(r"\3C /style>\3C img"));
         assert!(!html.contains("</style><img"));
         assert!(!html.contains("<img src=x"));
+    }
+
+    #[test]
+    fn wikidot_compatibility_fallback_comment_markers_in_css_do_not_expose_html() {
+        let source = RenderService::render_wikidot_compat_fallback_css_modules(concat!(
+            "[[module CSS]]\n",
+            "/* [!--\n",
+            "[[/module]]\n",
+            "--]\n",
+            "</style><script>alert(1)</script>\n",
+            "[[code]]\n",
+            "x\n",
+            "[[/code]]\n",
+        ));
+
+        let html = RenderService::render_wikidot_compatibility_fallback_with_code_blocks(
+            &source,
+        );
+
+        assert!(html.contains(r#"<style data-wikijump-compat-css-module="1">"#));
+        assert!(html.contains("/* [!--"));
+        assert!(html.contains("&lt;/style&gt;&lt;script&gt;alert(1)&lt;/script&gt;"));
+        assert!(!html.contains("</style><script>"));
     }
 
     #[test]
