@@ -2,6 +2,7 @@ import { Socket } from "node:net"
 import { connect as tlsConnect } from "node:tls"
 
 const DEFAULT_REDIS_PORT = 6379
+const REDIS_SUBSCRIBER_RETRY_DELAY_MS = 100
 const CRLF = "\r\n"
 
 const encodeCommand = (parts) => {
@@ -243,6 +244,10 @@ class RedisFenceInvalidationSubscriber {
     this.buffer = Buffer.alloc(0)
     this.pending = []
     this.started = false
+    this.running = false
+    this.retryTimer = null
+    this.stopped = false
+    this.subscribed = false
     this.channel = null
     this.onSubscribed = null
     this.onMessage = null
@@ -253,6 +258,7 @@ class RedisFenceInvalidationSubscriber {
   subscribe({ channel, onSubscribed, onMessage, onDisconnect, onMalformed }) {
     if (this.started) return
     this.started = true
+    this.stopped = false
     this.channel = channel
     this.onSubscribed = onSubscribed
     this.onMessage = onMessage
@@ -262,6 +268,8 @@ class RedisFenceInvalidationSubscriber {
   }
 
   async run() {
+    if (this.running || this.stopped) return
+    this.running = true
     try {
       await this.connect()
       for (const command of this.authCommands) {
@@ -277,10 +285,23 @@ class RedisFenceInvalidationSubscriber {
         this.reset()
         return
       }
+      this.subscribed = true
       this.onSubscribed?.()
     } catch {
       this.reset()
+    } finally {
+      this.running = false
+      this.scheduleRetry()
     }
+  }
+
+  scheduleRetry() {
+    if (this.stopped || !this.started || this.subscribed || this.retryTimer) return
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null
+      void this.run()
+    }, REDIS_SUBSCRIBER_RETRY_DELAY_MS)
+    this.retryTimer.unref?.()
   }
 
   async connect() {
@@ -315,6 +336,7 @@ class RedisFenceInvalidationSubscriber {
   }
 
   reset() {
+    this.subscribed = false
     if (this.socket && !this.socket.destroyed) {
       this.socket.destroy()
     }
@@ -326,6 +348,17 @@ class RedisFenceInvalidationSubscriber {
       request.reject(new Error("Redis subscriber connection closed"))
     }
     this.onDisconnect?.()
+    this.scheduleRetry()
+  }
+
+  close() {
+    this.stopped = true
+    this.started = false
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer)
+      this.retryTimer = null
+    }
+    this.reset()
   }
 
   handleData(chunk) {

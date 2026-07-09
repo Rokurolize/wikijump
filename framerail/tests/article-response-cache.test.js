@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert"
+import net from "node:net"
 import test from "node:test"
 
 import {
@@ -25,6 +26,75 @@ import {
   writeAnonymousArticleResponseCache,
   writeCachedArticleResponse
 } from "../src/lib/server/article-response-cache.js"
+import { createRedisCacheStore } from "../src/lib/server/redis-cache-store.js"
+
+const redisArray = (...values) => {
+  let response = `*${values.length}\r\n`
+  for (const value of values) {
+    response += `$${Buffer.byteLength(value, "utf8")}\r\n${value}\r\n`
+  }
+  return response
+}
+
+const waitFor = async (condition, message, timeoutMs = 1500) => {
+  const started = Date.now()
+  while (!condition()) {
+    if (Date.now() - started > timeoutMs) {
+      throw new Error(message)
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+}
+
+const getUnusedPort = async () => {
+  const server = net.createServer()
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve))
+  const address = server.address()
+  assert.equal(typeof address, "object")
+  await new Promise((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()))
+  })
+  return address.port
+}
+
+const createPubSubRedisServer = async ({
+  channel,
+  port = 0,
+  onSocket,
+  onSubscribe
+} = {}) => {
+  const sockets = new Set()
+  const server = net.createServer((socket) => {
+    sockets.add(socket)
+    socket.on("close", () => sockets.delete(socket))
+    onSocket?.(socket)
+    socket.setEncoding("utf8")
+    let buffer = ""
+    socket.on("data", (chunk) => {
+      buffer += chunk
+      if (!buffer.includes("SUBSCRIBE")) return
+      buffer = ""
+      onSubscribe?.(socket)
+      socket.write(redisArray("subscribe", channel, "1"))
+    })
+  })
+
+  await new Promise((resolve) => server.listen(port, "127.0.0.1", resolve))
+  const address = server.address()
+  assert.equal(typeof address, "object")
+
+  return {
+    port: address.port,
+    close: async () => {
+      for (const socket of sockets) {
+        socket.destroy()
+      }
+      await new Promise((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()))
+      })
+    }
+  }
+}
 
 test("anonymous article response cache gate allows only plain anonymous article GETs", () => {
   const allowed = canConsiderAnonymousArticleResponseCache({
@@ -165,6 +235,72 @@ test("anonymous article response cache fence helpers fail closed on malformed va
     await readAnonymousArticleResponseCacheFences({ store, siteId: 6000005 }),
     null
   )
+})
+
+test("Redis article response fence subscriber retries after initial subscribe failure", async () => {
+  const channel = "test:article-response-fence"
+  const port = await getUnusedPort()
+  const store = createRedisCacheStore(`redis://127.0.0.1:${port}`)
+  let disconnects = 0
+  let subscribed = 0
+
+  const subscriber = store.subscribe({
+    channel,
+    onSubscribed: () => {
+      subscribed += 1
+    },
+    onMessage: () => {},
+    onDisconnect: () => {
+      disconnects += 1
+    },
+    onMalformed: () => {}
+  })
+
+  await waitFor(() => disconnects > 0, "subscriber did not fail closed")
+  const redis = await createPubSubRedisServer({ channel, port })
+
+  try {
+    await waitFor(() => subscribed === 1, "subscriber did not retry subscription")
+    assert.equal(disconnects >= 1, true)
+  } finally {
+    subscriber.close()
+    await redis.close()
+  }
+})
+
+test("Redis article response fence subscriber resubscribes after socket close", async () => {
+  const channel = "test:article-response-fence"
+  let firstSocket = null
+  let subscribed = 0
+  let disconnects = 0
+  const redis = await createPubSubRedisServer({
+    channel,
+    onSocket: (socket) => {
+      firstSocket ??= socket
+    }
+  })
+  const store = createRedisCacheStore(`redis://127.0.0.1:${redis.port}`)
+  const subscriber = store.subscribe({
+    channel,
+    onSubscribed: () => {
+      subscribed += 1
+    },
+    onMessage: () => {},
+    onDisconnect: () => {
+      disconnects += 1
+    },
+    onMalformed: () => {}
+  })
+
+  try {
+    await waitFor(() => subscribed === 1, "subscriber did not subscribe")
+    firstSocket.destroy()
+    await waitFor(() => disconnects > 0, "subscriber did not fail closed")
+    await waitFor(() => subscribed === 2, "subscriber did not resubscribe")
+  } finally {
+    subscriber.close()
+    await redis.close()
+  }
 })
 
 test("memory article response fence cache does not store a seed raced by invalidation", async () => {
