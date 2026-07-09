@@ -39,7 +39,7 @@ use crate::services::relation::{
     SetPageAttributions,
 };
 use crate::services::role::{
-    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+    InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
 use crate::services::site::{CreateSite, CreateSiteOutput, SiteService, UpdateSiteBody};
 use crate::services::user::{CreateUser, CreateUserOutput, UpdateUserBody, UserService};
@@ -626,28 +626,6 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             )
             .await
             .or_raise(make_error)?;
-
-            // Make test user admin
-            // TODO: remove in prod
-            if role_template.name == "admin" {
-                let user = UserService::get(&ctx, Reference::from(ADMIN_USER_ID))
-                    .await
-                    .or_raise(make_error)?;
-
-                RoleService::grant_role_to_user(
-                    &ctx,
-                    GrantUserRoleInput {
-                        site_id,
-                        user_id: user.user_id,
-                        role_id: role.role_id,
-                        assigning_user_id: SYSTEM_USER_ID,
-                        expires_at: None,
-                        ip_address: SEED_IP_ADDRESS,
-                    },
-                )
-                .await
-                .or_raise(make_error)?;
-            }
         }
     }
 
