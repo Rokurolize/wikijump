@@ -21,7 +21,14 @@ const PERMISSION_FENCE = "site=11,user=13"
 const DEEPWELL_ARTICLE_PAGE_CACHE_KEY =
   "deepwell:article-view:page:v1:site=6000005:page=173:rev=9:updated=123:permission=site=11,user=13:body=aa"
 
-const createFastPathFixtureStore = async () => {
+const createFastPathFixtureStore = async ({
+  route = { slug: "scp-173", extra: "" },
+  headers = [
+    ["content-type", "text/html; charset=utf-8"],
+    ["x-cache-fixture", "hit"]
+  ],
+  body = "<!doctype html><html><body>cached article</body></html>"
+} = {}) => {
   const store = createMemoryArticleResponseCacheStore()
   await store.set(buildPublicContentFenceKey(SITE_ID), PUBLIC_CONTENT_FENCE)
   await store.set(`permission:site:${SITE_ID}:version`, "11")
@@ -30,7 +37,7 @@ const createFastPathFixtureStore = async () => {
   const tokenMetadata = buildAnonymousArticleResponseCacheFences({
     siteId: SITE_ID,
     siteSlug: SITE_SLUG,
-    route: { slug: "scp-173", extra: "" },
+    route,
     requestLocales: REQUEST_LOCALES,
     backendLocales: BACKEND_LOCALES,
     publicContentFence: PUBLIC_CONTENT_FENCE,
@@ -55,11 +62,8 @@ const createFastPathFixtureStore = async () => {
     cacheKey,
     JSON.stringify({
       status: 200,
-      headers: [
-        ["content-type", "text/html; charset=utf-8"],
-        ["x-cache-fixture", "hit"]
-      ],
-      body: "<!doctype html><html><body>cached article</body></html>"
+      headers,
+      body
     })
   )
 
@@ -142,6 +146,61 @@ test("article response fast path falls through when cache entries miss", async (
     assert.equal(response.status, 209)
     assert.equal(await response.text(), "fallback handler")
     assert.equal(handlerCalls(), 1)
+  })
+})
+
+test("article response fast path falls through for seeded non-article app routes", async () => {
+  const { store } = await createFastPathFixtureStore({
+    route: { slug: "about", extra: "" },
+    body: "<!doctype html><html><body>cached about poison</body></html>"
+  })
+
+  await withServer(store, async ({ baseUrl, handlerCalls }) => {
+    const response = await fetch(`${baseUrl}/about`, { headers: fastPathHeaders })
+
+    assert.equal(response.status, 209)
+    assert.equal(await response.text(), "fallback handler")
+    assert.equal(handlerCalls(), 1)
+  })
+})
+
+test("article response fast path enforces static security headers on replay", async () => {
+  const csp = "script-src 'nonce-cached-nonce'"
+  const cachedBody =
+    '<!doctype html><html><body><script nonce="cached-nonce"></script></body></html>'
+  const { store } = await createFastPathFixtureStore({
+    headers: [
+      ["content-security-policy", csp],
+      ["content-type", "text/html; charset=utf-8"],
+      ["cross-origin-opener-policy", "unsafe-none"],
+      ["x-cache-fixture", "hit"],
+      ["x-frame-options", "SAMEORIGIN"]
+    ],
+    body: cachedBody
+  })
+
+  await withServer(store, async ({ baseUrl, handlerCalls }) => {
+    const response = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
+
+    assert.equal(response.status, 200)
+    assert.equal(response.headers.get("content-security-policy"), csp)
+    assert.equal(response.headers.get("cross-origin-opener-policy"), "same-origin")
+    assert.equal(
+      response.headers.get("permissions-policy"),
+      "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(self), screen-wake-lock=(), usb=(), web-share=(self), xr-spatial-tracking=()"
+    )
+    assert.equal(
+      response.headers.get("referrer-policy"),
+      "strict-origin-when-cross-origin"
+    )
+    assert.equal(
+      response.headers.get("strict-transport-security"),
+      "max-age=31536000; includeSubDomains"
+    )
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff")
+    assert.equal(response.headers.get("x-frame-options"), "DENY")
+    assert.equal(await response.text(), cachedBody)
+    assert.equal(handlerCalls(), 0)
   })
 })
 

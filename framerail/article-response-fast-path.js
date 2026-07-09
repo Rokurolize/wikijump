@@ -5,12 +5,20 @@ import {
   readAnonymousArticleResponseCacheFences,
   readAnonymousArticleResponseToken
 } from "./src/lib/server/article-response-cache.js"
+import { applyStaticSecurityHeadersToNodeResponse } from "./src/lib/server/security-headers.js"
 import { parseAcceptLangHeader, withFallbackLocale } from "./src/lib/locales.js"
 
 const FALLBACK_LOCALE = "en"
 const SITE_ID_HEADER = "x-wikijump-site-id"
 const SITE_SLUG_HEADER = "x-wikijump-site-slug"
 const SESSION_COOKIE = "wikijump_token"
+const STATIC_APP_ROUTE_SLUGS = new Set([
+  "-",
+  ".well-known",
+  "about",
+  "forum",
+  "xml-rpc-api.php"
+])
 
 const hasSessionCookie = (cookieHeader) => {
   if (!cookieHeader) return false
@@ -52,6 +60,7 @@ const articleRouteFromPathname = (pathname) => {
   try {
     const slug = decodeURIComponent(segments[1])
     if (!slug || slug.includes("/")) return undefined
+    if (STATIC_APP_ROUTE_SLUGS.has(slug)) return undefined
     return { slug, extra: "" }
   } catch {
     return undefined
@@ -143,6 +152,8 @@ export const writeArticleResponseFastPathHit = (request, response, entry) => {
   for (const [name, value] of entry.headers) {
     response.setHeader(name, value)
   }
+  const pathname = new URL(request.url ?? "", "http://localhost").pathname
+  applyStaticSecurityHeadersToNodeResponse(response, pathname)
 
   if (request.method === "HEAD") {
     response.end()
