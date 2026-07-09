@@ -140,9 +140,9 @@ pub struct ServiceContext<'txn> {
 
 #[derive(Debug)]
 pub(crate) enum PostCommitAction {
-    InvalidatePermissionUser { site_id: i64, user_id: i64 },
-    InvalidatePermissionSite { site_id: i64 },
-    InvalidatePublicContentSite { site_id: i64 },
+    PermissionUser { site_id: i64, user_id: i64 },
+    PermissionSite { site_id: i64 },
+    PublicContentSite { site_id: i64 },
 }
 
 impl<'txn> ServiceContext<'txn> {
@@ -235,7 +235,7 @@ impl<'txn> ServiceContext<'txn> {
             )
             .raise()
         })?;
-        actions.push(PostCommitAction::InvalidatePermissionUser { site_id, user_id });
+        actions.push(PostCommitAction::PermissionUser { site_id, user_id });
         Ok(())
     }
 
@@ -247,7 +247,7 @@ impl<'txn> ServiceContext<'txn> {
             )
             .raise()
         })?;
-        actions.push(PostCommitAction::InvalidatePermissionSite { site_id });
+        actions.push(PostCommitAction::PermissionSite { site_id });
         Ok(())
     }
 
@@ -259,7 +259,7 @@ impl<'txn> ServiceContext<'txn> {
             )
             .raise()
         })?;
-        actions.push(PostCommitAction::InvalidatePublicContentSite { site_id });
+        actions.push(PostCommitAction::PublicContentSite { site_id });
         Ok(())
     }
 
@@ -280,14 +280,14 @@ impl<'txn> ServiceContext<'txn> {
     ) -> Result<()> {
         for action in actions {
             match action {
-                PostCommitAction::InvalidatePermissionUser { site_id, user_id } => {
+                PostCommitAction::PermissionUser { site_id, user_id } => {
                     PermissionCache::invalidate_user_for_state(state, site_id, user_id)
                         .await?;
                 }
-                PostCommitAction::InvalidatePermissionSite { site_id } => {
+                PostCommitAction::PermissionSite { site_id } => {
                     PermissionCache::invalidate_site_for_state(state, site_id).await?;
                 }
-                PostCommitAction::InvalidatePublicContentSite { site_id } => {
+                PostCommitAction::PublicContentSite { site_id } => {
                     PublicContentCache::invalidate_site_for_state(state, site_id).await?;
                 }
             }
