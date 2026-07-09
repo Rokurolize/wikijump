@@ -92,7 +92,8 @@ impl ViewService {
         }
         let cache_key = ArticlePageCache::key(ctx, &input).await?;
         if let Some(cache_key) = &cache_key
-            && let Some(page) = ArticlePageCache::get(ctx, cache_key).await?
+            && ArticlePageCache::anonymous_can_view(ctx, input.site_id, cache_key).await?
+            && let Some(page) = ArticlePageCache::get(ctx, &cache_key.cache_key).await?
         {
             return Ok(GetArticleViewOutput {
                 viewer: preload.viewer,
@@ -105,7 +106,7 @@ impl ViewService {
             (&cache_key, &page_view)
             && page.from_wikidot
         {
-            ArticlePageCache::set(ctx, cache_key, &page_view).await?;
+            ArticlePageCache::set(ctx, &cache_key.cache_key, &page_view).await?;
         }
 
         Ok(GetArticleViewOutput {

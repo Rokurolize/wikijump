@@ -20,11 +20,19 @@
 
 use super::options::PageOptions;
 use super::prelude::*;
+use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::types::{Action, Permission, Reference, Resource};
 use redis::AsyncCommands;
 use sea_orm::{DatabaseBackend, FromQueryResult, Statement, Value};
 use time::OffsetDateTime;
 
 const ARTICLE_VIEW_PAGE_CACHE_PREFIX: &str = "deepwell:article-view:page:v1";
+const ARTICLE_VIEW_PAGE_CACHE_TTL_SECONDS: u64 = 60 * 60;
+
+pub(super) struct ArticlePageCacheKey {
+    pub(super) cache_key: String,
+    page_category_id: i64,
+}
 
 pub(super) struct ArticlePageCache;
 
@@ -32,7 +40,7 @@ impl ArticlePageCache {
     pub(super) async fn key(
         ctx: &ServiceContext<'_>,
         input: &GetPageView,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ArticlePageCacheKey>> {
         if !matches!(input.session_token.as_deref(), None | Some("")) {
             return Ok(None);
         }
@@ -50,6 +58,7 @@ impl ArticlePageCache {
             page_id: i64,
             page_updated_at: Option<OffsetDateTime>,
             latest_revision_id: Option<i64>,
+            page_category_id: i64,
             from_wikidot: bool,
             compiled_top_bar_html_hash: Option<Vec<u8>>,
             compiled_side_bar_html_hash: Option<Vec<u8>>,
@@ -64,6 +73,7 @@ impl ArticlePageCache {
                     page.page_id,
                     page.updated_at AS page_updated_at,
                     page.latest_revision_id,
+                    page.page_category_id,
                     page.from_wikidot,
                     revision.compiled_top_bar_html_hash,
                     revision.compiled_side_bar_html_hash
@@ -110,18 +120,44 @@ impl ArticlePageCache {
         let route_slug = input.route.as_ref().map_or("", |route| route.slug.as_str());
         let locales = input.locales.join(",");
 
-        Ok(Some(format!(
-            "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:site={}:page={}:rev={}:updated={}:top={}:side={}:slug={}:extra={}:locales={}",
-            input.site_id,
-            row.page_id,
-            latest_revision_id,
-            page_updated_at,
-            top_bar_hash,
-            side_bar_hash,
-            hex::encode(route_slug),
-            hex::encode(page_extra),
-            hex::encode(locales),
-        )))
+        Ok(Some(ArticlePageCacheKey {
+            cache_key: format!(
+                "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:site={}:page={}:rev={}:updated={}:top={}:side={}:slug={}:extra={}:locales={}",
+                input.site_id,
+                row.page_id,
+                latest_revision_id,
+                page_updated_at,
+                top_bar_hash,
+                side_bar_hash,
+                hex::encode(route_slug),
+                hex::encode(page_extra),
+                hex::encode(locales),
+            ),
+            page_category_id: row.page_category_id,
+        }))
+    }
+
+    pub(super) async fn anonymous_can_view(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        cache_key: &ArticlePageCacheKey,
+    ) -> Result<bool> {
+        let [can_view] = PermissionService::batch_check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: None,
+                site_id,
+                page_reference: None,
+            },
+            [Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(cache_key.page_category_id)),
+                action: Action::View,
+            }],
+        )
+        .await?;
+
+        Ok(can_view)
     }
 
     pub(super) async fn get(
@@ -161,7 +197,11 @@ impl ArticlePageCache {
         })?;
         let mut redis = ctx.redis();
         redis
-            .set::<_, _, ()>(cache_key, serialized)
+            .set_ex::<_, _, ()>(
+                cache_key,
+                serialized,
+                ARTICLE_VIEW_PAGE_CACHE_TTL_SECONDS,
+            )
             .await
             .or_raise(|| {
                 Error::new(
