@@ -104,14 +104,26 @@ export const getArticleResponseFastPathRequest = (request) => {
 }
 
 export const readArticleResponseFastPathEntry = async ({ store, request }) => {
-  if (!store || !request) return null
+  return readArticleResponseFastPathEntryFromStores({
+    responseStore: store,
+    tokenStore: store,
+    request
+  })
+}
+
+export const readArticleResponseFastPathEntryFromStores = async ({
+  responseStore,
+  tokenStore,
+  request
+}) => {
+  if (!responseStore || !tokenStore || !request) return null
 
   try {
     const candidate = getArticleResponseFastPathRequest(request)
     if (!candidate) return null
 
     const fences = await readAnonymousArticleResponseCacheFences({
-      store,
+      store: tokenStore,
       siteId: candidate.siteId
     })
     const tokenMetadata = buildAnonymousArticleResponseCacheFences({
@@ -124,7 +136,7 @@ export const readArticleResponseFastPathEntry = async ({ store, request }) => {
       permissionFence: fences?.permissionFence
     })
     const deepwellArticlePageCacheKey = await readAnonymousArticleResponseToken({
-      store,
+      store: tokenStore,
       tokenMetadata
     })
     const metadata = buildAnonymousArticleResponseCacheMetadata({
@@ -137,7 +149,7 @@ export const readArticleResponseFastPathEntry = async ({ store, request }) => {
       permissionFence: fences?.permissionFence
     })
     const cachedEntry = await readAnonymousArticleResponseCacheEntry({
-      store,
+      store: responseStore,
       metadata
     })
 
@@ -162,9 +174,21 @@ export const writeArticleResponseFastPathHit = (request, response, entry) => {
   }
 }
 
-export const createArticleResponseFastPathHandler = ({ store, handler }) => {
+export const createArticleResponseFastPathHandler = ({
+  responseStore,
+  tokenStore,
+  store,
+  handler
+}) => {
+  const resolvedResponseStore = responseStore ?? store
+  const resolvedTokenStore = tokenStore ?? store
+
   return async (request, response) => {
-    const cachedEntry = await readArticleResponseFastPathEntry({ store, request })
+    const cachedEntry = await readArticleResponseFastPathEntryFromStores({
+      responseStore: resolvedResponseStore,
+      tokenStore: resolvedTokenStore,
+      request
+    })
     if (cachedEntry) {
       writeArticleResponseFastPathHit(request, response, cachedEntry)
       return

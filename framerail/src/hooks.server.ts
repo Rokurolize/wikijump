@@ -4,13 +4,16 @@ import {
   buildAnonymousArticleResponseCacheFences,
   buildAnonymousArticleResponseCacheMetadata,
   canConsiderAnonymousArticleResponseCache,
-  createMemoryArticleResponseCacheStore,
   readAnonymousArticleResponseCacheFences,
   readAnonymousArticleResponseCache,
   readAnonymousArticleResponseToken,
   writeAnonymousArticleResponseToken,
   writeAnonymousArticleResponseCache
 } from "$lib/server/article-response-cache"
+import {
+  articleResponseCacheStore,
+  articleResponseTokenStore
+} from "$lib/server/article-response-cache-stores"
 import { articleViewCacheMetadata } from "$lib/server/deepwell/views"
 import {
   getPreloadBackendLocales,
@@ -18,15 +21,10 @@ import {
 } from "$lib/server/load/preload"
 import { storeRequestContext } from "$lib/server/load/request-ctx"
 import { loadSiteInfo } from "$lib/server/load/site-info"
-import { createRedisCacheStore } from "$lib/server/redis-cache-store"
 import { applyStaticSecurityHeaders } from "$lib/server/security-headers"
 import type { Handle, RequestEvent } from "@sveltejs/kit"
 
 const SITE_CONTEXT_EXEMPT_PATHS = new Set(["/xml-rpc-api.php"])
-const redisArticleResponseCacheStore = createRedisCacheStore()
-const articleResponseCacheStore =
-  redisArticleResponseCacheStore ?? createMemoryArticleResponseCacheStore()
-const articleResponseTokenStore = redisArticleResponseCacheStore
 
 function getArticleRoute(event: RequestEvent) {
   return event.params.slug || event.params.extra
