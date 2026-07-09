@@ -11,6 +11,7 @@ const requestWithAcceptLanguage = (value) => {
 }
 
 test("Accept-Language parsing ignores wildcards and preserves ordered locales", () => {
+  assert.deepEqual(parseAcceptLangHeader(requestWithAcceptLanguage(null)), [])
   assert.deepEqual(
     parseAcceptLangHeader(requestWithAcceptLanguage("fr-CA, fr;q=0.8, *, en;q=0.7")),
     ["fr-CA", "fr", "en"]

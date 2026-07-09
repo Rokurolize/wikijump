@@ -5,6 +5,8 @@ const PERMISSION_FENCE = "anonymous-page-view-v1"
 const RESPONSE_CACHE_PREFIX = "framerail:article-response:v1"
 const SESSION_COOKIE = "wikijump_token"
 export const ARTICLE_RESPONSE_CACHE_MAX_ENTRIES = 1024
+export const ARTICLE_RESPONSE_CACHE_MAX_BYTES = 32 * 1024 * 1024
+export const ARTICLE_RESPONSE_CACHE_MAX_SERIALIZED_BYTES = 1024 * 1024
 export const ARTICLE_RESPONSE_CACHE_TTL_SECONDS = 60
 
 const utf8Hex = (value) => {
@@ -102,29 +104,46 @@ export const serializeArticleResponseForCache = async (response) => {
   }
 }
 
+const serializedByteLength = (value) => {
+  return Buffer.byteLength(value, "utf8")
+}
+
 export const createMemoryArticleResponseCacheStore = ({
   now = () => Date.now(),
-  maxEntries = ARTICLE_RESPONSE_CACHE_MAX_ENTRIES
+  maxEntries = ARTICLE_RESPONSE_CACHE_MAX_ENTRIES,
+  maxBytes = ARTICLE_RESPONSE_CACHE_MAX_BYTES
 } = {}) => {
   const entries = new Map()
+  let totalBytes = 0
   const maxEntryCount =
     Number.isInteger(maxEntries) && maxEntries > 0
       ? maxEntries
       : ARTICLE_RESPONSE_CACHE_MAX_ENTRIES
+  const maxTotalBytes =
+    Number.isInteger(maxBytes) && maxBytes > 0
+      ? maxBytes
+      : ARTICLE_RESPONSE_CACHE_MAX_BYTES
+
+  const deleteEntry = (key) => {
+    const entry = entries.get(key)
+    if (!entry) return
+    totalBytes -= entry.bytes
+    entries.delete(key)
+  }
 
   const pruneExpired = (nowMs) => {
     for (const [key, entry] of entries) {
       if (entry.expiresAt <= nowMs) {
-        entries.delete(key)
+        deleteEntry(key)
       }
     }
   }
 
   const pruneOverflow = () => {
-    while (entries.size > maxEntryCount) {
+    while (entries.size > maxEntryCount || totalBytes > maxTotalBytes) {
       const oldest = entries.keys().next()
       if (oldest.done) return
-      entries.delete(oldest.value)
+      deleteEntry(oldest.value)
     }
   }
 
@@ -134,7 +153,7 @@ export const createMemoryArticleResponseCacheStore = ({
       if (!entry) return null
 
       if (entry.expiresAt <= now()) {
-        entries.delete(key)
+        deleteEntry(key)
         return null
       }
 
@@ -147,16 +166,22 @@ export const createMemoryArticleResponseCacheStore = ({
 
       pruneExpired(nowMs)
       if (expiresAt <= nowMs) {
-        entries.delete(key)
-        return
+        deleteEntry(key)
+        return false
       }
 
-      entries.delete(key)
+      const bytes = serializedByteLength(value)
+      deleteEntry(key)
+      if (bytes > maxTotalBytes) return false
+
       entries.set(key, {
         value,
-        expiresAt
+        expiresAt,
+        bytes
       })
+      totalBytes += bytes
       pruneOverflow()
+      return entries.has(key)
     },
 
     size() {
@@ -207,10 +232,18 @@ export const readCachedArticleResponse = async (store, key) => {
   }
 }
 
-export const writeCachedArticleResponse = async (store, key, entry, ttlSeconds) => {
+export const writeCachedArticleResponse = async (
+  store,
+  key,
+  entry,
+  ttlSeconds,
+  { maxSerializedBytes = ARTICLE_RESPONSE_CACHE_MAX_SERIALIZED_BYTES } = {}
+) => {
   try {
-    await store.set(key, JSON.stringify(entry), ttlSeconds)
-    return true
+    const serialized = JSON.stringify(entry)
+    if (serializedByteLength(serialized) > maxSerializedBytes) return false
+
+    return (await store.set(key, serialized, ttlSeconds)) !== false
   } catch {
     return false
   }

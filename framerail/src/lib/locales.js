@@ -45,6 +45,8 @@ const formatParsedLocale = (lang) => {
  */
 export const parseAcceptLangHeader = (req) => {
   const language = req.headers.get("Accept-Language")
+  if (language === null) return []
+
   const locales = parse(language)
     .sort((a, b) => b.quality - a.quality)
     .map(formatParsedLocale)

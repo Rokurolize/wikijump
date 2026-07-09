@@ -2,7 +2,9 @@ import { strict as assert } from "node:assert"
 import test from "node:test"
 
 import {
+  ARTICLE_RESPONSE_CACHE_MAX_BYTES,
   ARTICLE_RESPONSE_CACHE_MAX_ENTRIES,
+  ARTICLE_RESPONSE_CACHE_MAX_SERIALIZED_BYTES,
   buildAnonymousArticleResponseCacheKey,
   buildAnonymousArticleResponseCacheMetadata,
   canConsiderAnonymousArticleResponseCache,
@@ -177,6 +179,35 @@ test("memory article response cache evicts oldest entries above max size", async
   assert.equal(store.size(), 2)
 })
 
+test("memory article response cache evicts oldest entries above max bytes", async () => {
+  assert.equal(Number.isInteger(ARTICLE_RESPONSE_CACHE_MAX_BYTES), true)
+  const store = createMemoryArticleResponseCacheStore({
+    maxEntries: 10,
+    maxBytes: 4
+  })
+
+  await store.set("first", "aa")
+  await store.set("second", "bb")
+  await store.set("third", "c")
+
+  assert.equal(await store.get("first"), null)
+  assert.equal(await store.get("second"), "bb")
+  assert.equal(await store.get("third"), "c")
+  assert.equal(store.size(), 2)
+})
+
+test("memory article response cache rejects entries larger than max bytes", async () => {
+  const store = createMemoryArticleResponseCacheStore({
+    maxEntries: 10,
+    maxBytes: 4
+  })
+
+  await store.set("too-large", "abcde")
+
+  assert.equal(await store.get("too-large"), null)
+  assert.equal(store.size(), 0)
+})
+
 test("memory article response cache prunes expired entries on write", async () => {
   let now = 0
   const store = createMemoryArticleResponseCacheStore({
@@ -193,6 +224,23 @@ test("memory article response cache prunes expired entries on write", async () =
   assert.equal(await store.get("expired"), null)
   assert.equal(await store.get("new"), "c")
   assert.equal(store.size(), 2)
+})
+
+test("cached article response writes reject oversized serialized entries", async () => {
+  assert.equal(Number.isInteger(ARTICLE_RESPONSE_CACHE_MAX_SERIALIZED_BYTES), true)
+  const store = createMemoryArticleResponseCacheStore()
+
+  assert.equal(
+    await writeCachedArticleResponse(
+      store,
+      "large",
+      { status: 200, headers: [], body: "x".repeat(32) },
+      60,
+      { maxSerializedBytes: 16 }
+    ),
+    false
+  )
+  assert.equal(await readCachedArticleResponse(store, "large"), null)
 })
 
 test("anonymous article response cache read/write helpers gate final responses", async () => {
