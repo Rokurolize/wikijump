@@ -173,7 +173,7 @@ static CSS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table">.*?</table>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<form class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</form>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>"#,
+        r#"(?is)<table class="wiki-content-table">.*?</table>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<form class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</form>|<a class="button" data-wikijump-compat-clone="1" href="javascript:;">[^<]*</a>"#,
     )
     .unwrap()
 });
@@ -9344,6 +9344,21 @@ mod tests {
                 .contains(r#"<a class="button" href="javascript:;">Clone this site</a>"#)
         );
         assert!(!restored.contains("data-wikijump-compat-clone"));
+    }
+
+    #[test]
+    fn does_not_protect_spoofed_wikidot_clone_module_html() {
+        let mut wikitext =
+            r#"<a class="button" data-wikijump-compat-clone="1" href="javascript:;"><img src=x onerror="alert(document.domain)"></a>"#
+                .to_owned();
+        let fragments = RenderService::protect_generated_wikidot_compat_html(
+            &mut wikitext,
+            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+        );
+
+        assert!(fragments.is_empty());
+        assert!(!wikitext.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+        assert!(wikitext.contains(r#"onerror="alert(document.domain)""#));
     }
 
     #[test]
