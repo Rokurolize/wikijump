@@ -13,6 +13,8 @@ export const ARTICLE_RESPONSE_LOCAL_HOT_CACHE_TTL_MS = 5000
 export const ARTICLE_RESPONSE_LOCAL_HOT_CACHE_MAX_ENTRIES = 1024
 export const ARTICLE_RESPONSE_LOCAL_HOT_CACHE_MAX_BYTES = 8 * 1024 * 1024
 export const PUBLIC_CONTENT_FENCE_PREFIX = "deepwell:public-content:site"
+export const ARTICLE_RESPONSE_FENCE_INVALIDATION_CHANNEL =
+  "wikijump:article-response-fence-invalidation:v1"
 
 const utf8Hex = (value) => {
   return Buffer.from(value, "utf8").toString("hex")
@@ -41,6 +43,17 @@ const normalizeFenceVersion = (value) => {
   if (value === undefined || value === null) return "0"
   if (typeof value !== "string" || !/^\d+$/.test(value)) return null
   return value
+}
+
+const parsePermissionFence = (value) => {
+  if (typeof value !== "string") return null
+  const match = /^site=(\d+),user=(\d+)$/.exec(value)
+  if (!match) return null
+
+  return {
+    sitePermissionFence: match[1],
+    userPermissionFence: match[2]
+  }
 }
 
 const reject = (reason) => {
@@ -162,6 +175,161 @@ export const readAnonymousArticleResponseCacheFences = async ({ store, siteId })
   } catch {
     return null
   }
+}
+
+export const createMemoryArticleResponseFenceCache = ({ store, subscriber } = {}) => {
+  const sites = new Map()
+  const hotCaches = new Set()
+  let trusted = false
+
+  const clearHotResponses = () => {
+    for (const hotCache of hotCaches) {
+      hotCache?.clear?.()
+    }
+  }
+
+  const poison = () => {
+    trusted = false
+    sites.clear()
+    clearHotResponses()
+  }
+
+  const seedSite = async (siteId) => {
+    const fences = await readAnonymousArticleResponseCacheFences({ store, siteId })
+    const permission = parsePermissionFence(fences?.permissionFence)
+    if (!fences || !permission) return null
+
+    const site = {
+      publicContentFence: fences.publicContentFence,
+      sitePermissionFence: permission.sitePermissionFence,
+      userPermissionFence: permission.userPermissionFence
+    }
+    sites.set(siteId, site)
+    return site
+  }
+
+  const isGap = (current, next) => {
+    if (current === undefined) return true
+    try {
+      return BigInt(next) > BigInt(current) + 1n
+    } catch {
+      return true
+    }
+  }
+
+  const messageSiteId = (value) => {
+    return Number.isInteger(value) && value > 0 ? value : null
+  }
+
+  const applyPublicContentMessage = (message) => {
+    const siteId = messageSiteId(message.site_id)
+    const version = normalizeFenceVersion(message.version)
+    if (!siteId || version === null) return false
+
+    const site = sites.get(siteId)
+    if (!site) {
+      clearHotResponses()
+      return true
+    }
+    if (BigInt(version) <= BigInt(site.publicContentFence)) return true
+    if (isGap(site.publicContentFence, version)) clearHotResponses()
+    site.publicContentFence = version
+    clearHotResponses()
+    return true
+  }
+
+  const applyAnonymousPermissionMessage = (message) => {
+    const siteId = messageSiteId(message.site_id)
+    const siteVersion = normalizeFenceVersion(message.site_version)
+    const userVersion = normalizeFenceVersion(message.user_version)
+    if (!siteId || siteVersion === null || userVersion === null) return false
+
+    const site = sites.get(siteId)
+    if (!site) {
+      clearHotResponses()
+      return true
+    }
+    const siteAdvanced = BigInt(siteVersion) > BigInt(site.sitePermissionFence)
+    const userAdvanced = BigInt(userVersion) > BigInt(site.userPermissionFence)
+    if (!siteAdvanced && !userAdvanced) return true
+    if (
+      isGap(site.sitePermissionFence, siteVersion) ||
+      isGap(site.userPermissionFence, userVersion)
+    ) {
+      clearHotResponses()
+    }
+    site.sitePermissionFence = siteVersion
+    site.userPermissionFence = userVersion
+    clearHotResponses()
+    return true
+  }
+
+  const applyMessage = (payload) => {
+    let message
+    try {
+      message = JSON.parse(payload)
+    } catch {
+      poison()
+      return false
+    }
+    if (!message || typeof message !== "object") {
+      poison()
+      return false
+    }
+
+    let applied = false
+    if (message.type === "public-content") {
+      applied = applyPublicContentMessage(message)
+    } else if (message.type === "anonymous-permission") {
+      applied = applyAnonymousPermissionMessage(message)
+    }
+    if (!applied) poison()
+    return applied
+  }
+
+  const api = {
+    attachHotCache(hotCache) {
+      if (hotCache) hotCaches.add(hotCache)
+    },
+
+    async readFences({ siteId }) {
+      if (!trusted) {
+        return readAnonymousArticleResponseCacheFences({ store, siteId })
+      }
+
+      const site = sites.get(siteId) ?? (await seedSite(siteId))
+      if (!site) return null
+
+      return {
+        publicContentFence: site.publicContentFence,
+        permissionFence: `site=${site.sitePermissionFence},user=${site.userPermissionFence}`
+      }
+    },
+
+    markSubscribedForTest: async () => {
+      trusted = true
+    },
+
+    markDisconnectedForTest: () => {
+      poison()
+    },
+
+    applyMessageForTest: async (payload) => {
+      applyMessage(payload)
+    }
+  }
+
+  subscriber?.subscribe?.({
+    channel: ARTICLE_RESPONSE_FENCE_INVALIDATION_CHANNEL,
+    onSubscribed: () => {
+      trusted = true
+    },
+    onMessage: applyMessage,
+    onDisconnect: poison,
+    onMalformed: poison
+  })
+
+  return api
 }
 
 export const buildAnonymousArticleResponseCacheKey = (metadata) => {
@@ -333,11 +501,15 @@ export const normalizeCachedArticleResponseEntry = (value) => {
 }
 
 const copyCachedArticleResponseEntry = (entry) => {
-  return {
+  const copy = {
     status: entry.status,
     headers: entry.headers.map(([name, value]) => [name, value]),
     body: entry.body
   }
+  if (Buffer.isBuffer(entry.bodyBuffer)) {
+    copy.bodyBuffer = Buffer.from(entry.bodyBuffer)
+  }
+  return copy
 }
 
 const cachedArticleResponseEntryByteLength = (key, entry) => {
@@ -424,7 +596,10 @@ export const createLocalArticleResponseHotCache = ({
       if (bytes > maxTotalBytes) return false
 
       entries.set(key, {
-        value: copyCachedArticleResponseEntry(normalized),
+        value: copyCachedArticleResponseEntry({
+          ...normalized,
+          bodyBuffer: Buffer.from(normalized.body, "utf8")
+        }),
         expiresAt,
         bytes
       })

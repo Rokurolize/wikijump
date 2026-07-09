@@ -12,6 +12,7 @@ import {
   buildAnonymousPermissionFenceKeys,
   buildPublicContentFenceKey,
   canConsiderAnonymousArticleResponseCache,
+  createLocalArticleResponseHotCache,
   createMemoryArticleResponseCacheStore,
   deserializeCachedArticleResponse,
   readAnonymousArticleResponseCacheFences,
@@ -394,6 +395,28 @@ test("cached article response writes reject oversized serialized entries", async
     false
   )
   assert.equal(await readCachedArticleResponse(store, "large"), null)
+})
+
+test("local article response hot cache keeps a Buffer body replay copy", () => {
+  const hotCache = createLocalArticleResponseHotCache()
+
+  assert.equal(
+    hotCache.set("token", {
+      status: 200,
+      headers: [["content-type", "text/html"]],
+      body: "<!doctype html><html><body>cached body</body></html>"
+    }),
+    true
+  )
+
+  const cached = hotCache.get("token")
+  assert.equal(cached.status, 200)
+  assert.equal(cached.body, "<!doctype html><html><body>cached body</body></html>")
+  assert.equal(Buffer.isBuffer(cached.bodyBuffer), true)
+  assert.equal(
+    cached.bodyBuffer.toString("utf8"),
+    "<!doctype html><html><body>cached body</body></html>"
+  )
 })
 
 test("anonymous article response cache read/write helpers gate final responses", async () => {
