@@ -1390,6 +1390,30 @@ impl RenderService {
         let mut output = String::with_capacity(segment.len());
         let mut rest = segment;
 
+        while let Some(tag_start) = rest.find('<') {
+            let (before_tag, from_tag_start) = rest.split_at(tag_start);
+            output.push_str(&Self::restore_residual_wikidot_span_markers_in_text(
+                before_tag,
+            ));
+
+            let Some(tag_end) = from_tag_start.find('>') else {
+                output.push_str(from_tag_start);
+                return output;
+            };
+
+            let (tag, after_tag) = from_tag_start.split_at(tag_end + 1);
+            output.push_str(tag);
+            rest = after_tag;
+        }
+
+        output.push_str(&Self::restore_residual_wikidot_span_markers_in_text(rest));
+        output
+    }
+
+    fn restore_residual_wikidot_span_markers_in_text(segment: &str) -> String {
+        let mut output = String::with_capacity(segment.len());
+        let mut rest = segment;
+
         while let Some(start) = rest.find("[[span") {
             let (before, marker_start) = rest.split_at(start);
             output.push_str(before);
@@ -14721,6 +14745,22 @@ mod tests {
         let restored = RenderService::restore_residual_wikidot_span_markers(html);
 
         assert_eq!(restored, html);
+    }
+
+    #[test]
+    fn leaves_residual_wikidot_span_markers_inside_tag_attributes() {
+        let html = concat!(
+            r#"<img src="x" alt="[[span class=&quot;x onerror=alert(1)//&quot;]]broken[[/span]]">"#,
+            r#" [[span class=&quot;safe&quot;]]body[[/span]]"#,
+        );
+
+        let restored = RenderService::restore_residual_wikidot_span_markers(html);
+
+        assert!(restored.contains(
+            r#"<img src="x" alt="[[span class=&quot;x onerror=alert(1)//&quot;]]broken[[/span]]">"#
+        ));
+        assert!(restored.contains(r#"<span class="safe">body</span>"#));
+        assert!(!restored.contains(r#"<span class="x onerror=alert(1)//">"#));
     }
 
     #[test]
