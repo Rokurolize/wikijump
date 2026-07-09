@@ -13,6 +13,7 @@ import {
   buildPublicContentFenceKey,
   canConsiderAnonymousArticleResponseCache,
   createLocalArticleResponseHotCache,
+  createMemoryArticleResponseFenceCache,
   createMemoryArticleResponseCacheStore,
   deserializeCachedArticleResponse,
   readAnonymousArticleResponseCacheFences,
@@ -164,6 +165,87 @@ test("anonymous article response cache fence helpers fail closed on malformed va
     await readAnonymousArticleResponseCacheFences({ store, siteId: 6000005 }),
     null
   )
+})
+
+test("memory article response fence cache does not store a seed raced by invalidation", async () => {
+  let resumeSeed
+  let seedStartedResolve
+  const seedStarted = new Promise((resolve) => {
+    seedStartedResolve = resolve
+  })
+  const staleSeed = ["7", "11", "13"]
+  const currentSeed = ["8", "11", "13"]
+  let calls = 0
+  const store = {
+    async mget() {
+      calls += 1
+      if (calls === 1) {
+        seedStartedResolve()
+        await new Promise((resume) => {
+          resumeSeed = resume
+        })
+        return staleSeed
+      }
+      return currentSeed
+    }
+  }
+  const fenceCache = createMemoryArticleResponseFenceCache({ store })
+  await fenceCache.markSubscribedForTest()
+
+  const seedingRead = fenceCache.readFences({ siteId: 6000005 })
+  await seedStarted
+  await fenceCache.applyMessageForTest(
+    JSON.stringify({ type: "public-content", site_id: 6000005, version: "8" })
+  )
+  resumeSeed()
+
+  assert.equal(await seedingRead, null)
+  assert.deepEqual(await fenceCache.readFences({ siteId: 6000005 }), {
+    publicContentFence: "8",
+    permissionFence: "site=11,user=13"
+  })
+})
+
+test("memory article response fence cache ignores non-anonymous user permission messages", async () => {
+  let reads = 0
+  const store = {
+    async mget() {
+      reads += 1
+      return ["7", "11", "13"]
+    }
+  }
+  const hotCache = createLocalArticleResponseHotCache()
+  assert.equal(
+    hotCache.set("token", {
+      status: 200,
+      headers: [["content-type", "text/html"]],
+      body: "<!doctype html><html><body>cached body</body></html>"
+    }),
+    true
+  )
+  const fenceCache = createMemoryArticleResponseFenceCache({ store })
+  fenceCache.attachHotCache(hotCache)
+  await fenceCache.markSubscribedForTest()
+
+  assert.deepEqual(await fenceCache.readFences({ siteId: 6000005 }), {
+    publicContentFence: "7",
+    permissionFence: "site=11,user=13"
+  })
+  await fenceCache.applyMessageForTest(
+    JSON.stringify({
+      type: "user-permission",
+      site_id: 6000005,
+      user_id: 123,
+      version: "19"
+    })
+  )
+
+  assert.deepEqual(await fenceCache.readFences({ siteId: 6000005 }), {
+    publicContentFence: "7",
+    permissionFence: "site=11,user=13"
+  })
+  assert.equal(reads, 1)
+  assert.equal(hotCache.size(), 1)
 })
 
 test("anonymous article response token maps route and fences to Deepwell cache key", async () => {
@@ -397,26 +479,22 @@ test("cached article response writes reject oversized serialized entries", async
   assert.equal(await readCachedArticleResponse(store, "large"), null)
 })
 
-test("local article response hot cache keeps a Buffer body replay copy", () => {
+test("local article response hot cache keeps an isolated body replay copy", () => {
   const hotCache = createLocalArticleResponseHotCache()
 
-  assert.equal(
-    hotCache.set("token", {
-      status: 200,
-      headers: [["content-type", "text/html"]],
-      body: "<!doctype html><html><body>cached body</body></html>"
-    }),
-    true
-  )
+  const entry = {
+    status: 200,
+    headers: [["content-type", "text/html"]],
+    body: "<!doctype html><html><body>cached body</body></html>"
+  }
+  assert.equal(hotCache.set("token", entry), true)
+  entry.headers[0][1] = "text/plain"
+  entry.body = "mutated"
 
   const cached = hotCache.get("token")
   assert.equal(cached.status, 200)
+  assert.deepEqual(cached.headers, [["content-type", "text/html"]])
   assert.equal(cached.body, "<!doctype html><html><body>cached body</body></html>")
-  assert.equal(Buffer.isBuffer(cached.bodyBuffer), true)
-  assert.equal(
-    cached.bodyBuffer.toString("utf8"),
-    "<!doctype html><html><body>cached body</body></html>"
-  )
 })
 
 test("anonymous article response cache read/write helpers gate final responses", async () => {

@@ -181,6 +181,7 @@ export const createMemoryArticleResponseFenceCache = ({ store, subscriber } = {}
   const sites = new Map()
   const hotCaches = new Set()
   let trusted = false
+  let fenceRevision = 0
 
   const clearHotResponses = () => {
     for (const hotCache of hotCaches) {
@@ -189,15 +190,18 @@ export const createMemoryArticleResponseFenceCache = ({ store, subscriber } = {}
   }
 
   const poison = () => {
+    fenceRevision += 1
     trusted = false
     sites.clear()
     clearHotResponses()
   }
 
   const seedSite = async (siteId) => {
+    const seedRevision = fenceRevision
     const fences = await readAnonymousArticleResponseCacheFences({ store, siteId })
     const permission = parsePermissionFence(fences?.permissionFence)
     if (!fences || !permission) return null
+    if (seedRevision !== fenceRevision) return sites.get(siteId) ?? null
 
     const site = {
       publicContentFence: fences.publicContentFence,
@@ -226,6 +230,7 @@ export const createMemoryArticleResponseFenceCache = ({ store, subscriber } = {}
     const version = normalizeFenceVersion(message.version)
     if (!siteId || version === null) return false
 
+    fenceRevision += 1
     const site = sites.get(siteId)
     if (!site) {
       clearHotResponses()
@@ -244,6 +249,7 @@ export const createMemoryArticleResponseFenceCache = ({ store, subscriber } = {}
     const userVersion = normalizeFenceVersion(message.user_version)
     if (!siteId || siteVersion === null || userVersion === null) return false
 
+    fenceRevision += 1
     const site = sites.get(siteId)
     if (!site) {
       clearHotResponses()
@@ -264,6 +270,14 @@ export const createMemoryArticleResponseFenceCache = ({ store, subscriber } = {}
     return true
   }
 
+  const ignoreNonAnonymousPermissionMessage = (message) => {
+    const siteId = messageSiteId(message.site_id)
+    const version = normalizeFenceVersion(message.version)
+    return Boolean(
+      siteId && Number.isInteger(message.user_id) && message.user_id > 0 && version
+    )
+  }
+
   const applyMessage = (payload) => {
     let message
     try {
@@ -282,6 +296,8 @@ export const createMemoryArticleResponseFenceCache = ({ store, subscriber } = {}
       applied = applyPublicContentMessage(message)
     } else if (message.type === "anonymous-permission") {
       applied = applyAnonymousPermissionMessage(message)
+    } else if (message.type === "user-permission") {
+      applied = ignoreNonAnonymousPermissionMessage(message)
     }
     if (!applied) poison()
     return applied
@@ -501,15 +517,11 @@ export const normalizeCachedArticleResponseEntry = (value) => {
 }
 
 const copyCachedArticleResponseEntry = (entry) => {
-  const copy = {
+  return {
     status: entry.status,
     headers: entry.headers.map(([name, value]) => [name, value]),
     body: entry.body
   }
-  if (Buffer.isBuffer(entry.bodyBuffer)) {
-    copy.bodyBuffer = Buffer.from(entry.bodyBuffer)
-  }
-  return copy
 }
 
 const cachedArticleResponseEntryByteLength = (key, entry) => {
@@ -596,10 +608,7 @@ export const createLocalArticleResponseHotCache = ({
       if (bytes > maxTotalBytes) return false
 
       entries.set(key, {
-        value: copyCachedArticleResponseEntry({
-          ...normalized,
-          bodyBuffer: Buffer.from(normalized.body, "utf8")
-        }),
+        value: copyCachedArticleResponseEntry(normalized),
         expiresAt,
         bytes
       })
