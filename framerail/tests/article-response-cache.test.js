@@ -303,6 +303,25 @@ test("Redis article response fence subscriber resubscribes after socket close", 
   }
 })
 
+test("memory article response fence cache closes subscriber handle", () => {
+  let closed = 0
+  const fenceCache = createMemoryArticleResponseFenceCache({
+    subscriber: {
+      subscribe() {
+        return {
+          close() {
+            closed += 1
+          }
+        }
+      }
+    }
+  })
+
+  fenceCache.close()
+
+  assert.equal(closed, 1)
+})
+
 test("memory article response fence cache does not store a seed raced by invalidation", async () => {
   let resumeSeed
   let seedStartedResolve

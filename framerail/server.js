@@ -34,6 +34,7 @@ server.listen(path ? { path } : { host, port }, () => {
 })
 
 const closeServer = () => {
+  fenceCache.close()
   server.close()
 }
 

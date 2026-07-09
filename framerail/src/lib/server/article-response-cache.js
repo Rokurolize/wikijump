@@ -303,6 +303,7 @@ export const createMemoryArticleResponseFenceCache = ({ store, subscriber } = {}
     return applied
   }
 
+  let subscription = null
   const api = {
     attachHotCache(hotCache) {
       if (hotCache) hotCaches.add(hotCache)
@@ -332,10 +333,14 @@ export const createMemoryArticleResponseFenceCache = ({ store, subscriber } = {}
 
     applyMessageForTest: async (payload) => {
       applyMessage(payload)
+    },
+
+    close() {
+      subscription?.close?.()
     }
   }
 
-  subscriber?.subscribe?.({
+  subscription = subscriber?.subscribe?.({
     channel: ARTICLE_RESPONSE_FENCE_INVALIDATION_CHANNEL,
     onSubscribed: () => {
       trusted = true
