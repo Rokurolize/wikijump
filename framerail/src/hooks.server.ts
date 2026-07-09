@@ -57,8 +57,10 @@ const LOCAL_WIKIDOT_INTERWIKI_FRAME_PATHS = new Set([
   "/-/wikidot-interwiki/interwikiFrame.html",
   "/-/wikidot-interwiki/styleFrame.html"
 ])
-const articleResponseCacheStore = createMemoryArticleResponseCacheStore()
-const articleResponseTokenStore = createRedisCacheStore()
+const redisArticleResponseCacheStore = createRedisCacheStore()
+const articleResponseCacheStore =
+  redisArticleResponseCacheStore ?? createMemoryArticleResponseCacheStore()
+const articleResponseTokenStore = redisArticleResponseCacheStore
 
 function shouldSetHsts() {
   return !isLocalEnvironment()
