@@ -174,7 +174,7 @@ static CSS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table">.*?</table>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<form class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</form>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<form class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</form>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>"#,
     )
     .unwrap()
 });
@@ -3535,9 +3535,17 @@ impl RenderService {
             .replace_all(wikitext, |captures: &regex::Captures<'_>| {
                 let marker =
                     format!("{WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX}{}X", fragments.len());
+                let fragment = &captures[0];
+                let fragment =
+                    if fragment.starts_with(r#"<table class="wiki-content-table""#) {
+                        sanitize_generated_wikidot_compat_table(fragment)
+                    } else {
+                        fragment.to_owned()
+                    };
                 fragments.push(
-                    captures[0]
+                    fragment
                         .replace(r#" data-wikijump-compat-list="1""#, "")
+                        .replace(r#" data-wikijump-compat-listpages="1""#, "")
                         .replace(r#" data-wikijump-compat-members="1""#, "")
                         .replace(r#" data-wikijump-compat-backlinks="1""#, "")
                         .replace(r#" data-wikijump-compat-new-page="1""#, "")
@@ -7411,6 +7419,81 @@ fn render_list_pages_numbered_rows(value: &str) -> String {
     output
 }
 
+fn sanitize_generated_wikidot_compat_table(fragment: &str) -> String {
+    let mut output = String::with_capacity(fragment.len());
+    let mut rest = fragment;
+
+    while let Some(start) = rest.find('<') {
+        let (before, after_start) = rest.split_at(start);
+        output.push_str(&escape_list_pages_html_text(before));
+        let Some(end) = after_start.find('>') else {
+            output.push_str(&escape_list_pages_html_text(after_start));
+            return output;
+        };
+        let (tag, after_tag) = after_start.split_at(end + 1);
+        if let Some(tag) = sanitize_generated_wikidot_compat_table_tag(tag) {
+            output.push_str(&tag);
+        } else if let Some(tag) = sanitize_wikidot_compat_inline_tag(tag) {
+            output.push_str(&tag);
+        } else {
+            output.push_str(&escape_list_pages_html_text(tag));
+        }
+        rest = after_tag;
+    }
+
+    output.push_str(&escape_list_pages_html_text(rest));
+    output
+}
+
+fn sanitize_generated_wikidot_compat_table_tag(tag: &str) -> Option<String> {
+    match tag {
+        "</table>" | "</tr>" | "</td>" | "</th>" => return Some(tag.to_owned()),
+        _ => {}
+    }
+
+    let inner = tag.strip_prefix('<')?.strip_suffix('>')?.trim();
+    let name_end = inner
+        .find(|character: char| character.is_ascii_whitespace())
+        .unwrap_or(inner.len());
+    let name = inner[..name_end].to_ascii_lowercase();
+    if !matches!(name.as_str(), "table" | "tr" | "td" | "th") {
+        return None;
+    }
+
+    let mut output = String::new();
+    output.push('<');
+    output.push_str(&name);
+
+    let mut rest = &inner[name_end..];
+    while let Some((attr_name, attr_value, after_attr)) =
+        parse_wikidot_compat_html_attr(rest)
+    {
+        rest = after_attr;
+        let attr_name = attr_name.to_ascii_lowercase();
+        let keep = match (name.as_str(), attr_name.as_str()) {
+            ("table", "class") if attr_value == "wiki-content-table" => Some(attr_value),
+            ("table", "data-wikijump-compat-listpages") if attr_value == "1" => {
+                Some(attr_value)
+            }
+            ("td" | "th", "style") if attr_value == "text-align: center;" => {
+                Some(attr_value)
+            }
+            _ => None,
+        };
+        let Some(value) = keep else {
+            continue;
+        };
+        output.push(' ');
+        output.push_str(&attr_name);
+        output.push_str(r#"=""#);
+        output.push_str(&escape_list_pages_html_attr(&value));
+        output.push('"');
+    }
+
+    output.push('>');
+    Some(output)
+}
+
 fn render_list_pages_table_rows(value: &str) -> Option<String> {
     if !list_pages_body_has_table_rows(value) {
         return None;
@@ -7433,7 +7516,9 @@ fn render_list_pages_table_rows(value: &str) -> Option<String> {
         return None;
     }
 
-    let mut output = String::from("<table class=\"wiki-content-table\">");
+    let mut output = String::from(
+        "<table class=\"wiki-content-table\" data-wikijump-compat-listpages=\"1\">",
+    );
     for (header, center, cell) in rows {
         output.push_str("<tr>");
         let tag = if header { "th" } else { "td" };
@@ -9649,6 +9734,31 @@ mod tests {
     }
 
     #[test]
+    fn forged_wiki_content_table_is_not_restored_as_trusted_fallback_html() {
+        let forged = r#"<table class="wiki-content-table"><tr><td><img src=x onerror="alert(1)"></td></tr></table>"#;
+        let rendered = render_wikidot_fallback_after_generated_compat_restore(forged);
+
+        assert!(rendered.contains("&lt;table"));
+        assert!(rendered.contains("&lt;img"));
+        assert!(rendered.contains("onerror=&quot;alert(1)&quot;"));
+        assert!(!rendered.contains(r#"<table class="wiki-content-table">"#));
+        assert!(!rendered.contains("<img"));
+        assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+    }
+
+    #[test]
+    fn protected_wiki_content_table_sanitizes_untrusted_attributes() {
+        let forged = r#"<table class="wiki-content-table" data-wikijump-compat-listpages="1"><tr><td><img src=x onerror="alert(1)"></td></tr></table>"#;
+        let rendered = render_wikidot_fallback_after_generated_compat_restore(forged);
+
+        assert!(rendered.contains(r#"<table class="wiki-content-table">"#));
+        assert!(rendered.contains(r#"<img src="x">"#));
+        assert!(!rendered.contains("onerror"));
+        assert!(!rendered.contains("data-wikijump-compat-listpages"));
+        assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+    }
+
+    #[test]
     fn generated_list_pages_pager_still_renders_without_forgeable_marker() {
         let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
         let mut wikitext = String::new();
@@ -9852,7 +9962,7 @@ mod tests {
         let rendered = render_list_pages_table_rows(source)
             .expect("authorbox ListPages body should render as raw table HTML");
 
-        assert!(rendered.contains("<table class=\"wiki-content-table\">"));
+        assert!(rendered.contains("<table class=\"wiki-content-table\""));
         assert!(rendered.contains("<strong>By:</strong>"));
         assert!(rendered.contains("<span class=\"printuser\">"));
         assert!(rendered.contains("<span class=\"odate time_1782003564"));
@@ -9866,12 +9976,11 @@ mod tests {
         );
         assert_eq!(fragments.len(), 1);
         assert!(!protected.contains("<table"));
-        assert_eq!(
-            RenderService::restore_protected_generated_wikidot_compat_html(
-                protected, &fragments,
-            ),
-            rendered,
+        let restored = RenderService::restore_protected_generated_wikidot_compat_html(
+            protected, &fragments,
         );
+        assert!(restored.contains("<table class=\"wiki-content-table\">"));
+        assert!(!restored.contains("data-wikijump-compat-listpages"));
     }
 
     #[test]
@@ -10654,7 +10763,7 @@ mod tests {
         let rendered = render_list_pages_table_rows(&substituted)
             .expect("table-shaped ListPages body should render as raw table HTML");
 
-        assert!(rendered.contains("<table class=\"wiki-content-table\">"));
+        assert!(rendered.contains("<table class=\"wiki-content-table\""));
         assert!(rendered.contains(r#"<span class="odate time_1782003564"#));
         assert!(rendered.contains(r#"<a href="/system:page-tags/tag/scp">scp</a>"#));
         assert!(
