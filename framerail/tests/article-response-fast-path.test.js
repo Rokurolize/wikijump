@@ -137,6 +137,35 @@ test("article response fast path sends no cached body for HEAD hits", async () =
   })
 })
 
+test("article response fast path handlers keep stores isolated", async () => {
+  const { store: firstStore } = await createFastPathFixtureStore({
+    body: "<!doctype html><html><body>first store article</body></html>"
+  })
+  const { store: secondStore } = await createFastPathFixtureStore({
+    body: "<!doctype html><html><body>second store article</body></html>"
+  })
+
+  await withServer(firstStore, async ({ baseUrl, handlerCalls }) => {
+    const response = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
+    assert.equal(response.status, 200)
+    assert.equal(
+      await response.text(),
+      "<!doctype html><html><body>first store article</body></html>"
+    )
+    assert.equal(handlerCalls(), 0)
+  })
+
+  await withServer(secondStore, async ({ baseUrl, handlerCalls }) => {
+    const response = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
+    assert.equal(response.status, 200)
+    assert.equal(
+      await response.text(),
+      "<!doctype html><html><body>second store article</body></html>"
+    )
+    assert.equal(handlerCalls(), 0)
+  })
+})
+
 test("article response fast path falls through when cache entries miss", async () => {
   const store = createMemoryArticleResponseCacheStore()
 
