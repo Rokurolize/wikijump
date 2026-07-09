@@ -29,10 +29,11 @@ const createFastPathFixtureStore = async ({
   ],
   body = "<!doctype html><html><body>cached article</body></html>"
 } = {}) => {
-  const store = createMemoryArticleResponseCacheStore()
-  await store.set(buildPublicContentFenceKey(SITE_ID), PUBLIC_CONTENT_FENCE)
-  await store.set(`permission:site:${SITE_ID}:version`, "11")
-  await store.set(`permission:site:${SITE_ID}:user:anonymous:version`, "13")
+  const tokenStore = createMemoryArticleResponseCacheStore()
+  const responseStore = createMemoryArticleResponseCacheStore()
+  await tokenStore.set(buildPublicContentFenceKey(SITE_ID), PUBLIC_CONTENT_FENCE)
+  await tokenStore.set(`permission:site:${SITE_ID}:version`, "11")
+  await tokenStore.set(`permission:site:${SITE_ID}:user:anonymous:version`, "13")
 
   const tokenMetadata = buildAnonymousArticleResponseCacheFences({
     siteId: SITE_ID,
@@ -43,7 +44,7 @@ const createFastPathFixtureStore = async ({
     publicContentFence: PUBLIC_CONTENT_FENCE,
     permissionFence: PERMISSION_FENCE
   })
-  await store.set(
+  await tokenStore.set(
     buildAnonymousArticleResponseTokenKey(tokenMetadata),
     JSON.stringify({ articlePageCacheKey: DEEPWELL_ARTICLE_PAGE_CACHE_KEY })
   )
@@ -58,7 +59,7 @@ const createFastPathFixtureStore = async ({
     permissionFence: PERMISSION_FENCE
   })
   const cacheKey = buildAnonymousArticleResponseCacheKey(metadata)
-  await store.set(
+  await responseStore.set(
     cacheKey,
     JSON.stringify({
       status: 200,
@@ -67,10 +68,10 @@ const createFastPathFixtureStore = async ({
     })
   )
 
-  return { store, cacheKey }
+  return { responseStore, tokenStore, cacheKey }
 }
 
-const withServer = async (store, run) => {
+const withServer = async ({ responseStore, tokenStore }, run) => {
   let handlerCalls = 0
   const handler = (request, response) => {
     handlerCalls += 1
@@ -78,7 +79,11 @@ const withServer = async (store, run) => {
     response.setHeader("content-type", "text/plain")
     response.end("fallback handler")
   }
-  const fastPathHandler = createArticleResponseFastPathHandler({ store, handler })
+  const fastPathHandler = createArticleResponseFastPathHandler({
+    responseStore,
+    tokenStore,
+    handler
+  })
   const server = http.createServer((request, response) => {
     void fastPathHandler(request, response)
   })
@@ -105,9 +110,9 @@ const fastPathHeaders = {
 }
 
 test("article response fast path serves a hot anonymous article hit without calling handler", async () => {
-  const { store } = await createFastPathFixtureStore()
+  const stores = await createFastPathFixtureStore()
 
-  await withServer(store, async ({ baseUrl, handlerCalls }) => {
+  await withServer(stores, async ({ baseUrl, handlerCalls }) => {
     const response = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
 
     assert.equal(response.status, 200)
@@ -122,9 +127,9 @@ test("article response fast path serves a hot anonymous article hit without call
 })
 
 test("article response fast path sends no cached body for HEAD hits", async () => {
-  const { store } = await createFastPathFixtureStore()
+  const stores = await createFastPathFixtureStore()
 
-  await withServer(store, async ({ baseUrl, handlerCalls }) => {
+  await withServer(stores, async ({ baseUrl, handlerCalls }) => {
     const response = await fetch(`${baseUrl}/scp-173`, {
       method: "HEAD",
       headers: fastPathHeaders
@@ -138,14 +143,14 @@ test("article response fast path sends no cached body for HEAD hits", async () =
 })
 
 test("article response fast path handlers keep stores isolated", async () => {
-  const { store: firstStore } = await createFastPathFixtureStore({
+  const firstStores = await createFastPathFixtureStore({
     body: "<!doctype html><html><body>first store article</body></html>"
   })
-  const { store: secondStore } = await createFastPathFixtureStore({
+  const secondStores = await createFastPathFixtureStore({
     body: "<!doctype html><html><body>second store article</body></html>"
   })
 
-  await withServer(firstStore, async ({ baseUrl, handlerCalls }) => {
+  await withServer(firstStores, async ({ baseUrl, handlerCalls }) => {
     const response = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
     assert.equal(response.status, 200)
     assert.equal(
@@ -155,7 +160,7 @@ test("article response fast path handlers keep stores isolated", async () => {
     assert.equal(handlerCalls(), 0)
   })
 
-  await withServer(secondStore, async ({ baseUrl, handlerCalls }) => {
+  await withServer(secondStores, async ({ baseUrl, handlerCalls }) => {
     const response = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
     assert.equal(response.status, 200)
     assert.equal(
@@ -167,9 +172,10 @@ test("article response fast path handlers keep stores isolated", async () => {
 })
 
 test("article response fast path falls through when cache entries miss", async () => {
-  const store = createMemoryArticleResponseCacheStore()
+  const responseStore = createMemoryArticleResponseCacheStore()
+  const tokenStore = createMemoryArticleResponseCacheStore()
 
-  await withServer(store, async ({ baseUrl, handlerCalls }) => {
+  await withServer({ responseStore, tokenStore }, async ({ baseUrl, handlerCalls }) => {
     const response = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
 
     assert.equal(response.status, 209)
@@ -179,12 +185,12 @@ test("article response fast path falls through when cache entries miss", async (
 })
 
 test("article response fast path falls through for seeded non-article app routes", async () => {
-  const { store } = await createFastPathFixtureStore({
+  const stores = await createFastPathFixtureStore({
     route: { slug: "about", extra: "" },
     body: "<!doctype html><html><body>cached about poison</body></html>"
   })
 
-  await withServer(store, async ({ baseUrl, handlerCalls }) => {
+  await withServer(stores, async ({ baseUrl, handlerCalls }) => {
     const response = await fetch(`${baseUrl}/about`, { headers: fastPathHeaders })
 
     assert.equal(response.status, 209)
@@ -197,7 +203,7 @@ test("article response fast path enforces static security headers on replay", as
   const csp = "script-src 'nonce-cached-nonce'"
   const cachedBody =
     '<!doctype html><html><body><script nonce="cached-nonce"></script></body></html>'
-  const { store } = await createFastPathFixtureStore({
+  const stores = await createFastPathFixtureStore({
     headers: [
       ["content-security-policy", csp],
       ["content-type", "text/html; charset=utf-8"],
@@ -208,7 +214,7 @@ test("article response fast path enforces static security headers on replay", as
     body: cachedBody
   })
 
-  await withServer(store, async ({ baseUrl, handlerCalls }) => {
+  await withServer(stores, async ({ baseUrl, handlerCalls }) => {
     const response = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
 
     assert.equal(response.status, 200)
@@ -234,7 +240,7 @@ test("article response fast path enforces static security headers on replay", as
 })
 
 test("article response fast path falls through for unsafe requests", async () => {
-  const { store } = await createFastPathFixtureStore()
+  const stores = await createFastPathFixtureStore()
   const candidates = [
     ["/scp-173?module=forum", { headers: fastPathHeaders }],
     ["/scp-173/edit", { headers: fastPathHeaders }],
@@ -243,7 +249,7 @@ test("article response fast path falls through for unsafe requests", async () =>
     ["/scp-173", { headers: { "x-wikijump-site-id": String(SITE_ID) } }]
   ]
 
-  await withServer(store, async ({ baseUrl, handlerCalls }) => {
+  await withServer(stores, async ({ baseUrl, handlerCalls }) => {
     for (const [path, init] of candidates) {
       const response = await fetch(`${baseUrl}${path}`, init)
       assert.equal(response.status, 209)
@@ -254,10 +260,10 @@ test("article response fast path falls through for unsafe requests", async () =>
 })
 
 test("article response fast path fails closed on malformed cached response values", async () => {
-  const { store, cacheKey } = await createFastPathFixtureStore()
-  await store.set(cacheKey, "{not-json")
+  const stores = await createFastPathFixtureStore()
+  await stores.responseStore.set(stores.cacheKey, "{not-json")
 
-  await withServer(store, async ({ baseUrl, handlerCalls }) => {
+  await withServer(stores, async ({ baseUrl, handlerCalls }) => {
     const response = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
 
     assert.equal(response.status, 209)

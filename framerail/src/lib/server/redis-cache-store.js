@@ -75,7 +75,6 @@ const parseResponse = (buffer, offset = 0) => {
 
     return { value: values, nextOffset }
   }
-
   throw new Error("unsupported Redis response type")
 }
 
