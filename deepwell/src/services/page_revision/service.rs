@@ -26,8 +26,8 @@ use crate::models::text::{self, Entity as Text, Model as TextModel};
 use crate::services::render::RenderPageOutput;
 use crate::services::score::ScoreValue;
 use crate::services::{
-    LinkService, OutdateService, PageService, ParentService, RenderService, ScoreService,
-    SettingsService, SiteService, TextService,
+    LinkService, OutdateService, PageService, ParentService, PublicContentCache,
+    RenderService, ScoreService, SettingsService, SiteService, TextService,
 };
 use crate::types::{FetchDirection, PageId, PageRevisionType, RerenderDepth};
 use crate::utils::{split_category, split_category_name, trim_default};
@@ -211,12 +211,19 @@ impl PageRevisionService {
         // If nothing has changed, then don't create a new revision
         if changes.is_empty() {
             debug!("No changes in edit, only rerendering the page");
+            PublicContentCache::invalidate_site(ctx, site_id)
+                .await
+                .or_raise(make_error)?;
             Self::rerender(ctx, id, RerenderDepth::default(), RerenderType::Full)
                 .await
                 .or_raise(make_error)?;
 
             return Ok(None);
         }
+
+        PublicContentCache::invalidate_site(ctx, site_id)
+            .await
+            .or_raise(make_error)?;
 
         // Get ancillary page data
         let (score_result, layout_result) = join!(
@@ -415,6 +422,10 @@ impl PageRevisionService {
             )
         };
 
+        PublicContentCache::invalidate_site(ctx, site_id)
+            .await
+            .or_raise(make_error)?;
+
         // If the page creation doesn't specify a preferred layout,
         // use the default for the site.
         let layout = match layout {
@@ -542,6 +553,10 @@ impl PageRevisionService {
             ..
         } = previous;
 
+        PublicContentCache::invalidate_site(ctx, site_id)
+            .await
+            .or_raise(make_error)?;
+
         // Run outdater
         OutdateService::process_page_displace(
             ctx,
@@ -653,6 +668,10 @@ impl PageRevisionService {
         } else {
             vec![str!("slug")]
         };
+
+        PublicContentCache::invalidate_site(ctx, site_id)
+            .await
+            .or_raise(make_error)?;
 
         // Get ancillary page data
         let (score_result, layout_result) = join!(
@@ -895,6 +914,10 @@ impl PageRevisionService {
                 return Ok(());
             }
         }
+
+        PublicContentCache::invalidate_site(ctx, site_id)
+            .await
+            .or_raise(make_error)?;
 
         // Get data for page
         let (wikitext, score, layout) = try_join!(
