@@ -49,16 +49,10 @@ impl PageLockService {
             )
         };
 
-        // Fetch the page to be locked
-        let page_id = match page_ref {
-            Reference::Id(page_id) => page_id,
-            _ => {
-                PageService::get(ctx, site_id, page_ref.borrow())
-                    .await
-                    .or_raise(make_error)?
-                    .page_id
-            }
-        };
+        // Resolve through PageService so Reference::Id is still validated against site_id.
+        let page_id = PageService::get_id(ctx, site_id, page_ref.borrow())
+            .await
+            .or_raise(make_error)?;
 
         // Check if any active lock exists for the page
         let existing_lock = Self::get_active_lock_for_page(ctx, page_id)
