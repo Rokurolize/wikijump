@@ -1151,7 +1151,6 @@ mod tests {
                     value: "blocked".to_string(),
                     failed: vec![FilterSummary {
                         filter_id: 7,
-                        regex: "blocked".to_string(),
                         description: "blocked words".to_string(),
                     }],
                 },
@@ -1316,7 +1315,6 @@ mod tests {
                 value: "blocked".to_string(),
                 failed: vec![FilterSummary {
                     filter_id: 7,
-                    regex: "blocked".to_string(),
                     description: "blocked words".to_string(),
                 }],
             }
@@ -1326,7 +1324,6 @@ mod tests {
                 "value": "blocked",
                 "failed": [{
                     "filter_id": 7,
-                    "regex": "blocked",
                     "description": "blocked words",
                 }],
             }),

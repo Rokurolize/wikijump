@@ -27,7 +27,6 @@ use std::net::IpAddr;
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct FilterSummary {
     pub filter_id: i64,
-    pub regex: String,
     pub description: String,
 }
 
@@ -81,8 +80,8 @@ impl FilterMatcher {
         for index in matches {
             let info = &self.filter_data[index];
             error!(
-                "String failed filter ID {} (regex '{}'): {}",
-                info.filter_id, info.regex, info.description,
+                "String failed filter ID {}: {}",
+                info.filter_id, info.description,
             );
 
             AuditService::log(
@@ -120,13 +119,9 @@ mod tests {
     fn matcher_keeps_regex_set_and_filter_metadata_aligned() {
         let filters = vec![FilterSummary {
             filter_id: 1,
-            regex: str!("forbidden"),
             description: str!("test filter"),
         }];
-        let matcher = FilterMatcher::new(
-            RegexSet::new(filters.iter().map(|filter| filter.regex.as_str())).unwrap(),
-            filters,
-        );
+        let matcher = FilterMatcher::new(RegexSet::new(["forbidden"]).unwrap(), filters);
 
         assert!(matcher.regex_set.is_match("forbidden word"));
         assert_eq!(matcher.filter_data[0].filter_id, 1);

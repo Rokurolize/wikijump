@@ -404,7 +404,6 @@ impl FilterService {
         {
             filter_data.push(FilterSummary {
                 filter_id,
-                regex: str!(regex.as_str()),
                 description,
             });
             regexes.push(regex);

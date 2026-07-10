@@ -937,7 +937,6 @@ mod tests {
     fn extracts_filter_events_for_each_object_scope() {
         let info = FilterSummary {
             filter_id: 30,
-            regex: str!("forbidden"),
             description: str!("blocked word"),
         };
 
