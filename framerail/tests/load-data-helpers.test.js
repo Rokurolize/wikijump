@@ -38,7 +38,18 @@ test("article route data includes preload data and page-specific data", () => {
     site_file_domain: "files.example",
     license_name: "CC BY-SA 3.0",
     license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
-    user_session: null,
+    user_session: {
+      session: {
+        session_token: "secret-token",
+        user_id: 123,
+        created_at: "2026-07-09T00:00:00Z",
+        expires_at: "2026-07-10T00:00:00Z",
+        ip_address: "192.0.2.1",
+        user_agent: "test-agent",
+        restricted: false
+      },
+      user: { id: 123, name: "Example" }
+    },
     locales: ["en-US", "en"]
   }
   const viewData = {
@@ -50,7 +61,9 @@ test("article route data includes preload data and page-specific data", () => {
 
   assert.deepEqual(buildPageLoadData(parentData, viewData, forms), {
     ...parentData,
+    user_session: { user: { id: 123, name: "Example" } },
     ...viewData,
     forms
   })
+  assert.equal(parentData.user_session.session.session_token, "secret-token")
 })
