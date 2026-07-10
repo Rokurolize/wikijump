@@ -79,7 +79,7 @@ test("hit serves fresh cache without calling fetchers", async (t) => {
   const statusPath = await tempStatus(t);
   await collectCiStatus({statusPath, nowMs: 1000, fetchers: makeFetchers().fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
   const second = makeFetchers();
-  const artifact = await collectCiStatus({statusPath, nowMs: 1500, fetchers: second.fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  const artifact = await collectCiStatus({statusPath, nowMs: 1500, fetchers: second.fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
 
   assert.equal(artifact.cacheStatus, "hit");
   assert.equal(artifact.cacheReason, "fresh");
@@ -92,7 +92,7 @@ test("pending artifacts use the short ttl and become stale before completed ttl"
   const pending = makeFetchers({rollup: [rollup("build", "IN_PROGRESS", null)], protection: {strict: true, contexts: ["build"]}});
   await collectCiStatus({statusPath, nowMs: 1000, ttlMs: 100, completedTtlMs: 1000, fetchers: pending.fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
   const second = makeFetchers();
-  const artifact = await collectCiStatus({statusPath, nowMs: 1200, ttlMs: 100, completedTtlMs: 1000, fetchers: second.fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  const artifact = await collectCiStatus({statusPath, nowMs: 1200, ttlMs: 100, completedTtlMs: 1000, fetchers: second.fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
 
   assert.equal(artifact.cacheStatus, "stale");
   assert.equal(artifact.cacheReason, "ttl-expired");
@@ -103,7 +103,7 @@ test("completed artifacts use the longer completed ttl", async (t) => {
   const statusPath = await tempStatus(t);
   await collectCiStatus({statusPath, nowMs: 1000, ttlMs: 100, completedTtlMs: 1000, fetchers: makeFetchers().fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
   const second = makeFetchers();
-  const artifact = await collectCiStatus({statusPath, nowMs: 1200, ttlMs: 100, completedTtlMs: 1000, fetchers: second.fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  const artifact = await collectCiStatus({statusPath, nowMs: 1200, ttlMs: 100, completedTtlMs: 1000, fetchers: second.fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
 
   assert.equal(artifact.cacheStatus, "hit");
   assert.deepEqual(second.calls, {view: 0, branch: 0, checkRuns: 0, protection: 0});
@@ -119,6 +119,43 @@ test("local head sha changes stale a pr cache", async (t) => {
   assert.equal(artifact.cacheReason, "head-sha-changed");
   assert.equal(second.calls.view, 1);
   assert.equal(artifact.subject.headSha, SHA_Y);
+});
+
+test("pr cache without local head sha is refreshed", async (t) => {
+  const statusPath = await tempStatus(t);
+  await collectCiStatus({statusPath, nowMs: 1000, fetchers: makeFetchers({headSha: SHA_X}).fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  const second = makeFetchers({headSha: SHA_X});
+  const artifact = await collectCiStatus({statusPath, nowMs: 1100, fetchers: second.fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+
+  assert.equal(artifact.cacheStatus, "stale");
+  assert.equal(artifact.cacheReason, "head-sha-unverified");
+  assert.equal(second.calls.view, 1);
+});
+
+test("future fetchedAt cache is refreshed", async (t) => {
+  const statusPath = await tempStatus(t);
+  await collectCiStatus({statusPath, nowMs: 2000, fetchers: makeFetchers({headSha: SHA_X}).fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  const cached = JSON.parse(readFileSync(statusPath, "utf8"));
+  cached.fetchedAt = new Date(3000).toISOString();
+  writeFileSync(statusPath, `${JSON.stringify(cached, null, 2)}\n`, "utf8");
+  const second = makeFetchers({headSha: SHA_X});
+  const artifact = await collectCiStatus({statusPath, nowMs: 2500, fetchers: second.fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
+
+  assert.equal(artifact.cacheStatus, "stale");
+  assert.equal(artifact.cacheReason, "invalid-fetched-at");
+  assert.equal(second.calls.view, 1);
+});
+
+test("workspace status paths are not trusted as cache hits", async (t) => {
+  const statusPath = path.join(PACKAGE_ROOT, ".ci-status-workspace-test.json");
+  t.after(() => rm(statusPath, {force: true}));
+  await collectCiStatus({statusPath, nowMs: 1000, fetchers: makeFetchers({headSha: SHA_X}).fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
+  const second = makeFetchers({headSha: SHA_X});
+  const artifact = await collectCiStatus({statusPath, nowMs: 1100, fetchers: second.fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
+
+  assert.equal(artifact.cacheStatus, "stale");
+  assert.equal(artifact.cacheReason, "workspace-cache-untrusted");
+  assert.equal(second.calls.view, 1);
 });
 
 test("refresh bypasses a fresh cache", async (t) => {

@@ -1,6 +1,7 @@
 import {execFile, execFileSync} from "node:child_process";
 import {randomUUID} from "node:crypto";
 import {mkdir, readFile, rename, rm, writeFile} from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 const SCHEMA_VERSION = 1;
@@ -58,6 +59,17 @@ function normalizeSubject(subject) {
 }
 function statusFileName(subject) {
   return subject.kind === "pr" ? `pr-${subject.prNumber}.json` : subject.kind === "branch" ? `branch-${subject.branch.replaceAll("/", "--")}.json` : `sha-${subject.sha.slice(0, 12)}.json`;
+}
+function defaultCacheRoot() {
+  if (typeof process.env.XDG_CACHE_HOME === "string" && process.env.XDG_CACHE_HOME.length > 0) {
+    return process.env.XDG_CACHE_HOME;
+  }
+  const home = os.homedir();
+  return home.length > 0 ? path.join(home, ".cache") : os.tmpdir();
+}
+function pathIsInside(parent, child) {
+  const relative = path.relative(parent, child);
+  return relative === "" || (relative.length > 0 && !relative.startsWith("..") && !path.isAbsolute(relative));
 }
 function parseCachedBranch(raw) {
   if (raw === null) return null;
@@ -276,7 +288,7 @@ export function redactText(text) {
     .slice(0, 500);
 }
 export function defaultStatusPath(subject) {
-  return path.join(PACKAGE_ROOT, "artifacts", "ci-status", statusFileName(normalizeSubject(subject)));
+  return path.join(defaultCacheRoot(), "wikijump", "wikidot-verification", "ci-status", statusFileName(normalizeSubject(subject)));
 }
 export function buildFingerprint(config) {
   return {
@@ -303,11 +315,19 @@ export function evaluateCiCache({raw, nowMs, fingerprint, ttlMs, completedTtlMs,
     return {cacheStatus: "miss", cacheReason: "fingerprint-mismatch", artifact: null};
   }
   const ageMs = nowMs - Date.parse(artifact.fetchedAt);
-  if ((artifact.subject?.kind === "pr" || artifact.subject?.kind === "branch") && typeof localHeadSha === "string" && localHeadSha.length > 0 && artifact.subject?.headSha !== localHeadSha) {
-    return {cacheStatus: "stale", cacheReason: "head-sha-changed", artifact: withCacheFields(artifact, {cacheStatus: "stale", cacheReason: "head-sha-changed", ageMs, expired: false, ttlMs, completedTtlMs})};
+  if (!Number.isFinite(ageMs) || ageMs < 0) {
+    return {cacheStatus: "stale", cacheReason: "invalid-fetched-at", artifact: withCacheFields(artifact, {cacheStatus: "stale", cacheReason: "invalid-fetched-at", ageMs, expired: true, ttlMs, completedTtlMs})};
+  }
+  if (artifact.subject?.kind === "pr" || artifact.subject?.kind === "branch") {
+    if (typeof localHeadSha !== "string" || localHeadSha.length === 0) {
+      return {cacheStatus: "stale", cacheReason: "head-sha-unverified", artifact: withCacheFields(artifact, {cacheStatus: "stale", cacheReason: "head-sha-unverified", ageMs, expired: false, ttlMs, completedTtlMs})};
+    }
+    if (artifact.subject?.headSha !== localHeadSha) {
+      return {cacheStatus: "stale", cacheReason: "head-sha-changed", artifact: withCacheFields(artifact, {cacheStatus: "stale", cacheReason: "head-sha-changed", ageMs, expired: false, ttlMs, completedTtlMs})};
+    }
   }
   const ttlForArtifact = cacheTtlFor(artifact.overall, ttlMs, completedTtlMs);
-  if (!Number.isFinite(ageMs) || ageMs > ttlForArtifact) {
+  if (ageMs > ttlForArtifact) {
     return {cacheStatus: "stale", cacheReason: "ttl-expired", artifact: withCacheFields(artifact, {cacheStatus: "stale", cacheReason: "ttl-expired", ageMs, expired: true, ttlMs, completedTtlMs})};
   }
   return {cacheStatus: "hit", cacheReason: "fresh", artifact: withCacheFields(artifact, {cacheStatus: "hit", cacheReason: "fresh", ageMs, expired: false, ttlMs, completedTtlMs})};
@@ -352,7 +372,10 @@ export async function collectCiStatus(options) {
   const statusPath = path.resolve(options.statusPath ?? defaultStatusPath(subject));
   const fingerprint = buildFingerprint({repo, subject});
   const localGit = options.localGit ?? createDefaultLocalGit();
-  if (options.refresh !== true) {
+  const statusPathInGitRoot = GIT_ROOT !== null && pathIsInside(GIT_ROOT, statusPath);
+  if (options.refresh !== true && statusPathInGitRoot) {
+    options = {...options, cacheStatus: "stale", cacheReason: "workspace-cache-untrusted"};
+  } else if (options.refresh !== true) {
     let raw = null;
     try {
       raw = await readFile(statusPath, "utf8");
