@@ -40,21 +40,57 @@ function walkFiles(root, relativeRoot = '') {
   return output.sort((left, right) => codePointCompare(left.relative, right.relative));
 }
 
+const WIKIDOT_SITE_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/u;
+
+function normalizeWikidotSiteSlug(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed.length === 0) return null;
+
+  let candidate = trimmed;
+  if (/^https?:\/\//u.test(trimmed)) {
+    let url;
+    try {
+      url = new URL(trimmed);
+    } catch (error) {
+      void error;
+      return null;
+    }
+    if (url.username !== '' || url.password !== '' || url.port !== '') return null;
+    if (!url.hostname.endsWith('.wikidot.com')) return null;
+    candidate = url.hostname.slice(0, -'.wikidot.com'.length);
+  }
+
+  return WIKIDOT_SITE_SLUG_PATTERN.test(candidate) ? candidate : null;
+}
+
 function siteUnixFromIndex(index, branch) {
   const sites = new Set();
+  const invalidSites = new Set();
+  const addSite = (value) => {
+    const site = normalizeWikidotSiteSlug(value);
+    if (site === null) invalidSites.add(value);
+    else sites.add(site);
+  };
+
   if (index?.by_site_created_at && typeof index.by_site_created_at === 'object') {
     for (const key of Object.keys(index.by_site_created_at)) {
       const separator = key.indexOf('|');
-      if (separator > 0) sites.add(key.slice(0, separator));
+      if (separator > 0) addSite(key.slice(0, separator));
     }
   }
-  if (typeof index?.target_wiki === 'string' && index.target_wiki.length > 0) {
-    sites.add(index.target_wiki.replace(/^https?:\/\//u, '').replace(/\.wikidot\.com\/?$/u, ''));
-  }
+  if (typeof index?.target_wiki === 'string' && index.target_wiki.length > 0) addSite(index.target_wiki);
+
+  const siteStatus = invalidSites.size > 0
+    ? 'invalid'
+    : sites.size === 1
+      ? 'resolved'
+      : sites.size === 0 ? 'missing' : 'ambiguous';
   return {
-    source_site: sites.size === 1 ? [...sites][0] : null,
+    source_site: siteStatus === 'resolved' ? [...sites][0] : null,
     source_sites: [...sites].sort(codePointCompare),
-    site_status: sites.size === 1 ? 'resolved' : sites.size === 0 ? 'missing' : 'ambiguous',
+    invalid_source_sites: [...invalidSites].sort(codePointCompare),
+    site_status: siteStatus,
     branch,
   };
 }

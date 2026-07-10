@@ -53,6 +53,40 @@ test('buildCorpusSnapshot freezes canonical files and emits browser inventory ro
   assert.equal(snapshot.branches[0].files.some((file) => file.path.includes('_runs')), false);
 });
 
+test('buildCorpusSnapshot rejects corpus-controlled site names that cannot be safe URL hosts', () => {
+  const root = fixtureCorpus();
+  write(path.join(root, 'en', 'index.json'), JSON.stringify({
+    schema_version: 1,
+    target_wiki: 'https://127.0.0.1:1234/private',
+  }));
+
+  const snapshot = buildCorpusSnapshot({ corpusRoot: root });
+
+  assert.equal(snapshot.branches[0].site_status, 'invalid');
+  assert.deepEqual(snapshot.branches[0].invalid_source_sites, ['https://127.0.0.1:1234/private']);
+  assert.equal(snapshot.rows[0].source_site, null);
+  assert.equal(snapshot.rows[0].source_url, null);
+  assert.equal(snapshot.rows[0].local_https_url, null);
+  assert.equal(snapshot.rows[0].inventory_status, 'invalid');
+  assert.deepEqual(snapshot.rows[0].inventory_problems, ['source_site_invalid']);
+});
+
+test('buildCorpusSnapshot normalizes valid target_wiki URLs to Wikidot site slugs', () => {
+  const root = fixtureCorpus();
+  write(path.join(root, 'en', 'index.json'), JSON.stringify({
+    schema_version: 1,
+    target_wiki: 'https://scp-wiki.wikidot.com/',
+  }));
+
+  const snapshot = buildCorpusSnapshot({ corpusRoot: root });
+
+  assert.equal(snapshot.rows[0].source_site, 'scp-wiki');
+  assert.equal(snapshot.rows[0].source_url, 'https://scp-wiki.wikidot.com/alpha');
+  assert.equal(snapshot.rows[0].local_https_url, 'https://scp-wiki.wikijump.localhost/alpha');
+  assert.equal(new URL(snapshot.rows[0].source_url).host, 'scp-wiki.wikidot.com');
+  assert.equal(new URL(snapshot.rows[0].local_https_url).host, 'scp-wiki.wikijump.localhost');
+});
+
 test('buildCorpusSnapshot records incomplete pages instead of silently dropping them', () => {
   const root = fixtureCorpus();
   fs.unlinkSync(path.join(root, 'en', 'pages', 'alpha', 'entity_id.txt'));
