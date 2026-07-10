@@ -128,10 +128,7 @@ impl AuthorizationTokenService {
         object_type: AuthorizedObject,
         ip_address: IpAddr,
     ) -> Result<()> {
-        info!(
-            "Verifying authorization token '{}' (scope {:?})",
-            token, object_type,
-        );
+        info!("Verifying authorization token for scope {:?}", object_type);
 
         if token.len() != AUTHORIZATION_TOKEN_LENGTH {
             bail!(Error::new(
