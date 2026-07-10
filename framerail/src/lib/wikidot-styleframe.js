@@ -7,8 +7,6 @@
  * }} WikidotStyleFrameInput
  */
 
-const STYLEFRAME_MARKER = "wikidot-style-frame"
-
 /**
  * @param {string | null | undefined} value
  * @returns {string}
@@ -26,12 +24,6 @@ const escapeHtml = (value) => {
  * @returns {string}
  */
 const safeInlineCss = (value) => value.replace(/<\/(style|script)/giu, "<\\/$1")
-
-/**
- * @param {string} value
- * @returns {string}
- */
-const safeScriptJson = (value) => JSON.stringify(value).replace(/</gu, "\\u003c")
 
 /**
  * @param {string | null | undefined} value
@@ -99,63 +91,10 @@ export const buildWikidotStyleFrameHtml = ({
   const themeList = localizedThemes
     .map((theme) => `<li>${escapeHtml(theme)}</li>`)
     .join("")
+  const styleLinks = localizedThemes
+    .map((theme) => `<link rel="stylesheet" href="${escapeHtml(theme)}">`)
+    .join("\n    ")
   const styleBlock = inlineCss ? `<style>${inlineCss}</style>` : ""
-  const script = `(() => {
-  const marker = ${safeScriptJson(STYLEFRAME_MARKER)};
-  const priority = ${safeScriptJson(priority ?? "")};
-  const priorityNumber = Number.parseFloat(priority);
-  const priorityValue = Number.isFinite(priorityNumber) ? priorityNumber : 0;
-  const themes = ${JSON.stringify(localizedThemes).replace(/</gu, "\\u003c")};
-  const css = ${safeScriptJson(inlineCss)};
-  const targetDocument = window.parent && window.parent !== window
-    ? window.parent.document
-    : document;
-  const head = targetDocument.head || targetDocument.documentElement;
-  const markedStyleNodes = () => Array.from(
-    head.querySelectorAll('[data-wikidot-style-frame="' + marker + '"]')
-  );
-  const stylePriority = (node) => {
-    const value = Number.parseFloat(node.dataset.wikidotStylePriority || "");
-    return Number.isFinite(value) ? value : 0;
-  };
-  const restoreStyleFrameOrder = () => {
-    markedStyleNodes()
-      .sort((left, right) => stylePriority(left) - stylePriority(right))
-      .forEach((node) => head.appendChild(node));
-  };
-  const scheduleStyleFrameOrderRestore = () => {
-    setTimeout(restoreStyleFrameOrder, 0);
-    setTimeout(restoreStyleFrameOrder, 250);
-    if (typeof targetDocument.defaultView?.requestAnimationFrame === "function") {
-      targetDocument.defaultView.requestAnimationFrame(() => {
-        targetDocument.defaultView.requestAnimationFrame(restoreStyleFrameOrder);
-      });
-    }
-  };
-  const appendMarked = (element, id) => {
-    element.dataset.wikidotStyleFrame = marker;
-    element.dataset.wikidotStylePriority = priority;
-    element.dataset.wikidotStyleId = id;
-    const laterStyle = markedStyleNodes().find((node) => stylePriority(node) > priorityValue);
-    if (laterStyle) {
-      head.insertBefore(element, laterStyle);
-    } else {
-      head.appendChild(element);
-    }
-  };
-  themes.forEach((href, index) => {
-    const link = targetDocument.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
-    appendMarked(link, \`theme-\${index}\`);
-  });
-  if (css.trim().length > 0) {
-    const style = targetDocument.createElement("style");
-    style.textContent = css;
-    appendMarked(style, "inline-css");
-  }
-  scheduleStyleFrameOrderRestore();
-})();`
 
   return `<!doctype html>
 <html>
@@ -165,11 +104,11 @@ export const buildWikidotStyleFrameHtml = ({
     <meta name="wikidot-style-priority" content="${escapeHtml(priority)}">
     <meta name="wikidot-style-theme-count" content="${localizedThemes.length}">
     <meta name="wikidot-style-inline-css" content="${inlineCss ? "true" : "false"}">
+    ${styleLinks}
     ${styleBlock}
   </head>
   <body>
     <ul hidden>${themeList}</ul>
-    <script>${script}</script>
   </body>
 </html>
 `

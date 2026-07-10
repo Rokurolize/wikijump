@@ -55,7 +55,7 @@ test("renders Wikidot-compatible interwiki visible text for translated SCP pages
   assert.doesNotMatch(html, /English/)
 })
 
-test("builds styleFrame parent injection for theme stylesheets", () => {
+test("builds styleFrame-local theme stylesheets without parent mutation", () => {
   const html = buildWikidotStyleFrameHtml({
     priority: "2",
     themes: [
@@ -67,10 +67,12 @@ test("builds styleFrame parent injection for theme stylesheets", () => {
   })
 
   assert.match(html, /wikidot-style-theme-count" content="2"/)
-  assert.match(html, /window\.parent\.document/)
-  assert.match(html, /head\.insertBefore\(element, laterStyle\)/)
-  assert.match(html, /restoreStyleFrameOrder/)
-  assert.match(html, /head\.appendChild\(node\)/)
+  assert.doesNotMatch(html, /window\.parent\.document/)
+  assert.doesNotMatch(html, /<script>/)
+  assert.match(
+    html,
+    /<link rel="stylesheet" href="https:\/\/cdn\.scpwiki\.com\/theme\/en\/basalt\/basalt-bedrock-min\.css">/
+  )
   assert.match(html, /cdn\.scpwiki\.com\/theme\/en\/basalt\/basalt-bedrock-min\.css/)
   assert.match(html, /scp-wiki\.wjfiles\.localhost\/local--code\/theme%3Abasalt\/1/)
   assert.doesNotMatch(html, /<style>\{\$css\}<\/style>/)
@@ -86,8 +88,8 @@ test("keeps non-placeholder styleFrame inline CSS safe", () => {
   assert.equal(isUsableStyleFrameCss("$css"), false)
   assert.equal(isUsableStyleFrameCss(" body { color: red } "), true)
   assert.match(html, /<style>body::before \{ content: '<\\\/style>'; \}<\/style>/)
-  assert.match(html, /const css = "body::before \{ content: '\\u003c/)
-  assert.doesNotMatch(html, /<\/script>.*<\/script>/s)
+  assert.doesNotMatch(html, /<script>/)
+  assert.doesNotMatch(html, /<\/script>/)
 })
 
 test("localizes Wikidot local file and code theme URLs to the local file host", () => {
