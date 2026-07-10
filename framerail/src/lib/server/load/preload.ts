@@ -43,7 +43,14 @@ export function finalizePreloadData(response: Viewer, locales: string[]) {
     response.user_session.user = sanitizeUserData(response.user_session?.user, false)
   }
 
-  return { ...response, locales: resolvedLocales }
+  return {
+    site: response.site,
+    site_file_domain: response.site_file_domain,
+    license_name: response.license_name,
+    license_url: response.license_url,
+    user_session: response.user_session,
+    locales: resolvedLocales
+  }
 }
 
 /**
