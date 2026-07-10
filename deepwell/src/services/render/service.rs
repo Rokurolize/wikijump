@@ -8988,23 +8988,23 @@ fn render_native_list_inline_wikidot_spans(value: &str) -> String {
         let marker = &marker_start[..marker_end + 2];
         let after_marker = &marker_start[marker_end + 2..];
 
-        let Some(close_start) = find_matching_wikidot_span_close(after_marker) else {
+        let Some(open_tag) = wikidot_inline_span_marker_open(marker) else {
             output.push_str(&escape_list_pages_html_text(marker));
             rest = after_marker;
             continue;
         };
 
-        if let Some(open_tag) = wikidot_inline_span_marker_open(marker) {
-            output.push_str(&open_tag);
-            output.push_str(&render_native_list_inline_wikidot_spans(
-                &after_marker[..close_start],
-            ));
-            output.push_str("</span>");
-            rest = &after_marker[close_start + "[[/span]]".len()..];
-        } else {
-            output.push_str(&escape_list_pages_html_text(marker));
-            rest = after_marker;
-        }
+        let Some(close_start) = find_matching_wikidot_span_close(after_marker) else {
+            output.push_str(&escape_list_pages_html_text(marker_start));
+            return output;
+        };
+
+        output.push_str(&open_tag);
+        output.push_str(&render_native_list_inline_wikidot_spans(
+            &after_marker[..close_start],
+        ));
+        output.push_str("</span>");
+        rest = &after_marker[close_start + "[[/span]]".len()..];
     }
 
     output.push_str(&escape_list_pages_html_text(rest));
@@ -14588,6 +14588,21 @@ mod tests {
         );
         assert!(!rendered.contains("[[span"));
         assert!(!rendered.contains("[[/span]]"));
+    }
+
+    #[test]
+    fn leaves_unclosed_native_list_wikidot_spans_literal() {
+        let mut item = String::from("attack ");
+        for _ in 0..256 {
+            item.push_str(r#"[[span class="safe"]]"#);
+        }
+        item.push_str("text");
+
+        let rendered = render_native_list_inline_wikidot_spans(&item);
+
+        assert!(rendered.starts_with("attack [[span class=&quot;safe&quot;]]"));
+        assert!(rendered.ends_with("text"));
+        assert!(!rendered.contains("<span"));
     }
 
     #[test]
