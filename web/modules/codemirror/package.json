@@ -27,6 +27,6 @@
     "@lezer/highlight": "^0.16.0",
     "@wikijump/components": "workspace:*",
     "@wikijump/util": "workspace:*",
-    "svelte": "^5.53.0"
+    "svelte": "^4.2.20"
   }
 }
