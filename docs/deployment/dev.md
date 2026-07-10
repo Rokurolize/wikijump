@@ -60,12 +60,18 @@ Using the admin password you generated for `compose.env`, log in to Komodo via `
 In order to add the rest of the infrastructure, we need to add a git repository and a resource sync. Then, Komodo can use the `*.toml` files in `install/dev/komodo/` to set up the rest of the infrastructure.
 
   1. Go to **repos**. See `install/dev/komodo/sources.toml` and add the fields as appropriate.
-  2. Go to **resource syncs**. See `install/dev/komodo/resource-sync.toml` add add the fields as appropriate.
+  2. Go to **resource syncs**. See `install/dev/komodo/resource-sync.toml` and add the fields as appropriate.
   3. As a **one-time change**, set "Sync Variables" to true.
   4. Click the "refresh" button, verify that proposed infrastructure changes look good, then apply.
   5. Set "Sync Variables" back to false.
 10. Add secrets.
-It is not good practice to add secrets to code, and triply so if the repository is public. As such, `install/dev/komodo/variables.toml` is missing values for those marked "secret" (see the file for more information). Some of these are secret values that need to be generated, and some come from your infrastructure. Fill in the values as appropriate.
+It is not good practice to add secrets to code, and triply so if the repository is public. As such, `install/dev/komodo/variables.toml` is intentionally ignored by Git and must be created from the tracked template before storing deployment values:
+
+```bash
+cp install/dev/komodo/variables.example.toml install/dev/komodo/variables.toml
+```
+
+The local `variables.toml` file is missing values for those marked "secret" (see the file for more information). Some of these are secret values that need to be generated, and some come from your infrastructure. Fill in the values as appropriate, but do not commit that file or include real secret values in any tracked Komodo TOML resource.
 11. Go to the `wikijump-dev` stack and **pull images**. If everything is configured properly so far, it should be able to retrieve the images and be in a state to deploy it.
 12. Now, deploy the `wikijump-dev` stack. This will first build the local images (the two databases) and attempt to start the containers per the topology in `docker-compose.yaml`.
 On the first deploy, it may take some time to populate the database. You may need to restart services dependent on `deepwell` (i.e. `caddy`, `framerail`, `wws`) if they are reporting as unhealthy.

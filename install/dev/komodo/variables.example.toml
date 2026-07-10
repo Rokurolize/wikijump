@@ -3,7 +3,7 @@
 [[variable]]
 name = "POSTGRES_PASSWORD"
 description = "Password for the PostgreSQL database."
-value = ""  # TODO: generate password value!
+value = ""  # Copy to variables.toml, then generate a password locally.
 is_secret = true
 
 # S3 / Object Storage
@@ -41,13 +41,13 @@ is_secret = false
 [[variable]]
 name = "S3_ACCESS_KEY_ID"
 description = "Access key for S3."
-value = ""  # TODO: fill in value here!
+value = ""  # Copy to variables.toml, then fill locally; never commit secrets.
 is_secret = true
 
 [[variable]]
 name = "S3_SECRET_ACCESS_KEY"
 description = "Secret key for S3 access."
-value = ""  # TODO: fill in value here!
+value = ""  # Copy to variables.toml, then fill locally; never commit secrets.
 is_secret = true
 
 # Mailjet API
@@ -55,13 +55,13 @@ is_secret = true
 [[variable]]
 name = "MAILJET_API_KEY"
 description = "API key for Mailjet."
-value = ""  # TODO: fill in value here!
+value = ""  # Copy to variables.toml, then fill locally; never commit secrets.
 is_secret = true
 
 [[variable]]
 name = "MAILJET_SECRET_KEY"
 description = "Secret key for Mailjet."
-value = ""  # TODO: fill in value here!
+value = ""  # Copy to variables.toml, then fill locally; never commit secrets.
 is_secret = true
 
 # ACME DNS Challenge Token
@@ -74,7 +74,7 @@ is_secret = true
 [[variable]]
 name = "DIGITALOCEAN_API_TOKEN"
 description = "API token for changing DNS records in DigitalOcean"
-vaue = ""  # TODO: fill in value here!
+value = ""  # Copy to variables.toml, then fill locally; never commit secrets.
 is_secret = true
 
 # Alerters
@@ -82,5 +82,5 @@ is_secret = true
 [[variable]]
 name = "DISCORD_WEBHOOK"
 description = "Webhook for notifying on infrastructural changes"
-value = ""  # TODO: fill in value here!
+value = ""  # Copy to variables.toml, then fill locally; never commit secrets.
 is_secret = true
