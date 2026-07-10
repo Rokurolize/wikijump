@@ -908,14 +908,8 @@ impl ErrorType {
                 "message_key": message_key,
                 "attribute": attribute,
             }),
-            ErrorType::FilterViolation {
-                field,
-                value,
-                failed,
-            } => json!({
+            ErrorType::FilterViolation { field, .. } => json!({
                 "field": field,
-                "value": value,
-                "failed": failed,
             }),
             ErrorType::FilterRegexInvalid { regex } => json!({
                 "regex": regex,
@@ -1323,12 +1317,6 @@ mod tests {
             .data(),
             json!({
                 "field": "title",
-                "value": "blocked",
-                "failed": [{
-                    "filter_id": 7,
-                    "regex": "blocked",
-                    "description": "blocked words",
-                }],
             }),
         );
         assert_eq!(
