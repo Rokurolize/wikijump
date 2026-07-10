@@ -5,9 +5,11 @@ INSERT INTO role_permission (
     resource_category_id,
     action
 )
--- There is no persisted stable seeded-role identifier in existing databases.
--- Preserve upgrade behavior for existing role managers by backfilling Role:Edit
--- to active roles that already had Role:Assign before this permission split.
+-- Preserve upgrade behavior for existing seeded full-administrator roles by
+-- backfilling Role:Edit only to the built-in root/admin role names that
+-- already had Role:Assign before this permission split. Do not infer full
+-- role-administration authority from Role:Assign alone: sites may delegate
+-- Role:Assign for membership management without intending Role:Edit.
 SELECT DISTINCT
     role_permission.role_id,
     role_permission.site_id,
@@ -23,6 +25,7 @@ WHERE
     AND role_permission.resource_category_id IS NULL
     AND role_permission.action = 'assign'
     AND role.deleted_at IS NULL
+    AND role.name IN ('root', 'admin')
     AND NOT EXISTS (
         SELECT 1
         FROM role_permission existing_role_edit
