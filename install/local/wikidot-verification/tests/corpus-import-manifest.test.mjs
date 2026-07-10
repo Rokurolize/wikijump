@@ -718,6 +718,100 @@ test('apply-corpus-import-manifest rejects DB create mode without a text hash co
   assert.match(result.stderr, /text-hash-command|DEEPWELL_TEXT_HASH_COMMAND/);
 });
 
+test('apply-corpus-import-manifest keeps batch text hashes tied to duplicate-fullname rows', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
+  writePage(root, 'en', 'dup:page', {
+    entityId: '77777777-7777-4777-8777-777777777777',
+    source: 'FIRST_ROW_UNIQUE_WIKITEXT',
+  });
+  const rows = buildCorpusImportManifest({
+    corpusRoot: root,
+    branch: 'en',
+    sourceSite: 'scp-wiki',
+    sourceBranch: 'en',
+  });
+  const secondSourcePath = path.join(root, 'second-source.wikidot.txt');
+  fs.writeFileSync(secondSourcePath, 'SECOND_ROW_DIFFERENT_WIKITEXT');
+  const duplicateRows = [
+    rows[0],
+    {
+      ...rows[0],
+      source_path: secondSourcePath,
+      source_bytes: Buffer.byteLength('SECOND_ROW_DIFFERENT_WIKITEXT'),
+      source_sha256: cryptoSha256('SECOND_ROW_DIFFERENT_WIKITEXT'),
+    },
+  ];
+  const manifestPath = path.join(root, 'manifest.jsonl');
+  fs.writeFileSync(manifestPath, formatJsonl(duplicateRows));
+
+  const binDir = path.join(root, 'bin');
+  const logDir = path.join(root, 'sql');
+  fs.mkdirSync(binDir);
+  fs.mkdirSync(logDir);
+  const batchHashPath = path.join(binDir, 'batch-hash.cjs');
+  fs.writeFileSync(batchHashPath, `#!/usr/bin/env node
+const crypto = require('node:crypto');
+let input = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => { input += chunk; });
+process.stdin.on('end', () => {
+  for (const line of input.split('\\n')) {
+    if (!line.trim()) continue;
+    const [id, base64] = line.split('\\t');
+    const contents = Buffer.from(base64, 'base64');
+    console.log(id + '\\t' + crypto.createHash('md5').update(contents).digest('hex'));
+  }
+});
+`, { mode: 0o755 });
+  const fakeDockerPath = path.join(binDir, 'docker');
+  fs.writeFileSync(fakeDockerPath, `#!/usr/bin/env node
+const fs = require('node:fs');
+const path = require('node:path');
+const sql = fs.readFileSync(0, 'utf8');
+const logDir = process.env.SQL_LOG_DIR;
+const indexPath = path.join(logDir, 'index.txt');
+const index = fs.existsSync(indexPath) ? Number(fs.readFileSync(indexPath, 'utf8')) + 1 : 1;
+fs.writeFileSync(indexPath, String(index));
+fs.writeFileSync(path.join(logDir, \`sql_\${index}.sql\`), sql);
+if (sql.includes('RETURNING import_run_id')) console.log('1');
+else if (sql.includes('SELECT slug ||')) console.log('_default|10');
+else if (sql.includes('FROM corpus_shell_import_result')) console.log(String(100 + index) + '|10|' + String(200 + index) + '|false|true');
+`, { mode: 0o755 });
+
+  const { spawnSync } = await import('node:child_process');
+  const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const result = spawnSync(process.execPath, [
+    path.join(packageRoot, 'scripts/apply-corpus-import-manifest.mjs'),
+    '--manifest',
+    manifestPath,
+    '--create-mode',
+    'db',
+    '--assume-empty-db-import',
+    '--text-hash-batch-command',
+    batchHashPath,
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${binDir}${path.delimiter}${process.env.PATH}`, SQL_LOG_DIR: logDir },
+    maxBuffer: 1024 * 1024,
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const firstHash = crypto.createHash('md5').update('FIRST_ROW_UNIQUE_WIKITEXT').digest('hex');
+  const secondHash = crypto.createHash('md5').update('SECOND_ROW_DIFFERENT_WIKITEXT').digest('hex');
+  const sqlLogs = fs.readdirSync(logDir)
+    .filter((name) => name.endsWith('.sql'))
+    .map((name) => fs.readFileSync(path.join(logDir, name), 'utf8'));
+  assert(sqlLogs.some((sql) => (
+    sql.includes(`decode('${firstHash}', 'hex')`)
+    && sql.includes("RklSU1RfUk9XX1VOSVFVRV9XSUtJVEVYVA==")
+  )));
+  assert(sqlLogs.some((sql) => (
+    sql.includes(`decode('${secondHash}', 'hex')`)
+    && sql.includes("U0VDT05EX1JPV19ESUZGRVJFTlRfV0lLSVRFWFQ=")
+  )));
+});
+
 test('apply-corpus-import-manifest dry-run filters by slug without touching services', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
   writePage(root, 'en', 'scp-173', {

@@ -343,13 +343,13 @@ function precomputeDbTextHashes(args, selectedRows) {
   const items = [{ id: '__shell_body__', contents: SHELL_BODY_HTML }];
   for (let index = 0; index < selectedRows.length; index += 1) {
     const contents = sourceText(selectedRows[index]);
-    precomputedSourceTexts.set(selectedRows[index].fullname, contents);
+    precomputedSourceTexts.set(selectedRows[index], contents);
     items.push({ id: `page:${index}`, contents });
   }
   const hashes = batchTextHashesHex(args, items);
   shellBodyHash = hashes.get('__shell_body__');
   for (let index = 0; index < selectedRows.length; index += 1) {
-    precomputedTextHashes.set(selectedRows[index].fullname, hashes.get(`page:${index}`));
+    precomputedTextHashes.set(selectedRows[index], hashes.get(`page:${index}`));
   }
 }
 
@@ -379,7 +379,7 @@ ON CONFLICT (hash) DO NOTHING;
 `;
     await sqlExecutor.runSql(sql);
     for (const item of batch) {
-      precreatedSourceTextHashes.add(item.fullname);
+      precreatedSourceTextHashes.add(item.row);
     }
     batch = [];
     batchBytes = 0;
@@ -387,13 +387,13 @@ ON CONFLICT (hash) DO NOTHING;
 
   for (const row of selectedRows) {
     const contents = sourceText(row);
-    const hash = textHashHex(args, contents, row.fullname);
+    const hash = textHashHex(args, contents, row);
     const encodedBytes = Buffer.byteLength(contents, 'utf8') * 4 / 3;
     if (batch.length > 0 && (batch.length >= SOURCE_TEXT_PRECREATE_MAX_ROWS || batchBytes + encodedBytes > SOURCE_TEXT_PRECREATE_MAX_BASE64_BYTES)) {
       await flush();
     }
     batch.push({
-      fullname: row.fullname,
+      row,
       valueSql: `(${sqlTextHash(hash)}, ${sqlTextFromBase64(contents)})`,
     });
     batchBytes += encodedBytes;
@@ -539,7 +539,7 @@ function readManifestFile(row, pathKey, shaKey) {
 }
 
 function sourceText(row) {
-  const cached = precomputedSourceTexts.get(row.fullname);
+  const cached = precomputedSourceTexts.get(row);
   if (cached !== undefined) return cached;
   return readManifestFile(row, 'source_path', 'source_sha256');
 }
@@ -621,9 +621,9 @@ function categoryName(slug) {
 }
 
 async function shellCreatePage(args, sqlExecutor, row, { replaceExistingRevision = false } = {}) {
-  const sourceTextPrecreated = precreatedSourceTextHashes.has(row.fullname);
+  const sourceTextPrecreated = precreatedSourceTextHashes.has(row);
   const wikitext = sourceTextPrecreated ? '' : sourceText(row);
-  const wikitextHash = textHashHex(args, wikitext, row.fullname);
+  const wikitextHash = textHashHex(args, wikitext, row);
   const bodyHash = shellBodyHashHex(args);
   const title = fallbackTitle(row);
   const category = categoryName(row.fullname);
@@ -1296,11 +1296,11 @@ function batchShellCreatePageValues(args, rows) {
     if (categoryId === undefined) {
       throw new Error(`missing precreated category id for ${row.fullname}`);
     }
-    const sourceTextPrecreated = precreatedSourceTextHashes.has(row.fullname);
+    const sourceTextPrecreated = precreatedSourceTextHashes.has(row);
     if (!sourceTextPrecreated) {
       throw new Error(`missing precreated source text for ${row.fullname}`);
     }
-    const wikitextHash = textHashHex(args, '', row.fullname);
+    const wikitextHash = textHashHex(args, '', row);
     const title = fallbackTitle(row);
     const metaText = metaJsonText(row);
     return `(
