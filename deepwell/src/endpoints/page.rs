@@ -179,15 +179,21 @@ pub async fn page_get_score(
 
     let make_error = || Error::new("failed to get page score", ErrorType::Page);
 
-    let page_id = PageService::get_id(ctx, site_id, reference)
+    let page = PageService::get(ctx, site_id, reference)
+        .await
+        .or_raise(make_error)?;
+    ensure_page_view_permission(ctx, site_id, page.page_id)
         .await
         .or_raise(make_error)?;
 
-    let score = ScoreService::score(ctx, page_id)
+    let score = ScoreService::score(ctx, page.page_id)
         .await
         .or_raise(make_error)?;
 
-    Ok(GetPageScoreOutput { page_id, score })
+    Ok(GetPageScoreOutput {
+        page_id: page.page_id,
+        score,
+    })
 }
 
 pub async fn page_get_files(

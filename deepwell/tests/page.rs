@@ -4210,6 +4210,80 @@ async fn page_tags_select_filters_latest_page_tags() {
 }
 
 #[tokio::test]
+async fn page_get_score_requires_site_membership_and_view_permission() {
+    const PRIVATE_CATEGORY: &str = "fixture-page-score-private";
+    const PRIVATE_SLUG: &str = "fixture-page-score-private:target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PRIVATE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "private score target",
+            "title": "Private score target",
+            "alt_title": null,
+            "slug": PRIVATE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create private score target",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_SLUG, PRIVATE_CATEGORY)
+        .await;
+    run_endpoint!(
+        runner,
+        vote_set,
+        json!({
+            "page_id": page.page_id,
+            "user_id": ADMIN_USER_ID,
+            "value": 7,
+        }),
+    );
+
+    let admin_score = run_endpoint!(
+        runner,
+        page_get_score,
+        json!({"site_id": site_id, "page": page.page_id}),
+    );
+    assert_eq!(admin_score.page_id, page.page_id);
+    assert_eq!(
+        admin_score.score,
+        deepwell::services::score::ScoreValue::Integer(7),
+    );
+
+    runner.set_request_context(RequestContext::default());
+    let anonymous_error = run_endpoint_err!(
+        runner,
+        page_get_score,
+        json!({"site_id": site_id, "page": page.page_id}),
+    );
+    assert_contains_error!(anonymous_error, ErrorType::PermissionDenied);
+
+    let other_site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let wrong_site_error = run_endpoint_err!(
+        runner,
+        page_get_score,
+        json!({"site_id": other_site.site.site_id, "page": page.page_id}),
+    );
+    assert_contains_error!(wrong_site_error, ErrorType::Page);
+}
+
+#[tokio::test]
 async fn page_select_filters_pages_with_page_query_semantics() {
     const TAG: &str = "xmlrpc-page-select-target";
 
