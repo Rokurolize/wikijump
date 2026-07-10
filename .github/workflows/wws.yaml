@@ -75,7 +75,6 @@ jobs:
 
   clippy_lint:
     name: Lint
-    if: ${{ github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'full-ci' }}
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: -D warnings
