@@ -549,11 +549,9 @@ impl PageQueryService {
                 debug!("Limiting ListPages to a maximum of {limit} pages total");
                 query = query.limit(limit);
             }
-        } else if !data_form_fields.is_empty()
-            && let Some(candidate_limit) = candidate_limit
-        {
+        } else if let Some(candidate_limit) = candidate_limit {
             debug!(
-                "Limiting ListPages data form candidate scan to {candidate_limit} pages"
+                "Limiting ListPages deferred filtering or ordering candidate scan to {candidate_limit} pages"
             );
             query = query.limit(candidate_limit);
         }

@@ -331,6 +331,7 @@ pub async fn page_select(
     params: Params<'static>,
 ) -> Result<Vec<String>> {
     const MAX_FILTER_VALUES: usize = 100;
+    const MAX_SELECTED_PAGES: u64 = 500;
 
     #[derive(Deserialize, Debug)]
     struct Input<'a> {
@@ -484,11 +485,16 @@ pub async fn page_select(
             slug: None,
             data_form_fields: &[],
             order: Some(order),
-            candidate_limit: None,
-            pagination: PaginationSelector::default(),
+            candidate_limit: Some(MAX_SELECTED_PAGES),
+            pagination: PaginationSelector {
+                limit: Some(MAX_SELECTED_PAGES),
+                per_page: 100,
+                reversed: false,
+            },
             variables: &[],
             fields: FoundPageFields {
                 slug: true,
+                page_category_id: true,
                 score: rating_filter.is_some(),
                 ..FoundPageFields::default()
             },
@@ -497,16 +503,37 @@ pub async fn page_select(
     .await
     .or_raise(make_error)?;
 
-    let pages = found
-        .pages
-        .into_iter()
-        .filter(|page| {
-            rating_filter
-                .as_ref()
-                .is_none_or(|filter| filter.matches(page.score.unwrap_or(0.0)))
-        })
-        .filter_map(|page| page.slug)
-        .collect();
+    let mut pages = Vec::new();
+    for page in found.pages {
+        if !rating_filter
+            .as_ref()
+            .is_none_or(|filter| filter.matches(page.score.unwrap_or(0.0)))
+        {
+            continue;
+        }
+
+        let anonymously_viewable = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: None,
+                site_id: page.site_id,
+                page_reference: Some(Reference::Id(page.page_id)),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: page.page_category_id.map(Reference::Id),
+                action: Action::View,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        if anonymously_viewable {
+            if let Some(slug) = page.slug {
+                pages.push(slug);
+            }
+        }
+    }
 
     Ok(pages)
 }

@@ -4308,6 +4308,61 @@ async fn page_select_filters_pages_with_page_query_semantics() {
 }
 
 #[tokio::test]
+async fn page_select_excludes_pages_without_anonymous_view_permission() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let private_category = "xmlrpc-page-select-private";
+    let public_slug = "xmlrpc-page-select-public-viewable";
+    let private_slug = "xmlrpc-page-select-private-hidden";
+
+    make_listpages_test_category_admin_only(&runner, site_id, private_category).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        public_slug,
+        "XML-RPC Page Select Public",
+        "Public XML-RPC page selection target.",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        private_slug,
+        "XML-RPC Page Select Private",
+        "Private XML-RPC page selection target.",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, private_slug, private_category)
+        .await;
+
+    let selected = run_endpoint!(
+        runner,
+        page_select,
+        json!({
+            "site": "scp-wiki",
+            "pagetype": "all",
+            "order": "name asc",
+        }),
+    );
+
+    assert!(
+        selected
+            .iter()
+            .any(|selected_slug| selected_slug == public_slug),
+        "pages.select should still include anonymously viewable pages",
+    );
+    assert!(
+        selected
+            .iter()
+            .all(|selected_slug| selected_slug != private_slug),
+        "pages.select must not disclose pages anonymous viewers cannot view",
+    );
+}
+
+#[tokio::test]
 async fn page_select_treats_blank_optional_filters_as_absent() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
