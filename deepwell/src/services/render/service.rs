@@ -18,6 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::compat_html_fragments::{
+    COMPAT_HTML_MARKER_PREFIX, CompatHtmlFragments, is_compat_html_marker_shape,
+};
 use super::html_text::html_data_segments;
 use super::include_comment_branches::remove_unresolved_include_comment_branches;
 use super::prelude::*;
@@ -145,8 +148,6 @@ const INCLUDE_VARIABLE_CLOSE_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_CLOSE__";
 const WIKIDOT_COMMENT_INCLUDE_SENTINEL: &str = "__WIKIJUMP_COMMENT_INCLUDE__";
 const WIKIDOT_CLASS_INCLUDE_VARIABLE_SENTINEL_PREFIX: &str = "wikijump-include-var-";
 const WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTEMBEDIFRAME";
-const WIKIDOT_CSS_MODULE_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCSSMODULE";
-const WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOMPATHTML";
 const WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOMPATLINK";
 const WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTWIKIPEDIALINK";
 const WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOLORSPAN";
@@ -216,12 +217,6 @@ static CLONE_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[module\s+Clone(?P<head>[^\]]*)\]\]").unwrap());
 static CSS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+css[^\]]*\]\](?P<body>.*?)\[\[/module\]\]").unwrap()
-});
-static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(
-        r#"(?is)<table class="wiki-content-table">.*?</table>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<form class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</form>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>"#,
-    )
-    .unwrap()
 });
 static WIKIDOT_RESIDUAL_DIV_PARAGRAPH_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
@@ -733,6 +728,7 @@ impl RenderService {
             &mut wikitext,
             page_info,
         );
+        let mut wikidot_compat_html = CompatHtmlFragments::new(&wikitext);
         let IncludeExpansion {
             wikitext: expanded_wikitext,
             included_pages: list_pages_included_pages,
@@ -744,6 +740,7 @@ impl RenderService {
             settings,
             current_site_id,
             current_page_id,
+            &mut wikidot_compat_html,
         )
         .await
         .or_raise(make_error)?;
@@ -774,12 +771,16 @@ impl RenderService {
             settings,
             current_site_id,
             current_page_id,
+            &mut wikidot_compat_html,
         )
         .await
         .or_raise(make_error)?;
-        wikitext = Self::expand_members_modules(wikitext, settings);
-        wikitext = Self::expand_new_page_modules(wikitext, settings);
-        wikitext = Self::expand_clone_modules(wikitext, settings);
+        wikitext =
+            Self::expand_members_modules(wikitext, settings, &mut wikidot_compat_html);
+        wikitext =
+            Self::expand_new_page_modules(wikitext, settings, &mut wikidot_compat_html);
+        wikitext =
+            Self::expand_clone_modules(wikitext, settings, &mut wikidot_compat_html);
         wikitext = Self::expand_rate_modules(wikitext, page_info, settings);
         if settings.enable_page_syntax {
             Self::normalize_wikidot_div_style_url_quotes(&mut wikitext);
@@ -791,10 +792,13 @@ impl RenderService {
         let wikidot_color_spans =
             Self::protect_wikidot_color_spans(&mut wikitext, settings);
         wikitext = Self::escape_unrendered_wikidot_color_markers(wikitext, settings);
-        wikitext = Self::render_long_native_list_runs(wikitext);
+        wikitext = Self::render_long_native_list_runs(wikitext, &mut wikidot_compat_html);
         if Self::should_use_wikidot_compatibility_fallback(&wikitext, page_info) {
-            let wikidot_compat_html =
-                Self::protect_generated_wikidot_compat_html(&mut wikitext, settings);
+            Self::protect_wikidot_css_modules(
+                &mut wikitext,
+                settings,
+                &mut wikidot_compat_html,
+            );
             let mut backlinks = ftml::data::Backlinks::new();
             backlinks.included_pages.extend(included_pages);
             let fallback_link_titles = if let Some(site_id) = current_site_id {
@@ -815,10 +819,7 @@ impl RenderService {
                 .html_block_texts
                 .iter()
                 .map(|html| {
-                    let html = Self::restore_protected_generated_wikidot_compat_html(
-                        html.to_owned(),
-                        &wikidot_compat_html,
-                    );
+                    let html = wikidot_compat_html.restore(html);
                     let html = Self::restore_protected_wikidot_inline_html(
                         Self::restore_protected_wikidot_color_spans(
                             html,
@@ -836,10 +837,7 @@ impl RenderService {
                 .collect();
             let html_output = HtmlOutput {
                 body: {
-                    let body = Self::restore_protected_generated_wikidot_compat_html(
-                        fallback_output.body,
-                        &wikidot_compat_html,
-                    );
+                    let body = wikidot_compat_html.restore(&fallback_output.body);
                     let body = Self::restore_protected_wikidot_inline_html(
                         Self::restore_protected_wikidot_color_spans(
                             body,
@@ -895,16 +893,15 @@ impl RenderService {
         let render_timeout = Self::ftml_compat_render_timeout(&render_config, &wikitext);
 
         let render_task = task::spawn_blocking(move || {
-            let wikidot_css_modules =
-                Self::protect_wikidot_css_modules(&mut wikitext, &render_settings);
+            Self::protect_wikidot_css_modules(
+                &mut wikitext,
+                &render_settings,
+                &mut wikidot_compat_html,
+            );
             let wikidot_compat_links =
                 Self::protect_wikidot_compat_links(&mut wikitext, &render_settings);
             let wikidot_wikipedia_links =
                 Self::protect_wikidot_wikipedia_links(&mut wikitext, &render_settings);
-            let wikidot_compat_html = Self::protect_generated_wikidot_compat_html(
-                &mut wikitext,
-                &render_settings,
-            );
             let wikidot_stray_bibcite_closers =
                 Self::protect_wikidot_stray_bibcite_closers(
                     &mut wikitext,
@@ -927,10 +924,6 @@ impl RenderService {
                 html_output.body,
                 &wikidot_embed_iframes,
             );
-            html_output.body = Self::restore_protected_wikidot_css_modules(
-                html_output.body,
-                &wikidot_css_modules,
-            );
             html_output.body = Self::restore_protected_wikidot_color_spans(
                 html_output.body,
                 &wikidot_color_spans,
@@ -939,10 +932,7 @@ impl RenderService {
                 html_output.body,
                 &wikidot_inline_html,
             );
-            html_output.body = Self::restore_protected_generated_wikidot_compat_html(
-                html_output.body,
-                &wikidot_compat_html,
-            );
+            html_output.body = wikidot_compat_html.restore(&html_output.body);
             html_output.body = Self::restore_protected_wikidot_wikipedia_links(
                 html_output.body,
                 &wikidot_wikipedia_links,
@@ -976,8 +966,9 @@ impl RenderService {
                 .html_blocks
                 .iter()
                 .map(|html| {
+                    let html = wikidot_compat_html.restore(html);
                     Self::localize_wikidot_local_file_urls(
-                        html,
+                        &html,
                         render_current_site.as_ref(),
                         &render_config,
                     )
@@ -3751,6 +3742,7 @@ impl RenderService {
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
         current_page_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
     ) -> Result<IncludeExpansion> {
         let (Some(current_site_id), Some(current_page_id)) =
             (current_site_id, current_page_id)
@@ -3808,12 +3800,12 @@ impl RenderService {
                 ..
             } = Self::render_list_pages_block(
                 ctx,
-                current_site_id,
-                current_page_id,
+                (current_site_id, current_page_id),
                 page_info,
                 settings,
                 arguments,
                 body,
+                compat_html,
             )
             .await?;
             expanded.push_str(&replacement);
@@ -3914,7 +3906,11 @@ impl RenderService {
             .into_owned()
     }
 
-    fn expand_members_modules(wikitext: String, settings: &WikitextSettings) -> String {
+    fn expand_members_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
         if !settings.enable_page_syntax {
             return wikitext;
         }
@@ -3925,12 +3921,16 @@ impl RenderService {
                 let group = wikidot_module_argument(head, "group")
                     .unwrap_or("members")
                     .trim();
-                render_members_module_placeholder(group)
+                compat_html.push(render_members_module_placeholder(group))
             })
             .into_owned()
     }
 
-    fn expand_new_page_modules(wikitext: String, settings: &WikitextSettings) -> String {
+    fn expand_new_page_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
         if !settings.enable_page_syntax {
             return wikitext;
         }
@@ -3938,12 +3938,16 @@ impl RenderService {
         NEWPAGE_MODULE_REGEX
             .replace_all(&wikitext, |captures: &regex::Captures<'_>| {
                 let head = captures.name("head").map_or("", |mtch| mtch.as_str());
-                render_new_page_module(head)
+                compat_html.push(render_new_page_module(head))
             })
             .into_owned()
     }
 
-    fn expand_clone_modules(wikitext: String, settings: &WikitextSettings) -> String {
+    fn expand_clone_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
         if !settings.enable_page_syntax {
             return wikitext;
         }
@@ -3951,7 +3955,7 @@ impl RenderService {
         CLONE_MODULE_REGEX
             .replace_all(&wikitext, |captures: &regex::Captures<'_>| {
                 let head = captures.name("head").map_or("", |mtch| mtch.as_str());
-                render_clone_module(head)
+                compat_html.push(render_clone_module(head))
             })
             .into_owned()
     }
@@ -3997,6 +4001,7 @@ impl RenderService {
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
         current_page_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         if !settings.enable_page_syntax || !BACKLINKS_MODULE_REGEX.is_match(&wikitext) {
             return Ok(wikitext);
@@ -4031,7 +4036,7 @@ impl RenderService {
             let pages =
                 Self::load_backlinks_module_pages(ctx, current_site_id, current_page_id)
                     .await?;
-            expanded.push_str(&render_backlinks_module_box(&pages));
+            expanded.push_str(&compat_html.push(render_backlinks_module_box(&pages)));
             cursor = mtch.end();
         }
 
@@ -4150,110 +4155,25 @@ impl RenderService {
     fn protect_wikidot_css_modules(
         wikitext: &mut String,
         settings: &WikitextSettings,
-    ) -> Vec<String> {
+        compat_html: &mut CompatHtmlFragments,
+    ) {
         if !settings.enable_page_syntax {
-            return Vec::new();
+            return;
         }
 
-        let mut styles = Vec::new();
         let protected = CSS_MODULE_REGEX
             .replace_all(wikitext, |captures: &regex::Captures<'_>| {
                 let body = captures.name("body").map_or("", |mtch| mtch.as_str());
                 let body = body.trim_matches('\n');
                 let body = Self::escape_wikidot_css_module_body(body);
-                let marker =
-                    format!("{WIKIDOT_CSS_MODULE_SENTINEL_PREFIX}{}X", styles.len());
-                styles.push(format!("<style>\n{body}\n</style>"));
-                marker
+                compat_html.push(format!("<style>\n{body}\n</style>"))
             })
             .into_owned();
         *wikitext = protected;
-        styles
     }
 
     fn escape_wikidot_css_module_body(body: &str) -> String {
         body.replace('<', r"\3C ")
-    }
-
-    fn restore_protected_wikidot_css_modules(
-        mut html: String,
-        styles: &[String],
-    ) -> String {
-        for (index, style) in styles.iter().enumerate() {
-            let marker = format!("{WIKIDOT_CSS_MODULE_SENTINEL_PREFIX}{index}X");
-            html = html.replace(&marker, style);
-        }
-        html
-    }
-
-    fn protect_generated_wikidot_compat_html(
-        wikitext: &mut String,
-        settings: &WikitextSettings,
-    ) -> Vec<String> {
-        if !settings.enable_page_syntax {
-            return Vec::new();
-        }
-
-        let mut fragments = Vec::new();
-        *wikitext =
-            Self::protect_generated_wikidot_compat_lists(wikitext, &mut fragments);
-        let protected = GENERATED_COMPAT_TABLE_REGEX
-            .replace_all(wikitext, |captures: &regex::Captures<'_>| {
-                let marker =
-                    format!("{WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX}{}X", fragments.len());
-                fragments.push(
-                    captures[0]
-                        .replace(r#" data-wikijump-compat-list="1""#, "")
-                        .replace(r#" data-wikijump-compat-members="1""#, "")
-                        .replace(r#" data-wikijump-compat-backlinks="1""#, "")
-                        .replace(r#" data-wikijump-compat-new-page="1""#, "")
-                        .replace(r#" data-wikijump-compat-clone="1""#, ""),
-                );
-                marker
-            })
-            .into_owned();
-        *wikitext = protected;
-        fragments
-    }
-
-    fn protect_generated_wikidot_compat_lists(
-        wikitext: &str,
-        fragments: &mut Vec<String>,
-    ) -> String {
-        let mut output = String::with_capacity(wikitext.len());
-        let mut rest = wikitext;
-        let list_start = r#"<ul data-wikijump-compat-list="1">"#;
-
-        while let Some(start) = rest.find(list_start) {
-            let (before, from_start) = rest.split_at(start);
-            output.push_str(before);
-
-            if let Some(end) = find_balanced_ul_end(from_start) {
-                let fragment = &from_start[..end];
-                let marker =
-                    format!("{WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX}{}X", fragments.len());
-                fragments.push(fragment.replace(r#" data-wikijump-compat-list="1""#, ""));
-                output.push_str(&marker);
-                rest = &from_start[end..];
-            } else {
-                output.push_str(list_start);
-                rest = &from_start[list_start.len()..];
-            }
-        }
-
-        output.push_str(rest);
-        output
-    }
-
-    fn restore_protected_generated_wikidot_compat_html(
-        mut html: String,
-        fragments: &[String],
-    ) -> String {
-        for (index, fragment) in fragments.iter().enumerate() {
-            let marker = format!("{WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX}{index}X");
-            html = html.replace(&marker, fragment);
-        }
-        html
     }
 
     fn protect_wikidot_stray_bibcite_closers(
@@ -4517,7 +4437,10 @@ impl RenderService {
         wikitext.replace("##", "&#35;&#35;")
     }
 
-    fn render_long_native_list_runs(wikitext: String) -> String {
+    fn render_long_native_list_runs(
+        wikitext: String,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
         let lines = wikitext.split_inclusive('\n').collect::<Vec<_>>();
         let mut output = String::with_capacity(wikitext.len());
         let mut index = 0;
@@ -4529,7 +4452,8 @@ impl RenderService {
             }
 
             if end - index >= LONG_NATIVE_LIST_RENDER_MIN_ITEMS {
-                output.push_str(&render_native_bullet_list(&lines[index..end]));
+                let html = render_native_bullet_list(&lines[index..end]);
+                output.push_str(&compat_html.push(html));
                 index = end;
             } else {
                 output.push_str(lines[index]);
@@ -4694,7 +4618,6 @@ impl RenderService {
     ) -> WikidotCompatibilityFallbackOutput {
         let localized =
             Self::localize_wikidot_local_file_urls(wikitext, current_site, config);
-        let localized = Self::render_wikidot_compat_fallback_css_modules(&localized);
 
         if localized.lines().any(|line| {
             let marker = line.trim_start().to_ascii_lowercase();
@@ -4722,17 +4645,6 @@ impl RenderService {
         push_escaped_html(&mut body, &localized);
         body.push_str("</pre></div>");
         WikidotCompatibilityFallbackOutput::body(body)
-    }
-
-    fn render_wikidot_compat_fallback_css_modules(wikitext: &str) -> String {
-        CSS_MODULE_REGEX
-            .replace_all(wikitext, |captures: &regex::Captures<'_>| {
-                let body = captures.name("body").map_or("", |mtch| mtch.as_str());
-                let body = body.trim_matches('\n');
-                let body = Self::escape_wikidot_css_module_body(body);
-                format!("<style data-wikijump-compat-css-module=\"1\">\n{body}\n</style>")
-            })
-            .into_owned()
     }
 
     #[allow(dead_code)]
@@ -5008,19 +4920,11 @@ impl RenderService {
             || text.contains("[[*")
             || text.contains("[http")
             || text.contains("**")
-            || text.contains("<style data-wikijump-compat-css-module=\"1\">")
-            || text.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
+            || text.contains(COMPAT_HTML_MARKER_PREFIX)
     }
 
     fn wikidot_compat_html_sentinel_marker(marker: &str) -> bool {
-        let Some(index) = marker
-            .strip_prefix(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
-            .and_then(|value| value.strip_suffix('X'))
-        else {
-            return false;
-        };
-
-        !index.is_empty() && index.chars().all(|character| character.is_ascii_digit())
+        is_compat_html_marker_shape(marker)
     }
 
     #[allow(dead_code)]
@@ -5065,7 +4969,6 @@ impl RenderService {
         let text = Self::strip_wikidot_comments_from_text(text);
         let mut output = String::with_capacity(text.len());
         let mut paragraph = String::new();
-        let mut in_style = false;
         let mut tabview_open = false;
         let mut tab_open = false;
         let mut size_depth = 0usize;
@@ -5143,28 +5046,6 @@ impl RenderService {
                     body.push_str(line);
                     body.push('\n');
                 }
-                continue;
-            }
-
-            if in_style {
-                output.push_str(line);
-                output.push('\n');
-                if trimmed.eq_ignore_ascii_case("</style>") {
-                    in_style = false;
-                }
-                continue;
-            }
-
-            if trimmed == "<style data-wikijump-compat-css-module=\"1\">" {
-                Self::push_wikidot_compat_fallback_paragraph_for_page(
-                    &mut output,
-                    &mut paragraph,
-                    current_page,
-                    link_titles,
-                );
-                output.push_str(trimmed);
-                output.push('\n');
-                in_style = true;
                 continue;
             }
 
@@ -6216,13 +6097,14 @@ impl RenderService {
 
     async fn render_list_pages_block(
         ctx: &ServiceContext<'_>,
-        current_site_id: i64,
-        current_page_id: i64,
+        current_page: (i64, i64),
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
         arguments: ListPagesArguments,
         body: &str,
+        compat_html: &mut CompatHtmlFragments,
     ) -> Result<IncludeExpansion> {
+        let (current_site_id, current_page_id) = current_page;
         let ListPagesArguments {
             current_page_only,
             category_selector_present,
@@ -6511,7 +6393,7 @@ impl RenderService {
                 &substitution_context,
             );
             if let Some(table) = render_list_pages_table_rows(&body) {
-                output.push_str(&table);
+                output.push_str(&compat_html.push(table));
             } else {
                 output.push_str(&render_list_pages_numbered_rows(&body));
             }
@@ -8662,7 +8544,7 @@ fn render_native_bullet_list(lines: &[&str]) -> String {
     let mut current_depth = 0usize;
     let mut open_li = false;
 
-    output.push_str(r#"<ul data-wikijump-compat-list="1">"#);
+    output.push_str("<ul>");
     output.push('\n');
 
     for (index, &(raw_depth, content)) in items.iter().enumerate() {
@@ -8716,39 +8598,6 @@ fn render_native_list_item_content(content: &str, has_children: bool) -> String 
         )
     } else {
         rendered
-    }
-}
-
-fn find_balanced_ul_end(html: &str) -> Option<usize> {
-    let mut depth = 0usize;
-    let mut cursor = 0usize;
-
-    loop {
-        let next_open = html[cursor..].find("<ul").map(|offset| cursor + offset);
-        let next_close = html[cursor..].find("</ul>").map(|offset| cursor + offset);
-
-        match (next_open, next_close) {
-            (Some(open), Some(close)) if open < close => {
-                depth += 1;
-                cursor = open + 3;
-            }
-            (Some(open), None) => {
-                depth += 1;
-                cursor = open + 3;
-            }
-            (_, Some(close)) => {
-                if depth == 0 {
-                    return None;
-                }
-
-                depth -= 1;
-                cursor = close + "</ul>".len();
-                if depth == 0 {
-                    return Some(cursor);
-                }
-            }
-            (None, None) => return None,
-        }
     }
 }
 
@@ -9730,9 +9579,7 @@ fn wikidot_module_argument<'a>(head: &'a str, name: &str) -> Option<&'a str> {
 }
 
 fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> String {
-    let mut output = String::from(
-        "\n<div class=\"backlinks-module-box\" data-wikijump-compat-backlinks=\"1\"><ul>",
-    );
+    let mut output = String::from("\n<div class=\"backlinks-module-box\"><ul>");
 
     for page in pages {
         output.push_str(r#"<li><a href="/"#);
@@ -9762,7 +9609,7 @@ fn render_members_module_placeholder(group: &str) -> String {
     };
 
     format!(
-        r#"<div id="ml-607935" data-wikijump-compat-members="1" data-group="{group_attr}">{body}<script type="text/javascript">function updateMemberList607935(pageNo) {{var p = {{}};p.group = '{group_script}';p.order = 'joined';p.page = pageNo;OZONE.ajax.requestModule("membership/MembersListModule", p, function(r) {{}});}}</script></div>"#,
+        r#"<div id="ml-607935" data-group="{group_attr}">{body}<script type="text/javascript">function updateMemberList607935(pageNo) {{var p = {{}};p.group = '{group_script}';p.order = 'joined';p.page = pageNo;OZONE.ajax.requestModule("membership/MembersListModule", p, function(r) {{}});}}</script></div>"#,
     )
 }
 
@@ -9777,7 +9624,7 @@ fn render_new_page_module(head: &str) -> String {
 
     format!(
         concat!(
-            r#"<form class="new-page-box" data-wikijump-compat-new-page="1" action="javascript:;" method="post">"#,
+            r#"<form class="new-page-box" action="javascript:;" method="post">"#,
             r#"<input class="text" type="text" name="page" size="{size}">"#,
             r#"<input class="button" type="button" value="{button}">"#,
             r#"</form>"#,
@@ -9793,7 +9640,7 @@ fn render_clone_module(head: &str) -> String {
         .unwrap_or("Clone this site");
 
     format!(
-        r#"<a class="button" data-wikijump-compat-clone="1" href="javascript:;">{button}</a>"#,
+        r#"<a class="button" href="javascript:;">{button}</a>"#,
         button = escape_list_pages_html_text(button),
     )
 }
@@ -10388,14 +10235,14 @@ fn rendered_wikidot_mailform_attribute(head: &str, name: &str) -> Option<String>
 #[cfg(test)]
 mod tests {
     use super::{
-        CollectingIncluder, LISTPAGES_MODULE_REGEX, ListPagesSnapshotDisplay,
-        ListPagesSubstitutionContext, MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS,
-        MAX_FTML_COMPAT_DENSE_PARSE_SCORE, MAX_FTML_COMPAT_PARSE_BYTES,
-        MAX_LISTPAGES_RENDER_SCAN_ROWS, MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS,
-        MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES, MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS,
-        OrderBySelector, OrderProperty, PreparedIncluder, RenderContext, RenderService,
-        WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX, WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX,
-        WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX, WIKIDOT_CSS_MODULE_SENTINEL_PREFIX,
+        COMPAT_HTML_MARKER_PREFIX, CollectingIncluder, CompatHtmlFragments,
+        LISTPAGES_MODULE_REGEX, ListPagesSnapshotDisplay, ListPagesSubstitutionContext,
+        MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS, MAX_FTML_COMPAT_DENSE_PARSE_SCORE,
+        MAX_FTML_COMPAT_PARSE_BYTES, MAX_LISTPAGES_RENDER_SCAN_ROWS,
+        MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS, MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES,
+        MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS, OrderBySelector, OrderProperty,
+        PreparedIncluder, RenderContext, RenderService,
+        WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX, WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX,
         WIKIDOT_LISTPAGES_LITERAL_ELLIPSIS_SENTINEL_PREFIX,
         WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX, WikidotCompatLinkTitleMap,
         WikidotUserDisplay, count_pages_exact_count_render_diagnostics,
@@ -10513,13 +10360,17 @@ mod tests {
     }
 
     fn render_wikidot_page_body_after_compat_restore(wikitext: &str) -> String {
+        let fragments = CompatHtmlFragments::new(wikitext);
+        render_wikidot_page_body_with_compat_restore(wikitext, &fragments)
+    }
+
+    fn render_wikidot_page_body_with_compat_restore(
+        wikitext: &str,
+        fragments: &CompatHtmlFragments,
+    ) -> String {
         let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
         let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
         let mut wikitext = wikitext.to_owned();
-        let fragments = RenderService::protect_generated_wikidot_compat_html(
-            &mut wikitext,
-            &settings,
-        );
         let stray_bibcite_closers = RenderService::protect_wikidot_stray_bibcite_closers(
             &mut wikitext,
             &settings,
@@ -10535,26 +10386,48 @@ mod tests {
             stray_bibcite_closers,
         );
 
-        RenderService::restore_protected_generated_wikidot_compat_html(
-            rendered, &fragments,
-        )
+        fragments.restore(&rendered)
     }
 
     fn render_wikidot_fallback_after_generated_compat_restore(wikitext: &str) -> String {
+        let fragments = CompatHtmlFragments::new(wikitext);
+        render_wikidot_fallback_with_compat_restore(wikitext, &fragments)
+    }
+
+    fn render_wikidot_fallback_with_compat_restore(
+        wikitext: &str,
+        fragments: &CompatHtmlFragments,
+    ) -> String {
+        let rendered =
+            RenderService::render_wikidot_compatibility_fallback_with_code_blocks(
+                wikitext,
+            );
+
+        fragments.restore(&rendered)
+    }
+
+    fn render_long_native_list_runs_for_test(wikitext: String) -> String {
+        let mut fragments = CompatHtmlFragments::new(&wikitext);
+        let protected =
+            RenderService::render_long_native_list_runs(wikitext, &mut fragments);
+        assert!(fragments.is_marker(&protected));
+        fragments.restore(&protected)
+    }
+
+    fn render_wikidot_fallback_with_css_for_test(source: &str) -> String {
         let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
-        let mut wikitext = wikitext.to_owned();
-        let fragments = RenderService::protect_generated_wikidot_compat_html(
-            &mut wikitext,
+        let mut source = source.to_owned();
+        let mut fragments = CompatHtmlFragments::new(&source);
+        RenderService::protect_wikidot_css_modules(
+            &mut source,
             &settings,
+            &mut fragments,
         );
         let rendered =
             RenderService::render_wikidot_compatibility_fallback_with_code_blocks(
-                &wikitext,
+                &source,
             );
-
-        RenderService::restore_protected_generated_wikidot_compat_html(
-            rendered, &fragments,
-        )
+        fragments.restore(&rendered)
     }
 
     #[test]
@@ -11069,36 +10942,38 @@ mod tests {
         let head = r#" group="moderators" order="joined""#;
         assert_eq!(wikidot_module_argument(head, "group"), Some("moderators"));
 
+        let source = "[[module Members group=\"moderators\"]]";
+        let mut fragments = CompatHtmlFragments::new(source);
         let rendered = RenderService::expand_members_modules(
-            "[[module Members group=\"moderators\"]]".to_owned(),
+            source.to_owned(),
             &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            &mut fragments,
         );
+        let restored = fragments.restore(&rendered);
 
-        assert!(rendered.contains(r#"<div id="ml-607935" data-wikijump-compat-members="1" data-group="moderators">"#));
-        assert!(rendered.contains(r#"<span class="printuser avatarhover">"#));
-        assert!(rendered.contains("membership/MembersListModule"));
+        assert!(fragments.is_marker(&rendered));
+        assert!(restored.contains(r#"<div id="ml-607935" data-group="moderators">"#));
+        assert!(restored.contains(r#"<span class="printuser avatarhover">"#));
+        assert!(restored.contains("membership/MembersListModule"));
         assert!(!rendered.contains("[[module Members"));
     }
 
     #[test]
-    fn protects_wikidot_members_module_html_before_parsing() {
-        let mut wikitext = render_members_module_placeholder("moderators");
-        let fragments = RenderService::protect_generated_wikidot_compat_html(
-            &mut wikitext,
-            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-        );
+    fn registers_wikidot_members_module_html_at_its_producer() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker = fragments.push(render_members_module_placeholder("moderators"));
+        let restored = fragments.restore(&marker);
 
-        assert_eq!(fragments.len(), 1);
-        assert!(wikitext.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-        let restored = RenderService::restore_protected_generated_wikidot_compat_html(
-            wikitext, &fragments,
-        );
+        assert!(fragments.is_marker(&marker));
         assert!(restored.contains(r#"<div id="ml-607935" data-group="moderators">"#));
         assert!(!restored.contains("data-wikijump-compat-members"));
     }
 
     #[test]
     fn wikidot_compatibility_fallback_restores_generated_members_html_as_block() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let member_marker =
+            fragments.push(render_members_module_placeholder("moderators"));
         let source = format!(
             concat!(
                 "before\n",
@@ -11109,10 +10984,10 @@ mod tests {
                 "[[/div]]\n",
                 "after\n",
             ),
-            render_members_module_placeholder("moderators"),
+            member_marker,
         );
 
-        let rendered = render_wikidot_fallback_after_generated_compat_restore(&source);
+        let rendered = render_wikidot_fallback_with_compat_restore(&source, &fragments);
 
         assert!(rendered.contains(
             r#"<div class="a-randomizer"><div id="ml-607935" data-group="moderators">"#
@@ -11122,64 +10997,73 @@ mod tests {
         assert!(!rendered.contains(r#"data-wikijump-compat-members"#));
         assert!(!rendered.contains(r#"&lt;div id="ml-607935""#));
         assert!(!rendered.contains(r#"<p><div id="ml-607935""#));
-        assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+        assert!(!rendered.contains(COMPAT_HTML_MARKER_PREFIX));
     }
 
     #[test]
     fn renders_wikidot_new_page_module_placeholder() {
+        let source = "[[module NewPage size=\"15\" button=\"new page\"]]";
+        let mut fragments = CompatHtmlFragments::new(source);
         let rendered = RenderService::expand_new_page_modules(
-            "[[module NewPage size=\"15\" button=\"new page\"]]".to_owned(),
+            source.to_owned(),
             &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            &mut fragments,
         );
+        let restored = fragments.restore(&rendered);
 
-        assert!(rendered.contains(r#"<form class="new-page-box" data-wikijump-compat-new-page="1" action="javascript:;" method="post">"#));
+        assert!(restored.contains(
+            r#"<form class="new-page-box" action="javascript:;" method="post">"#
+        ));
         assert!(
-            rendered
+            restored
                 .contains(r#"<input class="text" type="text" name="page" size="15">"#)
         );
         assert!(
-            rendered.contains(r#"<input class="button" type="button" value="new page">"#)
+            restored.contains(r#"<input class="button" type="button" value="new page">"#)
         );
         assert!(!rendered.contains("[[module NewPage"));
     }
 
     #[test]
     fn renders_wikidot_clone_module_placeholder() {
+        let source = "[[module Clone]]";
+        let mut fragments = CompatHtmlFragments::new(source);
         let rendered = RenderService::expand_clone_modules(
-            "[[module Clone]]".to_owned(),
+            source.to_owned(),
             &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            &mut fragments,
         );
+        let restored = fragments.restore(&rendered);
 
-        assert!(rendered.contains(
-            r#"<a class="button" data-wikijump-compat-clone="1" href="javascript:;">Clone this site</a>"#
-        ));
+        assert!(
+            restored
+                .contains(r#"<a class="button" href="javascript:;">Clone this site</a>"#)
+        );
         assert!(!rendered.contains("[[module Clone"));
     }
 
     #[test]
     fn renders_wikidot_clone_module_custom_button() {
+        let source = "[[module Clone button=\"Clone <now>\"]]";
+        let mut fragments = CompatHtmlFragments::new(source);
         let rendered = RenderService::expand_clone_modules(
-            "[[module Clone button=\"Clone <now>\"]]".to_owned(),
+            source.to_owned(),
             &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+            &mut fragments,
         );
+        let restored = fragments.restore(&rendered);
 
-        assert!(rendered.contains("Clone &lt;now&gt;"));
+        assert!(restored.contains("Clone &lt;now&gt;"));
         assert!(!rendered.contains("[[module Clone"));
     }
 
     #[test]
-    fn protects_wikidot_clone_module_html_before_parsing() {
-        let mut wikitext = render_clone_module("");
-        let fragments = RenderService::protect_generated_wikidot_compat_html(
-            &mut wikitext,
-            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-        );
+    fn registers_wikidot_clone_module_html_at_its_producer() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker = fragments.push(render_clone_module(""));
+        let restored = fragments.restore(&marker);
 
-        assert_eq!(fragments.len(), 1);
-        assert!(wikitext.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-        let restored = RenderService::restore_protected_generated_wikidot_compat_html(
-            wikitext, &fragments,
-        );
+        assert!(fragments.is_marker(&marker));
         assert!(
             restored
                 .contains(r#"<a class="button" href="javascript:;">Clone this site</a>"#)
@@ -11188,18 +11072,13 @@ mod tests {
     }
 
     #[test]
-    fn protects_wikidot_new_page_module_html_before_parsing() {
-        let mut wikitext = render_new_page_module(r#" size="15" button="new <page>""#);
-        let fragments = RenderService::protect_generated_wikidot_compat_html(
-            &mut wikitext,
-            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-        );
+    fn registers_wikidot_new_page_module_html_at_its_producer() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker =
+            fragments.push(render_new_page_module(r#" size="15" button="new <page>""#));
+        let restored = fragments.restore(&marker);
 
-        assert_eq!(fragments.len(), 1);
-        assert!(wikitext.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-        let restored = RenderService::restore_protected_generated_wikidot_compat_html(
-            wikitext, &fragments,
-        );
+        assert!(fragments.is_marker(&marker));
         assert!(restored.contains(
             r#"<form class="new-page-box" action="javascript:;" method="post">"#
         ));
@@ -11210,14 +11089,9 @@ mod tests {
     #[test]
     fn does_not_protect_forgeable_pager_html_before_parsing() {
         let original = r#"<div class="pager" data-wikijump-compat-pager="1"><img src=x onerror="alert(1)"></div>"#;
-        let mut wikitext = original.to_owned();
-        let fragments = RenderService::protect_generated_wikidot_compat_html(
-            &mut wikitext,
-            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-        );
+        let fragments = CompatHtmlFragments::new(original);
 
-        assert!(fragments.is_empty());
-        assert_eq!(wikitext, original);
+        assert_eq!(fragments.restore(original), original);
     }
 
     #[test]
@@ -11232,7 +11106,35 @@ mod tests {
         assert!(!rendered.contains(r#"<div class="pager""#));
         assert!(!rendered.contains("<img"));
         assert!(!rendered.contains(r#"<img src=x onerror="alert(1)">"#));
-        assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+        assert!(!rendered.contains(COMPAT_HTML_MARKER_PREFIX));
+    }
+
+    #[test]
+    fn forgeable_compat_html_shapes_remain_escaped_in_normal_and_fallback_rendering() {
+        let payloads = [
+            r#"<table class="wiki-content-table"><tr><td><img src=x onerror="alert(1)"></td></tr></table>"#,
+            r#"<a class="button" data-wikijump-compat-clone="1"><img src=x onerror="alert(1)"></a>"#,
+            r#"<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"><img src=x onerror="alert(1)"></div>"#,
+            r#"<div id="ml-607935" data-wikijump-compat-members="1"><img src=x onerror="alert(1)"></div>"#,
+            r#"<form class="new-page-box" data-wikijump-compat-new-page="1"><img src=x onerror="alert(1)"></form>"#,
+            r#"<ul data-wikijump-compat-list="1"><li><img src=x onerror="alert(1)"></li></ul>"#,
+            r#"<style data-wikijump-compat-css-module="1"></style><img src=x onerror="alert(1)">"#,
+        ];
+
+        for payload in payloads {
+            for rendered in [
+                render_wikidot_page_body_after_compat_restore(payload),
+                render_wikidot_fallback_after_generated_compat_restore(payload),
+            ] {
+                assert!(rendered.contains("&lt;img"), "rendered: {rendered}");
+                assert!(
+                    rendered.contains("onerror=&quot;alert(1)&quot;"),
+                    "rendered: {rendered}",
+                );
+                assert!(!rendered.contains("<img"), "rendered: {rendered}");
+                assert!(!rendered.contains(COMPAT_HTML_MARKER_PREFIX));
+            }
+        }
     }
 
     #[test]
@@ -11246,7 +11148,7 @@ mod tests {
         assert!(rendered.contains("onerror=&quot;alert(1)&quot;"));
         assert!(!rendered.contains(r#"<div class="pager""#));
         assert!(!rendered.contains("<img"));
-        assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+        assert!(!rendered.contains(COMPAT_HTML_MARKER_PREFIX));
     }
 
     #[test]
@@ -11459,20 +11361,10 @@ mod tests {
         assert!(rendered.contains("<span class=\"odate time_1782003564"));
         assert!(!rendered.contains("&lt;span"));
 
-        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
-        let mut protected = rendered.clone();
-        let fragments = RenderService::protect_generated_wikidot_compat_html(
-            &mut protected,
-            &settings,
-        );
-        assert_eq!(fragments.len(), 1);
+        let mut fragments = CompatHtmlFragments::new("");
+        let protected = fragments.push(rendered.clone());
         assert!(!protected.contains("<table"));
-        assert_eq!(
-            RenderService::restore_protected_generated_wikidot_compat_html(
-                protected, &fragments,
-            ),
-            rendered,
-        );
+        assert_eq!(fragments.restore(&protected), rendered);
     }
 
     #[test]
@@ -11545,9 +11437,9 @@ mod tests {
         ]
         .join("");
 
-        let rendered = RenderService::render_long_native_list_runs(source);
+        let rendered = render_long_native_list_runs_for_test(source);
 
-        assert!(rendered.starts_with(r#"<ul data-wikijump-compat-list="1">"#));
+        assert!(rendered.starts_with("<ul>"));
         assert!(
             rendered.contains(r#"<li><a href="/tokyo-incidents">東京事変</a> -- by "#)
         );
@@ -11559,18 +11451,7 @@ mod tests {
         assert!(rendered.contains(r#"<a href="/empty-label">Empty Label</a>"#));
         assert!(!rendered.contains("[[*user"));
 
-        let mut protected = rendered.clone();
-        let fragments = RenderService::protect_generated_wikidot_compat_html(
-            &mut protected,
-            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-        );
-        assert_eq!(fragments.len(), 1);
-        assert!(protected.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-        let restored = RenderService::restore_protected_generated_wikidot_compat_html(
-            protected, &fragments,
-        );
-        assert!(restored.starts_with("<ul>"));
-        assert!(!restored.contains("data-wikijump-compat-list"));
+        assert!(!rendered.contains("data-wikijump-compat-list"));
     }
 
     #[test]
@@ -11679,7 +11560,7 @@ mod tests {
         ]
         .join("");
 
-        let rendered = RenderService::render_long_native_list_runs(source);
+        let rendered = render_long_native_list_runs_for_test(source);
 
         assert!(rendered.contains(
             "<li><a href=\"javascript:;\">About\n</a><ul>\n<li><a href=\"/about-the-scp-foundation\">About Us</a></li>"
@@ -11697,21 +11578,9 @@ mod tests {
             r#"<a href="http://05command.wikidot.com/staff-list">Staff List</a>"#
         ));
 
-        let mut protected = rendered.clone();
-        let fragments = RenderService::protect_generated_wikidot_compat_html(
-            &mut protected,
-            &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-        );
-        assert_eq!(fragments.len(), 1);
-        assert!(protected.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-        assert!(!protected.contains("</ul>"));
-
-        let restored = RenderService::restore_protected_generated_wikidot_compat_html(
-            protected, &fragments,
-        );
-        assert!(restored.starts_with("<ul>"));
-        assert!(restored.contains("<li><a href=\"javascript:;\">About\n</a><ul>"));
-        assert!(!restored.contains("data-wikijump-compat-list"));
+        assert!(rendered.starts_with("<ul>"));
+        assert!(rendered.contains("<li><a href=\"javascript:;\">About\n</a><ul>"));
+        assert!(!rendered.contains("data-wikijump-compat-list"));
     }
 
     #[test]
@@ -11728,11 +11597,11 @@ mod tests {
         ]
         .join("");
 
-        let rendered = RenderService::render_long_native_list_runs(source);
+        let rendered = render_long_native_list_runs_for_test(source);
 
-        assert!(rendered.starts_with(r#"<ul data-wikijump-compat-list="1">"#));
+        assert!(rendered.starts_with("<ul>"));
         assert!(rendered.contains("<li><a href=\"javascript:;\">Parent\n</a><ul>"));
-        assert!(!rendered.contains("<ul data-wikijump-compat-list=\"1\">\n<ul>"));
+        assert!(!rendered.contains("<ul>\n<ul>"));
         assert!(!rendered.contains("</ul>\n</li>\n</li>"));
     }
 
@@ -11750,18 +11619,20 @@ mod tests {
         )
         .to_owned();
 
-        let styles = RenderService::protect_wikidot_css_modules(&mut source, &settings);
+        let mut fragments = CompatHtmlFragments::new(&source);
+        RenderService::protect_wikidot_css_modules(
+            &mut source,
+            &settings,
+            &mut fragments,
+        );
 
-        assert_eq!(styles.len(), 1);
-        assert!(styles[0].contains("<style>\n#u-change{"));
-        assert!(styles[0].contains("display:none;"));
-        assert!(source.contains(WIKIDOT_CSS_MODULE_SENTINEL_PREFIX));
+        assert!(fragments.contains_marker(&source));
         assert!(!source.contains("[[module css]]"));
         assert!(!source.contains("#u-change"));
 
-        let restored =
-            RenderService::restore_protected_wikidot_css_modules(source, &styles);
+        let restored = fragments.restore(&source);
         assert!(restored.contains("<style>\n#u-change{"));
+        assert!(restored.contains("display:none;"));
     }
 
     #[test]
@@ -11774,13 +11645,18 @@ mod tests {
         )
         .to_owned();
 
-        let styles = RenderService::protect_wikidot_css_modules(&mut source, &settings);
+        let mut fragments = CompatHtmlFragments::new(&source);
+        RenderService::protect_wikidot_css_modules(
+            &mut source,
+            &settings,
+            &mut fragments,
+        );
+        let restored = fragments.restore(&source);
 
-        assert_eq!(styles.len(), 1);
-        assert!(styles[0].starts_with("<style>\n"));
-        assert!(styles[0].ends_with("\n</style>"));
-        assert!(!styles[0].contains("</style><img"));
-        assert!(styles[0].contains(r"\3C /style>\3C img"));
+        assert!(restored.starts_with("<style>\n"));
+        assert!(restored.ends_with("\n</style>\n"));
+        assert!(!restored.contains("</style><img"));
+        assert!(restored.contains(r"\3C /style>\3C img"));
     }
 
     #[test]
@@ -12973,11 +12849,7 @@ mod tests {
             "Visible body\n",
             "[[/div]]\n",
         );
-        let source = RenderService::render_wikidot_compat_fallback_css_modules(source);
-
-        let html = RenderService::render_wikidot_compatibility_fallback_with_code_blocks(
-            &source,
-        );
+        let html = render_wikidot_fallback_with_css_for_test(source);
 
         assert!(html.contains(r#"<div class="wikidot-compat-fallback">"#));
         assert!(html.contains(r#"<div><p>Visible body</p></div>"#));
@@ -13219,20 +13091,17 @@ mod tests {
 
     #[test]
     fn wikidot_compatibility_fallback_renders_css_modules_and_style_divs() {
-        let source = RenderService::render_wikidot_compat_fallback_css_modules(concat!(
+        let source = concat!(
             "[[module CSS]]\n",
             ".scp-pride { display: block; }\n",
             "[[/module]]\n",
             "[[div style=\"font-weight: bold; text-align: center;\"]]\n",
             "[https://example.com keep coming]\n",
             "[[/div]]\n",
-        ));
-
-        let html = RenderService::render_wikidot_compatibility_fallback_with_code_blocks(
-            &source,
         );
+        let html = render_wikidot_fallback_with_css_for_test(source);
 
-        assert!(html.contains(r#"<style data-wikijump-compat-css-module="1">"#));
+        assert!(html.contains("<style>"));
         assert!(html.contains(".scp-pride { display: block; }"));
         assert!(html.contains(r#"<div style="font-weight: bold; text-align: center;">"#));
         assert!(!html.contains("[[module CSS"));
@@ -13242,20 +13111,17 @@ mod tests {
 
     #[test]
     fn wikidot_compatibility_fallback_escapes_css_module_style_end_tags() {
-        let source = RenderService::render_wikidot_compat_fallback_css_modules(concat!(
+        let source = concat!(
             "[[module CSS]]\n",
             "</style><img src=x onerror=alert(1)><style>\n",
             "[[/module]]\n",
             "[[collapsible]]\n",
             "body\n",
             "[[/collapsible]]\n",
-        ));
-
-        let html = RenderService::render_wikidot_compatibility_fallback_with_code_blocks(
-            &source,
         );
+        let html = render_wikidot_fallback_with_css_for_test(source);
 
-        assert!(html.contains(r#"<style data-wikijump-compat-css-module="1">"#));
+        assert!(html.contains("<style>"));
         assert!(html.contains(r"\3C /style>\3C img"));
         assert!(!html.contains("</style><img"));
         assert!(!html.contains("<img src=x"));
@@ -14714,7 +14580,7 @@ mod tests {
         )
         .to_owned();
 
-        let rendered = RenderService::render_long_native_list_runs(wikitext);
+        let rendered = render_long_native_list_runs_for_test(wikitext);
 
         assert!(rendered.contains(r#"<li>The Logistics Branch"#));
         assert!(rendered.contains(r#"<span class="safe">span</span>"#));
@@ -14740,7 +14606,7 @@ mod tests {
         )
         .to_owned();
 
-        let rendered = RenderService::render_long_native_list_runs(wikitext);
+        let rendered = render_long_native_list_runs_for_test(wikitext);
 
         assert!(rendered.contains(r#"<li>Source <a href="http://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical Bundle</a></li>"#));
         assert!(!rendered.contains("[wikipedia:Canonical_bundle"));
@@ -14760,7 +14626,7 @@ mod tests {
         )
         .to_owned();
 
-        let rendered = RenderService::render_long_native_list_runs(wikitext);
+        let rendered = render_long_native_list_runs_for_test(wikitext);
 
         assert!(rendered.contains(
             r#"<li>All acroamatic material <em>in absentia</em> must be voided.</li>"#
@@ -14782,7 +14648,7 @@ mod tests {
         )
         .to_owned();
 
-        let rendered = RenderService::render_long_native_list_runs(wikitext);
+        let rendered = render_long_native_list_runs_for_test(wikitext);
 
         assert!(rendered.contains(r#"<a href="http://example.com/a//b//c">label</a>"#));
         assert!(!rendered.contains("a<em>b</em>c"));
@@ -14803,7 +14669,7 @@ mod tests {
         )
         .to_owned();
 
-        let rendered = RenderService::render_long_native_list_runs(wikitext);
+        let rendered = render_long_native_list_runs_for_test(wikitext);
 
         assert!(
             rendered.contains(
@@ -14828,7 +14694,7 @@ mod tests {
         )
         .to_owned();
 
-        let rendered = RenderService::render_long_native_list_runs(wikitext);
+        let rendered = render_long_native_list_runs_for_test(wikitext);
 
         assert!(rendered.contains(r#"<span class="outer">a [[span text</span>"#));
     }
