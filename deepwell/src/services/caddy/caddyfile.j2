@@ -162,9 +162,6 @@ deploy{{ files_domain }} {
 	}
 	redir @redirect https://{vars.site_slug}{{ files_domain }}{uri}
 
-	# Enable HTTP/2 server push
-	push
-
 	# Enable default compression settings
 	encode
 

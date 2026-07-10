@@ -77,9 +77,6 @@
 	}
 	redir @redirect https://{vars.site_slug}.wjfiles.host.site.somedomain.example.com{uri}
 
-	# Enable HTTP/2 server push
-	push
-
 	# Enable default compression settings
 	encode
 

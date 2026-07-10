@@ -89,9 +89,6 @@ deploy.wjfiles.test {
 	}
 	redir @redirect https://{vars.site_slug}.wjfiles.test{uri}
 
-	# Enable HTTP/2 server push
-	push
-
 	# Enable default compression settings
 	encode
 
