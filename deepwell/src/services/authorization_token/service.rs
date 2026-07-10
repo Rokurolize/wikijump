@@ -187,7 +187,6 @@ impl AuthorizationTokenService {
             ip_address,
             AuditEvent::AuthorizationTokenVerify {
                 object_type,
-                token,
                 token_id,
             },
         )
