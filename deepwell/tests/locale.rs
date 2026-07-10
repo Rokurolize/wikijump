@@ -116,50 +116,26 @@ async fn translate_strings() {
             | ErrorType::LocaleMessageAttributeMissing { .. }
     );
 
-    // No locale
-    let error = run_endpoint_err!(
+    // Success cases
+
+    // Missing locale data or messages return null translations instead of endpoint errors.
+    let output = run_endpoint!(
         runner,
         translate_strings,
         json!({"locales": ["xyz_US"], "messages": {"license": {}}}),
     );
-    assert_contains_error!(
-        error,
-        // it first tries xyz_US, which doesn't exist
-        // it then tries xyz, which also doesn't exist
-        // and it has no more fallbacks so that is what it returns
-        ErrorType::LocaleMissing { locale } if locale == "xyz",
-    );
-    assert_no_error!(
-        error,
-        ErrorType::BadRequest
-            | ErrorType::LocaleInvalid { .. }
-            | ErrorType::LocaleMessageMissing { .. }
-            | ErrorType::LocaleMessageValueMissing { .. }
-            | ErrorType::LocaleMessageAttributeMissing { .. }
-    );
+    assert_eq!(output.len(), 1);
+    assert!(output["license"].is_none());
 
-    // No message key
-    let error = run_endpoint_err!(
+    let output = run_endpoint!(
         runner,
         translate_strings,
         json!({"locales": ["en"], "messages": {"xyz-invalid-key": {}}}),
     );
-    assert_contains_error!(
-        error,
-        ErrorType::LocaleMessageMissing { message_key } if message_key == "xyz-invalid-key",
-    );
-    assert_no_error!(
-        error,
-        ErrorType::BadRequest
-            | ErrorType::LocaleInvalid { .. }
-            | ErrorType::LocaleMissing { .. }
-            | ErrorType::LocaleMessageValueMissing { .. }
-            | ErrorType::LocaleMessageAttributeMissing { .. }
-    );
+    assert_eq!(output.len(), 1);
+    assert!(output["xyz-invalid-key"].is_none());
 
-    // No message value
-    // Only attributes exist
-    let error = run_endpoint_err!(
+    let output = run_endpoint!(
         runner,
         translate_strings,
         json!({
@@ -170,21 +146,11 @@ async fn translate_strings() {
             },
         }),
     );
-    assert_contains_error!(
-        error,
-        ErrorType::LocaleMessageValueMissing { message_key } if message_key == "error-404",
-    );
-    assert_no_error!(
-        error,
-        ErrorType::BadRequest
-            | ErrorType::LocaleInvalid { .. }
-            | ErrorType::LocaleMissing { .. }
-            | ErrorType::LocaleMessageMissing { .. }
-            | ErrorType::LocaleMessageAttributeMissing { .. }
-    );
+    assert_eq!(output.len(), 2);
+    assert!(output["error-404"].is_none());
+    assert!(output["error-404.page"].is_some());
 
-    // No message attribute
-    let error = run_endpoint_err!(
+    let output = run_endpoint!(
         runner,
         translate_strings,
         json!({
@@ -195,21 +161,9 @@ async fn translate_strings() {
             },
         }),
     );
-    assert_contains_error!(
-        error,
-        ErrorType::LocaleMessageAttributeMissing { message_key, attribute }
-            if message_key == "license" && attribute == "xyz",
-    );
-    assert_no_error!(
-        error,
-        ErrorType::BadRequest
-            | ErrorType::LocaleInvalid { .. }
-            | ErrorType::LocaleMissing { .. }
-            | ErrorType::LocaleMessageMissing { .. }
-            | ErrorType::LocaleMessageValueMissing { .. }
-    );
-
-    // Success cases
+    assert_eq!(output.len(), 2);
+    assert!(output["license.cc0"].is_some());
+    assert!(output["license.xyz"].is_none());
 
     let output = run_endpoint!(
         runner,
