@@ -157,32 +157,6 @@ async fn translate_strings() {
             | ErrorType::LocaleMessageAttributeMissing { .. }
     );
 
-    // No message value
-    // Only attributes exist
-    let error = run_endpoint_err!(
-        runner,
-        translate_strings,
-        json!({
-            "locales": ["en"],
-            "messages": {
-                "error-404": {},
-                "error-404.page": {},
-            },
-        }),
-    );
-    assert_contains_error!(
-        error,
-        ErrorType::LocaleMessageValueMissing { message_key } if message_key == "error-404",
-    );
-    assert_no_error!(
-        error,
-        ErrorType::BadRequest
-            | ErrorType::LocaleInvalid { .. }
-            | ErrorType::LocaleMissing { .. }
-            | ErrorType::LocaleMessageMissing { .. }
-            | ErrorType::LocaleMessageAttributeMissing { .. }
-    );
-
     // No message attribute
     let error = run_endpoint_err!(
         runner,
@@ -227,6 +201,24 @@ async fn translate_strings() {
     assert_str_eq!(output["license"], Some("License"));
     assert_str_eq!(output["license.cc0"], Some("Public Domain (CC0)"));
     assert_str_eq!(output["base-title"], Some("\u{2068}foo\u{2069} | Wikijump"));
+
+    // No message value
+    // Only attributes exist
+    let output = run_endpoint!(
+        runner,
+        translate_strings,
+        json!({
+            "locales": ["en"],
+            "messages": {
+                "error-404": {},
+                "error-404.page": {},
+            },
+        }),
+    );
+    assert_eq!(output.len(), 2);
+    assert!(output.contains_key("error-404"));
+    assert_str_eq!(output["error-404"], None);
+    assert_str_eq!(output["error-404.page"], Some("The page can not be found"));
 
     let output = run_endpoint!(
         runner,
