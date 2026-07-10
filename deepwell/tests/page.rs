@@ -4210,6 +4210,94 @@ async fn page_tags_select_filters_latest_page_tags() {
 }
 
 #[tokio::test]
+async fn page_tags_select_filters_pages_without_view_permission() {
+    const PUBLIC_SLUG: &str = "xmlrpc-tags-public-source";
+    const PRIVATE_SLUG: &str = "xmlrpc-tags-private-source";
+    const PRIVATE_CATEGORY: &str = "xmlrpc-tags-private";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    let public_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_SLUG,
+        "XML-RPC Public Tag Source",
+        "Public tag source",
+    )
+    .await;
+    set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        PUBLIC_SLUG,
+        public_revision,
+        &["xmlrpc-public-visible"],
+    )
+    .await;
+
+    let private_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_SLUG,
+        "XML-RPC Private Tag Source",
+        "Private tag source",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_SLUG, PRIVATE_CATEGORY)
+        .await;
+    set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        PRIVATE_SLUG,
+        private_revision,
+        &["xmlrpc-private-secret"],
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let anonymous_tags = run_endpoint!(
+        runner,
+        page_tags_select,
+        json!({
+            "site": "scp-wiki",
+            "pages": [PUBLIC_SLUG, PRIVATE_SLUG],
+        }),
+    );
+    assert_eq!(anonymous_tags, ["xmlrpc-public-visible".to_owned()]);
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let admin_tags = run_endpoint!(
+        runner,
+        page_tags_select,
+        json!({
+            "site": "scp-wiki",
+            "pages": [PUBLIC_SLUG, PRIVATE_SLUG],
+        }),
+    );
+    assert_eq!(
+        admin_tags.into_iter().collect::<BTreeSet<_>>(),
+        BTreeSet::from([
+            "xmlrpc-private-secret".to_owned(),
+            "xmlrpc-public-visible".to_owned(),
+        ])
+    );
+}
+
+#[tokio::test]
 async fn page_select_filters_pages_with_page_query_semantics() {
     const TAG: &str = "xmlrpc-page-select-target";
 

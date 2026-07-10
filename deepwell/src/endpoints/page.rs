@@ -309,21 +309,41 @@ pub async fn page_tags_select(
         page_query = page_query.filter(page::Column::Slug.is_in(pages));
     }
 
-    let tags = page_query
+    let tagged_pages = page_query
         .join(JoinType::Join, page::Relation::PageRevision.def())
         .select_only()
+        .column(page::Column::PageId)
+        .column(page::Column::PageCategoryId)
         .column(page_revision::Column::Tags)
-        .into_tuple::<Vec<String>>()
+        .into_tuple::<(i64, i64, Vec<String>)>()
         .all(txn)
         .await
-        .or_raise(make_error)?
-        .into_iter()
-        .flatten()
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .collect();
+        .or_raise(make_error)?;
 
-    Ok(tags)
+    let mut tags = BTreeSet::new();
+    for (page_id, page_category_id, page_tags) in tagged_pages {
+        let can_view = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: ctx.request().user_id,
+                site_id,
+                page_reference: Some(Reference::Id(page_id)),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(page_category_id)),
+                action: Action::View,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        if can_view {
+            tags.extend(page_tags);
+        }
+    }
+
+    Ok(tags.into_iter().collect())
 }
 
 pub async fn page_select(
