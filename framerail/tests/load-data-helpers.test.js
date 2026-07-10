@@ -54,3 +54,37 @@ test("article route data includes preload data and page-specific data", () => {
     forms
   })
 })
+
+test("article route data omits private Deepwell cache fence metadata", () => {
+  const parentData = {
+    site: { name: "SCP Wiki", locale: "en" },
+    site_file_domain: "files.example",
+    license_name: "CC BY-SA 3.0",
+    license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
+    user_session: null,
+    locales: ["en-US", "en"],
+    article_page_cache_key: "article-key",
+    public_content_cache_fence: "public-fence",
+    anonymous_permission_cache_fence: "permission-fence"
+  }
+  const viewData = {
+    view: "found",
+    compiled_body_html: "<p>body</p>",
+    wikidot_page_watch: null,
+    public_content_cache_fence: "view-public-fence"
+  }
+  const forms = { pageEditForm: { valid: true } }
+
+  assert.deepEqual(buildPageLoadData(parentData, viewData, forms), {
+    site: parentData.site,
+    site_file_domain: parentData.site_file_domain,
+    license_name: parentData.license_name,
+    license_url: parentData.license_url,
+    user_session: parentData.user_session,
+    locales: parentData.locales,
+    view: viewData.view,
+    compiled_body_html: viewData.compiled_body_html,
+    wikidot_page_watch: viewData.wikidot_page_watch,
+    forms
+  })
+})
