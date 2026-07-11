@@ -36,6 +36,7 @@ mod include_comment_branches;
 mod list_pages;
 mod literal_regions;
 mod render_dependency;
+mod replay;
 mod service;
 mod structs;
 mod wikidot_expression;
@@ -43,5 +44,12 @@ mod wikidot_expression;
 pub use self::render_dependency::{
     RenderDependencyClass, RenderDependencyClasses, classify_render_dependencies,
 };
+pub(crate) use self::replay::{
+    RenderReplayService, RenderReplaySettings, run_worker_action,
+};
 pub use self::service::RenderService;
+pub(crate) use self::service::{
+    CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,
+    CorpusReplayPreparedWikitext, CorpusReplayStageTimings, CorpusReplaySyntaxFeatures,
+};
 pub use self::structs::*;
