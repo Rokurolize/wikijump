@@ -9,7 +9,7 @@ import test from "node:test";
 import {parseArgs} from "../scripts/theme-localization-e2e.mjs";
 import {ALLOWED_SITE_SLUG, THEME_LOCALIZATION_E2E_SCHEMA, runOwnedSlug} from "../src/theme-localization-e2e.mjs";
 import {ThemeExecutionLedger, themeExecutionFingerprint, validateThemeExecutionPlan} from "../src/theme-localization-execution.mjs";
-import {THEME_RUN_RESULT_SCHEMA, runGuardedThemeAction, validateStorageState, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
+import {THEME_RUN_RESULT_SCHEMA, runGuardedThemeAction, validateStorageState, validateThemeCdpEndpoint, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
 
 const digest = (value) => crypto.createHash("sha256").update(value).digest("hex");
 
@@ -31,34 +31,39 @@ class MemoryAdapter {
   async remove(resource) { this.pages.delete(resource.slug); }
 }
 
-async function fixture({onCreate} = {}) {
+async function fixture({onCreate, tierIds = ["yossistyle"]} = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "theme-runner-"));
-  const source = "日本語のテーマ本文\n";
-  const sourcePath = path.join(root, "accepted.txt");
-  await fs.writeFile(sourcePath, source);
   const runId = "runner-test";
-  const tierId = "yossistyle";
-  const slug = runOwnedSlug(runId, tierId);
-  const plan = {
-    schema: THEME_LOCALIZATION_E2E_SCHEMA,
-    mode: "execute",
-    run: {id: runId, site_slug: ALLOWED_SITE_SLUG, owned_slug_prefix: `theme:codex-l10n-${runId}-`},
-    safety: {execute_supported: true, hard_allowlist: {site_slug: ALLOWED_SITE_SLUG, wikidot_hostname: `${ALLOWED_SITE_SLUG}.wikidot.com`, wikijump_hostname: `${ALLOWED_SITE_SLUG}.wikijump.localhost`}},
-    preflight: {status: "pass"},
-    tiers: [{
-      id: tierId, order: 1, run_owned_slug: slug,
+  const tiers = [];
+  for (const [index, tierId] of tierIds.entries()) {
+    const source = `日本語のテーマ本文 ${tierId}\n`;
+    const sourcePath = path.join(root, `${tierId}.txt`);
+    const slug = runOwnedSlug(runId, tierId);
+    await fs.writeFile(sourcePath, source);
+    tiers.push({
+      id: tierId, order: index + 1, run_owned_slug: slug,
       preflight: {status: "pass", source: {absolute_path: sourcePath, sha256: digest(source)}},
       targets: [
         {id: "wikidot", resource_id: `${tierId}:wikidot`, origin: `http://${ALLOWED_SITE_SLUG}.wikidot.com`, url: `http://${ALLOWED_SITE_SLUG}.wikidot.com/${slug}`},
         {id: "wikijump", resource_id: `${tierId}:wikijump`, origin: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443`, url: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443/${slug}`},
       ],
       capture: {viewports: [{id: "desktop", width: 100, height: 100}]},
-    }],
+    });
+  }
+  const plan = {
+    schema: THEME_LOCALIZATION_E2E_SCHEMA,
+    mode: "execute",
+    run: {id: runId, site_slug: ALLOWED_SITE_SLUG, owned_slug_prefix: `theme:codex-l10n-${runId}-`},
+    safety: {execute_supported: true, hard_allowlist: {site_slug: ALLOWED_SITE_SLUG, wikidot_hostname: `${ALLOWED_SITE_SLUG}.wikidot.com`, wikijump_hostname: `${ALLOWED_SITE_SLUG}.wikijump.localhost`}},
+    preflight: {status: "pass"},
+    tiers,
   };
   const adapters = {wikidot: new MemoryAdapter("wikidot", onCreate), wikijump: new MemoryAdapter("wikijump")};
   let closed = false;
-  const dependencyFactory = async () => ({adapters, secrets: ["swordfish-pass"], storageStates: {}, chromium: {}, async close() { closed = true; }});
-  return {root, source, plan, adapters, dependencyFactory, closed: () => closed, ledgerPath: path.join(root, "ledger.jsonl"), resultPath: path.join(root, "result.json"), artifactDir: path.join(root, "artifacts")};
+  let closedAfterCleanup = false;
+  const browserSession = {id: "shared-browser"};
+  const dependencyFactory = async ({needsBrowser}) => ({adapters, secrets: ["swordfish-pass"], storageStates: {}, chromium: {}, browserSession: needsBrowser ? browserSession : null, async close() { closedAfterCleanup = adapters.wikidot.pages.size + adapters.wikijump.pages.size === 0; closed = true; }});
+  return {root, plan, adapters, browserSession, dependencyFactory, closed: () => closed, closedAfterCleanup: () => closedAfterCleanup, ledgerPath: path.join(root, "ledger.jsonl"), resultPath: path.join(root, "result.json"), artifactDir: path.join(root, "artifacts")};
 }
 
 function capture(status = "pass") {
@@ -75,6 +80,20 @@ test("guarded execution captures the tier, cleans both targets, and persists a p
   assert.equal((await ThemeExecutionLedger.load(fx.ledgerPath)).completed, true);
   assert.equal((await fs.stat(fx.resultPath)).mode & 0o077, 0);
   assert.equal(fx.closed(), true);
+  assert.equal(fx.closedAfterCleanup(), true);
+});
+
+test("one browser session is reused across tiers and closed only after cleanup", async () => {
+  const fx = await fixture({tierIds: ["yossistyle", "ashes-to-ashes"]});
+  const seen = [];
+  const result = await runGuardedThemeAction({...fx, mode: "execute", captureTierImpl: async (options) => {
+    seen.push({tier: options.tier.id, session: options.browserSession});
+    return capture()(options);
+  }});
+  assert.deepEqual(seen.map((item) => item.tier), ["yossistyle", "ashes-to-ashes"]);
+  assert.ok(seen.every((item) => item.session === fx.browserSession));
+  assert.equal(result.captures.length, 2);
+  assert.equal(fx.closedAfterCleanup(), true);
 });
 
 test("live execution and recovery reject a dry-run plan before connecting adapters", async () => {
@@ -110,6 +129,21 @@ test("browser storage state denies group and other access", async () => {
   await assert.rejects(validateStorageState(storageState), /deny group and other access/);
 });
 
+test("CDP endpoint accepts only an uncredentialed loopback HTTP origin", () => {
+  assert.equal(validateThemeCdpEndpoint("http://127.0.0.1:9222"), "http://127.0.0.1:9222");
+  assert.equal(validateThemeCdpEndpoint("http://localhost:9333/"), "http://localhost:9333");
+  for (const endpoint of ["https://127.0.0.1:9222", "http://192.168.1.2:9222", "http://user:pass@127.0.0.1:9222", "http://127.0.0.1:9222/json", "http://127.0.0.1"]) assert.throws(() => validateThemeCdpEndpoint(endpoint), /loopback HTTP origin/);
+});
+
+test("insecure artifact root is rejected before adapters connect", async () => {
+  const fx = await fixture();
+  await fs.mkdir(fx.artifactDir, {mode: 0o755});
+  let connected = false;
+  fx.dependencyFactory = async () => { connected = true; };
+  await assert.rejects(runGuardedThemeAction({...fx, mode: "execute"}), /artifact directory permissions/);
+  assert.equal(connected, false);
+});
+
 test("a strict capture failure remains primary after verified cleanup", async () => {
   const fx = await fixture();
   await assert.rejects(runGuardedThemeAction({...fx, mode: "execute", captureTierImpl: capture("fail")}), /strict browser verdict failed/);
@@ -121,6 +155,9 @@ test("a strict capture failure remains primary after verified cleanup", async ()
 
 test("recovery accepts only the matching fingerprint and removes an intent-fenced page", async () => {
   const fx = await fixture();
+  let browserRequested = null;
+  const dependencyFactory = fx.dependencyFactory;
+  fx.dependencyFactory = async (options) => { browserRequested = options.needsBrowser; return dependencyFactory(options); };
   const resources = validateThemeExecutionPlan(fx.plan);
   const ledger = await ThemeExecutionLedger.create(fx.ledgerPath, {runId: fx.plan.run.id, fingerprint: themeExecutionFingerprint(fx.plan), resources});
   const resource = resources[0];
@@ -130,6 +167,7 @@ test("recovery accepts only the matching fingerprint and removes an intent-fence
   const result = await runGuardedThemeAction({...fx, mode: "recover"});
   assert.equal(result.operation.status, "clean");
   assert.equal(fx.adapters.wikidot.pages.size, 0);
+  assert.equal(browserRequested, false);
 });
 
 test("SIGINT aborts at an operation boundary without bypassing cleanup", async () => {
@@ -153,6 +191,8 @@ test("CLI requires one explicit action and never accepts credential flags", () =
   assert.throws(() => parseArgs(base), /exactly one/);
   assert.throws(() => parseArgs([...base, "--dry-run", "--execute"]), /exactly one/);
   assert.throws(() => parseArgs([...base, "--execute", "--password", "secret"]), /Unknown argument: --password/);
+  assert.throws(() => parseArgs([...base, "--execute", "--browser-executable", "/chrome", "--cdp-endpoint", "http://127.0.0.1:9222"]), /cannot be combined/);
+  assert.throws(() => parseArgs([...base, "--execute", "--cdp-endpoint", "http://example.com:9222"]), /loopback HTTP origin/);
   assert.throws(() => parseArgs(["node", "theme", "--recover", "--plan", "/tmp/plan", "--ledger", "/tmp/ledger"]), /--result/);
   assert.equal(parseArgs([...base, "--dry-run"]).mode, "dry-run");
 });

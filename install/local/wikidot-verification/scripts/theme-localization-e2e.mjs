@@ -11,7 +11,7 @@ import {
   DEFAULT_WIKIJUMP_ORIGIN,
   buildThemeLocalizationE2EPlan,
 } from "../src/theme-localization-e2e.mjs";
-import {runGuardedThemeAction, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
+import {runGuardedThemeAction, validateThemeCdpEndpoint, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 
@@ -76,6 +76,9 @@ export function parseArgs(argv) {
     } else if (arg === "--browser-executable") {
       args.browserExecutable = path.resolve(nextArg(argv, index, arg));
       index += 1;
+    } else if (arg === "--cdp-endpoint") {
+      args.cdpEndpoint = nextArg(argv, index, arg);
+      index += 1;
     } else if (arg === "--wikidot-storage-state") {
       args.wikidotStorageState = path.resolve(nextArg(argv, index, arg));
       index += 1;
@@ -94,6 +97,8 @@ export function parseArgs(argv) {
   }
 
   if (!args.mode || args.mode === "conflict") throw new Error("exactly one of --dry-run, --execute, or --recover is required");
+  if (args.cdpEndpoint && args.browserExecutable) throw new Error("--cdp-endpoint cannot be combined with --browser-executable");
+  if (args.cdpEndpoint) args.cdpEndpoint = validateThemeCdpEndpoint(args.cdpEndpoint);
   if (args.mode === "recover") {
     if (!args.plan || !args.ledgerPath || !args.resultPath) throw new Error("--recover requires --plan, --ledger, and --result");
     if (args.translationRoot || args.runId || args.output) throw new Error("--recover reads its immutable plan from --plan");
@@ -113,7 +118,7 @@ function printHelp() {
   node install/local/wikidot-verification/scripts/theme-localization-e2e.mjs --execute --translation-root PATH --run-id ID --output PLAN --ledger FILE --result FILE --artifact-dir DIR [browser options] [--json]
   node install/local/wikidot-verification/scripts/theme-localization-e2e.mjs --recover --plan PLAN --ledger FILE --result FILE [--json]
 
-The exact site allowlist is ${ALLOWED_SITE_SLUG}. Credentials are accepted only through WIKIDOT_USERNAME, WIKIDOT_PASSWORD, WIKIJUMP_THEME_ADMIN_EMAIL, and WIKIJUMP_THEME_ADMIN_PASSWORD. Optional browser flags are --browser-root, --browser-executable, --wikidot-storage-state, --wikijump-storage-state, and --ignore-https-errors.`);
+The exact site allowlist is ${ALLOWED_SITE_SLUG}. Credentials are accepted only through WIKIDOT_USERNAME, WIKIDOT_PASSWORD, WIKIJUMP_THEME_ADMIN_EMAIL, and WIKIJUMP_THEME_ADMIN_PASSWORD. Optional browser flags are --browser-root, --browser-executable or --cdp-endpoint, --wikidot-storage-state, --wikijump-storage-state, and --ignore-https-errors.`);
 }
 
 export async function run(argv = process.argv) {
@@ -133,7 +138,7 @@ export async function run(argv = process.argv) {
   if (args.mode !== "dry-run" && plan.preflight?.status === "pass") {
     await runGuardedThemeAction({
       mode: args.mode, plan, ledgerPath: args.ledgerPath, resultPath: args.resultPath, artifactDir: args.artifactDir,
-      dependencyOptions: {browserRoot: args.browserRoot, browserExecutable: args.browserExecutable, wikidotStorageState: args.wikidotStorageState, wikijumpStorageState: args.wikijumpStorageState, ignoreHttpsErrors: args.ignoreHttpsErrors},
+      dependencyOptions: {browserRoot: args.browserRoot, browserExecutable: args.browserExecutable, cdpEndpoint: args.cdpEndpoint, wikidotStorageState: args.wikidotStorageState, wikijumpStorageState: args.wikijumpStorageState, ignoreHttpsErrors: args.ignoreHttpsErrors},
     });
   }
   const summary = args.mode === "dry-run" ? {output: args.output, mode: plan.mode, preflight: plan.preflight, page_mutations_performed: 0} : {mode: args.mode, preflight: plan.preflight, result: args.resultPath};
