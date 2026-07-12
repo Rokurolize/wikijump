@@ -73,7 +73,7 @@ export function validateThemeExecutionPlan(plan) {
 
 export function themeExecutionFingerprint(plan) {
   const resources = validateThemeExecutionPlan(plan);
-  return sha256(JSON.stringify({schema: plan.schema, run: plan.run, resources}));
+  return sha256(JSON.stringify({schema: plan.schema, execution: {mode: plan.mode ?? null, execute_supported: plan.safety?.execute_supported === true}, run: plan.run, resources}));
 }
 
 function parseEvents(text) {

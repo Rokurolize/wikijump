@@ -9,7 +9,7 @@ import test from "node:test";
 import {parseArgs} from "../scripts/theme-localization-e2e.mjs";
 import {ALLOWED_SITE_SLUG, THEME_LOCALIZATION_E2E_SCHEMA, runOwnedSlug} from "../src/theme-localization-e2e.mjs";
 import {ThemeExecutionLedger, themeExecutionFingerprint, validateThemeExecutionPlan} from "../src/theme-localization-execution.mjs";
-import {THEME_RUN_RESULT_SCHEMA, runGuardedThemeAction} from "../src/theme-localization-runner.mjs";
+import {THEME_RUN_RESULT_SCHEMA, runGuardedThemeAction, validateStorageState, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
 
 const digest = (value) => crypto.createHash("sha256").update(value).digest("hex");
 
@@ -41,8 +41,9 @@ async function fixture({onCreate} = {}) {
   const slug = runOwnedSlug(runId, tierId);
   const plan = {
     schema: THEME_LOCALIZATION_E2E_SCHEMA,
+    mode: "execute",
     run: {id: runId, site_slug: ALLOWED_SITE_SLUG, owned_slug_prefix: `theme:codex-l10n-${runId}-`},
-    safety: {hard_allowlist: {site_slug: ALLOWED_SITE_SLUG, wikidot_hostname: `${ALLOWED_SITE_SLUG}.wikidot.com`, wikijump_hostname: `${ALLOWED_SITE_SLUG}.wikijump.localhost`}},
+    safety: {execute_supported: true, hard_allowlist: {site_slug: ALLOWED_SITE_SLUG, wikidot_hostname: `${ALLOWED_SITE_SLUG}.wikidot.com`, wikijump_hostname: `${ALLOWED_SITE_SLUG}.wikijump.localhost`}},
     preflight: {status: "pass"},
     tiers: [{
       id: tierId, order: 1, run_owned_slug: slug,
@@ -74,6 +75,39 @@ test("guarded execution captures the tier, cleans both targets, and persists a p
   assert.equal((await ThemeExecutionLedger.load(fx.ledgerPath)).completed, true);
   assert.equal((await fs.stat(fx.resultPath)).mode & 0o077, 0);
   assert.equal(fx.closed(), true);
+});
+
+test("live execution and recovery reject a dry-run plan before connecting adapters", async () => {
+  const fx = await fixture();
+  const executableFingerprint = themeExecutionFingerprint(fx.plan);
+  fx.plan.mode = "dry-run";
+  fx.plan.safety.execute_supported = false;
+  assert.notEqual(themeExecutionFingerprint(fx.plan), executableFingerprint);
+  let connected = false;
+  fx.dependencyFactory = async () => { connected = true; };
+  await assert.rejects(runGuardedThemeAction({...fx, mode: "execute"}), /not explicitly executable/);
+  await assert.rejects(runGuardedThemeAction({...fx, mode: "recover"}), /not explicitly executable/);
+  assert.equal(connected, false);
+  await assert.rejects(fs.stat(fx.resultPath), /ENOENT/);
+});
+
+test("executable plan persistence is exclusive, durable, and private", async () => {
+  const fx = await fixture();
+  const planPath = path.join(fx.root, "plan.json");
+  await writeExecutableThemePlan(planPath, fx.plan);
+  assert.equal((await fs.stat(planPath)).mode & 0o077, 0);
+  assert.equal(JSON.parse(await fs.readFile(planPath, "utf8")).mode, "execute");
+  await assert.rejects(writeExecutableThemePlan(planPath, fx.plan), /EEXIST/);
+  assert.equal(JSON.parse(await fs.readFile(planPath, "utf8")).run.id, fx.plan.run.id);
+});
+
+test("browser storage state denies group and other access", async () => {
+  const fx = await fixture();
+  const storageState = path.join(fx.root, "storage.json");
+  await fs.writeFile(storageState, "{}", {mode: 0o600});
+  assert.equal(await validateStorageState(storageState), storageState);
+  await fs.chmod(storageState, 0o640);
+  await assert.rejects(validateStorageState(storageState), /deny group and other access/);
 });
 
 test("a strict capture failure remains primary after verified cleanup", async () => {

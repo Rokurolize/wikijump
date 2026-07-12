@@ -33,11 +33,12 @@ async function readAcceptedSource(resource) {
   return fs.readFile(resource.source_path, "utf8");
 }
 
-async function validateStorageState(filePath) {
+export async function validateStorageState(filePath) {
   if (!filePath) return null;
   const absolute = path.resolve(filePath);
   const stat = await fs.lstat(absolute);
   if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("browser storage state must be a regular file");
+  if ((stat.mode & 0o077) !== 0) throw new Error("browser storage state permissions must deny group and other access");
   return absolute;
 }
 
@@ -90,6 +91,31 @@ function installSignalBridge(signalSource) {
   return {signal: controller.signal, received: () => received, close() { for (const [name, listener] of listeners) signalSource.off(name, listener); }};
 }
 
+function validateExecutablePlan(plan) {
+  validateThemeExecutionPlan(plan);
+  if (plan.mode !== "execute" || plan.safety?.execute_supported !== true) throw new Error("theme plan is not explicitly executable");
+}
+
+async function syncParent(filePath) {
+  const handle = await fs.open(path.dirname(filePath), "r");
+  try { await handle.sync(); } finally { await handle.close(); }
+}
+
+export async function writeExecutableThemePlan(filePath, plan) {
+  validateExecutablePlan(plan);
+  const absolute = path.resolve(filePath);
+  await fs.mkdir(path.dirname(absolute), {recursive: true});
+  const handle = await fs.open(absolute, "wx", 0o600);
+  try {
+    await handle.writeFile(`${JSON.stringify(plan, null, 2)}\n`, "utf8");
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+  await syncParent(absolute);
+  return absolute;
+}
+
 async function reserveResult(filePath) {
   await fs.mkdir(path.dirname(filePath), {recursive: true});
   const handle = await fs.open(filePath, "wx", 0o600);
@@ -109,7 +135,7 @@ function captureSummary(captures) {
 
 export async function runGuardedThemeAction({mode, plan, ledgerPath, resultPath, artifactDir, signalSource = process, dependencyFactory = createLiveThemeDependencies, dependencyOptions = {}, captureTierImpl = captureThemeTierBrowserEvidence}) {
   if (!new Set(["execute", "recover"]).has(mode)) throw new Error("theme action must be execute or recover");
-  validateThemeExecutionPlan(plan);
+  validateExecutablePlan(plan);
   if (!ledgerPath || !resultPath || (mode === "execute" && !artifactDir)) throw new Error("ledger, result, and execute artifact paths are required");
   const resultFile = await reserveResult(path.resolve(resultPath));
   const bridge = installSignalBridge(signalSource);

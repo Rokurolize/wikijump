@@ -11,7 +11,7 @@ import {
   DEFAULT_WIKIJUMP_ORIGIN,
   buildThemeLocalizationE2EPlan,
 } from "../src/theme-localization-e2e.mjs";
-import {runGuardedThemeAction} from "../src/theme-localization-runner.mjs";
+import {runGuardedThemeAction, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 
@@ -124,8 +124,11 @@ export async function run(argv = process.argv) {
   }
   const plan = args.mode === "recover" ? JSON.parse(await fs.readFile(args.plan, "utf8")) : await buildThemeLocalizationE2EPlan(args);
   if (args.mode !== "recover") {
-    await fs.mkdir(path.dirname(args.output), {recursive: true});
-    await fs.writeFile(args.output, `${JSON.stringify(plan, null, 2)}\n`, "utf8");
+    if (args.mode === "execute") await writeExecutableThemePlan(args.output, plan);
+    else {
+      await fs.mkdir(path.dirname(args.output), {recursive: true});
+      await fs.writeFile(args.output, `${JSON.stringify(plan, null, 2)}\n`, "utf8");
+    }
   }
   if (args.mode !== "dry-run" && plan.preflight?.status === "pass") {
     await runGuardedThemeAction({

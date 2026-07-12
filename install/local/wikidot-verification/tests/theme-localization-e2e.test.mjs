@@ -126,6 +126,11 @@ test("plan is deterministic, mutation-free, and carries cleanup and capture cont
   assert.ok(first.tiers[2].capture.interactions.some((interaction) => interaction.id === "tab_switch"));
   assert.ok(first.tiers.flatMap((tier) => tier.targets).every((target) => target.url.includes("scpaiueouiuiuiui")));
   assert.ok(first.tiers.flatMap((tier) => tier.preflight.dependency_files.assets).every((asset) => asset.status === "pass" && asset.sha256));
+
+  const executable = await buildThemeLocalizationE2EPlan({...options, mode: "execute"});
+  assert.equal(executable.mode, "execute");
+  assert.equal(executable.safety.execute_supported, true);
+  assert.equal(first.mode, "dry-run");
 });
 
 test("dependency preflight fails closed when an attachment is absent", async () => {
