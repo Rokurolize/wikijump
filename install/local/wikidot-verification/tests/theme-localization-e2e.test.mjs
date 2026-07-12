@@ -160,7 +160,7 @@ test("CLI requires dry-run and writes a passing deterministic plan", async () =>
   assert.equal(summary.page_mutations_performed, 0);
   assert.equal(plan.mode, "dry-run");
 
-  await assert.rejects(execFileAsync(process.execPath, [cli, "--translation-root", translationRoot, "--run-id", "20260713-cli", "--output", output]), /--dry-run is required/);
-  await assert.rejects(execFileAsync(process.execPath, [cli, "--execute", "--translation-root", translationRoot, "--run-id", "20260713-cli", "--output", output]), /--execute is intentionally disabled/);
+  await assert.rejects(execFileAsync(process.execPath, [cli, "--translation-root", translationRoot, "--run-id", "20260713-cli", "--output", output]), /exactly one of/);
+  await assert.rejects(execFileAsync(process.execPath, [cli, "--execute", "--translation-root", translationRoot, "--run-id", "20260713-cli", "--output", output]), /--execute requires/);
   await assert.rejects(execFileAsync(process.execPath, [cli, "--dry-run", "--translation-root", translationRoot, "--run-id", "20260713-cli", "--output", output, "--site", "scp-wiki"]), /site is not allowlisted/);
 });

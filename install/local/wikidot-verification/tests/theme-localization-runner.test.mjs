@@ -1,0 +1,124 @@
+import assert from "node:assert/strict";
+import crypto from "node:crypto";
+import {EventEmitter} from "node:events";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+
+import {parseArgs} from "../scripts/theme-localization-e2e.mjs";
+import {ALLOWED_SITE_SLUG, THEME_LOCALIZATION_E2E_SCHEMA, runOwnedSlug} from "../src/theme-localization-e2e.mjs";
+import {ThemeExecutionLedger, themeExecutionFingerprint, validateThemeExecutionPlan} from "../src/theme-localization-execution.mjs";
+import {THEME_RUN_RESULT_SCHEMA, runGuardedThemeAction} from "../src/theme-localization-runner.mjs";
+
+const digest = (value) => crypto.createHash("sha256").update(value).digest("hex");
+
+class MemoryAdapter {
+  constructor(target, onCreate = null) {
+    this.target = target;
+    this.onCreate = onCreate;
+    this.pages = new Map();
+    this.nextId = 1;
+  }
+
+  async inspect(resource) { return this.pages.get(resource.slug) ?? null; }
+  async create(resource, payload) {
+    const page = {identity: this.nextId++, title: resource.title, source_sha256: digest(payload.source)};
+    this.pages.set(resource.slug, page);
+    this.onCreate?.();
+    return page.identity;
+  }
+  async remove(resource) { this.pages.delete(resource.slug); }
+}
+
+async function fixture({onCreate} = {}) {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "theme-runner-"));
+  const source = "日本語のテーマ本文\n";
+  const sourcePath = path.join(root, "accepted.txt");
+  await fs.writeFile(sourcePath, source);
+  const runId = "runner-test";
+  const tierId = "yossistyle";
+  const slug = runOwnedSlug(runId, tierId);
+  const plan = {
+    schema: THEME_LOCALIZATION_E2E_SCHEMA,
+    run: {id: runId, site_slug: ALLOWED_SITE_SLUG, owned_slug_prefix: `theme:codex-l10n-${runId}-`},
+    safety: {hard_allowlist: {site_slug: ALLOWED_SITE_SLUG, wikidot_hostname: `${ALLOWED_SITE_SLUG}.wikidot.com`, wikijump_hostname: `${ALLOWED_SITE_SLUG}.wikijump.localhost`}},
+    preflight: {status: "pass"},
+    tiers: [{
+      id: tierId, order: 1, run_owned_slug: slug,
+      preflight: {status: "pass", source: {absolute_path: sourcePath, sha256: digest(source)}},
+      targets: [
+        {id: "wikidot", resource_id: `${tierId}:wikidot`, origin: `http://${ALLOWED_SITE_SLUG}.wikidot.com`, url: `http://${ALLOWED_SITE_SLUG}.wikidot.com/${slug}`},
+        {id: "wikijump", resource_id: `${tierId}:wikijump`, origin: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443`, url: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443/${slug}`},
+      ],
+      capture: {viewports: [{id: "desktop", width: 100, height: 100}]},
+    }],
+  };
+  const adapters = {wikidot: new MemoryAdapter("wikidot", onCreate), wikijump: new MemoryAdapter("wikijump")};
+  let closed = false;
+  const dependencyFactory = async () => ({adapters, secrets: ["swordfish-pass"], storageStates: {}, chromium: {}, async close() { closed = true; }});
+  return {root, source, plan, adapters, dependencyFactory, closed: () => closed, ledgerPath: path.join(root, "ledger.jsonl"), resultPath: path.join(root, "result.json"), artifactDir: path.join(root, "artifacts")};
+}
+
+function capture(status = "pass") {
+  return async ({tier, source}) => ({tier_id: tier.id, status, targets: tier.targets.map((target) => ({id: target.id, verdict: {status, failed_viewports: status === "pass" ? [] : ["desktop"]}})), source_seen: source.length});
+}
+
+test("guarded execution captures the tier, cleans both targets, and persists a private aggregate", async () => {
+  const fx = await fixture();
+  const result = await runGuardedThemeAction({...fx, mode: "execute", captureTierImpl: capture()});
+  assert.equal(result.schema, THEME_RUN_RESULT_SCHEMA);
+  assert.equal(result.status, "pass");
+  assert.deepEqual(result.captures[0].targets.map((target) => target.id), ["wikidot", "wikijump"]);
+  assert.equal(fx.adapters.wikidot.pages.size + fx.adapters.wikijump.pages.size, 0);
+  assert.equal((await ThemeExecutionLedger.load(fx.ledgerPath)).completed, true);
+  assert.equal((await fs.stat(fx.resultPath)).mode & 0o077, 0);
+  assert.equal(fx.closed(), true);
+});
+
+test("a strict capture failure remains primary after verified cleanup", async () => {
+  const fx = await fixture();
+  await assert.rejects(runGuardedThemeAction({...fx, mode: "execute", captureTierImpl: capture("fail")}), /strict browser verdict failed/);
+  assert.equal(fx.adapters.wikidot.pages.size + fx.adapters.wikijump.pages.size, 0);
+  const result = JSON.parse(await fs.readFile(fx.resultPath, "utf8"));
+  assert.equal(result.status, "fail");
+  assert.equal(result.captures[0].status, "fail");
+});
+
+test("recovery accepts only the matching fingerprint and removes an intent-fenced page", async () => {
+  const fx = await fixture();
+  const resources = validateThemeExecutionPlan(fx.plan);
+  const ledger = await ThemeExecutionLedger.create(fx.ledgerPath, {runId: fx.plan.run.id, fingerprint: themeExecutionFingerprint(fx.plan), resources});
+  const resource = resources[0];
+  const expected = {source_sha256: resource.source_sha256, title: resource.title};
+  await ledger.intent(resource, expected);
+  fx.adapters.wikidot.pages.set(resource.slug, {identity: 42, ...expected});
+  const result = await runGuardedThemeAction({...fx, mode: "recover"});
+  assert.equal(result.operation.status, "clean");
+  assert.equal(fx.adapters.wikidot.pages.size, 0);
+});
+
+test("SIGINT aborts at an operation boundary without bypassing cleanup", async () => {
+  const signals = new EventEmitter();
+  const fx = await fixture({onCreate: () => signals.emit("SIGINT")});
+  await assert.rejects(runGuardedThemeAction({...fx, mode: "execute", signalSource: signals, captureTierImpl: capture()}), (error) => error.signal === "SIGINT");
+  assert.equal(fx.adapters.wikidot.pages.size + fx.adapters.wikijump.pages.size, 0);
+  assert.equal(signals.listenerCount("SIGINT") + signals.listenerCount("SIGTERM"), 0);
+  assert.equal(JSON.parse(await fs.readFile(fx.resultPath, "utf8")).signal, "SIGINT");
+});
+
+test("credential values are redacted from thrown and persisted errors", async () => {
+  const fx = await fixture();
+  fx.adapters.wikidot.inspect = async () => { throw new Error("remote rejected swordfish-pass"); };
+  await assert.rejects(runGuardedThemeAction({...fx, mode: "execute", captureTierImpl: capture()}), (error) => !error.message.includes("swordfish-pass") && error.message.includes("[REDACTED]"));
+  assert.doesNotMatch(await fs.readFile(fx.resultPath, "utf8"), /swordfish-pass/);
+});
+
+test("CLI requires one explicit action and never accepts credential flags", () => {
+  const base = ["node", "theme", "--translation-root", "/tmp/translations", "--run-id", "runner-test", "--output", "/tmp/plan.json"];
+  assert.throws(() => parseArgs(base), /exactly one/);
+  assert.throws(() => parseArgs([...base, "--dry-run", "--execute"]), /exactly one/);
+  assert.throws(() => parseArgs([...base, "--execute", "--password", "secret"]), /Unknown argument: --password/);
+  assert.throws(() => parseArgs(["node", "theme", "--recover", "--plan", "/tmp/plan", "--ledger", "/tmp/ledger"]), /--result/);
+  assert.equal(parseArgs([...base, "--dry-run"]).mode, "dry-run");
+});
