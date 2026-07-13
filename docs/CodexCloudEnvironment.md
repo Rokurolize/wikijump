@@ -45,15 +45,15 @@ Setup runs on the trusted default branch. It installs the native build toolchain
 
 The script fetches the three pnpm lockfiles without lifecycle scripts, fetches all Rust workspaces with locked manifests, and installs the importer's Python requirements. It creates `wikijump-cloud-services`, which starts and health-checks PostgreSQL, Redis, and MinIO, then resets their disposable state.
 
-Setup, maintenance, and agent execution use separate Bash sessions. The Node activation helper records the canonical NVM binary path in shell startup files so each later session selects Node.js 24. It removes the obsolete `/opt/wikijump/node24` symlink used by earlier script revisions because a cached rerun could turn that link into a self-reference.
+Setup, maintenance, and agent execution use separate Bash sessions. Setup copies the selected Node.js 24 installation into `/opt/wikijump/trusted-node24`, installs a root-owned Rust launcher at `/usr/local/bin/rustup`, and records the trusted Node binary path in shell startup files so each later session selects Node.js 24. It removes the obsolete `/opt/wikijump/node24` symlink used by earlier script revisions because a cached rerun could turn that link into a self-reference.
 
 ## Maintenance behavior
 
-On a cached task, Codex checks out the task branch before running the pasted maintenance script. Maintenance removes relative and checkout-owned entries from `PATH`, activates the trusted Node and Rust toolchains, and changes to `/` before dependency fetching.
+On a cached task, Codex checks out the task branch before running the pasted maintenance script. Maintenance removes relative and checkout-owned entries from `PATH`, activates the setup-created Node copy and Rust launcher from absolute root-owned paths, and changes to `/` before dependency fetching.
 
 The pnpm fetches use `--ignore-scripts` and `--ignore-pnpmfile`; task-controlled lifecycle scripts and `.pnpmfile` hooks therefore do not execute while maintenance has network access. Cargo fetches use absolute manifests, disable Git CLI fetching, and ignore system and global Git configuration. Maintenance does not run migrations, seeders, builds, tests, or repository programs.
 
-Maintenance invokes the setup-created service helper and resets PostgreSQL, Redis, and MinIO for every task, preventing cached state from leaking across branches.
+Maintenance invokes `/usr/local/bin/wikijump-cloud-services` directly and resets PostgreSQL, Redis, and MinIO for every task, preventing cached state from leaking across branches.
 
 ## Agent phase
 
