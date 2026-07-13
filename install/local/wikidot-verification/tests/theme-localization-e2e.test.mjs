@@ -207,6 +207,26 @@ test("accepted source preflight fails closed on artifact leakage", async () => {
   assert.deepEqual(leakage.findings.map((finding) => finding.id), ["thread_id"]);
 });
 
+test("accepted source preflight rejects symlinks before reading target content", async () => {
+  const translationRoot = await fixtureTranslationRoot();
+  const tier = THEME_LOCALIZATION_TIERS[0];
+  const sourcePath = path.join(translationRoot, tier.accepted_source);
+  const outsideTarget = path.join(translationRoot, "..", "outside-secret.wikidot.txt");
+  const outsideSource = `${acceptedFixtureSource(tier)}thread_id=019de38f-db2e-76d1-b375-145c28c0ea8b\n`;
+  await fs.writeFile(outsideTarget, outsideSource, "utf8");
+  await fs.unlink(sourcePath);
+  await fs.symlink(outsideTarget, sourcePath);
+
+  const plan = await buildThemeLocalizationE2EPlan({translationRoot, runId: "20260713-symlink", tiers: [tier.id]});
+
+  assert.equal(plan.preflight.status, "fail");
+  assert.equal(plan.tiers[0].preflight.source.sha256, null);
+  assert.deepEqual(plan.tiers[0].preflight.source.shape, inventoryThemeSource(""));
+  assert.equal(plan.tiers[0].preflight.checks.find((check) => check.id === "accepted_source_regular_file").status, "fail");
+  assert.equal(plan.tiers[0].preflight.checks.some((check) => check.id === "artifact_leakage"), false);
+  assert.equal(JSON.stringify(plan).includes("thread_id"), false);
+});
+
 test("CLI requires dry-run and writes a passing deterministic plan", async () => {
   const translationRoot = await fixtureTranslationRoot();
   const output = path.join(translationRoot, "artifacts", "theme-plan.json");
