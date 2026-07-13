@@ -3254,20 +3254,35 @@ impl RenderService {
         let bytes = source.as_bytes();
         while offset + 1 < bytes.len() {
             if bytes[offset..].starts_with(b"[[[") {
-                if let Some(close_offset) = source[offset + 3..].find("]]]") {
-                    offset += 3 + close_offset + 3;
-                    continue;
+                offset += 3;
+                while offset + 2 < bytes.len() && !bytes[offset..].starts_with(b"]]]") {
+                    offset += 1;
                 }
+                if offset + 2 >= bytes.len() {
+                    return None;
+                }
+                offset += 3;
+                continue;
             } else if bytes[offset..].starts_with(b"[[") {
-                if let Some(close_offset) = source[offset + 2..].find("]]") {
-                    offset += 2 + close_offset + 2;
-                    continue;
+                offset += 2;
+                while offset + 1 < bytes.len() && !bytes[offset..].starts_with(b"]]") {
+                    offset += 1;
                 }
+                if offset + 1 >= bytes.len() {
+                    return None;
+                }
+                offset += 2;
+                continue;
             } else if bytes[offset] == b'[' {
-                if let Some(close_offset) = source[offset + 1..].find(']') {
-                    offset += 1 + close_offset + 1;
-                    continue;
+                offset += 1;
+                while offset < bytes.len() && bytes[offset] != b']' {
+                    offset += 1;
                 }
+                if offset >= bytes.len() {
+                    return None;
+                }
+                offset += 1;
+                continue;
             } else if bytes[offset..].starts_with(b"]]") {
                 return Some(offset + 2);
             }
@@ -16542,6 +16557,20 @@ mod tests {
         assert!(wikitext.contains("[[*user Example User]]"));
         assert!(wikitext.ends_with("[[/div]]\n"), "{wikitext}");
         assert!(!wikitext.contains("[[/div]]]"), "{wikitext}");
+    }
+
+    #[test]
+    fn leaves_malformed_image_block_with_many_unclosed_external_links_literal() {
+        let mut wikitext =
+            format!("[[include component:image-block {}", "[a".repeat(10_000),);
+        let original = wikitext.clone();
+        let page_info = fallback_test_page_info("slow-page", "Slow Page");
+
+        let included_pages =
+            RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info);
+
+        assert!(included_pages.is_empty());
+        assert_eq!(wikitext, original);
     }
 
     #[test]
