@@ -25,6 +25,7 @@ use super::diagnostics::{
     StageGuard,
 };
 use super::html_text::html_data_segments;
+use super::iftags::{resolve_outermost_wikidot_iftags, wikidot_tag_conditions_match};
 use super::include_comment_branches::remove_unresolved_include_comment_branches;
 use super::list_pages_template::{
     LISTPAGES_VARIABLE_REGEX, ListPagesOutputShape, ListPagesTemplatePlan,
@@ -97,6 +98,7 @@ pub(crate) struct CorpusReplayExpandedWikitext {
     pub id: PageId,
     pub included_pages: Vec<PageRef>,
     pub(super) wikidot_compat_html: CompatHtmlFragments,
+    pub(super) wikidot_compat_text: CompatTextFragments,
 }
 
 impl CorpusReplayExpandedWikitext {
@@ -263,6 +265,7 @@ struct ExpandedRenderWikitext {
     wikitext: String,
     included_pages: Vec<PageRef>,
     wikidot_compat_html: CompatHtmlFragments,
+    wikidot_compat_text: CompatTextFragments,
 }
 
 #[derive(Debug)]
@@ -592,21 +595,6 @@ static WIKIJUMP_TAB_BUTTON_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static WIKIJUMP_TAB_PANEL_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"(?is)<div class="wj-tabs-panel"[^>]*>"#).unwrap());
-static WIKIDOT_RESIDUAL_IFTAGS_INLINE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?i)\[\[iftags[^\]\n]*\]\][^\[\]\n]*\[\[/iftags\]\]"#).unwrap()
-});
-static WIKIDOT_SINGLE_LINE_IFTAGS_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(
-        r#"(?i)\[\[iftags(?P<spec>[^\]\n]*)\]\](?P<body>[^\[\]\n]*)\[\[/iftags\]\]"#,
-    )
-    .unwrap()
-});
-static WIKIDOT_SIMPLE_IFTAGS_BLOCK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(
-        r#"(?is)\[\[iftags(?P<spec>(?:[ \t]+[^\]\r\n]*)?)\]\](?P<body>.*?)\[\[/iftags\]\]"#,
-    )
-    .unwrap()
-});
 static WIKIDOT_IMAGE_BLOCK_INCLUDE_START_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"(?is)\[\[include\s+(?::(?P<site>[A-Za-z0-9_-]+):)?component:image-block(?P<after>\s|\||\]\])"#,
@@ -1010,6 +998,7 @@ impl RenderService {
             id,
             included_pages: expanded.included_pages,
             wikidot_compat_html: expanded.wikidot_compat_html,
+            wikidot_compat_text: expanded.wikidot_compat_text,
         })
     }
 
@@ -1033,11 +1022,13 @@ impl RenderService {
             id,
             included_pages,
             wikidot_compat_html,
+            wikidot_compat_text,
         } = input;
         let expanded = ExpandedRenderWikitext {
             wikitext,
             included_pages,
             wikidot_compat_html,
+            wikidot_compat_text,
         };
         let outer = Self::prepare_outer_render_wikitext_observed(
             expanded,
@@ -1102,6 +1093,7 @@ impl RenderService {
             || Error::new("failed to perform render operation", ErrorType::Render);
         let mut include_budget = IncludeExpansionBudget::new(max_include_expansions);
         let mut include_source_cache = IncludeSourceCache::default();
+        let mut wikidot_compat_text = CompatTextFragments::new(&wikitext);
         Self::remove_preview_component_separator_markers(&mut wikitext);
         let mut included_pages = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::ImagePrelude);
@@ -1126,6 +1118,7 @@ impl RenderService {
                 IncludeExpansionOptions {
                     current_site_id,
                     source_cache: &mut include_source_cache,
+                    compat_text: &mut wikidot_compat_text,
                     expand_wikidot_image_blocks: true,
                     budget: include_budget,
                 },
@@ -1143,6 +1136,7 @@ impl RenderService {
             Self::prepare_wikidot_conditionals_for_include_expansion(
                 &mut wikitext,
                 page_info,
+                &mut wikidot_compat_text,
             );
             Self::neutralize_authored_wikidot_compat_markers(&mut wikitext);
         }
@@ -1160,6 +1154,7 @@ impl RenderService {
                 settings,
                 &mut wikidot_compat_html,
                 &mut include_source_cache,
+                &mut wikidot_compat_text,
                 ListPagesExpansionOptions {
                     current_site_id,
                     current_page_id,
@@ -1241,6 +1236,7 @@ impl RenderService {
             wikitext,
             included_pages,
             wikidot_compat_html,
+            wikidot_compat_text,
         })
     }
 
@@ -1264,7 +1260,7 @@ impl RenderService {
         observer: &mut impl FnMut(CorpusReplayPreparationStage),
     ) -> OuterPreparedRenderWikitext {
         let mut timings = CorpusReplayStageTimings::default();
-        let mut wikidot_compat_text = CompatTextFragments::new(&expanded.wikitext);
+        let mut wikidot_compat_text = expanded.wikidot_compat_text;
 
         observer(CorpusReplayPreparationStage::Normalization);
         let started = Instant::now();
@@ -1275,6 +1271,7 @@ impl RenderService {
             Self::prepare_wikidot_conditionals_for_include_expansion(
                 &mut expanded.wikitext,
                 page_info,
+                &mut wikidot_compat_text,
             );
             Self::normalize_wikidot_cross_closed_div_collapsibles(&mut expanded.wikitext);
             Self::normalize_wikidot_div_style_url_quotes(&mut expanded.wikitext);
@@ -1889,9 +1886,6 @@ impl RenderService {
         }
         if html.starts_with('+') || html.contains("\n+") || html.contains("\n====") {
             html = Self::restore_residual_wikidot_heading_markers(&html);
-        }
-        if WIKIDOT_RESIDUAL_IFTAGS_INLINE_REGEX.is_match(&html) {
-            html = Self::remove_residual_wikidot_iftags_fragments(&html);
         }
         if html.contains("<tbody>") || html.contains("</tbody>") {
             html = Self::remove_wikijump_table_body_wrappers(&html);
@@ -2652,20 +2646,14 @@ impl RenderService {
         Some((level, body))
     }
 
-    fn remove_residual_wikidot_iftags_fragments(html: &str) -> String {
-        WIKIDOT_RESIDUAL_IFTAGS_INLINE_REGEX
-            .replace_all(html, "")
-            .into_owned()
-    }
-
     fn prepare_wikidot_conditionals_for_include_expansion(
         wikitext: &mut String,
         page_info: &ftml::data::PageInfo<'_>,
+        preserved: &mut CompatTextFragments,
     ) {
         Self::remove_unresolved_variable_iftags_blocks(wikitext);
         *wikitext = ftml::preproc::resolve_wikidot_parser_functions(wikitext);
-        Self::resolve_single_line_wikidot_iftags_fragments(wikitext, page_info);
-        Self::resolve_simple_wikidot_iftags_blocks(wikitext, page_info);
+        Self::resolve_wikidot_iftags(wikitext, page_info, preserved);
     }
 
     fn normalize_wikidot_cross_closed_div_collapsibles(wikitext: &mut String) {
@@ -2757,63 +2745,12 @@ impl RenderService {
         }
     }
 
-    fn resolve_single_line_wikidot_iftags_fragments(
+    fn resolve_wikidot_iftags(
         wikitext: &mut String,
         page_info: &ftml::data::PageInfo<'_>,
+        preserved: &mut CompatTextFragments,
     ) {
-        let literal_regions = LiteralRegionIndex::new_wikidot_syntax(wikitext);
-        let resolved = WIKIDOT_SINGLE_LINE_IFTAGS_REGEX.replace_all(
-            wikitext,
-            |captures: &regex::Captures<'_>| {
-                let full_match = captures.get(0).expect("iftags full match");
-                if literal_regions.contains(full_match.start()) {
-                    return full_match.as_str().to_owned();
-                }
-                if wikidot_tag_conditions_match(&captures["spec"], &page_info.tags) {
-                    captures["body"].to_owned()
-                } else {
-                    String::new()
-                }
-            },
-        );
-        if let Cow::Owned(resolved) = resolved {
-            *wikitext = resolved;
-        }
-    }
-
-    fn resolve_simple_wikidot_iftags_blocks(
-        wikitext: &mut String,
-        page_info: &ftml::data::PageInfo<'_>,
-    ) {
-        loop {
-            let literal_regions = LiteralRegionIndex::new_wikidot_syntax(wikitext);
-            let resolved = WIKIDOT_SIMPLE_IFTAGS_BLOCK_REGEX.replace_all(
-                wikitext,
-                |captures: &regex::Captures<'_>| {
-                    let full_match = captures.get(0).expect("iftags full match");
-                    if literal_regions.contains(full_match.start()) {
-                        return full_match.as_str().to_owned();
-                    }
-                    let body = captures.name("body").map_or("", |mtch| mtch.as_str());
-                    if body.contains("[[iftags") {
-                        return full_match.as_str().to_owned();
-                    }
-
-                    let spec = captures.name("spec").map_or("", |mtch| mtch.as_str());
-                    if wikidot_tag_conditions_match(spec, &page_info.tags) {
-                        body.to_owned()
-                    } else {
-                        String::new()
-                    }
-                },
-            );
-
-            match resolved {
-                Cow::Borrowed(_) => return,
-                Cow::Owned(resolved) if resolved == *wikitext => return,
-                Cow::Owned(resolved) => *wikitext = resolved,
-            }
-        }
+        resolve_outermost_wikidot_iftags(wikitext, &page_info.tags, preserved);
     }
 
     fn resolve_wikidot_parser_functions(value: &str) -> String {
@@ -4438,6 +4375,7 @@ impl RenderService {
         let IncludeExpansionOptions {
             current_site_id,
             source_cache,
+            compat_text,
             expand_wikidot_image_blocks,
             budget,
         } = options;
@@ -4469,6 +4407,7 @@ impl RenderService {
                 max_total_includes: budget.maximum,
             },
             source_cache,
+            compat_text,
             0,
             budget.remaining,
         )
@@ -4483,6 +4422,7 @@ impl RenderService {
         wikitext: String,
         expansion_context: IncludeExpansionContext<'a>,
         include_source_cache: &'a mut IncludeSourceCache,
+        compat_text: &'a mut CompatTextFragments,
         depth: usize,
         mut remaining_includes: usize,
     ) -> Pin<Box<dyn Future<Output = Result<IncludeExpansion>> + Send + 'a>> {
@@ -4492,6 +4432,7 @@ impl RenderService {
             Self::prepare_wikidot_conditionals_for_include_expansion(
                 &mut wikitext,
                 expansion_context.page_info,
+                compat_text,
             );
             Self::mask_wikidot_comment_include_markers(&mut wikitext);
             let image_block_included_pages = if expansion_context
@@ -4589,6 +4530,7 @@ impl RenderService {
                         max_total_includes: expansion_context.max_total_includes,
                     },
                     include_source_cache,
+                    compat_text,
                     depth + 1,
                     remaining_includes,
                 )
@@ -4768,6 +4710,7 @@ impl RenderService {
         }))
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn expand_list_pages(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -4775,6 +4718,7 @@ impl RenderService {
         settings: &WikitextSettings,
         compat_html: &mut CompatHtmlFragments,
         include_source_cache: &mut IncludeSourceCache,
+        compat_text: &mut CompatTextFragments,
         options: ListPagesExpansionOptions,
     ) -> Result<IncludeExpansion> {
         let ListPagesExpansionOptions {
@@ -4959,6 +4903,7 @@ impl RenderService {
                         Some(prefetched_pages),
                         Some(&prefetched_displays),
                         include_source_cache,
+                        compat_text,
                     )
                     .await?;
                     include_budget.consume(replacement_expanded_include_count);
@@ -5000,6 +4945,7 @@ impl RenderService {
                         None,
                         None,
                         include_source_cache,
+                        compat_text,
                     )
                     .await?;
                     include_budget.consume(replacement_expanded_include_count);
@@ -7408,6 +7354,7 @@ impl RenderService {
         mut prefetched_pages: Option<FoundPages>,
         prefetched_displays: Option<&ListPagesBatchDisplays>,
         include_source_cache: &mut IncludeSourceCache,
+        compat_text: &mut CompatTextFragments,
     ) -> Result<IncludeExpansion> {
         let ListPagesPageContext {
             site_id: current_site_id,
@@ -7670,6 +7617,7 @@ impl RenderService {
                             IncludeExpansionOptions {
                                 current_site_id: Some(page.site_id),
                                 source_cache: include_source_cache,
+                                compat_text,
                                 expand_wikidot_image_blocks: false,
                                 budget: include_budget,
                             },
@@ -11460,6 +11408,7 @@ struct IncludeExpansion {
 struct IncludeExpansionOptions<'a> {
     current_site_id: Option<i64>,
     source_cache: &'a mut IncludeSourceCache,
+    compat_text: &'a mut CompatTextFragments,
     expand_wikidot_image_blocks: bool,
     budget: IncludeExpansionBudget,
 }
@@ -11739,42 +11688,6 @@ fn unprotect_include_variables(content: &mut String) {
     *content = content
         .replace(INCLUDE_VARIABLE_OPEN_SENTINEL, "{$")
         .replace(INCLUDE_VARIABLE_CLOSE_SENTINEL, "}");
-}
-
-fn wikidot_tag_conditions_match(spec: &str, tags: &[Cow<'_, str>]) -> bool {
-    if spec.trim().is_empty() {
-        return false;
-    }
-
-    let mut required = true;
-    let mut prohibited = true;
-    let mut present = false;
-    let mut had_present = false;
-
-    for raw_condition in spec.split_whitespace() {
-        let (operator, tag) = raw_condition.split_at(usize::from(
-            raw_condition.starts_with('+') || raw_condition.starts_with('-'),
-        ));
-        if tag.is_empty() {
-            continue;
-        }
-
-        let has_tag = tags.iter().any(|value| value.as_ref() == tag);
-        match operator {
-            "+" => required &= has_tag,
-            "-" => prohibited &= !has_tag,
-            _ => {
-                had_present = true;
-                present |= has_tag;
-            }
-        }
-    }
-
-    if !had_present {
-        present = true;
-    }
-
-    required && prohibited && present
 }
 
 fn apply_basalt_shell_compatibility(html: &mut String) {
@@ -12153,6 +12066,28 @@ mod tests {
             tags: Vec::new(),
             language: Cow::Borrowed("en"),
         }
+    }
+
+    fn prepare_test_wikidot_conditionals(
+        wikitext: &mut String,
+        page_info: &ftml::data::PageInfo<'_>,
+    ) {
+        let mut preserved = CompatTextFragments::new(wikitext);
+        RenderService::prepare_wikidot_conditionals_for_include_expansion(
+            wikitext,
+            page_info,
+            &mut preserved,
+        );
+        *wikitext = preserved.restore(wikitext);
+    }
+
+    fn resolve_test_wikidot_iftags(
+        wikitext: &mut String,
+        page_info: &ftml::data::PageInfo<'_>,
+    ) {
+        let mut preserved = CompatTextFragments::new(wikitext);
+        RenderService::resolve_wikidot_iftags(wikitext, page_info, &mut preserved);
+        *wikitext = preserved.restore(wikitext);
     }
 
     #[test]
@@ -15361,6 +15296,7 @@ mod tests {
             },
             included_pages: vec![PageRef::page_only("component:fixture")],
             wikidot_compat_html: CompatHtmlFragments::new(""),
+            wikidot_compat_text: CompatTextFragments::new(""),
         };
         let encoded = serde_json::to_string(&input).expect("serialize replay input");
         let decoded = serde_json::from_str(&encoded).expect("deserialize replay input");
@@ -15426,6 +15362,7 @@ mod tests {
             },
             included_pages: Vec::new(),
             wikidot_compat_html: CompatHtmlFragments::new(""),
+            wikidot_compat_text: CompatTextFragments::new(""),
         };
 
         let prepared = RenderService::prepare_corpus_replay_wikitext(input);
@@ -18500,24 +18437,6 @@ mod tests {
     }
 
     #[test]
-    fn removes_residual_wikidot_iftags_fragments_after_render() {
-        let html = concat!(
-            r#"<div class="modalbox-title [[iftags 殿堂入り]]heritage[[/iftags]]">"#,
-            "title</div>",
-            r#"<a href="/[[iftags +en]]target[[/iftags]]">link</a>"#,
-        );
-
-        let restored = RenderService::remove_residual_wikidot_iftags_fragments(html);
-
-        assert_eq!(
-            restored,
-            r#"<div class="modalbox-title ">title</div><a href="/">link</a>"#,
-        );
-        assert!(!restored.contains("[[iftags"));
-        assert!(!restored.contains("[[/iftags]]"));
-    }
-
-    #[test]
     fn resolves_parser_functions_only_outside_literal_regions() {
         let source = concat!(
             "[[code]]\n[[#expr 1+1]]\n[[/code]]\n",
@@ -18570,10 +18489,7 @@ mod tests {
         let mut source = r#"[[div class="[[#if 1 | folded | unfolded ]] [[#if 0 | inactive | active ]]"]]body[[/div]]"#.to_owned();
         let page_info = fallback_test_page_info("conditional", "Conditional");
 
-        RenderService::prepare_wikidot_conditionals_for_include_expansion(
-            &mut source,
-            &page_info,
-        );
+        prepare_test_wikidot_conditionals(&mut source, &page_info);
 
         assert_eq!(source, r#"[[div class="folded active"]]body[[/div]]"#);
         let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
@@ -18597,10 +18513,7 @@ mod tests {
         .to_owned();
         let page_info = fallback_test_page_info("conditional", "Conditional");
 
-        RenderService::prepare_wikidot_conditionals_for_include_expansion(
-            &mut source,
-            &page_info,
-        );
+        prepare_test_wikidot_conditionals(&mut source, &page_info);
 
         let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
         let mut includes = Vec::new();
@@ -18642,10 +18555,7 @@ mod tests {
         .to_owned();
         let page_info = fallback_test_page_info("conditional", "Conditional");
 
-        RenderService::prepare_wikidot_conditionals_for_include_expansion(
-            &mut source,
-            &page_info,
-        );
+        prepare_test_wikidot_conditionals(&mut source, &page_info);
         ftml::preprocess(&mut source);
         let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
         let tokens = ftml::tokenize(&source);
@@ -18674,6 +18584,7 @@ mod tests {
                 .to_owned(),
                 included_pages: Vec::new(),
                 wikidot_compat_html: CompatHtmlFragments::new(""),
+                wikidot_compat_text: CompatTextFragments::new(""),
             },
             &page_info,
             &settings,
@@ -19098,10 +19009,7 @@ mod tests {
         )
         .to_owned();
 
-        RenderService::prepare_wikidot_conditionals_for_include_expansion(
-            &mut wikitext,
-            &page_info,
-        );
+        prepare_test_wikidot_conditionals(&mut wikitext, &page_info);
 
         for visible in ["OMEGA_TRUE_MINUS", "OMEGA_TRUE_ALPHA", "OMEGA_BARE_OR"] {
             assert!(wikitext.contains(visible), "{visible}: {wikitext}");
@@ -19145,10 +19053,7 @@ mod tests {
         )
         .to_owned();
 
-        RenderService::prepare_wikidot_conditionals_for_include_expansion(
-            &mut wikitext,
-            &page_info,
-        );
+        prepare_test_wikidot_conditionals(&mut wikitext, &page_info);
 
         for literal in [
             ">[[iftags [[#ifexpr 1 == 1 | +alpha | +beta ]]]]",
@@ -19176,10 +19081,7 @@ mod tests {
         )
         .to_owned();
 
-        RenderService::resolve_single_line_wikidot_iftags_fragments(
-            &mut wikitext,
-            &page_info,
-        );
+        resolve_test_wikidot_iftags(&mut wikitext, &page_info);
 
         assert_eq!(wikitext, "\nOMEGA_EMPTY_NEGATIVE\n");
     }
@@ -19206,14 +19108,11 @@ mod tests {
         )
         .to_owned();
 
-        RenderService::resolve_single_line_wikidot_iftags_fragments(
-            &mut wikitext,
-            &page_info,
-        );
+        resolve_test_wikidot_iftags(&mut wikitext, &page_info);
 
         assert!(wikitext.contains("[[div_  class=\"Dendo\"]]"));
         assert!(wikitext.contains("[[span class=\"visible \"]]body[[/span]]"));
-        assert!(wikitext.contains("[[iftags +missing]]\nmultiline\n[[/iftags]]"));
+        assert!(!wikitext.contains("multiline"));
         assert!(!wikitext.contains("display: flex"));
         assert!(!wikitext.contains("hidden"));
     }
@@ -19242,6 +19141,7 @@ mod tests {
         let outer = RenderService::prepare_outer_render_wikitext(
             super::ExpandedRenderWikitext {
                 wikidot_compat_html: CompatHtmlFragments::new(&source),
+                wikidot_compat_text: CompatTextFragments::new(&source),
                 wikitext: source,
                 included_pages: Vec::new(),
             },
@@ -19302,7 +19202,7 @@ mod tests {
         )
         .to_owned();
 
-        RenderService::resolve_simple_wikidot_iftags_blocks(&mut wikitext, &page_info);
+        resolve_test_wikidot_iftags(&mut wikitext, &page_info);
 
         assert!(wikitext.contains("[[module css]]"));
         assert!(wikitext.contains(".a { color: red; }"));
@@ -19327,7 +19227,7 @@ mod tests {
         )
         .to_owned();
 
-        RenderService::resolve_simple_wikidot_iftags_blocks(&mut wikitext, &page_info);
+        resolve_test_wikidot_iftags(&mut wikitext, &page_info);
 
         assert!(wikitext.contains("[[module css]]"));
         assert!(wikitext.contains(".a { color: red; }"));
@@ -19347,7 +19247,7 @@ mod tests {
         )
         .to_owned();
 
-        RenderService::resolve_simple_wikidot_iftags_blocks(&mut wikitext, &page_info);
+        resolve_test_wikidot_iftags(&mut wikitext, &page_info);
 
         assert!(wikitext.contains("before\n"));
         assert!(wikitext.contains("after\n"));
@@ -19369,10 +19269,7 @@ mod tests {
         )
         .to_owned();
 
-        RenderService::prepare_wikidot_conditionals_for_include_expansion(
-            &mut wikitext,
-            &page_info,
-        );
+        prepare_test_wikidot_conditionals(&mut wikitext, &page_info);
 
         let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
         let mut includes = Vec::new();
@@ -19395,7 +19292,7 @@ mod tests {
     }
 
     #[test]
-    fn leaves_nested_multiline_wikidot_iftags_blocks_for_later_handling() {
+    fn active_outer_preserves_nested_multiline_wikidot_iftags_literal() {
         let page_info = fallback_test_page_info("black-queen-hub", "Black Queen Hub");
         let mut wikitext = concat!(
             "[[iftags -component]]\n",
@@ -19404,10 +19301,107 @@ mod tests {
         )
         .to_owned();
 
-        RenderService::resolve_simple_wikidot_iftags_blocks(&mut wikitext, &page_info);
+        resolve_test_wikidot_iftags(&mut wikitext, &page_info);
 
-        assert!(wikitext.contains("[[iftags -component]]"));
+        assert!(!wikitext.contains("[[iftags -component]]"));
         assert!(wikitext.contains("[[iftags +theme]]nested[[/iftags]]"));
+    }
+
+    #[test]
+    fn repeated_render_preparation_preserves_nested_iftags_for_ftml() {
+        let page_info = ftml::data::PageInfo {
+            tags: vec![Cow::Borrowed("alpha")],
+            ..fallback_test_page_info("nested", "Nested")
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut wikitext = concat!(
+            "[[iftags +alpha]]\n",
+            "outer-before\n",
+            "[[iftags +beta]]inner[[/iftags]]\n",
+            "outer-after\n",
+            "[[/iftags]]\n",
+            "root-after\n",
+        )
+        .to_owned();
+        let mut wikidot_compat_text = CompatTextFragments::new(&wikitext);
+        for _ in 0..2 {
+            RenderService::prepare_wikidot_conditionals_for_include_expansion(
+                &mut wikitext,
+                &page_info,
+                &mut wikidot_compat_text,
+            );
+        }
+        assert!(wikitext.contains(COMPAT_TEXT_MARKER_PREFIX), "{wikitext}");
+
+        let outer = RenderService::prepare_outer_render_wikitext(
+            super::ExpandedRenderWikitext {
+                wikitext,
+                included_pages: Vec::new(),
+                wikidot_compat_html: CompatHtmlFragments::new(""),
+                wikidot_compat_text,
+            },
+            &page_info,
+            &settings,
+        );
+        assert!(!outer.wikitext.contains("[[iftags +alpha]]"));
+        assert!(outer.wikitext.contains(COMPAT_TEXT_MARKER_PREFIX));
+        assert!(outer.wikitext.contains("root-after"));
+
+        let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+        let tokens = ftml::tokenize(&inner.wikitext);
+        let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        assert!(errors.is_empty(), "{errors:#?}");
+        let html = HtmlRender.render(&tree, &page_info, &settings).body;
+        let html = inner.wikidot_compat_text.restore(&html);
+        assert!(html.contains("[[iftags +beta]]inner[[/iftags]]"), "{html}");
+        assert!(html.contains("root-after"), "{html}");
+    }
+
+    #[test]
+    fn malformed_iftags_remain_literal_without_ftml_parser_errors() {
+        let page_info = ftml::data::PageInfo {
+            tags: vec![Cow::Borrowed("alpha")],
+            ..fallback_test_page_info("malformed", "Malformed")
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut wikitext = concat!(
+            "[[/iftags]]\n",
+            "[[iftags +alpha]]selected[[/iftags]]\n",
+            "[[iftags +alpha]]unclosed\n",
+            "[[iftags -alpha]]repeated\n",
+        )
+        .to_owned();
+        let mut wikidot_compat_text = CompatTextFragments::new(&wikitext);
+        for _ in 0..2 {
+            RenderService::prepare_wikidot_conditionals_for_include_expansion(
+                &mut wikitext,
+                &page_info,
+                &mut wikidot_compat_text,
+            );
+        }
+
+        let outer = RenderService::prepare_outer_render_wikitext(
+            super::ExpandedRenderWikitext {
+                wikitext,
+                included_pages: Vec::new(),
+                wikidot_compat_html: CompatHtmlFragments::new(""),
+                wikidot_compat_text,
+            },
+            &page_info,
+            &settings,
+        );
+        let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+        let tokens = ftml::tokenize(&inner.wikitext);
+        let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        assert!(errors.is_empty(), "{errors:#?}");
+        let html = HtmlRender.render(&tree, &page_info, &settings).body;
+        let html = inner.wikidot_compat_text.restore(&html);
+        for literal in ["[[/iftags]]", "[[iftags +alpha]]", "[[iftags -alpha]]"] {
+            assert!(html.contains(literal), "{literal}: {html}");
+        }
+        for marker in ["selected", "unclosed", "repeated"] {
+            assert!(html.contains(marker), "{marker}: {html}");
+        }
     }
 
     fn wikidot_site(slug: &str, preferred_domain: Option<&str>) -> SiteModel {
