@@ -8,7 +8,9 @@ required_rust_version=1.95.0
 pnpm_version=11.12.0
 legacy_node24_link=/opt/wikijump/node24
 node24_env=/root/.config/wikijump/node24.sh
-cargo_command=(rustup run "$required_rust_version" cargo)
+trusted_node24_dir=/opt/wikijump/trusted-node24
+trusted_rustup=/usr/local/bin/rustup
+cargo_command=("$trusted_rustup" run "$required_rust_version" cargo)
 
 printf 'Wikijump Codex Cloud setup revision %s\n' "$script_revision"
 
@@ -162,6 +164,11 @@ activate_node24() {
   fi
 
   node_bin=$(dirname "$node_executable")
+  sudo rm -rf -- "$trusted_node24_dir"
+  sudo mkdir -p -- "$trusted_node24_dir"
+  sudo cp -a "$(dirname "$node_bin")/." "$trusted_node24_dir/"
+  node_bin="$trusted_node24_dir/bin"
+  node_executable="$node_bin/node"
   case "${PATH-}" in
     "$node_bin"|"$node_bin":*) ;;
     *) PATH="$node_bin${PATH:+:${PATH}}" ;;
@@ -222,7 +229,8 @@ printf 'Using %s at %s\n' "$(node --version)" "$(command -v node)"
 
 retry env RUSTUP_MAX_RETRIES=5 rustup toolchain install "$required_rust_version" \
   --profile minimal --component clippy,rustfmt,rust-src --no-self-update
-printf 'Using %s\n' "$(rustup run "$required_rust_version" rustc --version)"
+sudo install -m 0755 "$(command -v rustup)" "$trusted_rustup"
+printf 'Using %s\n' "$("$trusted_rustup" run "$required_rust_version" rustc --version)"
 
 export npm_config_fetch_retries=5
 export npm_config_fetch_retry_factor=2

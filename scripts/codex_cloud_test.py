@@ -50,6 +50,11 @@ class CodexCloudScriptTests(unittest.TestCase):
         self.assertEqual(maintenance.count("--ignore-pnpmfile --ignore-scripts --frozen-lockfile"), 3)
         self.assertEqual(maintenance.count("CARGO_NET_GIT_FETCH_WITH_CLI=false"), 3)
         self.assertEqual(maintenance.count('GIT_CONFIG_GLOBAL=/dev/null'), 3)
+        self.assertIn('cargo_command=("$trusted_rustup" run "$required_rust_version" cargo)', maintenance)
+        self.assertIn('"$trusted_node24_dir/bin/pnpm" --dir', maintenance)
+        self.assertIn("/usr/local/bin/wikijump-cloud-services", maintenance)
+        self.assertNotIn('export PATH="$HOME/.cargo/bin', maintenance)
+        self.assertNotIn('. "$NVM_DIR/nvm.sh"', maintenance)
         for prohibited in ("pnpm install", "cargo build", "cargo test", "sqlx migrate", "python3 -m", "seed"):
             self.assertNotIn(prohibited, maintenance)
 
@@ -59,6 +64,7 @@ class CodexCloudScriptTests(unittest.TestCase):
             self.assertIn('sudo rm -f -- "$legacy_node24_link"', content)
             self.assertNotRegex(content, r"ln\s+-[^\n]*\$legacy_node24_link")
             self.assertIn("node24.sh", content)
+            self.assertIn("trusted_node24_dir=/opt/wikijump/trusted-node24", content)
 
     def test_documentation_points_to_canonical_scripts(self):
         documentation = read(DOCUMENTATION)
