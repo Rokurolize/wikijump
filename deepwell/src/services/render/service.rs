@@ -302,6 +302,7 @@ const MAX_BACKLINKS_MODULE_ROWS: usize = 500;
 const LONG_NATIVE_LIST_RENDER_MIN_ITEMS: usize = 8;
 const MAX_NATIVE_LIST_COMPAT_DEPTH: usize = 64;
 const MAX_FTML_COMPAT_PARSE_BYTES: usize = 768_000;
+const MAX_FTML_COMPAT_PREPROCESS_BYTES: usize = MAX_FTML_COMPAT_PARSE_BYTES;
 const MAX_FTML_COMPAT_DENSE_PARSE_SCORE: usize = 180_000;
 const MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS: usize = 48;
 const MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES: usize = 64_000;
@@ -5640,6 +5641,10 @@ impl RenderService {
             return true;
         }
 
+        if Self::wikidot_compat_has_quote_preprocess_amplification(wikitext) {
+            return true;
+        }
+
         let page_name = page_info.page.as_ref();
         let title = page_info.title.as_ref();
         if !page_name.contains("scp-style-resource")
@@ -5660,6 +5665,40 @@ impl RenderService {
         wikitext.len() >= MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES
             && wikitext.matches("[[tab").count()
                 >= MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS
+    }
+
+    fn wikidot_compat_has_quote_preprocess_amplification(wikitext: &str) -> bool {
+        let mut active_quote_depth = 0usize;
+        let mut projected_bytes = 0usize;
+
+        for line in wikitext.split_inclusive('\n') {
+            let (body, ending) = split_wikitext_line(line);
+            let trimmed = body.trim_start_matches([' ', '\t']);
+            if !trimmed.starts_with('>') {
+                active_quote_depth = 0;
+                projected_bytes = projected_bytes.saturating_add(line.len());
+            } else {
+                let valid_depth = wikidot_compat_valid_quote_depth(body);
+                if valid_depth > 0 {
+                    active_quote_depth = valid_depth;
+                    projected_bytes = projected_bytes.saturating_add(line.len());
+                } else if active_quote_depth == 0 {
+                    projected_bytes = projected_bytes.saturating_add(ending.len());
+                } else {
+                    let indentation_len = body.len() - trimmed.len();
+                    projected_bytes = projected_bytes
+                        .saturating_add(indentation_len)
+                        .saturating_add(active_quote_depth.saturating_mul(2))
+                        .saturating_add(ending.len());
+                }
+            }
+
+            if projected_bytes > MAX_FTML_COMPAT_PREPROCESS_BYTES {
+                return true;
+            }
+        }
+
+        false
     }
 
     fn ftml_compat_render_timeout(config: &Config, wikitext: &str) -> Duration {
@@ -11829,6 +11868,27 @@ fn public_url_port_suffix(port: Option<u16>) -> String {
     port.map(|port| format!(":{port}")).unwrap_or_default()
 }
 
+fn split_wikitext_line(line: &str) -> (&str, &str) {
+    if let Some(body) = line.strip_suffix("\r\n") {
+        (body, "\r\n")
+    } else if let Some(body) = line.strip_suffix('\n') {
+        (body, "\n")
+    } else {
+        (line, "")
+    }
+}
+
+fn wikidot_compat_valid_quote_depth(body: &str) -> usize {
+    let body = body.trim_start_matches([' ', '\t']);
+    let depth = body.bytes().take_while(|byte| *byte == b'>').count();
+    let rest = &body[depth..];
+    if depth > 0 && (rest.is_empty() || rest.starts_with([' ', '\t', '\r'])) {
+        depth
+    } else {
+        0
+    }
+}
+
 fn rendered_wikidot_mailform_attribute(head: &str, name: &str) -> Option<String> {
     let prefix = format!("{name}=&quot;");
     let start = head.find(&prefix)? + prefix.len();
@@ -15804,6 +15864,29 @@ mod tests {
                 "vg021-jp-author-congy-2e28d21069",
                 "[jp] author:congy"
             )
+        ));
+    }
+
+    #[test]
+    fn amplified_tight_quote_lines_use_compatibility_fallback_before_ftml() {
+        let mut source = String::new();
+        source.push_str(&format!("{} quoted header\n", ">".repeat(20_000)));
+        source.push_str(&">x\n".repeat(100));
+
+        assert!(source.len() < MAX_FTML_COMPAT_PARSE_BYTES);
+        assert!(RenderService::should_use_wikidot_compatibility_fallback(
+            &source,
+            &fallback_test_page_info("quote-depth-poc", "Quote Depth PoC")
+        ));
+    }
+
+    #[test]
+    fn ordinary_tight_quote_lines_stay_parse_eligible() {
+        let source = "> quoted header\n>x\n>y\n";
+
+        assert!(!RenderService::should_use_wikidot_compatibility_fallback(
+            source,
+            &fallback_test_page_info("ordinary-quotes", "Ordinary Quotes")
         ));
     }
 
