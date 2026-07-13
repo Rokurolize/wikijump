@@ -21,6 +21,8 @@ use crate::api::ServerState;
 use crate::services::render::CORPUS_RENDER_BUDGET_US;
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, Value};
 
+const LATEST_COMPLETED_IMPORT_RUN_SQL: &str = "SELECT import_run_id FROM wikidot_corpus_import_run WHERE state = 'done' AND finished_at IS NOT NULL ORDER BY started_at DESC, import_run_id DESC LIMIT 1";
+
 impl CorpusRenderInventoryService {
     pub async fn run(
         state: &ServerState,
@@ -53,7 +55,7 @@ async fn select_latest_import_run(state: &ServerState) -> Result<Option<i64>> {
     };
     let statement = Statement::from_string(
         DatabaseBackend::Postgres,
-        "SELECT import_run_id FROM wikidot_corpus_import_run ORDER BY started_at DESC, import_run_id DESC LIMIT 1",
+        LATEST_COMPLETED_IMPORT_RUN_SQL,
     );
     state
         .database
@@ -244,6 +246,16 @@ async fn load_inventory_rows(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn latest_completed_import_run_sql_filters_to_terminal_successes() {
+        assert!(LATEST_COMPLETED_IMPORT_RUN_SQL.contains("WHERE state = 'done'"));
+        assert!(LATEST_COMPLETED_IMPORT_RUN_SQL.contains("AND finished_at IS NOT NULL"));
+        assert!(
+            LATEST_COMPLETED_IMPORT_RUN_SQL
+                .contains("ORDER BY started_at DESC, import_run_id DESC")
+        );
+    }
 
     #[test]
     fn latest_attempt_sql_is_pass_scoped_and_descending() {
