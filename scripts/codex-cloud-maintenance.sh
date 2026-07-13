@@ -8,7 +8,9 @@ required_rust_version=1.95.0
 pnpm_version=11.12.0
 legacy_node24_link=/opt/wikijump/node24
 node24_env=/root/.config/wikijump/node24.sh
-cargo_command=(rustup run "$required_rust_version" cargo)
+trusted_node24_dir=/opt/wikijump/trusted-node24
+trusted_rustup=/usr/local/bin/rustup
+cargo_command=("$trusted_rustup" run "$required_rust_version" cargo)
 
 printf 'Wikijump Codex Cloud maintenance revision %s\n' "$script_revision"
 
@@ -58,7 +60,7 @@ prepare_process_environment() {
       *) clean_path+="${clean_path:+:}$entry" ;;
     esac
   done
-  export PATH="$HOME/.cargo/bin${clean_path:+:$clean_path}"
+  export PATH="${clean_path:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
   unset RUSTUP_TOOLCHAIN
 }
 
@@ -127,51 +129,25 @@ install_shell_hooks() {
 }
 
 activate_node24() {
-  local installed_version
   local actual_node_major
-  local git_exclude
-  local node_executable
-  local node_bin
+  local node_executable="$trusted_node24_dir/bin/node"
+  local node_bin="$trusted_node24_dir/bin"
 
   cleanup_legacy_node24_link
 
-  export NVM_DIR="${NVM_DIR:-/root/.nvm}"
-  if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
-    printf 'NVM initialization script is missing: %s\n' "$NVM_DIR/nvm.sh" >&2
-    return 1
-  fi
-
-  set +u
-  # shellcheck disable=SC1091
-  . "$NVM_DIR/nvm.sh"
-
-  installed_version=$(nvm version "$required_node_major" 2>/dev/null || true)
-  if [[ -z "$installed_version" || "$installed_version" == N/A ]]; then
-    if ! retry nvm install "$required_node_major"; then
-      set -u
-      return 1
-    fi
-  fi
-
-  nvm use --silent "$required_node_major"
-  nvm alias default "$required_node_major" >/dev/null
-  node_executable=$(nvm which "$required_node_major" 2>/dev/null || true)
-  set -u
-
-  if [[ -z "$node_executable" || ! -x "$node_executable" ]]; then
-    printf 'NVM did not provide an executable for Node.js %s.\n' \
-      "$required_node_major" >&2
+  if [[ ! -x "$node_executable" ]]; then
+    printf 'Trusted Node.js %s executable is missing: %s\n' \
+      "$required_node_major" "$node_executable" >&2
     return 1
   fi
 
   actual_node_major=$("$node_executable" -p 'process.versions.node.split(".")[0]')
   if [[ "$actual_node_major" != "$required_node_major" ]]; then
-    printf 'Failed to activate Node.js %s; Node.js %s is active.\n' \
+    printf 'Trusted Node.js path should provide Node.js %s but provides Node.js %s. Reset the Codex environment cache.\n' \
       "$required_node_major" "$actual_node_major" >&2
     return 1
   fi
 
-  node_bin=$(dirname "$node_executable")
   case "${PATH-}" in
     "$node_bin"|"$node_bin":*) ;;
     *) PATH="$node_bin${PATH:+:${PATH}}" ;;
@@ -203,22 +179,13 @@ PROFILE_ENV
   if [[ -e /root/.bash_profile ]]; then
     install_shell_hooks /root/.bash_profile
   fi
-
-  if ! git -C "$repo" ls-files --error-unmatch .nvmrc >/dev/null 2>&1; then
-    printf '%s\n' "$required_node_major" >"$repo/.nvmrc"
-    git_exclude=$(git -C "$repo" rev-parse --path-format=absolute --git-path info/exclude)
-    mkdir -p "$(dirname "$git_exclude")"
-    if ! grep -Fqx '/.nvmrc' "$git_exclude" 2>/dev/null; then
-      printf '%s\n' '/.nvmrc' >>"$git_exclude"
-    fi
-  fi
 }
 
 prepare_process_environment
 cd "$repo"
 activate_node24
 printf 'Using %s at %s\n' "$(node --version)" "$(command -v node)"
-printf 'Using %s\n' "$(rustup run "$required_rust_version" rustc --version)"
+printf 'Using %s\n' "$("$trusted_rustup" run "$required_rust_version" rustc --version)"
 cd /
 
 export npm_config_fetch_retries=5
@@ -226,19 +193,19 @@ export npm_config_fetch_retry_factor=2
 export npm_config_fetch_retry_mintimeout=10000
 export npm_config_fetch_retry_maxtimeout=120000
 
-installed_pnpm=$(pnpm --version 2>/dev/null || true)
+installed_pnpm=$("$trusted_node24_dir/bin/pnpm" --version 2>/dev/null || true)
 if [[ "$installed_pnpm" != "$pnpm_version" ]]; then
   # Remove a conflicting Corepack shim only when replacement is necessary.
   # Leaving a verified npm-installed pnpm in place keeps maintenance idempotent.
-  corepack disable pnpm >/dev/null 2>&1 || true
-  retry npm install --global --no-audit --no-fund "pnpm@${pnpm_version}"
+  "$trusted_node24_dir/bin/corepack" disable pnpm >/dev/null 2>&1 || true
+  retry "$trusted_node24_dir/bin/npm" install --global --no-audit --no-fund "pnpm@${pnpm_version}"
   hash -r
 fi
-[[ "$(pnpm --version)" == "$pnpm_version" ]]
+[[ "$("$trusted_node24_dir/bin/pnpm" --version)" == "$pnpm_version" ]]
 
-retry pnpm --dir "$repo/framerail" fetch --ignore-pnpmfile --ignore-scripts --frozen-lockfile
-retry pnpm --dir "$repo/install/local/wikidot-verification" fetch --ignore-pnpmfile --ignore-scripts --frozen-lockfile
-retry pnpm --dir "$repo/locales/typed" fetch --ignore-pnpmfile --ignore-scripts --frozen-lockfile
+retry "$trusted_node24_dir/bin/pnpm" --dir "$repo/framerail" fetch --ignore-pnpmfile --ignore-scripts --frozen-lockfile
+retry "$trusted_node24_dir/bin/pnpm" --dir "$repo/install/local/wikidot-verification" fetch --ignore-pnpmfile --ignore-scripts --frozen-lockfile
+retry "$trusted_node24_dir/bin/pnpm" --dir "$repo/locales/typed" fetch --ignore-pnpmfile --ignore-scripts --frozen-lockfile
 
 export CARGO_NET_RETRY=5
 export CARGO_HTTP_TIMEOUT=120
@@ -249,8 +216,8 @@ retry env CARGO_NET_GIT_FETCH_WITH_CLI=false GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GL
 retry env CARGO_NET_GIT_FETCH_WITH_CLI=false GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null \
   "${cargo_command[@]}" fetch --locked --manifest-path "$repo/locales/validator/Cargo.toml"
 
-if ! command -v wikijump-cloud-services >/dev/null 2>&1; then
-  echo 'wikijump-cloud-services is missing; reset the Codex environment cache.' >&2
+if [[ ! -x /usr/local/bin/wikijump-cloud-services ]]; then
+  echo '/usr/local/bin/wikijump-cloud-services is missing; reset the Codex environment cache.' >&2
   exit 1
 fi
-wikijump-cloud-services
+/usr/local/bin/wikijump-cloud-services
