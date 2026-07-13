@@ -169,7 +169,7 @@ mod tests {
     fn relation_condition_matches_legacy_and_namespaced_database_values() {
         let statement = relation::Entity::find()
             .filter(relation_condition(
-                RelationType::SiteBan,
+                RelationType::SiteUser,
                 RelationObject::Site(42),
                 RelationObject::User(7),
             ))
@@ -177,7 +177,7 @@ mod tests {
 
         let sql = statement.to_string();
         assert!(
-            sql.contains(r#""relation"."relation_type" IN ('ban', 'site-ban')"#),
+            sql.contains(r#""relation"."relation_type" IN ('user', 'site-user')"#),
             "{sql}"
         );
     }

@@ -200,7 +200,7 @@ async fn get_relation(
     let model = Relation::find()
         .filter(
             Condition::all()
-                .add(relation::Column::RelationType.eq(RelationType::SiteUser))
+                .add(relation_type_condition(RelationType::SiteUser))
                 .add(condition)
                 .add(relation::Column::OverwrittenAt.is_null())
                 .add(relation::Column::DeletedAt.is_null()),
