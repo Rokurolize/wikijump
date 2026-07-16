@@ -27,6 +27,7 @@ import {
   shouldProcessParentLinks,
 } from '../src/corpus-import-parent-links.mjs';
 import { createSqlExecutor } from '../src/corpus-import-sql.mjs';
+import { deepwellRpcAuthorization } from '../src/deepwell-rpc-auth.mjs';
 import {
   sqlByteaFromHex,
   sqlInt,
@@ -454,7 +455,7 @@ async function rpc(args, method, params, requestContext = {}) {
   rpcSequence += 1;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), args.rpcTimeoutMs);
-  const headers = { 'content-type': 'application/json' };
+  const headers = { authorization: deepwellRpcAuthorization(), 'content-type': 'application/json' };
   const sessionToken = requestContext.sessionToken ?? args.sessionToken;
   const siteId = requestContext.siteId ?? null;
   const pageRef = requestContext.pageRef ?? null;

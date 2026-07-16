@@ -20,9 +20,44 @@
 
 use s3::creds::Credentials;
 use s3::region::Region;
+use std::fmt;
+
+#[derive(Clone)]
+pub struct RpcToken(String);
+
+impl RpcToken {
+    pub fn parse(value: String) -> Result<Self, &'static str> {
+        if value.len() != 64
+            || !value
+                .as_bytes()
+                .iter()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(byte))
+        {
+            return Err(
+                "DEEPWELL_RPC_TOKEN must be exactly 64 lowercase hexadecimal characters",
+            );
+        }
+        Ok(Self(value))
+    }
+
+    pub fn expose(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Debug for RpcToken {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("RpcToken([REDACTED])")
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Secrets {
+    /// The service token used to authenticate to DEEPWELL.
+    ///
+    /// Set using environment variable `DEEPWELL_RPC_TOKEN`.
+    pub deepwell_rpc_token: RpcToken,
+
     /// The URL of the DEEPWELL server to connect to.
     ///
     /// Set using environment variable `DEEPWELL_URL`.

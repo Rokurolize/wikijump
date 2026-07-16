@@ -30,13 +30,13 @@ use crate::config::{Config, Secrets};
 use crate::endpoints::all::*;
 use crate::error::prelude::*;
 use crate::locales::Localizations;
-use crate::middleware::{RequestContextHeaders, RequestContextLayer};
+use crate::middleware::{RequestContextHeaders, RequestContextLayer, RpcAuthLayer};
 use crate::runtime::ServerStateInner;
 use crate::services::blob::MimeAnalyzer;
 use crate::services::job::JobWorker;
 use crate::services::{RequestContext, ServiceContext, SessionService};
 use crate::{database, info, redis as redis_db};
-use jsonrpsee::server::{RpcModule, Server, ServerHandle};
+use jsonrpsee::server::{RpcModule, Server, ServerConfig, ServerHandle};
 use reqwest::Client as ReqwestClient;
 use s3::bucket::Bucket;
 use sea_orm::TransactionTrait;
@@ -70,6 +70,7 @@ async fn build_server_state_inner(
     Secrets {
         database_url,
         redis_url,
+        rpc_token_digest,
         s3_files_bucket,
         s3_tblocks_bucket,
         s3_region,
@@ -153,6 +154,7 @@ async fn build_server_state_inner(
     // Build server state
     let state = Arc::new(ServerStateInner {
         config,
+        rpc_token_digest,
         database,
         redis,
         rsmq,
@@ -186,8 +188,14 @@ pub async fn build_server_at(
     socket_address: SocketAddr,
 ) -> Result<(SocketAddr, ServerHandle)> {
     let make_error = || Error::new("failed to build server", ErrorType::ServerSetup);
+    let rpc_token_digest = app_state.rpc_token_digest.clone();
     let server = Server::builder()
-        .set_http_middleware(tower::ServiceBuilder::new().layer(RequestContextLayer))
+        .set_config(ServerConfig::builder().http_only().build())
+        .set_http_middleware(
+            tower::ServiceBuilder::new()
+                .layer(RpcAuthLayer::new(rpc_token_digest))
+                .layer(RequestContextLayer),
+        )
         .build(socket_address)
         .await
         .or_raise(make_error)?;

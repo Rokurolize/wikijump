@@ -4,6 +4,7 @@ For a permanent dev deployment, you can run docker-compose to start the provided
 
 The main infrastructural requirements are a Postgres database and two S3 buckets. Information about how to access external resources must be passed as environment variables.
 Set `VALKEY_PASSWORD` to a randomly generated URL-safe password of at least 16 characters before starting the stack; the bundled Valkey service is not published to the host and application containers authenticate to it with this password. Do not place the password directly on a `valkey-cli` command line; the bundled healthcheck uses `VALKEYCLI_AUTH` instead.
+Set `DEEPWELL_RPC_TOKEN` to a randomly generated 256-bit token from `openssl rand -hex 32`. Deepwell, Framerail, WWS, and Caddy must receive the same value; it is a service credential and does not replace end-user session or permission checks.
 Presently, Valkey (Redis) is exposed as Docker images. If you wish, you can replace it with an external service by updating the appropriate environment variables.
 
 Note that the database is intended to be recreated on dev re-deploy (at least for the time being), which can be implemented by deleting the container before the next `up`.

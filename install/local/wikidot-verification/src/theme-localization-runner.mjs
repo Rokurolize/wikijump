@@ -79,12 +79,13 @@ export async function createLiveThemeDependencies({env = process.env, browserRoo
   if (cdpEndpoint && browserExecutable) throw new Error("CDP endpoint cannot be combined with a browser executable");
   const validatedCdpEndpoint = cdpEndpoint ? validateThemeCdpEndpoint(cdpEndpoint) : null;
   const rpcUrl = validateGuardedThemeRpcUrl(env.WIKIJUMP_THEME_RPC_URL);
-  const secrets = [requiredEnv(env, "WIKIDOT_USERNAME"), requiredEnv(env, "WIKIDOT_PASSWORD"), requiredEnv(env, "WIKIJUMP_THEME_ADMIN_EMAIL"), requiredEnv(env, "WIKIJUMP_THEME_ADMIN_PASSWORD")];
+  const rpcToken = requiredEnv(env, "DEEPWELL_RPC_TOKEN");
+  const secrets = [requiredEnv(env, "WIKIDOT_USERNAME"), requiredEnv(env, "WIKIDOT_PASSWORD"), requiredEnv(env, "WIKIJUMP_THEME_ADMIN_EMAIL"), requiredEnv(env, "WIKIJUMP_THEME_ADMIN_PASSWORD"), rpcToken];
   const actorUserId = env.WIKIJUMP_THEME_ACTOR_USER_ID === undefined ? -1 : Number(env.WIKIJUMP_THEME_ACTOR_USER_ID);
   if (!Number.isSafeInteger(actorUserId)) throw new Error("WIKIJUMP_THEME_ACTOR_USER_ID must be an integer");
   const storageStates = needsBrowser ? {wikidot: await validateStorageState(wikidotStorageState), wikijump: await validateStorageState(wikijumpStorageState)} : {};
   const wikidot = new WikidotThemePageAdapter({helperOptions: {env}});
-  const wikijump = new DeepwellThemePageAdapter({rpcUrl, adminEmail: env.WIKIJUMP_THEME_ADMIN_EMAIL, adminPassword: env.WIKIJUMP_THEME_ADMIN_PASSWORD, actorUserId});
+  const wikijump = new DeepwellThemePageAdapter({rpcUrl, rpcToken, adminEmail: env.WIKIJUMP_THEME_ADMIN_EMAIL, adminPassword: env.WIKIJUMP_THEME_ADMIN_PASSWORD, actorUserId});
   let browserSession = null;
   try {
     await wikidot.connect();

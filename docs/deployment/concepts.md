@@ -8,6 +8,8 @@ We are using [Komodo](https://komo.do)-based dev tier hosting. This self-hostabl
 
 As such, we are documenting setup steps and we store infrastructure files in `install/{dev,prod}/komodo/`.
 
+Deepwell is a trusted internal HTTP API, but network location alone is not its authentication boundary. Every deployment must provision the same 64-character lowercase hexadecimal `DEEPWELL_RPC_TOKEN` to Deepwell and each repository caller at runtime; the token must not be a build argument or committed value. This shared credential identifies a trusted service, while Framerail remains responsible for end-user sessions and permission checks. Rotate it by updating the secret store and recreating Deepwell and all callers in one coordinated deployment.
+
 Komodo has the concept of a **core**, which is the leader of a cluster, responsible for overseeing the other machines and maintaining the health of deployed services and other resources.
 
 It can support one or more **machines**, which run Periphery, management software which is responsible for effectuating the instructions given to it by the Komodo Core instance.

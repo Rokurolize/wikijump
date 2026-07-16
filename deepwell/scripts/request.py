@@ -8,6 +8,15 @@ import sys
 import requests
 
 
+def rpc_authorization():
+    token = os.environ.get("DEEPWELL_RPC_TOKEN", "")
+    if len(token) != 64 or any(c not in "0123456789abcdef" for c in token):
+        raise ValueError(
+            "DEEPWELL_RPC_TOKEN must be exactly 64 lowercase hexadecimal characters"
+        )
+    return f"Bearer {token}"
+
+
 def color_settings(value):
     match value:
         case "auto":
@@ -43,6 +52,7 @@ def deepwell_request(endpoint, method, data, id=0, color=False):
     try:
         r = requests.post(
             endpoint,
+            headers={"Authorization": rpc_authorization()},
             json={
                 "jsonrpc": "2.0",
                 "method": method,

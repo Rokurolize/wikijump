@@ -6,6 +6,7 @@ import https from "node:https";
 import net from "node:net";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
+import {deepwellRpcAuthorization} from "./deepwell-rpc-auth.mjs";
 
 const SCHEMA_VERSION = 1;
 const DEFAULT_TTL_MS = 30000;
@@ -181,7 +182,7 @@ function probeTcpEndpoint({name, host, port}) {
 
 async function probeRuntimeUrls() {
   return Promise.all([
-    probeHttpEndpoint({name: "deepwell", method: "POST", url: "http://127.0.0.1:2747/jsonrpc", headers: {"content-type": "application/json"}, okStatus: (statusCode) => statusCode === 200}),
+    probeHttpEndpoint({name: "deepwell", method: "POST", url: "http://127.0.0.1:2747/jsonrpc", headers: {authorization: deepwellRpcAuthorization(), "content-type": "application/json"}, okStatus: (statusCode) => statusCode === 200}),
     probeHttpEndpoint({name: "framerail", method: "HEAD", url: "http://127.0.0.1:3393/", headers: {"x-wikijump-site-slug": "www", "x-wikijump-site-id": "6000000"}, okStatus: (statusCode) => statusCode < 500}),
     probeHttpEndpoint({name: "wws", method: "HEAD", url: "http://127.0.0.1:3466/-/health-check", okStatus: (statusCode) => statusCode >= 200 && statusCode < 300}),
     probeHttpEndpoint({name: "caddy", method: "HEAD", url: "https://wikijump.localhost/-/health-check/caddy", okStatus: (statusCode) => statusCode >= 200 && statusCode < 300}),

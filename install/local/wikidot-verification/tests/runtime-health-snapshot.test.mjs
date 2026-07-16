@@ -322,6 +322,7 @@ test("cli help, usage errors, and quiet snapshot smoke", async (t) => {
   const quiet = spawnSync(process.execPath, [CLI_SCRIPT, "--quiet", "--snapshot", snapshotPath], {
     cwd: PACKAGE_ROOT,
     encoding: "utf8",
+    env: {...process.env, DEEPWELL_RPC_TOKEN: "0".repeat(64)},
     timeout: 10000,
   });
   assert.equal(quiet.status, 0);

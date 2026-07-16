@@ -17,6 +17,7 @@ file_paths = ["docker-compose.yaml"]
 # Pass-through variables/secrets defined in variables.toml
 environment = """
 POSTGRES_PASSWORD=[[POSTGRES_PASSWORD]]
+DEEPWELL_RPC_TOKEN=[[DEEPWELL_RPC_TOKEN]]
 S3_FILES_BUCKET=[[S3_FILES_BUCKET]]
 S3_TEXT_BLOCKS_BUCKET=[[S3_TEXT_BLOCKS_BUCKET]]
 S3_CUSTOM_ENDPOINT=[[S3_CUSTOM_ENDPOINT]]

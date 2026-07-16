@@ -23,7 +23,7 @@ mod object;
 mod secrets;
 
 pub use self::object::Config;
-pub use self::secrets::Secrets;
+pub use self::secrets::{RpcToken, Secrets};
 
 use self::args::Arguments;
 use dotenvy::dotenv;
@@ -108,6 +108,8 @@ where
 
     // Process secrets
     let deepwell_url = required_env!("DEEPWELL_URL");
+    let deepwell_rpc_token =
+        RpcToken::parse(required_env!("DEEPWELL_RPC_TOKEN")).map_err(str::to_string)?;
     let redis_url = required_env!("REDIS_URL");
 
     let s3_files_bucket = required_env!("S3_FILES_BUCKET");
@@ -174,6 +176,7 @@ where
 
     let secrets = Secrets {
         deepwell_url,
+        deepwell_rpc_token,
         redis_url,
         s3_files_bucket,
         s3_tblocks_bucket,
@@ -259,6 +262,10 @@ mod tests {
             ("PID_FILE", "/tmp/wws.pid"),
             ("ADDRESS", "127.0.0.1:8080"),
             ("DEEPWELL_URL", "http://deepwell:2747"),
+            (
+                "DEEPWELL_RPC_TOKEN",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+            ),
             ("REDIS_URL", "redis://cache:6379"),
             ("S3_FILES_BUCKET", "files"),
             ("S3_TEXT_BLOCKS_BUCKET", "text-blocks"),
@@ -282,6 +289,10 @@ mod tests {
         assert_eq!(config.address.ip(), IpAddr::V4(Ipv4Addr::LOCALHOST));
         assert_eq!(config.address.port(), 8080);
         assert_eq!(secrets.deepwell_url, "http://deepwell:2747");
+        assert_eq!(
+            format!("{:?}", secrets.deepwell_rpc_token),
+            "RpcToken([REDACTED])"
+        );
         assert_eq!(secrets.redis_url, "redis://cache:6379");
         assert_eq!(secrets.s3_files_bucket, "files");
         assert_eq!(secrets.s3_tblocks_bucket, "text-blocks");
@@ -301,6 +312,10 @@ mod tests {
     fn load_config_from_env_uses_aws_region_and_profile_credentials_fallback() {
         let vars = &[
             ("DEEPWELL_URL", "http://deepwell:2747"),
+            (
+                "DEEPWELL_RPC_TOKEN",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+            ),
             ("REDIS_URL", "redis://cache:6379"),
             ("S3_FILES_BUCKET", "files"),
             ("S3_TEXT_BLOCKS_BUCKET", "text-blocks"),
@@ -345,6 +360,10 @@ mod tests {
     fn load_config_from_env_reports_invalid_path_style() {
         let vars = &[
             ("DEEPWELL_URL", "http://deepwell:2747"),
+            (
+                "DEEPWELL_RPC_TOKEN",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+            ),
             ("REDIS_URL", "redis://cache:6379"),
             ("S3_FILES_BUCKET", "files"),
             ("S3_TEXT_BLOCKS_BUCKET", "text-blocks"),

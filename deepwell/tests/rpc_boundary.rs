@@ -22,6 +22,7 @@ use deepwell::api::{build_server_at, build_server_state_without_workers};
 use deepwell::config::{Config, Secrets};
 use deepwell::error::ErrorType;
 use serde_json::{Value, json};
+use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 async fn rpc_request(method: &str, params: Value) -> Value {
@@ -38,6 +39,7 @@ async fn rpc_request(method: &str, params: Value) -> Value {
 
     let response = reqwest::Client::new()
         .post(format!("http://{address}"))
+        .bearer_auth(env::var("DEEPWELL_RPC_TOKEN").expect("test RPC token must be configured"))
         .header("X-Deepwell-Site-Id", "42")
         .header("X-Deepwell-Page", "category:page")
         .json(&json!({

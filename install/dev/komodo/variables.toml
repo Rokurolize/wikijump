@@ -6,6 +6,12 @@ description = "Password for the PostgreSQL database."
 value = ""  # TODO: generate password value!
 is_secret = true
 
+[[variable]]
+name = "DEEPWELL_RPC_TOKEN"
+description = "Shared 256-bit service token for callers of the internal Deepwell RPC API."
+value = ""
+is_secret = true
+
 # S3 / Object Storage
 
 [[variable]]

@@ -596,6 +596,7 @@ test("Deepwell JSON-RPC client rejects redirects and protocol substitution", asy
   const requests = [];
   const client = new DeepwellJsonRpcClient({
     rpcUrl: "http://127.0.0.1:1/jsonrpc",
+    rpcToken: "0".repeat(64),
     fetchImpl: async (_url, options) => {
       requests.push(options);
       return responses.shift();

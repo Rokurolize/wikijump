@@ -299,7 +299,11 @@ mod tests {
 
     fn test_state(deepwell_url: &str) -> ServerStateInner {
         ServerStateInner {
-            deepwell: Deepwell::connect(deepwell_url).unwrap(),
+            deepwell: Deepwell::connect(
+                deepwell_url,
+                &crate::config::RpcToken::parse("0".repeat(64)).unwrap(),
+            )
+            .unwrap(),
             cache: Cache::connect("redis://127.0.0.1/").unwrap(),
             s3_files_bucket: test_bucket("files"),
             s3_tblocks_bucket: test_bucket("text-blocks"),

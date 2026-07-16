@@ -46,6 +46,7 @@ pub async fn build_server_state(
     check_deepwell: bool,
     Secrets {
         deepwell_url,
+        deepwell_rpc_token,
         redis_url,
         s3_files_bucket,
         s3_tblocks_bucket,
@@ -54,7 +55,7 @@ pub async fn build_server_state(
         s3_path_style,
     }: Secrets,
 ) -> Result<ServerState> {
-    let deepwell = Deepwell::connect(&deepwell_url)?;
+    let deepwell = Deepwell::connect(&deepwell_url, &deepwell_rpc_token)?;
     if check_deepwell {
         deepwell.check().await;
     }
@@ -266,6 +267,7 @@ mod tests {
     fn test_secrets(path_style: bool) -> Secrets {
         Secrets {
             deepwell_url: str!("http://127.0.0.1:2747"),
+            deepwell_rpc_token: crate::config::RpcToken::parse("0".repeat(64)).unwrap(),
             redis_url: str!("redis://127.0.0.1/"),
             s3_files_bucket: str!("files"),
             s3_tblocks_bucket: str!("text-blocks"),

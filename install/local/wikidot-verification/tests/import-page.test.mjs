@@ -21,6 +21,8 @@ import {
   validateRpcUrl,
 } from '../src/import-page.mjs';
 
+const RPC_TOKEN = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
 test('import-page CLI derives fail-closed defaults without running imports', () => {
   assert.deepEqual(parseImportPageArgs([
     '--slug', 'scp-2000',
@@ -223,7 +225,7 @@ test('login RPC uses the configured mock origin and returns its session token', 
   const server = http.createServer(async (request, response) => {
     let body = '';
     for await (const chunk of request) body += chunk;
-    requests.push({url: request.url, body: JSON.parse(body)});
+    requests.push({url: request.url, authorization: request.headers.authorization, body: JSON.parse(body)});
     response.writeHead(200, {'content-type': 'application/json'});
     response.end(JSON.stringify({jsonrpc: '2.0', id: 1, result: {session_token: 'mock-session'}}));
   });
@@ -234,10 +236,11 @@ test('login RPC uses the configured mock origin and returns its session token', 
   const {port} = server.address();
   const rpcUrl = `http://127.0.0.1:${port}/custom-jsonrpc`;
 
-  const result = await rpcCall(rpcUrl, 'login', {name_or_email: 'admin@example.test'});
+  const result = await rpcCall(rpcUrl, 'login', {name_or_email: 'admin@example.test'}, fetch, RPC_TOKEN);
   assert.equal(result.session_token, 'mock-session');
   assert.equal(requests.length, 1);
   assert.equal(requests[0].url, '/custom-jsonrpc');
+  assert.equal(requests[0].authorization, `Bearer ${RPC_TOKEN}`);
   assert.equal(requests[0].body.method, 'login');
 });
 
@@ -266,7 +269,7 @@ test('RPC calls reject cross-origin redirects without forwarding request bodies'
   await assert.rejects(
     rpcCall(`http://127.0.0.1:${redirectPort}/jsonrpc`, 'login', {
       password: 'redirect-secret',
-    }),
+    }, fetch, RPC_TOKEN),
   );
   assert.equal(targetRequests, 0);
 });

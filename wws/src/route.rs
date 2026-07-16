@@ -130,6 +130,7 @@ mod tests {
     fn test_secrets() -> Secrets {
         Secrets {
             deepwell_url: str!("http://127.0.0.1:2747"),
+            deepwell_rpc_token: crate::config::RpcToken::parse("0".repeat(64)).unwrap(),
             redis_url: str!("redis://127.0.0.1/"),
             s3_files_bucket: str!("files"),
             s3_tblocks_bucket: str!("text-blocks"),

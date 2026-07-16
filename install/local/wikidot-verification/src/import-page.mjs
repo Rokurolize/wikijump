@@ -4,6 +4,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import {deepwellRpcAuthorization} from './deepwell-rpc-auth.mjs';
 
 export function validateRpcUrl(value) {
   let url;
@@ -30,12 +31,12 @@ export function validateRpcUrl(value) {
   return {rpcUrl: url.href, warnings};
 }
 
-export async function rpcCall(rpcUrl, method, params, fetchImpl = fetch) {
+export async function rpcCall(rpcUrl, method, params, fetchImpl = fetch, rpcToken) {
   const {rpcUrl: validatedUrl} = validateRpcUrl(rpcUrl);
   const response = await fetchImpl(validatedUrl, {
     method: 'POST',
     redirect: 'error',
-    headers: {'Content-Type': 'application/json'},
+    headers: {Authorization: deepwellRpcAuthorization(rpcToken), 'Content-Type': 'application/json'},
     body: JSON.stringify({jsonrpc: '2.0', id: 1, method, params}),
   });
   if (!response.ok) throw new Error(`${method}: RPC HTTP ${response.status}`);

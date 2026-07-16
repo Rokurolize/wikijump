@@ -62,6 +62,7 @@ static_assertions = "1.1"
 str-macro = "1"
 strum = "0.28"
 strum_macros = "0.28"
+subtle = "2.6"
 time = { version = "0.3", features = ["macros", "parsing", "serde"], default-features = false }
 tiny-keccak = { version = "2", features = ["k12"] }
 toml = { version = "1.1", features = ["parse"] }

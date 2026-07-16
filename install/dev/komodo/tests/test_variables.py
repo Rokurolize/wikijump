@@ -7,6 +7,7 @@ import unittest
 KOMODO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPOSITORY_ROOT = KOMODO_ROOT.parents[2]
 SENSITIVE_VARIABLES = {
+    "DEEPWELL_RPC_TOKEN",
     "POSTGRES_PASSWORD",
     "S3_ACCESS_KEY_ID",
     "S3_SECRET_ACCESS_KEY",

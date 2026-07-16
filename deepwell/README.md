@@ -14,7 +14,7 @@
   -->
 </p>
 
-DEEPWELL is an internal backend system that provides core wiki operations for Wikijump. It is deployed behind Framerail rather than exposed as a public API, but network placement is not its authorization boundary.
+DEEPWELL is an internal backend system that provides core wiki operations for Wikijump. It is deployed behind Framerail rather than exposed as a public API, but network placement is not its authorization boundary. Every HTTP JSON-RPC request also requires the shared 256-bit service token; this service credential does not replace end-user session or permission checks.
 
 ### Authorization boundary
 
@@ -83,7 +83,7 @@ $ cargo build --features <deploy|local> -- [-q] [-p <port>] <config-file>
 
 There are a number of arguments beyond the ones shown. Run with `--help` for all relevant information.
 
-This runs a local instance of DEEPWELL with the given configuration file. When debugging (i.e. on `--features local` only), you can also pass in `-w` or `--watch-files` to have the process to restart automatically when the configuration file or any localization files change.
+This runs a local instance of DEEPWELL with the given configuration file. Set `DEEPWELL_RPC_TOKEN` to 64 lowercase hexadecimal characters, such as the output of `openssl rand -hex 32`, before startup. When debugging (i.e. on `--features local` only), you can also pass in `-w` or `--watch-files` to have the process to restart automatically when the configuration file or any localization files change.
 
 This does not seem to work with Docker, so you should instead manually stop the `api` container and run it locally with the flag. That will properly watch changes and restart itself.
 
@@ -117,7 +117,7 @@ $ cargo clippy  # Check code for lints
 When you have a local instance of DEEPWELL running, probably in the developement `docker-compose` instance, you may want to run requests against it. You can easily accomplish this with a tool like `curl`. The basic format is:
 
 ```sh
-$ curl -X POST --json '{"jsonrpc":"2.0","method":"<method here>","params":<json data of request>,"id":<request id>}' http://localhost:2747/jsonrpc
+$ curl -H "Authorization: Bearer $DEEPWELL_RPC_TOKEN" -X POST --json '{"jsonrpc":"2.0","method":"<method here>","params":<json data of request>,"id":<request id>}' http://localhost:2747/jsonrpc
 ```
 
 Where you pass in the JSONRPC method name and corresponding JSON data. The ID value distinguishes between notices and requests, see the JSONRPC specification for information.
@@ -125,11 +125,11 @@ Where you pass in the JSONRPC method name and corresponding JSON data. The ID va
 For instance:
 
 ```sh
-$ curl -X POST --json '{"jsonrpc":"2.0","method":"echo","params":{"my":["json","data"]},"id":0}' http://localhost:2747/jsonrpc
+$ curl -H "Authorization: Bearer $DEEPWELL_RPC_TOKEN" -X POST --json '{"jsonrpc":"2.0","method":"echo","params":{"my":["json","data"]},"id":0}' http://localhost:2747/jsonrpc
 
 {"jsonrpc":"2.0","id":0,"result":{"my":["json","data"]}}
 
-$ curl -X POST --json '{"jsonrpc":"2.0","method":"ping","id":0}' http://localhost:2747/jsonrpc
+$ curl -H "Authorization: Bearer $DEEPWELL_RPC_TOKEN" -X POST --json '{"jsonrpc":"2.0","method":"ping","id":0}' http://localhost:2747/jsonrpc
 
 {"jsonrpc":"2.0","id":0,"result":"Pong!"}
 ```
