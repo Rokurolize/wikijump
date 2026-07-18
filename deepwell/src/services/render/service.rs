@@ -72,7 +72,7 @@ use super::prelude::*;
 use super::wikidot_inline_markers::{
     WikidotCompatInlineMarkerKind, next_wikidot_compat_inline_marker,
 };
-use crate::hash::TextHash;
+use crate::hash::{TextHash, k12_hash};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::{self, Entity as PageCategory};
 use crate::models::page_revision;
@@ -756,6 +756,7 @@ impl RenderService {
             RenderContext::none(),
             MAX_INCLUDE_EXPANSION_TOTAL,
             None,
+            true,
         ))
         .await
         .or_raise(make_error)?;
@@ -809,6 +810,7 @@ impl RenderService {
             RenderContext::ajax_module(site_id),
             MAX_INCLUDE_EXPANSION_TOTAL,
             None,
+            false,
         ))
         .await
         .or_raise(make_error)?;
@@ -945,6 +947,7 @@ impl RenderService {
             RenderContext::page(site_id, page_id),
             max_include_expansions,
             trace.map(|trace| (trace, CorpusRenderScope::Body)),
+            true,
         )
         .await
         .or_raise(make_error)?;
@@ -975,6 +978,7 @@ impl RenderService {
                         RenderContext::page_nav(site_id, page_id),
                         max_include_expansions,
                         trace.map(|trace| (trace, scope)),
+                        true,
                     )
                     .await;
 
@@ -1455,6 +1459,7 @@ impl RenderService {
         render_context: RenderContext,
         max_include_expansions: usize,
         trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
+        persist_compiled_text: bool,
     ) -> Result<RenderInnerOutput> {
         let config = ctx.config();
         let RenderContext {
@@ -1631,12 +1636,14 @@ impl RenderService {
                     html_output.body.len(),
                 );
             }
-            let compiled_hash = {
-                let _stage = StageGuard::new(trace, CorpusRenderStage::CompiledText);
-                TextService::create(ctx, html_output.body.clone())
-                    .await
-                    .or_raise(make_error)?
-            };
+            let compiled_hash = Self::compiled_text_hash(
+                ctx,
+                trace,
+                &html_output.body,
+                persist_compiled_text,
+                make_error,
+            )
+            .await?;
             if let Some(page_id) = text_block_page_id {
                 TextBlockService::validate_page_block_counts(
                     fallback_html_block_texts.len(),
@@ -1886,13 +1893,14 @@ impl RenderService {
             }
         }
 
-        // Insert compiled HTML into text table
-        let compiled_hash = {
-            let _stage = StageGuard::new(trace, CorpusRenderStage::CompiledText);
-            TextService::create(ctx, html_output.body.clone())
-                .await
-                .or_raise(make_error)?
-        };
+        let compiled_hash = Self::compiled_text_hash(
+            ctx,
+            trace,
+            &html_output.body,
+            persist_compiled_text,
+            make_error,
+        )
+        .await?;
 
         // Set up the hosted text blocks
         //
@@ -1964,6 +1972,23 @@ impl RenderService {
             errors,
             compiled_hash,
         })
+    }
+
+    async fn compiled_text_hash(
+        ctx: &ServiceContext<'_>,
+        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
+        html: &str,
+        persist_compiled_text: bool,
+        make_error: impl Fn() -> Error,
+    ) -> Result<TextHash> {
+        let _stage = StageGuard::new(trace, CorpusRenderStage::CompiledText);
+        if persist_compiled_text {
+            TextService::create(ctx, html.to_owned())
+                .await
+                .or_raise(make_error)
+        } else {
+            Ok(k12_hash(html.as_bytes()))
+        }
     }
 
     fn restore_wikidot_render_compatibility(
