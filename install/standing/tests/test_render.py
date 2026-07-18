@@ -15,10 +15,9 @@ FTML_SHA = "f" * 40
 class RenderStandingConfigTest(unittest.TestCase):
     def make_source(self, root: Path) -> tuple[Path, str]:
         source = root / "source"
-        (source / "install/local/deepwell").mkdir(parents=True)
-        (source / "deepwell/seeder").mkdir(parents=True)
-        (source / "install/local/deepwell/config.toml").write_text("run-seeder = true\n", encoding="utf-8")
-        (source / "deepwell/seeder/page.ftml").write_text("[[module ListPages]]\n", encoding="utf-8")
+        (source / "install/prod/deepwell").mkdir(parents=True)
+        (source / "deepwell").mkdir(parents=True)
+        (source / "install/prod/deepwell/config.toml").write_text("[database]\nrun-seeder = false\n", encoding="utf-8")
         (source / "deepwell/Cargo.lock").write_text(f'source = "git+https://github.com/Rokurolize/ftml#{FTML_SHA}"\n', encoding="utf-8")
         for command in (("git", "init"), ("git", "config", "user.email", "test@example.invalid"), ("git", "config", "user.name", "Standing test"), ("git", "add", "."), ("git", "commit", "-m", "fixture")):
             subprocess.run(command, cwd=source, check=True, stdout=subprocess.DEVNULL)
@@ -53,9 +52,11 @@ class RenderStandingConfigTest(unittest.TestCase):
             self.assertEqual(identity["wikijump_sha"], sha)
             self.assertEqual(identity["ftml_sha"], FTML_SHA)
             self.assertEqual(identity["project_name"], "wikijump-standing")
-            self.assertEqual((output / "deepwell/config.toml").read_text(encoding="utf-8"), "run-seeder = true\n")
-            self.assertTrue((output / "deepwell/seeder/page.ftml").exists())
-            self.assertIn("runtime50x-postgres-data", (output / "compose.yaml").read_text(encoding="utf-8"))
+            self.assertEqual((output / "deepwell/config.toml").read_text(encoding="utf-8"), "[database]\nrun-seeder = false\n")
+            self.assertFalse((output / "deepwell/seeder").exists())
+            compose = (output / "compose.yaml").read_text(encoding="utf-8")
+            self.assertIn("runtime50x-postgres-data", compose)
+            self.assertNotIn("./deepwell/seeder", compose)
             self.assertIn("STANDING_CADDY_IMAGE=example/caddy", (output / ".env").read_text(encoding="utf-8"))
 
     def test_rejects_dirty_source_before_writing_output(self) -> None:
