@@ -45,12 +45,94 @@ use crate::types::{
 };
 use crate::utils::get_category_name;
 use futures::future::try_join_all;
-use sea_orm::{
-    ColumnTrait, EntityTrait, JoinType, QueryFilter, QuerySelect, RelationTrait,
-};
+use regex::Regex;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
 use std::borrow::Cow;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::LazyLock;
 use time::OffsetDateTime;
+
+static WIKIDOT_LIST_PAGES_SET_PAIR_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?s)<span class="set (?P<name_class>[^"]+)"><span class="name">(?P<name>.*?)</span></span><span class="set (?P<value_class>[^"]+)"><span class="value">(?P<value>.*?)</span></span>"#,
+    )
+    .expect("Wikidot ListPages set-pair expression is valid")
+});
+
+#[derive(Deserialize)]
+struct WikidotListPagesModuleInput {
+    site_id: i64,
+    module_body: String,
+    parameters: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotListPagesModuleOutput {
+    pub body: String,
+}
+
+pub async fn wikidot_list_pages_module(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotListPagesModuleOutput> {
+    let input: WikidotListPagesModuleInput = parse!(params, Page);
+    let output = RenderService::render_wikidot_list_pages_module(
+        ctx,
+        input.site_id,
+        input.module_body,
+        &input.parameters,
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            format!(
+                "failed to render Wikidot ListPages module in site ID {}",
+                input.site_id,
+            ),
+            ErrorType::Page,
+        )
+    })?;
+
+    Ok(WikidotListPagesModuleOutput {
+        body: normalize_wikidot_list_pages_set_pairs(&output.html_output.body),
+    })
+}
+
+/// FTML renders adjacent inline spans as sibling nodes in this module shape.
+/// wikidot.py's ListPages parser instead treats the name and value spans as one
+/// `set` record, so restore that documented connector-only wire shape here.
+fn normalize_wikidot_list_pages_set_pairs(body: &str) -> String {
+    WIKIDOT_LIST_PAGES_SET_PAIR_REGEX
+        .replace_all(body, |captures: &regex::Captures<'_>| {
+            let name_class = captures
+                .name("name_class")
+                .expect("set-pair name class capture exists")
+                .as_str();
+            let value_class = captures
+                .name("value_class")
+                .expect("set-pair value class capture exists")
+                .as_str();
+            if name_class != value_class {
+                return captures
+                    .get(0)
+                    .expect("set-pair full capture exists")
+                    .as_str()
+                    .to_owned();
+            }
+            format!(
+                r#"<span class="set {name_class}"><span class="name">{}</span><span class="value">{}</span></span>"#,
+                captures
+                    .name("name")
+                    .expect("set-pair name capture exists")
+                    .as_str(),
+                captures
+                    .name("value")
+                    .expect("set-pair value capture exists")
+                    .as_str(),
+            )
+        })
+        .into_owned()
+}
 
 pub async fn page_create(
     ctx: &ServiceContext<'_>,
@@ -264,6 +346,12 @@ pub async fn page_tags_select(
     }
 
     let make_error = || Error::new("failed to select page tags", ErrorType::Page);
+    let user_id = ctx.request().user_id().or_raise(|| {
+        Error::new(
+            "page tag selection requires an authenticated request context",
+            ErrorType::PermissionDenied,
+        )
+    })?;
     let site_id = SiteService::get_id(ctx, site).await.or_raise(make_error)?;
     info!("Selecting page tags in site ID {site_id}");
 
@@ -309,8 +397,36 @@ pub async fn page_tags_select(
         page_query = page_query.filter(page::Column::Slug.is_in(pages));
     }
 
-    let tags = page_query
-        .join(JoinType::Join, page::Relation::PageRevision.def())
+    let pages = page_query.all(txn).await.or_raise(make_error)?;
+    let mut visible_revision_ids = Vec::with_capacity(pages.len());
+    for page in pages {
+        let can_view = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: Some(user_id),
+                site_id,
+                page_reference: Some(Reference::Id(page.page_id)),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(page.page_category_id)),
+                action: Action::View,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        if can_view && let Some(revision_id) = page.latest_revision_id {
+            visible_revision_ids.push(revision_id);
+        }
+    }
+
+    if visible_revision_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let tags = page_revision::Entity::find()
+        .filter(page_revision::Column::RevisionId.is_in(visible_revision_ids))
         .select_only()
         .column(page_revision::Column::Tags)
         .into_tuple::<Vec<String>>()
