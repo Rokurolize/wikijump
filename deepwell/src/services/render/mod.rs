@@ -23,7 +23,6 @@ mod prelude {
     pub use super::super::prelude::*;
     pub use super::structs::*;
     pub use ftml::data::PageInfo;
-    pub use ftml::info::VERSION as FTML_VERSION;
     pub use ftml::parsing::ParseError;
     pub use ftml::render::Render;
     pub use ftml::render::html::{HtmlOutput, HtmlRender};
@@ -31,18 +30,29 @@ mod prelude {
     pub use ftml::{self};
 }
 
+mod compat_fallback_code;
 mod compat_html_fragments;
 mod compat_text_fragments;
 mod diagnostics;
+mod footnote_dom;
+mod generator;
 mod html_text;
 mod iftags;
+mod include_attachment_owners;
 mod include_comment_branches;
+mod include_variable_iftags;
+mod issued_markers;
 #[allow(dead_code)]
 mod list_pages;
+mod list_pages_content_sections;
+mod list_pages_scanner;
 mod list_pages_template;
 mod literal_regions;
+mod metacomponent;
+mod native_list_context;
 mod percent_encoding;
 mod render_dependency;
+mod replay;
 mod service;
 mod structs;
 mod wikidot_inline_markers;
@@ -52,8 +62,16 @@ pub(crate) use self::diagnostics::{
     CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, CorpusRenderTraceSnapshot,
     StageGuard, is_corpus_render_timing,
 };
+pub(crate) use self::literal_regions::LiteralRegionIndex;
 pub use self::render_dependency::{
     RenderDependencyClass, RenderDependencyClasses, classify_render_dependencies,
 };
+pub(crate) use self::replay::{
+    RenderReplayService, RenderReplaySettings, run_worker_action,
+};
 pub use self::service::RenderService;
+pub(crate) use self::service::{
+    CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,
+    CorpusReplayPreparedWikitext, CorpusReplayStageTimings, CorpusReplaySyntaxFeatures,
+};
 pub use self::structs::*;

@@ -4,6 +4,12 @@
 
 FROM node:20-alpine
 
+# SvelteKit materializes CSP and CSRF options while `pnpm build` runs; standing may pass `local` for CSP only.
+ARG FRAMERAIL_ENV=prod
+ARG FRAMERAIL_CSRF_CHECK_ORIGIN=true
+ENV FRAMERAIL_ENV=${FRAMERAIL_ENV}
+ENV FRAMERAIL_CSRF_CHECK_ORIGIN=${FRAMERAIL_CSRF_CHECK_ORIGIN}
+
 # Install dependencies
 RUN apk add --no-cache curl && \
     npm install -g pnpm
@@ -24,7 +30,6 @@ RUN \
 # Run command
 USER node:node
 ENV NODE_ENV=production
-ENV FRAMERAIL_ENV=prod
 ENV PORT=3393
 EXPOSE 3393
 
