@@ -78,7 +78,24 @@ impl Debug for ServerStateInner {
     }
 }
 
-pub async fn build_server_state(
+pub async fn build_server_state(config: Config, secrets: Secrets) -> Result<ServerState> {
+    build_server_state_inner(config, secrets, true).await
+}
+
+/// Build state for a bounded runtime action that must not consume background jobs.
+///
+/// Runtime actions such as render replay use the production services and databases,
+/// but are read-only diagnostics. Starting the normal queue workers here would make
+/// their behavior depend on unrelated jobs and could mutate the corpus while a replay
+/// is collecting evidence.
+pub(crate) async fn build_server_state_without_workers(
+    config: Config,
+    secrets: Secrets,
+) -> Result<ServerState> {
+    build_server_state_inner(config, secrets, false).await
+}
+
+async fn build_server_state_inner(
     config: Config,
     Secrets {
         database_url,
@@ -90,6 +107,7 @@ pub async fn build_server_state(
         s3_credentials,
         mailcheck_api_key,
     }: Secrets,
+    start_workers: bool,
 ) -> Result<ServerState> {
     let make_error =
         || Error::new("failed to build server state", ErrorType::ServerSetup);
@@ -176,7 +194,9 @@ pub async fn build_server_state(
     });
 
     // Start workers listening to the job queue (requires ServerState)
-    JobWorker::spawn_all(&state);
+    if start_workers {
+        JobWorker::spawn_all(&state);
+    }
 
     // Return server state
     Ok(state)
@@ -382,6 +402,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("page_get_files", page_get_files);
     register!("page_tags_select", page_tags_select);
     register!("page_select", page_select);
+    register!("wikidot_list_pages_module", wikidot_list_pages_module);
     register!("page_edit", page_edit);
     register!("page_edit_permission", page_edit_permission);
     register!("page_delete", page_delete);
