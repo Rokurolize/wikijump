@@ -2,6 +2,7 @@
 
 use crate::services::page_query::FoundPageFields;
 use regex::Regex;
+use std::collections::BTreeSet;
 use std::sync::LazyLock;
 
 pub(super) static LISTPAGES_VARIABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -36,6 +37,9 @@ enum ListPagesVariable {
     Comments,
     Tags,
     TagsLinked,
+    RawTags,
+    Category,
+    EmptyCompatField,
     FormData,
     Content,
     Index,
@@ -56,15 +60,25 @@ impl ListPagesVariable {
                 Some(Self::CreatedByLinked)
             }
             "created_at" | "createdat" | "date" => Some(Self::CreatedAt),
-            "updated_by" | "updatedby" => Some(Self::UpdatedBy),
+            "updated_by" | "updatedby" | "updated_by_linked" | "updatedbylinked" => {
+                Some(Self::UpdatedBy)
+            }
             "updated_at" | "updatedat" => Some(Self::UpdatedAt),
-            "commented_by" | "commentedby" => Some(Self::CommentedBy),
+            "commented_by"
+            | "commentedby"
+            | "commented_by_linked"
+            | "commentedbylinked" => Some(Self::CommentedBy),
             "commented_at" | "commentedat" => Some(Self::CommentedAt),
             "rating" => Some(Self::Rating),
             "rating_votes" | "ratingvotes" => Some(Self::RatingVotes),
             "comments" => Some(Self::Comments),
             "tags" => Some(Self::Tags),
             "tags_linked" | "tagslinked" => Some(Self::TagsLinked),
+            "_tags" => Some(Self::RawTags),
+            "category" => Some(Self::Category),
+            "parent_fullname" | "size" | "children" | "rating_percent" | "revisions" => {
+                Some(Self::EmptyCompatField)
+            }
             "form_data" | "form_raw" if has_argument => Some(Self::FormData),
             "content" => Some(Self::Content),
             "index" => Some(Self::Index),
@@ -100,6 +114,7 @@ pub(super) struct ListPagesTemplatePlan {
     body: String,
     variables: ListPagesVariables,
     fields: FoundPageFields,
+    content_sections: BTreeSet<Option<usize>>,
     output_shape: ListPagesOutputShape,
     rating_only: bool,
     #[cfg(test)]
@@ -109,6 +124,7 @@ pub(super) struct ListPagesTemplatePlan {
 impl ListPagesTemplatePlan {
     pub(super) fn compile(body: &str) -> Option<Self> {
         let mut variables = ListPagesVariables::default();
+        let mut content_sections = BTreeSet::new();
         let mut variable_count = 0;
         let mut rating_only = true;
 
@@ -120,12 +136,20 @@ impl ListPagesTemplatePlan {
             variable_count += 1;
             rating_only &= variable == ListPagesVariable::Rating;
             variables.insert(variable);
+            if variable == ListPagesVariable::Content {
+                content_sections.insert(
+                    captures
+                        .name("argument")
+                        .and_then(|matched| matched.as_str().parse().ok()),
+                );
+            }
         }
 
         Some(Self {
             body: body.to_owned(),
             variables,
             fields: found_page_fields(variables),
+            content_sections,
             output_shape: output_shape(body),
             rating_only: variable_count > 0 && rating_only,
             #[cfg(test)]
@@ -184,6 +208,10 @@ impl ListPagesTemplatePlan {
         self.variables.contains(ListPagesVariable::Content)
     }
 
+    pub(super) fn content_sections(&self) -> &BTreeSet<Option<usize>> {
+        &self.content_sections
+    }
+
     pub(super) fn uses_data_form(&self) -> bool {
         self.variables.contains(ListPagesVariable::FormData)
     }
@@ -210,8 +238,11 @@ fn found_page_fields(variables: ListPagesVariables) -> FoundPageFields {
         page_category_id: true,
         created_by,
         created_at: variables.contains(ListPagesVariable::CreatedAt),
-        tags: variables
-            .intersects(&[ListPagesVariable::Tags, ListPagesVariable::TagsLinked]),
+        tags: variables.intersects(&[
+            ListPagesVariable::Tags,
+            ListPagesVariable::TagsLinked,
+            ListPagesVariable::RawTags,
+        ]),
         updated_by: variables.contains(ListPagesVariable::UpdatedBy),
         updated_at: variables.contains(ListPagesVariable::UpdatedAt),
         score: variables.contains(ListPagesVariable::Rating) || rating_votes,
@@ -262,6 +293,7 @@ mod tests {
         assert!(plan.uses_commented_by());
         assert!(plan.uses_commented_at());
         assert!(plan.uses_content());
+        assert_eq!(plan.content_sections(), &BTreeSet::from([None]));
         assert!(plan.uses_data_form());
         assert_eq!(plan.variable_traversals(), 1);
         assert_eq!(
@@ -289,6 +321,19 @@ mod tests {
     }
 
     #[test]
+    fn records_distinct_content_sections_during_compilation() {
+        let plan = ListPagesTemplatePlan::compile(
+            "%%content{2}%% %%content{4}%% %%content{2}%% %%content%%",
+        )
+        .expect("content sections should compile");
+
+        assert_eq!(
+            plan.content_sections(),
+            &BTreeSet::from([None, Some(2), Some(4)]),
+        );
+    }
+
+    #[test]
     fn accepts_every_supported_alias_and_variable_suffix() {
         for name in [
             "title_linked",
@@ -310,10 +355,14 @@ mod tests {
             "date",
             "updated_by",
             "updatedby",
+            "updated_by_linked",
+            "updatedbylinked",
             "updated_at",
             "updatedat",
             "commented_by",
             "commentedby",
+            "commented_by_linked",
+            "commentedbylinked",
             "commented_at",
             "commentedat",
             "rating",
@@ -322,7 +371,14 @@ mod tests {
             "comments",
             "tags",
             "tags_linked",
+            "category",
             "tagslinked",
+            "_tags",
+            "parent_fullname",
+            "size",
+            "children",
+            "rating_percent",
+            "revisions",
             "content",
             "index",
             "total",

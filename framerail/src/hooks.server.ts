@@ -22,6 +22,10 @@ import {
 import { storeRequestContext } from "$lib/server/load/request-ctx"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { applyStaticSecurityHeaders } from "$lib/server/security-headers"
+import {
+  injectWikidotRequestInfo,
+  requestHostFromRequest
+} from "$lib/server/wikidot-request-info"
 import type { Handle, RequestEvent } from "@sveltejs/kit"
 
 const SITE_CONTEXT_EXEMPT_PATHS = new Set(["/xml-rpc-api.php"])
@@ -59,6 +63,7 @@ async function readAnonymousArticleResponseCacheForEvent(
   const gate = canUseAnonymousArticleResponseCache(event, siteId, siteSlug)
 
   if (!gate.cacheable) return null
+  const requestHost = requestHostFromRequest(event.request)
 
   if (articleResponseTokenStore) {
     try {
@@ -69,6 +74,7 @@ async function readAnonymousArticleResponseCacheForEvent(
       const tokenMetadata = buildAnonymousArticleResponseCacheFences({
         siteId,
         siteSlug,
+        requestHost,
         route,
         requestLocales,
         backendLocales,
@@ -82,6 +88,7 @@ async function readAnonymousArticleResponseCacheForEvent(
       const metadata = buildAnonymousArticleResponseCacheMetadata({
         siteId,
         siteSlug,
+        requestHost,
         requestLocales,
         backendLocales,
         deepwellArticlePageCacheKey,
@@ -104,6 +111,7 @@ async function readAnonymousArticleResponseCacheForEvent(
     const metadata = buildAnonymousArticleResponseCacheMetadata({
       siteId,
       siteSlug,
+      requestHost,
       requestLocales,
       backendLocales,
       deepwellArticlePageCacheKey: cacheMetadata.article_page_cache_key,
@@ -123,9 +131,14 @@ async function readAnonymousArticleResponseCacheForEvent(
 
 export const handle: Handle = async ({ event, resolve }) => {
   const { request, cookies, locals, params } = event
+  const resolveWithWikidotRequestInfo = () =>
+    resolve(event, {
+      transformPageChunk: ({ html }) =>
+        injectWikidotRequestInfo(html, locals.wikidotRequestInfo)
+    })
 
   if (SITE_CONTEXT_EXEMPT_PATHS.has(event.url.pathname)) {
-    const response = await resolve(event)
+    const response = await resolveWithWikidotRequestInfo()
     applyStaticSecurityHeaders(response, event.url.pathname)
     return response
   }
@@ -143,14 +156,14 @@ export const handle: Handle = async ({ event, resolve }) => {
     siteSlug
   )
   if (cachedResponse) {
-    applyStaticSecurityHeaders(cachedResponse, event.url.pathname)
+    applyStaticSecurityHeaders(cachedResponse, event.url.pathname, siteSlug)
     return cachedResponse
   }
 
   // Continue processing the request
-  const response = await resolve(event)
+  const response = await resolveWithWikidotRequestInfo()
 
-  applyStaticSecurityHeaders(response, event.url.pathname)
+  applyStaticSecurityHeaders(response, event.url.pathname, siteSlug)
 
   const writeGate = canUseAnonymousArticleResponseCache(event, siteId, siteSlug)
   if (writeGate.cacheable) {
@@ -164,6 +177,7 @@ export const handle: Handle = async ({ event, resolve }) => {
       const tokenMetadata = buildAnonymousArticleResponseCacheFences({
         siteId: metadata?.siteId,
         siteSlug: metadata?.siteSlug,
+        requestHost: metadata?.requestHost,
         route: getArticleRoute(event),
         requestLocales: metadata?.requestLocales,
         backendLocales: metadata?.backendLocales,

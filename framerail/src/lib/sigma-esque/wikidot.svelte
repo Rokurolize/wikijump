@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { wikidotCollapsibles } from "$lib/wikidot-collapsibles"
+
   let { header, topBar, loginStatus, sideBar, content, footer, license } = $props()
 </script>
 
-<div id="skrollr-body">
+<div id="skrollr-body" use:wikidotCollapsibles>
   <!-- svelte-ignore a11y_consider_explicit_label -->
   <a name="page-top"></a>
   <div id="container-wrap-wrap">
@@ -59,16 +61,6 @@
     --error: #b42d0a;
     --col-accent-1: #19a9ff;
     --col-accent-2: #0068b5;
-  }
-
-  #skrollr-body {
-    --font-sans: verdana, arial, helvetica, sans-serif;
-    --font-display: "Trebuchet MS", Trebuchet, Verdana, Arial, Helvetica;
-    --font-mono: monospace;
-    font-family: var(--font-sans);
-    font-size: 0.8em;
-    line-height: normal;
-    text-rendering: auto;
   }
 
   .clickable {
