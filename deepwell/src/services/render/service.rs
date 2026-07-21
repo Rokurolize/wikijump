@@ -27,6 +27,7 @@ use super::diagnostics::{
     CorpusRenderDimension, CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace,
     StageGuard,
 };
+use super::footnote_dom::restore_wikidot_footnote_list_dom;
 use super::generator::COMPILED_GENERATOR;
 use super::html_text::html_data_segments;
 use super::iftags::{
@@ -73,7 +74,7 @@ use super::prelude::*;
 use super::wikidot_inline_markers::{
     WikidotCompatInlineMarkerKind, next_wikidot_compat_inline_marker,
 };
-use crate::hash::TextHash;
+use crate::hash::{TextHash, k12_hash};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::{self, Entity as PageCategory};
 use crate::models::page_revision;
@@ -143,7 +144,6 @@ pub(crate) struct CorpusReplayExpandedWikitext {
 
 impl CorpusReplayExpandedWikitext {
     #[inline]
-    #[allow(dead_code)] // Consumed by the stacked render-replay action.
     pub fn included_page_count(&self) -> usize {
         self.included_pages.len()
     }
@@ -384,8 +384,8 @@ const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
 // Keep runtime-owned content expansion within the ordinary ListPages page size. Explicitly larger content modules remain literal before revision loading and nested include expansion.
 const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
     DEFAULT_LISTPAGES_RENDER_LIMIT as usize;
-// Content-backed ListPages queries can each trigger permission filtering, revision loading, and nested include expansion. Three queries cover the common corpus shape while stopping dense author-page compositions before they exhaust the render budget.
-const MAX_LISTPAGES_CONTENT_QUERIES_PER_RENDER: usize = 3;
+// Content-backed ListPages modules can trigger permission filtering, revision loading, and nested include expansion. Three modules cover the common corpus shape while stopping dense author-page compositions before they exhaust the render budget.
+const MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER: usize = 3;
 const MAX_LISTPAGES_RENDER_OFFSET: u32 = 1_000;
 const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 5_000;
 const MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES: usize = 65_536;
@@ -691,18 +691,6 @@ static WIKIDOT_LOCAL_FILE_CSS_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     )
     .unwrap()
 });
-static CSS_IMPORT_LINE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?im)^(?P<indent>[ \t]*)@import(?P<body>[^\n]*)$"#).unwrap()
-});
-static CSS_ABSOLUTE_URL_HOST_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?i)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?"#).unwrap()
-});
-static CSS_EXTERNAL_URL_FUNCTION_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(
-        r#"(?i)url\(\s*(?P<quote>["']?)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>[^"')\s]*)["']?\s*\)"#,
-    )
-    .unwrap()
-});
 
 impl RenderService {
     fn owned_page_info(page_info: &PageInfo<'_>) -> PageInfo<'static> {
@@ -754,9 +742,12 @@ impl RenderService {
             wikitext,
             page_info,
             settings,
-            RenderContext::none(),
-            MAX_INCLUDE_EXPANSION_TOTAL,
-            None,
+            RenderInnerOptions {
+                render_context: RenderContext::none(),
+                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                trace: None,
+                persist_compiled_text: true,
+            },
         ))
         .await
         .or_raise(make_error)?;
@@ -807,9 +798,12 @@ impl RenderService {
             wikitext,
             &page_info,
             &settings,
-            RenderContext::ajax_module(site_id),
-            MAX_INCLUDE_EXPANSION_TOTAL,
-            None,
+            RenderInnerOptions {
+                render_context: RenderContext::ajax_module(site_id),
+                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                trace: None,
+                persist_compiled_text: false,
+            },
         ))
         .await
         .or_raise(make_error)?;
@@ -943,9 +937,12 @@ impl RenderService {
             wikitext,
             page_info,
             &page_settings,
-            RenderContext::page(site_id, page_id),
-            max_include_expansions,
-            trace.map(|trace| (trace, CorpusRenderScope::Body)),
+            RenderInnerOptions {
+                render_context: RenderContext::page(site_id, page_id),
+                max_include_expansions,
+                trace: trace.map(|trace| (trace, CorpusRenderScope::Body)),
+                persist_compiled_text: true,
+            },
         )
         .await
         .or_raise(make_error)?;
@@ -973,9 +970,12 @@ impl RenderService {
                         wikitext,
                         page_info,
                         nav_settings,
-                        RenderContext::page_nav(site_id, page_id),
-                        max_include_expansions,
-                        trace.map(|trace| (trace, scope)),
+                        RenderInnerOptions {
+                            render_context: RenderContext::page_nav(site_id, page_id),
+                            max_include_expansions,
+                            trace: trace.map(|trace| (trace, scope)),
+                            persist_compiled_text: true,
+                        },
                     )
                     .await;
 
@@ -1035,7 +1035,6 @@ impl RenderService {
     /// The returned value is intentionally owned and serializable so a replay
     /// controller can hand it to an isolated worker without giving that worker
     /// database or service credentials.
-    #[allow(dead_code)] // Consumed by the stacked render-replay action.
     pub(crate) async fn expand_corpus_replay_wikitext(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -1453,11 +1452,15 @@ impl RenderService {
         wikitext: String,
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
-        render_context: RenderContext,
-        max_include_expansions: usize,
-        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
+        options: RenderInnerOptions<'_>,
     ) -> Result<RenderInnerOutput> {
         let config = ctx.config();
+        let RenderInnerOptions {
+            render_context,
+            max_include_expansions,
+            trace,
+            persist_compiled_text,
+        } = options;
         let RenderContext {
             current_site_id,
             current_page_id,
@@ -1632,12 +1635,14 @@ impl RenderService {
                     html_output.body.len(),
                 );
             }
-            let compiled_hash = {
-                let _stage = StageGuard::new(trace, CorpusRenderStage::CompiledText);
-                TextService::create(ctx, html_output.body.clone())
-                    .await
-                    .or_raise(make_error)?
-            };
+            let compiled_hash = Self::compiled_text_hash(
+                ctx,
+                trace,
+                &html_output.body,
+                persist_compiled_text,
+                make_error,
+            )
+            .await?;
             if let Some(page_id) = text_block_page_id {
                 TextBlockService::validate_page_block_counts(
                     fallback_html_block_texts.len(),
@@ -1887,13 +1892,14 @@ impl RenderService {
             }
         }
 
-        // Insert compiled HTML into text table
-        let compiled_hash = {
-            let _stage = StageGuard::new(trace, CorpusRenderStage::CompiledText);
-            TextService::create(ctx, html_output.body.clone())
-                .await
-                .or_raise(make_error)?
-        };
+        let compiled_hash = Self::compiled_text_hash(
+            ctx,
+            trace,
+            &html_output.body,
+            persist_compiled_text,
+            make_error,
+        )
+        .await?;
 
         // Set up the hosted text blocks
         //
@@ -1965,6 +1971,23 @@ impl RenderService {
             errors,
             compiled_hash,
         })
+    }
+
+    async fn compiled_text_hash(
+        ctx: &ServiceContext<'_>,
+        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
+        html: &str,
+        persist_compiled_text: bool,
+        make_error: impl Fn() -> Error,
+    ) -> Result<TextHash> {
+        let _stage = StageGuard::new(trace, CorpusRenderStage::CompiledText);
+        if persist_compiled_text {
+            TextService::create(ctx, html.to_owned())
+                .await
+                .or_raise(make_error)
+        } else {
+            Ok(k12_hash(html.as_bytes()))
+        }
     }
 
     fn restore_wikidot_render_compatibility(
@@ -2195,6 +2218,7 @@ impl RenderService {
                 format!("{}{}", &captures["before"], &captures["footnote"])
             })
             .into_owned();
+        let html = Self::remove_wikijump_footnote_ref_tooltips(&html);
         let html = WIKIJUMP_FOOTNOTE_REF_SPAN_WRAPPER_REGEX
             .replace_all(&html, |captures: &regex::Captures<'_>| {
                 captures
@@ -2203,15 +2227,7 @@ impl RenderService {
                     .to_owned()
             })
             .into_owned();
-        let html = Self::remove_wikijump_footnote_ref_tooltips(&html);
-        html.replace(
-            r#"<div class="wj-footnote-list">"#,
-            r#"<div class="wj-footnote-list footnotes-footer">"#,
-        )
-        .replace(
-            r#"<div class="wj-footnote-list footnotes-footer"><div class="wj-title">"#,
-            r#"<div class="wj-footnote-list footnotes-footer"><div class="wj-title title">"#,
-        )
+        restore_wikidot_footnote_list_dom(&html)
     }
 
     fn remove_wikijump_footnote_ref_tooltips(html: &str) -> String {
@@ -3243,8 +3259,10 @@ impl RenderService {
         current_site: Option<&SiteModel>,
         config: &Config,
     ) -> String {
-        let code = Self::localize_wikidot_local_file_urls(code, current_site, config);
-        Self::suppress_external_css_dependencies(&code, config)
+        // Wikidot code blocks used through /local--code are active CSS. Keep
+        // their dependency graph intact; Framerail's CSP allowlist is the
+        // browser boundary for external requests, not the renderer.
+        Self::localize_wikidot_local_file_urls(code, current_site, config)
     }
 
     fn normalize_wikidot_ta_badge_multiline_includes(wikitext: &mut String) {
@@ -4296,38 +4314,6 @@ impl RenderService {
             "https://{}{}{}",
             target_site_slug, config.files_domain, path,
         ))
-    }
-
-    fn suppress_external_css_dependencies(css: &str, config: &Config) -> String {
-        let css = CSS_IMPORT_LINE_REGEX
-            .replace_all(css, |captures: &regex::Captures<'_>| {
-                let body = &captures["body"];
-                let has_external_url = CSS_ABSOLUTE_URL_HOST_REGEX
-                    .captures_iter(body)
-                    .any(|url_captures| {
-                        !css_dependency_host_is_local(&url_captures["host"], config)
-                    });
-                if !has_external_url {
-                    return captures.get(0).map_or("", |m| m.as_str()).to_owned();
-                }
-
-                format!(
-                    "{}/* wikijump local render: omitted external @import */",
-                    &captures["indent"],
-                )
-            })
-            .into_owned();
-
-        CSS_EXTERNAL_URL_FUNCTION_REGEX
-            .replace_all(&css, |captures: &regex::Captures<'_>| {
-                let host = &captures["host"];
-                if css_dependency_host_is_local(host, config) {
-                    return captures.get(0).map_or("", |m| m.as_str()).to_owned();
-                }
-
-                r#"url("data:,")"#.to_owned()
-            })
-            .into_owned()
     }
 
     async fn expand_includes(
@@ -8028,10 +8014,8 @@ impl RenderService {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal);
         }
         if wants_content
-            && !current_page_only
-            && prefetched_pages.is_none()
             && query_limit > 0
-            && !expansion_budget.try_start_content_query()
+            && !expansion_budget.try_start_content_module()
         {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal);
         }
@@ -8716,11 +8700,7 @@ impl RenderService {
             )
             .await?;
             if found.metadata.cap_exceeded {
-                return Ok(ViewableListPagesRows {
-                    pages: FoundPages { pages: Vec::new() },
-                    metadata: found.metadata,
-                    view_permission_filtering_applied: false,
-                });
+                found.metadata.cap_exceeded = false;
             }
             let raw_count = found.pages.pages.len();
             let mut pages = Self::filter_viewable_list_pages_rows(
@@ -8730,18 +8710,6 @@ impl RenderService {
             )
             .await?;
             let view_permission_filtering_applied = pages.len() != raw_count;
-            if random_page_query_scan_requires_preservation(
-                raw_count,
-                pages.len(),
-                target_count,
-            ) {
-                found.metadata.cap_exceeded = true;
-                return Ok(ViewableListPagesRows {
-                    pages: FoundPages { pages: Vec::new() },
-                    metadata: found.metadata,
-                    view_permission_filtering_applied,
-                });
-            }
             pages.truncate(target_count);
             return Ok(ViewableListPagesRows {
                 pages: FoundPages { pages },
@@ -8815,12 +8783,7 @@ impl RenderService {
             query.pagination.limit = Some(random_page_query_scan_limit(target_count));
             let mut found = PageQueryService::find_with_metadata(ctx, query).await?;
             if found.metadata.cap_exceeded {
-                return Ok(ViewableCountPagesRows {
-                    pages: FoundPages { pages: Vec::new() },
-                    metadata: found.metadata,
-                    view_permission_filtering_applied: false,
-                    raw_scan_completion: CountPagesRawScanCompletion::Capped,
-                });
+                found.metadata.cap_exceeded = false;
             }
             let raw_count = found.pages.pages.len();
             let mut pages = Self::filter_viewable_list_pages_rows(
@@ -8830,19 +8793,6 @@ impl RenderService {
             )
             .await?;
             let view_permission_filtering_applied = pages.len() != raw_count;
-            if random_page_query_scan_requires_preservation(
-                raw_count,
-                pages.len(),
-                target_count,
-            ) {
-                found.metadata.cap_exceeded = true;
-                return Ok(ViewableCountPagesRows {
-                    pages: FoundPages { pages: Vec::new() },
-                    metadata: found.metadata,
-                    view_permission_filtering_applied,
-                    raw_scan_completion: CountPagesRawScanCompletion::Capped,
-                });
-            }
             pages.truncate(target_count);
             return Ok(ViewableCountPagesRows {
                 pages: FoundPages { pages },
@@ -10246,16 +10196,8 @@ fn list_pages_content_query_target(
     )
 }
 
-fn random_page_query_scan_limit(target_count: usize) -> u64 {
-    target_count.min(MAX_LISTPAGES_RENDER_SCAN_ROWS as usize) as u64
-}
-
-fn random_page_query_scan_requires_preservation(
-    raw_count: usize,
-    viewable_count: usize,
-    target_count: usize,
-) -> bool {
-    raw_count >= target_count && viewable_count < target_count
+fn random_page_query_scan_limit(_target_count: usize) -> u64 {
+    u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS)
 }
 
 fn merge_render_page_query_metadata(
@@ -12846,6 +12788,14 @@ struct RenderContext {
 }
 
 #[derive(Clone, Copy, Debug)]
+struct RenderInnerOptions<'a> {
+    render_context: RenderContext,
+    max_include_expansions: usize,
+    trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
+    persist_compiled_text: bool,
+}
+
+#[derive(Clone, Copy, Debug)]
 struct RenderExpansionOptions<'a> {
     current_site_id: Option<i64>,
     current_page_id: Option<i64>,
@@ -12938,23 +12888,23 @@ struct ListPagesContentCache {
 
 #[derive(Debug)]
 struct ListPagesExpansionBudget {
-    remaining_content_queries: usize,
+    remaining_content_modules: usize,
     remaining_content_rows: usize,
 }
 
 impl ListPagesExpansionBudget {
     fn new() -> Self {
         Self {
-            remaining_content_queries: MAX_LISTPAGES_CONTENT_QUERIES_PER_RENDER,
+            remaining_content_modules: MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER,
             remaining_content_rows: MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER,
         }
     }
 
-    fn try_start_content_query(&mut self) -> bool {
-        if self.remaining_content_queries == 0 {
+    fn try_start_content_module(&mut self) -> bool {
+        if self.remaining_content_modules == 0 {
             return false;
         }
-        self.remaining_content_queries -= 1;
+        self.remaining_content_modules -= 1;
         true
     }
 
@@ -13492,21 +13442,6 @@ fn direct_wdfiles_local_file_url(host: &str, path: &str) -> Option<String> {
     Some(format!("https://{site_slug}.wdfiles.com{path}"))
 }
 
-fn css_dependency_host_is_local(host: &str, config: &Config) -> bool {
-    let host = host.trim().trim_end_matches('.').to_ascii_lowercase();
-    if host == "localhost" || host == "127.0.0.1" || host.ends_with(".localhost") {
-        return true;
-    }
-
-    let files_domain = config.files_domain.trim().to_ascii_lowercase();
-    if !files_domain.is_empty() && host.ends_with(&files_domain) {
-        return true;
-    }
-
-    let files_domain_no_dot = config.files_domain_no_dot.trim().to_ascii_lowercase();
-    !files_domain_no_dot.is_empty() && host == files_domain_no_dot
-}
-
 #[allow(dead_code)]
 fn public_url_port_suffix(port: Option<u16>) -> String {
     port.map(|port| format!(":{port}")).unwrap_or_default()
@@ -13560,14 +13495,13 @@ mod tests {
         page_query_cap_requires_original_module, parse_list_pages_arguments,
         parse_list_pages_date_selector, parse_wikidot_compat_color_descriptor,
         protect_forwarded_attachment_variables, push_list_pages_pager,
-        random_page_query_scan_limit, random_page_query_scan_requires_preservation,
-        register_generated_list_pages_html, render_clone_module,
-        render_list_pages_numbered_rows, render_list_pages_table_rows,
-        render_list_pages_tags, render_members_module_placeholder,
-        render_native_list_inline_wikidot_spans, render_native_list_page_link,
-        render_new_page_module, render_page_query_batch_limit,
-        render_page_query_uses_single_scan, render_read_only_rate_module,
-        render_tag_cloud_box, requested_page_info_score,
+        random_page_query_scan_limit, register_generated_list_pages_html,
+        render_clone_module, render_list_pages_numbered_rows,
+        render_list_pages_table_rows, render_list_pages_tags,
+        render_members_module_placeholder, render_native_list_inline_wikidot_spans,
+        render_native_list_page_link, render_new_page_module,
+        render_page_query_batch_limit, render_page_query_uses_single_scan,
+        render_read_only_rate_module, render_tag_cloud_box, requested_page_info_score,
         restore_list_pages_literal_ellipsis_markers,
         should_render_current_page_list_pages_row, substitute_count_pages_variables,
         substitute_list_pages_variables, unsupported_list_pages_replacement,
@@ -14742,13 +14676,13 @@ mod tests {
     }
 
     #[test]
-    fn list_pages_content_budget_limits_queries_and_rows() {
+    fn list_pages_content_budget_limits_modules_and_rows() {
         let mut budget = ListPagesExpansionBudget::new();
 
-        assert!(budget.try_start_content_query());
-        assert!(budget.try_start_content_query());
-        assert!(budget.try_start_content_query());
-        assert!(!budget.try_start_content_query());
+        assert!(budget.try_start_content_module());
+        assert!(budget.try_start_content_module());
+        assert!(budget.try_start_content_module());
+        assert!(!budget.try_start_content_module());
         assert!(budget.can_expand_content_rows(40));
         budget.consume_content_rows(40);
         assert!(budget.can_expand_content_rows(60));
@@ -14837,20 +14771,19 @@ mod tests {
     }
 
     #[test]
-    fn random_page_query_scan_is_bounded_by_the_requested_rows() {
-        assert_eq!(random_page_query_scan_limit(1), 1);
-        assert_eq!(random_page_query_scan_limit(100), 100);
+    fn random_page_query_scan_uses_the_full_render_cap() {
+        assert_eq!(
+            random_page_query_scan_limit(1),
+            u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS)
+        );
+        assert_eq!(
+            random_page_query_scan_limit(100),
+            u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS)
+        );
         assert_eq!(
             random_page_query_scan_limit(MAX_LISTPAGES_RENDER_SCAN_ROWS as usize + 1),
             u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
         );
-    }
-
-    #[test]
-    fn random_page_query_preserves_when_permission_filtering_makes_the_sample_short() {
-        assert!(random_page_query_scan_requires_preservation(100, 99, 100));
-        assert!(!random_page_query_scan_requires_preservation(99, 98, 100));
-        assert!(!random_page_query_scan_requires_preservation(100, 100, 100));
     }
 
     #[test]
@@ -17565,7 +17498,7 @@ mod tests {
     }
 
     #[test]
-    fn code_block_compatibility_suppresses_external_css_dependencies() {
+    fn code_block_compatibility_preserves_external_css_dependencies() {
         let mut site = wikidot_site(
             "scp-wiki-cn-corpus-scp9506-translation-seed",
             Some("scp-wiki-cn.wikidot.com"),
@@ -17577,8 +17510,11 @@ mod tests {
         let css = concat!(
             "@import url('https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css');\n",
             "@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:ital,wght@0,100;0,200;1,900&display=swap');\n",
+            "@import url('https://fonts.bunny.net/css2?family=Sofia+Sans:wght@400;900&display=swap');\n",
             "@import url(\"https://scp-wiki-cn-corpus-scp9506-translation-seed.wjfiles.localhost/local--code/theme:basalt/1\");\n",
             "@font-face { src: url('https://cdn.jsdelivr.net/font.woff2') format('woff2'); }\n",
+            ".arbitrary { background: url(https://assets.example.test/image.png?size=2x); }\n",
+            ".protocol-relative { background: url('//static.example.test/image.svg#icon'); }\n",
             ":root { --logo: url('http://scp-wiki.wikidot.com/local--files/scp-9506/NFSI.png'); }\n",
         );
 
@@ -17588,18 +17524,17 @@ mod tests {
             &config,
         );
 
-        assert!(restored.contains("omitted external @import"));
-        assert!(!restored.contains("cdn.scpwiki.com"));
-        assert!(!restored.contains("fonts.googleapis.com"));
-        assert!(!restored.contains("display=swap"));
-        assert!(!restored.contains("cdn.jsdelivr.net"));
-        assert!(restored.contains(
-            "https://scp-wiki-cn-corpus-scp9506-translation-seed.wjfiles.localhost/local--code/theme:basalt/1"
-        ));
-        assert!(restored.contains(
-            "https://scp-wiki-cn-corpus-scp9506-translation-seed.wjfiles.localhost/local--files/scp-9506/NFSI.png"
-        ));
-        assert!(restored.contains(r#"url("data:,")"#));
+        let expected = concat!(
+            "@import url('https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css');\n",
+            "@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:ital,wght@0,100;0,200;1,900&display=swap');\n",
+            "@import url('https://fonts.bunny.net/css2?family=Sofia+Sans:wght@400;900&display=swap');\n",
+            "@import url(\"https://scp-wiki-cn-corpus-scp9506-translation-seed.wjfiles.localhost/local--code/theme:basalt/1\");\n",
+            "@font-face { src: url('https://cdn.jsdelivr.net/font.woff2') format('woff2'); }\n",
+            ".arbitrary { background: url(https://assets.example.test/image.png?size=2x); }\n",
+            ".protocol-relative { background: url('//static.example.test/image.svg#icon'); }\n",
+            ":root { --logo: url('https://scp-wiki-cn-corpus-scp9506-translation-seed.wjfiles.localhost/local--files/scp-9506/NFSI.png'); }\n",
+        );
+        assert_eq!(restored, expected);
     }
 
     #[test]
@@ -22160,7 +22095,7 @@ mod tests {
             r#"<span class="wj-footnote-ref-tooltip-label">Footnote 2.</span>"#,
             r#"<div class="wj-footnote-ref-contents"><div>hidden note</div></div>"#,
             r#"</div> after</p>"#,
-            r#"<div class="wj-footnote-list"><div class="wj-title">Footnotes</div></div>"#,
+            r#"<div class="wj-footnote-list"><div class="wj-title">Footnotes</div><ol></ol></div>"#,
         );
 
         let restored = RenderService::restore_wikidot_footnote_dom_compatibility(html);
@@ -22168,8 +22103,8 @@ mod tests {
         assert!(restored.contains(
             r#"<sup class="footnoteref"><a id="footnoteref-2" href="javascript:;" class="footnoteref" onclick="WIKIDOT.page.utils.scrollToReference('footnote-2')">2</a></sup> after"#
         ));
-        assert!(restored.contains(r#"<div class="wj-footnote-list footnotes-footer">"#));
-        assert!(restored.contains(r#"<div class="wj-title title">Footnotes</div>"#));
+        assert!(restored.contains(r#"<div class="footnotes-footer">"#));
+        assert!(restored.contains(r#"<div class="title">Footnotes</div>"#));
         assert!(!restored.contains(r#"<span class="wj-footnote-ref">"#));
         assert!(!restored.contains("wj-footnote-ref-tooltip"));
         assert!(!restored.contains("hidden note"));
@@ -22191,6 +22126,7 @@ mod tests {
         assert!(restored.contains(
             r#"<sup class="footnoteref"><a id="footnoteref-2" href="javascript:;" class="footnoteref" onclick="WIKIDOT.page.utils.scrollToReference('footnote-2')">2</a></sup>"#
         ));
+        assert!(!restored.contains(r#"<span class="wj-footnote-ref">"#));
         assert!(!restored.contains("wj-footnote-ref-tooltip"));
         assert!(!restored.contains("hidden note"));
     }
@@ -22199,7 +22135,7 @@ mod tests {
     fn restores_wikidot_footnote_title_class_without_assuming_english_text() {
         for title in ["脚注", "The feet-noten"] {
             let html = format!(
-                r#"<div class="wj-footnote-list"><div class="wj-title">{title}</div></div>"#
+                r#"<div class="wj-footnote-list"><div class="wj-title">{title}</div><ol></ol></div>"#
             );
 
             let restored =
@@ -22208,7 +22144,7 @@ mod tests {
             assert_eq!(
                 restored,
                 format!(
-                    r#"<div class="wj-footnote-list footnotes-footer"><div class="wj-title title">{title}</div></div>"#
+                    r#"<div class="footnotes-footer"><div class="title">{title}</div></div>"#
                 )
             );
         }
@@ -22233,9 +22169,17 @@ mod tests {
         let restored =
             RenderService::restore_wikidot_footnote_dom_compatibility(&rendered);
 
+        assert!(
+            restored.contains(
+                r#"<div class="footnotes-footer"><div class="title">脚注</div>"#
+            )
+        );
+        assert!(restored.contains(r#"<div class="footnote-footer" id="footnote-1">"#));
         assert!(restored.contains(
-            r#"<div class="wj-footnote-list footnotes-footer"><div class="wj-title title">脚注</div>"#
+            r#"onclick="WIKIDOT.page.utils.scrollToReference('footnoteref-1')">1</a>. 注記"#
         ));
+        assert_eq!(restored.matches("注記").count(), 1);
+        assert!(!restored.contains("wj-footnote"));
         assert!(!restored.contains(">Footnotes<"));
     }
 
