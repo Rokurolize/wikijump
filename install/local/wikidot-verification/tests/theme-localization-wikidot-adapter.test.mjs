@@ -22,13 +22,13 @@ function sha256(value) {
 function fixtureResource() {
   const source = "日本語 theme source\n";
   const slug = "codex-l10n:20260713-adapter-yossistyle";
-  return {source, resource: {resource_id: "yossistyle:wikidot", tier_id: "yossistyle", target: "wikidot", slug, url: `http://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}};
+  return {source, resource: {resource_id: "yossistyle:wikidot", tier_id: "yossistyle", target: "wikidot", slug, url: `https://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}};
 }
 
 function prerequisiteResource() {
   const source = "[[include component:image-block-base]]";
   const slug = "component:image-block";
-  return {source, resource: {resource_id: `prerequisite:${slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", slug, url: `http://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Image Block", tags: ["codex-source-parity-redo", "component"]}};
+  return {source, resource: {resource_id: `prerequisite:${slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", slug, url: `https://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Image Block", tags: ["codex-source-parity-redo", "component"]}};
 }
 
 class FakeHelper {
@@ -71,10 +71,11 @@ test("private-site adapter uses the execution interface without ListPages lookup
   assert.equal(await adapter.inspect(resource), null);
   assert.deepEqual(helper.calls.map(({action}) => action), ["inspect", "inspect", "create", "inspect", "remove", "inspect", "inspect"]);
   assert.deepEqual(helper.calls.find(({action}) => action === "create").fields.tags, ["テーマ"]);
-  await assert.rejects(adapter.inspect({...resource, url: `http://scp-wiki.wikidot.com/${resource.slug}`}), /hard allowlist/);
+  await assert.rejects(adapter.inspect({...resource, url: `https://scp-wiki.wikidot.com/${resource.slug}`}), /hard allowlist/);
+  await assert.rejects(adapter.inspect({...resource, url: `http://${SITE}.wikidot.com/${resource.slug}`}), /hard allowlist/);
   await assert.rejects(adapter.inspect({...resource, slug: "theme:yossistyle"}), /validated/);
   const legacySlug = "theme:codex-l10n-20260713-adapter-yossistyle";
-  const legacy = {...resource, slug: legacySlug, url: `http://${SITE}.wikidot.com/${legacySlug}`};
+  const legacy = {...resource, slug: legacySlug, url: `https://${SITE}.wikidot.com/${legacySlug}`};
   assert.equal(await adapter.inspect(legacy), null);
   await assert.rejects(adapter.create(legacy, {source}), /validated/);
 });
@@ -90,7 +91,7 @@ test("private-site adapter exposes exact read-only reference prerequisites", asy
   await assert.rejects(adapter.inspect({...resource, title: "changed"}), /read-only contract/);
 });
 
-test("durable create intent can clean a page after a post-save error", async () => {
+test("durable create intent retains a page after a post-save error without a recorded identity", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "theme-wikidot-intent-"));
   const helper = new FakeHelper({failAfterCreate: true});
   const adapter = new WikidotThemePageAdapter({helperClient: helper});
@@ -100,9 +101,11 @@ test("durable create intent can clean a page after a post-save error", async () 
   await ledger.intent(resource, expected);
   await assert.rejects(adapter.create(resource, {source}), /post-save/);
   assert.notEqual(await adapter.inspect(resource), null);
-  await cleanupThemeExecution({ledger, adapters: {wikidot: adapter}});
-  assert.equal(helper.pages.size, 0);
-  assert.equal((await ThemeExecutionLedger.load(ledger.filePath)).completed, true);
+  await assert.rejects(cleanupThemeExecution({ledger, adapters: {wikidot: adapter}}), /cleanup left residual resources/);
+  assert.equal(helper.pages.size, 1);
+  const recovered = await ThemeExecutionLedger.load(ledger.filePath);
+  assert.equal(recovered.completed, false);
+  assert.equal(recovered.states.get(resource.resource_id).phase, "residual");
 });
 
 test("cleanup refuses content or identity changed after creation", async () => {

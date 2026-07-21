@@ -34,6 +34,7 @@ mod compat_fallback_code;
 mod compat_html_fragments;
 mod compat_text_fragments;
 mod diagnostics;
+mod footnote_dom;
 mod generator;
 mod html_text;
 mod iftags;
@@ -51,6 +52,7 @@ mod metacomponent;
 mod native_list_context;
 mod percent_encoding;
 mod render_dependency;
+mod replay;
 mod service;
 mod structs;
 mod wikidot_inline_markers;
@@ -64,5 +66,12 @@ pub(crate) use self::literal_regions::LiteralRegionIndex;
 pub use self::render_dependency::{
     RenderDependencyClass, RenderDependencyClasses, classify_render_dependencies,
 };
+pub(crate) use self::replay::{
+    RenderReplayService, RenderReplaySettings, run_worker_action,
+};
 pub use self::service::RenderService;
+pub(crate) use self::service::{
+    CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,
+    CorpusReplayPreparedWikitext, CorpusReplayStageTimings, CorpusReplaySyntaxFeatures,
+};
 pub use self::structs::*;
