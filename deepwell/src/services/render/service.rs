@@ -27,6 +27,7 @@ use super::diagnostics::{
     CorpusRenderDimension, CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace,
     StageGuard,
 };
+use super::footnote_dom::restore_wikidot_footnote_list_dom;
 use super::generator::COMPILED_GENERATOR;
 use super::html_text::html_data_segments;
 use super::iftags::{
@@ -73,7 +74,7 @@ use super::prelude::*;
 use super::wikidot_inline_markers::{
     WikidotCompatInlineMarkerKind, next_wikidot_compat_inline_marker,
 };
-use crate::hash::TextHash;
+use crate::hash::{TextHash, k12_hash};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::{self, Entity as PageCategory};
 use crate::models::page_revision;
@@ -143,7 +144,6 @@ pub(crate) struct CorpusReplayExpandedWikitext {
 
 impl CorpusReplayExpandedWikitext {
     #[inline]
-    #[allow(dead_code)] // Consumed by the stacked render-replay action.
     pub fn included_page_count(&self) -> usize {
         self.included_pages.len()
     }
@@ -384,8 +384,8 @@ const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
 // Keep runtime-owned content expansion within the ordinary ListPages page size. Explicitly larger content modules remain literal before revision loading and nested include expansion.
 const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
     DEFAULT_LISTPAGES_RENDER_LIMIT as usize;
-// Content-backed ListPages queries can each trigger permission filtering, revision loading, and nested include expansion. Three queries cover the common corpus shape while stopping dense author-page compositions before they exhaust the render budget.
-const MAX_LISTPAGES_CONTENT_QUERIES_PER_RENDER: usize = 3;
+// Content-backed ListPages modules can trigger permission filtering, revision loading, and nested include expansion. Three modules cover the common corpus shape while stopping dense author-page compositions before they exhaust the render budget.
+const MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER: usize = 3;
 const MAX_LISTPAGES_RENDER_OFFSET: u32 = 1_000;
 const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 5_000;
 const MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES: usize = 65_536;
@@ -742,9 +742,12 @@ impl RenderService {
             wikitext,
             page_info,
             settings,
-            RenderContext::none(),
-            MAX_INCLUDE_EXPANSION_TOTAL,
-            None,
+            RenderInnerOptions {
+                render_context: RenderContext::none(),
+                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                trace: None,
+                persist_compiled_text: true,
+            },
         ))
         .await
         .or_raise(make_error)?;
@@ -795,9 +798,12 @@ impl RenderService {
             wikitext,
             &page_info,
             &settings,
-            RenderContext::ajax_module(site_id),
-            MAX_INCLUDE_EXPANSION_TOTAL,
-            None,
+            RenderInnerOptions {
+                render_context: RenderContext::ajax_module(site_id),
+                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                trace: None,
+                persist_compiled_text: false,
+            },
         ))
         .await
         .or_raise(make_error)?;
@@ -931,9 +937,12 @@ impl RenderService {
             wikitext,
             page_info,
             &page_settings,
-            RenderContext::page(site_id, page_id),
-            max_include_expansions,
-            trace.map(|trace| (trace, CorpusRenderScope::Body)),
+            RenderInnerOptions {
+                render_context: RenderContext::page(site_id, page_id),
+                max_include_expansions,
+                trace: trace.map(|trace| (trace, CorpusRenderScope::Body)),
+                persist_compiled_text: true,
+            },
         )
         .await
         .or_raise(make_error)?;
@@ -961,9 +970,12 @@ impl RenderService {
                         wikitext,
                         page_info,
                         nav_settings,
-                        RenderContext::page_nav(site_id, page_id),
-                        max_include_expansions,
-                        trace.map(|trace| (trace, scope)),
+                        RenderInnerOptions {
+                            render_context: RenderContext::page_nav(site_id, page_id),
+                            max_include_expansions,
+                            trace: trace.map(|trace| (trace, scope)),
+                            persist_compiled_text: true,
+                        },
                     )
                     .await;
 
@@ -1023,7 +1035,6 @@ impl RenderService {
     /// The returned value is intentionally owned and serializable so a replay
     /// controller can hand it to an isolated worker without giving that worker
     /// database or service credentials.
-    #[allow(dead_code)] // Consumed by the stacked render-replay action.
     pub(crate) async fn expand_corpus_replay_wikitext(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -1441,11 +1452,15 @@ impl RenderService {
         wikitext: String,
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
-        render_context: RenderContext,
-        max_include_expansions: usize,
-        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
+        options: RenderInnerOptions<'_>,
     ) -> Result<RenderInnerOutput> {
         let config = ctx.config();
+        let RenderInnerOptions {
+            render_context,
+            max_include_expansions,
+            trace,
+            persist_compiled_text,
+        } = options;
         let RenderContext {
             current_site_id,
             current_page_id,
@@ -1620,12 +1635,14 @@ impl RenderService {
                     html_output.body.len(),
                 );
             }
-            let compiled_hash = {
-                let _stage = StageGuard::new(trace, CorpusRenderStage::CompiledText);
-                TextService::create(ctx, html_output.body.clone())
-                    .await
-                    .or_raise(make_error)?
-            };
+            let compiled_hash = Self::compiled_text_hash(
+                ctx,
+                trace,
+                &html_output.body,
+                persist_compiled_text,
+                make_error,
+            )
+            .await?;
             if let Some(page_id) = text_block_page_id {
                 TextBlockService::validate_page_block_counts(
                     fallback_html_block_texts.len(),
@@ -1875,13 +1892,14 @@ impl RenderService {
             }
         }
 
-        // Insert compiled HTML into text table
-        let compiled_hash = {
-            let _stage = StageGuard::new(trace, CorpusRenderStage::CompiledText);
-            TextService::create(ctx, html_output.body.clone())
-                .await
-                .or_raise(make_error)?
-        };
+        let compiled_hash = Self::compiled_text_hash(
+            ctx,
+            trace,
+            &html_output.body,
+            persist_compiled_text,
+            make_error,
+        )
+        .await?;
 
         // Set up the hosted text blocks
         //
@@ -1953,6 +1971,23 @@ impl RenderService {
             errors,
             compiled_hash,
         })
+    }
+
+    async fn compiled_text_hash(
+        ctx: &ServiceContext<'_>,
+        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
+        html: &str,
+        persist_compiled_text: bool,
+        make_error: impl Fn() -> Error,
+    ) -> Result<TextHash> {
+        let _stage = StageGuard::new(trace, CorpusRenderStage::CompiledText);
+        if persist_compiled_text {
+            TextService::create(ctx, html.to_owned())
+                .await
+                .or_raise(make_error)
+        } else {
+            Ok(k12_hash(html.as_bytes()))
+        }
     }
 
     fn restore_wikidot_render_compatibility(
@@ -2183,6 +2218,7 @@ impl RenderService {
                 format!("{}{}", &captures["before"], &captures["footnote"])
             })
             .into_owned();
+        let html = Self::remove_wikijump_footnote_ref_tooltips(&html);
         let html = WIKIJUMP_FOOTNOTE_REF_SPAN_WRAPPER_REGEX
             .replace_all(&html, |captures: &regex::Captures<'_>| {
                 captures
@@ -2191,15 +2227,7 @@ impl RenderService {
                     .to_owned()
             })
             .into_owned();
-        let html = Self::remove_wikijump_footnote_ref_tooltips(&html);
-        html.replace(
-            r#"<div class="wj-footnote-list">"#,
-            r#"<div class="wj-footnote-list footnotes-footer">"#,
-        )
-        .replace(
-            r#"<div class="wj-footnote-list footnotes-footer"><div class="wj-title">"#,
-            r#"<div class="wj-footnote-list footnotes-footer"><div class="wj-title title">"#,
-        )
+        restore_wikidot_footnote_list_dom(&html)
     }
 
     fn remove_wikijump_footnote_ref_tooltips(html: &str) -> String {
@@ -7986,10 +8014,8 @@ impl RenderService {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal);
         }
         if wants_content
-            && !current_page_only
-            && prefetched_pages.is_none()
             && query_limit > 0
-            && !expansion_budget.try_start_content_query()
+            && !expansion_budget.try_start_content_module()
         {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal);
         }
@@ -12762,6 +12788,14 @@ struct RenderContext {
 }
 
 #[derive(Clone, Copy, Debug)]
+struct RenderInnerOptions<'a> {
+    render_context: RenderContext,
+    max_include_expansions: usize,
+    trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
+    persist_compiled_text: bool,
+}
+
+#[derive(Clone, Copy, Debug)]
 struct RenderExpansionOptions<'a> {
     current_site_id: Option<i64>,
     current_page_id: Option<i64>,
@@ -12854,23 +12888,23 @@ struct ListPagesContentCache {
 
 #[derive(Debug)]
 struct ListPagesExpansionBudget {
-    remaining_content_queries: usize,
+    remaining_content_modules: usize,
     remaining_content_rows: usize,
 }
 
 impl ListPagesExpansionBudget {
     fn new() -> Self {
         Self {
-            remaining_content_queries: MAX_LISTPAGES_CONTENT_QUERIES_PER_RENDER,
+            remaining_content_modules: MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER,
             remaining_content_rows: MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER,
         }
     }
 
-    fn try_start_content_query(&mut self) -> bool {
-        if self.remaining_content_queries == 0 {
+    fn try_start_content_module(&mut self) -> bool {
+        if self.remaining_content_modules == 0 {
             return false;
         }
-        self.remaining_content_queries -= 1;
+        self.remaining_content_modules -= 1;
         true
     }
 
@@ -14642,13 +14676,13 @@ mod tests {
     }
 
     #[test]
-    fn list_pages_content_budget_limits_queries_and_rows() {
+    fn list_pages_content_budget_limits_modules_and_rows() {
         let mut budget = ListPagesExpansionBudget::new();
 
-        assert!(budget.try_start_content_query());
-        assert!(budget.try_start_content_query());
-        assert!(budget.try_start_content_query());
-        assert!(!budget.try_start_content_query());
+        assert!(budget.try_start_content_module());
+        assert!(budget.try_start_content_module());
+        assert!(budget.try_start_content_module());
+        assert!(!budget.try_start_content_module());
         assert!(budget.can_expand_content_rows(40));
         budget.consume_content_rows(40);
         assert!(budget.can_expand_content_rows(60));
@@ -22061,7 +22095,7 @@ mod tests {
             r#"<span class="wj-footnote-ref-tooltip-label">Footnote 2.</span>"#,
             r#"<div class="wj-footnote-ref-contents"><div>hidden note</div></div>"#,
             r#"</div> after</p>"#,
-            r#"<div class="wj-footnote-list"><div class="wj-title">Footnotes</div></div>"#,
+            r#"<div class="wj-footnote-list"><div class="wj-title">Footnotes</div><ol></ol></div>"#,
         );
 
         let restored = RenderService::restore_wikidot_footnote_dom_compatibility(html);
@@ -22069,8 +22103,8 @@ mod tests {
         assert!(restored.contains(
             r#"<sup class="footnoteref"><a id="footnoteref-2" href="javascript:;" class="footnoteref" onclick="WIKIDOT.page.utils.scrollToReference('footnote-2')">2</a></sup> after"#
         ));
-        assert!(restored.contains(r#"<div class="wj-footnote-list footnotes-footer">"#));
-        assert!(restored.contains(r#"<div class="wj-title title">Footnotes</div>"#));
+        assert!(restored.contains(r#"<div class="footnotes-footer">"#));
+        assert!(restored.contains(r#"<div class="title">Footnotes</div>"#));
         assert!(!restored.contains(r#"<span class="wj-footnote-ref">"#));
         assert!(!restored.contains("wj-footnote-ref-tooltip"));
         assert!(!restored.contains("hidden note"));
@@ -22092,6 +22126,7 @@ mod tests {
         assert!(restored.contains(
             r#"<sup class="footnoteref"><a id="footnoteref-2" href="javascript:;" class="footnoteref" onclick="WIKIDOT.page.utils.scrollToReference('footnote-2')">2</a></sup>"#
         ));
+        assert!(!restored.contains(r#"<span class="wj-footnote-ref">"#));
         assert!(!restored.contains("wj-footnote-ref-tooltip"));
         assert!(!restored.contains("hidden note"));
     }
@@ -22100,7 +22135,7 @@ mod tests {
     fn restores_wikidot_footnote_title_class_without_assuming_english_text() {
         for title in ["脚注", "The feet-noten"] {
             let html = format!(
-                r#"<div class="wj-footnote-list"><div class="wj-title">{title}</div></div>"#
+                r#"<div class="wj-footnote-list"><div class="wj-title">{title}</div><ol></ol></div>"#
             );
 
             let restored =
@@ -22109,7 +22144,7 @@ mod tests {
             assert_eq!(
                 restored,
                 format!(
-                    r#"<div class="wj-footnote-list footnotes-footer"><div class="wj-title title">{title}</div></div>"#
+                    r#"<div class="footnotes-footer"><div class="title">{title}</div></div>"#
                 )
             );
         }
@@ -22134,9 +22169,17 @@ mod tests {
         let restored =
             RenderService::restore_wikidot_footnote_dom_compatibility(&rendered);
 
+        assert!(
+            restored.contains(
+                r#"<div class="footnotes-footer"><div class="title">脚注</div>"#
+            )
+        );
+        assert!(restored.contains(r#"<div class="footnote-footer" id="footnote-1">"#));
         assert!(restored.contains(
-            r#"<div class="wj-footnote-list footnotes-footer"><div class="wj-title title">脚注</div>"#
+            r#"onclick="WIKIDOT.page.utils.scrollToReference('footnoteref-1')">1</a>. 注記"#
         ));
+        assert_eq!(restored.matches("注記").count(), 1);
+        assert!(!restored.contains("wj-footnote"));
         assert!(!restored.contains(">Footnotes<"));
     }
 
