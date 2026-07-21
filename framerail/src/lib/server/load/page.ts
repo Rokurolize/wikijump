@@ -2,6 +2,7 @@ import defaults from "$lib/defaults"
 
 import { buildAnonymousArticleResponseCacheMetadata } from "$lib/server/article-response-cache"
 import { authGetSession } from "$lib/server/auth/getSession"
+import { resolvePageRedirect } from "$lib/server/page-redirect"
 import {
   pageDelete,
   pageDeletedGet,
@@ -40,6 +41,10 @@ import {
   getPreloadRequestLocales
 } from "$lib/server/load/preload"
 import { loadSiteInfo } from "$lib/server/load/site-info"
+import {
+  buildWikidotRequestInfo,
+  requestHostFromRequest
+} from "$lib/server/wikidot-request-info"
 import { type DeepwellError, DeleteOptions, Layout } from "$lib/types"
 import {
   buildWikidotPageActionLabels,
@@ -121,9 +126,16 @@ export async function loadPage(
   }
 
   if (locals && responseType === "found") {
+    const requestHost = requestHostFromRequest(request)
+    locals.wikidotRequestInfo = buildWikidotRequestInfo({
+      domain: requestHost,
+      site: parentData.site,
+      page: responseData.page
+    })
     const metadata = buildAnonymousArticleResponseCacheMetadata({
       siteId,
       siteSlug,
+      requestHost,
       requestLocales,
       backendLocales,
       deepwellArticlePageCacheKey: articleResponse.article_page_cache_key,
@@ -336,7 +348,7 @@ export async function loadPage(
 
   // TODO remove checkRedirect when errorStatus is fixed
   if (checkRedirect) {
-    runRedirect(responseData, slug, extra)
+    runRedirect(responseData, slug, extra, request.url)
   }
 
   // Return to page for rendering
@@ -346,34 +358,12 @@ export async function loadPage(
 function runRedirect(
   viewData: PageView["data"],
   originalSlug: Optional<string>,
-  extra: Optional<string>
+  extra: Optional<string>,
+  requestUrl: string
 ): void {
-  if (!viewData.redirect_page) {
-    // Nothing to do
-    return
-  }
-
-  const slug: Optional<string> = viewData.redirect_page || originalSlug
-  const route: string = buildRoute(slug, extra)
-  redirect(308, `/${route}`)
-}
-
-function buildRoute(slug: Optional<string>, extra: Optional<string>): string {
-  // Combines a nullable slug and extra to form a route for redirection.
-  //
-  // Test cases:
-  // null, null => ''
-  // 'start', null => 'start'
-  // 'start', '' => 'start'
-  // 'start', 'comments/show' => 'start/comments/show'
-  // null, 'xyz' => (impossible)
-
-  if (slug === null) {
-    return ""
-  } else if (!extra) {
-    return slug ?? ""
-  } else {
-    return `${slug}/${extra}`
+  const resolved = resolvePageRedirect(viewData, originalSlug, extra, requestUrl)
+  if (resolved) {
+    redirect(resolved.status, resolved.location)
   }
 }
 
