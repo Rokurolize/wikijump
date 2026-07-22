@@ -9,6 +9,7 @@ import {promisify} from "node:util";
 
 import {
   ALLOWED_SITE_SLUG,
+  ALLOWED_SITE_SLUGS,
   THEME_CAPTURE_VIEWPORTS,
   THEME_CURRENT_SITE_DEPENDENCIES,
   THEME_LOCALIZATION_TIERS,
@@ -22,12 +23,14 @@ import {
   selectThemeTiers,
   themeComputedStyleProperties,
   validateThemeComputedStyleContract,
+  validateSiteSlug,
   validateTargetOrigin,
 } from "../src/theme-localization-e2e.mjs";
 
 const execFileAsync = promisify(execFile);
 const here = path.dirname(fileURLToPath(import.meta.url));
 const cli = path.resolve(here, "../scripts/theme-localization-e2e.mjs");
+const helper = path.resolve(here, "../scripts/wikidot-theme-page-helper.py");
 
 async function fixtureTranslationRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-theme-e2e-"));
@@ -85,6 +88,10 @@ test("tier selection is deterministic and run-owned slugs cannot drift", () => {
 test("target allowlist rejects mirror sites, paths, credentials, and wrong protocols", () => {
   assert.equal(validateTargetOrigin("http://scpaiueouiuiuiui.wikidot.com", "wikidot"), "http://scpaiueouiuiuiui.wikidot.com");
   assert.equal(validateTargetOrigin("https://scpaiueouiuiuiui.wikijump.localhost:18443", "wikijump"), "https://scpaiueouiuiuiui.wikijump.localhost:18443");
+  assert.equal(validateTargetOrigin("http://sandbox-for-codex.wikidot.com", "wikidot", "sandbox-for-codex"), "http://sandbox-for-codex.wikidot.com");
+  assert.equal(validateTargetOrigin("https://sandbox-for-codex.wikijump.localhost", "wikijump", "sandbox-for-codex"), "https://sandbox-for-codex.wikijump.localhost");
+  assert.throws(() => validateTargetOrigin("http://sandbox-for-codex.wikidot.com", "wikidot", ALLOWED_SITE_SLUG), /hard allowlist/);
+  assert.throws(() => validateTargetOrigin("http://scpaiueouiuiuiui.wikidot.com", "wikidot", "sandbox-for-codex"), /hard allowlist/);
   assert.throws(() => validateTargetOrigin("http://scpaiueouiuiui.wikidot.com", "wikidot"), /hard allowlist/);
   assert.throws(() => validateTargetOrigin("https://scpaiueouiuiui.wikijump.localhost:18443", "wikijump"), /hard allowlist/);
   assert.throws(() => validateTargetOrigin("https://scp-wiki.wikijump.localhost", "wikijump"), /hard allowlist/);
@@ -95,6 +102,20 @@ test("target allowlist rejects mirror sites, paths, credentials, and wrong proto
   assert.throws(() => validateTargetOrigin("http://scpaiueouiuiuiui.wikidot.com:9999", "wikidot"), /hard allowlist/);
   assert.throws(() => validateTargetOrigin("https://scpaiueouiuiuiui.wikijump.localhost:2747", "wikijump"), /hard allowlist/);
   assert.throws(() => validateTargetOrigin("https://scpaiueouiuiuiui.wikijump.localhost", "other"), /unknown target/);
+});
+
+test("JavaScript and Python mutation allowlists enumerate the same sites", async () => {
+  const program = String.raw`
+import importlib.util, json, sys
+spec = importlib.util.spec_from_file_location("theme_helper", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(json.dumps(sorted(module.ALLOWED_SITES)))
+`;
+  const {stdout, stderr} = await execFileAsync("python3", ["-c", program, helper]);
+  assert.equal(stderr, "");
+  assert.deepEqual(JSON.parse(stdout), [...ALLOWED_SITE_SLUGS].sort());
+  for (const site of ALLOWED_SITE_SLUGS) assert.equal(validateSiteSlug(site), site);
 });
 
 test("artifact leakage reports locations without copying identifiers", () => {
@@ -164,6 +185,25 @@ test("plan is deterministic, mutation-free, and carries cleanup and capture cont
   assert.equal(executable.mode, "execute");
   assert.equal(executable.safety.execute_supported, true);
   assert.equal(first.mode, "dry-run");
+});
+
+test("sandbox plans bind every target and hard-allowlist field to the validated site", async () => {
+  const translationRoot = await fixtureTranslationRoot();
+  const plan = await buildThemeLocalizationE2EPlan({
+    translationRoot,
+    runId: "20260722-oracle",
+    siteSlug: "sandbox-for-codex",
+    tiers: ["basalt"],
+  });
+  assert.equal(plan.run.site_slug, "sandbox-for-codex");
+  assert.deepEqual(plan.safety.hard_allowlist, {
+    site_slug: "sandbox-for-codex",
+    wikidot_hostname: "sandbox-for-codex.wikidot.com",
+    wikijump_hostname: "sandbox-for-codex.wikijump.localhost",
+  });
+  assert.equal(plan.tiers[0].targets.find((target) => target.id === "wikidot").origin, "http://sandbox-for-codex.wikidot.com");
+  assert.equal(plan.tiers[0].targets.find((target) => target.id === "wikijump").origin, "https://sandbox-for-codex.wikijump.localhost:18443");
+  assert.ok(plan.tiers[0].targets.every((target) => new URL(target.url).hostname.startsWith("sandbox-for-codex.")));
 });
 
 test("computed-style contracts accept only exact eq and one_of specifications", () => {

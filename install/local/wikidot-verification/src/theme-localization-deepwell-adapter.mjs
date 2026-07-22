@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-import {ALLOWED_SITE_SLUG, isCurrentRunOwnedSlug, isRecoverableRunOwnedSlug} from "./theme-localization-e2e.mjs";
+import {ALLOWED_SITE_SLUG, isCurrentRunOwnedSlug, isRecoverableRunOwnedSlug, validateSiteSlug, validateTargetOrigin} from "./theme-localization-e2e.mjs";
 
 const DEFAULT_RPC_TIMEOUT_MS = 30_000;
 const IP_ADDRESS = "127.0.0.1";
@@ -37,7 +37,7 @@ export function validateLocalDeepwellRpcUrl(value) {
   return url.href;
 }
 
-function validateResource(resource, {allowLegacy = false} = {}) {
+function validateResource(resource, {allowLegacy = false, siteSlug = ALLOWED_SITE_SLUG} = {}) {
   const kind = resource?.kind ?? "theme_page";
   const dependency = kind === "component_dependency" && MATERIALIZED_COMPONENT_TITLES.has(resource?.slug);
   const validSlug = dependency || (allowLegacy ? isRecoverableRunOwnedSlug(resource?.slug) : isCurrentRunOwnedSlug(resource?.slug));
@@ -45,7 +45,7 @@ function validateResource(resource, {allowLegacy = false} = {}) {
     throw new Error("Deepwell adapter accepts only validated Wikijump theme execution pages");
   }
   const url = new URL(resource.url);
-  if (url.protocol !== "https:" || url.hostname !== `${ALLOWED_SITE_SLUG}.wikijump.localhost` || !new Set(["", "18443"]).has(url.port) || url.pathname !== `/${resource.slug}` || url.search || url.hash) {
+  if (validateTargetOrigin(url.origin, "wikijump", siteSlug) !== url.origin || url.pathname !== `/${resource.slug}` || url.search || url.hash || url.username || url.password) {
     throw new Error("Deepwell adapter resource URL is outside the hard allowlist");
   }
   if (dependency && (resource.title !== MATERIALIZED_COMPONENT_TITLES.get(resource.slug) || resource.resource_id !== `dependency:${resource.slug}:wikijump` || !/^[0-9a-f]{32}$/u.test(resource.ownership_token))) {
@@ -95,7 +95,7 @@ export class DeepwellJsonRpcClient {
 
 export class DeepwellThemePageAdapter {
   constructor({rpcClient, rpcUrl, timeoutMs, adminEmail, adminPassword, actorUserId = null, siteSlug = ALLOWED_SITE_SLUG} = {}) {
-    if (siteSlug !== ALLOWED_SITE_SLUG) throw new Error("Deepwell adapter site is outside the hard allowlist");
+    siteSlug = validateSiteSlug(siteSlug);
     if (typeof adminEmail !== "string" || !adminEmail || typeof adminPassword !== "string" || !adminPassword) throw new Error("Deepwell adapter credentials are required");
     if (actorUserId !== null && !Number.isSafeInteger(actorUserId)) throw new Error("Deepwell adapter actor user id must be an integer");
     this.rpc = rpcClient ?? new DeepwellJsonRpcClient({rpcUrl, timeoutMs});
@@ -130,7 +130,7 @@ export class DeepwellThemePageAdapter {
   }
 
   async inspect(resource) {
-    validateResource(resource, {allowLegacy: true});
+    validateResource(resource, {allowLegacy: true, siteSlug: this.siteSlug});
     const page = await this.rpc.call("page_get", {site_id: this.siteId, page: resource.slug, details: {wikitext: true, compiled: false}}, this.context(resource));
     if (page === null) return null;
     if (!Number.isSafeInteger(page.page_id) || !Number.isSafeInteger(page.revision_id) || typeof page.wikitext !== "string" || typeof page.title !== "string" || !Array.isArray(page.tags) || page.tags.some((tag) => typeof tag !== "string")) {
@@ -140,7 +140,7 @@ export class DeepwellThemePageAdapter {
   }
 
   async create(resource, payload) {
-    validateResource(resource);
+    validateResource(resource, {siteSlug: this.siteSlug});
     if (typeof payload?.source !== "string" || sha256(payload.source) !== resource.source_sha256) throw new Error("Deepwell create source does not match the accepted source hash");
     if (await this.inspect(resource) !== null) throw new Error("Deepwell create-only guard found a preexisting page");
     const result = await this.rpc.call("page_create", {
@@ -162,7 +162,7 @@ export class DeepwellThemePageAdapter {
   }
 
   async remove(resource, {expected, identity} = {}) {
-    validateResource(resource, {allowLegacy: true});
+    validateResource(resource, {allowLegacy: true, siteSlug: this.siteSlug});
     const actual = await this.inspect(resource);
     if (actual === null) return;
     if (actual.source_sha256 !== expected?.source_sha256 || actual.title !== expected?.title || JSON.stringify(actual.tags) !== JSON.stringify(expected?.tags) || (identity !== undefined && actual.identity !== identity)) {

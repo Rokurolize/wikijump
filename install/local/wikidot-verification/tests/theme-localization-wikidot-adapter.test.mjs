@@ -22,13 +22,13 @@ function sha256(value) {
 function fixtureResource() {
   const source = "日本語 theme source\n";
   const slug = "codex-l10n:20260713-adapter-yossistyle";
-  return {source, resource: {resource_id: "yossistyle:wikidot", tier_id: "yossistyle", target: "wikidot", slug, url: `https://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}};
+  return {source, resource: {resource_id: "yossistyle:wikidot", tier_id: "yossistyle", target: "wikidot", slug, url: `http://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}};
 }
 
 function prerequisiteResource() {
   const source = "[[include component:image-block-base]]";
   const slug = "component:image-block";
-  return {source, resource: {resource_id: `prerequisite:${slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", slug, url: `https://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Image Block", tags: ["codex-source-parity-redo", "component"]}};
+  return {source, resource: {resource_id: `prerequisite:${slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", slug, url: `http://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Image Block", tags: ["codex-source-parity-redo", "component"]}};
 }
 
 class FakeHelper {
@@ -71,11 +71,11 @@ test("private-site adapter uses the execution interface without ListPages lookup
   assert.equal(await adapter.inspect(resource), null);
   assert.deepEqual(helper.calls.map(({action}) => action), ["inspect", "inspect", "create", "inspect", "remove", "inspect", "inspect"]);
   assert.deepEqual(helper.calls.find(({action}) => action === "create").fields.tags, ["テーマ"]);
-  await assert.rejects(adapter.inspect({...resource, url: `https://scp-wiki.wikidot.com/${resource.slug}`}), /hard allowlist/);
-  await assert.rejects(adapter.inspect({...resource, url: `http://${SITE}.wikidot.com/${resource.slug}`}), /hard allowlist/);
+  await assert.rejects(adapter.inspect({...resource, url: `http://scp-wiki.wikidot.com/${resource.slug}`}), /hard allowlist/);
+  await assert.rejects(adapter.inspect({...resource, url: `https://${SITE}.wikidot.com/${resource.slug}`}), /hard allowlist/);
   await assert.rejects(adapter.inspect({...resource, slug: "theme:yossistyle"}), /validated/);
   const legacySlug = "theme:codex-l10n-20260713-adapter-yossistyle";
-  const legacy = {...resource, slug: legacySlug, url: `https://${SITE}.wikidot.com/${legacySlug}`};
+  const legacy = {...resource, slug: legacySlug, url: `http://${SITE}.wikidot.com/${legacySlug}`};
   assert.equal(await adapter.inspect(legacy), null);
   await assert.rejects(adapter.create(legacy, {source}), /validated/);
 });
@@ -125,7 +125,8 @@ test("Python helper contains only direct authenticated page primitives", async (
   assert.match(source, /edit\/PageEditModule/);
   assert.match(source, /"event": "deletePage"/);
   assert.match(source, /"event": "saveTags"/);
-  assert.match(source, /ALLOWED_ORIGIN}\/ajax-module-connector\.php/);
+  assert.match(source, /self\.origin}\/ajax-module-connector\.php/);
+  assert.match(source, /WIKIDOT_SITE/);
   assert.match(source, /page_revision_id/);
   assert.doesNotMatch(source, /ListPagesModule/);
   assert.doesNotMatch(source, /site\.page\.get/);
@@ -237,6 +238,7 @@ class Httpx:
     def __init__(self, response): self.response = response
     def Client(self, **kwargs): return Client(self.response, **kwargs)
 backend = object.__new__(module.WikidotBackend)
+backend.origin = "http://scpaiueouiuiuiui.wikidot.com"
 backend.headers = {}
 backend.httpx = Httpx(Response(404, ""))
 print(backend._get("codex-l10n:20260713-adapter-yossistyle") is None)
@@ -260,7 +262,7 @@ spec = importlib.util.spec_from_file_location("theme_helper", sys.argv[1])
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 class Backend:
-    def __init__(self): self.count = 0
+    def __init__(self): self.count = 0; self.site = module.ALLOWED_SITE
     def inspect(self, slug, kind="theme_page"):
         self.count += 1
         return {"identity": self.count, "title": "fixture", "source_sha256": "0" * 64, "tags": []}

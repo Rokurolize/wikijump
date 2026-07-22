@@ -7,8 +7,7 @@ import {fileURLToPath} from "node:url";
 
 import {
   ALLOWED_SITE_SLUG,
-  DEFAULT_WIKIDOT_ORIGIN,
-  DEFAULT_WIKIJUMP_ORIGIN,
+  ALLOWED_SITE_SLUGS,
   buildThemeLocalizationE2EPlan,
 } from "../src/theme-localization-e2e.mjs";
 import {GUARDED_THEME_WIKIJUMP_RPC_URL, runGuardedThemeAction, validateThemeCdpEndpoint, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
@@ -24,8 +23,6 @@ function nextArg(argv, index, flag) {
 export function parseArgs(argv) {
   const args = {
     siteSlug: ALLOWED_SITE_SLUG,
-    wikidotOrigin: DEFAULT_WIKIDOT_ORIGIN,
-    wikijumpOrigin: DEFAULT_WIKIJUMP_ORIGIN,
     tiers: [],
   };
 
@@ -120,7 +117,7 @@ function printHelp() {
 
 New plans reserve codex-l10n:<run-id>-<tier>; recovery also accepts exact legacy theme:codex-l10n-<run-id>-<tier> plans whose ledger fingerprint and resources match.
 
-The exact site allowlist is ${ALLOWED_SITE_SLUG}. Execute and recover require WIKIJUMP_THEME_RPC_URL=${GUARDED_THEME_WIKIJUMP_RPC_URL}. Credentials are accepted only through WIKIDOT_USERNAME, WIKIDOT_PASSWORD, WIKIJUMP_THEME_ADMIN_EMAIL, and WIKIJUMP_THEME_ADMIN_PASSWORD. Optional browser flags are --browser-root, --browser-executable or --cdp-endpoint, --wikidot-storage-state, --wikijump-storage-state, and --ignore-https-errors.`);
+The exact site allowlist is ${ALLOWED_SITE_SLUGS.join(", ")}. Execute and recover require WIKIJUMP_THEME_RPC_URL=${GUARDED_THEME_WIKIJUMP_RPC_URL}. Credentials are accepted only through WIKIDOT_USERNAME, WIKIDOT_PASSWORD, WIKIJUMP_THEME_ADMIN_EMAIL, and WIKIJUMP_THEME_ADMIN_PASSWORD. Optional browser flags are --browser-root, --browser-executable or --cdp-endpoint, --wikidot-storage-state, --wikijump-storage-state, and --ignore-https-errors.`);
 }
 
 export async function run(argv = process.argv) {

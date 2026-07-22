@@ -293,4 +293,8 @@ test("CLI requires one explicit action and never accepts credential flags", () =
   assert.throws(() => parseArgs([...base, "--execute", "--cdp-endpoint", "http://example.com:9222"]), /loopback HTTP origin/);
   assert.throws(() => parseArgs(["node", "theme", "--recover", "--plan", "/tmp/plan", "--ledger", "/tmp/ledger"]), /--result/);
   assert.equal(parseArgs([...base, "--dry-run"]).mode, "dry-run");
+  const sandbox = parseArgs([...base, "--dry-run", "--site", "sandbox-for-codex"]);
+  assert.equal(sandbox.siteSlug, "sandbox-for-codex");
+  assert.equal(sandbox.wikidotOrigin, undefined);
+  assert.equal(sandbox.wikijumpOrigin, undefined);
 });

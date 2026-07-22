@@ -13,8 +13,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 ALLOWED_SITE = "scpaiueouiuiuiui"
-ALLOWED_DOMAIN = f"{ALLOWED_SITE}.wikidot.com"
-ALLOWED_ORIGIN = f"https://{ALLOWED_DOMAIN}"
+ALLOWED_SITES = frozenset({ALLOWED_SITE, "sandbox-for-codex"})
 CURRENT_RUN_OWNED_SLUG = re.compile(r"^codex-l10n:[a-z0-9][a-z0-9-]+-(?:yossistyle|ashes-to-ashes|basalt)$")
 LEGACY_RUN_OWNED_SLUG = re.compile(r"^theme:codex-l10n-[a-z0-9][a-z0-9-]+-(?:yossistyle|ashes-to-ashes|basalt)$")
 REFERENCE_PREREQUISITE_SLUGS = {"component:image-block-base", "component:image-block"}
@@ -40,6 +39,12 @@ def sha256(value: str) -> str:
 def wikidot_round_trip_sha256(value: str) -> str:
     # Live Wikidot removes exactly one terminal LF when saving page source.
     return sha256(value[:-1] if value.endswith("\n") else value)
+
+
+def validate_site(value: object) -> str:
+    if value not in ALLOWED_SITES:
+        raise PublicError("site_not_allowed", "site is outside the hard allowlist")
+    return str(value)
 
 
 def validate_kind(value: object) -> str:
@@ -89,6 +94,9 @@ def reject_secret_fields(value: object) -> None:
 
 class WikidotBackend:
     def __init__(self) -> None:
+        self.site = validate_site(os.environ.pop("WIKIDOT_SITE", ALLOWED_SITE))
+        self.domain = f"{self.site}.wikidot.com"
+        self.origin = f"http://{self.domain}"
         username = os.environ.pop("WIKIDOT_USERNAME", "")
         password = os.environ.pop("WIKIDOT_PASSWORD", "")
         root = Path(os.environ.pop("WIKIDOT_PY_ROOT", "/home/roku/src/Rokurolize/wikidot.py/src"))
@@ -122,7 +130,7 @@ class WikidotBackend:
         site_id = SITE_ID.search(root_html)
         site_name = SITE_UNIX_NAME.search(root_html)
         domain = SITE_DOMAIN.search(root_html)
-        if not site_id or not site_name or not domain or site_name.group(1) != ALLOWED_SITE or domain.group(1) != ALLOWED_DOMAIN:
+        if not site_id or not site_name or not domain or site_name.group(1) != self.site or domain.group(1) != self.domain:
             self.close()
             raise PublicError(
                 "site_identity_mismatch",
@@ -138,7 +146,7 @@ class WikidotBackend:
                 pass
 
     def _get(self, slug: str) -> str | None:
-        url = ALLOWED_ORIGIN if not slug else f"{ALLOWED_ORIGIN}/{slug}"
+        url = self.origin if not slug else f"{self.origin}/{slug}"
         try:
             with self.httpx.Client(follow_redirects=False, timeout=30.0, trust_env=False) as client:
                 response = client.get(url, headers=self.headers)
@@ -175,7 +183,7 @@ class WikidotBackend:
         try:
             with self.httpx.Client(follow_redirects=False, timeout=30.0, trust_env=False) as client:
                 response = client.post(
-                    f"{ALLOWED_ORIGIN}/ajax-module-connector.php",
+                    f"{self.origin}/ajax-module-connector.php",
                     headers=headers,
                     data={"wikidot_token7": token, **body},
                 )
@@ -341,7 +349,7 @@ def dispatch(backend: Any, request: dict[str, Any]) -> tuple[dict[str, Any], boo
     if action == "ping":
         return {
             "protocol": "wikijump.theme_wikidot_helper.v1",
-            "site": ALLOWED_SITE,
+            "site": backend.site,
         }, False
     if action == "shutdown":
         return {"closed": True}, True
