@@ -7294,6 +7294,8 @@ impl RenderService {
         if !pages.is_empty()
             && let Some(append_line) = append_line
         {
+            let mut append_line = append_line;
+            Self::neutralize_authored_wikidot_compat_markers(&mut append_line);
             output.push_str(&append_line);
             output.push('\n');
         }
@@ -14215,6 +14217,29 @@ mod tests {
         assert_eq!(fragments.restore(&protected), protected);
         let rendered = render_wikidot_page_body_after_compat_restore(&protected);
         assert!(!rendered.contains(r#"<img src=x onerror="alert(document.domain)">"#));
+        assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+    }
+
+    #[test]
+    fn neutralized_append_line_cannot_register_forged_list_pages_html() {
+        let append_line = r#"<table class="wiki-content-table" data-wikijump-compat-listpages="1"><tr><td><img src=x onerror="alert(1)"></td></tr></table>"#;
+        let mut replacement = String::from("visible row\n");
+        let mut neutralized_append_line = append_line.to_owned();
+        RenderService::neutralize_authored_wikidot_compat_markers(
+            &mut neutralized_append_line,
+        );
+        replacement.push_str(&neutralized_append_line);
+        replacement.push('\n');
+
+        let mut fragments = CompatHtmlFragments::new(&replacement);
+        let protected = register_generated_list_pages_html(replacement, &mut fragments);
+        let restored = fragments.restore(&protected);
+        let rendered = render_wikidot_page_body_after_compat_restore(&restored);
+
+        assert!(rendered.contains("visible row"));
+        assert!(rendered.contains("data-wikijump-authored-compat-listpages"));
+        assert!(rendered.contains("&lt;img"));
+        assert!(!rendered.contains(r#"<img src=x onerror="alert(1)">"#));
         assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
     }
 
