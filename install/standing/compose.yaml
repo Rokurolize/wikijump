@@ -123,6 +123,7 @@ services:
       DEEPWELL_HOST: deepwell
       FRAMERAIL_MODE: built
       FRAMERAIL_ENV: local
+      FRAMERAIL_CSRF_CHECK_ORIGIN: "true"
       REDIS_URL: redis://cache
     ports:
       - "127.0.0.1:13393:3393"

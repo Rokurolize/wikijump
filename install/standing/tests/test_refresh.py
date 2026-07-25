@@ -68,6 +68,10 @@ class RefreshStandingTest(unittest.TestCase):
                 self.assertEqual(
                     "FRAMERAIL_ENV=local" in command, service == "framerail"
                 )
+                self.assertEqual(
+                    "FRAMERAIL_CSRF_CHECK_ORIGIN=true" in command,
+                    service == "framerail",
+                )
 
     def test_environment_rewrite_is_atomic_and_preserves_unrelated_values(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:

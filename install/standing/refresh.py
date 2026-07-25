@@ -101,7 +101,12 @@ def build_command(
         f"com.rokurolize.wikijump.ftml_sha={identity['ftml_sha']}",
     ]
     if service == "framerail":
-        args.extend(("--build-arg", "FRAMERAIL_ENV=local"))
+        args.extend((
+            "--build-arg",
+            "FRAMERAIL_ENV=local",
+            "--build-arg",
+            "FRAMERAIL_CSRF_CHECK_ORIGIN=true",
+        ))
     args.extend(("--tag", tag, str(source_root)))
     return args
 
