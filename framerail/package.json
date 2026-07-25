@@ -31,7 +31,7 @@
     "eslint-plugin-svelte": "^3.19.0",
     "globals": "^17.7.0",
     "jiti": "^2.7.0",
-    "postcss": "^8.5.15",
+    "postcss": "^8.5.18",
     "postcss-html": "^1.8.1",
     "postcss-scss": "^4.0.9",
     "prettier": "^3.9.4",
@@ -47,7 +47,7 @@
     "sveltekit-superforms": "^2.30.2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.0",
-    "valibot": "^1.3.1"
+    "valibot": "^1.4.2"
   },
   "dependencies": {
     "@sveltejs/adapter-node": "^5.5.4",
