@@ -24,6 +24,11 @@ type NavigationAnimationFrame = {
   themeStylesheetsReady: boolean
 }
 
+type PresentedFrame = {
+  data: string
+  probe: Promise<NavigationAnimationFrame | null>
+}
+
 test("Wikidot page links do not present the destination before its CSS", async ({
   page
 }) => {
@@ -56,10 +61,16 @@ test("Wikidot page links do not present the destination before its CSS", async (
   })
   const destinationHtml = await destinationResponse.text()
   expect(destinationResponse.ok()).toBe(true)
-  expect(destinationHtml.indexOf("navigation-style-b-theme.css")).toBeGreaterThan(0)
-  expect(destinationHtml.indexOf("navigation-style-b-theme.css")).toBeLessThan(
-    destinationHtml.indexOf("</head>")
+  const themeIndex = destinationHtml.indexOf("navigation-style-b-theme.css")
+  const inlineStyleIndex = destinationHtml.indexOf("#page-title{display:none}")
+  const generatedStyleIndex = destinationHtml.indexOf(
+    ".generated-style-b-one { color: blue; }"
   )
+  const headEndIndex = destinationHtml.indexOf("</head>")
+  expect(themeIndex).toBeGreaterThan(0)
+  expect(inlineStyleIndex).toBeGreaterThan(themeIndex)
+  expect(generatedStyleIndex).toBeGreaterThan(inlineStyleIndex)
+  expect(generatedStyleIndex).toBeLessThan(headEndIndex)
 
   const cdp = await page.context().newCDPSession(page)
   await page.goto("/navigation-style-a")
@@ -75,10 +86,15 @@ test("Wikidot page links do not present the destination before its CSS", async (
     page.locator('head [data-wikidot-style-frame="wikidot-style-frame"]')
   ).toHaveCount(1)
   expect(await generatedCss(page)).toEqual([".generated-style-a { color: red; }"])
-  const presentedFrameProbes: Promise<NavigationAnimationFrame | null>[] = []
+  const presentedFrames: PresentedFrame[] = []
+  let markFirstPresentedFrame!: () => void
+  const firstPresentedFrame = new Promise<void>((resolve) => {
+    markFirstPresentedFrame = resolve
+  })
   cdp.on("Page.screencastFrame", (event) => {
-    presentedFrameProbes.push(
-      cdp
+    presentedFrames.push({
+      data: event.data,
+      probe: cdp
         .send("Runtime.evaluate", {
           expression: `(() => {
             const pageTitle = document.querySelector("#page-title");
@@ -104,7 +120,8 @@ test("Wikidot page links do not present the destination before its CSS", async (
         })
         .then((result) => (result.result.value as NavigationAnimationFrame) ?? null)
         .catch(() => null)
-    )
+    })
+    markFirstPresentedFrame()
     void cdp.send("Page.screencastFrameAck", { sessionId: event.sessionId })
   })
   await cdp.send("Page.startScreencast", {
@@ -112,8 +129,10 @@ test("Wikidot page links do not present the destination before its CSS", async (
     format: "png",
     quality: 100
   })
-  await page.waitForTimeout(100)
-  presentedFrameProbes.length = 0
+  await firstPresentedFrame
+  const oldDocumentFrame = presentedFrames.at(-1)?.data
+  expect(oldDocumentFrame).toBeTruthy()
+  presentedFrames.length = 0
 
   await page.evaluate(() => {
     ;(
@@ -128,14 +147,13 @@ test("Wikidot page links do not present the destination before its CSS", async (
   })
   await themeRequested
   await page.waitForTimeout(300)
-  const probesDuringThemeDelay = [...presentedFrameProbes]
-  const framesDuringThemeDelay = await Promise.all(probesDuringThemeDelay)
-  const destinationFramesDuringThemeDelay = framesDuringThemeDelay.filter(
-    (frame): frame is NavigationAnimationFrame => frame?.href === "/navigation-style-b"
+  const framesDuringThemeDelay = [...presentedFrames]
+  const onlyOldDocumentFramesDuringThemeDelay = framesDuringThemeDelay.every(
+    (frame) => frame.data === oldDocumentFrame
   )
   releaseThemeResponse()
   await Promise.all([click, navigation])
-  expect(destinationFramesDuringThemeDelay).toEqual([])
+  expect(onlyOldDocumentFramesDuringThemeDelay).toBe(true)
   await expect(
     page.locator('head [data-wikidot-style-frame="wikidot-style-frame"]')
   ).toHaveCount(2)
@@ -147,14 +165,17 @@ test("Wikidot page links do not present the destination before its CSS", async (
   )
   await page.waitForTimeout(100)
   await cdp.send("Page.stopScreencast")
-  const presentedFrames = await Promise.all(presentedFrameProbes)
-  const destinationFrames = presentedFrames.filter(
+  const changedFrameProbes = presentedFrames
+    .filter((frame) => frame.data !== oldDocumentFrame)
+    .map((frame) => frame.probe)
+  const changedFrameStates = await Promise.all(changedFrameProbes)
+  const destinationFrames = changedFrameStates.filter(
     (frame): frame is NavigationAnimationFrame => frame?.href === "/navigation-style-b"
   )
   expect(destinationFrames.length).toBeGreaterThan(0)
   for (const frame of destinationFrames) {
     expect(frame).toMatchObject({
-      generatedClones: 2,
+      generatedClones: 0,
       markedStyles: 2,
       pageTitleDisplay: "none",
       sideBarDisplay: "none",
@@ -187,15 +208,15 @@ test("Wikidot page links do not present the destination before its CSS", async (
     ".generated-style-b-one { color: blue; }",
     ".generated-style-b-two { color: green; }"
   ])
-  expect(await generatedCssClones(page)).toEqual(clickedStyleB)
+  expect(await generatedCssClones(page)).toEqual([])
 
   await page.goto("/navigation-style-b")
   await expect(page.locator("head style[data-wikijump-generated-css]")).toHaveCount(2)
   await expect(page.locator("head style[data-wikijump-generated-css-clone]")).toHaveCount(
-    2
+    0
   )
   expect(await generatedCss(page)).toEqual(clickedStyleB)
-  expect(await generatedCssClones(page)).toEqual(clickedStyleB)
+  expect(await generatedCssClones(page)).toEqual([])
 
   await page.goto("/navigation-style-c")
   await expect(page.locator("head style[data-wikijump-generated-css]")).toHaveCount(2)
@@ -229,12 +250,12 @@ test("Wikidot page links do not present the destination before its CSS", async (
 
   const clickedStyleD = await generatedCss(page)
   expect(clickedStyleD).toEqual([".generated-style-d { color: black; }"])
-  expect(await generatedCssClones(page)).toEqual(clickedStyleD)
+  expect(await generatedCssClones(page)).toEqual([])
   await page.goto("/navigation-style-d")
   await expect(page.locator("head style[data-wikijump-generated-css]")).toHaveCount(1)
   await expect(page.locator("head style[data-wikijump-generated-css-clone]")).toHaveCount(
-    1
+    0
   )
   expect(await generatedCss(page)).toEqual(clickedStyleD)
-  expect(await generatedCssClones(page)).toEqual(clickedStyleD)
+  expect(await generatedCssClones(page)).toEqual([])
 })
