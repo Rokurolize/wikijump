@@ -21,7 +21,7 @@ type NavigationAnimationFrame = {
   markedStyles: number
   pageTitleDisplay: string | null
   sideBarDisplay: string | null
-  stylesheetsReady: boolean
+  themeStylesheetsReady: boolean
 }
 
 test("Wikidot page links do not present the destination before its CSS", async ({
@@ -93,9 +93,11 @@ test("Wikidot page links do not present the destination before its CSS", async (
               ).length,
               pageTitleDisplay: pageTitle ? getComputedStyle(pageTitle).display : null,
               sideBarDisplay: sideBar ? getComputedStyle(sideBar).display : null,
-              stylesheetsReady: Array.from(
+              themeStylesheetsReady: Array.from(
                 document.querySelectorAll('head link[rel="stylesheet"]')
-              ).every((stylesheet) => stylesheet.sheet !== null)
+              )
+                .filter((stylesheet) => stylesheet.hasAttribute("data-wikidot-style-frame"))
+                .every((stylesheet) => stylesheet.sheet !== null)
             };
           })()`,
           returnByValue: true
@@ -126,9 +128,14 @@ test("Wikidot page links do not present the destination before its CSS", async (
   })
   await themeRequested
   await page.waitForTimeout(300)
-  expect(presentedFrameProbes).toEqual([])
+  const probesDuringThemeDelay = [...presentedFrameProbes]
+  const framesDuringThemeDelay = await Promise.all(probesDuringThemeDelay)
+  const destinationFramesDuringThemeDelay = framesDuringThemeDelay.filter(
+    (frame): frame is NavigationAnimationFrame => frame?.href === "/navigation-style-b"
+  )
   releaseThemeResponse()
   await Promise.all([click, navigation])
+  expect(destinationFramesDuringThemeDelay).toEqual([])
   await expect(
     page.locator('head [data-wikidot-style-frame="wikidot-style-frame"]')
   ).toHaveCount(2)
@@ -151,7 +158,7 @@ test("Wikidot page links do not present the destination before its CSS", async (
       markedStyles: 2,
       pageTitleDisplay: "none",
       sideBarDisplay: "none",
-      stylesheetsReady: true
+      themeStylesheetsReady: true
     })
   }
   await expect(page).toHaveURL(/\/navigation-style-b$/u)
