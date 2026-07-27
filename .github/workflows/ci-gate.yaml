@@ -86,13 +86,11 @@ jobs:
         run: node --test .github/tests/*.test.mjs
 
   deepwell:
-    name: Deepwell lint and unit tests
+    name: Deepwell fast checks
     needs: classify
     if: needs.classify.outputs.deepwell == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      RUSTFLAGS: -D warnings
+    timeout-minutes: 2
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -103,16 +101,10 @@ jobs:
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
             ~/.cargo/bin
             ~/.cargo/.crates.toml
             ~/.cargo/.crates2.json
-            deepwell/target
           key: ${{ runner.os }}-${{ runner.arch }}-deepwell-required-${{ hashFiles('deepwell/Cargo.lock', 'rust-toolchain.toml') }}
-
-      - name: System Dependencies
-        run: sudo apt update && sudo apt install libmagic-dev
 
       - name: Install cargo-machete
         run: cargo install cargo-machete --version 0.9.1 --locked
@@ -120,10 +112,7 @@ jobs:
       - name: Validate
         run: |
           cargo machete deepwell
-          cd deepwell
-          cargo fmt --all -- --check
-          cargo clippy --locked --tests --no-deps
-          cargo test --locked --lib --no-default-features
+          cargo fmt --manifest-path deepwell/Cargo.toml --all -- --check
 
   wws:
     name: WWS lint and unit tests

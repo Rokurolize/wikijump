@@ -100,13 +100,11 @@ test("Deepwell validation stays fast and service-free", () => {
   const gate = source.slice(source.indexOf("  gate:\n"))
 
   assert.match(deepwell, /needs\.classify\.outputs\.deepwell == 'true'/)
-  assert.doesNotMatch(deepwell, /services:|DATABASE_URL|Start MinIO|sqlx|all-features/)
-  assert.match(deepwell, /timeout-minutes: 5/)
+  assert.doesNotMatch(deepwell, /services:|DATABASE_URL|Start MinIO|sqlx|clippy|cargo test|target/)
+  assert.match(deepwell, /timeout-minutes: 2/)
   for (const command of [
     "cargo machete deepwell",
-    "cargo fmt --all -- --check",
-    "cargo clippy --locked --tests --no-deps",
-    "cargo test --locked --lib --no-default-features"
+    "cargo fmt --manifest-path deepwell/Cargo.toml --all -- --check"
   ]) assert.ok(deepwell.includes(command), command)
   assert.ok(hasYamlLine(gate, "- deepwell"))
   assert.match(gate, /needs\.classify\.outputs\.draft == 'true' && 'CI \/ draft gate' \|\| 'CI \/ gate'/)

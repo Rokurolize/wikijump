@@ -16,8 +16,8 @@ which is why an unrelated change does not pay for the whole matrix. Its jobs:
 - Workflow policy: `actionlint` plus `.github/tests/`, which assert the CI
   structure itself, including that third-party actions are pinned to full
   commit SHAs and that the Framerail unit and browser suites stay separate.
-- Deepwell lint and unit tests: fast checks that do not start database or object
-  storage services.
+- Deepwell fast checks: dependency hygiene and formatting without compiling the
+  service. Clippy and unit tests run in the required local pre-push preflight.
 - WWS, Framerail, Locales: the per-area equivalents.
 - CI / gate: the single required check that aggregates the rest, so branch
   protection has one status to require rather than a list that changes.
