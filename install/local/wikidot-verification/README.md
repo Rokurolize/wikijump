@@ -73,6 +73,27 @@ node install/local/wikidot-verification/scripts/rerender-saved-page-runtime.mjs 
 
 Repeat `--case-id <case-id>` on both the rerender and differential commands to run an explicit source-current subset while retaining a larger frozen reference file. Unknown or duplicate filters fail. The subsequent browser-facing differential requires the source- and revision-bound rerender receipt for the exact selected reference set and exactly one serialized `compiled_generator` whose FTML revision matches the runtime identity. A source-drifted page or stale, missing, or duplicated generator fails even when the selected DOM happens to match.
 
+When a selected public `scp-wiki` reference has drifted from the canonical corpus, build a no-replace refresh bundle from the frozen reference before importing it. The builder preserves the corpus page metadata and entity ID, replaces only the live-derived source, title, revision count, and capture provenance fields, and emits a deterministic receipt plus an import manifest bound to `scp-wiki` and the named corpus branch. It rejects a no-drift selection unless `--allow-no-drift` is given for an intentional metadata-only refresh.
+
+```sh
+node install/local/wikidot-verification/scripts/build-saved-page-corpus-refresh-bundle.mjs \
+  --references /absolute/evidence/path/saved-page-references.jsonl \
+  --case-id scp-7446-stray-open-include \
+  --case-id fragment-scp-9988-2-stray-open-include \
+  --corpus-root /absolute/path/to/canonical-corpus \
+  --branch en \
+  --output-dir /absolute/evidence/path/saved-page-refresh-bundle
+
+node install/local/wikidot-verification/scripts/apply-corpus-import-manifest.mjs \
+  --manifest /absolute/evidence/path/saved-page-refresh-bundle/import-manifest.jsonl \
+  --create-mode db \
+  --replace-existing \
+  --skip-rerender \
+  --skip-attachments
+```
+
+After import, run the saved-page rerender command above for the same case IDs and exact runtime identity, then run the HTTPS differential.
+
 ## Wikijump identifier leaks
 
 Imported content must carry Wikidot's own DOM names. The Wikidot stylesheet the page loads has no `.wj-` rules, so a leaked `wj-` class is an unstyled element as well as a tree difference.
