@@ -2544,6 +2544,82 @@ async fn page_render_emits_wikidot_rate_widget_structure() {
 }
 
 #[tokio::test]
+async fn page_render_star_rate_module_consumes_body_and_substitutes_live_variables() {
+    const CATEGORY: &str = "fixture-rate-module-stars";
+    const SLUG: &str = "fixture-rate-module-stars:holder";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    set_listpages_test_category_rating_type(&runner, site_id, CATEGORY, "stars").await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SLUG,
+        "Fixture Rate Module Stars",
+        concat!(
+            "[[module Rate]]\n",
+            "Average Rating %%rating%% from %%rating_votes%% votes percent=%%rating_percent%% decimal=%%rating_decimal%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, SLUG, CATEGORY).await;
+    let page_id = listpages_test_page_id(&runner, site_id, SLUG).await;
+    let page_category_id = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Rate star fixture page lookup should not fail")
+        .expect("Rate star fixture page should exist")
+        .page_category_id;
+    runner
+        .context()
+        .transaction()
+        .execute_raw(Statement::from_sql_and_values(
+            runner.context().transaction().get_database_backend(),
+            "INSERT INTO page_vote (from_wikidot, page_id, user_id, rating_system, value) \
+             VALUES (false, $1, $2, 'stars', 4)",
+            [Value::from(page_id), Value::from(ADMIN_USER_ID)],
+        ))
+        .await
+        .expect("Rate star fixture should receive its stored star vote");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": page_category_id,
+            "page_id": page_id,
+        }),
+    );
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, SLUG).await;
+
+    assert!(
+        html.contains(concat!(
+            r#"<div class="page-rate-widget"><div class="page-rate-widget-start" data-rating="4"></div>"#,
+            r#"<div class="page-rate-widget-start-text">Average Rating "#,
+            r#"<span class="page-rate-widget-start-text-rating">4</span>"#,
+            r#" from <span class="page-rate-widget-start-text-rating-votes">1</span>"#,
+            r#" votes percent=<span class="page-rate-widget-start-text-rating-percent">80</span>"#,
+            r#" decimal=%%rating_decimal%%</div></div>"#,
+        )),
+        "star Rate module body should match live Wikidot's star wrapper, variable spans, and literal rating_decimal:\n{html}",
+    );
+    assert!(!html.contains(r#"class="page-rate-widget-box""#), "{html}");
+    assert!(!html.contains("[[/module]]"), "{html}");
+    assert!(!html.contains("WIKIJUMPWIKIDOTCOMPATHTML"), "{html}");
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
