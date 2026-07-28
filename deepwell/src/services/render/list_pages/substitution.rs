@@ -1236,11 +1236,25 @@ pub(in crate::services::render) fn protect_ajax_module_literal_markers(
             let bytes = hex::decode(&captures["text"])
                 .expect("marker regex accepts only complete hexadecimal bytes");
             match String::from_utf8(bytes) {
-                Ok(text) => compat_text.push_escaped_html_text(&text),
+                Ok(text) if ajax_module_literal_marker_text_is_valid(&text) => {
+                    compat_text.push_escaped_html_text(&text)
+                }
                 Err(_) => captures[0].to_owned(),
+                Ok(_) => captures[0].to_owned(),
             }
         })
         .into_owned()
+}
+
+fn ajax_module_literal_marker_text_is_valid(text: &str) -> bool {
+    let lowercase = text.to_ascii_lowercase();
+    lowercase == "[[/module]]"
+        || (lowercase.starts_with("[[module")
+            && lowercase
+                .as_bytes()
+                .get("[[module".len())
+                .is_some_and(u8::is_ascii_whitespace)
+            && lowercase.ends_with("]]"))
 }
 
 pub(in crate::services::render) fn parse_list_pages_score_selector(

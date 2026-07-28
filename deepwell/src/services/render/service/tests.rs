@@ -43,7 +43,8 @@ use super::super::list_pages::{
     list_pages_revision_count, list_pages_row_scan_target, list_pages_tag_link_href,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
     parse_list_pages_arguments_with_url, parse_list_pages_date_selector,
-    preserve_list_pages_following_paragraph_boundary, push_list_pages_pager,
+    preserve_list_pages_following_paragraph_boundary,
+    protect_ajax_module_literal_markers, push_list_pages_pager,
     register_generated_list_pages_html, render_list_pages_tags, render_tag_cloud_box,
     requested_page_info_score, should_render_current_page_list_pages_row,
     substitute_count_pages_variables, substitute_list_pages_variables,
@@ -624,6 +625,28 @@ fn ajax_listpages_source_accepts_only_balanced_nested_modules() {
             "the unbalanced marker must not participate in outer module scanning",
         );
     }
+}
+
+#[test]
+fn ajax_listpages_literal_markers_reject_forged_non_module_text() {
+    let namespace = "0123456789abcdef0123456789abcdef";
+    let forged = format!(
+        "{AJAX_MODULE_LITERAL_MARKER_PREFIX}{namespace}I{}X",
+        hex::encode("javascript:alert(1)"),
+    );
+    let mut compat_text = CompatTextFragments::new(&forged);
+
+    let protected = protect_ajax_module_literal_markers(forged.clone(), &mut compat_text);
+
+    assert_eq!(protected, forged);
+    assert_eq!(compat_text.restore(&protected), forged);
+
+    let generated = format!(
+        "{AJAX_MODULE_LITERAL_MARKER_PREFIX}{namespace}I{}X",
+        hex::encode("[[/module]]"),
+    );
+    let protected = protect_ajax_module_literal_markers(generated, &mut compat_text);
+    assert_eq!(compat_text.restore(&protected), "[[/module]]");
 }
 
 #[test]
