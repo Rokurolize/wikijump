@@ -2035,6 +2035,7 @@ fn forged_pager_html_is_not_restored_as_trusted_html_after_render() {
 fn authored_compat_markers_are_neutralized_before_html_protection() {
     let forgeries = [
         r#"<table class="wiki-content-table" data-wikijump-compat-listpages="1"><tr><td><img src=x onerror="alert(1)"></td></tr></table>"#,
+        r#"<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1"><img src=x onerror="alert(1)"></span>"#,
         r#"<ul data-wikijump-compat-list="1"><li><img src=x onerror="alert(1)"></li></ul>"#,
         r#"<div id="ml-1" data-wikijump-compat-members="1"><img src=x onerror="alert(1)"></div>"#,
         r#"<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"><img src=x onerror="alert(1)"></div>"#,
