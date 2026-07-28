@@ -17,6 +17,10 @@ use super::module_arguments::{
     wikidot_module_arguments_ignoring_bare_flags,
 };
 use super::native_list_context::collect_unproven_scope_ranges;
+use super::new_page_module::{
+    NEWPAGE_MODULE_REGEX, NewPageTemplateOption, NewPageTemplateRendering,
+    new_page_template_names, render_new_page_module,
+};
 use super::percent_encoding::percent_encode_path_segment;
 use super::rate_module::{
     render_read_only_rate_module, render_read_only_star_rate_module,
@@ -26,11 +30,10 @@ use super::service::{
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PAGECALENDAR_MODULE_REGEX, RATE_MODULE_REGEX,
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
     escape_list_pages_html_attr, escape_list_pages_html_text, render_clone_module,
-    render_members_module_placeholder, render_new_page_module,
+    render_members_module_placeholder,
 };
 use super::url_arguments::UrlArguments;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::services::ServiceContext;
 use crate::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DateSelector,
     FoundPageFields, IncludedCategories, OrderBySelector, OrderProperty,
@@ -40,8 +43,10 @@ use crate::services::page_query::{
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::score::ScoreValue;
 use crate::services::settings::PageRatingType;
+use crate::services::{PageRevisionService, PageService, ServiceContext};
 use crate::types::Reference;
 use crate::types::{Action, Permission, Resource};
+use crate::utils::{normalize_page_slug, split_category, trim_default};
 use ftml::data::PageInfo;
 use ftml::settings::WikitextSettings;
 
@@ -184,6 +189,79 @@ fn render_join_module(head: &str) -> String {
         class = escape_list_pages_html_attr(class),
         button = escape_list_pages_html_text(button),
     )
+}
+
+async fn resolve_new_page_templates(
+    ctx: &ServiceContext<'_>,
+    current_site_id: Option<i64>,
+    head: &str,
+) -> Result<NewPageTemplateRendering> {
+    let names = new_page_template_names(head);
+    if names.is_empty() {
+        return Ok(NewPageTemplateRendering::None);
+    }
+
+    let Some(site_id) = current_site_id else {
+        return Ok(NewPageTemplateRendering::Error(format!(
+            "Template \"{}\" can not be found.",
+            names[0],
+        )));
+    };
+
+    let mut options = Vec::with_capacity(names.len());
+    for name in names {
+        let normalized = normalize_page_slug(name);
+        if split_category(&normalized).0 != Some("template") {
+            return Ok(NewPageTemplateRendering::Error(format!(
+                "\"{name}\" is not in the \"template:\" category.",
+            )));
+        }
+        let lookup_slug = trim_default(&normalized).to_owned();
+        let Some(page) = PageService::get_optional(
+            ctx,
+            site_id,
+            Reference::Slug(Cow::Owned(lookup_slug)),
+        )
+        .await?
+        else {
+            return Ok(NewPageTemplateRendering::Error(format!(
+                "Template \"{name}\" can not be found.",
+            )));
+        };
+        let can_view = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: None,
+                site_id,
+                page_reference: Some(Reference::Id(page.page_id)),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(page.page_category_id)),
+                action: Action::View,
+            },
+        )
+        .await?;
+        if !can_view {
+            return Ok(NewPageTemplateRendering::Error(format!(
+                "Template \"{name}\" can not be found.",
+            )));
+        }
+        let revision =
+            PageRevisionService::get_latest(ctx, site_id, page.page_id).await?;
+        options.push(NewPageTemplateOption {
+            page_id: page.page_id,
+            title: revision.title,
+        });
+    }
+
+    Ok(match options.len() {
+        0 => NewPageTemplateRendering::None,
+        1 => NewPageTemplateRendering::Single(
+            options.into_iter().next().expect("len was checked above"),
+        ),
+        _ => NewPageTemplateRendering::Multiple(options),
+    })
 }
 
 fn parse_rated_pages_arguments(head: &str) -> Option<RatedPagesArguments> {
@@ -1144,7 +1222,7 @@ impl RenderService {
                     .trim();
                 render_members_module_placeholder(group)
             } else if name.eq_ignore_ascii_case("NewPage") {
-                render_new_page_module(head)
+                render_new_page_module(head, NewPageTemplateRendering::None)
             } else if name.eq_ignore_ascii_case("Clone") {
                 render_clone_module(head)
             } else {
@@ -1194,6 +1272,43 @@ impl RenderService {
             |name| name.eq_ignore_ascii_case("NewPage"),
         );
         fragments.restore(&protected)
+    }
+
+    pub(super) async fn expand_new_page_modules_with_registry(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        settings: &WikitextSettings,
+        current_site_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> Result<String> {
+        if !settings.enable_page_syntax || !NEWPAGE_MODULE_REGEX.is_match(&wikitext) {
+            return Ok(wikitext);
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in NEWPAGE_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a NewPage module capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            let head = captures.name("head").map_or("", |mtch| mtch.as_str());
+            let templates =
+                resolve_new_page_templates(ctx, current_site_id, head).await?;
+            let rendered = render_new_page_module(head, templates);
+            output.push_str(&compat_html.push_html(rendered));
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return Ok(wikitext);
+        }
+        output.push_str(&wikitext[cursor..]);
+        Ok(output)
     }
 
     #[cfg(test)]

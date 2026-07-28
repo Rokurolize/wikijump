@@ -355,7 +355,7 @@ pub(super) static PAGECALENDAR_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 });
 pub(super) static REGISTRY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"(?is)\[\[module\s+(?P<name>Members|NewPage|Clone|Join)(?P<head>[^\]]*)\]\]",
+        r#"(?is)\[\[module\s+(?P<name>Members|NewPage|Clone|Join)(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
     )
     .unwrap()
 });
@@ -369,7 +369,7 @@ pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::ne
 #[cfg(test)]
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<form class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</form>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">[^<>]*</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</div>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">[^<>]*</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
     )
     .unwrap()
 });
@@ -1235,6 +1235,15 @@ impl RenderService {
         .or_raise(make_error)?;
         {
             let _stage = StageGuard::new(trace, CorpusRenderStage::RegistryModules);
+            wikitext = Box::pin(Self::expand_new_page_modules_with_registry(
+                ctx,
+                wikitext,
+                settings,
+                current_site_id,
+                &mut wikidot_compat_html,
+            ))
+            .await
+            .or_raise(make_error)?;
             wikitext = Self::expand_registry_modules_with_registry(
                 wikitext,
                 settings,
@@ -4650,27 +4659,6 @@ pub(super) fn render_members_module_placeholder(group: &str) -> String {
 
     format!(
         r#"<div id="ml-607935" data-wikijump-compat-members="1" data-group="{group_attr}">{body}<script type="text/javascript">function updateMemberList607935(pageNo) {{var p = {{}};p.group = '{group_script}';p.order = 'joined';p.page = pageNo;OZONE.ajax.requestModule("membership/MembersListModule", p, function(r) {{}});}}</script></div>"#,
-    )
-}
-
-pub(super) fn render_new_page_module(head: &str) -> String {
-    let size = wikidot_module_argument(head, "size")
-        .and_then(|value| value.parse::<u16>().ok())
-        .filter(|value| (1..=128).contains(value))
-        .unwrap_or(30);
-    let button = wikidot_module_argument(head, "button")
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or("new page");
-
-    format!(
-        concat!(
-            r#"<form class="new-page-box" data-wikijump-compat-new-page="1" action="javascript:;" method="post">"#,
-            r#"<input class="text" type="text" name="page" size="{size}">"#,
-            r#"<input class="button" type="button" value="{button}">"#,
-            r#"</form>"#,
-        ),
-        size = size,
-        button = escape_list_pages_html_attr(button),
     )
 }
 

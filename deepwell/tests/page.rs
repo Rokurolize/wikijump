@@ -5584,6 +5584,116 @@ async fn wantedpages_module_groups_missing_internal_links_by_target() {
 }
 
 #[tokio::test]
+async fn newpage_module_resolves_existing_templates_in_rendered_pages() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    const TEMPLATE_A_SLUG: &str = "template:fixture-newpage-template-a";
+    const TEMPLATE_B_SLUG: &str = "template:fixture-newpage-template-b";
+    const HOLDER_SLUG: &str = "fixture-newpage-template-holder";
+    const MISSING_HOLDER_SLUG: &str = "fixture-newpage-missing-template-holder";
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATE_A_SLUG,
+        "Fixture NewPage Template A",
+        "Template A source",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATE_B_SLUG,
+        "Fixture NewPage Template B",
+        "Template B source",
+    )
+    .await;
+    let template_a_id = listpages_test_page_id(&runner, site_id, TEMPLATE_A_SLUG).await;
+    let template_b_id = listpages_test_page_id(&runner, site_id, TEMPLATE_B_SLUG).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER_SLUG,
+        "Fixture NewPage Template Holder",
+        &format!(
+            "NEWPAGE_START\n[[module NewPage template=\"{TEMPLATE_A_SLUG},{TEMPLATE_B_SLUG}\" category=\"probe\"]]\nNEWPAGE_END"
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        MISSING_HOLDER_SLUG,
+        "Fixture NewPage Missing Template Holder",
+        "MISSING_START\n[[module NewPage template=\"template:fixture-newpage-template-missing\"]]\nMISSING_END",
+    )
+    .await;
+
+    for slug in [HOLDER_SLUG, MISSING_HOLDER_SLUG] {
+        let holder = run_endpoint!(
+            runner,
+            page_get,
+            json!({
+                "site_id": site_id,
+                "page": slug,
+            }),
+        )
+        .expect("NewPage holder should exist");
+        run_endpoint!(
+            runner,
+            page_rerender,
+            json!({
+                "site_id": site_id,
+                "category_id": holder.page_category_id,
+                "page_id": holder.page_id,
+            }),
+        );
+    }
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    let expected_fragments = vec![
+        "NEWPAGE_START".to_owned(),
+        r#"<div class="new-page-box" style="text-align: center; margin: 1em 0;">"#
+            .to_owned(),
+        r#"<form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);">"#
+            .to_owned(),
+        r#"<input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/>"#
+            .to_owned(),
+        r#"<select name="template" style="margin: 1px">"#.to_owned(),
+        r#"<option value="" selected="selected">-- Select a template --</option>"#
+            .to_owned(),
+        format!(r#"<option value="{template_a_id}">Fixture NewPage Template A</option>"#),
+        format!(r#"<option value="{template_b_id}">Fixture NewPage Template B</option>"#),
+        r#"<input type="submit" class="button" value="Create page" style="margin: 1px;"/>"#
+            .to_owned(),
+        r#"<input type="hidden" name="categoryName" value="probe"/>"#.to_owned(),
+        "NEWPAGE_END".to_owned(),
+    ];
+    for expected in expected_fragments {
+        assert!(
+            html.contains(&expected),
+            "NewPage template output should contain {expected:?}:\n{html}"
+        );
+    }
+    assert!(
+        !html.contains("[[module NewPage"),
+        "NewPage template output should not leak the raw module:\n{html}"
+    );
+
+    let missing_html =
+        load_listpages_test_compiled_html(&runner, site_id, MISSING_HOLDER_SLUG).await;
+    assert!(
+        missing_html.contains(
+            r#"<div class="error-block">Template "template:fixture-newpage-template-missing" can not be found.</div>"#
+        ),
+        "missing NewPage template should render Wikidot's error block:\n{missing_html}"
+    );
+}
+
+#[tokio::test]
 async fn categories_module_lists_active_categories_and_honors_include_hidden() {
     const VISIBLE_CATEGORY: &str = "fixture-categories-visible";
     const HIDDEN_CATEGORY: &str = "_fixture-categories-hidden";

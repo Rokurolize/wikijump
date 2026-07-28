@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "44903658506ea767a8275cbc2bde203fa7882b8766f5ad4fb72db1615808074a",
+  "catalog_sha256": "7aa3ae4514b0c648164979cd7e19508ed061d467aeb374db06f7de7bb40d3c1c",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -1213,15 +1213,35 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-newpage": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Saved-page and preview rendering through Deepwell's public Wikidot page render pipeline",
+        "Existing-template lookup through runtime page/category/revision state"
+      ],
+      "tests": [
+        "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_placeholder",
+        "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_documented_hidden_fields",
+        "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_uses_live_argument_quirks",
+        "deepwell/src/services/render/service/tests.rs::protects_wikidot_new_page_module_html_before_parsing",
+        "deepwell/src/services/render/new_page_module.rs::tests::renders_existing_template_selector_options",
+        "deepwell/src/services/render/new_page_module.rs::tests::extracts_comma_separated_template_names",
+        "deepwell/tests/page.rs::newpage_module_resolves_existing_templates_in_rendered_pages"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/new_page_module.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/compat/preparation.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-newpage.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/newpage-module-live-rendering.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Initial NewPage form rendering, static attributes, and template lookup/error DOM are implemented. Browser submit behavior is not complete: Wikijump does not yet provide WIKIDOT.modules.NewPageHelperModule.listeners.create(event), page-name validation/format enforcement, hidden-page rejection, edit/save-and-refresh/save-and-go creation flows, or goTo navigation behavior."
+      ]
     },
     "module-newsite": {
       "status": "pending",
