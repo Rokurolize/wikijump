@@ -29,11 +29,11 @@ use super::super::runtime_page_queries::{
 };
 use super::super::service::{
     COUNTPAGES_MODULE_REGEX, CountPagesRequiredTagBatchResult,
-    DEFAULT_LISTPAGES_PER_PAGE, GENERATED_LISTPAGES_HTML_REGEX, IncludeExpansion,
-    IncludeExpansionBudget, IncludeExpansionOptions,
-    MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER, MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER,
-    MAX_LISTPAGES_RENDER_LIMIT, MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService,
-    render_list_pages_numbered_rows, render_list_pages_table_rows,
+    DEFAULT_LISTPAGES_PER_PAGE, IncludeExpansion, IncludeExpansionBudget,
+    IncludeExpansionOptions, MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER,
+    MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER, MAX_LISTPAGES_RENDER_LIMIT,
+    MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService, render_list_pages_numbered_rows,
+    render_list_pages_table_rows,
 };
 use super::content_sections::{isolate_wikidot_content_section, wikidot_content_section};
 use super::parents::{load_list_pages_child_counts, load_list_pages_parent_displays};
@@ -45,7 +45,7 @@ use super::scanner::{
 use super::template::{ListPagesOutputShape, ListPagesTemplatePlan};
 use super::{
     ExactNameListPagesBatchKey, ListPagesArguments, ListPagesAuthorCacheKey,
-    ListPagesBatchDisplayRequirements, ListPagesBatchDisplays, ListPagesOffsetOrigin,
+    ListPagesBatchDisplayRequirements, ListPagesBatchDisplays,
     ListPagesSubstitutionContext, ResolvedListPagesAuthors,
     count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
     count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
@@ -56,12 +56,15 @@ use super::{
     list_pages_feed_info_html, list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_parent_fullname,
     list_pages_revision_count, list_pages_row_scan_target,
-    list_pages_static_parent_fullname, page_query_cap_requires_original_module,
-    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
+    list_pages_static_parent_fullname, load_list_pages_data_form_definitions,
+    page_query_cap_requires_original_module, parse_list_pages_arguments,
+    parse_list_pages_arguments_with_url,
+    preserve_list_pages_following_paragraph_boundary,
     protect_ajax_module_literal_markers, push_list_pages_pager,
-    should_render_current_page_list_pages_row, substitute_count_pages_variables,
-    substitute_list_pages_rating_only, substitute_list_pages_variables_with_fragments,
-    union_found_page_fields, unsupported_list_pages_replacement,
+    register_generated_list_pages_html, should_render_current_page_list_pages_row,
+    substitute_count_pages_variables, substitute_list_pages_rating_only,
+    substitute_list_pages_variables_with_fragments, union_found_page_fields,
+    unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::hash::{TextHash, k12_hash};
@@ -540,7 +543,7 @@ impl RenderService {
                         prefetched.as_ref().map(|prefetched| FoundPages {
                             pages: prefetched.get(&slug).cloned().unwrap_or_default(),
                         });
-                    let rendered = Self::render_list_pages_block(
+                    let rendered = Box::pin(Self::render_list_pages_block(
                         ctx,
                         ListPagesPageContext {
                             site_id: current_site_id,
@@ -561,7 +564,7 @@ impl RenderService {
                         &mut score_filter_cache,
                         &mut author_resolution_cache,
                         compat_text,
-                    )
+                    ))
                     .await?;
                     match rendered {
                         ListPagesBlockRenderResult::Expanded(IncludeExpansion {
@@ -616,7 +619,7 @@ impl RenderService {
                 } => {
                     let offset_origin = arguments.offset_origin;
                     let uses_content = template.uses_content();
-                    let rendered = Self::render_list_pages_block(
+                    let rendered = Box::pin(Self::render_list_pages_block(
                         ctx,
                         ListPagesPageContext {
                             site_id: current_site_id,
@@ -637,7 +640,7 @@ impl RenderService {
                         &mut score_filter_cache,
                         &mut author_resolution_cache,
                         compat_text,
-                    )
+                    ))
                     .await?;
                     match rendered {
                         ListPagesBlockRenderResult::Expanded(IncludeExpansion {
@@ -831,9 +834,15 @@ impl RenderService {
         } else {
             BTreeMap::new()
         };
+        let runtime_displays = if requirements.runtime {
+            Self::load_list_pages_runtime_displays(ctx, pages).await?
+        } else {
+            BTreeMap::new()
+        };
         Ok(ListPagesBatchDisplays {
             user_displays,
             snapshot_displays,
+            runtime_displays,
         })
     }
 
@@ -1794,8 +1803,8 @@ impl RenderService {
             .iter()
             .filter_map(|page| page.page_category_id)
             .collect::<BTreeSet<_>>();
-        let category_slugs = if category_ids.is_empty() {
-            BTreeMap::new()
+        let categories = if category_ids.is_empty() {
+            Vec::new()
         } else {
             PageCategory::find()
                 .filter(page_category::Column::CategoryId.is_in(category_ids))
@@ -1807,9 +1816,15 @@ impl RenderService {
                         ErrorType::Render,
                     )
                 })?
-                .into_iter()
-                .map(|category| (category.category_id, category.slug))
-                .collect::<BTreeMap<_, _>>()
+        };
+        let category_slugs = categories
+            .iter()
+            .map(|category| (category.category_id, category.slug.clone()))
+            .collect::<BTreeMap<_, _>>();
+        let data_form_definitions = if wants_data_form_values {
+            load_list_pages_data_form_definitions(ctx, &categories).await?
+        } else {
+            BTreeMap::new()
         };
         let loaded_user_displays =
             if (wants_created_by || wants_updated_by) && prefetched_displays.is_none() {
@@ -1861,6 +1876,25 @@ impl RenderService {
             .map(|displays| &displays.snapshot_displays)
             .or(loaded_snapshot_displays.as_ref())
             .unwrap_or(&empty_snapshot_displays);
+        let wants_rating = template.uses_rating();
+        let wants_rating_percent = template.uses_rating_percent();
+        let wants_runtime_displays = wants_comments
+            || wants_commented_by
+            || wants_commented_at
+            || wants_rating
+            || wants_rating_percent
+            || wants_rating_votes;
+        let loaded_runtime_displays =
+            if wants_runtime_displays && prefetched_displays.is_none() {
+                Some(Self::load_list_pages_runtime_displays(ctx, &pages).await?)
+            } else {
+                None
+            };
+        let empty_runtime_displays = BTreeMap::new();
+        let runtime_displays = prefetched_displays
+            .map(|displays| &displays.runtime_displays)
+            .or(loaded_runtime_displays.as_ref())
+            .unwrap_or(&empty_runtime_displays);
         if wants_created_by_unix
             && pages.iter().any(|page| {
                 list_pages_created_by_unix(page, user_displays, snapshot_displays)
@@ -2069,6 +2103,7 @@ impl RenderService {
                     .unwrap_or_default(),
                 user_displays,
                 snapshot_displays,
+                runtime_displays,
                 page_wikitext: page_wikitext.as_deref(),
                 page_wikitext_scalar_count: wants_size.then(|| {
                     content_cache
@@ -2094,9 +2129,15 @@ impl RenderService {
                 }),
                 expanded_content: Some(&expanded_content),
                 data_form_values: &data_form_values,
+                data_form_definition: page
+                    .page_category_id
+                    .and_then(|category_id| data_form_definitions.get(&category_id)),
                 render_generated_html,
             };
-            let body = if template.uses_only_rating() {
+            let uses_star_rating = runtime_displays
+                .get(&page.page_id)
+                .is_some_and(|display| display.rating_type == "stars");
+            let body = if template.uses_only_rating() && !uses_star_rating {
                 let mut body = substitute_list_pages_rating_only(body, page);
                 neutralize_authored_markers(&mut body);
                 body
@@ -2406,72 +2447,5 @@ impl RenderService {
         Ok(CountPagesBlockRenderResult::Expanded(
             substitute_count_pages_variables(body, total),
         ))
-    }
-}
-
-pub(in crate::services::render) fn register_generated_list_pages_html(
-    value: String,
-    compat_html: &mut CompatHtmlFragments,
-) -> String {
-    if !value.contains("data-wikijump-compat-") {
-        return value;
-    }
-    let literal_regions = LiteralRegionIndex::new(&value);
-    GENERATED_LISTPAGES_HTML_REGEX
-        .replace_all(&value, |captures: &regex::Captures<'_>| {
-            let full_match = captures.get(0).expect("compat fragment capture exists");
-            if literal_regions.contains(full_match.start()) {
-                return full_match.as_str().to_owned();
-            }
-
-            let block_html = full_match
-                .as_str()
-                .contains(r#"data-wikijump-compat-listpages-feed="1""#);
-            let html = compat_html
-                .restore(full_match.as_str())
-                .replace(r#" data-wikijump-compat-date="1""#, "")
-                .replace(r#" data-wikijump-compat-listpages-user="1""#, "")
-                .replace(r#" data-wikijump-compat-listpages-feed="1""#, "")
-                .replace(r#" data-wikijump-compat-listpages-preview="1""#, "");
-            if block_html {
-                compat_html.push_block_html(html)
-            } else {
-                compat_html.push_html(html)
-            }
-        })
-        .into_owned()
-}
-
-pub(in crate::services::render) fn url_offset_list_pages_content_bytes(
-    offset_origin: ListPagesOffsetOrigin,
-    uses_content: bool,
-    replacement: &str,
-) -> usize {
-    if offset_origin == ListPagesOffsetOrigin::Url && uses_content {
-        replacement.len()
-    } else {
-        0
-    }
-}
-
-pub(in crate::services::render) fn preserve_list_pages_following_paragraph_boundary(
-    replacement: &mut String,
-    suffix: &str,
-) {
-    if !replacement.starts_with("[[div class=\"list-pages-box\"]]\n")
-        || !replacement.ends_with("[[/div]]")
-    {
-        return;
-    }
-
-    let suffix = suffix
-        .strip_prefix("\r\n")
-        .or_else(|| suffix.strip_prefix('\n'))
-        .or_else(|| suffix.strip_prefix('\r'));
-    if let Some(suffix) = suffix
-        && !suffix.is_empty()
-        && !suffix.starts_with(['\r', '\n'])
-    {
-        replacement.push('\n');
     }
 }

@@ -29,7 +29,7 @@ use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
-use super::module_arguments::{module_arguments_are_complete, wikidot_module_argument};
+use super::module_arguments::{module_arguments_are_complete, wikidot_module_arguments};
 use super::service::{
     RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
 };
@@ -65,7 +65,11 @@ struct PageTreeArguments<'a> {
 }
 
 fn page_tree_argument<'a>(head: &'a str, name: &str) -> Option<&'a str> {
-    wikidot_module_argument(head, name)
+    wikidot_module_arguments(head)?
+        .into_iter()
+        .rev()
+        .find(|argument| argument.key == name)
+        .map(|argument| argument.value)
 }
 
 fn parse_page_tree_arguments(head: &str) -> Option<PageTreeArguments<'_>> {

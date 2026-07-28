@@ -37,6 +37,7 @@ pub(in crate::services::render) fn wikidot_module_argument<'a>(
 ) -> Option<&'a str> {
     wikidot_module_arguments(head)?
         .into_iter()
+        .rev()
         .find(|argument| argument.key.eq_ignore_ascii_case(name))
         .map(|argument| argument.value)
 }

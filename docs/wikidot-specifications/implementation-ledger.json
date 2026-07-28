@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-28",
-  "catalog_sha256": "2aaa91cffaa839246fc771729b953580737928fb13e97e94c315527d4de1af84",
+  "catalog_sha256": "cb97399a1264b724d59ff7f023193ae43554fb1dbaa67e617debde1f93f13749",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -858,7 +858,7 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-listpages": {
-      "status": "in_progress",
+      "status": "implemented",
       "confirmed_public_seams": [
         "Anonymous PagePreviewModule and run-owned saved-page live Wikidot oracle",
         "Deepwell public saved-page, preview, and AJAX ListPages render/query interfaces",
@@ -913,10 +913,11 @@
         "install/local/wikidot-verification/artifacts/listpages-campaign-rss-live-preview.jsonl",
         "install/local/wikidot-verification/artifacts/listpages-campaign-rss-selector-live-preview.jsonl",
         "install/local/wikidot-verification/artifacts/listpages-campaign-hash-magic-reconciliation.json",
-        "install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json"
+        "install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "The controlled sandbox could not produce nonzero rating/vote state because RateAction returned not_ok; the exact environment blocker is preserved in the live fixture classification."
+        "Imported Wikidot snapshots retain the last commenter's display name and timestamp but not the Wikidot user ID. Identity-bearing last-comment variables on imported rows remain provenance-blocked until the corpus or importer supplies a stable user identity; local relational comments are not blocked."
       ]
     },
     "module-listusers": {

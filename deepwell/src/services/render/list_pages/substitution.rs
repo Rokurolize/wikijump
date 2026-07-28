@@ -28,26 +28,26 @@ use crate::services::page_query::{
     count_pages_exact_count_eligibility_diagnostics, normalize_wikidot_author_name,
 };
 use crate::services::render::UrlArguments;
-use regex::Regex;
 use sea_orm::FromQueryResult;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::LazyLock;
-use uuid::Uuid;
 use wikidot_normalize::normalize;
 
 use super::super::compat::CompatHtmlFragments;
-use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
+use super::super::compat::text_fragments::escape_html_text;
 use super::super::literal_regions::LiteralRegionCursor;
 use super::super::module_arguments::wikidot_module_arguments;
 use super::super::service::{
     CountPagesRequiredTagBatchResult, MAX_LISTPAGES_RENDER_LIMIT,
-    MAX_LISTPAGES_RENDER_OFFSET, MAX_LISTPAGES_RENDER_SCAN_ROWS,
-    MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES, MAX_WIKIDOT_AJAX_MODULE_PARAMETER_BYTES,
-    MAX_WIKIDOT_AJAX_MODULE_PARAMETERS, RenderService, format_list_pages_rating,
-    native_numbered_list_content,
+    MAX_LISTPAGES_RENDER_OFFSET, MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService,
+    format_list_pages_rating, native_numbered_list_content,
 };
 use super::content_sections::wikidot_content_section;
+use super::data_forms::{
+    ListPagesDataFormDefinition, substitute_list_pages_form_data,
+    substitute_list_pages_form_hint, substitute_list_pages_form_label,
+    substitute_list_pages_form_raw,
+};
 use super::parents::ListPagesParentDisplay;
 use super::presentation::{
     format_list_pages_created_at, is_list_pages_hidden_tag, is_list_pages_visible_tag,
@@ -55,19 +55,8 @@ use super::presentation::{
     protect_list_pages_generated_html, render_list_pages_snapshot_user,
     render_list_pages_tags, render_list_pages_wikidot_user,
 };
-use super::scanner::{
-    find_list_pages_module_matches, list_pages_runtime_head_can_execute,
-};
+use super::scanner::list_pages_runtime_head_can_execute;
 use ftml::{self};
-
-pub(in crate::services::render) const AJAX_MODULE_LITERAL_MARKER_PREFIX: &str =
-    "WIKIJUMPWIKIDOTAJAXMODULELITERAL";
-static AJAX_MODULE_LITERAL_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(&format!(
-        r"{AJAX_MODULE_LITERAL_MARKER_PREFIX}[0-9a-f]{{32}}I(?P<text>(?:[0-9a-f]{{2}})+)X",
-    ))
-    .unwrap()
-});
 
 #[derive(Debug, Clone)]
 pub(in crate::services::render) struct WikidotUserDisplay {
@@ -89,6 +78,18 @@ pub(in crate::services::render) struct ListPagesSnapshotDisplay {
     pub(in crate::services::render) rating_votes: Option<i64>,
     pub(in crate::services::render) parent_fullname: Option<String>,
     pub(in crate::services::render) source_revision_count: i32,
+}
+
+#[derive(Debug, Clone)]
+pub(in crate::services::render) struct ListPagesRuntimeDisplay {
+    pub(in crate::services::render) comments: i64,
+    pub(in crate::services::render) commented_at: Option<time::OffsetDateTime>,
+    pub(in crate::services::render) commented_by_user_id: Option<i64>,
+    pub(in crate::services::render) commented_by_name: Option<String>,
+    pub(in crate::services::render) commented_by_slug: Option<String>,
+    pub(in crate::services::render) commented_by_wikidot_profile: bool,
+    pub(in crate::services::render) rating_votes: i64,
+    pub(in crate::services::render) rating_type: String,
 }
 
 #[derive(Debug, FromQueryResult)]
@@ -260,12 +261,15 @@ pub(in crate::services::render) struct ListPagesBatchDisplays {
     pub(in crate::services::render) user_displays: BTreeMap<i64, WikidotUserDisplay>,
     pub(in crate::services::render) snapshot_displays:
         BTreeMap<i64, ListPagesSnapshotDisplay>,
+    pub(in crate::services::render) runtime_displays:
+        BTreeMap<i64, ListPagesRuntimeDisplay>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(in crate::services::render) struct ListPagesBatchDisplayRequirements {
     pub(in crate::services::render) users: bool,
     pub(in crate::services::render) snapshots: bool,
+    pub(in crate::services::render) runtime: bool,
 }
 
 impl ListPagesBatchDisplayRequirements {
@@ -278,9 +282,13 @@ impl ListPagesBatchDisplayRequirements {
         self.snapshots |= users
             || template.uses_created_at()
             || template.uses_updated_at()
-            || template.uses_comments()
+            || template.uses_parent_metadata()
+            || template.uses_revisions();
+        self.runtime |= template.uses_comments()
             || template.uses_commented_by()
             || template.uses_commented_at()
+            || template.uses_rating()
+            || template.uses_rating_percent()
             || template.uses_rating_votes();
     }
 }
@@ -764,15 +772,21 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 let resolved_url_offset;
                 let legacy_url_offset = url
                     .offset
-                    .filter(|_| url_attr_prefix.is_none())
+                    .filter(|offset| {
+                        url_attr_prefix.is_none()
+                            && *offset <= MAX_LISTPAGES_RENDER_OFFSET
+                    })
                     .map(|offset| offset.to_string());
                 let value = match resolve_url_selector(
                     value,
-                    url.value_for_list_pages_argument(
-                        url_attr_prefix.as_deref(),
-                        "offset",
-                    )
-                    .or(legacy_url_offset.as_deref()),
+                    if url_attr_prefix.is_some() {
+                        url.value_for_list_pages_argument(
+                            url_attr_prefix.as_deref(),
+                            "offset",
+                        )
+                    } else {
+                        legacy_url_offset.as_deref()
+                    },
                 ) {
                     UrlSelector::Static(value) => {
                         offset_origin = if dynamic {
@@ -1357,172 +1371,6 @@ pub(in crate::services::render) fn parse_list_pages_boolean_argument(
     }
 }
 
-pub(in crate::services::render) fn build_wikidot_list_pages_module_source(
-    module_body: String,
-    parameters: &BTreeMap<String, String>,
-) -> Option<String> {
-    if module_body.len() > MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES
-        || parameters.len() > MAX_WIKIDOT_AJAX_MODULE_PARAMETERS
-    {
-        return None;
-    }
-
-    let mut source = String::from("[[module ListPages");
-    for (key, value) in parameters {
-        let normalized_key = key.to_ascii_lowercase();
-        if !matches!(
-            normalized_key.as_str(),
-            "pagetype"
-                | "page_type"
-                | "page-type"
-                | "category"
-                | "tags"
-                | "tag"
-                | "parent"
-                | "created_at"
-                | "createdat"
-                | "updated_at"
-                | "updatedat"
-                | "created_by"
-                | "createdby"
-                | "rating"
-                | "score"
-                | "name"
-                | "fullname"
-                | "full_slug"
-                | "fullslug"
-                | "range"
-                | "order"
-                | "offset"
-                | "limit"
-                | "perpage"
-                | "per_page"
-                | "separate"
-                | "wrapper"
-                | "rss"
-                | "rsstitle"
-                | "rssdescription"
-                | "rsshome"
-                | "rsslimit"
-                | "rssonly"
-        ) || value.len() > MAX_WIKIDOT_AJAX_MODULE_PARAMETER_BYTES
-            || value.chars().any(|character| character.is_control())
-            || value.contains("]]")
-        {
-            return None;
-        }
-        let current_page_dependent = (matches!(
-            normalized_key.as_str(),
-            "name" | "fullname" | "full_slug" | "fullslug"
-        ) && value.trim() == "=")
-            || (normalized_key == "range" && value.trim() == ".")
-            || (normalized_key == "parent" && value.trim() == ".")
-            || (normalized_key == "category"
-                && split_list_pages_values(value)
-                    .iter()
-                    .any(|category| category == "."));
-        if current_page_dependent {
-            return None;
-        }
-
-        let (quote, quoted_value) = if !value.contains('"') {
-            ('"', value.as_str())
-        } else if !value.contains('\'') {
-            ('\'', value.as_str())
-        } else {
-            return None;
-        };
-        source.push(' ');
-        source.push_str(key);
-        source.push('=');
-        source.push(quote);
-        source.push_str(quoted_value);
-        source.push(quote);
-    }
-    source.push_str("]]\n");
-    let body_start = source.len();
-    source.push_str(&module_body);
-    source.push_str("\n[[/module]]");
-    if wikidot_ajax_list_pages_source_is_safe(&source) {
-        return Some(source);
-    }
-
-    let literalized_body = literalize_ajax_module_markers(&module_body);
-    source.truncate(body_start);
-    source.push_str(&literalized_body);
-    source.push_str("\n[[/module]]");
-    wikidot_ajax_list_pages_source_is_safe(&source).then_some(source)
-}
-
-fn wikidot_ajax_list_pages_source_is_safe(source: &str) -> bool {
-    let modules = find_list_pages_module_matches(source);
-    modules.len() == 1
-        && modules[0].start == 0
-        && modules[0].end == source.len()
-        && modules[0].runtime_safe
-}
-
-fn literalize_ajax_module_markers(body: &str) -> String {
-    let lowercase = body.to_ascii_lowercase();
-    let mut output = String::with_capacity(body.len());
-    let mut cursor = 0;
-
-    while let Some(relative_start) = lowercase[cursor..].find("[[") {
-        let start = cursor + relative_start;
-        output.push_str(&body[cursor..start]);
-
-        let suffix = &lowercase[start..];
-        let end = if suffix.starts_with("[[/module]]") {
-            Some(start + "[[/module]]".len())
-        } else if suffix.starts_with("[[module")
-            && suffix
-                .as_bytes()
-                .get("[[module".len())
-                .is_some_and(u8::is_ascii_whitespace)
-        {
-            suffix.find("]]").map(|end| start + end + 2)
-        } else {
-            None
-        };
-
-        let Some(end) = end else {
-            output.push_str("[[");
-            cursor = start + 2;
-            continue;
-        };
-        let marker = &body[start..end];
-        output.push_str(AJAX_MODULE_LITERAL_MARKER_PREFIX);
-        output.push_str(&Uuid::new_v4().as_simple().to_string());
-        output.push('I');
-        output.push_str(&hex::encode(marker));
-        output.push('X');
-        cursor = end;
-    }
-
-    output.push_str(&body[cursor..]);
-    output
-}
-
-pub(in crate::services::render) fn protect_ajax_module_literal_markers(
-    source: String,
-    compat_text: &mut CompatTextFragments,
-) -> String {
-    if !source.contains(AJAX_MODULE_LITERAL_MARKER_PREFIX) {
-        return source;
-    }
-
-    AJAX_MODULE_LITERAL_MARKER_REGEX
-        .replace_all(&source, |captures: &regex::Captures<'_>| {
-            let bytes = hex::decode(&captures["text"])
-                .expect("marker regex accepts only complete hexadecimal bytes");
-            match String::from_utf8(bytes) {
-                Ok(text) => compat_text.push_escaped_html_text(&text),
-                Err(_) => captures[0].to_owned(),
-            }
-        })
-        .into_owned()
-}
-
 pub(in crate::services::render) fn parse_list_pages_score_selector(
     value: &str,
 ) -> Option<ScoreSelector> {
@@ -2018,6 +1866,8 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) user_displays: &'a BTreeMap<i64, WikidotUserDisplay>,
     pub(in crate::services::render) snapshot_displays:
         &'a BTreeMap<i64, ListPagesSnapshotDisplay>,
+    pub(in crate::services::render) runtime_displays:
+        &'a BTreeMap<i64, ListPagesRuntimeDisplay>,
     pub(in crate::services::render) page_wikitext: Option<&'a str>,
     pub(in crate::services::render) page_wikitext_scalar_count: Option<usize>,
     pub(in crate::services::render) page_parent_fullname: Option<&'a str>,
@@ -2028,6 +1878,8 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) expanded_content:
         Option<&'a BTreeMap<Option<usize>, String>>,
     pub(in crate::services::render) data_form_values: &'a BTreeMap<String, String>,
+    pub(in crate::services::render) data_form_definition:
+        Option<&'a ListPagesDataFormDefinition>,
     pub(in crate::services::render) render_generated_html: bool,
 }
 
@@ -2062,12 +1914,11 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         format!("[/{full_slug} {generated_wikitext_title}]")
     };
     let snapshot = context.snapshot_displays.get(&page.page_id);
+    let runtime = context.runtime_displays.get(&page.page_id);
     let created_by_snapshot =
         snapshot.and_then(|snapshot| snapshot.created_by_name.as_deref());
     let updated_by_snapshot =
         snapshot.and_then(|snapshot| snapshot.updated_by_name.as_deref());
-    let commented_by_snapshot =
-        snapshot.and_then(|snapshot| snapshot.commented_by_name.as_deref());
     let created_by = created_by_snapshot
         .map(str::to_owned)
         .or_else(|| {
@@ -2141,16 +1992,49 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
             .map(|user_id| user_id.to_string())
             .unwrap_or_default()
     };
-    let commented_by = commented_by_snapshot.map(str::to_owned).unwrap_or_default();
+    let commented_by = runtime
+        .and_then(|runtime| runtime.commented_by_name.clone())
+        .or_else(|| snapshot.and_then(|snapshot| snapshot.commented_by_name.clone()))
+        .unwrap_or_default();
+    let commented_by_unix = runtime.and_then(|runtime| runtime.commented_by_slug.clone());
+    let commented_by_id = runtime
+        .and_then(|runtime| runtime.commented_by_user_id)
+        .map(|user_id| user_id.to_string());
+    let commented_by_linked = runtime
+        .and_then(|runtime| {
+            runtime.commented_by_user_id.map(|user_id| {
+                let display = WikidotUserDisplay {
+                    user_id,
+                    name: runtime.commented_by_name.clone().unwrap_or_default(),
+                    slug: runtime.commented_by_slug.clone(),
+                    wikidot_profile: runtime.commented_by_wikidot_profile,
+                };
+                render_list_pages_wikidot_user(user_id, Some(&display))
+            })
+        })
+        .or_else(|| {
+            runtime
+                .and_then(|runtime| runtime.commented_by_name.as_deref())
+                .map(render_list_pages_snapshot_user)
+        })
+        .or_else(|| {
+            snapshot
+                .and_then(|snapshot| snapshot.commented_by_name.as_deref())
+                .map(render_list_pages_snapshot_user)
+        })
+        .unwrap_or_default();
     let created_at = snapshot
         .map(|snapshot| snapshot.created_at)
         .or(page.created_at);
     let updated_at = snapshot
         .map(|snapshot| snapshot.updated_at)
         .or(page.updated_at);
-    let commented_at = snapshot.and_then(|snapshot| snapshot.commented_at);
-    let comments = snapshot
-        .map(|snapshot| snapshot.comments.to_string())
+    let commented_at = runtime
+        .and_then(|runtime| runtime.commented_at)
+        .or_else(|| snapshot.and_then(|snapshot| snapshot.commented_at));
+    let comments = runtime
+        .map(|runtime| runtime.comments.to_string())
+        .or_else(|| snapshot.map(|snapshot| snapshot.comments.to_string()))
         .unwrap_or_else(|| "0".to_owned());
     let tags = page.tags.as_deref().unwrap_or(&[]);
     let visible_tags = tags
@@ -2164,13 +2048,31 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         .cloned()
         .collect::<Vec<_>>();
     let tags_text = visible_tags.join(" ");
-    let rating = format_list_pages_rating(page.score);
+    let rating = if runtime.is_some_and(|runtime| runtime.rating_type == "stars") {
+        let rating = format_list_pages_rating(page.score);
+        protect_list_pages_generated_html(
+            format!(
+                "<span class=\"page-rate-list-pages-start\" data-rating=\"{rating}\" data-wikijump-compat-listpages-rating=\"1\">{rating}</span>",
+            ),
+            context.render_generated_html,
+            compat_html,
+        )
+    } else {
+        format_list_pages_rating(page.score)
+    };
+    let rating_percent = if runtime.is_some_and(|runtime| runtime.rating_type == "stars")
+    {
+        format_list_pages_rating(page.score.map(|score| score * 20.0).or(Some(0.0)))
+    } else {
+        String::new()
+    };
     // The frozen corpus predates vote-count capture. Keep this value typed as
     // optional provenance and select the component's explicit zero-vote state
     // when it is absent; inventing a count from the net rating would create a
     // visibly plausible but false upvote/downvote ratio.
-    let rating_votes = snapshot
-        .and_then(|snapshot| snapshot.rating_votes)
+    let rating_votes = runtime
+        .map(|runtime| runtime.rating_votes)
+        .or_else(|| snapshot.and_then(|snapshot| snapshot.rating_votes))
         .unwrap_or(0)
         .to_string();
     let index = index.to_string();
@@ -2262,18 +2164,23 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
                     )
                 }
                 "commented_by"
-                | "commentedby"
-                | "commented_by_linked"
-                | "commentedbylinked" => commented_by.clone(),
-                "commented_by_unix" | "commented_by_id"
-                    if commented_by.is_empty() =>
-                {
+                | "commentedby" => commented_by.clone(),
+                "commented_by_linked" | "commentedbylinked" => {
+                    protect_list_pages_generated_html(
+                        commented_by_linked.clone(),
+                        context.render_generated_html,
+                        compat_html,
+                    )
+                }
+                "commented_by_unix" | "commented_by_id" if commented_by.is_empty() => {
                     String::new()
                 }
-                // The frozen snapshot carries only a last-comment author name.
-                // Preserve identity-bearing forms when a comment exists until a
-                // live-provenance user identity can be loaded.
-                "commented_by_unix" | "commented_by_id" => captures[0].to_owned(),
+                "commented_by_unix" => commented_by_unix
+                    .clone()
+                    .unwrap_or_else(|| captures[0].to_owned()),
+                "commented_by_id" => commented_by_id
+                    .clone()
+                    .unwrap_or_else(|| captures[0].to_owned()),
                 "commented_at" | "commentedat" => protect_list_pages_generated_html(
                     format_list_pages_created_at(
                         commented_at,
@@ -2358,14 +2265,57 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
                         )
                     })
                     .unwrap_or_default(),
+                "rating_percent"
+                    if runtime
+                        .is_some_and(|runtime| runtime.rating_type == "stars") =>
+                {
+                    rating_percent.clone()
+                }
                 // Live Wikidot leaves this variable unsubstituted on a
                 // plus/minus site, so the authored text survives rather than
                 // collapsing to an empty cell.
                 "rating_percent" => captures[0].to_owned(),
-                "form_data" | "form_raw" | "form_label" | "form_hint" => captures
+                "form_data" => captures
                     .name("argument")
-                    .and_then(|matched| context.data_form_values.get(matched.as_str()))
-                    .cloned()
+                    .map(|matched| matched.as_str())
+                    .and_then(|field| {
+                        substitute_list_pages_form_data(
+                            field,
+                            context.data_form_values,
+                            context.data_form_definition,
+                        )
+                    })
+                    .unwrap_or_else(|| captures[0].to_owned()),
+                "form_raw" => captures
+                    .name("argument")
+                    .map(|matched| matched.as_str())
+                    .and_then(|field| {
+                        substitute_list_pages_form_raw(
+                            field,
+                            context.data_form_values,
+                            context.data_form_definition,
+                        )
+                    })
+                    .unwrap_or_else(|| captures[0].to_owned()),
+                "form_label" => captures
+                    .name("argument")
+                    .map(|matched| matched.as_str())
+                    .and_then(|field| {
+                        substitute_list_pages_form_label(
+                            field,
+                            context.data_form_definition,
+                        )
+                    })
+                    .unwrap_or_else(|| captures[0].to_owned()),
+                "form_hint" => captures
+                    .name("argument")
+                    .map(|matched| matched.as_str())
+                    .and_then(|field| {
+                        substitute_list_pages_form_hint(
+                            field,
+                            context.data_form_definition,
+                        )
+                    })
                     .unwrap_or_else(|| captures[0].to_owned()),
                 "content" | "text" | "long" | "body" => {
                     let section = captures

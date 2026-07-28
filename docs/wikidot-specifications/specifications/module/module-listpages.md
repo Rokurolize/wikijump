@@ -150,6 +150,29 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/listpages-campaign-template-variables-live-classification.json` (SHA-256 `7994dfcf7e8f3cae568e44c53fda16ff9acb8d4b47f59494a110633cd4d8f67d`), cases: `lp-live-template-variables`
 
+### Ratings, last comments, and data-form variables depend on runtime metadata
+
+- Observation ID: `listpages-rating-comment-and-data-form-variables`
+- Classification: `documentation-discrepancy`
+- Observed at: `2026-07-28`
+- Analysis: The documentation lists rating, comment, and data-form variables but omits their exact rating-mode markup, treats form values too uniformly, and does not define missing fields on an actual data-form page. Controlled run-owned pages, two independent voters, a last comment, a temporarily enabled five-star category, and a data-form template establish the runtime contract. The five-star category was restored to its prior disabled configuration and every run-owned page was removed after capture.
+
+Normative behavior:
+
+- rating_votes renders the number of votes for both plus/minus and five-star rating categories; it is not limited to five-star ratings.
+- On a plus/minus category, rating renders the numeric net score and rating_percent remains literal.
+- On a five-star category, rating renders a span.page-rate-list-pages-start whose data-rating attribute and text are the arithmetic mean, including a fractional mean and the zero-vote value 0.
+- On a five-star category, rating_percent renders the arithmetic mean divided by five and multiplied by 100, without a percent-sign suffix; the observed values include 0, 80, and 90.
+- For a page with comments, comments renders the count; commented_by renders the last commenter's display name; commented_by_unix renders the account unix name; commented_by_id renders the numeric Wikidot user ID; commented_by_linked renders printuser avatar/profile markup; and commented_at renders the standard odate span.
+- On a data-form page, form_raw renders the stored scalar. form_data renders the display label for a select value and the stored scalar for an ordinary text value.
+- form_label renders the field label. form_hint renders a supported field hint, an empty string when the field type does not expose its authored hint, and an empty string when no hint is authored.
+- An empty field on a data-form page still resolves form_data, form_raw, form_label, and form_hint: the value variables are empty while label and supported hint metadata remain available.
+- A missing field on an actual data-form page resolves every form variable to an empty string. This differs from an ordinary non-data-form page, where a missing form variable remains literal.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json` (SHA-256 `df42b383b81eeac1c00c25fe54a59dcf2015ed622baea0752e9481d8bfe7708c`), cases: `lp-live-plus-minus-rating-and-last-comment`, `lp-live-five-star-rating`, `lp-live-five-star-fractional-rating`, `lp-live-five-star-zero-rating`, `lp-live-data-form-values-labels-and-hints`
+
 ### Legacy selectors and pre-parsed module bodies retain production quirks
 
 - Observation ID: `listpages-legacy-and-body-edge-behavior`

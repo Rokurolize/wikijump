@@ -18,10 +18,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod ajax;
 pub(super) mod authors;
 pub(super) mod content_sections;
 mod current_page;
+mod data_forms;
 mod feed;
+mod generated_html;
 mod pagination;
 mod parents;
 mod presentation;
@@ -30,6 +33,11 @@ pub(super) mod scanner;
 pub(super) mod substitution;
 pub(super) mod template;
 
+#[cfg(test)]
+pub(super) use self::ajax::AJAX_MODULE_LITERAL_MARKER_PREFIX;
+pub(super) use self::ajax::{
+    build_wikidot_list_pages_module_source, protect_ajax_module_literal_markers,
+};
 pub(super) use self::current_page::{
     count_pages_scan_requires_preservation, count_pages_unbounded_total,
     list_pages_content_query_target, list_pages_row_scan_target,
@@ -38,6 +46,11 @@ pub(super) use self::current_page::{
 #[cfg(test)]
 pub(super) use self::current_page::{
     current_page_info_list_pages_row, requested_page_info_score,
+};
+pub(super) use self::data_forms::load_list_pages_data_form_definitions;
+pub(super) use self::generated_html::{
+    preserve_list_pages_following_paragraph_boundary, register_generated_list_pages_html,
+    url_offset_list_pages_content_bytes,
 };
 pub(super) use self::pagination::{list_pages_feed_info_html, push_list_pages_pager};
 #[cfg(test)]
@@ -52,35 +65,30 @@ pub(super) use self::presentation::{
     list_pages_parent_fullname, list_pages_revision_count, render_tag_cloud_box,
     restore_list_pages_literal_ellipsis_markers, substitute_count_pages_variables,
 };
+#[cfg(test)]
+pub(super) use self::rendering::ListPagesExpansionBudget;
 pub(super) use self::rendering::{
     CountPagesExpansionOptions, ListPagesExpansion, ListPagesExpansionOptions,
-};
-#[cfg(test)]
-pub(super) use self::rendering::{
-    ListPagesExpansionBudget, preserve_list_pages_following_paragraph_boundary,
-    register_generated_list_pages_html, url_offset_list_pages_content_bytes,
-};
-#[cfg(test)]
-pub(super) use self::substitution::{
-    AJAX_MODULE_LITERAL_MARKER_PREFIX, list_pages_body_is_no_visible_tracking_markup,
-    list_pages_body_uses_content_variable, list_pages_body_variables_supported,
-    parse_list_pages_date_selector,
 };
 pub(super) use self::substitution::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesArguments,
     ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements, ListPagesBatchDisplays,
-    ListPagesOffsetOrigin, ListPagesSnapshotDisplay, ListPagesSubstitutionContext,
-    ResolvedListPagesAuthors, WikidotUserDisplay, build_wikidot_list_pages_module_source,
-    count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
-    count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
-    count_pages_should_remain_literal, exact_name_list_pages_batch_key,
-    list_pages_argument_error, list_pages_author_cache_key,
-    list_pages_has_unsupported_page_type_selector,
+    ListPagesRuntimeDisplay, ListPagesSnapshotDisplay, ListPagesSubstitutionContext,
+    ResolvedListPagesAuthors, WikidotUserDisplay, count_pages_capture_is_literal,
+    count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
+    count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
+    exact_name_list_pages_batch_key, list_pages_argument_error,
+    list_pages_author_cache_key, list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_parent_fullname,
     parse_list_pages_arguments, parse_list_pages_arguments_with_url,
-    protect_ajax_module_literal_markers, substitute_list_pages_rating_only,
-    substitute_list_pages_variables_with_fragments, union_found_page_fields,
-    unsupported_list_pages_replacement,
+    substitute_list_pages_rating_only, substitute_list_pages_variables_with_fragments,
+    union_found_page_fields, unsupported_list_pages_replacement,
+};
+#[cfg(test)]
+pub(super) use self::substitution::{
+    ListPagesOffsetOrigin, list_pages_body_is_no_visible_tracking_markup,
+    list_pages_body_uses_content_variable, list_pages_body_variables_supported,
+    parse_list_pages_date_selector,
 };
 
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};

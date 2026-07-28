@@ -6156,6 +6156,107 @@ async fn listpages_missing_data_form_variables_stay_literal_without_blocking_row
 }
 
 #[tokio::test]
+async fn listpages_data_form_variables_match_live_wikidot() {
+    const CATEGORY: &str = "fixture-listpages-form";
+    const TEMPLATE_SLUG: &str = "fixture-listpages-form-template";
+    const TARGET_SLUG: &str = "fixture-listpages-form-target";
+    const INDEX_SLUG: &str = "fixture-listpages-form-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATE_SLUG,
+        "Fixture ListPages Form Template",
+        concat!(
+            "[[form]]\n",
+            "fields:\n",
+            "  probe:\n",
+            "    label: Probe Label\n",
+            "    hint: 'Probe hint #1'\n",
+            "  choice:\n",
+            "    label: Choice Label\n",
+            "    hint: Choice hint\n",
+            "    type: select\n",
+            "    values:\n",
+            "      alpha: Alpha Display\n",
+            "      beta: Beta Display\n",
+            "  empty:\n",
+            "    label: Empty Label\n",
+            "    hint: Empty hint\n",
+            "[[/form]]\n",
+            "====\n",
+            "PROBE=%%form_data{probe}%%",
+        ),
+    )
+    .await;
+    let template_page_id = listpages_test_page_id(&runner, site_id, TEMPLATE_SLUG).await;
+    set_listpages_test_category_template_page(
+        &runner,
+        site_id,
+        CATEGORY,
+        template_page_id,
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, TEMPLATE_SLUG, CATEGORY).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Form Target",
+        "probe: 'raw probe value'\nchoice: alpha\nempty: ''",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, TARGET_SLUG, CATEGORY).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Form Index",
+        concat!(
+            "[[module ListPages category=\"fixture-listpages-form\" name=\"fixture-listpages-form-target\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n",
+            "D=%%form_data{probe}%%|R=%%form_raw{probe}%%|L=%%form_label{probe}%%|H=%%form_hint{probe}%%|",
+            "DC=%%form_data{choice}%%|RC=%%form_raw{choice}%%|LC=%%form_label{choice}%%|HC=%%form_hint{choice}%%|",
+            "DE=%%form_data{empty}%%|RE=%%form_raw{empty}%%|LE=%%form_label{empty}%%|HE=%%form_hint{empty}%%|",
+            "DM=%%form_data{missing}%%|RM=%%form_raw{missing}%%|LM=%%form_label{missing}%%|HM=%%form_hint{missing}%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert!(
+        html.contains(concat!(
+            "D=raw probe value|R=raw probe value|L=Probe Label|H=Probe hint #1|",
+            "DC=Alpha Display|RC=alpha|LC=Choice Label|HC=|",
+            "DE=|RE=|LE=Empty Label|HE=Empty hint|",
+            "DM=|RM=|LM=|HM=",
+        )),
+        "ListPages data-form variables must match live Wikidot value, label, hint, select, empty, and missing-field behavior:\n{html}",
+    );
+    for unresolved in [
+        "%%form_data{probe}%%",
+        "%%form_raw{probe}%%",
+        "%%form_label{probe}%%",
+        "%%form_hint{probe}%%",
+        "%%form_data{missing}%%",
+        "%%form_raw{missing}%%",
+        "%%form_label{missing}%%",
+        "%%form_hint{missing}%%",
+    ] {
+        assert!(
+            !html.contains(unresolved),
+            "data-form page variables should resolve rather than remain literal: {unresolved}\n{html}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn listpages_no_comment_variables_match_live_wikidot() {
     const TARGET_SLUG: &str = "fixture-listpages-no-comments-target";
     const INDEX_SLUG: &str = "fixture-listpages-no-comments-index";
@@ -6222,6 +6323,271 @@ async fn listpages_no_comment_variables_match_live_wikidot() {
             "the live-evidenced no-comment row must execute fully: {unresolved}\n{html}"
         );
     }
+}
+
+#[tokio::test]
+async fn listpages_last_comment_variables_match_live_wikidot() {
+    const TARGET_SLUG: &str = "fixture-listpages-last-comment-target";
+    const INDEX_SLUG: &str = "fixture-listpages-last-comment-index";
+    const COMMENTER_ID: i64 = 10_382_659;
+    const COMMENTER_NAME: &str = "voted-fated-smuggler";
+    const COMMENTER_SLUG: &str = "voted-fated-smuggler";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_string(
+            transaction.get_database_backend(),
+            format!(
+                r#"
+                INSERT INTO known_user (user_id)
+                VALUES ({COMMENTER_ID})
+                ON CONFLICT (user_id) DO NOTHING
+                "#,
+            ),
+        ))
+        .await
+        .expect("commenter known_user fixture should be inserted");
+    transaction
+        .execute_raw(Statement::from_string(
+            transaction.get_database_backend(),
+            format!(
+                r#"
+                INSERT INTO wikidot_user (
+                    user_id,
+                    created_at,
+                    fetched_at,
+                    is_deleted,
+                    name,
+                    slug,
+                    karma,
+                    is_pro
+                ) VALUES (
+                    {COMMENTER_ID},
+                    TIMESTAMPTZ '2020-01-01T00:00:00Z',
+                    TIMESTAMPTZ '2026-07-28T00:00:00Z',
+                    FALSE,
+                    '{COMMENTER_NAME}',
+                    '{COMMENTER_SLUG}',
+                    0,
+                    FALSE
+                )
+                "#,
+            ),
+        ))
+        .await
+        .expect("commenter wikidot_user fixture should be inserted");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Last Comment Target",
+        "Page with one controlled discussion comment.",
+    )
+    .await;
+    let target_page_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
+
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "ListPages comment fixture group".to_owned(),
+            description: "ListPages comment fixture group".to_owned(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("ListPages comment forum group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "ListPages comment fixture category".to_owned(),
+            description: "ListPages comment fixture category".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("ListPages comment forum category should be created");
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(target_page_id),
+            title: "ListPages last comment fixture".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("ListPages comment thread should be created");
+    let post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: COMMENTER_ID,
+            title: "ListPages last comment".to_owned(),
+            wikitext: "Controlled last comment".to_owned(),
+            comments: "create ListPages comment fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("ListPages comment should be created");
+    assert!(post.parser_errors.is_empty());
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Last Comment Index",
+        concat!(
+            "[[module ListPages category=\"*\" fullname=\"fixture-listpages-last-comment-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "comments=[%%comments%%]\n",
+            "commented_by=[%%commented_by%%]\n",
+            "commented_by_linked=[%%commented_by_linked%%]\n",
+            "commented_by_unix=[%%commented_by_unix%%]\n",
+            "commented_by_id=[%%commented_by_id%%]\n",
+            "commented_at=[%%commented_at%%]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert!(html.contains("comments=[1]"), "{html}");
+    assert!(
+        html.contains(&format!("commented_by=[{COMMENTER_NAME}]")),
+        "{html}"
+    );
+    assert!(
+        html.contains(&format!("commented_by_unix=[{COMMENTER_SLUG}]")),
+        "{html}"
+    );
+    assert!(
+        html.contains(&format!("commented_by_id=[{COMMENTER_ID}]")),
+        "{html}"
+    );
+    assert!(
+        html.contains(&format!(
+            "http://www.wikidot.com/user:info/{COMMENTER_SLUG}"
+        )) && html.contains(&format!("WIKIDOT.page.listeners.userInfo({COMMENTER_ID})")),
+        "{html}"
+    );
+    assert!(
+        html.contains("commented_at=[<span class=\"odate time_"),
+        "{html}"
+    );
+}
+
+#[tokio::test]
+async fn listpages_star_rating_variables_match_live_wikidot() {
+    const CATEGORY: &str = "fixture-listpages-stars";
+    const FOUR_SLUG: &str = "fixture-listpages-star-four";
+    const HALF_SLUG: &str = "fixture-listpages-star-half";
+    const ZERO_SLUG: &str = "fixture-listpages-star-zero";
+    const INDEX_SLUG: &str = "fixture-listpages-star-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    set_listpages_test_category_rating_type(&runner, site_id, CATEGORY, "stars").await;
+
+    for (slug, title) in [
+        (FOUR_SLUG, "Fixture ListPages Star Four"),
+        (HALF_SLUG, "Fixture ListPages Star Half"),
+        (ZERO_SLUG, "Fixture ListPages Star Zero"),
+    ] {
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            title,
+            "Star rating target.",
+        )
+        .await;
+        set_listpages_test_category_slug(&runner, site_id, slug, CATEGORY).await;
+    }
+
+    let four_id = listpages_test_page_id(&runner, site_id, FOUR_SLUG).await;
+    let half_id = listpages_test_page_id(&runner, site_id, HALF_SLUG).await;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO page_vote (from_wikidot, page_id, user_id, rating_system, value) VALUES \
+             (false, $1, $2, 'stars', 4), \
+             (false, $1, $3, 'stars', 4), \
+             (false, $4, $2, 'stars', 5), \
+             (false, $4, $3, 'stars', 4)",
+            [
+                Value::from(four_id),
+                Value::from(ADMIN_USER_ID),
+                Value::from(SAMPLE_USER_ID),
+                Value::from(half_id),
+            ],
+        ))
+        .await
+        .expect("star rating fixtures should be inserted");
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Star Index",
+        concat!(
+            "[[module ListPages category=\"fixture-listpages-stars\" order=\"name\"]]\n",
+            "%%name%% rating=[%%rating%%] votes=[%%rating_votes%%] percent=[%%rating_percent%%]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert!(
+        html.contains(concat!(
+            "fixture-listpages-star-four rating=[",
+            "<span class=\"page-rate-list-pages-start\" data-rating=\"4\">4</span>",
+            "] votes=[2] percent=[80]",
+        )),
+        "Wikidot renders a star ListPages score as a protected span and rating_percent as rating*20:\n{html}"
+    );
+    assert!(
+        html.contains(concat!(
+            "fixture-listpages-star-half rating=[",
+            "<span class=\"page-rate-list-pages-start\" data-rating=\"4.5\">4.5</span>",
+            "] votes=[2] percent=[90]",
+        )),
+        "Wikidot preserves fractional star averages without forcing an integer:\n{html}"
+    );
+    assert!(
+        html.contains(concat!(
+            "fixture-listpages-star-zero rating=[",
+            "<span class=\"page-rate-list-pages-start\" data-rating=\"0\">0</span>",
+            "] votes=[0] percent=[0]",
+        )),
+        "Wikidot emits an explicit zero state for unrated star rows:\n{html}"
+    );
+    assert!(
+        !html.contains("%%rating_percent%%"),
+        "star rating_percent variables must not remain literal:\n{html}"
+    );
 }
 
 #[tokio::test]
@@ -11511,6 +11877,42 @@ async fn set_listpages_test_category_slug(
         .update(runner.context().transaction())
         .await
         .expect("category test page update should not fail");
+}
+
+async fn set_listpages_test_category_rating_type(
+    runner: &TestRunner,
+    site_id: i64,
+    category_slug: &str,
+    rating_type: &str,
+) {
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, category_slug)
+            .await
+            .expect("rating category test category should exist");
+    let mut model = category.into_active_model();
+    model.rating_type = Set(Some(rating_type.to_owned()));
+    model
+        .update(runner.context().transaction())
+        .await
+        .expect("rating category test update should not fail");
+}
+
+async fn set_listpages_test_category_template_page(
+    runner: &TestRunner,
+    site_id: i64,
+    category_slug: &str,
+    template_page_id: i64,
+) {
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, category_slug)
+            .await
+            .expect("template category test category should exist");
+    let mut model = category.into_active_model();
+    model.template_page_id = Set(Some(template_page_id));
+    model
+        .update(runner.context().transaction())
+        .await
+        .expect("template category test update should not fail");
 }
 
 async fn set_listpages_test_tags(

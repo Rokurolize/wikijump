@@ -29,16 +29,17 @@ use super::super::list_pages::template::ListPagesTemplatePlan;
 use super::super::list_pages::{
     AJAX_MODULE_LITERAL_MARKER_PREFIX, ListPagesBatchDisplayRequirements,
     ListPagesExpansionBudget, ListPagesOffsetOrigin, ListPagesParentDisplay,
-    ListPagesSnapshotDisplay, ListPagesSubstitutionContext, WikidotUserDisplay,
-    build_wikidot_list_pages_module_source, count_pages_capture_is_literal,
-    count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
-    count_pages_required_tag_batch_selector, count_pages_scan_requires_preservation,
-    count_pages_should_remain_literal, count_pages_unbounded_total,
-    current_page_info_list_pages_row, exact_name_list_pages_batch_key,
-    format_list_pages_created_at, list_pages_author_cache_key,
-    list_pages_body_is_no_visible_tracking_markup, list_pages_body_uses_content_variable,
-    list_pages_body_variables_supported, list_pages_content_query_target,
-    list_pages_feed_info_html, list_pages_has_unsupported_page_type_selector,
+    ListPagesRuntimeDisplay, ListPagesSnapshotDisplay, ListPagesSubstitutionContext,
+    WikidotUserDisplay, build_wikidot_list_pages_module_source,
+    count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
+    count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
+    count_pages_scan_requires_preservation, count_pages_should_remain_literal,
+    count_pages_unbounded_total, current_page_info_list_pages_row,
+    exact_name_list_pages_batch_key, format_list_pages_created_at,
+    list_pages_author_cache_key, list_pages_body_is_no_visible_tracking_markup,
+    list_pages_body_uses_content_variable, list_pages_body_variables_supported,
+    list_pages_content_query_target, list_pages_feed_info_html,
+    list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_parent_fullname,
     list_pages_revision_count, list_pages_row_scan_target, list_pages_tag_link_href,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
@@ -138,6 +139,7 @@ fn list_pages_substitution_context_with_mode<'a>(
         category: "",
         user_displays,
         snapshot_displays,
+        runtime_displays: empty_list_pages_runtime_displays(),
         page_wikitext,
         page_wikitext_scalar_count: page_wikitext
             .map(|wikitext| wikitext.chars().count()),
@@ -147,6 +149,7 @@ fn list_pages_substitution_context_with_mode<'a>(
         page_revision_count: None,
         expanded_content: None,
         data_form_values,
+        data_form_definition: None,
         render_generated_html,
     }
 }
@@ -154,6 +157,13 @@ fn list_pages_substitution_context_with_mode<'a>(
 fn empty_list_pages_snapshot_displays() -> &'static BTreeMap<i64, ListPagesSnapshotDisplay>
 {
     static EMPTY: std::sync::LazyLock<BTreeMap<i64, ListPagesSnapshotDisplay>> =
+        std::sync::LazyLock::new(BTreeMap::new);
+    &EMPTY
+}
+
+fn empty_list_pages_runtime_displays() -> &'static BTreeMap<i64, ListPagesRuntimeDisplay>
+{
+    static EMPTY: std::sync::LazyLock<BTreeMap<i64, ListPagesRuntimeDisplay>> =
         std::sync::LazyLock::new(BTreeMap::new);
     &EMPTY
 }
@@ -897,7 +907,8 @@ fn list_pages_batch_display_requirements_union_template_metadata() {
         requirements,
         ListPagesBatchDisplayRequirements {
             users: false,
-            snapshots: true,
+            snapshots: false,
+            runtime: true,
         }
     );
 
@@ -910,6 +921,7 @@ fn list_pages_batch_display_requirements_union_template_metadata() {
         ListPagesBatchDisplayRequirements {
             users: true,
             snapshots: true,
+            runtime: true,
         }
     );
 }
@@ -975,10 +987,9 @@ fn parses_wikidot_list_pages_reverse_yes_only() {
     .expect("live-evidenced reverse=yes should parse");
 
     assert!(arguments.reverse);
-    assert!(
-        parse_list_pages_arguments(r#" tags="+fixture" reverse="no" "#).is_none(),
-        "unverified reverse values must remain literal",
-    );
+    let arguments = parse_list_pages_arguments(r#" tags="+fixture" reverse="no" "#)
+        .expect("live-evidenced reverse=no should parse as the default order");
+    assert!(!arguments.reverse);
 }
 
 #[test]
@@ -1559,7 +1570,7 @@ fn parses_corpus_list_pages_custom_and_unknown_noops() {
     assert_eq!(arguments.authors, vec![Cow::Borrowed("=")]);
     assert_eq!(arguments.order, None);
     assert_eq!(arguments.count_pages_per_page, Some(250));
-    assert_eq!(arguments.all_tags, vec![Cow::Borrowed("scp")]);
+    assert!(arguments.all_tags.is_empty());
     assert_eq!(arguments.no_tags, vec![Cow::Borrowed("co-authored")]);
     assert_eq!(
         arguments.excluded_categories,
@@ -2925,11 +2936,11 @@ fn accepts_corpus_list_pages_comments_placeholder() {
 
     assert_eq!(
         substituted,
-        "# () [/scp-655-jp SCP-655-JP] (評価: 12 コメント:  最終コメント: )",
+        "# () [/scp-655-jp SCP-655-JP] (評価: 12 コメント: 0 最終コメント: )",
     );
     assert_eq!(
         render_list_pages_numbered_rows(&substituted),
-        "<ol>\n<li>() <a href=\"/scp-655-jp\">SCP-655-JP</a> (評価: 12 コメント:  最終コメント: )</li>\n</ol>\n",
+        "<ol>\n<li>() <a href=\"/scp-655-jp\">SCP-655-JP</a> (評価: 12 コメント: 0 最終コメント: )</li>\n</ol>\n",
     );
 }
 
@@ -4836,7 +4847,7 @@ fn distinguishes_wikidot_list_pages_link_and_fullname() {
         concat!(
             "black-highlighter-theme-dev|",
             "black-highlighter-theme-dev|",
-            "black-highlighter-theme-dev|",
+            "component:black-highlighter-theme-dev|",
             "component:black-highlighter-theme-dev|",
             "component:black-highlighter-theme-dev|",
             "http://scp-wiki.wikidot.com/component:black-highlighter-theme-dev/noredirect/true",

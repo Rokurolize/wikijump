@@ -350,14 +350,14 @@ pub(super) static REGISTRY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">[^<>]*</span>|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">.*?</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">[^<>]*</span>|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">.*?</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
     )
     .unwrap()
 });
 #[cfg(test)]
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<form class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</form>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<form class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</form>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">[^<>]*</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
     )
     .unwrap()
 });

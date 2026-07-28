@@ -44,6 +44,7 @@ enum ListPagesVariable {
     CommentedAt,
     Rating,
     RatingVotes,
+    RatingPercent,
     Comments,
     Tags,
     TagsLinked,
@@ -61,7 +62,6 @@ enum ListPagesVariable {
     ParentTitleLinked,
     Revisions,
     Children,
-    EmptyCompatField,
     FormData,
     Content,
     Preview,
@@ -106,6 +106,7 @@ impl ListPagesVariable {
             "commented_at" | "commentedat" => Some(Self::CommentedAt),
             "rating" => Some(Self::Rating),
             "rating_votes" | "ratingvotes" => Some(Self::RatingVotes),
+            "rating_percent" => Some(Self::RatingPercent),
             "comments" => Some(Self::Comments),
             "tags" => Some(Self::Tags),
             "tags_linked" | "tagslinked" => Some(Self::TagsLinked),
@@ -123,7 +124,6 @@ impl ListPagesVariable {
             "parent_title_linked" => Some(Self::ParentTitleLinked),
             "revisions" => Some(Self::Revisions),
             "children" => Some(Self::Children),
-            "rating_percent" => Some(Self::EmptyCompatField),
             "form_data" | "form_raw" | "form_label" | "form_hint" if has_argument => {
                 Some(Self::FormData)
             }
@@ -352,6 +352,14 @@ impl ListPagesTemplatePlan {
         self.variables.contains(ListPagesVariable::RatingVotes)
     }
 
+    pub(in crate::services::render) fn uses_rating(&self) -> bool {
+        self.variables.contains(ListPagesVariable::Rating)
+    }
+
+    pub(in crate::services::render) fn uses_rating_percent(&self) -> bool {
+        self.variables.contains(ListPagesVariable::RatingPercent)
+    }
+
     pub(in crate::services::render) fn uses_content(&self) -> bool {
         self.variables.intersects(&[
             ListPagesVariable::Content,
@@ -440,7 +448,9 @@ fn found_page_fields(variables: ListPagesVariables) -> FoundPageFields {
             ListPagesVariable::UpdatedById,
         ]),
         updated_at: variables.contains(ListPagesVariable::UpdatedAt),
-        score: variables.contains(ListPagesVariable::Rating) || rating_votes,
+        score: variables.contains(ListPagesVariable::Rating)
+            || variables.contains(ListPagesVariable::RatingPercent)
+            || rating_votes,
         ..Default::default()
     }
 }
