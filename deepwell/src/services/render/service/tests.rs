@@ -52,6 +52,7 @@ use super::super::list_pages::{
 };
 use super::super::literal_regions::ListPagesSourceProjection;
 use super::super::module_arguments::wikidot_module_argument;
+use super::super::new_page_module::{NewPageTemplateRendering, render_new_page_module};
 use super::super::runtime_page_queries::{
     CountPagesRawScanCompletion, count_pages_raw_scan_completion,
     random_page_query_scan_limit, render_page_query_batch_limit,
@@ -79,8 +80,8 @@ use super::{
     protect_forwarded_attachment_variables, render_clone_module,
     render_list_pages_numbered_rows, render_list_pages_table_rows,
     render_members_module_placeholder, render_native_list_inline_wikidot_spans,
-    render_native_list_page_link, render_new_page_module,
-    restore_list_pages_literal_ellipsis_markers, wikidot_no_such_include_replacement,
+    render_native_list_page_link, restore_list_pages_literal_ellipsis_markers,
+    wikidot_no_such_include_replacement,
 };
 use crate::config::Config;
 use crate::constants::ADMIN_USER_ID;
@@ -2095,18 +2096,63 @@ fn wikidot_compatibility_fallback_restores_generated_members_html_as_block() {
 #[test]
 fn renders_wikidot_new_page_module_placeholder() {
     let rendered = RenderService::expand_new_page_modules(
-        "[[module NewPage size=\"15\" button=\"new page\"]]".to_owned(),
+        "[[module NewPage]]".to_owned(),
         &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
     );
 
-    assert!(rendered.contains(r#"<form class="new-page-box" data-wikijump-compat-new-page="1" action="javascript:;" method="post">"#));
+    assert!(rendered.contains(
+        r#"<div class="new-page-box" style="text-align: center; margin: 1em 0;">"#
+    ));
+    assert!(rendered.contains(r#"<form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);">"#));
     assert!(
-        rendered.contains(r#"<input class="text" type="text" name="page" size="15">"#)
+        rendered.contains(r#"<input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/>"#)
     );
     assert!(
-        rendered.contains(r#"<input class="button" type="button" value="new page">"#)
+        rendered.contains(r#"<input type="submit" class="button" value="Create page" style="margin: 1px;"/>"#)
     );
     assert!(!rendered.contains("[[module NewPage"));
+}
+
+#[test]
+fn renders_wikidot_new_page_module_documented_hidden_fields() {
+    let rendered = RenderService::expand_new_page_modules(
+        r#"[[module NewPage size="30" category="band" parent="bands" tags="rock" format="/^[0-9]{5}$/" mode="save-and-go" goTo="target" button="Add a new rock band"]]"#
+            .to_owned(),
+        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+    );
+
+    assert!(
+        rendered.contains(r#"<input type="hidden" name="mode" value="save-and-go"/>"#)
+    );
+    assert!(rendered.contains(r#"<input type="hidden" name="goTo" value="target"/>"#));
+    assert!(
+        rendered.contains(r#"<input type="hidden" name="categoryName" value="band"/>"#)
+    );
+    assert!(
+        rendered.contains(r#"<input type="hidden" name="format" value="/^[0-9]{5}$/"/>"#)
+    );
+    assert!(rendered.contains(r#"<input type="hidden" name="tags" value="rock"/>"#));
+    assert!(rendered.contains(r#"<input type="hidden" name="parent" value="bands"/>"#));
+    assert!(
+        rendered.contains(r#"<input type="submit" class="button" value="Add a new rock band" style="margin: 1px;"/>"#)
+    );
+}
+
+#[test]
+fn renders_wikidot_new_page_module_uses_live_argument_quirks() {
+    let rendered = RenderService::expand_new_page_modules(
+        r#"[[module NewPage size="999" button="   " SIZE="15" button='ignored' category=doc]]"#
+            .to_owned(),
+        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+    );
+
+    assert!(
+        rendered.contains(r#"<input class="text" name="pageName" type="text" size="999" maxlength="128" style="margin: 1px"/>"#)
+    );
+    assert!(rendered.contains(
+        r#"<input type="submit" class="button" value="   " style="margin: 1px;"/>"#
+    ));
+    assert!(!rendered.contains(r#"name="categoryName""#));
 }
 
 #[test]
@@ -2310,7 +2356,15 @@ fn protects_wikidot_clone_module_html_before_parsing() {
 
 #[test]
 fn protects_wikidot_new_page_module_html_before_parsing() {
-    let mut wikitext = render_new_page_module(r#" size="15" button="new <page>""#);
+    let mut wikitext = render_new_page_module(
+        r#" size="15" button="new <page>""#,
+        NewPageTemplateRendering::None,
+    )
+    .replacen(
+        r#"<div class="new-page-box""#,
+        r#"<div class="new-page-box" data-wikijump-compat-new-page="1""#,
+        1,
+    );
     let fragments = RenderService::protect_generated_wikidot_compat_html(
         &mut wikitext,
         &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
@@ -2321,11 +2375,9 @@ fn protects_wikidot_new_page_module_html_before_parsing() {
     let restored = RenderService::restore_protected_generated_wikidot_compat_html(
         wikitext, &fragments,
     );
-    assert!(
-        restored.contains(
-            r#"<form class="new-page-box" action="javascript:;" method="post">"#
-        )
-    );
+    assert!(restored.contains(
+        r#"<div class="new-page-box" style="text-align: center; margin: 1em 0;">"#
+    ));
     assert!(restored.contains(r#"value="new &lt;page&gt;""#));
     assert!(!restored.contains("data-wikijump-compat-new-page"));
 }
@@ -2365,7 +2417,7 @@ fn authored_compat_markers_are_neutralized_before_html_protection() {
         r#"<ul data-wikijump-compat-list="1"><li><img src=x onerror="alert(1)"></li></ul>"#,
         r#"<div id="ml-1" data-wikijump-compat-members="1"><img src=x onerror="alert(1)"></div>"#,
         r#"<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"><img src=x onerror="alert(1)"></div>"#,
-        r#"<form class="new-page-box" data-wikijump-compat-new-page="1"><img src=x onerror="alert(1)"></form>"#,
+        r#"<div class="new-page-box" data-wikijump-compat-new-page="1"><img src=x onerror="alert(1)"></div>"#,
         r#"<a class="button" data-wikijump-compat-clone="1"><img src=x onerror="alert(1)"></a>"#,
         "<style data-wikijump-compat-css-module=\"1\">\n</style><img src=x onerror=\"alert(1)\">",
     ];

@@ -41,6 +41,7 @@ mod literal_regions;
 mod metacomponent;
 mod module_arguments;
 mod native_list_context;
+mod new_page_module;
 mod next_previous_page;
 mod page_preview;
 mod page_tree;
