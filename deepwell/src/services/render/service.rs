@@ -97,7 +97,7 @@ use super::render_options::{
     RenderContext, RenderExpansionOptions, RenderInnerOptions, RenderPageOptions,
 };
 use super::runtime::{IncludeSource, IncludeSourceCache, RenderRuntime};
-use super::runtime_modules::SecondaryRuntimeModuleExpansionOptions;
+use super::runtime_modules::{RateModuleContext, SecondaryRuntimeModuleExpansionOptions};
 use super::structs::{RenderOutput, RenderPageOutput};
 use super::url_arguments::UrlArguments;
 use super::wikidot_hosts::{
@@ -115,7 +115,9 @@ use crate::services::settings::{
 use crate::services::text_block::{
     MIME_HTML, TextBlock, TextBlockService, mime_for_language,
 };
-use crate::services::{LinkService, SiteService, TextService};
+use crate::services::{
+    LinkService, PageQueryService, ScoreService, SiteService, TextService,
+};
 use crate::types::Reference;
 use crate::types::{PageId, TextBlockType};
 use crate::utils::locale_for_ftml;
@@ -1238,24 +1240,44 @@ impl RenderService {
                 settings,
                 &mut wikidot_compat_html,
             );
-            let rating_type = match (
-                RATE_MODULE_REGEX.is_match(&wikitext),
-                current_site_id,
-                current_category_id,
-            ) {
-                (true, Some(site_id), Some(category_id)) => {
-                    SettingsService::get_page_rating_settings(ctx, site_id, category_id)
+            let has_rate_module = RATE_MODULE_REGEX.is_match(&wikitext);
+            let rating_type =
+                match (has_rate_module, current_site_id, current_category_id) {
+                    (true, Some(site_id), Some(category_id)) => {
+                        SettingsService::get_page_rating_settings(
+                            ctx,
+                            site_id,
+                            category_id,
+                        )
                         .await
                         .or_raise(make_error)?
                         .rating_type
-                }
-                _ => PageRatingType::PlusMinus,
+                    }
+                    _ => PageRatingType::PlusMinus,
+                };
+            let rate_score = match (has_rate_module, current_page_id) {
+                (true, Some(page_id)) => ScoreService::score(ctx, page_id)
+                    .await
+                    .or_raise(make_error)?,
+                _ => page_info.score,
+            };
+            let rating_votes = match (has_rate_module, current_page_id) {
+                (true, Some(page_id)) => Some(
+                    PageQueryService::effective_vote_count(ctx, page_id)
+                        .await
+                        .or_raise(make_error)?,
+                ),
+                _ => None,
             };
             wikitext = Self::expand_rate_modules_with_registry(
                 wikitext,
                 page_info,
                 settings,
-                rating_type,
+                RateModuleContext {
+                    rating_type,
+                    score: rate_score,
+                    rating_votes,
+                },
                 &mut wikidot_compat_html,
                 &mut wikidot_compat_text,
             );
@@ -4611,76 +4633,6 @@ pub(super) fn format_list_pages_rating(score: Option<f32>) -> String {
     }
 }
 
-pub(super) fn render_read_only_rate_module(
-    score: ftml::data::ScoreValue,
-    language: &str,
-    rating_type: PageRatingType,
-) -> String {
-    let score = format_score_value(score);
-    let labels = wikidot_rate_module_labels(language);
-    let downvote = if rating_type == PageRatingType::PlusMinus {
-        format!(
-            concat!(
-                "<span class=\"ratedown btn btn-default\">",
-                "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\" title=\"{}\">–</a>",
-                "</span>",
-            ),
-            labels.down_title,
-        )
-    } else {
-        String::new()
-    };
-
-    format!(
-        concat!(
-            "<div class=\"page-rate-widget-box\">",
-            "<span class=\"rate-points\">{}",
-            "<span class=\"number prw54353\">{}</span>",
-            "</span>",
-            "<span class=\"rateup btn btn-default\">",
-            "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\" title=\"{}\">+</a>",
-            "</span>",
-            "{}",
-            "<span class=\"cancel btn btn-default\">",
-            "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\" title=\"{}\">x</a>",
-            "</span>",
-            "</div>"
-        ),
-        labels.rating_prefix, score, labels.up_title, downvote, labels.cancel_title,
-    )
-}
-
-#[derive(Debug)]
-struct WikidotRateModuleLabels {
-    rating_prefix: &'static str,
-    up_title: &'static str,
-    down_title: &'static str,
-    cancel_title: &'static str,
-}
-
-fn wikidot_rate_module_labels(language: &str) -> WikidotRateModuleLabels {
-    if is_japanese_wikidot_locale(language) {
-        WikidotRateModuleLabels {
-            rating_prefix: "評価:\u{00a0}",
-            up_title: "好き",
-            down_title: "好きじゃない",
-            cancel_title: "投票を取り消す",
-        }
-    } else {
-        WikidotRateModuleLabels {
-            rating_prefix: "rating:\u{00a0}",
-            up_title: "I like it",
-            down_title: "I don't like it",
-            cancel_title: "Cancel my vote",
-        }
-    }
-}
-
-fn is_japanese_wikidot_locale(language: &str) -> bool {
-    let language = language.replace('_', "-").to_ascii_lowercase();
-    matches!(language.as_str(), "ja" | "jp") || language.starts_with("ja-")
-}
-
 pub(super) fn render_members_module_placeholder(group: &str) -> String {
     let group_attr = escape_list_pages_html_attr(group);
     let group_script = escape_javascript_single_quoted(group);
@@ -4744,23 +4696,6 @@ fn escape_javascript_single_quoted(value: &str) -> String {
         .replace('\u{2029}', r"\u2029")
         .replace('\n', r"\n")
         .replace('\r', r"\r")
-}
-
-fn format_score_value(score: ftml::data::ScoreValue) -> String {
-    match score {
-        ftml::data::ScoreValue::Integer(value) if value > 0 => format!("+{value}"),
-        ftml::data::ScoreValue::Integer(value) => value.to_string(),
-        ftml::data::ScoreValue::Float(value) if value > 0.0 && value.fract() == 0.0 => {
-            format!("+{value:.0}")
-        }
-        ftml::data::ScoreValue::Float(value) if value > 0.0 => {
-            format!("+{value}")
-        }
-        ftml::data::ScoreValue::Float(value) if value.fract() == 0.0 => {
-            format!("{value:.0}")
-        }
-        ftml::data::ScoreValue::Float(value) => value.to_string(),
-    }
 }
 
 pub(super) fn push_escaped_html(output: &mut String, value: &str) {

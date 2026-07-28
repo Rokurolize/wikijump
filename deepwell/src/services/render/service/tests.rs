@@ -79,7 +79,7 @@ use super::{
     protect_forwarded_attachment_variables, render_clone_module,
     render_list_pages_numbered_rows, render_list_pages_table_rows,
     render_members_module_placeholder, render_native_list_inline_wikidot_spans,
-    render_native_list_page_link, render_new_page_module, render_read_only_rate_module,
+    render_native_list_page_link, render_new_page_module,
     restore_list_pages_literal_ellipsis_markers, wikidot_no_such_include_replacement,
 };
 use crate::config::Config;
@@ -92,7 +92,9 @@ use crate::services::page_query::{
     OrderProperty, PageQueryResultMetadata, parse_static_wikidot_data_form_values,
     static_wikidot_data_form_matches,
 };
+use crate::services::render::rate_module::render_read_only_rate_module;
 use crate::services::render::runtime::IncludeSource;
+use crate::services::render::runtime_modules::RateModuleContext;
 use crate::services::render::{UrlArgumentPair, UrlArguments};
 use crate::services::settings::PageRatingType;
 use crate::types::{License, PageId};
@@ -6063,7 +6065,11 @@ fn wikidot_compatibility_fallback_centers_read_only_rate_module() {
         source.to_owned(),
         &page_info,
         &settings,
-        PageRatingType::PlusMinus,
+        RateModuleContext {
+            rating_type: PageRatingType::PlusMinus,
+            score: page_info.score,
+            rating_votes: None,
+        },
         &mut fragments,
         &mut compat_text,
     );
@@ -6099,6 +6105,52 @@ fn wikidot_compatibility_fallback_centers_read_only_rate_module() {
 }
 
 #[test]
+fn rate_module_plusminus_body_is_consumed_like_live_wikidot() {
+    let source = concat!(
+        "[[module Rate]]\n",
+        "Average Rating %%rating%% from %%rating_votes%% votes percent=%%rating_percent%% decimal=%%rating_decimal%%\n",
+        "[[/module]]",
+    );
+    let page_info = fallback_test_page_info("rate-plusminus-body", "Rate plusminus body");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut fragments = CompatHtmlFragments::new(source);
+    let mut compat_text = CompatTextFragments::new(source);
+    let protected = RenderService::expand_rate_modules_with_registry(
+        source.to_owned(),
+        &page_info,
+        &settings,
+        RateModuleContext {
+            rating_type: PageRatingType::PlusMinus,
+            score: page_info.score,
+            rating_votes: Some(0),
+        },
+        &mut fragments,
+        &mut compat_text,
+    );
+
+    let mut output =
+        RenderService::render_wikidot_compatibility_fallback_output_for_context(
+            &protected,
+            Some("rate-plusminus-body"),
+            Some("scp-wiki"),
+            None,
+        );
+    output.body = fragments.restore(&output.body);
+
+    assert_eq!(
+        output
+            .body
+            .matches(r#"class="page-rate-widget-box""#)
+            .count(),
+        1
+    );
+    assert!(output.body.contains(r#"class="ratedown btn btn-default""#));
+    assert!(!output.body.contains("Average Rating"));
+    assert!(!output.body.contains("%%rating"));
+    assert!(!output.body.contains("[[/module]]"));
+}
+
+#[test]
 fn rate_module_block_fragment_restores_only_at_root_and_div_contexts() {
     let source = "[[module Rate]]\n";
     let mut page_info = fallback_test_page_info("scp-9506", "SCP-9506");
@@ -6110,7 +6162,11 @@ fn rate_module_block_fragment_restores_only_at_root_and_div_contexts() {
         source.to_owned(),
         &page_info,
         &settings,
-        PageRatingType::PlusMinus,
+        RateModuleContext {
+            rating_type: PageRatingType::PlusMinus,
+            score: page_info.score,
+            rating_votes: None,
+        },
         &mut fragments,
         &mut compat_text,
     );
@@ -6148,7 +6204,11 @@ fn rate_module_expansion_leaves_wikidot_quote_depths_literal() {
         source.to_owned(),
         &page_info,
         &settings,
-        PageRatingType::Plus,
+        RateModuleContext {
+            rating_type: PageRatingType::Plus,
+            score: page_info.score,
+            rating_votes: None,
+        },
         &mut fragments,
         &mut compat_text,
     );
@@ -6169,7 +6229,11 @@ fn rate_module_expansion_leaves_footnote_body_literal() {
         source.to_owned(),
         &page_info,
         &settings,
-        PageRatingType::PlusMinus,
+        RateModuleContext {
+            rating_type: PageRatingType::PlusMinus,
+            score: page_info.score,
+            rating_votes: None,
+        },
         &mut fragments,
         &mut compat_text,
     );
@@ -6209,7 +6273,11 @@ fn rate_module_expansion_ignores_literal_and_attribute_occurrences() {
         source.to_owned(),
         &page_info,
         &settings,
-        PageRatingType::PlusMinus,
+        RateModuleContext {
+            rating_type: PageRatingType::PlusMinus,
+            score: page_info.score,
+            rating_votes: None,
+        },
         &mut fragments,
         &mut compat_text,
     );

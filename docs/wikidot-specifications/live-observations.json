@@ -860,6 +860,37 @@
       ]
     },
     {
+      "id": "rate-module-live-stars-and-body-semantics",
+      "title": "Rate consumes paired bodies and five-star variables follow live widget semantics",
+      "feature_ids": [
+        "module-rate"
+      ],
+      "classification": "documentation-correction",
+      "observed_at": "2026-07-29",
+      "analysis": "The Rate module documentation says five-star bodies may use rating, vote-count, percent, and decimal variables, but does not specify exact DOM, non-star handling of paired bodies, or client-side star initialization. Controlled run-owned sandbox pages show that a paired Rate body is consumed in plus/minus mode and rendered only in five-star mode. Live Wikidot also contradicts the documented %%rating_decimal%% variable: it remains literal in the tested five-star body before any vote and after a four-star vote.",
+      "normative_behavior": [
+        "A paired [[module Rate]]...[[/module]] occurrence consumes the body and closing marker.",
+        "In plus/minus mode, the paired body is not rendered; live output is the standard div.page-rate-widget-box with rate-points, rateup, ratedown, and cancel controls.",
+        "In five-star mode, the module renders div.page-rate-widget containing div.page-rate-widget-start with data-rating set to the current displayed rating.",
+        "In five-star mode, non-empty body text is rendered in div.page-rate-widget-start-text after the star placeholder div.",
+        "In a five-star body, %%rating%% renders span.page-rate-widget-start-text-rating containing the current displayed rating.",
+        "In a five-star body, %%rating_votes%% renders span.page-rate-widget-start-text-rating-votes containing the vote count.",
+        "In a five-star body, %%rating_percent%% renders span.page-rate-widget-start-text-rating-percent containing the current displayed rating multiplied by 20, with no percent sign.",
+        "Despite the frozen documentation, %%rating_decimal%% remains literal in the tested five-star Rate body.",
+        "After live Wikidot's browser runtime initializes a five-star widget for a voting user, div.page-rate-widget-start is populated with jquery-raty star images and a hidden score input while retaining the same text-variable spans."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/rate-module-live-stars-and-body.json",
+          "sha256": "f04bdb74ca677d638d46dcfdbb6e5e05df72bcd85fcd3fb2f00879e8b4a3d130",
+          "case_ids": [
+            "rate-star-body-zero-and-after-vote",
+            "rate-plusminus-body-consumed"
+          ]
+        }
+      ]
+    },
+    {
       "id": "redirect-module-noredirect-notice",
       "title": "Redirect noredirect renders a Wikidot error-block notice",
       "feature_ids": [

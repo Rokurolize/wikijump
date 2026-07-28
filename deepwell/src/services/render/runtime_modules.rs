@@ -18,13 +18,15 @@ use super::module_arguments::{
 };
 use super::native_list_context::collect_unproven_scope_ranges;
 use super::percent_encoding::percent_encode_path_segment;
+use super::rate_module::{
+    render_read_only_rate_module, render_read_only_star_rate_module,
+};
 use super::runtime_page_queries::find_viewable_list_pages_rows;
 use super::service::{
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PAGECALENDAR_MODULE_REGEX, RATE_MODULE_REGEX,
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
     escape_list_pages_html_attr, escape_list_pages_html_text, render_clone_module,
     render_members_module_placeholder, render_new_page_module,
-    render_read_only_rate_module,
 };
 use super::url_arguments::UrlArguments;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -81,6 +83,13 @@ pub(super) struct SecondaryRuntimeModuleExpansionOptions<'a> {
     pub(super) current_page_id: Option<i64>,
     pub(super) url: UrlArguments<'a>,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(super) struct RateModuleContext {
+    pub(super) rating_type: PageRatingType,
+    pub(super) score: ftml::data::ScoreValue,
+    pub(super) rating_votes: Option<i64>,
 }
 
 #[derive(Debug, FromQueryResult)]
@@ -990,12 +999,39 @@ fn render_tag_cloud_module(
     }
 }
 
+fn rate_module_occurrence_body(source: &str, open_end: usize) -> (usize, Option<&str>) {
+    let suffix = &source[open_end..];
+    if suffix.starts_with("[[/module]]") {
+        return (open_end + "[[/module]]".len(), Some(""));
+    }
+
+    if !suffix
+        .chars()
+        .next()
+        .is_some_and(|character| matches!(character, '\n' | '\r'))
+    {
+        return (open_end, None);
+    }
+
+    match suffix
+        .to_ascii_lowercase()
+        .find("[[/module]]")
+        .map(|offset| open_end + offset)
+    {
+        Some(close_start) => (
+            close_start + "[[/module]]".len(),
+            Some(&source[open_end..close_start]),
+        ),
+        None => (open_end, None),
+    }
+}
+
 impl RenderService {
     pub(super) fn expand_rate_modules_with_registry(
         wikitext: String,
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
-        rating_type: PageRatingType,
+        rate_context: RateModuleContext,
         compat_html: &mut CompatHtmlFragments,
         compat_text: &mut CompatTextFragments,
     ) -> String {
@@ -1024,21 +1060,37 @@ impl RenderService {
             {
                 continue;
             }
+            let (occurrence_end, body) =
+                rate_module_occurrence_body(&wikitext, matched.end());
             output.push_str(&wikitext[cursor..matched.start()]);
             if footnote_ranges
                 .iter()
-                .any(|range| range.start < matched.start() && matched.end() <= range.end)
+                .any(|range| range.start < matched.start() && occurrence_end <= range.end)
             {
-                output.push_str(&compat_text.push_escaped_html_text(matched.as_str()));
-                cursor = matched.end();
+                output.push_str(
+                    &compat_text.push_escaped_html_text(
+                        &wikitext[matched.start()..occurrence_end],
+                    ),
+                );
+                cursor = occurrence_end;
                 continue;
             }
-            output.push_str(&compat_html.push_block_html(render_read_only_rate_module(
-                page_info.score,
-                &page_info.language,
-                rating_type,
-            )));
-            cursor = matched.end();
+            let rendered = match rate_context.rating_type {
+                PageRatingType::Stars => render_read_only_star_rate_module(
+                    rate_context.score,
+                    rate_context.rating_votes,
+                    body.unwrap_or(""),
+                ),
+                PageRatingType::Plus | PageRatingType::PlusMinus => {
+                    render_read_only_rate_module(
+                        rate_context.score,
+                        &page_info.language,
+                        rate_context.rating_type,
+                    )
+                }
+            };
+            output.push_str(&compat_html.push_block_html(rendered));
+            cursor = occurrence_end;
         }
         if cursor == 0 {
             return wikitext;
