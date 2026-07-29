@@ -194,3 +194,50 @@ test("prototype-sensitive field names use only backend-provided own values", () 
     "constructor: ''\ntoString: ''\n__proto__: ''"
   )
 })
+
+test("checkbox and wiki state and source match live Wikidot", () => {
+  const definition = {
+    default_layout: true,
+    fields: [
+      {
+        name: "unchecked",
+        label: "Unchecked",
+        hint: "ignored",
+        field_type: "checkbox",
+        values: [],
+        default_value: null
+      },
+      {
+        name: "checked",
+        label: "Checked",
+        hint: "",
+        field_type: "checkbox",
+        values: [],
+        default_value: "1"
+      },
+      {
+        name: "wiki",
+        label: "Wiki",
+        hint: "enter wiki",
+        field_type: "wiki",
+        values: [],
+        default_value: "**Default**"
+      }
+    ]
+  }
+
+  const defaults = buildWikidotDataFormState(definition, {})
+  assert.deepEqual(defaults, {
+    unchecked: "0",
+    checked: "1",
+    wiki: "**Default**"
+  })
+  assert.equal(
+    serializeWikidotDataFormSource(definition, {
+      unchecked: "0",
+      checked: "1",
+      wiki: "**Bold**\n[[[start|Home]]]"
+    }),
+    ["unchecked: '0'", "checked: '1'", 'wiki: "**Bold**\\n[[[start|Home]]]"'].join("\n")
+  )
+})

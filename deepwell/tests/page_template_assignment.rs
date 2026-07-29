@@ -1175,3 +1175,181 @@ quoted: false_value"#;
         ],
     );
 }
+
+#[tokio::test]
+async fn page_view_exposes_live_checkbox_and_wiki_contract() {
+    const CATEGORY: &str = "data-form-checkbox-wiki-contract";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  enabled:\n",
+        "    label: Enabled\n",
+        "    type: checkbox\n",
+        "    default: 1\n",
+        "    before: PRE\n",
+        "    after: POST\n",
+        "  details:\n",
+        "    label: Details\n",
+        "    type: wiki\n",
+        "    default: \"**Default**\"\n",
+        "    hint: enter wiki \\#source\n",
+        "    before: \"**Before**\"\n",
+        "    after: \"//After//\"\n",
+        "    match: /^never$/\n",
+        "    match-error: ignored\n",
+        "[[/form]]",
+    );
+    const SAVED_SOURCE: &str = "enabled: '1'\ndetails: \"**Bold**\\n[[[start|Home]]]\"";
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell checkbox/wiki data-form contract test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template = create_page(
+        &mut runner,
+        site_id,
+        "data-form-checkbox-wiki-contract:_template",
+        TEMPLATE_SOURCE,
+    )
+    .await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form target category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-checkbox-wiki-contract-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let definition = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {
+                "slug": "data-form-checkbox-wiki-contract:new",
+                "extra": "/edit/true"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => data_form.definition,
+        other => panic!("expected checkbox/wiki create definition, got {other:?}"),
+    };
+    let enabled = definition.field("enabled").expect("checkbox field");
+    assert_eq!(enabled.default_value.as_deref(), Some("1"));
+    let details = definition.field("details").expect("wiki field");
+    assert_eq!((details.width, details.height), (40, 2));
+    assert_eq!(details.hint, "enter wiki \\#source");
+    assert_eq!(details.match_pattern, None);
+    assert_eq!(details.match_error, None);
+
+    create_page(
+        &mut runner,
+        site_id,
+        "data-form-checkbox-wiki-contract:saved",
+        SAVED_SOURCE,
+    )
+    .await;
+    let editor = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {
+                "slug": "data-form-checkbox-wiki-contract:saved",
+                "extra": "/edit"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => panic!("expected checkbox/wiki edit definition, got {other:?}"),
+    };
+    assert_eq!(
+        editor.values,
+        BTreeMap::from([
+            (
+                "details".to_owned(),
+                "**Bold**\n[[[start|Home]]]".to_owned()
+            ),
+            ("enabled".to_owned(), "1".to_owned()),
+        ]),
+    );
+
+    let rendered_html = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "data-form-checkbox-wiki-contract:saved",
+                "extra": ""
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected checkbox/wiki rendered page, got {other:?}"),
+    };
+    assert!(
+        rendered_html.contains("<span>PRE 1 POST</span>"),
+        "{rendered_html}",
+    );
+    assert!(
+        rendered_html.contains(r#"<div class="form-value field-details">"#,)
+            && rendered_html.contains("<p><strong>Bold</strong><br>")
+            && rendered_html.contains(r#"<a class="newpage" href="/start">Home</a>"#),
+        "wiki field values must compile through the Wikidot renderer:\n{rendered_html}",
+    );
+    assert!(
+        rendered_html
+            .contains(r#"<p><span style="white-space: pre-wrap;">**Before**</span></p>"#,)
+            && rendered_html.contains(
+                r#"<p><span style="white-space: pre-wrap;">//After//</span></p>"#,
+            ),
+        "wiki affixes must stay literal while the stored value is parsed:\n{rendered_html}",
+    );
+}

@@ -67,6 +67,52 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json` (SHA-256 `70ffe68197540fe292f8343e98d64fe76fbadf73533a3537b12b4a7ea185fd6f`), cases: `vineyard-current-page-form-variables-drive-data-form-selectors`, `vineyard-data-form-order-desc-uses-stored-field-properties`
 
+### Checkbox fields use exact-one defaults, quoted binary storage, and ordinary data-form variables
+
+- Observation ID: `data-form-checkbox-control-storage-and-variable-contract`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-29`
+- Analysis: The frozen checkbox documentation says only that the field stores 0 or 1 and that default supplies the initial value. It does not define scalar comparison, DOM, quoting, field-property behavior, display, edit restoration, or ListPages variables. The live corpus also contains community-sites:_template checkboxes with after text and no label. Run-owned generated create/edit flows establish that a checkbox is checked only when its parsed default is numeric one, submission always emits quoted binary strings, ordinary properties are honored, and both form_data and form_raw expose the stored digit.
+
+Normative behavior:
+
+- A checkbox renders input.form-checkbox with type=checkbox, name=field-<field-name>, and no authored value attribute; its DOM value is therefore the browser default on.
+- An omitted default is unchecked. Observed numeric 1, quoted "1", 01, and 1.0 defaults are checked. Observed 0, false, true, quoted "0", quoted "false", quoted "true", empty, -1, 2, yes, no, null, quoted "null", and quoted " 1 " defaults are unchecked.
+- Saving a checked checkbox stores the exact single-quoted scalar '1'; saving an unchecked checkbox stores the exact single-quoted scalar '0'.
+- The generated default table displays 1 or 0 as ordinary text. Both form_data and form_raw render that same stored digit in a direct category template and in a ListPages row.
+- Checkbox label, join, before, and after follow the observed common field-property grouping contract. Affixes remain literal and do not change storage.
+- A checkbox hint produces no placeholder or other visible hint content.
+- Create and edit restore the checked state from the stored quoted binary scalar.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json` (SHA-256 `8d806e502db320a3cfb1889368530c3c4f46921b3fb958cca2c660a63a835fe0`), cases: `checkbox-control-default-storage-display-and-restoration`, `direct-and-listpages-wiki-checkbox-variables`
+
+### Wiki fields use wiki controls, parsed values, literal affixes, and live template variables
+
+- Observation ID: `data-form-wiki-control-rendering-and-variable-contract`
+- Classification: `documentation-correction`
+- Observed at: `2026-07-29`
+- Analysis: The frozen wiki-field page says it works like text and lists only width and height. Live behavior differs materially from a text field's defaults, supports undocumented default and hint properties, ignores text-only match properties, and distinguishes a wiki-parsed field value from literal affixes. The frozen template-variable references also contradict each other about form_raw and recommend it specially for wiki fields. Live direct templates and ListPages render the observed wiki value through both form_data and form_raw.
+
+Normative behavior:
+
+- A wiki field uses class form-control form-wiki. With omitted dimensions it renders a textarea with cols=40 and rows=2.
+- Observed numeric width values clamp to a minimum of 20; width 21 renders 21. Empty and non-numeric widths fall back to 40.
+- Omitted, empty, and non-numeric heights render a two-row textarea. Numeric heights below 2 render a one-line input; height 2 or greater renders a textarea with that row count.
+- The undocumented default property supplies the initial wiki value. The undocumented hint property supplies the exact input or textarea placeholder, including retaining a backslash before a hash.
+- Wiki field storage uses the observed text scalar encoding: safe single-line syntax may remain plain, unsafe single-line values use doubled-apostrophe single quotes, and multiline values use double quotes with escaped newlines.
+- Text-only match and match-error properties have no effect on a wiki field; an observed value that failed the authored pattern still saved.
+- In the generated editor, before and after remain literal text around the control, with exactly one separator space after a non-empty before value and before a non-empty after value; source-formatting whitespace does not add another separator. In the default table, each non-empty affix and the wiki value occupy separate paragraphs inside div.form-value.field-<name>; only the stored wiki value is parsed as Wikidot syntax, while affix markup remains literal pre-wrapped text.
+- Wiki label and join follow the observed common field-property contract in both the editor and default table.
+- Both form_data and form_raw render the observed wiki syntax in a direct category template and a ListPages row. Marker-separated variables produced equivalent bold and internal-link HTML.
+- Placing a raw wiki variable inside one of several immediately adjacent div blocks exposes a legacy composition boundary: the raw block's opening syntax can remain literal and alter parsing of following blocks. Preserve this adversarial input; do not normalize it into the ordinary marker-separated result.
+- Create and edit restore the exact stored wiki source.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json` (SHA-256 `8d806e502db320a3cfb1889368530c3c4f46921b3fb958cca2c660a63a835fe0`), cases: `wiki-control-dimension-default-hint-and-storage-boundaries`, `wiki-rendering-field-properties-and-text-only-validation-boundary`, `direct-and-listpages-wiki-checkbox-variables`, `raw-wiki-variable-adjacent-block-composition`
+
 
 
 ## Suggested public TDD seams

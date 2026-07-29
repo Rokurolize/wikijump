@@ -8561,6 +8561,96 @@ async fn listpages_data_form_variables_match_live_wikidot() {
 }
 
 #[tokio::test]
+async fn listpages_checkbox_and_wiki_variables_match_live_wikidot() {
+    const CATEGORY: &str = "fixture-listpages-checkbox-wiki";
+    const TEMPLATE_SLUG: &str = "fixture-listpages-checkbox-wiki:_template";
+    const TARGET_SLUG: &str = "fixture-listpages-checkbox-wiki:target";
+    const INDEX_SLUG: &str = "fixture-listpages-checkbox-wiki-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATE_SLUG,
+        "Fixture ListPages Checkbox Wiki Template",
+        concat!(
+            "[[form]]\n",
+            "fields:\n",
+            "  enabled:\n",
+            "    label: Enabled\n",
+            "    type: checkbox\n",
+            "  details:\n",
+            "    label: Details\n",
+            "    type: wiki\n",
+            "[[/form]]",
+        ),
+    )
+    .await;
+    let template_page_id = listpages_test_page_id(&runner, site_id, TEMPLATE_SLUG).await;
+    set_listpages_test_category_template_page(
+        &runner,
+        site_id,
+        CATEGORY,
+        template_page_id,
+    )
+    .await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Checkbox Wiki Target",
+        "enabled: '1'\ndetails: \"**Bold**\\n[[[start|Home]]]\"",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Checkbox Wiki Index",
+        concat!(
+            "[[module ListPages category=\"fixture-listpages-checkbox-wiki\" ",
+            "fullname=\"fixture-listpages-checkbox-wiki:target\" ",
+            "limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n",
+            "DATA-WIKI-BEGIN\n",
+            "%%form_data{details}%%\n",
+            "DATA-WIKI-END\n",
+            "RAW-WIKI-BEGIN\n",
+            "%%form_raw{details}%%\n",
+            "RAW-WIKI-END\n",
+            "CHECKBOX=%%form_data{enabled}%%|%%form_raw{enabled}%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert_eq!(
+        html.matches("<strong>Bold</strong>").count(),
+        2,
+        "both form_data and form_raw must parse wiki field syntax:\n{html}",
+    );
+    assert_eq!(
+        html.matches(r#"<a class="newpage" href="/start">Home</a>"#)
+            .count(),
+        2,
+        "both wiki variables must decode the stored newline and internal link:\n{html}",
+    );
+    assert!(
+        html.contains("CHECKBOX=1|1"),
+        "checkbox variables must expose the stored digit:\n{html}",
+    );
+    assert!(
+        !html.contains(r"\n[[[start|Home]]]"),
+        "stored multiline wiki scalars must be decoded before substitution:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_template_selectors_can_use_current_page_data_form_values() {
     const CATEGORY: &str = "fixture-listpages-current-form";
     const TEMPLATE_SLUG: &str = "fixture-listpages-current-form:_template";

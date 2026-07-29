@@ -138,7 +138,7 @@
     if (validationErrors.size > 0) return false
 
     const matchFields = definitionSnapshot.fields.flatMap((field) =>
-      field.match_pattern
+      field.field_type === "text" && field.match_pattern
         ? [
             {
               name: field.name,
@@ -339,59 +339,112 @@
       <label class="col-sm-2 control-label">{fields[0].label}</label>
       <div class="col-sm-5">
         {#each fields as field, fieldIndex (field.name)}
-          {#if fieldIndex > 0 && field.label}{field.label}{/if}<span
-            class={`form-value field-${field.name}`}
-            class:form-error={validationErrors.has(field.name)}
-            >{field.before ? `${field.before} ` : " "}{#if field.field_type === "select"}
-              {#if field.values.length >= 5}
-                <select
+          {#if fieldIndex > 0 && field.label}{field.label}{/if}{#if field.field_type === "wiki"}
+            <div
+              class={`form-value field-${field.name}`}
+              class:form-error={validationErrors.has(field.name)}
+            >
+              {field.before ? `${field.before} ` : " "}{#if field.height >= 2}
+                <textarea
                   name={`field-${field.name}`}
-                  class="form-control form-select"
-                  bind:value={values[field.name]}
-                >
-                  {#each field.values as option (option.value)}
-                    <option value={option.value}>{option.label}</option>
-                  {/each}
-                </select>
+                  class="form-control form-wiki"
+                  cols={field.width}
+                  placeholder={field.hint}
+                  rows={field.height}
+                  bind:value={values[field.name]}></textarea>
               {:else}
-                {#each field.values as option (option.value)}
-                  <label class="radio-inline">
-                    <input
-                      name={`field-${field.name}`}
-                      class="form-select"
-                      checked={values[field.name] === option.value}
-                      onchange={() => (values[field.name] = option.value)}
-                      type="radio"
-                      value={option.value}
-                    />{option.label}
-                  </label>
-                {/each}
-              {/if}
-            {:else if field.height >= 2}
-              <textarea
-                name={`field-${field.name}`}
-                class="form-control form-text"
-                cols={field.width}
-                placeholder={field.hint}
-                rows={field.height}
-                bind:value={values[field.name]}></textarea>
-            {:else}
-              <input
-                name={`field-${field.name}`}
-                class="form-control form-text"
-                onkeypress={(event) => {
-                  if (event.key === "Enter") event.preventDefault()
-                }}
-                placeholder={field.hint}
-                size={field.width}
-                type="text"
-                bind:value={values[field.name]}
-              />
-            {/if}{field.after ? ` ${field.after}` : " "}<span
-              class="form-message text-danger"
-              >{validationErrors.get(field.name) ?? ""}</span
-            ></span
-          >
+                <input
+                  name={`field-${field.name}`}
+                  class="form-control form-wiki"
+                  onkeypress={(event) => {
+                    if (event.key === "Enter") event.preventDefault()
+                  }}
+                  placeholder={field.hint}
+                  size={field.width}
+                  type="text"
+                  bind:value={values[field.name]}
+                />
+              {/if}{field.after ? ` ${field.after}` : " "}<span
+                class="form-message text-danger"
+                >{validationErrors.get(field.name) ?? ""}</span
+              >
+            </div>
+          {:else}
+            <span
+              class={`form-value field-${field.name}`}
+              class:form-error={validationErrors.has(field.name)}
+              >{field.before
+                ? `${field.before} `
+                : " "}{#if field.field_type === "checkbox"}
+                {#if values[field.name] === "1"}
+                  <input
+                    name={`field-${field.name}`}
+                    class="form-checkbox"
+                    checked="checked"
+                    onchange={(event) =>
+                      (values[field.name] = event.currentTarget.checked ? "1" : "0")}
+                    type="checkbox"
+                  />
+                {:else}
+                  <input
+                    name={`field-${field.name}`}
+                    class="form-checkbox"
+                    onchange={(event) =>
+                      (values[field.name] = event.currentTarget.checked ? "1" : "0")}
+                    type="checkbox"
+                  />
+                {/if}
+              {:else if field.field_type === "select"}
+                {#if field.values.length >= 5}
+                  <select
+                    name={`field-${field.name}`}
+                    class="form-control form-select"
+                    bind:value={values[field.name]}
+                  >
+                    {#each field.values as option (option.value)}
+                      <option value={option.value}>{option.label}</option>
+                    {/each}
+                  </select>
+                {:else}
+                  {#each field.values as option (option.value)}
+                    <label class="radio-inline">
+                      <input
+                        name={`field-${field.name}`}
+                        class="form-select"
+                        checked={values[field.name] === option.value}
+                        onchange={() => (values[field.name] = option.value)}
+                        type="radio"
+                        value={option.value}
+                      />{option.label}
+                    </label>
+                  {/each}
+                {/if}
+              {:else if field.height >= 2}
+                <textarea
+                  name={`field-${field.name}`}
+                  class="form-control form-text"
+                  cols={field.width}
+                  placeholder={field.hint}
+                  rows={field.height}
+                  bind:value={values[field.name]}></textarea>
+              {:else}
+                <input
+                  name={`field-${field.name}`}
+                  class="form-control form-text"
+                  onkeypress={(event) => {
+                    if (event.key === "Enter") event.preventDefault()
+                  }}
+                  placeholder={field.hint}
+                  size={field.width}
+                  type="text"
+                  bind:value={values[field.name]}
+                />
+              {/if}{field.after ? ` ${field.after}` : " "}<span
+                class="form-message text-danger"
+                >{validationErrors.get(field.name) ?? ""}</span
+              ></span
+            >
+          {/if}
         {/each}
       </div>
     </div>

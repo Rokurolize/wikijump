@@ -49,14 +49,14 @@ use crate::services::ServiceContext;
 use crate::services::blueprint::{BlueprintPageType, GetBlueprintPageOutput};
 use crate::services::data_form::{
     load_data_form_definitions, parse_observed_wikidot_data_form_values,
-    render_wikidot_data_form_table,
+    render_wikidot_data_form_table_with_wiki_html,
 };
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{
     GetPageAttributions, GetSiteBan, PageAttribution, RelationService,
 };
-use crate::services::render::RenderOutput;
+use crate::services::render::{RenderOutput, RenderService};
 use crate::services::settings::{NavigationPageHtml, SettingsService};
 use crate::services::user::User;
 use crate::services::view::ViewType;
@@ -74,6 +74,7 @@ use ref_map::OptionRefMap;
 use sea_orm::ConnectionTrait;
 use sea_orm::{FromQueryResult, Statement};
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use time::OffsetDateTime;
 use unic_langid::LanguageIdentifier;
 use wikidot_normalize::normalize;
@@ -87,6 +88,40 @@ fn wikidot_redirect_module_allowed(
     // import provenance prevents ordinary editable wikitext from creating
     // permanent external redirects on the local Wikijump domain.
     page.from_wikidot && page_revision.from_wikidot
+}
+
+async fn render_wikidot_data_form_wiki_values(
+    ctx: &ServiceContext<'_>,
+    data_form: &DataFormEditor,
+    page_info: &PageInfo<'_>,
+    page_id: PageId,
+) -> Result<BTreeMap<String, String>> {
+    tokio::time::timeout(ctx.config().render_timeout, async {
+        let mut rendered = BTreeMap::new();
+        for field in &data_form.definition.fields {
+            if field.field_type.as_deref() != Some("wiki") {
+                continue;
+            }
+            let source = data_form
+                .values
+                .get(&field.name)
+                .cloned()
+                .unwrap_or_default();
+            let output = RenderService::render_wikidot_fragment_for_page(
+                ctx, source, page_info, page_id,
+            )
+            .await?;
+            rendered.insert(field.name.clone(), output.html_output.body);
+        }
+        Ok(rendered)
+    })
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to render data-form wiki values due to timeout",
+            ErrorType::RenderTimeout,
+        )
+    })?
 }
 
 #[derive(Debug)]
@@ -620,16 +655,29 @@ impl ViewService {
                             Some(_) => None,
                         }
                     };
-                    let compiled_body_html = data_form
-                        .as_ref()
-                        .filter(|_| page_extra.is_empty())
-                        .map(|data_form| {
-                            render_wikidot_data_form_table(
-                                &data_form.definition,
-                                &data_form.values,
-                            )
-                        })
-                        .unwrap_or(compiled_body_html);
+                    let compiled_body_html = if let Some(data_form) =
+                        data_form.as_ref().filter(|_| page_extra.is_empty())
+                    {
+                        let rendered_wiki_values = render_wikidot_data_form_wiki_values(
+                            ctx,
+                            data_form,
+                            &page_info,
+                            PageId {
+                                site_id: page.site_id,
+                                category_id: page.page_category_id,
+                                page_id: page.page_id,
+                            },
+                        )
+                        .await
+                        .or_raise(make_error)?;
+                        render_wikidot_data_form_table_with_wiki_html(
+                            &data_form.definition,
+                            &data_form.values,
+                            &rendered_wiki_values,
+                        )
+                    } else {
+                        compiled_body_html
+                    };
                     let data_form =
                         data_form.filter(|_| options.edit && user_can_edit_page);
 

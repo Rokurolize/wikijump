@@ -35,10 +35,14 @@ export const buildWikidotDataFormState = (definition, savedValues) => {
       field.name,
       Object.hasOwn(savedValues, field.name)
         ? savedValues[field.name]
-        : (field.default_value ??
-          (field.field_type === "select" && field.values.length >= 5
-            ? (field.values[0]?.value ?? "")
-            : ""))
+        : field.field_type === "checkbox"
+          ? field.default_value === "1"
+            ? "1"
+            : "0"
+          : (field.default_value ??
+            (field.field_type === "select" && field.values.length >= 5
+              ? (field.values[0]?.value ?? "")
+              : ""))
     ])
   )
 }
@@ -76,6 +80,15 @@ const serializeWikidotSelectScalar = (value) => {
 }
 
 /**
+ * @param {string} value
+ * @returns {string}
+ */
+const serializeWikidotWikiScalar = (value) => {
+  if (/^\/\S+$/u.test(value)) return value
+  return serializeWikidotTextScalar(value)
+}
+
+/**
  * Serializes the currently evidenced text and select fields in template
  * order.
  *
@@ -88,9 +101,15 @@ export const serializeWikidotDataFormSource = (definition, values) => {
     .map((field) => {
       const value = values[field.name] ?? ""
       const serialized =
-        field.field_type === "select"
-          ? serializeWikidotSelectScalar(value)
-          : serializeWikidotTextScalar(value)
+        field.field_type === "checkbox"
+          ? values[field.name] === "1"
+            ? "'1'"
+            : "'0'"
+          : field.field_type === "select"
+            ? serializeWikidotSelectScalar(value)
+            : field.field_type === "wiki"
+              ? serializeWikidotWikiScalar(value)
+              : serializeWikidotTextScalar(value)
       return `${field.name}: ${serialized}`
     })
     .join("\n")

@@ -1,0 +1,232 @@
+{
+  "schema": "wikidot.live.data-form.checkbox-wiki.v1",
+  "observed_at": "2026-07-29",
+  "site": "sandbox-for-codex",
+  "actor": "authenticated account A through isolated Codex-owned Chrome profiles",
+  "credential_material": "none; credentials and session material stayed in the local environment and isolated browser profiles",
+  "documentation_provenance": [
+    {
+      "path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:checkbox-field/source.wikidot.txt",
+      "lines": "1-18",
+      "sha256": "80246a710718a8a0c14a97dc164390e84fc7a6f58c251c18150b68afac5ed5be"
+    },
+    {
+      "path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:wiki-field/source.wikidot.txt",
+      "lines": "1-15",
+      "sha256": "0f799742cbdae02eac942b09544ff311b4ef770f077c62ff85f23459fbe18ab8"
+    },
+    {
+      "path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites:_template/source.wikidot.txt",
+      "lines": "1-47",
+      "sha256": "13bfab492bfea6036fa910c4d9fd3fc5e7f9d765d5f7c955d9c39eb9b10b5940"
+    },
+    {
+      "path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:listpages-module/source.wikidot.txt",
+      "lines": "85-95 and 229-232",
+      "sha256": "d5c5aac7290c3b8108378d93ad32e444e682f58c3f21eedb4871a2a66a224e02"
+    }
+  ],
+  "run_owned_pages": [
+    {
+      "run_id": "1785328674",
+      "template": "df-checkbox-wiki-1785328674:_template",
+      "target": "df-checkbox-wiki-1785328674:target",
+      "cleanup_verified": true
+    },
+    {
+      "run_id": "1785328780",
+      "template": "df-checkbox-wiki-1785328780:_template",
+      "target": "df-checkbox-wiki-1785328780:target",
+      "cleanup_verified": true
+    },
+    {
+      "run_id": "1785328879",
+      "template": "df-checkbox-wiki-1785328879:_template",
+      "target": "df-checkbox-wiki-1785328879:target",
+      "cleanup_verified": true
+    },
+    {
+      "run_id": "1785328969",
+      "template": "df-checkbox-wiki-1785328969:_template",
+      "target": "df-checkbox-wiki-1785328969:target",
+      "cleanup_verified": true
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "checkbox-control-default-storage-display-and-restoration",
+      "authored_defaults": {
+        "omitted": false,
+        "0": false,
+        "1": true,
+        "false": false,
+        "true": false,
+        "quoted_0": false,
+        "quoted_1": true,
+        "quoted_false": false,
+        "quoted_true": false,
+        "empty": false,
+        "negative_1": false,
+        "2": false,
+        "yes": false,
+        "no": false,
+        "null": false,
+        "quoted_null": false,
+        "leading_zero_01": true,
+        "float_1_0": true,
+        "quoted_spaced_1": false
+      },
+      "observed": {
+        "control_tag": "input",
+        "control_type": "checkbox",
+        "control_class": "form-checkbox",
+        "dom_value_without_value_attribute": "on",
+        "default_is_checked_only_when_the_parsed_scalar_is_numeric_one": true,
+        "unchecked_submission": "0",
+        "checked_submission": "1",
+        "stored_scalars_are_single_quoted": true,
+        "default_table_displays_numeric_text": true,
+        "form_data_and_form_raw_both_display_stored_numeric_text": true,
+        "submitted_states_restore_on_edit": true,
+        "hint_is_not_visible": true
+      },
+      "exact_dom_fragments": [
+        "<input name=\"field-checkbox_omitted\" type=\"checkbox\" class=\"form-checkbox\">",
+        "<input name=\"field-checkbox_one\" type=\"checkbox\" class=\"form-checkbox\" checked=\"checked\">",
+        "<span class=\"form-value field-checkbox_affix\">PRE <input name=\"field-checkbox_affix\" type=\"checkbox\" class=\"form-checkbox\"> Support from the Wikidot Team<span class=\"form-message text-danger\"></span></span>",
+        "<span class=\"form-value field-checkbox_joined\">LEFT <input name=\"field-checkbox_joined\" type=\"checkbox\" class=\"form-checkbox\"> RIGHT<span class=\"form-message text-danger\"></span></span>"
+      ],
+      "exact_saved_source": "checkbox_omitted: '1'\ncheckbox_zero: '1'\ncheckbox_one: '0'\ncheckbox_false: '1'\ncheckbox_true: '0'\ncheckbox_quoted_zero: '1'\ncheckbox_quoted_one: '0'\ncheckbox_quoted_false: '1'\ncheckbox_quoted_true: '0'\ncheckbox_empty: '1'\ncheckbox_negative: '0'\ncheckbox_two: '0'\ncheckbox_affix: '1'\ncheckbox_joined: '1'\nwiki_main: \"**Bold**\\n[[[start|Home]]]\"\nwiki_omitted: //italic//\nwiki_height_one: 'height one'\nwiki_height_zero: 'height zero'\nwiki_width_zero: 'width zero'\nwiki_joined: 'joined wiki'",
+      "exact_default_table_fragment": "<tr class=\"form-row\">\n<td class=\"form-labels\"></td>\n<td class=\"form-values\"><span>PRE 1 Support from the Wikidot Team</span><span class=\"form-label\">Joined checkbox</span><span>LEFT 1 RIGHT</span></td>\n</tr>",
+      "corpus_case": {
+        "page": "community-sites:_template",
+        "field_shape": "type: checkbox with after and no label",
+        "source_lines": "38-46"
+      }
+    },
+    {
+      "case_id": "wiki-control-dimension-default-hint-and-storage-boundaries",
+      "observed_dimensions": {
+        "omitted": {
+          "tag": "textarea",
+          "cols": 40,
+          "rows": 2
+        },
+        "width_negative": 20,
+        "width_zero": 20,
+        "width_one": 20,
+        "width_nineteen": 20,
+        "width_twenty": 20,
+        "width_twenty_one": 21,
+        "width_empty": 40,
+        "width_nonnumeric": 40,
+        "height_empty": {
+          "tag": "textarea",
+          "rows": 2
+        },
+        "height_nonnumeric": {
+          "tag": "textarea",
+          "rows": 2
+        },
+        "height_negative": {
+          "tag": "input",
+          "size": 40
+        },
+        "height_zero": {
+          "tag": "input",
+          "size": 40
+        },
+        "height_one": {
+          "tag": "input",
+          "size": 40
+        },
+        "height_two": {
+          "tag": "textarea",
+          "rows": 2
+        },
+        "height_three": {
+          "tag": "textarea",
+          "rows": 3
+        }
+      },
+      "observed": {
+        "control_class": "form-control form-wiki",
+        "default_property_is_supported": true,
+        "hint_property_is_supported": true,
+        "escaped_hash_in_hint_retains_backslash": true,
+        "single_and_multiline_storage_matches_text_scalar_encoding": true,
+        "submitted_values_restore_on_edit": true
+      },
+      "exact_dom_fragments": [
+        "<textarea cols=\"40\" rows=\"2\" name=\"field-wiki_omitted\" placeholder=\"\" class=\"form-control form-wiki\"></textarea>",
+        "<textarea cols=\"20\" rows=\"3\" name=\"field-wiki_main\" placeholder=\"wiki hint\" class=\"form-control form-wiki\"></textarea>",
+        "<input type=\"text\" size=\"40\" name=\"field-wiki_height_one\" value=\"\" placeholder=\"\" class=\"form-control form-wiki\">",
+        "<textarea cols=\"40\" rows=\"2\" name=\"field-wiki_default\" placeholder=\"\" class=\"form-control form-wiki\">**Default** #hash</textarea>",
+        "<textarea cols=\"40\" rows=\"2\" name=\"field-wiki_escaped_hint\" placeholder=\"enter \\#hash\" class=\"form-control form-wiki\"></textarea>"
+      ]
+    },
+    {
+      "case_id": "wiki-rendering-field-properties-and-text-only-validation-boundary",
+      "submitted_values": {
+        "wiki_match": "bad",
+        "wiki_markup_affixes": "**Value**",
+        "checkbox_hint": "1"
+      },
+      "observed": {
+        "wiki_match_and_match_error_are_ignored": true,
+        "invalid_text_pattern_did_not_block_creation": true,
+        "wiki_value_is_parsed_as_wikidot_syntax": true,
+        "wiki_before_and_after_are_literal_not_wiki_parsed": true,
+        "wiki_before_value_and_after_each_render_as_separate_paragraphs": true,
+        "checkbox_hint_is_ignored": true,
+        "wiki_join_shares_the_previous_editor_group_and_default_table_row": true
+      },
+      "exact_editor_fragments": [
+        "<div class=\"form-value field-wiki_match\"> <textarea cols=\"40\" rows=\"2\" name=\"field-wiki_match\" placeholder=\"\" class=\"form-control form-wiki\"></textarea> <span class=\"form-message text-danger\"></span></div>",
+        "<div class=\"form-value field-wiki_markup_affixes\">**Before** <textarea cols=\"40\" rows=\"2\" name=\"field-wiki_markup_affixes\" placeholder=\"\" class=\"form-control form-wiki\"></textarea> //After//<span class=\"form-message text-danger\"></span></div>",
+        "<span class=\"form-value field-checkbox_hint\"> <input name=\"field-checkbox_hint\" type=\"checkbox\" class=\"form-checkbox\"> <span class=\"form-message text-danger\"></span></span>"
+      ],
+      "exact_rendered_row": "<tr class=\"form-row\">\n<td class=\"form-labels\"><span class=\"form-label\">Wiki markup affixes</span></td>\n<td class=\"form-values\">\n<div class=\"form-value field-wiki_markup_affixes\">\n<p><span style=\"white-space: pre-wrap;\">**Before**</span></p>\n<p><strong>Value</strong></p>\n<p><span style=\"white-space: pre-wrap;\">//After//</span></p>\n</div>\n</td>\n</tr>"
+    },
+    {
+      "case_id": "direct-and-listpages-wiki-checkbox-variables",
+      "submitted_values": {
+        "wiki_main": "**Bold**\n[[[start|Home]]]",
+        "checkbox_affix": "1"
+      },
+      "observed": {
+        "direct_form_data_wiki_renders_wiki_syntax": true,
+        "direct_form_raw_wiki_renders_wiki_syntax": true,
+        "listpages_form_data_wiki_renders_wiki_syntax": true,
+        "listpages_form_raw_wiki_renders_wiki_syntax": true,
+        "direct_form_data_checkbox": "1",
+        "direct_form_raw_checkbox": "1",
+        "listpages_form_data_checkbox": "1",
+        "listpages_form_raw_checkbox": "1",
+        "listpages_row_count": 1
+      },
+      "exact_rendered_fragments": [
+        "<strong>Bold</strong><br>\n<a class=\"newpage\" href=\"/start\">Home</a>",
+        "DIRECT-CHECKBOX-DATA-BEGIN<br>\n1<br>\nDIRECT-CHECKBOX-DATA-END",
+        "LP-CHECKBOX-RAW-BEGIN<br>\n1<br>\nLP-CHECKBOX-RAW-END"
+      ],
+      "documentation_discrepancy": "The frozen ListPages and template-variable tables describe form_raw inconsistently and one note recommends form_raw for wiki fields. Live Wikidot renders both form_data and form_raw for the observed wiki and checkbox values in direct templates and ListPages."
+    },
+    {
+      "case_id": "raw-wiki-variable-adjacent-block-composition",
+      "observed": {
+        "form_data_inside_a_div_rendered_the_wrapper_normally": true,
+        "form_raw_inside_an_immediately_adjacent_div_left_the_opening_div_literal_and_changed_parsing_of_following_adjacent_blocks": true,
+        "marker_separated_form_raw_rendered_the_wiki_value_normally": true
+      },
+      "exact_pathological_fragment": "[[div class=\"direct-wiki-raw\"]]<strong>Bold</strong><br>\n<a class=\"newpage\" href=\"/start\">Home</a>[<a href=\"/div]][[div\">class=\"direct-checkbox-data\"</a>]1",
+      "classification": "legacy parser composition boundary preserved as an adversarial regression input; ordinary marker-separated variable behavior is the field contract"
+    }
+  ],
+  "routes": [
+    "Authenticated wikidot.py high-level run-owned template creation, exact-source mutation, target source readback, exact page deletion, and absence verification",
+    "Authenticated isolated Chrome DevTools Protocol profiles for generated create/edit routes, exact DOM extraction, generated save navigation, default-table rendering, direct template variables, ListPages variables, and edit restoration",
+    "Four isolated Codex-owned Chrome profiles were stopped and removed after cleanup",
+    "A post-save template-mutation timing probe remained on the original rendered template at five seconds; a later interval attempt did not reach a generated editor and was cleaned. This timing route is not used as evidence for the checkbox or wiki field contract."
+  ]
+}
