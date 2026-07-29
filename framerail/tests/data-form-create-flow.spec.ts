@@ -104,3 +104,63 @@ test("data-form edit flow restores and updates saved field values", async ({
       }
     })
 })
+
+test("data-form create rejects NewPage tags without creating a page", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-create-flow:example/edit/true/tags/rock%20live")
+
+  await page.locator("input[name='field-name']").fill("Tagged Value")
+  await page.locator("input[name='field-choice'][value='a']").check()
+  await page.locator("#edit-save-button").click()
+
+  await expect(
+    page.getByText("An error occurred while processing the request.")
+  ).toBeVisible()
+  await expect(page.locator("#edit-page-form")).toBeVisible()
+  const writes = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writes.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-create-flow:example"
+    )
+  ).toBeUndefined()
+})
+
+test("data-form create applies the NewPage parent after saving", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto(
+    "/data-form-create-flow:example/edit/true/parentPage/data-form-create-flow%3Aparent"
+  )
+
+  await page.locator("input[name='field-name']").fill("Parent Value")
+  await page.locator("input[name='field-choice'][value='a']").check()
+  await page.locator("#edit-save-button").click()
+
+  await expect
+    .poll(async () => {
+      const writes = await request
+        .get(`${FIXTURE_URL}/last-page-write-requests`)
+        .then((response) => response.json())
+      return writes.parentUpdate.find(
+        (entry: { params: { child?: string } }) =>
+          entry.params.child === "data-form-create-flow:example"
+      )
+    })
+    .toMatchObject({
+      params: {
+        child: "data-form-create-flow:example",
+        add: ["data-form-create-flow:parent"],
+        remove: []
+      }
+    })
+})

@@ -179,7 +179,9 @@
             definition={errorData.data_form.definition}
             editForm={errorData.forms.pageEditForm}
             initialSource=""
+            initialParent={errorData.options.parent ?? ""}
             initialTitle={missingPageTitle}
+            initialTags={errorData.options.tags ?? ""}
             initialValues={errorData.data_form.values}
             siteId={errorData.site.site_id}
             slug={missingPageSlug}

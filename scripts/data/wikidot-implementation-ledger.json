@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "59a9e7d196ff75f0ffb25409559f86be41f836460e4f7e96623ba189ca88bd14",
+  "catalog_sha256": "2b5331396d6d9ca1a6750d3326b77b6d18a2b801c46590fd9f0381a2539932a2",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -208,7 +208,7 @@
         {
           "path": "framerail/tests/data-form-create-flow.spec.ts",
           "name": "data-form create and edit browser flow",
-          "scope": "HTTP 404 missing-page DOM, client Create page transition, stale-content suppression, Enter-key suppression, public controls, select defaults, restored values, and exact create/edit source payloads"
+          "scope": "HTTP 404 missing-page DOM, client Create page transition, stale-content suppression, Enter-key suppression, public controls, select defaults, restored values, exact create/edit source payloads, non-empty NewPage tags failure without mutation, and valid parentPage assignment after create"
         }
       ],
       "implementation_files": [
@@ -220,6 +220,7 @@
         "docs/ftml-boundary-deviations/data-form-category-template.md",
         "framerail/src/lib/server/deepwell/views.ts",
         "framerail/src/lib/server/deepwell/page.ts",
+        "framerail/src/lib/server/load/page/page-edit-actions.ts",
         "framerail/src/lib/wikidot/wikidot-data-form.js",
         "framerail/src/routes/+error.svelte",
         "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
@@ -230,13 +231,14 @@
         "specifications/data-forms/data-forms-creating-new-page.md"
       ],
       "live_oracle_evidence": [
-        "install/local/wikidot-verification/artifacts/data-form-create-edit-live.json"
+        "install/local/wikidot-verification/artifacts/data-form-create-edit-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-newpage-metadata-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
         "Live create, edit, validation, storage, and rendering behavior for data-form field types other than text and select remains to be observed and implemented.",
         "Custom data-form layouts after the ==== separator and their display-variable substitutions remain to be implemented.",
         "Validation and escaping behavior outside the exact observed text/select values remains to be probed before implementation.",
-        "Parent, tags, permissions, and route-parameter interactions in the data-form creation flow remain to be observed and implemented.",
+        "Valid parentPage creation and non-empty tags rejection are observed, implemented, and covered through the public browser and Deepwell mutation seams. Missing-parent, empty-tags, malformed-route, and permission variants remain unobserved.",
         "Template edit, reassignment, deletion, and restoration must be proven to invalidate every anonymous imported-page cache entry that depends on the category template.",
         "The live Do not notify watchers control and its mutation semantics remain omitted until the page-watcher backend exists and the data-form request contract is observed.",
         "FTML does not yet expose a structured data-form definition, stored-record validator, or Wikidot-layout table primitive; the temporary Wikijump-side codec is constrained by the committed boundary-deviation note."
@@ -523,14 +525,29 @@
     },
     "data-forms-tags": {
       "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "confirmed_public_seams": [
+        "Framerail generated data-form create flow for NewPage-provided tags"
+      ],
+      "tests": [
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form create rejects NewPage tags without creating a page",
+          "scope": "observed generic processing-error dialog and absence of a Deepwell page-create mutation for a non-empty tags route parameter"
+        }
+      ],
+      "implementation_files": [
+        "framerail/src/routes/+error.svelte",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-tags.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-newpage-metadata-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "NewPage-provided non-empty tags are now proven to make data-form creation fail closed, but the documented limitation on deriving tags from form field values and its workaround remain unimplemented."
+      ]
     },
     "data-forms-text-field": {
       "status": "pending",
