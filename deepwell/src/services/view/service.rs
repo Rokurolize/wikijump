@@ -47,6 +47,10 @@ use crate::models::page::Model as PageModel;
 use crate::models::page_revision::Model as PageRevisionModel;
 use crate::services::ServiceContext;
 use crate::services::blueprint::{BlueprintPageType, GetBlueprintPageOutput};
+use crate::services::data_form::{
+    load_data_form_definitions, parse_observed_wikidot_data_form_values,
+    render_wikidot_data_form_table,
+};
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{
@@ -57,8 +61,9 @@ use crate::services::settings::{NavigationPageHtml, SettingsService};
 use crate::services::user::User;
 use crate::services::view::ViewType;
 use crate::services::{
-    BlueprintPageService, CategoryService, DomainService, PageRevisionService,
-    PageService, SessionService, SiteService, TextService, UserService,
+    BlueprintPageService, CategoryService, DataFormEditor, DomainService,
+    PageRevisionService, PageService, SessionService, SiteService, TextService,
+    UserService,
 };
 use crate::types::Reference;
 use crate::types::{Action, PageId, PageOrder, Permission, RerenderDepth, Resource};
@@ -422,6 +427,7 @@ impl ViewService {
             new_page_wikitext: Option<String>,
             page_templates: Vec<PageTemplateSummary>,
             selected_template_page_id: Option<i64>,
+            data_form: Option<DataFormEditor>,
             compiled_body_html: String,
             compiled_body_styles: Vec<String>,
             compiled_top_bar_html: Option<String>,
@@ -435,6 +441,7 @@ impl ViewService {
             new_page_wikitext,
             page_templates,
             selected_template_page_id,
+            data_form,
             mut compiled_body_html,
             compiled_body_styles,
             compiled_top_bar_html,
@@ -579,6 +586,52 @@ impl ViewService {
                     )
                     .await
                     .or_raise(make_error)?;
+                    let data_form = {
+                        let category = CategoryService::get_optional(
+                            ctx,
+                            site_id,
+                            Reference::Id(page.page_category_id),
+                        )
+                        .await
+                        .or_raise(make_error)?;
+                        match category {
+                            Some(category)
+                                if category.template_page_id != Some(page.page_id) =>
+                            {
+                                load_data_form_definitions(
+                                    ctx,
+                                    std::slice::from_ref(&category),
+                                )
+                                .await
+                                .or_raise(make_error)?
+                                .remove(&category.category_id)
+                                .filter(|definition| {
+                                    definition.supports_observed_create_edit()
+                                })
+                                .and_then(|definition| {
+                                    parse_observed_wikidot_data_form_values(
+                                        &definition,
+                                        &wikitext,
+                                    )
+                                    .map(|values| DataFormEditor { definition, values })
+                                })
+                            }
+                            None => None,
+                            Some(_) => None,
+                        }
+                    };
+                    let compiled_body_html = data_form
+                        .as_ref()
+                        .filter(|_| page_extra.is_empty())
+                        .map(|data_form| {
+                            render_wikidot_data_form_table(
+                                &data_form.definition,
+                                &data_form.values,
+                            )
+                        })
+                        .unwrap_or(compiled_body_html);
+                    let data_form =
+                        data_form.filter(|_| options.edit && user_can_edit_page);
 
                     PageReturn {
                         page_status: PageStatus::Found {
@@ -592,6 +645,7 @@ impl ViewService {
                         new_page_wikitext: None,
                         page_templates: Vec::new(),
                         selected_template_page_id: None,
+                        data_form,
                         compiled_body_html,
                         compiled_body_styles,
                         compiled_top_bar_html,
@@ -667,6 +721,7 @@ impl ViewService {
                         new_page_wikitext: None,
                         page_templates: Vec::new(),
                         selected_template_page_id: None,
+                        data_form: None,
                         compiled_body_html,
                         compiled_body_styles,
                         compiled_top_bar_html,
@@ -706,7 +761,9 @@ impl ViewService {
                 } = SettingsService::get_nav_page_html(ctx, site_id, category_id)
                     .await
                     .or_raise(make_error)?;
-                let (page_templates, category_template_page_id) = if options.edit {
+                let (page_templates, category_template_page_id, data_form) = if options
+                    .edit
+                {
                     let create_category = CategoryService::get_optional(
                         ctx,
                         site_id,
@@ -736,6 +793,23 @@ impl ViewService {
                     };
 
                     if user_can_create_page {
+                        let data_form = match create_category.as_ref() {
+                            Some(category) => load_data_form_definitions(
+                                ctx,
+                                std::slice::from_ref(category),
+                            )
+                            .await
+                            .or_raise(make_error)?
+                            .remove(&category.category_id)
+                            .filter(|definition| {
+                                definition.supports_observed_create_edit()
+                            })
+                            .map(|definition| DataFormEditor {
+                                definition,
+                                values: Default::default(),
+                            }),
+                            None => None,
+                        };
                         (
                             Self::get_page_templates(
                                 ctx,
@@ -746,12 +820,13 @@ impl ViewService {
                             .or_raise(make_error)?,
                             create_category
                                 .and_then(|category| category.template_page_id),
+                            data_form,
                         )
                     } else {
-                        (Vec::new(), None)
+                        (Vec::new(), None, None)
                     }
                 } else {
-                    (Vec::new(), None)
+                    (Vec::new(), None, None)
                 };
                 let selected_template_page_id = options
                     .template
@@ -780,6 +855,7 @@ impl ViewService {
                     new_page_wikitext,
                     page_templates,
                     selected_template_page_id,
+                    data_form,
                     compiled_body_html,
                     compiled_body_styles,
                     compiled_top_bar_html,
@@ -855,6 +931,7 @@ impl ViewService {
                     attributions,
                     page_rating,
                     page_discussion,
+                    data_form,
                     redirect_page,
                     redirect_kind,
                     wikitext,
@@ -872,6 +949,7 @@ impl ViewService {
                 new_page_wikitext,
                 page_templates,
                 selected_template_page_id,
+                data_form,
                 compiled_body_html,
                 compiled_body_styles,
                 compiled_top_bar_html,

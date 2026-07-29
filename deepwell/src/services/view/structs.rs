@@ -25,6 +25,7 @@ use crate::models::page_revision::Model as PageRevisionModel;
 use crate::models::session::Model as SessionModel;
 use crate::models::site::Model as SiteModel;
 use crate::models::user::Model as WikijumpUserModel;
+use crate::services::DataFormEditor;
 use crate::services::relation::PageAttribution;
 use crate::services::settings::{PageDiscussionSettings, PageRatingSettings};
 use crate::services::user::User;
@@ -113,6 +114,8 @@ pub enum GetPageViewOutput {
         page_rating: PageRatingSettings,
         #[serde(default)]
         page_discussion: PageDiscussionSettings,
+        #[serde(default)]
+        data_form: Option<DataFormEditor>,
         redirect_page: Option<String>,
         #[serde(default)]
         redirect_kind: Option<PageRedirectKind>,
@@ -135,6 +138,8 @@ pub enum GetPageViewOutput {
         page_templates: Vec<PageTemplateSummary>,
         #[serde(default)]
         selected_template_page_id: Option<i64>,
+        #[serde(default)]
+        data_form: Option<DataFormEditor>,
         compiled_body_html: String,
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,

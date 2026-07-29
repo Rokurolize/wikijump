@@ -48,6 +48,7 @@ pub mod blob;
 pub mod blueprint;
 pub mod caddy;
 pub mod category;
+pub mod data_form;
 pub mod domain;
 pub mod email;
 pub mod file;
@@ -96,6 +97,9 @@ pub use self::blueprint::BlueprintPageService;
 pub use self::caddy::CaddyService;
 pub use self::category::CategoryService;
 pub use self::context::{RequestContext, ServiceContext};
+pub use self::data_form::{
+    DataFormDefinition, DataFormEditor, DataFormFieldDefinition, DataFormValueDefinition,
+};
 pub use self::domain::DomainService;
 pub use self::email::EmailService;
 pub use self::file::FileService;

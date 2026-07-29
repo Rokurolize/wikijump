@@ -87,7 +87,7 @@ export async function pageEdit(
     tags,
     layout
   } = input
-  const pageReference = pageId ? { page: pageId } : {}
+  const pageReference = pageId ? { page: pageId, last_revision_id: lastRevisionId } : {}
   return client.request(
     pageId ? "page_edit" : "page_create",
     {
@@ -96,7 +96,6 @@ export async function pageEdit(
       ...pageReference,
       user_id: userId,
       ip_address: userIpAddr,
-      last_revision_id: lastRevisionId,
       revision_comments: revisionComments,
       wikitext,
       title,

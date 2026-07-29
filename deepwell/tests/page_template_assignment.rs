@@ -37,6 +37,7 @@ use deepwell::services::view::{GetPageViewOutput, PageTemplateSummary};
 use deepwell::types::{Action, Permission, Reference, Resource};
 use serde_json::json;
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
 fn set_page_actor(runner: &mut TestRunner, site_id: i64, slug: &str) {
     runner.set_request_context(RequestContext {
@@ -411,4 +412,296 @@ async fn category_page_template_prefills_new_page_source_and_can_be_cleared() {
         }),
     );
     assert_eq!(cleared_default.template_page_id, None);
+}
+
+#[tokio::test]
+async fn page_view_exposes_category_data_form_definition_in_template_order() {
+    const CATEGORY: &str = "data-form-create-flow";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  name:\n",
+        "    label: Name\n",
+        "    type: text\n",
+        "  choice:\n",
+        "    label: Choice\n",
+        "    type: select\n",
+        "    values:\n",
+        "      a: Alpha\n",
+        "      b: Beta\n",
+        "    default: b\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell data-form create-flow test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template = create_page(
+        &mut runner,
+        site_id,
+        "data-form-create-flow:_template",
+        TEMPLATE_SOURCE,
+    )
+    .await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form target category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-create-flow-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    for extra in ["", "/edit"] {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": {
+                    "slug": "data-form-create-flow:_template",
+                    "extra": extra
+                },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                data_form: None,
+                wikitext,
+                compiled_body_html,
+                ..
+            } => {
+                assert_eq!(wikitext, TEMPLATE_SOURCE);
+                assert!(!compiled_body_html.contains("form-table"));
+            }
+            other => {
+                panic!("category template must retain ordinary view/edit: {other:?}")
+            }
+        }
+    }
+
+    let definition = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {
+                "slug": "data-form-create-flow:example",
+                "extra": "/edit/true"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => data_form.definition,
+        other => panic!("expected missing data-form page definition, got {other:?}"),
+    };
+
+    assert_eq!(
+        definition
+            .fields
+            .iter()
+            .map(|field| field.name.as_str())
+            .collect::<Vec<_>>(),
+        ["name", "choice"],
+        "Wikidot emits form-fields in category-template field order",
+    );
+    assert!(definition.default_layout);
+    assert_eq!(definition.fields[0].label, "Name");
+    assert_eq!(definition.fields[0].field_type.as_deref(), Some("text"));
+    assert_eq!(definition.fields[0].default_value, None);
+    assert_eq!(definition.fields[1].label, "Choice");
+    assert_eq!(definition.fields[1].field_type.as_deref(), Some("select"));
+    assert_eq!(definition.fields[1].default_value.as_deref(), Some("b"));
+    assert_eq!(
+        definition.fields[1]
+            .values
+            .iter()
+            .map(|value| (value.value.as_str(), value.label.as_str()))
+            .collect::<Vec<_>>(),
+        [("a", "Alpha"), ("b", "Beta")],
+    );
+
+    create_page(
+        &mut runner,
+        site_id,
+        "data-form-create-flow:saved",
+        "name: 'Probe Name'\nchoice: a",
+    )
+    .await;
+    let edit_definition = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {
+                "slug": "data-form-create-flow:saved",
+                "extra": "/edit"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => panic!("expected saved data-form page definition, got {other:?}"),
+    };
+    assert_eq!(edit_definition.definition, definition);
+    assert_eq!(
+        edit_definition.values,
+        BTreeMap::from([
+            ("choice".to_owned(), "a".to_owned()),
+            ("name".to_owned(), "Probe Name".to_owned()),
+        ]),
+    );
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "data-form-create-flow:saved",
+                "extra": "/edit"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: None, ..
+        } => {}
+        other => panic!("view-only actors must not receive editor metadata: {other:?}"),
+    }
+
+    let rendered_html = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "data-form-create-flow:saved",
+                "extra": ""
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: None,
+            compiled_body_html,
+            ..
+        } => compiled_body_html,
+        other => panic!("expected rendered data-form page, got {other:?}"),
+    };
+    assert!(
+        rendered_html.contains(concat!(
+            "<table class=\"form-table\">",
+            "<tbody><tr class=\"form-row\">",
+            "<td class=\"form-labels\"><span class=\"form-label\">Name</span></td>",
+            "<td class=\"form-values\"><span>Probe Name</span></td>",
+            "</tr>",
+            "<tr class=\"form-row\">",
+            "<td class=\"form-labels\"><span class=\"form-label\">Choice</span></td>",
+            "<td class=\"form-values\"><span>Alpha</span></td>",
+            "</tr>",
+            "</tbody></table>",
+        )),
+        "saved data-form fields must render with Wikidot's table DOM:\n{rendered_html}",
+    );
+
+    for (slug, source) in [
+        (
+            "data-form-create-flow:legacy",
+            "name: 'Probe Name'\nlegacy: x\nchoice: a",
+        ),
+        (
+            "data-form-create-flow:blank-line",
+            "name: 'Probe Name'\n\nchoice: a",
+        ),
+    ] {
+        create_page(&mut runner, site_id, slug, source).await;
+        for extra in ["", "/edit"] {
+            match run_endpoint!(
+                runner,
+                page_view,
+                json!({
+                    "site_id": site_id,
+                    "session_token": session_token,
+                    "route": { "slug": slug, "extra": extra },
+                    "locales": ["en-US", "en"],
+                }),
+            ) {
+                GetPageViewOutput::Found {
+                    data_form: None,
+                    wikitext,
+                    compiled_body_html,
+                    ..
+                } => {
+                    assert_eq!(wikitext, source);
+                    assert!(!compiled_body_html.contains("form-table"));
+                }
+                other => panic!("unrecognized stored source must fail closed: {other:?}"),
+            }
+        }
+    }
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {
+                "slug": "data-form-create-flow:saved",
+                "extra": "/p/2"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: None,
+            compiled_body_html,
+            ..
+        } => assert!(!compiled_body_html.contains("form-table")),
+        other => panic!("non-bare routes must preserve route rendering: {other:?}"),
+    }
 }

@@ -145,6 +145,35 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/newpage-module-live-final-evidence.json` (SHA-256 `d02e18bc0e36f5ca313d85d0c3faad2a04fa827f5238f90ba79c75af3da08cce`), cases: `template-default-selected`, `template-edit-selected-with-parent-tags`, `category-simple`, `category-default`, `category-with-colon-page-name`, `category-empty-explicit`, `error-missing-page-name`, `error-empty-page-name`, `error-format-mismatch`, `error-existing-target`, `error-anonymous-save-and-go`, `error-anonymous-save-and-refresh`, `template-edit-browser-navigation`, `template-save-and-go-no-tags`, `template-save-and-go-tags-and-parent`, `template-save-and-go-tags`, `template-save-and-go-parent`, `template-save-and-refresh-no-tags`, `template-save-and-refresh-tags`, `invalid-template-save-and-go-no-tags`
 
+### Direct navigation uses the missing-page view; Create page opens the generated data-form editor
+
+- Observation ID: `data-form-live-create-edit-round-trip`
+- Classification: `documentation-correction`
+- Observed at: `2026-07-29`
+- Analysis: The documentation says to enter a data-form category and page name in the browser and press Enter, which can be read as implying that direct navigation opens the form editor. Live Wikidot instead returns its ordinary HTTP 404 missing-page view with a JavaScript Create page link. The authenticated user must activate that link before Wikidot loads the category template and displays the generated data-form editor. A complete create/save/edit round trip also supplies previously undocumented storage, markup, default-value, and visibility contracts.
+
+Normative behavior:
+
+- Directly loading a nonexistent data-form page returns HTTP 404 and initially renders Wikidot's ordinary missing-page content, including p#404-message and ul#create-it-now-link.
+- The missing-page create link has visible text Create page and dispatches WIKIDOT.page.listeners.editClick(event).
+- Direct navigation does not automatically open the editor, including for an authenticated actor with page-creation permission.
+- Activating Create page renders form#edit-page-form.form-horizontal.data-form in #action-area.
+- The create heading is Create <category> with the observed category's first character capitalized. The edit heading is Edit <category>.
+- The generated form contains hidden form-use=true, a comma-separated form-fields value in template field order, and form-file-still-uploading=0.
+- The initial title is derived from the page-name part of the slug; observed example became Example.
+- An observed text field renders as input.form-control.form-text named field-<field-name>.
+- An observed select field renders as inline radio inputs named field-<field-name>, with each stored key as its value and each configured value as its label. The configured default is checked on create.
+- The data-form editor uses Wikidot's PageEditModule cancel and save listeners.
+- While the data-form editor is open, Wikidot hides the normal page content, page title, page information, watch controls, and top action area.
+- Saving the observed values Probe Name and select key a stored exact page source name: 'Probe Name' followed by choice: a on the next line.
+- The saved data-form page renders a table.form-table; each field uses tr.form-row, td.form-labels > span.form-label, and td.form-values > span.
+- A select field displays its configured label (Alpha) rather than its stored key (a).
+- Reopening Edit restores the text value and checks the radio corresponding to the stored select key.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/data-form-create-edit-live.json` (SHA-256 `12a85fc671c52b036d5fe648e63ff5cbfc7d28a8cd0d88e662de614cd6772a8b`), cases: `anonymous-direct-missing-page`, `authenticated-direct-missing-page`, `authenticated-create-form`, `authenticated-save`, `authenticated-edit-form`
+
 
 
 ## Suggested public TDD seams

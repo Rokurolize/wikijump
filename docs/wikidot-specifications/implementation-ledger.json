@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "a6f5297f2a9af72943ca78e52c704e7b90f501a46fab4c5e89ab4f1a83a076ca",
+  "catalog_sha256": "59a9e7d196ff75f0ffb25409559f86be41f836460e4f7e96623ba189ca88bd14",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -187,15 +187,60 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-creating-new-page": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Deepwell category-template data-form definition loading and default saved-page table rendering",
+        "Deepwell public missing/found page view contracts for create and edit",
+        "Framerail public missing-page Create page and existing-page Edit flows",
+        "Existing Framerail page create/edit mutation boundary"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_category_data_form_definition_in_template_order",
+          "scope": "public missing, create, saved, edit, and default table rendering behavior for text and select fields, including template self-exclusion, edit-permission metadata gating, complete stored-source validation, and non-bare route fallback"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js",
+          "name": "data-form source serialization unit tests",
+          "scope": "template-order defaults, backend-provided saved values, prototype-sensitive field names, and exact text/select source serialization"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form create and edit browser flow",
+          "scope": "HTTP 404 missing-page DOM, client Create page transition, stale-content suppression, Enter-key suppression, public controls, select defaults, restored values, and exact create/edit source payloads"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/category/service.rs",
+        "deepwell/src/services/view/structs.rs",
+        "deepwell/src/services/view/service.rs",
+        "deepwell/src/services/render/list_pages/data_forms.rs",
+        "docs/ftml-boundary-deviations/data-form-category-template.md",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/lib/server/deepwell/page.ts",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/routes/+error.svelte",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
+        "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-creating-new-page.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-create-edit-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Live create, edit, validation, storage, and rendering behavior for data-form field types other than text and select remains to be observed and implemented.",
+        "Custom data-form layouts after the ==== separator and their display-variable substitutions remain to be implemented.",
+        "Validation and escaping behavior outside the exact observed text/select values remains to be probed before implementation.",
+        "Parent, tags, permissions, and route-parameter interactions in the data-form creation flow remain to be observed and implemented.",
+        "Template edit, reassignment, deletion, and restoration must be proven to invalidate every anonymous imported-page cache entry that depends on the category template.",
+        "The live Do not notify watchers control and its mutation semantics remain omitted until the page-watcher backend exists and the data-form request contract is observed.",
+        "FTML does not yet expose a structured data-form definition, stored-record validator, or Wikidot-layout table primitive; the temporary Wikijump-side codec is constrained by the committed boundary-deviation note."
+      ]
     },
     "data-forms-css-styling": {
       "status": "pending",
