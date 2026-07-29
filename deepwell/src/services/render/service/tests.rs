@@ -1794,6 +1794,11 @@ fn unbounded_count_pages_remains_literal_when_scan_cap_is_reached() {
         count_pages_unbounded_total(CountPagesRawScanCompletion::Complete, 17),
         Some(17),
     );
+    assert_eq!(
+        count_pages_unbounded_total(CountPagesRawScanCompletion::RandomSampleCapped, 17,),
+        Some(17),
+        "random CountPages must use the sampled visible count instead of a permission-dependent literal fallback",
+    );
 }
 
 #[test]
@@ -1812,10 +1817,14 @@ fn data_form_candidate_cap_requires_original_listpages_and_countpages_modules() 
 }
 
 #[test]
-fn capped_random_scan_preserves_count_pages_only_when_viewable_rows_are_insufficient() {
+fn capped_random_scan_uses_the_privacy_preserving_sample_count() {
     let raw_scan_completion = count_pages_raw_scan_completion(5_000);
 
-    assert!(count_pages_scan_requires_preservation(
+    assert_eq!(
+        raw_scan_completion,
+        CountPagesRawScanCompletion::RandomSampleCapped,
+    );
+    assert!(!count_pages_scan_requires_preservation(
         raw_scan_completion,
         99,
         100,

@@ -1547,11 +1547,26 @@
           "path": "deepwell/tests/page.rs",
           "name": "listpages_imported_creator_identity_uses_structured_corpus_provenance; listpages_imported_editor_identity_uses_structured_corpus_provenance; listpages_imported_commenter_identity_uses_structured_corpus_provenance; wikidot_listpages_feed_uses_imported_creator_identity_provenance",
           "scope": "public saved-page and feed regressions verify imported creator, last-editor, and last-comment identity tuples drive text, unix-name, numeric-ID, linked-user, comment-date, and RSS author output without substituting the local importer account"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_template_body_over_the_render_budget_remains_literal; listpages_aggregate_generated_output_budget_preserves_overflowing_module; listpages_following_paragraph_boundary_counts_toward_generated_output_budget; listpages_module_count_over_the_render_budget_remains_literal; listpages_module_source_over_the_render_budget_remains_literal; listpages_current_page_content_shares_the_module_work_budget",
+          "scope": "public render regressions verify shared root-and-nested module, source, template, generated-output, paragraph-repair, and content-work boundaries preserve complete authored modules without partial output"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "random_countpages_capped_sample_does_not_reveal_private_matches",
+          "scope": "public anonymous render regression verifies a capped random CountPages sample cannot distinguish private-only matches from no matches through permission-dependent literal fallback"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-runtime-budget-envelope.test.mjs",
+          "scope": "reusable corpus-envelope regression verifies threshold measurements and provenance are recomputed deterministically from invocation records"
         }
       ],
       "implementation_files": [
         "deepwell/src/services/page_query",
         "deepwell/src/services/render/list_pages",
+        "deepwell/src/services/render/runtime_page_queries.rs",
         "deepwell/src/services/render/url_arguments.rs",
         "deepwell/src/services/view/module_arguments.rs",
         "deepwell/src/services/view/module_render.rs",
@@ -1565,7 +1580,8 @@
         "docs/wikidot-specifications/live-observations.json",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl",
-        "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json"
+        "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json",
+        "install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json"
       ],
       "live_oracle_evidence": [
         "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json",

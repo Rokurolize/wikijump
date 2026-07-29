@@ -359,6 +359,11 @@ These seams are recommendations. The implementation agent must present and confi
 
 - Module names and attribute names are compatibility-sensitive and must not be modernized.
 - Examples are acceptance-test inputs, not permission to infer behavior beyond the documented case.
+- Wikijump runtime invariant (not a claim about live Wikidot): one root-and-nested render admits at most 512 ListPages modules, 2 MiB of aggregate matched module source, 256 KiB per template body, and 16 MiB of actual generated wikitext. A nested expansion pass additionally evaluates at most 64 modules before using the existing controlled unsupported-module diagnostic.
+- Generated wrapper and item markup, sections, substituted rows, feed and pager markup, and post-wrapper paragraph repair consume one shared counter before append. Rows are atomic; a rejected module remains literal or uses an already evidenced controlled fallback, is never partially emitted, and must not broaden its query.
+- Content-backed modules, including current-page-only modules, share a three-module and 100-row work budget before revision loading or nested include expansion.
+- Random ListPages and CountPages examine at most 5,000 raw rows and filter the sample through anonymous view permissions. At the cap, ListPages returns the visible sample and CountPages returns its visible sampled count rather than a permission-dependent literal fallback; the sampled count is intentionally not exact.
+- Regenerate `install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json` after a corpus refresh. Its deterministic check covers all 23,893 preserved invocation records and currently measures maxima of 273 modules per page, 112,646 aggregate matched-source bytes, 173,697 aggregate template-body bytes, 133,680 bytes for one template, and 13,964,000 estimated first-page authored-template bytes.
 
 ## Source inventory
 

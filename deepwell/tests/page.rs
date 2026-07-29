@@ -14512,6 +14512,685 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
 }
 
 #[tokio::test]
+async fn listpages_current_page_content_shares_the_module_work_budget() {
+    const INDEX_SLUG: &str = "fixture-listpages-current-page-content-budget-index";
+    const CONTENT_MARKER: &str = "CURRENT_PAGE_CONTENT_BUDGET_BODY";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "ListPages Current Page Content Budget Index",
+        CONTENT_MARKER,
+    )
+    .await;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+        }),
+    )
+    .expect("current-page content budget index should exist");
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("ListPages Current Page Content Budget Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id: page.page_id,
+    };
+    let module = |label: &str| {
+        format!(
+            "[[module ListPages range=\".\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]{label} %%content%%[[/module]]\n",
+        )
+    };
+    let source = ["ONE", "TWO", "THREE", "FOUR"]
+        .into_iter()
+        .map(module)
+        .collect::<String>();
+
+    let output = RenderService::render_page(
+        runner.context(),
+        source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("current-page content budget overflow should preserve the later module");
+    let html = output.html_output.body;
+    assert_eq!(
+        html.matches(CONTENT_MARKER).count(),
+        3,
+        "only the first three current-page content modules may expand:\n{html}",
+    );
+    assert!(
+        html.contains("FOUR %%content%%"),
+        "the fourth current-page content module must remain literal:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_template_body_over_the_render_budget_remains_literal() {
+    const AT_LIMIT_SLUG: &str = "fixture-listpages-template-body-budget-at-limit";
+    const OVER_LIMIT_SLUG: &str = "fixture-listpages-template-body-budget-over-limit";
+    const TEMPLATE_BODY_BUDGET: usize = 256 * 1024;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let template_body = |sentinel: &str, bytes: usize| {
+        let variable = "%%title%%";
+        assert!(sentinel.len() + variable.len() <= bytes);
+        format!(
+            "{sentinel}{}{variable}",
+            "x".repeat(bytes - sentinel.len() - variable.len()),
+        )
+    };
+    let module_source = |body: &str| {
+        format!(
+            "[[module ListPages range=\".\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]{body}[[/module]]",
+        )
+    };
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        AT_LIMIT_SLUG,
+        "ListPages Template Body Budget At Limit",
+        &module_source(&template_body(
+            "AT_LIMIT_TEMPLATE_SENTINEL",
+            TEMPLATE_BODY_BUDGET,
+        )),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        OVER_LIMIT_SLUG,
+        "ListPages Template Body Budget Over Limit",
+        &module_source(&template_body(
+            "OVER_LIMIT_TEMPLATE_SENTINEL",
+            TEMPLATE_BODY_BUDGET + 1,
+        )),
+    )
+    .await;
+
+    let at_limit =
+        load_listpages_test_compiled_html(&runner, site_id, AT_LIMIT_SLUG).await;
+    assert!(
+        at_limit.contains("AT_LIMIT_TEMPLATE_SENTINEL")
+            && at_limit.contains("ListPages Template Body Budget At Limit")
+            && !at_limit.contains("%%title%%"),
+        "a ListPages template exactly at the body budget must still expand:\n{}",
+        &at_limit[..at_limit.len().min(4_096)],
+    );
+
+    let over_limit =
+        load_listpages_test_compiled_html(&runner, site_id, OVER_LIMIT_SLUG).await;
+    assert!(
+        over_limit.contains("OVER_LIMIT_TEMPLATE_SENTINEL")
+            && over_limit.contains("%%title%%"),
+        "an oversized ListPages template must remain literal instead of expanding:\n{}",
+        &over_limit[..over_limit.len().min(4_096)],
+    );
+}
+
+#[tokio::test]
+async fn listpages_aggregate_generated_output_budget_preserves_overflowing_module() {
+    const INDEX_SLUG: &str = "fixture-listpages-generated-byte-budget-index";
+    const TARGET_PREFIX: &str = "fixture-listpages-generated-byte-budget-row";
+    const ROW_COUNT: usize = 11;
+    const TITLE_BYTES: usize = 200;
+    const TITLE_VARIABLE_REPETITIONS: usize = 8_192;
+    const GENERATED_BYTE_BUDGET: usize = 16 * 1024 * 1024;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let title = "T".repeat(TITLE_BYTES);
+    for index in 0..ROW_COUNT {
+        let slug = format!("{TARGET_PREFIX}-{index:02}");
+        create_listpages_test_page(&mut runner, site_id, &slug, &title, "row").await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "ListPages Generated Byte Budget Index",
+        "placeholder",
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+        }),
+    )
+    .expect("ListPages generated-byte budget index should exist");
+    let body = format!(
+        "GENERATED_BYTE_BUDGET_SENTINEL{}",
+        "%%title%%".repeat(TITLE_VARIABLE_REPETITIONS),
+    );
+    let source = format!(
+        "[[module ListPages name=\"{TARGET_PREFIX}-*\" order=\"name\" limit=\"{ROW_COUNT}\" perPage=\"{ROW_COUNT}\" separate=\"no\" wrapper=\"no\"]]{body}[[/module]]",
+    );
+    const {
+        assert!(
+            ROW_COUNT * TITLE_BYTES * TITLE_VARIABLE_REPETITIONS > GENERATED_BYTE_BUDGET,
+            "the fixture must exceed the intended aggregate output budget",
+        );
+    }
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("ListPages Generated Byte Budget Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id: page.page_id,
+    };
+
+    let output = RenderService::render_page(
+        runner.context(),
+        source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("generated output overflow should preserve the complete module");
+    let html = output.html_output.body;
+    assert!(
+        html.contains("GENERATED_BYTE_BUDGET_SENTINEL") && html.contains("%%title%%"),
+        "a ListPages module that would exceed the aggregate generated-output budget must remain literal:\n{}",
+        &html[..html.len().min(4_096)],
+    );
+}
+
+#[tokio::test]
+async fn listpages_following_paragraph_boundary_counts_toward_generated_output_budget() {
+    const INDEX_SLUG: &str = "fixture-listpages-paragraph-byte-budget-index";
+    const TARGET_PREFIX: &str = "fixture-listpages-paragraph-byte-budget-row";
+    const ROW_COUNT: usize = 4;
+    const TITLE_VARIABLE_REPETITIONS: usize = 20_701;
+    const GENERATED_BYTE_BUDGET: usize = 16 * 1024 * 1024;
+    const WRAPPER_OPEN: &str = "[[div class=\"list-pages-box\"]]\n";
+    const WRAPPER_CLOSE: &str = "[[/div]]";
+    const SENTINEL: &str = "PARAGRAPH_BYTE_BUDGET_SENTINEL";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let mut title_lengths = [200usize; ROW_COUNT];
+    let fixed_without_padding = |title_lengths: &[usize; ROW_COUNT]| {
+        WRAPPER_OPEN.len()
+            + WRAPPER_CLOSE.len()
+            + ROW_COUNT * (SENTINEL.len() + 1)
+            + TITLE_VARIABLE_REPETITIONS * title_lengths.iter().sum::<usize>()
+    };
+    let title_length_adjustment = (0..ROW_COUNT)
+        .find(|adjustment| {
+            title_lengths[0] += adjustment;
+            let divisible = (GENERATED_BYTE_BUDGET
+                - fixed_without_padding(&title_lengths))
+            .is_multiple_of(ROW_COUNT);
+            title_lengths[0] -= adjustment;
+            divisible
+        })
+        .expect("one title-length adjustment must make row padding integral");
+    title_lengths[0] += title_length_adjustment;
+    let fixed_without_padding = fixed_without_padding(&title_lengths);
+    let row_padding_bytes = (GENERATED_BYTE_BUDGET - fixed_without_padding) / ROW_COUNT;
+    let body = format!(
+        "{SENTINEL}{}{}",
+        "%%title%%".repeat(TITLE_VARIABLE_REPETITIONS),
+        "x".repeat(row_padding_bytes),
+    );
+    assert!(
+        body.len() <= 256 * 1024,
+        "the fixture must remain within the per-template source budget",
+    );
+    assert_eq!(
+        WRAPPER_OPEN.len()
+            + WRAPPER_CLOSE.len()
+            + title_lengths
+                .iter()
+                .map(|title_length| {
+                    SENTINEL.len()
+                        + TITLE_VARIABLE_REPETITIONS * title_length
+                        + row_padding_bytes
+                        + 1
+                })
+                .sum::<usize>(),
+        GENERATED_BYTE_BUDGET,
+        "the generated module must fill the output budget exactly before paragraph repair",
+    );
+
+    for (index, title_length) in title_lengths.into_iter().enumerate() {
+        let slug = format!("{TARGET_PREFIX}-{index:02}");
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &slug,
+            &"T".repeat(title_length),
+            "row",
+        )
+        .await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "ListPages Paragraph Byte Budget Index",
+        "placeholder",
+    )
+    .await;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+        }),
+    )
+    .expect("ListPages paragraph-byte budget index should exist");
+    let module = format!(
+        "[[module ListPages name=\"{TARGET_PREFIX}-*\" order=\"name\" limit=\"{ROW_COUNT}\" perPage=\"{ROW_COUNT}\" separate=\"no\" wrapper=\"yes\"]]{body}[[/module]]",
+    );
+    let at_limit_source = format!("{module}\n\nAFTER_MODULE");
+    let over_limit_source = format!("{module}\nAFTER_MODULE");
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("ListPages Paragraph Byte Budget Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id: page.page_id,
+    };
+
+    let at_limit_output = RenderService::render_page(
+        runner.context(),
+        at_limit_source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("exact generated-output boundary should still render");
+    let at_limit_html = at_limit_output.html_output.body;
+    assert_eq!(
+        at_limit_html.matches(SENTINEL).count(),
+        ROW_COUNT,
+        "the complete module must render when it fills the output budget exactly",
+    );
+    assert!(
+        !at_limit_html.contains("%%title%%"),
+        "the exact generated-output boundary must not be treated as overflow",
+    );
+    drop(at_limit_html);
+
+    let output = RenderService::render_page(
+        runner.context(),
+        over_limit_source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("paragraph-boundary output overflow should preserve the module");
+    let html = output.html_output.body;
+    assert!(
+        html.contains(SENTINEL) && html.contains("%%title%%"),
+        "the post-render paragraph repair byte must not bypass the shared output budget:\n{}",
+        &html[..html.len().min(4_096)],
+    );
+}
+
+#[tokio::test]
+async fn listpages_module_count_over_the_render_budget_remains_literal() {
+    const INDEX_SLUG: &str = "fixture-listpages-module-count-budget-index";
+    const MODULE_COUNT_BUDGET: usize = 512;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "ListPages Module Count Budget Index",
+        "placeholder",
+    )
+    .await;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+        }),
+    )
+    .expect("ListPages module-count budget index should exist");
+    let module = concat!(
+        "[[module ListPages range=\".\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]",
+        "MODULE_COUNT_BUDGET_SENTINEL%%title%%",
+        "[[/module]]\n",
+    );
+    let at_limit_source = module.repeat(MODULE_COUNT_BUDGET);
+    let source = module.repeat(MODULE_COUNT_BUDGET + 1);
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("ListPages Module Count Budget Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id: page.page_id,
+    };
+
+    let at_limit_output = RenderService::render_page(
+        runner.context(),
+        at_limit_source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("module-count boundary should still render");
+    let at_limit_html = at_limit_output.html_output.body;
+    assert_eq!(
+        at_limit_html
+            .matches("ListPages Module Count Budget Index")
+            .count(),
+        MODULE_COUNT_BUDGET,
+        "every ListPages module at the exact render-wide count boundary must expand",
+    );
+    assert!(
+        !at_limit_html.contains("%%title%%"),
+        "the exact module-count boundary must not be treated as overflow",
+    );
+
+    let output = RenderService::render_page(
+        runner.context(),
+        source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("module-count overflow should preserve the complete source");
+    let html = output.html_output.body;
+    assert!(
+        html.contains("MODULE_COUNT_BUDGET_SENTINEL") && html.contains("%%title%%"),
+        "ListPages source above the per-render module-count budget must remain literal:\n{}",
+        &html[..html.len().min(4_096)],
+    );
+}
+
+#[tokio::test]
+async fn listpages_module_source_over_the_render_budget_remains_literal() {
+    const INDEX_SLUG: &str = "fixture-listpages-module-source-budget-index";
+    const MODULE_SOURCE_BUDGET: usize = 2 * 1024 * 1024;
+    const MODULES: usize = 9;
+    const OPENING: &str =
+        "[[module ListPages range=\".\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]";
+    const CLOSING: &str = "[[/module]]";
+    const SENTINEL: &str = "MODULE_SOURCE_BUDGET_SENTINEL";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "ListPages Module Source Budget Index",
+        "placeholder",
+    )
+    .await;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+        }),
+    )
+    .expect("ListPages module-source budget index should exist");
+    let build_source = |total_module_bytes: usize| {
+        let mut source = String::with_capacity(total_module_bytes + MODULES);
+        let base_module_bytes = total_module_bytes / MODULES;
+        let remainder = total_module_bytes % MODULES;
+        for index in 0..MODULES {
+            let module_bytes = base_module_bytes + usize::from(index < remainder);
+            let body_bytes = module_bytes - OPENING.len() - CLOSING.len();
+            let fixed_body_bytes = SENTINEL.len() + "%%title%%".len();
+            assert!(
+                body_bytes <= 256 * 1024 && body_bytes >= fixed_body_bytes,
+                "each generated fixture body must fit the individual template budget",
+            );
+            source.push_str(OPENING);
+            source.push_str(SENTINEL);
+            source.push_str(&"s".repeat(body_bytes - fixed_body_bytes));
+            source.push_str("%%title%%");
+            source.push_str(CLOSING);
+            source.push('\n');
+        }
+        assert_eq!(
+            source.len() - MODULES,
+            total_module_bytes,
+            "only separator newlines may sit outside the matched module-source total",
+        );
+        source
+    };
+    let at_limit_source = build_source(MODULE_SOURCE_BUDGET);
+    let over_limit_source = build_source(MODULE_SOURCE_BUDGET + 1);
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("ListPages Module Source Budget Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id: page.page_id,
+    };
+
+    let at_limit_output = RenderService::render_page(
+        runner.context(),
+        at_limit_source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("module-source boundary should still render");
+    let at_limit_html = at_limit_output.html_output.body;
+    assert_eq!(
+        at_limit_html
+            .matches("ListPages Module Source Budget Index")
+            .count(),
+        MODULES,
+        "every module at the exact aggregate source-byte boundary must expand",
+    );
+    assert!(
+        !at_limit_html.contains("%%title%%"),
+        "the exact aggregate module-source boundary must not be treated as overflow",
+    );
+
+    let output = RenderService::render_page(
+        runner.context(),
+        over_limit_source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("module-source overflow should preserve the complete source");
+    let html = output.html_output.body;
+    assert!(
+        html.contains("MODULE_SOURCE_BUDGET_SENTINEL") && html.contains("%%title%%"),
+        "ListPages source above the aggregate module-source budget must remain literal:\n{}",
+        &html[..html.len().min(4_096)],
+    );
+}
+
+#[tokio::test]
+async fn random_countpages_capped_sample_does_not_reveal_private_matches() {
+    const INDEX_SLUG: &str = "fixture-random-countpages-private-cap-index";
+    const PRIVATE_CATEGORY: &str = "fixture-random-countpages-private-cap";
+    const PRIVATE_PAGE_COUNT: i32 = 5_000;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Random CountPages Private Cap Index",
+        "placeholder",
+    )
+    .await;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    let private_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, PRIVATE_CATEGORY)
+            .await
+            .expect("private random CountPages category should exist")
+            .category_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO page \
+             (created_at, updated_at, deleted_at, from_wikidot, site_id, \
+              latest_revision_id, page_category_id, slug, discussion_thread_id, layout) \
+             SELECT NOW(), NULL, NULL, false, $1, NULL, $2, \
+                    'fixture-random-countpages-private-row-' || series, NULL, 'wikidot' \
+             FROM generate_series(1, $3) AS series",
+            [
+                Value::from(site_id),
+                Value::from(private_category_id),
+                Value::from(PRIVATE_PAGE_COUNT),
+            ],
+        ))
+        .await
+        .expect("private random CountPages fixtures should be inserted");
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+        }),
+    )
+    .expect("random CountPages private-cap index should exist");
+    runner.set_request_context(RequestContext::default());
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Random CountPages Private Cap Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id: page.page_id,
+    };
+    let source = format!(
+        concat!(
+            "[[module CountPages category=\"fixture-random-countpages-empty\" order=\"random\"]]",
+            "EMPTY=%%total%%",
+            "[[/module]]\n",
+            "[[module CountPages category=\"{PRIVATE_CATEGORY}\" order=\"random\"]]",
+            "PRIVATE=%%total%%",
+            "[[/module]]",
+        ),
+        PRIVATE_CATEGORY = PRIVATE_CATEGORY,
+    );
+
+    let output = RenderService::render_page(
+        runner.context(),
+        source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("anonymous random CountPages render should complete");
+    let html = output.html_output.body;
+    assert!(
+        html.contains("EMPTY=0") && html.contains("PRIVATE=0"),
+        "no matches and a capped private-only sample must have the same anonymous result:\n{html}",
+    );
+    assert!(
+        !html.contains("%%total%%"),
+        "private match existence must not be exposed through literal fallback:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
     const COMPONENT_SLUG: &str = "component:dense-include-cell";
     const PAGE_SLUG: &str = "fixture-dense-includes";

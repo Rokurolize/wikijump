@@ -31,6 +31,7 @@ mod pagination;
 mod parents;
 mod presentation;
 mod rendering;
+mod rendering_support;
 pub(super) mod scanner;
 pub(super) mod substitution;
 pub(super) mod template;
@@ -69,9 +70,12 @@ pub(super) use self::presentation::{
     list_pages_revision_count, render_list_pages_wikidot_user,
     substitute_count_pages_variables,
 };
-pub(super) use self::rendering::{
-    CountPagesExpansionOptions, ListPagesBlockRenderResult, ListPagesContentCache,
+pub(super) use self::rendering_support::{
+    CountPagesBlockRenderResult, CountPagesExpansionOptions, CountPagesRequiredTagSource,
+    CountPagesRequiredTagTotal, ListPagesBlockRenderResult, ListPagesContentCache,
     ListPagesExpansion, ListPagesExpansionOptions, ListPagesPageContext,
+    list_pages_body_starts_with_preparsed_block, preserve_list_pages_module_matches,
+    push_list_pages_generated_output,
 };
 pub(super) use self::substitution::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesArguments,

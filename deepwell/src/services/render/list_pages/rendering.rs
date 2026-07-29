@@ -46,27 +46,32 @@ use super::scanner::{
 };
 use super::template::{ListPagesOutputShape, ListPagesTemplatePlan};
 use super::{
-    ExactNameListPagesBatchKey, ListPagesArguments, ListPagesAuthorCacheKey,
-    ListPagesBatchDisplayRequirements, ListPagesBatchDisplays, ListPagesExpansionBudget,
+    CountPagesBlockRenderResult, CountPagesExpansionOptions, CountPagesRequiredTagSource,
+    CountPagesRequiredTagTotal, ExactNameListPagesBatchKey, ListPagesArguments,
+    ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements, ListPagesBatchDisplays,
+    ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansion,
+    ListPagesExpansionBudget, ListPagesExpansionOptions, ListPagesPageContext,
     ListPagesSubstitutionContext, ResolvedListPagesAuthors,
     count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
     count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
     count_pages_scan_requires_preservation, count_pages_should_remain_literal,
     count_pages_unbounded_total, exact_name_list_pages_batch_key,
     is_list_pages_visible_tag, list_pages_argument_error,
-    list_pages_content_query_target, list_pages_created_by_unix,
-    list_pages_feed_info_html, list_pages_has_unsupported_page_type_selector,
+    list_pages_body_starts_with_preparsed_block, list_pages_content_query_target,
+    list_pages_created_by_unix, list_pages_feed_info_html,
+    list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_parent_fullname,
     list_pages_revision_count, list_pages_row_scan_target,
     list_pages_static_parent_fullname, load_list_pages_data_form_definitions,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
     parse_list_pages_arguments_with_url,
-    preserve_list_pages_following_paragraph_boundary,
-    protect_ajax_module_literal_markers, push_list_pages_pager,
-    register_generated_list_pages_html, should_render_current_page_list_pages_row,
-    substitute_count_pages_variables, substitute_list_pages_rating_only,
-    substitute_list_pages_variables_with_fragments, union_found_page_fields,
-    unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
+    preserve_list_pages_following_paragraph_boundary, preserve_list_pages_module_matches,
+    protect_ajax_module_literal_markers, push_list_pages_generated_output,
+    push_list_pages_pager, register_generated_list_pages_html,
+    should_render_current_page_list_pages_row, substitute_count_pages_variables,
+    substitute_list_pages_rating_only, substitute_list_pages_variables_with_fragments,
+    union_found_page_fields, unsupported_list_pages_replacement,
+    url_offset_list_pages_content_bytes,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::hash::{TextHash, k12_hash};
@@ -81,7 +86,6 @@ use crate::services::page_query::{
     parse_static_wikidot_data_form_values,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
-use crate::services::render::UrlArguments;
 use crate::services::{
     CategoryService, PageQueryService, PageRevisionService, PageService, SiteService,
 };
@@ -97,85 +101,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 const MAX_NESTED_LISTPAGES_DEPTH: usize = 8;
 const MAX_NESTED_LISTPAGES_MODULES_PER_PASS: usize = 64;
-
-fn list_pages_body_starts_with_preparsed_block(body: &str) -> bool {
-    let body = body.trim_start_matches(char::is_whitespace);
-    body.get(.."[[code]]".len())
-        .is_some_and(|opening| opening.eq_ignore_ascii_case("[[code]]"))
-        || body
-            .get(.."[[html]]".len())
-            .is_some_and(|opening| opening.eq_ignore_ascii_case("[[html]]"))
-}
-
-#[derive(Debug)]
-pub(in crate::services::render) enum ListPagesBlockRenderResult {
-    Expanded(IncludeExpansion),
-    PreserveOriginal,
-}
-
-#[derive(Debug)]
-pub(in crate::services::render) struct ListPagesExpansion {
-    pub(in crate::services::render) wikitext: String,
-    pub(in crate::services::render) included_pages: Vec<ftml::data::PageRef>,
-    pub(in crate::services::render) expanded_include_count: usize,
-    pub(in crate::services::render) url_offset_content_bytes: usize,
-}
-
-#[derive(Debug, Clone)]
-pub(in crate::services::render) enum CountPagesBlockRenderResult {
-    Expanded(String),
-    PreserveOriginal,
-}
-
-#[derive(Debug, FromQueryResult)]
-pub(in crate::services::render) struct CountPagesRequiredTagTotal {
-    pub(in crate::services::render) tag: String,
-    pub(in crate::services::render) total: i64,
-}
-
-pub(in crate::services::render) struct CountPagesRequiredTagSource<'a> {
-    pub(in crate::services::render) literal_regions: &'a LiteralRegionIndex,
-    pub(in crate::services::render) close_reachability:
-        &'a CountPagesCloseReachabilityIndex,
-    pub(in crate::services::render) source_projection:
-        Option<&'a ListPagesSourceProjection>,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub(in crate::services::render) struct ListPagesPageContext<'a> {
-    pub(in crate::services::render) site_id: i64,
-    pub(in crate::services::render) page_id: Option<i64>,
-
-    /// Wikidot URL path arguments from the current page view.
-    pub(in crate::services::render) url: UrlArguments<'a>,
-}
-
-#[derive(Debug, Default)]
-pub(in crate::services::render) struct ListPagesContentCache {
-    pub(in crate::services::render) wikitext: BTreeMap<(i64, i64), Option<String>>,
-    pub(in crate::services::render) wikitext_scalar_count:
-        BTreeMap<(i64, i64), Option<usize>>,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub(in crate::services::render) struct ListPagesExpansionOptions<'a> {
-    pub(in crate::services::render) current_site_id: Option<i64>,
-    pub(in crate::services::render) current_page_id: Option<i64>,
-    pub(in crate::services::render) include_budget: IncludeExpansionBudget,
-
-    /// The Wikidot URL path arguments this request carried.
-    pub(in crate::services::render) url: UrlArguments<'a>,
-}
-
-/// The request a CountPages expansion is answering.
-pub(in crate::services::render) struct CountPagesExpansionOptions<'a> {
-    pub(in crate::services::render) current_site_id: Option<i64>,
-    pub(in crate::services::render) current_page_id: Option<i64>,
-
-    /// The Wikidot URL path arguments this request carried; a `tags` selector
-    /// can name the tag as `@URL`, and `/p/<n>` picks the rendered page.
-    pub(in crate::services::render) url: UrlArguments<'a>,
-}
 
 impl RenderService {
     #[allow(clippy::too_many_arguments)]
@@ -300,6 +225,24 @@ impl RenderService {
             }
         };
         let module_matches = find_list_pages_module_matches(&wikitext);
+        let module_source_bytes = module_matches.iter().fold(0usize, |total, module| {
+            total.saturating_add(module.original.len())
+        });
+        if !expansion_budget.try_consume_modules(module_matches.len())
+            || !expansion_budget.try_consume_module_source_bytes(module_source_bytes)
+        {
+            let preserved = preserve_list_pages_module_matches(
+                &wikitext,
+                &module_matches,
+                compat_text,
+            );
+            return Ok(ListPagesExpansion {
+                wikitext: preserved,
+                included_pages: Vec::new(),
+                expanded_include_count: 0,
+                url_offset_content_bytes: 0,
+            });
+        }
         if depth > 0 && module_matches.len() > MAX_NESTED_LISTPAGES_MODULES_PER_PASS {
             return Ok(ListPagesExpansion {
                 wikitext,
@@ -590,13 +533,27 @@ impl RenderService {
                             included_pages: replacement_included_pages,
                             expanded_include_count: replacement_expanded_include_count,
                         }) => {
-                            include_budget.consume(replacement_expanded_include_count);
                             let following_source =
                                 legacy_tail.as_deref().unwrap_or(&wikitext[block.end..]);
+                            let generated_bytes_before_paragraph_repair =
+                                replacement.len();
                             preserve_list_pages_following_paragraph_boundary(
                                 &mut replacement,
                                 following_source,
                             );
+                            let paragraph_repair_bytes = replacement
+                                .len()
+                                .saturating_sub(generated_bytes_before_paragraph_repair);
+                            if !expansion_budget.try_consume_generated_output_bytes(
+                                paragraph_repair_bytes,
+                            ) {
+                                expanded.push_str(&compat_text.push_escaped_html_text(
+                                    &wikitext[block.start..block.end],
+                                ));
+                                cursor = block.end;
+                                continue;
+                            }
+                            include_budget.consume(replacement_expanded_include_count);
                             let replacement = register_generated_list_pages_html(
                                 replacement,
                                 compat_html,
@@ -672,13 +629,27 @@ impl RenderService {
                             included_pages: replacement_included_pages,
                             expanded_include_count: replacement_expanded_include_count,
                         }) => {
-                            include_budget.consume(replacement_expanded_include_count);
                             let following_source =
                                 legacy_tail.as_deref().unwrap_or(&wikitext[block.end..]);
+                            let generated_bytes_before_paragraph_repair =
+                                replacement.len();
                             preserve_list_pages_following_paragraph_boundary(
                                 &mut replacement,
                                 following_source,
                             );
+                            let paragraph_repair_bytes = replacement
+                                .len()
+                                .saturating_sub(generated_bytes_before_paragraph_repair);
+                            if !expansion_budget.try_consume_generated_output_bytes(
+                                paragraph_repair_bytes,
+                            ) {
+                                expanded.push_str(&compat_text.push_escaped_html_text(
+                                    &wikitext[block.start..block.end],
+                                ));
+                                cursor = block.end;
+                                continue;
+                            }
+                            include_budget.consume(replacement_expanded_include_count);
                             let replacement = register_generated_list_pages_html(
                                 replacement,
                                 compat_html,
@@ -1249,41 +1220,6 @@ impl RenderService {
         Ok(totals)
     }
 
-    pub(in crate::services::render) fn categories_with_current_page_category(
-        mut categories: Vec<Cow<'static, str>>,
-        page_info: &PageInfo<'_>,
-    ) -> Vec<Cow<'static, str>> {
-        let category = page_info
-            .category
-            .as_ref()
-            .map(Cow::as_ref)
-            .unwrap_or("_default");
-        if !categories.iter().any(|slug| slug.as_ref() == category) {
-            categories.push(Cow::Owned(category.to_owned()));
-        }
-        categories
-    }
-
-    pub(in crate::services::render) fn page_info_category_slug<'a>(
-        page_info: &'a PageInfo<'_>,
-    ) -> Cow<'a, str> {
-        page_info
-            .category
-            .as_ref()
-            .map(|category| Cow::Borrowed(category.as_ref()))
-            .unwrap_or(Cow::Borrowed("_default"))
-    }
-
-    pub(in crate::services::render) fn page_info_full_slug(
-        page_info: &PageInfo<'_>,
-    ) -> String {
-        let page = page_info.page.as_ref();
-        match Self::page_info_category_slug(page_info).as_ref() {
-            "_default" => page.to_owned(),
-            category => format!("{category}:{page}"),
-        }
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub(in crate::services::render) async fn render_list_pages_block(
         ctx: &ServiceContext<'_>,
@@ -1318,6 +1254,9 @@ impl RenderService {
         if arguments.rss_only
             && let Some(feed_info) = feed_info
         {
+            if !expansion_budget.try_consume_generated_output_bytes(feed_info.len()) {
+                return Ok(ListPagesBlockRenderResult::PreserveOriginal);
+            }
             return Ok(ListPagesBlockRenderResult::Expanded(IncludeExpansion {
                 wikitext: feed_info,
                 included_pages: Vec::new(),
@@ -1983,8 +1922,14 @@ impl RenderService {
             None
         };
         let mut output = String::new();
-        if wrapper {
-            output.push_str("[[div class=\"list-pages-box\"]]\n");
+        if wrapper
+            && !push_list_pages_generated_output(
+                &mut output,
+                "[[div class=\"list-pages-box\"]]\n",
+                expansion_budget,
+            )
+        {
+            return Ok(ListPagesBlockRenderResult::PreserveOriginal);
         }
         let mut included_pages = Vec::new();
         if template.has_sections() && pages.is_empty() {
@@ -1993,21 +1938,28 @@ impl RenderService {
         if !separate
             && !pages.is_empty()
             && let Some(prepend_line) = prepend_line
+            && (!push_list_pages_generated_output(
+                &mut output,
+                &prepend_line,
+                expansion_budget,
+            ) || !push_list_pages_generated_output(
+                &mut output,
+                "\n",
+                expansion_budget,
+            ))
         {
-            output.push_str(&prepend_line);
-            output.push('\n');
+            return Ok(ListPagesBlockRenderResult::PreserveOriginal);
         }
-        if let Some(head) = template.head_section() {
-            output.push_str(head);
-            output.push('\n');
+        if let Some(head) = template.head_section()
+            && (!push_list_pages_generated_output(&mut output, head, expansion_budget)
+                || !push_list_pages_generated_output(&mut output, "\n", expansion_budget))
+        {
+            return Ok(ListPagesBlockRenderResult::PreserveOriginal);
         }
 
         let render_generated_html =
             template.output_shape() == ListPagesOutputShape::TableRows;
         for (index, page) in pages.iter().enumerate() {
-            if separate {
-                output.push_str("[[div class=\"list-pages-item\"]]\n");
-            }
             let cache_key = (page.site_id, page.page_id);
             let page_wikitext = if wants_content || wants_data_form_values {
                 content_cache
@@ -2184,11 +2136,28 @@ impl RenderService {
                 neutralize_authored_markers(&mut body);
                 generated_fragments.restore(&body)
             };
-            if let Some(table) = render_list_pages_table_rows(&body) {
-                output.push_str(&table);
+            let rendered_body = if let Some(table) = render_list_pages_table_rows(&body) {
+                table
             } else {
-                output.push_str(&render_list_pages_numbered_rows(&body));
+                render_list_pages_numbered_rows(&body)
+            };
+            let row_markup_bytes = if separate {
+                "[[div class=\"list-pages-item\"]]\n\n[[/div]]\n".len()
+            } else {
+                1
+            };
+            let Some(rendered_row_bytes) =
+                rendered_body.len().checked_add(row_markup_bytes)
+            else {
+                return Ok(ListPagesBlockRenderResult::PreserveOriginal);
+            };
+            if !expansion_budget.try_consume_generated_output_bytes(rendered_row_bytes) {
+                return Ok(ListPagesBlockRenderResult::PreserveOriginal);
             }
+            if separate {
+                output.push_str("[[div class=\"list-pages-item\"]]\n");
+            }
+            output.push_str(&rendered_body);
             if separate {
                 output.push_str("\n[[/div]]\n");
             } else {
@@ -2196,9 +2165,11 @@ impl RenderService {
             }
         }
 
-        if let Some(foot) = template.foot_section() {
-            output.push_str(foot);
-            output.push('\n');
+        if let Some(foot) = template.foot_section()
+            && (!push_list_pages_generated_output(&mut output, foot, expansion_budget)
+                || !push_list_pages_generated_output(&mut output, "\n", expansion_budget))
+        {
+            return Ok(ListPagesBlockRenderResult::PreserveOriginal);
         }
 
         if !separate
@@ -2207,12 +2178,19 @@ impl RenderService {
         {
             let mut append_line = append_line;
             neutralize_authored_markers(&mut append_line);
-            output.push_str(&append_line);
-            output.push('\n');
+            if !push_list_pages_generated_output(
+                &mut output,
+                &append_line,
+                expansion_budget,
+            ) || !push_list_pages_generated_output(&mut output, "\n", expansion_budget)
+            {
+                return Ok(ListPagesBlockRenderResult::PreserveOriginal);
+            }
         }
 
+        let mut pager = String::new();
         push_list_pages_pager(
-            &mut output,
+            &mut pager,
             page_info,
             url,
             url_attr_prefix.as_deref(),
@@ -2223,12 +2201,27 @@ impl RenderService {
             total_selected,
             compat_text,
         );
-
-        if let Some(feed_info) = feed_info {
-            output.push_str(&feed_info);
+        if !push_list_pages_generated_output(&mut output, &pager, expansion_budget) {
+            return Ok(ListPagesBlockRenderResult::PreserveOriginal);
         }
-        if wrapper {
-            output.push_str("[[/div]]");
+
+        if let Some(feed_info) = feed_info
+            && !push_list_pages_generated_output(
+                &mut output,
+                &feed_info,
+                expansion_budget,
+            )
+        {
+            return Ok(ListPagesBlockRenderResult::PreserveOriginal);
+        }
+        if wrapper
+            && !push_list_pages_generated_output(
+                &mut output,
+                "[[/div]]",
+                expansion_budget,
+            )
+        {
+            return Ok(ListPagesBlockRenderResult::PreserveOriginal);
         }
         if wants_content {
             expansion_budget.consume_content_rows(rendered_rows);

@@ -5,6 +5,8 @@ use regex::Regex;
 use std::collections::BTreeSet;
 use std::sync::LazyLock;
 
+use super::budget::MAX_LISTPAGES_TEMPLATE_BODY_BYTES;
+
 pub(in crate::services::render) static LISTPAGES_VARIABLE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| {
         Regex::new(
@@ -230,6 +232,9 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String)> 
 
 impl ListPagesTemplatePlan {
     pub(in crate::services::render) fn compile(body: &str) -> Option<Self> {
+        if body.len() > MAX_LISTPAGES_TEMPLATE_BODY_BYTES {
+            return None;
+        }
         let (sections, body) = split_list_pages_sections(body)?;
         let body = match body.trim() {
             "" if sections == ListPagesSections::default() => DEFAULT_LISTPAGES_TEMPLATE,

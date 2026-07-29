@@ -40,7 +40,8 @@ pub(in crate::services::render) fn count_pages_unbounded_total(
     scanned_total: usize,
 ) -> Option<usize> {
     match raw_scan_completion {
-        CountPagesRawScanCompletion::Complete => Some(scanned_total),
+        CountPagesRawScanCompletion::Complete
+        | CountPagesRawScanCompletion::RandomSampleCapped => Some(scanned_total),
         CountPagesRawScanCompletion::Capped => None,
     }
 }
