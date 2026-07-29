@@ -1,0 +1,31 @@
+{
+  "schema": "wikijump.ftml_pin_marker_contract_receipt.v1",
+  "run_id": "ftml-marker-634f4d4e-87463a9e",
+  "status": "pass",
+  "wikijump_base_sha": "96a067b49aa7afafcafd7858650490d9f6adad58",
+  "baseline_ftml_sha": "57b6cfc914e62bb2cc6dd45bccfdb8ff1f232408",
+  "candidate_ftml_sha": "634f4d4e6b6417557eaf6459485634ffb31f638b",
+  "required_surfaces": [
+    "heading",
+    "separator",
+    "div",
+    "span",
+    "alignment"
+  ],
+  "comparison": {
+    "schema": "wikijump_local_lab.render_compare.v1",
+    "pairs_total": 5,
+    "matches": 5,
+    "accepted_differences": 0,
+    "regressions": 0,
+    "verdict_sha256": "bc7464b91978f7f71d328d6e15cde5e207b9a73ac5adcd7be2c54289464487e5"
+  },
+  "artifact_manifests": {
+    "baseline_sha256": "7820e5bfbe396fb0ace6ff56906f547c281611133dbed31d50df7ace93f1b5b8",
+    "candidate_sha256": "1ceb937c07d45ff415d774b9f66958b909c23f85ecdb87e1f6e2bf67826860af"
+  },
+  "resource_disposition": {
+    "policy": "delete-on-close",
+    "disposable_containers_remaining": 0
+  }
+}
