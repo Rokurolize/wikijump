@@ -1,15 +1,9 @@
 ## DOM Compatibility
 
-Backwards compatibility with Wikidot is an important goal of the Wikijump project. In order to allow imported data from Wikidot to be usable in Wikijump, the project implements a transition mechanism called "layout" for each site or page to choose its HTML structure, either conforming to Wikidot (legacy) layout or to the new Wikijump layout.
+DOM compatibility is a required part of this fork's Wikidot-emulator contract, not an optional migration aid. For every browser surface exposed by live Wikidot, the Wikidot layout and browser-facing routes must preserve the observable tree structure, element order, IDs, classes, attributes, CSS cascade, interactions, navigation states, intermediate visible states, and settled layout. Controlled live Wikidot observations are canonical when documentation or local output disagrees.
 
-However, there are some places where we have determined it would be better not to maintain DOM compatibility. Here is a brief list of them.
+No UI category is exempt from compatibility in advance. Login and logout, user settings, site administration, user profiles, page editing, and page options are all required observation surfaces and must be reproduced from evidence rather than assigned replacement markup merely because themes or customization are limited there.
 
-UI where themes and customization are not available:
-  * Login / logout page
-  * User settings page
-  * Admin panel
-  * User profile page
+The existence of another internal layout or a transition mechanism does not relax the `Layout::Wikidot` contract and must not change imported-content behavior. Unverified compatibility behavior must remain unspecified until controlled evidence is collected; implementations must not invent replacement markup or silently redesign the interface. Security-sensitive trust boundaries continue to fail closed.
 
-UI where existing themes should be adapted to:
-  * Page editor
-  * Page options
+Intentional differences are limited to explicit security boundaries such as escaping, sanitization, content security policy, credential handling, and access control. Each such difference must be narrowly documented, justified, and covered by regression evidence; it is not a general license to modernize Wikidot behavior.
