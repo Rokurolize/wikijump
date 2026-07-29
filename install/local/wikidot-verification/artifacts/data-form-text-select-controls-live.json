@@ -1,0 +1,235 @@
+{
+  "schema": "wikidot.live.data-form.text-select-controls.v1",
+  "observed_at": "2026-07-29",
+  "site": "sandbox-for-codex",
+  "actor": "authenticated account A through an isolated Codex-owned Chrome profile",
+  "credential_material": "none; credentials and session material stayed in the local environment and isolated browser profile",
+  "run_owned_pages": {
+    "run_id": "1785318693",
+    "template": "df-controls-1785318693:_template",
+    "target": "df-controls-1785318693:target",
+    "cleanup_verified": true,
+    "remaining": []
+  },
+  "cases": [
+    {
+      "case_id": "text-and-select-create-controls",
+      "route": "/df-controls-1785318693:target/edit/true",
+      "result": {
+        "form_class": "form-horizontal data-form",
+        "text_controls": [
+          {
+            "field": "plain",
+            "tag": "input",
+            "type": "text",
+            "size": "40",
+            "placeholder": "",
+            "default": ""
+          },
+          {
+            "field": "defaulted",
+            "tag": "input",
+            "type": "text",
+            "size": "40",
+            "placeholder": "",
+            "default": "**bold** #hash"
+          },
+          {
+            "field": "one_line",
+            "tag": "input",
+            "type": "text",
+            "size": "30",
+            "placeholder": "enter a color like \\#468259",
+            "default": ""
+          },
+          {
+            "field": "multi_line",
+            "tag": "textarea",
+            "rows": "3",
+            "cols": "50",
+            "placeholder": "",
+            "default": ""
+          },
+          {
+            "field": "implicit",
+            "declared_type": null,
+            "tag": "input",
+            "type": "text",
+            "size": "40",
+            "placeholder": "",
+            "default": ""
+          }
+        ],
+        "select_controls": [
+          {
+            "field": "select_two",
+            "tag": "input",
+            "type": "radio",
+            "values": [
+              "a",
+              "b"
+            ],
+            "selected": "b"
+          },
+          {
+            "field": "select_four",
+            "tag": "input",
+            "type": "radio",
+            "values": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "selected": null
+          },
+          {
+            "field": "select_five",
+            "tag": "select",
+            "type": "select-one",
+            "values": [
+              "0",
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "selected": "4"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "text-match-validation",
+      "submitted_value": "bad",
+      "pattern": "/^ok-[0-9]+$/",
+      "match_error": "Use ok- followed by digits",
+      "result": {
+        "page_created": false,
+        "form_preserved": true,
+        "form_group_class": "form-group has-error",
+        "value_wrapper_class": "form-value field-matched form-error",
+        "message_class": "form-message text-danger",
+        "message": "Use ok- followed by digits",
+        "submitted_value_preserved": true
+      }
+    },
+    {
+      "case_id": "text-and-select-create-save",
+      "submitted_values": {
+        "plain": "**literal wiki**",
+        "defaulted": "**bold** #hash",
+        "one_line": "#112233",
+        "multi_line": "line 1\nline 2",
+        "matched": "ok-42",
+        "implicit": "implicit value",
+        "select_two": "b",
+        "select_four": "c",
+        "select_five": "2",
+        "reserved_labels": "done"
+      },
+      "result": {
+        "page_created": true,
+        "rendered_text": "Plain text\t**literal wiki**\nDefaulted text\t**bold** #hash\nOne line\t#112233\nMulti line\tline 1\nline 2\nMatched text\tok-42\nImplicit text\timplicit value\nSelect two\tBeta\nSelect four\tGamma\nSelect five\tTwo\nReserved labels\tYes",
+        "saved_source": "plain: '**literal wiki**'\ndefaulted: '**bold** #hash'\none_line: '#112233'\nmulti_line: \"line 1\\nline 2\"\nmatched: ok-42\nimplicit: 'implicit value'\nselect_two: b\nselect_four: c\nselect_five: '2'\nreserved_labels: done",
+        "saved_tags": [],
+        "saved_parent": null,
+        "wiki_markup_in_text_rendered_literally": true
+      }
+    },
+    {
+      "case_id": "text-scalar-escaping",
+      "submitted_values": {
+        "plain": "O'Brien: # [x] \\ slash \"quote\"",
+        "defaulted": "",
+        "one_line": "  spaced  ",
+        "multi_line": "first \"quoted\"\nsecond 'single' \\ end",
+        "implicit": "yes: no"
+      },
+      "result": {
+        "saved_source": "plain: 'O''Brien: # [x] \\ slash \"quote\"'\ndefaulted: ''\none_line: '  spaced  '\nmulti_line: \"first \\\"quoted\\\"\\nsecond 'single' \\\\ end\"\nmatched: ok-42\nimplicit: 'yes: no'\nselect_two: b\nselect_four: c\nselect_five: '2'\nreserved_labels: done",
+        "single_quotes_are_doubled": true,
+        "leading_and_trailing_spaces_are_preserved": true,
+        "multiline_text_uses_double_quotes_and_backslash_escapes": true
+      }
+    },
+    {
+      "case_id": "select-reserved-labels",
+      "result": {
+        "unquoted_labels": [
+          "No",
+          "Yes"
+        ],
+        "unquoted_labels_omitted": [
+          "False",
+          "True"
+        ],
+        "quoted_labels": [
+          "No",
+          "Yes",
+          "False",
+          "True"
+        ]
+      },
+      "analysis": "The frozen documentation's blanket claim is too broad: quoting is required for False and True in the observed label position, but unquoted No and Yes remain visible."
+    },
+    {
+      "case_id": "select-cardinality",
+      "result": {
+        "missing_values_field_visible": false,
+        "empty_values_field_visible": false,
+        "one_value_control": "radio",
+        "two_value_control": "radio",
+        "five_value_control": "select"
+      }
+    },
+    {
+      "case_id": "text-dimension-boundaries",
+      "result": {
+        "width": {
+          "omitted": "40",
+          "zero": "1",
+          "negative_one": "1",
+          "non_numeric": "40",
+          "empty": "40"
+        },
+        "height": {
+          "omitted": {
+            "tag": "input",
+            "size": "40"
+          },
+          "zero": {
+            "tag": "input",
+            "size": "40"
+          },
+          "negative_one": {
+            "tag": "input",
+            "size": "40"
+          },
+          "non_numeric": {
+            "tag": "input",
+            "size": "40"
+          },
+          "empty": {
+            "tag": "input",
+            "size": "40"
+          },
+          "one": {
+            "tag": "input",
+            "size": "40"
+          },
+          "two": {
+            "tag": "textarea",
+            "rows": "2",
+            "cols": "40"
+          }
+        }
+      }
+    }
+  ],
+  "routes": [
+    "Authenticated wikidot.py high-level page creation, source and metadata readback, template mutation, deletion, and absence verification",
+    "Authenticated isolated Chrome DevTools Protocol profile for direct edit-route loading, exact control DOM, validation, create, edit restoration, navigation, and rendered output",
+    "The isolated Codex-owned Chrome profile was stopped and removed after cleanup"
+  ]
+}

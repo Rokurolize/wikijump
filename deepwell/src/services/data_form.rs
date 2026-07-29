@@ -51,10 +51,20 @@ impl DataFormDefinition {
                 .fields
                 .iter()
                 .all(|field| match field.field_type.as_deref() {
-                    Some("text") => !field.label.is_empty() && field.values.is_empty(),
+                    Some("text") => {
+                        !field.label.is_empty()
+                            && !field.has_values_property
+                            && field.values.is_empty()
+                            && field.match_pattern.is_some()
+                                == field.match_error.is_some()
+                            && field
+                                .match_pattern
+                                .as_deref()
+                                .is_none_or(valid_observed_wikidot_match_pattern)
+                    }
                     Some("select") => {
                         !field.label.is_empty()
-                            && !field.values.is_empty()
+                            && !field.has_text_specific_properties
                             && field
                                 .default_value
                                 .as_ref()
@@ -65,7 +75,7 @@ impl DataFormDefinition {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct DataFormFieldDefinition {
     pub name: String,
     pub label: String,
@@ -73,6 +83,33 @@ pub struct DataFormFieldDefinition {
     pub field_type: Option<String>,
     pub values: Vec<DataFormValueDefinition>,
     pub default_value: Option<String>,
+    pub width: usize,
+    pub height: usize,
+    pub match_pattern: Option<String>,
+    pub match_error: Option<String>,
+    #[serde(skip)]
+    has_text_specific_properties: bool,
+    #[serde(skip)]
+    has_values_property: bool,
+}
+
+impl Default for DataFormFieldDefinition {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            label: String::new(),
+            hint: String::new(),
+            field_type: None,
+            values: Vec::new(),
+            default_value: None,
+            width: 40,
+            height: 1,
+            match_pattern: None,
+            match_error: None,
+            has_text_specific_properties: false,
+            has_values_property: false,
+        }
+    }
 }
 
 impl DataFormFieldDefinition {
@@ -195,6 +232,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             continue;
         }
         if !in_fields {
+            definition.observed_create_edit_compatible = false;
             continue;
         }
         if indent == 2
@@ -214,11 +252,20 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             current_properties.clear();
             continue;
         }
+        if indent == 2 {
+            definition.observed_create_edit_compatible = false;
+            current_field = None;
+            current_values_field = None;
+            current_properties.clear();
+            continue;
+        }
         let Some(field_name) = current_field.as_deref() else {
+            definition.observed_create_edit_compatible = false;
             continue;
         };
         if indent == 4 {
             let Some((key, value)) = trimmed.split_once(':') else {
+                definition.observed_create_edit_compatible = false;
                 current_values_field = None;
                 continue;
             };
@@ -249,6 +296,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                     }
                     if let Some(field) = definition.field_mut(field_name) {
                         field.hint = unquote_wikidot_data_form_scalar(value).to_owned();
+                        field.has_text_specific_properties = true;
                     }
                     current_values_field = None;
                 }
@@ -278,14 +326,62 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                     }
                     current_values_field = None;
                 }
-                "values" if value.is_empty() => {
+                "width" => {
+                    if let Some(field) = definition.field_mut(field_name) {
+                        field.width = parse_wikidot_text_width(value);
+                        field.has_text_specific_properties = true;
+                    }
+                    current_values_field = None;
+                }
+                "height" => {
+                    if let Some(field) = definition.field_mut(field_name) {
+                        field.height = parse_wikidot_text_height(value);
+                        field.has_text_specific_properties = true;
+                    }
+                    current_values_field = None;
+                }
+                "match" => {
                     if definition
                         .field(field_name)
-                        .is_some_and(|field| !field.values.is_empty())
+                        .is_some_and(|field| field.match_pattern.is_some())
                     {
                         definition.observed_create_edit_compatible = false;
                     }
-                    current_values_field = Some(field_name.to_owned());
+                    if let Some(field) = definition.field_mut(field_name) {
+                        field.match_pattern =
+                            Some(unquote_wikidot_data_form_scalar(value).to_owned());
+                        field.has_text_specific_properties = true;
+                    }
+                    current_values_field = None;
+                }
+                "match-error" => {
+                    if definition
+                        .field(field_name)
+                        .is_some_and(|field| field.match_error.is_some())
+                    {
+                        definition.observed_create_edit_compatible = false;
+                    }
+                    if let Some(field) = definition.field_mut(field_name) {
+                        field.match_error =
+                            Some(unquote_wikidot_data_form_scalar(value).to_owned());
+                        field.has_text_specific_properties = true;
+                    }
+                    current_values_field = None;
+                }
+                "values" if value.is_empty() => {
+                    if definition
+                        .field(field_name)
+                        .is_some_and(|field| field.has_values_property)
+                    {
+                        definition.observed_create_edit_compatible = false;
+                    }
+                    if let Some(field) = definition.field_mut(field_name) {
+                        field.has_values_property = true;
+                        current_values_field = Some(field_name.to_owned());
+                    } else {
+                        definition.observed_create_edit_compatible = false;
+                        current_values_field = None;
+                    }
                 }
                 _ => {
                     definition.observed_create_edit_compatible = false;
@@ -294,12 +390,20 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             }
             continue;
         }
-        if indent >= 6
+        if indent == 6
             && current_values_field.as_deref() == Some(field_name)
             && let Some((value, label)) = trimmed.split_once(':')
         {
             let value = unquote_wikidot_data_form_scalar(value.trim()).to_owned();
-            let label = unquote_wikidot_data_form_scalar(label.trim()).to_owned();
+            let raw_label = label.trim();
+            if matches!(raw_label, "False" | "True") {
+                continue;
+            }
+            let label = unquote_wikidot_data_form_scalar(raw_label).to_owned();
+            if value.is_empty() || label.is_empty() {
+                definition.observed_create_edit_compatible = false;
+                continue;
+            }
             let duplicate = definition.field(field_name).is_some_and(|field| {
                 field
                     .values
@@ -328,6 +432,11 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
         definition.observed_create_edit_compatible = false;
     }
 
+    for field in &mut definition.fields {
+        if field.field_type.is_none() {
+            field.field_type = Some("text".to_owned());
+        }
+    }
     definition.observed_create_edit_compatible &= saw_fields;
     Some(definition)
 }
@@ -355,19 +464,26 @@ pub fn parse_observed_wikidot_data_form_values(
             return None;
         }
         let value = match field.field_type.as_deref() {
-            Some("text") => {
-                let inner = raw_value.strip_prefix('\'')?.strip_suffix('\'')?;
-                if inner.contains('\'') {
-                    return None;
-                }
-                inner.to_owned()
-            }
+            Some("text") => parse_wikidot_stored_text_scalar(raw_value)?,
             Some("select") => {
-                field.value_label(raw_value)?;
-                raw_value.to_owned()
+                if raw_value == "null" {
+                    String::new()
+                } else {
+                    let value = parse_wikidot_stored_plain_scalar(raw_value)?;
+                    field.value_label(&value)?;
+                    value
+                }
             }
             _ => return None,
         };
+        let canonical = match field.field_type.as_deref() {
+            Some("text") => serialize_wikidot_stored_text_scalar(&value),
+            Some("select") => serialize_wikidot_stored_select_scalar(&value),
+            _ => return None,
+        };
+        if canonical != raw_value {
+            return None;
+        }
         values.insert(name.to_owned(), value);
     }
 
@@ -403,6 +519,130 @@ fn valid_wikidot_data_form_field_name(value: &str) -> bool {
         && value.chars().all(|character| {
             character.is_ascii_alphanumeric() || matches!(character, '_' | '-')
         })
+}
+
+fn parse_wikidot_text_width(value: &str) -> usize {
+    value
+        .parse::<i64>()
+        .ok()
+        .and_then(|width| usize::try_from(width.max(1)).ok())
+        .unwrap_or(40)
+}
+
+fn parse_wikidot_text_height(value: &str) -> usize {
+    value
+        .parse::<i64>()
+        .ok()
+        .filter(|height| *height >= 2)
+        .and_then(|height| usize::try_from(height).ok())
+        .unwrap_or(1)
+}
+
+fn valid_observed_wikidot_match_pattern(value: &str) -> bool {
+    value.len() >= 2 && value.starts_with('/') && value.ends_with('/')
+}
+
+fn parse_wikidot_stored_plain_scalar(value: &str) -> Option<String> {
+    if value.starts_with('\'') {
+        parse_wikidot_single_quoted_scalar(value)
+    } else if valid_wikidot_stored_plain_scalar(value) {
+        Some(value.to_owned())
+    } else {
+        None
+    }
+}
+
+fn parse_wikidot_stored_text_scalar(value: &str) -> Option<String> {
+    if value.starts_with('\'') {
+        parse_wikidot_single_quoted_scalar(value)
+    } else if value.starts_with('"') {
+        parse_wikidot_double_quoted_scalar(value).filter(|parsed| parsed.contains('\n'))
+    } else if valid_wikidot_stored_plain_scalar(value) {
+        Some(value.to_owned())
+    } else {
+        None
+    }
+}
+
+fn valid_wikidot_stored_plain_scalar(value: &str) -> bool {
+    let mut characters = value.chars();
+    let Some(first) = characters.next() else {
+        return false;
+    };
+    (first.is_ascii_alphabetic() || first == '_')
+        && characters.all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.')
+        })
+        && !matches!(
+            value.to_ascii_lowercase().as_str(),
+            "false" | "no" | "null" | "off" | "on" | "true" | "yes"
+        )
+}
+
+fn serialize_wikidot_stored_text_scalar(value: &str) -> String {
+    if value.contains('\n') {
+        let mut output = String::with_capacity(value.len() + 2);
+        output.push('"');
+        for character in value.chars() {
+            match character {
+                '\\' => output.push_str(r"\\"),
+                '"' => output.push_str(r#"\""#),
+                '\n' => output.push_str(r"\n"),
+                _ => output.push(character),
+            }
+        }
+        output.push('"');
+        output
+    } else {
+        serialize_wikidot_stored_select_scalar(value)
+    }
+}
+
+fn serialize_wikidot_stored_select_scalar(value: &str) -> String {
+    if value.is_empty() {
+        return "null".to_owned();
+    }
+    if valid_wikidot_stored_plain_scalar(value) {
+        value.to_owned()
+    } else {
+        format!("'{}'", value.replace('\'', "''"))
+    }
+}
+
+fn parse_wikidot_single_quoted_scalar(value: &str) -> Option<String> {
+    let inner = value.strip_prefix('\'')?.strip_suffix('\'')?;
+    let mut output = String::with_capacity(inner.len());
+    let mut characters = inner.chars().peekable();
+    while let Some(character) = characters.next() {
+        if character == '\'' {
+            characters.next_if_eq(&'\'')?;
+            output.push('\'');
+        } else {
+            output.push(character);
+        }
+    }
+    Some(output)
+}
+
+fn parse_wikidot_double_quoted_scalar(value: &str) -> Option<String> {
+    let inner = value.strip_prefix('"')?.strip_suffix('"')?;
+    let mut output = String::with_capacity(inner.len());
+    let mut characters = inner.chars();
+    while let Some(character) = characters.next() {
+        if character != '\\' {
+            output.push(character);
+            continue;
+        }
+        output.push(match characters.next()? {
+            '\\' => '\\',
+            '"' => '"',
+            'n' => '\n',
+            'r' => '\r',
+            't' => '\t',
+            _ => return None,
+        });
+    }
+    Some(output)
 }
 
 fn unquote_wikidot_data_form_scalar(value: &str) -> &str {
@@ -503,6 +743,14 @@ fields:
             "[[form]]\nfields:\n  name:\n    type: text\n[[/form]]\n[[form]]\nfields:\n[[/form]]",
             "[[code]]\n[[form]]\nfields:\n  name:\n    type: text\n[[/form]]\n[[/code]]",
             "[[form]]\nfields:\n  name:\n    type: text\n[[/form]]\ntrailing content",
+            "[[form]]\nversion: 1\nfields:\n  name:\n    label: Name\n[[/form]]",
+            "[[form]]\nfields:\n  bad name:\n    label: Bad\n  name:\n    label: Name\n[[/form]]",
+            "[[form]]\nfields:\n    label: Orphan\n  name:\n    label: Name\n[[/form]]",
+            "[[form]]\nfields:\n  name:\n    label: Name\n    malformed property\n[[/form]]",
+            "[[form]]\nfields:\n  choice:\n    label: Choice\n    type: select\n    values:\n        a: Alpha\n[[/form]]",
+            "[[form]]\nfields:\n  name:\n    label: Name\n    values:\n[[/form]]",
+            "[[form]]\nfields:\n  choice:\n    label: Choice\n    type: select\n    values:\n      : Empty value\n[[/form]]",
+            "[[form]]\nfields:\n  choice:\n    label: Choice\n    type: select\n    values:\n      a:\n[[/form]]",
         ] {
             let definition = parse_wikidot_data_form_definition(form).expect("data form");
             assert!(
@@ -534,11 +782,64 @@ fields:
             "name: 'Probe Name'\nchoice: unknown",
             "name: Probe Name\nchoice: a",
             "name: 'Probe Name'\nchoice: a\n",
+            "name: 'ok-42'\nchoice: a",
+            "name: ok-42\nchoice: 'a'",
         ] {
             assert_eq!(
                 parse_observed_wikidot_data_form_values(&definition, source),
                 None,
                 "source must fail closed:\n{source}",
+            );
+        }
+    }
+
+    #[test]
+    fn empty_and_unselected_selects_round_trip_as_null() {
+        let definition = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  missing:\n    label: Missing\n    type: select\n  empty:\n    label: Empty\n    type: select\n    values:\n  choice:\n    label: Choice\n    type: select\n    values:\n      a: Alpha\n[[/form]]",
+        )
+        .expect("data form");
+
+        assert!(definition.supports_observed_create_edit());
+        assert_eq!(
+            definition
+                .fields
+                .iter()
+                .map(|field| (field.name.as_str(), field.values.len()))
+                .collect::<Vec<_>>(),
+            [("missing", 0), ("empty", 0), ("choice", 1)],
+        );
+        let values = parse_observed_wikidot_data_form_values(
+            &definition,
+            "missing: null\nempty: null\nchoice: null",
+        )
+        .expect("live null select values");
+        assert_eq!(
+            values,
+            BTreeMap::from([
+                ("choice".to_owned(), String::new()),
+                ("empty".to_owned(), String::new()),
+                ("missing".to_owned(), String::new()),
+            ]),
+        );
+        assert_eq!(
+            render_wikidot_data_form_table(&definition, &values),
+            concat!(
+                r#"<table class="form-table"><tbody>"#,
+                r#"<tr class="form-row"><td class="form-labels"><span class="form-label">Missing</span></td><td class="form-values"><span></span></td></tr>"#,
+                r#"<tr class="form-row"><td class="form-labels"><span class="form-label">Empty</span></td><td class="form-values"><span></span></td></tr>"#,
+                r#"<tr class="form-row"><td class="form-labels"><span class="form-label">Choice</span></td><td class="form-values"><span></span></td></tr>"#,
+                "</tbody></table>",
+            ),
+        );
+        for source in [
+            "missing: ''\nempty: null\nchoice: null",
+            "missing: null\nempty: null\nchoice: ''",
+        ] {
+            assert_eq!(
+                parse_observed_wikidot_data_form_values(&definition, source),
+                None,
+                "only Wikidot's canonical null spelling is accepted:\n{source}",
             );
         }
     }

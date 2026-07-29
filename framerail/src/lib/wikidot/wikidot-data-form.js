@@ -35,9 +35,44 @@ export const buildWikidotDataFormState = (definition, savedValues) => {
       field.name,
       Object.hasOwn(savedValues, field.name)
         ? savedValues[field.name]
-        : (field.default_value ?? "")
+        : (field.default_value ??
+          (field.field_type === "select" && field.values.length >= 5
+            ? (field.values[0]?.value ?? "")
+            : ""))
     ])
   )
+}
+
+const WIKIDOT_PLAIN_SCALAR = /^[A-Za-z_][A-Za-z0-9_.-]*$/u
+const WIKIDOT_RESERVED_PLAIN_SCALARS = /^(?:false|no|null|off|on|true|yes|~)$/iu
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+const serializeWikidotTextScalar = (value) => {
+  if (value.includes("\n")) {
+    return `"${value
+      .replaceAll("\\", "\\\\")
+      .replaceAll('"', '\\"')
+      .replaceAll("\n", "\\n")}"`
+  }
+  if (WIKIDOT_PLAIN_SCALAR.test(value) && !WIKIDOT_RESERVED_PLAIN_SCALARS.test(value)) {
+    return value
+  }
+  return `'${value.replaceAll("'", "''")}'`
+}
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+const serializeWikidotSelectScalar = (value) => {
+  if (value === "") return "null"
+  if (WIKIDOT_PLAIN_SCALAR.test(value) && !WIKIDOT_RESERVED_PLAIN_SCALARS.test(value)) {
+    return value
+  }
+  return `'${value.replaceAll("'", "''")}'`
 }
 
 /**
@@ -53,7 +88,9 @@ export const serializeWikidotDataFormSource = (definition, values) => {
     .map((field) => {
       const value = values[field.name] ?? ""
       const serialized =
-        field.field_type === "select" ? value : `'${value.replaceAll("'", "''")}'`
+        field.field_type === "select"
+          ? serializeWikidotSelectScalar(value)
+          : serializeWikidotTextScalar(value)
       return `${field.name}: ${serialized}`
     })
     .join("\n")

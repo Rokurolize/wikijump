@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 39,
+    "observation_count": 40,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -606,7 +606,9 @@
         "Public create/edit/view flow and ListPages query behavior where documented"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "data-form-text-select-controls-and-storage"
+      ]
     },
     {
       "id": "data-forms-file-field",
@@ -678,7 +680,9 @@
         "Public create/edit/view flow and ListPages query behavior where documented"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "data-form-text-select-controls-and-storage"
+      ]
     },
     {
       "id": "data-forms-howto",
@@ -910,7 +914,9 @@
         "Public create/edit/view flow and ListPages query behavior where documented"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "data-form-text-select-controls-and-storage"
+      ]
     },
     {
       "id": "data-forms-selecting-and-sorting",
@@ -1010,7 +1016,9 @@
         "Public create/edit/view flow and ListPages query behavior where documented"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "data-form-text-select-controls-and-storage"
+      ]
     },
     {
       "id": "data-forms-url-field",
