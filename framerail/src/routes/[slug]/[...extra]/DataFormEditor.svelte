@@ -59,6 +59,18 @@
   let activeValidationWorker: Worker | null = null
   let cancelActiveValidation: (() => void) | null = null
   let validationGeneration = 0
+  const fieldGroups = $derived.by(() => {
+    const groups: DataFormDefinition["fields"][] = []
+    for (const field of definition.fields) {
+      if (field.field_type === "select" && field.values.length === 0) continue
+      if ((field.join ?? false) && groups.length > 0) {
+        groups[groups.length - 1].push(field)
+      } else {
+        groups.push([field])
+      }
+    }
+    return groups
+  })
 
   type MatchField = {
     name: string
@@ -180,7 +192,11 @@
         const definitionField = definitionSnapshot.fields.find(
           (field) => field.name === resultField.name
         )
-        validationErrors.set(resultField.name, definitionField?.match_error ?? "")
+        validationErrors.set(
+          resultField.name,
+          definitionField?.match_error ||
+            `Please enter valid '${definitionField?.label ?? ""}'`
+        )
       }
     }
     return validationErrors.size === 0
@@ -298,7 +314,8 @@
   <input name="form-file-still-uploading" type="hidden" value="0" />
 
   <div class="form-group">
-    <label class="col-sm-2 control-label" for="edit-page-title">Title</label>
+    <!-- svelte-ignore a11y_label_has_associated_control -->
+    <label class="col-sm-2 control-label">Title</label>
     <div class="col-sm-5">
       <input
         id="edit-page-title"
@@ -313,21 +330,21 @@
     </div>
   </div>
 
-  {#each definition.fields as field (field.name)}
-    {#if field.field_type !== "select" || field.values.length > 0}
-      <div class="form-group" class:has-error={validationErrors.has(field.name)}>
-        <label class="col-sm-2 control-label" for={`field-${field.name}`}>
-          {field.label}
-        </label>
-        <div class="col-sm-5">
-          <span
+  {#each fieldGroups as fields (fields[0].name)}
+    <div
+      class="form-group"
+      class:has-error={fields.some((field) => validationErrors.has(field.name))}
+    >
+      <!-- svelte-ignore a11y_label_has_associated_control -->
+      <label class="col-sm-2 control-label">{fields[0].label}</label>
+      <div class="col-sm-5">
+        {#each fields as field, fieldIndex (field.name)}
+          {#if fieldIndex > 0 && field.label}{field.label}{/if}<span
             class={`form-value field-${field.name}`}
             class:form-error={validationErrors.has(field.name)}
-          >
-            {#if field.field_type === "select"}
+            >{field.before ? `${field.before} ` : " "}{#if field.field_type === "select"}
               {#if field.values.length >= 5}
                 <select
-                  id={`field-${field.name}`}
                   name={`field-${field.name}`}
                   class="form-control form-select"
                   bind:value={values[field.name]}
@@ -352,7 +369,6 @@
               {/if}
             {:else if field.height >= 2}
               <textarea
-                id={`field-${field.name}`}
                 name={`field-${field.name}`}
                 class="form-control form-text"
                 cols={field.width}
@@ -361,7 +377,6 @@
                 bind:value={values[field.name]}></textarea>
             {:else}
               <input
-                id={`field-${field.name}`}
                 name={`field-${field.name}`}
                 class="form-control form-text"
                 onkeypress={(event) => {
@@ -372,14 +387,14 @@
                 type="text"
                 bind:value={values[field.name]}
               />
-            {/if}
-            <span class="form-message text-danger">
-              {validationErrors.get(field.name) ?? ""}
-            </span>
-          </span>
-        </div>
+            {/if}{field.after ? ` ${field.after}` : " "}<span
+              class="form-message text-danger"
+              >{validationErrors.get(field.name) ?? ""}</span
+            ></span
+          >
+        {/each}
       </div>
-    {/if}
+    </div>
   {/each}
 
   <div class="form-group">

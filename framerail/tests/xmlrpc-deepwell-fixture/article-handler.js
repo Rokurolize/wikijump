@@ -8,6 +8,7 @@ const DATA_FORM_CONTROLS_CREATE_SLUG = "data-form-controls-flow:example"
 const DATA_FORM_REGEX_BUDGET_CREATE_SLUG = "data-form-regex-budget-flow:example"
 const DATA_FORM_INVALID_REGEX_CREATE_SLUG = "data-form-invalid-regex-flow:example"
 const DATA_FORM_EMPTY_SELECT_CREATE_SLUG = "data-form-empty-select-flow:example"
+const DATA_FORM_PROPERTIES_CREATE_SLUG = "data-form-properties-flow:example"
 const DATA_FORM_EDIT_SLUG = "data-form-edit-flow:example"
 const DATA_FORM_DEFINITION = {
   default_layout: true,
@@ -238,6 +239,89 @@ const DATA_FORM_EMPTY_SELECT_DEFINITION = {
     }
   ]
 }
+const DATA_FORM_PROPERTIES_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "base",
+      label: "Base label",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false
+    },
+    {
+      name: "joined",
+      label: "Joined label",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: "/^ok$/i",
+      match_error: null,
+      before: "PRE",
+      after: "POST",
+      join: true
+    },
+    {
+      name: "extended",
+      label: "",
+      hint: "  padded # hint  ",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 2,
+      match_pattern: "/^a b$/x",
+      match_error: "Extended mismatch",
+      before: "pre # ",
+      after: " post",
+      join: false
+    },
+    {
+      name: "duplicate_modifier",
+      label: "Duplicate modifier",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: "/^ok$/ii",
+      match_error: "Duplicate mismatch",
+      before: "",
+      after: "",
+      join: false
+    },
+    {
+      name: "choice",
+      label: "Choice",
+      hint: "ignored select hint",
+      field_type: "select",
+      values: [
+        { value: "a", label: "Alpha" },
+        { value: "b", label: "Beta" }
+      ],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "PRE",
+      after: "POST",
+      join: false
+    }
+  ]
+}
 
 const optionValue = (extra, name) => {
   const parts = extra.split("/")
@@ -350,7 +434,9 @@ const missingPageArticleViewResult = (route) => ({
                 ? { definition: DATA_FORM_INVALID_REGEX_DEFINITION, values: {} }
                 : route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG
                   ? { definition: DATA_FORM_EMPTY_SELECT_DEFINITION, values: {} }
-                  : null
+                  : route.slug === DATA_FORM_PROPERTIES_CREATE_SLUG
+                    ? { definition: DATA_FORM_PROPERTIES_DEFINITION, values: {} }
+                    : null
     }
   }
 })

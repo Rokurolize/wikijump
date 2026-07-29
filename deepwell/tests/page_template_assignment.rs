@@ -727,6 +727,9 @@ async fn page_view_exposes_live_text_and_select_control_contract() {
         "    hint: enter a color like \\#468259\n",
         "    match: /^ok-[0-9]+$/\n",
         "    match-error: Use ok- followed by digits\n",
+        "    join: true\n",
+        "    before: PRE\n",
+        "    after: POST\n",
         "  missing_values:\n",
         "    label: Missing values\n",
         "    type: select\n",
@@ -737,6 +740,9 @@ async fn page_view_exposes_live_text_and_select_control_contract() {
         "  select_one:\n",
         "    label: Select one\n",
         "    type: select\n",
+        "    hint: ignored select hint\n",
+        "    before: PRE\n",
+        "    after: POST\n",
         "    values:\n",
         "      a: Alpha\n",
         "  select_five:\n",
@@ -886,14 +892,14 @@ quoted: false_value"#;
         matched.match_error.as_deref(),
         Some("Use ok- followed by digits"),
     );
-    assert_eq!(
-        definition
-            .field("select_one")
-            .expect("one-value select")
-            .values
-            .len(),
-        1,
-    );
+    assert!(matched.join);
+    assert_eq!(matched.before, "PRE");
+    assert_eq!(matched.after, "POST");
+    let select_one = definition.field("select_one").expect("one-value select");
+    assert_eq!(select_one.hint, "ignored select hint");
+    assert_eq!(select_one.before, "PRE");
+    assert_eq!(select_one.after, "POST");
+    assert_eq!(select_one.values.len(), 1,);
     assert_eq!(
         definition
             .field("select_five")

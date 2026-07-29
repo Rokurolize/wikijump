@@ -1529,6 +1529,47 @@
           ]
         }
       ]
+    },
+    {
+      "id": "data-form-properties-hints-and-match-boundaries",
+      "title": "Data-form field properties use legacy scalar truthiness, literal affixes, placeholders, and PCRE-style validation",
+      "feature_ids": [
+        "data-forms-field-properties",
+        "data-forms-hints",
+        "data-forms-text-field",
+        "data-forms-select-field"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-07-29",
+      "analysis": "The frozen documentation describes label, join, before, after, hint, match, and match-error only at a high level. Live generated create/edit, validation, save, default-table rendering, and edit restoration establish the exact observable behavior for text and select fields. Field-property scalars retain legacy PHP/YAML coercion quirks instead of using strict modern types; labels and affixes are literal escaped text; affixes affect editor and default-table presentation without affecting storage; hints are text placeholders only on text controls; and validation accepts observed PCRE modifiers and supplies a generated error when match-error is omitted or empty.",
+      "normative_behavior": [
+        "join: true places a non-first text or select field inside the preceding field's editor form-group and default-table row. join on the first field has no effect.",
+        "For joined fields, a non-empty label is emitted as literal inline text immediately before the field wrapper in the editor and as span.form-label in the existing value cell. Omitted, empty, or false-coerced labels emit no inline label. For unjoined fields, omitted or empty labels retain an empty label column or cell.",
+        "Observed join scalar truthiness is not a strict Boolean contract: false, 0, quoted \"0\", and an empty value start a new group, while quoted \"false\", true, quoted \"true\", yes, no, 1, quoted \"1\", and TRUE join the preceding group.",
+        "Observed unquoted false label and affix values collapse to empty; quoted \"false\" remains literal false. Numeric zero, quoted or unquoted, remains literal 0. An unquoted true affix collapses to empty while quoted \"true\" remains literal true.",
+        "before and after are escaped literal text. In the generated editor they are emitted inside span.form-value immediately around the control with Wikidot-supplied separating spaces. They apply to text inputs, textareas, radio select controls, and dropdown select controls.",
+        "before and after do not alter stored values. In the default table they surround the escaped text value or resolved select label. A joined field shares the preceding row and places one ordinary space before its optional inline label.",
+        "Default-table text labels, text values, before, and after remain literal rather than evaluating wiki or HTML markup. Multiline text emits one escaped white-space: pre-wrap span per line separated by br.",
+        "A text-field hint becomes the exact placeholder of an input or textarea. Empty and quoted-empty hints become an empty placeholder; quoted leading and trailing spaces are retained. Select fields do not expose hint as visible content or a placeholder.",
+        "In an unquoted hint, a raw hash starts a comment and removes the hash plus following text. A backslash before the hash is retained literally. A quoted hash is retained without a backslash. HTML- and wiki-looking hint text remains placeholder text rather than markup.",
+        "A non-empty match without match-error uses the generated message Please enter valid '<label>'. An empty match disables validation. match-error without a non-empty match has no effect. An empty match-error uses the same generated fallback.",
+        "Observed slash-delimited match patterns accept i, m, s, x, and u modifiers, escaped slash delimiters, and duplicate i modifiers. Undelimited patterns and observed g, y, or unknown z modifiers fail the match and display the configured match-error.",
+        "Match validation applies to empty text values: an empty value fails /^ok$/ and passes /^$/.",
+        "Failed validation retains all submitted values, keeps the editor open, adds has-error to the form-group and form-error to the field wrapper, and writes the chosen message to span.form-message.text-danger."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json",
+          "sha256": "a45e286977713b7bd1b4181d769b5c8642f20b1c6cd2ae2222490a2b62f760bb",
+          "case_ids": [
+            "field-property-layout-and-scalar-boundaries",
+            "field-property-save-render-edit-round-trip",
+            "text-and-select-hint-boundaries",
+            "text-match-default-error-empty-and-delimiter-rules",
+            "text-match-modifier-and-empty-value-boundaries"
+          ]
+        }
+      ]
     }
   ]
 }

@@ -121,6 +121,9 @@ export interface DataFormFieldDefinition {
   height: number
   match_pattern: Nullable<string>
   match_error: Nullable<string>
+  before: string
+  after: string
+  join: boolean
 }
 export interface DataFormDefinition {
   fields: DataFormFieldDefinition[]
