@@ -25,18 +25,21 @@ use super::structs::{
     GetForumThreads, TouchForumThread, UpdateForumThread, UpdateForumThreadBody,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::models::forum_category::{self, Entity as ForumCategory};
 use crate::models::forum_thread::{
     self, Entity as ForumThread, Model as ForumThreadModel,
 };
+use crate::models::page::Model as PageModel;
 use crate::models::{forum_post, forum_post_revision};
 use crate::services::ForumService;
 use crate::services::ServiceContext;
 use crate::types::Maybe;
 use crate::utils::now;
 use paste::paste;
+use sea_orm::sea_query::OnConflict;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder,
-    QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter,
+    QueryOrder, QuerySelect, Set,
 };
 use sea_query::Expr;
 
@@ -44,6 +47,94 @@ use sea_query::Expr;
 pub struct ForumThreadService;
 
 impl ForumThreadService {
+    pub async fn get_or_create_page_discussion(
+        ctx: &ServiceContext<'_>,
+        page: &PageModel,
+        user_id: i64,
+        title: &str,
+    ) -> Result<ForumThreadModel> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to get or create page discussion for page ID {}",
+                    page.page_id,
+                ),
+                ErrorType::ForumThread,
+            )
+        };
+        let txn = ctx.transaction();
+
+        if let Some(thread) = ForumThread::find()
+            .filter(forum_thread::Column::PageId.eq(page.page_id))
+            .filter(forum_thread::Column::DeletedAt.is_null())
+            .one(txn)
+            .await
+            .or_raise(make_error)?
+        {
+            if page.discussion_thread_id != Some(thread.forum_thread_id) {
+                let mut page = page.clone().into_active_model();
+                page.discussion_thread_id = Set(Some(thread.forum_thread_id));
+                page.update(txn).await.or_raise(make_error)?;
+            }
+            return Ok(thread);
+        }
+
+        let category = ForumCategory::find()
+            .filter(forum_category::Column::SiteId.eq(page.site_id))
+            .filter(forum_category::Column::DeletedAt.is_null())
+            .filter(forum_category::Column::PerPageDiscussion.eq(true))
+            .order_by_asc(forum_category::Column::SortIndex)
+            .order_by_asc(forum_category::Column::ForumCategoryId)
+            .one(txn)
+            .await
+            .or_raise(make_error)?
+            .ok_or_else(|| {
+                Error::new(
+                    format!(
+                        "site ID {} has no active per-page discussion forum category",
+                        page.site_id,
+                    ),
+                    ErrorType::ForumCategory,
+                )
+            })?;
+
+        ForumThread::insert(forum_thread::ActiveModel {
+            forum_category_id: Set(category.forum_category_id),
+            forum_group_id: Set(category.forum_group_id),
+            site_id: Set(category.site_id),
+            page_id: Set(Some(page.page_id)),
+            created_by: Set(user_id),
+            title: Set(title.to_owned()),
+            description: Set(format!(
+                "This is the discussion related to the wiki page {title} .",
+            )),
+            sticky: Set(false),
+            from_wikidot: Set(true),
+            ..Default::default()
+        })
+        .on_conflict(
+            OnConflict::column(forum_thread::Column::PageId)
+                .do_nothing()
+                .to_owned(),
+        )
+        .exec_without_returning(txn)
+        .await
+        .or_raise(make_error)?;
+
+        let thread = ForumThread::find()
+            .filter(forum_thread::Column::PageId.eq(page.page_id))
+            .filter(forum_thread::Column::DeletedAt.is_null())
+            .one(txn)
+            .await
+            .or_raise(make_error)?
+            .ok_or_else(make_error)?;
+
+        let mut page = page.clone().into_active_model();
+        page.discussion_thread_id = Set(Some(thread.forum_thread_id));
+        page.update(txn).await.or_raise(make_error)?;
+        Ok(thread)
+    }
+
     pub async fn create(
         ctx: &ServiceContext<'_>,
         CreateForumThread {

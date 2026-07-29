@@ -22,6 +22,7 @@ use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::page::Model as PageModel;
 use crate::services::file::{GetFileOutput, GetPageFiles};
+use crate::services::forum_thread::ForumThreadService;
 use crate::services::page::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
     GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
@@ -44,6 +45,7 @@ use regex::Regex;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
+use wikidot_normalize::normalize;
 
 static WIKIDOT_LIST_PAGES_SET_PAIR_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
@@ -69,6 +71,18 @@ struct WikidotPagePreviewInput {
     site_id: i64,
     title: String,
     wikitext: String,
+}
+
+#[derive(Deserialize)]
+struct WikidotPageDiscussionInput {
+    site_id: i64,
+    page_id: i64,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotPageDiscussionOutput {
+    pub thread_id: i64,
+    pub thread_unix_title: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -103,6 +117,75 @@ pub async fn wikidot_page_preview(
         body: output.html_output.body,
         styles: output.html_output.styles,
     })
+}
+
+pub async fn wikidot_page_discussion_create(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<WikidotPageDiscussionOutput>> {
+    let input: WikidotPageDiscussionInput = parse!(params, Page);
+    let Some(page) = PageService::get_direct_optional(ctx, input.page_id, false)
+        .await
+        .or_raise(|| Error::new("failed to load discussion page", ErrorType::Page))?
+    else {
+        return Ok(None);
+    };
+    if page.site_id != input.site_id {
+        return Ok(None);
+    }
+
+    let can_view = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id: input.site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to check page discussion view permission",
+            ErrorType::Permission,
+        )
+    })?;
+    if !can_view {
+        return Ok(None);
+    }
+
+    let revision = PageRevisionService::get_latest(ctx, page.site_id, page.page_id)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to load page discussion title",
+                ErrorType::PageRevision,
+            )
+        })?;
+    let thread = ForumThreadService::get_or_create_page_discussion(
+        ctx,
+        &page,
+        crate::constants::ANONYMOUS_USER_ID,
+        &revision.title,
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to create Wikidot page discussion",
+            ErrorType::ForumThread,
+        )
+    })?;
+
+    let mut thread_unix_title = thread.title;
+    normalize(&mut thread_unix_title);
+    Ok(Some(WikidotPageDiscussionOutput {
+        thread_id: thread.forum_thread_id,
+        thread_unix_title,
+    }))
 }
 
 pub async fn wikidot_list_pages_module(
