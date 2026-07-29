@@ -52,6 +52,12 @@ impl DataFormDefinition {
                 .iter()
                 .all(|field| match field.field_type.as_deref() {
                     Some("text") => !field.has_values_property && field.values.is_empty(),
+                    Some("checkbox") => {
+                        !field.has_values_property
+                            && field.values.is_empty()
+                            && !field.has_text_specific_properties
+                    }
+                    Some("wiki") => !field.has_values_property && field.values.is_empty(),
                     Some("select") => {
                         !field.has_text_specific_properties
                             && field
@@ -86,6 +92,10 @@ pub struct DataFormFieldDefinition {
     has_text_specific_properties: bool,
     #[serde(skip)]
     has_values_property: bool,
+    #[serde(skip)]
+    authored_width: Option<String>,
+    #[serde(skip)]
+    authored_height: Option<String>,
 }
 
 impl Default for DataFormFieldDefinition {
@@ -106,6 +116,8 @@ impl Default for DataFormFieldDefinition {
             join: false,
             has_text_specific_properties: false,
             has_values_property: false,
+            authored_width: None,
+            authored_height: None,
         }
     }
 }
@@ -325,14 +337,14 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                 }
                 "width" => {
                     if let Some(field) = definition.field_mut(field_name) {
-                        field.width = parse_wikidot_text_width(value);
+                        field.authored_width = Some(value.to_owned());
                         field.has_text_specific_properties = true;
                     }
                     current_values_field = None;
                 }
                 "height" => {
                     if let Some(field) = definition.field_mut(field_name) {
-                        field.height = parse_wikidot_text_height(value);
+                        field.authored_height = Some(value.to_owned());
                         field.has_text_specific_properties = true;
                     }
                     current_values_field = None;
@@ -450,6 +462,45 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
         if field.field_type.is_none() {
             field.field_type = Some("text".to_owned());
         }
+        match field.field_type.as_deref() {
+            Some("wiki") => {
+                field.width = field
+                    .authored_width
+                    .as_deref()
+                    .map(parse_wikidot_wiki_width)
+                    .unwrap_or(40);
+                field.height = field
+                    .authored_height
+                    .as_deref()
+                    .map(parse_wikidot_wiki_height)
+                    .unwrap_or(2);
+                // Live Wikidot accepts these text-only properties on a wiki
+                // field but does not validate the submitted wiki source.
+                field.match_pattern = None;
+                field.match_error = None;
+            }
+            Some("checkbox") => {
+                if let Some(value) = field.default_value.as_mut() {
+                    *value = if wikidot_checkbox_default_is_checked(value) {
+                        "1".to_owned()
+                    } else {
+                        "0".to_owned()
+                    };
+                }
+            }
+            _ => {
+                field.width = field
+                    .authored_width
+                    .as_deref()
+                    .map(parse_wikidot_text_width)
+                    .unwrap_or(40);
+                field.height = field
+                    .authored_height
+                    .as_deref()
+                    .map(parse_wikidot_text_height)
+                    .unwrap_or(1);
+            }
+        }
     }
     definition.observed_create_edit_compatible &= saw_fields;
     Some(definition)
@@ -479,6 +530,8 @@ pub fn parse_observed_wikidot_data_form_values(
         }
         let value = match field.field_type.as_deref() {
             Some("text") => parse_wikidot_stored_text_scalar(raw_value)?,
+            Some("wiki") => parse_wikidot_stored_wiki_scalar(raw_value)?,
+            Some("checkbox") => parse_wikidot_stored_checkbox_scalar(raw_value)?,
             Some("select") => {
                 if raw_value == "null" {
                     String::new()
@@ -492,6 +545,8 @@ pub fn parse_observed_wikidot_data_form_values(
         };
         let canonical = match field.field_type.as_deref() {
             Some("text") => serialize_wikidot_stored_text_scalar(&value),
+            Some("wiki") => serialize_wikidot_stored_wiki_scalar(&value),
+            Some("checkbox") => serialize_wikidot_stored_checkbox_scalar(&value),
             Some("select") => serialize_wikidot_stored_select_scalar(&value),
             _ => return None,
         };
@@ -507,6 +562,14 @@ pub fn parse_observed_wikidot_data_form_values(
 pub fn render_wikidot_data_form_table(
     definition: &DataFormDefinition,
     values: &BTreeMap<String, String>,
+) -> String {
+    render_wikidot_data_form_table_with_wiki_html(definition, values, &BTreeMap::new())
+}
+
+pub fn render_wikidot_data_form_table_with_wiki_html(
+    definition: &DataFormDefinition,
+    values: &BTreeMap<String, String>,
+    rendered_wiki_values: &BTreeMap<String, String>,
 ) -> String {
     let mut html = String::from(r#"<table class="form-table"><tbody>"#);
     for (index, field) in definition.fields.iter().enumerate() {
@@ -536,6 +599,24 @@ pub fn render_wikidot_data_form_table(
         } else {
             raw_value
         };
+        if field.field_type.as_deref() == Some("wiki") {
+            html.push_str(r#"<div class="form-value field-"#);
+            html.push_str(&field.name);
+            html.push_str(r#"">"#);
+            if !field.before.is_empty() {
+                append_wikidot_data_form_wiki_affix(&mut html, &field.before);
+            }
+            if let Some(rendered) = rendered_wiki_values.get(&field.name) {
+                html.push_str(rendered);
+            } else {
+                append_wikidot_data_form_wiki_affix(&mut html, display_value);
+            }
+            if !field.after.is_empty() {
+                append_wikidot_data_form_wiki_affix(&mut html, &field.after);
+            }
+            html.push_str("</div>");
+            continue;
+        }
         html.push_str("<span>");
         if !field.before.is_empty() {
             append_wikidot_data_form_display_text(&mut html, field.before.trim());
@@ -553,6 +634,12 @@ pub fn render_wikidot_data_form_table(
     }
     html.push_str("</tbody></table>");
     html
+}
+
+fn append_wikidot_data_form_wiki_affix(output: &mut String, value: &str) {
+    output.push_str(r#"<p><span style="white-space: pre-wrap;">"#);
+    output.push_str(&escape_html_text(value));
+    output.push_str("</span></p>");
 }
 
 fn append_wikidot_data_form_display_text(output: &mut String, value: &str) {
@@ -594,6 +681,29 @@ fn parse_wikidot_text_height(value: &str) -> usize {
         .unwrap_or(1)
 }
 
+fn parse_wikidot_wiki_width(value: &str) -> usize {
+    value
+        .parse::<i64>()
+        .ok()
+        .and_then(|width| usize::try_from(width.max(20)).ok())
+        .unwrap_or(40)
+}
+
+fn parse_wikidot_wiki_height(value: &str) -> usize {
+    value
+        .parse::<i64>()
+        .ok()
+        .and_then(|height| usize::try_from(if height < 2 { 1 } else { height }).ok())
+        .unwrap_or(2)
+}
+
+fn wikidot_checkbox_default_is_checked(value: &str) -> bool {
+    value
+        .parse::<f64>()
+        .ok()
+        .is_some_and(|numeric| numeric.is_finite() && numeric == 1.0)
+}
+
 fn parse_wikidot_stored_plain_scalar(value: &str) -> Option<String> {
     if value.starts_with('\'') {
         parse_wikidot_single_quoted_scalar(value)
@@ -604,7 +714,7 @@ fn parse_wikidot_stored_plain_scalar(value: &str) -> Option<String> {
     }
 }
 
-fn parse_wikidot_stored_text_scalar(value: &str) -> Option<String> {
+pub(crate) fn parse_wikidot_stored_text_scalar(value: &str) -> Option<String> {
     if value.starts_with('\'') {
         parse_wikidot_single_quoted_scalar(value)
     } else if value.starts_with('"') {
@@ -614,6 +724,30 @@ fn parse_wikidot_stored_text_scalar(value: &str) -> Option<String> {
     } else {
         None
     }
+}
+
+fn parse_wikidot_stored_wiki_scalar(value: &str) -> Option<String> {
+    if value.starts_with('\'') {
+        parse_wikidot_single_quoted_scalar(value)
+    } else if value.starts_with('"') {
+        parse_wikidot_double_quoted_scalar(value).filter(|parsed| parsed.contains('\n'))
+    } else if valid_wikidot_stored_wiki_plain_scalar(value) {
+        Some(value.to_owned())
+    } else {
+        None
+    }
+}
+
+fn valid_wikidot_stored_wiki_plain_scalar(value: &str) -> bool {
+    valid_wikidot_stored_plain_scalar(value)
+        || (value.starts_with('/')
+            && value.len() > 1
+            && !value.chars().any(char::is_whitespace))
+}
+
+fn parse_wikidot_stored_checkbox_scalar(value: &str) -> Option<String> {
+    parse_wikidot_single_quoted_scalar(value)
+        .filter(|parsed| matches!(parsed.as_str(), "0" | "1"))
 }
 
 fn valid_wikidot_stored_plain_scalar(value: &str) -> bool {
@@ -648,6 +782,20 @@ fn serialize_wikidot_stored_text_scalar(value: &str) -> String {
     } else {
         serialize_wikidot_stored_select_scalar(value)
     }
+}
+
+fn serialize_wikidot_stored_wiki_scalar(value: &str) -> String {
+    if value.contains('\n') {
+        serialize_wikidot_stored_text_scalar(value)
+    } else if valid_wikidot_stored_wiki_plain_scalar(value) {
+        value.to_owned()
+    } else {
+        serialize_wikidot_stored_select_scalar(value)
+    }
+}
+
+fn serialize_wikidot_stored_checkbox_scalar(value: &str) -> String {
+    format!("'{}'", if value == "1" { "1" } else { "0" })
 }
 
 fn serialize_wikidot_stored_select_scalar(value: &str) -> String {
@@ -1135,5 +1283,174 @@ fields:
                 .match_error,
             None,
         );
+    }
+
+    #[test]
+    fn checkbox_and_wiki_fields_follow_live_control_and_storage_contracts() {
+        let definition = parse_wikidot_data_form_definition(
+            r#"[[form]]
+fields:
+  checkbox_omitted:
+    label: Omitted checkbox
+    type: checkbox
+  checkbox_one:
+    label: One checkbox
+    type: checkbox
+    default: 1.0
+  checkbox_spaced:
+    label: Spaced checkbox
+    type: checkbox
+    default: " 1 "
+  wiki_default:
+    label: Wiki default
+    type: wiki
+    default: "**Default**"
+    hint: enter wiki \#source
+  wiki_one_line:
+    label: Wiki one line
+    type: wiki
+    width: 1
+    height: 1
+    match: /^ok$/
+    match-error: ignored
+  wiki_fallback:
+    label: Wiki fallback
+    type: wiki
+    width: nope
+    height: nope
+[[/form]]"#,
+        )
+        .expect("data form");
+
+        assert!(definition.supports_observed_create_edit());
+        assert_eq!(
+            definition
+                .field("checkbox_omitted")
+                .expect("checkbox")
+                .default_value,
+            None,
+        );
+        assert_eq!(
+            definition
+                .field("checkbox_one")
+                .expect("checkbox")
+                .default_value
+                .as_deref(),
+            Some("1"),
+        );
+        assert_eq!(
+            definition
+                .field("checkbox_spaced")
+                .expect("checkbox")
+                .default_value
+                .as_deref(),
+            Some("0"),
+        );
+        let wiki_default = definition.field("wiki_default").expect("wiki");
+        assert_eq!(wiki_default.width, 40);
+        assert_eq!(wiki_default.height, 2);
+        assert_eq!(wiki_default.default_value.as_deref(), Some("**Default**"));
+        assert_eq!(wiki_default.hint, "enter wiki \\#source");
+        let wiki_one_line = definition.field("wiki_one_line").expect("wiki");
+        assert_eq!(wiki_one_line.width, 20);
+        assert_eq!(wiki_one_line.height, 1);
+        assert_eq!(wiki_one_line.match_pattern, None);
+        assert_eq!(wiki_one_line.match_error, None);
+        let wiki_fallback = definition.field("wiki_fallback").expect("wiki");
+        assert_eq!(wiki_fallback.width, 40);
+        assert_eq!(wiki_fallback.height, 2);
+
+        let values = parse_observed_wikidot_data_form_values(
+            &definition,
+            concat!(
+                "checkbox_omitted: '0'\n",
+                "checkbox_one: '1'\n",
+                "checkbox_spaced: '0'\n",
+                "wiki_default: \"**Bold**\\n[[[start|Home]]]\"\n",
+                "wiki_one_line: //italic//\n",
+                "wiki_fallback: 'plain wiki'",
+            ),
+        )
+        .expect("canonical checkbox and wiki values");
+        assert_eq!(
+            values.get("wiki_default").map(String::as_str),
+            Some("**Bold**\n[[[start|Home]]]"),
+        );
+        assert_eq!(values.get("checkbox_one").map(String::as_str), Some("1"),);
+
+        for source in [
+            concat!(
+                "checkbox_omitted: 0\n",
+                "checkbox_one: '1'\n",
+                "checkbox_spaced: '0'\n",
+                "wiki_default: \"**Bold**\\n[[[start|Home]]]\"\n",
+                "wiki_one_line: //italic//\n",
+                "wiki_fallback: 'plain wiki'",
+            ),
+            concat!(
+                "checkbox_omitted: '2'\n",
+                "checkbox_one: '1'\n",
+                "checkbox_spaced: '0'\n",
+                "wiki_default: \"**Bold**\\n[[[start|Home]]]\"\n",
+                "wiki_one_line: //italic//\n",
+                "wiki_fallback: 'plain wiki'",
+            ),
+        ] {
+            assert_eq!(
+                parse_observed_wikidot_data_form_values(&definition, source),
+                None,
+                "checkbox storage must be canonical quoted binary:\n{source}",
+            );
+        }
+    }
+
+    #[test]
+    fn checkbox_defaults_and_wiki_dimensions_cover_live_boundaries() {
+        for checked in ["1", "01", "1.0"] {
+            assert!(
+                wikidot_checkbox_default_is_checked(checked),
+                "{checked:?} is live-checked",
+            );
+        }
+        for unchecked in [
+            "", "0", "-1", "2", "false", "true", "yes", "no", "null", " 1 ",
+        ] {
+            assert!(
+                !wikidot_checkbox_default_is_checked(unchecked),
+                "{unchecked:?} is live-unchecked",
+            );
+        }
+
+        for (authored, expected) in [
+            ("", 40),
+            ("nope", 40),
+            ("-1", 20),
+            ("0", 20),
+            ("1", 20),
+            ("19", 20),
+            ("20", 20),
+            ("21", 21),
+        ] {
+            assert_eq!(
+                parse_wikidot_wiki_width(authored),
+                expected,
+                "wiki width {authored:?}",
+            );
+        }
+        for (authored, expected) in [
+            ("", 2),
+            ("nope", 2),
+            ("-1", 1),
+            ("0", 1),
+            ("1", 1),
+            ("2", 2),
+            ("3", 3),
+        ] {
+            assert_eq!(
+                parse_wikidot_wiki_height(authored),
+                expected,
+                "wiki height {authored:?}",
+            );
+        }
     }
 }

@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "2c52b7cf0c869588bb3a9657f92cf8aa736338cafe1bb496bddfc6521e911352",
+  "catalog_sha256": "f1b9f3db6eb6194e869d725dde1d2d736df93cffe47e3c7725131e0688c83137",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -176,14 +176,48 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-checkbox-field": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Live generated checkbox create/edit control DOM, exact stored-source readback, default display, and direct/ListPages variables",
+        "Deepwell public missing/found page view and ListPages query/render contracts",
+        "Framerail public generated data-form create/edit browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "checkbox_and_wiki_fields_follow_live_control_and_storage_contracts; checkbox_defaults_and_wiki_dimensions_cover_live_boundaries",
+          "scope": "definition and storage regressions verify exact-one checkbox defaults, quoted binary records, common field properties, wiki dimensions, and fail-closed scalar boundaries"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_checkbox_and_wiki_contract",
+          "scope": "public missing, create, saved, and edit page views verify checkbox controls, defaults, canonical storage restoration, and default-table output"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "scope": "public saved-page ListPages rendering verifies checkbox form_data and form_raw both expose the stored digit"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js; framerail/tests/data-form-create-flow.spec.ts",
+          "name": "checkbox/wiki source serialization and public create/edit browser flow",
+          "scope": "unit and browser regressions verify exact checked DOM, default state, quoted storage, mutation payloads, and edit restoration"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/page_query/structs.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/view/service.rs",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-checkbox-field.md"
       ],
-      "live_oracle_evidence": [],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+      ],
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-creating-new-page": {
@@ -229,6 +263,16 @@
           "path": "framerail/tests/data-form-create-flow.spec.ts",
           "name": "pathological data-form match patterns fail closed without blocking the editor",
           "scope": "public browser flow verifies adversarial match evaluation cannot block the editor or cause a page-create mutation"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_checkbox_and_wiki_contract",
+          "scope": "public missing, create, saved, and edit page views verify the observed checkbox/wiki definition, restoration, and default-display contract"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js; framerail/tests/data-form-create-flow.spec.ts",
+          "name": "checkbox/wiki source serialization and public create/edit browser flow",
+          "scope": "unit and public browser regressions verify generated controls, defaults, exact source payloads, and edit restoration"
         }
       ],
       "implementation_files": [
@@ -254,12 +298,13 @@
       "live_oracle_evidence": [
         "install/local/wikidot-verification/artifacts/data-form-create-edit-live.json",
         "install/local/wikidot-verification/artifacts/data-form-newpage-metadata-live.json",
-        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json"
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Live create, edit, validation, storage, and rendering behavior for data-form field types other than text and select remains to be observed and implemented.",
+        "Live create, edit, validation, storage, and rendering behavior for data-form field types other than text, select, checkbox, and wiki remains to be observed and implemented.",
         "Custom data-form layouts after the ==== separator and their display-variable substitutions remain to be implemented.",
-        "The observed text/select validation and escaping contract is implemented and covered; validation and escaping for the remaining field types still require live probes before implementation.",
+        "The observed text/select/checkbox/wiki validation and escaping contract is implemented and covered; validation and escaping for the remaining field types still require live probes before implementation.",
         "Valid parentPage creation and non-empty tags rejection are observed, implemented, and covered through the public browser and Deepwell mutation seams. Missing-parent, empty-tags, malformed-route, and permission variants remain unobserved.",
         "Template edit, reassignment, deletion, and restoration must be proven to invalidate every anonymous imported-page cache entry that depends on the category template.",
         "The live Do not notify watchers control and its mutation semantics remain omitted until the page-watcher backend exists and the data-form request contract is observed.",
@@ -299,6 +344,11 @@
           "path": "deepwell/tests/page.rs",
           "name": "listpages_template_selectors_can_use_current_page_data_form_values",
           "scope": "public saved-page rendering verifies current-page form_raw variables inside a data-form template ListPages head resolve before _field selectors and data-form field ordering renders display labels"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "scope": "public saved-page rendering verifies checkbox digits and wiki-parsed form_data/form_raw output, including canonical multiline stored-source decoding"
         }
       ],
       "implementation_files": [
@@ -314,7 +364,8 @@
       ],
       "live_oracle_evidence": [
         "install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json",
-        "install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json"
+        "install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
       ],
       "unresolved_ambiguities_or_blockers": []
     },
@@ -341,15 +392,38 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-displaying": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live generated default data-form table plus direct and ListPages template-variable rendering",
+        "Deepwell public saved-page page_get compiled HTML and ListPages render contracts"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_checkbox_and_wiki_contract",
+          "scope": "public saved-page default display verifies checkbox digits, page-context wiki rendering, literal affixes, join behavior, and the exact Wikidot table structure"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "scope": "public ListPages rendering verifies checkbox and wiki display variables"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/view/service.rs",
+        "deepwell/src/services/render/list_pages/data_forms.rs"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-displaying.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Observed checkbox and wiki default-table and template-variable behavior is implemented and covered. Custom layouts, including the adversarial direct raw-wiki adjacent-block composition, and the remaining field types still require implementation or live coverage."
+      ]
     },
     "data-forms-field-properties": {
       "status": "in_progress",
@@ -373,6 +447,11 @@
           "path": "framerail/tests/data-form-create-flow.spec.ts",
           "name": "data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage; pathological data-form match patterns fail closed without blocking the editor; invalid data-form match patterns use a host-owned diagnostic",
           "scope": "public browser flows verify joined control groups, omitted labels, literal affixes, exact live field label/id DOM, width, height, hints, generated and custom match-error DOM, extended and duplicate regex modifiers, preserved invalid values, one overall worker budget, safety diagnostics, unselected-select null storage, defaults, exact saved source, and edit restoration"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs; deepwell/tests/page_template_assignment.rs; framerail/tests/data-form-create-flow.spec.ts",
+          "name": "checkbox/wiki common properties and public rendering flow",
+          "scope": "unit, public Deepwell, and browser regressions verify checkbox/wiki label, join, literal before/after affixes, dimensions, defaults, ignored checkbox hint, wiki placeholder, and text-only validation boundaries"
         }
       ],
       "implementation_files": [
@@ -387,10 +466,11 @@
       ],
       "live_oracle_evidence": [
         "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
-        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json"
+        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Label, join, before, and after are observed, implemented, and covered for text and select fields, including scalar boundaries and default-table rendering. Their behavior across checkbox, wiki, and the other pending field types remains coupled to those unimplemented field types and still requires live coverage."
+        "Label, join, before, and after are observed, implemented, and covered for text, select, checkbox, and wiki fields. The other pending field types still require live coverage."
       ]
     },
     "data-forms-file-field": {
@@ -437,6 +517,11 @@
           "path": "framerail/tests/data-form-create-flow.spec.ts",
           "name": "data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage",
           "scope": "public browser flows verify exact text input and textarea placeholders, including retained backslashes and surrounding spaces, while select hints produce no placeholder"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs; deepwell/tests/page_template_assignment.rs; framerail/tests/data-form-create-flow.spec.ts",
+          "name": "checkbox/wiki hint parsing and public control rendering",
+          "scope": "unit, public Deepwell, and browser regressions verify exact wiki placeholders and the absence of visible checkbox hints"
         }
       ],
       "implementation_files": [
@@ -449,10 +534,11 @@
       ],
       "live_oracle_evidence": [
         "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
-        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json"
+        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Text and select hint behavior is observed, implemented, and covered for plain, escaped-hash, raw-hash, quoted-hash, empty, quoted-empty, surrounding-space, wiki-looking, and HTML-looking values. The documentation's heading, wiki-field, and CSS composition tips plus hint behavior for the remaining pending field types require those field types and integrations to be implemented."
+        "Text, select, checkbox, and wiki hint behavior is observed, implemented, and covered. Heading/CSS composition and remaining field types still require coverage."
       ]
     },
     "data-forms-howto": {
@@ -758,15 +844,51 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-wiki-field": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live generated wiki create/edit control DOM, exact stored-source readback, parsed default display, and direct/ListPages variables",
+        "Deepwell public missing/found page view and ListPages query/render contracts",
+        "Framerail public generated data-form create/edit browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "checkbox_and_wiki_fields_follow_live_control_and_storage_contracts; checkbox_defaults_and_wiki_dimensions_cover_live_boundaries",
+          "scope": "definition and storage regressions verify wiki control defaults, dimension fallbacks, common properties, text-only validation exclusion, and canonical scalar handling"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_checkbox_and_wiki_contract",
+          "scope": "public missing, create, saved, and edit page views verify page-context wiki parsing, literal affixes, exact default-table DOM, and edit restoration"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "scope": "public saved-page ListPages rendering verifies parsed wiki form_data/form_raw output and canonical multiline stored-source decoding"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js; framerail/tests/data-form-create-flow.spec.ts",
+          "name": "checkbox/wiki source serialization and public create/edit browser flow",
+          "scope": "unit and browser regressions verify form-wiki DOM, dimensions, placeholders, exact scalar encoding, mutation payloads, ignored text-only validation, and edit restoration"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/page_query/structs.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/view/service.rs",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-wiki-field.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The observed wiki control, dimension fallbacks, default and hint properties, text-only validation boundary, storage, parsed default display, literal affixes, edit restoration, and ListPages variables are implemented and covered. Exact adversarial raw-wiki adjacent-block composition remains coupled to the unimplemented custom data-form layout surface."
+      ]
     },
     "data-forms-youtube": {
       "status": "pending",
@@ -1387,7 +1509,7 @@
       ]
     },
     "module-listpages": {
-      "status": "implemented",
+      "status": "in_progress",
       "confirmed_public_seams": [
         "Anonymous PagePreviewModule and run-owned saved-page live Wikidot oracle",
         "Deepwell public saved-page, preview, and AJAX ListPages render/query interfaces",
@@ -1415,6 +1537,11 @@
         {
           "path": "install/local/wikidot-verification/tests",
           "scope": "corpus inventory, generated matrix, live differential, regression accounting, RSS, and navigation verifier tests"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "scope": "public saved-page regression verifies checkbox and wiki data-form variables, canonical multiline source decoding, and wiki parsing in ListPages rows"
         }
       ],
       "implementation_files": [
@@ -1446,7 +1573,8 @@
         "install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
         "install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json",
         "install/local/wikidot-verification/artifacts/countpages-inside-listpages-live.json",
-        "install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json"
+        "install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
         "Imported Wikidot snapshots retain the last commenter's display name and timestamp but not the Wikidot user ID. Identity-bearing last-comment variables on imported rows remain provenance-blocked until the corpus or importer supplies a stable user identity; local relational comments are not blocked."

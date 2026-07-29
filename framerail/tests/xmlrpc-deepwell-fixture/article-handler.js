@@ -9,6 +9,7 @@ const DATA_FORM_REGEX_BUDGET_CREATE_SLUG = "data-form-regex-budget-flow:example"
 const DATA_FORM_INVALID_REGEX_CREATE_SLUG = "data-form-invalid-regex-flow:example"
 const DATA_FORM_EMPTY_SELECT_CREATE_SLUG = "data-form-empty-select-flow:example"
 const DATA_FORM_PROPERTIES_CREATE_SLUG = "data-form-properties-flow:example"
+const DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG = "data-form-checkbox-wiki-flow:example"
 const DATA_FORM_EDIT_SLUG = "data-form-edit-flow:example"
 const DATA_FORM_DEFINITION = {
   default_layout: true,
@@ -322,6 +323,71 @@ const DATA_FORM_PROPERTIES_DEFINITION = {
     }
   ]
 }
+const DATA_FORM_CHECKBOX_WIKI_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "checkbox_unchecked",
+      label: "Unchecked",
+      hint: "ignored checkbox hint",
+      field_type: "checkbox",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "PRE",
+      after: "POST",
+      join: false
+    },
+    {
+      name: "checkbox_checked",
+      label: "Checked",
+      hint: "",
+      field_type: "checkbox",
+      values: [],
+      default_value: "1",
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: true
+    },
+    {
+      name: "wiki",
+      label: "Wiki",
+      hint: "enter wiki \\#source",
+      field_type: "wiki",
+      values: [],
+      default_value: "**Default**",
+      width: 40,
+      height: 2,
+      match_pattern: null,
+      match_error: null,
+      before: "**Before**",
+      after: "//After//",
+      join: false
+    },
+    {
+      name: "wiki_one_line",
+      label: "Wiki one line",
+      hint: "",
+      field_type: "wiki",
+      values: [],
+      default_value: null,
+      width: 20,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false
+    }
+  ]
+}
 
 const optionValue = (extra, name) => {
   const parts = extra.split("/")
@@ -436,7 +502,9 @@ const missingPageArticleViewResult = (route) => ({
                   ? { definition: DATA_FORM_EMPTY_SELECT_DEFINITION, values: {} }
                   : route.slug === DATA_FORM_PROPERTIES_CREATE_SLUG
                     ? { definition: DATA_FORM_PROPERTIES_DEFINITION, values: {} }
-                    : null
+                    : route.slug === DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG
+                      ? { definition: DATA_FORM_CHECKBOX_WIKI_DEFINITION, values: {} }
+                      : null
     }
   }
 })

@@ -626,6 +626,48 @@ impl RenderService {
         })
     }
 
+    /// Renders a Wikidot fragment in an existing page's site context without
+    /// persisting compiled text or replacing that page's hosted text blocks.
+    pub async fn render_wikidot_fragment_for_page(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        page_info: &PageInfo<'_>,
+        PageId {
+            site_id,
+            category_id,
+            page_id,
+        }: PageId,
+    ) -> Result<RenderOutput> {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let RenderInnerOutput {
+            html_output,
+            errors,
+            compiled_hash,
+        } = Box::pin(Self::render_inner(
+            ctx,
+            wikitext,
+            page_info,
+            &settings,
+            RenderInnerOptions {
+                render_context: RenderContext::page_nav(site_id, category_id, page_id),
+                viewer_user_id: None,
+                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                trace: None,
+                persist_compiled_text: false,
+                url: UrlArguments::default(),
+            },
+        ))
+        .await?;
+
+        Ok(RenderOutput {
+            html_output,
+            errors,
+            compiled_hash,
+            compiled_at: now(),
+            compiled_generator: COMPILED_GENERATOR.clone(),
+        })
+    }
+
     pub async fn render_wikidot_list_pages_module(
         ctx: &ServiceContext<'_>,
         site_id: i64,

@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 41,
+    "observation_count": 43,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -425,7 +425,9 @@
         "Public create/edit/view flow and ListPages query behavior where documented"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "data-form-checkbox-control-storage-and-variable-contract"
+      ]
     },
     {
       "id": "data-forms-creating-new-page",
@@ -507,7 +509,9 @@
       "related_features": [],
       "live_observation_ids": [
         "listpages-rating-comment-and-data-form-variables",
-        "dataforms-listpages-selection-sorting-live"
+        "dataforms-listpages-selection-sorting-live",
+        "data-form-checkbox-control-storage-and-variable-contract",
+        "data-form-wiki-control-rendering-and-variable-contract"
       ]
     },
     {
@@ -581,7 +585,9 @@
       ],
       "related_features": [],
       "live_observation_ids": [
-        "data-form-live-create-edit-round-trip"
+        "data-form-live-create-edit-round-trip",
+        "data-form-checkbox-control-storage-and-variable-contract",
+        "data-form-wiki-control-rendering-and-variable-contract"
       ]
     },
     {
@@ -608,7 +614,9 @@
       "related_features": [],
       "live_observation_ids": [
         "data-form-text-select-controls-and-storage",
-        "data-form-properties-hints-and-match-boundaries"
+        "data-form-properties-hints-and-match-boundaries",
+        "data-form-checkbox-control-storage-and-variable-contract",
+        "data-form-wiki-control-rendering-and-variable-contract"
       ]
     },
     {
@@ -683,7 +691,9 @@
       "related_features": [],
       "live_observation_ids": [
         "data-form-text-select-controls-and-storage",
-        "data-form-properties-hints-and-match-boundaries"
+        "data-form-properties-hints-and-match-boundaries",
+        "data-form-checkbox-control-storage-and-variable-contract",
+        "data-form-wiki-control-rendering-and-variable-contract"
       ]
     },
     {
@@ -1070,7 +1080,9 @@
         "Public create/edit/view flow and ListPages query behavior where documented"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "data-form-wiki-control-rendering-and-variable-contract"
+      ]
     },
     {
       "id": "data-forms-youtube",
@@ -2050,7 +2062,9 @@
         "listpages-rating-comment-and-data-form-variables",
         "dataforms-listpages-selection-sorting-live",
         "listpages-legacy-and-body-edge-behavior",
-        "countpages-inside-listpages-body"
+        "countpages-inside-listpages-body",
+        "data-form-checkbox-control-storage-and-variable-contract",
+        "data-form-wiki-control-rendering-and-variable-contract"
       ]
     },
     {

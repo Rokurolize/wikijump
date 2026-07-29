@@ -169,6 +169,90 @@ test("data-form text and select controls match live validation and storage", asy
   await expect(page.locator("select[name='field-select_five']")).toHaveValue("2")
 })
 
+test("data-form checkbox and wiki controls match live DOM and storage", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-checkbox-wiki-flow:example/edit/true")
+
+  const unchecked = page.locator("input[name='field-checkbox_unchecked']")
+  await expect(unchecked).toHaveAttribute("type", "checkbox")
+  await expect(unchecked).toHaveClass("form-checkbox")
+  await expect(unchecked).not.toHaveAttribute("value")
+  await expect(unchecked).not.toBeChecked()
+  expect(await unchecked.inputValue()).toBe("on")
+
+  const checked = page.locator("input[name='field-checkbox_checked']")
+  await expect(checked).toBeChecked()
+  await expect(checked).toHaveAttribute("checked", "checked")
+  await expect(checked).not.toHaveAttribute("value")
+  await expect(page.locator(".field-checkbox_unchecked")).toContainText("PRE POST")
+  await expect(unchecked).not.toHaveAttribute("placeholder")
+  expect(
+    await page
+      .locator(".field-checkbox_unchecked")
+      .evaluate((element) =>
+        [...element.childNodes]
+          .filter((node) => node.nodeType !== Node.COMMENT_NODE)
+          .map((node) =>
+            node.nodeType === Node.TEXT_NODE ? node.textContent : node.nodeName
+          )
+      )
+  ).toEqual(["PRE ", "INPUT", " POST", "SPAN"])
+
+  const wiki = page.locator("textarea[name='field-wiki']")
+  await expect(wiki).toHaveClass("form-control form-wiki")
+  await expect(wiki).toHaveAttribute("cols", "40")
+  await expect(wiki).toHaveAttribute("rows", "2")
+  await expect(wiki).toHaveAttribute("placeholder", "enter wiki \\#source")
+  await expect(wiki).toHaveValue("**Default**")
+  await expect(page.locator(".field-wiki")).toContainText("**Before** //After//")
+  expect(
+    await page
+      .locator(".field-wiki")
+      .evaluate((element) =>
+        [...element.childNodes]
+          .filter((node) => node.nodeType !== Node.COMMENT_NODE)
+          .map((node) =>
+            node.nodeType === Node.TEXT_NODE ? node.textContent : node.nodeName
+          )
+      )
+  ).toEqual(["**Before** ", "TEXTAREA", " //After//", "SPAN"])
+
+  const wikiOneLine = page.locator("input[name='field-wiki_one_line']")
+  await expect(wikiOneLine).toHaveClass("form-control form-wiki")
+  await expect(wikiOneLine).toHaveAttribute("size", "20")
+
+  await unchecked.check()
+  await checked.uncheck()
+  await wiki.fill("**Bold**\n[[[start|Home]]]")
+  await wikiOneLine.fill("//italic//")
+  await page.locator("#edit-save-button").click()
+
+  await expect
+    .poll(async () => {
+      const writes = await request
+        .get(`${FIXTURE_URL}/last-page-write-requests`)
+        .then((response) => response.json())
+      return writes.pageCreate.find(
+        (entry: { params: { slug?: string } }) =>
+          entry.params.slug === "data-form-checkbox-wiki-flow:example"
+      )
+    })
+    .toMatchObject({
+      params: {
+        wikitext: [
+          "checkbox_unchecked: '1'",
+          "checkbox_checked: '0'",
+          'wiki: "**Bold**\\n[[[start|Home]]]"',
+          "wiki_one_line: //italic//"
+        ].join("\n")
+      }
+    })
+})
+
 test("empty and unselected select fields save and restore as Wikidot null", async ({
   page,
   request
