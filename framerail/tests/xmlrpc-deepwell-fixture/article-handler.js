@@ -2,7 +2,9 @@ import { fixtureState, hasExactKeys, requestContextHeaders } from "./context.js"
 import { pages, toArticleViewResult } from "./data.js"
 
 const LISTPAGES_NAVIGATION_EXTRA = /^p\/[1-9][0-9]*$/u
+const NEW_PAGE_EDIT_EXTRA = /^edit\/true(?:\/.*)?$/u
 
+/** @param {{ slug: string; extra: string }} route */
 const pageForArticleRoute = (route) => {
   const page = pages[route.slug]
   if (!page) return null
@@ -23,6 +25,69 @@ const pageForArticleRoute = (route) => {
   }
   return route.extra === "" ? page : null
 }
+
+const siteView = {
+  site: {
+    site_id: 6000005,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: null,
+    deleted_at: null,
+    from_wikidot: false,
+    slug: "scp-wiki",
+    name: "SCP Foundation",
+    tagline: "Secure, Contain, Protect",
+    description: "Fixture site",
+    locale: "en",
+    default_page: "main",
+    top_bar_page: null,
+    side_bar_page: null,
+    preferred_domain: null,
+    layout: "wikidot",
+    license: "cc-by-sa-3.0"
+  },
+  site_file_domain: "scp-wiki.wjfiles.localhost",
+  license_name: "CC BY-SA 3.0",
+  license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
+  license_kind: "standard",
+  license_html: null,
+  user_session: null
+}
+
+/** @param {{ slug: string; extra: string }} route */
+const missingPageArticleViewResult = (route) => ({
+  ...siteView,
+  article_page_cache_key: null,
+  public_content_cache_fence: null,
+  anonymous_permission_cache_fence: null,
+  page: {
+    type: "missing",
+    data: {
+      options: {
+        edit: NEW_PAGE_EDIT_EXTRA.test(route.extra),
+        title: null,
+        parent: null,
+        tags: null,
+        no_redirect: false,
+        no_render: false,
+        debug: false,
+        renderer: false,
+        comments: false,
+        history: false,
+        offset: null,
+        data: ""
+      },
+      redirect_page: null,
+      wikitext: "",
+      compiled_body_html: "",
+      compiled_body_styles: [],
+      compiled_top_bar_html: null,
+      compiled_side_bar_html: null,
+      new_page_wikitext: null,
+      page_templates: [],
+      selected_template_page_id: null
+    }
+  }
+})
 
 /**
  * @param {{
@@ -49,10 +114,14 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
     Array.isArray(rpcRequest.params.locales) &&
     hasExactKeys(rpcRequest.params.route, ["extra", "slug"]) &&
     typeof rpcRequest.params.route.slug === "string" &&
-    pageForArticleRoute(rpcRequest.params.route)
+    (pageForArticleRoute(rpcRequest.params.route) ||
+      NEW_PAGE_EDIT_EXTRA.test(rpcRequest.params.route.extra))
   ) {
     articleReadRequests.articleView.push(rpcRequest.params)
-    result = toArticleViewResult(pageForArticleRoute(rpcRequest.params.route))
+    const page = pageForArticleRoute(rpcRequest.params.route)
+    result = page
+      ? toArticleViewResult(page)
+      : missingPageArticleViewResult(rpcRequest.params.route)
   } else if (
     rpcRequest.method === "article_view_cache_metadata" &&
     hasExactKeys(rpcRequest.params, ["locales", "route", "session_token", "site_id"]) &&
@@ -65,6 +134,7 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
   ) {
     articleReadRequests.articleViewCacheMetadata.push(rpcRequest.params)
     const page = pageForArticleRoute(rpcRequest.params.route)
+    if (!page) return undefined
     result = {
       article_page_cache_key: `deepwell:article-view:page:v1:site=6000005:page=${page.page_id}:rev=${page.revision_id}:updated=0:permission=site=0,user=0:body=fixture`,
       public_content_cache_fence: "0",

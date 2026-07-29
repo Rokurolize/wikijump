@@ -1,0 +1,268 @@
+{
+  "schema": "wikijump.wikidot_live_artifact.v1",
+  "feature": "module-newpage",
+  "captured_at": "2026-07-29T08:31:00+09:00/2026-07-29T08:41:00+09:00",
+  "site": "sandbox-for-codex",
+  "source_page": "run-owned:np-submit-20260728233036-holder",
+  "source_page_url": "http://sandbox-for-codex.wikidot.com/run-owned:np-submit-20260728233036-holder",
+  "credential_material": "omitted",
+  "cases": [
+    {
+      "case_id": "newpage-page-content-form-disambiguation",
+      "kind": "served-dom",
+      "source": "[[module NewPage button=\"Default create\"]]",
+      "observed": {
+        "page_contains_site_chrome_newpage_form": true,
+        "site_chrome_form": {
+          "input_size": "20",
+          "button_value": "New page"
+        },
+        "page_content_form": {
+          "selector": "#page-content .new-page-box form",
+          "action": "dummy.html",
+          "method": "get",
+          "onsubmit": "WIKIDOT.modules.NewPageHelperModule.listeners.create(event);",
+          "input": {
+            "name": "pageName",
+            "type": "text",
+            "size": "30",
+            "maxlength": "128",
+            "class": "text",
+            "style": "margin: 1px"
+          },
+          "submit": {
+            "type": "submit",
+            "class": "button",
+            "value": "Default create",
+            "style": "margin: 1px;"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "newpage-default-submit-anonymous-browser-dispatch",
+      "kind": "browser-submit",
+      "actor": "anonymous",
+      "submitted_page_name": "run-owned:np-submit-20260728233036-default-target",
+      "observed": {
+        "submit_event_dispatch_return": false,
+        "submit_event_default_prevented": true,
+        "ajax_request_keys": [
+          "action",
+          "callbackIndex",
+          "event",
+          "moduleName",
+          "pageName",
+          "wikidot_token7"
+        ],
+        "final_url": "http://sandbox-for-codex.wikidot.com/run-owned:np-submit-20260728233036-default-target/edit/true/title/run-owned%3Anp-submit-20260728233036-default-target",
+        "document_status": 404,
+        "permission_message": "Sorry, you can not create a new page in this category. Only members of this site, site administrators and perhaps selected moderators are allowed to do it. Sign in as Wikidot user"
+      }
+    },
+    {
+      "case_id": "newpage-default-submit-authenticated-browser-dispatch",
+      "kind": "browser-submit",
+      "actor": "authenticated-account-a",
+      "submitted_page_name": "run-owned:np-submit-20260728233036-browser-default-1785281864",
+      "observed": {
+        "submitted_length": 61,
+        "submit_event_dispatch_return": false,
+        "submit_event_default_prevented": true,
+        "ajax_request_keys": [
+          "action",
+          "callbackIndex",
+          "event",
+          "moduleName",
+          "pageName",
+          "wikidot_token7"
+        ],
+        "final_url": "http://sandbox-for-codex.wikidot.com/run-owned:np-submit-20260728233036-browser-default-178528186/edit/true/title/run-owned%3Anp-submit-20260728233036-browser-default-1785281864",
+        "document_status": 404,
+        "edit_interface_visible": true,
+        "slug_component_length": 60,
+        "title_path_value_preserves_full_submitted_name": true,
+        "initial_source_textarea_value": ""
+      }
+    },
+    {
+      "case_id": "newpage-server-action-matrix-authenticated",
+      "kind": "raw-ajax-action",
+      "actor": "authenticated-account-a",
+      "observed": [
+        {
+          "name": "default-short",
+          "request": {
+            "pageName": "run-owned:npact-1785282019-default"
+          },
+          "response": {
+            "status": "ok",
+            "unixName": "run-owned:npact-1785282019-default",
+            "pageTitle": "run-owned:npact-1785282019-default",
+            "tags": "",
+            "parentPage": ""
+          },
+          "created_page": false
+        },
+        {
+          "name": "default-60",
+          "request": {
+            "pageName_length": 60
+          },
+          "response": {
+            "status": "ok",
+            "unixName_length": 60,
+            "pageTitle_length": 60
+          },
+          "created_page": false
+        },
+        {
+          "name": "default-61",
+          "request": {
+            "pageName_length": 61
+          },
+          "response": {
+            "status": "ok",
+            "unixName_length": 60,
+            "pageTitle_length": 61
+          },
+          "created_page": false
+        },
+        {
+          "name": "categoryName",
+          "request": {
+            "categoryName": "run-owned",
+            "pageName": "npact-1785282019-category"
+          },
+          "response": {
+            "status": "ok",
+            "unixName": "run-owned:npact-1785282019-category",
+            "pageTitle": "npact-1785282019-category"
+          },
+          "created_page": false
+        },
+        {
+          "name": "tags-parent",
+          "request": {
+            "pageName": "run-owned:npact-1785282019-tags-parent",
+            "tags": "tag-a tag-b",
+            "parent": "main"
+          },
+          "response": {
+            "status": "ok",
+            "unixName": "run-owned:npact-1785282019-tags-parent",
+            "pageTitle": "run-owned:npact-1785282019-tags-parent",
+            "tags": "tag-a tag-b",
+            "parentPage": "main"
+          },
+          "created_page": false
+        },
+        {
+          "name": "format-pass",
+          "request": {
+            "format": "/^run-owned:.*-123$/"
+          },
+          "response": {
+            "status": "ok"
+          },
+          "created_page": false
+        },
+        {
+          "name": "format-fail",
+          "request": {
+            "format": "/^[0-9]+$/"
+          },
+          "response": {
+            "status": "incorrect_name"
+          },
+          "created_page": false
+        },
+        {
+          "name": "hidden-default",
+          "request": {
+            "pageName_prefix": "_"
+          },
+          "response": {
+            "status": "ok",
+            "unixName_prefix": "_"
+          },
+          "created_page": false
+        },
+        {
+          "name": "hidden-in-category",
+          "request": {
+            "categoryName": "run-owned",
+            "pageName_prefix": "_"
+          },
+          "response": {
+            "status": "ok",
+            "unixName": "run-owned:_npact-1785282019-hidden"
+          },
+          "created_page": false
+        },
+        {
+          "name": "mode-edit",
+          "request": {
+            "mode": "edit"
+          },
+          "response": {
+            "status": "ok",
+            "unixName": "run-owned:npact-1785282019-mode-edit"
+          },
+          "created_page": false
+        },
+        {
+          "name": "mode-save-refresh",
+          "request": {
+            "mode": "save-and-refresh"
+          },
+          "response": {
+            "status": "ok",
+            "goToUrl": "."
+          },
+          "created_page": true,
+          "created_source": "",
+          "created_tags": []
+        },
+        {
+          "name": "mode-save-go",
+          "request": {
+            "mode": "save-and-go"
+          },
+          "response": {
+            "status": "ok",
+            "goToUrl": "run-owned:npact-1785282019-save-go"
+          },
+          "created_page": true,
+          "created_source": "",
+          "created_tags": []
+        },
+        {
+          "name": "mode-save-go-goto",
+          "request": {
+            "mode": "save-and-go",
+            "goTo": "main"
+          },
+          "response": {
+            "status": "ok",
+            "goToUrl": "main"
+          },
+          "created_page": true,
+          "created_source": "",
+          "created_tags": []
+        },
+        {
+          "name": "mode-invalid",
+          "request": {
+            "mode": "bogus"
+          },
+          "response": {
+            "status": "ok",
+            "unixName": "run-owned:npact-1785282019-mode-invalid"
+          },
+          "created_page": false
+        }
+      ]
+    }
+  ]
+}

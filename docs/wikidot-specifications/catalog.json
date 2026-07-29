@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 25,
+    "observation_count": 26,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -450,7 +450,8 @@
       ],
       "related_features": [],
       "live_observation_ids": [
-        "newpage-module-live-rendering-and-template-semantics"
+        "newpage-module-live-rendering-and-template-semantics",
+        "newpage-module-live-submit-action-and-navigation"
       ]
     },
     {
@@ -2317,7 +2318,8 @@
       ],
       "related_features": [],
       "live_observation_ids": [
-        "newpage-module-live-rendering-and-template-semantics"
+        "newpage-module-live-rendering-and-template-semantics",
+        "newpage-module-live-submit-action-and-navigation"
       ]
     },
     {

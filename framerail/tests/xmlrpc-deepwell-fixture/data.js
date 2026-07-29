@@ -297,6 +297,24 @@ export const pages = {
     rating: 0,
     wikitext: '[[module ListPages perPage="1"]]%%title%%[[/module]]',
     compiled_body_html: "<p>ListPages navigation fixture.</p>"
+  },
+  "newpage-helper": {
+    page_id: 3000410,
+    revision_id: 9000410,
+    page_created_at: "2026-07-29T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-29T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "NewPage Helper",
+    slug: "newpage-helper",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext:
+      '[[module NewPage button="Default create"]]\n[[module NewPage mode="save-and-go" tags="alpha beta" parent="main" button="Autosave"]]',
+    compiled_body_html:
+      '<div id="default-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Default create" style="margin: 1px;"/></form></div><div id="autosave-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Autosave" style="margin: 1px;"/><input type="hidden" name="mode" value="save-and-go"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div>'
   }
 }
 

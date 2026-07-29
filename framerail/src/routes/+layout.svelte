@@ -41,6 +41,7 @@
     faviconDeclaration,
     hasIosIcons
   } from "$lib/site-icons"
+  import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
 
   let { children } = $props()
 
@@ -114,6 +115,7 @@
   onMount(() => {
     let disposed = false
     let stop: (() => void) | undefined
+    installWikidotNewPageHelper(window)
     void import("$lib/wikidot/wikidot-code-highlighting").then((module) => {
       if (!disposed) stop = module.observeWikidotCodeBlocks(document)
     })
