@@ -100,6 +100,23 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/newpage-module-live-followup-action.json` (SHA-256 `cf59d7247ce87f09202a95c48159a43a49f41384bd17d7b502b03c96578efafe`), cases: `newpage-template-autosave-save-go`, `newpage-hidden-autosave-save-go`, `newpage-existing-target-omitted-mode`, `newpage-existing-target-edit`, `newpage-existing-target-save-and-go`, `newpage-existing-target-save-and-refresh`, `newpage-format-empty-delimiters`, `newpage-format-missing-trailing-delimiter`, `newpage-format-invalid-pcre`, `newpage-format-unknown-flag`, `newpage-format-undelimited`, `newpage-format-case-insensitive-pass`, `newpage-format-multiline-flag-pass`
 
+### NewPage anonymous helper action allows edit routing but rejects autosave creation
+
+- Observation ID: `newpage-module-live-anonymous-action-permissions`
+- Classification: `documentation-correction`
+- Observed at: `2026-07-29`
+- Analysis: Anonymous raw NewPage helper action probes against sandbox-for-codex confirm that page creation permission is not checked for the non-mutating edit-routing path. Omitted mode and mode=edit return status=ok with unixName, pageTitle, tags, and parentPage. Autosave modes are mutating and anonymous requests fail with no_permission before page creation.
+
+Normative behavior:
+
+- Anonymous NewPage helper requests with omitted mode return status=ok and edit-routing fields without creating a page.
+- Anonymous NewPage helper requests with mode="edit" return status=ok and edit-routing fields without creating a page.
+- Anonymous NewPage helper requests with mode="save-and-go" or mode="save-and-refresh" return no_permission and do not create a page.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/newpage-module-live-anonymous-action.json` (SHA-256 `8f48557f76ac4fc6365ff16fa0a38b0b63aab5ca0e0462927dcd569a3a58034d`), cases: `anonymous-omitted-mode`, `anonymous-edit`, `anonymous-save-and-go`, `anonymous-save-and-refresh`
+
 
 
 ## Suggested public TDD seams

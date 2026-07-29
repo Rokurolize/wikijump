@@ -174,6 +174,56 @@ test("rejects NewPage helper requests when the target already exists", async () 
   assert.deepEqual(calls, [])
 })
 
+test("allows NewPage edit routing without page creation permission", async () => {
+  for (const mode of [undefined, "edit"]) {
+    const form = {
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: "run-owned:newpage-anonymous-edit"
+    }
+    if (mode !== undefined) form.mode = mode
+
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render"),
+      canCreateNewPage: false
+    })
+
+    const body = await response.json()
+    assert.equal(body.status, "ok")
+    assert.equal(body.unixName, "run-owned:newpage-anonymous-edit")
+    assert.equal(body.pageTitle, "run-owned:newpage-anonymous-edit")
+  }
+})
+
+test("rejects NewPage autosave without page creation permission", async () => {
+  const calls = []
+  for (const mode of ["save-and-go", "save-and-refresh"]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({
+        action: "misc/NewPageHelperAction",
+        event: "createNewPage",
+        moduleName: "Empty",
+        pageName: "run-owned:newpage-anonymous-autosave",
+        mode
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render"),
+        canCreateNewPage: false,
+        createNewPage: async (input) => calls.push(input)
+      }
+    )
+
+    assert.deepEqual(await response.json(), {
+      status: "no_permission",
+      message: "Permission denied."
+    })
+  }
+  assert.deepEqual(calls, [])
+})
+
 test("ignores malformed NewPage format strings but enforces valid patterns", async () => {
   const malformedFormats = ["//", "/^[a-z]+$", "/[/", "^[a-z]+$"]
   for (const format of malformedFormats) {
