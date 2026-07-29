@@ -80,12 +80,12 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/newpage-module-live-submit-action.json` (SHA-256 `5ee0093482a194351fcc4506a18490114dcd99fbb1daaf1cb9ce7edeeebe94c0`), cases: `newpage-page-content-form-disambiguation`, `newpage-default-submit-anonymous-browser-dispatch`, `newpage-default-submit-authenticated-browser-dispatch`, `newpage-server-action-matrix-authenticated`
 
-### NewPage action returns page_exists, ignores malformed format strings, rejects template autosave, and autosaves hidden pages
+### NewPage action returns page_exists, ignores malformed format strings, rejects template-and-tags autosave, and autosaves hidden pages
 
 - Observation ID: `newpage-module-live-followup-action-errors-and-format`
 - Classification: `documentation-correction`
 - Observed at: `2026-07-29`
-- Analysis: Follow-up NewPage helper probes against sandbox-for-codex corrected several remaining action-level assumptions. Live Wikidot checks the resolved target slug for existing pages before returning edit-routing or autosave success; existing targets return status=page_exists for omitted mode, mode=edit, mode=save-and-go, and mode=save-and-refresh without changing the existing source. Format strings that are empty-delimited, missing a trailing delimiter, syntactically invalid PCRE, undelimited, or carrying an unknown flag are ignored rather than rejected; valid non-matching regexes still return incorrect_name. A save-and-go request carrying a template page id returns status=not_ok and does not create a page, so template-backed autosave source population is not supported by the observed helper action. A hidden page name in a visible category, such as run-owned:_name, is accepted by save-and-go and creates an empty page.
+- Analysis: Follow-up NewPage helper probes against sandbox-for-codex corrected several remaining action-level assumptions. Live Wikidot checks the resolved target slug for existing pages before returning edit-routing or autosave success; existing targets return status=page_exists for omitted mode, mode=edit, mode=save-and-go, and mode=save-and-refresh without changing the existing source. Format strings that are empty-delimited, missing a trailing delimiter, syntactically invalid PCRE, undelimited, or carrying an unknown flag are ignored rather than rejected; valid non-matching regexes still return incorrect_name. The observed save-and-go request combining a template page id, tags, and parent returned status=not_ok and did not create a page; a later minimized browser probe established that the non-empty tags-plus-template interaction, not template alone, triggers this error. A hidden page name in a visible category, such as run-owned:_name, is accepted by save-and-go and creates an empty page.
 
 Normative behavior:
 
@@ -93,7 +93,7 @@ Normative behavior:
 - If the target unixName already exists, the helper returns status=page_exists for omitted mode, mode="edit", mode="save-and-go", and mode="save-and-refresh" and does not alter the existing page source.
 - The helper enforces valid delimited regex formats, returning status=incorrect_name for a valid non-matching pattern.
 - Malformed, undelimited, or unsupported format strings are ignored: observed formats //, /^[a-z]+$, /[/, /^run-owned:/z, and ^[a-z]+$ all returned status=ok for non-mutating edit routing.
-- Autosave modes with a non-empty template id return status=not_ok and do not create a page.
+- The observed save-and-go request combining a non-empty template id, tags, and parent returns status=not_ok and does not create a page; this case alone does not imply that template-only autosave is rejected.
 - mode="save-and-go" accepts a target whose pageName begins with _ after a visible category prefix and creates an empty page with status=ok and goToUrl equal to the hidden target slug.
 
 Evidence:
@@ -116,6 +116,34 @@ Normative behavior:
 Evidence:
 
 - `install/local/wikidot-verification/artifacts/newpage-module-live-anonymous-action.json` (SHA-256 `8f48557f76ac4fc6365ff16fa0a38b0b63aab5ca0e0462927dcd569a3a58034d`), cases: `anonymous-omitted-mode`, `anonymous-edit`, `anonymous-save-and-go`, `anonymous-save-and-refresh`
+
+### NewPage returns exact helper envelopes and preserves template edit-route fields
+
+- Observation ID: `newpage-module-live-final-action-envelope`
+- Classification: `documentation-correction`
+- Observed at: `2026-07-29`
+- Analysis: Raw anonymous helper requests, isolated anonymous browser navigation, and isolated authenticated template-autosave probes against sandbox-for-codex completed NewPage's action and edit-route evidence. Live Wikidot serves the JSON helper envelope as text/plain; returns exact messages for missing names, format mismatches, existing targets, anonymous autosave denial, and template-plus-tags autosave failure; ignores categoryName=_default while prepending other non-empty category values verbatim; returns selected template, tag, and parent fields for edit routing; and uses encodeURIComponent path encoding in the browser, including %20 rather than + for spaces. A minimized authenticated matrix also corrected the earlier blanket template-autosave conclusion: template alone is accepted but ignored during autosave, a submitted parent is ignored, and only the combination of a non-empty template and non-empty tags triggers not_ok.
+
+Normative behavior:
+
+- Raw NewPage helper action responses contain JSON text and use Content-Type text/plain; charset=UTF-8.
+- A successful helper response includes templateId when a non-empty template field is submitted and preserves submitted tags and parent as tags and parentPage.
+- categoryName="_default" is not prepended to unixName. A non-empty categoryName other than _default is prepended verbatim as categoryName:pageName, including when pageName already contains a colon.
+- A missing or empty pageName returns status=no_name with message You should provide a page name.
+- A valid non-matching format returns status=incorrect_name with message The page name is not correct: please fix it and try again.
+- An existing target returns status=page_exists with an HTML message naming and linking to the target: The page <em>NAME</em> already exists. <a href="/NAME">Jump to it</a> if you wish.
+- Anonymous save-and-go and save-and-refresh requests return status=no_permission with Wikidot's full category-permission message and #action:login link.
+- The browser edit callback appends /t/<templateId>/title/<encodeURIComponent(pageTitle)>/tags/<encodeURIComponent(tags)>/parentPage/<encodeURIComponent(parentPage)> in that order when all fields are non-empty.
+- Browser edit-route encoding follows encodeURIComponent: a colon becomes %3A and a space becomes %20 rather than +.
+- Authenticated save-and-go and save-and-refresh requests with a non-empty template field and no tags create an empty page; the template source is not applied.
+- A submitted parent is ignored when autosave also receives a non-empty template field.
+- The template id is not validated in the observed autosave path: an existing template id and a nonexistent numeric id both produced empty-page success when tags were omitted.
+- Authenticated autosave with both a non-empty template field and non-empty tags returns status=not_ok with message An error occurred while processing the request. and creates no page.
+- A transient status=try_again response with time_to_wait is rate limiting; retrying after the stated delay is required before classifying the underlying action result.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/newpage-module-live-final-evidence.json` (SHA-256 `d02e18bc0e36f5ca313d85d0c3faad2a04fa827f5238f90ba79c75af3da08cce`), cases: `template-default-selected`, `template-edit-selected-with-parent-tags`, `category-simple`, `category-default`, `category-with-colon-page-name`, `category-empty-explicit`, `error-missing-page-name`, `error-empty-page-name`, `error-format-mismatch`, `error-existing-target`, `error-anonymous-save-and-go`, `error-anonymous-save-and-refresh`, `template-edit-browser-navigation`, `template-save-and-go-no-tags`, `template-save-and-go-tags-and-parent`, `template-save-and-go-tags`, `template-save-and-go-parent`, `template-save-and-refresh-no-tags`, `template-save-and-refresh-tags`, `invalid-template-save-and-go-no-tags`
 
 
 

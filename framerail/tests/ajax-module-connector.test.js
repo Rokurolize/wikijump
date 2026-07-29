@@ -40,6 +40,7 @@ test("dispatches ListPages forms and returns the Wikidot JSON envelope", async (
     status: "ok",
     body: '<div class="page">scp-173</div>'
   })
+  assert.equal(response.headers.get("content-type"), "text/plain; charset=UTF-8")
   assert.deepEqual(received, {
     siteId: 6000006,
     moduleBody: '[[div class="page"]]%%fullname%%[[/div]]',
@@ -150,6 +151,50 @@ test("dispatches NewPage helper default action with Wikidot edit-routing fields"
   })
 })
 
+test("dispatches NewPage template and category action fields like Wikidot", async () => {
+  const templated = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: "run-owned:newpage-template-edit",
+      mode: "edit",
+      template: "1469068384",
+      tags: "alpha beta",
+      parent: "run-owned:newpage-parent"
+    }),
+    { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
+  )
+
+  assert.deepEqual(await templated.json(), {
+    status: "ok",
+    unixName: "run-owned:newpage-template-edit",
+    pageTitle: "run-owned:newpage-template-edit",
+    tags: "alpha beta",
+    parentPage: "run-owned:newpage-parent",
+    templateId: "1469068384"
+  })
+
+  const defaultCategory = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: "newpage-default-category",
+      categoryName: "_default"
+    }),
+    { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
+  )
+
+  assert.deepEqual(await defaultCategory.json(), {
+    status: "ok",
+    unixName: "newpage-default-category",
+    pageTitle: "newpage-default-category",
+    tags: "",
+    parentPage: ""
+  })
+})
+
 test("rejects NewPage helper requests when the target already exists", async () => {
   const calls = []
   const pageName = "run-owned:newpage-existing-target"
@@ -169,9 +214,39 @@ test("rejects NewPage helper requests when the target already exists", async () 
       pageExists: async (slug) => slug === pageName
     })
 
-    assert.deepEqual(await response.json(), { status: "page_exists" })
+    assert.deepEqual(await response.json(), {
+      status: "page_exists",
+      message:
+        'The page <em>run-owned:newpage-existing-target</em> already exists. <a href="/run-owned:newpage-existing-target">Jump to it</a> if you wish.'
+    })
   }
   assert.deepEqual(calls, [])
+})
+
+test("rejects NewPage helper requests without a page name like Wikidot", async () => {
+  for (const form of [
+    {
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty"
+    },
+    {
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: ""
+    }
+  ]) {
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render")
+    })
+
+    assert.deepEqual(await response.json(), {
+      status: "no_name",
+      message: "You should provide a page name"
+    })
+  }
 })
 
 test("allows NewPage edit routing without page creation permission", async () => {
@@ -218,7 +293,8 @@ test("rejects NewPage autosave without page creation permission", async () => {
 
     assert.deepEqual(await response.json(), {
       status: "no_permission",
-      message: "Permission denied."
+      message:
+        'Sorry, you can not create a new page in this category. Only members of this site, site administrators and perhaps selected moderators are allowed to do it. <a href="#action:login">Sign in as Wikidot user</a>'
     })
   }
   assert.deepEqual(calls, [])
@@ -254,11 +330,11 @@ test("ignores malformed NewPage format strings but enforces valid patterns", asy
 
   assert.deepEqual(await rejected.json(), {
     status: "incorrect_name",
-    message: "Page name does not match the required format."
+    message: "The page name is not correct: please fix it and try again"
   })
 })
 
-test("rejects NewPage autosave when a template id is submitted", async () => {
+test("NewPage template autosave creates an empty page and ignores parent", async () => {
   const calls = []
   const response = await handleAjaxModuleConnectorRequest(
     request({
@@ -267,7 +343,8 @@ test("rejects NewPage autosave when a template id is submitted", async () => {
       moduleName: "Empty",
       pageName: "run-owned:newpage-template-autosave",
       mode: "save-and-go",
-      template: "1469068213"
+      template: "1469068213",
+      parent: "main"
     }),
     {
       siteId: 6000006,
@@ -276,7 +353,44 @@ test("rejects NewPage autosave when a template id is submitted", async () => {
     }
   )
 
-  assert.deepEqual(await response.json(), { status: "not_ok" })
+  assert.deepEqual(await response.json(), {
+    status: "ok",
+    goToUrl: "run-owned:newpage-template-autosave"
+  })
+  assert.deepEqual(calls, [
+    {
+      slug: "run-owned:newpage-template-autosave",
+      title: "run-owned:newpage-template-autosave",
+      wikitext: "",
+      tags: [],
+      parentPage: ""
+    }
+  ])
+})
+
+test("rejects NewPage template autosave when tags are submitted", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: "run-owned:newpage-template-tags-autosave",
+      mode: "save-and-refresh",
+      template: "1469068213",
+      tags: "alpha beta"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render"),
+      createNewPage: async (input) => calls.push(input)
+    }
+  )
+
+  assert.deepEqual(await response.json(), {
+    status: "not_ok",
+    message: "An error occurred while processing the request."
+  })
   assert.deepEqual(calls, [])
 })
 

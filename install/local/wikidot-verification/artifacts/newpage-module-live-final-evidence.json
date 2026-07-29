@@ -1,0 +1,516 @@
+{
+  "schema": "wikidot.live.newpage.final-evidence.v1",
+  "observed_at": "2026-07-29",
+  "site": "sandbox-for-codex",
+  "actor": "anonymous raw helper action and anonymous browser navigation with authenticated run-owned setup only",
+  "credential_material": "none in captured helper requests or browser evidence; authenticated setup used local environment only and did not enter the artifact",
+  "oracle_routes": [
+    "Run-owned templates and an existing page were seeded through wikidot.py account A; helper action envelopes were captured by anonymous raw HTTP POST with only the public wikidot_token7 anti-CSRF cookie/form pair and no session cookie.",
+    "A run-owned holder and template page were seeded through wikidot.py account A; an isolated anonymous Chrome profile submitted the rendered NewPage form and captured the resulting browser URL."
+  ],
+  "cases": [
+    {
+      "case_id": "template-default-selected"
+    },
+    {
+      "case_id": "template-edit-selected-with-parent-tags"
+    },
+    {
+      "case_id": "category-simple"
+    },
+    {
+      "case_id": "category-default"
+    },
+    {
+      "case_id": "category-with-colon-page-name"
+    },
+    {
+      "case_id": "category-empty-explicit"
+    },
+    {
+      "case_id": "error-missing-page-name"
+    },
+    {
+      "case_id": "error-empty-page-name"
+    },
+    {
+      "case_id": "error-format-mismatch"
+    },
+    {
+      "case_id": "error-existing-target"
+    },
+    {
+      "case_id": "error-anonymous-save-and-go"
+    },
+    {
+      "case_id": "error-anonymous-save-and-refresh"
+    },
+    {
+      "case_id": "template-edit-browser-navigation"
+    },
+    {
+      "case_id": "template-save-and-go-no-tags"
+    },
+    {
+      "case_id": "template-save-and-go-tags-and-parent"
+    },
+    {
+      "case_id": "template-save-and-go-tags"
+    },
+    {
+      "case_id": "template-save-and-go-parent"
+    },
+    {
+      "case_id": "template-save-and-refresh-no-tags"
+    },
+    {
+      "case_id": "template-save-and-refresh-tags"
+    },
+    {
+      "case_id": "invalid-template-save-and-go-no-tags"
+    }
+  ],
+  "action_run": {
+    "run_id": "np-final-1785298253",
+    "seeded_pages": {
+      "template_a": {
+        "fullname": "template:np-final-1785298253-template-a",
+        "page_id": 1469068383,
+        "title": "Template A np-final-1785298253",
+        "source_sha256": "095b6a192c73590f2423dfe2014c82f3b6d459176e502679286d09a9db0e480f"
+      },
+      "template_b": {
+        "fullname": "template:np-final-1785298253-template-b",
+        "page_id": 1469068384,
+        "title": "Template B np-final-1785298253",
+        "source_sha256": "191b0bc2d70c96f3508d89ab9d16df92cb5b1e691c346d019a53d861f4ce0d3e"
+      },
+      "existing": {
+        "fullname": "run-owned:np-final-1785298253-existing",
+        "page_id": 1469068385,
+        "title": "Existing np-final-1785298253",
+        "source_sha256": "37acbea01e246ec943e16a4942c4ec893dbfc0d814eee78d3388c64c1dd8bfc5"
+      }
+    },
+    "cases": [
+      {
+        "case_id": "template-default-selected",
+        "request": {
+          "pageName": "run-owned:np-final-1785298253-template-default",
+          "template": "1469068383"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298265,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-final-1785298253-template-default",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "templateId": "1469068383",
+          "unixName": "run-owned:np-final-1785298253-template-default"
+        },
+        "raw_text_sha256": "61a735033d1568902053696dd8969f804e25b6cf1cd02c4a3631e92a3013ef24"
+      },
+      {
+        "case_id": "template-edit-selected-with-parent-tags",
+        "request": {
+          "mode": "edit",
+          "pageName": "run-owned:np-final-1785298253-template-edit",
+          "parent": "run-owned:np-final-1785298253-parent",
+          "tags": "alpha beta",
+          "template": "1469068384"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298265,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-final-1785298253-template-edit",
+          "parentPage": "run-owned:np-final-1785298253-parent",
+          "status": "ok",
+          "tags": "alpha beta",
+          "templateId": "1469068384",
+          "unixName": "run-owned:np-final-1785298253-template-edit"
+        },
+        "raw_text_sha256": "6d8ae44c496e734d60742b70dc584eb357e72da1f7e4e07620006969cfdf159d"
+      },
+      {
+        "case_id": "category-simple",
+        "request": {
+          "categoryName": "run-owned",
+          "pageName": "np-final-1785298253-category-simple"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298266,
+          "callbackIndex": null,
+          "pageTitle": "np-final-1785298253-category-simple",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-final-1785298253-category-simple"
+        },
+        "raw_text_sha256": "c5b6a5f05dffffd9eae69ff6c069f643550e7af092dd48554e139edc839fafdb"
+      },
+      {
+        "case_id": "category-default",
+        "request": {
+          "categoryName": "_default",
+          "pageName": "run-owned:np-final-1785298253-category-default"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298266,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-final-1785298253-category-default",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-final-1785298253-category-default"
+        },
+        "raw_text_sha256": "093d675da562d6bf9312041085ca69c2e3309b20d43fda53484e8117db615397"
+      },
+      {
+        "case_id": "category-with-colon-page-name",
+        "request": {
+          "categoryName": "run-owned",
+          "pageName": "other:np-final-1785298253-colon-name"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298267,
+          "callbackIndex": null,
+          "pageTitle": "other:np-final-1785298253-colon-name",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:other:np-final-1785298253-colon-name"
+        },
+        "raw_text_sha256": "a63fe652cc88509a4c1b7e75bd1a51b59f926d07a51b0ba6fc81205bca0dd63c"
+      },
+      {
+        "case_id": "category-empty-explicit",
+        "request": {
+          "categoryName": "",
+          "pageName": "run-owned:np-final-1785298253-category-empty"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298267,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-final-1785298253-category-empty",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-final-1785298253-category-empty"
+        },
+        "raw_text_sha256": "c7745eb3873306e70a646004feeb44a1ed57175df4e8bd9cee3cdd2c59ddcb8a"
+      },
+      {
+        "case_id": "error-missing-page-name",
+        "request": {},
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298267,
+          "callbackIndex": null,
+          "message": "You should provide a page name",
+          "status": "no_name"
+        },
+        "raw_text_sha256": "dd69eccc53b24c6b74653235873b09186570e49d61c38d8de182a93c58933da0"
+      },
+      {
+        "case_id": "error-empty-page-name",
+        "request": {
+          "pageName": ""
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298268,
+          "callbackIndex": null,
+          "message": "You should provide a page name",
+          "status": "no_name"
+        },
+        "raw_text_sha256": "3d1b7b5afeb098b8f25c523b0b2f5da681ecaa79df4ac6bb1f1ef0462f078546"
+      },
+      {
+        "case_id": "error-format-mismatch",
+        "request": {
+          "format": "/^zzzz$/",
+          "pageName": "run-owned:np-final-1785298253-format-mismatch"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298268,
+          "callbackIndex": null,
+          "message": "The page name is not correct: please fix it and try again",
+          "status": "incorrect_name"
+        },
+        "raw_text_sha256": "bd6cb177764e5e0634723abb9db59d3c7e2dd2712479fd78230374b4d561782b"
+      },
+      {
+        "case_id": "error-existing-target",
+        "request": {
+          "pageName": "run-owned:np-final-1785298253-existing"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298268,
+          "callbackIndex": null,
+          "message": "The page <em>run-owned:np-final-1785298253-existing</em> already exists. <a href=\"/run-owned:np-final-1785298253-existing\">Jump to it</a> if you wish.",
+          "status": "page_exists"
+        },
+        "raw_text_sha256": "d89b9ce17d87f85299cbd99c45fd0431d8875d95da05df936aac1a299bac49b2"
+      },
+      {
+        "case_id": "error-anonymous-save-and-go",
+        "request": {
+          "mode": "save-and-go",
+          "pageName": "run-owned:np-final-1785298253-anonymous-autosave"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298269,
+          "callbackIndex": null,
+          "message": "Sorry, you can not create a new page in this category. Only members of this site, site administrators and perhaps selected moderators are allowed to do it. <a href=\"#action:login\">Sign in as Wikidot user</a>",
+          "status": "no_permission"
+        },
+        "raw_text_sha256": "f4776b521777092d34863814d66971e52f2c080c7378420c8fd99e921a69b1e7"
+      },
+      {
+        "case_id": "error-anonymous-save-and-refresh",
+        "request": {
+          "mode": "save-and-refresh",
+          "pageName": "run-owned:np-final-1785298253-anonymous-autosave-refresh"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785298269,
+          "callbackIndex": null,
+          "message": "Sorry, you can not create a new page in this category. Only members of this site, site administrators and perhaps selected moderators are allowed to do it. <a href=\"#action:login\">Sign in as Wikidot user</a>",
+          "status": "no_permission"
+        },
+        "raw_text_sha256": "f4776b521777092d34863814d66971e52f2c080c7378420c8fd99e921a69b1e7"
+      }
+    ],
+    "cleanup": {
+      "attempted": [
+        "template:np-final-1785298253-template-a",
+        "template:np-final-1785298253-template-b",
+        "run-owned:np-final-1785298253-existing"
+      ],
+      "failed": []
+    }
+  },
+  "browser_run": {
+    "case_id": "template-edit-browser-navigation",
+    "run_id": "np-route-1785298842",
+    "source": "[[module NewPage template=\"template:np-route-1785298842\" tags=\"alpha beta\" parent=\"main\" button=\"Template\"]]",
+    "template_id": 1469068403,
+    "submitted_page_name": "run-owned:np-route-target-1785298842",
+    "result_url": "http://sandbox-for-codex.wikidot.com/run-owned:np-route-target-1785298842/edit/true/t/1469068403/title/run-owned%3Anp-route-target-1785298842/tags/alpha%20beta/parentPage/main",
+    "observations": [
+      "The browser callback appended the template id, encoded title, tags, and parentPage path segments in that order.",
+      "encodeURIComponent semantics were visible in the path: the title colon became %3A and the tags space became %20 rather than +."
+    ],
+    "cleanup": {
+      "deleted_and_absence_verified": [
+        "run-owned:np-route-1785298842",
+        "template:np-route-1785298842"
+      ],
+      "browser_profile_stopped_and_removed": true
+    }
+  },
+  "authenticated_template_autosave_run": {
+    "run_id": "np-not-ok-1785299340",
+    "actor": "sandbox account A in an isolated authenticated Chrome profile",
+    "template": {
+      "fullname": "template:np-not-ok-1785299340",
+      "page_id": 1469068433
+    },
+    "cases": [
+      {
+        "case_id": "template-save-and-go-no-tags",
+        "request": {
+          "mode": "save-and-go",
+          "pageName": "run-owned:np-not-ok-target-1785299340",
+          "template": "1469068433"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785299356,
+          "callbackIndex": null,
+          "goToUrl": "run-owned:np-not-ok-target-1785299340",
+          "status": "ok"
+        },
+        "created_page": {
+          "source_length": 0,
+          "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "tags": [],
+          "parent": null
+        }
+      },
+      {
+        "case_id": "template-save-and-go-tags-and-parent",
+        "request": {
+          "mode": "save-and-go",
+          "pageName": "run-owned:np-not-ok-target-fields-1785299340",
+          "parent": "main",
+          "tags": "tag-one tag-two",
+          "template": "1469068433"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785299381,
+          "callbackIndex": null,
+          "message": "An error occurred while processing the request.",
+          "status": "not_ok"
+        },
+        "created_page": false
+      },
+      {
+        "case_id": "template-save-and-go-tags",
+        "request": {
+          "mode": "save-and-go",
+          "pageName": "run-owned:np-not-ok-target-tags-1785299340",
+          "tags": "tag-one tag-two",
+          "template": "1469068433"
+        },
+        "first_response": {
+          "CURRENT_TIMESTAMP": 1785299395,
+          "callbackIndex": null,
+          "status": "try_again",
+          "time_to_wait": 3
+        },
+        "retry_after_seconds": 4,
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785299409,
+          "callbackIndex": null,
+          "message": "An error occurred while processing the request.",
+          "status": "not_ok"
+        },
+        "created_page": false
+      },
+      {
+        "case_id": "template-save-and-go-parent",
+        "request": {
+          "mode": "save-and-go",
+          "pageName": "run-owned:np-not-ok-target-parent-1785299340",
+          "parent": "main",
+          "template": "1469068433"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785299395,
+          "callbackIndex": null,
+          "goToUrl": "run-owned:np-not-ok-target-parent-1785299340",
+          "status": "ok"
+        },
+        "created_page": {
+          "source_length": 0,
+          "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "tags": [],
+          "parent": null
+        }
+      },
+      {
+        "case_id": "template-save-and-refresh-no-tags",
+        "request": {
+          "mode": "save-and-refresh",
+          "pageName": "run-owned:np-not-ok-target-refresh-1785299340",
+          "template": "1469068433"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785299454,
+          "callbackIndex": null,
+          "goToUrl": ".",
+          "status": "ok"
+        },
+        "created_page": {
+          "source_length": 0,
+          "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "tags": [],
+          "parent": null
+        }
+      },
+      {
+        "case_id": "template-save-and-refresh-tags",
+        "request": {
+          "mode": "save-and-refresh",
+          "pageName": "run-owned:np-not-ok-target-refresh-tags-1785299340",
+          "tags": "tag-one",
+          "template": "1469068433"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785299458,
+          "callbackIndex": null,
+          "message": "An error occurred while processing the request.",
+          "status": "not_ok"
+        },
+        "created_page": false
+      },
+      {
+        "case_id": "invalid-template-save-and-go-no-tags",
+        "request": {
+          "mode": "save-and-go",
+          "pageName": "run-owned:np-not-ok-target-invalid-template-1785299340",
+          "template": "9999999999"
+        },
+        "http_status": 200,
+        "content_type": "text/plain; charset=UTF-8",
+        "json": {
+          "CURRENT_TIMESTAMP": 1785299462,
+          "callbackIndex": null,
+          "goToUrl": "run-owned:np-not-ok-target-invalid-template-1785299340",
+          "status": "ok"
+        },
+        "created_page": {
+          "source_length": 0,
+          "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "tags": [],
+          "parent": null
+        }
+      }
+    ],
+    "analysis": [
+      "The earlier not_ok probe combined template, tags, and parent; it did not establish that template alone was rejected.",
+      "A non-empty template field with no tags is accepted in both autosave modes, but the template source is not applied and a submitted parent is ignored.",
+      "The template id is not validated in this autosave path: a nonexistent numeric id produced the same empty-page success.",
+      "A non-empty tags field combined with a non-empty template field returns not_ok with the generic error message and creates no page.",
+      "The transient try_again response was rate limiting; retrying after the supplied wait reproduced the stable not_ok result."
+    ],
+    "cleanup": {
+      "deleted_and_absence_verified": [
+        "template:np-not-ok-1785299340",
+        "run-owned:np-not-ok-target-1785299340",
+        "run-owned:np-not-ok-target-fields-1785299340",
+        "run-owned:np-not-ok-target-tags-1785299340",
+        "run-owned:np-not-ok-target-parent-1785299340",
+        "run-owned:np-not-ok-target-refresh-1785299340",
+        "run-owned:np-not-ok-target-refresh-tags-1785299340",
+        "run-owned:np-not-ok-target-invalid-template-1785299340"
+      ],
+      "browser_profile_stopped_and_removed": true
+    }
+  }
+}
