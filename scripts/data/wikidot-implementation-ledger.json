@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "2f62517ae5ba28147c96aeb17ba7189831fde147c541cc0545e86b353f1f3317",
+  "catalog_sha256": "ac63bd679842da0ab42613c8c350c4b3f1723091e6a9ab39b84f0196d3880f27",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -532,15 +532,30 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "layout-custom": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/layout/layout-custom.md"
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes establish the boundary between normal page source and custom-layout modules.",
+        "Deepwell wikidot_page_preview preserves page-source unavailable-module behavior for custom-layout-only modules and empty page-source rendering for Ad."
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "tests": [
+        "deepwell/tests/page.rs::loginstatus_page_source_matches_live_unavailable_module",
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module",
+        "deepwell/tests/page.rs::ad_module_page_source_matches_live_empty_output"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/layout/layout-custom.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/loginstatus-module-live-preview.json",
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Wikijump currently has no custom-layout module renderer or public custom-layout rendering seam. Normal page-source boundaries are verified and covered; actual custom-layout rendering for LoginStatus, NaviBar, FooterBar, PageOptionsBottom, AdModule* placements, and layout placeholders remains blocked until custom layout support exists."
+      ]
     },
     "layout-forum": {
       "status": "pending",
@@ -565,70 +580,132 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-ad": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/module/module-ad.md"
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for Ad in normal page source with omitted attributes, label, unrelated attributes, uppercase module spelling, and closing marker.",
+        "Deepwell wikidot_page_preview renders Ad as empty output in normal page source."
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "tests": [
+        "deepwell/tests/page.rs::ad_module_page_source_matches_live_empty_output"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-ad.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Normal page-source Ad behavior is implemented as live empty output. The documented custom-layout Pro ad rendering remains blocked because Wikijump has no custom-layout module renderer."
+      ]
     },
     "module-admoduleabovecontent": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for AdModuleAboveContent in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
       "implementation_files": [],
       "documentation_evidence": [
-        "specifications/module/module-admoduleabovecontent.md"
+        "specifications/module/module-admoduleabovecontent.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented AdModuleAboveContent behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
     },
     "module-admoduleabovesidebar": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for AdModuleAboveSidebar in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
       "implementation_files": [],
       "documentation_evidence": [
-        "specifications/module/module-admoduleabovesidebar.md"
+        "specifications/module/module-admoduleabovesidebar.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented AdModuleAboveSidebar behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
     },
     "module-admodulebelowcontent": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for AdModuleBelowContent in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
       "implementation_files": [],
       "documentation_evidence": [
-        "specifications/module/module-admodulebelowcontent.md"
+        "specifications/module/module-admodulebelowcontent.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented AdModuleBelowContent behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
     },
     "module-admodulebelowfooter": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for AdModuleBelowFooter in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
       "implementation_files": [],
       "documentation_evidence": [
-        "specifications/module/module-admodulebelowfooter.md"
+        "specifications/module/module-admodulebelowfooter.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented AdModuleBelowFooter behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
     },
     "module-admodulebelowsidebar": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for AdModuleBelowSidebar in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
       "implementation_files": [],
       "documentation_evidence": [
-        "specifications/module/module-admodulebelowsidebar.md"
+        "specifications/module/module-admodulebelowsidebar.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented AdModuleBelowSidebar behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
     },
     "module-adsenseunit": {
       "status": "pending",
@@ -916,15 +993,25 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-footerbar": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for FooterBar in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
       "implementation_files": [],
       "documentation_evidence": [
-        "specifications/module/module-footerbar.md"
+        "specifications/module/module-footerbar.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented FooterBar behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
     },
     "module-forumcategory": {
       "status": "pending",
@@ -1245,15 +1332,25 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-navibar": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for NaviBar in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
       "implementation_files": [],
       "documentation_evidence": [
-        "specifications/module/module-navibar.md"
+        "specifications/module/module-navibar.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented NaviBar behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
     },
     "module-newpage": {
       "status": "in_progress",
@@ -1397,15 +1494,25 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-pageoptionsbottom": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for PageOptionsBottom in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
       "implementation_files": [],
       "documentation_evidence": [
-        "specifications/module/module-pageoptionsbottom.md"
+        "specifications/module/module-pageoptionsbottom.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented PageOptionsBottom behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
     },
     "module-pages": {
       "status": "implemented",

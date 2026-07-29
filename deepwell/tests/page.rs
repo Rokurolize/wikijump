@@ -2893,6 +2893,92 @@ async fn loginstatus_page_source_matches_live_unavailable_module() {
 }
 
 #[tokio::test]
+async fn layout_only_modules_page_source_match_live_unavailable_module() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for module_name in [
+        "NaviBar",
+        "FooterBar",
+        "PageOptionsBottom",
+        "AdModuleAboveContent",
+        "AdModuleBelowContent",
+        "AdModuleAboveSidebar",
+        "AdModuleBelowSidebar",
+        "AdModuleBelowFooter",
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let source = format!("[[module {module_name}]]");
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "Layout-only module page-source preview",
+                "wikitext": source,
+            }),
+        );
+        let expected = format!(
+            r#"<div class="error-block">[[module <em>{module_name}</em>]] No such module, please <a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a> and fix this page.</div>"#,
+        );
+        assert!(
+            preview.body.contains(&expected),
+            "{module_name} in page source should match live Wikidot's unavailable-module error:\n{}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
+async fn ad_module_page_source_matches_live_empty_output() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for source in [
+        "AD_START\n[[module Ad]]\nAD_END",
+        "AD_START\n[[module Ad label=\"custom_location\"]]\nAD_END",
+        "AD_START\n[[module AD foo=\"bar\"]]\nAD_END",
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "Ad module page-source preview",
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains("AD_START") && preview.body.contains("AD_END"),
+            "Ad module should preserve surrounding content:\n{}",
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains("[[module Ad")
+                && !preview.body.contains("[[module AD")
+                && !preview.body.contains("error-block"),
+            "Ad module should render empty without unavailable-module markup:\n{}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

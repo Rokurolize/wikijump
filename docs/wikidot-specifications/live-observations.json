@@ -1101,6 +1101,55 @@
           ]
         }
       ]
+    },
+    {
+      "id": "layout-modules-live-page-source-boundaries",
+      "title": "Custom-layout modules are not normal page modules, except Ad consumes page-source calls as empty output",
+      "feature_ids": [
+        "layout-custom",
+        "module-navibar",
+        "module-footerbar",
+        "module-pageoptionsbottom",
+        "module-admoduleabovecontent",
+        "module-admodulebelowcontent",
+        "module-admoduleabovesidebar",
+        "module-admodulebelowsidebar",
+        "module-admodulebelowfooter",
+        "module-ad"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-07-29",
+      "analysis": "doc:layout-reference lists these names as custom-layout modules, explicitly independent from normal page modules. Live PagePreviewModule probes confirm that NaviBar, FooterBar, PageOptionsBottom, and the AdModule* placement modules are unavailable in normal page source and render Wikidot's standard unavailable-module error. The generic Ad module is an exception at the page-source seam: Ad consumes the standalone opener and emits empty output, regardless of the observed label, unrelated attributes, omitted attributes, or uppercase module spelling. Wikijump has no custom-layout module renderer, so custom-layout-context behavior remains blocked separately from the page-source boundary.",
+      "normative_behavior": [
+        "In normal page source, [[module NaviBar]], [[module FooterBar]], [[module PageOptionsBottom]], [[module AdModuleAboveContent]], [[module AdModuleBelowContent]], [[module AdModuleAboveSidebar]], [[module AdModuleBelowSidebar]], and [[module AdModuleBelowFooter]] render div.error-block unavailable-module messages.",
+        "The unavailable-module message includes the authored module name inside [[module <em>...</em>]].",
+        "In normal page source, [[module Ad]] consumes the standalone opener and renders empty output.",
+        "Observed Ad attributes are ignored for page-source rendering: omitted attributes, label=\"custom_location\", label=\"\", unrelated attributes, and uppercase AD all render empty output.",
+        "A following [[/module]] is not consumed by these standalone modules and renders literally.",
+        "Anonymous and authenticated account-A PagePreviewModule output was identical for representative observed cases."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json",
+          "sha256": "5fdac4ead64520d5c07e780b9cd8e38e0cae6c89745dcb0462b4831bdd9a27df",
+          "case_ids": [
+            "anonymous-navibar-no-such-module",
+            "anonymous-footerbar-no-such-module",
+            "anonymous-pageoptionsbottom-no-such-module",
+            "anonymous-admoduleabovecontent-no-such-module",
+            "anonymous-admodulebelowcontent-no-such-module",
+            "anonymous-admoduleabovesidebar-no-such-module",
+            "anonymous-admodulebelowsidebar-no-such-module",
+            "anonymous-admodulebelowfooter-no-such-module",
+            "anonymous-ad-omitted-empty",
+            "anonymous-ad-custom-label-empty",
+            "anonymous-ad-other-attribute-empty",
+            "anonymous-ad-uppercase-empty",
+            "anonymous-ad-with-closing-body-literal",
+            "account-a-ad-custom-label-empty"
+          ]
+        }
+      ]
     }
   ]
 }

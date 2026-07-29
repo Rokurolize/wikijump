@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 29,
+    "observation_count": 30,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -1098,7 +1098,8 @@
       ],
       "related_features": [],
       "live_observation_ids": [
-        "loginstatus-live-page-source-no-such-module"
+        "loginstatus-live-page-source-no-such-module",
+        "layout-modules-live-page-source-boundaries"
       ]
     },
     {
@@ -1175,7 +1176,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "layout-modules-live-page-source-boundaries"
+      ]
     },
     {
       "id": "module-admoduleabovecontent",
@@ -1199,7 +1202,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "layout-modules-live-page-source-boundaries"
+      ]
     },
     {
       "id": "module-admoduleabovesidebar",
@@ -1223,7 +1228,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "layout-modules-live-page-source-boundaries"
+      ]
     },
     {
       "id": "module-admodulebelowcontent",
@@ -1247,7 +1254,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "layout-modules-live-page-source-boundaries"
+      ]
     },
     {
       "id": "module-admodulebelowfooter",
@@ -1271,7 +1280,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "layout-modules-live-page-source-boundaries"
+      ]
     },
     {
       "id": "module-admodulebelowsidebar",
@@ -1295,7 +1306,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "layout-modules-live-page-source-boundaries"
+      ]
     },
     {
       "id": "module-adsenseunit",
@@ -1759,7 +1772,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "layout-modules-live-page-source-boundaries"
+      ]
     },
     {
       "id": "module-forumcategory",
@@ -2301,7 +2316,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "layout-modules-live-page-source-boundaries"
+      ]
     },
     {
       "id": "module-newpage",
@@ -2461,7 +2478,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "layout-modules-live-page-source-boundaries"
+      ]
     },
     {
       "id": "module-pages",
