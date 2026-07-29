@@ -99,9 +99,6 @@ impl RenderService {
         if html.contains("{$") {
             html = Self::restore_wikidot_ta_badge_default_compatibility(&html);
         }
-        if html.contains("...") {
-            html = Self::restore_wikidot_text_ellipsis_compatibility(&html);
-        }
         if html.contains("wj-footnote") {
             html = Self::restore_wikidot_footnote_dom_compatibility(&html);
         }
@@ -318,40 +315,6 @@ impl RenderService {
             .replace("{$item-rt-link}", "empty")
             .replace("{$item-rc-link}", "empty")
             .replace("{$item-rb-link}", "empty")
-    }
-
-    pub(in crate::services::render) fn restore_wikidot_text_ellipsis_compatibility(
-        html: &str,
-    ) -> String {
-        let mut output = String::with_capacity(html.len());
-        let mut cursor = 0usize;
-        let mut literal_depth = 0usize;
-
-        while let Some(tag_start_offset) = html[cursor..].find('<') {
-            let tag_start = cursor + tag_start_offset;
-            Self::push_wikidot_text_ellipsis_segment(
-                &mut output,
-                &html[cursor..tag_start],
-                literal_depth,
-            );
-
-            let Some(tag_end_offset) = html[tag_start..].find('>') else {
-                output.push_str(&html[tag_start..]);
-                return output;
-            };
-            let tag_end = tag_start + tag_end_offset + 1;
-            let tag = &html[tag_start..tag_end];
-            Self::update_wikidot_ellipsis_literal_depth(tag, &mut literal_depth);
-            output.push_str(tag);
-            cursor = tag_end;
-        }
-
-        Self::push_wikidot_text_ellipsis_segment(
-            &mut output,
-            &html[cursor..],
-            literal_depth,
-        );
-        output
     }
 
     pub(in crate::services::render) fn restore_wikidot_code_block_compatibility(

@@ -34,7 +34,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use wikidot_normalize::normalize;
 
 use super::super::compat::CompatHtmlFragments;
-use super::super::compat::text_fragments::escape_html_text;
+use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
 use super::super::literal_regions::LiteralRegionCursor;
 use super::super::module_arguments::wikidot_module_arguments;
 use super::super::service::{
@@ -51,12 +51,12 @@ use super::data_forms::{
 use super::parents::ListPagesParentDisplay;
 use super::presentation::{
     format_list_pages_created_at, is_list_pages_hidden_tag, is_list_pages_visible_tag,
-    list_pages_created_by_unix, preserve_list_pages_generated_text_typography,
-    protect_list_pages_generated_html, render_list_pages_snapshot_user,
-    render_list_pages_snapshot_wikidot_user, render_list_pages_tags,
-    render_list_pages_wikidot_user,
+    list_pages_created_by_unix, protect_list_pages_generated_html,
+    render_list_pages_snapshot_user, render_list_pages_snapshot_wikidot_user,
+    render_list_pages_tags, render_list_pages_wikidot_user,
 };
 use super::scanner::list_pages_runtime_head_can_execute;
+use super::titles::{render_list_pages_linked_title, sanitize_list_pages_title};
 use ftml::{self};
 
 #[derive(Debug, Clone)]
@@ -1944,6 +1944,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
     total: usize,
     context: &ListPagesSubstitutionContext<'_>,
     compat_html: &mut CompatHtmlFragments,
+    compat_text: &mut CompatTextFragments,
 ) -> String {
     let full_slug = page.slug.as_deref().unwrap_or("");
     // Page-query rows already retain Wikidot's normalized full slug, including
@@ -1961,12 +1962,8 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         context.site,
     );
     let title = page.title.as_deref().unwrap_or(slug);
-    let generated_wikitext_title = preserve_list_pages_generated_text_typography(title);
-    let title_linked = if slug.is_empty() {
-        generated_wikitext_title.clone()
-    } else {
-        format!("[/{full_slug} {generated_wikitext_title}]")
-    };
+    let title = sanitize_list_pages_title(title);
+    let title_linked = render_list_pages_linked_title(full_slug, &title, compat_text);
     let snapshot = context.snapshot_displays.get(&page.page_id);
     let runtime = context.runtime_displays.get(&page.page_id);
     let created_by_snapshot =
@@ -2171,7 +2168,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
             match captures["name"].to_ascii_lowercase().as_str() {
                 "title_linked" => title_linked.clone(),
                 "linked_title" => title_linked.clone(),
-                "title" => generated_wikitext_title.clone(),
+                "title" => title.clone(),
                 "name" | "slug" | "page_name" => slug.to_owned(),
                 "fullname" | "full_slug" | "page_unix_name" | "full_page_name"
                     if list_pages_variable_starts_triple_link_target(
@@ -2327,15 +2324,16 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
                     .unwrap_or_default(),
                 "parent_title" => context
                     .page_parent_display
-                    .map(|parent| parent.title.clone())
+                    .map(|parent| sanitize_list_pages_title(&parent.title))
                     .unwrap_or_default(),
                 "parent_title_linked" => context
                     .page_parent_display
                     .map(|parent| {
-                        format!(
-                            "[/{} {}]",
-                            parent.fullname,
-                            preserve_list_pages_generated_text_typography(&parent.title,),
+                        let parent_title = sanitize_list_pages_title(&parent.title);
+                        render_list_pages_linked_title(
+                            &parent.fullname,
+                            &parent_title,
+                            compat_text,
                         )
                     })
                     .unwrap_or_default(),
@@ -2423,11 +2421,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
                     protect_list_pages_generated_html(
                         format!(
                             r#"<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">{}</span>"#,
-                            escape_html_text(
-                                &preserve_list_pages_generated_text_typography(
-                                    &preview,
-                                ),
-                            ),
+                            escape_html_text(&preview),
                         ),
                         context.render_generated_html,
                         compat_html,

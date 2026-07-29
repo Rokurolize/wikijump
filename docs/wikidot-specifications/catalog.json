@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 44,
+    "observation_count": 47,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -2055,6 +2055,8 @@
       "live_observation_ids": [
         "listpages-invalid-numeric-fallbacks",
         "listpages-pagination-path-semantics",
+        "listpages-generated-text-typography-boundary",
+        "listpages-title-variable-parser-context",
         "listpages-duplicate-and-alias-precedence",
         "listpages-rss-link-and-rssonly",
         "listpages-live-feed-endpoint",
@@ -5151,7 +5153,9 @@
         "Rendered HTML/DOM at the saved-page boundary for context-dependent forms"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "literal-text-inline-escape-line-scope"
+      ]
     },
     {
       "id": "syntax-math",
@@ -5367,7 +5371,11 @@
         "Rendered HTML/DOM at the saved-page boundary for context-dependent forms"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "listpages-generated-text-typography-boundary",
+        "literal-text-inline-escape-line-scope",
+        "listpages-title-variable-parser-context"
+      ]
     },
     {
       "id": "syntax-universal-escaping",

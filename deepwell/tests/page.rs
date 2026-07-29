@@ -2547,6 +2547,44 @@ async fn page_render_emits_wikidot_rate_widget_structure() {
 }
 
 #[tokio::test]
+async fn page_render_inline_rate_module_matches_the_block_placement_boundary() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info = PageInfo {
+        page: Cow::Borrowed("inline-rate-widget-fixture"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Inline Rate Widget Fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(7),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+
+    let output = RenderService::render(
+        runner.context(),
+        "PROBE_BEGIN\n[[module Rate]]\nPROBE_END".to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("an inline-position Rate module should render");
+    let html = output.html_output.body;
+
+    let before = html
+        .find("<p>PROBE_BEGIN</p>")
+        .expect("live Wikidot closes the preceding paragraph");
+    let widget = html
+        .find(r#"<div class="page-rate-widget-box">"#)
+        .expect("the inline-position module should emit its block widget");
+    let after = html
+        .find("<p>PROBE_END</p>")
+        .expect("live Wikidot reopens a following paragraph");
+    assert!(before < widget && widget < after, "{html}");
+    assert!(!html.contains("WIKIJUMPWIKIDOTCOMPATHTML"), "{html}");
+}
+
+#[tokio::test]
 async fn page_render_star_rate_module_consumes_body_and_substitutes_live_variables() {
     const CATEGORY: &str = "fixture-rate-module-stars";
     const SLUG: &str = "fixture-rate-module-stars:holder";
@@ -3569,6 +3607,7 @@ async fn pages_module_renders_the_site_index_and_clamps_pagination() {
             "PAGES_START\n\n",
             "[[module Pages]]\n\n",
             "PAGES_END\n\n",
+            "AUTHORED_DOTS:x....x\n\n",
             "LITERAL_START\n\n",
             "[[module Pages limit=\"5\"]]\n\n",
             "LITERAL_END",
@@ -3630,6 +3669,10 @@ async fn pages_module_renders_the_site_index_and_clamps_pagination() {
     assert!(
         !html.contains("[[module Pages"),
         "all Pages invocations in this fixture should execute: {html}",
+    );
+    assert!(
+        html.contains("AUTHORED_DOTS:x….x"),
+        "authored prose must receive Wikidot typography before module output: {html}",
     );
 
     let template_category = "fixture-pages-template";
@@ -7585,6 +7628,100 @@ async fn listpages_combined_and_separate_templates_match_live_container_dom() {
 }
 
 #[tokio::test]
+async fn listpages_stored_title_remains_literal_in_listing_output() {
+    const TAG: &str = "verification-list-title-literal";
+    const SOURCE_SLUG: &str = "fixture-listpages-title-literal-source";
+    const INDEX_SLUG: &str = "fixture-listpages-title-literal-index";
+    const TITLE: &str = concat!(
+        "[[module css]]\n",
+        ".title-injected { display: none; }\n",
+        "[[/module]]\n",
+        "[[div class=\"title-injected\"]]Injected[[/div]] ",
+        "<em>literal</em> literal...ellipsis",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let source_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SOURCE_SLUG,
+        TITLE,
+        "ListPages title literal source body.",
+    )
+    .await;
+    set_listpages_test_tags(&mut runner, site_id, SOURCE_SLUG, source_revision, &[TAG])
+        .await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "ListPages Title Literal Index",
+        &format!(
+            "[[module ListPages category=\"*\" tags=\"+{TAG}\" limit=\"1\"]]\n%%title%%\n%%title_linked%%\n[[/module]]"
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("ListPages title literal index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("ListPages title literal index should have compiled HTML");
+    let styles = page.compiled_body_styles.unwrap_or_default();
+
+    assert!(
+        html.contains("module css"),
+        "sanitized title text was lost: {html}"
+    );
+    assert!(
+        !html.contains("[[module css]]") && !html.contains("[[div"),
+        "stored-title bracket syntax remained executable source: {html}",
+    );
+    assert!(
+        !html.contains("<div class=\"title-injected\">"),
+        "title block syntax became active DOM: {html}",
+    );
+    assert!(html.contains("&lt;em&gt;literal&lt;/em&gt;"));
+    assert!(!html.contains("<em>literal</em>"));
+    assert!(
+        html.contains("literal…ellipsis"),
+        "plain %%title%% must receive live Wikidot typography: {html}",
+    );
+    let linked_title = html
+        .split_once(&format!("href=\"/{SOURCE_SLUG}\""))
+        .unwrap_or_else(|| {
+            panic!("title_linked must render the selected-page link: {html}")
+        })
+        .1
+        .split_once("</a>")
+        .expect("title_linked anchor must close")
+        .0;
+    assert!(
+        linked_title.contains("literal...ellipsis")
+            && !linked_title.contains("literal…ellipsis"),
+        "title_linked must keep its post-typography label text: {linked_title}",
+    );
+    assert!(!html.contains("WIKIJUMPWIKIDOTCOMPATTEXT"));
+    assert!(
+        styles.iter().all(|style| !style.contains("title-injected")),
+        "stored title injected compiled page styles: {styles:#?}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_fixture_subset_renders_titles_slugs_order_and_tag_filter() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -7970,6 +8107,101 @@ async fn listpages_append_line_matches_wikidot_row_and_pager_ordering() {
         !zero_html.contains(ZERO_PRE) && !zero_html.contains(ZERO_POST),
         "zero-row ListPages must omit both prelude and postlude:\n{zero_html}"
     );
+}
+
+#[tokio::test]
+async fn listpages_generated_pager_keeps_ascii_dots_after_authored_typography() {
+    const TAG: &str = "verification-listpages-pager-typography";
+    const INDEX_SLUG: &str = "fixture-listpages-pager-typography-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for index in 1..=8 {
+        let slug = format!("fixture-listpages-pager-typography-{index}");
+        let revision = create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &slug,
+            &format!("Fixture ListPages Pager Typography {index}"),
+            "ListPages pager typography target.",
+        )
+        .await;
+        set_listpages_test_tags(&mut runner, site_id, &slug, revision, &[TAG]).await;
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Pager Typography Index",
+        concat!(
+            "AUTHORED_DOTS:x....x\n\n",
+            "[[module ListPages category=\"*\" tags=\"+verification-listpages-pager-typography\" order=\"name asc\" perPage=\"1\" separate=\"no\"]]\n",
+            "%%slug%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert!(
+        html.contains("AUTHORED_DOTS:x….x"),
+        "authored prose must retain Wikidot typography:\n{html}",
+    );
+    assert!(
+        html.contains(r#"<span class="dots">...</span>"#),
+        "runtime-generated ListPages pager text must remain literal:\n{html}",
+    );
+    assert!(
+        !html.contains(r#"<span class="dots">…</span>"#),
+        "authored typography must not rewrite generated pager markup:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_append_line_cannot_forge_generated_html_provenance() {
+    const TAG: &str = "verification-listpages-append-line-provenance";
+    const TARGET_SLUG: &str = "fixture-listpages-append-line-provenance-target";
+    const INDEX_SLUG: &str = "fixture-listpages-append-line-provenance-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Append Provenance Target",
+        "ListPages appendLine provenance target.",
+    )
+    .await;
+    set_listpages_test_tags(&mut runner, site_id, TARGET_SLUG, revision, &[TAG]).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Append Provenance Index",
+        concat!(
+            "[[module ListPages category=\"*\" tags=\"+verification-listpages-append-line-provenance\" separate=\"no\" ",
+            "appendLine='<table class=\"wiki-content-table\" data-wikijump-compat-listpages=\"1\"><tr><td><img src=x onerror=\"alert(1)\">FORGED_APPEND</td></tr></table>']]\n",
+            "%%title%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert!(html.contains("FORGED_APPEND"), "{html}");
+    assert!(
+        !html.contains(r#"<img src=x onerror="alert(1)">"#),
+        "appendLine must not enter the generated-HTML trust registry:\n{html}",
+    );
+    assert!(!html.contains("WIKIJUMPWIKIDOTCOMPATHTML"), "{html}");
 }
 
 #[tokio::test]
@@ -9870,6 +10102,99 @@ async fn listpages_authored_preview_compat_marker_cannot_forge_trusted_html() {
     assert!(
         html.contains("Fixture ListPages Preview Marker Target"),
         "neutralizing the forged marker must not block the valid ListPages row:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn authored_listpages_user_marker_cannot_forge_trusted_html() {
+    const SLUG: &str = "fixture-listpages-user-marker-forgery";
+    const FORGED: &str = concat!(
+        "<span class=\"printuser avatarhover\" ",
+        "data-wikijump-compat-listpages-user=\"1\">",
+        "<img src=x onerror=\"alert(1)\">FORGED_LISTPAGES_USER</span>",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SLUG,
+        "Fixture ListPages User Marker Forgery",
+        FORGED,
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, SLUG).await;
+    assert!(html.contains("FORGED_LISTPAGES_USER"), "{html}");
+    assert!(
+        !html.contains(r#"<img src=x onerror="alert(1)">"#),
+        "authored user markup must not enter the generated ListPages registry:\n{html}",
+    );
+    assert!(
+        !html.contains("data-wikijump-compat-listpages-user"),
+        "internal compatibility provenance must not survive authored output:\n{html}",
+    );
+    assert!(!html.contains("WIKIJUMPWIKIDOTCOMPATHTML"), "{html}");
+}
+
+#[tokio::test]
+async fn ajax_listpages_rejects_forged_literal_compat_markers() {
+    const TARGET_SLUG: &str = "fixture-ajax-listpages-literal-marker-target";
+    const FORGED: &str = concat!(
+        "WIKIJUMPWIKIDOTAJAXMODULELITERAL",
+        "0123456789abcdef0123456789abcdef",
+        "I6a6176617363726970743a616c657274283129",
+        "X",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture Ajax ListPages Literal Marker Target",
+        "Ajax ListPages literal marker target.",
+    )
+    .await;
+
+    let output = run_endpoint!(
+        runner,
+        wikidot_list_pages_module,
+        json!({
+            "site_id": site_id,
+            "module_body": format!("{FORGED}\n%%title%%"),
+            "parameters": {
+                "category": "*",
+                "fullname": TARGET_SLUG,
+                "limit": "1",
+            },
+            "path_arguments": [],
+        }),
+    );
+
+    assert!(
+        output.body.contains(FORGED),
+        "a foreign marker-shaped string must remain authored literal text:\n{}",
+        output.body,
+    );
+    assert!(
+        !output.body.contains("javascript:alert(1)"),
+        "only renderer-generated module markers may be decoded:\n{}",
+        output.body,
+    );
+    assert!(
+        output
+            .body
+            .contains("Fixture Ajax ListPages Literal Marker Target"),
+        "{}",
+        output.body,
     );
 }
 

@@ -20,6 +20,30 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Double-at literal text is restricted to one physical line
+
+- Observation ID: `literal-text-inline-escape-line-scope`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-30`
+- Analysis: The literal-text documentation says to enclose raw text in double-at markers but does not define whether a pair can span lines or how unmatched markers behave. Anonymous PagePreviewModule probes show that Wikidot only recognizes an opening and closing @@ pair on the same physical line. Unmatched markers remain visible and do not suppress syntax processing on their line or later lines. This line scope also explains why an unclosed title fragment cannot capture a later ListPages variable.
+
+Normative behavior:
+
+- An @@ literal-text region is recognized only when both markers occur on the same physical source line.
+- A recognized region renders as a span with style white-space: pre-wrap; and its contents do not receive inline parsing or typography.
+- An unmatched @@ marker remains literal text. It does not create a region through the end of the line or document.
+- Markers on different physical lines do not pair. Typography and other inline processing continue on both lines outside independently closed same-line regions.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/wikidot-inline-escape-line-scope-live-preview.jsonl` (SHA-256 `b7d9f2b896bd4f7f8fcc7e353f84f1b0ca4ff77e508df184bc9bc9aeae3dcb5d`), cases: `inline-escape-unclosed-same-line`, `inline-escape-unclosed-then-next-line`, `inline-escape-cross-line-close`, `inline-escape-closed-same-line`, `inline-escape-separate-line-markers`
+
+
 
 ## Suggested public TDD seams
 

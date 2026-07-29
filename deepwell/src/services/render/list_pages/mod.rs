@@ -34,6 +34,7 @@ mod rendering;
 pub(super) mod scanner;
 pub(super) mod substitution;
 pub(super) mod template;
+mod titles;
 
 #[cfg(test)]
 pub(super) use self::ajax::AJAX_MODULE_LITERAL_MARKER_PREFIX;
@@ -66,7 +67,7 @@ pub(super) use self::presentation::{
 pub(super) use self::presentation::{
     is_list_pages_visible_tag, list_pages_created_by_unix, list_pages_parent_fullname,
     list_pages_revision_count, render_list_pages_wikidot_user,
-    restore_list_pages_literal_ellipsis_markers, substitute_count_pages_variables,
+    substitute_count_pages_variables,
 };
 pub(super) use self::rendering::{
     CountPagesExpansionOptions, ListPagesBlockRenderResult, ListPagesContentCache,
