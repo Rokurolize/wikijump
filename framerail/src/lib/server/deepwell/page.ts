@@ -49,9 +49,11 @@ export async function pageDelete(
 
 /* ----- Page Edit ----- */
 export interface CreatePageRevisionOutput {
+  page_id?: number
   revision_id: number
   revision_number: number
   parser_errors: Nullable<ParseError[]>
+  slug?: string
 }
 export interface PageEditInput {
   siteId: number
@@ -85,12 +87,13 @@ export async function pageEdit(
     tags,
     layout
   } = input
+  const pageReference = pageId ? { page: pageId } : {}
   return client.request(
     pageId ? "page_edit" : "page_create",
     {
       site_id: siteId,
-      page: pageId ?? slug,
       slug,
+      ...pageReference,
       user_id: userId,
       ip_address: userIpAddr,
       last_revision_id: lastRevisionId,
@@ -362,7 +365,7 @@ interface PageParentUpdate {
 }
 export async function pageParentUpdate(
   siteId: number,
-  pageId: number,
+  pageId: number | string,
   userId: number,
   add: Optional<string[]>,
   remove: Optional<string[]>,

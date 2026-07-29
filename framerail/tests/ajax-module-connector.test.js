@@ -126,3 +126,60 @@ test("converts Deepwell failures to a stable Wikidot error envelope", async () =
     console.error = originalConsoleError
   }
 })
+
+test("dispatches NewPage helper default action with Wikidot edit-routing fields", async () => {
+  const pageName = `run-owned:${"x".repeat(51)}`
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName,
+      tags: "alpha beta",
+      parent: "main"
+    }),
+    { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
+  )
+
+  assert.deepEqual(await response.json(), {
+    status: "ok",
+    unixName: pageName.slice(0, 60),
+    pageTitle: pageName,
+    tags: "alpha beta",
+    parentPage: "main"
+  })
+})
+
+test("dispatches NewPage autosave modes through the injected create callback", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: "run-owned:newpage-autosave",
+      mode: "save-and-go",
+      tags: "alpha beta",
+      parent: "main"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render"),
+      createNewPage: async (input) => calls.push(input)
+    }
+  )
+
+  assert.deepEqual(await response.json(), {
+    status: "ok",
+    goToUrl: "run-owned:newpage-autosave"
+  })
+  assert.deepEqual(calls, [
+    {
+      slug: "run-owned:newpage-autosave",
+      title: "run-owned:newpage-autosave",
+      wikitext: "",
+      tags: ["alpha", "beta"],
+      parentPage: "main"
+    }
+  ])
+})

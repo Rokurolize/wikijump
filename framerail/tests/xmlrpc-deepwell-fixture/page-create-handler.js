@@ -17,6 +17,7 @@ export const handlePageCreateRpc = ({ rpcRequest, request }) => {
       "revision_comments",
       "site_id",
       "slug",
+      "tags",
       "title",
       "user_id",
       "wikitext"
@@ -24,7 +25,8 @@ export const handlePageCreateRpc = ({ rpcRequest, request }) => {
     rpcRequest.params.site_id !== 6000005 ||
     request.headers["x-deepwell-session-token"] !== "fixture-session-token" ||
     request.headers["x-deepwell-site-id"] !== "6000005" ||
-    typeof rpcRequest.params.slug !== "string"
+    typeof rpcRequest.params.slug !== "string" ||
+    !Array.isArray(rpcRequest.params.tags)
   ) {
     return undefined
   }
@@ -47,7 +49,7 @@ export const handlePageCreateRpc = ({ rpcRequest, request }) => {
     creator_user_id: rpcRequest.params.user_id,
     title: rpcRequest.params.title,
     slug,
-    tags: [],
+    tags: rpcRequest.params.tags,
     rating: 0,
     wikitext: rpcRequest.params.wikitext,
     compiled_body_html: `<p>${rpcRequest.params.wikitext}</p>`
