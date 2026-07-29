@@ -16,9 +16,11 @@ use super::super::{
     WikidotListPagesFeedInput, WikidotListPagesFeedItem, WikidotListPagesFeedOutput,
 };
 use super::presentation::{
-    render_list_pages_snapshot_user, render_list_pages_wikidot_user,
+    render_list_pages_snapshot_user, render_list_pages_wikidot_feed_user,
 };
-use super::substitution::{parse_list_pages_score_selector, split_list_pages_values};
+use super::substitution::{
+    WikidotUserDisplay, parse_list_pages_score_selector, split_list_pages_values,
+};
 use crate::error::prelude::{Error, ErrorType, ExnError, Result, ResultExt};
 use crate::services::page_query::{
     AuthorSelector, CategoriesSelector, DateSelector, FoundPageFields,
@@ -262,6 +264,7 @@ impl RenderService {
         let user_displays = Self::load_wikidot_user_displays(ctx, &pages).await?;
         let snapshot_displays =
             Self::load_list_pages_snapshot_displays(ctx, &pages).await?;
+        let avatar_timestamp = OffsetDateTime::now_utc().unix_timestamp();
         let mut items = Vec::with_capacity(pages.len());
         for page in pages {
             let revision = PageRevisionService::get_latest(ctx, site_id, page.page_id)
@@ -281,18 +284,37 @@ impl RenderService {
                     )
                 })?;
             let snapshot = snapshot_displays.get(&page.page_id);
-            let created_by_html = page
-                .created_by
-                .and_then(|user_id| {
-                    user_displays.get(&user_id).map(|user| {
-                        render_list_pages_wikidot_user(user_id, Some(user))
-                            .replace(r#" data-wikijump-compat-listpages-user="1""#, "")
+            let created_by_html = snapshot
+                .and_then(|snapshot| {
+                    snapshot.created_by_name.as_deref().map(|name| {
+                        snapshot
+                            .created_by_user_id
+                            .map(|user_id| {
+                                let display = WikidotUserDisplay {
+                                    user_id,
+                                    name: name.to_owned(),
+                                    slug: snapshot.created_by_slug.clone(),
+                                    wikidot_profile: true,
+                                };
+                                render_list_pages_wikidot_feed_user(
+                                    user_id,
+                                    Some(&display),
+                                    avatar_timestamp,
+                                )
+                            })
+                            .unwrap_or_else(|| render_list_pages_snapshot_user(name))
                     })
                 })
                 .or_else(|| {
-                    snapshot
-                        .and_then(|snapshot| snapshot.created_by_name.as_deref())
-                        .map(render_list_pages_snapshot_user)
+                    page.created_by.and_then(|user_id| {
+                        user_displays.get(&user_id).map(|user| {
+                            render_list_pages_wikidot_feed_user(
+                                user_id,
+                                Some(user),
+                                avatar_timestamp,
+                            )
+                        })
+                    })
                 })
                 .unwrap_or_default();
             items.push(WikidotListPagesFeedItem {

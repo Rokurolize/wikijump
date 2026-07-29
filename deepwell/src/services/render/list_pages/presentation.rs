@@ -195,8 +195,53 @@ pub(in crate::services::render) fn render_list_pages_wikidot_user(
     )
 }
 
+pub(in crate::services::render) fn render_list_pages_wikidot_feed_user(
+    user_id: i64,
+    user: Option<&WikidotUserDisplay>,
+    avatar_timestamp: i64,
+) -> String {
+    let Some(user) = user else {
+        return user_id.to_string();
+    };
+    if !user.wikidot_profile {
+        return escape_list_pages_html_text(&user.name);
+    }
+    let slug = user.slug.as_deref().unwrap_or(&user.name);
+    format!(
+        concat!(
+            r#"<span class="printuser avatarhover">"#,
+            r#"<a href="http://www.wikidot.com/user:info/{slug}" >"#,
+            r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
+            r#"alt="{name}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})" />"#,
+            r#"</a><a href="http://www.wikidot.com/user:info/{slug}" >{name}</a>"#,
+            r#"</span>"#
+        ),
+        slug = escape_list_pages_html_attr(slug),
+        user_id = user.user_id,
+        avatar_timestamp = avatar_timestamp,
+        name = escape_list_pages_html_text(&user.name),
+    )
+}
+
 pub(in crate::services::render) fn render_list_pages_snapshot_user(name: &str) -> String {
     escape_list_pages_html_text(name)
+}
+
+pub(in crate::services::render) fn render_list_pages_snapshot_wikidot_user(
+    name: &str,
+    user_id: Option<i64>,
+    slug: Option<&str>,
+) -> String {
+    let Some(user_id) = user_id else {
+        return render_list_pages_snapshot_user(name);
+    };
+    let display = WikidotUserDisplay {
+        user_id,
+        name: name.to_owned(),
+        slug: slug.map(str::to_owned),
+        wikidot_profile: true,
+    };
+    render_list_pages_wikidot_user(user_id, Some(&display))
 }
 
 pub(in crate::services::render) fn list_pages_revision_count(
@@ -230,12 +275,17 @@ pub(in crate::services::render) fn list_pages_created_by_unix(
     user_displays: &BTreeMap<i64, WikidotUserDisplay>,
     snapshot_displays: &BTreeMap<i64, ListPagesSnapshotDisplay>,
 ) -> Option<String> {
-    if snapshot_displays
-        .get(&page.page_id)
-        .and_then(|snapshot| snapshot.created_by_name.as_deref())
-        .is_some_and(|created_by_name| !created_by_name.is_empty())
+    if let Some(snapshot) = snapshot_displays.get(&page.page_id)
+        && snapshot
+            .created_by_name
+            .as_deref()
+            .is_some_and(|created_by_name| !created_by_name.is_empty())
     {
-        return None;
+        return snapshot
+            .created_by_slug
+            .as_deref()
+            .filter(|slug| !slug.is_empty())
+            .map(str::to_owned);
     }
     let user = user_displays.get(&page.created_by?)?;
     let slug = user.slug.as_deref()?;

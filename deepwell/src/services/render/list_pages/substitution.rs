@@ -53,7 +53,8 @@ use super::presentation::{
     format_list_pages_created_at, is_list_pages_hidden_tag, is_list_pages_visible_tag,
     list_pages_created_by_unix, preserve_list_pages_generated_text_typography,
     protect_list_pages_generated_html, render_list_pages_snapshot_user,
-    render_list_pages_tags, render_list_pages_wikidot_user,
+    render_list_pages_snapshot_wikidot_user, render_list_pages_tags,
+    render_list_pages_wikidot_user,
 };
 use super::scanner::list_pages_runtime_head_can_execute;
 use ftml::{self};
@@ -70,8 +71,12 @@ pub(in crate::services::render) struct WikidotUserDisplay {
 pub(in crate::services::render) struct ListPagesSnapshotDisplay {
     pub(in crate::services::render) created_at: time::OffsetDateTime,
     pub(in crate::services::render) updated_at: time::OffsetDateTime,
+    pub(in crate::services::render) created_by_user_id: Option<i64>,
     pub(in crate::services::render) created_by_name: Option<String>,
+    pub(in crate::services::render) created_by_slug: Option<String>,
+    pub(in crate::services::render) updated_by_user_id: Option<i64>,
     pub(in crate::services::render) updated_by_name: Option<String>,
+    pub(in crate::services::render) updated_by_slug: Option<String>,
     pub(in crate::services::render) comments: i32,
     pub(in crate::services::render) commented_at: Option<time::OffsetDateTime>,
     pub(in crate::services::render) commented_by_name: Option<String>,
@@ -1986,14 +1991,23 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         context.snapshot_displays,
     );
     let created_by_id = if created_by_snapshot.is_some() {
-        String::new()
+        snapshot
+            .and_then(|snapshot| snapshot.created_by_user_id)
+            .map(|user_id| user_id.to_string())
+            .unwrap_or_default()
     } else {
         page.created_by
             .map(|user_id| user_id.to_string())
             .unwrap_or_default()
     };
     let created_by_linked = created_by_snapshot
-        .map(render_list_pages_snapshot_user)
+        .map(|name| {
+            render_list_pages_snapshot_wikidot_user(
+                name,
+                snapshot.and_then(|snapshot| snapshot.created_by_user_id),
+                snapshot.and_then(|snapshot| snapshot.created_by_slug.as_deref()),
+            )
+        })
         .or_else(|| {
             page.created_by.map(|user_id| {
                 render_list_pages_wikidot_user(
@@ -2016,7 +2030,13 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         })
         .unwrap_or_default();
     let updated_by_linked = updated_by_snapshot
-        .map(render_list_pages_snapshot_user)
+        .map(|name| {
+            render_list_pages_snapshot_wikidot_user(
+                name,
+                snapshot.and_then(|snapshot| snapshot.updated_by_user_id),
+                snapshot.and_then(|snapshot| snapshot.updated_by_slug.as_deref()),
+            )
+        })
         .or_else(|| {
             page.updated_by.map(|user_id| {
                 render_list_pages_wikidot_user(
@@ -2027,7 +2047,9 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         })
         .unwrap_or_default();
     let updated_by_unix = if updated_by_snapshot.is_some() {
-        String::new()
+        snapshot
+            .and_then(|snapshot| snapshot.updated_by_slug.clone())
+            .unwrap_or_default()
     } else {
         page.updated_by
             .and_then(|user_id| context.user_displays.get(&user_id))
@@ -2035,7 +2057,10 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
             .unwrap_or_default()
     };
     let updated_by_id = if updated_by_snapshot.is_some() {
-        String::new()
+        snapshot
+            .and_then(|snapshot| snapshot.updated_by_user_id)
+            .map(|user_id| user_id.to_string())
+            .unwrap_or_default()
     } else {
         page.updated_by
             .map(|user_id| user_id.to_string())

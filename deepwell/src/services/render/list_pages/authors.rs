@@ -134,8 +134,12 @@ impl RenderService {
             page_id: i64,
             source_created_at: time::OffsetDateTime,
             source_updated_at: time::OffsetDateTime,
+            created_by_user_id: Option<i64>,
             created_by_name: Option<String>,
+            created_by_slug: Option<String>,
+            updated_by_user_id: Option<i64>,
             updated_by_name: Option<String>,
+            updated_by_slug: Option<String>,
             comments: i32,
             commented_at: Option<time::OffsetDateTime>,
             commented_by_name: Option<String>,
@@ -169,7 +173,27 @@ impl RenderService {
             format!(
                 "WITH input(page_id) AS (VALUES {values}) \
                  SELECT snapshot.page_id, snapshot.source_created_at, snapshot.source_updated_at, \
-                        snapshot.created_by_name, snapshot.updated_by_name, snapshot.comments, \
+                        CASE \
+                            WHEN snapshot.meta_json ->> 'created_by_id' ~ '^[1-9][0-9]{{0,18}}$' \
+                                 AND (length(snapshot.meta_json ->> 'created_by_id') < 19 \
+                                      OR snapshot.meta_json ->> 'created_by_id' <= '9223372036854775807') \
+                            THEN (snapshot.meta_json ->> 'created_by_id')::bigint \
+                            ELSE NULL \
+                        END AS created_by_user_id, \
+                        snapshot.created_by_name, \
+                        NULLIF(snapshot.meta_json ->> 'created_by_unix', '') \
+                            AS created_by_slug, \
+                        CASE \
+                            WHEN snapshot.meta_json ->> 'updated_by_id' ~ '^[1-9][0-9]{{0,18}}$' \
+                                 AND (length(snapshot.meta_json ->> 'updated_by_id') < 19 \
+                                      OR snapshot.meta_json ->> 'updated_by_id' <= '9223372036854775807') \
+                            THEN (snapshot.meta_json ->> 'updated_by_id')::bigint \
+                            ELSE NULL \
+                        END AS updated_by_user_id, \
+                        snapshot.updated_by_name, \
+                        NULLIF(snapshot.meta_json ->> 'updated_by_unix', '') \
+                            AS updated_by_slug, \
+                        snapshot.comments, \
                         snapshot.commented_at, snapshot.commented_by_name, \
                         snapshot.parent_fullname, snapshot.source_revision_count, \
                         CASE \
@@ -195,8 +219,12 @@ impl RenderService {
                              page_id,
                              source_created_at,
                              source_updated_at,
+                             created_by_user_id,
                              created_by_name,
+                             created_by_slug,
+                             updated_by_user_id,
                              updated_by_name,
+                             updated_by_slug,
                              comments,
                              commented_at,
                              commented_by_name,
@@ -209,8 +237,12 @@ impl RenderService {
                                 ListPagesSnapshotDisplay {
                                     created_at: source_created_at,
                                     updated_at: source_updated_at,
+                                    created_by_user_id,
                                     created_by_name,
+                                    created_by_slug,
+                                    updated_by_user_id,
                                     updated_by_name,
+                                    updated_by_slug,
                                     comments,
                                     commented_at,
                                     commented_by_name,
@@ -280,7 +312,15 @@ impl RenderService {
                                  AND (snapshot.commented_at IS NULL \
                                       OR local_comment.commented_at >= snapshot.commented_at) \
                             THEN local_comment.commented_by_user_id \
-                            ELSE NULL \
+                            ELSE CASE \
+                                WHEN snapshot.meta_json ->> 'commented_by_id' \
+                                         ~ '^[1-9][0-9]{{0,18}}$' \
+                                     AND (length(snapshot.meta_json ->> 'commented_by_id') < 19 \
+                                          OR snapshot.meta_json ->> 'commented_by_id' \
+                                             <= '9223372036854775807') \
+                                THEN (snapshot.meta_json ->> 'commented_by_id')::bigint \
+                                ELSE NULL \
+                            END \
                         END AS commented_by_user_id, \
                         CASE \
                             WHEN local_comment.commented_at IS NOT NULL \
@@ -295,14 +335,21 @@ impl RenderService {
                                  AND (snapshot.commented_at IS NULL \
                                       OR local_comment.commented_at >= snapshot.commented_at) \
                             THEN COALESCE(wikidot_commenter.slug, local_commenter.slug) \
-                            ELSE NULL \
+                            ELSE NULLIF(snapshot.meta_json ->> 'commented_by_unix', '') \
                         END AS commented_by_slug, \
                         CASE \
                             WHEN local_comment.commented_at IS NOT NULL \
                                  AND (snapshot.commented_at IS NULL \
                                       OR local_comment.commented_at >= snapshot.commented_at) \
                             THEN wikidot_commenter.user_id IS NOT NULL \
-                            ELSE FALSE \
+                            ELSE COALESCE( \
+                                snapshot.meta_json ->> 'commented_by_id' \
+                                    ~ '^[1-9][0-9]{{0,18}}$' \
+                                AND (length(snapshot.meta_json ->> 'commented_by_id') < 19 \
+                                     OR snapshot.meta_json ->> 'commented_by_id' \
+                                        <= '9223372036854775807'), \
+                                FALSE \
+                            ) \
                         END AS commented_by_wikidot_profile, \
                         COALESCE( \
                             CASE \

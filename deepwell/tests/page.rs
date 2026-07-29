@@ -7385,6 +7385,99 @@ async fn wikidot_listpages_feed_queries_newest_viewable_pages() {
 }
 
 #[tokio::test]
+async fn wikidot_listpages_feed_uses_imported_creator_identity_provenance() {
+    const IMPORT_RUN_ID: i64 = 944_004;
+    const TARGET_SLUG: &str = "fixture-listpages-imported-feed-target";
+    const TAG: &str = "verification-listpages-imported-feed";
+    const CREATOR_ID: i64 = 10_382_659;
+    const CREATOR_NAME: &str = "voted-fated-smuggler";
+    const CREATOR_SLUG: &str = "voted-fated-smuggler";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture Imported Feed Target",
+        "Imported feed target.",
+    )
+    .await;
+    set_listpages_test_tags(&mut runner, site_id, TARGET_SLUG, revision, &[TAG]).await;
+    let target_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
+    create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
+    set_imported_author(
+        &runner,
+        site_id,
+        IMPORT_RUN_ID,
+        (target_id, TARGET_SLUG, 944_004, CREATOR_NAME),
+    )
+    .await;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE wikidot_page_snapshot \
+             SET meta_json = jsonb_build_object( \
+                 'created_by_id', $1::bigint, \
+                 'created_by_unix', $2::text \
+             ) \
+             WHERE page_id = $3",
+            [
+                Value::from(CREATOR_ID),
+                Value::from(CREATOR_SLUG),
+                Value::from(target_id),
+            ],
+        ))
+        .await
+        .expect("imported feed creator identity provenance should be attached");
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let output = run_endpoint!(
+        runner,
+        wikidot_list_pages_feed,
+        json!({
+            "site_id": site_id,
+            "pagetype": "normal",
+            "category": "*",
+            "tags": format!("+{TAG}"),
+        }),
+    );
+
+    assert_eq!(output.items.len(), 1);
+    let created_by_html = &output.items[0].created_by_html;
+    for expected in [
+        CREATOR_NAME.to_owned(),
+        format!("http://www.wikidot.com/user:info/{CREATOR_SLUG}"),
+        r#"<span class="printuser avatarhover">"#.to_owned(),
+        format!(
+            "http://www.wikidot.com/avatar.php?userid={CREATOR_ID}&amp;amp;size=small&amp;amp;timestamp="
+        ),
+        format!(
+            r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
+        ),
+    ] {
+        assert!(
+            created_by_html.contains(&expected),
+            "imported identity provenance must drive feed authorship ({expected}):\n{created_by_html}",
+        );
+    }
+    assert!(
+        !created_by_html.contains("onclick=")
+            && !created_by_html.contains("data-wikijump-compat"),
+        "live ListPages RSS author markup has no browser-only onclick or Wikijump marker:\n{created_by_html}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_combined_and_separate_templates_match_live_container_dom() {
     const PREFIX: &str = "fixture-listpages-container-target";
     const HOLDER: &str = "fixture-listpages-container-holder";
@@ -8774,6 +8867,277 @@ async fn listpages_template_selectors_can_use_current_page_data_form_values() {
     assert!(
         !html.contains("%%form_raw{scotland}%%") && !html.contains("[[module ListPages"),
         "resolved current-page data-form selector variables must not remain literal:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_imported_creator_identity_uses_structured_corpus_provenance() {
+    const IMPORT_RUN_ID: i64 = 944_001;
+    const TARGET_SLUG: &str = "fixture-listpages-imported-creator-target";
+    const INDEX_SLUG: &str = "fixture-listpages-imported-creator-index";
+    const CREATOR_ID: i64 = 10_382_659;
+    const CREATOR_NAME: &str = "voted-fated-smuggler";
+    const CREATOR_SLUG: &str = "voted-fated-smuggler";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture Imported Creator Target",
+        "Imported creator target.",
+    )
+    .await;
+    let target_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
+    create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
+    set_imported_author(
+        &runner,
+        site_id,
+        IMPORT_RUN_ID,
+        (target_id, TARGET_SLUG, 944_001, CREATOR_NAME),
+    )
+    .await;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE wikidot_page_snapshot \
+             SET meta_json = jsonb_build_object( \
+                 'created_by_id', $1::bigint, \
+                 'created_by_unix', $2::text \
+             ) \
+             WHERE page_id = $3",
+            [
+                Value::from(CREATOR_ID),
+                Value::from(CREATOR_SLUG),
+                Value::from(target_id),
+            ],
+        ))
+        .await
+        .expect("imported creator identity provenance should be attached");
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture Imported Creator Index",
+        concat!(
+            "[[module ListPages category=\"*\" ",
+            "fullname=\"fixture-listpages-imported-creator-target\" ",
+            "separate=\"no\" wrapper=\"no\"]]\n",
+            "created_by=[%%created_by%%]\n",
+            "created_by_unix=[%%created_by_unix%%]\n",
+            "created_by_id=[%%created_by_id%%]\n",
+            "created_by_linked=[%%created_by_linked%%]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    for expected in [
+        format!("created_by=[{CREATOR_NAME}]"),
+        format!("created_by_unix=[{CREATOR_SLUG}]"),
+        format!("created_by_id=[{CREATOR_ID}]"),
+        format!("http://www.wikidot.com/user:info/{CREATOR_SLUG}"),
+        format!("WIKIDOT.page.listeners.userInfo({CREATOR_ID})"),
+    ] {
+        assert!(
+            html.contains(&expected),
+            "imported creator identity provenance must drive every lifecycle variable ({expected}):\n{html}",
+        );
+    }
+    assert!(
+        !html.contains("[[module ListPages") && !html.contains("%%created_by"),
+        "a fully identified imported creator must not make ListPages fail closed:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_imported_editor_identity_uses_structured_corpus_provenance() {
+    const IMPORT_RUN_ID: i64 = 944_002;
+    const TARGET_SLUG: &str = "fixture-listpages-imported-editor-target";
+    const INDEX_SLUG: &str = "fixture-listpages-imported-editor-index";
+    const EDITOR_ID: i64 = 10_382_659;
+    const EDITOR_NAME: &str = "voted-fated-smuggler";
+    const EDITOR_SLUG: &str = "voted-fated-smuggler";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture Imported Editor Target",
+        "Imported editor target.",
+    )
+    .await;
+    let target_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
+    create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
+    set_imported_author(
+        &runner,
+        site_id,
+        IMPORT_RUN_ID,
+        (target_id, TARGET_SLUG, 944_002, "Fixture Creator"),
+    )
+    .await;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE wikidot_page_snapshot \
+             SET updated_by_name = $1, \
+                 meta_json = jsonb_build_object( \
+                     'updated_by_id', $2::bigint, \
+                     'updated_by_unix', $3::text \
+                 ) \
+             WHERE page_id = $4",
+            [
+                Value::from(EDITOR_NAME),
+                Value::from(EDITOR_ID),
+                Value::from(EDITOR_SLUG),
+                Value::from(target_id),
+            ],
+        ))
+        .await
+        .expect("imported editor identity provenance should be attached");
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture Imported Editor Index",
+        concat!(
+            "[[module ListPages category=\"*\" ",
+            "fullname=\"fixture-listpages-imported-editor-target\" ",
+            "separate=\"no\" wrapper=\"no\"]]\n",
+            "updated_by=[%%updated_by%%]\n",
+            "updated_by_unix=[%%updated_by_unix%%]\n",
+            "updated_by_id=[%%updated_by_id%%]\n",
+            "updated_by_linked=[%%updated_by_linked%%]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    for expected in [
+        format!("updated_by=[{EDITOR_NAME}]"),
+        format!("updated_by_unix=[{EDITOR_SLUG}]"),
+        format!("updated_by_id=[{EDITOR_ID}]"),
+        format!("http://www.wikidot.com/user:info/{EDITOR_SLUG}"),
+        format!("WIKIDOT.page.listeners.userInfo({EDITOR_ID})"),
+    ] {
+        assert!(
+            html.contains(&expected),
+            "imported editor identity provenance must drive every lifecycle variable ({expected}):\n{html}",
+        );
+    }
+    assert!(
+        !html.contains("%%updated_by"),
+        "a fully identified imported editor must resolve every identity variable:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_imported_commenter_identity_uses_structured_corpus_provenance() {
+    const IMPORT_RUN_ID: i64 = 944_003;
+    const TARGET_SLUG: &str = "fixture-listpages-imported-commenter-target";
+    const INDEX_SLUG: &str = "fixture-listpages-imported-commenter-index";
+    const COMMENTER_ID: i64 = 10_382_659;
+    const COMMENTER_NAME: &str = "voted-fated-smuggler";
+    const COMMENTER_SLUG: &str = "voted-fated-smuggler";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture Imported Commenter Target",
+        "Imported commenter target.",
+    )
+    .await;
+    let target_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
+    create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
+    set_imported_author(
+        &runner,
+        site_id,
+        IMPORT_RUN_ID,
+        (target_id, TARGET_SLUG, 944_003, "Fixture Creator"),
+    )
+    .await;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE wikidot_page_snapshot \
+             SET comments = 1, \
+                 commented_at = TIMESTAMPTZ '2026-07-28 06:36:00+00', \
+                 commented_by_name = $1, \
+                 meta_json = jsonb_build_object( \
+                     'commented_by_id', $2::bigint, \
+                     'commented_by_unix', $3::text \
+                 ) \
+             WHERE page_id = $4",
+            [
+                Value::from(COMMENTER_NAME),
+                Value::from(COMMENTER_ID),
+                Value::from(COMMENTER_SLUG),
+                Value::from(target_id),
+            ],
+        ))
+        .await
+        .expect("imported commenter identity provenance should be attached");
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture Imported Commenter Index",
+        concat!(
+            "[[module ListPages category=\"*\" ",
+            "fullname=\"fixture-listpages-imported-commenter-target\" ",
+            "separate=\"no\" wrapper=\"no\"]]\n",
+            "comments=[%%comments%%]\n",
+            "commented_by=[%%commented_by%%]\n",
+            "commented_by_unix=[%%commented_by_unix%%]\n",
+            "commented_by_id=[%%commented_by_id%%]\n",
+            "commented_by_linked=[%%commented_by_linked%%]\n",
+            "commented_at=[%%commented_at%%]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    for expected in [
+        "comments=[1]".to_owned(),
+        format!("commented_by=[{COMMENTER_NAME}]"),
+        format!("commented_by_unix=[{COMMENTER_SLUG}]"),
+        format!("commented_by_id=[{COMMENTER_ID}]"),
+        format!("http://www.wikidot.com/user:info/{COMMENTER_SLUG}"),
+        format!("WIKIDOT.page.listeners.userInfo({COMMENTER_ID})"),
+        "commented_at=[<span class=\"odate time_".to_owned(),
+    ] {
+        assert!(
+            html.contains(&expected),
+            "imported commenter identity provenance must drive every last-comment variable ({expected}):\n{html}",
+        );
+    }
+    assert!(
+        !html.contains("%%commented_"),
+        "a fully identified imported commenter must resolve every identity variable:\n{html}",
     );
 }
 
