@@ -87,6 +87,46 @@ test("NewPage anonymous default submit still navigates to edit URL", async ({ pa
   )
 })
 
+test("NewPage template submit includes template, tags, and parent in edit URL", async ({
+  page
+}) => {
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  await page.goto("/newpage-helper")
+  await page.evaluate(() => {
+    document.cookie = "wikidot_token7=fixture-wikidot-token7; path=/"
+  })
+
+  const submittedName = "run-owned:newpage-helper-template-default"
+  const ajaxRequestPromise = page.waitForRequest(
+    (request) =>
+      request.method() === "POST" && request.url().endsWith("/ajax-module-connector.php")
+  )
+  await page.locator("#template-newpage input[name='pageName']").fill(submittedName)
+  await page.locator("#template-newpage input[type='submit']").click()
+  const ajaxFields = new URLSearchParams((await ajaxRequestPromise).postData() ?? "")
+
+  await expect(page).toHaveURL(
+    new RegExp(
+      `/${escapeRegExp(submittedName)}/edit/true/t/1469068384/title/${escapeRegExp(
+        encodeURIComponent(submittedName)
+      )}/tags/alpha%20beta/parentPage/main$`,
+      "u"
+    )
+  )
+  expect(Object.fromEntries(ajaxFields)).toEqual(
+    expect.objectContaining({
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: submittedName,
+      template: "1469068384",
+      tags: "alpha beta",
+      parent: "main",
+      wikidot_token7: "fixture-wikidot-token7"
+    })
+  )
+})
+
 test("NewPage save-and-go creates an empty page and navigates to it", async ({
   page,
   request

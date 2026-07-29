@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "6cde4d5c708137cd02eedd2928c8298a07f77131809bcac84ea3e7b740481fc0",
+  "catalog_sha256": "a6f5297f2a9af72943ca78e52c704e7b90f501a46fab4c5e89ab4f1a83a076ca",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -1402,7 +1402,7 @@
       ]
     },
     "module-newpage": {
-      "status": "in_progress",
+      "status": "implemented",
       "confirmed_public_seams": [
         "Saved-page and preview rendering through Deepwell's public Wikidot page render pipeline",
         "Existing-template lookup through runtime page/category/revision state",
@@ -1419,14 +1419,18 @@
         "deepwell/src/services/render/new_page_module.rs::tests::extracts_comma_separated_template_names",
         "deepwell/tests/page.rs::newpage_module_resolves_existing_templates_in_rendered_pages",
         "framerail/tests/ajax-module-connector.test.js::dispatches NewPage helper default action with Wikidot edit-routing fields",
+        "framerail/tests/ajax-module-connector.test.js::dispatches NewPage template and category action fields like Wikidot",
         "framerail/tests/ajax-module-connector.test.js::rejects NewPage helper requests when the target already exists",
+        "framerail/tests/ajax-module-connector.test.js::rejects NewPage helper requests without a page name like Wikidot",
         "framerail/tests/ajax-module-connector.test.js::allows NewPage edit routing without page creation permission",
         "framerail/tests/ajax-module-connector.test.js::rejects NewPage autosave without page creation permission",
         "framerail/tests/ajax-module-connector.test.js::ignores malformed NewPage format strings but enforces valid patterns",
-        "framerail/tests/ajax-module-connector.test.js::rejects NewPage autosave when a template id is submitted",
+        "framerail/tests/ajax-module-connector.test.js::NewPage template autosave creates an empty page and ignores parent",
+        "framerail/tests/ajax-module-connector.test.js::rejects NewPage template autosave when tags are submitted",
         "framerail/tests/ajax-module-connector.test.js::dispatches NewPage autosave modes through the injected create callback",
         "framerail/tests/new-page-helper.spec.ts::NewPage default submit posts Wikidot helper action and navigates to edit URL",
         "framerail/tests/new-page-helper.spec.ts::NewPage anonymous default submit still navigates to edit URL",
+        "framerail/tests/new-page-helper.spec.ts::NewPage template submit includes template, tags, and parent in edit URL",
         "framerail/tests/new-page-helper.spec.ts::NewPage save-and-go creates an empty page and navigates to it"
       ],
       "implementation_files": [
@@ -1447,11 +1451,10 @@
         "install/local/wikidot-verification/artifacts/newpage-module-live-rendering.json",
         "install/local/wikidot-verification/artifacts/newpage-module-live-submit-action.json",
         "install/local/wikidot-verification/artifacts/newpage-module-live-followup-action.json",
-        "install/local/wikidot-verification/artifacts/newpage-module-live-anonymous-action.json"
+        "install/local/wikidot-verification/artifacts/newpage-module-live-anonymous-action.json",
+        "install/local/wikidot-verification/artifacts/newpage-module-live-final-evidence.json"
       ],
-      "unresolved_ambiguities_or_blockers": [
-        "Initial NewPage rendering, browser submit interception, anonymous and authenticated default/edit navigation, format enforcement including malformed-format fallback, existing-target page_exists responses, hidden-name default and autosave behavior, save-and-refresh/save-and-go autosave, autosave template rejection, goTo navigation, tag creation, and parent assignment are implemented for observed cases. Remaining NewPage gaps require additional live evidence before marking complete: template selection action fields beyond edit URL propagation, category edge cases beyond observed categoryName prefixing, and exact raw non-ok response body fields for page_exists/not_ok/no_permission beyond the status or exception classification captured through wikidot.py validation."
-      ]
+      "unresolved_ambiguities_or_blockers": []
     },
     "module-newsite": {
       "status": "pending",

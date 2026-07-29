@@ -1,6 +1,6 @@
 const AJAX_MODULE_CONNECTOR_HEADERS = {
   "cache-control": "no-store",
-  "content-type": "application/json; charset=utf-8"
+  "content-type": "text/plain; charset=UTF-8"
 }
 const MAX_AJAX_MODULE_CONNECTOR_BODY_BYTES = 131_072
 const CONTROL_FIELDS = new Set([
@@ -13,6 +13,12 @@ const CONTROL_FIELDS = new Set([
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
 const NEWPAGE_AUTOSAVE_MODES = new Set(["save-and-refresh", "save-and-go"])
+const NEWPAGE_NO_NAME_MESSAGE = "You should provide a page name"
+const NEWPAGE_INCORRECT_NAME_MESSAGE =
+  "The page name is not correct: please fix it and try again"
+const NEWPAGE_NO_PERMISSION_MESSAGE =
+  'Sorry, you can not create a new page in this category. Only members of this site, site administrators and perhaps selected moderators are allowed to do it. <a href="#action:login">Sign in as Wikidot user</a>'
+const NEWPAGE_GENERIC_ERROR_MESSAGE = "An error occurred while processing the request."
 const MAX_WIKIDOT_PAGE_UNIX_NAME_LENGTH = 60
 
 /**
@@ -124,9 +130,19 @@ const fieldValue = (fields, name) => fields.get(name) ?? ""
 /** @param {string} tags */
 const splitNewPageTags = (tags) => tags.split(/\s+/u).filter((tag) => tag.length > 0)
 
+/** @param {string} value */
+const escapeHtml = (value) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+
 /** @param {{ pageName: string; categoryName: string }} input */
 const toWikidotUnixName = ({ pageName, categoryName }) => {
-  const prefixed = categoryName.length > 0 ? `${categoryName}:${pageName}` : pageName
+  const normalizedCategory = categoryName === "_default" ? "" : categoryName
+  const prefixed =
+    normalizedCategory.length > 0 ? `${normalizedCategory}:${pageName}` : pageName
   return prefixed.slice(0, MAX_WIKIDOT_PAGE_UNIX_NAME_LENGTH)
 }
 
@@ -184,8 +200,8 @@ const handleNewPageHelperRequest = async (
   const pageName = fieldValue(fields, "pageName")
   if (pageName.length === 0) {
     return jsonResponse({
-      status: "incorrect_name",
-      message: "Incorrect page name."
+      status: "no_name",
+      message: NEWPAGE_NO_NAME_MESSAGE
     })
   }
 
@@ -194,15 +210,17 @@ const handleNewPageHelperRequest = async (
     categoryName: fieldValue(fields, "categoryName")
   })
   if (pageExists && (await pageExists(unixName))) {
+    const escapedUnixName = escapeHtml(unixName)
     return jsonResponse({
-      status: "page_exists"
+      status: "page_exists",
+      message: `The page <em>${escapedUnixName}</em> already exists. <a href="/${escapedUnixName}">Jump to it</a> if you wish.`
     })
   }
 
   if (!matchesNewPageFormat(pageName, fieldValue(fields, "format"))) {
     return jsonResponse({
       status: "incorrect_name",
-      message: "Page name does not match the required format."
+      message: NEWPAGE_INCORRECT_NAME_MESSAGE
     })
   }
 
@@ -216,12 +234,13 @@ const handleNewPageHelperRequest = async (
     if (!(await resolveCanCreateNewPage(canCreateNewPage))) {
       return jsonResponse({
         status: "no_permission",
-        message: "Permission denied."
+        message: NEWPAGE_NO_PERMISSION_MESSAGE
       })
     }
-    if (templateId.length > 0) {
+    if (templateId.length > 0 && tags.length > 0) {
       return jsonResponse({
-        status: "not_ok"
+        status: "not_ok",
+        message: NEWPAGE_GENERIC_ERROR_MESSAGE
       })
     }
     if (!createNewPage) {
@@ -235,8 +254,8 @@ const handleNewPageHelperRequest = async (
       slug: unixName,
       title: pageTitle,
       wikitext: "",
-      tags: splitNewPageTags(tags),
-      parentPage
+      tags: templateId.length > 0 ? [] : splitNewPageTags(tags),
+      parentPage: templateId.length > 0 ? "" : parentPage
     })
 
     return jsonResponse({
