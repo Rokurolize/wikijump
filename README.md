@@ -38,11 +38,11 @@
 </p>
 
 This repository is Rokurolize's fork of [scpwiki/wikijump](https://github.com/scpwiki/wikijump).
-It is used for fork-local development, validation, and review support; upstream project links below describe the Wikijump project maintained by the SCP Wiki team.
+This fork develops Wikijump as a Wikidot-compatible emulator. Its compatibility target is the complete observable behavior of live Wikidot across syntax, storage, APIs, permissions, HTTP routes, DOM and CSS, and browser interactions, including legacy and surprising behavior. When documentation, tests, or local Wikijump output disagree with a controlled live observation, the live behavior is canonical.
+
+Independent product redesigns, compatibility-breaking "improvements," and feature additions without Wikidot evidence are outside this fork's compatibility work. Escaping, sanitization, and other security boundaries remain enforced; any intentional deviation must be explicit and evidence-backed.
 
 Wikijump began as the [SCP Wiki](https://scpwiki.com)'s fork of the unmaintained [Wikidot](https://github.com/gabrys/wikidot).
-It seeks to implement [Project Foundation](https://scpwiki.com/forum/c-3335628/general-information) using lessons learned from Wikidot's legacy PHP code and cutting-edge Wikidot research from other technical projects.
-The goal is to provide a scalable, maintainable platform with features, improvements, and bugfixes that current users of Wikidot need today.
 
 The upstream project is being primarily developed by the English SCP Wiki's [Technical Team](http://05command.wikidot.com/technical-staff-main) as part of Project Foundation, however other contributors are welcome.
 Upstream issues are tracked on [Jira](https://scuttle.atlassian.net/browse/WJ).
@@ -51,8 +51,7 @@ Questions and comments for the upstream project can be posted in the [General In
 
 ## Contributing
 
-Fork-local changes should be validated in this repository before any upstream submission is prepared.
-Upstream suggestions or requests can be made in the [Feature Requests forum](https://scpwiki.com/forum/c-3335630/feature-requests).
+Fork-local contributions should close observed compatibility gaps, expand durable Wikidot evidence and regression coverage, or improve security and maintainability without changing evidenced behavior. Changes should be validated in this repository before any upstream submission is prepared.
 
 If you would like to volunteer some of your time to Wikijump development, join the Discord and chat with us! (Invites can be received in `#site11` or by DMing a current Wikijump team member).
 
