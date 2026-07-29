@@ -56,6 +56,7 @@ pub(super) async fn render_body_for_module_arguments(
     page: &PageModel,
     page_revision: &PageRevisionModel,
     site: &SiteModel,
+    viewer_user_id: Option<i64>,
     stored_body_html: String,
 ) -> Result<String> {
     let (category_slug, page_slug) = split_category(&page_revision.slug);
@@ -96,12 +97,13 @@ pub(super) async fn render_body_for_module_arguments(
         language: cow!(locale_for_ftml(&site.locale)),
     };
 
-    let output = RenderService::render_page(
+    let output = RenderService::render_page_for_viewer(
         ctx,
         wikitext,
         &page_info,
         layout,
         id,
+        viewer_user_id,
         UrlArguments {
             tag: module_arguments.tag.as_deref(),
             page: module_arguments.page,

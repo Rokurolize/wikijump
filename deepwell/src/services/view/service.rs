@@ -545,6 +545,7 @@ impl ViewService {
                         &page,
                         &page_revision,
                         &site,
+                        user_session.as_ref().map(|session| session.user.user_id),
                         compiled_body_html,
                     )
                     .await

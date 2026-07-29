@@ -2620,6 +2620,406 @@ async fn page_render_star_rate_module_consumes_body_and_substitutes_live_variabl
 }
 
 #[tokio::test]
+async fn listusers_module_matches_live_preview_and_runtime_viewer() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    set_test_user_name(&runner, SAMPLE_USER_ID, "ListUsers Person").await;
+
+    let preview_source = concat!(
+        "[[module ListUsers users=\".\"]]\n",
+        "**%%title%%** (//%%name%%//) #%%number%% UNKNOWN %%missing%%\n",
+        "[[/module]]\n",
+        "[[module ListUsers]]\n",
+        "OMIT %%title%%\n",
+        "[[/module]]",
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let anonymous_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ListUsers anonymous preview",
+            "wikitext": preview_source,
+        }),
+    );
+    assert!(
+        !anonymous_preview.body.contains("ListUsers Person")
+            && !anonymous_preview.body.contains("[[module ListUsers"),
+        "users=\".\" should render nothing for anonymous viewers:\n{}",
+        anonymous_preview.body,
+    );
+    assert!(
+        anonymous_preview.body.contains(
+            r#"<div class="error-block">Currently only users="." is implemented.</div>"#
+        ),
+        "omitted users should match live Wikidot's error block:\n{}",
+        anonymous_preview.body,
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(SAMPLE_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let authenticated_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ListUsers authenticated preview",
+            "wikitext": preview_source,
+        }),
+    );
+    assert!(
+        authenticated_preview
+            .body
+            .contains(r#"<p><strong>ListUsers Person</strong> (<em>listusers-person</em>) #-5 UNKNOWN %%missing%%</p>"#),
+        "authenticated users=\".\" should substitute the current viewer and leave unknown variables literal:\n{}",
+        authenticated_preview.body,
+    );
+    assert!(
+        authenticated_preview.body.contains(
+            r#"<div class="error-block">Currently only users="." is implemented.</div>"#
+        ),
+        "authenticated omitted users should still render the live error block:\n{}",
+        authenticated_preview.body,
+    );
+
+    let page_source = concat!(
+        "VIEW_START\n",
+        "[[module ListUsers users=\".\"]]\n",
+        "VIEW %%title%% %%name%% %%number%%\n",
+        "[[/module]]\n",
+        "VIEW_END",
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-listusers-viewer",
+        "Fixture ListUsers Viewer",
+        page_source,
+    )
+    .await;
+
+    let stored_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-listusers-viewer",
+        }),
+    )
+    .expect("ListUsers holder should exist");
+    assert!(
+        !stored_page
+            .compiled_body_html
+            .as_deref()
+            .unwrap_or_default()
+            .contains("VIEW ListUsers Person"),
+        "stored revision HTML must not bake in the editor identity:\n{:?}",
+        stored_page.compiled_body_html,
+    );
+
+    let sample_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: SAMPLE_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "ListUsers runtime viewer test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("sample session should be created");
+
+    let anonymous_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-listusers-viewer", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let anonymous_body = match anonymous_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous ListUsers view, got {other:?}"),
+    };
+    assert!(
+        !anonymous_body.contains("VIEW ListUsers Person")
+            && !anonymous_body.contains("[[module ListUsers"),
+        "anonymous page view should render an empty users=\".\" module:\n{anonymous_body}",
+    );
+
+    let authenticated_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": sample_session_token,
+            "route": {"slug": "fixture-listusers-viewer", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let authenticated_body = match authenticated_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found authenticated ListUsers view, got {other:?}"),
+    };
+    assert!(
+        authenticated_body.contains("<p>VIEW ListUsers Person listusers-person -5</p>"),
+        "authenticated page view should render ListUsers for the request viewer:\n{authenticated_body}",
+    );
+}
+
+#[tokio::test]
+async fn listdrafts_module_matches_live_empty_draft_state() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = "DRAFTS_START\n[[module ListDrafts pageType=\"exists\"]]\nDRAFTS_END";
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ListDrafts empty preview",
+            "wikitext": source,
+        }),
+    );
+    assert!(
+        preview.body.contains(r#"<div class="list-drafts-box">"#),
+        "ListDrafts should render Wikidot's empty draft-list wrapper:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("[[module ListDrafts")
+            && !preview.body.contains("list-drafts-item"),
+        "empty ListDrafts should not leak raw source or render draft items:\n{}",
+        preview.body,
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-listdrafts-empty",
+        "Fixture ListDrafts Empty",
+        source,
+    )
+    .await;
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-listdrafts-empty", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found ListDrafts view, got {other:?}"),
+    };
+    assert!(
+        body.contains("DRAFTS_START")
+            && body.contains(r#"<div class="list-drafts-box">"#)
+            && body.contains("DRAFTS_END"),
+        "saved page view should render the ListDrafts wrapper in place:\n{body}",
+    );
+    assert!(
+        !body.contains("[[module ListDrafts") && !body.contains("list-drafts-item"),
+        "saved page view should not leak raw ListDrafts source or render nonexistent drafts:\n{body}",
+    );
+}
+
+#[tokio::test]
+async fn loginstatus_page_source_matches_live_unavailable_module() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = "[[module LoginStatus]]";
+
+    for user_id in [None, Some(SAMPLE_USER_ID)] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "LoginStatus page-source preview",
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(
+                r#"<div class="error-block">[[module <em>LoginStatus</em>]] No such module, please <a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a> and fix this page.</div>"#
+            ),
+            "LoginStatus in page source should match live Wikidot's unavailable-module error for viewer {user_id:?}:\n{}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
+async fn layout_only_modules_page_source_match_live_unavailable_module() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for module_name in [
+        "NaviBar",
+        "FooterBar",
+        "PageOptionsBottom",
+        "AdModuleAboveContent",
+        "AdModuleBelowContent",
+        "AdModuleAboveSidebar",
+        "AdModuleBelowSidebar",
+        "AdModuleBelowFooter",
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let source = format!("[[module {module_name}]]");
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "Layout-only module page-source preview",
+                "wikitext": source,
+            }),
+        );
+        let expected = format!(
+            r#"<div class="error-block">[[module <em>{module_name}</em>]] No such module, please <a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a> and fix this page.</div>"#,
+        );
+        assert!(
+            preview.body.contains(&expected),
+            "{module_name} in page source should match live Wikidot's unavailable-module error:\n{}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
+async fn ad_module_page_source_matches_live_empty_output() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for source in [
+        "AD_START\n[[module Ad]]\nAD_END",
+        "AD_START\n[[module Ad label=\"custom_location\"]]\nAD_END",
+        "AD_START\n[[module AD foo=\"bar\"]]\nAD_END",
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "Ad module page-source preview",
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains("AD_START") && preview.body.contains("AD_END"),
+            "Ad module should preserve surrounding content:\n{}",
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains("[[module Ad")
+                && !preview.body.contains("[[module AD")
+                && !preview.body.contains("error-block"),
+            "Ad module should render empty without unavailable-module markup:\n{}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
+async fn adsenseunit_module_matches_live_deprecated_empty_output() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for source in [
+        "ADSENSE_START\n[[module AdSenseUnit]]\nADSENSE_END",
+        "ADSENSE_START\n[[module AdSenseUnit label=\"your ad\"]]\nADSENSE_END",
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "AdSenseUnit deprecated preview",
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains("ADSENSE_START")
+                && preview.body.contains("ADSENSE_END"),
+            "AdSenseUnit should preserve surrounding content:\n{}",
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains("[[module AdSenseUnit")
+                && !preview.body.contains("error-block"),
+            "Deprecated AdSenseUnit should render empty without unavailable-module markup:\n{}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

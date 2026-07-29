@@ -20,6 +20,33 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### ListDrafts renders a draft-list wrapper and filters only exact double-quoted pageType values
+
+- Observation ID: `listdrafts-live-preview-filtering-and-empty-wrapper`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-29`
+- Analysis: The ListDrafts documentation names pageType=exists and pageType=notexists but omits output markup, attribute parsing quirks, standalone-module behavior, and permission/viewer effects. Live PagePreviewModule probes against sandbox-for-codex show the module renders a list-drafts-box wrapper even when empty; exact lowercase double-quoted pageType values filter the draft set; unsupported, empty, bare, single-quoted, and uppercase-argument values behave like omission. The sandbox had one run-owned not-existing-page draft from a prior NewPage probe, so non-empty all/notexists output was observed, but Wikijump currently has no page-draft persistence model to query.
+
+Normative behavior:
+
+- ListDrafts is a standalone opener module: [[module ListDrafts ...]] is consumed, but a following [[/module]] is rendered literally.
+- The rendered wrapper is div.list-drafts-box. Empty results render the wrapper with no list-drafts-item children.
+- Each observed draft row renders as div.list-drafts-item containing a p with an a link to the draft page path and link text equal to the draft page title/name.
+- pageType="exists" filters to drafts for existing pages; pageType="notexists" filters to drafts for non-existing pages; an omitted pageType lists all drafts.
+- pageType="", unsupported values such as pageType="other", single-quoted pageType, bare pageType, and uppercase PAGETYPE are treated as omitted in observed output.
+- The module name is case-insensitive in observed output.
+- Anonymous and authenticated account-A PagePreviewModule output was identical for the observed cases.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listdrafts-module-live-preview.json` (SHA-256 `67a6233f996f2429a30b7dff4b329a0a37bcb016dbc2d22f83b068be63ca43f6`), cases: `anonymous-exists-empty-wrapper`, `anonymous-omitted-all-drafts`, `anonymous-notexists-drafts`, `anonymous-invalid-pagetype-all-drafts`, `anonymous-empty-pagetype-all-drafts`, `anonymous-single-quoted-pagetype-all-drafts`, `anonymous-bare-pagetype-all-drafts`, `anonymous-uppercase-name-exists-empty-wrapper`, `anonymous-uppercase-arg-all-drafts`, `anonymous-with-closing-body-literal`, `account-a-exists-empty-wrapper`
+
+
 
 ## Suggested public TDD seams
 

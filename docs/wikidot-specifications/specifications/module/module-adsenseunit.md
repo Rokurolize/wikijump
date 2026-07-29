@@ -20,6 +20,29 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Deprecated AdSenseUnit consumes page-source calls as empty output
+
+- Observation ID: `adsenseunit-live-deprecated-empty-output`
+- Classification: `documentation-correction`
+- Observed at: `2026-07-29`
+- Analysis: The AdSenseUnit documentation says the module inserted Google AdSense ads and that label is mandatory, while also noting the feature was deprecated after Wikidot removed AdSense integration. Live PagePreviewModule probes show current Wikidot still recognizes the module but renders empty output for both label and omitted-label invocations, for both anonymous and authenticated viewers.
+
+Normative behavior:
+
+- AdSenseUnit consumes the standalone module opener and renders empty output.
+- Observed label and omitted-label invocations both render empty output.
+- Anonymous and authenticated account-A PagePreviewModule output was identical for observed AdSenseUnit cases.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/adsenseunit-module-live-preview.json` (SHA-256 `650d22bf68cf9245295a466d48d1b648d04cbfbd89cfd3884240eb15a246c365`), cases: `anonymous-label-empty`, `anonymous-omitted-empty`, `account-a-label-empty`, `account-a-omitted-empty`
+
+
 
 ## Suggested public TDD seams
 

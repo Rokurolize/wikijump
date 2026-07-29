@@ -1,0 +1,145 @@
+{
+  "schema": "wikijump.wikidot_live_probe.v1",
+  "case_id": "layout-modules-page-source-live-preview-matrix",
+  "captured_at": "2026-07-29T01:08:54.097051+00:00",
+  "site": "sandbox-for-codex",
+  "module_route": "edit/PagePreviewModule",
+  "mutated": false,
+  "notes": [
+    "These module names are documented in doc:layout-reference as custom-layout modules, independent from normal page-source modules.",
+    "Anonymous and account-A output was identical for the representative observed cases."
+  ],
+  "cases": [
+    {
+      "case_id": "anonymous-navibar-no-such-module",
+      "viewer": "anonymous",
+      "source": "[[module NaviBar]]",
+      "source_sha256": "3c9f1d666e66cecde78f57154cad8ab4edad180a592c511b31fce4490c593ee8",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>NaviBar</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "2d2d8a1da5fc3145437405ea5658d41ce131d95950a67926afd83dde72cab6c3"
+    },
+    {
+      "case_id": "anonymous-footerbar-no-such-module",
+      "viewer": "anonymous",
+      "source": "[[module FooterBar]]",
+      "source_sha256": "e2335379401ff3b903c9bd40d3b47f6433abb41ba4f5da27c95a5ad1ce27b59b",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>FooterBar</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "ab922c768887ab0509f345aed05dbca79943956d82637a46edcda17cb4785152"
+    },
+    {
+      "case_id": "anonymous-pageoptionsbottom-no-such-module",
+      "viewer": "anonymous",
+      "source": "[[module PageOptionsBottom]]",
+      "source_sha256": "306c61086b89ffc3a6263cc5e0e7aee408863e053ce367174fd9e9e3dea29d99",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>PageOptionsBottom</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "0910537171e9880450020a0ea249b92c17c64461eb9f4d67b567cc2e37048a41"
+    },
+    {
+      "case_id": "anonymous-admoduleabovecontent-no-such-module",
+      "viewer": "anonymous",
+      "source": "[[module AdModuleAboveContent]]",
+      "source_sha256": "c1323cdcb7b3e09812d1069825a6d197e5758c2626c367bcdabe39b16ca2f3a8",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>AdModuleAboveContent</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "94ea611c3c48a047d9d8536a0fb3a9d5bb01d44d44961f41c6ee9aed3fc0a46b"
+    },
+    {
+      "case_id": "anonymous-admodulebelowcontent-no-such-module",
+      "viewer": "anonymous",
+      "source": "[[module AdModuleBelowContent]]",
+      "source_sha256": "70690edd8912179095d8ae9e52b6527e48dcab32ab6277491ab7fcd44fb0e21d",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>AdModuleBelowContent</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "a363deffea36639684b7d753b2c5f2fd8920a741c29b04c3cb6c077e2756bfde"
+    },
+    {
+      "case_id": "anonymous-admoduleabovesidebar-no-such-module",
+      "viewer": "anonymous",
+      "source": "[[module AdModuleAboveSidebar]]",
+      "source_sha256": "b34acb39e7f37f28924b100334afcd7a8f161f48ce1e67e34aee9b65275a721c",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>AdModuleAboveSidebar</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "660f19755beda07e882a9edfc65efadb68c5b85899c4b3d07b3da71404a6d683"
+    },
+    {
+      "case_id": "anonymous-admodulebelowsidebar-no-such-module",
+      "viewer": "anonymous",
+      "source": "[[module AdModuleBelowSidebar]]",
+      "source_sha256": "395006a33fa0c99c88048251d46539ee6436b0506f620e58b2c189c9d0430e61",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>AdModuleBelowSidebar</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "1d1fb69e69232ca8d90e3b7caddfa47c92789fb451dab8e226b8d51965b12755"
+    },
+    {
+      "case_id": "anonymous-admodulebelowfooter-no-such-module",
+      "viewer": "anonymous",
+      "source": "[[module AdModuleBelowFooter]]",
+      "source_sha256": "10fb231ff4a61afef21f0fb4873aa197dd22d27c2b33c33033a14549eea18232",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>AdModuleBelowFooter</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "9e4b2ec84e80ac994d1c116fda2bbf65a31e1c8363d4dea6d095c10c88d79447"
+    },
+    {
+      "case_id": "anonymous-ad-omitted-empty",
+      "viewer": "anonymous",
+      "source": "[[module Ad]]",
+      "source_sha256": "c631b629a18131689f181ed1331ab36dda6ee0170c62bbf78e0e2dd66af69623",
+      "status": "ok",
+      "body": "\n\n\n\n",
+      "body_sha256": "545c38b0922de19734fbffde62792c37c2aef6a3216cfa472449173165220f7d"
+    },
+    {
+      "case_id": "anonymous-ad-custom-label-empty",
+      "viewer": "anonymous",
+      "source": "[[module Ad label=\"custom_location\"]]",
+      "source_sha256": "609171b4e33f7c054f0cac26b11a1b2ac28598b1eac635180570cae19bdf83c5",
+      "status": "ok",
+      "body": "\n\n\n\n",
+      "body_sha256": "545c38b0922de19734fbffde62792c37c2aef6a3216cfa472449173165220f7d"
+    },
+    {
+      "case_id": "anonymous-ad-other-attribute-empty",
+      "viewer": "anonymous",
+      "source": "[[module Ad foo=\"bar\"]]",
+      "source_sha256": "fc06f5d2a3ad55df4a86e6df7c5bda67ad42d8f7c028eeef1805fc621e4794e9",
+      "status": "ok",
+      "body": "\n\n\n\n",
+      "body_sha256": "545c38b0922de19734fbffde62792c37c2aef6a3216cfa472449173165220f7d"
+    },
+    {
+      "case_id": "anonymous-ad-uppercase-empty",
+      "viewer": "anonymous",
+      "source": "[[module AD foo=\"bar\"]]",
+      "source_sha256": "0418427be42d012d5f82e9e5627ced26ecaec6b77d8ce7f9df7936835128dda6",
+      "status": "ok",
+      "body": "\n\n\n\n",
+      "body_sha256": "545c38b0922de19734fbffde62792c37c2aef6a3216cfa472449173165220f7d"
+    },
+    {
+      "case_id": "anonymous-ad-with-closing-body-literal",
+      "viewer": "anonymous",
+      "source": "[[module Ad label=\"custom_location\"]]\n[[/module]]",
+      "source_sha256": "fb6f51675f1e4be6a90a0bcee6aa45b8e327bb568f5632699095dfc8fcdd921c",
+      "status": "ok",
+      "body": "\n\n\n\n\n<p>[[/module]]</p>\n",
+      "body_sha256": "8d28a5e0eb8f091f7eb8f2dedc345975637d2d4cbbf8c29e7de458ad335139d8"
+    },
+    {
+      "case_id": "account-a-ad-custom-label-empty",
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "title": null
+      },
+      "source": "[[module Ad label=\"custom_location\"]]",
+      "source_sha256": "609171b4e33f7c054f0cac26b11a1b2ac28598b1eac635180570cae19bdf83c5",
+      "status": "ok",
+      "body": "\n\n\n\n",
+      "body_sha256": "545c38b0922de19734fbffde62792c37c2aef6a3216cfa472449173165220f7d"
+    }
+  ]
+}

@@ -1000,6 +1000,183 @@
           ]
         }
       ]
+    },
+    {
+      "id": "listusers-live-current-viewer-output",
+      "title": "ListUsers renders only the current authenticated viewer",
+      "feature_ids": [
+        "module-listusers"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-07-29",
+      "analysis": "The ListUsers documentation says the current implementation outputs a block for the current logged user and outputs nothing for anonymous users, but omits unsupported users values, empty body handling, wiki syntax parsing, and unknown variable behavior. Anonymous and account-A PagePreviewModule probes against live Wikidot establish the exact current-viewer contract.",
+      "normative_behavior": [
+        "ListUsers users=\".\" renders no output for anonymous viewers.",
+        "For an authenticated viewer, users=\".\" substitutes %%number%% with the viewer user ID, %%title%% with the viewer display title/name, and %%name%% with the viewer unix name.",
+        "The substituted ListUsers body is parsed as wiki syntax after variable substitution.",
+        "An empty ListUsers body renders empty output.",
+        "Unknown ListUsers template variables remain literal.",
+        "An omitted users argument, users=\"\", or a users value other than . renders div.error-block with the text Currently only users=\".\" is implemented."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listusers-module-live-preview.json",
+          "sha256": "f20910497a983e6cb4e6be7688420d028bfbba7f16a514ed0eb263f538e37ffe",
+          "case_ids": [
+            "users-dot-variables",
+            "users-dot-wiki-body",
+            "users-dot-empty-body",
+            "users-omitted",
+            "users-empty",
+            "users-other",
+            "users-dot-unknown-variable"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "listdrafts-live-preview-filtering-and-empty-wrapper",
+      "title": "ListDrafts renders a draft-list wrapper and filters only exact double-quoted pageType values",
+      "feature_ids": [
+        "module-listdrafts"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-07-29",
+      "analysis": "The ListDrafts documentation names pageType=exists and pageType=notexists but omits output markup, attribute parsing quirks, standalone-module behavior, and permission/viewer effects. Live PagePreviewModule probes against sandbox-for-codex show the module renders a list-drafts-box wrapper even when empty; exact lowercase double-quoted pageType values filter the draft set; unsupported, empty, bare, single-quoted, and uppercase-argument values behave like omission. The sandbox had one run-owned not-existing-page draft from a prior NewPage probe, so non-empty all/notexists output was observed, but Wikijump currently has no page-draft persistence model to query.",
+      "normative_behavior": [
+        "ListDrafts is a standalone opener module: [[module ListDrafts ...]] is consumed, but a following [[/module]] is rendered literally.",
+        "The rendered wrapper is div.list-drafts-box. Empty results render the wrapper with no list-drafts-item children.",
+        "Each observed draft row renders as div.list-drafts-item containing a p with an a link to the draft page path and link text equal to the draft page title/name.",
+        "pageType=\"exists\" filters to drafts for existing pages; pageType=\"notexists\" filters to drafts for non-existing pages; an omitted pageType lists all drafts.",
+        "pageType=\"\", unsupported values such as pageType=\"other\", single-quoted pageType, bare pageType, and uppercase PAGETYPE are treated as omitted in observed output.",
+        "The module name is case-insensitive in observed output.",
+        "Anonymous and authenticated account-A PagePreviewModule output was identical for the observed cases."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listdrafts-module-live-preview.json",
+          "sha256": "67a6233f996f2429a30b7dff4b329a0a37bcb016dbc2d22f83b068be63ca43f6",
+          "case_ids": [
+            "anonymous-exists-empty-wrapper",
+            "anonymous-omitted-all-drafts",
+            "anonymous-notexists-drafts",
+            "anonymous-invalid-pagetype-all-drafts",
+            "anonymous-empty-pagetype-all-drafts",
+            "anonymous-single-quoted-pagetype-all-drafts",
+            "anonymous-bare-pagetype-all-drafts",
+            "anonymous-uppercase-name-exists-empty-wrapper",
+            "anonymous-uppercase-arg-all-drafts",
+            "anonymous-with-closing-body-literal",
+            "account-a-exists-empty-wrapper"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loginstatus-live-page-source-no-such-module",
+      "title": "LoginStatus is a custom-layout module and is unavailable in page source",
+      "feature_ids": [
+        "module-loginstatus",
+        "layout-custom"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-07-29",
+      "analysis": "The documentation lists LoginStatus in doc:layout-reference under custom layout modules, explicitly independent from normal page modules. Live PagePreviewModule probes confirm that normal page source does not render login controls for LoginStatus; it emits Wikidot's standard unavailable-module error for anonymous and authenticated viewers. Wikijump currently has no custom-layout module renderer, so layout-context LoginStatus rendering remains blocked, while page-source behavior is covered.",
+      "normative_behavior": [
+        "In normal page source, [[module LoginStatus]] renders a div.error-block unavailable-module message.",
+        "The unavailable-module message includes the authored module name inside [[module <em>...</em>]], preserving observed module-name casing.",
+        "A following [[/module]] is not consumed by LoginStatus page-source handling and renders literally.",
+        "Anonymous and authenticated account-A PagePreviewModule output was identical for observed page-source LoginStatus cases.",
+        "The documented Sign in/Create account or logged-in user behavior applies to Wikidot custom-layout context, not normal page source."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/loginstatus-module-live-preview.json",
+          "sha256": "3f64e793eb33b514300977863b643f8e22231ec221c595edf648a7e486ed2cec",
+          "case_ids": [
+            "anonymous-basic-no-such-module",
+            "anonymous-uppercase-name-preserved",
+            "anonymous-with-closing-body-literal",
+            "account-a-basic-no-such-module"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layout-modules-live-page-source-boundaries",
+      "title": "Custom-layout modules are not normal page modules, except Ad consumes page-source calls as empty output",
+      "feature_ids": [
+        "layout-custom",
+        "module-navibar",
+        "module-footerbar",
+        "module-pageoptionsbottom",
+        "module-admoduleabovecontent",
+        "module-admodulebelowcontent",
+        "module-admoduleabovesidebar",
+        "module-admodulebelowsidebar",
+        "module-admodulebelowfooter",
+        "module-ad"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-07-29",
+      "analysis": "doc:layout-reference lists these names as custom-layout modules, explicitly independent from normal page modules. Live PagePreviewModule probes confirm that NaviBar, FooterBar, PageOptionsBottom, and the AdModule* placement modules are unavailable in normal page source and render Wikidot's standard unavailable-module error. The generic Ad module is an exception at the page-source seam: Ad consumes the standalone opener and emits empty output, regardless of the observed label, unrelated attributes, omitted attributes, or uppercase module spelling. Wikijump has no custom-layout module renderer, so custom-layout-context behavior remains blocked separately from the page-source boundary.",
+      "normative_behavior": [
+        "In normal page source, [[module NaviBar]], [[module FooterBar]], [[module PageOptionsBottom]], [[module AdModuleAboveContent]], [[module AdModuleBelowContent]], [[module AdModuleAboveSidebar]], [[module AdModuleBelowSidebar]], and [[module AdModuleBelowFooter]] render div.error-block unavailable-module messages.",
+        "The unavailable-module message includes the authored module name inside [[module <em>...</em>]].",
+        "In normal page source, [[module Ad]] consumes the standalone opener and renders empty output.",
+        "Observed Ad attributes are ignored for page-source rendering: omitted attributes, label=\"custom_location\", label=\"\", unrelated attributes, and uppercase AD all render empty output.",
+        "A following [[/module]] is not consumed by these standalone modules and renders literally.",
+        "Anonymous and authenticated account-A PagePreviewModule output was identical for representative observed cases."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json",
+          "sha256": "5fdac4ead64520d5c07e780b9cd8e38e0cae6c89745dcb0462b4831bdd9a27df",
+          "case_ids": [
+            "anonymous-navibar-no-such-module",
+            "anonymous-footerbar-no-such-module",
+            "anonymous-pageoptionsbottom-no-such-module",
+            "anonymous-admoduleabovecontent-no-such-module",
+            "anonymous-admodulebelowcontent-no-such-module",
+            "anonymous-admoduleabovesidebar-no-such-module",
+            "anonymous-admodulebelowsidebar-no-such-module",
+            "anonymous-admodulebelowfooter-no-such-module",
+            "anonymous-ad-omitted-empty",
+            "anonymous-ad-custom-label-empty",
+            "anonymous-ad-other-attribute-empty",
+            "anonymous-ad-uppercase-empty",
+            "anonymous-ad-with-closing-body-literal",
+            "account-a-ad-custom-label-empty"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adsenseunit-live-deprecated-empty-output",
+      "title": "Deprecated AdSenseUnit consumes page-source calls as empty output",
+      "feature_ids": [
+        "module-adsenseunit"
+      ],
+      "classification": "documentation-correction",
+      "observed_at": "2026-07-29",
+      "analysis": "The AdSenseUnit documentation says the module inserted Google AdSense ads and that label is mandatory, while also noting the feature was deprecated after Wikidot removed AdSense integration. Live PagePreviewModule probes show current Wikidot still recognizes the module but renders empty output for both label and omitted-label invocations, for both anonymous and authenticated viewers.",
+      "normative_behavior": [
+        "AdSenseUnit consumes the standalone module opener and renders empty output.",
+        "Observed label and omitted-label invocations both render empty output.",
+        "Anonymous and authenticated account-A PagePreviewModule output was identical for observed AdSenseUnit cases."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/adsenseunit-module-live-preview.json",
+          "sha256": "650d22bf68cf9245295a466d48d1b648d04cbfbd89cfd3884240eb15a246c365",
+          "case_ids": [
+            "anonymous-label-empty",
+            "anonymous-omitted-empty",
+            "account-a-label-empty",
+            "account-a-omitted-empty"
+          ]
+        }
+      ]
     }
   ]
 }

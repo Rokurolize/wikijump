@@ -2,7 +2,9 @@
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::sync::LazyLock;
 
+use regex::Regex;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 
 use super::compat::CompatHtmlFragments;
@@ -43,7 +45,8 @@ use crate::services::page_query::{
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::score::ScoreValue;
 use crate::services::settings::PageRatingType;
-use crate::services::{PageRevisionService, PageService, ServiceContext};
+use crate::services::user::User;
+use crate::services::{PageRevisionService, PageService, ServiceContext, UserService};
 use crate::types::Reference;
 use crate::types::{Action, Permission, Resource};
 use crate::utils::{normalize_page_slug, split_category, trim_default};
@@ -58,6 +61,27 @@ const TAG_CLOUD_FONT_UNIT_ERROR: &str =
     "Format for minFontSize and maxFontSize must be the same (px, em, pt or %).";
 const TAG_CLOUD_COLOR_ERROR: &str = "Unsupported color format. Use \"RRR,GGG,BBB\" for Red,Green,Blue each within 0-255 range.";
 const PAGE_CALENDAR_CATEGORY_ERROR: &str = "The requested categories do not (yet) exist.";
+const LISTUSERS_UNSUPPORTED_USERS_ERROR: &str =
+    r#"Currently only users="." is implemented."#;
+const LISTDRAFTS_EMPTY_HTML: &str = r#"<div class="list-drafts-box">
+            </div>"#;
+
+static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+ListUsers(?P<head>(?:[^\]"]+|"[^"]*")*)\]\](?P<body>.*?)\[\[/module\]\]"#)
+        .expect("ListUsers module expression is valid")
+});
+static LISTDRAFTS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+ListDrafts(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("ListDrafts module expression is valid")
+});
+static AD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+Ad\b(?:[^\]"]+|"[^"]*")*\]\]"#)
+        .expect("Ad module expression is valid")
+});
+static ADSENSEUNIT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+AdSenseUnit\b(?:[^\]"]+|"[^"]*")*\]\]"#)
+        .expect("AdSenseUnit module expression is valid")
+});
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum PageCalendarCategorySelector {
@@ -86,6 +110,7 @@ pub(super) struct PageCalendarExpansionOptions<'a> {
 pub(super) struct SecondaryRuntimeModuleExpansionOptions<'a> {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
+    pub(super) viewer_user_id: Option<i64>,
     pub(super) url: UrlArguments<'a>,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
 }
@@ -171,6 +196,53 @@ struct RatedPagesArguments {
     max_rating: Option<i64>,
     limit: usize,
     comments: bool,
+}
+
+#[derive(Clone, Debug)]
+struct ListUsersViewer {
+    number: String,
+    title: String,
+    name: String,
+}
+
+fn substitute_list_users_variables(body: &str, viewer: &ListUsersViewer) -> String {
+    body.replace("%%number%%", &viewer.number)
+        .replace("%%title%%", &viewer.title)
+        .replace("%%name%%", &viewer.name)
+}
+
+async fn resolve_list_users_viewer(
+    ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
+) -> Result<Option<ListUsersViewer>> {
+    let Some(user_id) = viewer_user_id else {
+        return Ok(None);
+    };
+    let Some(user) = UserService::get_optional(ctx, Reference::Id(user_id)).await? else {
+        return Ok(None);
+    };
+
+    Ok(Some(match user {
+        User::Wikijump(user) => ListUsersViewer {
+            number: user.user_id.to_string(),
+            title: user.name,
+            name: user.slug,
+        },
+        User::Wikidot(user) => {
+            let number = user.user_id.to_string();
+            let title = user
+                .name
+                .clone()
+                .or_else(|| user.slug.clone())
+                .unwrap_or_else(|| number.clone());
+            let name = user.slug.or(user.name).unwrap_or_else(|| number.clone());
+            ListUsersViewer {
+                number,
+                title,
+                name,
+            }
+        }
+    }))
 }
 
 fn render_join_module(head: &str) -> String {
@@ -1341,6 +1413,111 @@ impl RenderService {
         fragments.restore(&protected)
     }
 
+    async fn expand_list_users_modules(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        settings: &WikitextSettings,
+        viewer_user_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> Result<String> {
+        if !settings.enable_page_syntax || !LISTUSERS_MODULE_REGEX.is_match(&wikitext) {
+            return Ok(wikitext);
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let viewer = resolve_list_users_viewer(ctx, viewer_user_id).await?;
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in LISTUSERS_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a ListUsers capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            let body = captures.name("body").map_or("", |body| body.as_str());
+            if wikidot_module_argument(head, "users") != Some(".") {
+                output.push_str(&compat_html.push_block_html(format!(
+                    r#"<div class="error-block">{}</div>"#,
+                    LISTUSERS_UNSUPPORTED_USERS_ERROR,
+                )));
+            } else if let Some(viewer) = &viewer {
+                output.push_str(&substitute_list_users_variables(body, viewer));
+            }
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return Ok(wikitext);
+        }
+        output.push_str(&wikitext[cursor..]);
+        Ok(output)
+    }
+
+    fn expand_list_drafts_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
+        if !settings.enable_page_syntax || !LISTDRAFTS_MODULE_REGEX.is_match(&wikitext) {
+            return wikitext;
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in LISTDRAFTS_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a ListDrafts capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&compat_html.push_html(LISTDRAFTS_EMPTY_HTML.to_owned()));
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
+    fn expand_ad_modules(wikitext: String, settings: &WikitextSettings) -> String {
+        if !settings.enable_page_syntax
+            || (!AD_MODULE_REGEX.is_match(&wikitext)
+                && !ADSENSEUNIT_MODULE_REGEX.is_match(&wikitext))
+        {
+            return wikitext;
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        let mut matches = AD_MODULE_REGEX
+            .find_iter(&wikitext)
+            .chain(ADSENSEUNIT_MODULE_REGEX.find_iter(&wikitext))
+            .collect::<Vec<_>>();
+        matches.sort_by_key(|matched| matched.start());
+        for matched in matches {
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
     pub(super) async fn expand_secondary_runtime_modules(
         ctx: &ServiceContext<'_>,
         mut wikitext: String,
@@ -1369,6 +1546,17 @@ impl RenderService {
             .await
             .or_raise(make_error)?
         };
+        wikitext = Self::expand_list_users_modules(
+            ctx,
+            wikitext,
+            settings,
+            options.viewer_user_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
+        wikitext = Self::expand_list_drafts_modules(wikitext, settings, compat_html);
+        wikitext = Self::expand_ad_modules(wikitext, settings);
         if PAGECALENDAR_MODULE_REGEX.is_match(&wikitext) {
             wikitext = {
                 let _stage =
