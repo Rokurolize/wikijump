@@ -54,6 +54,39 @@ test("NewPage default submit posts Wikidot helper action and navigates to edit U
   )
 })
 
+test("NewPage anonymous default submit still navigates to edit URL", async ({ page }) => {
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  await page.goto("/newpage-helper")
+  await page.evaluate(() => {
+    document.cookie = "wikidot_token7=fixture-wikidot-token7; path=/"
+  })
+
+  const submittedName = "run-owned:newpage-helper-anonymous-default"
+  const ajaxRequestPromise = page.waitForRequest(
+    (request) =>
+      request.method() === "POST" && request.url().endsWith("/ajax-module-connector.php")
+  )
+  await page.locator("#default-newpage input[name='pageName']").fill(submittedName)
+  await page.locator("#default-newpage input[type='submit']").click()
+  const ajaxFields = new URLSearchParams((await ajaxRequestPromise).postData() ?? "")
+
+  await expect(page).toHaveURL(
+    new RegExp(
+      `/${escapeRegExp(submittedName)}/edit/true/title/${escapeRegExp(encodeURIComponent(submittedName))}$`,
+      "u"
+    )
+  )
+  expect(Object.fromEntries(ajaxFields)).toEqual(
+    expect.objectContaining({
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: submittedName,
+      wikidot_token7: "fixture-wikidot-token7"
+    })
+  )
+})
+
 test("NewPage save-and-go creates an empty page and navigates to it", async ({
   page,
   request

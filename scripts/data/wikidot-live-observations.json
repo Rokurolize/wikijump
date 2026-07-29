@@ -1043,6 +1043,34 @@
       ]
     },
     {
+      "id": "newpage-module-live-anonymous-action-permissions",
+      "title": "NewPage anonymous helper action allows edit routing but rejects autosave creation",
+      "feature_ids": [
+        "module-newpage",
+        "data-forms-creating-new-page"
+      ],
+      "classification": "documentation-correction",
+      "observed_at": "2026-07-29",
+      "analysis": "Anonymous raw NewPage helper action probes against sandbox-for-codex confirm that page creation permission is not checked for the non-mutating edit-routing path. Omitted mode and mode=edit return status=ok with unixName, pageTitle, tags, and parentPage. Autosave modes are mutating and anonymous requests fail with no_permission before page creation.",
+      "normative_behavior": [
+        "Anonymous NewPage helper requests with omitted mode return status=ok and edit-routing fields without creating a page.",
+        "Anonymous NewPage helper requests with mode=\"edit\" return status=ok and edit-routing fields without creating a page.",
+        "Anonymous NewPage helper requests with mode=\"save-and-go\" or mode=\"save-and-refresh\" return no_permission and do not create a page."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/newpage-module-live-anonymous-action.json",
+          "sha256": "8f48557f76ac4fc6365ff16fa0a38b0b63aab5ca0e0462927dcd569a3a58034d",
+          "case_ids": [
+            "anonymous-omitted-mode",
+            "anonymous-edit",
+            "anonymous-save-and-go",
+            "anonymous-save-and-refresh"
+          ]
+        }
+      ]
+    },
+    {
       "id": "listusers-live-current-viewer-output",
       "title": "ListUsers renders only the current authenticated viewer",
       "feature_ids": [

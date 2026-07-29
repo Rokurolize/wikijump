@@ -189,13 +189,6 @@ const handleNewPageHelperRequest = async (
     })
   }
 
-  if (!(await resolveCanCreateNewPage(canCreateNewPage))) {
-    return jsonResponse({
-      status: "no_permission",
-      message: "Permission denied."
-    })
-  }
-
   const unixName = toWikidotUnixName({
     pageName,
     categoryName: fieldValue(fields, "categoryName")
@@ -220,6 +213,12 @@ const handleNewPageHelperRequest = async (
   const mode = fieldValue(fields, "mode")
 
   if (NEWPAGE_AUTOSAVE_MODES.has(mode)) {
+    if (!(await resolveCanCreateNewPage(canCreateNewPage))) {
+      return jsonResponse({
+        status: "no_permission",
+        message: "Permission denied."
+      })
+    }
     if (templateId.length > 0) {
       return jsonResponse({
         status: "not_ok"
