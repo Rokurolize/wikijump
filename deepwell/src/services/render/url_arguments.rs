@@ -45,6 +45,8 @@ static PAGE_CALENDAR_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+pagecalendar\b").unwrap());
 static LIST_USERS_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listusers\b").unwrap());
+static LIST_DRAFTS_MODULE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listdrafts\b").unwrap());
 
 /// One raw URL path argument addressed to a page module.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -170,6 +172,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(wikitext)
         || PAGE_CALENDAR_MODULE_REGEX.is_match(wikitext)
         || LIST_USERS_MODULE_REGEX.is_match(wikitext)
+        || LIST_DRAFTS_MODULE_REGEX.is_match(wikitext)
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
         || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)
 }
@@ -217,6 +220,9 @@ mod tests {
         ));
         assert!(wikitext_requires_runtime_render(
             r#"[[module ListUsers users="."]]%%title%%[[/module]]"#
+        ));
+        assert!(wikitext_requires_runtime_render(
+            r#"[[module ListDrafts pageType="exists"]]"#
         ));
     }
 

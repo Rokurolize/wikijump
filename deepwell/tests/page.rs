@@ -2787,6 +2787,78 @@ async fn listusers_module_matches_live_preview_and_runtime_viewer() {
 }
 
 #[tokio::test]
+async fn listdrafts_module_matches_live_empty_draft_state() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = "DRAFTS_START\n[[module ListDrafts pageType=\"exists\"]]\nDRAFTS_END";
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ListDrafts empty preview",
+            "wikitext": source,
+        }),
+    );
+    assert!(
+        preview.body.contains(r#"<div class="list-drafts-box">"#),
+        "ListDrafts should render Wikidot's empty draft-list wrapper:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("[[module ListDrafts")
+            && !preview.body.contains("list-drafts-item"),
+        "empty ListDrafts should not leak raw source or render draft items:\n{}",
+        preview.body,
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-listdrafts-empty",
+        "Fixture ListDrafts Empty",
+        source,
+    )
+    .await;
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-listdrafts-empty", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found ListDrafts view, got {other:?}"),
+    };
+    assert!(
+        body.contains("DRAFTS_START")
+            && body.contains(r#"<div class="list-drafts-box">"#)
+            && body.contains("DRAFTS_END"),
+        "saved page view should render the ListDrafts wrapper in place:\n{body}",
+    );
+    assert!(
+        !body.contains("[[module ListDrafts") && !body.contains("list-drafts-item"),
+        "saved page view should not leak raw ListDrafts source or render nonexistent drafts:\n{body}",
+    );
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

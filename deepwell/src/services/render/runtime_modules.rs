@@ -63,10 +63,16 @@ const TAG_CLOUD_COLOR_ERROR: &str = "Unsupported color format. Use \"RRR,GGG,BBB
 const PAGE_CALENDAR_CATEGORY_ERROR: &str = "The requested categories do not (yet) exist.";
 const LISTUSERS_UNSUPPORTED_USERS_ERROR: &str =
     r#"Currently only users="." is implemented."#;
+const LISTDRAFTS_EMPTY_HTML: &str = r#"<div class="list-drafts-box">
+            </div>"#;
 
 static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListUsers(?P<head>(?:[^\]"]+|"[^"]*")*)\]\](?P<body>.*?)\[\[/module\]\]"#)
         .expect("ListUsers module expression is valid")
+});
+static LISTDRAFTS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+ListDrafts(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("ListDrafts module expression is valid")
 });
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1442,6 +1448,37 @@ impl RenderService {
         Ok(output)
     }
 
+    fn expand_list_drafts_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
+        if !settings.enable_page_syntax || !LISTDRAFTS_MODULE_REGEX.is_match(&wikitext) {
+            return wikitext;
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in LISTDRAFTS_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a ListDrafts capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&compat_html.push_html(LISTDRAFTS_EMPTY_HTML.to_owned()));
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
     pub(super) async fn expand_secondary_runtime_modules(
         ctx: &ServiceContext<'_>,
         mut wikitext: String,
@@ -1479,6 +1516,7 @@ impl RenderService {
         )
         .await
         .or_raise(make_error)?;
+        wikitext = Self::expand_list_drafts_modules(wikitext, settings, compat_html);
         if PAGECALENDAR_MODULE_REGEX.is_match(&wikitext) {
             wikitext = {
                 let _stage =

@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "b04d623a33fc810f6efa737b108612567ce1b50431b7fe5d95c7251ad482fbae",
+  "catalog_sha256": "ab25682d9da8795e82373e8134b8effb6bae497ec72eda75d14abeb3bcb58196",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -1004,15 +1004,30 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-listdrafts": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/module/module-listdrafts.md"
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule anonymous and authenticated account-A probes for ListDrafts pageType filtering, empty wrapper output, ignored malformed pageType forms, case-insensitive module name, and literal closing marker behavior.",
+        "Deepwell wikidot_page_preview renders the no-draft ListDrafts wrapper and does not leak the raw module.",
+        "Deepwell page_view renders the no-draft ListDrafts wrapper from saved page source."
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "tests": [
+        "deepwell/tests/page.rs::listdrafts_module_matches_live_empty_draft_state",
+        "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-listdrafts.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/listdrafts-module-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Deepwell currently has no persisted page-draft model corresponding to Wikidot page edit drafts. The implemented compatibility surface recognizes ListDrafts and renders the live empty wrapper for no-draft state, but non-empty draft enumeration and pageType exists/notexists filtering remain blocked until page draft state exists or imported Wikidot draft provenance is made available."
+      ]
     },
     "module-listpages": {
       "status": "implemented",
