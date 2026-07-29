@@ -225,6 +225,117 @@ test("empty and unselected select fields save and restore as Wikidot null", asyn
   await expect(page.locator("select[name='field-select_five']")).toHaveValue("a")
 })
 
+test("data-form field properties and PCRE-style match behavior follow live Wikidot", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-properties-flow:example/edit/true")
+
+  const base = page.locator("input[name='field-base']")
+  const joined = page.locator("input[name='field-joined']")
+  const baseGroup = base.locator(
+    "xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' form-group ')][1]"
+  )
+  const joinedGroup = joined.locator(
+    "xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' form-group ')][1]"
+  )
+  await expect(baseGroup.locator("input[name='field-joined']")).toHaveCount(1)
+  await expect(joinedGroup.locator("input[name='field-base']")).toHaveCount(1)
+  await expect(baseGroup.locator(":scope > .control-label")).toHaveText("Base label")
+  await expect(baseGroup.locator(":scope > .control-label")).not.toHaveAttribute("for")
+  await expect(base).not.toHaveAttribute("id")
+  expect(
+    await page
+      .locator(".field-base")
+      .evaluate((element) =>
+        [...element.childNodes]
+          .filter((node) => node.nodeType !== Node.COMMENT_NODE)
+          .map((node) =>
+            node.nodeType === Node.TEXT_NODE ? node.textContent : node.nodeName
+          )
+      )
+  ).toEqual([" ", "INPUT", " ", "SPAN"])
+  expect(
+    await page
+      .locator(".field-joined")
+      .evaluate((element) =>
+        [...element.childNodes]
+          .filter((node) => node.nodeType !== Node.COMMENT_NODE)
+          .map((node) =>
+            node.nodeType === Node.TEXT_NODE ? node.textContent : node.nodeName
+          )
+      )
+  ).toEqual(["PRE ", "INPUT", " POST", "SPAN"])
+  await expect(baseGroup.locator(":scope > .col-sm-5")).toContainText(
+    "Joined labelPRE POST"
+  )
+  await expect(page.locator(".field-joined")).toContainText("PRE POST")
+
+  const extended = page.locator("textarea[name='field-extended']")
+  await expect(extended).toHaveAttribute("placeholder", "  padded # hint  ")
+  await expect(page.locator(".field-extended")).toContainText("pre # post")
+  await expect(
+    page
+      .locator(".field-extended")
+      .locator("xpath=ancestor::div[contains(@class, 'form-group')][1]")
+      .locator(":scope > .control-label")
+  ).toHaveText("")
+
+  const choice = page.locator("input[name='field-choice']")
+  await expect(choice).toHaveCount(2)
+  await expect(choice.first()).not.toHaveAttribute("placeholder")
+  await expect(page.locator(".field-choice")).toContainText("PRE AlphaBeta POST")
+
+  await base.fill("base value")
+  await joined.fill("bad")
+  await extended.fill("ab")
+  await page.locator("input[name='field-duplicate_modifier']").fill("ok")
+  await page.locator("input[name='field-choice'][value='b']").check()
+  await page.locator("#edit-save-button").click()
+
+  await expect(joinedGroup).toHaveClass(/(?:^|\s)has-error(?:\s|$)/u)
+  await expect(joined.locator("xpath=..")).toHaveClass(/(?:^|\s)form-error(?:\s|$)/u)
+  await expect(joined.locator("xpath=..").locator(".form-message")).toHaveText(
+    "Please enter valid 'Joined label'"
+  )
+  const writesAfterInvalid = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writesAfterInvalid.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-properties-flow:example"
+    )
+  ).toBeUndefined()
+
+  await joined.fill("OK")
+  await page.locator("#edit-save-button").click()
+  await expect
+    .poll(async () => {
+      const writes = await request
+        .get(`${FIXTURE_URL}/last-page-write-requests`)
+        .then((response) => response.json())
+      return writes.pageCreate.find(
+        (entry: { params: { slug?: string } }) =>
+          entry.params.slug === "data-form-properties-flow:example"
+      )
+    })
+    .toMatchObject({
+      params: {
+        slug: "data-form-properties-flow:example",
+        wikitext: [
+          "base: 'base value'",
+          "joined: OK",
+          "extended: ab",
+          "duplicate_modifier: ok",
+          "choice: b"
+        ].join("\n")
+      }
+    })
+})
+
 test("pathological data-form match patterns fail closed without blocking the editor", async ({
   page,
   request

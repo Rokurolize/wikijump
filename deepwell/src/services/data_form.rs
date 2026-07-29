@@ -51,20 +51,9 @@ impl DataFormDefinition {
                 .fields
                 .iter()
                 .all(|field| match field.field_type.as_deref() {
-                    Some("text") => {
-                        !field.label.is_empty()
-                            && !field.has_values_property
-                            && field.values.is_empty()
-                            && field.match_pattern.is_some()
-                                == field.match_error.is_some()
-                            && field
-                                .match_pattern
-                                .as_deref()
-                                .is_none_or(valid_observed_wikidot_match_pattern)
-                    }
+                    Some("text") => !field.has_values_property && field.values.is_empty(),
                     Some("select") => {
-                        !field.label.is_empty()
-                            && !field.has_text_specific_properties
+                        !field.has_text_specific_properties
                             && field
                                 .default_value
                                 .as_ref()
@@ -87,6 +76,12 @@ pub struct DataFormFieldDefinition {
     pub height: usize,
     pub match_pattern: Option<String>,
     pub match_error: Option<String>,
+    #[serde(default)]
+    pub before: String,
+    #[serde(default)]
+    pub after: String,
+    #[serde(default)]
+    pub join: bool,
     #[serde(skip)]
     has_text_specific_properties: bool,
     #[serde(skip)]
@@ -106,6 +101,9 @@ impl Default for DataFormFieldDefinition {
             height: 1,
             match_pattern: None,
             match_error: None,
+            before: String::new(),
+            after: String::new(),
+            join: false,
             has_text_specific_properties: false,
             has_values_property: false,
         }
@@ -283,7 +281,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                         definition.observed_create_edit_compatible = false;
                     }
                     if let Some(field) = definition.field_mut(field_name) {
-                        field.label = unquote_wikidot_data_form_scalar(value).to_owned();
+                        field.label = parse_wikidot_data_form_text_scalar(value);
                     }
                     current_values_field = None;
                 }
@@ -295,8 +293,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                         definition.observed_create_edit_compatible = false;
                     }
                     if let Some(field) = definition.field_mut(field_name) {
-                        field.hint = unquote_wikidot_data_form_scalar(value).to_owned();
-                        field.has_text_specific_properties = true;
+                        field.hint = parse_wikidot_data_form_text_scalar(value);
                     }
                     current_values_field = None;
                 }
@@ -349,7 +346,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                     }
                     if let Some(field) = definition.field_mut(field_name) {
                         field.match_pattern =
-                            Some(unquote_wikidot_data_form_scalar(value).to_owned());
+                            nonempty_wikidot_data_form_text_scalar(value);
                         field.has_text_specific_properties = true;
                     }
                     current_values_field = None;
@@ -362,9 +359,26 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                         definition.observed_create_edit_compatible = false;
                     }
                     if let Some(field) = definition.field_mut(field_name) {
-                        field.match_error =
-                            Some(unquote_wikidot_data_form_scalar(value).to_owned());
+                        field.match_error = nonempty_wikidot_data_form_text_scalar(value);
                         field.has_text_specific_properties = true;
+                    }
+                    current_values_field = None;
+                }
+                "before" => {
+                    if let Some(field) = definition.field_mut(field_name) {
+                        field.before = parse_wikidot_data_form_text_scalar(value);
+                    }
+                    current_values_field = None;
+                }
+                "after" => {
+                    if let Some(field) = definition.field_mut(field_name) {
+                        field.after = parse_wikidot_data_form_text_scalar(value);
+                    }
+                    current_values_field = None;
+                }
+                "join" => {
+                    if let Some(field) = definition.field_mut(field_name) {
+                        field.join = parse_wikidot_data_form_join(value);
                     }
                     current_values_field = None;
                 }
@@ -495,23 +509,65 @@ pub fn render_wikidot_data_form_table(
     values: &BTreeMap<String, String>,
 ) -> String {
     let mut html = String::from(r#"<table class="form-table"><tbody>"#);
-    for field in &definition.fields {
+    for (index, field) in definition.fields.iter().enumerate() {
+        let joined = index > 0 && field.join;
+        if !joined {
+            if index > 0 {
+                html.push_str("</td></tr>");
+            }
+            html.push_str(r#"<tr class="form-row"><td class="form-labels">"#);
+            if !field.label.is_empty() {
+                html.push_str(r#"<span class="form-label">"#);
+                append_wikidot_data_form_display_text(&mut html, &field.label);
+                html.push_str("</span>");
+            }
+            html.push_str(r#"</td><td class="form-values">"#);
+        } else {
+            html.push(' ');
+            if !field.label.is_empty() {
+                html.push_str(r#"<span class="form-label">"#);
+                append_wikidot_data_form_display_text(&mut html, &field.label);
+                html.push_str("</span>");
+            }
+        }
         let raw_value = values.get(&field.name).map(String::as_str).unwrap_or("");
         let display_value = if field.field_type.as_deref() == Some("select") {
             field.value_label(raw_value).unwrap_or(raw_value)
         } else {
             raw_value
         };
-        html.push_str(
-            r#"<tr class="form-row"><td class="form-labels"><span class="form-label">"#,
-        );
-        html.push_str(&escape_html_text(&field.label));
-        html.push_str(r#"</span></td><td class="form-values"><span>"#);
-        html.push_str(&escape_html_text(display_value));
-        html.push_str("</span></td></tr>");
+        html.push_str("<span>");
+        if !field.before.is_empty() {
+            append_wikidot_data_form_display_text(&mut html, field.before.trim());
+            html.push(' ');
+        }
+        append_wikidot_data_form_display_text(&mut html, display_value);
+        if !field.after.is_empty() {
+            html.push(' ');
+            append_wikidot_data_form_display_text(&mut html, field.after.trim());
+        }
+        html.push_str("</span>");
+    }
+    if !definition.fields.is_empty() {
+        html.push_str("</td></tr>");
     }
     html.push_str("</tbody></table>");
     html
+}
+
+fn append_wikidot_data_form_display_text(output: &mut String, value: &str) {
+    if value.contains(['<', '>', '\n']) {
+        for (index, line) in value.split('\n').enumerate() {
+            if index > 0 {
+                output.push_str("<br>\n");
+            }
+            output.push_str(r#"<span style="white-space: pre-wrap;">"#);
+            output.push_str(&escape_html_text(line));
+            output.push_str("</span>");
+        }
+    } else {
+        output.push_str(&escape_html_text(value));
+    }
 }
 
 fn valid_wikidot_data_form_field_name(value: &str) -> bool {
@@ -536,10 +592,6 @@ fn parse_wikidot_text_height(value: &str) -> usize {
         .filter(|height| *height >= 2)
         .and_then(|height| usize::try_from(height).ok())
         .unwrap_or(1)
-}
-
-fn valid_observed_wikidot_match_pattern(value: &str) -> bool {
-    value.len() >= 2 && value.starts_with('/') && value.ends_with('/')
 }
 
 fn parse_wikidot_stored_plain_scalar(value: &str) -> Option<String> {
@@ -657,6 +709,77 @@ fn unquote_wikidot_data_form_scalar(value: &str) -> &str {
     value
 }
 
+fn parse_wikidot_data_form_text_scalar(value: &str) -> String {
+    if quoted_wikidot_data_form_scalar(value) {
+        return unquote_wikidot_data_form_scalar(value).to_owned();
+    }
+
+    let value = strip_wikidot_data_form_scalar_comment(value).trim_end();
+    if value.is_empty()
+        || value == "~"
+        || matches!(
+            value.to_ascii_lowercase().as_str(),
+            "false" | "null" | "true"
+        )
+    {
+        String::new()
+    } else {
+        value.to_owned()
+    }
+}
+
+fn nonempty_wikidot_data_form_text_scalar(value: &str) -> Option<String> {
+    let value = parse_wikidot_data_form_text_scalar(value);
+    (!value.is_empty()).then_some(value)
+}
+
+fn parse_wikidot_data_form_join(value: &str) -> bool {
+    if quoted_wikidot_data_form_scalar(value) {
+        return php_string_truthy(unquote_wikidot_data_form_scalar(value));
+    }
+
+    let value = strip_wikidot_data_form_scalar_comment(value).trim_end();
+    if value.is_empty() || value == "~" || value.eq_ignore_ascii_case("null") {
+        return false;
+    }
+    if value.eq_ignore_ascii_case("false") {
+        return false;
+    }
+    if value.eq_ignore_ascii_case("true") {
+        return true;
+    }
+    php_string_truthy(value)
+}
+
+fn quoted_wikidot_data_form_scalar(value: &str) -> bool {
+    if value.len() < 2 {
+        return false;
+    }
+    matches!(
+        (value.as_bytes()[0], value.as_bytes()[value.len() - 1]),
+        (b'\'', b'\'') | (b'"', b'"')
+    )
+}
+
+fn strip_wikidot_data_form_scalar_comment(value: &str) -> &str {
+    let bytes = value.as_bytes();
+    for (index, byte) in bytes.iter().enumerate() {
+        if *byte != b'#' {
+            continue;
+        }
+        let preceded_by_space = index == 0 || bytes[index - 1].is_ascii_whitespace();
+        let escaped = index > 0 && bytes[index - 1] == b'\\';
+        if preceded_by_space && !escaped {
+            return &value[..index];
+        }
+    }
+    value
+}
+
+fn php_string_truthy(value: &str) -> bool {
+    !value.is_empty() && value != "0"
+}
+
 fn escape_html_text(value: &str) -> String {
     value
         .replace('&', "&amp;")
@@ -738,7 +861,6 @@ fields:
         for form in [
             "[[form]]\nfields:\n  name:\n    type: text\n    required: true\n[[/form]]",
             "[[form]]\nfields:\n  name:\n    type: text\n  name:\n    type: text\n[[/form]]",
-            "[[form]]\nfields:\n  choice:\n    type: select\n    values:\n[[/form]]",
             "[[form]]\nfields:\n  choice:\n    type: select\n    values:\n      a: Alpha\n    default: b\n[[/form]]",
             "[[form]]\nfields:\n  name:\n    type: text\n[[/form]]\n[[form]]\nfields:\n[[/form]]",
             "[[code]]\n[[form]]\nfields:\n  name:\n    type: text\n[[/form]]\n[[/code]]",
@@ -858,10 +980,160 @@ fields:
             render_wikidot_data_form_table(&definition, &values),
             concat!(
                 r#"<table class="form-table"><tbody>"#,
-                r#"<tr class="form-row"><td class="form-labels"><span class="form-label">Name &amp; role</span></td><td class="form-values"><span>A &amp; &lt;B&gt;</span></td></tr>"#,
-                r#"<tr class="form-row"><td class="form-labels"><span class="form-label">Choice</span></td><td class="form-values"><span>Beta &lt;unsafe&gt;</span></td></tr>"#,
+                r#"<tr class="form-row"><td class="form-labels"><span class="form-label">Name &amp; role</span></td><td class="form-values"><span><span style="white-space: pre-wrap;">A &amp; &lt;B&gt;</span></span></td></tr>"#,
+                r#"<tr class="form-row"><td class="form-labels"><span class="form-label">Choice</span></td><td class="form-values"><span><span style="white-space: pre-wrap;">Beta &lt;unsafe&gt;</span></span></td></tr>"#,
                 "</tbody></table>",
             ),
+        );
+    }
+
+    #[test]
+    fn parses_and_renders_live_field_property_contract() {
+        let definition = parse_wikidot_data_form_definition(
+            r#"[[form]]
+fields:
+  base:
+    label: Base label
+    type: text
+  joined:
+    label: Joined label
+    type: text
+    join: true
+    before: PRE
+    after: POST
+    match: /^ok$/i
+  omitted:
+    type: text
+  area:
+    label: Area
+    type: text
+    height: 2
+    hint: "  padded # hint  "
+    before: "pre # "
+    after: " post"
+  choice:
+    label: Choice
+    type: select
+    hint: ignored select hint
+    before: PRE
+    after: POST
+    values:
+      a: Alpha
+      b: Beta
+[[/form]]"#,
+        )
+        .expect("data form");
+
+        assert!(definition.supports_observed_create_edit());
+        let base = definition.field("base").expect("base");
+        assert!(!base.join);
+        assert_eq!(base.before, "");
+        assert_eq!(base.after, "");
+        let joined = definition.field("joined").expect("joined");
+        assert!(joined.join);
+        assert_eq!(joined.before, "PRE");
+        assert_eq!(joined.after, "POST");
+        assert_eq!(joined.match_pattern.as_deref(), Some("/^ok$/i"));
+        assert_eq!(joined.match_error, None);
+        assert_eq!(definition.field("omitted").expect("omitted").label, "");
+        assert_eq!(
+            definition.field("area").expect("area").hint,
+            "  padded # hint  "
+        );
+        assert_eq!(
+            definition.field("choice").expect("choice").hint,
+            "ignored select hint",
+        );
+
+        let values = BTreeMap::from([
+            ("area".to_owned(), "line 1\nline 2".to_owned()),
+            ("base".to_owned(), "base value".to_owned()),
+            ("choice".to_owned(), "b".to_owned()),
+            ("joined".to_owned(), "ok".to_owned()),
+            ("omitted".to_owned(), "omitted value".to_owned()),
+        ]);
+        assert_eq!(
+            render_wikidot_data_form_table(&definition, &values),
+            concat!(
+                r#"<table class="form-table"><tbody>"#,
+                r#"<tr class="form-row"><td class="form-labels"><span class="form-label">Base label</span></td><td class="form-values"><span>base value</span> <span class="form-label">Joined label</span><span>PRE ok POST</span></td></tr>"#,
+                r#"<tr class="form-row"><td class="form-labels"></td><td class="form-values"><span>omitted value</span></td></tr>"#,
+                r#"<tr class="form-row"><td class="form-labels"><span class="form-label">Area</span></td><td class="form-values"><span>pre # <span style="white-space: pre-wrap;">line 1</span><br>"#,
+                "\n",
+                r#"<span style="white-space: pre-wrap;">line 2</span> post</span></td></tr>"#,
+                r#"<tr class="form-row"><td class="form-labels"><span class="form-label">Choice</span></td><td class="form-values"><span>PRE Beta POST</span></td></tr>"#,
+                "</tbody></table>",
+            ),
+        );
+    }
+
+    #[test]
+    fn applies_live_scalar_truthiness_comments_and_empty_match_rules() {
+        let definition = parse_wikidot_data_form_definition(
+            r#"[[form]]
+fields:
+  root:
+    label: false
+    type: text
+    hint: raw hash # comment
+  join_false:
+    label: Quoted false
+    type: text
+    join: "false"
+    before: false
+    after: "true"
+  join_zero:
+    label: Zero
+    type: text
+    join: "0"
+  empty_match:
+    label: Empty match
+    type: text
+    match:
+    match-error: ignored
+  orphan_error:
+    label: Orphan error
+    type: text
+    match-error: ignored
+  empty_error:
+    label: Empty error
+    type: text
+    match: /^ok$/
+    match-error:
+[[/form]]"#,
+        )
+        .expect("data form");
+
+        assert!(definition.supports_observed_create_edit());
+        let root = definition.field("root").expect("root");
+        assert_eq!(root.label, "");
+        assert_eq!(root.hint, "raw hash");
+        let joined = definition.field("join_false").expect("quoted false");
+        assert!(joined.join);
+        assert_eq!(joined.before, "");
+        assert_eq!(joined.after, "true");
+        assert!(!definition.field("join_zero").expect("quoted zero").join);
+        assert_eq!(
+            definition
+                .field("empty_match")
+                .expect("empty match")
+                .match_pattern,
+            None,
+        );
+        assert_eq!(
+            definition
+                .field("orphan_error")
+                .expect("orphan error")
+                .match_error
+                .as_deref(),
+            Some("ignored"),
+        );
+        assert_eq!(
+            definition
+                .field("empty_error")
+                .expect("empty error")
+                .match_error,
+            None,
         );
     }
 }

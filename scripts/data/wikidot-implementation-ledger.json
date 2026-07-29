@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "07c2105dfa202524d3ca8f0b6ab8825b33aedc0ca78a6d3764723c59ae3f75b2",
+  "catalog_sha256": "2c52b7cf0c869588bb3a9657f92cf8aa736338cafe1bb496bddfc6521e911352",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -362,17 +362,17 @@
         {
           "path": "deepwell/tests/page_template_assignment.rs",
           "name": "page_view_exposes_live_text_and_select_control_contract",
-          "scope": "public missing/found page views verify implicit text type, the observed width and height boundary matrix, defaults, hints, match metadata, retained empty select fields, reserved-looking labels, canonical null and non-null stored-value restoration, rejection of noncanonical records, and fail-closed unsupported shapes"
+          "scope": "public missing/found page views verify implicit text type, the observed width and height boundary matrix, defaults, hints, match metadata, join and affix metadata, retained empty select fields, reserved-looking labels, canonical null and non-null stored-value restoration, rejection of noncanonical records, and fail-closed unsupported shapes"
         },
         {
           "path": "deepwell/src/services/data_form.rs",
-          "name": "unknown_or_ambiguous_definition_shapes_fail_closed_for_create_edit; stored_values_must_match_the_complete_observed_record_shape",
-          "scope": "definition and storage boundary tests reject content outside fields, malformed or over-indented fields and properties, empty option keys or labels, text values blocks, and alternate noncanonical scalar spellings"
+          "name": "parses_and_renders_live_field_property_contract; applies_live_scalar_truthiness_comments_and_empty_match_rules; unknown_or_ambiguous_definition_shapes_fail_closed_for_create_edit; stored_values_must_match_the_complete_observed_record_shape",
+          "scope": "definition, rendering, and storage boundary tests cover label omission, join grouping, literal before and after affixes, legacy scalar truthiness, hash comments, empty validation properties, joined default-table rows, escaped and multiline display, and fail-closed malformed or noncanonical shapes"
         },
         {
           "path": "framerail/tests/data-form-create-flow.spec.ts",
-          "name": "data-form text and select controls match live validation and storage; pathological data-form match patterns fail closed without blocking the editor; invalid data-form match patterns use a host-owned diagnostic",
-          "scope": "public browser flows verify width, height, hint, custom match-error DOM, preserved invalid values, one overall time budget in an isolated worker, explicit invalid-pattern and safety diagnostics, blank-select rejection, defaults, cardinality-sensitive controls, exact saved source, and edit restoration"
+          "name": "data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage; pathological data-form match patterns fail closed without blocking the editor; invalid data-form match patterns use a host-owned diagnostic",
+          "scope": "public browser flows verify joined control groups, omitted labels, literal affixes, exact live field label/id DOM, width, height, hints, generated and custom match-error DOM, extended and duplicate regex modifiers, preserved invalid values, one overall worker budget, safety diagnostics, unselected-select null storage, defaults, exact saved source, and edit restoration"
         }
       ],
       "implementation_files": [
@@ -386,10 +386,11 @@
         "specifications/data-forms/data-forms-field-properties.md"
       ],
       "live_oracle_evidence": [
-        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json"
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Text width, height, default, hint, match, and match-error plus select values and default are observed, implemented, and covered. The general label, join, before, and after properties and their behavior across the remaining field types still require live coverage and implementation."
+        "Label, join, before, and after are observed, implemented, and covered for text and select fields, including scalar boundaries and default-table rendering. Their behavior across checkbox, wiki, and the other pending field types remains coupled to those unimplemented field types and still requires live coverage."
       ]
     },
     "data-forms-file-field": {
@@ -425,12 +426,17 @@
         {
           "path": "deepwell/tests/page_template_assignment.rs",
           "name": "page_view_exposes_live_text_and_select_control_contract",
-          "scope": "public missing-page view preserves the documented escaped-hash hint exactly"
+          "scope": "public missing-page view preserves text and ignored-select hint metadata, including the documented escaped-hash value"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "parses_and_renders_live_field_property_contract; applies_live_scalar_truthiness_comments_and_empty_match_rules",
+          "scope": "parser regressions cover exact quoted spacing, raw-hash comments, retained escaped hashes, empty hints, and select hint acceptance"
         },
         {
           "path": "framerail/tests/data-form-create-flow.spec.ts",
-          "name": "data-form text and select controls match live validation and storage",
-          "scope": "public browser flow verifies the exact live placeholder value, including its retained backslash"
+          "name": "data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage",
+          "scope": "public browser flows verify exact text input and textarea placeholders, including retained backslashes and surrounding spaces, while select hints produce no placeholder"
         }
       ],
       "implementation_files": [
@@ -442,10 +448,11 @@
         "specifications/data-forms/data-forms-hints.md"
       ],
       "live_oracle_evidence": [
-        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json"
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "The documented escaped-hash text hint is observed, implemented, and covered. The documented heading, wiki-field, and CSS composition tips plus hint behavior for other field types, empty hints, quoting, and additional escaping remain to be classified."
+        "Text and select hint behavior is observed, implemented, and covered for plain, escaped-hash, raw-hash, quoted-hash, empty, quoted-empty, surrounding-space, wiki-looking, and HTML-looking values. The documentation's heading, wiki-field, and CSS composition tips plus hint behavior for the remaining pending field types require those field types and integrations to be implemented."
       ]
     },
     "data-forms-howto": {
@@ -552,7 +559,7 @@
         {
           "path": "deepwell/tests/page_template_assignment.rs",
           "name": "page_view_exposes_live_text_and_select_control_contract",
-          "scope": "public missing/found page views verify zero-, one-, and five-value select definitions, defaults, retention and null restoration of empty selects, unquoted and quoted reserved-looking labels, canonical quoted numeric scalar restoration, rejection of unquoted numeric storage, text-only-property rejection, and default-table display"
+          "scope": "public missing/found page views verify zero-, one-, and five-value select definitions, defaults, ignored hint plus before and after metadata, retention and null restoration of empty selects, reserved-looking labels, canonical quoted numeric scalar restoration, text-only-property rejection, and default-table display"
         },
         {
           "path": "framerail/tests/wikidot-data-form.test.js",
@@ -561,8 +568,8 @@
         },
         {
           "path": "framerail/tests/data-form-create-flow.spec.ts",
-          "name": "data-form text and select controls match live validation and storage; empty and unselected select fields save and restore as Wikidot null",
-          "scope": "public browser flow verifies absent zero-option controls, unselected and selected one- and four-option radios, five-option dropdown DOM, explicit and implicit defaults, exact null/plain/quoted saved source, and restored empty/radio/dropdown values on edit"
+          "name": "data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage; empty and unselected select fields save and restore as Wikidot null",
+          "scope": "public browser flows verify ignored select hints, literal affixes, joined grouping, absent zero-option controls, unselected and selected radios, dropdown DOM, defaults, exact null/plain/quoted saved source, and restored values on edit"
         },
         {
           "path": "deepwell/tests/page.rs",
@@ -586,7 +593,8 @@
       ],
       "live_oracle_evidence": [
         "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
-        "install/local/wikidot-verification/artifacts/data-form-empty-select-storage-live.json"
+        "install/local/wikidot-verification/artifacts/data-form-empty-select-storage-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json"
       ],
       "unresolved_ambiguities_or_blockers": []
     },
@@ -678,7 +686,12 @@
         {
           "path": "deepwell/tests/page_template_assignment.rs",
           "name": "page_view_exposes_live_text_and_select_control_contract",
-          "scope": "public missing/found page views verify implicit text type, the complete observed width/height fallback matrix, defaults, retained hint escaping, match metadata, canonical single- and multiline scalar restoration, rejection of unsafe unquoted storage, and literal default-table display"
+          "scope": "public missing/found page views verify implicit text type, the complete observed width/height fallback matrix, defaults, retained hint escaping, match plus join and affix metadata, canonical single- and multiline scalar restoration, rejection of unsafe unquoted storage, and literal default-table display"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "parses_and_renders_live_field_property_contract; applies_live_scalar_truthiness_comments_and_empty_match_rules",
+          "scope": "parser and renderer regressions cover match without error, empty match and error, literal text properties, joined rows, escaped markup, and multiline display"
         },
         {
           "path": "framerail/tests/wikidot-data-form.test.js",
@@ -687,8 +700,8 @@
         },
         {
           "path": "framerail/tests/data-form-create-flow.spec.ts",
-          "name": "data-form text and select controls match live validation and storage",
-          "scope": "public browser flow verifies input and textarea DOM, width, height, defaults, hints, regex validation markup, value preservation, exact saved source, and restored single-/multiline values on edit"
+          "name": "data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage",
+          "scope": "public browser flows verify input and textarea DOM, labels, grouping, affixes, defaults, hints, generated and custom regex validation markup, i/x and duplicate modifiers, value preservation, exact saved source, and restored single-/multiline values on edit"
         },
         {
           "path": "framerail/tests/data-form-create-flow.spec.ts",
@@ -726,10 +739,11 @@
         "specifications/data-forms/data-forms-text-field.md"
       ],
       "live_oracle_evidence": [
-        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json"
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Live generic validation markup when match is present without match-error, PCRE modifiers and constructs beyond the observed slash-delimited pattern, and their exact failure behavior remain unobserved. Wikijump fails those definition shapes closed; observed patterns run in a terminable browser worker with a fixed budget."
+        "Generic validation messages, empty properties and values, delimiters, escaped slashes, duplicate i, and i/m/s/x/u versus g/y/z modifier behavior are now live-observed and implemented. PCRE-only constructs and remaining modifiers such as A, D, J, S, U, and X still require live minimization; constructs that JavaScript cannot safely evaluate continue to fail closed in the terminable browser worker."
       ]
     },
     "data-forms-url-field": {
