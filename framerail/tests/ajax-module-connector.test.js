@@ -150,6 +150,86 @@ test("dispatches NewPage helper default action with Wikidot edit-routing fields"
   })
 })
 
+test("rejects NewPage helper requests when the target already exists", async () => {
+  const calls = []
+  const pageName = "run-owned:newpage-existing-target"
+  for (const mode of [undefined, "edit", "save-and-go", "save-and-refresh"]) {
+    const form = {
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName
+    }
+    if (mode !== undefined) form.mode = mode
+
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render"),
+      createNewPage: async (input) => calls.push(input),
+      pageExists: async (slug) => slug === pageName
+    })
+
+    assert.deepEqual(await response.json(), { status: "page_exists" })
+  }
+  assert.deepEqual(calls, [])
+})
+
+test("ignores malformed NewPage format strings but enforces valid patterns", async () => {
+  const malformedFormats = ["//", "/^[a-z]+$", "/[/", "^[a-z]+$"]
+  for (const format of malformedFormats) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({
+        action: "misc/NewPageHelperAction",
+        event: "createNewPage",
+        moduleName: "Empty",
+        pageName: "run-owned:newpage-format-probe",
+        format
+      }),
+      { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
+    )
+
+    assert.equal((await response.json()).status, "ok")
+  }
+
+  const rejected = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: "run-owned:newpage-format-probe",
+      format: "/^[0-9]+$/"
+    }),
+    { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
+  )
+
+  assert.deepEqual(await rejected.json(), {
+    status: "incorrect_name",
+    message: "Page name does not match the required format."
+  })
+})
+
+test("rejects NewPage autosave when a template id is submitted", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: "run-owned:newpage-template-autosave",
+      mode: "save-and-go",
+      template: "1469068213"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render"),
+      createNewPage: async (input) => calls.push(input)
+    }
+  )
+
+  assert.deepEqual(await response.json(), { status: "not_ok" })
+  assert.deepEqual(calls, [])
+})
+
 test("dispatches NewPage autosave modes through the injected create callback", async () => {
   const calls = []
   const response = await handleAjaxModuleConnectorRequest(

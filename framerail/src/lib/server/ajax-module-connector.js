@@ -39,6 +39,7 @@ const MAX_WIKIDOT_PAGE_UNIX_NAME_LENGTH = 60
  *   ) => Promise<{ body: string }>
  *   createNewPage?: (input: NewPageCreateInput) => Promise<void>
  *   canCreateNewPage?: boolean | (() => boolean | Promise<boolean>)
+ *   pageExists?: (slug: string) => boolean | Promise<boolean>
  * }} AjaxModuleConnectorOptions
  */
 
@@ -159,7 +160,7 @@ const matchesNewPageFormat = (pageName, format) => {
   if (format.length === 0) return true
 
   const regex = parseDelimitedRegex(format)
-  if (!regex) return false
+  if (!regex) return true
   return regex.test(pageName)
 }
 
@@ -173,12 +174,12 @@ const resolveCanCreateNewPage = async (canCreateNewPage) => {
  * @param {Map<string, string>} fields
  * @param {Pick<
  *   AjaxModuleConnectorOptions,
- *   "createNewPage" | "canCreateNewPage"
+ *   "createNewPage" | "canCreateNewPage" | "pageExists"
  * >} options
  */
 const handleNewPageHelperRequest = async (
   fields,
-  { createNewPage, canCreateNewPage }
+  { createNewPage, canCreateNewPage, pageExists }
 ) => {
   const pageName = fieldValue(fields, "pageName")
   if (pageName.length === 0) {
@@ -195,6 +196,16 @@ const handleNewPageHelperRequest = async (
     })
   }
 
+  const unixName = toWikidotUnixName({
+    pageName,
+    categoryName: fieldValue(fields, "categoryName")
+  })
+  if (pageExists && (await pageExists(unixName))) {
+    return jsonResponse({
+      status: "page_exists"
+    })
+  }
+
   if (!matchesNewPageFormat(pageName, fieldValue(fields, "format"))) {
     return jsonResponse({
       status: "incorrect_name",
@@ -202,10 +213,6 @@ const handleNewPageHelperRequest = async (
     })
   }
 
-  const unixName = toWikidotUnixName({
-    pageName,
-    categoryName: fieldValue(fields, "categoryName")
-  })
   const pageTitle = pageName
   const tags = fieldValue(fields, "tags")
   const parentPage = fieldValue(fields, "parent")
@@ -213,6 +220,11 @@ const handleNewPageHelperRequest = async (
   const mode = fieldValue(fields, "mode")
 
   if (NEWPAGE_AUTOSAVE_MODES.has(mode)) {
+    if (templateId.length > 0) {
+      return jsonResponse({
+        status: "not_ok"
+      })
+    }
     if (!createNewPage) {
       return jsonResponse({
         status: "not_ok",
@@ -261,7 +273,7 @@ const handleNewPageHelperRequest = async (
  */
 export const handleAjaxModuleConnectorRequest = async (
   request,
-  { siteId, renderListPages, createNewPage, canCreateNewPage = true }
+  { siteId, renderListPages, createNewPage, canCreateNewPage = true, pageExists }
 ) => {
   if (request.method !== "POST") {
     return jsonResponse(
@@ -293,7 +305,8 @@ export const handleAjaxModuleConnectorRequest = async (
     try {
       return await handleNewPageHelperRequest(fields, {
         createNewPage,
-        canCreateNewPage
+        canCreateNewPage,
+        pageExists
       })
     } catch (error) {
       console.error("AJAX NewPage helper action failed", error)

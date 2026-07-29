@@ -1,7 +1,7 @@
 import { handleAjaxModuleConnectorRequest } from "$lib/server/ajax-module-connector.js"
 import { authGetSession } from "$lib/server/auth/get-session"
 import { client } from "$lib/server/deepwell"
-import { pageEdit, pageParentUpdate } from "$lib/server/deepwell/page"
+import { pageEdit, pageGet, pageParentUpdate } from "$lib/server/deepwell/page"
 import { resolvePageMutationUserId } from "$lib/server/load/local-authoring-actor"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 
@@ -47,6 +47,11 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
   return handleAjaxModuleConnectorRequest(request, {
     siteId,
     canCreateNewPage: async () => (await resolveNewPageUserId()) !== undefined,
+    pageExists: async (slug: string) =>
+      (await pageGet(siteId, slug, {
+        ...requestContext,
+        page: slug
+      })) !== null,
     createNewPage: async ({
       slug,
       title,
