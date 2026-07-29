@@ -355,7 +355,7 @@ pub(super) static PAGECALENDAR_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 });
 pub(super) static REGISTRY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)\[\[module\s+(?P<name>Members|NewPage|Clone|Join)(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
+        r#"(?is)\[\[module\s+(?P<name>Members|NewPage|Clone|Join)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
     )
     .unwrap()
 });

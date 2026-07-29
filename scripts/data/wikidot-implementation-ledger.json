@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "6dea623f61cab655e24ac25c6da193d8ec253bc30770bfa73b618ebdddccc2d4",
+  "catalog_sha256": "b9377e81dceea01856cffefe9e684e2c8c500a188b65d1819587b04e559d7604",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -729,15 +729,27 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-anonymousnotificationsunsubscribe": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-anonymousnotificationsunsubscribe.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "No-token AnonymousNotificationsUnsubscribe rendering is implemented and covered. Tokenized unsubscribe URL/state behavior remains blocked until live token generation, notification subscription state, and side-effect semantics are modeled from a safe live fixture."
+      ]
     },
     "module-backlinks": {
       "status": "implemented",
@@ -1298,15 +1310,27 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-membershipemailinvitation": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-membershipemailinvitation.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Missing-token MembershipEmailInvitation rendering is implemented and covered. Valid invitation-token resolution, acceptance side effects, expiration/used/canceled distinctions, and membership mutations remain blocked until safe live invitation fixtures and local invitation state exist."
+      ]
     },
     "module-miniactivethreads": {
       "status": "pending",
@@ -1793,14 +1817,25 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-searchusers": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics",
+        "deepwell/src/services/render/service/tests.rs::registry_module_expansion_does_not_match_name_prefixes"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-searchusers.md"
       ],
-      "live_oracle_evidence": [],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+      ],
       "unresolved_ambiguities_or_blockers": []
     },
     "module-sendinvitations": {
@@ -1914,15 +1949,27 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-userinfo": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-userinfo.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "No-target UserInfo rendering is implemented and covered. Target-user lookup, URL/user-id resolution, rendered user profile fields, permissions, and popup/action behavior remain blocked pending live evidence and a compatible user-info rendering model."
+      ]
     },
     "module-wantedpages": {
       "status": "implemented",
@@ -1965,15 +2012,27 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-whoinvited": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-whoinvited.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Initial WhoInvited lookup form rendering is implemented and covered. The autocomplete/user lookup action, invitation-chain result rendering, and membership invitation provenance queries remain blocked pending live action-surface evidence and local invitation provenance data."
+      ]
     },
     "account-lifecycle": {
       "status": "pending",

@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 32,
+    "observation_count": 33,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -1358,7 +1358,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "static-account-modules-live-preview-and-pageview-basics"
+      ]
     },
     {
       "id": "module-backlinks",
@@ -2222,7 +2224,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "static-account-modules-live-preview-and-pageview-basics"
+      ]
     },
     {
       "id": "module-miniactivethreads",
@@ -2783,7 +2787,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "static-account-modules-live-preview-and-pageview-basics"
+      ]
     },
     {
       "id": "module-sendinvitations",
@@ -2981,7 +2987,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "static-account-modules-live-preview-and-pageview-basics"
+      ]
     },
     {
       "id": "module-wantedpages",
@@ -3055,7 +3063,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "static-account-modules-live-preview-and-pageview-basics"
+      ]
     },
     {
       "id": "account-lifecycle",
