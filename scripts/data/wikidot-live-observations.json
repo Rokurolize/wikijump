@@ -1150,6 +1150,33 @@
           ]
         }
       ]
+    },
+    {
+      "id": "adsenseunit-live-deprecated-empty-output",
+      "title": "Deprecated AdSenseUnit consumes page-source calls as empty output",
+      "feature_ids": [
+        "module-adsenseunit"
+      ],
+      "classification": "documentation-correction",
+      "observed_at": "2026-07-29",
+      "analysis": "The AdSenseUnit documentation says the module inserted Google AdSense ads and that label is mandatory, while also noting the feature was deprecated after Wikidot removed AdSense integration. Live PagePreviewModule probes show current Wikidot still recognizes the module but renders empty output for both label and omitted-label invocations, for both anonymous and authenticated viewers.",
+      "normative_behavior": [
+        "AdSenseUnit consumes the standalone module opener and renders empty output.",
+        "Observed label and omitted-label invocations both render empty output.",
+        "Anonymous and authenticated account-A PagePreviewModule output was identical for observed AdSenseUnit cases."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/adsenseunit-module-live-preview.json",
+          "sha256": "650d22bf68cf9245295a466d48d1b648d04cbfbd89cfd3884240eb15a246c365",
+          "case_ids": [
+            "anonymous-label-empty",
+            "anonymous-omitted-empty",
+            "account-a-label-empty",
+            "account-a-omitted-empty"
+          ]
+        }
+      ]
     }
   ]
 }

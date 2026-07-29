@@ -2979,6 +2979,47 @@ async fn ad_module_page_source_matches_live_empty_output() {
 }
 
 #[tokio::test]
+async fn adsenseunit_module_matches_live_deprecated_empty_output() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for source in [
+        "ADSENSE_START\n[[module AdSenseUnit]]\nADSENSE_END",
+        "ADSENSE_START\n[[module AdSenseUnit label=\"your ad\"]]\nADSENSE_END",
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "AdSenseUnit deprecated preview",
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains("ADSENSE_START")
+                && preview.body.contains("ADSENSE_END"),
+            "AdSenseUnit should preserve surrounding content:\n{}",
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains("[[module AdSenseUnit")
+                && !preview.body.contains("error-block"),
+            "Deprecated AdSenseUnit should render empty without unavailable-module markup:\n{}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

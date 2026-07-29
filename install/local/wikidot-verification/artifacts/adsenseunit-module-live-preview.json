@@ -1,0 +1,59 @@
+{
+  "schema": "wikijump.wikidot_live_probe.v1",
+  "case_id": "adsenseunit-module-live-preview-matrix",
+  "captured_at": "2026-07-29T01:16:35.473043+00:00",
+  "site": "sandbox-for-codex",
+  "module_route": "edit/PagePreviewModule",
+  "mutated": false,
+  "notes": [
+    "The documentation marks AdSenseUnit deprecated after Wikidot removed AdSense integration. Live Wikidot currently consumes the module and emits empty output."
+  ],
+  "cases": [
+    {
+      "case_id": "anonymous-label-empty",
+      "viewer": "anonymous",
+      "source": "[[module AdSenseUnit label=\"your ad\"]]",
+      "source_sha256": "955f9d481042eeb501ee60d8a9b3f3a5c5b6eb2d4c12f47fcb7ba2f0913d8db6",
+      "status": "ok",
+      "body": "\n\n",
+      "body_sha256": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070"
+    },
+    {
+      "case_id": "anonymous-omitted-empty",
+      "viewer": "anonymous",
+      "source": "[[module AdSenseUnit]]",
+      "source_sha256": "a7be99f674717071442b1d506c61a512d208d3be45eafcbe9c934bef12e1643a",
+      "status": "ok",
+      "body": "\n\n",
+      "body_sha256": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070"
+    },
+    {
+      "case_id": "account-a-label-empty",
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "title": null
+      },
+      "source": "[[module AdSenseUnit label=\"your ad\"]]",
+      "source_sha256": "955f9d481042eeb501ee60d8a9b3f3a5c5b6eb2d4c12f47fcb7ba2f0913d8db6",
+      "status": "ok",
+      "body": "\n\n",
+      "body_sha256": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070"
+    },
+    {
+      "case_id": "account-a-omitted-empty",
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "title": null
+      },
+      "source": "[[module AdSenseUnit]]",
+      "source_sha256": "a7be99f674717071442b1d506c61a512d208d3be45eafcbe9c934bef12e1643a",
+      "status": "ok",
+      "body": "\n\n",
+      "body_sha256": "75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070"
+    }
+  ]
+}

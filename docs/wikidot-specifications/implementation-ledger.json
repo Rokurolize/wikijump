@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "ac63bd679842da0ab42613c8c350c4b3f1723091e6a9ab39b84f0196d3880f27",
+  "catalog_sha256": "67fd2f233d607b328fc64d755d09bdef38d53fbab7808c1afeede76004b38a57",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -708,14 +708,24 @@
       ]
     },
     "module-adsenseunit": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/module/module-adsenseunit.md"
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule anonymous and authenticated account-A probes for AdSenseUnit with label and omitted label.",
+        "Deepwell wikidot_page_preview renders deprecated AdSenseUnit as empty output."
       ],
-      "live_oracle_evidence": [],
+      "tests": [
+        "deepwell/tests/page.rs::adsenseunit_module_matches_live_deprecated_empty_output"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-adsenseunit.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/adsenseunit-module-live-preview.json"
+      ],
       "unresolved_ambiguities_or_blockers": []
     },
     "module-anonymousnotificationsunsubscribe": {

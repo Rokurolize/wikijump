@@ -78,6 +78,10 @@ static AD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+Ad\b(?:[^\]"]+|"[^"]*")*\]\]"#)
         .expect("Ad module expression is valid")
 });
+static ADSENSEUNIT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+AdSenseUnit\b(?:[^\]"]+|"[^"]*")*\]\]"#)
+        .expect("AdSenseUnit module expression is valid")
+});
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum PageCalendarCategorySelector {
@@ -1484,7 +1488,10 @@ impl RenderService {
     }
 
     fn expand_ad_modules(wikitext: String, settings: &WikitextSettings) -> String {
-        if !settings.enable_page_syntax || !AD_MODULE_REGEX.is_match(&wikitext) {
+        if !settings.enable_page_syntax
+            || (!AD_MODULE_REGEX.is_match(&wikitext)
+                && !ADSENSEUNIT_MODULE_REGEX.is_match(&wikitext))
+        {
             return wikitext;
         }
 
@@ -1492,7 +1499,12 @@ impl RenderService {
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
-        for matched in AD_MODULE_REGEX.find_iter(&wikitext) {
+        let mut matches = AD_MODULE_REGEX
+            .find_iter(&wikitext)
+            .chain(ADSENSEUNIT_MODULE_REGEX.find_iter(&wikitext))
+            .collect::<Vec<_>>();
+        matches.sort_by_key(|matched| matched.start());
+        for matched in matches {
             if literal_regions.contains(matched.start()) {
                 continue;
             }
