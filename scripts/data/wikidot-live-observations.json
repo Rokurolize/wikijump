@@ -1071,6 +1071,36 @@
           ]
         }
       ]
+    },
+    {
+      "id": "loginstatus-live-page-source-no-such-module",
+      "title": "LoginStatus is a custom-layout module and is unavailable in page source",
+      "feature_ids": [
+        "module-loginstatus",
+        "layout-custom"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-07-29",
+      "analysis": "The documentation lists LoginStatus in doc:layout-reference under custom layout modules, explicitly independent from normal page modules. Live PagePreviewModule probes confirm that normal page source does not render login controls for LoginStatus; it emits Wikidot's standard unavailable-module error for anonymous and authenticated viewers. Wikijump currently has no custom-layout module renderer, so layout-context LoginStatus rendering remains blocked, while page-source behavior is covered.",
+      "normative_behavior": [
+        "In normal page source, [[module LoginStatus]] renders a div.error-block unavailable-module message.",
+        "The unavailable-module message includes the authored module name inside [[module <em>...</em>]], preserving observed module-name casing.",
+        "A following [[/module]] is not consumed by LoginStatus page-source handling and renders literally.",
+        "Anonymous and authenticated account-A PagePreviewModule output was identical for observed page-source LoginStatus cases.",
+        "The documented Sign in/Create account or logged-in user behavior applies to Wikidot custom-layout context, not normal page source."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/loginstatus-module-live-preview.json",
+          "sha256": "3f64e793eb33b514300977863b643f8e22231ec221c595edf648a7e486ed2cec",
+          "case_ids": [
+            "anonymous-basic-no-such-module",
+            "anonymous-uppercase-name-preserved",
+            "anonymous-with-closing-body-literal",
+            "account-a-basic-no-such-module"
+          ]
+        }
+      ]
     }
   ]
 }

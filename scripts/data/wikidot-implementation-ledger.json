@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "ab25682d9da8795e82373e8134b8effb6bae497ec72eda75d14abeb3bcb58196",
+  "catalog_sha256": "2f62517ae5ba28147c96aeb17ba7189831fde147c541cc0545e86b353f1f3317",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -1125,15 +1125,25 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-loginstatus": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule anonymous and authenticated account-A probes for LoginStatus in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior for anonymous and authenticated viewer contexts."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::loginstatus_page_source_matches_live_unavailable_module"
+      ],
       "implementation_files": [],
       "documentation_evidence": [
-        "specifications/module/module-loginstatus.md"
+        "specifications/module/module-loginstatus.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/loginstatus-module-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented LoginStatus UI belongs to Wikidot custom-layout modules, not normal page-source modules. Wikijump currently has no custom-layout module renderer or public custom-layout rendering seam for LoginStatus; implementation is blocked until custom layout support exists. Page-source behavior is verified and covered."
+      ]
     },
     "module-mailform": {
       "status": "pending",

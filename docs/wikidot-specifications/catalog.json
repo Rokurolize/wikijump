@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 28,
+    "observation_count": 29,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -1097,7 +1097,9 @@
         "Public service/API boundary for persistent state and permissions"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "loginstatus-live-page-source-no-such-module"
+      ]
     },
     {
       "id": "layout-forum",
@@ -2057,7 +2059,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "loginstatus-live-page-source-no-such-module"
+      ]
     },
     {
       "id": "module-mailform",

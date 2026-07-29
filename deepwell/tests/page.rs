@@ -2859,6 +2859,40 @@ async fn listdrafts_module_matches_live_empty_draft_state() {
 }
 
 #[tokio::test]
+async fn loginstatus_page_source_matches_live_unavailable_module() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = "[[module LoginStatus]]";
+
+    for user_id in [None, Some(SAMPLE_USER_ID)] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "LoginStatus page-source preview",
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(
+                r#"<div class="error-block">[[module <em>LoginStatus</em>]] No such module, please <a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a> and fix this page.</div>"#
+            ),
+            "LoginStatus in page source should match live Wikidot's unavailable-module error for viewer {user_id:?}:\n{}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
