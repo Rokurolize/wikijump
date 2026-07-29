@@ -205,9 +205,16 @@ impl CategoryService {
                         ErrorType::PageCategory,
                     )
                 })?;
-            if get_category_name(&template.slug) != "template" {
+            let wikidot_live_template_slug = if category.slug == "_default" {
+                "_template".to_owned()
+            } else {
+                format!("{}:_template", category.slug)
+            };
+            if get_category_name(&template.slug) != "template"
+                && template.slug != wikidot_live_template_slug
+            {
                 return Err(Error::new(
-                    "page template must reference a page in the template category",
+                    "page template must reference a page in the template category or the category's Wikidot _template page",
                     ErrorType::PageCategory,
                 )
                 .into());

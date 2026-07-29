@@ -3,6 +3,32 @@ import { pages, toArticleViewResult } from "./data.js"
 
 const LISTPAGES_NAVIGATION_EXTRA = /^p\/[1-9][0-9]*$/u
 const NEW_PAGE_EDIT_EXTRA = /^edit\/true(?:\/.*)?$/u
+const DATA_FORM_CREATE_SLUG = "data-form-create-flow:example"
+const DATA_FORM_EDIT_SLUG = "data-form-edit-flow:example"
+const DATA_FORM_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "name",
+      label: "Name",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: null
+    },
+    {
+      name: "choice",
+      label: "Choice",
+      hint: "",
+      field_type: "select",
+      values: [
+        { value: "a", label: "Alpha" },
+        { value: "b", label: "Beta" }
+      ],
+      default_value: "b"
+    }
+  ]
+}
 
 /** @param {{ slug: string; extra: string }} route */
 const pageForArticleRoute = (route) => {
@@ -23,6 +49,7 @@ const pageForArticleRoute = (route) => {
       ].join("")
     }
   }
+  if (route.slug === DATA_FORM_EDIT_SLUG && route.extra === "edit") return page
   return route.extra === "" ? page : null
 }
 
@@ -84,7 +111,11 @@ const missingPageArticleViewResult = (route) => ({
       compiled_side_bar_html: null,
       new_page_wikitext: null,
       page_templates: [],
-      selected_template_page_id: null
+      selected_template_page_id: null,
+      data_form:
+        route.slug === DATA_FORM_CREATE_SLUG
+          ? { definition: DATA_FORM_DEFINITION, values: {} }
+          : null
     }
   }
 })
@@ -115,13 +146,27 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
     hasExactKeys(rpcRequest.params.route, ["extra", "slug"]) &&
     typeof rpcRequest.params.route.slug === "string" &&
     (pageForArticleRoute(rpcRequest.params.route) ||
+      (rpcRequest.params.route.slug === DATA_FORM_CREATE_SLUG &&
+        rpcRequest.params.route.extra === "") ||
       NEW_PAGE_EDIT_EXTRA.test(rpcRequest.params.route.extra))
   ) {
     articleReadRequests.articleView.push(rpcRequest.params)
     const page = pageForArticleRoute(rpcRequest.params.route)
-    result = page
-      ? toArticleViewResult(page)
-      : missingPageArticleViewResult(rpcRequest.params.route)
+    if (page) {
+      result = toArticleViewResult(page)
+      if (
+        rpcRequest.params.route.slug === DATA_FORM_EDIT_SLUG &&
+        rpcRequest.params.route.extra === "edit"
+      ) {
+        result.page.data.options.edit = true
+        result.page.data.data_form = {
+          definition: DATA_FORM_DEFINITION,
+          values: { name: "Probe Name", choice: "a" }
+        }
+      }
+    } else {
+      result = missingPageArticleViewResult(rpcRequest.params.route)
+    }
   } else if (
     rpcRequest.method === "article_view_cache_metadata" &&
     hasExactKeys(rpcRequest.params, ["locales", "route", "session_token", "site_id"]) &&
