@@ -30,6 +30,16 @@ const DATA_FORM_DEFINITION = {
   ]
 }
 
+const optionValue = (extra, name) => {
+  const parts = extra.split("/")
+  for (let index = 0; index + 1 < parts.length; index += 2) {
+    if (parts[index].toLowerCase() === name.toLowerCase()) {
+      return decodeURIComponent(parts[index + 1])
+    }
+  }
+  return null
+}
+
 /** @param {{ slug: string; extra: string }} route */
 const pageForArticleRoute = (route) => {
   const page = pages[route.slug]
@@ -91,9 +101,10 @@ const missingPageArticleViewResult = (route) => ({
     data: {
       options: {
         edit: NEW_PAGE_EDIT_EXTRA.test(route.extra),
-        title: null,
-        parent: null,
-        tags: null,
+        title: optionValue(route.extra, "title"),
+        parent:
+          optionValue(route.extra, "parentPage") ?? optionValue(route.extra, "parent"),
+        tags: optionValue(route.extra, "tags"),
         no_redirect: false,
         no_render: false,
         debug: false,

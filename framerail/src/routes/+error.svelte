@@ -178,7 +178,9 @@
             creating={true}
             definition={errorData.data_form.definition}
             editForm={errorData.forms.pageEditForm}
+            initialParent={errorData.options.parent ?? ""}
             initialSource=""
+            initialTags={errorData.options.tags ?? ""}
             initialTitle={missingPageTitle}
             initialValues={errorData.data_form.values}
             siteId={errorData.site.site_id}

@@ -3,7 +3,8 @@ import {
   pageEdit,
   pageEditPermission,
   pageLayout,
-  pageMove
+  pageMove,
+  pageParentUpdate
 } from "$lib/server/deepwell/page"
 import {
   failForActionError,
@@ -125,6 +126,7 @@ export async function pageEditAction(event: RequestEvent) {
       title,
       altTitle,
       tags: tagsStr,
+      parent,
       layout
     } = form.data
     const context = await resolvePageActionRequestContext(event, {
@@ -150,6 +152,9 @@ export async function pageEditAction(event: RequestEvent) {
       },
       context.requestContext
     )
+    if (!pageId && parent) {
+      await pageParentUpdate(siteId, slug, userId, [parent], [], context.requestContext)
+    }
 
     return { form, res }
   } catch (error) {
@@ -163,6 +168,7 @@ export const pageEditSchema = object({
   altTitle: string(),
   wikitext: string(),
   tags: string(),
+  parent: optional(string()),
   comments: string(),
   layout: optional(nullable(vEnum(Layout)))
 })

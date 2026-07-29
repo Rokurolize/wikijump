@@ -23,6 +23,7 @@
     initialAltTitle = "",
     initialTags = "",
     initialComments = "",
+    initialParent = "",
     siteId,
     pageId,
     lastRevisionId,
@@ -37,6 +38,7 @@
     initialAltTitle?: string
     initialTags?: string
     initialComments?: string
+    initialParent?: string
     siteId: number
     pageId?: number
     lastRevisionId?: number
@@ -57,6 +59,15 @@
     {
       dataType: "json",
       onSubmit: async ({ jsonData, cancel }) => {
+        if (creating && initialTags) {
+          cancel()
+          errorPopupState.current = {
+            state: true,
+            message: "An error occurred while processing the request.",
+            data: {}
+          }
+          return
+        }
         if (
           !creating &&
           (!Number.isSafeInteger(pageId) ||
@@ -100,6 +111,7 @@
   $form.altTitle = untrack(() => initialAltTitle)
   $form.wikitext = untrack(() => initialSource)
   $form.tags = untrack(() => initialTags)
+  $form.parent = untrack(() => initialParent)
   $form.comments = untrack(() => initialComments)
 
   function cancelEdit() {
