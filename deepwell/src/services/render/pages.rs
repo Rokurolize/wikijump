@@ -520,6 +520,7 @@ fn push_pages_pager_target(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::Config;
     use std::borrow::Cow;
 
     fn page(number: usize) -> PagesModulePage {
@@ -608,6 +609,22 @@ mod tests {
                 "<span class=\"target\"><a href=\"/site-index/p/3\">next »</a></span>",
             ),
         );
+    }
+
+    #[test]
+    fn post_render_compatibility_does_not_rewrite_generated_pager_text() {
+        let pages = (1..=121).map(page).collect::<Vec<_>>();
+        let generated = render_pages_module(&page_info(), &pages, 1, false);
+
+        assert!(generated.contains("<span class=\"dots\">...</span>"));
+        let restored = RenderService::restore_wikidot_render_compatibility(
+            &generated,
+            None,
+            &Config::integration_testing(),
+        );
+
+        assert!(restored.contains("<span class=\"dots\">...</span>"));
+        assert!(!restored.contains("<span class=\"dots\">…</span>"));
     }
 
     #[test]

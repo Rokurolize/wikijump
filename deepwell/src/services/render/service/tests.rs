@@ -48,7 +48,8 @@ use super::super::list_pages::{
     register_generated_list_pages_html, render_list_pages_tags,
     requested_page_info_score, should_render_current_page_list_pages_row,
     substitute_count_pages_variables, substitute_list_pages_variables,
-    unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
+    substitute_list_pages_variables_with_fragments, unsupported_list_pages_replacement,
+    url_offset_list_pages_content_bytes,
 };
 use super::super::literal_regions::ListPagesSourceProjection;
 use super::super::module_arguments::wikidot_module_argument;
@@ -72,16 +73,13 @@ use super::{
     MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS, PreparedIncluder, RenderContext,
     RenderService, WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX,
     WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX,
-    WIKIDOT_INLINE_HTML_SENTINEL_PREFIX,
-    WIKIDOT_LISTPAGES_LITERAL_ELLIPSIS_SENTINEL_PREFIX,
-    WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX, WikidotCompatLinkTitleMap,
-    find_balanced_ul_end, has_include_opening_candidate, include_error,
-    native_list_page_link_default_label, parse_wikidot_compat_color_descriptor,
-    protect_forwarded_attachment_variables, render_clone_module,
-    render_list_pages_numbered_rows, render_list_pages_table_rows,
+    WIKIDOT_INLINE_HTML_SENTINEL_PREFIX, WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX,
+    WikidotCompatLinkTitleMap, find_balanced_ul_end, has_include_opening_candidate,
+    include_error, native_list_page_link_default_label,
+    parse_wikidot_compat_color_descriptor, protect_forwarded_attachment_variables,
+    render_clone_module, render_list_pages_numbered_rows, render_list_pages_table_rows,
     render_members_module_placeholder, render_native_list_inline_wikidot_spans,
-    render_native_list_page_link, restore_list_pages_literal_ellipsis_markers,
-    wikidot_no_such_include_replacement,
+    render_native_list_page_link, wikidot_no_such_include_replacement,
 };
 use crate::config::Config;
 use crate::constants::ADMIN_USER_ID;
@@ -2796,6 +2794,7 @@ fn wikidot_compatibility_fallback_keeps_arbitrary_html_escaped() {
 fn generated_list_pages_pager_still_renders_without_forgeable_marker() {
     let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
     let mut wikitext = String::new();
+    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
@@ -2805,6 +2804,7 @@ fn generated_list_pages_pager_still_renders_without_forgeable_marker() {
         0,
         2,
         5,
+        &mut compat_text,
     );
 
     assert!(wikitext.contains(r#"[[div class="pager"]]"#));
@@ -2828,6 +2828,7 @@ fn generated_list_pages_pager_keeps_untrusted_slug_inside_href() {
         "Missing page",
     );
     let mut wikitext = String::new();
+    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
@@ -2837,6 +2838,7 @@ fn generated_list_pages_pager_keeps_untrusted_slug_inside_href() {
         0,
         2,
         5,
+        &mut compat_text,
     );
 
     let encoded_slug = concat!(
@@ -2875,6 +2877,7 @@ fn generated_list_pages_pager_preserves_live_url_argument_shape() {
         },
     ];
     let mut wikitext = String::new();
+    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
@@ -2887,6 +2890,7 @@ fn generated_list_pages_pager_preserves_live_url_argument_shape() {
         4,
         2,
         10,
+        &mut compat_text,
     );
 
     assert!(
@@ -2908,6 +2912,7 @@ fn generated_list_pages_pager_appends_after_malformed_page_arguments() {
         value: Some("nope".to_owned()),
     }];
     let mut wikitext = String::new();
+    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
@@ -2920,6 +2925,7 @@ fn generated_list_pages_pager_appends_after_malformed_page_arguments() {
         0,
         2,
         5,
+        &mut compat_text,
     );
 
     assert!(
@@ -2936,6 +2942,7 @@ fn generated_list_pages_pager_replaces_zero_page_arguments() {
         value: Some("0".to_owned()),
     }];
     let mut wikitext = String::new();
+    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
@@ -2948,6 +2955,7 @@ fn generated_list_pages_pager_replaces_zero_page_arguments() {
         0,
         2,
         5,
+        &mut compat_text,
     );
 
     assert!(wikitext.contains("/listpages-zero-pager/p/2"), "{wikitext}");
@@ -2963,6 +2971,7 @@ fn generated_list_pages_pager_uses_url_attr_prefix() {
         value: Some("2".to_owned()),
     }];
     let mut wikitext = String::new();
+    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
@@ -2975,6 +2984,7 @@ fn generated_list_pages_pager_uses_url_attr_prefix() {
         0,
         2,
         5,
+        &mut compat_text,
     );
 
     assert!(
@@ -4333,6 +4343,181 @@ fn malformed_comment_dash_substitution_has_deterministic_linear_scan_growth() {
     );
 }
 
+fn render_list_pages_title_variables_through_outer_pipeline(
+    title: &str,
+    parent: Option<&ListPagesParentDisplay>,
+) -> String {
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some(title.to_owned()),
+        alt_title: None,
+        slug: Some("title-matrix".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: None,
+        created_at: None,
+        created_by: None,
+        updated_at: None,
+        updated_by: None,
+        score: None,
+    };
+    let template = concat!(
+        "TITLE=%%title%%\n",
+        "LINKED=%%title_linked%%\n",
+        "PARENT=%%parent_title%%\n",
+        "PARENT_LINKED=%%parent_title_linked%%",
+    );
+    let mut compat_html = CompatHtmlFragments::new(template);
+    let mut compat_text = CompatTextFragments::new(template);
+    let user_displays = BTreeMap::new();
+    let data_form_values = BTreeMap::new();
+    let mut context =
+        list_pages_substitution_context(20, &user_displays, None, &data_form_values);
+    context.page_parent_display = parent;
+    let substituted = substitute_list_pages_variables_with_fragments(
+        template,
+        &page,
+        1,
+        1,
+        &context,
+        &mut compat_html,
+        &mut compat_text,
+    );
+
+    let page_info = fallback_test_page_info("listing", "Listing");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let outer = RenderService::prepare_outer_render_wikitext(
+        super::ExpandedRenderWikitext {
+            wikitext: substituted,
+            included_pages: Vec::new(),
+            wikidot_compat_html: compat_html,
+            wikidot_compat_text: compat_text,
+            url_offset_list_pages_content_bytes: 0,
+        },
+        &page_info,
+        &settings,
+    );
+    let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+    let tokens = ftml::tokenize(&inner.wikitext);
+    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+    let rendered = RenderService::restore_protected_wikidot_color_spans(
+        rendered,
+        &inner.wikidot_color_spans,
+    );
+    let rendered = RenderService::restore_protected_wikidot_inline_html(
+        rendered,
+        &inner.wikidot_inline_html,
+    );
+    let rendered = inner.wikidot_compat_html.restore(&rendered);
+    inner.wikidot_compat_text.restore(&rendered)
+}
+
+#[test]
+fn list_pages_title_variables_match_live_sanitization_and_context() {
+    let rendered = render_list_pages_title_variables_through_outer_pipeline(
+        "**BOLD** //ITALIC// __UNDER__ --STRIKE--",
+        None,
+    );
+    assert!(rendered.contains("<strong>BOLD</strong>"), "{rendered}");
+    assert!(rendered.contains("<em>ITALIC</em>"), "{rendered}");
+    assert!(
+        rendered.contains(">**BOLD** //ITALIC// __UNDER__ --STRIKE--</a>"),
+        "{rendered}",
+    );
+
+    let rendered = render_list_pages_title_variables_through_outer_pipeline(
+        "[[div class=\"owned\"]]DIV[[/div]]",
+        None,
+    );
+    assert!(
+        rendered.contains("TITLE=div class=&quot;owned&quot;DIV/div"),
+        "{rendered}"
+    );
+    assert!(
+        rendered.contains(">div class=\"owned\"DIV/div</a>"),
+        "{rendered}"
+    );
+    assert!(!rendered.contains("<div class=\"owned\">"));
+    assert!(!rendered.contains("[["));
+
+    let rendered = render_list_pages_title_variables_through_outer_pipeline(
+        "x...x x....x x. . .x",
+        None,
+    );
+    assert!(rendered.contains("TITLE=x…x x….x x…x"), "{rendered}");
+    assert!(rendered.contains(">x...x x....x x. . .x</a>"), "{rendered}",);
+
+    let rendered = render_list_pages_title_variables_through_outer_pipeline(
+        "``DOUBLE'' `SINGLE' <<ANGLE>> 10 000 5 kg",
+        None,
+    );
+    assert!(
+        rendered.contains("TITLE=“DOUBLE” ‘SINGLE’ «ANGLE» 10\u{a0}000\u{a0}5\u{a0}kg"),
+        "{rendered}",
+    );
+    assert!(
+        rendered.contains(">``DOUBLE'' `SINGLE' &lt;&lt;ANGLE&gt;&gt; 10 000 5 kg</a>"),
+        "{rendered}",
+    );
+
+    let rendered = render_list_pages_title_variables_through_outer_pipeline(
+        "##red|COLOR## ^^SUP^^ ,,SUB,, {{CODE}}",
+        None,
+    );
+    assert!(
+        rendered.contains(">##red|COLOR## ^^SUP^^ ,,SUB,, {{CODE}}</a>",),
+        "{rendered}",
+    );
+
+    let rendered = render_list_pages_title_variables_through_outer_pipeline(
+        "##red|COLOR## ^^SUP^^ ,,SUB,, {{CODE}} @@ESCAPED@@",
+        None,
+    );
+    assert!(
+        rendered.contains(
+            "LINKED=[[[title-matrix | <span style=\"color: red\">COLOR</span> \
+             <sup>SUP</sup> <sub>SUB</sub> <tt>CODE</tt> \
+             <span style=\"white-space: pre-wrap;\">ESCAPED</span>]]]",
+        ),
+        "{rendered}",
+    );
+    assert!(
+        !rendered.contains(r#"<a href="/title-matrix">"#),
+        "{rendered}",
+    );
+
+    let parent = ListPagesParentDisplay {
+        fullname: "run-owned:parent".to_owned(),
+        name: "parent".to_owned(),
+        category: "run-owned".to_owned(),
+        title: "[[div]]**PARENT**... @@ESCAPED@@[[/div]]".to_owned(),
+    };
+    let rendered = render_list_pages_title_variables_through_outer_pipeline(
+        "CHILD @@UNCLOSED",
+        Some(&parent),
+    );
+    assert!(
+        rendered.contains("LINKED=<a href=\"/title-matrix\">CHILD @@UNCLOSED</a>",),
+        "{rendered}",
+    );
+    assert!(
+        rendered.contains(
+            "PARENT=div<strong>PARENT</strong>… \
+             <span style=\"white-space: pre-wrap;\">ESCAPED</span>/div",
+        ),
+        "{rendered}",
+    );
+    assert!(
+        rendered.contains(
+            "PARENT_LINKED=[[[run-owned:parent | div<strong>PARENT</strong>… \
+             <span style=\"white-space: pre-wrap;\">ESCAPED</span>/div]]]",
+        ),
+        "{rendered}",
+    );
+}
+
 #[test]
 fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
     let created_at = time::OffsetDateTime::from_unix_timestamp(1_782_003_564)
@@ -4421,10 +4606,8 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
         1,
         &list_pages_substitution_context(20, &users, None, &BTreeMap::new()),
     );
-    assert!(rendered.starts_with("[/dom-001 Now watch and learn, here's the deal"));
-    assert!(rendered.contains(WIKIDOT_LISTPAGES_LITERAL_ELLIPSIS_SENTINEL_PREFIX));
     assert_eq!(
-        restore_list_pages_literal_ellipsis_markers(&rendered),
+        rendered,
         "[/dom-001 Now watch and learn, here's the deal...]"
     );
 
@@ -10658,23 +10841,6 @@ fn restores_wikidot_footnote_refs_without_source_spacing() {
 
     assert!(restored.contains(r#"behaviour.<sup class="footnoteref">"#));
     assert!(!restored.contains(r#"behaviour. <sup"#));
-}
-
-#[test]
-fn restores_wikidot_text_ellipsis_only_in_text_nodes() {
-    let html = concat!(
-        r#"<p>"scp-049...." be.... witnessed...</p>"#,
-        r#"<a title="keep....">label....</a>"#,
-        r#"<code>keep....</code>"#,
-        r#"<style>.x:after{content:"keep...."}</style>"#,
-    );
-
-    let restored = RenderService::restore_wikidot_text_ellipsis_compatibility(html);
-
-    assert!(restored.contains(r#"<p>"scp-049…." be…. witnessed…</p>"#));
-    assert!(restored.contains(r#"<a title="keep....">label….</a>"#));
-    assert!(restored.contains(r#"<code>keep....</code>"#));
-    assert!(restored.contains(r#"<style>.x:after{content:"keep...."}</style>"#));
 }
 
 #[test]

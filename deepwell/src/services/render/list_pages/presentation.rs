@@ -22,11 +22,12 @@
 
 use super::super::compat::CompatHtmlFragments;
 use super::super::compat::preparation::neutralize_authored_markers;
+#[cfg(test)]
+use super::super::compat::text_fragments::CompatTextFragments;
 use super::super::percent_encoding::percent_encode_path_segment;
 use super::super::service::{
-    RenderService, WIKIDOT_LISTPAGES_LITERAL_ELLIPSIS_SENTINEL_PREFIX,
-    WIKIDOT_LISTPAGES_LITERAL_ELLIPSIS_SENTINEL_REGEX, escape_list_pages_html_attr,
-    escape_list_pages_html_text, format_wikidot_list_pages_date,
+    RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
+    format_wikidot_list_pages_date,
 };
 use super::parents::ListPagesParentDisplay;
 use super::substitution::{ListPagesSnapshotDisplay, WikidotUserDisplay};
@@ -37,7 +38,6 @@ use super::substitution::{
 use super::template::LISTPAGES_VARIABLE_REGEX;
 use crate::services::page_query::FoundPageRow;
 use std::collections::BTreeMap;
-use uuid::Uuid;
 
 #[cfg(test)]
 pub(in crate::services::render) fn substitute_list_pages_variables(
@@ -48,6 +48,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables(
     context: &ListPagesSubstitutionContext<'_>,
 ) -> String {
     let mut compat_html = CompatHtmlFragments::new(template);
+    let mut compat_text = CompatTextFragments::new(template);
     let protected = substitute_list_pages_variables_with_fragments(
         template,
         page,
@@ -55,8 +56,9 @@ pub(in crate::services::render) fn substitute_list_pages_variables(
         total,
         context,
         &mut compat_html,
+        &mut compat_text,
     );
-    compat_html.restore(&protected)
+    compat_text.restore(&compat_html.restore(&protected))
 }
 
 pub(in crate::services::render) fn substitute_count_pages_variables(
@@ -293,31 +295,6 @@ pub(in crate::services::render) fn list_pages_created_by_unix(
         return None;
     }
     Some(slug.to_owned())
-}
-
-pub(in crate::services::render) fn preserve_list_pages_generated_text_typography(
-    value: &str,
-) -> String {
-    if !value.contains("...") {
-        return value.to_owned();
-    }
-    let marker = list_pages_literal_ellipsis_marker();
-    value.replace("...", &marker)
-}
-
-pub(in crate::services::render) fn list_pages_literal_ellipsis_marker() -> String {
-    format!(
-        "{WIKIDOT_LISTPAGES_LITERAL_ELLIPSIS_SENTINEL_PREFIX}{}X",
-        Uuid::new_v4().as_simple(),
-    )
-}
-
-pub(in crate::services::render) fn restore_list_pages_literal_ellipsis_markers(
-    html: &str,
-) -> String {
-    WIKIDOT_LISTPAGES_LITERAL_ELLIPSIS_SENTINEL_REGEX
-        .replace_all(html, "...")
-        .into_owned()
 }
 
 pub(in crate::services::render) fn format_list_pages_created_at(

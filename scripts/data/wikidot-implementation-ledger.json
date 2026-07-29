@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "69bb969eede60ed343dc86024744317168ef29fdfc3bb2ddb3bba2c69929c67b",
+  "catalog_sha256": "05e329f83e0998ce970b99ba131afdcb0f1eabbd76877fd6f66738576c489f67",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [

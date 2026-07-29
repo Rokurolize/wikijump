@@ -81,8 +81,7 @@ use super::include_variables::{
 #[cfg(test)]
 use super::list_pages::ResolvedListPagesAuthors;
 use super::list_pages::{
-    ListPagesExpansion, ListPagesExpansionOptions,
-    build_wikidot_list_pages_module_source, restore_list_pages_literal_ellipsis_markers,
+    ListPagesExpansion, ListPagesExpansionOptions, build_wikidot_list_pages_module_source,
 };
 use super::literal_regions::LiteralRegionIndex;
 use super::metacomponent::{
@@ -313,8 +312,6 @@ pub(super) const WIKIDOT_WIKIPEDIA_LINK_SENTINEL_NONCE_LEN: usize = 32;
 const WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOLORSPAN";
 pub(super) const WIKIDOT_INLINE_HTML_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTINLINEHTML";
 pub(super) const WIKIDOT_RATE_ANCHOR_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTRATEANCHOR";
-pub(super) const WIKIDOT_LISTPAGES_LITERAL_ELLIPSIS_SENTINEL_PREFIX: &str =
-    "WIKIJUMPWIKIDOTLISTPAGESELLIPSIS";
 pub(super) const WIKIDOT_TABVIEW_SCRIPT: &str = "";
 pub(super) const WIKIDOT_TABVIEW_INIT_SCRIPT: &str =
     r#"<script type="text/javascript"></script>"#;
@@ -322,13 +319,6 @@ const MAX_WIKIDOT_COMPAT_FALLBACK_TITLE_LINKS: usize = 128;
 
 pub(super) static INCLUDE_VARIABLE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\{\$(?P<name>[a-zA-Z0-9_\-]+)\}").unwrap());
-pub(super) static WIKIDOT_LISTPAGES_LITERAL_ELLIPSIS_SENTINEL_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| {
-        Regex::new(&format!(
-            r"{WIKIDOT_LISTPAGES_LITERAL_ELLIPSIS_SENTINEL_PREFIX}[0-9a-f]{{32}}X"
-        ))
-        .unwrap()
-    });
 pub(super) static COUNTPAGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"(?is)\[\[module\s+CountPages(?P<head>(?:"[^"]*"|'[^']*'|[^\]])*)\]\](?P<body>.*?)\[\[/module\]\]"#,
@@ -1662,7 +1652,6 @@ impl RenderService {
                         ),
                         &wikidot_inline_html,
                     );
-                    let html = restore_list_pages_literal_ellipsis_markers(&html);
                     let html = Self::localize_wikidot_local_file_urls(
                         &html,
                         current_site.as_ref(),
@@ -1704,7 +1693,6 @@ impl RenderService {
                         ),
                         &wikidot_inline_html,
                     );
-                    let body = restore_list_pages_literal_ellipsis_markers(&body);
                     let body = Self::localize_wikidot_local_file_urls(
                         &body,
                         current_site.as_ref(),
@@ -1923,8 +1911,6 @@ impl RenderService {
                     render_current_site.as_ref(),
                     &render_config,
                 );
-                html_output.body =
-                    restore_list_pages_literal_ellipsis_markers(&html_output.body);
                 html_output.body = wikidot_compat_text.restore(&html_output.body);
                 html_output.backlinks.included_pages.extend(included_pages);
                 let html_block_texts = tree
@@ -2606,64 +2592,6 @@ impl RenderService {
         WIKIDOT_COMPAT_STYLE_BLOCK_REGEX
             .replace_all(html, "")
             .into_owned()
-    }
-
-    pub(super) fn push_wikidot_text_ellipsis_segment(
-        output: &mut String,
-        segment: &str,
-        literal_depth: usize,
-    ) {
-        if literal_depth == 0 {
-            output.push_str(&segment.replace("...", "…"));
-        } else {
-            output.push_str(segment);
-        }
-    }
-
-    pub(super) fn update_wikidot_ellipsis_literal_depth(
-        tag: &str,
-        literal_depth: &mut usize,
-    ) {
-        let Some((name, closing, self_closing)) = Self::html_tag_name(tag) else {
-            return;
-        };
-        if !matches!(
-            name.as_str(),
-            "code" | "pre" | "script" | "style" | "textarea"
-        ) {
-            return;
-        }
-
-        if closing {
-            *literal_depth = literal_depth.saturating_sub(1);
-        } else if !self_closing {
-            *literal_depth += 1;
-        }
-    }
-
-    fn html_tag_name(tag: &str) -> Option<(String, bool, bool)> {
-        let inner = tag.strip_prefix('<')?.strip_suffix('>')?.trim();
-        if inner.is_empty() || inner.starts_with('!') || inner.starts_with('?') {
-            return None;
-        }
-
-        let closing = inner.starts_with('/');
-        let inner = if closing {
-            inner[1..].trim_start()
-        } else {
-            inner
-        };
-        let name = inner
-            .split(|character: char| {
-                character.is_ascii_whitespace() || character == '/' || character == '>'
-            })
-            .next()?
-            .to_ascii_lowercase();
-        if name.is_empty() {
-            return None;
-        }
-
-        Some((name, closing, inner.ends_with('/')))
     }
 
     pub(super) fn remove_wikijump_underline_wrappers(html: &str) -> String {

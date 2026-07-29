@@ -2179,6 +2179,7 @@ impl RenderService {
                     total,
                     &substitution_context,
                     &mut generated_fragments,
+                    compat_text,
                 );
                 neutralize_authored_markers(&mut body);
                 generated_fragments.restore(&body)
@@ -2204,6 +2205,8 @@ impl RenderService {
             && !pages.is_empty()
             && let Some(append_line) = append_line
         {
+            let mut append_line = append_line;
+            neutralize_authored_markers(&mut append_line);
             output.push_str(&append_line);
             output.push('\n');
         }
@@ -2218,6 +2221,7 @@ impl RenderService {
             u32::try_from(url_page_skip).unwrap_or(u32::MAX),
             per_page,
             total_selected,
+            compat_text,
         );
 
         if let Some(feed_info) = feed_info {

@@ -20,6 +20,7 @@
 
 //! Pager targets and RSS-link presentation for ListPages.
 
+use super::super::compat::text_fragments::CompatTextFragments;
 use super::super::percent_encoding::percent_encode_path_segment;
 use super::super::service::{
     MAX_LISTPAGES_RENDER_LIMIT, RenderService, escape_list_pages_html_attr,
@@ -30,6 +31,7 @@ use crate::services::render::UrlArguments;
 use ftml::data::PageInfo;
 use std::collections::BTreeSet;
 
+#[allow(clippy::too_many_arguments)]
 pub(in crate::services::render) fn push_list_pages_pager(
     output: &mut String,
     page_info: &PageInfo<'_>,
@@ -38,6 +40,7 @@ pub(in crate::services::render) fn push_list_pages_pager(
     offset: u32,
     per_page: u64,
     total_selected: usize,
+    compat_text: &mut CompatTextFragments,
 ) {
     let per_page = per_page
         .min(MAX_LISTPAGES_RENDER_LIMIT)
@@ -77,7 +80,10 @@ pub(in crate::services::render) fn push_list_pages_pager(
     let mut previous = 0;
     for page in pages {
         if previous != 0 && page > previous + 1 {
-            output.push_str(r#"[[span class="dots"]]...[[/span]]"#);
+            let dots = compat_text.push_escaped_html_text("...");
+            output.push_str(r#"[[span class="dots"]]"#);
+            output.push_str(&dots);
+            output.push_str("[[/span]]");
         }
         if page == current_page {
             output.push_str(&format!(r#"[[span class="current"]]{page}[[/span]]"#));
