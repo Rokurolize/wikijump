@@ -49,6 +49,9 @@ use deepwell::services::page_query::{
 use deepwell::services::permission::{
     CheckPermissionContext, PermissionCache, PermissionService,
 };
+use deepwell::services::relation::{
+    CreateSiteMember, SiteMemberAccepted, SiteMemberData,
+};
 use deepwell::services::render::{UrlArgumentPair, UrlArguments};
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
@@ -59,8 +62,8 @@ use deepwell::services::site::UpdateSiteBody;
 use deepwell::services::view::{GetArticleViewOutput, GetPageViewOutput};
 use deepwell::services::{
     FileRevisionService, ForumPostService, ForumService, ForumThreadService, LinkService,
-    PageService, RenderService, RequestContext, SessionService, SettingsService,
-    SiteService, TextService,
+    PageService, RelationService, RenderService, RequestContext, SessionService,
+    SettingsService, SiteService, TextService,
 };
 use deepwell::types::{
     Action, ConnectionType, Maybe, PageId, PageRevisionType, Permission, Reference,
@@ -3171,6 +3174,180 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
             && !body.contains("[[module MembershipEmailInvitation")
             && !body.contains("[[module WhoInvited"),
         "saved page view should consume all covered modules:\n{body}",
+    );
+}
+
+#[tokio::test]
+async fn membership_by_password_module_matches_live_anonymous_and_member_output() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = "MBP_START\n[[module MembershipByPassword]]\nMBP_END";
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let anonymous_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "MembershipByPassword anonymous live basics",
+            "wikitext": source,
+        }),
+    );
+    assert!(
+        anonymous_preview
+            .body
+            .contains(r#"<div id="membership-by-password-box">"#)
+            && anonymous_preview
+                .body
+                .contains("Please create an account and/or sign in first.")
+            && anonymous_preview
+                .body
+                .contains("WIKIDOT.page.listeners.loginClick(event)")
+            && anonymous_preview
+                .body
+                .contains("WIKIREQUEST.createAccountSkipCongrats=true; WIKIDOT.page.listeners.createAccount(event)")
+            && anonymous_preview.body.contains("Create a new account"),
+        "anonymous MembershipByPassword should render the live sign-in/create-account prompt:\n{}",
+        anonymous_preview.body,
+    );
+    assert!(
+        !anonymous_preview
+            .body
+            .contains("[[module MembershipByPassword"),
+        "anonymous MembershipByPassword should be consumed:\n{}",
+        anonymous_preview.body,
+    );
+
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("sample user should become a site member for MembershipByPassword");
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(SAMPLE_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let member_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "MembershipByPassword member live basics",
+            "wikitext": source,
+        }),
+    );
+    assert!(
+        member_preview
+            .body
+            .contains(r#"<div id="membership-by-password-box">"#)
+            && member_preview.body.contains(r#"<div class="error-block">"#)
+            && member_preview.body.contains("You can not apply.<br/>")
+            && member_preview
+                .body
+                .contains("It seems you already are a member of this site."),
+        "member MembershipByPassword should render the live already-member error:\n{}",
+        member_preview.body,
+    );
+    assert!(
+        !member_preview
+            .body
+            .contains("[[module MembershipByPassword"),
+        "member MembershipByPassword should be consumed:\n{}",
+        member_preview.body,
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-membership-by-password",
+        "Fixture MembershipByPassword",
+        source,
+    )
+    .await;
+
+    let anonymous_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-membership-by-password", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let anonymous_body = match anonymous_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => {
+            panic!("expected found anonymous MembershipByPassword view, got {other:?}")
+        }
+    };
+    assert!(
+        anonymous_body.contains("MBP_START")
+            && anonymous_body.contains(r#"<div id="membership-by-password-box">"#)
+            && anonymous_body.contains("Please create an account and/or sign in first.")
+            && anonymous_body.contains("MBP_END"),
+        "saved anonymous page view should render the live sign-in/create-account prompt:\n{anonymous_body}",
+    );
+
+    let sample_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: SAMPLE_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "MembershipByPassword member view test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("sample session should be created");
+    let member_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": sample_session_token,
+            "route": {"slug": "fixture-membership-by-password", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let member_body = match member_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found member MembershipByPassword view, got {other:?}"),
+    };
+    assert!(
+        member_body.contains("MBP_START")
+            && member_body.contains(r#"<div id="membership-by-password-box">"#)
+            && member_body.contains("You can not apply.<br/>")
+            && member_body.contains("It seems you already are a member of this site.")
+            && member_body.contains("MBP_END"),
+        "saved member page view should render the live already-member error:\n{member_body}",
+    );
+    assert!(
+        !anonymous_body.contains("[[module MembershipByPassword")
+            && !member_body.contains("[[module MembershipByPassword"),
+        "saved page views should consume MembershipByPassword:\nanonymous={anonymous_body}\nmember={member_body}",
     );
 }
 

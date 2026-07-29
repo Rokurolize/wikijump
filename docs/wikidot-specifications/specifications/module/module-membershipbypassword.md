@@ -20,6 +20,32 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### MembershipByPassword renders an anonymous sign-in prompt and an already-member error
+
+- Observation ID: `membershipbypassword-live-anonymous-and-member-output`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-29`
+- Analysis: The documentation describes the deprecated password-membership form but does not distinguish the anonymous prompt, current member handling, or missing non-member password-enabled state. Live PagePreviewModule probes against sandbox-for-codex show anonymous viewers receive the sign-in/create-account prompt, while account A, B, and C all have site-member roles and receive the already-member error. The non-member registered-user password form could not be observed on sandbox-for-codex because all available test accounts are already members of that site.
+
+Normative behavior:
+
+- MembershipByPassword with an anonymous viewer renders div#membership-by-password-box containing a sign-in/create-account prompt.
+- The anonymous prompt includes a Sign in link calling WIKIDOT.page.listeners.loginClick(event).
+- The anonymous prompt includes a Create a new account link that sets WIKIREQUEST.createAccountSkipCongrats=true and calls WIKIDOT.page.listeners.createAccount(event).
+- MembershipByPassword for observed site members renders div#membership-by-password-box containing div.error-block with You can not apply. and It seems you already are a member of this site.
+- Account A (admin/member), account B (member), and account C (moderator/member) produced the same member error in PagePreviewModule probes.
+- Registered non-member behavior, password-enabled behavior, password submission actions, and membership side effects remain unimplemented until a safe live non-member fixture is created and modeled.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/membershipbypassword-role-preview-probe.json` (SHA-256 `6071c075337c2917377db0eb576e1c7e10cc77a072972ac53f79c96a937b8035`), cases: `membershipbypassword-role-preview-probe`
+
+
 
 ## Suggested public TDD seams
 

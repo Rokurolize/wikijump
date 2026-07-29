@@ -43,10 +43,13 @@ use crate::services::page_query::{
     ScoreSelector, TagCondition,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::relation::GetSiteMember;
 use crate::services::score::ScoreValue;
 use crate::services::settings::PageRatingType;
 use crate::services::user::User;
-use crate::services::{PageRevisionService, PageService, ServiceContext, UserService};
+use crate::services::{
+    PageRevisionService, PageService, RelationService, ServiceContext, UserService,
+};
 use crate::types::Reference;
 use crate::types::{Action, Permission, Resource};
 use crate::utils::{normalize_page_slug, split_category, trim_default};
@@ -100,6 +103,34 @@ const WHOINVITED_FORM_HTML: &str = concat!(
     r#"<div id="who-invited-results-box">"#,
     "\n\n</div>",
 );
+const MEMBERSHIP_BY_PASSWORD_ANONYMOUS_HTML: &str = concat!(
+    r#"<div id="membership-by-password-box">"#,
+    "\n\t\t\t<p>\n\t\t\tPlease create an account and/or sign in first.\t\t</p>",
+    "\n\t\t",
+    r#"<table style="margin: 1em auto">"#,
+    "\n\t\t\t<tr>\n\t\t\t\t",
+    r#"<td style="text-align: center; padding: 1em">"#,
+    "\n\t\t\t\t\t",
+    r#"<div style="font-size: 180%; font-weight: bold;">"#,
+    "\n\t\t\t\t\t\t",
+    r#"<a href="javascript:;" onclick="WIKIDOT.page.listeners.loginClick(event)""#,
+    "\n\t\t\t\t\t\t\t>Sign in</a>\n\t\t\t\t\t</div>\n\t\t\t\t\t<p>\t\n\t\t\t\t\t\tif you already have a Wikidot.com account\t\t\t\t\t</p>\n\t\t\t\t</td>",
+    "\n\t\t\t\t",
+    r#"<td style="padding: 1em; font-size: 140%">"#,
+    "\n\t\t\t\t\tor\t\t\t\t</td>\n\t\t\t\t",
+    r#"<td style="text-align: center; padding: 1em">"#,
+    "\n\t\t\t\t\t",
+    r#"<div style="font-size: 180%; font-weight: bold;">"#,
+    "\n\t\t\t\t\t\t",
+    r#"<a href="javascript:;"  onclick="WIKIREQUEST.createAccountSkipCongrats=true; WIKIDOT.page.listeners.createAccount(event)""#,
+    "\n\t\t\t\t\t\t\t>Create a new account</a>\n\t\t\t\t\t</div>\n\t\t\t\t\t<p>\n\t\t\t\t\t\tit is worth it and is free\t\t\t\t\t</p>\n\t\t\t\t</td>\n\t\t\t</tr>\n\t\t</table>\n\t\n</div>",
+);
+const MEMBERSHIP_BY_PASSWORD_MEMBER_HTML: &str = concat!(
+    r#"<div id="membership-by-password-box">"#,
+    "\n\t\t\t",
+    r#"<div class="error-block">"#,
+    "\n\t\t\tYou can not apply.<br/>\n\t\t\t\t\t\t\t\t\t\tIt seems you already are a member of this site.\t\t\t\t\t\t\t\t</div>\n\t\n</div>",
+);
 
 static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListUsers(?P<head>(?:[^\]"]+|"[^"]*")*)\]\](?P<body>.*?)\[\[/module\]\]"#)
@@ -122,6 +153,12 @@ static STATIC_ACCOUNT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         r#"(?is)\[\[module\s+(?P<name>AnonymousNotificationsUnsubscribe|UserInfo|SearchUsers|MembershipEmailInvitation|WhoInvited)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
     )
     .expect("static account module expression is valid")
+});
+static MEMBERSHIPBYPASSWORD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?is)\[\[module\s+MembershipByPassword\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
+    )
+    .expect("MembershipByPassword module expression is valid")
 });
 static AD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+Ad\b(?:[^\]"]+|"[^"]*")*\]\]"#)
@@ -1711,6 +1748,79 @@ impl RenderService {
         output
     }
 
+    async fn render_membership_by_password_module(
+        ctx: &ServiceContext<'_>,
+        current_site_id: Option<i64>,
+        viewer_user_id: Option<i64>,
+    ) -> Result<Option<&'static str>> {
+        let Some(viewer_user_id) = viewer_user_id else {
+            return Ok(Some(MEMBERSHIP_BY_PASSWORD_ANONYMOUS_HTML));
+        };
+        let Some(current_site_id) = current_site_id else {
+            return Ok(None);
+        };
+        let membership = RelationService::get_optional_site_member(
+            ctx,
+            GetSiteMember {
+                site_id: current_site_id,
+                user_id: viewer_user_id,
+            },
+        )
+        .await?;
+        Ok(membership
+            .is_some()
+            .then_some(MEMBERSHIP_BY_PASSWORD_MEMBER_HTML))
+    }
+
+    async fn expand_membership_by_password_modules(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        settings: &WikitextSettings,
+        current_site_id: Option<i64>,
+        viewer_user_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> Result<String> {
+        if !settings.enable_page_syntax
+            || !MEMBERSHIPBYPASSWORD_MODULE_REGEX.is_match(&wikitext)
+        {
+            return Ok(wikitext);
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in MEMBERSHIPBYPASSWORD_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a MembershipByPassword capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            if !head.trim().is_empty() {
+                continue;
+            }
+            let Some(rendered) = Self::render_membership_by_password_module(
+                ctx,
+                current_site_id,
+                viewer_user_id,
+            )
+            .await?
+            else {
+                continue;
+            };
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&compat_html.push_html(rendered.to_owned()));
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return Ok(wikitext);
+        }
+        output.push_str(&wikitext[cursor..]);
+        Ok(output)
+    }
+
     fn expand_ad_modules(wikitext: String, settings: &WikitextSettings) -> String {
         if !settings.enable_page_syntax
             || (!AD_MODULE_REGEX.is_match(&wikitext)
@@ -1783,6 +1893,16 @@ impl RenderService {
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_static_account_modules(wikitext, settings, compat_html);
+        wikitext = Self::expand_membership_by_password_modules(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            options.viewer_user_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext = Self::expand_ad_modules(wikitext, settings);
         if PAGECALENDAR_MODULE_REGEX.is_match(&wikitext) {
             wikitext = {
