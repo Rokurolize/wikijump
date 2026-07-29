@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 43,
+    "observation_count": 44,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -2060,6 +2060,7 @@
         "listpages-live-feed-endpoint",
         "listpages-template-variable-rendering",
         "listpages-rating-comment-and-data-form-variables",
+        "listpages-imported-lifecycle-identity-provenance",
         "dataforms-listpages-selection-sorting-live",
         "listpages-legacy-and-body-edge-behavior",
         "countpages-inside-listpages-body",

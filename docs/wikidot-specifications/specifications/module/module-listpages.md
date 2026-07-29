@@ -173,6 +173,28 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json` (SHA-256 `df42b383b81eeac1c00c25fe54a59dcf2015ed622baea0752e9481d8bfe7708c`), cases: `lp-live-plus-minus-rating-and-last-comment`, `lp-live-five-star-rating`, `lp-live-five-star-fractional-rating`, `lp-live-five-star-zero-rating`, `lp-live-data-form-values-labels-and-hints`
 
+### Imported lifecycle identities require the structured tuple exposed by live Wikidot
+
+- Observation ID: `listpages-imported-lifecycle-identity-provenance`
+- Classification: `documentation-discrepancy`
+- Observed at: `2026-07-29`
+- Analysis: The frozen ListPages documentation defines lifecycle identity variables but does not describe acquisition provenance. The existing SCP corpus adapter flattened live Wikidot user objects to display-name strings, creating an apparent blocker for imported created_by, updated_by, and commented_by identity variables. An anonymous read through the repository-pinned wikidot.py ListPages interface proves that live Wikidot supplies the numeric user ID, display name, and unix name for every populated lifecycle user. The missing identity is therefore a corpus-adapter loss, not a limitation of the live oracle.
+
+Normative behavior:
+
+- For each populated created-by, updated-by, or last-comment user, live Wikidot exposes a structured identity tuple containing numeric Wikidot user ID, display name, and unix name.
+- A refreshed corpus metadata record must preserve these tuples additively as created_by_id and created_by_unix, updated_by_id and updated_by_unix, and commented_by_id and commented_by_unix while retaining the existing display-name fields.
+- When structured imported provenance is present, ListPages *_by, *_by_unix, *_by_id, and *_by_linked variables render the same text, unix name, numeric ID, and printuser profile markup as live Wikidot. The local importer account must never substitute for the Wikidot lifecycle user.
+- ListPages RSS item authorship uses the selected page creator, including for imported pages, and renders feed-specific printuser markup. The feed markup contains the profile links, avatar and user-karma URLs, and a cache-busting avatar timestamp, but omits the browser-only userInfo onclick handler.
+- Legacy snapshots without a required identity component remain provenance-incomplete. Identity-bearing output for those snapshots must fail closed or stay literal rather than inventing an ID, unix name, or linked profile from a display-name normalization.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json` (SHA-256 `c8b2a404c93d43c175bc6a3f72017226cdb642a279ea9a3968d6a58059106db4`), cases: `scp-3435-lifecycle-identities`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-template-variables-live-classification.json` (SHA-256 `7994dfcf7e8f3cae568e44c53fda16ff9acb8d4b47f59494a110633cd4d8f67d`), cases: `lp-live-template-variables`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json` (SHA-256 `df42b383b81eeac1c00c25fe54a59dcf2015ed622baea0752e9481d8bfe7708c`), cases: `lp-live-plus-minus-rating-and-last-comment`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-feed-endpoint-live.jsonl` (SHA-256 `37e6a52c88f48bc7eadfeacb7218ce270e615f0916e4a8810bfed2f01bb0afa9`), cases: `lpfeed-0001-baseline`
+
 ### Data-form ListPages selection and ordering use stored field properties
 
 - Observation ID: `dataforms-listpages-selection-sorting-live`

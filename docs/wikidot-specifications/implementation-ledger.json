@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "f1b9f3db6eb6194e869d725dde1d2d736df93cffe47e3c7725131e0688c83137",
+  "catalog_sha256": "69bb969eede60ed343dc86024744317168ef29fdfc3bb2ddb3bba2c69929c67b",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -1542,6 +1542,11 @@
           "path": "deepwell/tests/page.rs",
           "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
           "scope": "public saved-page regression verifies checkbox and wiki data-form variables, canonical multiline source decoding, and wiki parsing in ListPages rows"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_imported_creator_identity_uses_structured_corpus_provenance; listpages_imported_editor_identity_uses_structured_corpus_provenance; listpages_imported_commenter_identity_uses_structured_corpus_provenance; wikidot_listpages_feed_uses_imported_creator_identity_provenance",
+          "scope": "public saved-page and feed regressions verify imported creator, last-editor, and last-comment identity tuples drive text, unix-name, numeric-ID, linked-user, comment-date, and RSS author output without substituting the local importer account"
         }
       ],
       "implementation_files": [
@@ -1574,10 +1579,11 @@
         "install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json",
         "install/local/wikidot-verification/artifacts/countpages-inside-listpages-live.json",
         "install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json",
-        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json",
+        "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Imported Wikidot snapshots retain the last commenter's display name and timestamp but not the Wikidot user ID. Identity-bearing last-comment variables on imported rows remain provenance-blocked until the corpus or importer supplies a stable user identity; local relational comments are not blocked."
+        "Wikijump now consumes additive created_by_id/created_by_unix, updated_by_id/updated_by_unix, and commented_by_id/commented_by_unix corpus metadata and renders every imported lifecycle identity variable. The current frozen SCP corpus still lacks those fields because its adapter stringifies wikidot.py user objects. The coordinated producer change and corpus refresh remain required before existing imported rows carry the proven live identity tuples; legacy incomplete snapshots continue to fail closed instead of using the importer account."
       ]
     },
     "module-listusers": {
