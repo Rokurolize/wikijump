@@ -227,12 +227,23 @@ fn parse_block_opener(
     let line = lines[line_index];
 
     let (content_start, exact_head) = match family {
-        BlockFamily::Code | BlockFamily::Html => match heads.map_head_end[name_end] {
+        BlockFamily::Code => {
+            let close = expanded_offset(heads.next_wikidot_right_block[name_end]);
+            if close < line.body_end {
+                let exact = source[start + 2..]
+                    .chars()
+                    .next()
+                    .is_some_and(|character| !character.is_whitespace());
+                (close + 2, exact)
+            } else {
+                (name_end, false)
+            }
+        }
+        BlockFamily::Html => match heads.map_head_end[name_end] {
             NO_OFFSET => (name_end, false),
             end => {
                 let content_start = expanded_offset(end);
-                let exact = family != BlockFamily::Html
-                    || source[name_end..content_start - 2].trim().is_empty();
+                let exact = source[name_end..content_start - 2].trim().is_empty();
                 (content_start, exact)
             }
         },
@@ -563,7 +574,7 @@ mod tests {
             "[[code {$k}=\"v\"]]x[[/code]]",
             "[[code a\u{a0}=\"x\"]]x[[/code]]",
         ];
-        for (source, exact) in sources.into_iter().zip([true, true, true, false]) {
+        for (source, exact) in sources.into_iter().zip([true, true, true, true]) {
             let candidates = candidates(source);
             assert_eq!(candidates.len(), 1, "{source:?}");
             assert_eq!(

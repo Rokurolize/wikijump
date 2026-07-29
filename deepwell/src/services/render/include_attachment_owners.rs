@@ -189,6 +189,7 @@ pub(super) fn qualify_relative_image_variable_attachments(
                 variables,
                 owners,
                 &mut replacements,
+                false,
             );
         }
         for link in links {
@@ -198,6 +199,7 @@ pub(super) fn qualify_relative_image_variable_attachments(
                 variables,
                 owners,
                 &mut replacements,
+                true,
             );
         }
     }
@@ -244,6 +246,7 @@ fn qualify_variable(
     variables: &VariableMap<'_>,
     owners: &AttachmentVariableOwners,
     replacements: &mut Vec<(Range<usize>, String)>,
+    preserve_quotes: bool,
 ) {
     let Some(variable) = VARIABLE.captures(target.semantic) else {
         return;
@@ -256,9 +259,14 @@ fn qualify_variable(
         return;
     };
     if relative(value) {
+        let qualified = owned_url(owner, value);
         replacements.push((
             base + target.range.start..base + target.range.end,
-            owned_url(owner, value),
+            if preserve_quotes {
+                preserve_argument_quotes(target.raw, &qualified)
+            } else {
+                qualified
+            },
         ));
     }
 }
@@ -540,7 +548,7 @@ fn next_top_level_pipe(source: &str, mut offset: usize) -> Option<Option<usize>>
     Some(None)
 }
 
-fn preserve_argument_quotes(raw: &str, value: &str) -> String {
+pub(super) fn preserve_argument_quotes(raw: &str, value: &str) -> String {
     if raw.len() >= 2
         && matches!(raw.as_bytes()[0], b'"' | b'\'')
         && raw.as_bytes()[0] == raw.as_bytes()[raw.len() - 1]

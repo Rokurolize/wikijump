@@ -7831,8 +7831,8 @@ fn image_block_prepass_consumes_forwarded_name_and_link_provenance() {
     );
     assert!(
         wikitext.contains(concat!(
-            "link=https://link-site.wikidot.com/local--files/",
-            "fragment:link-source/source%20full.png",
+            "link='https://link-site.wikidot.com/local--files/",
+            "fragment:link-source/source%20full.png'",
         )),
         "{wikitext}",
     );
@@ -8077,8 +8077,8 @@ fn image_block_prepass_unquotes_composite_names_for_the_authoring_page() {
     assert!(!wikitext.contains("%22"), "{wikitext}");
     assert!(
         wikitext.contains(concat!(
-            "link=https://scp-wiki.wikidot.com/local--files/",
-            "component:wrapper/full-real%20image.png",
+            "link=\"https://scp-wiki.wikidot.com/local--files/",
+            "component:wrapper/full-real%20image.png\"",
         )),
         "{wikitext}",
     );

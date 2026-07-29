@@ -58,7 +58,8 @@ use super::iftags::{
 use super::include_attachment_owners::{
     AttachmentOwner, AttachmentProvenanceRegistry, AttachmentVariableOwners,
     find_wikidot_directive_end, owned_url, parse_wikidot_include_argument,
-    protect_forwarded_attachment_variables, qualify_included_relative_image_attachments,
+    preserve_argument_quotes, protect_forwarded_attachment_variables,
+    qualify_included_relative_image_attachments,
     qualify_relative_image_variable_attachments, relative, semantic_attachment_value,
     split_wikidot_include_argument_segments, wikidot_include_segment_is_space,
 };
@@ -2804,7 +2805,7 @@ impl RenderService {
             let link_attribute = if link == "#" {
                 String::new()
             } else {
-                format!(" link={link}")
+                format!(" link={}", preserve_argument_quotes(raw_link, &link),)
             };
 
             let replacement = format!(
