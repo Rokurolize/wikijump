@@ -65,6 +65,8 @@ const LISTUSERS_UNSUPPORTED_USERS_ERROR: &str =
     r#"Currently only users="." is implemented."#;
 const LISTDRAFTS_EMPTY_HTML: &str = r#"<div class="list-drafts-box">
             </div>"#;
+const SIMPLETODO_MISSING_ID_ERROR: &str = "The SimpleTodo module must have an id.";
+const SENDINVITATIONS_DISABLED_ERROR_HTML: &str = r#"<div class="error-block">Inviting users has been disabled due to severe abuse. Admins can still send email invitations via <a href="/_admin">site admin dashboard</a>.</div>"#;
 
 static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListUsers(?P<head>(?:[^\]"]+|"[^"]*")*)\]\](?P<body>.*?)\[\[/module\]\]"#)
@@ -73,6 +75,14 @@ static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 static LISTDRAFTS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListDrafts(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
         .expect("ListDrafts module expression is valid")
+});
+static SIMPLETODO_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+SimpleToDo\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("SimpleToDo module expression is valid")
+});
+static SENDINVITATIONS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+SendInvitations\b(?:[^\]"]+|"[^"]*")*\]\]"#)
+        .expect("SendInvitations module expression is valid")
 });
 static AD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+Ad\b(?:[^\]"]+|"[^"]*")*\]\]"#)
@@ -260,6 +270,51 @@ fn render_join_module(head: &str) -> String {
         ),
         class = escape_list_pages_html_attr(class),
         button = escape_list_pages_html_text(button),
+    )
+}
+
+fn render_simpletodo_module(head: &str, index: usize) -> String {
+    let Some(list_id) =
+        wikidot_module_argument(head, "id").filter(|value| !value.trim().is_empty())
+    else {
+        return format!(
+            r#"<div class="error-block">{SIMPLETODO_MISSING_ID_ERROR}</div>"#
+        );
+    };
+    let label = escape_list_pages_html_text(list_id);
+
+    format!(
+        concat!(
+            r#"<script type="text/javascript" src="http://www.wikidot.com/common--javascript/yahooui/animation-min.js"></script>"#,
+            "\n",
+            r#"<div class="simpletodo-box" id="simpletodo_{index}">"#,
+            r#"<div class="title">Here is a place for your title</div>"#,
+            r#"<table class="simpletodo-format-table"><tr><td>"#,
+            r#"<div class="simpletodo-sub-box" id="simpletodo_sub_{index}">"#,
+            r#"<div class="task"><span class="checkbox"><input type="checkbox" class="checkbox"/></span>"#,
+            r#"<span><span class="text">Click me to edit !</span></span>"#,
+            r#"<span class="follow-link"><a href="javascript:;" class="icon1"><span>Follow link</span></a></span>"#,
+            r#"<span class="options"></span></div>"#,
+            r#"<div class="task"><span class="checkbox"><input type="checkbox" class="checkbox"/></span>"#,
+            r#"<span><span class="text">Drag me !</span></span>"#,
+            r#"<span class="follow-link"><a href="javascript:;" class="icon1">Follow Link</a></span>"#,
+            r#"<span class="options"></span></div>"#,
+            r#"</div></td></tr></table>"#,
+            r#"<div class="bottom-options"></div>"#,
+            r#"<div class="label">{label}</div></div>"#,
+            "\n",
+            r#"<div id="simpletodo-data">"#,
+            "\n",
+            r#"<span id="simpletodo-data-title">Here is a place for your title</span>"#,
+            "\n",
+            r#"<span id="simpletodo-data-itemtext">Click me to edit !</span>"#,
+            "\n",
+            r#"<span id="simpletodo-data-edit-permission">false</span>"#,
+            "\n",
+            r#"</div>"#,
+        ),
+        index = index,
+        label = label,
     )
 }
 
@@ -1487,6 +1542,77 @@ impl RenderService {
         output
     }
 
+    fn expand_simpletodo_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
+        if !settings.enable_page_syntax || !SIMPLETODO_MODULE_REGEX.is_match(&wikitext) {
+            return wikitext;
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        let mut simpletodo_index = 0usize;
+        for captures in SIMPLETODO_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a SimpleToDo capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            let rendered = render_simpletodo_module(head, simpletodo_index);
+            if wikidot_module_argument(head, "id")
+                .is_some_and(|value| !value.trim().is_empty())
+            {
+                simpletodo_index += 1;
+            }
+            output.push_str(&compat_html.push_html(rendered));
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
+    fn expand_send_invitations_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
+        if !settings.enable_page_syntax
+            || !SENDINVITATIONS_MODULE_REGEX.is_match(&wikitext)
+        {
+            return wikitext;
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for matched in SENDINVITATIONS_MODULE_REGEX.find_iter(&wikitext) {
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(
+                &compat_html.push_html(SENDINVITATIONS_DISABLED_ERROR_HTML.to_owned()),
+            );
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
     fn expand_ad_modules(wikitext: String, settings: &WikitextSettings) -> String {
         if !settings.enable_page_syntax
             || (!AD_MODULE_REGEX.is_match(&wikitext)
@@ -1556,6 +1682,8 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = Self::expand_list_drafts_modules(wikitext, settings, compat_html);
+        wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
+        wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_ad_modules(wikitext, settings);
         if PAGECALENDAR_MODULE_REGEX.is_match(&wikitext) {
             wikitext = {

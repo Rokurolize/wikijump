@@ -3020,6 +3020,76 @@ async fn adsenseunit_module_matches_live_deprecated_empty_output() {
 }
 
 #[tokio::test]
+async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = concat!(
+        "SIMPLE_MISSING\n",
+        "[[module SimpleToDo]]\n",
+        "SIMPLE_EMPTY\n",
+        "[[module SimpleToDo id=\"\"]]\n",
+        "SIMPLE_VALID\n",
+        "[[module SimpleToDo id=\"codex-live-probe\"]]\n",
+        "INVITE\n",
+        "[[module SendInvitations]]\n",
+        "END",
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "SimpleToDo and SendInvitations live basics",
+            "wikitext": source,
+        }),
+    );
+
+    assert!(
+        preview
+            .body
+            .matches("The SimpleTodo module must have an id.")
+            .count()
+            == 2,
+        "SimpleToDo omitted and empty id should render the live error:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains(
+            r#"<div class="simpletodo-box" id="simpletodo_0"><div class="title">Here is a place for your title</div>"#
+        ) && preview
+            .body
+            .contains(r#"<div class="label">codex-live-probe</div>"#)
+            && preview
+                .body
+                .contains(r#"<span id="simpletodo-data-edit-permission">false</span>"#),
+        "SimpleToDo with id should render the live initial read-only list shell:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains(
+            r#"<div class="error-block">Inviting users has been disabled due to severe abuse. Admins can still send email invitations via <a href="/_admin">site admin dashboard</a>.</div>"#
+        ),
+        "SendInvitations should render Wikidot's disabled-invitations error:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("[[module SimpleToDo")
+            && !preview.body.contains("[[module SendInvitations"),
+        "implemented modules should not leak raw module source:\n{}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

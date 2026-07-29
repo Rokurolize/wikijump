@@ -20,6 +20,32 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### SimpleToDo initial preview rendering and globally disabled SendInvitations output
+
+- Observation ID: `simpletodo-sendinvitations-live-preview-basics`
+- Classification: `documentation-correction`
+- Observed at: `2026-07-29`
+- Analysis: The SendInvitations documentation describes the historical invitation form, but live Wikidot currently renders only a disabled-abuse notice for anonymous and authenticated account-A PagePreviewModule probes. The SimpleToDo documentation describes an interactive persisted task list, but live preview evidence establishes the missing-id error and the initial empty-list shell for a new id; task persistence and edit controls remain a separate stateful action surface.
+
+Normative behavior:
+
+- SendInvitations renders a div.error-block saying invitations are disabled due to severe abuse and links to /_admin.
+- SendInvitations observed output is identical for anonymous and authenticated account-A PagePreviewModule probes.
+- SimpleToDo with omitted id or id="" renders div.error-block with the text The SimpleTodo module must have an id.
+- SimpleToDo with an id renders the initial simpletodo-box shell with default title Here is a place for your title, default task text Click me to edit !, default task text Drag me !, a label containing the id, and simpletodo-data edit-permission false in PagePreviewModule.
+- SimpleToDo anonymous and account-A PagePreviewModule output was identical for the observed initial id case.
+- SimpleToDo task mutation, persistence, saved-page edit permission, and browser drag/drop behavior remain unimplemented until a stateful live action surface and data model are added.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/simpletodo-sendinvitations-live-preview.json` (SHA-256 `d26c44a0de21437a0c344244f0b7d24778a5e66b5c24bb1839dfe546ec2df095`), cases: `simpletodo-missing-id`, `simpletodo-empty-id`, `simpletodo-id-initial`, `sendinvitations-disabled`
+
+
 
 ## Suggested public TDD seams
 

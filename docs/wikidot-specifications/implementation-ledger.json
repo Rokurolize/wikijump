@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "67fd2f233d607b328fc64d755d09bdef38d53fbab7808c1afeede76004b38a57",
+  "catalog_sha256": "6dea623f61cab655e24ac25c6da193d8ec253bc30770bfa73b618ebdddccc2d4",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -1804,26 +1804,44 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-sendinvitations": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Anonymous and authenticated PagePreviewModule rendering through Deepwell's public Wikidot page preview pipeline"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-sendinvitations.md"
       ],
-      "live_oracle_evidence": [],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/simpletodo-sendinvitations-live-preview.json"
+      ],
       "unresolved_ambiguities_or_blockers": []
     },
     "module-simpletodo": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Anonymous and authenticated PagePreviewModule rendering through Deepwell's public Wikidot page preview pipeline"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-simpletodo.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/simpletodo-sendinvitations-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Initial SimpleToDo rendering and missing-id errors are implemented for observed PagePreviewModule cases. Full completion is blocked on a stateful SimpleToDo data model and live action-surface evidence for task creation, editing, checkbox state, ordering, link changes, saved-page edit permissions, and browser runtime behavior."
+      ]
     },
     "module-sitechanges": {
       "status": "pending",
