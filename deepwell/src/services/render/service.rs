@@ -607,6 +607,7 @@ impl RenderService {
             settings,
             RenderInnerOptions {
                 render_context: RenderContext::none(),
+                viewer_user_id: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 trace: None,
                 persist_compiled_text: true,
@@ -664,6 +665,7 @@ impl RenderService {
             &settings,
             RenderInnerOptions {
                 render_context: RenderContext::ajax_module(site_id),
+                viewer_user_id: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 trace: None,
                 persist_compiled_text: false,
@@ -713,6 +715,38 @@ impl RenderService {
             },
             RenderPageOptions {
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                viewer_user_id: None,
+                url,
+                trace: None,
+            },
+        ))
+        .await
+    }
+
+    /// Render a page for a request-specific viewer.
+    ///
+    /// This is used for page-view rerenders whose output depends on runtime
+    /// request state. Revision compilation uses `render_page()` so
+    /// viewer-specific modules cannot bake an editor's identity into stored
+    /// HTML.
+    pub async fn render_page_for_viewer(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        page_info: &PageInfo<'_>,
+        layout: Layout,
+        id: PageId,
+        viewer_user_id: Option<i64>,
+        url: UrlArguments<'_>,
+    ) -> Result<RenderPageOutput> {
+        Box::pin(Self::render_page_with_include_limit(
+            ctx,
+            wikitext,
+            page_info,
+            layout,
+            id,
+            RenderPageOptions {
+                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                viewer_user_id,
                 url,
                 trace: None,
             },
@@ -738,6 +772,7 @@ impl RenderService {
             id,
             RenderPageOptions {
                 max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
+                viewer_user_id: None,
                 url: UrlArguments::default(),
                 trace: None,
             },
@@ -761,6 +796,7 @@ impl RenderService {
             id,
             RenderPageOptions {
                 max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
+                viewer_user_id: None,
                 url: UrlArguments::default(),
                 trace: Some(trace),
             },
@@ -780,6 +816,7 @@ impl RenderService {
         }: PageId,
         RenderPageOptions {
             max_include_expansions,
+            viewer_user_id,
             url,
             trace,
         }: RenderPageOptions<'_>,
@@ -813,6 +850,7 @@ impl RenderService {
             &page_settings,
             RenderInnerOptions {
                 render_context: RenderContext::page(site_id, category_id, page_id),
+                viewer_user_id,
                 max_include_expansions,
                 trace: trace.map(|trace| (trace, CorpusRenderScope::Body)),
                 persist_compiled_text: true,
@@ -851,6 +889,7 @@ impl RenderService {
                                 category_id,
                                 page_id,
                             ),
+                            viewer_user_id,
                             max_include_expansions,
                             trace: trace.map(|trace| (trace, scope)),
                             persist_compiled_text: true,
@@ -934,6 +973,7 @@ impl RenderService {
                 current_site_id: Some(id.site_id),
                 current_category_id: Some(id.category_id),
                 current_page_id: Some(id.page_id),
+                viewer_user_id: None,
                 max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
                 trace: None,
                 // Corpus replay renders stored wikitext, never a live request.
@@ -1039,6 +1079,7 @@ impl RenderService {
             current_site_id,
             current_category_id,
             current_page_id,
+            viewer_user_id,
             max_include_expansions,
             trace,
             url,
@@ -1146,6 +1187,7 @@ impl RenderService {
             SecondaryRuntimeModuleExpansionOptions {
                 current_site_id,
                 current_page_id,
+                viewer_user_id,
                 url,
                 trace,
             },
@@ -1452,6 +1494,7 @@ impl RenderService {
         let config = ctx.config();
         let RenderInnerOptions {
             render_context,
+            viewer_user_id,
             max_include_expansions,
             trace,
             persist_compiled_text,
@@ -1491,6 +1534,7 @@ impl RenderService {
                 current_site_id,
                 current_category_id,
                 current_page_id,
+                viewer_user_id,
                 max_include_expansions,
                 trace,
                 url,

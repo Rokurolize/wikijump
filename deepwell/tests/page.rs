@@ -2620,6 +2620,173 @@ async fn page_render_star_rate_module_consumes_body_and_substitutes_live_variabl
 }
 
 #[tokio::test]
+async fn listusers_module_matches_live_preview_and_runtime_viewer() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    set_test_user_name(&runner, SAMPLE_USER_ID, "ListUsers Person").await;
+
+    let preview_source = concat!(
+        "[[module ListUsers users=\".\"]]\n",
+        "**%%title%%** (//%%name%%//) #%%number%% UNKNOWN %%missing%%\n",
+        "[[/module]]\n",
+        "[[module ListUsers]]\n",
+        "OMIT %%title%%\n",
+        "[[/module]]",
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let anonymous_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ListUsers anonymous preview",
+            "wikitext": preview_source,
+        }),
+    );
+    assert!(
+        !anonymous_preview.body.contains("ListUsers Person")
+            && !anonymous_preview.body.contains("[[module ListUsers"),
+        "users=\".\" should render nothing for anonymous viewers:\n{}",
+        anonymous_preview.body,
+    );
+    assert!(
+        anonymous_preview.body.contains(
+            r#"<div class="error-block">Currently only users="." is implemented.</div>"#
+        ),
+        "omitted users should match live Wikidot's error block:\n{}",
+        anonymous_preview.body,
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(SAMPLE_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let authenticated_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ListUsers authenticated preview",
+            "wikitext": preview_source,
+        }),
+    );
+    assert!(
+        authenticated_preview
+            .body
+            .contains(r#"<p><strong>ListUsers Person</strong> (<em>listusers-person</em>) #-5 UNKNOWN %%missing%%</p>"#),
+        "authenticated users=\".\" should substitute the current viewer and leave unknown variables literal:\n{}",
+        authenticated_preview.body,
+    );
+    assert!(
+        authenticated_preview.body.contains(
+            r#"<div class="error-block">Currently only users="." is implemented.</div>"#
+        ),
+        "authenticated omitted users should still render the live error block:\n{}",
+        authenticated_preview.body,
+    );
+
+    let page_source = concat!(
+        "VIEW_START\n",
+        "[[module ListUsers users=\".\"]]\n",
+        "VIEW %%title%% %%name%% %%number%%\n",
+        "[[/module]]\n",
+        "VIEW_END",
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-listusers-viewer",
+        "Fixture ListUsers Viewer",
+        page_source,
+    )
+    .await;
+
+    let stored_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-listusers-viewer",
+        }),
+    )
+    .expect("ListUsers holder should exist");
+    assert!(
+        !stored_page
+            .compiled_body_html
+            .as_deref()
+            .unwrap_or_default()
+            .contains("VIEW ListUsers Person"),
+        "stored revision HTML must not bake in the editor identity:\n{:?}",
+        stored_page.compiled_body_html,
+    );
+
+    let sample_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: SAMPLE_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "ListUsers runtime viewer test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("sample session should be created");
+
+    let anonymous_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-listusers-viewer", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let anonymous_body = match anonymous_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous ListUsers view, got {other:?}"),
+    };
+    assert!(
+        !anonymous_body.contains("VIEW ListUsers Person")
+            && !anonymous_body.contains("[[module ListUsers"),
+        "anonymous page view should render an empty users=\".\" module:\n{anonymous_body}",
+    );
+
+    let authenticated_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": sample_session_token,
+            "route": {"slug": "fixture-listusers-viewer", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let authenticated_body = match authenticated_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found authenticated ListUsers view, got {other:?}"),
+    };
+    assert!(
+        authenticated_body.contains("<p>VIEW ListUsers Person listusers-person -5</p>"),
+        "authenticated page view should render ListUsers for the request viewer:\n{authenticated_body}",
+    );
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

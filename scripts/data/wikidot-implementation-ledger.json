@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "6395572d4927ae79c65170ca616f54c507ee22d735e13daa3838aac0759efae4",
+  "catalog_sha256": "b04d623a33fc810f6efa737b108612567ce1b50431b7fe5d95c7251ad482fbae",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -1081,14 +1081,32 @@
       ]
     },
     "module-listusers": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/module/module-listusers.md"
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule anonymous and authenticated account-A probes for ListUsers users=\".\", omitted users, empty users, non-dot users, empty body, wiki syntax body, and unknown variables.",
+        "Deepwell wikidot_page_preview renders ListUsers from caller viewer identity rather than stored page state.",
+        "Deepwell page_view runtime rendering evaluates ListUsers against the active viewer session and keeps anonymous page views empty."
       ],
-      "live_oracle_evidence": [],
+      "tests": [
+        "deepwell/tests/page.rs::listusers_module_matches_live_preview_and_runtime_viewer",
+        "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/render_options.rs",
+        "deepwell/src/services/render/page_preview.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/view/module_render.rs",
+        "deepwell/src/services/view/service.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-listusers.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/listusers-module-live-preview.json"
+      ],
       "unresolved_ambiguities_or_blockers": []
     },
     "module-loginstatus": {

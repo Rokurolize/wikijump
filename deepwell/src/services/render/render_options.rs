@@ -39,6 +39,7 @@ pub(super) struct RenderContext {
 #[derive(Clone, Copy, Debug)]
 pub(super) struct RenderInnerOptions<'a> {
     pub(super) render_context: RenderContext,
+    pub(super) viewer_user_id: Option<i64>,
     pub(super) max_include_expansions: usize,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) persist_compiled_text: bool,
@@ -53,6 +54,7 @@ pub(super) struct RenderInnerOptions<'a> {
 #[derive(Clone, Copy, Debug)]
 pub(super) struct RenderPageOptions<'a> {
     pub(super) max_include_expansions: usize,
+    pub(super) viewer_user_id: Option<i64>,
 
     /// The Wikidot URL path arguments this request carried.
     pub(super) url: UrlArguments<'a>,
@@ -65,6 +67,7 @@ pub(super) struct RenderExpansionOptions<'a> {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_category_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
+    pub(super) viewer_user_id: Option<i64>,
     pub(super) max_include_expansions: usize,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) url: UrlArguments<'a>,

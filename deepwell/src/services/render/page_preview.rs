@@ -59,6 +59,7 @@ impl RenderService {
             &settings,
             RenderInnerOptions {
                 render_context: RenderContext::page_preview(site_id),
+                viewer_user_id: ctx.request().user_id().ok(),
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 trace: None,
                 persist_compiled_text: false,

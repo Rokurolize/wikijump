@@ -1000,6 +1000,39 @@
           ]
         }
       ]
+    },
+    {
+      "id": "listusers-live-current-viewer-output",
+      "title": "ListUsers renders only the current authenticated viewer",
+      "feature_ids": [
+        "module-listusers"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-07-29",
+      "analysis": "The ListUsers documentation says the current implementation outputs a block for the current logged user and outputs nothing for anonymous users, but omits unsupported users values, empty body handling, wiki syntax parsing, and unknown variable behavior. Anonymous and account-A PagePreviewModule probes against live Wikidot establish the exact current-viewer contract.",
+      "normative_behavior": [
+        "ListUsers users=\".\" renders no output for anonymous viewers.",
+        "For an authenticated viewer, users=\".\" substitutes %%number%% with the viewer user ID, %%title%% with the viewer display title/name, and %%name%% with the viewer unix name.",
+        "The substituted ListUsers body is parsed as wiki syntax after variable substitution.",
+        "An empty ListUsers body renders empty output.",
+        "Unknown ListUsers template variables remain literal.",
+        "An omitted users argument, users=\"\", or a users value other than . renders div.error-block with the text Currently only users=\".\" is implemented."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listusers-module-live-preview.json",
+          "sha256": "f20910497a983e6cb4e6be7688420d028bfbba7f16a514ed0eb263f538e37ffe",
+          "case_ids": [
+            "users-dot-variables",
+            "users-dot-wiki-body",
+            "users-dot-empty-body",
+            "users-omitted",
+            "users-empty",
+            "users-other",
+            "users-dot-unknown-variable"
+          ]
+        }
+      ]
     }
   ]
 }

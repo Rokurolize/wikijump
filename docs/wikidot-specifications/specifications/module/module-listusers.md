@@ -20,6 +20,32 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### ListUsers renders only the current authenticated viewer
+
+- Observation ID: `listusers-live-current-viewer-output`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-29`
+- Analysis: The ListUsers documentation says the current implementation outputs a block for the current logged user and outputs nothing for anonymous users, but omits unsupported users values, empty body handling, wiki syntax parsing, and unknown variable behavior. Anonymous and account-A PagePreviewModule probes against live Wikidot establish the exact current-viewer contract.
+
+Normative behavior:
+
+- ListUsers users="." renders no output for anonymous viewers.
+- For an authenticated viewer, users="." substitutes %%number%% with the viewer user ID, %%title%% with the viewer display title/name, and %%name%% with the viewer unix name.
+- The substituted ListUsers body is parsed as wiki syntax after variable substitution.
+- An empty ListUsers body renders empty output.
+- Unknown ListUsers template variables remain literal.
+- An omitted users argument, users="", or a users value other than . renders div.error-block with the text Currently only users="." is implemented.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listusers-module-live-preview.json` (SHA-256 `f20910497a983e6cb4e6be7688420d028bfbba7f16a514ed0eb263f538e37ffe`), cases: `users-dot-variables`, `users-dot-wiki-body`, `users-dot-empty-body`, `users-omitted`, `users-empty`, `users-other`, `users-dot-unknown-variable`
+
+
 
 ## Suggested public TDD seams
 
