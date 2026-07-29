@@ -2244,6 +2244,41 @@ fn clone_html_is_registered_only_by_its_runtime_producer() {
 }
 
 #[test]
+fn registry_module_expansion_does_not_match_name_prefixes() {
+    let source = concat!(
+        "[[module MembershipByPassword]] ",
+        "[[module MembershipEmailInvitation]] ",
+        "[[module NewPageExtra]] ",
+        "[[module Joinery]] ",
+        "[[module Members]]",
+    );
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut fragments = CompatHtmlFragments::new(source);
+    let protected = RenderService::expand_registry_modules_with_registry(
+        source.to_owned(),
+        &settings,
+        &mut fragments,
+    );
+
+    assert_eq!(
+        protected
+            .matches(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
+            .count(),
+        1,
+        "only the exact Members module should be expanded:\n{protected}",
+    );
+    assert!(protected.contains("[[module MembershipByPassword]]"));
+    assert!(protected.contains("[[module MembershipEmailInvitation]]"));
+    assert!(protected.contains("[[module NewPageExtra]]"));
+    assert!(protected.contains("[[module Joinery]]"));
+
+    let restored = fragments.restore(&protected);
+    assert!(restored.contains("membership/MembersListModule"));
+    assert!(!restored.contains("[[module Members]]"));
+    assert!(!restored.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+}
+
+#[test]
 fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences() {
     let modules = concat!(
         "[[module Members]] ",

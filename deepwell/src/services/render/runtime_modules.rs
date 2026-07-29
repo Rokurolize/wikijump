@@ -67,6 +67,39 @@ const LISTDRAFTS_EMPTY_HTML: &str = r#"<div class="list-drafts-box">
             </div>"#;
 const SIMPLETODO_MISSING_ID_ERROR: &str = "The SimpleTodo module must have an id.";
 const SENDINVITATIONS_DISABLED_ERROR_HTML: &str = r#"<div class="error-block">Inviting users has been disabled due to severe abuse. Admins can still send email invitations via <a href="/_admin">site admin dashboard</a>.</div>"#;
+const ANONYMOUS_NOTIFICATIONS_UNSUBSCRIBE_INVALID_TOKEN_HTML: &str =
+    r#"<div class="error-block">Invalid indentification token.</div>"#;
+const USERINFO_NO_USER_HTML: &str =
+    r#"<div class="error-block">No user specified.</div>"#;
+const SEARCHUSERS_DISABLED_HTML: &str = r#"<div class="error-block">User search has been (temporarily) disabled. Sorry!</div>"#;
+const MEMBERSHIP_EMAIL_INVITATION_MISSING_HTML: &str = concat!(
+    r#"<div id="membership-email-invitation-box">"#,
+    "\n\t\n\t\t\t<p>\n\t\t\t",
+    "Sorry, the invitation could not be found. It might have been canceled by the sender, aleady",
+    "\n\t\t\tused by someone (you?) or the URL link that you were supposed to copy",
+    "\n\t\t\tfrom the invitation email might be corrupted somehow.",
+    "\n\t\t</p>\t\n\t</div>",
+);
+const WHOINVITED_FORM_HTML: &str = concat!(
+    r#"<form action="dummy" id="who-invited-form" onsubmit="WIKIDOT.modules.WhoInvitedModule.listeners.lookUp(event)">"#,
+    "\n\t",
+    r#"<table class="form">"#,
+    "\n\t\t<tr>\n\t\t\t<td>\n\t\t\t\tWho invited this guy?\t\t\t</td>\n\t\t\t<td>\n\t\t\t\t",
+    r#"<div class="autocomplete-container" style="width: 20em; padding-top: 3px;">"#,
+    "\n\t\t\t\t\t\t",
+    r#"<input type="text" id="user-lookup" size="30" class="autocomplete-input text"/>"#,
+    "\n\t\t\t\t\t\t",
+    r#"<div id="user-lookup-list" class="autocomplete-list"></div>"#,
+    "\n\t\t\t\t</div>\n\t\t\t\t",
+    r#"<div class="sub">"#,
+    "\n\t\t\t\t\tType name of the user\t\t\t\t</div>\n\t\t\t</td>\n\t\t</tr>\n\t</table>\n\t",
+    r#"<div class="buttons">"#,
+    "\n\t\t",
+    r#"<input type="submit" value="look up"/>"#,
+    "\n\t</div>\n</form>\n\n",
+    r#"<div id="who-invited-results-box">"#,
+    "\n\n</div>",
+);
 
 static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListUsers(?P<head>(?:[^\]"]+|"[^"]*")*)\]\](?P<body>.*?)\[\[/module\]\]"#)
@@ -83,6 +116,12 @@ static SIMPLETODO_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 static SENDINVITATIONS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+SendInvitations\b(?:[^\]"]+|"[^"]*")*\]\]"#)
         .expect("SendInvitations module expression is valid")
+});
+static STATIC_ACCOUNT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?is)\[\[module\s+(?P<name>AnonymousNotificationsUnsubscribe|UserInfo|SearchUsers|MembershipEmailInvitation|WhoInvited)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
+    )
+    .expect("static account module expression is valid")
 });
 static AD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+Ad\b(?:[^\]"]+|"[^"]*")*\]\]"#)
@@ -1613,6 +1652,65 @@ impl RenderService {
         output
     }
 
+    fn render_static_account_module(name: &str) -> &'static str {
+        if name.eq_ignore_ascii_case("AnonymousNotificationsUnsubscribe") {
+            ANONYMOUS_NOTIFICATIONS_UNSUBSCRIBE_INVALID_TOKEN_HTML
+        } else if name.eq_ignore_ascii_case("UserInfo") {
+            USERINFO_NO_USER_HTML
+        } else if name.eq_ignore_ascii_case("SearchUsers") {
+            SEARCHUSERS_DISABLED_HTML
+        } else if name.eq_ignore_ascii_case("MembershipEmailInvitation") {
+            MEMBERSHIP_EMAIL_INVITATION_MISSING_HTML
+        } else {
+            debug_assert!(name.eq_ignore_ascii_case("WhoInvited"));
+            WHOINVITED_FORM_HTML
+        }
+    }
+
+    fn expand_static_account_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
+        if !settings.enable_page_syntax
+            || !STATIC_ACCOUNT_MODULE_REGEX.is_match(&wikitext)
+        {
+            return wikitext;
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in STATIC_ACCOUNT_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a static account module capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            if !head.trim().is_empty() {
+                continue;
+            }
+            let name = captures
+                .name("name")
+                .expect("a static account module capture always has a name")
+                .as_str();
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(
+                &compat_html
+                    .push_html(Self::render_static_account_module(name).to_owned()),
+            );
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
     fn expand_ad_modules(wikitext: String, settings: &WikitextSettings) -> String {
         if !settings.enable_page_syntax
             || (!AD_MODULE_REGEX.is_match(&wikitext)
@@ -1684,6 +1782,7 @@ impl RenderService {
         wikitext = Self::expand_list_drafts_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
+        wikitext = Self::expand_static_account_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_ad_modules(wikitext, settings);
         if PAGECALENDAR_MODULE_REGEX.is_match(&wikitext) {
             wikitext = {

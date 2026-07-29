@@ -3020,6 +3020,161 @@ async fn adsenseunit_module_matches_live_deprecated_empty_output() {
 }
 
 #[tokio::test]
+async fn static_account_modules_match_live_preview_and_page_view_basics() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = concat!(
+        "ANONUN_START\n",
+        "[[module AnonymousNotificationsUnsubscribe]]\n",
+        "ANONUN_END\n",
+        "USERINFO_START\n",
+        "[[module UserInfo]]\n",
+        "USERINFO_END\n",
+        "SEARCHUSERS_START\n",
+        "[[module SearchUsers]]\n",
+        "SEARCHUSERS_END\n",
+        "MBE_START\n",
+        "[[module MembershipEmailInvitation]]\n",
+        "MBE_END\n",
+        "WHO_START\n",
+        "[[module WhoInvited]]\n",
+        "WHO_END",
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Static account modules live basics",
+            "wikitext": source,
+        }),
+    );
+
+    for (label, html) in [("preview", preview.body.as_str())] {
+        assert!(
+            html.contains(
+                r#"<div class="error-block">Invalid indentification token.</div>"#
+            ),
+            "{label} should render AnonymousNotificationsUnsubscribe's live no-token error:\n{html}",
+        );
+        assert!(
+            html.contains(r#"<div class="error-block">No user specified.</div>"#),
+            "{label} should render UserInfo's live no-user error:\n{html}",
+        );
+        assert!(
+            html.contains(
+                r#"<div class="error-block">User search has been (temporarily) disabled. Sorry!</div>"#
+            ),
+            "{label} should render SearchUsers' live disabled notice:\n{html}",
+        );
+        assert!(
+            html.contains(r#"<div id="membership-email-invitation-box">"#)
+                && html.contains("Sorry, the invitation could not be found.")
+                && html.contains("aleady\n\t\t\tused by someone"),
+            "{label} should render MembershipEmailInvitation's live missing invitation box:\n{html}",
+        );
+        assert!(
+            html.contains(r#"<form action="dummy" id="who-invited-form" onsubmit="WIKIDOT.modules.WhoInvitedModule.listeners.lookUp(event)">"#)
+                && html.contains(r#"<input type="text" id="user-lookup" size="30" class="autocomplete-input text"/>"#)
+                && html.contains(r#"<div id="who-invited-results-box">"#),
+            "{label} should render WhoInvited's live lookup form shell:\n{html}",
+        );
+        for module_name in [
+            "AnonymousNotificationsUnsubscribe",
+            "UserInfo",
+            "SearchUsers",
+            "MembershipEmailInvitation",
+            "WhoInvited",
+        ] {
+            assert!(
+                !html.contains(&format!("[[module {module_name}")),
+                "{label} should consume {module_name} rather than leaking raw source:\n{html}",
+            );
+        }
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-static-account-modules",
+        "Fixture Static Account Modules",
+        source,
+    )
+    .await;
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-static-account-modules", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found static account module view, got {other:?}"),
+    };
+
+    assert!(
+        body.contains("ANONUN_START")
+            && body.contains(
+                r#"<div class="error-block">Invalid indentification token.</div>"#
+            )
+            && body.contains("ANONUN_END"),
+        "saved page view should preserve AnonymousNotificationsUnsubscribe markers around the live error:\n{body}",
+    );
+    assert!(
+        body.contains("USERINFO_START")
+            && body.contains(r#"<div class="error-block">No user specified.</div>"#)
+            && body.contains("USERINFO_END"),
+        "saved page view should preserve UserInfo markers around the live error:\n{body}",
+    );
+    assert!(
+        body.contains("SEARCHUSERS_START")
+            && body.contains(
+                r#"<div class="error-block">User search has been (temporarily) disabled. Sorry!</div>"#
+            )
+            && body.contains("SEARCHUSERS_END"),
+        "saved page view should preserve SearchUsers markers around the live disabled notice:\n{body}",
+    );
+    assert!(
+        body.contains("MBE_START")
+            && body.contains(r#"<div id="membership-email-invitation-box">"#)
+            && body.contains("Sorry, the invitation could not be found.")
+            && body.contains("MBE_END"),
+        "saved page view should preserve MembershipEmailInvitation markers around the live missing invitation box:\n{body}",
+    );
+    assert!(
+        body.contains("WHO_START")
+            && body.contains(r#"<form action="dummy" id="who-invited-form" onsubmit="WIKIDOT.modules.WhoInvitedModule.listeners.lookUp(event)">"#)
+            && body.contains(r#"<div id="who-invited-results-box">"#)
+            && body.contains("WHO_END"),
+        "saved page view should preserve WhoInvited markers around the live form:\n{body}",
+    );
+    assert!(
+        !body.contains("[[module AnonymousNotificationsUnsubscribe")
+            && !body.contains("[[module UserInfo")
+            && !body.contains("[[module SearchUsers")
+            && !body.contains("[[module MembershipEmailInvitation")
+            && !body.contains("[[module WhoInvited"),
+        "saved page view should consume all covered modules:\n{body}",
+    );
+}
+
+#[tokio::test]
 async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
