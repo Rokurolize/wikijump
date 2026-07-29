@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 31,
+    "observation_count": 32,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -2807,7 +2807,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "simpletodo-sendinvitations-live-preview-basics"
+      ]
     },
     {
       "id": "module-simpletodo",
@@ -2831,7 +2833,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "simpletodo-sendinvitations-live-preview-basics"
+      ]
     },
     {
       "id": "module-sitechanges",
