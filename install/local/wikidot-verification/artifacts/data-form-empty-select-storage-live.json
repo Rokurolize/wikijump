@@ -1,0 +1,51 @@
+{
+  "schema": "wikidot.live.data-form.empty-select-storage.v1",
+  "observed_at": "2026-07-29",
+  "site": "sandbox-for-codex",
+  "actor": "authenticated account A through an isolated Codex-owned Chrome profile",
+  "credential_material": "none; credentials and session material stayed in the local environment and isolated browser profile",
+  "run_owned_pages": {
+    "run_id": "1785322890",
+    "template": "df-controls-1785322890:_template",
+    "target": "df-controls-1785322890:target",
+    "cleanup_verified": true,
+    "remaining": []
+  },
+  "case": {
+    "case_id": "empty-and-unselected-select-storage",
+    "route": "/df-controls-1785322890:target/edit/true",
+    "initial_controls": [
+      {
+        "field": "select_one",
+        "control": "radio",
+        "control_count": 1,
+        "selected": null
+      },
+      {
+        "field": "select_two",
+        "control": "radio",
+        "control_count": 2,
+        "selected": null
+      },
+      {
+        "field": "select_five",
+        "control": "select",
+        "control_count": 1,
+        "selected": "a"
+      }
+    ],
+    "result": {
+      "page_created": true,
+      "final_route": "/df-controls-1785322890:target",
+      "saved_source": "missing_values: null\nempty_values: null\nselect_one: null\nselect_two: null\nselect_five: a",
+      "rendered_text": "Missing values\t\nEmpty values\t\nSelect one\t\nSelect two\t\nSelect five\tAlpha",
+      "saved_tags": [],
+      "saved_parent": null
+    }
+  },
+  "routes": [
+    "Authenticated wikidot.py high-level run-owned template creation, mutation, exact source readback, deletion, and absence verification",
+    "Authenticated isolated Chrome DevTools Protocol profile for direct edit-route loading, exact control state, save navigation, and rendered output",
+    "The isolated Codex-owned Chrome profile was stopped and removed after cleanup"
+  ]
+}

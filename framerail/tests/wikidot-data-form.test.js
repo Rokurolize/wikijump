@@ -38,6 +38,60 @@ test("initial data-form state follows template order and applies select defaults
   })
 })
 
+test("a five-option select without a default starts at its first option", () => {
+  const selectDefinition = {
+    default_layout: true,
+    fields: [
+      {
+        name: "choice",
+        label: "Choice",
+        hint: "",
+        field_type: "select",
+        values: ["a", "b", "c", "d", "e"].map((value) => ({
+          value,
+          label: value.toUpperCase()
+        })),
+        default_value: null
+      }
+    ]
+  }
+
+  assert.deepEqual(buildWikidotDataFormState(selectDefinition, {}), {
+    choice: "a"
+  })
+})
+
+test("empty and unselected select values serialize as Wikidot null scalars", () => {
+  const selectDefinition = {
+    default_layout: true,
+    fields: [
+      {
+        name: "missing",
+        label: "Missing",
+        hint: "",
+        field_type: "select",
+        values: [],
+        default_value: null
+      },
+      {
+        name: "choice",
+        label: "Choice",
+        hint: "",
+        field_type: "select",
+        values: [{ value: "a", label: "Alpha" }],
+        default_value: null
+      }
+    ]
+  }
+
+  const state = buildWikidotDataFormState(selectDefinition, {})
+  assert.deepEqual(state, { missing: "", choice: "" })
+  assert.equal(
+    serializeWikidotDataFormSource(selectDefinition, state),
+    "missing: null\nchoice: null"
+  )
+})
+
 test("saved data-form source overrides defaults and round-trips through Wikidot source", () => {
   const state = buildWikidotDataFormState(definition, {
     name: "Probe Name",
@@ -50,6 +104,71 @@ test("saved data-form source overrides defaults and round-trips through Wikidot 
   assert.equal(
     serializeWikidotDataFormSource(definition, state),
     "name: 'Probe Name'\nchoice: a"
+  )
+})
+
+test("data-form source uses Wikidot text and select scalar encoding", () => {
+  const scalarDefinition = {
+    default_layout: true,
+    fields: [
+      {
+        name: "plain",
+        label: "Plain",
+        hint: "",
+        field_type: "text",
+        values: [],
+        default_value: null
+      },
+      {
+        name: "multi",
+        label: "Multi",
+        hint: "",
+        field_type: "text",
+        values: [],
+        default_value: null
+      },
+      {
+        name: "matched",
+        label: "Matched",
+        hint: "",
+        field_type: "text",
+        values: [],
+        default_value: null
+      },
+      {
+        name: "select_word",
+        label: "Word",
+        hint: "",
+        field_type: "select",
+        values: [{ value: "done", label: "Done" }],
+        default_value: null
+      },
+      {
+        name: "select_number",
+        label: "Number",
+        hint: "",
+        field_type: "select",
+        values: [{ value: "2", label: "Two" }],
+        default_value: null
+      }
+    ]
+  }
+
+  assert.equal(
+    serializeWikidotDataFormSource(scalarDefinition, {
+      plain: `O'Brien: # [x] \\ slash "quote"`,
+      multi: `first "quoted"\nsecond 'single' \\ end`,
+      matched: "ok-42",
+      select_word: "done",
+      select_number: "2"
+    }),
+    [
+      `plain: 'O''Brien: # [x] \\ slash "quote"'`,
+      `multi: "first \\"quoted\\"\\nsecond 'single' \\\\ end"`,
+      "matched: ok-42",
+      "select_word: done",
+      "select_number: '2'"
+    ].join("\n")
   )
 })
 

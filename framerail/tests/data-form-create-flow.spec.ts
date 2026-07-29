@@ -68,6 +68,260 @@ test("data-form create flow renders controls and stores Wikidot source", async (
     })
 })
 
+test("data-form text and select controls match live validation and storage", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-controls-flow:example/edit/true")
+
+  const plain = page.locator("input[name='field-plain']")
+  await expect(plain).toHaveAttribute("size", "1")
+  await expect(plain).toHaveValue("**bold** #hash")
+  const multi = page.locator("textarea[name='field-multi']")
+  await expect(multi).toHaveAttribute("rows", "3")
+  await expect(multi).toHaveAttribute("cols", "50")
+  const matched = page.locator("input[name='field-matched']")
+  await expect(matched).toHaveAttribute("size", "40")
+  await expect(matched).toHaveAttribute("placeholder", "enter a color like \\#468259")
+  await expect(page.locator("input[name='field-select_one']")).toHaveCount(1)
+  await expect(page.locator("input[name='field-select_one']")).not.toBeChecked()
+  await expect(page.locator("input[name='field-select_four']")).toHaveCount(4)
+  await expect(page.locator("input[name='field-select_four'][value='c']")).toBeChecked()
+  const selectFive = page.locator("select[name='field-select_five']")
+  await expect(selectFive).toHaveValue("4")
+  await expect(selectFive.locator("option")).toHaveText([
+    "Zero",
+    "One",
+    "Two",
+    "Three",
+    "Four"
+  ])
+
+  await plain.fill(`O'Brien: # [x] \\ slash "quote"`)
+  await multi.fill(`first "quoted"\nsecond 'single' \\ end`)
+  await matched.fill("bad")
+  await page.locator("input[name='field-select_one'][value='a']").check()
+  await selectFive.selectOption("2")
+  await page.locator("#edit-save-button").click()
+
+  const matchedGroup = matched.locator(
+    "xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' form-group ')][1]"
+  )
+  await expect(matchedGroup).toHaveClass(/(?:^|\s)has-error(?:\s|$)/u)
+  await expect(matched.locator("xpath=..")).toHaveClass(/(?:^|\s)form-error(?:\s|$)/u)
+  await expect(matchedGroup.locator(".form-message")).toHaveClass(
+    /(?:^|\s)text-danger(?:\s|$)/u
+  )
+  await expect(matchedGroup.locator(".form-message")).toHaveText(
+    "Use ok- followed by digits"
+  )
+  await expect(plain).toHaveValue(`O'Brien: # [x] \\ slash "quote"`)
+  await expect(multi).toHaveValue(`first "quoted"\nsecond 'single' \\ end`)
+  const writesAfterInvalid = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writesAfterInvalid.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-controls-flow:example"
+    )
+  ).toBeUndefined()
+
+  await matched.fill("ok-42")
+  await page.locator("#edit-save-button").click()
+  await expect
+    .poll(async () => {
+      const writes = await request
+        .get(`${FIXTURE_URL}/last-page-write-requests`)
+        .then((response) => response.json())
+      return writes.pageCreate.find(
+        (entry: { params: { slug?: string } }) =>
+          entry.params.slug === "data-form-controls-flow:example"
+      )
+    })
+    .toMatchObject({
+      params: {
+        slug: "data-form-controls-flow:example",
+        wikitext: [
+          "plain: 'O''Brien: # [x] \\ slash \"quote\"'",
+          'multi: "first \\"quoted\\"\\nsecond \'single\' \\\\ end"',
+          "matched: ok-42",
+          "select_one: a",
+          "select_four: c",
+          "select_five: '2'"
+        ].join("\n"),
+        tags: []
+      }
+    })
+
+  await page.goto("/data-form-controls-flow:example/edit")
+  await expect(page.locator("input[name='field-plain']")).toHaveValue(
+    `O'Brien: # [x] \\ slash "quote"`
+  )
+  await expect(page.locator("textarea[name='field-multi']")).toHaveValue(
+    `first "quoted"\nsecond 'single' \\ end`
+  )
+  await expect(page.locator("input[name='field-matched']")).toHaveValue("ok-42")
+  await expect(page.locator("input[name='field-select_one'][value='a']")).toBeChecked()
+  await expect(page.locator("input[name='field-select_four'][value='c']")).toBeChecked()
+  await expect(page.locator("select[name='field-select_five']")).toHaveValue("2")
+})
+
+test("empty and unselected select fields save and restore as Wikidot null", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-empty-select-flow:example/edit/true")
+
+  await expect(page.locator("[name='field-missing_values']")).toHaveCount(0)
+  await expect(page.locator("[name='field-empty_values']")).toHaveCount(0)
+  await expect(page.locator("input[name='field-select_one']")).not.toBeChecked()
+  const selectTwo = page.locator("input[name='field-select_two']")
+  await expect(selectTwo).toHaveCount(2)
+  expect(
+    await selectTwo.evaluateAll((controls) =>
+      controls.every((control) => !control.checked)
+    )
+  ).toBe(true)
+  await expect(page.locator("select[name='field-select_five']")).toHaveValue("a")
+  await page.locator("#edit-save-button").click()
+
+  await expect
+    .poll(async () => {
+      const writes = await request
+        .get(`${FIXTURE_URL}/last-page-write-requests`)
+        .then((response) => response.json())
+      return writes.pageCreate.find(
+        (entry: { params: { slug?: string } }) =>
+          entry.params.slug === "data-form-empty-select-flow:example"
+      )
+    })
+    .toMatchObject({
+      params: {
+        wikitext: [
+          "missing_values: null",
+          "empty_values: null",
+          "select_one: null",
+          "select_two: null",
+          "select_five: a"
+        ].join("\n")
+      }
+    })
+
+  await page.goto("/data-form-empty-select-flow:example/edit")
+  await expect(page.locator("[name='field-missing_values']")).toHaveCount(0)
+  await expect(page.locator("[name='field-empty_values']")).toHaveCount(0)
+  await expect(page.locator("input[name='field-select_one']")).not.toBeChecked()
+  await expect(selectTwo).toHaveCount(2)
+  expect(
+    await selectTwo.evaluateAll((controls) =>
+      controls.every((control) => !control.checked)
+    )
+  ).toBe(true)
+  await expect(page.locator("select[name='field-select_five']")).toHaveValue("a")
+})
+
+test("pathological data-form match patterns fail closed without blocking the editor", async ({
+  page,
+  request
+}) => {
+  test.setTimeout(15_000)
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-regex-budget-flow:example/edit/true")
+
+  const matched = page.locator("input[name='field-matched']")
+  const matchedTwo = page.locator("input[name='field-matched_two']")
+  await matched.fill(`${"a".repeat(28)}!`)
+  await matchedTwo.fill(`${"a".repeat(28)}!`)
+  const validationStartedAt = Date.now()
+  await page.locator("#edit-save-button").click()
+  await expect(page.locator(".form-message")).toHaveText([
+    "Wikijump could not safely evaluate this field.",
+    "Wikijump could not safely evaluate this field."
+  ])
+  expect(Date.now() - validationStartedAt).toBeLessThan(450)
+
+  await page.locator("#edit-page-title").fill("Editor remains responsive")
+  await expect(page.locator("#edit-page-title")).toHaveValue("Editor remains responsive")
+  const writes = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writes.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-regex-budget-flow:example"
+    )
+  ).toBeUndefined()
+})
+
+test("a new data-form submission cancels stale validation and saves its own snapshot", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-regex-budget-flow:example/edit/true")
+
+  const matched = page.locator("input[name='field-matched']")
+  const matchedTwo = page.locator("input[name='field-matched_two']")
+  await page.locator("#edit-page-title").fill("Stale snapshot")
+  await matched.fill(`${"a".repeat(28)}!`)
+  await matchedTwo.fill(`${"a".repeat(28)}!`)
+  await page.locator("#edit-save-button").click()
+
+  await page.locator("#edit-page-title").fill("Current snapshot")
+  await matched.fill("a")
+  await matchedTwo.fill("aa")
+  await page.locator("#edit-save-button").click()
+
+  await expect
+    .poll(async () => {
+      const writes = await request
+        .get(`${FIXTURE_URL}/last-page-write-requests`)
+        .then((response) => response.json())
+      return writes.pageCreate.find(
+        (entry: { params: { slug?: string } }) =>
+          entry.params.slug === "data-form-regex-budget-flow:example"
+      )
+    })
+    .toMatchObject({
+      params: {
+        title: "Current snapshot",
+        wikitext: "matched: a\nmatched_two: aa"
+      }
+    })
+})
+
+test("invalid data-form match patterns use a host-owned diagnostic", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-invalid-regex-flow:example/edit/true")
+
+  await page.locator("input[name='field-matched']").fill("anything")
+  await page.locator("#edit-save-button").click()
+  await expect(page.locator(".form-message")).toHaveText(
+    "Wikijump could not evaluate this field's validation pattern."
+  )
+
+  const writes = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writes.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-invalid-regex-flow:example"
+    )
+  ).toBeUndefined()
+})
+
 test("data-form edit flow restores and updates saved field values", async ({
   page,
   request

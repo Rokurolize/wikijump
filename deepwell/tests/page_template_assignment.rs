@@ -705,3 +705,467 @@ async fn page_view_exposes_category_data_form_definition_in_template_order() {
         other => panic!("non-bare routes must preserve route rendering: {other:?}"),
     }
 }
+
+#[tokio::test]
+async fn page_view_exposes_live_text_and_select_control_contract() {
+    const CATEGORY: &str = "data-form-control-contract";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  plain:\n",
+        "    label: Plain text\n",
+        "    width: 0\n",
+        "    default: \"**bold** #hash\"\n",
+        "  multi:\n",
+        "    label: Multi line\n",
+        "    type: text\n",
+        "    width: 50\n",
+        "    height: 3\n",
+        "  matched:\n",
+        "    label: Matched text\n",
+        "    type: text\n",
+        "    hint: enter a color like \\#468259\n",
+        "    match: /^ok-[0-9]+$/\n",
+        "    match-error: Use ok- followed by digits\n",
+        "  missing_values:\n",
+        "    label: Missing values\n",
+        "    type: select\n",
+        "  empty_values:\n",
+        "    label: Empty values\n",
+        "    type: select\n",
+        "    values:\n",
+        "  select_one:\n",
+        "    label: Select one\n",
+        "    type: select\n",
+        "    values:\n",
+        "      a: Alpha\n",
+        "  select_five:\n",
+        "    label: Select five\n",
+        "    type: select\n",
+        "    values:\n",
+        "      0: Zero\n",
+        "      1: One\n",
+        "      2: Two\n",
+        "      3: Three\n",
+        "      4: Four\n",
+        "    default: 4\n",
+        "  reserved:\n",
+        "    label: Reserved labels\n",
+        "    type: select\n",
+        "    values:\n",
+        "      no_value: No\n",
+        "      yes_value: Yes\n",
+        "      false_value: False\n",
+        "      true_value: True\n",
+        "  quoted:\n",
+        "    label: Quoted labels\n",
+        "    type: select\n",
+        "    values:\n",
+        "      no_value: \"No\"\n",
+        "      yes_value: \"Yes\"\n",
+        "      false_value: \"False\"\n",
+        "      true_value: \"True\"\n",
+        "[[/form]]",
+    );
+    const SAVED_SOURCE: &str = r#"plain: 'O''Brien: # [x] \ slash "quote"'
+multi: "first \"quoted\"\nsecond 'single' \\ end"
+matched: ok-42
+missing_values: null
+empty_values: null
+select_one: a
+select_five: '2'
+reserved: no_value
+quoted: false_value"#;
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell data-form text/select controls test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template = create_page(
+        &mut runner,
+        site_id,
+        "data-form-control-contract:_template",
+        TEMPLATE_SOURCE,
+    )
+    .await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form target category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-control-contract-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let definition = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {
+                "slug": "data-form-control-contract:new",
+                "extra": "/edit/true"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => data_form.definition,
+        other => {
+            panic!("expected live-backed data-form control definition, got {other:?}")
+        }
+    };
+
+    assert_eq!(
+        definition
+            .fields
+            .iter()
+            .map(|field| field.name.as_str())
+            .collect::<Vec<_>>(),
+        [
+            "plain",
+            "multi",
+            "matched",
+            "missing_values",
+            "empty_values",
+            "select_one",
+            "select_five",
+            "reserved",
+            "quoted",
+        ],
+        "select fields without usable values stay in storage order",
+    );
+    let plain = definition.field("plain").expect("plain field");
+    assert_eq!(plain.field_type.as_deref(), Some("text"));
+    assert_eq!(plain.width, 1);
+    assert_eq!(plain.height, 1);
+    assert_eq!(plain.default_value.as_deref(), Some("**bold** #hash"));
+    let multi = definition.field("multi").expect("multiline field");
+    assert_eq!(multi.width, 50);
+    assert_eq!(multi.height, 3);
+    let matched = definition.field("matched").expect("matched field");
+    assert_eq!(matched.width, 40);
+    assert_eq!(matched.height, 1);
+    assert_eq!(matched.hint, "enter a color like \\#468259");
+    assert_eq!(matched.match_pattern.as_deref(), Some("/^ok-[0-9]+$/"));
+    assert_eq!(
+        matched.match_error.as_deref(),
+        Some("Use ok- followed by digits"),
+    );
+    assert_eq!(
+        definition
+            .field("select_one")
+            .expect("one-value select")
+            .values
+            .len(),
+        1,
+    );
+    assert_eq!(
+        definition
+            .field("select_five")
+            .expect("five-value select")
+            .values
+            .len(),
+        5,
+    );
+    assert_eq!(
+        definition
+            .field("reserved")
+            .expect("unquoted reserved labels")
+            .values
+            .iter()
+            .map(|value| value.label.as_str())
+            .collect::<Vec<_>>(),
+        ["No", "Yes"],
+    );
+    assert_eq!(
+        definition
+            .field("quoted")
+            .expect("quoted reserved labels")
+            .values
+            .iter()
+            .map(|value| value.label.as_str())
+            .collect::<Vec<_>>(),
+        ["No", "Yes", "False", "True"],
+    );
+
+    create_page(
+        &mut runner,
+        site_id,
+        "data-form-control-contract:saved",
+        SAVED_SOURCE,
+    )
+    .await;
+    let editor = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {
+                "slug": "data-form-control-contract:saved",
+                "extra": "/edit"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => panic!("expected stored live-backed data-form values, got {other:?}"),
+    };
+    assert_eq!(editor.definition, definition);
+    assert_eq!(
+        editor.values,
+        BTreeMap::from([
+            ("matched".to_owned(), "ok-42".to_owned()),
+            ("missing_values".to_owned(), String::new()),
+            ("empty_values".to_owned(), String::new()),
+            (
+                "multi".to_owned(),
+                "first \"quoted\"\nsecond 'single' \\ end".to_owned(),
+            ),
+            (
+                "plain".to_owned(),
+                "O'Brien: # [x] \\ slash \"quote\"".to_owned(),
+            ),
+            ("quoted".to_owned(), "false_value".to_owned()),
+            ("reserved".to_owned(), "no_value".to_owned()),
+            ("select_five".to_owned(), "2".to_owned()),
+            ("select_one".to_owned(), "a".to_owned()),
+        ]),
+    );
+
+    for (slug, source) in [
+        (
+            "data-form-control-contract:unquoted-number",
+            SAVED_SOURCE.replace("select_five: '2'", "select_five: 2"),
+        ),
+        (
+            "data-form-control-contract:unsafe-plain-text",
+            SAVED_SOURCE.replace(
+                r#"plain: 'O''Brien: # [x] \ slash "quote"'"#,
+                "plain: unquoted text",
+            ),
+        ),
+    ] {
+        create_page(&mut runner, site_id, slug, &source).await;
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": {
+                    "slug": slug,
+                    "extra": "/edit"
+                },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                data_form: None,
+                wikitext,
+                ..
+            } => assert_eq!(wikitext, source),
+            other => panic!("non-canonical stored scalars must fail closed: {other:?}"),
+        }
+    }
+
+    const UNSUPPORTED_SELECT_PROPERTY_CATEGORY: &str =
+        "data-form-unsupported-select-property";
+    let unsupported_template = create_page(
+        &mut runner,
+        site_id,
+        "data-form-unsupported-select-property:_template",
+        concat!(
+            "[[form]]\n",
+            "fields:\n",
+            "  choice:\n",
+            "    label: Choice\n",
+            "    type: select\n",
+            "    width: 40\n",
+            "    values:\n",
+            "      a: Alpha\n",
+            "[[/form]]",
+        ),
+    )
+    .await;
+    let unsupported_category = CategoryService::get_or_create(
+        runner.context(),
+        site_id,
+        UNSUPPORTED_SELECT_PROPERTY_CATEGORY,
+    )
+    .await
+    .expect("unsupported-property category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        unsupported_category.category_id,
+        "data-form-unsupported-select-property-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": unsupported_category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": unsupported_template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {
+                "slug": "data-form-unsupported-select-property:new",
+                "extra": "/edit/true"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: None, ..
+        } => {}
+        other => panic!("text-only properties on selects must fail closed: {other:?}"),
+    }
+
+    const DIMENSION_CATEGORY: &str = "data-form-dimension-boundaries";
+    let dimension_template = create_page(
+        &mut runner,
+        site_id,
+        "data-form-dimension-boundaries:_template",
+        concat!(
+            "[[form]]\n",
+            "fields:\n",
+            "  omitted:\n",
+            "    label: Omitted\n",
+            "  empty:\n",
+            "    label: Empty\n",
+            "    width:\n",
+            "    height:\n",
+            "  nonnumeric:\n",
+            "    label: Nonnumeric\n",
+            "    width: nope\n",
+            "    height: nope\n",
+            "  zero:\n",
+            "    label: Zero\n",
+            "    width: 0\n",
+            "    height: 0\n",
+            "  negative:\n",
+            "    label: Negative\n",
+            "    width: -1\n",
+            "    height: -1\n",
+            "  one:\n",
+            "    label: One\n",
+            "    height: 1\n",
+            "  two:\n",
+            "    label: Two\n",
+            "    height: 2\n",
+            "[[/form]]",
+        ),
+    )
+    .await;
+    let dimension_category =
+        CategoryService::get_or_create(runner.context(), site_id, DIMENSION_CATEGORY)
+            .await
+            .expect("dimension-boundary category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        dimension_category.category_id,
+        "data-form-dimension-boundary-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": dimension_category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": dimension_template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let dimensions = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {
+                "slug": "data-form-dimension-boundaries:new",
+                "extra": "/edit/true"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => data_form
+            .definition
+            .fields
+            .into_iter()
+            .map(|field| (field.name, field.width, field.height))
+            .collect::<Vec<_>>(),
+        other => panic!("expected dimension-boundary definition, got {other:?}"),
+    };
+    assert_eq!(
+        dimensions,
+        [
+            ("omitted".to_owned(), 40, 1),
+            ("empty".to_owned(), 40, 1),
+            ("nonnumeric".to_owned(), 40, 1),
+            ("zero".to_owned(), 1, 1),
+            ("negative".to_owned(), 1, 1),
+            ("one".to_owned(), 40, 1),
+            ("two".to_owned(), 40, 2),
+        ],
+    );
+}

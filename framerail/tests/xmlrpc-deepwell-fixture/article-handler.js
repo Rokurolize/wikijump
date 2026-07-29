@@ -4,6 +4,10 @@ import { pages, toArticleViewResult } from "./data.js"
 const LISTPAGES_NAVIGATION_EXTRA = /^p\/[1-9][0-9]*$/u
 const NEW_PAGE_EDIT_EXTRA = /^edit\/true(?:\/.*)?$/u
 const DATA_FORM_CREATE_SLUG = "data-form-create-flow:example"
+const DATA_FORM_CONTROLS_CREATE_SLUG = "data-form-controls-flow:example"
+const DATA_FORM_REGEX_BUDGET_CREATE_SLUG = "data-form-regex-budget-flow:example"
+const DATA_FORM_INVALID_REGEX_CREATE_SLUG = "data-form-invalid-regex-flow:example"
+const DATA_FORM_EMPTY_SELECT_CREATE_SLUG = "data-form-empty-select-flow:example"
 const DATA_FORM_EDIT_SLUG = "data-form-edit-flow:example"
 const DATA_FORM_DEFINITION = {
   default_layout: true,
@@ -26,6 +30,211 @@ const DATA_FORM_DEFINITION = {
         { value: "b", label: "Beta" }
       ],
       default_value: "b"
+    }
+  ]
+}
+const DATA_FORM_CONTROLS_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "plain",
+      label: "Plain text",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: "**bold** #hash",
+      width: 1,
+      height: 1,
+      match_pattern: null,
+      match_error: null
+    },
+    {
+      name: "multi",
+      label: "Multi line",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      width: 50,
+      height: 3,
+      match_pattern: null,
+      match_error: null
+    },
+    {
+      name: "matched",
+      label: "Matched text",
+      hint: "enter a color like \\#468259",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: "/^ok-[0-9]+$/",
+      match_error: "Use ok- followed by digits"
+    },
+    {
+      name: "select_one",
+      label: "Select one",
+      hint: "",
+      field_type: "select",
+      values: [{ value: "a", label: "Alpha" }],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null
+    },
+    {
+      name: "select_four",
+      label: "Select four",
+      hint: "",
+      field_type: "select",
+      values: [
+        { value: "a", label: "Alpha" },
+        { value: "b", label: "Beta" },
+        { value: "c", label: "Gamma" },
+        { value: "d", label: "Delta" }
+      ],
+      default_value: "c",
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null
+    },
+    {
+      name: "select_five",
+      label: "Select five",
+      hint: "",
+      field_type: "select",
+      values: [
+        { value: "0", label: "Zero" },
+        { value: "1", label: "One" },
+        { value: "2", label: "Two" },
+        { value: "3", label: "Three" },
+        { value: "4", label: "Four" }
+      ],
+      default_value: "4",
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null
+    }
+  ]
+}
+const DATA_FORM_REGEX_BUDGET_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "matched",
+      label: "Matched text",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: "/^(a+)+$/",
+      match_error: "Use only a characters"
+    },
+    {
+      name: "matched_two",
+      label: "Second matched text",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: "/^(a+)+$/",
+      match_error: "Use only a characters"
+    }
+  ]
+}
+const DATA_FORM_INVALID_REGEX_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "matched",
+      label: "Matched text",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: "/(/",
+      match_error: "Site-authored mismatch message"
+    }
+  ]
+}
+const DATA_FORM_EMPTY_SELECT_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "missing_values",
+      label: "Missing values",
+      hint: "",
+      field_type: "select",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null
+    },
+    {
+      name: "empty_values",
+      label: "Empty values",
+      hint: "",
+      field_type: "select",
+      values: [],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null
+    },
+    {
+      name: "select_one",
+      label: "Select one",
+      hint: "",
+      field_type: "select",
+      values: [{ value: "a", label: "Alpha" }],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null
+    },
+    {
+      name: "select_two",
+      label: "Select two",
+      hint: "",
+      field_type: "select",
+      values: [
+        { value: "a", label: "Alpha" },
+        { value: "b", label: "Beta" }
+      ],
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null
+    },
+    {
+      name: "select_five",
+      label: "Select five",
+      hint: "",
+      field_type: "select",
+      values: ["a", "b", "c", "d", "e"].map((value) => ({
+        value,
+        label: value.toUpperCase()
+      })),
+      default_value: null,
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null
     }
   ]
 }
@@ -59,7 +268,14 @@ const pageForArticleRoute = (route) => {
       ].join("")
     }
   }
-  if (route.slug === DATA_FORM_EDIT_SLUG && route.extra === "edit") return page
+  if (
+    (route.slug === DATA_FORM_EDIT_SLUG ||
+      route.slug === DATA_FORM_CONTROLS_CREATE_SLUG ||
+      route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG) &&
+    route.extra === "edit"
+  ) {
+    return page
+  }
   return route.extra === "" ? page : null
 }
 
@@ -126,7 +342,15 @@ const missingPageArticleViewResult = (route) => ({
       data_form:
         route.slug === DATA_FORM_CREATE_SLUG
           ? { definition: DATA_FORM_DEFINITION, values: {} }
-          : null
+          : route.slug === DATA_FORM_CONTROLS_CREATE_SLUG
+            ? { definition: DATA_FORM_CONTROLS_DEFINITION, values: {} }
+            : route.slug === DATA_FORM_REGEX_BUDGET_CREATE_SLUG
+              ? { definition: DATA_FORM_REGEX_BUDGET_DEFINITION, values: {} }
+              : route.slug === DATA_FORM_INVALID_REGEX_CREATE_SLUG
+                ? { definition: DATA_FORM_INVALID_REGEX_DEFINITION, values: {} }
+                : route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG
+                  ? { definition: DATA_FORM_EMPTY_SELECT_DEFINITION, values: {} }
+                  : null
     }
   }
 })
@@ -173,6 +397,37 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
         result.page.data.data_form = {
           definition: DATA_FORM_DEFINITION,
           values: { name: "Probe Name", choice: "a" }
+        }
+      } else if (
+        rpcRequest.params.route.slug === DATA_FORM_CONTROLS_CREATE_SLUG &&
+        rpcRequest.params.route.extra === "edit"
+      ) {
+        result.page.data.options.edit = true
+        result.page.data.data_form = {
+          definition: DATA_FORM_CONTROLS_DEFINITION,
+          values: {
+            plain: `O'Brien: # [x] \\ slash "quote"`,
+            multi: `first "quoted"\nsecond 'single' \\ end`,
+            matched: "ok-42",
+            select_one: "a",
+            select_four: "c",
+            select_five: "2"
+          }
+        }
+      } else if (
+        rpcRequest.params.route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG &&
+        rpcRequest.params.route.extra === "edit"
+      ) {
+        result.page.data.options.edit = true
+        result.page.data.data_form = {
+          definition: DATA_FORM_EMPTY_SELECT_DEFINITION,
+          values: {
+            missing_values: "",
+            empty_values: "",
+            select_one: "",
+            select_two: "",
+            select_five: "a"
+          }
         }
       }
     } else {

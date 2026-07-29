@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "2b5331396d6d9ca1a6750d3326b77b6d18a2b801c46590fd9f0381a2539932a2",
+  "catalog_sha256": "07c2105dfa202524d3ca8f0b6ab8825b33aedc0ca78a6d3764723c59ae3f75b2",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -196,19 +196,39 @@
       ],
       "tests": [
         {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "empty_and_unselected_selects_round_trip_as_null",
+          "scope": "parser and canonical storage regression verifies that missing and empty value lists remain compatible fields and that unselected select values parse and serialize only as the plain null scalar"
+        },
+        {
           "path": "deepwell/tests/page_template_assignment.rs",
           "name": "page_view_exposes_category_data_form_definition_in_template_order",
           "scope": "public missing, create, saved, edit, and default table rendering behavior for text and select fields, including template self-exclusion, edit-permission metadata gating, complete stored-source validation, and non-bare route fallback"
         },
         {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_text_and_select_control_contract",
+          "scope": "public missing and found page views verify live text/select definitions, the complete observed dimension fallback matrix, retained empty selects with null storage, reserved-looking labels, canonical saved-value restoration, non-canonical scalar rejection, and fail-closed text-only select properties"
+        },
+        {
           "path": "framerail/tests/wikidot-data-form.test.js",
           "name": "data-form source serialization unit tests",
-          "scope": "template-order defaults, backend-provided saved values, prototype-sensitive field names, and exact text/select source serialization"
+          "scope": "template-order defaults, cardinality-sensitive select initialization, backend-provided saved values, prototype-sensitive field names, and exact live text/select scalar serialization"
         },
         {
           "path": "framerail/tests/data-form-create-flow.spec.ts",
           "name": "data-form create and edit browser flow",
           "scope": "HTTP 404 missing-page DOM, client Create page transition, stale-content suppression, Enter-key suppression, public controls, select defaults, restored values, exact create/edit source payloads, non-empty NewPage tags failure without mutation, and valid parentPage assignment after create"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form text and select controls match live validation and storage",
+          "scope": "public browser flow verifies input, textarea, radio, and dropdown DOM; custom regex validation; invalid-value preservation; and exact live scalar storage"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "pathological data-form match patterns fail closed without blocking the editor",
+          "scope": "public browser flow verifies adversarial match evaluation cannot block the editor or cause a page-create mutation"
         }
       ],
       "implementation_files": [
@@ -222,6 +242,7 @@
         "framerail/src/lib/server/deepwell/page.ts",
         "framerail/src/lib/server/load/page/page-edit-actions.ts",
         "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
         "framerail/src/routes/+error.svelte",
         "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
         "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
@@ -232,12 +253,13 @@
       ],
       "live_oracle_evidence": [
         "install/local/wikidot-verification/artifacts/data-form-create-edit-live.json",
-        "install/local/wikidot-verification/artifacts/data-form-newpage-metadata-live.json"
+        "install/local/wikidot-verification/artifacts/data-form-newpage-metadata-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
         "Live create, edit, validation, storage, and rendering behavior for data-form field types other than text and select remains to be observed and implemented.",
         "Custom data-form layouts after the ==== separator and their display-variable substitutions remain to be implemented.",
-        "Validation and escaping behavior outside the exact observed text/select values remains to be probed before implementation.",
+        "The observed text/select validation and escaping contract is implemented and covered; validation and escaping for the remaining field types still require live probes before implementation.",
         "Valid parentPage creation and non-empty tags rejection are observed, implemented, and covered through the public browser and Deepwell mutation seams. Missing-parent, empty-tags, malformed-route, and permission variants remain unobserved.",
         "Template edit, reassignment, deletion, and restoration must be proven to invalidate every anonymous imported-page cache entry that depends on the category template.",
         "The live Do not notify watchers control and its mutation semantics remain omitted until the page-watcher backend exists and the data-form request contract is observed.",
@@ -330,15 +352,45 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-field-properties": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live generated data-form create/edit control DOM and exact stored-source readback",
+        "Deepwell public missing/found page view data-form contract",
+        "Framerail public generated data-form create/edit browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_text_and_select_control_contract",
+          "scope": "public missing/found page views verify implicit text type, the observed width and height boundary matrix, defaults, hints, match metadata, retained empty select fields, reserved-looking labels, canonical null and non-null stored-value restoration, rejection of noncanonical records, and fail-closed unsupported shapes"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "unknown_or_ambiguous_definition_shapes_fail_closed_for_create_edit; stored_values_must_match_the_complete_observed_record_shape",
+          "scope": "definition and storage boundary tests reject content outside fields, malformed or over-indented fields and properties, empty option keys or labels, text values blocks, and alternate noncanonical scalar spellings"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form text and select controls match live validation and storage; pathological data-form match patterns fail closed without blocking the editor; invalid data-form match patterns use a host-owned diagnostic",
+          "scope": "public browser flows verify width, height, hint, custom match-error DOM, preserved invalid values, one overall time budget in an isolated worker, explicit invalid-pattern and safety diagnostics, blank-select rejection, defaults, cardinality-sensitive controls, exact saved source, and edit restoration"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-field-properties.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Text width, height, default, hint, match, and match-error plus select values and default are observed, implemented, and covered. The general label, join, before, and after properties and their behavior across the remaining field types still require live coverage and implementation."
+      ]
     },
     "data-forms-file-field": {
       "status": "pending",
@@ -363,15 +415,38 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-hints": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live generated text-field placeholder DOM",
+        "Deepwell public missing-page data-form contract",
+        "Framerail public generated data-form create browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_text_and_select_control_contract",
+          "scope": "public missing-page view preserves the documented escaped-hash hint exactly"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form text and select controls match live validation and storage",
+          "scope": "public browser flow verifies the exact live placeholder value, including its retained backslash"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-hints.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented escaped-hash text hint is observed, implemented, and covered. The documented heading, wiki-field, and CSS composition tips plus hint behavior for other field types, empty hints, quoting, and additional escaping remain to be classified."
+      ]
     },
     "data-forms-howto": {
       "status": "pending",
@@ -462,14 +537,57 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-select-field": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Live generated create/edit radio and select DOM, default selection, saved source, and default table display",
+        "Deepwell public missing/found page view and ListPages field-query/render seams",
+        "Framerail public generated data-form create/edit browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "empty_and_unselected_selects_round_trip_as_null",
+          "scope": "parser and canonical storage regression verifies that missing and empty value lists remain compatible fields and that unselected select values parse and serialize only as the plain null scalar"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_text_and_select_control_contract",
+          "scope": "public missing/found page views verify zero-, one-, and five-value select definitions, defaults, retention and null restoration of empty selects, unquoted and quoted reserved-looking labels, canonical quoted numeric scalar restoration, rejection of unquoted numeric storage, text-only-property rejection, and default-table display"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js",
+          "name": "a five-option select without a default starts at its first option; empty and unselected select values serialize as Wikidot null scalars; data-form source uses Wikidot text and select scalar encoding",
+          "scope": "public state and serialization helpers verify five-option implicit selection plus null, plain word, and quoted numeric select storage"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form text and select controls match live validation and storage; empty and unselected select fields save and restore as Wikidot null",
+          "scope": "public browser flow verifies absent zero-option controls, unselected and selected one- and four-option radios, five-option dropdown DOM, explicit and implicit defaults, exact null/plain/quoted saved source, and restored empty/radio/dropdown values on edit"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_data_form_variables_match_live_wikidot; listpages_template_selectors_can_use_current_page_data_form_values",
+          "scope": "public saved-page and ListPages seams verify select display labels, raw values, field selection, ordering, and template-variable rendering"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/render/list_pages/data_forms.rs",
+        "deepwell/src/services/render/list_pages/rendering.rs",
+        "deepwell/src/services/render/list_pages/substitution.rs",
+        "deepwell/src/services/page_query",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-select-field.md"
       ],
-      "live_oracle_evidence": [],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-empty-select-storage-live.json"
+      ],
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-selecting-and-sorting": {
@@ -550,15 +668,69 @@
       ]
     },
     "data-forms-text-field": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live generated create/edit input and textarea DOM, regex validation, exact saved source, and default table display",
+        "Deepwell public missing/found page view and ListPages field-query/render seams",
+        "Framerail public generated data-form create/edit browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_text_and_select_control_contract",
+          "scope": "public missing/found page views verify implicit text type, the complete observed width/height fallback matrix, defaults, retained hint escaping, match metadata, canonical single- and multiline scalar restoration, rejection of unsafe unquoted storage, and literal default-table display"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js",
+          "name": "data-form source uses Wikidot text and select scalar encoding",
+          "scope": "public serializer verifies safe plain text, doubled apostrophes, preserved spaces and punctuation, and double-quoted multiline escaping"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form text and select controls match live validation and storage",
+          "scope": "public browser flow verifies input and textarea DOM, width, height, defaults, hints, regex validation markup, value preservation, exact saved source, and restored single-/multiline values on edit"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "pathological data-form match patterns fail closed without blocking the editor",
+          "scope": "public browser flow verifies multiple adversarial regex evaluations share one deadline in an isolated worker, preserve the editor, render host-owned safety diagnostics, and create no page"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "invalid data-form match patterns use a host-owned diagnostic",
+          "scope": "public browser flow distinguishes an invalid validation pattern from an ordinary mismatch and never presents the site's match-error as though validation completed"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "a new data-form submission cancels stale validation and saves its own snapshot",
+          "scope": "public browser flow verifies a repeated submit cancels the older worker and request generation, then validates and stores one immutable title-and-field snapshot"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_data_form_variables_match_live_wikidot; listpages_template_selectors_can_use_current_page_data_form_values",
+          "scope": "public saved-page and ListPages seams verify literal text display, raw and hinted variables, field selection, ordering, and template-variable rendering"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/render/list_pages/data_forms.rs",
+        "deepwell/src/services/render/list_pages/rendering.rs",
+        "deepwell/src/services/render/list_pages/substitution.rs",
+        "deepwell/src/services/page_query",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-text-field.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Live generic validation markup when match is present without match-error, PCRE modifiers and constructs beyond the observed slash-delimited pattern, and their exact failure behavior remain unobserved. Wikijump fails those definition shapes closed; observed patterns run in a terminable browser worker with a fixed budget."
+      ]
     },
     "data-forms-url-field": {
       "status": "pending",
