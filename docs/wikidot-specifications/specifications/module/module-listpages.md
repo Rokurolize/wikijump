@@ -178,7 +178,7 @@ Evidence:
 - Observation ID: `listpages-imported-lifecycle-identity-provenance`
 - Classification: `documentation-discrepancy`
 - Observed at: `2026-07-29`
-- Analysis: The frozen ListPages documentation defines lifecycle identity variables but does not describe acquisition provenance. The existing SCP corpus adapter flattened live Wikidot user objects to display-name strings, creating an apparent blocker for imported created_by, updated_by, and commented_by identity variables. An anonymous read through the repository-pinned wikidot.py ListPages interface proves that live Wikidot supplies the numeric user ID, display name, and unix name for every populated lifecycle user. The missing identity is therefore a corpus-adapter loss, not a limitation of the live oracle.
+- Analysis: The frozen ListPages documentation defines lifecycle identity variables but does not describe acquisition provenance. The pre-fix SCP corpus adapter flattened live Wikidot user objects to display-name strings, creating an apparent blocker for imported created_by, updated_by, and commented_by identity variables. An anonymous read through the repository-pinned wikidot.py ListPages interface proves that live Wikidot supplies the numeric user ID, display name, and unix name for every populated lifecycle user. The producer now preserves those tuples, and a refreshed scp-3435 record verifies the complete producer-to-standing-runtime path. The missing identity was therefore a corpus-adapter loss, not a limitation of the live oracle.
 
 Normative behavior:
 
@@ -190,7 +190,7 @@ Normative behavior:
 
 Evidence:
 
-- `install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json` (SHA-256 `c8b2a404c93d43c175bc6a3f72017226cdb642a279ea9a3968d6a58059106db4`), cases: `scp-3435-lifecycle-identities`
+- `install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json` (SHA-256 `eb7e379417eaf1d4e9fedaa72ee0ea6bc9abc87291a01e2c5a3ac57682923fcd`), cases: `scp-3435-lifecycle-identities`
 - `install/local/wikidot-verification/artifacts/listpages-campaign-template-variables-live-classification.json` (SHA-256 `7994dfcf7e8f3cae568e44c53fda16ff9acb8d4b47f59494a110633cd4d8f67d`), cases: `lp-live-template-variables`
 - `install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json` (SHA-256 `df42b383b81eeac1c00c25fe54a59dcf2015ed622baea0752e9481d8bfe7708c`), cases: `lp-live-plus-minus-rating-and-last-comment`
 - `install/local/wikidot-verification/artifacts/listpages-campaign-feed-endpoint-live.jsonl` (SHA-256 `37e6a52c88f48bc7eadfeacb7218ce270e615f0916e4a8810bfed2f01bb0afa9`), cases: `lpfeed-0001-baseline`
