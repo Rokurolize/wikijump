@@ -41,6 +41,11 @@ pub(in crate::services::render) struct ViewableCountPagesRows {
 pub(in crate::services::render) enum CountPagesRawScanCompletion {
     Complete,
     Capped,
+    /// A random-order query sampled the complete render window. The sampled
+    /// viewable count is an intentionally inexact, privacy-preserving fallback:
+    /// switching to literal output based on permission filtering would expose
+    /// the existence or proportion of hidden matches.
+    RandomSampleCapped,
 }
 
 #[derive(Debug)]
@@ -221,7 +226,7 @@ pub(in crate::services::render) fn count_pages_raw_scan_completion(
     raw_count: usize,
 ) -> CountPagesRawScanCompletion {
     if raw_count >= MAX_LISTPAGES_RENDER_SCAN_ROWS as usize {
-        CountPagesRawScanCompletion::Capped
+        CountPagesRawScanCompletion::RandomSampleCapped
     } else {
         CountPagesRawScanCompletion::Complete
     }

@@ -8,6 +8,7 @@
     "syntax-dispositions": "node scripts/check-syntax-differential-dispositions.mjs",
     "reference-inventory": "node scripts/build-reference-acquisition-inventory.mjs",
     "listpages-campaign-inventory": "node scripts/build-listpages-campaign-inventory.mjs",
+    "listpages-runtime-budget-envelope": "node scripts/build-listpages-runtime-budget-envelope.mjs",
     "listpages-campaign-matrix": "node scripts/build-listpages-campaign-matrix.mjs",
     "listpages-preview-cases": "node scripts/export-listpages-preview-cases.mjs",
     "listpages-preview-differential": "node scripts/run-listpages-preview-differential.mjs",
