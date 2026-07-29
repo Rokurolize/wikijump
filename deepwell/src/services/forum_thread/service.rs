@@ -64,19 +64,22 @@ impl ForumThreadService {
         };
         let txn = ctx.transaction();
 
-        if let Some(thread) = ForumThread::find()
+        let existing_thread = ForumThread::find()
             .filter(forum_thread::Column::PageId.eq(page.page_id))
-            .filter(forum_thread::Column::DeletedAt.is_null())
             .one(txn)
             .await
-            .or_raise(make_error)?
+            .or_raise(make_error)?;
+
+        if let Some(thread) = existing_thread
+            .as_ref()
+            .filter(|thread| thread.deleted_at.is_none())
         {
             if page.discussion_thread_id != Some(thread.forum_thread_id) {
                 let mut page = page.clone().into_active_model();
                 page.discussion_thread_id = Set(Some(thread.forum_thread_id));
                 page.update(txn).await.or_raise(make_error)?;
             }
-            return Ok(thread);
+            return Ok(thread.clone());
         }
 
         let category = ForumCategory::find()
@@ -97,6 +100,70 @@ impl ForumThreadService {
                     ErrorType::ForumCategory,
                 )
             })?;
+
+        if let Some(thread) = existing_thread {
+            if thread.site_id != page.site_id {
+                bail!(Error::new(
+                    format!(
+                        "page discussion thread ID {} belongs to site ID {}, not page site ID {}",
+                        thread.forum_thread_id, thread.site_id, page.site_id,
+                    ),
+                    ErrorType::ForumThread,
+                ));
+            }
+
+            let moved_category = thread.forum_category_id != category.forum_category_id;
+            let restored = forum_thread::ActiveModel {
+                forum_thread_id: Set(thread.forum_thread_id),
+                forum_category_id: Set(category.forum_category_id),
+                forum_group_id: Set(category.forum_group_id),
+                site_id: Set(category.site_id),
+                deleted_by: Set(None),
+                deleted_at: Set(None),
+                updated_by: Set(Some(user_id)),
+                updated_at: Set(Some(now())),
+                ..Default::default()
+            }
+            .update(txn)
+            .await
+            .or_raise(make_error)?;
+
+            if moved_category {
+                forum_post::Entity::update_many()
+                    .set(forum_post::ActiveModel {
+                        forum_category_id: Set(category.forum_category_id),
+                        forum_group_id: Set(category.forum_group_id),
+                        site_id: Set(category.site_id),
+                        ..Default::default()
+                    })
+                    .filter(
+                        forum_post::Column::ForumThreadId.eq(restored.forum_thread_id),
+                    )
+                    .exec(txn)
+                    .await
+                    .or_raise(make_error)?;
+
+                forum_post_revision::Entity::update_many()
+                    .set(forum_post_revision::ActiveModel {
+                        forum_category_id: Set(category.forum_category_id),
+                        forum_group_id: Set(category.forum_group_id),
+                        site_id: Set(category.site_id),
+                        ..Default::default()
+                    })
+                    .filter(
+                        forum_post_revision::Column::ForumThreadId
+                            .eq(restored.forum_thread_id),
+                    )
+                    .exec(txn)
+                    .await
+                    .or_raise(make_error)?;
+            }
+
+            let mut page = page.clone().into_active_model();
+            page.discussion_thread_id = Set(Some(restored.forum_thread_id));
+            page.update(txn).await.or_raise(make_error)?;
+            return Ok(restored);
+        }
 
         ForumThread::insert(forum_thread::ActiveModel {
             forum_category_id: Set(category.forum_category_id),

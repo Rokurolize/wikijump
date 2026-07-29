@@ -135,7 +135,8 @@ test("dispatches Wikidot page discussion creation and preserves its wire envelop
       action: "ForumAction",
       event: "createPageDiscussionThread",
       moduleName: "Empty",
-      page_id: "1469071756"
+      page_id: "1469071756",
+      callbackIndex: "lane4-callback-success"
     }),
     {
       siteId: 6000006,
@@ -156,7 +157,7 @@ test("dispatches Wikidot page discussion creation and preserves its wire envelop
   assert.equal(body.status, "ok")
   assert.equal(body.thread_id, 18232631)
   assert.equal(body.thread_unix_title, "lane-4-discussion")
-  assert.equal(body.callbackIndex, null)
+  assert.equal(body.callbackIndex, "lane4-callback-success")
   assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
 })
 
@@ -167,7 +168,8 @@ test("page discussion creation uses Wikidot no_page and stable failure boundarie
         action: "ForumAction",
         event: "createPageDiscussionThread",
         moduleName: "Empty",
-        page_id: pageId
+        page_id: pageId,
+        callbackIndex: `lane4-callback-${pageId}`
       }),
       {
         siteId: 6000006,
@@ -178,7 +180,7 @@ test("page discussion creation uses Wikidot no_page and stable failure boundarie
     const body = await response.json()
     assert.equal(body.status, "no_page")
     assert.equal(body.message, "The page does not exist")
-    assert.equal(body.callbackIndex, null)
+    assert.equal(body.callbackIndex, `lane4-callback-${pageId}`)
     assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
   }
 
@@ -187,7 +189,8 @@ test("page discussion creation uses Wikidot no_page and stable failure boundarie
       action: "ForumAction",
       event: "createPageDiscussionThread",
       moduleName: "Empty",
-      page_id: "1469071758"
+      page_id: "1469071758",
+      callbackIndex: "lane4-callback-missing"
     }),
     {
       siteId: 6000006,
@@ -198,7 +201,7 @@ test("page discussion creation uses Wikidot no_page and stable failure boundarie
   const missingBody = await missing.json()
   assert.equal(missingBody.status, "no_page")
   assert.equal(missingBody.message, "The page does not exist")
-  assert.equal(missingBody.callbackIndex, null)
+  assert.equal(missingBody.callbackIndex, "lane4-callback-missing")
   assert.equal(Number.isInteger(missingBody.CURRENT_TIMESTAMP), true)
 
   const originalConsoleError = console.error
@@ -209,7 +212,8 @@ test("page discussion creation uses Wikidot no_page and stable failure boundarie
         action: "ForumAction",
         event: "createPageDiscussionThread",
         moduleName: "Empty",
-        page_id: "1469071760"
+        page_id: "1469071760",
+        callbackIndex: "lane4-callback-failed"
       }),
       {
         siteId: 6000006,
@@ -222,7 +226,7 @@ test("page discussion creation uses Wikidot no_page and stable failure boundarie
     const failedBody = await failed.json()
     assert.equal(failedBody.status, "not_ok")
     assert.equal(failedBody.message, "Unable to create page discussion")
-    assert.equal(failedBody.callbackIndex, null)
+    assert.equal(failedBody.callbackIndex, "lane4-callback-failed")
     assert.equal(Number.isInteger(failedBody.CURRENT_TIMESTAMP), true)
   } finally {
     console.error = originalConsoleError

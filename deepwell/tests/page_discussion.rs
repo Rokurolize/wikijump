@@ -19,6 +19,7 @@ use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
 use deepwell::services::forum_thread::GetForumThread;
 use deepwell::services::{ForumService, ForumThreadService, RequestContext};
 use deepwell::types::Reference;
+use sea_orm::{ConnectionTrait, Statement, Value};
 use serde_json::json;
 
 fn set_actor(
@@ -141,6 +142,50 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
     .await
     .expect("discussion page should exist");
     assert_eq!(stored_page.discussion_thread_id, Some(first.thread_id));
+
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "UPDATE forum_thread ",
+                "SET deleted_by = $1, deleted_at = now(), updated_by = $1, updated_at = now() ",
+                "WHERE forum_thread_id = $2",
+            ),
+            [Value::from(ADMIN_USER_ID), Value::from(first.thread_id)],
+        ))
+        .await
+        .expect("discussion thread should be soft-deleted for lifecycle coverage");
+    let deleted_thread = ForumThreadService::get(
+        runner.context(),
+        GetForumThread {
+            forum_thread_id: first.thread_id,
+            include_deleted: true,
+        },
+    )
+    .await
+    .expect("soft-deleted discussion thread should remain queryable internally");
+    assert!(deleted_thread.deleted_at.is_some());
+
+    set_actor(&mut runner, None, site_id, Reference::Id(page.page_id));
+    let restored = run_endpoint!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": page.page_id }),
+    )
+    .expect("a deleted page discussion should be restored on the next action");
+    assert_eq!(restored.thread_id, first.thread_id);
+    let restored_thread = ForumThreadService::get(
+        runner.context(),
+        GetForumThread {
+            forum_thread_id: first.thread_id,
+            include_deleted: false,
+        },
+    )
+    .await
+    .expect("restored discussion thread should be active");
+    assert!(restored_thread.deleted_at.is_none());
+    assert!(restored_thread.deleted_by.is_none());
 
     set_actor(
         &mut runner,
