@@ -111,6 +111,25 @@ export async function pageEdit(
   )
 }
 
+export async function pageGet(
+  siteId: number,
+  page: number | string,
+  requestContext: RequestContext = {}
+): Promise<Nullable<unknown>> {
+  return client.request(
+    "page_get",
+    {
+      site_id: siteId,
+      page,
+      details: {
+        compiled_html: false,
+        wikitext: false
+      }
+    },
+    requestContext
+  )
+}
+
 export async function pageEditPermission(
   requestContext: RequestContext = {}
 ): Promise<{ can_edit: boolean }> {

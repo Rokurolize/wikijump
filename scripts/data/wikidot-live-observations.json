@@ -981,8 +981,8 @@
         "The browser callback redirects non-autosave responses to /<unixName>/edit/true with optional /t/<templateId>, /title/<encodeURIComponent(pageTitle)>, /tags/<encodeURIComponent(tags)>, and /parentPage/<encodeURIComponent(parentPage)> path segments.",
         "The NewPage action truncates unixName to 60 characters. pageTitle preserves the full submitted pageName up to the rendered input maxlength, and the edit URL's /title/ segment uses the full pageTitle.",
         "categoryName prefixes unixName as categoryName:pageName. pageTitle remains the submitted pageName without the categoryName prefix.",
-        "format is enforced by the action. A matching observed format returns status=ok; a non-matching observed format returns status=incorrect_name and does not create a page.",
-        "Names beginning with _ are accepted by the helper action in observed default/edit responses; any later inability to create or save hidden pages is outside the helper's initial action response.",
+        "Valid observed format patterns are enforced by the action. A matching observed format returns status=ok; a non-matching observed format returns status=incorrect_name and does not create a page.",
+        "Names beginning with _ are accepted by the helper action in observed default/edit responses.",
         "mode=\"save-and-refresh\" creates the page immediately with empty source and returns status=ok and goToUrl=\".\"; the browser callback reloads the current page for goToUrl=\".\".",
         "mode=\"save-and-go\" creates the page immediately with empty source and returns status=ok and goToUrl=<unixName> unless goTo is present.",
         "mode=\"save-and-go\" with goTo returns status=ok and goToUrl equal to the goTo value after creating the requested page.",
@@ -997,6 +997,47 @@
             "newpage-default-submit-anonymous-browser-dispatch",
             "newpage-default-submit-authenticated-browser-dispatch",
             "newpage-server-action-matrix-authenticated"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "newpage-module-live-followup-action-errors-and-format",
+      "title": "NewPage action returns page_exists, ignores malformed format strings, rejects template autosave, and autosaves hidden pages",
+      "feature_ids": [
+        "module-newpage",
+        "data-forms-creating-new-page",
+        "platform-page-templates"
+      ],
+      "classification": "documentation-correction",
+      "observed_at": "2026-07-29",
+      "analysis": "Follow-up NewPage helper probes against sandbox-for-codex corrected several remaining action-level assumptions. Live Wikidot checks the resolved target slug for existing pages before returning edit-routing or autosave success; existing targets return status=page_exists for omitted mode, mode=edit, mode=save-and-go, and mode=save-and-refresh without changing the existing source. Format strings that are empty-delimited, missing a trailing delimiter, syntactically invalid PCRE, undelimited, or carrying an unknown flag are ignored rather than rejected; valid non-matching regexes still return incorrect_name. A save-and-go request carrying a template page id returns status=not_ok and does not create a page, so template-backed autosave source population is not supported by the observed helper action. A hidden page name in a visible category, such as run-owned:_name, is accepted by save-and-go and creates an empty page.",
+      "normative_behavior": [
+        "The NewPage helper resolves categoryName plus pageName into the target unixName before existence checks.",
+        "If the target unixName already exists, the helper returns status=page_exists for omitted mode, mode=\"edit\", mode=\"save-and-go\", and mode=\"save-and-refresh\" and does not alter the existing page source.",
+        "The helper enforces valid delimited regex formats, returning status=incorrect_name for a valid non-matching pattern.",
+        "Malformed, undelimited, or unsupported format strings are ignored: observed formats //, /^[a-z]+$, /[/, /^run-owned:/z, and ^[a-z]+$ all returned status=ok for non-mutating edit routing.",
+        "Autosave modes with a non-empty template id return status=not_ok and do not create a page.",
+        "mode=\"save-and-go\" accepts a target whose pageName begins with _ after a visible category prefix and creates an empty page with status=ok and goToUrl equal to the hidden target slug."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/newpage-module-live-followup-action.json",
+          "sha256": "cf59d7247ce87f09202a95c48159a43a49f41384bd17d7b502b03c96578efafe",
+          "case_ids": [
+            "newpage-template-autosave-save-go",
+            "newpage-hidden-autosave-save-go",
+            "newpage-existing-target-omitted-mode",
+            "newpage-existing-target-edit",
+            "newpage-existing-target-save-and-go",
+            "newpage-existing-target-save-and-refresh",
+            "newpage-format-empty-delimiters",
+            "newpage-format-missing-trailing-delimiter",
+            "newpage-format-invalid-pcre",
+            "newpage-format-unknown-flag",
+            "newpage-format-undelimited",
+            "newpage-format-case-insensitive-pass",
+            "newpage-format-multiline-flag-pass"
           ]
         }
       ]
