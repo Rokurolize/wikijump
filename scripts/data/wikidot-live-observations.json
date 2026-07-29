@@ -275,7 +275,7 @@
       ],
       "classification": "documentation-discrepancy",
       "observed_at": "2026-07-29",
-      "analysis": "The frozen ListPages documentation defines lifecycle identity variables but does not describe acquisition provenance. The existing SCP corpus adapter flattened live Wikidot user objects to display-name strings, creating an apparent blocker for imported created_by, updated_by, and commented_by identity variables. An anonymous read through the repository-pinned wikidot.py ListPages interface proves that live Wikidot supplies the numeric user ID, display name, and unix name for every populated lifecycle user. The missing identity is therefore a corpus-adapter loss, not a limitation of the live oracle.",
+      "analysis": "The frozen ListPages documentation defines lifecycle identity variables but does not describe acquisition provenance. The pre-fix SCP corpus adapter flattened live Wikidot user objects to display-name strings, creating an apparent blocker for imported created_by, updated_by, and commented_by identity variables. An anonymous read through the repository-pinned wikidot.py ListPages interface proves that live Wikidot supplies the numeric user ID, display name, and unix name for every populated lifecycle user. The producer now preserves those tuples, and a refreshed scp-3435 record verifies the complete producer-to-standing-runtime path. The missing identity was therefore a corpus-adapter loss, not a limitation of the live oracle.",
       "normative_behavior": [
         "For each populated created-by, updated-by, or last-comment user, live Wikidot exposes a structured identity tuple containing numeric Wikidot user ID, display name, and unix name.",
         "A refreshed corpus metadata record must preserve these tuples additively as created_by_id and created_by_unix, updated_by_id and updated_by_unix, and commented_by_id and commented_by_unix while retaining the existing display-name fields.",
@@ -286,7 +286,7 @@
       "evidence": [
         {
           "path": "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
-          "sha256": "c8b2a404c93d43c175bc6a3f72017226cdb642a279ea9a3968d6a58059106db4",
+          "sha256": "eb7e379417eaf1d4e9fedaa72ee0ea6bc9abc87291a01e2c5a3ac57682923fcd",
           "case_ids": [
             "scp-3435-lifecycle-identities"
           ]

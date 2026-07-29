@@ -1509,7 +1509,7 @@
       ]
     },
     "module-listpages": {
-      "status": "in_progress",
+      "status": "implemented",
       "confirmed_public_seams": [
         "Anonymous PagePreviewModule and run-owned saved-page live Wikidot oracle",
         "Deepwell public saved-page, preview, and AJAX ListPages render/query interfaces",
@@ -1582,9 +1582,29 @@
         "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json",
         "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json"
       ],
-      "unresolved_ambiguities_or_blockers": [
-        "Wikijump now consumes additive created_by_id/created_by_unix, updated_by_id/updated_by_unix, and commented_by_id/commented_by_unix corpus metadata and renders every imported lifecycle identity variable. The current frozen SCP corpus still lacks those fields because its adapter stringifies wikidot.py user objects. The coordinated producer change and corpus refresh remain required before existing imported rows carry the proven live identity tuples; legacy incomplete snapshots continue to fail closed instead of using the importer account."
-      ]
+      "delivery_evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-standing.json",
+          "sha256": "89ea01e43dff747791eb13c7b388d432c1b0aa3ebff9575e0c1c5802c08f0c9f",
+          "scope": "The refreshed scp-3435 corpus row preserves all lifecycle identity tuples; the standing runtime resolves every corresponding ListPages variable and emits linked RSS creator markup."
+        },
+        {
+          "repository": "Rokurolize/wikijump",
+          "pull_request": 957,
+          "merge_sha": "8cd52e44f6581f4c7bcbd26ad5007e623026e370"
+        },
+        {
+          "repository": "Rokurolize/scp-wiki-translation",
+          "pull_request": 208,
+          "merge_sha": "d380ef3a8440089510333d53eedb2cdeac0e5551"
+        },
+        {
+          "repository": "Rokurolize/scp-wiki-translation",
+          "pull_request": 209,
+          "merge_sha": "cb101c737c6a7fc98acd43dc6184ed2c98ba85fc"
+        }
+      ],
+      "unresolved_ambiguities_or_blockers": []
     },
     "module-listusers": {
       "status": "implemented",
