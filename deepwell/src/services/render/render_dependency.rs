@@ -67,7 +67,13 @@ const MODULE_QUERY_NAMES: &[&str] = &[
     "orphanedpages",
     "wantedpages",
 ];
-const MODULE_VIEWER_NAMES: &[&str] = &["rate", "members", "newpage", "clone"];
+const MODULE_VIEWER_NAMES: &[&str] = &[
+    "rate",
+    "members",
+    "newpage",
+    "clone",
+    "membershipbypassword",
+];
 const MODULE_STATIC_NAMES: &[&str] = &["css"];
 
 static INCLUDE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -291,6 +297,7 @@ mod tests {
             "[[module Members]]",
             "[[module NewPage]]",
             "[[module Clone]]",
+            "[[module MembershipByPassword]]",
         ] {
             let classes = classify_render_dependencies(source);
 

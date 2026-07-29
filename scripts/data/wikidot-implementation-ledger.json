@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v1",
   "updated_at": "2026-07-29",
-  "catalog_sha256": "b9377e81dceea01856cffefe9e684e2c8c500a188b65d1819587b04e559d7604",
+  "catalog_sha256": "822f0c479696e17bae9900ab8fd3b6f95a13b4ac9d42719b65270b643703b76c",
   "campaign": {
     "name": "ListPages compatibility campaign",
     "requested_scope": [
@@ -1299,15 +1299,30 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-membershipbypassword": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous and member page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::membership_by_password_module_matches_live_anonymous_and_member_output",
+        "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_viewer_module_is_viewer_dependent",
+        "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/render_dependency.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-membershipbypassword.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/membershipbypassword-role-preview-probe.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Anonymous and confirmed-member MembershipByPassword rendering is implemented and covered. Registered non-member password-entry behavior, password validation, join side effects, site access-policy interactions, and error states remain blocked until a safe live non-member/password-enabled fixture is available and local membership-password state is modeled."
+      ]
     },
     "module-membershipemailinvitation": {
       "status": "blocked",
