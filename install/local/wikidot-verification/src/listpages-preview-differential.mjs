@@ -1,5 +1,4 @@
 import fs from "node:fs/promises";
-import path from "node:path";
 
 import {
   canonicalDom,
@@ -7,6 +6,13 @@ import {
   validateWikidotReference,
   visibleText,
 } from "./syntax-differential.mjs";
+import {
+  observeListPagesRuntimeAuthority,
+  validateListPagesRuntimeObservation,
+} from "./listpages-runtime-authority.mjs";
+import {
+  publishListPagesJsonNoReplace,
+} from "./listpages-evidence-publication.mjs";
 
 export const LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA =
   "wikijump_listpages_compat.preview_differential.v1";
@@ -23,7 +29,7 @@ function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function validateRuntimeIdentity(identity) {
+export function validateListPagesRuntimeIdentity(identity) {
   if (identity?.schema !== LISTPAGES_REPLAY_RUNTIME_IDENTITY_SCHEMA) {
     throw new Error("runtime identity schema is unsupported");
   }
@@ -34,6 +40,7 @@ function validateRuntimeIdentity(identity) {
   }
   for (const field of [
     "dependency_lock_sha256",
+    "build_manifest_sha256",
     "executable_sha256",
     "runtime_config_sha256",
   ]) {
@@ -43,6 +50,12 @@ function validateRuntimeIdentity(identity) {
   }
   if (typeof identity.profile !== "string" || identity.profile.trim() === "") {
     throw new Error("runtime identity profile is invalid");
+  }
+  if (
+    typeof identity.build_artifact_key !== "string" ||
+    !/^candidate-v3-[0-9a-f]{64}$/u.test(identity.build_artifact_key)
+  ) {
+    throw new Error("runtime identity build_artifact_key is invalid");
   }
   let rpcUrl;
   try {
@@ -95,7 +108,7 @@ function validateRuntimeIdentity(identity) {
   return identity;
 }
 
-function validateRuntimeProof(proof, identity) {
+export function validateListPagesRuntimeProof(proof, identity) {
   if (proof?.schema !== LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA) {
     throw new Error("runtime proof schema is unsupported");
   }
@@ -110,6 +123,8 @@ function validateRuntimeProof(proof, identity) {
     wikijump_tree: identity.wikijump_tree,
     ftml_sha: identity.ftml_sha,
     dependency_lock_sha256: identity.dependency_lock_sha256,
+    build_manifest_sha256: identity.build_manifest_sha256,
+    build_artifact_key: identity.build_artifact_key,
     executable_sha256: identity.executable_sha256,
     runtime_config_sha256: identity.runtime_config_sha256,
     profile: identity.profile,
@@ -163,10 +178,11 @@ async function loadRuntimeAuthority({
       identity: null,
       identity_sha256: null,
       proof_sha256: null,
+      proof: null,
     };
   }
   const identityText = await fs.readFile(runtimeIdentityPath, "utf8");
-  const identity = validateRuntimeIdentity(JSON.parse(identityText));
+  const identity = validateListPagesRuntimeIdentity(JSON.parse(identityText));
   if (!authoritative) {
     return {
       mode: "diagnostic",
@@ -174,6 +190,7 @@ async function loadRuntimeAuthority({
       identity,
       identity_sha256: sha256(identityText),
       proof_sha256: null,
+      proof: null,
     };
   }
   if (identity.rpc_url !== rpcUrl || identity.site_slug !== siteSlug) {
@@ -182,13 +199,14 @@ async function loadRuntimeAuthority({
     );
   }
   const proofText = await fs.readFile(runtimeProofPath, "utf8");
-  validateRuntimeProof(JSON.parse(proofText), identity);
+  const proof = validateListPagesRuntimeProof(JSON.parse(proofText), identity);
   return {
     mode: "authoritative",
     completion_eligible: true,
     identity,
     identity_sha256: sha256(identityText),
     proof_sha256: sha256(proofText),
+    proof,
   };
 }
 
@@ -204,11 +222,13 @@ export class DeepwellJsonRpcClient {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     let response;
+    const requestId = this.nextId++;
     try {
       response = await this.fetchImpl(this.rpcUrl, {
         method: "POST",
+        redirect: "error",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: this.nextId++, method, params }),
+        body: JSON.stringify({ jsonrpc: "2.0", id: requestId, method, params }),
         signal: controller.signal,
       });
     } finally {
@@ -219,6 +239,11 @@ export class DeepwellJsonRpcClient {
       throw new Error(`JSON-RPC ${method} failed with HTTP ${response.status}: ${text.slice(0, 300)}`);
     }
     const body = JSON.parse(text);
+    if (body?.jsonrpc !== "2.0" || body.id !== requestId) {
+      throw new Error(
+        `JSON-RPC ${method} returned a mismatched protocol version or response ID`,
+      );
+    }
     if (body.error) {
       throw new Error(`JSON-RPC ${method} error: ${JSON.stringify(body.error)}`);
     }
@@ -226,8 +251,7 @@ export class DeepwellJsonRpcClient {
   }
 }
 
-async function readJsonl(filePath) {
-  const text = await fs.readFile(filePath, "utf8");
+function readJsonlText(text) {
   if (!text.trim()) return [];
   return text.trimEnd().split(/\r?\n/u).map((line) => JSON.parse(line));
 }
@@ -257,7 +281,7 @@ async function mapWithConcurrency(values, concurrency, worker) {
   return results;
 }
 
-function compareHtml(reference, localHtml) {
+export function compareListPagesPreviewHtml(reference, localHtml) {
   const liveHtml = reference.raw_html;
   const liveDom = canonicalDom(liveHtml);
   const localDom = canonicalDom(localHtml);
@@ -295,9 +319,22 @@ export async function runListPagesPreviewDifferential({
   siteSlug,
   rpcClient = new DeepwellJsonRpcClient({ rpcUrl }),
   concurrency = 8,
+  observeRuntime = observeListPagesRuntimeAuthority,
 }) {
   concurrency = validateConcurrency(concurrency);
-  const references = (await readJsonl(referencesPath)).map(validateWikidotReference);
+  const referencesText = await fs.readFile(referencesPath, "utf8");
+  const references = readJsonlText(referencesText).map(validateWikidotReference);
+  const referenceIds = new Set();
+  for (const reference of references) {
+    const caseId = reference.syntax_case.case_id;
+    if (referenceIds.has(caseId)) {
+      throw new Error(`duplicate live reference case ID ${caseId}`);
+    }
+    referenceIds.add(caseId);
+  }
+  if (authoritative && references.length === 0) {
+    throw new Error("authoritative preview references must not be empty");
+  }
   const runtimeAuthority = await loadRuntimeAuthority({
     authoritative,
     runtimeIdentityPath,
@@ -306,6 +343,17 @@ export async function runListPagesPreviewDifferential({
     siteSlug,
   });
   const runtimeIdentity = runtimeAuthority.identity;
+  let runtimeObservationBefore = null;
+  if (runtimeAuthority.completion_eligible) {
+    runtimeObservationBefore = validateListPagesRuntimeObservation(
+      await observeRuntime({
+        identity: runtimeIdentity,
+        proof: runtimeAuthority.proof,
+        phase: "before",
+      }),
+      "before",
+    );
+  }
   const site = await rpcClient.call("site_get", { site: siteSlug });
   if (!Number.isSafeInteger(site?.site_id)) {
     throw new Error(`local site lookup did not return a site_id for ${siteSlug}`);
@@ -314,7 +362,7 @@ export async function runListPagesPreviewDifferential({
     runtimeAuthority.completion_eligible &&
     (
       site.site_id !== runtimeIdentity.site_id ||
-      (site.slug !== undefined && site.slug !== runtimeIdentity.site_slug)
+      site.slug !== runtimeIdentity.site_slug
     )
   ) {
     throw new Error("running site identity differs from authoritative runtime proof");
@@ -341,11 +389,12 @@ export async function runListPagesPreviewDifferential({
           visible_text: visibleText(reference.raw_html),
         },
         local: {
+          raw_html: preview.body,
           html_sha256: sha256(preview.body),
           visible_text: visibleText(preview.body),
           styles: Array.isArray(preview.styles) ? preview.styles : [],
         },
-        comparison: compareHtml(reference, preview.body),
+        comparison: compareListPagesPreviewHtml(reference, preview.body),
       };
       result.status = result.comparison.status;
     } catch (error) {
@@ -371,12 +420,29 @@ export async function runListPagesPreviewDifferential({
 
   const counts = {};
   for (const row of cases) counts[row.status] = (counts[row.status] ?? 0) + 1;
+  let runtimeObservationAfter = null;
+  if (runtimeAuthority.completion_eligible) {
+    runtimeObservationAfter = validateListPagesRuntimeObservation(
+      await observeRuntime({
+        identity: runtimeIdentity,
+        proof: runtimeAuthority.proof,
+        phase: "after",
+      }),
+      "after",
+    );
+    if (
+      runtimeObservationAfter.stable_sha256 !==
+      runtimeObservationBefore.stable_sha256
+    ) {
+      throw new Error("runtime identity changed during preview replay");
+    }
+  }
   return {
     schema: LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA,
     generated_at: new Date().toISOString(),
     inputs: {
       references_path: referencesPath,
-      references_sha256: sha256(await fs.readFile(referencesPath, "utf8")),
+      references_sha256: sha256(referencesText),
       runtime_identity_path: runtimeIdentityPath,
       runtime_identity_sha256: runtimeAuthority.identity_sha256,
       runtime_proof_path: runtimeProofPath,
@@ -384,6 +450,18 @@ export async function runListPagesPreviewDifferential({
       authority: {
         mode: runtimeAuthority.mode,
         completion_eligible: runtimeAuthority.completion_eligible,
+        ...(runtimeAuthority.completion_eligible
+          ? {
+              runtime_observation_before_sha256: sha256(
+                JSON.stringify(runtimeObservationBefore),
+              ),
+              runtime_observation_after_sha256: sha256(
+                JSON.stringify(runtimeObservationAfter),
+              ),
+              runtime_observation_stable_sha256:
+                runtimeObservationAfter.stable_sha256,
+            }
+          : {}),
       },
       rpc_url: rpcUrl,
       site_slug: siteSlug,
@@ -401,10 +479,5 @@ export async function runListPagesPreviewDifferential({
 }
 
 export async function writePreviewDifferential(verdict, outputPath) {
-  await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  await fs.writeFile(
-    outputPath,
-    `${JSON.stringify(verdict, null, 2)}\n`,
-    { encoding: "utf8", flag: "wx", mode: 0o600 },
-  );
+  await publishListPagesJsonNoReplace(outputPath, verdict);
 }

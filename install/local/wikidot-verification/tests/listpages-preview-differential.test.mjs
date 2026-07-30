@@ -5,6 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 
 import {
+  DeepwellJsonRpcClient,
   LISTPAGES_REPLAY_RUNTIME_IDENTITY_SCHEMA,
   LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
   runListPagesPreviewDifferential,
@@ -70,9 +71,11 @@ function authoritativeIdentity(overrides = {}) {
     wikijump_tree: "2".repeat(40),
     ftml_sha: "3".repeat(40),
     dependency_lock_sha256: "4".repeat(64),
+    build_manifest_sha256: "a".repeat(64),
+    build_artifact_key: `candidate-v3-${"b".repeat(64)}`,
     executable_sha256: "5".repeat(64),
     runtime_config_sha256: "6".repeat(64),
-    profile: "dev",
+    profile: "release",
     rpc_url: "http://127.0.0.1:12747/jsonrpc",
     site_slug: "sandbox-for-codex",
     site_id: 7,
@@ -95,6 +98,8 @@ function authoritativeProof(identity, overrides = {}) {
       wikijump_tree: identity.wikijump_tree,
       ftml_sha: identity.ftml_sha,
       dependency_lock_sha256: identity.dependency_lock_sha256,
+      build_manifest_sha256: identity.build_manifest_sha256,
+      build_artifact_key: identity.build_artifact_key,
       executable_sha256: identity.executable_sha256,
       runtime_config_sha256: identity.runtime_config_sha256,
       profile: identity.profile,
@@ -103,7 +108,28 @@ function authoritativeProof(identity, overrides = {}) {
     site_slug: identity.site_slug,
     site_id: identity.site_id,
     service_image_sha256: { ...identity.service_image_sha256 },
+    process: {
+      pid: 1234,
+      start_ticks: "5678",
+      config_path: "/tmp/listpages-runtime.toml",
+      build_manifest_path: "/tmp/listpages-candidate-manifest.json",
+    },
+    service_containers: {
+      cache: "a".repeat(64),
+      database: "b".repeat(64),
+      files: "c".repeat(64),
+    },
     ...overrides,
+  };
+}
+
+function boundRuntimeObservation(stableSha256, observedAt, phase) {
+  return {
+    schema: "wikijump_listpages_compat.runtime_observation.v1",
+    status: "bound",
+    phase,
+    observed_at: observedAt,
+    stable_sha256: stableSha256,
   };
 }
 
@@ -184,11 +210,17 @@ test("authoritative preview binds proof, endpoint, site, and every runtime diges
     siteSlug: identity.site_slug,
     rpcClient,
     authoritative: true,
+    observeRuntime: async ({ phase }) =>
+      boundRuntimeObservation(
+        "a".repeat(64),
+        phase === "before"
+          ? "2026-07-30T00:00:01.000Z"
+          : "2026-07-30T00:00:02.000Z",
+        phase,
+      ),
   });
-  assert.deepEqual(verdict.inputs.authority, {
-    mode: "authoritative",
-    completion_eligible: true,
-  });
+  assert.equal(verdict.inputs.authority.mode, "authoritative");
+  assert.equal(verdict.inputs.authority.completion_eligible, true);
   assert.match(verdict.inputs.runtime_identity_sha256, /^[0-9a-f]{64}$/u);
   assert.match(verdict.inputs.runtime_proof_sha256, /^[0-9a-f]{64}$/u);
 
@@ -197,14 +229,18 @@ test("authoritative preview binds proof, endpoint, site, and every runtime diges
     "wikijump_tree",
     "ftml_sha",
     "dependency_lock_sha256",
+    "build_manifest_sha256",
+    "build_artifact_key",
     "executable_sha256",
     "runtime_config_sha256",
     "profile",
   ]) {
     const changed = authoritativeProof(identity);
     changed.candidate[field] = field === "profile"
-      ? "release"
-      : "0".repeat(identity[field].length);
+      ? "dev"
+      : field === "build_artifact_key"
+        ? `candidate-v3-${"0".repeat(64)}`
+        : "0".repeat(identity[field].length);
     const changedArtifacts = await writeAuthoritativeArtifacts(
       await fs.mkdtemp(path.join(root, "changed-")),
       identity,
@@ -222,6 +258,123 @@ test("authoritative preview binds proof, endpoint, site, and every runtime diges
       new RegExp(`runtime proof ${field} differs`, "u"),
     );
   }
+});
+
+test("authoritative preview observes the running endpoint before and after every RPC", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-preview-observed-runtime-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  await writeReferences(
+    referencesPath,
+    [reference("exact", "source", "<p>exact</p>")],
+  );
+  const identity = authoritativeIdentity();
+  const proof = authoritativeProof(identity);
+  const artifacts = await writeAuthoritativeArtifacts(root, identity, proof);
+  const observations = [
+    boundRuntimeObservation(
+      "a".repeat(64),
+      "2026-07-30T00:00:01.000Z",
+      "before",
+    ),
+    boundRuntimeObservation(
+      "a".repeat(64),
+      "2026-07-30T00:00:02.000Z",
+      "after",
+    ),
+  ];
+  const phases = [];
+  const verdict = await runListPagesPreviewDifferential({
+    referencesPath,
+    ...artifacts,
+    rpcUrl: identity.rpc_url,
+    siteSlug: identity.site_slug,
+    rpcClient: new FakeRpc(new Map([["source", "<p>exact</p>"]])),
+    authoritative: true,
+    observeRuntime: async ({ phase, identity: actualIdentity, proof: actualProof }) => {
+      phases.push(phase);
+      assert.deepEqual(actualIdentity, identity);
+      assert.deepEqual(actualProof, proof);
+      return observations.shift();
+    },
+  });
+
+  assert.deepEqual(phases, ["before", "after"]);
+  assert.equal(
+    verdict.inputs.authority.runtime_observation_stable_sha256,
+    "a".repeat(64),
+  );
+  assert.match(
+    verdict.inputs.authority.runtime_observation_before_sha256,
+    /^[0-9a-f]{64}$/u,
+  );
+  assert.match(
+    verdict.inputs.authority.runtime_observation_after_sha256,
+    /^[0-9a-f]{64}$/u,
+  );
+});
+
+test("authoritative preview fails closed before RPC and on mid-replay replacement", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-preview-runtime-replacement-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  await writeReferences(
+    referencesPath,
+    [reference("exact", "source", "<p>exact</p>")],
+  );
+  const identity = authoritativeIdentity();
+  const proof = authoritativeProof(identity);
+  const artifacts = await writeAuthoritativeArtifacts(root, identity, proof);
+  const rpcClient = new FakeRpc(new Map([["source", "<p>exact</p>"]]));
+  rpcClient.calls = [];
+  const call = rpcClient.call.bind(rpcClient);
+  rpcClient.call = async (...args) => {
+    rpcClient.calls.push(args);
+    return call(...args);
+  };
+
+  await assert.rejects(
+    runListPagesPreviewDifferential({
+      referencesPath,
+      ...artifacts,
+      rpcUrl: identity.rpc_url,
+      siteSlug: identity.site_slug,
+      rpcClient,
+      authoritative: true,
+      observeRuntime: async () => {
+        throw new Error("listener PID does not own the endpoint");
+      },
+    }),
+    /listener PID does not own the endpoint/,
+  );
+  assert.equal(rpcClient.calls.length, 0);
+
+  const observations = [
+    boundRuntimeObservation(
+      "a".repeat(64),
+      "2026-07-30T00:00:01.000Z",
+      "before",
+    ),
+    boundRuntimeObservation(
+      "b".repeat(64),
+      "2026-07-30T00:00:02.000Z",
+      "after",
+    ),
+  ];
+  await assert.rejects(
+    runListPagesPreviewDifferential({
+      referencesPath,
+      ...artifacts,
+      rpcUrl: identity.rpc_url,
+      siteSlug: identity.site_slug,
+      rpcClient,
+      authoritative: true,
+      observeRuntime: async () => observations.shift(),
+    }),
+    /runtime identity changed during preview replay/,
+  );
 });
 
 test("diagnostic preview is explicitly completion-ineligible", async () => {
@@ -321,6 +474,64 @@ test("preview differential records matches and mismatches", async () => {
   const mismatch = verdict.cases.find((row) => row.case_id === "mismatch");
   assert.equal(mismatch.comparison.checks.visible_text.live, "live");
   assert.equal(mismatch.comparison.checks.visible_text.local, "local");
+  assert.equal(mismatch.local.raw_html, "<p>local</p>");
+});
+
+test("preview differential rejects duplicate references before the first RPC", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-preview-duplicate-input-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  const duplicate = reference("duplicate", "source", "<p>live</p>");
+  await writeReferences(referencesPath, [duplicate, duplicate]);
+  const rpcClient = new FakeRpc(new Map());
+  rpcClient.calls = 0;
+  rpcClient.call = async () => {
+    rpcClient.calls += 1;
+    throw new Error("must not be called");
+  };
+  await assert.rejects(
+    runListPagesPreviewDifferential({
+      referencesPath,
+      rpcUrl: "http://127.0.0.1:1/jsonrpc",
+      siteSlug: "sandbox-for-codex",
+      rpcClient,
+    }),
+    /duplicate live reference case ID duplicate/,
+  );
+  assert.equal(rpcClient.calls, 0);
+});
+
+test("Deepwell JSON-RPC client rejects redirects and protocol substitution", async () => {
+  const responses = [
+    {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ jsonrpc: "1.0", id: 1, result: {} }),
+    },
+    {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ jsonrpc: "2.0", id: 999, result: {} }),
+    },
+  ];
+  const requests = [];
+  const client = new DeepwellJsonRpcClient({
+    rpcUrl: "http://127.0.0.1:1/jsonrpc",
+    fetchImpl: async (_url, options) => {
+      requests.push(options);
+      return responses.shift();
+    },
+  });
+  await assert.rejects(
+    client.call("site_get", {}),
+    /mismatched protocol version or response ID/,
+  );
+  await assert.rejects(
+    client.call("site_get", {}),
+    /mismatched protocol version or response ID/,
+  );
+  assert.deepEqual(requests.map(({ redirect }) => redirect), ["error", "error"]);
 });
 
 test("preview differential records local errors and writes a verdict", async () => {
@@ -337,6 +548,7 @@ test("preview differential records local errors and writes a verdict", async () 
   assert.equal(verdict.summary.counts["local-error"], 1);
   await writePreviewDifferential(verdict, output);
   assert.equal(JSON.parse(await fs.readFile(output, "utf8")).summary.counts["local-error"], 1);
+  assert.equal((await fs.stat(output)).mode & 0o777, 0o400);
   await assert.rejects(
     writePreviewDifferential(verdict, output),
     (error) => error?.code === "EEXIST",

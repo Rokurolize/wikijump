@@ -8,10 +8,22 @@ import {
   reconcileListPagesCorpusReplay,
 } from "../src/listpages-corpus-replay-reconciliation.mjs";
 import {
+  classifyListPagesPreviewDifferential,
+} from "../src/listpages-preview-classification.mjs";
+import {
+  compareListPagesPreviewHtml,
+  LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA,
+  LISTPAGES_REPLAY_RUNTIME_IDENTITY_SCHEMA,
+  LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
+} from "../src/listpages-preview-differential.mjs";
+import {
   main as reconcileCli,
   parseArgs as parseReconcileArgs,
 } from "../scripts/reconcile-listpages-corpus-replay.mjs";
-import { sha256 } from "../src/syntax-differential.mjs";
+import {
+  sha256,
+  visibleText,
+} from "../src/syntax-differential.mjs";
 
 async function writeJsonl(filePath, rows) {
   await fs.writeFile(
@@ -25,6 +37,10 @@ function invocation(id, source, pageFullname) {
     id,
     source,
     source_sha256: sha256(source),
+    execution_context: "executable",
+    literal_owner: null,
+    context_replay_source: null,
+    context_replay_source_sha256: null,
     semantic_cluster_key: "cluster",
     provenance: {
       branch: "en",
@@ -97,7 +113,7 @@ test("maps one exact-source live classification to every corpus provenance", asy
     differential_statuses: { match: 2 },
     classifications: { matched: 2 },
     dispositions: { none: 2 },
-    exit_code: 0,
+    exit_code: 2,
   });
   assert.equal(reconciliation.cases[1].representative_case_id, "en:alpha:L1:B0");
   assert.equal(reconciliation.cases[1].direct_live_capture, false);
@@ -245,7 +261,7 @@ test("reconciles literal occurrences through their preserved owner context", asy
   const replay = `{{${extracted}}}`;
   const row = invocation("en:literal:L1:B0", extracted, "literal");
   row.execution_context = "literal";
-  row.literal_owner = "monospace";
+  row.literal_owner = "inline-monospace";
   row.context_replay_source = replay;
   row.context_replay_source_sha256 = sha256(replay);
   const inputs = await fixture({
@@ -310,9 +326,10 @@ test("CLI writes a no-replace corpus reconciliation artifact", async () => {
     output,
   ]);
 
-  assert.equal(code, 0);
+  assert.equal(code, 2);
   const result = JSON.parse(await fs.readFile(output, "utf8"));
   assert.equal(result.summary.classified_invocation_count, 1);
+  assert.equal((await fs.stat(output)).mode & 0o777, 0o400);
   await assert.rejects(
     reconcileCli([
       "node",
@@ -357,7 +374,7 @@ test("CLI accepts repeatable classification shards", async () => {
     output,
   ]);
 
-  assert.equal(code, 0);
+  assert.equal(code, 2);
   const result = JSON.parse(await fs.readFile(output, "utf8"));
   assert.equal(result.summary.classified_invocation_count, 2);
   assert.equal(result.inputs.classifications.length, 2);
@@ -374,9 +391,86 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
   const referencesPath = path.join(root, "references.jsonl");
   const runtimeIdentityPath = path.join(root, "runtime-identity.json");
   const runtimeProofPath = path.join(root, "runtime-proof.json");
-  const runtimeIdentityText = '{"identity":"exact"}\n';
-  const runtimeProofText = '{"proof":"exact"}\n';
-  const referencesText = "frozen references\n";
+  const runtimeIdentity = {
+    schema: LISTPAGES_REPLAY_RUNTIME_IDENTITY_SCHEMA,
+    wikijump_sha: "1".repeat(40),
+    wikijump_tree: "2".repeat(40),
+    ftml_sha: "3".repeat(40),
+    dependency_lock_sha256: "4".repeat(64),
+    build_manifest_sha256: "a".repeat(64),
+    build_artifact_key: `candidate-v3-${"b".repeat(64)}`,
+    executable_sha256: "5".repeat(64),
+    runtime_config_sha256: "6".repeat(64),
+    profile: "release",
+    rpc_url: "http://127.0.0.1:12747/jsonrpc",
+    site_slug: "sandbox-for-codex",
+    site_id: 7,
+    service_image_sha256: {
+      deepwell: "5".repeat(64),
+      database: "7".repeat(64),
+      cache: "8".repeat(64),
+      files: "9".repeat(64),
+    },
+  };
+  const runtimeProof = {
+    schema: LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
+    observed_at: "2026-07-30T00:00:00.000Z",
+    candidate: {
+      wikijump_sha: runtimeIdentity.wikijump_sha,
+      wikijump_tree: runtimeIdentity.wikijump_tree,
+      ftml_sha: runtimeIdentity.ftml_sha,
+      dependency_lock_sha256: runtimeIdentity.dependency_lock_sha256,
+      build_manifest_sha256: runtimeIdentity.build_manifest_sha256,
+      build_artifact_key: runtimeIdentity.build_artifact_key,
+      executable_sha256: runtimeIdentity.executable_sha256,
+      runtime_config_sha256: runtimeIdentity.runtime_config_sha256,
+      profile: runtimeIdentity.profile,
+    },
+    rpc_url: runtimeIdentity.rpc_url,
+    site_slug: runtimeIdentity.site_slug,
+    site_id: runtimeIdentity.site_id,
+    service_image_sha256: { ...runtimeIdentity.service_image_sha256 },
+    process: {
+      pid: 1234,
+      start_ticks: "5678",
+      config_path: "/tmp/runtime.toml",
+      build_manifest_path: "/tmp/manifest.json",
+    },
+    service_containers: {
+      cache: "a".repeat(64),
+      database: "b".repeat(64),
+      files: "c".repeat(64),
+    },
+  };
+  const runtimeIdentityText = `${JSON.stringify(runtimeIdentity)}\n`;
+  const runtimeProofText = `${JSON.stringify(runtimeProof)}\n`;
+  const rawHtml = "<p>exact</p>";
+  const reference = {
+    schema: "wikijump_syntax_differential.wikidot_reference.v1",
+    syntax_case: {
+      schema: "wikijump_syntax_differential.syntax_case.v1",
+      case_id: "en:exact:L1:B0",
+      source,
+      title: "en:exact:L1:B0",
+      wikidot_observation_tier: "page-preview",
+      local_execution_tier: "wikijump-runtime",
+    },
+    source_sha256: sha256(source),
+    captured_at: "2026-07-30T00:00:00.000Z",
+    provenance: {
+      site: "sandbox-for-codex",
+      site_domain: "sandbox-for-codex.wikidot.com",
+      module: "edit/PagePreviewModule",
+      wikidot_py_version: "4.4.1",
+      wikidot_py_commit: "4af7c8eaec00a3e7a29fe502234e0aeeef968233",
+      requirements_sha256: "c".repeat(64),
+      authenticated: false,
+      mutated: false,
+    },
+    raw_html: rawHtml,
+    raw_html_sha256: sha256(rawHtml),
+  };
+  const referencesText = `${JSON.stringify(reference)}\n`;
   await writeJsonl(invocationsPath, [
     invocation("en:exact:L1:B0", source, "exact"),
   ]);
@@ -384,8 +478,15 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
   await fs.writeFile(runtimeProofPath, runtimeProofText);
   await fs.writeFile(referencesPath, referencesText);
   const verdict = {
+    schema: LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA,
     inputs: {
-      authority: { mode: "authoritative", completion_eligible: true },
+      authority: {
+        mode: "authoritative",
+        completion_eligible: true,
+        runtime_observation_before_sha256: "a".repeat(64),
+        runtime_observation_after_sha256: "b".repeat(64),
+        runtime_observation_stable_sha256: "c".repeat(64),
+      },
       runtime_identity_path: runtimeIdentityPath,
       runtime_identity_sha256: sha256(runtimeIdentityText),
       runtime_proof_path: runtimeProofPath,
@@ -393,27 +494,38 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       references_path: referencesPath,
       references_sha256: sha256(referencesText),
     },
+    cases: [{
+      schema: `${LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA}.case`,
+      case_id: "en:exact:L1:B0",
+      status: "match",
+      live: {
+        html_sha256: sha256(rawHtml),
+        visible_text: visibleText(rawHtml),
+      },
+      local: {
+        raw_html: rawHtml,
+        html_sha256: sha256(rawHtml),
+        visible_text: visibleText(rawHtml),
+        styles: [],
+      },
+      comparison: compareListPagesPreviewHtml(reference, rawHtml),
+    }],
+    summary: {
+      total: 1,
+      counts: { match: 1 },
+      exit_code: 0,
+    },
   };
   const verdictText = `${JSON.stringify(verdict)}\n`;
   await fs.writeFile(verdictPath, verdictText);
+  const classification = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+    authoritative: true,
+  });
   await fs.writeFile(
     classificationPath,
-    `${JSON.stringify({
-      schema: "wikijump_listpages_compat.preview_classification.v1",
-      inputs: {
-        verdict_path: verdictPath,
-        verdict_sha256: sha256(verdictText),
-        references_path: referencesPath,
-        references_sha256: sha256(referencesText),
-        authority: {
-          mode: "authoritative",
-          completion_eligible: true,
-          runtime_identity_sha256: sha256(runtimeIdentityText),
-          runtime_proof_sha256: sha256(runtimeProofText),
-        },
-      },
-      cases: [classifiedCase("en:exact:L1:B0", source)],
-    })}\n`,
+    `${JSON.stringify(classification)}\n`,
   );
 
   const reconciliation = await reconcileListPagesCorpusReplay({
@@ -422,6 +534,7 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     authoritative: true,
   });
   assert.equal(reconciliation.inputs.authority.completion_eligible, true);
+  assert.equal(reconciliation.summary.exit_code, 0);
 
   await fs.writeFile(runtimeProofPath, '{"proof":"changed"}\n');
   await assert.rejects(
@@ -430,10 +543,23 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       classificationPaths: [classificationPath],
       authoritative: true,
     }),
-    /runtime proof changed after preview classification/,
+    /runtime proof changed after (?:the preview verdict|preview classification)/,
+  );
+  await fs.writeFile(runtimeProofPath, runtimeProofText);
+
+  const forged = JSON.parse(await fs.readFile(classificationPath, "utf8"));
+  forged.cases[0].classification = "forged-benign";
+  await fs.writeFile(classificationPath, `${JSON.stringify(forged)}\n`);
+  await assert.rejects(
+    reconcileListPagesCorpusReplay({
+      invocationsPath,
+      classificationPaths: [classificationPath],
+      authoritative: true,
+    }),
+    /differs from canonical recomputation/,
   );
 
-  const diagnostic = JSON.parse(await fs.readFile(classificationPath, "utf8"));
+  const diagnostic = classification;
   diagnostic.inputs.authority = {
     mode: "diagnostic",
     completion_eligible: false,

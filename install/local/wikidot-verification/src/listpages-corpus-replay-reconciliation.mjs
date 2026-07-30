@@ -1,6 +1,12 @@
 import fs from "node:fs/promises";
 
 import { sha256 } from "./syntax-differential.mjs";
+import {
+  classifyListPagesPreviewDifferential,
+} from "./listpages-preview-classification.mjs";
+import {
+  publishListPagesJsonNoReplace,
+} from "./listpages-evidence-publication.mjs";
 
 export const LISTPAGES_CORPUS_REPLAY_RECONCILIATION_SCHEMA =
   "wikijump_listpages_compat.corpus_replay_reconciliation.v1";
@@ -33,14 +39,41 @@ function validateSourceIdentity(row, kind) {
 }
 
 function replaySourceHash(invocation) {
-  if (invocation.execution_context !== "literal") {
+  if (!["executable", "literal"].includes(invocation.execution_context)) {
+    throw new Error(
+      `corpus invocation ${invocation.id} execution context is unsupported`,
+    );
+  }
+  if (invocation.execution_context === "executable") {
+    if (
+      invocation.literal_owner !== null ||
+      invocation.context_replay_source !== null ||
+      invocation.context_replay_source_sha256 !== null
+    ) {
+      throw new Error(
+        `executable corpus invocation ${invocation.id} has literal replay metadata`,
+      );
+    }
     return invocation.source_sha256;
   }
+  const literalDelimiters = new Map([
+    ["code-block", ["[[code]]", "[[/code]]"]],
+    ["comment", ["[!--", "--]"]],
+    ["css-module", ["[[module CSS", "[[/module]]"]],
+    ["html-block", ["[[html]]", "[[/html]]"]],
+    ["inline-monospace", ["{{", "}}"]],
+    ["inline-raw", ["@@", "@@"]],
+  ]);
+  const delimiters = literalDelimiters.get(invocation.literal_owner);
   if (
+    delimiters === undefined ||
     typeof invocation.context_replay_source !== "string" ||
     typeof invocation.context_replay_source_sha256 !== "string" ||
     sha256(invocation.context_replay_source) !==
-      invocation.context_replay_source_sha256
+      invocation.context_replay_source_sha256 ||
+    !invocation.context_replay_source.trimStart().startsWith(delimiters[0]) ||
+    !invocation.context_replay_source.trimEnd().endsWith(delimiters[1]) ||
+    invocation.context_replay_source.split(invocation.source).length !== 2
   ) {
     throw new Error(
       `literal corpus invocation ${invocation.id} replay source identity is invalid`,
@@ -70,6 +103,9 @@ export async function reconcileListPagesCorpusReplay({
   }
   const invocationsText = await fs.readFile(invocationsPath, "utf8");
   const invocations = readJsonlText(invocationsText);
+  if (authoritative && invocations.length === 0) {
+    throw new Error("authoritative corpus replay invocations must not be empty");
+  }
 
   const invocationIds = new Set();
   const invocationSourceHashes = new Set();
@@ -87,6 +123,7 @@ export async function reconcileListPagesCorpusReplay({
   const classificationInputs = [];
   let authoritativeRuntimeIdentitySha256 = null;
   let authoritativeRuntimeProofSha256 = null;
+  let authoritativeRuntimeObservationSha256 = null;
   for (const selectedPath of selectedClassificationPaths) {
     const classificationText = await fs.readFile(selectedPath, "utf8");
     const classification = JSON.parse(classificationText);
@@ -147,6 +184,21 @@ export async function reconcileListPagesCorpusReplay({
           "live references changed after preview classification",
         );
       }
+      const recomputed = await classifyListPagesPreviewDifferential({
+        verdictPath,
+        referencesPath: classification.inputs.references_path,
+        authoritative: true,
+      });
+      if (
+        JSON.stringify(recomputed.cases) !==
+          JSON.stringify(classification.cases) ||
+        JSON.stringify(recomputed.summary) !==
+          JSON.stringify(classification.summary)
+      ) {
+        throw new Error(
+          "authoritative preview classification differs from canonical recomputation",
+        );
+      }
       for (const [kind, pathField, hashField] of [
         [
           "runtime identity",
@@ -166,10 +218,14 @@ export async function reconcileListPagesCorpusReplay({
       authoritativeRuntimeIdentitySha256 ??=
         authority.runtime_identity_sha256;
       authoritativeRuntimeProofSha256 ??= authority.runtime_proof_sha256;
+      authoritativeRuntimeObservationSha256 ??=
+        authority.runtime_observation_stable_sha256;
       if (
         authoritativeRuntimeIdentitySha256 !==
           authority.runtime_identity_sha256 ||
-        authoritativeRuntimeProofSha256 !== authority.runtime_proof_sha256
+        authoritativeRuntimeProofSha256 !== authority.runtime_proof_sha256 ||
+        authoritativeRuntimeObservationSha256 !==
+          authority.runtime_observation_stable_sha256
       ) {
         throw new Error(
           "authoritative classification shards use different runtime identities",
@@ -188,9 +244,17 @@ export async function reconcileListPagesCorpusReplay({
         completion_eligible: false,
       },
     };
-    for (const row of classification.cases ?? []) {
+    if (!Array.isArray(classification.cases)) {
+      throw new Error("preview classification cases must be an array");
+    }
+    for (const row of classification.cases) {
       validateSourceIdentity(row, "preview classification");
       if (!invocationSourceHashes.has(row.source_sha256)) {
+        if (authoritative) {
+          throw new Error(
+            `authoritative preview classification ${row.case_id} is stale`,
+          );
+        }
         classificationInput.stale_case_count += 1;
         continue;
       }
@@ -270,6 +334,8 @@ export async function reconcileListPagesCorpusReplay({
             completion_eligible: true,
             runtime_identity_sha256: authoritativeRuntimeIdentitySha256,
             runtime_proof_sha256: authoritativeRuntimeProofSha256,
+            runtime_observation_stable_sha256:
+              authoritativeRuntimeObservationSha256,
           }
         : {
             mode: "diagnostic",
@@ -308,7 +374,11 @@ export async function reconcileListPagesCorpusReplay({
       differential_statuses: differentialStatuses,
       classifications,
       dispositions,
-      exit_code: actionableCases.length > 0 ? 1 : 0,
+      exit_code: actionableCases.length > 0
+        ? 1
+        : authoritative
+          ? 0
+          : 2,
     },
   };
 }
@@ -317,9 +387,5 @@ export async function writeListPagesCorpusReplayReconciliation(
   reconciliation,
   outputPath,
 ) {
-  await fs.writeFile(
-    outputPath,
-    `${JSON.stringify(reconciliation, null, 2)}\n`,
-    { encoding: "utf8", flag: "wx" },
-  );
+  await publishListPagesJsonNoReplace(outputPath, reconciliation);
 }

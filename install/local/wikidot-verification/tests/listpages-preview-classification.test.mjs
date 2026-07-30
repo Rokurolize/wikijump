@@ -16,6 +16,12 @@ import {
   sha256,
   visibleText,
 } from "../src/syntax-differential.mjs";
+import {
+  compareListPagesPreviewHtml,
+  LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA,
+  LISTPAGES_REPLAY_RUNTIME_IDENTITY_SCHEMA,
+  LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
+} from "../src/listpages-preview-differential.mjs";
 
 const referenceIdentities = new Map();
 
@@ -125,6 +131,83 @@ function identityBoundMatch(referenceRow, overrides = {}) {
   };
 }
 
+function authoritativeIdentity() {
+  return {
+    schema: LISTPAGES_REPLAY_RUNTIME_IDENTITY_SCHEMA,
+    wikijump_sha: "1".repeat(40),
+    wikijump_tree: "2".repeat(40),
+    ftml_sha: "3".repeat(40),
+    dependency_lock_sha256: "4".repeat(64),
+    build_manifest_sha256: "a".repeat(64),
+    build_artifact_key: `candidate-v3-${"b".repeat(64)}`,
+    executable_sha256: "5".repeat(64),
+    runtime_config_sha256: "6".repeat(64),
+    profile: "release",
+    rpc_url: "http://127.0.0.1:12747/jsonrpc",
+    site_slug: "sandbox-for-codex",
+    site_id: 7,
+    service_image_sha256: {
+      deepwell: "5".repeat(64),
+      database: "7".repeat(64),
+      cache: "8".repeat(64),
+      files: "9".repeat(64),
+    },
+  };
+}
+
+function authoritativeProof(identity) {
+  return {
+    schema: LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
+    observed_at: "2026-07-30T00:00:00.000Z",
+    candidate: {
+      wikijump_sha: identity.wikijump_sha,
+      wikijump_tree: identity.wikijump_tree,
+      ftml_sha: identity.ftml_sha,
+      dependency_lock_sha256: identity.dependency_lock_sha256,
+      build_manifest_sha256: identity.build_manifest_sha256,
+      build_artifact_key: identity.build_artifact_key,
+      executable_sha256: identity.executable_sha256,
+      runtime_config_sha256: identity.runtime_config_sha256,
+      profile: identity.profile,
+    },
+    rpc_url: identity.rpc_url,
+    site_slug: identity.site_slug,
+    site_id: identity.site_id,
+    service_image_sha256: { ...identity.service_image_sha256 },
+    process: {
+      pid: 1234,
+      start_ticks: "5678",
+      config_path: "/tmp/runtime.toml",
+      build_manifest_path: "/tmp/manifest.json",
+    },
+    service_containers: {
+      cache: "a".repeat(64),
+      database: "b".repeat(64),
+      files: "c".repeat(64),
+    },
+  };
+}
+
+function authoritativeMatch(referenceRow) {
+  const rawHtml = referenceRow.raw_html;
+  return {
+    schema: `${LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA}.case`,
+    case_id: referenceRow.syntax_case.case_id,
+    status: "match",
+    live: {
+      html_sha256: referenceRow.raw_html_sha256,
+      visible_text: visibleText(rawHtml),
+    },
+    local: {
+      raw_html: rawHtml,
+      html_sha256: sha256(rawHtml),
+      visible_text: visibleText(rawHtml),
+      styles: [],
+    },
+    comparison: compareListPagesPreviewHtml(referenceRow, rawHtml),
+  };
+}
+
 test("preview classifier requires a case-ID bijection", async () => {
   const first = reference("case-a", "source a", "<p>a</p>");
   const second = reference("case-b", "source b", "<p>b</p>");
@@ -202,7 +285,7 @@ test("authoritative classification preserves and revalidates the runtime identit
   const live = reference("case-a", "source a", "<p>a</p>");
   const fixture = await writeIdentityFixture({
     references: [live],
-    cases: [identityBoundMatch(live)],
+    cases: [authoritativeMatch(live)],
   });
   const runtimeIdentityPath = path.join(
     path.dirname(fixture.verdictPath),
@@ -219,7 +302,13 @@ test("authoritative classification preserves and revalidates the runtime identit
   const verdict = JSON.parse(await fs.readFile(fixture.verdictPath, "utf8"));
   const referencesText = await fs.readFile(fixture.referencesPath, "utf8");
   verdict.inputs = {
-    authority: { mode: "authoritative", completion_eligible: true },
+    authority: {
+      mode: "authoritative",
+      completion_eligible: true,
+      runtime_observation_before_sha256: "a".repeat(64),
+      runtime_observation_after_sha256: "b".repeat(64),
+      runtime_observation_stable_sha256: "c".repeat(64),
+    },
     references_path: fixture.referencesPath,
     references_sha256: sha256(referencesText),
     runtime_identity_path: runtimeIdentityPath,
@@ -227,6 +316,30 @@ test("authoritative classification preserves and revalidates the runtime identit
     runtime_proof_path: runtimeProofPath,
     runtime_proof_sha256: sha256(runtimeProofText),
   };
+  verdict.schema = LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA;
+  verdict.summary = {
+    total: 1,
+    counts: { match: 1 },
+    exit_code: 0,
+  };
+  await fs.writeFile(fixture.verdictPath, JSON.stringify(verdict));
+
+  await assert.rejects(
+    classifyListPagesPreviewDifferential({
+      ...fixture,
+      authoritative: true,
+    }),
+    /runtime identity schema is unsupported/,
+  );
+
+  const identity = authoritativeIdentity();
+  const proof = authoritativeProof(identity);
+  const validIdentityText = `${JSON.stringify(identity)}\n`;
+  const validProofText = `${JSON.stringify(proof)}\n`;
+  await fs.writeFile(runtimeIdentityPath, validIdentityText);
+  await fs.writeFile(runtimeProofPath, validProofText);
+  verdict.inputs.runtime_identity_sha256 = sha256(validIdentityText);
+  verdict.inputs.runtime_proof_sha256 = sha256(validProofText);
   await fs.writeFile(fixture.verdictPath, JSON.stringify(verdict));
 
   const classified = await classifyListPagesPreviewDifferential({
@@ -236,8 +349,9 @@ test("authoritative classification preserves and revalidates the runtime identit
   assert.deepEqual(classified.inputs.authority, {
     mode: "authoritative",
     completion_eligible: true,
-    runtime_identity_sha256: sha256(runtimeIdentityText),
-    runtime_proof_sha256: sha256(runtimeProofText),
+    runtime_identity_sha256: sha256(validIdentityText),
+    runtime_proof_sha256: sha256(validProofText),
+    runtime_observation_stable_sha256: "c".repeat(64),
   });
 
   await fs.writeFile(runtimeIdentityPath, '{"changed":true}\n');
@@ -283,6 +397,7 @@ test("classification CLI and writer preserve authoritative evidence", async () =
   const output = path.join(root, "classification.json");
   const classification = { schema: "classification" };
   await writeListPagesPreviewClassification(classification, output);
+  assert.equal((await fs.stat(output)).mode & 0o777, 0o400);
   await assert.rejects(
     writeListPagesPreviewClassification(classification, output),
     (error) => error?.code === "EEXIST",

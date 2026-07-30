@@ -1,20 +1,28 @@
 import fs from "node:fs/promises";
-import path from "node:path";
 
 import {
   canonicalDom,
   sha256,
   validateWikidotReference,
+  visibleText,
 } from "./syntax-differential.mjs";
+import {
+  compareListPagesPreviewHtml,
+  LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA,
+  validateListPagesRuntimeIdentity,
+  validateListPagesRuntimeProof,
+} from "./listpages-preview-differential.mjs";
 import {
   extractListPagesInvocationsFromSource,
 } from "./listpages-campaign-inventory.mjs";
+import {
+  publishListPagesJsonNoReplace,
+} from "./listpages-evidence-publication.mjs";
 
 export const LISTPAGES_PREVIEW_CLASSIFICATION_SCHEMA =
   "wikijump_listpages_compat.preview_classification.v1";
 
-async function readJsonl(filePath) {
-  const text = await fs.readFile(filePath, "utf8");
+function readJsonlText(text) {
   if (!text.trim()) return [];
   return text.trimEnd().split(/\r?\n/u).map((line) => JSON.parse(line));
 }
@@ -45,12 +53,9 @@ function literalContextKeepsListPagesInactive({
   localUnsupportedDiagnostic,
 }) {
   if (!row.case_id.endsWith(":literal-context")) return false;
-  const liveHtml = reference.raw_html;
+  const liveNodes = canonicalDom(reference.raw_html);
   const liveExecuted = ["list-pages-box", "list-pages-item", "pager"]
-    .some((className) =>
-      liveHtml.includes(`class="${className}"`) ||
-      liveHtml.includes(`class='${className}'`)
-    );
+    .some((className) => domHasClass(liveNodes, className));
   const localExecuted = ["list-pages-box", "list-pages-item", "pager"]
     .some((className) => domHasClass(localNodes, className));
   return !liveExecuted && !localExecuted && !localUnsupportedDiagnostic;
@@ -299,8 +304,8 @@ function classifyMismatch(row, reference) {
   );
   const liveHasListPages =
     domHasClass(liveNodes, "list-pages-box") ||
-    liveHtml.includes('class="list-pages-item"') ||
-    liveHtml.includes('class="pager"') ||
+    domHasClass(liveNodes, "list-pages-item") ||
+    domHasClass(liveNodes, "pager") ||
     resolvesTemplateVariables(source, liveText);
   const localHasListPages =
     domHasClass(localNodes, "list-pages-box") ||
@@ -449,6 +454,7 @@ export async function classifyListPagesPreviewDifferential({
   const verdictText = await fs.readFile(verdictPath, "utf8");
   const verdict = JSON.parse(verdictText);
   const referencesText = await fs.readFile(referencesPath, "utf8");
+  const references = readJsonlText(referencesText).map(validateWikidotReference);
   let authority = {
     mode: "diagnostic",
     completion_eligible: false,
@@ -465,6 +471,7 @@ export async function classifyListPagesPreviewDifferential({
     if (verdict.inputs.references_sha256 !== sha256(referencesText)) {
       throw new Error("live references changed after the preview verdict");
     }
+    const authorityArtifacts = {};
     for (const [kind, pathField, hashField] of [
       [
         "runtime identity",
@@ -485,15 +492,38 @@ export async function classifyListPagesPreviewDifferential({
       if (sha256(currentText) !== inputHash) {
         throw new Error(`${kind} changed after the preview verdict`);
       }
+      authorityArtifacts[kind] = JSON.parse(currentText);
+    }
+    const runtimeIdentity = validateListPagesRuntimeIdentity(
+      authorityArtifacts["runtime identity"],
+    );
+    validateListPagesRuntimeProof(
+      authorityArtifacts["runtime proof"],
+      runtimeIdentity,
+    );
+    if (
+      verdict.schema !== LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA ||
+      !/^[0-9a-f]{64}$/u.test(
+        verdict.inputs.authority.runtime_observation_before_sha256 ?? "",
+      ) ||
+      !/^[0-9a-f]{64}$/u.test(
+        verdict.inputs.authority.runtime_observation_after_sha256 ?? "",
+      ) ||
+      !/^[0-9a-f]{64}$/u.test(
+        verdict.inputs.authority.runtime_observation_stable_sha256 ?? "",
+      )
+    ) {
+      throw new Error("authoritative preview verdict schema or runtime observations are invalid");
     }
     authority = {
       mode: "authoritative",
       completion_eligible: true,
       runtime_identity_sha256: verdict.inputs.runtime_identity_sha256,
       runtime_proof_sha256: verdict.inputs.runtime_proof_sha256,
+      runtime_observation_stable_sha256:
+        verdict.inputs.authority.runtime_observation_stable_sha256,
     };
   }
-  const references = (await readJsonl(referencesPath)).map(validateWikidotReference);
   const referenceIds = new Set();
   for (const reference of references) {
     const caseId = reference.syntax_case.case_id;
@@ -529,6 +559,39 @@ export async function classifyListPagesPreviewDifferential({
 
   const cases = verdict.cases.map((row) => {
     const reference = referencesById.get(row.case_id);
+    if (authoritative) {
+      if (
+        row.schema !== `${LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA}.case` ||
+        !["match", "mismatch", "local-error"].includes(row.status)
+      ) {
+        throw new Error(`authoritative verdict case ${row.case_id} is invalid`);
+      }
+      if (row.status !== "local-error") {
+        if (
+          typeof row.local?.raw_html !== "string" ||
+          row.local.html_sha256 !== sha256(row.local.raw_html) ||
+          row.local.visible_text !== visibleText(row.local.raw_html) ||
+          row.live?.html_sha256 !== reference.raw_html_sha256 ||
+          row.live.visible_text !== visibleText(reference.raw_html)
+        ) {
+          throw new Error(
+            `authoritative verdict local or live output is invalid for ${row.case_id}`,
+          );
+        }
+        const expectedComparison = compareListPagesPreviewHtml(
+          reference,
+          row.local.raw_html,
+        );
+        if (
+          JSON.stringify(row.comparison) !== JSON.stringify(expectedComparison) ||
+          row.status !== expectedComparison.status
+        ) {
+          throw new Error(
+            `authoritative verdict comparison is invalid for ${row.case_id}`,
+          );
+        }
+      }
+    }
     const identities = row.comparison?.identities;
     if (
       identities?.source_sha256 === undefined ||
@@ -573,6 +636,24 @@ export async function classifyListPagesPreviewDifferential({
     counts[row.classification] = (counts[row.classification] ?? 0) + 1;
     dispositions[row.disposition] = (dispositions[row.disposition] ?? 0) + 1;
   }
+  if (authoritative) {
+    const verdictCounts = {};
+    for (const row of verdict.cases) {
+      verdictCounts[row.status] = (verdictCounts[row.status] ?? 0) + 1;
+    }
+    const expectedExitCode =
+      (verdictCounts.mismatch ?? 0) > 0 ||
+        (verdictCounts["local-error"] ?? 0) > 0
+        ? 1
+        : 0;
+    if (
+      verdict.summary?.total !== verdict.cases.length ||
+      JSON.stringify(verdict.summary.counts) !== JSON.stringify(verdictCounts) ||
+      verdict.summary.exit_code !== expectedExitCode
+    ) {
+      throw new Error("authoritative preview verdict summary is invalid");
+    }
+  }
   return {
     schema: LISTPAGES_PREVIEW_CLASSIFICATION_SCHEMA,
     generated_at: new Date().toISOString(),
@@ -596,10 +677,5 @@ export async function writeListPagesPreviewClassification(
   classification,
   outputPath,
 ) {
-  await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  await fs.writeFile(
-    outputPath,
-    `${JSON.stringify(classification, null, 2)}\n`,
-    { encoding: "utf8", flag: "wx", mode: 0o600 },
-  );
+  await publishListPagesJsonNoReplace(outputPath, classification);
 }
