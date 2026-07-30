@@ -22,12 +22,14 @@ mod date_selectors;
 mod selectors;
 
 pub(in crate::services::render) use self::date_selectors::parse_list_pages_date_selector;
+use self::selectors::{ListPagesNameSelector, compose_list_pages_name_selectors};
 pub(in crate::services::render) use self::selectors::{
     UrlSelector, is_dynamic_list_pages_value,
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
-    list_pages_url_fallback, resolve_url_selector, split_list_pages_tag_values,
-    static_list_pages_selector, substitute_list_pages_current_data_form_variables,
+    list_pages_url_fallback, parse_list_pages_numeric_argument, resolve_url_selector,
+    split_list_pages_tag_values, static_list_pages_selector,
+    substitute_list_pages_current_data_form_variables,
 };
 
 use super::template::{
@@ -447,9 +449,11 @@ pub(in crate::services::render) fn list_pages_static_parent_fullname_with_url(
             }
         })?;
     let value = value.trim();
+    let value = value.split('"').next().unwrap_or(value);
+    let signed_static_selector = value.get(1..).is_some_and(|remainder| remainder != "-");
     if matches!(value, "" | "." | "-" | "=" | "-=")
-        || value.starts_with(['+', '/', '\'', '"'])
-        || value.starts_with('-')
+        || value.starts_with(['/', '\'', '"'])
+        || (value.starts_with(['+', '-']) && signed_static_selector)
     {
         None
     } else {
@@ -481,7 +485,6 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     let mut category_selector_present = false;
     let mut saw_category_argument = false;
     let mut saw_tag_argument = false;
-    let mut saw_pagetype_argument = false;
     let mut saw_rss_argument = false;
     let mut current_page_only = false;
     let mut include_current_category = false;
@@ -523,8 +526,8 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     let mut score_equals_current_page = false;
     let mut votes = Vec::new();
     let mut votes_equals_current_page = false;
-    let mut slug = None;
-    let mut name_pattern = None;
+    let mut canonical_name_selector = None;
+    let mut alias_name_selector = None;
     let mut data_form_fields = Vec::new();
     let mut prepend_line = None;
     let mut append_line = None;
@@ -605,7 +608,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 | "appendLine"
         ) && double_quoted_assignment;
         if exact_grammar_family && !exact_grammar_token
-            || matches!(raw_key, "score" | "createdat" | "updatedat")
+            || matches!(key.as_str(), "score" | "createdat" | "updatedat")
         {
             continue;
         }
@@ -902,13 +905,13 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         legacy_url_offset.as_deref()
                     },
                 ) {
-                    UrlSelector::Static(_) => {
+                    UrlSelector::Static(static_value) => {
                         offset_origin = if dynamic {
                             ListPagesOffsetOrigin::Fallback
                         } else {
                             ListPagesOffsetOrigin::Static
                         };
-                        if dynamic { value } else { raw_value }
+                        if dynamic { static_value } else { raw_value }
                     }
                     UrlSelector::Resolved(resolved) => {
                         offset_origin = ListPagesOffsetOrigin::Url;
@@ -921,7 +924,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         continue;
                     }
                 };
-                let parsed = value.parse().unwrap_or(0);
+                let parsed = parse_list_pages_numeric_argument(value).unwrap_or(0);
                 rss_path.offset = nonempty_list_pages_feed_value(value);
                 if parsed > u64::from(MAX_LISTPAGES_RENDER_OFFSET) {
                     offset_beyond_render_window = Some(parsed);
@@ -931,13 +934,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     offset = parsed as u32;
                 }
             }
-            "pagetype" | "page_type" | "page-type" => {
-                if raw_key != "pagetype" && saw_pagetype_argument {
-                    continue;
-                }
-                if raw_key == "pagetype" {
-                    saw_pagetype_argument = true;
-                }
+            "pagetype" => {
                 let resolved_url_page_type;
                 let value = match resolve_url_selector(
                     value,
@@ -946,7 +943,13 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         raw_key,
                     ),
                 ) {
-                    UrlSelector::Static(_) => raw_value,
+                    UrlSelector::Static(static_value) => {
+                        if is_dynamic_list_pages_value(value) {
+                            static_value
+                        } else {
+                            raw_value
+                        }
+                    }
                     UrlSelector::Resolved(resolved) => {
                         unsupported_count_pages_filter = true;
                         resolved_url_page_type = resolved;
@@ -1080,19 +1083,23 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         continue;
                     }
                 };
-                current_page_only = false;
-                slug = None;
-                name_pattern = None;
-                if value == "=" {
-                    current_page_only = true;
+                let selector = if value == "=" {
                     limit = Some(1);
+                    Some(ListPagesNameSelector::CurrentPage)
                 } else if !value.is_empty() && !is_dynamic_list_pages_value(value) {
                     let value = wikidot_list_pages_name_slug(value);
                     if value.contains(['*', '%', '?']) {
-                        name_pattern = Some(Cow::Owned(value));
+                        Some(ListPagesNameSelector::Pattern(Cow::Owned(value)))
                     } else {
-                        slug = Some(Cow::Owned(value));
+                        Some(ListPagesNameSelector::Exact(Cow::Owned(value)))
                     }
+                } else {
+                    None
+                };
+                if raw_key == "name" {
+                    canonical_name_selector = selector;
+                } else {
+                    alias_name_selector = selector;
                 }
             }
             // These inputs need additional data or Wikidot semantics that are not
@@ -1171,6 +1178,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 match value {
                     "." => {
                         range_current_page_only = true;
+                        limit = Some(1);
                     }
                     "others" | "other" => {
                         range_exclude_current_page = true;
@@ -1253,7 +1261,9 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 if score.len() == MAX_PAGE_QUERY_SCORE_SELECTORS {
                     unsupported_score_filter = true;
                 } else {
-                    score.push(parse_list_pages_score_selector(value)?);
+                    if let Some(selector) = parse_list_pages_score_selector(value) {
+                        score.push(selector);
+                    }
                 }
             }
             "votes" => {
@@ -1285,7 +1295,9 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 if votes.len() == MAX_PAGE_QUERY_SCORE_SELECTORS {
                     unsupported_score_filter = true;
                 } else {
-                    votes.push(parse_list_pages_score_selector(value)?);
+                    if let Some(selector) = parse_list_pages_score_selector(value) {
+                        votes.push(selector);
+                    }
                 }
             }
             "created_at" | "createdat" | "date" => {
@@ -1409,6 +1421,14 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
         }
     }
 
+    let composed_name_selector =
+        compose_list_pages_name_selectors(canonical_name_selector, alias_name_selector);
+    current_page_only |= composed_name_selector.current_page_only;
+    let slug = composed_name_selector.slug;
+    let name_pattern = composed_name_selector.name_pattern;
+    unsupported_count_pages_filter |= composed_name_selector.unsupported;
+    unsupported_list_pages_filter |= composed_name_selector.unsupported;
+
     if score_equals_current_page && score.len() == MAX_PAGE_QUERY_SCORE_SELECTORS {
         unsupported_score_filter = true;
     }
@@ -1417,9 +1437,6 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     }
     current_page_only |= range_current_page_only;
     exclude_current_page |= range_exclude_current_page;
-    if range_current_page_only {
-        limit = Some(1);
-    }
     if same_visible_tags
         && default_tags.is_empty()
         && all_tags.is_empty()
@@ -1650,16 +1667,6 @@ pub(in crate::services::render) fn count_pages_exact_count_render_diagnostics(
             explicit_count_pages_bound_matches_sql_window,
         },
     )
-}
-
-pub(in crate::services::render) fn parse_list_pages_numeric_argument(
-    value: &str,
-) -> Option<u64> {
-    if let Some(fallback) = list_pages_url_fallback(value) {
-        return fallback.parse().ok();
-    }
-
-    value.parse().ok()
 }
 
 fn parse_list_pages_false_only_boolean_argument(value: &str) -> bool {

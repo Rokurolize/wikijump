@@ -1510,6 +1510,30 @@ fn corpus_legacy_list_pages_heads_remain_structurally_visible() {
 }
 
 #[test]
+fn unquoted_comparison_discriminators_remain_structurally_executable() {
+    for token in [
+        "rating>100000",
+        "score>100000",
+        "votes>100000",
+        "created_at>2100",
+        "createdat>2100",
+        "date>2100",
+        "parent>=component:image-block",
+        "limit>=1",
+    ] {
+        let head = format!(r#"fullname="scp-002" {token}"#);
+        assert!(
+            list_pages_runtime_head_can_execute(&head),
+            "the evidenced inert comparison token must not invalidate {head:?}",
+        );
+        let source =
+            format!("[[module ListPages {head}]]\nROW=%%fullname%%\n[[/module]]");
+        let modules = find_list_pages_module_matches(&source);
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+    }
+}
+
+#[test]
 fn live_inert_list_pages_head_tokens_remain_structurally_visible() {
     for head in [
         r#"| name="target" limit="1" order="name""#,

@@ -28,6 +28,28 @@ use crate::services::render::module_arguments::{
     WikidotModuleArgumentValueKind, wikidot_list_pages_arguments,
 };
 
+#[derive(Debug, PartialEq, Eq)]
+pub(in crate::services::render) enum ListPagesArgumentError {
+    Message(&'static str),
+    MissingParent(String),
+}
+
+pub(in crate::services::render) fn list_pages_argument_error_with_parent_precedence(
+    head: &str,
+    has_current_page: bool,
+    url: UrlArguments<'_>,
+    missing_static_parent: Option<String>,
+) -> Option<ListPagesArgumentError> {
+    if let Some(error) = list_pages_non_range_argument_error(head) {
+        Some(ListPagesArgumentError::Message(error))
+    } else if let Some(parent) = missing_static_parent {
+        Some(ListPagesArgumentError::MissingParent(parent))
+    } else {
+        list_pages_range_argument_error(head, has_current_page, url)
+            .map(ListPagesArgumentError::Message)
+    }
+}
+
 pub(in crate::services::render) fn list_pages_non_range_argument_error(
     head: &str,
 ) -> Option<&'static str> {
@@ -37,7 +59,6 @@ pub(in crate::services::render) fn list_pages_non_range_argument_error(
     let head_arguments = wikidot_list_pages_arguments(head);
 
     let mut canonical_page_type = None;
-    let mut alias_page_type = None;
     let mut rating = None;
     let mut votes = None;
     let mut offset = None;
@@ -47,9 +68,6 @@ pub(in crate::services::render) fn list_pages_non_range_argument_error(
         match argument.key {
             "pagetype" if argument.op == "=" => {
                 canonical_page_type = Some(argument.value);
-            }
-            "page_type" | "page-type" if argument.op == "=" => {
-                alias_page_type = Some(argument.value);
             }
             "rating" if argument.op == "=" || double_quoted => {
                 rating = Some((argument.op, argument.value));
@@ -68,7 +86,7 @@ pub(in crate::services::render) fn list_pages_non_range_argument_error(
         }
     }
 
-    if let Some(value) = canonical_page_type.or(alias_page_type)
+    if let Some(value) = canonical_page_type
         && !is_dynamic_list_pages_value(value)
         && value != "0"
         && parse_list_pages_page_type(value).is_none()

@@ -887,7 +887,8 @@ fn exact_name_list_pages_batch_classifier_is_deliberately_narrow() {
     assert!(!key.category_all);
     assert_eq!(key.categories, ["_default"]);
 
-    for key_name in ["fullname", "full_slug", "fullslug"] {
+    {
+        let key_name = "fullname";
         let head = format!(r#" {key_name}="scp-173" category="*""#);
         let arguments = parse_list_pages_arguments(&head)
             .expect("exact full-slug selector should parse");
@@ -901,20 +902,38 @@ fn exact_name_list_pages_batch_classifier_is_deliberately_narrow() {
         assert!(key.category_all, "unexpected category scope for {key_name}");
         assert!(key.categories.is_empty());
     }
+    for inert_alias in ["full_slug", "fullslug"] {
+        let head = format!(r#" {inert_alias}="scp-173" category="*""#);
+        let arguments =
+            parse_list_pages_arguments(&head).expect("inert alias should not abort");
+        assert!(arguments.slug.is_none(), "{inert_alias}");
+        assert!(
+            exact_name_list_pages_batch_key(
+                &head,
+                &default_template,
+                &arguments,
+                "_default",
+            )
+            .is_none(),
+            "{inert_alias}",
+        );
+    }
 
     let categorized =
         parse_list_pages_arguments(r#" category="art" name="ralliston-portrait""#)
             .expect("categorized exact-name selector should parse");
     let categorized_template =
         ListPagesTemplatePlan::compile("%%rating%%").expect("rating body should compile");
-    let key = exact_name_list_pages_batch_key(
-        r#" category="art" name="ralliston-portrait""#,
-        &categorized_template,
-        &categorized,
-        "_default",
-    )
-    .expect("categorized exact-name block should batch");
-    assert_eq!(key.categories, ["art"]);
+    assert!(
+        exact_name_list_pages_batch_key(
+            r#" category="art" name="ralliston-portrait""#,
+            &categorized_template,
+            &categorized,
+            "_default",
+        )
+        .is_none(),
+        "category-local names require the ordinary query's full-slug projection",
+    );
 
     for (head, body) in [
         (r#" name="scp-173" tags="scp""#, "%%rating%%"),
@@ -2016,19 +2035,18 @@ fn random_page_query_scan_uses_the_full_render_cap() {
 }
 
 #[test]
-fn repeated_score_selectors_are_bounded_and_preserved_when_over_limit() {
-    let within_limit = r#" score=">=0""#.repeat(MAX_PAGE_QUERY_SCORE_SELECTORS);
-    let arguments = parse_list_pages_arguments(&within_limit)
-        .expect("score selectors at the limit should parse");
-    assert_eq!(arguments.score.len(), MAX_PAGE_QUERY_SCORE_SELECTORS);
+fn repeated_rating_selectors_keep_only_the_effective_final_value() {
+    let impossible_alias = r#" score=">=0""#.repeat(MAX_PAGE_QUERY_SCORE_SELECTORS);
+    let arguments = parse_list_pages_arguments(&impossible_alias)
+        .expect("the impossible score alias should remain inert");
+    assert!(arguments.score.is_empty());
     assert!(!arguments.unsupported_score_filter);
 
-    let over_limit = r#" score=">=0""#.repeat(MAX_PAGE_QUERY_SCORE_SELECTORS + 1);
-    let arguments = parse_list_pages_arguments(&over_limit)
-        .expect("an excessive score selector module should remain representable");
-    assert_eq!(arguments.score.len(), MAX_PAGE_QUERY_SCORE_SELECTORS);
-    assert!(arguments.unsupported_score_filter);
-    assert!(count_pages_should_remain_literal(&arguments));
+    let repeated_rating = r#" rating=">=0""#.repeat(MAX_PAGE_QUERY_SCORE_SELECTORS + 1);
+    let arguments = parse_list_pages_arguments(&repeated_rating)
+        .expect("duplicate canonical rating selectors should remain representable");
+    assert_eq!(arguments.score.len(), 1);
+    assert!(!arguments.unsupported_score_filter);
 }
 
 #[test]

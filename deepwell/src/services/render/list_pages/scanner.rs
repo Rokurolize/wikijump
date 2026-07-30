@@ -31,9 +31,20 @@ use super::super::module_arguments::wikidot_list_pages_arguments;
 mod count_reachability;
 #[path = "scanner/legacy_heads.rs"]
 mod legacy_heads;
+#[path = "scanner/runtime_heads.rs"]
+mod runtime_heads;
 
 pub(in crate::services::render) use self::count_reachability::CountPagesCloseReachabilityIndex;
 use self::legacy_heads::{paired_inline_comment, recovered_nested_assignment};
+pub(in crate::services::render) use self::runtime_heads::list_pages_runtime_head_can_execute;
+use self::runtime_heads::{
+    list_pages_bare_comparison_key_is_evidenced, normalize_module_head,
+    runtime_list_pages_key_is_supported, unresolved_block_conditional_prefix,
+};
+#[cfg(test)]
+use self::runtime_heads::{
+    list_pages_runtime_head_is_safe, runtime_regex_recognizes_entire_head,
+};
 #[cfg(test)]
 use std::cell::Cell;
 use std::ops::Range;
@@ -1415,6 +1426,7 @@ fn validate_module_head(
         while cursor < bytes.len() {
             if bytes[cursor] == b'='
                 || (bytes[cursor] == b'!' && bytes.get(cursor + 1) == Some(&b'='))
+                || (list_pages_compatibility && matches!(bytes[cursor], b'<' | b'>'))
                 || is_module_argument_spacing(bytes[cursor])
             {
                 break;
@@ -1473,32 +1485,55 @@ fn validate_module_head(
         if cursor == key_start {
             return ModuleHeadValidation::DefiniteInvalid;
         }
-        let runtime_key_supported =
-            runtime_list_pages_key_is_supported(&source[key_start..cursor]);
+        let runtime_key = &source[key_start..cursor];
+        let runtime_key_supported = runtime_list_pages_key_is_supported(runtime_key);
         if list_pages_compatibility && !runtime_key_supported {
             runtime_safe = false;
         }
         skip_horizontal_whitespace(bytes, &mut cursor);
 
-        if bytes.get(cursor) == Some(&b'!') {
-            if !list_pages_compatibility
-                || !runtime_key_supported
-                || bytes.get(key_start) != Some(&b'_')
+        let mut comparison_operator = false;
+        if list_pages_compatibility
+            && runtime_key_supported
+            && matches!(bytes.get(cursor), Some(b'!' | b'<' | b'>'))
+            && !(runtime_key.starts_with('_')
+                && bytes.get(cursor..cursor + 2) == Some(&b"!="[..]))
+        {
+            comparison_operator = true;
+            let first = bytes[cursor];
+            cursor += 1;
+            if bytes.get(cursor) == Some(&b'=')
+                || first == b'<' && bytes.get(cursor) == Some(&b'>')
             {
+                cursor += 1;
+            }
+        } else {
+            if bytes.get(cursor) == Some(&b'!') {
+                if !list_pages_compatibility
+                    || !runtime_key_supported
+                    || bytes.get(key_start) != Some(&b'_')
+                {
+                    return ModuleHeadValidation::DefiniteInvalid;
+                }
+                cursor += 1;
+            }
+            if bytes.get(cursor) != Some(&b'=') {
                 return ModuleHeadValidation::DefiniteInvalid;
             }
             cursor += 1;
         }
-        if bytes.get(cursor) != Some(&b'=') {
-            return ModuleHeadValidation::DefiniteInvalid;
-        }
-        cursor += 1;
         skip_horizontal_whitespace(bytes, &mut cursor);
         if cursor == bytes.len() || is_module_argument_spacing(bytes[cursor]) {
             return ModuleHeadValidation::DefiniteInvalid;
         }
 
         let quote = bytes[cursor];
+        if comparison_operator
+            && !matches!(quote, b'\'' | b'"')
+            && !list_pages_bare_comparison_key_is_evidenced(runtime_key)
+        {
+            return ModuleHeadValidation::DefiniteInvalid;
+        }
         let list_pages_url_value = list_pages_compatibility
             && quote == b'"'
             && list_pages_url_value_quote_starts_at(bytes, cursor);
@@ -1586,95 +1621,6 @@ fn validate_module_head(
             return ModuleHeadValidation::DefiniteInvalid;
         }
     }
-}
-
-fn runtime_list_pages_key_is_supported(key: &str) -> bool {
-    let mut bytes = key.bytes();
-    bytes
-        .next()
-        .is_some_and(|byte| byte.is_ascii_alphabetic() || byte == b'_')
-        && bytes.all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
-}
-
-pub(in crate::services::render) fn runtime_regex_recognizes_entire_head(
-    source: &str,
-) -> bool {
-    super::super::module_arguments::module_arguments_are_complete(source)
-}
-
-fn unresolved_block_conditional_prefix(source: &str) -> bool {
-    const NAME: &str = "if";
-
-    source
-        .get(..NAME.len())
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(NAME))
-        && source[NAME.len()..]
-            .chars()
-            .next()
-            .is_some_and(char::is_whitespace)
-}
-
-pub(in crate::services::render) fn list_pages_runtime_head_is_safe(head: &str) -> bool {
-    validate_module_head(head, true) == ModuleHeadValidation::RuntimeSafe
-}
-
-pub(in crate::services::render) fn list_pages_runtime_head_can_execute(
-    head: &str,
-) -> bool {
-    match validate_module_head(head, true) {
-        ModuleHeadValidation::RuntimeSafe | ModuleHeadValidation::ValidRuntimeUnsafe => {
-            runtime_regex_recognizes_entire_head(head)
-                || !super::super::module_arguments::wikidot_list_pages_arguments(head)
-                    .is_empty()
-        }
-        ModuleHeadValidation::DefiniteInvalid if !head.contains("[[") => true,
-        _ => false,
-    }
-}
-
-fn normalize_module_head(source: &str) -> String {
-    let bytes = source.as_bytes();
-    let mut normalized = String::with_capacity(source.len());
-    let mut cursor = 0usize;
-    let mut line_leading = false;
-    while cursor < bytes.len() {
-        match bytes[cursor] {
-            b'\0' => {
-                normalized.push(' ');
-                cursor += 1;
-                line_leading = false;
-            }
-            b'\n' | b'\r' => {
-                let continued = normalized.ends_with('\\');
-                if continued {
-                    normalized.pop();
-                } else {
-                    normalized.push('\n');
-                }
-                cursor = physical_line_resume(bytes, cursor);
-                line_leading = true;
-            }
-            b'\t' => {
-                normalized.push_str("    ");
-                cursor += 1;
-                line_leading = false;
-            }
-            _ => {
-                let character = source[cursor..]
-                    .chars()
-                    .next()
-                    .expect("cursor is before the module head end");
-                if line_leading && matches!(character, '\u{00a0}' | '\u{2007}') {
-                    normalized.push(' ');
-                } else {
-                    normalized.push(character);
-                    line_leading = false;
-                }
-                cursor += character.len_utf8();
-            }
-        }
-    }
-    normalized
 }
 
 fn is_module_argument_spacing(byte: u8) -> bool {
@@ -1952,8 +1898,27 @@ fn scanner_argument_boundary_at(
     if lookahead_tokens.contains(key_start) {
         return false;
     }
+    let key_end = cursor;
     while matches!(bytes.get(cursor), Some(b' ' | b'\t' | b'\0')) {
         cursor += 1;
+    }
+    let runtime_key = std::str::from_utf8(&bytes[key_start..key_end]).unwrap_or_default();
+    if matches!(bytes.get(cursor), Some(b'!' | b'<' | b'>'))
+        && !(runtime_key.starts_with('_')
+            && bytes.get(cursor..cursor + 2) == Some(&b"!="[..]))
+    {
+        let first = bytes[cursor];
+        cursor += 1;
+        if bytes.get(cursor) == Some(&b'=')
+            || first == b'<' && bytes.get(cursor) == Some(&b'>')
+        {
+            cursor += 1;
+        }
+        while matches!(bytes.get(cursor), Some(b' ' | b'\t' | b'\0')) {
+            cursor += 1;
+        }
+        return matches!(bytes.get(cursor), Some(b'\'' | b'"'))
+            || list_pages_bare_comparison_key_is_evidenced(runtime_key);
     }
     if bytes.get(cursor) == Some(&b'!') {
         cursor += 1;

@@ -49,6 +49,10 @@ pub(super) use self::ajax::{
     build_wikidot_list_pages_module_request, protect_ajax_module_literal_markers,
 };
 pub(super) use self::argument_errors::{
+    ListPagesArgumentError, list_pages_argument_error_with_parent_precedence,
+};
+#[cfg(test)]
+pub(super) use self::argument_errors::{
     list_pages_non_range_argument_error, list_pages_range_argument_error,
 };
 pub(super) use self::budget::ListPagesExpansionBudget;
@@ -133,9 +137,9 @@ use std::sync::LazyLock;
 use time::{Month, OffsetDateTime};
 use wikidot_normalize::normalize;
 
-// This intentionally recognizes only bounded, proven ListPages shapes. Generic
-// ListPages parsing remains follow-up work; unsupported complete modules are
-// preserved for now so existing pages keep their current behavior.
+// This bounded content-expansion specialization accepts only proven shapes.
+// The runtime parser handles the general selector surface; unsupported content
+// expansion shapes remain preserved so existing pages keep their source.
 const CONTENT_VARIABLE: &str = "%%content%%";
 const CREATED_AT_VARIABLE: &str = "created_at";
 const DEFAULT_CATEGORY: &str = "*";
@@ -1463,5 +1467,107 @@ mod tests {
             .expect("an exact category-local name should execute");
         assert_eq!(arguments.categories, vec![Cow::Borrowed("nav")]);
         assert_eq!(arguments.slug, Some(Cow::Borrowed("side")));
+    }
+
+    #[test]
+    fn list_pages_late_selector_discriminators_preserve_effective_state() {
+        for head in [
+            r#"SCORE=">100000""#,
+            r#"Score=">100000""#,
+            r#"score=">100000""#,
+        ] {
+            let arguments = parse_list_pages_arguments(head)
+                .expect("the impossible score alias must remain an inert token");
+            assert!(arguments.score.is_empty(), "{head:?}");
+        }
+
+        let arguments = parse_list_pages_arguments(
+            r#"rating="bad" rating=">=-100000" votes="bad" votes=">=0""#,
+        )
+        .expect("a valid final score selector must supersede an invalid predecessor");
+        assert_eq!(arguments.score.len(), 1);
+        assert_eq!(arguments.votes.len(), 1);
+
+        let arguments = parse_list_pages_arguments(
+            r#"name="definitely-missing-page" fullname="component:acs-animation""#,
+        )
+        .expect("canonical and alias name selectors compose");
+        assert_eq!(arguments.slug.as_deref(), Some("definitely-missing-page"),);
+        assert_eq!(
+            arguments.name_pattern.as_deref(),
+            Some("component:acs-animation"),
+        );
+
+        let arguments =
+            parse_list_pages_arguments(r#"fullname="definitely-missing-page" name="""#)
+                .expect("an empty canonical name does not erase the fullname selector");
+        assert_eq!(arguments.slug.as_deref(), Some("definitely-missing-page"),);
+
+        let arguments = parse_list_pages_arguments(r#"pagetype="@URL|normal""#)
+            .expect("a static URL fallback pagetype should execute");
+        assert_eq!(arguments.page_type, PageTypeSelector::Normal);
+
+        for head in [r#"page_type="all""#, r#"page-type="all""#] {
+            assert_eq!(
+                list_pages_non_range_argument_error(head),
+                None,
+                "legacy pagetype aliases are inert rather than canonical errors",
+            );
+            assert_eq!(
+                parse_list_pages_arguments(head)
+                    .expect("the inert pagetype alias should execute")
+                    .page_type,
+                PageTypeSelector::Normal,
+                "the inert pagetype alias must not change the effective selector",
+            );
+        }
+
+        for head in [r#"offset="+1""#, r#"offset=" 1""#, r#"offset="1 ""#] {
+            let arguments = parse_list_pages_arguments(head)
+                .expect("invalid offset lexical forms fall back to zero");
+            assert_eq!(arguments.offset, 0, "{head:?}");
+        }
+
+        assert_eq!(
+            list_pages_static_parent_fullname(r#"parent="+-""#).as_deref(),
+            Some("+-"),
+        );
+        assert_eq!(
+            list_pages_static_parent_fullname(r#"parent="--""#).as_deref(),
+            Some("--"),
+        );
+        assert_eq!(
+            list_pages_static_parent_fullname(r#"parent="\"component:image-block\"""#)
+                .as_deref(),
+            Some(r"\"),
+        );
+    }
+
+    #[test]
+    fn missing_static_parent_precedes_range_but_not_non_range_errors() {
+        let url = crate::services::render::UrlArguments::default();
+        let missing_parent = Some("definitely-missing-listpages-parent".to_owned());
+        assert_eq!(
+            list_pages_argument_error_with_parent_precedence(
+                r#"parent="definitely-missing-listpages-parent" range="bogus""#,
+                false,
+                url,
+                missing_parent.clone(),
+            ),
+            Some(ListPagesArgumentError::MissingParent(
+                "definitely-missing-listpages-parent".to_owned(),
+            )),
+        );
+        assert_eq!(
+            list_pages_argument_error_with_parent_precedence(
+                r#"parent="definitely-missing-listpages-parent" pagetype="bogus""#,
+                false,
+                url,
+                missing_parent,
+            ),
+            Some(ListPagesArgumentError::Message(
+                "Invalid pagetype attribute.",
+            )),
+        );
     }
 }

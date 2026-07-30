@@ -21,6 +21,7 @@
 use crate::services::render::module_arguments::{
     WikidotModuleArgumentValueKind, wikidot_list_pages_arguments,
 };
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use super::super::data_forms::{
@@ -30,6 +31,67 @@ use super::super::data_forms::{
 };
 use super::super::template::LISTPAGES_VARIABLE_REGEX;
 use super::split_list_pages_values;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(super) enum ListPagesNameSelector {
+    CurrentPage,
+    Exact(Cow<'static, str>),
+    Pattern(Cow<'static, str>),
+}
+
+pub(super) struct ComposedListPagesNameSelector {
+    pub(super) current_page_only: bool,
+    pub(super) slug: Option<Cow<'static, str>>,
+    pub(super) name_pattern: Option<Cow<'static, str>>,
+    pub(super) unsupported: bool,
+}
+
+pub(super) fn compose_list_pages_name_selectors(
+    canonical: Option<ListPagesNameSelector>,
+    alias: Option<ListPagesNameSelector>,
+) -> ComposedListPagesNameSelector {
+    let mut selectors = [canonical, alias].into_iter().flatten();
+    let first = selectors.next();
+    let second = selectors.next();
+    let (current_page_only, slug, name_pattern, unsupported) = match (first, second) {
+        (None, None) => (false, None, None, false),
+        (Some(ListPagesNameSelector::CurrentPage), None) => (true, None, None, false),
+        (Some(ListPagesNameSelector::Exact(exact)), None) => {
+            (false, Some(exact), None, false)
+        }
+        (Some(ListPagesNameSelector::Pattern(pattern)), None) => {
+            (false, None, Some(pattern), false)
+        }
+        (Some(first), Some(second)) if first == second => match first {
+            ListPagesNameSelector::CurrentPage => (true, None, None, false),
+            ListPagesNameSelector::Exact(exact) => (false, Some(exact), None, false),
+            ListPagesNameSelector::Pattern(pattern) => {
+                (false, None, Some(pattern), false)
+            }
+        },
+        (
+            Some(ListPagesNameSelector::Exact(first)),
+            Some(ListPagesNameSelector::Exact(second)),
+        ) => (false, Some(first), Some(second), false),
+        (
+            Some(ListPagesNameSelector::Exact(exact)),
+            Some(ListPagesNameSelector::Pattern(pattern)),
+        )
+        | (
+            Some(ListPagesNameSelector::Pattern(pattern)),
+            Some(ListPagesNameSelector::Exact(exact)),
+        ) => (false, Some(exact), Some(pattern), false),
+        (Some(_), Some(_)) => (false, None, None, true),
+        (None, Some(_)) => unreachable!("the second name selector follows the first"),
+    };
+
+    ComposedListPagesNameSelector {
+        current_page_only,
+        slug,
+        name_pattern,
+        unsupported,
+    }
+}
 
 pub(in crate::services::render) fn is_dynamic_list_pages_value(value: &str) -> bool {
     value.eq_ignore_ascii_case("@url")
@@ -42,6 +104,15 @@ pub(in crate::services::render) fn list_pages_url_fallback(value: &str) -> Optio
     value.split_once('|').and_then(|(selector, fallback)| {
         selector.eq_ignore_ascii_case("@url").then_some(fallback)
     })
+}
+
+pub(in crate::services::render) fn parse_list_pages_numeric_argument(
+    value: &str,
+) -> Option<u64> {
+    let value = list_pages_url_fallback(value).unwrap_or(value);
+    (!value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()))
+        .then(|| value.parse().ok())
+        .flatten()
 }
 
 /// What an `@URL` selector resolves to once the request's URL is known.
@@ -235,19 +306,16 @@ pub(in crate::services::render) fn list_pages_has_unsupported_page_type_selector
     head: &str,
 ) -> bool {
     let mut canonical = None;
-    let mut alias = None;
     for argument in wikidot_list_pages_arguments(head) {
         if argument.op != "=" {
             continue;
         }
-        match argument.key.to_ascii_lowercase().as_str() {
-            "pagetype" => canonical = Some(argument.value),
-            "page_type" | "page-type" => alias = Some(argument.value),
-            _ => {}
+        if argument.key.eq_ignore_ascii_case("pagetype") {
+            canonical = Some(argument.value);
         }
     }
 
-    canonical.or(alias).is_some_and(|value| {
+    canonical.is_some_and(|value| {
         let value = list_pages_url_fallback(value).unwrap_or(value);
         value != "0" && super::parse_list_pages_page_type(value).is_none()
     })

@@ -1886,6 +1886,54 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         format!(
             "[[module ListPages name=\"{TARGET_SLUG}\" offset=\"2.5\"]]\nROW %%fullname%%\n[[/module]]",
         ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" offset=\"+1\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" pagetype=\"@URL|normal\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" page_type=\"all\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" page-type=\"all\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" SCORE=\">100000\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" Score=\">100000\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" rating=\"bad\" rating=\">=-100000\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" votes=\"bad\" votes=\">=0\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" rating>100000]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" score>100000]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" votes>100000]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" created_at>2100]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" createdat>2100]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" date>2100]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" parent>={TARGET_SLUG}]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" limit>=1]]\nROW %%fullname%%\n[[/module]]",
+        ),
     ] {
         let preview = RenderService::render_wikidot_page_preview(
             runner.context(),
@@ -1900,6 +1948,36 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         assert!(
             preview.contains(&format!("ROW {TARGET_SLUG}")),
             "the documented selector should include the matching unparented, untagged page for {source}:\n{preview}",
+        );
+    }
+
+    for source in [
+        format!(
+            "[[module ListPages name=\"definitely-missing-page\" fullname=\"{TARGET_SLUG}\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages fullname=\"definitely-missing-page\" name=\"{TARGET_SLUG}\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        "[[module ListPages name=\"definitely-missing-page\" fullname=\"\"]]\nROW %%fullname%%\n[[/module]]"
+            .to_owned(),
+        "[[module ListPages fullname=\"definitely-missing-page\" name=\"\"]]\nROW %%fullname%%\n[[/module]]"
+            .to_owned(),
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            source.clone(),
+        )
+        .await
+        .expect("composed canonical and alias name selectors should render")
+        .html_output
+        .body;
+        assert!(
+            preview.contains("class=\"list-pages-box\"")
+                && !preview.contains("ROW ")
+                && !preview.contains("[[module ListPages"),
+            "canonical and alias name selectors compose rather than overwrite for {source}:\n{preview}",
         );
     }
 

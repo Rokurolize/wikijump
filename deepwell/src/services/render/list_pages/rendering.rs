@@ -46,26 +46,26 @@ use super::scanner::{
 use super::template::{ListPagesOutputShape, ListPagesTemplatePlan};
 use super::{
     CountPagesBlockRenderResult, CountPagesExpansionOptions, CountPagesRequiredTagSource,
-    CountPagesRequiredTagTotal, ExactNameListPagesBatchKey, ListPagesArguments,
-    ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements, ListPagesBatchDisplays,
-    ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansion,
-    ListPagesExpansionBudget, ListPagesExpansionOptions, ListPagesPageContext,
-    ListPagesPagerRoute, ListPagesSubstitutionContext, ResolvedListPagesAuthors,
-    count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
-    count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
-    count_pages_scan_requires_preservation, count_pages_should_remain_literal,
-    count_pages_unbounded_total, exact_name_list_pages_batch_key,
-    is_list_pages_visible_tag, list_pages_body_starts_with_preparsed_block,
-    list_pages_content_query_target, list_pages_created_by_unix,
-    list_pages_feed_info_html, list_pages_has_unsupported_page_type_selector,
+    CountPagesRequiredTagTotal, ExactNameListPagesBatchKey, ListPagesArgumentError,
+    ListPagesArguments, ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements,
+    ListPagesBatchDisplays, ListPagesBlockRenderResult, ListPagesContentCache,
+    ListPagesExpansion, ListPagesExpansionBudget, ListPagesExpansionOptions,
+    ListPagesPageContext, ListPagesPagerRoute, ListPagesSubstitutionContext,
+    ResolvedListPagesAuthors, count_pages_capture_is_literal,
+    count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
+    count_pages_required_tag_batch_selector, count_pages_scan_requires_preservation,
+    count_pages_should_remain_literal, count_pages_unbounded_total,
+    exact_name_list_pages_batch_key, is_list_pages_visible_tag,
+    list_pages_argument_error_with_parent_precedence,
+    list_pages_body_starts_with_preparsed_block, list_pages_content_query_target,
+    list_pages_created_by_unix, list_pages_feed_info_html,
+    list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector,
-    list_pages_head_has_current_data_form_query_selector,
-    list_pages_non_range_argument_error, list_pages_parent_fullname,
-    list_pages_range_argument_error, list_pages_revision_count,
-    list_pages_row_scan_target, list_pages_static_category_preflight,
-    list_pages_static_parent_fullname_with_url, load_list_pages_data_form_definitions,
-    page_query_cap_requires_original_module, parse_list_pages_arguments,
-    parse_list_pages_arguments_with_url,
+    list_pages_head_has_current_data_form_query_selector, list_pages_parent_fullname,
+    list_pages_revision_count, list_pages_row_scan_target,
+    list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
+    load_list_pages_data_form_definitions, page_query_cap_requires_original_module,
+    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
     preserve_list_pages_following_paragraph_boundary, preserve_list_pages_module_matches,
     protect_ajax_module_literal_markers, push_list_pages_generated_output,
     push_list_pages_pager, register_generated_list_pages_html,
@@ -376,27 +376,28 @@ impl RenderService {
                             }
                         })
                     });
+                let missing_static_parent =
+                    list_pages_static_parent_fullname_with_url(head, url)
+                        .filter(|parent| !existing_static_parents.contains(parent));
                 let plan = if let Some(plan) = feed_only_plan {
                     plan
-                } else if let Some(error) = list_pages_non_range_argument_error(head) {
-                    ListPagesBlockPlan::Static(compat_html.push_block_html(format!(
-                        r#"<div class="error-block">{error}</div>"#,
-                    )))
-                } else if let Some(parent) =
-                    list_pages_static_parent_fullname_with_url(head, url)
-                    && !existing_static_parents.contains(&parent)
+                } else if let Some(error) =
+                    list_pages_argument_error_with_parent_precedence(
+                        head,
+                        requested_current_page_id.is_some(),
+                        url,
+                        missing_static_parent,
+                    )
                 {
+                    let message = match error {
+                        ListPagesArgumentError::Message(message) => message.to_owned(),
+                        ListPagesArgumentError::MissingParent(parent) => format!(
+                            "Parent page {} does not exist",
+                            escape_html_text(&parent),
+                        ),
+                    };
                     ListPagesBlockPlan::Static(compat_html.push_block_html(format!(
-                        r#"<div class="error-block">Parent page {} does not exist</div>"#,
-                        escape_html_text(&parent),
-                    )))
-                } else if let Some(error) = list_pages_range_argument_error(
-                    head,
-                    requested_current_page_id.is_some(),
-                    url,
-                ) {
-                    ListPagesBlockPlan::Static(compat_html.push_block_html(format!(
-                        r#"<div class="error-block">{error}</div>"#,
+                        r#"<div class="error-block">{message}</div>"#,
                     )))
                 } else if static_categories_prove_empty {
                     let replacement = if static_category_preflight
