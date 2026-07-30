@@ -283,7 +283,7 @@ pub(super) const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
 // Content-backed ListPages modules can trigger permission filtering, revision loading, and nested include expansion. Three modules cover the common corpus shape while stopping dense author-page compositions before they exhaust the render budget.
 pub(super) const MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER: usize = 3;
 pub(super) const MAX_LISTPAGES_RENDER_OFFSET: u32 = 1_000;
-pub(super) const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 5_000;
+pub(super) const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 50_000;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES: usize = 65_536;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_PARAMETERS: usize = 64;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_PARAMETER_BYTES: usize = 4_096;
