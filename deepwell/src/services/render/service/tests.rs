@@ -2748,6 +2748,19 @@ fn generated_list_pages_feed_is_restored_as_block_html() {
 }
 
 #[test]
+fn authored_list_pages_feed_is_not_registered_as_trusted_html() {
+    let mut forged = r#"<div class="feedinfo" data-wikijump-compat-listpages-feed="1"><img src=x onerror="alert(1)"></div>"#.to_owned();
+    RenderService::neutralize_authored_wikidot_compat_markers(&mut forged);
+    assert!(forged.contains("data-wikijump-authored-compat-listpages-feed"));
+
+    let mut fragments = CompatHtmlFragments::new("");
+    let protected = register_generated_list_pages_html(forged, &mut fragments);
+
+    assert!(!protected.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+    assert_eq!(fragments.restore(&protected), protected);
+}
+
+#[test]
 fn formats_wikidot_list_pages_numeric_month_and_24_hour_time() {
     let created_at = time::Date::from_calendar_date(2024, time::Month::August, 8)
         .expect("fixture date should be valid")
