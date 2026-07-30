@@ -252,10 +252,10 @@ fn qualify_variable(
         return;
     };
     let name = variable.name("name").unwrap().as_str();
-    let (Some(value), Some(owner)) = (variables.get(name), owners.get(name)) else {
+    let (Some(raw_value), Some(owner)) = (variables.get(name), owners.get(name)) else {
         return;
     };
-    let Some(value) = semantic_attachment_value(value) else {
+    let Some(value) = semantic_attachment_value(raw_value) else {
         return;
     };
     if relative(value) {
@@ -263,7 +263,12 @@ fn qualify_variable(
         replacements.push((
             base + target.range.start..base + target.range.end,
             if preserve_quotes {
-                preserve_argument_quotes(target.raw, &qualified)
+                let target_quoted = preserve_argument_quotes(target.raw, &qualified);
+                if target_quoted == qualified {
+                    preserve_argument_quotes(raw_value.trim(), &qualified)
+                } else {
+                    target_quoted
+                }
             } else {
                 qualified
             },
@@ -714,10 +719,10 @@ pub(super) fn qualify_included_relative_image_attachments(
         let body = &original[head.body.clone()];
         let (target, links) = image_attachment_values(body);
         if let Some(target) = target {
-            qualify_literal(head.body.start, &target, &owner, &mut replacements);
+            qualify_literal(head.body.start, &target, &owner, &mut replacements, false);
         }
         for link in links {
-            qualify_literal(head.body.start, &link, &owner, &mut replacements);
+            qualify_literal(head.body.start, &link, &owner, &mut replacements, true);
         }
     }
     apply_replacements(source, replacements);
@@ -741,11 +746,17 @@ fn qualify_literal(
     target: &AttachmentValue<'_>,
     owner: &AttachmentOwner,
     replacements: &mut Vec<(Range<usize>, String)>,
+    preserve_quotes: bool,
 ) {
     if relative(target.semantic) {
+        let qualified = owned_url(owner, target.semantic);
         replacements.push((
             base + target.range.start..base + target.range.end,
-            owned_url(owner, target.semantic),
+            if preserve_quotes {
+                preserve_argument_quotes(target.raw, &qualified)
+            } else {
+                qualified
+            },
         ));
     }
 }
@@ -910,6 +921,33 @@ mod tests {
         assert_eq!(
             source,
             "[[image https://scp-wiki.wikidot.com/local--files/fragment:2117-1/2117.png]]",
+        );
+    }
+
+    #[test]
+    fn quoted_relative_link_variable_preserves_forwarded_quotes() {
+        let variables = [(Cow::Borrowed("link"), Cow::Borrowed(r#""full image.png""#))]
+            .into_iter()
+            .collect::<VariableMap<'_>>();
+        let owners = [(
+            "link".to_owned(),
+            AttachmentOwner {
+                site_slug: "scp-wiki".into(),
+                page_slug: "fragment:2117-1".into(),
+            },
+        )]
+        .into_iter()
+        .collect();
+        let mut source = "[[image 2117.png link={$link}]]".to_owned();
+
+        qualify_relative_image_variable_attachments(&mut source, &variables, &owners);
+
+        assert_eq!(
+            source,
+            concat!(
+                "[[image 2117.png link=\"https://scp-wiki.wikidot.com/local--files/",
+                "fragment:2117-1/full%20image.png\"]]",
+            ),
         );
     }
 
@@ -1155,6 +1193,13 @@ mod tests {
         }
         assert!(source.contains("alt=\"quoted link=not.png\""), "{source}");
         assert!(source.contains("data-link=data.png"), "{source}");
+        assert!(
+            source.contains(concat!(
+                "link=\"https://site.wikidot.com/local--files/",
+                "fragment:owner/full%20link%3Dbar.png\"",
+            )),
+            "{source}",
+        );
         assert!(
             source.contains("https://example.test/x?link=query.png"),
             "{source}",

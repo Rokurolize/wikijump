@@ -1861,6 +1861,7 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
             "[[image \"{$spaced}\" link=\"{$spaced}\"]]\n",
             "[[image {$composite} link={$composite}]]\n",
             "[[image literal-thumb.png link=literal-full.png]]\n",
+            "[[image literal-quoted-thumb.png link=\"literal quoted full.png\"]]\n",
         ),
     )
     .await;
@@ -1968,6 +1969,14 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
                 "/local--files/component:attachment-owner-base/literal-full.png"
             ),
         "a literal bare image target must retain the base source owner while Wikidot's ignored bare link remains absent: {html}"
+    );
+    assert!(
+        html.contains(
+            "/local--files/component:attachment-owner-base/literal-quoted-thumb.png"
+        ) && html.contains(
+            "/local--files/component:attachment-owner-base/literal%20quoted%20full.png"
+        ),
+        "a literal quoted link in included content must retain both its quotes and base source owner: {html}"
     );
     let cross_owned = concat!(
         "test.wdfiles.com/local--files/fragment:attachment-owner-cross-leaf/",
