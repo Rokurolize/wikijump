@@ -1229,9 +1229,11 @@ fn parses_corpus_list_pages_url_and_filter_arguments() {
     assert!(arguments.author_filter_present);
     assert!(arguments.unsupported_author_filter);
 
-    assert!(
-        parse_list_pages_arguments(r#" parent="@URL""#).is_none(),
-        "dynamic parent selectors should remain unsupported rather than widening to all parents"
+    let unresolved_parent = parse_list_pages_arguments(r#" parent="@URL""#)
+        .expect("an unresolved URL parent selector is omitted");
+    assert_eq!(
+        unresolved_parent.page_parent,
+        crate::services::page_query::PageParentSelector::All,
     );
     assert!(list_pages_has_unsupported_parent_selector(
         r#" parent="@URL""#

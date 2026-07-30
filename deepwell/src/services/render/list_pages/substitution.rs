@@ -867,7 +867,10 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         resolved_url_parent = resolved;
                         resolved_url_parent.as_str()
                     }
-                    UrlSelector::Dropped => return None,
+                    UrlSelector::Dropped => {
+                        unsupported_count_pages_filter = true;
+                        continue;
+                    }
                 };
                 rss_path.parent = nonempty_list_pages_feed_value(value);
                 match value {
