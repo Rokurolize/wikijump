@@ -51,6 +51,31 @@ async function readJsonl(filePath) {
   return text.trimEnd().split(/\r?\n/u).map((line) => JSON.parse(line));
 }
 
+function validateConcurrency(value) {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 32) {
+    throw new Error("preview differential concurrency must be an integer from 1 through 32");
+  }
+  return value;
+}
+
+async function mapWithConcurrency(values, concurrency, worker) {
+  const results = new Array(values.length);
+  let nextIndex = 0;
+
+  async function runWorker() {
+    while (true) {
+      const index = nextIndex;
+      nextIndex += 1;
+      if (index >= values.length) return;
+      results[index] = await worker(values[index], index);
+    }
+  }
+
+  const workerCount = Math.min(concurrency, values.length);
+  await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
+  return results;
+}
+
 function compareHtml(reference, localHtml) {
   const liveHtml = reference.raw_html;
   const liveDom = canonicalDom(liveHtml);
@@ -86,7 +111,9 @@ export async function runListPagesPreviewDifferential({
   rpcUrl,
   siteSlug,
   rpcClient = new DeepwellJsonRpcClient({ rpcUrl }),
+  concurrency = 8,
 }) {
+  concurrency = validateConcurrency(concurrency);
   const references = (await readJsonl(referencesPath)).map(validateWikidotReference);
   const runtimeIdentity = runtimeIdentityPath
     ? JSON.parse(await fs.readFile(runtimeIdentityPath, "utf8"))
@@ -96,8 +123,7 @@ export async function runListPagesPreviewDifferential({
     throw new Error(`local site lookup did not return a site_id for ${siteSlug}`);
   }
 
-  const cases = [];
-  for (const reference of references) {
+  const cases = await mapWithConcurrency(references, concurrency, async (reference) => {
     const syntaxCase = reference.syntax_case;
     let result;
     try {
@@ -137,8 +163,8 @@ export async function runListPagesPreviewDifferential({
         },
       };
     }
-    cases.push(result);
-  }
+    return result;
+  });
 
   const counts = {};
   for (const row of cases) counts[row.status] = (counts[row.status] ?? 0) + 1;
@@ -151,6 +177,7 @@ export async function runListPagesPreviewDifferential({
       runtime_identity_path: runtimeIdentityPath,
       rpc_url: rpcUrl,
       site_slug: siteSlug,
+      concurrency,
       local_site: { slug: site.slug, site_id: site.site_id },
     },
     runtime_identity: runtimeIdentity,
