@@ -369,6 +369,44 @@ async fn listpages_category_local_names_match_page_identities_and_wildcard_bound
 }
 
 #[tokio::test]
+async fn listpages_multi_zero_page_size_keeps_once_only_output_without_rows() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+
+    let html = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "Unsaved preview",
+        r#"[[module ListPages category="*" perPage="00" separate="no" prependLine="PRE" appendLine="POST"]]
+ROW %%fullname%%
+[[/module]]"#
+            .to_owned(),
+    )
+    .await
+    .expect("multi-zero perPage should render without dividing by zero")
+    .html_output
+    .body;
+
+    assert!(
+        html.contains("PRE"),
+        "prependLine should remain visible:\n{html}"
+    );
+    assert!(
+        html.contains("POST"),
+        "appendLine should remain visible:\n{html}"
+    );
+    assert!(
+        !html.contains("ROW ")
+            && !html.contains(r#"class="pager""#)
+            && !html.contains("[[module ListPages"),
+        "zero page size must not render rows, a pager, or raw source:\n{html}",
+    );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
 async fn wikidot_ajax_listpages_returns_unwrapped_client_rows() {
     const TARGET_SLUG: &str = "wikidot-ajax-listpages-target";
 

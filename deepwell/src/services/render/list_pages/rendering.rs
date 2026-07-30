@@ -1439,9 +1439,10 @@ impl RenderService {
         } else {
             categories
         };
+        let zero_page_size = count_pages_per_page == Some(0);
         let per_page = count_pages_per_page
             .unwrap_or(DEFAULT_LISTPAGES_PER_PAGE)
-            .min(MAX_LISTPAGES_RENDER_LIMIT);
+            .clamp(1, MAX_LISTPAGES_RENDER_LIMIT);
         let url_page = url.page_for_prefix(url_attr_prefix.as_deref());
         let oversized_offset_initial_page =
             offset_beyond_render_window.is_some() && url_page.unwrap_or(1) <= 1;
@@ -1549,7 +1550,8 @@ impl RenderService {
         let mut list_pages_metadata = None;
         let missing_current_page_for_selector = current_page_identity.is_none()
             && (current_page_only || exclude_current_page_author);
-        let pages = if oversized_offset_initial_page
+        let pages = if zero_page_size
+            || oversized_offset_initial_page
             || current_page_date_missing
             || votes_equal_current_zero_votes
             || missing_current_page_for_selector
