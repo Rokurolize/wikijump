@@ -2802,7 +2802,7 @@ impl RenderService {
                     format!(r#" {attribute}="{}""#, value.value.replace('"', "&quot;"),)
                 })
                 .unwrap_or_default();
-            let link_attribute = if link == "#" {
+            let link_attribute = if raw_link == "#" {
                 String::new()
             } else {
                 format!(" link={}", preserve_argument_quotes(raw_link, &link),)

@@ -7771,6 +7771,37 @@ fn expands_scp_2117_shaped_image_block_with_fragment_src_and_absolute_link() {
 }
 
 #[test]
+fn image_block_prepass_preserves_quoted_hash_link_distinction() {
+    let page_info = fallback_test_page_info("consumer", "Consumer");
+
+    for (raw_link, expected) in [
+        (
+            "#",
+            "[[image http://scp-wiki.wikidot.com/local--files/consumer/fixture.png]]",
+        ),
+        (
+            "\"#\"",
+            "[[image http://scp-wiki.wikidot.com/local--files/consumer/fixture.png link=\"#\"]]",
+        ),
+    ] {
+        let mut wikitext = format!(
+            "[[include component:image-block name=fixture.png|link={raw_link}]]",
+        );
+
+        RenderService::expand_wikidot_image_block_includes(
+            &mut wikitext,
+            &page_info,
+            None,
+        );
+
+        assert!(
+            wikitext.contains(expected),
+            "raw_link={raw_link:?}: {wikitext}"
+        );
+    }
+}
+
+#[test]
 fn image_block_prepass_consumes_forwarded_name_and_link_provenance() {
     let variables = [
         (Cow::Borrowed("asset"), Cow::Borrowed("source image.png")),
