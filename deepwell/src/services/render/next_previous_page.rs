@@ -245,7 +245,6 @@ impl RenderService {
                 &mut permission_cache,
                 &mut score_filter_cache,
                 &mut author_resolution_cache,
-                compat_html,
                 compat_text,
             ))
             .await?;

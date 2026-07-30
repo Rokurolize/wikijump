@@ -45,19 +45,18 @@ use super::scanner::{
 use super::template::{ListPagesOutputShape, ListPagesTemplatePlan};
 use super::{
     CountPagesBlockRenderResult, CountPagesExpansionOptions, CountPagesRequiredTagSource,
-    CountPagesRequiredTagTotal, ExactNameListPagesBatchKey, ListPagesArgumentError,
-    ListPagesArguments, ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements,
-    ListPagesBatchDisplays, ListPagesBlockRenderResult, ListPagesContentCache,
-    ListPagesExpansion, ListPagesExpansionBudget, ListPagesExpansionOptions,
-    ListPagesPageContext, ListPagesPagerRoute, ListPagesSubstitutionContext,
-    MAX_NESTED_LISTPAGES_DEPTH, MAX_NESTED_LISTPAGES_MODULES_PER_PASS,
-    ResolvedListPagesAuthors, append_list_pages_delayed_occurrences,
-    count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
-    count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
-    count_pages_scan_requires_preservation, count_pages_should_remain_literal,
-    count_pages_unbounded_total, exact_name_list_pages_batch_key,
-    find_list_pages_module_matches_with_delayed_links, is_list_pages_visible_tag,
-    list_pages_argument_error_with_parent_precedence,
+    CountPagesRequiredTagTotal, ListPagesArgumentError, ListPagesArguments,
+    ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements, ListPagesBatchDisplays,
+    ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansion,
+    ListPagesExpansionBudget, ListPagesExpansionOptions, ListPagesPageContext,
+    ListPagesPagerRoute, ListPagesSubstitutionContext, MAX_NESTED_LISTPAGES_DEPTH,
+    MAX_NESTED_LISTPAGES_MODULES_PER_PASS, ResolvedListPagesAuthors,
+    append_list_pages_delayed_occurrences, count_pages_capture_is_literal,
+    count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
+    count_pages_required_tag_batch_selector, count_pages_scan_requires_preservation,
+    count_pages_should_remain_literal, count_pages_unbounded_total,
+    exact_name_list_pages_batch_key, find_list_pages_module_matches_with_delayed_links,
+    is_list_pages_visible_tag, list_pages_argument_error_with_parent_precedence,
     list_pages_body_starts_with_preparsed_block, list_pages_content_query_target,
     list_pages_created_by_unix, list_pages_feed_info_html,
     list_pages_has_unsupported_page_type_selector,
@@ -610,7 +609,6 @@ impl RenderService {
                         &mut permission_cache,
                         &mut score_filter_cache,
                         &mut author_resolution_cache,
-                        compat_html,
                         compat_text,
                     ))
                     .await?;
@@ -717,7 +715,6 @@ impl RenderService {
                         &mut permission_cache,
                         &mut score_filter_cache,
                         &mut author_resolution_cache,
-                        compat_html,
                         compat_text,
                     ))
                     .await?;
@@ -1224,7 +1221,6 @@ impl RenderService {
             ListPagesAuthorCacheKey,
             ResolvedListPagesAuthors,
         >,
-        compat_html: &mut CompatHtmlFragments,
         compat_text: &mut CompatTextFragments,
     ) -> Result<ListPagesBlockRenderResult> {
         let ListPagesPageContext {
