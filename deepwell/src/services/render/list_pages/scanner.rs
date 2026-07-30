@@ -2227,11 +2227,18 @@ fn nested_module_opening_has_inert_at_marker_suffix(
     source: &str,
     opening_end: usize,
 ) -> bool {
-    let line_end = source[opening_end..]
-        .find(['\r', '\n'])
-        .map_or(source.len(), |offset| opening_end + offset);
-    let suffix = source[opening_end..line_end].trim_matches([' ', '\t']);
-    suffix.len() >= 2 && suffix.bytes().all(|byte| byte == b'@')
+    let bytes = source.as_bytes();
+    if bytes.get(opening_end..opening_end + 2) != Some(&b"@@"[..]) {
+        return false;
+    }
+    let mut cursor = opening_end + 2;
+    while bytes.get(cursor) == Some(&b'@') {
+        cursor += 1;
+    }
+    while matches!(bytes.get(cursor), Some(b' ' | b'\t')) {
+        cursor += 1;
+    }
+    matches!(bytes.get(cursor), None | Some(b'\r' | b'\n'))
 }
 
 fn collect_module_events(
