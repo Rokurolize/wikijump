@@ -439,6 +439,7 @@ impl RenderService {
                 {
                     if !zero_row_once_only_output
                         && (arguments.limit == Some(0)
+                            || arguments.count_pages_per_page == Some(0)
                             || arguments.current_page_only
                                 && requested_current_page_id.is_none())
                     {

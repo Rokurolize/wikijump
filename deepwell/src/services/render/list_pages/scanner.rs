@@ -1857,6 +1857,7 @@ fn evidenced_legacy_list_pages_head_boundary(head: &str) -> bool {
         || inert_head_prefix(trimmed, "|")
         || inert_head_prefix(trimmed, "size")
         || trailing_empty_assignment(trimmed, "prependLine")
+        || trailing_empty_assignment(trimmed, "appendLine")
         || trimmed.ends_with("@@")
 }
 

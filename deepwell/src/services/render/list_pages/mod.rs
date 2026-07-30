@@ -1248,4 +1248,160 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn list_pages_argument_activation_preserves_wikidot_source_grammar() {
+        let arguments = parse_list_pages_arguments(concat!(
+            r#"name="target" NAME="missing" name=bare name='single' "#,
+            r#"tags="component" TAGS="missing" tags=bare tags='single' "#,
+            r#"limit="2" LIMIT="0" limit=0 limit='0' "#,
+            r#"offset="3" OFFSET="1" offset=1 offset='1' "#,
+            r#"perPage="5" perpage="1" per_page="1" perPage=1 perPage='1' "#,
+            r#"wrapper="no" WRAPPER="yes" wrapper=yes wrapper='yes' "#,
+            r#"separate="no" SEPARATE="yes" separate=yes separate='yes' "#,
+            r#"reverse="no" REVERSE="yes" reverse=yes reverse='yes' "#,
+            r#"range="." RANGE="others" range=others range='others' "#,
+            r#"created_by="" createdby="missing" CREATED_BY="missing" "#,
+            r#"rss="" rssTitle="Alias" RSS="Wrong" rssTitle='Wrong' "#,
+            r#"prependLine="before" prependline="wrong" prependLine='wrong' "#,
+            r#"appendLine="after" appendline="wrong" appendLine=wrong "#,
+            r#"score=">100000" createdat="1900" updatedat="1900" "#,
+            r#"rating>100000 votes>100000 created_at>2100 date>2100 "#,
+            r#"name!="ignored" range!="others""#,
+        ))
+        .expect("inert ListPages head forms must not abort the module");
+
+        assert_eq!(arguments.slug.as_deref(), Some("target"));
+        assert_eq!(arguments.default_tags, vec![Cow::Borrowed("component")]);
+        assert_eq!(arguments.limit, Some(1), "range=\".\" owns a one-row limit");
+        assert_eq!(arguments.offset, 3);
+        assert_eq!(arguments.count_pages_per_page, Some(5));
+        assert!(!arguments.wrapper);
+        assert!(!arguments.separate);
+        assert!(!arguments.reverse);
+        assert!(arguments.current_page_only);
+        assert!(!arguments.exclude_current_page);
+        assert!(!arguments.author_filter_present);
+        assert!(arguments.authors.is_empty());
+        assert_eq!(arguments.rss_title.as_deref(), Some("Alias"));
+        assert_eq!(arguments.prepend_line.as_deref(), Some("before"));
+        assert_eq!(arguments.append_line.as_deref(), Some("after"));
+        assert!(arguments.score.is_empty());
+        assert!(arguments.votes.is_empty());
+        assert_eq!(
+            arguments.creation_date,
+            DateSelector::FromPresent {
+                start: time::OffsetDateTime::UNIX_EPOCH,
+            },
+        );
+        assert_eq!(
+            arguments.update_date,
+            DateSelector::FromPresent {
+                start: time::OffsetDateTime::UNIX_EPOCH,
+            },
+        );
+    }
+
+    #[test]
+    fn list_pages_effective_argument_state_matches_live_errors_and_fallbacks() {
+        for (head, has_current_page, expected) in [
+            (r#"name!="missing""#, false, None),
+            (r#"rating>100000"#, false, None),
+            (r#"range!="others""#, false, None),
+            (r#"RANGE="others""#, false, None),
+            (r#"range="others" range=".""#, false, None),
+            (
+                r#"pagetype="all""#,
+                false,
+                Some("Invalid pagetype attribute."),
+            ),
+            (r#"pagetype="0""#, false, None),
+            (r#"rating="""#, false, None),
+            (r#"rating="bad" rating=">=-100000""#, false, None),
+            (
+                r#"rating=">=-100000" rating="bad""#,
+                false,
+                Some("Invalid rating argument."),
+            ),
+            (r#"rating=">=+0""#, false, Some("Invalid rating argument.")),
+            (r#"rating=">=0.5""#, false, Some("Invalid rating argument.")),
+            (r#"rating="!=999""#, false, Some("Invalid rating argument.")),
+            (r#"score="bad""#, false, None),
+            (r#"offset="9223372036855000063""#, false, None),
+            (
+                r#"offset="9223372036855000064""#,
+                false,
+                Some("An error occurred when processing your request."),
+            ),
+            (
+                r#"offset="999999999999999999999999999999""#,
+                false,
+                Some("An error occurred when processing your request."),
+            ),
+        ] {
+            assert_eq!(
+                list_pages_non_range_argument_error(head).or_else(|| {
+                    list_pages_range_argument_error(
+                        head,
+                        has_current_page,
+                        crate::services::render::UrlArguments::default(),
+                    )
+                }),
+                expected,
+                "{head:?}",
+            );
+        }
+
+        let arguments = parse_list_pages_arguments(
+            r#"pagetype="hidden" page_type="normal" range="others" range=".""#,
+        )
+        .expect("valid effective enum arguments should parse");
+        assert_eq!(arguments.page_type, PageTypeSelector::Hidden);
+        assert!(arguments.current_page_only);
+        assert!(!arguments.exclude_current_page);
+
+        for value in ["0", "-1", "+1900", "1900.01.01", "1900.1.1"] {
+            assert_eq!(
+                parse_list_pages_date_selector(value),
+                None,
+                "{value:?} is a live date-selector fallback",
+            );
+        }
+        assert!(parse_list_pages_date_selector("1900").is_some());
+        assert!(parse_list_pages_date_selector("1900.01").is_some());
+
+        let arguments = parse_list_pages_arguments(
+            r#"rating=">100000" rating=">=-100000" votes=">100000" votes=">=0""#,
+        )
+        .expect("later rating and votes selectors replace earlier values");
+        assert_eq!(arguments.score.len(), 1);
+        assert_eq!(arguments.votes.len(), 1);
+
+        assert_eq!(
+            list_pages_static_parent_fullname(r#"parent="*""#),
+            Some("*".to_owned()),
+        );
+
+        let arguments = parse_list_pages_arguments(
+            r#"offset="+1" offset=" 1" offset="1 " perPage="00""#,
+        )
+        .expect("numeric lexical fallbacks should not abort ListPages");
+        assert_eq!(arguments.offset, 0);
+        assert_eq!(arguments.count_pages_per_page, Some(0));
+
+        for (head, expected_prepend, expected_append) in [
+            (r#"prependLine= prependLine="PRE2""#, Some("PRE2"), None),
+            (r#"appendLine= appendLine="POST2""#, None, Some("POST2")),
+            (r#"appendLine="POST1" appendLine="#, None, Some("POST1")),
+        ] {
+            let arguments = parse_list_pages_arguments(head)
+                .expect("an inert empty line assignment must not consume its successor");
+            assert_eq!(
+                arguments.prepend_line.as_deref(),
+                expected_prepend,
+                "{head}"
+            );
+            assert_eq!(arguments.append_line.as_deref(), expected_append, "{head}");
+        }
+    }
 }

@@ -1515,6 +1515,10 @@ fn live_inert_list_pages_head_tokens_remain_structurally_visible() {
         r#"| name="target" limit="1" order="name""#,
         r#"size name="target" limit="1" order="name""#,
         r#"name="target" limit="1" order="name" prependLine="#,
+        r#"name="target" limit="1" order="name" appendLine="#,
+        r#"name="target" appendLine= appendLine="POST""#,
+        r#"name="target" appendLine="POST" appendLine="#,
+        r#"name="target" prependLine= prependLine="PRE""#,
         r#"name="target" limit="1" order="name"@@"#,
     ] {
         let source = format!("[[module ListPages {head}]]ROW|%%fullname%%[[/module]]");

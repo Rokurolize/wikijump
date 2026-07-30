@@ -18,7 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::services::render::module_arguments::wikidot_list_pages_arguments;
+use crate::services::render::module_arguments::{
+    WikidotModuleArgumentValueKind, wikidot_list_pages_arguments,
+};
 use std::collections::BTreeMap;
 
 use super::super::data_forms::{
@@ -101,9 +103,11 @@ pub(in crate::services::render) fn list_pages_static_category_preflight(
     head: &str,
 ) -> Option<(Vec<String>, bool)> {
     let arguments = wikidot_list_pages_arguments(head);
-    let mut categories = arguments
-        .iter()
-        .filter(|argument| argument.key.eq_ignore_ascii_case("category"));
+    let mut categories = arguments.iter().filter(|argument| {
+        argument.key == "category"
+            && argument.op == "="
+            && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
+    });
     let category = categories.next()?;
     if categories.next().is_some() || category.op != "=" {
         return None;
@@ -127,13 +131,12 @@ pub(in crate::services::render) fn list_pages_static_category_preflight(
 
     let wrapper = arguments
         .iter()
-        .filter(|argument| argument.key.eq_ignore_ascii_case("wrapper"))
-        .map(|argument| {
-            !matches!(
-                argument.value.trim().to_ascii_lowercase().as_str(),
-                "false" | "no"
-            )
+        .filter(|argument| {
+            argument.key == "wrapper"
+                && argument.op == "="
+                && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
         })
+        .map(|argument| !matches!(argument.value, "false" | "no"))
         .next_back()
         .unwrap_or(true);
     Some((included, wrapper))
