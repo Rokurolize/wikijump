@@ -225,3 +225,87 @@ test("preview classifier does not mask a missing zero-row line as fixture state"
   );
   assert.equal(result.cases[0].disposition, "investigate-renderer");
 });
+
+test("literal-context replay isolates ListPages ownership from unrelated rendering drift", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-literal-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    "[[code]]",
+    '[[module ListPages tags="+example"]]',
+    "%%title%%",
+    "[[/module]]",
+    "[[/code]]",
+  ].join("\n");
+  const cases = [
+    {
+      caseId: "literal-ok:literal-context",
+      localText: '[[module ListPages tags="+example"]]\n%%title%%\n[[/module]]\n',
+      localDom: [{
+        attrs: [{ name: "class", value: "code" }],
+        children: [],
+      }],
+    },
+    {
+      caseId: "literal-todo:literal-context",
+      localText: "TODO: module ListPages",
+      localDom: [],
+    },
+    {
+      caseId: "literal-executed:literal-context",
+      localText: "local row",
+      localDom: [{
+        attrs: [{ name: "class", value: "list-pages-box" }],
+        children: [],
+      }],
+    },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases.map(({ caseId }) => `${JSON.stringify(reference(
+      caseId,
+      source,
+      '<div class="code">[[module ListPages tags="+example"]]\n%%title%%\n[[/module]]</div>',
+    ))}\n`).join(""),
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: cases.map(({ caseId, localText, localDom }) => ({
+      case_id: caseId,
+      status: "mismatch",
+      live: {
+        visible_text: '[[module ListPages tags="+example"]]\n%%title%%\n[[/module]]',
+      },
+      local: { visible_text: localText, html_sha256: "d".repeat(64) },
+      comparison: {
+        checks: {
+          dom_tree: { status: "mismatch", local: localDom },
+        },
+      },
+    })),
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases[0],
+    {
+      ...result.cases[0],
+      case_id: "literal-ok:literal-context",
+      classification: "literal-context-nonexecution-parity",
+      disposition: "none",
+    },
+  );
+  for (const caseId of [
+    "literal-todo:literal-context",
+    "literal-executed:literal-context",
+  ]) {
+    const classified = result.cases.find((row) => row.case_id === caseId);
+    assert.notEqual(
+      classified.disposition,
+      "none",
+      `${caseId} must remain actionable when local output executes or diagnoses ListPages`,
+    );
+  }
+});

@@ -91,16 +91,17 @@ pub(super) use self::substitution::{
     count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
     exact_name_list_pages_batch_key, list_pages_author_cache_key,
     list_pages_has_unsupported_page_type_selector,
-    list_pages_has_unsupported_parent_selector, list_pages_static_parent_fullname,
-    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
-    substitute_list_pages_rating_only, substitute_list_pages_variables_with_fragments,
-    union_found_page_fields, unsupported_list_pages_replacement,
+    list_pages_has_unsupported_parent_selector,
+    list_pages_static_parent_fullname_with_url, parse_list_pages_arguments,
+    parse_list_pages_arguments_with_url, substitute_list_pages_rating_only,
+    substitute_list_pages_variables_with_fragments, union_found_page_fields,
+    unsupported_list_pages_replacement,
 };
 #[cfg(test)]
 pub(super) use self::substitution::{
     ListPagesOffsetOrigin, list_pages_body_is_no_visible_tracking_markup,
     list_pages_body_uses_content_variable, list_pages_body_variables_supported,
-    parse_list_pages_date_selector,
+    list_pages_static_parent_fullname, parse_list_pages_date_selector,
 };
 
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -996,7 +997,7 @@ mod tests {
         assert!(parse_list_pages_arguments(r#"rating="<>5""#).is_some());
         assert_eq!(
             list_pages_static_parent_fullname(r#"parent="system:start""#),
-            Some("system:start"),
+            Some("system:start".to_owned()),
         );
         assert_eq!(list_pages_static_parent_fullname(r#"parent=".""#), None,);
         let arguments = parse_list_pages_arguments(r#"parent="system:start""#)
@@ -1060,6 +1061,68 @@ mod tests {
             parse_list_pages_arguments(r#"created_at="not-a-date""#).is_some(),
             "live ignores an invalid date selector",
         );
+
+        for head in [
+            r#"created_at<"2018.12.26""#,
+            r#"created_at>="2021.2.16""#,
+            r#"updated_at<"2017.02.04""#,
+            r#"rating>="-7""#,
+            r#"votes!="0""#,
+        ] {
+            assert!(
+                parse_list_pages_arguments(head).is_some(),
+                "legacy comparison operators belong to the selector rather than invalidating {head:?}",
+            );
+        }
+
+        let path_arguments = vec![
+            crate::services::render::UrlArgumentPair {
+                name: "created_by".to_owned(),
+                value: Some("administrator".to_owned()),
+            },
+            crate::services::render::UrlArgumentPair {
+                name: "order".to_owned(),
+                value: Some("name desc".to_owned()),
+            },
+            crate::services::render::UrlArgumentPair {
+                name: "parent".to_owned(),
+                value: Some("System:Start".to_owned()),
+            },
+        ];
+        let url = crate::services::render::UrlArguments {
+            path_arguments: &path_arguments,
+            ..crate::services::render::UrlArguments::default()
+        };
+        let arguments = parse_list_pages_arguments_with_url(
+            r#"created_by="@URL" order="@URL" parent="@URL" rating="@URL" name="@URL""#,
+            url,
+        )
+        .expect("URL-backed selectors should resolve independently and absent URL values should drop");
+        assert_eq!(arguments.authors, vec![Cow::Borrowed("administrator")]);
+        assert_eq!(
+            arguments.order,
+            Some(OrderBySelector {
+                property: OrderProperty::PageSlug,
+                ascending: false,
+            }),
+        );
+        assert_eq!(
+            arguments.static_parent_fullname.as_deref(),
+            Some("system:start"),
+        );
+        assert!(arguments.score.is_empty());
+        assert!(arguments.slug.is_none());
+        assert!(!arguments.unsupported_author_filter);
+        assert!(!arguments.unsupported_list_pages_filter);
+
+        let arguments = parse_list_pages_arguments_with_url(
+            r#"pagetype="@URL" created_at="@URL" updated_at="@URL" link_to="@URL" reverse="@URL""#,
+            crate::services::render::UrlArguments::default(),
+        )
+        .expect("unresolved URL selectors without fallbacks should be omitted like absent arguments");
+        assert_eq!(arguments.page_type, PageTypeSelector::Normal);
+        assert!(arguments.link_to.is_empty());
+        assert!(!arguments.reverse);
 
         let arguments = parse_list_pages_arguments(
             r#"category="fragment" parent="." order="name"" limit="1" offset="@URL|0""#,

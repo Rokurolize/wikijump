@@ -37,6 +37,24 @@ function localDom(row) {
   return null;
 }
 
+function literalContextKeepsListPagesInactive({
+  row,
+  reference,
+  localNodes,
+  localUnsupportedDiagnostic,
+}) {
+  if (!row.case_id.endsWith(":literal-context")) return false;
+  const liveHtml = reference.raw_html;
+  const liveExecuted = ["list-pages-box", "list-pages-item", "pager"]
+    .some((className) =>
+      liveHtml.includes(`class="${className}"`) ||
+      liveHtml.includes(`class='${className}'`)
+    );
+  const localExecuted = ["list-pages-box", "list-pages-item", "pager"]
+    .some((className) => domHasClass(localNodes, className));
+  return !liveExecuted && !localExecuted && !localUnsupportedDiagnostic;
+}
+
 function templateVariables(source) {
   return [...source.matchAll(/%%[A-Za-z0-9_]+%%/gu)]
     .map((match) => match[0]);
@@ -91,6 +109,20 @@ function classifyMismatch(row, reference) {
     /\bTODO:\s*module\s+ListPages\b/iu.test(localText);
   const missingLineArgument =
     missingVisibleLineArgument(source, liveText, localText);
+
+  if (literalContextKeepsListPagesInactive({
+    row,
+    reference,
+    localNodes,
+    localUnsupportedDiagnostic,
+  })) {
+    return {
+      classification: "literal-context-nonexecution-parity",
+      disposition: "none",
+      rationale:
+        "The context-preserving replay keeps ListPages inactive in both runtimes; unrelated code, HTML, typography, or whitespace differences remain outside the ListPages campaign.",
+    };
+  }
 
   const exactErrors = new Map([
     ["Invalid range argument.", ["invalid-range-error", "fix"]],

@@ -26,6 +26,7 @@ use super::super::literal_regions::{
     rollback_start_in_left_run, scan_wikidot_whole_head_value,
     wikidot_right_bracket_token, wikidot_trimmed_name,
 };
+use super::super::module_arguments::wikidot_list_pages_arguments;
 #[path = "scanner/count_reachability.rs"]
 mod count_reachability;
 
@@ -1988,6 +1989,7 @@ fn find_list_pages_module_matches_with_cursor_work(
     if let Some(module) = active
         && module.depth == 1
         && module.runtime_safe
+        && !wikidot_list_pages_arguments(module.head).is_empty()
     {
         matches.push(ListPagesModuleMatch {
             start: module.start,

@@ -62,7 +62,7 @@ use super::{
     list_pages_has_unsupported_parent_selector, list_pages_non_range_argument_error,
     list_pages_parent_fullname, list_pages_range_argument_error,
     list_pages_revision_count, list_pages_row_scan_target,
-    list_pages_static_parent_fullname, load_list_pages_data_form_definitions,
+    list_pages_static_parent_fullname_with_url, load_list_pages_data_form_definitions,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
     parse_list_pages_arguments_with_url,
     preserve_list_pages_following_paragraph_boundary, preserve_list_pages_module_matches,
@@ -258,9 +258,10 @@ impl RenderService {
                     current_data_form_context.as_ref(),
                 );
                 list_pages_runtime_head_can_execute(head.as_ref())
-                    .then(|| list_pages_static_parent_fullname(head.as_ref()))
+                    .then(|| {
+                        list_pages_static_parent_fullname_with_url(head.as_ref(), url)
+                    })
                     .flatten()
-                    .map(ToOwned::to_owned)
             })
             .collect::<BTreeSet<_>>()
             .into_iter()
@@ -325,12 +326,13 @@ impl RenderService {
                     ListPagesBlockPlan::Static(compat_html.push_block_html(format!(
                         r#"<div class="error-block">{error}</div>"#,
                     )))
-                } else if let Some(parent) = list_pages_static_parent_fullname(head)
-                    && !existing_static_parents.contains(parent)
+                } else if let Some(parent) =
+                    list_pages_static_parent_fullname_with_url(head, url)
+                    && !existing_static_parents.contains(&parent)
                 {
                     ListPagesBlockPlan::Static(compat_html.push_block_html(format!(
                         r#"<div class="error-block">Parent page {} does not exist</div>"#,
-                        escape_html_text(parent),
+                        escape_html_text(&parent),
                     )))
                 } else if let Some(error) = list_pages_range_argument_error(
                     head,
@@ -340,10 +342,7 @@ impl RenderService {
                     ListPagesBlockPlan::Static(compat_html.push_block_html(format!(
                         r#"<div class="error-block">{error}</div>"#,
                     )))
-                } else if !head_can_execute
-                    || list_pages_has_unsupported_parent_selector(head)
-                    || list_pages_has_unsupported_page_type_selector(head)
-                {
+                } else if !head_can_execute {
                     ListPagesBlockPlan::PreserveOriginal(
                         "head, parent, or page-type selector is not executable",
                     )

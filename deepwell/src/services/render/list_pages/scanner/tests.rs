@@ -1442,6 +1442,45 @@ fn list_pages_scanner_keeps_completed_matches_before_an_unclosed_body() {
     assert_eq!(modules.len(), 1);
     assert_eq!(modules[0].head, "name=\"unclosed\"");
     assert_eq!(modules[0].body, "");
+
+    for bare in [
+        "[[module ListPages]]@@example@@",
+        "[[module ListPages]]>@\n@<example>@",
+        "[[module ListPages]]documentation",
+    ] {
+        assert!(find_list_pages_module_matches(bare).is_empty(), "{bare:?}");
+    }
+}
+
+#[test]
+fn corpus_legacy_list_pages_heads_remain_structurally_visible() {
+    for source in [
+        concat!(
+            "[[module ListPages created_by=\"creambox\" order=\"random\"tags=\"+原创 +scp\" separate=\"no\"]]\n",
+            "%%title_linked%%\n[[/module]]",
+        ),
+        concat!(
+            "[[module ListPages separate=\"no\" tags=\"+cn3000 -竞赛\" perPage=\"100\" order=\"random\" ]]]\n",
+            "%%title_linked%%\n[[/module]]",
+        ),
+        concat!(
+            "[[module ListPages order=\"title\" tags=\"+_herman-fuller -scp\" separate=\"no\" ",
+            "order=\"title asc perPage=\"250]]\n%%title_linked%%\n[[/module]]",
+        ),
+        concat!(
+            "[[module ListPages range=\"@URL|.\" rating=\">15\" tags=\"+scp\" ",
+            "order=\"rating desc\" separate=\"false\" date=\"@URL\"]]\n",
+            "%%title_linked%%\n[[/module]]",
+        ),
+        concat!(
+            "[[module ListPages tags=\"{$tag}\" created_by=\"{$user}\" order=\"rating desc\" ",
+            "limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n",
+            "%%content{0}%%\n[[/module]]",
+        ),
+    ] {
+        let modules = find_list_pages_module_matches(source);
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+    }
 }
 
 #[test]

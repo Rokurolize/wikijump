@@ -1655,6 +1655,78 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
 }
 
 #[tokio::test]
+async fn listpages_legacy_comparisons_and_unresolved_url_selectors_execute_in_preview() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (source, marker) in [
+        (
+            concat!(
+                "[[module ListPages created_at<\"1900.1.1\" updated_at>=\"1900.1.1\" ",
+                "separate=\"no\" prependLine=\"LEGACY-COMPARISON-EXECUTED\"]]\n",
+                "ROW %%fullname%%\n",
+                "[[/module]]",
+            ),
+            "LEGACY-COMPARISON-EXECUTED",
+        ),
+        (
+            concat!(
+                "[[module ListPages created_by=\"@URL\" parent=\"@URL\" ",
+                "pagetype=\"@URL\" rating=\"@URL\" votes=\"@URL\" ",
+                "created_at=\"@URL\" updated_at=\"@URL\" link_to=\"@URL\" ",
+                "name=\"@URL\" order=\"@URL\" reverse=\"@URL\" limit=\"1\" ",
+                "separate=\"no\" prependLine=\"URL-SELECTORS-EXECUTED\"]]\n",
+                "ROW %%fullname%%\n",
+                "[[/module]]",
+            ),
+            "URL-SELECTORS-EXECUTED",
+        ),
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "ListPages legacy selector preview",
+            source.to_owned(),
+        )
+        .await
+        .expect("the live-compatible ListPages selector should render")
+        .html_output
+        .body;
+        assert!(preview.contains(marker), "{source:?}:\n{preview}");
+        assert!(
+            !preview.contains("[[module ListPages")
+                && !preview.contains("TODO: module ListPages"),
+            "the selector must execute rather than leak its authored module: {source:?}:\n{preview}",
+        );
+    }
+
+    let missing_parent = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages parent fallback preview",
+        concat!(
+            "[[module ListPages parent=\"@URL|SCP-2019-J\" range=\"others\"]]\n",
+            "ROW %%fullname%%\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a missing parent fallback should render Wikidot's error")
+    .html_output
+    .body;
+    assert!(
+        missing_parent.contains(
+            r#"<div class="error-block">Parent page scp-2019-j does not exist</div>"#,
+        ),
+        "the normalized missing-parent error must precede invalid range validation:\n{missing_parent}",
+    );
+    assert!(!missing_parent.contains("Invalid range argument."));
+}
+
+#[tokio::test]
 async fn listpages_module_heads_accept_live_legacy_boundaries() {
     const TARGET_SLUG: &str = "listpages-head-boundary-target";
 
