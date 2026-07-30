@@ -404,7 +404,7 @@ impl<'a> ModuleEventScanner<'a> {
                     (candidate..run_end.saturating_sub(1)).find(|marker| {
                         self.lowercase.as_bytes().get(*marker..*marker + 3)
                             == Some(&b"[[#"[..])
-                            && unresolved_conditional_parser_function_prefix(
+                            && unresolved_block_conditional_prefix(
                                 &self.source[*marker + 3..],
                             )
                     })
@@ -424,9 +424,7 @@ impl<'a> ModuleEventScanner<'a> {
                 continue;
             }
             if self.lowercase.as_bytes().get(start..start + 3) == Some(&b"[[#"[..])
-                && unresolved_conditional_parser_function_prefix(
-                    &self.source[start + 3..],
-                )
+                && unresolved_block_conditional_prefix(&self.source[start + 3..])
             {
                 self.ambiguous_whole_head = true;
                 self.advance_to(self.lowercase.len());
@@ -865,19 +863,17 @@ impl<'a> ModuleEventScanner<'a> {
                 );
             }
             if quote.is_some() && matches!(bytes[cursor], b'\n' | b'\r') {
+                if list_pages_compatibility {
+                    trailing_backslashes = 0;
+                    cursor = physical_line_resume(bytes, cursor);
+                    continue;
+                }
                 if trailing_backslashes > 0 {
                     trailing_backslashes -= 1;
                     cursor = physical_line_resume(bytes, cursor);
                     continue;
                 }
                 let resume = physical_line_resume(bytes, cursor);
-                if list_pages_compatibility {
-                    // An unescaped physical newline terminates the pinned
-                    // quoted head but can remain part of the runtime regex's
-                    // bare-value alternative. Do not evaluate either reading.
-                    self.ambiguous_whole_head = true;
-                    finish_head_scan!(resume, ModuleOpeningEnd::Malformed { resume });
-                }
                 finish_head_scan!(
                     resume,
                     ModuleOpeningEnd::Malformed {
@@ -921,7 +917,19 @@ impl<'a> ModuleEventScanner<'a> {
                         bytes.len(),
                         &mut head_tokens,
                     );
-                    if right_block {
+                    let surplus_list_pages_close_end = (list_pages_compatibility
+                        && !right_block)
+                        .then(|| {
+                            let mut end = cursor;
+                            while bytes.get(end) == Some(&b']') {
+                                end += 1;
+                            }
+                            (end.saturating_sub(cursor) >= 3).then_some(end)
+                        })
+                        .flatten();
+                    if right_block || surplus_list_pages_close_end.is_some() {
+                        let closing_end =
+                            surplus_list_pages_close_end.unwrap_or(cursor + token_len);
                         let raw_head = &source[subname_end..cursor];
                         let validation_head = raw_head.trim_start_matches([' ', '\t']);
                         let mut validation = validate_module_head(
@@ -929,21 +937,26 @@ impl<'a> ModuleEventScanner<'a> {
                             list_pages_compatibility,
                         );
                         let runtime_recognized = list_pages_compatibility
-                            && runtime_regex_recognizes_entire_head(validation_head);
+                            && !super::super::module_arguments::wikidot_list_pages_arguments(
+                                validation_head,
+                            )
+                            .is_empty();
                         if !self.charge_speculative(raw_head.len().saturating_mul(3)) {
                             record_module_head_scan_bytes(
                                 cursor.saturating_sub(module_name_end),
                             );
                             return ModuleOpeningEnd::Unclosed;
                         }
-                        if (first_rollback_marker.is_some() || runtime_recognized)
-                            && validation == ModuleHeadValidation::DefiniteInvalid
-                        {
-                            validation = if list_pages_compatibility {
+                        if validation == ModuleHeadValidation::DefiniteInvalid {
+                            validation = if list_pages_compatibility
+                                && first_rollback_marker.is_none()
+                            {
+                                ModuleHeadValidation::ValidRuntimeUnsafe
+                            } else if list_pages_compatibility && runtime_recognized {
                                 ModuleHeadValidation::AmbiguousFailClosed
                             } else {
                                 finish_head_scan!(
-                                    cursor + token_len,
+                                    closing_end,
                                     ModuleOpeningEnd::Malformed {
                                         resume: first_rollback_marker
                                             .expect("suppressed rollback marker exists"),
@@ -954,18 +967,18 @@ impl<'a> ModuleEventScanner<'a> {
                         let runtime_safe = match validation {
                             ModuleHeadValidation::DefiniteInvalid => {
                                 finish_head_scan!(
-                                    cursor + token_len,
+                                    closing_end,
                                     ModuleOpeningEnd::Malformed {
-                                        resume: cursor + token_len,
+                                        resume: closing_end,
                                     }
                                 );
                             }
                             ModuleHeadValidation::AmbiguousFailClosed => {
                                 self.ambiguous_whole_head = true;
                                 finish_head_scan!(
-                                    cursor + token_len,
+                                    closing_end,
                                     ModuleOpeningEnd::Malformed {
-                                        resume: cursor + token_len,
+                                        resume: closing_end,
                                     }
                                 );
                             }
@@ -973,9 +986,9 @@ impl<'a> ModuleEventScanner<'a> {
                                 if first_rollback_marker.is_none() {
                                     self.ambiguous_whole_head = true;
                                     finish_head_scan!(
-                                        cursor + token_len,
+                                        closing_end,
                                         ModuleOpeningEnd::Malformed {
-                                            resume: cursor + token_len,
+                                            resume: closing_end,
                                         }
                                     );
                                 }
@@ -986,9 +999,9 @@ impl<'a> ModuleEventScanner<'a> {
                         };
                         self.text_tokens = head_tokens;
                         finish_head_scan!(
-                            cursor + token_len,
+                            closing_end,
                             ModuleOpeningEnd::Complete {
-                                opening_end: cursor,
+                                opening_end: closing_end - 2,
                                 subname_end,
                                 runtime_safe,
                             }
@@ -1500,16 +1513,16 @@ pub(in crate::services::render) fn runtime_regex_recognizes_entire_head(
     super::super::module_arguments::module_arguments_are_complete(source)
 }
 
-fn unresolved_conditional_parser_function_prefix(source: &str) -> bool {
-    ["ifexpr", "if"].into_iter().any(|name| {
-        source
-            .get(..name.len())
-            .is_some_and(|prefix| prefix.eq_ignore_ascii_case(name))
-            && source[name.len()..]
-                .chars()
-                .next()
-                .is_some_and(char::is_whitespace)
-    })
+fn unresolved_block_conditional_prefix(source: &str) -> bool {
+    const NAME: &str = "if";
+
+    source
+        .get(..NAME.len())
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(NAME))
+        && source[NAME.len()..]
+            .chars()
+            .next()
+            .is_some_and(char::is_whitespace)
 }
 
 pub(in crate::services::render) fn list_pages_runtime_head_is_safe(head: &str) -> bool {
@@ -1519,10 +1532,15 @@ pub(in crate::services::render) fn list_pages_runtime_head_is_safe(head: &str) -
 pub(in crate::services::render) fn list_pages_runtime_head_can_execute(
     head: &str,
 ) -> bool {
-    matches!(
-        validate_module_head(head, true),
-        ModuleHeadValidation::RuntimeSafe | ModuleHeadValidation::ValidRuntimeUnsafe
-    ) && runtime_regex_recognizes_entire_head(head)
+    match validate_module_head(head, true) {
+        ModuleHeadValidation::RuntimeSafe | ModuleHeadValidation::ValidRuntimeUnsafe => {
+            runtime_regex_recognizes_entire_head(head)
+                || !super::super::module_arguments::wikidot_list_pages_arguments(head)
+                    .is_empty()
+        }
+        ModuleHeadValidation::DefiniteInvalid if !head.contains("[[") => true,
+        _ => false,
+    }
 }
 
 fn normalize_module_head(source: &str) -> String {
@@ -1935,7 +1953,9 @@ fn find_list_pages_module_matches_with_cursor_work(
                     active = Some(ActiveListPagesModule {
                         start,
                         body_start: opening_end + 2,
-                        head: source[subname_end..opening_end].trim_start(),
+                        head: source[subname_end..opening_end]
+                            .trim_start()
+                            .trim_end_matches(']'),
                         depth: 1,
                         runtime_safe,
                     });

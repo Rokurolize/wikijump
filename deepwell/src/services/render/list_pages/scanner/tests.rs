@@ -55,6 +55,24 @@ fn runtime_head_validation_accepts_static_wildcard_selectors() {
 }
 
 #[test]
+fn corpus_unicode_tag_head_remains_runtime_executable() {
+    let head = r#"separate="1" tags="+阿尔兹海默症 -中心" order="random"  perPage="50""#;
+    assert_eq!(
+        validate_module_head(head, true),
+        ModuleHeadValidation::RuntimeSafe,
+    );
+    assert!(runtime_regex_recognizes_entire_head(head));
+    assert!(list_pages_runtime_head_can_execute(head));
+
+    let source = format!(
+        "[[module ListPages {head}]]\n* %%title_linked%% - %%created_by_linked%%\n[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1);
+    assert!(modules[0].runtime_safe);
+}
+
+#[test]
 fn linear_list_pages_scanner_preserves_nested_modules_and_source_order() {
     let source = concat!(
         "before\n",
@@ -446,6 +464,30 @@ fn unresolved_parser_functions_always_fail_closed() {
 }
 
 #[test]
+fn inline_ifexpr_does_not_suppress_listpages_modules() {
+    let source = concat!(
+        "[[module ListPages category=\"*\"]]\n",
+        "[[#ifexpr %%rating_votes%% == 0 | ZERO_VOTES | HAS_VOTES]]\n",
+        "[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1);
+    assert_eq!(
+        modules[0].body,
+        "\n[[#ifexpr %%rating_votes%% == 0 | ZERO_VOTES | HAS_VOTES]]\n",
+    );
+
+    let source = concat!(
+        "[[#ifexpr 1 == 1 | yes | no]] ",
+        "[[module ListPages name=\"live\"]]Y[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 1);
+    assert_eq!(modules[0].head, "name=\"live\"");
+}
+
+#[test]
 fn owned_unresolved_and_whole_head_markers_do_not_suppress_live_modules() {
     for source in [
         concat!(
@@ -572,16 +614,31 @@ fn list_pages_scanner_ignores_right_block_tokens_inside_single_quoted_arguments(
 }
 
 #[test]
-fn list_pages_scanner_rejects_right_link_runs_as_module_head_terminators() {
-    let source = concat!(
-        "[[module ListPages name=\"malformed\"]]]ignored[[/module]]\n",
-        "[[module ListPages name=\"live\"]]kept[[/module]]",
-    );
-    let modules = find_list_pages_module_matches(source);
+fn list_pages_scanner_consumes_surplus_right_brackets_at_module_head_boundary() {
+    for right_brackets in ["]]]", "]]]]", "]]]]]", "]]]]]]"] {
+        let source =
+            format!("[[module ListPages name=\"live\"{right_brackets}kept[[/module]]",);
+        let modules = find_list_pages_module_matches(&source);
 
-    assert_eq!(modules.len(), 1);
-    assert_eq!(modules[0].head, "name=\"live\"");
-    assert_eq!(modules[0].body, "kept");
+        assert_eq!(modules.len(), 1, "{right_brackets}");
+        assert_eq!(modules[0].head, "name=\"live\"", "{right_brackets}");
+        assert_eq!(modules[0].body, "kept", "{right_brackets}");
+    }
+}
+
+#[test]
+fn list_pages_scanner_accepts_physical_newlines_in_complete_heads() {
+    for source in [
+        "[[module ListPages\nname=\"live\"\norder=\"name\"\n]]kept[[/module]]",
+        "[[module ListPages name=\"live\" order=\"name\n\"]]kept[[/module]]",
+        "[[module ListPages name=\"live\nname\" limit=\"1\"]]kept[[/module]]",
+    ] {
+        let modules = find_list_pages_module_matches(source);
+
+        assert_eq!(modules.len(), 1, "{source:?}");
+        assert_eq!(modules[0].body, "kept", "{source:?}");
+        assert!(modules[0].runtime_safe, "{source:?}");
+    }
 }
 
 #[test]
@@ -599,17 +656,26 @@ fn list_pages_scanner_rejects_right_link_runs_as_module_close_terminators() {
 }
 
 #[test]
-fn list_pages_scanner_fails_closed_when_a_quoted_head_reaches_a_physical_line_end() {
+fn list_pages_scanner_keeps_a_multiline_quote_open_until_a_later_quote() {
     for (label, line_end) in [("LF", "\n"), ("CRLF", "\r\n"), ("CR", "\r")] {
         let source = format!(
             "[[module ListPages name=\"first\"]]A[[/module]]{line_end}\
              [[module ListPages name=\"unterminated{line_end}\
              [[module ListPages name=\"second\"]]B[[/module]]",
         );
+        let modules = find_list_pages_module_matches(&source);
+
+        assert_eq!(modules.len(), 2, "{label}");
+        assert_eq!(modules[0].head, "name=\"first\"", "{label}");
+        assert_eq!(modules[0].body, "A", "{label}");
         assert!(
-            find_list_pages_module_matches(&source).is_empty(),
-            "{label}"
+            modules[1]
+                .head
+                .contains("[[module ListPages name=\"second\""),
+            "{label}: {:?}",
+            modules[1].head,
         );
+        assert_eq!(modules[1].body, "B", "{label}");
     }
 }
 
@@ -1445,5 +1511,34 @@ fn linear_list_pages_scanner_ignores_literal_module_tokens() {
         let modules = find_list_pages_module_matches(&source);
         assert_eq!(modules.len(), 1, "literal token changed nesting: {body}");
         assert_eq!(modules[0].body, body);
+    }
+}
+
+#[test]
+fn corpus_monospace_and_comment_owners_hide_listpages_candidates() {
+    for source in [
+        "{{[[Module Listpages]]}}",
+        concat!(
+            "[!--\n",
+            "[[module ListPages rating=\">100\" order=\"rating desc\" ",
+            "separate=\"false\" limit=\"1000\" perPage=\"1000\"]]\n",
+            "%%title_linked%%:: rating: %%rating%%\n",
+            "[[/module]]\n\n",
+            "---]",
+        ),
+        concat!(
+            "[!----\n",
+            "temporary hidden region\n",
+            "[[module ListPages order=\"updated_at\" category=\"*\" ",
+            "perPage=\"200\" separate=\"false\"]]\n",
+            "%%title_linked%%\n",
+            "[[/module]]\n",
+            "---]",
+        ),
+    ] {
+        assert!(
+            find_list_pages_module_matches(source).is_empty(),
+            "literal owner leaked a ListPages candidate:\n{source}",
+        );
     }
 }

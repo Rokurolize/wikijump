@@ -1509,7 +1509,7 @@
       ]
     },
     "module-listpages": {
-      "status": "implemented",
+      "status": "in_progress",
       "confirmed_public_seams": [
         "Anonymous PagePreviewModule and run-owned saved-page live Wikidot oracle",
         "Deepwell public saved-page, preview, and AJAX ListPages render/query interfaces",
@@ -1561,6 +1561,15 @@
         {
           "path": "install/local/wikidot-verification/tests/listpages-runtime-budget-envelope.test.mjs",
           "scope": "reusable corpus-envelope regression verifies threshold measurements and provenance are recomputed deterministically from invocation records"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_template_parser_functions_run_after_row_variable_substitution",
+          "scope": "public saved-page regression for the corpus-derived #ifexpr/#expr row-template behavior"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-corpus-replay-reconciliation.test.mjs",
+          "scope": "exact-source replay accounting maps every corpus provenance to a live/local classification and fails closed on missing or actionable sources"
         }
       ],
       "implementation_files": [
@@ -1596,7 +1605,8 @@
         "install/local/wikidot-verification/artifacts/countpages-inside-listpages-live.json",
         "install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json",
         "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json",
-        "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json"
+        "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
+        "install/local/wikidot-verification/artifacts/listpages-corpus-parser-functions-live.jsonl"
       ],
       "delivery_evidence": [
         {
@@ -1620,7 +1630,9 @@
           "merge_sha": "cb101c737c6a7fc98acd43dc6184ed2c98ba85fc"
         }
       ],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "The 23,893-invocation exact-source corpus replay is in progress. Its first tracer slice exposed the #ifexpr/#expr scanner gap; the item cannot return to implemented until the complete replay has no unresolved or actionable classification."
+      ]
     },
     "module-listusers": {
       "status": "implemented",

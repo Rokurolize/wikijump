@@ -7637,6 +7637,135 @@ async fn listpages_combined_and_separate_templates_match_live_container_dom() {
 }
 
 #[tokio::test]
+async fn listpages_sections_follow_live_separation_and_empty_result_rules() {
+    const DEFAULT_EMPTY: &str = "fixture-listpages-sections-default-empty";
+    const COMBINED_EMPTY: &str = "fixture-listpages-sections-combined-empty";
+    const SEPARATE_ONE: &str = "fixture-listpages-sections-separate-one";
+    const HEAD_ONLY_ONE: &str = "fixture-listpages-sections-head-only-one";
+    const TARGET: &str = "fixture-listpages-sections-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET,
+        "ListPages sections target",
+        "ListPages sections target body.",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        DEFAULT_EMPTY,
+        "ListPages empty sections holder",
+        concat!(
+            "[[module ListPages tags=\"+verification-listpages-empty-sections-absent\"]]\n",
+            "[[head]]EMPTY_SECTIONS_HEAD[[/head]]\n",
+            "[[body]]%%slug%%[[/body]]\n",
+            "[[foot]]EMPTY_SECTIONS_FOOT[[/foot]]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMBINED_EMPTY,
+        "ListPages combined empty sections holder",
+        concat!(
+            "[[module ListPages tags=\"+verification-listpages-empty-sections-absent\" separate=\"no\"]]\n",
+            "[[head]]COMBINED_EMPTY_HEAD[[/head]]\n",
+            "[[body]]ROW=%%fullname%%[[/body]]\n",
+            "[[foot]]COMBINED_EMPTY_FOOT[[/foot]]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SEPARATE_ONE,
+        "ListPages separate sections holder",
+        &format!(
+            concat!(
+                "[[module ListPages category=\"*\" fullname=\"{TARGET}\" separate=\"yes\"]]\n",
+                "[[head]]SEPARATE_ONE_HEAD[[/head]]\n",
+                "[[body]]ROW=%%fullname%%[[/body]]\n",
+                "[[foot]]SEPARATE_ONE_FOOT[[/foot]]\n",
+                "[[/module]]",
+            ),
+            TARGET = TARGET,
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HEAD_ONLY_ONE,
+        "ListPages head-only sections holder",
+        &format!(
+            concat!(
+                "[[module ListPages category=\"*\" fullname=\"{TARGET}\" separate=\"no\"]]\n",
+                "[[head]]HEAD_ONLY_LITERAL[[/head]]\n",
+                "[[/module]]",
+            ),
+            TARGET = TARGET,
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, DEFAULT_EMPTY).await;
+    assert_eq!(
+        html.matches(r#"<div class="list-pages-box">"#).count(),
+        1,
+        "live Wikidot emits the empty ListPages wrapper:\n{html}",
+    );
+    for forbidden in [
+        "EMPTY_SECTIONS_HEAD",
+        "EMPTY_SECTIONS_FOOT",
+        "[[head]]",
+        "[[body]]",
+        "[[foot]]",
+        "TODO: module ListPages",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "empty-result sections must not expose {forbidden:?}:\n{html}",
+        );
+    }
+
+    let combined_empty =
+        load_listpages_test_compiled_html(&runner, site_id, COMBINED_EMPTY).await;
+    assert!(
+        combined_empty.contains("COMBINED_EMPTY_HEAD")
+            && combined_empty.contains("COMBINED_EMPTY_FOOT")
+            && !combined_empty.contains("ROW="),
+        "separate=no emits head and foot even when no rows are selected:\n{combined_empty}",
+    );
+
+    let separate_one =
+        load_listpages_test_compiled_html(&runner, site_id, SEPARATE_ONE).await;
+    assert!(
+        separate_one.contains(&format!("ROW={TARGET}"))
+            && !separate_one.contains("SEPARATE_ONE_HEAD")
+            && !separate_one.contains("SEPARATE_ONE_FOOT"),
+        "separate=yes suppresses head and foot but keeps body as the row template:\n{separate_one}",
+    );
+
+    let head_only_one =
+        load_listpages_test_compiled_html(&runner, site_id, HEAD_ONLY_ONE).await;
+    assert!(
+        head_only_one.contains("[[head]]HEAD_ONLY_LITERAL[[/head]]")
+            && !head_only_one.contains("[[module ListPages"),
+        "a head without a body section remains literal per-row body text:\n{head_only_one}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_stored_title_remains_literal_in_listing_output() {
     const TAG: &str = "verification-list-title-literal";
     const SOURCE_SLUG: &str = "fixture-listpages-title-literal-source";
@@ -8112,9 +8241,15 @@ async fn listpages_append_line_matches_wikidot_row_and_pager_ordering() {
 
     let zero_html =
         load_listpages_test_compiled_html(&runner, site_id, ZERO_INDEX_SLUG).await;
+    let zero_pre = zero_html
+        .find(ZERO_PRE)
+        .expect("live Wikidot renders prependLine for an empty result");
+    let zero_post = zero_html
+        .find(ZERO_POST)
+        .expect("live Wikidot renders appendLine for an empty result");
     assert!(
-        !zero_html.contains(ZERO_PRE) && !zero_html.contains(ZERO_POST),
-        "zero-row ListPages must omit both prelude and postlude:\n{zero_html}"
+        zero_pre < zero_post,
+        "zero-row ListPages must render prependLine before appendLine:\n{zero_html}"
     );
 }
 
@@ -16441,6 +16576,69 @@ async fn countpages_substitutes_total_for_tagged_pages() {
         assert!(
             !html.contains(forbidden),
             "CountPages fixture should not contain {forbidden:?}:\n{html}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn listpages_template_parser_functions_run_after_row_variable_substitution() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "verification-listpages-template-parser-functions";
+
+    let target_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-listpages-template-parser-functions-target",
+        "Fixture ListPages Template Parser Functions Target",
+        "Fixture ListPages parser-function target marker.",
+    )
+    .await;
+    set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        "fixture-listpages-template-parser-functions-target",
+        target_revision,
+        &[tag],
+    )
+    .await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-listpages-template-parser-functions-index",
+        "Fixture ListPages Template Parser Functions Index",
+        &format!(
+            r#"[[module ListPages category="*" tags="+{tag}" order="name" limit="1"]]
+[[#ifexpr %%rating_votes%% == 0 | ZERO_VOTES | HAS_VOTES]] [[#expr %%rating_votes%% + %%rating%%]]
+[[/module]]"#
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(
+        &runner,
+        site_id,
+        "fixture-listpages-template-parser-functions-index",
+    )
+    .await;
+
+    assert!(
+        html.contains("<p>ZERO_VOTES 0</p>"),
+        "live Wikidot substitutes the row variables before evaluating #ifexpr and #expr:\n{html}",
+    );
+    for forbidden in [
+        "TODO: module ListPages",
+        "[[#ifexpr",
+        "[[#expr",
+        "%%rating_votes%%",
+        "%%rating%%",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "ListPages parser-function output should not contain {forbidden:?}:\n{html}",
         );
     }
 }

@@ -36,7 +36,7 @@ use wikidot_normalize::normalize;
 use super::super::compat::CompatHtmlFragments;
 use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
 use super::super::literal_regions::LiteralRegionCursor;
-use super::super::module_arguments::wikidot_module_arguments;
+use super::super::module_arguments::wikidot_list_pages_arguments;
 use super::super::service::{
     CountPagesRequiredTagBatchResult, MAX_LISTPAGES_RENDER_LIMIT,
     MAX_LISTPAGES_RENDER_OFFSET, MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService,
@@ -304,7 +304,7 @@ pub(in crate::services::render) fn exact_name_list_pages_batch_key(
     arguments: &ListPagesArguments,
     current_category: &str,
 ) -> Option<ExactNameListPagesBatchKey> {
-    let head_arguments = wikidot_module_arguments(head)?;
+    let head_arguments = wikidot_list_pages_arguments(head);
     if template.uses_content() || template.uses_data_form() {
         return None;
     }
@@ -375,46 +375,6 @@ pub(in crate::services::render) fn parse_list_pages_arguments(
     parse_list_pages_arguments_with_url(head, UrlArguments::default())
 }
 
-pub(in crate::services::render) fn list_pages_argument_error(
-    head: &str,
-    has_current_page: bool,
-) -> Option<&'static str> {
-    if !list_pages_runtime_head_can_execute(head) {
-        return None;
-    }
-    let head_arguments = wikidot_module_arguments(head)?;
-
-    for argument in head_arguments {
-        let key = argument.key.to_ascii_lowercase();
-        let value = argument.value.trim();
-        if is_dynamic_list_pages_value(value) {
-            continue;
-        }
-        match key.as_str() {
-            "range" => match value {
-                "" | "." => {}
-                "before" | "after" | "others" | "other" if has_current_page => {}
-                _ => return Some("Invalid range argument."),
-            },
-            "pagetype" | "page_type" | "page-type"
-                if parse_list_pages_page_type(value).is_none() =>
-            {
-                return Some("Invalid pagetype attribute.");
-            }
-            "rating" | "score"
-                if value != "=" && !list_pages_numeric_selector_is_valid(value) =>
-            {
-                return Some("Invalid rating argument.");
-            }
-            "votes" if value != "=" && !list_pages_numeric_selector_is_valid(value) => {
-                return Some("Invalid votes argument.");
-            }
-            _ => {}
-        }
-    }
-    None
-}
-
 pub(in crate::services::render) fn list_pages_static_parent_fullname(
     head: &str,
 ) -> Option<&str> {
@@ -422,7 +382,7 @@ pub(in crate::services::render) fn list_pages_static_parent_fullname(
         return None;
     }
 
-    wikidot_module_arguments(head)?
+    wikidot_list_pages_arguments(head)
         .into_iter()
         .filter(|argument| argument.key.eq_ignore_ascii_case("parent"))
         .map(|argument| argument.value.trim())
@@ -431,16 +391,6 @@ pub(in crate::services::render) fn list_pages_static_parent_fullname(
             !matches!(*value, "" | "*" | "." | "-" | "=" | "-=")
                 && !is_dynamic_list_pages_value(value)
         })
-}
-
-fn list_pages_numeric_selector_is_valid(value: &str) -> bool {
-    let value = value.trim();
-    let value = [">=", "<=", "!=", "<>", ">", "<", "="]
-        .into_iter()
-        .find_map(|prefix| value.strip_prefix(prefix))
-        .unwrap_or(value)
-        .trim();
-    !value.is_empty() && value.parse::<f64>().is_ok()
 }
 
 /// Parse a ListPages head against the request that is asking for it.
@@ -455,7 +405,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     if !list_pages_runtime_head_can_execute(head) {
         return None;
     }
-    let head_arguments = wikidot_module_arguments(head)?;
+    let head_arguments = wikidot_list_pages_arguments(head);
     let url_attr_prefix = head_arguments
         .iter()
         .filter(|argument| argument.key.eq_ignore_ascii_case("urlattrprefix"))
@@ -894,11 +844,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
             // implemented by PageQueryService yet. Leaving the module untouched is
             // safer than silently returning a wrong list.
             "separate" => {
-                separate = if value.is_empty() {
-                    true
-                } else {
-                    parse_list_pages_boolean_argument(value)?
-                };
+                separate = parse_list_pages_false_only_boolean_argument(value);
             }
             "created_by" | "createdby" => {
                 if key == "created_by" {
@@ -935,6 +881,22 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 }
             }
             "range" => {
+                unsupported_count_pages_filter |= is_dynamic_list_pages_value(value);
+                let resolved_url_range;
+                let value = match resolve_url_selector(
+                    value,
+                    url.value_for_list_pages_argument(
+                        url_attr_prefix.as_deref(),
+                        "range",
+                    ),
+                ) {
+                    UrlSelector::Static(value) => value,
+                    UrlSelector::Resolved(range) => {
+                        resolved_url_range = range;
+                        resolved_url_range.as_str()
+                    }
+                    UrlSelector::Dropped => continue,
+                };
                 rss_path.range = nonempty_list_pages_feed_value(value);
                 match value {
                     "." => {
@@ -961,11 +923,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 }
             }
             "wrapper" => {
-                wrapper = if value.is_empty() {
-                    true
-                } else {
-                    parse_list_pages_boolean_argument(value)?
-                };
+                wrapper = parse_list_pages_false_only_boolean_argument(value);
             }
             "rss" => {
                 saw_rss_argument = true;
@@ -1090,10 +1048,6 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 unsupported_count_pages_filter = true;
                 unsupported_list_pages_filter = true;
             }
-            // Wikidot accepts these arguments without applying them to the
-            // ListPages query or wrapper. Do not forward author-controlled
-            // values into generated markup.
-            "class" | "custom" | "style" | "unknown" => {}
             _ if raw_key.starts_with('_') => {
                 let value = static_list_pages_selector(
                     value,
@@ -1111,7 +1065,11 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     negated: argument.op == "!=",
                 });
             }
-            _ => return None,
+            // Live Wikidot ignores syntactically valid unknown non-data-form
+            // arguments while continuing to apply every recognized argument
+            // in the same invocation. Do not forward their author-controlled
+            // values into generated markup.
+            _ => {}
         }
     }
 
@@ -1363,14 +1321,8 @@ pub(in crate::services::render) fn parse_list_pages_numeric_argument(
     value.parse().ok()
 }
 
-pub(in crate::services::render) fn parse_list_pages_boolean_argument(
-    value: &str,
-) -> Option<bool> {
-    match value.trim().to_ascii_lowercase().as_str() {
-        "yes" | "true" => Some(true),
-        "no" | "false" => Some(false),
-        _ => None,
-    }
+fn parse_list_pages_false_only_boolean_argument(value: &str) -> bool {
+    !matches!(value.trim().to_ascii_lowercase().as_str(), "no" | "false")
 }
 
 pub(in crate::services::render) fn parse_list_pages_score_selector(
@@ -1668,8 +1620,7 @@ pub(in crate::services::render) fn substitute_list_pages_current_data_form_varia
 pub(in crate::services::render) fn list_pages_has_unsupported_parent_selector(
     head: &str,
 ) -> bool {
-    wikidot_module_arguments(head)
-        .unwrap_or_default()
+    wikidot_list_pages_arguments(head)
         .into_iter()
         .any(|argument| {
             if !argument.key.eq_ignore_ascii_case("parent") {
@@ -1685,8 +1636,7 @@ pub(in crate::services::render) fn list_pages_has_unsupported_parent_selector(
 pub(in crate::services::render) fn list_pages_has_unsupported_page_type_selector(
     head: &str,
 ) -> bool {
-    wikidot_module_arguments(head)
-        .unwrap_or_default()
+    wikidot_list_pages_arguments(head)
         .into_iter()
         .any(|argument| {
             if !matches!(

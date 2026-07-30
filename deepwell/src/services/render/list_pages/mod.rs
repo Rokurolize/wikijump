@@ -19,7 +19,9 @@
  */
 
 mod ajax;
+mod argument_errors;
 pub(super) mod authors;
+mod batch_loading;
 mod budget;
 pub(super) mod content_sections;
 mod current_data_form;
@@ -41,6 +43,9 @@ mod titles;
 pub(super) use self::ajax::AJAX_MODULE_LITERAL_MARKER_PREFIX;
 pub(super) use self::ajax::{
     build_wikidot_list_pages_module_source, protect_ajax_module_literal_markers,
+};
+pub(super) use self::argument_errors::{
+    list_pages_non_range_argument_error, list_pages_range_argument_error,
 };
 pub(super) use self::budget::ListPagesExpansionBudget;
 pub(super) use self::current_page::{
@@ -84,8 +89,8 @@ pub(super) use self::substitution::{
     ResolvedListPagesAuthors, WikidotUserDisplay, count_pages_capture_is_literal,
     count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
     count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
-    exact_name_list_pages_batch_key, list_pages_argument_error,
-    list_pages_author_cache_key, list_pages_has_unsupported_page_type_selector,
+    exact_name_list_pages_batch_key, list_pages_author_cache_key,
+    list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_parent_fullname,
     parse_list_pages_arguments, parse_list_pages_arguments_with_url,
     substitute_list_pages_rating_only, substitute_list_pages_variables_with_fragments,
@@ -962,6 +967,11 @@ mod tests {
         for (head, has_current_page, expected) in [
             (r#"range="others""#, false, Some("Invalid range argument.")),
             (r#"range="others""#, true, None),
+            (
+                r#"range="@URL|others""#,
+                false,
+                Some("Invalid range argument."),
+            ),
             (r#"range="bogus""#, true, Some("Invalid range argument.")),
             (
                 r#"pagetype="bogus""#,
@@ -972,7 +982,13 @@ mod tests {
             (r#"votes="bad""#, false, Some("Invalid votes argument.")),
         ] {
             assert_eq!(
-                list_pages_argument_error(head, has_current_page),
+                list_pages_non_range_argument_error(head).or_else(|| {
+                    list_pages_range_argument_error(
+                        head,
+                        has_current_page,
+                        crate::services::render::UrlArguments::default(),
+                    )
+                }),
                 expected,
                 "{head:?}",
             );
@@ -1061,5 +1077,70 @@ mod tests {
         assert_eq!(arguments.default_tags, vec![Cow::Borrowed(r#"rating="<0"#)]);
         assert!(!arguments.separate);
         assert!(!arguments.unsupported_list_pages_filter);
+
+        let arguments = parse_list_pages_arguments(
+            r#"separate="1" tags="+阿尔兹海默症 -中心" order="random"  perPage="50""#,
+        )
+        .expect("the corpus Unicode-tag selector should parse");
+        assert_eq!(arguments.all_tags, vec![Cow::Borrowed("阿尔兹海默症")],);
+        assert_eq!(arguments.no_tags, vec![Cow::Borrowed("中心")]);
+        assert!(!arguments.unsupported_list_pages_filter);
+
+        for unknown in [
+            r#"seperated="no""#,
+            r#"der="title""#,
+            r#"sort="created_by desc""#,
+            r#"hide="hidden""#,
+            r#"show="shown""#,
+            r#"by="someone""#,
+            r#"details="true""#,
+            r#"width="200px""#,
+            r#"create_by="someone""#,
+            r#"creat_by="someone""#,
+            r#"name-="SCP Série*""#,
+            r#"imit="150""#,
+            r#"v="value""#,
+            r#"limite="100""#,
+            r#"author="someone""#,
+        ] {
+            let head = format!(r#"category="*" limit="1" order="name" {unknown}"#);
+            let arguments = parse_list_pages_arguments(&head).unwrap_or_else(|| {
+                panic!("unknown argument should be ignored: {unknown}")
+            });
+            assert!(arguments.category_all);
+            assert_eq!(arguments.limit, Some(1));
+            assert_eq!(
+                arguments.order,
+                Some(OrderBySelector {
+                    property: OrderProperty::PageSlug,
+                    ascending: true,
+                }),
+            );
+            assert!(!arguments.unsupported_list_pages_filter);
+        }
+
+        for (inert, head) in [
+            ("pipe", r#"| name="target" limit="1" order="name""#),
+            ("bare flag", r#"size name="target" limit="1" order="name""#),
+            (
+                "empty assignment",
+                r#"name="target" limit="1" order="name" prependLine="#,
+            ),
+            ("at markers", r#"name="target" limit="1" order="name"@@"#),
+        ] {
+            let arguments = parse_list_pages_arguments(head).unwrap_or_else(|| {
+                panic!("live inert head token should be ignored: {inert}")
+            });
+            assert_eq!(arguments.slug.as_deref(), Some("target"), "{inert}");
+            assert_eq!(arguments.limit, Some(1), "{inert}");
+            assert_eq!(
+                arguments.order,
+                Some(OrderBySelector {
+                    property: OrderProperty::PageSlug,
+                    ascending: true,
+                }),
+                "{inert}",
+            );
+        }
     }
 }

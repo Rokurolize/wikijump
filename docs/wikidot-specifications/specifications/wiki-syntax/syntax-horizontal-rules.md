@@ -30,7 +30,36 @@ These seams are recommendations. The implementation agent must present and confi
 
 ## Feature-specific implementation notes
 
-- No feature-specific implementation note beyond the corpus contract.
+- Live Wikidot narrows the documentation's “four dashes or more” statement:
+  a run of at least four hyphens is a horizontal rule only when it begins the
+  effective line and is followed immediately by a line boundary or end of
+  input. Following text, a right bracket, or even trailing ASCII spaces
+  disqualifies the horizontal rule and leaves the run to inline dash parsing.
+- Observation routes differ at the beginning of a document. Anonymous
+  PagePreview preserves one leading ASCII space and therefore renders
+  ` ----` as inline dashes. A saved Wikidot page trims that document-leading
+  space before parsing and renders the same stored source as `<hr />`.
+  Saved-page behavior is canonical for compiled pages; PagePreview behavior
+  remains canonical for the preview route.
+- A disqualified run is not preserved literally. Live inline parsing consumes
+  each complete five-hyphen chunk as strikethrough containing one literal
+  hyphen, then renders each pair in the remainder as an em dash and a final
+  unpaired hyphen literally. This rule is verified for run lengths 4 through
+  15.
+- The same immediate-boundary rule applies inside native blockquotes after
+  their quote prefix is consumed: `> ----` emits a horizontal rule inside the
+  blockquote, while `> ---- tail` emits inline dash content.
+
+Live evidence:
+
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/horizontal-rule-boundary-live.jsonl`
+  (PagePreview; SHA-256 `e2f484b2955cac5f1bb26744964cc7c72b1143fb87e9efa5d94010c4b21fc007`)
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/horizontal-rule-leading-space-saved-live.json`
+  (saved page; SHA-256 `dbc9e01d7bd3f9bc148a460a85c4487a87c289be03ae79435f541ff65a4d77d3`)
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/dash-run-extended-live.jsonl`
+  (PagePreview; SHA-256 `5d45e7c2346af3d9da6a4f936b192f6615ba7930ceecf79f41c0cadcc27dd20f`)
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/horizontal-rule-quote-live.jsonl`
+  (PagePreview; SHA-256 `36af07458d0aa918c74e81bed693d191df5e21f4c2f1edada9d77efc9cd040f5`)
 
 ## Source inventory
 

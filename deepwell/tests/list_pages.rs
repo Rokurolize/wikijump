@@ -1597,6 +1597,10 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
             "Invalid range argument.",
         ),
         (
+            "[[module ListPages range=\"@URL|others\"]]\nROW %%fullname%%\n[[/module]]",
+            "Invalid range argument.",
+        ),
+        (
             "[[module ListPages range=\"bogus\"]]\nROW %%fullname%%\n[[/module]]",
             "Invalid range argument.",
         ),
@@ -1620,6 +1624,18 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
             "[[module ListPages parent=\"definitely-missing-listpages-parent\"]]\nROW %%fullname%%\n[[/module]]",
             "Parent page definitely-missing-listpages-parent does not exist",
         ),
+        (
+            "[[module ListPages parent=\"definitely-missing-listpages-parent\" range=\"others\"]]\nROW %%fullname%%\n[[/module]]",
+            "Parent page definitely-missing-listpages-parent does not exist",
+        ),
+        (
+            "[[module ListPages parent=\"definitely-missing-listpages-parent\" range=\"bogus\"]]\nROW %%fullname%%\n[[/module]]",
+            "Parent page definitely-missing-listpages-parent does not exist",
+        ),
+        (
+            "[[module ListPages parent=\"definitely-missing-listpages-parent\" pagetype=\"bogus\"]]\nROW %%fullname%%\n[[/module]]",
+            "Invalid pagetype attribute.",
+        ),
     ] {
         let preview = RenderService::render_wikidot_page_preview(
             runner.context(),
@@ -1634,6 +1650,148 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         assert!(
             preview.contains(&format!(r#"<div class="error-block">{message}</div>"#,)),
             "the exact live ListPages error should render:\n{preview}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn listpages_module_heads_accept_live_legacy_boundaries() {
+    const TARGET_SLUG: &str = "listpages-head-boundary-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "ListPages head-boundary target",
+            "title": "ListPages Head Boundary Target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "ListPages head-boundary fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let ordinary_head = format!(r#"name="{TARGET_SLUG}" limit="1" order="name""#);
+    let sources = [
+        format!("[[module ListPages {ordinary_head}]]]\nROW|%%fullname%%\n[[/module]]"),
+        format!("[[module ListPages {ordinary_head}]]]]\nROW|%%fullname%%\n[[/module]]"),
+        format!(
+            "[[module ListPages\nname=\"{TARGET_SLUG}\"\nlimit=\"1\"\norder=\"name\"\n]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\n\"]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages | name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\"]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages size name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\"]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\" prependLine=]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\"@@]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+    ];
+
+    for source in sources {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "ListPages head boundary",
+            source.clone(),
+        )
+        .await
+        .expect("a live-compatible ListPages head boundary should render")
+        .html_output
+        .body;
+        assert!(
+            preview.contains(&format!("ROW|{TARGET_SLUG}")),
+            "the ListPages opening should execute and select its exact row for {source:?}:\n{preview}",
+        );
+        assert!(
+            !preview.contains("[[module ListPages")
+                && !preview.contains("%%fullname%%")
+                && !preview.contains("<p>]</p>"),
+            "the recovered head must not leak source or surplus right brackets for {source:?}:\n{preview}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn listpages_respects_corpus_literal_context_ownership() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let monospace = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Literal ListPages monospace",
+        "{{[[Module Listpages]]}}".to_owned(),
+    )
+    .await
+    .expect("an inline-monospace ListPages example should render as literal text")
+    .html_output
+    .body;
+    assert!(
+        monospace.contains("[[Module Listpages]]")
+            && !monospace.contains("list-pages-box")
+            && !monospace.contains("TODO: module ListPages"),
+        "inline monospace must own the module-shaped text:\n{monospace}",
+    );
+
+    for comment in [
+        concat!(
+            "[!--\n",
+            "[[module ListPages rating=\">100\" order=\"rating desc\" ",
+            "separate=\"false\" limit=\"1000\" perPage=\"1000\"]]\n",
+            "%%title_linked%%:: rating: %%rating%%\n",
+            "[[/module]]\n\n",
+            "---]",
+        ),
+        concat!(
+            "[!----\n",
+            "temporary hidden region\n",
+            "[[module ListPages order=\"updated_at\" category=\"*\" ",
+            "perPage=\"200\" separate=\"false\"]]\n",
+            "%%title_linked%%\n",
+            "[[/module]]\n",
+            "---]",
+        ),
+    ] {
+        let hidden = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Comment-owned ListPages",
+            comment.to_owned(),
+        )
+        .await
+        .expect("a comment-owned ListPages example should remain hidden")
+        .html_output
+        .body;
+        assert!(
+            !hidden.contains("list-pages-box")
+                && !hidden.contains("TODO: module ListPages")
+                && !hidden.contains("[[module ListPages"),
+            "the complete Wikidot comment must own the module-shaped text:\n{hidden}",
         );
     }
 }

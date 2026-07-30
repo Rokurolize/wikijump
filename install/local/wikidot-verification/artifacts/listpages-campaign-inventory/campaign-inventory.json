@@ -1,6 +1,6 @@
 {
   "schema": "wikijump_listpages_compat.campaign_inventory.v1",
-  "generated_at": "2026-07-27T06:41:24.648Z",
+  "generated_at": "2026-07-29T21:36:50.452Z",
   "docs_root": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/www/pages",
   "corpus_root": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus",
   "files": {
@@ -21,10 +21,10 @@
     },
     "corpus": {
       "branch_count": 26,
-      "invocation_count": 23893,
+      "invocation_count": 23964,
       "page_count_with_invocations": 7148,
-      "cluster_count": 17644,
-      "malformed_count": 69
+      "cluster_count": 17724,
+      "malformed_count": 60
     }
   }
 }
