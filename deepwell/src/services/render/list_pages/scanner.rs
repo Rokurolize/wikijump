@@ -2138,10 +2138,14 @@ fn find_list_pages_module_matches_with_cursor_work(
             OrderedModuleEvent::Open {
                 kind,
                 start,
+                end,
                 direct,
                 ..
             } => {
                 if let Some(module) = active.as_mut() {
+                    if nested_module_opening_has_inert_at_marker_suffix(source, end) {
+                        continue;
+                    }
                     let Some(depth) = module.depth.checked_add(1) else {
                         break;
                     };
@@ -2217,6 +2221,17 @@ fn find_list_pages_module_matches_with_cursor_work(
         direct_work + projected_work + literal_range_advances + merge_work,
         literal_range_advances,
     )
+}
+
+fn nested_module_opening_has_inert_at_marker_suffix(
+    source: &str,
+    opening_end: usize,
+) -> bool {
+    let line_end = source[opening_end..]
+        .find(['\r', '\n'])
+        .map_or(source.len(), |offset| opening_end + offset);
+    let suffix = source[opening_end..line_end].trim_matches([' ', '\t']);
+    suffix.len() >= 2 && suffix.bytes().all(|byte| byte == b'@')
 }
 
 fn collect_module_events(

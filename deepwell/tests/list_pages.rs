@@ -1847,6 +1847,31 @@ async fn listpages_legacy_comparisons_and_unresolved_url_selectors_execute_in_pr
         "the normalized missing-parent error must precede invalid range validation:\n{missing_parent}",
     );
     assert!(!missing_parent.contains("Invalid range argument."));
+
+    let inert_at_marker_module = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages inert at-marker module preview",
+        concat!(
+            "[[module ListPages limit=\"@URL|0\" range=\".\" ",
+            "urlAttrPrefix=\"page2\"]]\n",
+            "|content=[[module rate]]@@@@@@@@\n",
+            "LISTPAGES-INERT-MODULE-BODY\n",
+            "[[/module]]\n",
+            "LISTPAGES-INERT-MODULE-AFTER",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an at-marker-suffixed module token should not steal the ListPages close")
+    .html_output
+    .body;
+    assert!(
+        inert_at_marker_module.contains("LISTPAGES-INERT-MODULE-AFTER")
+            && !inert_at_marker_module.contains("LISTPAGES-INERT-MODULE-BODY")
+            && !inert_at_marker_module.contains("[[module rate]]"),
+        "the exact live-owned ListPages body must remain atomic:\n{inert_at_marker_module}",
+    );
 }
 
 #[tokio::test]
