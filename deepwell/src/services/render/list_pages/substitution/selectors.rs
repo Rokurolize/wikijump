@@ -123,7 +123,11 @@ pub(in crate::services::render) fn list_pages_static_category_preflight(
         {
             return None;
         }
-        included.push(category);
+        let category = category.strip_prefix('+').unwrap_or(&category);
+        if category.is_empty() {
+            return None;
+        }
+        included.push(category.to_lowercase());
     }
     if included.is_empty() {
         return None;
@@ -140,6 +144,23 @@ pub(in crate::services::render) fn list_pages_static_category_preflight(
         .next_back()
         .unwrap_or(true);
     Some((included, wrapper))
+}
+
+pub(in crate::services::render) fn split_list_pages_tag_values(
+    value: &str,
+) -> Vec<String> {
+    value
+        .split(|character: char| {
+            character.is_whitespace() || matches!(character, ',' | ';')
+        })
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            part.strip_prefix('"')
+                .and_then(|part| part.strip_suffix('"'))
+                .unwrap_or(part)
+                .to_lowercase()
+        })
+        .collect()
 }
 
 pub(in crate::services::render) fn substitute_list_pages_current_data_form_variables(

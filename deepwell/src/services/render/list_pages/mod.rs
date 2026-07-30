@@ -1404,4 +1404,47 @@ mod tests {
             assert_eq!(arguments.append_line.as_deref(), expected_append, "{head}");
         }
     }
+
+    #[test]
+    fn list_pages_signed_and_legacy_tag_tokens_remain_literal_filters() {
+        let arguments =
+            parse_list_pages_arguments(r#"tags="Component;missing += -= +== -==""#)
+                .expect("signed and semicolon-separated tag tokens are executable");
+
+        assert_eq!(
+            arguments.default_tags,
+            vec![Cow::Borrowed("component"), Cow::Borrowed("missing")],
+        );
+        assert_eq!(
+            arguments.all_tags,
+            vec![Cow::Borrowed("="), Cow::Borrowed("==")],
+        );
+        assert_eq!(
+            arguments.no_tags,
+            vec![Cow::Borrowed("="), Cow::Borrowed("==")],
+        );
+        assert!(!arguments.same_visible_tags);
+        assert!(!arguments.exact_visible_tags);
+        assert!(!arguments.unsupported_list_pages_filter);
+
+        let arguments = parse_list_pages_arguments(r#"tags=""component"""#)
+            .expect("the evidenced doubled-quote tag recovery should execute");
+        assert_eq!(arguments.default_tags, vec![Cow::Borrowed("component")]);
+    }
+
+    #[test]
+    fn list_pages_category_local_names_fold_case_and_trim_source_values() {
+        let arguments =
+            parse_list_pages_arguments(r#"category="+Component" name=" Image?Block ""#)
+                .expect("the evidenced category-local name selector should execute");
+
+        assert_eq!(arguments.categories, vec![Cow::Borrowed("component")]);
+        assert_eq!(arguments.name_pattern, Some(Cow::Borrowed("image?block")),);
+        assert_eq!(arguments.slug, None);
+
+        let arguments = parse_list_pages_arguments(r#"category="NAV" name=" Side ""#)
+            .expect("an exact category-local name should execute");
+        assert_eq!(arguments.categories, vec![Cow::Borrowed("nav")]);
+        assert_eq!(arguments.slug, Some(Cow::Borrowed("side")));
+    }
 }

@@ -75,7 +75,9 @@ pub(in crate::services::render) fn list_pages_non_range_argument_error(
     {
         return Some("Invalid pagetype attribute.");
     }
-    if let Some((op, value)) = rating {
+    if let Some((op, value)) = rating
+        && !is_dynamic_list_pages_value(value)
+    {
         let comparison_value = format!("{}{value}", if op == "!=" { "<>" } else { op });
         let value = if op == "=" {
             value
@@ -89,7 +91,9 @@ pub(in crate::services::render) fn list_pages_non_range_argument_error(
             return Some("Invalid rating argument.");
         }
     }
-    if let Some((op, value)) = votes {
+    if let Some((op, value)) = votes
+        && !is_dynamic_list_pages_value(value)
+    {
         let comparison_value = format!("{}{value}", if op == "!=" { "<>" } else { op });
         let value = if op == "=" {
             value

@@ -500,15 +500,44 @@ impl PageQueryService {
                 .into());
             }
             let slug = slug.as_ref();
-            condition = condition.add(page::Column::Slug.eq(slug));
+            if let Some(patterns) =
+                category_local_wikidot_name_patterns(included_categories, slug)
+            {
+                let mut local_name = Condition::any();
+                for pattern in patterns {
+                    local_name = local_name.add(
+                        Expr::col((Page, page::Column::Slug))
+                            .binary(PgBinOper::ILike, Expr::val(pattern)),
+                    );
+                }
+                condition = condition.add(local_name);
+            } else {
+                condition = condition.add(page::Column::Slug.eq(slug));
+            }
         }
         if !slugs.is_empty() {
             condition = condition
                 .add(page::Column::Slug.is_in(slugs.iter().map(|slug| slug.as_ref())));
         }
         if let Some(name) = name {
-            let pattern = wikidot_name_pattern(name.as_ref());
-            condition = condition.add(page::Column::Slug.like(pattern));
+            if let Some(patterns) =
+                category_local_wikidot_name_patterns(included_categories, name.as_ref())
+            {
+                let mut local_name = Condition::any();
+                for pattern in patterns {
+                    local_name = local_name.add(
+                        Expr::col((Page, page::Column::Slug))
+                            .binary(PgBinOper::ILike, Expr::val(pattern)),
+                    );
+                }
+                condition = condition.add(local_name);
+            } else {
+                let pattern = wikidot_name_pattern(name.as_ref());
+                condition = condition.add(
+                    Expr::col((Page, page::Column::Slug))
+                        .binary(PgBinOper::ILike, Expr::val(pattern)),
+                );
+            }
         }
 
         // Initial page author. Local pages use the user ID on their earliest available revision. Corpus imports intentionally keep the Wikidot display name in wikidot_page_snapshot instead of fabricating local users, so the two representations are combined with OR semantics.
@@ -1220,15 +1249,50 @@ async fn project_page_query_results(
 
 fn wikidot_name_pattern(value: &str) -> String {
     let mut pattern = String::with_capacity(value.len());
-    for character in value.chars() {
+    let trailing_star = value.ends_with('*') && value.matches('*').count() == 1;
+    for (index, character) in value.char_indices() {
         match character {
-            '*' | '%' => pattern.push('%'),
+            '*' if trailing_star && index + character.len_utf8() == value.len() => {
+                pattern.push('%');
+            }
+            '*' => pattern.push_str("\\*"),
+            '?' => pattern.push('_'),
+            '%' => pattern.push_str("\\%"),
             '_' => pattern.push_str("\\_"),
             '\\' => pattern.push_str("\\\\"),
             _ => pattern.push(character),
         }
     }
     pattern
+}
+
+fn category_local_wikidot_name_patterns(
+    included_categories: IncludedCategories<'_>,
+    value: &str,
+) -> Option<Vec<String>> {
+    let IncludedCategories::List(categories) = included_categories else {
+        return None;
+    };
+    if value.contains(':') {
+        return None;
+    }
+
+    let local_pattern = wikidot_name_pattern(value);
+    Some(
+        categories
+            .iter()
+            .map(|category| {
+                if category.as_ref() == "_default" {
+                    local_pattern.clone()
+                } else {
+                    format!(
+                        "{}:{local_pattern}",
+                        wikidot_name_pattern(category.as_ref())
+                    )
+                }
+            })
+            .collect(),
+    )
 }
 
 fn date_selector_condition(column: page::Column, selector: DateSelector) -> Condition {
@@ -1776,14 +1840,15 @@ mod tests {
         MAX_CACHED_SCORE_FILTER_PAGE_IDS, MAX_CORRELATED_SCORE_CANDIDATES,
         MAX_TOTAL_CACHED_SCORE_FILTER_PAGE_IDS, PageQueryScoreFilterCache,
         PageQueryScoreFilterSession, ScoreFilterCacheKey, ScoreFilterCacheLookup,
-        ScoreFilterMembership, ScoreFilterPlan, bounded_score_page_ids, date_span_bounds,
+        ScoreFilterMembership, ScoreFilterPlan, bounded_score_page_ids,
+        category_local_wikidot_name_patterns, date_span_bounds,
         score_filter_plan_from_probe, score_membership_condition,
         score_membership_polarity_order, score_selector_condition,
         score_selectors_condition, wikidot_name_pattern,
     };
     use crate::models::page;
     use crate::services::page_query::{
-        ComparisonOperation, DateTimeResolution, ScoreSelector,
+        ComparisonOperation, DateTimeResolution, IncludedCategories, ScoreSelector,
     };
     use crate::services::score::ScoreValue;
     use sea_orm::{
@@ -1791,12 +1856,42 @@ mod tests {
         Value,
     };
     use sea_query::{SimpleExpr, func::Func};
+    use std::borrow::Cow;
 
     #[test]
-    fn wikidot_name_patterns_translate_both_wildcard_spellings() {
+    fn wikidot_name_patterns_preserve_the_evidenced_wildcard_boundary() {
         assert_eq!(wikidot_name_pattern("scp-*"), "scp-%");
-        assert_eq!(wikidot_name_pattern("fragment:part%"), "fragment:part%");
+        assert_eq!(wikidot_name_pattern("*block"), "\\*block");
+        assert_eq!(wikidot_name_pattern("image*base"), "image\\*base");
+        assert_eq!(wikidot_name_pattern("image?block"), "image_block");
+        assert_eq!(wikidot_name_pattern("fragment:part%"), "fragment:part\\%");
         assert_eq!(wikidot_name_pattern("literal_name"), "literal\\_name");
+    }
+
+    #[test]
+    fn explicit_categories_project_short_names_to_stored_full_slugs() {
+        let categories = vec![Cow::Borrowed("component"), Cow::Borrowed("_default")];
+        assert_eq!(
+            category_local_wikidot_name_patterns(
+                IncludedCategories::List(&categories),
+                "image?block",
+            ),
+            Some(vec![
+                "component:image_block".to_owned(),
+                "image_block".to_owned(),
+            ]),
+        );
+        assert_eq!(
+            category_local_wikidot_name_patterns(
+                IncludedCategories::List(&categories),
+                "component:image-block",
+            ),
+            None,
+        );
+        assert_eq!(
+            category_local_wikidot_name_patterns(IncludedCategories::All, "image-block",),
+            None,
+        );
     }
 
     #[test]

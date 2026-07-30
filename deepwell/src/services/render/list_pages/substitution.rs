@@ -26,8 +26,8 @@ pub(in crate::services::render) use self::selectors::{
     UrlSelector, is_dynamic_list_pages_value,
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
-    list_pages_url_fallback, resolve_url_selector, static_list_pages_selector,
-    substitute_list_pages_current_data_form_variables,
+    list_pages_url_fallback, resolve_url_selector, split_list_pages_tag_values,
+    static_list_pages_selector, substitute_list_pages_current_data_form_variables,
 };
 
 use super::template::{
@@ -345,6 +345,22 @@ pub(in crate::services::render) fn exact_name_list_pages_batch_key(
     if name_arguments != 1 || arguments.slug.is_none() {
         return None;
     }
+    if arguments
+        .slug
+        .as_deref()
+        .is_some_and(|slug| !slug.contains(':'))
+        && arguments.category_selector_present
+        && arguments
+            .categories
+            .iter()
+            .any(|category| category.as_ref() != "_default")
+    {
+        // Category-local names map to stored full slugs only inside the
+        // ordinary query. The exact-name batch is keyed by stored full slug,
+        // so using the short source token as its lookup key would fabricate
+        // an empty result.
+        return None;
+    }
 
     let mut categories = arguments
         .categories
@@ -652,7 +668,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     }
                 };
                 rss_path.tags = normalize_list_pages_feed_selector(value);
-                for tag in split_list_pages_values(value) {
+                for tag in split_list_pages_tag_values(value) {
                     if is_no_tags_selector(&tag) {
                         untagged = true;
                         unsupported_count_pages_filter = true;
@@ -712,7 +728,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     }
                 };
                 rss_path.tags = normalize_list_pages_feed_selector(value);
-                for tag in split_list_pages_values(value) {
+                for tag in split_list_pages_tag_values(value) {
                     if is_no_tags_selector(&tag) {
                         untagged = true;
                         unsupported_count_pages_filter = true;
@@ -796,12 +812,12 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         include_current_category = true;
                         saw_included_category = true;
                     } else if let Some(category) = category.strip_prefix('+') {
-                        categories.push(Cow::Owned(category.to_owned()));
+                        categories.push(Cow::Owned(category.to_lowercase()));
                         saw_included_category = true;
                     } else if let Some(category) = category.strip_prefix('-') {
-                        excluded_categories.push(Cow::Owned(category.to_owned()));
+                        excluded_categories.push(Cow::Owned(category.to_lowercase()));
                     } else {
-                        categories.push(Cow::Owned(category));
+                        categories.push(Cow::Owned(category.to_lowercase()));
                         saw_included_category = true;
                     }
                 }
@@ -1072,7 +1088,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     limit = Some(1);
                 } else if !value.is_empty() && !is_dynamic_list_pages_value(value) {
                     let value = wikidot_list_pages_name_slug(value);
-                    if value.contains(['*', '%']) {
+                    if value.contains(['*', '%', '?']) {
                         name_pattern = Some(Cow::Owned(value));
                     } else {
                         slug = Some(Cow::Owned(value));
@@ -1178,12 +1194,11 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
             "wrapper" => {
                 wrapper = parse_list_pages_false_only_boolean_argument(raw_value);
             }
-            "rss" => {
-                if !raw_value.is_empty() {
-                    saw_rss_argument = true;
-                    rss_title = Some(raw_value.to_owned());
-                }
+            "rss" if !raw_value.is_empty() => {
+                saw_rss_argument = true;
+                rss_title = Some(raw_value.to_owned());
             }
+            "rss" => {}
             "rsstitle" if !saw_rss_argument => {
                 rss_title = Some(raw_value.to_owned());
             }
@@ -1704,7 +1719,7 @@ fn nonempty_list_pages_feed_value(value: &str) -> Option<String> {
 }
 
 pub(in crate::services::render) fn is_current_page_tag_selector(value: &str) -> bool {
-    matches!(value.trim().trim_start_matches(['+', '-']), "=" | "==")
+    matches!(value.trim(), "=" | "==")
 }
 
 pub(in crate::services::render) fn is_no_tags_selector(value: &str) -> bool {

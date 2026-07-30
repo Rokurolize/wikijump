@@ -66,6 +66,31 @@ async fn set_page_created_at(runner: &TestRunner, page_id: i64, created_at: &str
         .expect("failed to set deterministic page creation timestamp");
 }
 
+async fn set_page_category(
+    runner: &TestRunner,
+    page_id: i64,
+    site_id: i64,
+    category_slug: &str,
+) {
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE page SET page_category_id = (
+                SELECT category_id
+                FROM page_category
+                WHERE site_id = $1 AND slug = $2
+            ) WHERE page_id = $3",
+            [
+                Value::from(site_id),
+                Value::from(category_slug.to_owned()),
+                Value::from(page_id),
+            ],
+        ))
+        .await
+        .expect("failed to set deterministic page category");
+}
+
 #[tokio::test]
 async fn exact_name_listpages_expands_created_at_and_rating() {
     const TARGET_SLUG: &str = "great-hippo-exact-name-target-3034";
@@ -244,6 +269,103 @@ After"#;
             && !html.contains("%%rating%%"),
         "missing exact-name ListPages should render zero rows without leaking metadata or raw module markup:\n{html}",
     );
+}
+
+#[tokio::test]
+async fn listpages_category_local_names_match_page_identities_and_wildcard_boundaries() {
+    const TARGET_SLUG: &str = "component:listpages-category-name-block";
+    const SECONDARY_SLUG: &str = "component:listpages-category-name-base";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title) in [
+        (TARGET_SLUG, "ListPages category name block"),
+        (SECONDARY_SLUG, "ListPages category name base"),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(slug.into())),
+        });
+        let page = run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": "Category-local ListPages target",
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "category-local ListPages selector fixture",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        set_page_category(&runner, page.page_id, site_id, "component").await;
+    }
+
+    for (attributes, expected_rows, absent_rows) in [
+        (
+            r#"category="component" name="component:listpages-category-name-block""#,
+            &[TARGET_SLUG][..],
+            &[SECONDARY_SLUG][..],
+        ),
+        (
+            r#"category="+Component" name=" listpages-category-name-block ""#,
+            &[TARGET_SLUG][..],
+            &[SECONDARY_SLUG][..],
+        ),
+        (
+            r#"category="component" name="listpages-category-name?block""#,
+            &[TARGET_SLUG][..],
+            &[SECONDARY_SLUG][..],
+        ),
+        (
+            r#"category="component" name="listpages-category-name-*""#,
+            &[SECONDARY_SLUG, TARGET_SLUG][..],
+            &[][..],
+        ),
+        (
+            r#"category="component" name="*block""#,
+            &[][..],
+            &[TARGET_SLUG, SECONDARY_SLUG][..],
+        ),
+    ] {
+        let source = format!(
+            "[[module ListPages {attributes} order=\"name\" separate=\"no\"]]\nROW %%fullname%%\n[[/module]]",
+        );
+        let html = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            source,
+        )
+        .await
+        .expect("category-local ListPages preview should render")
+        .html_output
+        .body;
+
+        for expected in expected_rows {
+            assert!(
+                html.contains(&format!("ROW {expected}")),
+                "{attributes:?} should select {expected}:\n{html}",
+            );
+        }
+        for absent in absent_rows {
+            assert!(
+                !html.contains(&format!("ROW {absent}")),
+                "{attributes:?} must not select {absent}:\n{html}",
+            );
+        }
+    }
+
+    runner.teardown().await;
 }
 
 #[tokio::test]
