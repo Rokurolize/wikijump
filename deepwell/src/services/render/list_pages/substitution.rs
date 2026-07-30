@@ -23,8 +23,9 @@ mod selectors;
 pub(in crate::services::render) use self::selectors::{
     UrlSelector, is_dynamic_list_pages_value,
     list_pages_has_unsupported_page_type_selector,
-    list_pages_has_unsupported_parent_selector, list_pages_url_fallback,
-    resolve_url_selector, substitute_list_pages_current_data_form_variables,
+    list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
+    list_pages_url_fallback, resolve_url_selector, static_list_pages_selector,
+    substitute_list_pages_current_data_form_variables,
 };
 
 use super::template::{
@@ -317,7 +318,10 @@ pub(in crate::services::render) fn exact_name_list_pages_batch_key(
     current_category: &str,
 ) -> Option<ExactNameListPagesBatchKey> {
     let head_arguments = wikidot_list_pages_arguments(head);
-    if template.uses_content() || template.uses_data_form() {
+    if template.uses_content()
+        || template.uses_data_form()
+        || template.mentions_data_form()
+    {
         return None;
     }
 
@@ -502,7 +506,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     let mut rss_limit = None;
     let mut rss_only = false;
     let mut rss_path = ListPagesRssPath::default();
-    let unsupported_author_filter = false;
+    let mut unsupported_author_filter = false;
     let mut exclude_current_page_author = false;
     let mut unsupported_list_pages_filter = false;
     let mut link_to = Vec::new();
@@ -562,6 +566,8 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     }
                     UrlSelector::Dropped => {
                         unsupported_count_pages_filter = true;
+                        author_filter_present = true;
+                        unsupported_author_filter = true;
                         continue;
                     }
                 };
@@ -861,10 +867,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         resolved_url_parent = resolved;
                         resolved_url_parent.as_str()
                     }
-                    UrlSelector::Dropped => {
-                        unsupported_count_pages_filter = true;
-                        continue;
-                    }
+                    UrlSelector::Dropped => return None,
                 };
                 rss_path.parent = nonempty_list_pages_feed_value(value);
                 match value {
@@ -1249,26 +1252,10 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 unsupported_list_pages_filter = true;
             }
             _ if raw_key.starts_with('_') => {
-                let resolved_url_data_form;
-                let value = match resolve_url_selector(
+                let value = static_list_pages_selector(
                     value,
-                    url.value_for_list_pages_argument(
-                        url_attr_prefix.as_deref(),
-                        raw_key,
-                    ),
-                ) {
-                    UrlSelector::Static(value) => value,
-                    UrlSelector::Resolved(resolved) => {
-                        unsupported_count_pages_filter = true;
-                        resolved_url_data_form = resolved;
-                        resolved_url_data_form.as_str()
-                    }
-                    UrlSelector::Dropped => {
-                        unsupported_count_pages_filter = true;
-                        unsupported_list_pages_filter = true;
-                        continue;
-                    }
-                };
+                    &mut unsupported_count_pages_filter,
+                )?;
                 let field = raw_key
                     .strip_prefix('_')
                     .expect("data form selector should start with an underscore");
@@ -1846,6 +1833,9 @@ pub(in crate::services::render) fn list_pages_body_variables_supported(
     body: &str,
 ) -> bool {
     ListPagesTemplatePlan::compile(body).is_some()
+        && LISTPAGES_VARIABLE_REGEX
+            .captures_iter(body)
+            .all(|captures| list_pages_variable_capture_is_valid(&captures))
 }
 
 pub(in crate::services::render) fn unsupported_list_pages_replacement(

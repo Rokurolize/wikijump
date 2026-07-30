@@ -61,9 +61,10 @@ use super::{
     list_pages_head_has_current_data_form_query_selector,
     list_pages_non_range_argument_error, list_pages_parent_fullname,
     list_pages_range_argument_error, list_pages_revision_count,
-    list_pages_row_scan_target, list_pages_static_parent_fullname_with_url,
-    load_list_pages_data_form_definitions, page_query_cap_requires_original_module,
-    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
+    list_pages_row_scan_target, list_pages_static_category_preflight,
+    list_pages_static_parent_fullname_with_url, load_list_pages_data_form_definitions,
+    page_query_cap_requires_original_module, parse_list_pages_arguments,
+    parse_list_pages_arguments_with_url,
     preserve_list_pages_following_paragraph_boundary, preserve_list_pages_module_matches,
     protect_ajax_module_literal_markers, push_list_pages_generated_output,
     push_list_pages_pager, register_generated_list_pages_html,
@@ -287,16 +288,7 @@ impl RenderService {
                 module.head,
                 current_data_form_context.as_ref(),
             );
-            list_pages_runtime_head_can_execute(head.as_ref())
-                && parse_list_pages_arguments_with_url(head.as_ref(), url).is_some_and(
-                    |arguments| {
-                        arguments.unsupported_list_pages_filter
-                            && arguments.category_selector_present
-                            && !arguments.category_all
-                            && !arguments.include_current_category
-                            && !arguments.categories.is_empty()
-                    },
-                )
+            list_pages_static_category_preflight(head.as_ref()).is_some()
         });
         let existing_category_slugs = if needs_static_category_existence {
             Some(
@@ -320,6 +312,17 @@ impl RenderService {
                 let unresolved_current_data_form_query = current_data_form_context
                     .is_none()
                     && list_pages_head_has_current_data_form_query_selector(head);
+                let static_category_preflight =
+                    list_pages_static_category_preflight(head);
+                let static_categories_prove_empty = static_category_preflight
+                    .as_ref()
+                    .is_some_and(|(categories, _)| {
+                        existing_category_slugs.as_ref().is_some_and(|existing| {
+                            categories
+                                .iter()
+                                .all(|category| !existing.contains(category))
+                        })
+                    });
                 // Wikidot's code/html pass owns a leading body block before
                 // ListPages evaluates. The remaining ListPages opening is
                 // therefore an empty, unclosed module using the default
@@ -386,6 +389,18 @@ impl RenderService {
                     ListPagesBlockPlan::Static(compat_html.push_block_html(format!(
                         r#"<div class="error-block">{error}</div>"#,
                     )))
+                } else if static_categories_prove_empty {
+                    let replacement = if static_category_preflight
+                        .as_ref()
+                        .is_some_and(|(_, wrapper)| *wrapper)
+                    {
+                        compat_html.push_block_html(
+                            r#"<div class="list-pages-box"></div>"#.to_owned(),
+                        )
+                    } else {
+                        String::new()
+                    };
+                    ListPagesBlockPlan::Static(replacement)
                 } else if unresolved_current_data_form_query
                     && let Some(arguments) =
                         parse_list_pages_arguments_with_url(head, url)
@@ -405,19 +420,7 @@ impl RenderService {
                 } else if let Some(arguments) =
                     parse_list_pages_arguments_with_url(head, url)
                 {
-                    let static_categories_prove_empty =
-                        existing_category_slugs.as_ref().is_some_and(|existing| {
-                            arguments.category_selector_present
-                                && !arguments.category_all
-                                && !arguments.include_current_category
-                                && !arguments.categories.is_empty()
-                                && arguments
-                                    .categories
-                                    .iter()
-                                    .all(|category| !existing.contains(category.as_ref()))
-                        });
-                    if static_categories_prove_empty
-                        || arguments.limit == Some(0)
+                    if arguments.limit == Some(0)
                         || arguments.current_page_only
                             && requested_current_page_id.is_none()
                     {

@@ -27,6 +27,7 @@ use super::super::data_forms::{
     substitute_list_pages_form_raw,
 };
 use super::super::template::LISTPAGES_VARIABLE_REGEX;
+use super::split_list_pages_values;
 
 pub(in crate::services::render) fn is_dynamic_list_pages_value(value: &str) -> bool {
     value.eq_ignore_ascii_case("@url")
@@ -94,6 +95,48 @@ pub(in crate::services::render) fn static_list_pages_selector<'a>(
     } else {
         Some(value)
     }
+}
+
+pub(in crate::services::render) fn list_pages_static_category_preflight(
+    head: &str,
+) -> Option<(Vec<String>, bool)> {
+    let arguments = wikidot_list_pages_arguments(head);
+    let mut categories = arguments
+        .iter()
+        .filter(|argument| argument.key.eq_ignore_ascii_case("category"));
+    let category = categories.next()?;
+    if categories.next().is_some() || category.op != "=" {
+        return None;
+    }
+
+    let mut included = Vec::new();
+    for category in split_list_pages_values(category.value.trim()) {
+        if category.is_empty()
+            || category == "*"
+            || category == "."
+            || category.starts_with('-')
+            || is_dynamic_list_pages_value(&category)
+        {
+            return None;
+        }
+        included.push(category);
+    }
+    if included.is_empty() {
+        return None;
+    }
+
+    let wrapper = arguments
+        .iter()
+        .filter(|argument| argument.key.eq_ignore_ascii_case("wrapper"))
+        .map(|argument| {
+            !matches!(
+                argument.value.trim().to_ascii_lowercase().as_str(),
+                "false" | "no"
+            )
+        })
+        .next_back()
+        .unwrap_or(true);
+    Some((included, wrapper))
 }
 
 pub(in crate::services::render) fn substitute_list_pages_current_data_form_variables(

@@ -463,6 +463,15 @@ impl ListPagesTemplatePlan {
         self.variables.contains(ListPagesVariable::FormData)
     }
 
+    pub(in crate::services::render) fn mentions_data_form(&self) -> bool {
+        LISTPAGES_VARIABLE_REGEX
+            .captures_iter(&self.body)
+            .any(|captures| {
+                ListPagesVariable::parse(&captures["name"])
+                    == Some(ListPagesVariable::FormData)
+            })
+    }
+
     pub(in crate::services::render) fn uses_only_rating(&self) -> bool {
         self.rating_only
     }

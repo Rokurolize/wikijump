@@ -93,7 +93,7 @@ pub(super) use self::substitution::{
     count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
     exact_name_list_pages_batch_key, list_pages_author_cache_key,
     list_pages_has_unsupported_page_type_selector,
-    list_pages_has_unsupported_parent_selector,
+    list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
     list_pages_static_parent_fullname_with_url, parse_list_pages_arguments,
     parse_list_pages_arguments_with_url, substitute_list_pages_rating_only,
     substitute_list_pages_variables_with_fragments, union_found_page_fields,
