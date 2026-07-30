@@ -1,0 +1,270 @@
+{
+  "schema": "wikijump.wikidot_live_observation.v1",
+  "observation_id": "listpages-p8-temporal-boundary-live-20260730",
+  "captured_at": "2026-07-30T01:03:24.438435Z",
+  "feature_ids": [
+    "module-listpages"
+  ],
+  "property_axis": "P8",
+  "property_cluster": "temporal behavior, gateway timeout, output atomicity, and resource bounds",
+  "provenance": {
+    "site": "www",
+    "authenticated": false,
+    "mutated": false,
+    "client": "repository-pinned Rokurolize/wikidot.py",
+    "transport": "anonymous Wikidot Ajax Module Connector",
+    "source_artifacts": [
+      {
+        "name": "listpages-p8-template-boundary-20260730.json",
+        "sha256": "efc8e5f242c6f88fb5993557ba7759bd28cea16a2b6ce9b46349a406603d5611"
+      },
+      {
+        "name": "listpages-p8-module-count-20260730.json",
+        "sha256": "1ec9b242a60f0abe3722a5bb1331a9677ec128012391bb09c1e33b1566c57d67"
+      },
+      {
+        "name": "listpages-p8-module-count-high-20260730.json",
+        "sha256": "b5c8a28d1e050b3f3113bfc2513dbaa92346b60219a11e53bd6e4672ce9ec69b"
+      }
+    ]
+  },
+  "request_shapes": {
+    "template_body": {
+      "module_name": "list/ListPagesModule",
+      "category": "doc",
+      "name": "start",
+      "limit": 1,
+      "per_page": 1,
+      "separate": "no",
+      "wrapper": "no",
+      "template": "P8_BEGIN + repeated x bytes + P8_END"
+    },
+    "module_count": {
+      "module_name": "edit/PagePreviewModule",
+      "mode": "page",
+      "repeated_module": "ListPages category=doc name=start limit=1 perPage=1 separate=no wrapper=no",
+      "row_marker": "P8M followed by a zero-padded module index"
+    }
+  },
+  "cases": [
+    {
+      "case_id": "listpages-p8-template-complete-success",
+      "claim": "Successful large-template responses contain both boundary markers exactly once."
+    },
+    {
+      "case_id": "listpages-p8-template-same-size-mixed-outcome",
+      "claim": "The same 245760-byte and 249856-byte templates each produced both a complete success and an HTTP 504 in separate trials."
+    },
+    {
+      "case_id": "listpages-p8-template-gateway-timeout",
+      "claim": "Near the observed processing boundary, failed large-template requests surface as HTTP 504 at approximately 28 seconds."
+    },
+    {
+      "case_id": "listpages-p8-module-count-through-2048",
+      "claim": "A 2048-module preview completed and returned every expected marker."
+    },
+    {
+      "case_id": "listpages-p8-module-count-4096-timeout",
+      "claim": "A 4096-module preview surfaced as HTTP 504 at approximately 28 seconds."
+    },
+    {
+      "case_id": "listpages-p8-atomic-failure",
+      "claim": "No failed request returned a partial JSON body or partial generated module output to the client."
+    }
+  ],
+  "template_body_trials": [
+    {
+      "template_body_bytes": 196608,
+      "elapsed_ms": 16090.853,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "response_bytes": 196862,
+      "body_bytes": 196642,
+      "body_sha256": "bfd6a3985328a6ebb2e535f80b227516c904699e5d37c4fcd3ffc7d3dd64c4e3",
+      "begin_count": 1,
+      "end_count": 1
+    },
+    {
+      "template_body_bytes": 229376,
+      "elapsed_ms": 21390.03,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "response_bytes": 229630,
+      "body_bytes": 229410,
+      "body_sha256": "6d42e3a3f86dd4c289aa05cc176ba1d25470e495de44974ddf7dd542cdb4cbeb",
+      "begin_count": 1,
+      "end_count": 1
+    },
+    {
+      "template_body_bytes": 245760,
+      "elapsed_ms": 24352.868,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "response_bytes": 246014,
+      "body_bytes": 245794,
+      "body_sha256": "6e6ee0bdb48554fe0404e0533e08324158928d6f47033c48305081ed3b7c7b6d",
+      "begin_count": 1,
+      "end_count": 1
+    },
+    {
+      "template_body_bytes": 253952,
+      "elapsed_ms": 28007.506,
+      "success": false,
+      "exception_type": "AMCHttpStatusCodeException",
+      "exception_message": "AMC request failed: 504"
+    },
+    {
+      "template_body_bytes": 249856,
+      "elapsed_ms": 28102.343,
+      "success": false,
+      "exception_type": "AMCHttpStatusCodeException",
+      "exception_message": "AMC request failed: 504"
+    },
+    {
+      "template_body_bytes": 245760,
+      "elapsed_ms": 28055.531,
+      "success": false,
+      "exception_type": "AMCHttpStatusCodeException",
+      "exception_message": "AMC request failed: 504",
+      "boundary_repeat": true
+    },
+    {
+      "template_body_bytes": 249856,
+      "elapsed_ms": 25088.758,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "response_bytes": 250110,
+      "body_bytes": 249890,
+      "body_sha256": "89c8cb2fbe83964a7056eebf3f3d5ab1b476307fe78a28fbabe1ea5e96604aa5",
+      "begin_count": 1,
+      "end_count": 1,
+      "boundary_repeat": true
+    }
+  ],
+  "module_count_trials": [
+    {
+      "module_count": 16,
+      "source_bytes": 1887,
+      "elapsed_ms": 513.096,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "body_bytes": 658,
+      "matched_markers": 16,
+      "body_sha256": "46af928aef22890b52aedccfc1796f52891473ba07317e24c6984bcbcc15e7fe"
+    },
+    {
+      "module_count": 32,
+      "source_bytes": 3775,
+      "elapsed_ms": 577.326,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "body_bytes": 1314,
+      "matched_markers": 32,
+      "body_sha256": "ece623ddefe3e3c0913d46e11d2a176cda6fa91a5d793a1d3cd780bbc38bbf12"
+    },
+    {
+      "module_count": 64,
+      "source_bytes": 7551,
+      "elapsed_ms": 870.002,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "body_bytes": 2626,
+      "matched_markers": 64,
+      "body_sha256": "f3a7630bad395ccce25ce4e91c7babb687a9673bd2cf7a54cab14e9f00c0615d"
+    },
+    {
+      "module_count": 128,
+      "source_bytes": 15103,
+      "elapsed_ms": 1745.301,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "body_bytes": 5250,
+      "matched_markers": 128,
+      "body_sha256": "1372e5b129a3a347dcd0e82d23b69f88afe5ec58cd8bea28f8070dc02f231d7f"
+    },
+    {
+      "module_count": 256,
+      "source_bytes": 30207,
+      "elapsed_ms": 3340.448,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "body_bytes": 10498,
+      "matched_markers": 256,
+      "body_sha256": "1bae7eb6414b320a5d9ed58b787447ddef79701ae26c259d08f8d66f48904130"
+    },
+    {
+      "module_count": 512,
+      "source_bytes": 60415,
+      "elapsed_ms": 7211.779,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "body_bytes": 20994,
+      "matched_markers": 512,
+      "body_sha256": "a5c1265658d75f04adcceb62a6d947759244deddb773132e3ef4c0b4d68ef37d"
+    },
+    {
+      "module_count": 1024,
+      "source_bytes": 120831,
+      "elapsed_ms": 14524.069,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "body_bytes": 41986,
+      "matched_markers": 1024,
+      "body_sha256": "31b1d31d97f08fbaa0a6923d725cd5bb8a9bced7445fbccac4cafd7d180bc81c"
+    },
+    {
+      "module_count": 2048,
+      "source_bytes": 241663,
+      "elapsed_ms": 21841.085,
+      "success": true,
+      "http_status": 200,
+      "wikidot_status": "ok",
+      "body_bytes": 83970,
+      "matched_markers": 2048,
+      "body_sha256": "f72636ec3bf06c8fd1236a7ddd76633ffc7224ae52b6e7d18fd531d6bec0fc79"
+    },
+    {
+      "module_count": 4096,
+      "source_bytes": 483327,
+      "elapsed_ms": 28145.103,
+      "success": false,
+      "exception_type": "AMCHttpStatusCodeException",
+      "exception_message": "AMC request failed: 504"
+    }
+  ],
+  "derived_observations": {
+    "same_size_mixed_outcome_bytes": [
+      245760,
+      249856
+    ],
+    "largest_successful_module_count": 2048,
+    "timed_out_module_count": 4096,
+    "timeout_elapsed_ms_range": {
+      "minimum": 28007.506,
+      "maximum": 28145.103
+    },
+    "successful_response_atomicity": "Every successful template response contained P8_BEGIN and P8_END exactly once, and every successful module-count response contained every expected row marker.",
+    "failure_surface": "Observed failures surfaced as HTTP 504 through AMCHttpStatusCodeException. No partial JSON body or partial generated module output was returned to the client.",
+    "interpretation": "Near the boundary, identical template sizes both succeeded and timed out. Production Wikidot therefore exposes a processing-time or gateway boundary rather than a deterministic public byte cap."
+  },
+  "wikijump_safety_invariants": {
+    "classification": "deterministic-safety-invariants-not-live-hard-limits",
+    "maximum_modules_per_render": 512,
+    "maximum_aggregate_module_source_bytes": 2097152,
+    "maximum_template_body_bytes": 262144,
+    "maximum_generated_output_bytes": 16777216,
+    "required_failure_property": "A rejected module must remain literal or fail through a controlled diagnostic without exposing partial generated output."
+  },
+  "verdict": "passed"
+}
