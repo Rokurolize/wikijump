@@ -1647,6 +1647,128 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "a tab-delimited ListPages opening should execute:\n{tabbed_preview}",
     );
 
+    let generated_heading_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[toc]]\n",
+                "+ AUTHORED-BEFORE\n\n",
+                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\" ",
+                "prependLine=\"+ GENERATED-PREPEND\" appendLine=\"+ GENERATED-APPEND\"]]\n",
+                "[[head]]+ GENERATED-HEAD[[/head]]\n",
+                "[[body]]+ GENERATED-ROW %%fullname%%[[/body]]\n",
+                "[[foot]]+ GENERATED-FOOT[[/foot]]\n",
+                "[[/module]]\n\n",
+                "+ AUTHORED-AFTER",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("ListPages generated headings should render in an unsaved preview")
+    .html_output
+    .body;
+    assert!(
+        generated_heading_preview
+            .contains(r#"<h1 id="toc0"><span>AUTHORED-BEFORE</span></h1>"#)
+            && generated_heading_preview
+                .contains(r#"<h1 id="toc1"><span>AUTHORED-AFTER</span></h1>"#),
+        "generated headings must not consume authored heading IDs:\n{generated_heading_preview}",
+    );
+    for heading in [
+        "GENERATED-PREPEND",
+        "GENERATED-HEAD",
+        &format!("GENERATED-ROW {TARGET_SLUG}"),
+        "GENERATED-FOOT",
+        "GENERATED-APPEND",
+    ] {
+        assert!(
+            generated_heading_preview
+                .contains(&format!("<h1><span>{heading}</span></h1>")),
+            "ListPages heading {heading:?} should render without a TOC ID:\n{generated_heading_preview}",
+        );
+    }
+    assert_eq!(
+        generated_heading_preview.matches("href=\"#toc").count(),
+        2,
+        "the outer TOC must contain only the two authored headings:\n{generated_heading_preview}",
+    );
+
+    for (label, template, expected, absent) in [
+        (
+            "out-of-order sections",
+            "[[head]]ORDERED-HEAD[[/head]][[foot]]ORDERED-FOOT[[/foot]][[body]]ORDERED-BODY=%%fullname%%[[/body]]",
+            &["ORDERED-BODY=listpages-preview-context-target"][..],
+            &["ORDERED-HEAD", "ORDERED-FOOT"][..],
+        ),
+        (
+            "mixed-case sections",
+            "[[Head]]CASE-HEAD[[/hEAd]][[bODy]]CASE-BODY=%%fullname%%[[/Body]][[FOot]]CASE-FOOT[[/fooT]]",
+            &[
+                "CASE-HEAD",
+                "CASE-BODY=listpages-preview-context-target",
+                "CASE-FOOT",
+            ][..],
+            &[][..],
+        ),
+        (
+            "literal-owned head",
+            "[!-- [[head]]LITERAL-HEAD[[/head]] --][[body]]LITERAL-BODY=%%fullname%%[[/body]][[foot]]LITERAL-FOOT[[/foot]]",
+            &[
+                "LITERAL-BODY=listpages-preview-context-target",
+                "LITERAL-FOOT",
+            ][..],
+            &["LITERAL-HEAD"][..],
+        ),
+        (
+            "once-only variables",
+            "[[head]]ONCE-HEAD=%%title%%[[/head]][[body]]ONCE-BODY=%%fullname%%[[/body]][[foot]]ONCE-FOOT=%%title%%[[/foot]]",
+            &[
+                "ONCE-HEAD=%%title%%",
+                "ONCE-BODY=listpages-preview-context-target",
+                "ONCE-FOOT=%%title%%",
+            ][..],
+            &[][..],
+        ),
+        (
+            "empty body fallback",
+            "[[head]]EMPTY-HEAD[[/head]][[body]][[/body]][[foot]]EMPTY-FOOT[[/foot]]",
+            &[
+                "EMPTY-HEAD",
+                "ListPages Preview Context Target",
+                "EMPTY-FOOT",
+            ][..],
+            &[][..],
+        ),
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            format!(
+                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]{template}[[/module]]",
+            ),
+        )
+        .await
+        .unwrap_or_else(|error| panic!("{label} should render: {error:?}"))
+        .html_output
+        .body;
+        for marker in expected {
+            assert!(
+                preview.contains(marker),
+                "{label} should contain {marker:?}:\n{preview}",
+            );
+        }
+        for marker in absent {
+            assert!(
+                !preview.contains(marker),
+                "{label} should not contain {marker:?}:\n{preview}",
+            );
+        }
+    }
+
     let unclosed_preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site_id,

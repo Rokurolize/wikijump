@@ -1,6 +1,7 @@
 //! Render-local analysis for a ListPages body template.
 
 use crate::services::page_query::FoundPageFields;
+use crate::services::render::literal_regions::LiteralRegionIndex;
 use regex::Regex;
 use std::collections::BTreeSet;
 use std::sync::LazyLock;
@@ -14,6 +15,11 @@ pub(in crate::services::render) static LISTPAGES_VARIABLE_REGEX: LazyLock<Regex>
     )
     .unwrap()
     });
+
+static LISTPAGES_SECTION_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i:\[\[(?P<close>/)?(?P<name>head|body|foot)\]\])")
+        .expect("the ListPages section marker regex is valid")
+});
 
 const DEFAULT_LISTPAGES_TEMPLATE: &str =
     "+ %%title_linked%%\n\nby %%created_by_linked%% %%created_at%%\n\n%%summary%%";
@@ -228,44 +234,131 @@ struct ListPagesSections {
     foot: Option<String>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ListPagesSectionKind {
+    Head,
+    Body,
+    Foot,
+}
+
+impl ListPagesSectionKind {
+    fn parse(name: &str) -> Self {
+        match name.to_ascii_lowercase().as_str() {
+            "head" => Self::Head,
+            "body" => Self::Body,
+            "foot" => Self::Foot,
+            _ => unreachable!("the section marker regex limits section names"),
+        }
+    }
+
+    fn index(self) -> usize {
+        match self {
+            Self::Head => 0,
+            Self::Body => 1,
+            Self::Foot => 2,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ListPagesSectionMarker {
+    kind: ListPagesSectionKind,
+    start: usize,
+    end: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ListPagesSectionPair {
+    kind: ListPagesSectionKind,
+    open_start: usize,
+    content_start: usize,
+    content_end: usize,
+    close_end: usize,
+}
+
 /// Splits a template into its once-emitted sections and its per-row body.
 ///
-/// Returns `None` for a shape whose live output is uncaptured: a repeated
-/// marker, a marker that never closes, or a `[[head]]`/`[[foot]]` without the
-/// `[[body]]` that would separate them from the row template.
+/// A complete body pair activates section mode. A head is once-emitted only
+/// when it is the immediately preceding balanced section, and a foot is
+/// once-emitted only when it is the immediately following balanced section.
+/// Other source is local recovery and does not get reordered around the body.
 fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String)> {
-    let mut sections = ListPagesSections::default();
-    let mut row_body = None;
+    let literal_regions = LiteralRegionIndex::new(body);
+    let mut stacks: [Vec<ListPagesSectionMarker>; 3] =
+        std::array::from_fn(|_| Vec::new());
+    let mut pairs = Vec::new();
 
-    for (name, slot) in [("head", 0), ("body", 1), ("foot", 2)] {
-        let open = format!("[[{name}]]");
-        let close = format!("[[/{name}]]");
-        let mut matches = body.match_indices(&open);
-        let Some((open_start, _)) = matches.next() else {
+    for captures in LISTPAGES_SECTION_MARKER_REGEX.captures_iter(body) {
+        let matched = captures
+            .get(0)
+            .expect("the section marker regex has a whole match");
+        if literal_regions.contains(matched.start()) {
             continue;
-        };
-        if matches.next().is_some() {
-            return None;
         }
-        if body.matches(&close).count() != 1 {
-            return None;
+        let kind = ListPagesSectionKind::parse(&captures["name"]);
+        if captures.name("close").is_none() {
+            stacks[kind.index()].push(ListPagesSectionMarker {
+                kind,
+                start: matched.start(),
+                end: matched.end(),
+            });
+            continue;
         }
-        let content_start = open_start + open.len();
-        let close_start = body[content_start..].find(&close)? + content_start;
-        let content = body[content_start..close_start].trim().to_owned();
-        match slot {
-            0 => sections.head = Some(content),
-            1 => row_body = Some(content),
-            _ => sections.foot = Some(content),
+
+        if let Some(open) = stacks[kind.index()].pop() {
+            debug_assert_eq!(open.kind, kind);
+            pairs.push(ListPagesSectionPair {
+                kind,
+                open_start: open.start,
+                content_start: open.end,
+                content_end: matched.start(),
+                close_end: matched.end(),
+            });
         }
     }
 
-    match row_body {
-        Some(row_body) => Some((sections, row_body)),
-        // Without a body marker, Wikidot treats head/foot markers as ordinary
-        // per-row template text rather than recognizing a section split.
-        None => Some((ListPagesSections::default(), body.to_owned())),
-    }
+    let body_pairs = pairs
+        .iter()
+        .filter(|pair| pair.kind == ListPagesSectionKind::Body)
+        .collect::<Vec<_>>();
+    let [body_pair] = body_pairs.as_slice() else {
+        if body_pairs.is_empty() {
+            // Without a body pair, Wikidot treats all section-shaped source as
+            // ordinary per-row template text.
+            return Some((ListPagesSections::default(), body.to_owned()));
+        }
+
+        // Repeated and nested body pairs have row-count-dependent recovery.
+        // Preserve the existing fail-closed behavior until that stateful
+        // grammar is modeled explicitly.
+        return None;
+    };
+
+    let head = pairs
+        .iter()
+        .filter(|pair| {
+            pair.kind == ListPagesSectionKind::Head
+                && pair.close_end <= body_pair.open_start
+                && body[pair.close_end..body_pair.open_start].trim().is_empty()
+        })
+        .max_by_key(|pair| pair.close_end)
+        .map(|pair| body[pair.content_start..pair.content_end].trim().to_owned());
+    let foot = pairs
+        .iter()
+        .filter(|pair| {
+            pair.kind == ListPagesSectionKind::Foot
+                && pair.open_start >= body_pair.close_end
+                && body[body_pair.close_end..pair.open_start].trim().is_empty()
+        })
+        .min_by_key(|pair| pair.open_start)
+        .map(|pair| body[pair.content_start..pair.content_end].trim().to_owned());
+
+    Some((
+        ListPagesSections { head, foot },
+        body[body_pair.content_start..body_pair.content_end]
+            .trim()
+            .to_owned(),
+    ))
 }
 
 impl ListPagesTemplatePlan {
@@ -275,7 +368,7 @@ impl ListPagesTemplatePlan {
         }
         let (sections, body) = split_list_pages_sections(body)?;
         let body = match body.trim() {
-            "" if sections == ListPagesSections::default() => DEFAULT_LISTPAGES_TEMPLATE,
+            "" => DEFAULT_LISTPAGES_TEMPLATE,
             body => body,
         };
         let mut variables = ListPagesVariables::default();
@@ -304,16 +397,6 @@ impl ListPagesTemplatePlan {
                         .and_then(|matched| matched.as_str().parse().ok()),
                 );
             }
-        }
-
-        // A row variable in a once-emitted section has no row to read from, and
-        // Wikidot's output for that shape is uncaptured.
-        if [sections.head.as_deref(), sections.foot.as_deref()]
-            .into_iter()
-            .flatten()
-            .any(|section| LISTPAGES_VARIABLE_REGEX.is_match(section))
-        {
-            return None;
         }
 
         Some(Self {
@@ -819,32 +902,129 @@ mod section_tests {
     }
 
     #[test]
-    fn repeated_or_unclosed_markers_do_not_compile() {
-        assert!(
-            ListPagesTemplatePlan::compile("[[body]]A[[/body]][[body]]B[[/body]]")
-                .is_none(),
-            "a repeated marker has no evidenced precedence",
-        );
-        assert!(
-            ListPagesTemplatePlan::compile("[[body]]A").is_none(),
-            "an unclosed marker has no evidenced extent",
-        );
-        assert!(
-            ListPagesTemplatePlan::compile(
-                "[[head]]H[[/head]][[body]]A[[/body]][[foot]]F"
-            )
-            .is_none(),
-        );
+    fn section_recognition_is_ordered_around_the_body_pair() {
+        for (source, expected_head, expected_body, expected_foot) in [
+            (
+                "[[head]]H[[/head]][[body]]B[[/body]][[foot]]F[[/foot]]",
+                Some("H"),
+                "B",
+                Some("F"),
+            ),
+            (
+                "[[head]]H[[/head]][[foot]]F[[/foot]][[body]]B[[/body]]",
+                None,
+                "B",
+                None,
+            ),
+            (
+                "[[body]]B[[/body]][[head]]H[[/head]][[foot]]F[[/foot]]",
+                None,
+                "B",
+                None,
+            ),
+            (
+                "[[body]]B[[/body]][[foot]]F[[/foot]][[head]]H[[/head]]",
+                None,
+                "B",
+                Some("F"),
+            ),
+            (
+                "[[foot]]F[[/foot]][[head]]H[[/head]][[body]]B[[/body]]",
+                Some("H"),
+                "B",
+                None,
+            ),
+            (
+                "[[foot]]F[[/foot]][[body]]B[[/body]][[head]]H[[/head]]",
+                None,
+                "B",
+                None,
+            ),
+            (
+                "PRE[[head]]H[[/head]]MID[[body]]B[[/body]]MID[[foot]]F[[/foot]]POST",
+                None,
+                "B",
+                None,
+            ),
+        ] {
+            let plan = ListPagesTemplatePlan::compile(source)
+                .expect("a complete body pair should remain executable");
+            assert_eq!(plan.head_section(), expected_head, "{source}");
+            assert_eq!(plan.body(), expected_body, "{source}");
+            assert_eq!(plan.foot_section(), expected_foot, "{source}");
+        }
     }
 
     #[test]
-    fn a_row_variable_in_a_once_emitted_section_does_not_compile() {
+    fn section_markers_are_case_insensitive_and_literal_aware() {
+        let mixed = ListPagesTemplatePlan::compile(
+            "[[Head]]H[[/hEAd]][[bODy]]B[[/Body]][[FOot]]F[[/fooT]]",
+        )
+        .expect("mixed-case section markers should compile");
+        assert_eq!(mixed.head_section(), Some("H"));
+        assert_eq!(mixed.body(), "B");
+        assert_eq!(mixed.foot_section(), Some("F"));
+
+        for protected_head in [
+            "[!-- [[head]]H[[/head]] --]",
+            "@@[[head]]H[[/head]]@@",
+            "{{[[head]]H[[/head]]}}",
+            "@<[[head]]>@H@<[[/head]]>@",
+        ] {
+            let source =
+                format!("{protected_head}\n[[body]]B[[/body]]\n[[foot]]F[[/foot]]",);
+            let plan = ListPagesTemplatePlan::compile(&source)
+                .expect("literal-owned section markers should not block the real body");
+            assert_eq!(plan.head_section(), None, "{source}");
+            assert_eq!(plan.body(), "B", "{source}");
+            assert_eq!(plan.foot_section(), Some("F"), "{source}");
+        }
+    }
+
+    #[test]
+    fn an_explicit_empty_body_uses_the_default_row_template() {
+        let plan = ListPagesTemplatePlan::compile(
+            "[[head]]H[[/head]][[body]][[/body]][[foot]]F[[/foot]]",
+        )
+        .expect("an empty body section should compile");
+
+        assert_eq!(plan.head_section(), Some("H"));
+        assert_eq!(plan.body(), DEFAULT_LISTPAGES_TEMPLATE);
+        assert_eq!(plan.foot_section(), Some("F"));
+    }
+
+    #[test]
+    fn row_variables_in_once_emitted_sections_remain_literal() {
+        let plan = ListPagesTemplatePlan::compile(
+            "[[head]]H=%%title%%[[/head]][[body]]B=%%name%%[[/body]][[foot]]F=%%title%%[[/foot]]",
+        )
+        .expect("once-emitted row variables should not reject the body plan");
+
+        assert_eq!(plan.head_section(), Some("H=%%title%%"));
+        assert_eq!(plan.body(), "B=%%name%%");
+        assert_eq!(plan.foot_section(), Some("F=%%title%%"));
+    }
+
+    #[test]
+    fn repeated_body_pairs_fail_closed_but_unclosed_markers_recover_locally() {
         assert!(
-            ListPagesTemplatePlan::compile(
-                "[[head]]%%title%%[[/head]][[body]]%%name%%[[/body]]"
-            )
-            .is_none(),
-            "a head emitted once has no row to read a page variable from",
+            ListPagesTemplatePlan::compile("[[body]]A[[/body]][[body]]B[[/body]]")
+                .is_none(),
+            "repeated body recovery depends on the selected row count",
         );
+        let unclosed_body = "[[body]]A";
+        let plan = ListPagesTemplatePlan::compile(unclosed_body)
+            .expect("an unclosed body marker remains ordinary row source");
+        assert_eq!(plan.head_section(), None);
+        assert_eq!(plan.body(), unclosed_body);
+        assert_eq!(plan.foot_section(), None);
+
+        let plan = ListPagesTemplatePlan::compile(
+            "[[head]]H[[/head]][[body]]A[[/body]][[foot]]F",
+        )
+        .expect("an unclosed foot recovers after a valid head/body pair");
+        assert_eq!(plan.head_section(), Some("H"));
+        assert_eq!(plan.body(), "A");
+        assert_eq!(plan.foot_section(), None);
     }
 }
