@@ -1343,6 +1343,7 @@ impl RenderService {
             exclude_current_page,
         );
         let wants_content = template.uses_content();
+        let wants_preview = template.uses_preview();
         let wants_size = template.uses_size();
         if wants_content
             && render_page_query_uses_single_scan(order.clone())
@@ -1630,6 +1631,29 @@ impl RenderService {
                     loaded
                         .into_iter()
                         .map(|(page_id, wikitext)| ((site_id, page_id), wikitext)),
+                );
+            }
+        }
+        if wants_preview {
+            let mut missing_by_site = BTreeMap::<i64, Vec<i64>>::new();
+            for page in &pages {
+                let cache_key = (page.site_id, page.page_id);
+                if !content_cache.compiled_body_html.contains_key(&cache_key) {
+                    missing_by_site
+                        .entry(page.site_id)
+                        .or_default()
+                        .push(page.page_id);
+                }
+            }
+            for (site_id, page_ids) in missing_by_site {
+                let loaded = PageRevisionService::get_compiled_body_html_optional_batch(
+                    ctx, site_id, &page_ids,
+                )
+                .await?;
+                content_cache.compiled_body_html.extend(
+                    loaded.into_iter().map(|(page_id, compiled_html)| {
+                        ((site_id, page_id), compiled_html)
+                    }),
                 );
             }
         }
@@ -2009,6 +2033,14 @@ impl RenderService {
                 snapshot_displays,
                 runtime_displays,
                 page_wikitext: page_wikitext.as_deref(),
+                page_compiled_body_html: wants_preview
+                    .then(|| {
+                        content_cache
+                            .compiled_body_html
+                            .get(&cache_key)
+                            .and_then(Option::as_deref)
+                    })
+                    .flatten(),
                 page_wikitext_scalar_count: wants_size.then(|| {
                     content_cache
                         .wikitext_scalar_count

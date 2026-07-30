@@ -142,6 +142,7 @@ fn list_pages_substitution_context_with_mode<'a>(
         snapshot_displays,
         runtime_displays: empty_list_pages_runtime_displays(),
         page_wikitext,
+        page_compiled_body_html: page_wikitext,
         page_wikitext_scalar_count: page_wikitext
             .map(|wikitext| wikitext.chars().count()),
         page_parent_fullname: None,

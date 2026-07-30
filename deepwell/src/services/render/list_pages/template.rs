@@ -126,9 +126,7 @@ impl ListPagesVariable {
             "parent_title_linked" => Some(Self::ParentTitleLinked),
             "revisions" => Some(Self::Revisions),
             "children" => Some(Self::Children),
-            "form_data" | "form_raw" | "form_label" | "form_hint" => {
-                Some(Self::FormData)
-            }
+            "form_data" | "form_raw" | "form_label" | "form_hint" => Some(Self::FormData),
             "content" | "text" | "long" | "body" => Some(Self::Content),
             "preview" => Some(Self::Preview),
             "summary" | "first_paragraph" | "description" | "short" => {
@@ -149,21 +147,20 @@ impl ListPagesVariable {
         format: Option<&str>,
     ) -> bool {
         match self {
-            Self::FormData => {
-                argument.is_some() && length.is_none() && format.is_none()
-            }
+            Self::FormData => argument.is_some() && length.is_none() && format.is_none(),
             Self::Content => {
                 argument.is_none_or(|value| {
-                    !value.is_empty()
-                        && value.bytes().all(|byte| byte.is_ascii_digit())
+                    !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit())
                 }) && length.is_none()
                     && format.is_none()
             }
             Self::Preview => {
-                argument.is_none() && length.is_none_or(|value| {
-                    !value.is_empty()
-                        && value.bytes().all(|byte| byte.is_ascii_digit())
-                }) && format.is_none()
+                argument.is_none()
+                    && length.is_none_or(|value| {
+                        !value.is_empty()
+                            && value.bytes().all(|byte| byte.is_ascii_digit())
+                    })
+                    && format.is_none()
             }
             Self::CreatedAt
             | Self::UpdatedAt
@@ -416,6 +413,10 @@ impl ListPagesTemplatePlan {
             ListPagesVariable::Preview,
             ListPagesVariable::Summary,
         ])
+    }
+
+    pub(in crate::services::render) fn uses_preview(&self) -> bool {
+        self.variables.contains(ListPagesVariable::Preview)
     }
 
     pub(in crate::services::render) fn uses_size(&self) -> bool {

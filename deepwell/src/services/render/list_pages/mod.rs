@@ -32,6 +32,7 @@ mod generated_html;
 mod pagination;
 mod parents;
 mod presentation;
+mod preview;
 mod rendering;
 mod rendering_support;
 pub(super) mod scanner;

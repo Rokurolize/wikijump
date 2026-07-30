@@ -29,8 +29,7 @@ pub(in crate::services::render) use self::selectors::{
 };
 
 use super::template::{
-    LISTPAGES_VARIABLE_REGEX, ListPagesTemplatePlan,
-    list_pages_variable_capture_is_valid,
+    LISTPAGES_VARIABLE_REGEX, ListPagesTemplatePlan, list_pages_variable_capture_is_valid,
 };
 use crate::services::page_query::{
     AuthorSelector, ComparisonOperation, CountPagesExactCountEligibilityDiagnostics,
@@ -68,6 +67,7 @@ use super::presentation::{
     render_list_pages_snapshot_user, render_list_pages_snapshot_wikidot_user,
     render_list_pages_tags, render_list_pages_wikidot_user,
 };
+use super::preview::{list_pages_plain_text, list_pages_preview};
 use super::scanner::list_pages_runtime_head_can_execute;
 use super::titles::{render_list_pages_linked_title, sanitize_list_pages_title};
 use ftml::{self};
@@ -1916,6 +1916,7 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) runtime_displays:
         &'a BTreeMap<i64, ListPagesRuntimeDisplay>,
     pub(in crate::services::render) page_wikitext: Option<&'a str>,
+    pub(in crate::services::render) page_compiled_body_html: Option<&'a str>,
     pub(in crate::services::render) page_wikitext_scalar_count: Option<usize>,
     pub(in crate::services::render) page_parent_fullname: Option<&'a str>,
     pub(in crate::services::render) page_parent_display:
@@ -2401,13 +2402,18 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
                 }
                 "preview" => {
                     let preview = context
-                        .page_wikitext
-                        .map(|wikitext| {
+                        .page_compiled_body_html
+                        .map(|compiled_html| {
                             list_pages_preview(
-                                wikitext,
+                                &list_pages_plain_text(compiled_html),
                                 captures
                                     .name("length")
-                                    .and_then(|length| length.as_str().parse().ok()),
+                                    .map(|length| {
+                                        length
+                                            .as_str()
+                                            .parse()
+                                            .unwrap_or(usize::MAX)
+                                    }),
                             )
                         })
                         .unwrap_or_default();
@@ -2442,34 +2448,6 @@ fn list_pages_first_paragraph(wikitext: &str) -> &str {
         .or_else(|| wikitext.split_once("\n\n").map(|(paragraph, _)| paragraph))
         .unwrap_or(wikitext)
         .trim()
-}
-
-fn list_pages_preview(wikitext: &str, maximum: Option<usize>) -> String {
-    let mut plain = String::with_capacity(wikitext.len());
-    let mut whitespace = false;
-    for character in wikitext.chars() {
-        if character.is_whitespace() {
-            whitespace = !plain.is_empty();
-            continue;
-        }
-        if whitespace {
-            plain.push(' ');
-            whitespace = false;
-        }
-        plain.push(character);
-    }
-    let plain = plain.trim();
-    let Some(maximum) = maximum else {
-        return plain.chars().take(200).collect();
-    };
-    if plain.chars().count() <= maximum {
-        return plain.to_owned();
-    }
-    let prefix = plain
-        .chars()
-        .take(maximum.saturating_sub(2))
-        .collect::<String>();
-    format!("{}...", prefix.trim_end())
 }
 
 fn list_pages_variable_starts_triple_link_target(template: &str, start: usize) -> bool {

@@ -8666,9 +8666,7 @@ async fn listpages_link_uses_the_unsuffixed_wikidot_page_url() {
 
     let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
     assert!(
-        html.contains(&format!(
-            ">http://scp-wiki.wikidot.com/{TARGET_SLUG}</a>"
-        )),
+        html.contains(&format!(">http://scp-wiki.wikidot.com/{TARGET_SLUG}</a>")),
         "plain %%link%% must expose Wikidot's exact page URL:\n{html}"
     );
     assert!(
@@ -9009,6 +9007,69 @@ async fn listpages_variable_suffixes_are_specific_to_each_variable_family() {
             "a supported variable-specific form must substitute {valid_token:?}:\n{html}",
         );
     }
+}
+
+#[tokio::test]
+async fn listpages_preview_uses_rendered_plain_text_and_legacy_word_limits() {
+    const TARGET_SLUG: &str = "fixture-listpages-rendered-preview-target";
+    const INDEX_SLUG: &str = "fixture-listpages-rendered-preview-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Rendered Preview Target",
+        concat!(
+            "[[>]]\n",
+            "[[module Rate]]\n",
+            "[[/>]]\n",
+            "[[div class=\"preview\"]]SCP-002 in its containment area[[/div]]\n",
+            "**Item #:** SCP-002\n",
+            "**Object Class:** Euclid\n",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Rendered Preview Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-rendered-preview-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "DEFAULT=%%preview%%\n",
+            "N0=%%preview(0)%%\n",
+            "N1=%%preview(1)%%\n",
+            "N2=%%preview(2)%%\n",
+            "N5=%%preview(5)%%\n",
+            "N17=%%preview(17)%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    for expected in [
+        "DEFAULT=<span style=\"white-space: pre-wrap;\">SCP-002 in its containment area Item #: SCP-002 Object Class: Euclid</span>",
+        "N0=<span style=\"white-space: pre-wrap;\">....</span>",
+        "N1=<span style=\"white-space: pre-wrap;\">.....</span>",
+        "N2=<span style=\"white-space: pre-wrap;\">......</span>",
+        "N5=<span style=\"white-space: pre-wrap;\">...</span>",
+        "N17=<span style=\"white-space: pre-wrap;\">SCP-002 in its...</span>",
+    ] {
+        assert!(
+            html.contains(expected),
+            "the rendered preview must contain the live-evidenced value {expected:?}:\n{html}",
+        );
+    }
+    assert!(
+        !html.contains("[[module") && !html.contains("[[div"),
+        "preview text must not expose selected-page source syntax:\n{html}",
+    );
 }
 
 #[tokio::test]
