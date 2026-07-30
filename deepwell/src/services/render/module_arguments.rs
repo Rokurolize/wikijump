@@ -269,7 +269,14 @@ pub(in crate::services::render) fn wikidot_list_pages_arguments(
             .chars()
             .next()
             .expect("cursor is before the end of the ListPages head");
-        let value = if first == '"' {
+        let value = if first != '"'
+            && first != '\''
+            && wikidot_argument_key_assignment_at(head, value_start)
+        {
+            // Live ListPages treats the outer assignment as inert and resumes
+            // at the nested key (for example `created_by=created_by="name"`).
+            continue;
+        } else if first == '"' {
             match wikidot_list_pages_double_quoted_argument_value(head, value_start) {
                 Some((value, next)) => {
                     cursor = next;
@@ -316,7 +323,8 @@ fn wikidot_list_pages_double_quoted_argument_value(
         let next = cursor + character.len_utf8();
         if character == '"'
             && (wikidot_argument_boundary_at(head, next)
-                || head.as_bytes().get(next) == Some(&b'@'))
+                || head.as_bytes().get(next) == Some(&b'@')
+                || head[next..].starts_with("[!--"))
         {
             return Some((&head[value_start..cursor], next));
         }

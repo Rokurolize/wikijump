@@ -49,6 +49,7 @@ pub(super) use self::argument_errors::{
     list_pages_non_range_argument_error, list_pages_range_argument_error,
 };
 pub(super) use self::budget::ListPagesExpansionBudget;
+pub(super) use self::current_data_form::list_pages_head_has_current_data_form_query_selector;
 pub(super) use self::current_page::{
     count_pages_scan_requires_preservation, count_pages_unbounded_total,
     list_pages_content_query_target, list_pages_row_scan_target,

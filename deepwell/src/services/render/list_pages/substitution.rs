@@ -24,8 +24,7 @@ pub(in crate::services::render) use self::selectors::{
     UrlSelector, is_dynamic_list_pages_value,
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_url_fallback,
-    resolve_url_selector, static_list_pages_selector,
-    substitute_list_pages_current_data_form_variables,
+    resolve_url_selector, substitute_list_pages_current_data_form_variables,
 };
 
 use super::template::{
@@ -1250,10 +1249,26 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 unsupported_list_pages_filter = true;
             }
             _ if raw_key.starts_with('_') => {
-                let value = static_list_pages_selector(
+                let resolved_url_data_form;
+                let value = match resolve_url_selector(
                     value,
-                    &mut unsupported_count_pages_filter,
-                )?;
+                    url.value_for_list_pages_argument(
+                        url_attr_prefix.as_deref(),
+                        raw_key,
+                    ),
+                ) {
+                    UrlSelector::Static(value) => value,
+                    UrlSelector::Resolved(resolved) => {
+                        unsupported_count_pages_filter = true;
+                        resolved_url_data_form = resolved;
+                        resolved_url_data_form.as_str()
+                    }
+                    UrlSelector::Dropped => {
+                        unsupported_count_pages_filter = true;
+                        unsupported_list_pages_filter = true;
+                        continue;
+                    }
+                };
                 let field = raw_key
                     .strip_prefix('_')
                     .expect("data form selector should start with an underscore");

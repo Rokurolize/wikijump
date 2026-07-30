@@ -57,12 +57,13 @@ use super::{
     is_list_pages_visible_tag, list_pages_body_starts_with_preparsed_block,
     list_pages_content_query_target, list_pages_created_by_unix,
     list_pages_feed_info_html, list_pages_has_unsupported_page_type_selector,
-    list_pages_has_unsupported_parent_selector, list_pages_non_range_argument_error,
-    list_pages_parent_fullname, list_pages_range_argument_error,
-    list_pages_revision_count, list_pages_row_scan_target,
-    list_pages_static_parent_fullname_with_url, load_list_pages_data_form_definitions,
-    page_query_cap_requires_original_module, parse_list_pages_arguments,
-    parse_list_pages_arguments_with_url,
+    list_pages_has_unsupported_parent_selector,
+    list_pages_head_has_current_data_form_query_selector,
+    list_pages_non_range_argument_error, list_pages_parent_fullname,
+    list_pages_range_argument_error, list_pages_revision_count,
+    list_pages_row_scan_target, list_pages_static_parent_fullname_with_url,
+    load_list_pages_data_form_definitions, page_query_cap_requires_original_module,
+    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
     preserve_list_pages_following_paragraph_boundary, preserve_list_pages_module_matches,
     protect_ajax_module_literal_markers, push_list_pages_generated_output,
     push_list_pages_pager, register_generated_list_pages_html,
@@ -98,6 +99,16 @@ use std::collections::{BTreeMap, BTreeSet};
 
 const MAX_NESTED_LISTPAGES_DEPTH: usize = 8;
 const MAX_NESTED_LISTPAGES_MODULES_PER_PASS: usize = 64;
+
+fn raw_module_close_end(source: &str, start: usize) -> Option<usize> {
+    let close = b"[[/module]]";
+    source
+        .as_bytes()
+        .get(start..)?
+        .windows(close.len())
+        .position(|candidate| candidate.eq_ignore_ascii_case(close))
+        .map(|offset| start + offset + close.len())
+}
 
 impl RenderService {
     #[allow(clippy::too_many_arguments)]
@@ -271,6 +282,33 @@ impl RenderService {
                 .into_iter()
                 .map(|page| page.slug)
                 .collect::<BTreeSet<_>>();
+        let needs_static_category_existence = module_matches.iter().any(|module| {
+            let head = current_data_form_list_pages_head(
+                module.head,
+                current_data_form_context.as_ref(),
+            );
+            list_pages_runtime_head_can_execute(head.as_ref())
+                && parse_list_pages_arguments_with_url(head.as_ref(), url).is_some_and(
+                    |arguments| {
+                        arguments.unsupported_list_pages_filter
+                            && arguments.category_selector_present
+                            && !arguments.category_all
+                            && !arguments.include_current_category
+                            && !arguments.categories.is_empty()
+                    },
+                )
+        });
+        let existing_category_slugs = if needs_static_category_existence {
+            Some(
+                CategoryService::get_all(ctx, current_site_id)
+                    .await?
+                    .into_iter()
+                    .map(|category| category.slug)
+                    .collect::<BTreeSet<_>>(),
+            )
+        } else {
+            None
+        };
         let blocks = module_matches
             .into_iter()
             .map(|module| {
@@ -279,6 +317,9 @@ impl RenderService {
                     current_data_form_context.as_ref(),
                 );
                 let head = resolved_head.as_ref();
+                let unresolved_current_data_form_query = current_data_form_context
+                    .is_none()
+                    && list_pages_head_has_current_data_form_query_selector(head);
                 // Wikidot's code/html pass owns a leading body block before
                 // ListPages evaluates. The remaining ListPages opening is
                 // therefore an empty, unclosed module using the default
@@ -289,6 +330,11 @@ impl RenderService {
                 let body = if body_was_preparsed { "" } else { module.body };
                 let module_end = if body_was_preparsed {
                     module.body_start
+                } else if unresolved_current_data_form_query
+                    && module.end == module.body_start
+                {
+                    raw_module_close_end(&wikitext, module.body_start)
+                        .unwrap_or(module.end)
                 } else {
                     module.end
                 };
@@ -340,6 +386,18 @@ impl RenderService {
                     ListPagesBlockPlan::Static(compat_html.push_block_html(format!(
                         r#"<div class="error-block">{error}</div>"#,
                     )))
+                } else if unresolved_current_data_form_query
+                    && let Some(arguments) =
+                        parse_list_pages_arguments_with_url(head, url)
+                {
+                    let replacement = if arguments.wrapper {
+                        compat_html.push_block_html(
+                            r#"<div class="list-pages-box"></div>"#.to_owned(),
+                        )
+                    } else {
+                        String::new()
+                    };
+                    ListPagesBlockPlan::Static(replacement)
                 } else if !head_can_execute {
                     ListPagesBlockPlan::PreserveOriginal(
                         "head, parent, or page-type selector is not executable",
@@ -347,7 +405,19 @@ impl RenderService {
                 } else if let Some(arguments) =
                     parse_list_pages_arguments_with_url(head, url)
                 {
-                    if arguments.limit == Some(0)
+                    let static_categories_prove_empty =
+                        existing_category_slugs.as_ref().is_some_and(|existing| {
+                            arguments.category_selector_present
+                                && !arguments.category_all
+                                && !arguments.include_current_category
+                                && !arguments.categories.is_empty()
+                                && arguments
+                                    .categories
+                                    .iter()
+                                    .all(|category| !existing.contains(category.as_ref()))
+                        });
+                    if static_categories_prove_empty
+                        || arguments.limit == Some(0)
                         || arguments.current_page_only
                             && requested_current_page_id.is_none()
                     {

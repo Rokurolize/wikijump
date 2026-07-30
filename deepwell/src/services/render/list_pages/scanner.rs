@@ -29,8 +29,11 @@ use super::super::literal_regions::{
 use super::super::module_arguments::wikidot_list_pages_arguments;
 #[path = "scanner/count_reachability.rs"]
 mod count_reachability;
+#[path = "scanner/legacy_heads.rs"]
+mod legacy_heads;
 
 pub(in crate::services::render) use self::count_reachability::CountPagesCloseReachabilityIndex;
+use self::legacy_heads::{paired_inline_comment, recovered_nested_assignment};
 #[cfg(test)]
 use std::cell::Cell;
 use std::ops::Range;
@@ -275,6 +278,7 @@ struct ModuleOpenTag {
 enum ModuleOpeningEnd {
     Complete {
         opening_end: usize,
+        body_start: usize,
         subname_end: usize,
         runtime_safe: bool,
     },
@@ -292,6 +296,7 @@ enum ModuleEvent {
         subname_start: usize,
         subname_end: usize,
         opening_end: usize,
+        body_start: usize,
         direct_candidate: bool,
         runtime_safe: bool,
         projection_guard_start: Option<usize>,
@@ -307,6 +312,7 @@ struct DirectModuleOpen {
     subname_start: usize,
     subname_end: usize,
     opening_end: usize,
+    body_start: usize,
     runtime_safe: bool,
 }
 
@@ -339,6 +345,7 @@ impl OrderedModuleEvent {
                 subname_start,
                 subname_end,
                 opening_end,
+                body_start,
                 direct_candidate: true,
                 runtime_safe,
                 ..
@@ -349,6 +356,7 @@ impl OrderedModuleEvent {
                 subname_start,
                 subname_end,
                 opening_end,
+                body_start,
                 runtime_safe,
             });
         }
@@ -436,13 +444,14 @@ impl<'a> ModuleEventScanner<'a> {
                 return Some(ModuleEvent::Close { start, end });
             }
             if let Some(tag) = self.module_open_tag(start) {
-                let (opening_end, subname_end, runtime_safe) =
+                let (opening_end, body_start, subname_end, runtime_safe) =
                     match self.module_opening_end(tag.name_end) {
                         ModuleOpeningEnd::Complete {
                             opening_end,
+                            body_start,
                             subname_end,
                             runtime_safe,
-                        } => (opening_end, subname_end, runtime_safe),
+                        } => (opening_end, body_start, subname_end, runtime_safe),
                         ModuleOpeningEnd::Malformed { resume } => {
                             self.advance_to(resume);
                             continue;
@@ -452,7 +461,7 @@ impl<'a> ModuleEventScanner<'a> {
                             return None;
                         }
                     };
-                self.advance_to(opening_end + 2);
+                self.advance_to(body_start);
                 let Some((subname_start, subname_end)) =
                     self.module_subname_span(tag.name_end, subname_end)
                 else {
@@ -464,6 +473,7 @@ impl<'a> ModuleEventScanner<'a> {
                     subname_start,
                     subname_end,
                     opening_end,
+                    body_start,
                     direct_candidate: tag.direct_candidate,
                     runtime_safe,
                     projection_guard_start: self.take_projection_guard(start),
@@ -838,6 +848,32 @@ impl<'a> ModuleEventScanner<'a> {
                 && bytes.get(cursor + 1) == Some(&b'[')
                 && !head_tokens.contains(cursor)
             {
+                let head_end =
+                    source[..cursor].trim_end_matches(char::is_whitespace).len();
+                let whitespace = &source[head_end..cursor];
+                let validation_head =
+                    source[subname_end..head_end].trim_start_matches([' ', '\t']);
+                if list_pages_compatibility
+                    && quote.is_none()
+                    && bytes
+                        .get(cursor..cursor + b"[[/module]]".len())
+                        .is_some_and(|candidate| {
+                            candidate.eq_ignore_ascii_case(b"[[/module]]")
+                        })
+                    && whitespace.contains(['\n', '\r'])
+                    && !wikidot_list_pages_arguments(validation_head).is_empty()
+                    && list_pages_runtime_head_can_execute(validation_head)
+                {
+                    finish_head_scan!(
+                        cursor,
+                        ModuleOpeningEnd::Complete {
+                            opening_end: head_end,
+                            body_start: cursor,
+                            subname_end,
+                            runtime_safe: false,
+                        }
+                    );
+                }
                 let (block_start, run_end) = left_block_start_in_run(bytes, cursor);
                 let rollback_marker =
                     rollback_start_in_left_run(bytes, cursor, block_start, run_end);
@@ -1043,6 +1079,7 @@ impl<'a> ModuleEventScanner<'a> {
                             closing_end,
                             ModuleOpeningEnd::Complete {
                                 opening_end: closing_end - 2,
+                                body_start: closing_end,
                                 subname_end,
                                 runtime_safe,
                             }
@@ -1814,7 +1851,9 @@ fn evidenced_legacy_list_pages_head_boundary(head: &str) -> bool {
     }
 
     let trimmed = head.trim_matches([' ', '\t', '\n', '\r']);
-    inert_head_prefix(trimmed, "|")
+    recovered_nested_assignment(trimmed)
+        || paired_inline_comment(trimmed)
+        || inert_head_prefix(trimmed, "|")
         || inert_head_prefix(trimmed, "size")
         || trailing_empty_assignment(trimmed, "prependLine")
         || trimmed.ends_with("@@")
@@ -2117,6 +2156,7 @@ fn find_list_pages_module_matches_with_cursor_work(
                     subname_start,
                     subname_end,
                     opening_end,
+                    body_start,
                     runtime_safe,
                 }) = direct
                 else {
@@ -2125,7 +2165,7 @@ fn find_list_pages_module_matches_with_cursor_work(
                 if source[subname_start..subname_end].eq_ignore_ascii_case("listpages") {
                     active = Some(ActiveListPagesModule {
                         start,
-                        body_start: opening_end + 2,
+                        body_start,
                         head: source[subname_end..opening_end]
                             .trim_start()
                             .trim_end_matches(']'),
@@ -2205,17 +2245,19 @@ fn ordered_direct_event(event: ModuleEvent) -> OrderedModuleEvent {
             subname_start,
             subname_end,
             opening_end,
+            body_start,
             direct_candidate,
             runtime_safe,
             ..
         } => OrderedModuleEvent::Open {
             kind,
             start,
-            end: opening_end + 2,
+            end: body_start,
             direct: direct_candidate.then_some(DirectModuleOpen {
                 subname_start,
                 subname_end,
                 opening_end,
+                body_start,
                 runtime_safe,
             }),
             projection_guard_start: None,
@@ -2233,16 +2275,13 @@ fn map_projected_event(
         ModuleEvent::Open {
             kind,
             start,
-            opening_end,
+            body_start,
             projection_guard_start,
             ..
         } => {
-            let mapped = projection.map_range(start..opening_end + 2, original_len);
-            let projection_guard_start = projection_guard_start.map(|guard| {
-                projection
-                    .map_range(guard..opening_end + 2, original_len)
-                    .start
-            });
+            let mapped = projection.map_range(start..body_start, original_len);
+            let projection_guard_start = projection_guard_start
+                .map(|guard| projection.map_range(guard..body_start, original_len).start);
             OrderedModuleEvent::Open {
                 kind,
                 start: mapped.start,
@@ -2395,7 +2434,7 @@ fn direct_event_matches_ordered(
             ModuleEvent::Open {
                 kind: direct_kind,
                 start: direct_start,
-                opening_end,
+                body_start,
                 ..
             },
             OrderedModuleEvent::Open {
@@ -2407,7 +2446,7 @@ fn direct_event_matches_ordered(
         ) => {
             direct_kind == projected_kind
                 && direct_start == projected_start
-                && opening_end + 2 == projected_end
+                && body_start == projected_end
         }
         (
             ModuleEvent::Close {

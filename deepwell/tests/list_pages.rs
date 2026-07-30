@@ -1604,6 +1604,27 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "the ListPages scanner must retain ownership through variable-controlled module tokens:\n{empty_dynamic_module_template}",
     );
 
+    let absent_current_data_form_context = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages tags=\"{$scp-tag}\" created_by=\"{$user}\" ",
+            "order=\"rating desc\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n",
+            "[[#ifexpr %%total%% > 1 |  | [!-- ]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an unsaved preview has no current data-form context")
+    .html_output
+    .body;
+    assert!(
+        absent_current_data_form_context.is_empty(),
+        "current data-form selectors without a current page resolve to an empty unwrapped module, even when a conditional comment opener appears in its body:\n{absent_current_data_form_context}",
+    );
+
     let absent_current_page_unsupported_template =
         RenderService::render_wikidot_page_preview(
             runner.context(),
@@ -1629,6 +1650,32 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
             && !absent_current_page_unsupported_template.contains("%%unsupported%%")
             && !absent_current_page_unsupported_template.contains(".unused"),
         "a current-page query without page identity is empty before unsupported row-template syntax matters:\n{absent_current_page_unsupported_template}",
+    );
+
+    let absent_category_precedes_dropped_url_selectors =
+        RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            concat!(
+                "[[module ListPages category=\"verification-listpages-absent-url-category\" ",
+                "order=\"@URL|name desc\" tags=\"@URL|\" perPage=\"@URL|50\" ",
+                "name=\"@URL\" _original=\"@URL\"]]\n",
+                "UNSUPPORTED %%form_raw{content}%%\n",
+                "[[/module]]",
+            )
+            .to_owned(),
+        )
+        .await
+        .expect("an absent static category should prove the query empty")
+        .html_output
+        .body;
+    assert!(
+        absent_category_precedes_dropped_url_selectors
+            .contains(r#"<div class="list-pages-box"></div>"#)
+            && !absent_category_precedes_dropped_url_selectors.contains("[[module")
+            && !absent_category_precedes_dropped_url_selectors.contains("UNSUPPORTED"),
+        "an absent static category proves the result empty before dropped URL selectors or unsupported row-template variables matter:\n{absent_category_precedes_dropped_url_selectors}",
     );
 
     for source in [
@@ -1880,6 +1927,85 @@ async fn listpages_module_heads_accept_live_legacy_boundaries() {
             "the recovered head must not leak source or surplus right brackets for {source:?}:\n{preview}",
         );
     }
+
+    for (source, expected_heading) in [
+        (
+            concat!(
+                "[[module ListPages created_by=\"Dr Nordsee\" category=\"*\" ",
+                "pagetype=\"*\" separate=\"no\" tags=\"-admin -_sys +übersetzt\" ",
+                "order=prependLine=\"||~ Übersetzung ||~ Veröffentlichungsdatum ||~ Momentane Bewertung ||\"]]]\n",
+                "|| %%title_linked%% || %%created_at%% || %%rating%% ||\n",
+                "[[/module]]",
+            ),
+            "Veröffentlichungsdatum",
+        ),
+        (
+            concat!(
+                "[[module ListPages created_by=created_by=\"s d locke\" ",
+                "order=\"rating desc\" separate=\"no\" tags=\"tale\" perPage=\"250\" ",
+                "prependLine=\"||~ Title ||~ Rating ||~ Comments ||~ Created ||~ Edited ||\"]]\n",
+                "|| %%title_linked%% || %%rating%% || %%comments%% || %%created_at%% || %%updated_at%% ||\n",
+                "[[/module]]",
+            ),
+            "Comments",
+        ),
+        (
+            concat!(
+                "[[module ListPages rating=\">60\" order=\"rating desc\" category=\"*\" ",
+                "separate=\"false\" limit=\"200\" perPage=\"35\" date=\"@URL|2023\"",
+                "[!-- UPDATE THIS TO CURRENT YEAR --] ",
+                "prependLine=\"||~ タイトル||~ 評価||~ 著者||~ 作成日||\"]]\n",
+                "|| %%title_linked%% || %%rating%% || %%created_by_linked%% || %%created_at%% ||\n",
+                "[[/module]]",
+            ),
+            "作成日",
+        ),
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "ListPages permissive legacy head",
+            source.to_owned(),
+        )
+        .await
+        .expect("an evidenced permissive ListPages head should render")
+        .html_output
+        .body;
+        assert!(
+            preview.contains(expected_heading)
+                && !preview.contains("[[module ListPages")
+                && !preview.contains("TODO: module ListPages"),
+            "the permissive legacy head must recover its later prependLine argument for {source:?}:\n{preview}",
+        );
+    }
+
+    let unclosed_head_before_raw_closer = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages unclosed legacy head",
+        format!(
+            concat!(
+                "[[module ListPages separate=\"no\" limit=\"250\" perPage=\"250\" ",
+                "tags=\"group-of-interest-form, beyond +_entropy-, -scp, -story,\" ",
+                "order=\"title\"\n\n",
+                "[[/module]]\nAFTER_MALFORMED\n",
+                "[[module ListPages name=\"{}\"]]",
+                "SECOND|%%fullname%%[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("a live-compatible unclosed ListPages head should render")
+    .html_output
+    .body;
+    assert!(
+        !unclosed_head_before_raw_closer.contains("[[module ListPages")
+            && !unclosed_head_before_raw_closer.contains("[[/module]]")
+            && unclosed_head_before_raw_closer.contains("AFTER_MALFORMED")
+            && unclosed_head_before_raw_closer.contains(&format!("SECOND|{TARGET_SLUG}")),
+        "an unclosed head ending before a raw closer must consume only its own module and leave the following module independent:\n{unclosed_head_before_raw_closer}",
+    );
 }
 
 #[tokio::test]
