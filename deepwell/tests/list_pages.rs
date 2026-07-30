@@ -1561,7 +1561,7 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "Unsaved preview",
         concat!(
             "[[module ListPages category=\"verification-listpages-absent-random-content\" ",
-            "order=\"random\"]]\n",
+            "order=\"random\" perPage=\"250\" limit=\"250\"]]\n",
             "[[div class=\"taleBlock\"]]\n%%content%%\n[[/div]]\n",
             "[[/module]]",
         )

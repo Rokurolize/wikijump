@@ -1423,15 +1423,6 @@ impl RenderService {
         let wants_preview = template.uses_preview();
         let wants_size = template.uses_size();
         if wants_content
-            && render_page_query_uses_single_scan(order.clone())
-            && query_limit > expansion_budget.remaining_content_rows() as u64
-        {
-            // Avoid a broad random scan when its scan target exceeds the remaining deterministic content-expansion budget.
-            return Ok(ListPagesBlockRenderResult::PreserveOriginal(
-                "content scan exceeds remaining content-row budget",
-            ));
-        }
-        if wants_content
             && query_limit > 0
             && !expansion_budget.try_start_content_module()
         {
