@@ -1,8 +1,8 @@
 {
   "schema": "wikijump.ftml_pin_marker_contract_receipt.v1",
-  "run_id": "ftml-marker-ef713593-25a37f12",
+  "run_id": "ftml-marker-ef713593-1f4945fb",
   "status": "pass",
-  "wikijump_base_sha": "55d66af5897ccbbd374ba629137b3e71aa8d06ad",
+  "wikijump_base_sha": "fbce2992c594c38590875e708f989b20a030969c",
   "baseline_ftml_sha": "57b6cfc914e62bb2cc6dd45bccfdb8ff1f232408",
   "candidate_ftml_sha": "ef7135934f8e72879b3f2f6ec939deb816cc378f",
   "required_surfaces": [
@@ -18,13 +18,13 @@
     "matches": 5,
     "accepted_differences": 0,
     "regressions": 0,
-    "verdict_sha256": "a6e4b7c471fa8e76ffb6f02e040f17528db05a539cbd01865451c7f7ca866820"
+    "verdict_sha256": "b839429c7d2e3e45fc221c182cbe072cd9369b08f9d47135b2289380805feaf3"
   },
   "artifact_manifests": {
-    "baseline_sha256": "14578f7cad2902d8da7b21def4c6b72c1f2e89e08d7bdd06b31aef6fc7a4afc4",
-    "candidate_sha256": "86ebad5699229ca13ef5a2ebc34647300871823317f4c50e1edba3c3ca9e0d5c"
+    "baseline_sha256": "8d70987c7ae27745e5c9f65f1f974e08e48456d991a099d41e03f551fd4521d0",
+    "candidate_sha256": "c9d2fbdd2ebb7590f75cd973eec9122e164f262e9c7c1104e0b2a51ac480e518"
   },
-  "canary_summary_sha256": "f178f2a72d6532213bf082dac9f5fcb55eb36448745d0997aac6decd3a8148f4",
+  "canary_summary_sha256": "63e2abd9c6779a0240ec38d7dd6a43ad4e858fcde1064ba4bd9785e898cff6c1",
   "resource_disposition": {
     "policy": "delete-on-close",
     "disposable_containers_remaining": 0

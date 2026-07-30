@@ -74,7 +74,13 @@ function run(command, args, options = {}) {
     encoding: "utf8",
     stdio: "pipe",
     env: options.env ?? process.env,
+    maxBuffer: 64 * 1024 * 1024,
   });
+  if (result.error) {
+    throw new Error(
+      `${command} ${args.join(" ")} failed to start or capture output: ${result.error.message}`,
+    );
+  }
   if (result.status !== 0)
     throw new Error(
       `${command} ${args.join(" ")} failed: ${result.stderr || result.stdout}`,
