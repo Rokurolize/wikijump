@@ -28,7 +28,10 @@ pub(in crate::services::render) use self::selectors::{
     substitute_list_pages_current_data_form_variables,
 };
 
-use super::template::{LISTPAGES_VARIABLE_REGEX, ListPagesTemplatePlan};
+use super::template::{
+    LISTPAGES_VARIABLE_REGEX, ListPagesTemplatePlan,
+    list_pages_variable_capture_is_valid,
+};
 use crate::services::page_query::{
     AuthorSelector, ComparisonOperation, CountPagesExactCountEligibilityDiagnostics,
     CountPagesExactCountEligibilityInput, DataFormSelector, DateSelector,
@@ -2152,6 +2155,9 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         .unwrap_or_default();
     let substituted = LISTPAGES_VARIABLE_REGEX
         .replace_all(template, |captures: &regex::Captures<'_>| {
+            if !list_pages_variable_capture_is_valid(captures) {
+                return captures[0].to_owned();
+            }
             match captures["name"].to_ascii_lowercase().as_str() {
                 "title_linked" => title_linked.clone(),
                 "linked_title" => title_linked.clone(),

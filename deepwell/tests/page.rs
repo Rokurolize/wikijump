@@ -8873,6 +8873,80 @@ async fn listpages_preview_summary_and_content_aliases_match_live_wikidot() {
 }
 
 #[tokio::test]
+async fn listpages_variable_suffixes_are_specific_to_each_variable_family() {
+    const TARGET_SLUG: &str = "fixture-listpages-variable-suffix-target";
+    const INDEX_SLUG: &str = "fixture-listpages-variable-suffix-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Variable Suffix Target",
+        "First section.\n=====\nSecond section.",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Variable Suffix Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-variable-suffix-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "INVALID=%%title{1}%%|%%fullname(1)%%|%%link|x%%|%%site_name{1}(2)|x%%|%%rating(1)%%|%%comments{1}%%|%%index|x%%|%%total{1}%%|%%created_at{1}(2)|x%%|%%preview{17}%%\n",
+            "VALID=%%title%%|%%content{2}%%|%%preview(5)%%|%%created_at|%Y%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    for literal in [
+        "%%title{1}%%",
+        "%%fullname(1)%%",
+        "%%link|x%%",
+        "%%site_name{1}(2)|x%%",
+        "%%rating(1)%%",
+        "%%comments{1}%%",
+        "%%index|x%%",
+        "%%total{1}%%",
+        "%%created_at{1}(2)|x%%",
+        "%%preview{17}%%",
+    ] {
+        assert!(
+            html.contains(literal),
+            "an unsupported suffix must preserve its complete token {literal:?}:\n{html}",
+        );
+    }
+    for expected in [
+        "Fixture ListPages Variable Suffix Target",
+        "Second section.",
+        "style=\"white-space: pre-wrap;\"",
+        "format_%25Y",
+    ] {
+        assert!(
+            html.contains(expected),
+            "the valid variable-specific suffix should still render {expected:?}:\n{html}",
+        );
+    }
+    for valid_token in [
+        "%%title%%",
+        "%%content{2}%%",
+        "%%preview(5)%%",
+        "%%created_at|%Y%%",
+    ] {
+        assert!(
+            !html.contains(valid_token),
+            "a supported variable-specific form must substitute {valid_token:?}:\n{html}",
+        );
+    }
+}
+
+#[tokio::test]
 async fn listpages_missing_data_form_variables_stay_literal_without_blocking_rows() {
     const TARGET_SLUG: &str = "fixture-listpages-missing-form-target";
     const INDEX_SLUG: &str = "fixture-listpages-missing-form-index";
