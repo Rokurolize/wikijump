@@ -10,6 +10,7 @@ import {
   parseArgs,
   readSeedAdministrator,
   replaceFtmlPin,
+  selectFtmlPinRewrite,
 } from "../scripts/run-ftml-marker-contract-canary.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -48,7 +49,37 @@ test("marker canary changes the manifest and lock to the same FTML revision", ()
   );
   assert.throws(
     () => replaceFtmlPin(manifest, "3".repeat(40), candidateFtml),
-    /baseline FTML pin exactly once/u,
+    /source FTML pin exactly once/u,
+  );
+});
+
+test("marker canary preserves whichever side already equals exact HEAD", () => {
+  const baselineFtml = "1".repeat(40);
+  const candidateFtml = "2".repeat(40);
+
+  assert.deepEqual(
+    selectFtmlPinRewrite(baselineFtml, baselineFtml, candidateFtml),
+    {
+      stage: "candidate",
+      sourceFtml: baselineFtml,
+      targetFtml: candidateFtml,
+    },
+  );
+  assert.deepEqual(
+    selectFtmlPinRewrite(candidateFtml, baselineFtml, candidateFtml),
+    {
+      stage: "baseline",
+      sourceFtml: candidateFtml,
+      targetFtml: baselineFtml,
+    },
+  );
+  assert.throws(
+    () => selectFtmlPinRewrite("3".repeat(40), baselineFtml, candidateFtml),
+    /matches neither baseline/u,
+  );
+  assert.throws(
+    () => selectFtmlPinRewrite(baselineFtml, baselineFtml, baselineFtml),
+    /must be distinct/u,
   );
 });
 
