@@ -48,7 +48,8 @@ use paste::paste;
 use ref_map::OptionRefMap;
 use sea_orm::ActiveValue;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder,
+    QuerySelect, Set,
 };
 use std::net::IpAddr;
 use wikidot_normalize::normalize;
@@ -1073,6 +1074,42 @@ impl PageService {
         {
             // If we're not looking for deleted pages, then
             // return nothing if the page whose ID match is.
+            return Ok(None);
+        }
+
+        Ok(page)
+    }
+
+    /// Get a page directly while holding an exclusive row lock until the
+    /// request transaction completes.
+    ///
+    /// Mutation paths that derive additional persistent state from a page
+    /// must use this form so a concurrent soft delete cannot commit between
+    /// the existence check and the dependent mutation.
+    pub async fn get_direct_optional_for_update(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+        allow_deleted: bool,
+    ) -> Result<Option<PageModel>> {
+        let txn = ctx.transaction();
+        let page = Page::find_by_id(page_id)
+            .lock_exclusive()
+            .one(txn)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!(
+                        "failed to lock page ID {} directly (accept deleted {})",
+                        page_id, allow_deleted,
+                    ),
+                    ErrorType::Page,
+                )
+            })?;
+
+        if let Some(ref page) = page
+            && !allow_deleted
+            && page.deleted_at.is_some()
+        {
             return Ok(None);
         }
 

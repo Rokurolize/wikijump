@@ -424,7 +424,6 @@ mod tests {
             "[[$ https://example.test/a$]]b [[module ListPages name=\"hidden\"]] $]]",
             "@<before >>@ [[module ListPages name=\"hidden\"]] >@",
             "@<before ~~~>@ [[module ListPages name=\"hidden\"]] >@",
-            "[!-- ---] [[module ListPages name=\"hidden\"]] --]",
         ] {
             let index = LiteralRegionIndex::new_list_pages_syntax(source);
             assert!(
@@ -586,6 +585,53 @@ mod tests {
         let index = LiteralRegionIndex::new_list_pages_syntax(source);
         assert!(!index.contains(source.find("[[module ListPages").unwrap()));
         assert!(!index.contains(source.find("[[/module]]").unwrap()));
+    }
+
+    #[test]
+    fn multiline_code_head_prevents_cross_block_color_ownership() {
+        for code_open in ["[[code\n", "[[ code\n", "[[\tcode\n"] {
+            let source = format!(
+                concat!(
+                    "{}",
+                    "type=\"rust\"]]\n",
+                    "##red|inside\n",
+                    "[[/code]]\n",
+                    "outside##\n",
+                    "[[module ListPages name=\"live\"]]C[[/module]]",
+                ),
+                code_open,
+            );
+            let index = LiteralRegionIndex::new_list_pages_syntax(&source);
+
+            assert!(
+                index.contains(source.find("inside").unwrap()),
+                "{code_open:?}"
+            );
+            assert!(
+                !index.contains(source.find("outside##").unwrap()),
+                "{code_open:?}",
+            );
+            assert!(
+                !index.contains(source.find("[[module ListPages").unwrap()),
+                "{code_open:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn extended_comment_closer_releases_following_listpages_module() {
+        for closer in ["---]", "----]", "-----]"] {
+            let source = format!(
+                "[!-- hidden {closer}\n[[module ListPages name=\"live\"]]C[[/module]]",
+            );
+            let index = LiteralRegionIndex::new_list_pages_syntax(&source);
+
+            assert!(index.contains(source.find("hidden").unwrap()), "{closer}");
+            assert!(
+                !index.contains(source.find("[[module ListPages").unwrap()),
+                "{closer}",
+            );
+        }
     }
 
     #[test]
