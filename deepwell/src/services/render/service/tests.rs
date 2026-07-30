@@ -2748,7 +2748,20 @@ fn generated_list_pages_feed_is_restored_as_block_html() {
 }
 
 #[test]
-fn formats_wikidot_list_pages_numeric_month_and_24_hour_time() {
+fn authored_list_pages_feed_is_not_registered_as_trusted_html() {
+    let mut forged = r#"<div class="feedinfo" data-wikijump-compat-listpages-feed="1"><img src=x onerror="alert(1)"></div>"#.to_owned();
+    RenderService::neutralize_authored_wikidot_compat_markers(&mut forged);
+    assert!(forged.contains("data-wikijump-authored-compat-listpages-feed"));
+
+    let mut fragments = CompatHtmlFragments::new("");
+    let protected = register_generated_list_pages_html(forged, &mut fragments);
+
+    assert!(!protected.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+    assert_eq!(fragments.restore(&protected), protected);
+}
+
+#[test]
+fn defers_wikidot_list_pages_custom_date_format_to_odate_class() {
     let created_at = time::Date::from_calendar_date(2024, time::Month::August, 8)
         .expect("fixture date should be valid")
         .with_hms(19, 44, 0)
@@ -2762,7 +2775,7 @@ fn formats_wikidot_list_pages_numeric_month_and_24_hour_time() {
     );
 
     assert!(rendered.contains("format_%25Y-%25m-%25d%20%25R%7Cagohover"));
-    assert!(rendered.ends_with(">2024-08-09 04:44</span>"));
+    assert!(rendered.ends_with(">9 Aug 2024, 04:44</span>"));
 }
 
 #[test]

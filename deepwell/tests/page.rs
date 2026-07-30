@@ -8688,6 +8688,71 @@ async fn listpages_link_uses_the_unsuffixed_wikidot_page_url() {
 }
 
 #[tokio::test]
+async fn listpages_date_formats_are_deferred_to_the_wikidot_client_phase() {
+    const TARGET_SLUG: &str = "fixture-listpages-date-phase-target";
+    const INDEX_SLUG: &str = "fixture-listpages-date-phase-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Date Phase Target",
+        "Date phase target.",
+    )
+    .await;
+    set_listpages_test_created_at(
+        &runner,
+        site_id,
+        TARGET_SLUG,
+        OffsetDateTime::from_unix_timestamp(1_216_474_620)
+            .expect("live-evidenced timestamp is valid"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Date Phase Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-date-phase-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "BARE=%%created_at%%\n",
+            "YEAR=%%created_at|%Y%%\n",
+            "UNKNOWN=%%created_at|x%%\n",
+            "MODIFIER=%%created_at|%Y|agohover%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert_eq!(
+        html.matches(">19 Jul 2008, 22:37</span>").count(),
+        4,
+        "the raw response must retain default date text for every format:\n{html}",
+    );
+    for encoded_format in [
+        "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M",
+        "format_%25Y",
+        "format_x",
+        "format_%25Y%7Cagohover",
+    ] {
+        assert!(
+            html.contains(encoded_format),
+            "the requested client format must survive in the ODate class {encoded_format:?}:\n{html}",
+        );
+    }
+    assert!(
+        !html.contains(">2008</span>") && !html.contains(">x</span>"),
+        "custom format payloads must not execute in the server response:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_structural_identity_and_site_variables_match_live_wikidot() {
     const PARENT_SLUG: &str = "fixture-listpages-variables-parent";
     const TARGET_SLUG: &str = "fixture-listpages-variables:target";
