@@ -5,6 +5,12 @@ import { createHash } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  WIKIDOT_IMPLEMENTATION_LEDGER_SCHEMA,
+  WIKIDOT_PROPERTY_AXES,
+  validateWikidotImplementationLedger,
+} from "./lib/wikidot-implementation-ledger.mjs";
+
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, "..");
 const catalogPath = resolve(
@@ -14,6 +20,10 @@ const catalogPath = resolve(
 const ledgerPath = resolve(
   scriptDirectory,
   "data/wikidot-implementation-ledger.json",
+);
+const liveObservationsPath = resolve(
+  scriptDirectory,
+  "data/wikidot-live-observations.json",
 );
 const checkOnly = process.argv.includes("--check");
 
@@ -29,43 +39,21 @@ function sha256(value) {
 
 const rawCatalog = readFileSync(catalogPath, "utf8");
 const catalog = JSON.parse(rawCatalog);
+const liveObservations = JSON.parse(
+  readFileSync(liveObservationsPath, "utf8"),
+);
+const liveObservationIds = liveObservations.observations.map(
+  (observation) => observation.id,
+);
 
 function validate(ledger) {
-  invariant(
-    ledger.schema === "wikijump.wikidot_implementation_ledger.v1",
-    "Unexpected implementation ledger schema",
-  );
-  invariant(
-    ledger.catalog_sha256 === sha256(rawCatalog),
-    "Implementation ledger catalog hash is stale",
-  );
-  const ledgerIds = Object.keys(ledger.features).sort();
-  const catalogIds = catalog.features.map((feature) => feature.id).sort();
-  invariant(
-    JSON.stringify(ledgerIds) === JSON.stringify(catalogIds),
-    "Implementation ledger must contain exactly one entry per catalog feature",
-  );
-  for (const [featureId, entry] of Object.entries(ledger.features)) {
-    invariant(
-      ["pending", "in_progress", "implemented", "blocked"].includes(
-        entry.status,
-      ),
-      `Invalid ledger status for ${featureId}`,
-    );
-    for (const field of [
-      "confirmed_public_seams",
-      "tests",
-      "implementation_files",
-      "documentation_evidence",
-      "live_oracle_evidence",
-      "unresolved_ambiguities_or_blockers",
-    ]) {
-      invariant(
-        Array.isArray(entry[field]),
-        `Ledger field ${featureId}.${field} must be an array`,
-      );
-    }
-  }
+  validateWikidotImplementationLedger({
+    ledger,
+    rawCatalog,
+    catalog,
+    liveObservationIds,
+    repositoryRoot,
+  });
 }
 
 if (checkOnly) {
@@ -151,13 +139,28 @@ features["module-listpages"] = {
 };
 
 const ledger = {
-  schema: "wikijump.wikidot_implementation_ledger.v1",
+  schema: WIKIDOT_IMPLEMENTATION_LEDGER_SCHEMA,
   updated_at: "2026-07-28",
   catalog_sha256: sha256(rawCatalog),
   campaign: {
     name: "ListPages compatibility campaign",
     requested_scope: ["module-listpages"],
     note: "All catalog entries remain represented as required by IMPLEMENTATION_PROMPT.md. This worktree is completing the user-requested ListPages item; unrelated catalog entries remain pending rather than being falsely marked complete.",
+  },
+  property_axes: WIKIDOT_PROPERTY_AXES,
+  feature_property_matrix: {
+    "module-listpages": Object.fromEntries(
+      Object.keys(WIKIDOT_PROPERTY_AXES).map((axis) => [
+        axis,
+        {
+          status: "unobserved",
+          evidence: [],
+          observation_gaps: [
+            `The ${axis} property has not yet been classified against live Wikidot.`,
+          ],
+        },
+      ]),
+    ),
   },
   features,
 };

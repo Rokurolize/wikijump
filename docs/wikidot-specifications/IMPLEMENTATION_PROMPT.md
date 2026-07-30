@@ -64,7 +64,18 @@ Create a machine-readable implementation ledger keyed by every `catalog.json` fe
 - documentation and live-oracle evidence used;
 - unresolved ambiguities or blockers.
 
-There must be exactly one ledger entry per catalog item. An item is not `implemented` merely because adjacent code exists; all explicit behaviors in its specification must have durable tests or a concrete, documented blocker.
+Treat compatibility coverage as a feature-by-property matrix. Every feature in `campaign.requested_scope` must classify all eight axes:
+
+- P1 invocation grammar and scalar interpretation;
+- P2 parser stage, nesting, and composition;
+- P3 lifecycle, persistence, import, and round trips;
+- P4 actors, permissions, visibility, and privacy;
+- P5 selection, ordering, counting, and pagination;
+- P6 HTTP, API, URL, Ajax, feed, and navigation contracts;
+- P7 DOM, CSS, resources, interaction, and geometry;
+- P8 temporal behavior, failure atomicity, limits, and resource bounds.
+
+Each property must be `evidence_backed`, `documentation_only`, `unobserved`, `blocked`, or `not_applicable`, with durable evidence or an exact observation gap. `evidence_backed` requires both a canonical `live:<observation-id>` reference and a public `test:<repository-path>#<exact-anchor>` regression seam. Test paths and anchors must resolve inside the repository; local output, an internal-only unit seam, a fabricated reference, or a manual check alone is insufficient. There must be exactly one ledger entry per catalog item. An item is not `implemented` merely because adjacent code exists: every P1-P8 property must be either evidence-backed or explicitly inapplicable, and no property may retain an observation gap or rely only on a manual check.
 
 Keep the work in one focused campaign and normal review sequence unless repository ownership boundaries require a deliberately coordinated FTML change. Do not split routine discoveries into one pull request per example or per catalog item.
 
