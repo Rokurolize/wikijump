@@ -306,12 +306,13 @@ pub(in crate::services::render) fn format_list_pages_created_at(
         return String::new();
     };
     let created_at = created_at.to_offset(time::UtcOffset::UTC);
-    const DEFAULT_FORMAT: &str = "%d %b %Y %H:%M";
-    let format = format.unwrap_or(DEFAULT_FORMAT);
+    const SERVER_FORMAT: &str = "%d %b %Y %H:%M";
+    const DEFAULT_ODATE_FORMAT: &str = "%e %b %Y, %H:%M|agohover";
+    let format = format.unwrap_or(DEFAULT_ODATE_FORMAT);
     // Wikidot's Ajax response always carries the default server-rendered text.
     // A requested display format belongs to the later ODate client phase and
     // is transported only through the `format_*` class.
-    let text = format_wikidot_list_pages_date(created_at, DEFAULT_FORMAT);
+    let text = format_wikidot_list_pages_date(created_at, SERVER_FORMAT);
     let encoded_format = percent_encode_path_segment(format);
     if render_as_html {
         format!(

@@ -4728,7 +4728,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
     );
     assert_eq!(
         rendered,
-        r#"<span class="odate time_1782003564 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M" data-wikijump-compat-date="1" style="cursor: help; display: inline;">21 Jun 2026 00:59</span>"#
+        r#"<span class="odate time_1782003564 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover" data-wikijump-compat-date="1" style="cursor: help; display: inline;">21 Jun 2026 00:59</span>"#
     );
 
     let rendered = substitute_list_pages_variables(
@@ -6621,12 +6621,7 @@ fn rate_module_body_does_not_revisit_nested_rate_heads() {
         &mut compat_text,
     );
 
-    assert_eq!(
-        protected
-            .matches("WIKIJUMPWIKIDOTCOMPATHTML")
-            .count(),
-        1,
-    );
+    assert_eq!(protected.matches("WIKIJUMPWIKIDOTCOMPATHTML").count(), 1,);
     assert!(protected.ends_with("\nvisible tail\n"), "{protected}");
     assert!(!protected.contains("[[module Rate]]"), "{protected}");
 }
