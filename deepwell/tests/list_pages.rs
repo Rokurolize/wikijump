@@ -1578,6 +1578,37 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "an empty random content query has no content rows to charge against the safety budget:\n{empty_random_content_preview}",
     );
 
+    let zero_row_once_only_output = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages category=\"verification-listpages-absent-once-output\" ",
+            "separate=\"no\" prependLine=\"ZERO-PREPEND\" ",
+            "appendLine=\"ZERO-APPEND\"]]\n",
+            "[[head]]ZERO-HEAD[[/head]]\n",
+            "[[body]]ZERO-ROW %%fullname%%[[/body]]\n",
+            "[[foot]]ZERO-FOOT[[/foot]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("zero-row ListPages once-only output should render")
+    .html_output
+    .body;
+    for marker in ["ZERO-PREPEND", "ZERO-HEAD", "ZERO-FOOT", "ZERO-APPEND"] {
+        assert!(
+            zero_row_once_only_output.contains(marker),
+            "zero-row ListPages must retain its once-only output ({marker}):\n{zero_row_once_only_output}",
+        );
+    }
+    assert!(
+        !zero_row_once_only_output.contains("ZERO-ROW")
+            && !zero_row_once_only_output.contains("[[module ListPages"),
+        "zero-row ListPages must not invent a row or preserve its source:\n{zero_row_once_only_output}",
+    );
+
     let empty_dynamic_module_template = RenderService::render_wikidot_page_preview(
         runner.context(),
         site_id,

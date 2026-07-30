@@ -314,15 +314,6 @@ impl RenderService {
                     && list_pages_head_has_current_data_form_query_selector(head);
                 let static_category_preflight =
                     list_pages_static_category_preflight(head);
-                let static_categories_prove_empty = static_category_preflight
-                    .as_ref()
-                    .is_some_and(|(categories, _)| {
-                        existing_category_slugs.as_ref().is_some_and(|existing| {
-                            categories
-                                .iter()
-                                .all(|category| !existing.contains(category))
-                        })
-                    });
                 // Wikidot's code/html pass owns a leading body block before
                 // ListPages evaluates. The remaining ListPages opening is
                 // therefore an empty, unclosed module using the default
@@ -331,6 +322,30 @@ impl RenderService {
                 let body_was_preparsed =
                     list_pages_body_starts_with_preparsed_block(module.body);
                 let body = if body_was_preparsed { "" } else { module.body };
+                let zero_row_once_only_output = parse_list_pages_arguments_with_url(
+                    head, url,
+                )
+                .is_some_and(|arguments| {
+                    !arguments.separate
+                        && (arguments.prepend_line.is_some()
+                            || arguments.append_line.is_some()
+                            || ListPagesTemplatePlan::compile(body).is_some_and(
+                                |template| {
+                                    template.head_section().is_some()
+                                        || template.foot_section().is_some()
+                                },
+                            ))
+                });
+                let static_categories_prove_empty = !zero_row_once_only_output
+                    && static_category_preflight.as_ref().is_some_and(
+                        |(categories, _)| {
+                            existing_category_slugs.as_ref().is_some_and(|existing| {
+                                categories
+                                    .iter()
+                                    .all(|category| !existing.contains(category))
+                            })
+                        },
+                    );
                 let module_end = if body_was_preparsed {
                     module.body_start
                 } else if unresolved_current_data_form_query
@@ -420,9 +435,10 @@ impl RenderService {
                 } else if let Some(arguments) =
                     parse_list_pages_arguments_with_url(head, url)
                 {
-                    if arguments.limit == Some(0)
-                        || arguments.current_page_only
-                            && requested_current_page_id.is_none()
+                    if !zero_row_once_only_output
+                        && (arguments.limit == Some(0)
+                            || arguments.current_page_only
+                                && requested_current_page_id.is_none())
                     {
                         let replacement = if arguments.wrapper {
                             compat_html.push_block_html(
