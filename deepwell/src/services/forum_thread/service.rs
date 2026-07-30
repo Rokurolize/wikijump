@@ -64,22 +64,80 @@ impl ForumThreadService {
         };
         let txn = ctx.transaction();
 
-        let existing_thread = ForumThread::find()
+        let pointed_thread = match page.discussion_thread_id {
+            Some(thread_id) => ForumThread::find_by_id(thread_id)
+                .one(txn)
+                .await
+                .or_raise(make_error)?,
+            None => None,
+        };
+        let associated_thread = ForumThread::find()
             .filter(forum_thread::Column::PageId.eq(page.page_id))
             .one(txn)
             .await
             .or_raise(make_error)?;
 
-        if let Some(thread) = existing_thread
-            .as_ref()
-            .filter(|thread| thread.deleted_at.is_none())
-        {
+        if let Some(mut thread) = pointed_thread {
+            Self::ensure_page_discussion_site(&thread, page)?;
+            if thread.page_id.is_some() && thread.page_id != Some(page.page_id) {
+                bail!(Error::new(
+                    format!(
+                        "page discussion thread ID {} points to page ID {:?}, not page ID {}",
+                        thread.forum_thread_id, thread.page_id, page.page_id,
+                    ),
+                    ErrorType::ForumThread,
+                ));
+            }
+
+            if thread.deleted_at.is_some() {
+                bail!(Error::new(
+                    format!(
+                        "page discussion thread ID {} has been deleted",
+                        thread.forum_thread_id,
+                    ),
+                    ErrorType::ForumThread,
+                ));
+            }
+
+            if let Some(associated) = associated_thread.as_ref() {
+                Self::ensure_page_discussion_site(associated, page)?;
+                if associated.forum_thread_id != thread.forum_thread_id {
+                    bail!(Error::new(
+                        format!(
+                            "page ID {} has conflicting discussion thread IDs {} and {}",
+                            page.page_id,
+                            thread.forum_thread_id,
+                            associated.forum_thread_id,
+                        ),
+                        ErrorType::ForumThread,
+                    ));
+                }
+            }
+            if thread.page_id != Some(page.page_id) {
+                let mut model = thread.clone().into_active_model();
+                model.page_id = Set(Some(page.page_id));
+                thread = model.update(txn).await.or_raise(make_error)?;
+            }
+            return Ok(thread);
+        }
+
+        if let Some(thread) = associated_thread {
+            Self::ensure_page_discussion_site(&thread, page)?;
+            if thread.deleted_at.is_some() {
+                bail!(Error::new(
+                    format!(
+                        "page discussion thread ID {} has been deleted",
+                        thread.forum_thread_id,
+                    ),
+                    ErrorType::ForumThread,
+                ));
+            }
             if page.discussion_thread_id != Some(thread.forum_thread_id) {
                 let mut page = page.clone().into_active_model();
                 page.discussion_thread_id = Set(Some(thread.forum_thread_id));
                 page.update(txn).await.or_raise(make_error)?;
             }
-            return Ok(thread.clone());
+            return Ok(thread);
         }
 
         let category = ForumCategory::find()
@@ -100,70 +158,6 @@ impl ForumThreadService {
                     ErrorType::ForumCategory,
                 )
             })?;
-
-        if let Some(thread) = existing_thread {
-            if thread.site_id != page.site_id {
-                bail!(Error::new(
-                    format!(
-                        "page discussion thread ID {} belongs to site ID {}, not page site ID {}",
-                        thread.forum_thread_id, thread.site_id, page.site_id,
-                    ),
-                    ErrorType::ForumThread,
-                ));
-            }
-
-            let moved_category = thread.forum_category_id != category.forum_category_id;
-            let restored = forum_thread::ActiveModel {
-                forum_thread_id: Set(thread.forum_thread_id),
-                forum_category_id: Set(category.forum_category_id),
-                forum_group_id: Set(category.forum_group_id),
-                site_id: Set(category.site_id),
-                deleted_by: Set(None),
-                deleted_at: Set(None),
-                updated_by: Set(Some(user_id)),
-                updated_at: Set(Some(now())),
-                ..Default::default()
-            }
-            .update(txn)
-            .await
-            .or_raise(make_error)?;
-
-            if moved_category {
-                forum_post::Entity::update_many()
-                    .set(forum_post::ActiveModel {
-                        forum_category_id: Set(category.forum_category_id),
-                        forum_group_id: Set(category.forum_group_id),
-                        site_id: Set(category.site_id),
-                        ..Default::default()
-                    })
-                    .filter(
-                        forum_post::Column::ForumThreadId.eq(restored.forum_thread_id),
-                    )
-                    .exec(txn)
-                    .await
-                    .or_raise(make_error)?;
-
-                forum_post_revision::Entity::update_many()
-                    .set(forum_post_revision::ActiveModel {
-                        forum_category_id: Set(category.forum_category_id),
-                        forum_group_id: Set(category.forum_group_id),
-                        site_id: Set(category.site_id),
-                        ..Default::default()
-                    })
-                    .filter(
-                        forum_post_revision::Column::ForumThreadId
-                            .eq(restored.forum_thread_id),
-                    )
-                    .exec(txn)
-                    .await
-                    .or_raise(make_error)?;
-            }
-
-            let mut page = page.clone().into_active_model();
-            page.discussion_thread_id = Set(Some(restored.forum_thread_id));
-            page.update(txn).await.or_raise(make_error)?;
-            return Ok(restored);
-        }
 
         ForumThread::insert(forum_thread::ActiveModel {
             forum_category_id: Set(category.forum_category_id),
@@ -200,6 +194,22 @@ impl ForumThreadService {
         page.discussion_thread_id = Set(Some(thread.forum_thread_id));
         page.update(txn).await.or_raise(make_error)?;
         Ok(thread)
+    }
+
+    fn ensure_page_discussion_site(
+        thread: &ForumThreadModel,
+        page: &PageModel,
+    ) -> Result<()> {
+        if thread.site_id == page.site_id {
+            return Ok(());
+        }
+        bail!(Error::new(
+            format!(
+                "page discussion thread ID {} belongs to site ID {}, not page site ID {}",
+                thread.forum_thread_id, thread.site_id, page.site_id,
+            ),
+            ErrorType::ForumThread,
+        ));
     }
 
     pub async fn create(

@@ -16,7 +16,7 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, ANONYMOUS_USER_ID};
 use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
-use deepwell::services::forum_thread::GetForumThread;
+use deepwell::services::forum_thread::{CreateForumThread, GetForumThread};
 use deepwell::services::{ForumService, ForumThreadService, RequestContext};
 use deepwell::types::Reference;
 use sea_orm::{ConnectionTrait, Statement, Value};
@@ -62,7 +62,7 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
     )
     .await
     .expect("page discussion forum group should be created");
-    ForumService::create_category(
+    let category = ForumService::create_category(
         runner.context(),
         CreateForumCategory {
             forum_group_id: group.forum_group_id,
@@ -143,19 +143,50 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
     .expect("discussion page should exist");
     assert_eq!(stored_page.discussion_thread_id, Some(first.thread_id));
 
-    let transaction = runner.context().transaction();
-    transaction
-        .execute_raw(Statement::from_sql_and_values(
-            transaction.get_database_backend(),
-            concat!(
-                "UPDATE forum_thread ",
-                "SET deleted_by = $1, deleted_at = now(), updated_by = $1, updated_at = now() ",
-                "WHERE forum_thread_id = $2",
-            ),
-            [Value::from(ADMIN_USER_ID), Value::from(first.thread_id)],
-        ))
-        .await
-        .expect("discussion thread should be soft-deleted for lifecycle coverage");
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                "UPDATE forum_thread SET page_id = NULL WHERE forum_thread_id = $1",
+                [Value::from(first.thread_id)],
+            ))
+            .await
+            .expect("import-style discussion pointer should lose its reverse link");
+    }
+    let imported_pointer = run_endpoint!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": page.page_id }),
+    )
+    .expect("the page's existing imported discussion pointer should be reused");
+    assert_eq!(imported_pointer.thread_id, first.thread_id);
+    let backfilled = ForumThreadService::get(
+        runner.context(),
+        GetForumThread {
+            forum_thread_id: first.thread_id,
+            include_deleted: false,
+        },
+    )
+    .await
+    .expect("the imported discussion thread should remain active");
+    assert_eq!(backfilled.page_id, Some(page.page_id));
+
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "UPDATE forum_thread ",
+                    "SET deleted_by = $1, deleted_at = now(), updated_by = $1, updated_at = now() ",
+                    "WHERE forum_thread_id = $2",
+                ),
+                [Value::from(ADMIN_USER_ID), Value::from(first.thread_id)],
+            ))
+            .await
+            .expect("discussion thread should be soft-deleted for lifecycle coverage");
+    }
     let deleted_thread = ForumThreadService::get(
         runner.context(),
         GetForumThread {
@@ -168,24 +199,85 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
     assert!(deleted_thread.deleted_at.is_some());
 
     set_actor(&mut runner, None, site_id, Reference::Id(page.page_id));
-    let restored = run_endpoint!(
+    run_endpoint_err!(
         runner,
         wikidot_page_discussion_create,
         json!({ "site_id": site_id, "page_id": page.page_id }),
-    )
-    .expect("a deleted page discussion should be restored on the next action");
-    assert_eq!(restored.thread_id, first.thread_id);
-    let restored_thread = ForumThreadService::get(
+    );
+    let deleted_thread = ForumThreadService::get(
         runner.context(),
         GetForumThread {
             forum_thread_id: first.thread_id,
+            include_deleted: true,
+        },
+    )
+    .await
+    .expect("the moderator-deleted discussion should remain available for audit");
+    assert!(deleted_thread.deleted_at.is_some());
+    assert_eq!(deleted_thread.page_id, Some(page.page_id));
+    let stored_page = deepwell::services::PageService::get_direct(
+        runner.context(),
+        page.page_id,
+        false,
+    )
+    .await
+    .expect("discussion page should retain its deleted-thread audit pointer");
+    assert_eq!(stored_page.discussion_thread_id, Some(first.thread_id));
+
+    let imported_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: None,
+            title: "Imported Page Discussion Fixture".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: true,
+        },
+    )
+    .await
+    .expect("an import-style active discussion pointer should be constructible");
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                "UPDATE page SET discussion_thread_id = $1 WHERE page_id = $2",
+                [
+                    Value::from(imported_thread.forum_thread_id),
+                    Value::from(page.page_id),
+                ],
+            ))
+            .await
+            .expect("the import-style page discussion pointer should be installed");
+    }
+    run_endpoint_err!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": page.page_id }),
+    );
+    let deleted_thread = ForumThreadService::get(
+        runner.context(),
+        GetForumThread {
+            forum_thread_id: first.thread_id,
+            include_deleted: true,
+        },
+    )
+    .await
+    .expect("the deleted reverse association should remain intact");
+    assert!(deleted_thread.deleted_at.is_some());
+    assert_eq!(deleted_thread.page_id, Some(page.page_id));
+    let imported_thread = ForumThreadService::get(
+        runner.context(),
+        GetForumThread {
+            forum_thread_id: imported_thread.forum_thread_id,
             include_deleted: false,
         },
     )
     .await
-    .expect("restored discussion thread should be active");
-    assert!(restored_thread.deleted_at.is_none());
-    assert!(restored_thread.deleted_by.is_none());
+    .expect("the active imported pointer should remain intact");
+    assert_eq!(imported_thread.page_id, None);
 
     set_actor(
         &mut runner,
@@ -215,5 +307,114 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
         )
         .is_none(),
         "deleted pages must use the live no_page boundary",
+    );
+}
+
+#[tokio::test]
+async fn wikidot_page_discussion_rejects_cross_site_thread_associations() {
+    const PAGE_SLUG: &str = "page-discussion-cross-site-fixture";
+
+    let mut runner = TestRunner::setup().await;
+    let test_site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let other_site_id = run_endpoint!(runner, site_get, json!({ "site": "scp-wiki" }))
+        .expect("seeded SCP Wiki site should exist")
+        .site
+        .site_id;
+
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        test_site_id,
+        Reference::from(PAGE_SLUG),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": test_site_id,
+            "wikitext": "Cross-site discussion fixture body",
+            "title": "Cross-site Discussion Fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "cross-site page discussion fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id: other_site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Cross-site page discussion fixture group".to_owned(),
+            description: "Cross-site page discussion fixture group".to_owned(),
+            visible: false,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("cross-site forum group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Cross-site per page discussions".to_owned(),
+            description: "Cross-site per page discussions".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("cross-site forum category should be created");
+    let cross_site_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(page.page_id),
+            title: "Cross-site discussion".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("the legacy service permits constructing the inconsistent fixture");
+
+    set_actor(&mut runner, None, test_site_id, Reference::Id(page.page_id));
+    run_endpoint_err!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": test_site_id, "page_id": page.page_id }),
+    );
+
+    runner
+        .context()
+        .transaction()
+        .execute_raw(Statement::from_sql_and_values(
+            runner.context().transaction().get_database_backend(),
+            "UPDATE page SET discussion_thread_id = $1 WHERE page_id = $2",
+            [
+                Value::from(cross_site_thread.forum_thread_id),
+                Value::from(page.page_id),
+            ],
+        ))
+        .await
+        .expect("cross-site pointer fixture should be installed");
+    run_endpoint_err!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": test_site_id, "page_id": page.page_id }),
     );
 }
