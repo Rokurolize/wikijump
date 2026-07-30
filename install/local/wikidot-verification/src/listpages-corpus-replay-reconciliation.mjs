@@ -65,24 +65,36 @@ function replaySourceHash(invocation) {
     }
     return invocation.source_sha256;
   }
-  const literalDelimiters = new Map([
-    ["code-block", ["[[code]]", "[[/code]]"]],
-    ["comment", ["[!--", "--]"]],
-    ["css-module", ["[[module CSS", "[[/module]]"]],
-    ["html-block", ["[[html]]", "[[/html]]"]],
-    ["inline-monospace", ["{{", "}}"]],
-    ["inline-raw", ["@@", "@@"]],
+  const literalBoundaries = new Map([
+    [
+      "code-block",
+      [/^\s*\[\[\s*code(?:\s+[^\]]*)?\]\]/iu, /\[\[\s*\/code\s*\]\]\s*$/iu],
+    ],
+    ["comment", [/^\s*\[!--/u, /--\]\s*$/u]],
+    [
+      "css-module",
+      [
+        /^\s*\[\[\s*(?:module654|module)_?\s+css\b[^\]]*\]\]/iu,
+        /\[\[\s*\/module\s*\]\]\s*$/iu,
+      ],
+    ],
+    [
+      "html-block",
+      [/^\s*\[\[\s*html(?:\s+[^\]]*)?\]\]/iu, /\[\[\s*\/html\s*\]\]\s*$/iu],
+    ],
+    ["inline-monospace", [/^\s*\{\{/u, /\}\}\s*$/u]],
+    ["inline-raw", [/^\s*@@/u, /@@\s*$/u]],
   ]);
-  const delimiters = literalDelimiters.get(invocation.literal_owner);
+  const boundaries = literalBoundaries.get(invocation.literal_owner);
   if (
-    delimiters === undefined ||
+    boundaries === undefined ||
     typeof invocation.context_replay_source !== "string" ||
     typeof invocation.context_replay_source_sha256 !== "string" ||
     sha256(invocation.context_replay_source) !==
       invocation.context_replay_source_sha256 ||
-    !invocation.context_replay_source.trimStart().startsWith(delimiters[0]) ||
-    !invocation.context_replay_source.trimEnd().endsWith(delimiters[1]) ||
-    invocation.context_replay_source.split(invocation.source).length !== 2
+    !boundaries[0].test(invocation.context_replay_source) ||
+    !boundaries[1].test(invocation.context_replay_source) ||
+    !invocation.context_replay_source.includes(invocation.source)
   ) {
     throw new Error(
       `literal corpus invocation ${invocation.id} replay source identity is invalid`,

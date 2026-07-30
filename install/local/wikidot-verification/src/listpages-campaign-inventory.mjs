@@ -581,7 +581,13 @@ export function extractListPagesInvocationsFromSource({
   while ((match = openRegex.exec(source)) !== null) {
     const openStart = match.index;
     const literalUsage = literalUsageAt(literalUsageRanges, openStart);
-    const headEnd = findModuleHeadEnd(source, openStart);
+    const detectedHeadEnd = findModuleHeadEnd(source, openStart);
+    const headEnd =
+      literalUsage !== null &&
+        detectedHeadEnd !== null &&
+        detectedHeadEnd > literalUsage.end
+        ? null
+        : detectedHeadEnd;
     const lineStart = lineNumberForOffset(starts, openStart);
     if (headEnd === null) {
       const moduleEnd = literalUsage?.end ?? source.length;

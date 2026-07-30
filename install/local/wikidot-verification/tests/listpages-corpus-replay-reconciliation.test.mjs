@@ -278,6 +278,29 @@ test("reconciles literal occurrences through their preserved owner context", asy
   assert.equal(reconciliation.cases[0].classification, "matched");
 });
 
+test("reconciles repeated literal occurrences inside an argument-bearing code head", async () => {
+  const extracted = "[[module ListPages]]literal CSS example[[/module]]";
+  const replay =
+    `[[code type="css"]]\n${extracted}\n${extracted}\n[[/code]]`;
+  const row = invocation("en:literal-code:L2:B20", extracted, "literal-code");
+  row.execution_context = "literal";
+  row.literal_owner = "code-block";
+  row.context_replay_source = replay;
+  row.context_replay_source_sha256 = sha256(replay);
+  const inputs = await fixture({
+    invocations: [row],
+    cases: [
+      classifiedCase("en:literal-code:L2:B20:literal-context", replay),
+    ],
+  });
+
+  const reconciliation = await reconcileListPagesCorpusReplay(inputs);
+
+  assert.equal(reconciliation.summary.classified_invocation_count, 1);
+  assert.equal(reconciliation.summary.directly_captured_invocation_count, 1);
+  assert.equal(reconciliation.cases[0].replay_source_sha256, sha256(replay));
+});
+
 test("fails closed when an invocation has no exact-source classification", async () => {
   const classified = "[[module ListPages]]x[[/module]]";
   const missing = "[[module ListPages]]y[[/module]]";

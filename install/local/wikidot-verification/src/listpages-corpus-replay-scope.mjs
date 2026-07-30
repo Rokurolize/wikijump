@@ -14,12 +14,12 @@ export const LISTPAGES_CORPUS_REPLAY_SCOPE_PATH = path.join(
 export const LISTPAGES_CORPUS_REPLAY_SCOPE_SCHEMA =
   "wikijump_listpages_compat.corpus_replay_scope.v1";
 export const LISTPAGES_CORPUS_REPLAY_SCOPE_SHA256 =
-  "c5e988bc067efa566b13816dd1c3dbe88ff3b887ef2f1d7792fd3b9fb71fe555";
+  "d1d9aca68fa8377a6381a96e132c2db94b4f81ceca92c5ca52568f6b7e2aabe1";
 
 const EXPECTED_INVOCATIONS = Object.freeze({
   path:
     "install/local/wikidot-verification/artifacts/listpages-campaign-matrix/corpus-invocation-cases.jsonl",
-  sha256: "f7b66809eefcc619add10cf03c38b1c5bbb3436c578d23ed763ef41e0447ea67",
+  sha256: "b9fd4f5fdfa775cba403682ec67485d6c13f5131a30999420cbc14f7a244f641",
   invocation_count: 23964,
   unique_invocation_id_count: 23964,
   unique_replay_key_count: 18996,
@@ -29,15 +29,15 @@ const EXPECTED_INVOCATIONS = Object.freeze({
 const EXPECTED_SOURCE_ARTIFACTS = Object.freeze([
   [
     "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/campaign-inventory.json",
-    "a1eedf51ba705443183c596dd546987eff8313f29d71bd981ee73b3fdfb1f277",
+    "0e9f115ebf115106b6bab149d252e77d93d58133d4b05189107f5c14fc4c0135",
   ],
   [
     "install/local/wikidot-verification/artifacts/listpages-campaign-matrix/matrix-summary.json",
-    "505b0e1ae39a95a89ba081d24f96ae2e49c0ddb0bfd6b605f53199f97beb2565",
+    "c16bc5380fdac483431101535eaceedcafbaa3e516b07a6d5495cd847a855363",
   ],
   [
     "install/local/wikidot-verification/src/listpages-campaign-inventory.mjs",
-    "48c24c4fd49e36ef35c3bf1930118e05c053484eadcce5ec49091135ccbeff7a",
+    "e9c646a9523e66dbae917676646f8fae5d4ed42129d6b292b6db7e91ef593f9f",
   ],
   [
     "install/local/wikidot-verification/src/listpages-campaign-matrix.mjs",

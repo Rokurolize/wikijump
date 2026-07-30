@@ -171,6 +171,33 @@ test("ListPages extraction preserves literal surrounding usage for contextual re
   assert.equal(invocations[3].source, '[[module ListPages tags="runtime"]]\n%%title%%\n[[/module]]');
 });
 
+test("literal ownership caps an unterminated quoted module head at its comment", () => {
+  const source = [
+    "[!--",
+    '[[module ListPages order="unterminated]',
+    "%%title%%",
+    "[[/module]]",
+    "--]",
+    'outside the comment"',
+    "]]",
+  ].join("\n");
+
+  const [invocation] = extractListPagesInvocationsFromSource({
+    corpusRoot: "/corpus/en",
+    branch: "en",
+    pageFullname: "malformed-literal",
+    sourcePath: "/corpus/en/pages/malformed-literal/source.wikidot.txt",
+    source,
+  });
+
+  assert.equal(invocation.execution_context, "literal");
+  assert.equal(invocation.literal_owner, "comment");
+  assert.equal(invocation.balanced, false);
+  assert.equal(invocation.malformed_reason, "literal-module-opening");
+  assert.ok(invocation.context_replay_source.includes(invocation.source));
+  assert.ok(!invocation.source.includes("outside the comment"));
+});
+
 test("corpus inventory scans selected branches and clusters semantic usages", async () => {
   const corpusRoot = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-corpus-"));
   await writeBranchPage(

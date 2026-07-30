@@ -1,19 +1,19 @@
 {
   "schema": "wikijump_listpages_compat.differential_matrix.v1",
-  "generated_at": "2026-07-29T21:37:03.779Z",
+  "generated_at": "2026-07-30T07:10:44.267Z",
   "inputs": {
-    "inventory_dir": "/home/roku/wjlab/worktrees/wikijump/listpages-corpus-replay-20260730/install/local/wikidot-verification/artifacts/listpages-campaign-inventory",
+    "inventory_dir": "/tmp/wj-listpages-regenerate.Ik7PJO/inventory",
     "documentation_claim_count": 5323,
     "corpus_invocation_count": 23964,
-    "corpus_cluster_count": 17724
+    "corpus_cluster_count": 17723
   },
   "summary": {
-    "corpus_cluster_case_count": 17724,
+    "corpus_cluster_case_count": 17723,
     "corpus_invocation_case_count": 23964,
     "generated_case_count": 141,
     "navigation_case_count": 19,
     "hash_magic_case_count": 13,
-    "pending_live_count": 41861
+    "pending_live_count": 41860
   },
   "files": {
     "corpus_cluster_cases": "corpus-cluster-cases.jsonl",
