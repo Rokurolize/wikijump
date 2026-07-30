@@ -1040,13 +1040,14 @@ impl<'a> ModuleEventScanner<'a> {
                                         resume: closing_end,
                                     }
                                 );
-                            } else {
+                            } else if let Some(resume) = first_rollback_marker {
                                 finish_head_scan!(
                                     closing_end,
-                                    ModuleOpeningEnd::Malformed {
-                                        resume: first_rollback_marker
-                                            .expect("suppressed rollback marker exists"),
-                                    }
+                                    ModuleOpeningEnd::Malformed { resume }
+                                );
+                            } else {
+                                unreachable!(
+                                    "the preceding branch owns a missing rollback marker"
                                 );
                             };
                         }
@@ -1862,9 +1863,9 @@ fn evidenced_legacy_list_pages_head_boundary(head: &str) -> bool {
 fn inert_head_prefix(head: &str, token: &str) -> bool {
     head.get(..token.len())
         .is_some_and(|prefix| prefix.eq_ignore_ascii_case(token))
-        && head[token.len()..]
+        && head
             .as_bytes()
-            .first()
+            .get(token.len())
             .is_some_and(|byte| is_module_argument_spacing(*byte))
 }
 
