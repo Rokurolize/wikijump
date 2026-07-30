@@ -8629,7 +8629,7 @@ async fn listpages_index_remains_absolute_after_offset() {
 }
 
 #[tokio::test]
-async fn listpages_link_and_fullname_keep_distinct_wikidot_identities() {
+async fn listpages_link_uses_the_unsuffixed_wikidot_page_url() {
     const TAG: &str = "verification-listpages-link-fullname";
     const TARGET_SLUG: &str = "component:fixture-listpages-link-fullname-target";
     const INDEX_SLUG: &str = "fixture-listpages-link-fullname-index";
@@ -8656,8 +8656,9 @@ async fn listpages_link_and_fullname_keep_distinct_wikidot_identities() {
         "Fixture ListPages Link Fullname Index",
         concat!(
             "[[module ListPages category=\"*\" tags=\"+verification-listpages-link-fullname\" limit=\"1\"]]\n",
+            "PLAIN=%%link%%\n",
             "[[[%%link%%|absolute link]]]\n",
-            "[[[%%fullname%%/noredirect/true|qualified name]]]\n",
+            "[[[%%fullname%%|qualified name]]]\n",
             "[[/module]]",
         ),
     )
@@ -8666,17 +8667,23 @@ async fn listpages_link_and_fullname_keep_distinct_wikidot_identities() {
     let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
     assert!(
         html.contains(&format!(
-            "href=\"http://scp-wiki.wikidot.com/{TARGET_SLUG}/noredirect/true\""
+            ">http://scp-wiki.wikidot.com/{TARGET_SLUG}</a>"
         )),
-        "%%link%% must render the complete live-compatible Wikidot URL:\n{html}"
+        "plain %%link%% must expose Wikidot's exact page URL:\n{html}"
     );
     assert!(
-        html.contains(&format!("href=\"/{TARGET_SLUG}/noredirect/true\"")),
-        "%%fullname%% must render the category-qualified internal page name:\n{html}"
+        html.contains(&format!(
+            "href=\"http://scp-wiki.wikidot.com/{TARGET_SLUG}\""
+        )),
+        "linked %%link%% must use Wikidot's exact page URL:\n{html}"
     );
     assert!(
-        !html.contains(&format!("href=\"/{TARGET_SLUG}\"")),
-        "%%link%% must not collapse to the internal full-name URL:\n{html}"
+        html.contains(&format!("href=\"/{TARGET_SLUG}\"")),
+        "%%fullname%% must remain the category-qualified internal page name:\n{html}"
+    );
+    assert!(
+        !html.contains("/noredirect/true"),
+        "Wikidot does not append a noredirect suffix to %%link%%:\n{html}"
     );
 }
 

@@ -1947,10 +1947,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
             .and_then(|slug| slug.strip_prefix(':'))
             .unwrap_or(full_slug)
     };
-    let link = format!(
-        "http://{}.wikidot.com/{full_slug}/noredirect/true",
-        context.site,
-    );
+    let link = format!("http://{}.wikidot.com/{full_slug}", context.site);
     let title = page.title.as_deref().unwrap_or(slug);
     let title = sanitize_list_pages_title(title);
     let title_linked = render_list_pages_linked_title(full_slug, &title, compat_text);
