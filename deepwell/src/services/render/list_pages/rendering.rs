@@ -30,16 +30,15 @@ use super::super::service::{
     COUNTPAGES_MODULE_REGEX, CountPagesRequiredTagBatchResult,
     DEFAULT_LISTPAGES_PER_PAGE, IncludeExpansion, IncludeExpansionBudget,
     MAX_LISTPAGES_RENDER_LIMIT, MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService,
-    render_list_pages_numbered_rows, render_list_pages_table_rows,
 };
 use super::current_data_form::{
     current_data_form_list_pages_head, load_current_page_data_form_context,
 };
 use super::parents::{load_list_pages_child_counts, load_list_pages_parent_displays};
-use super::rendering_support::raw_module_close_end;
+use super::rendering_support::{ListPagesBlock, ListPagesBlockPlan};
 use super::scanner::{
-    CountPagesCloseReachabilityIndex, find_list_pages_module_matches,
-    has_count_pages_module_opening_candidate, has_list_pages_module_opening_candidate,
+    CountPagesCloseReachabilityIndex, has_count_pages_module_opening_candidate,
+    has_list_pages_module_opening_candidate,
     list_pages_body_has_standalone_count_pages_opening,
     list_pages_body_inline_count_pages_legacy_tail, list_pages_runtime_head_can_execute,
 };
@@ -51,28 +50,29 @@ use super::{
     ListPagesBatchDisplays, ListPagesBlockRenderResult, ListPagesContentCache,
     ListPagesExpansion, ListPagesExpansionBudget, ListPagesExpansionOptions,
     ListPagesPageContext, ListPagesPagerRoute, ListPagesSubstitutionContext,
-    ResolvedListPagesAuthors, count_pages_capture_is_literal,
-    count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
-    count_pages_required_tag_batch_selector, count_pages_scan_requires_preservation,
-    count_pages_should_remain_literal, count_pages_unbounded_total,
-    exact_name_list_pages_batch_key, is_list_pages_visible_tag,
+    MAX_NESTED_LISTPAGES_DEPTH, MAX_NESTED_LISTPAGES_MODULES_PER_PASS,
+    ResolvedListPagesAuthors, append_list_pages_delayed_occurrences,
+    count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
+    count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
+    count_pages_scan_requires_preservation, count_pages_should_remain_literal,
+    count_pages_unbounded_total, exact_name_list_pages_batch_key,
+    find_list_pages_module_matches_with_delayed_links, is_list_pages_visible_tag,
     list_pages_argument_error_with_parent_precedence,
     list_pages_body_starts_with_preparsed_block, list_pages_content_query_target,
     list_pages_created_by_unix, list_pages_feed_info_html,
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector,
     list_pages_head_has_current_data_form_query_selector, list_pages_parent_fullname,
-    list_pages_revision_count, list_pages_row_scan_target,
+    list_pages_revision_count, list_pages_row_markup_bytes, list_pages_row_scan_target,
     list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
     load_list_pages_data_form_definitions, page_query_cap_requires_original_module,
     parse_list_pages_arguments, parse_list_pages_arguments_with_url,
-    preserve_list_pages_following_paragraph_boundary, preserve_list_pages_module_matches,
-    protect_ajax_module_literal_markers, push_list_pages_generated_output,
-    push_list_pages_pager, register_generated_list_pages_html,
+    prepare_delayed_list_pages_row, preserve_list_pages_following_paragraph_boundary,
+    preserve_list_pages_module_matches, protect_ajax_module_literal_markers,
+    push_list_pages_generated_output, push_list_pages_pager, raw_module_close_end,
+    register_generated_list_pages_html, seal_list_pages_delayed_output,
     seed_random_list_pages_order, should_render_current_page_list_pages_row,
-    substitute_count_pages_variables, substitute_list_pages_rating_only,
-    substitute_list_pages_variables_with_fragments,
-    suppress_generated_list_pages_heading_toc, union_found_page_fields,
+    substitute_count_pages_variables, union_found_page_fields,
     unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -99,9 +99,6 @@ use sea_orm::{
 };
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
-
-const MAX_NESTED_LISTPAGES_DEPTH: usize = 8;
-const MAX_NESTED_LISTPAGES_MODULES_PER_PASS: usize = 64;
 
 impl RenderService {
     #[allow(clippy::too_many_arguments)]
@@ -202,22 +199,6 @@ impl RenderService {
         .await?;
 
         let initial_remaining_include_expansions = include_budget.remaining;
-        enum ListPagesBlockPlan {
-            Static(String),
-            PreserveOriginal(&'static str),
-            Render {
-                arguments: ListPagesArguments,
-                template: ListPagesTemplatePlan,
-                batch_key: Option<ExactNameListPagesBatchKey>,
-                legacy_tail: Option<String>,
-            },
-        }
-        struct ListPagesBlock {
-            start: usize,
-            end: usize,
-            plan: ListPagesBlockPlan,
-        }
-
         let current_category = Self::page_info_category_slug(page_info);
         let unsupported_plan = |module_source: &str, body: &str| {
             let replacement = unsupported_list_pages_replacement(module_source, body);
@@ -227,7 +208,7 @@ impl RenderService {
                 ListPagesBlockPlan::Static(replacement)
             }
         };
-        let module_matches = find_list_pages_module_matches(&wikitext);
+        let module_matches = find_list_pages_module_matches_with_delayed_links(&wikitext);
         let module_source_bytes = module_matches.iter().fold(0usize, |total, module| {
             total.saturating_add(module.original.len())
         });
@@ -618,6 +599,7 @@ impl RenderService {
                         compat_html,
                         viewer_user_id,
                         page_info,
+                        settings,
                         arguments,
                         &template,
                         include_budget,
@@ -628,6 +610,7 @@ impl RenderService {
                         &mut permission_cache,
                         &mut score_filter_cache,
                         &mut author_resolution_cache,
+                        compat_html,
                         compat_text,
                     ))
                     .await?;
@@ -723,6 +706,7 @@ impl RenderService {
                         compat_html,
                         viewer_user_id,
                         page_info,
+                        settings,
                         arguments,
                         &template,
                         include_budget,
@@ -733,6 +717,7 @@ impl RenderService {
                         &mut permission_cache,
                         &mut score_filter_cache,
                         &mut author_resolution_cache,
+                        compat_html,
                         compat_text,
                     ))
                     .await?;
@@ -1225,6 +1210,7 @@ impl RenderService {
         compat_html: &mut CompatHtmlFragments,
         viewer_user_id: Option<i64>,
         page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
         arguments: ListPagesArguments,
         template: &ListPagesTemplatePlan,
         include_budget: IncludeExpansionBudget,
@@ -1238,6 +1224,7 @@ impl RenderService {
             ListPagesAuthorCacheKey,
             ResolvedListPagesAuthors,
         >,
+        compat_html: &mut CompatHtmlFragments,
         compat_text: &mut CompatTextFragments,
     ) -> Result<ListPagesBlockRenderResult> {
         let ListPagesPageContext {
@@ -2011,6 +1998,8 @@ impl RenderService {
             ));
         }
         let included_pages = Vec::new();
+        let mut delayed_occurrences = Vec::new();
+        let mut delayed_html_fragments = Vec::new();
         if !separate
             && let Some(prepend_line) = prepend_line
             && (!push_list_pages_generated_output(
@@ -2122,30 +2111,21 @@ impl RenderService {
             let uses_star_rating = runtime_displays
                 .get(&page.page_id)
                 .is_some_and(|display| display.rating_type == "stars");
-            let body = if template.uses_only_rating() && !uses_star_rating {
-                let mut body = substitute_list_pages_rating_only(body, page);
-                neutralize_authored_markers(&mut body);
-                body
-            } else {
-                let mut generated_fragments = CompatHtmlFragments::new(body);
-                let mut body = substitute_list_pages_variables_with_fragments(
-                    body,
-                    page,
-                    index + offset as usize + url_page_skip + 1,
-                    total,
-                    &substitution_context,
-                    &mut generated_fragments,
-                    compat_text,
-                );
-                neutralize_authored_markers(&mut body);
-                generated_fragments.restore(&body)
-            };
-            let rendered_body = if let Some(table) = render_list_pages_table_rows(&body) {
-                table
-            } else {
-                render_list_pages_numbered_rows(&body)
-            };
-            let rendered_body = suppress_generated_list_pages_heading_toc(&rendered_body);
+            let prepared_row = prepare_delayed_list_pages_row(
+                template,
+                body,
+                page,
+                index + offset as usize + url_page_skip + 1,
+                total,
+                &substitution_context,
+                &page_info.tags,
+                compat_text,
+                uses_star_rating,
+            );
+            if let Some(fragments) = prepared_row.html_fragments {
+                delayed_html_fragments.push(fragments);
+            }
+            let rendered_body = prepared_row.body;
             let generated_row_close = if separate
                 && !wrapper
                 && !pager.is_empty()
@@ -2155,11 +2135,8 @@ impl RenderService {
             } else {
                 "\n[[/div]]\n"
             };
-            let row_markup_bytes = if separate {
-                "[[div class=\"list-pages-item\"]]\n".len() + generated_row_close.len()
-            } else {
-                1
-            };
+            let row_markup_bytes =
+                list_pages_row_markup_bytes(separate, generated_row_close);
             let Some(rendered_row_bytes) =
                 rendered_body.len().checked_add(row_markup_bytes)
             else {
@@ -2175,7 +2152,18 @@ impl RenderService {
             if separate {
                 output.push_str("[[div class=\"list-pages-item\"]]\n");
             }
+            let rendered_body_start = output.len();
             output.push_str(&rendered_body);
+            if !append_list_pages_delayed_occurrences(
+                &mut delayed_occurrences,
+                prepared_row.generated_slots,
+                rendered_body_start,
+                rendered_body.len(),
+            ) {
+                return Ok(ListPagesBlockRenderResult::PreserveOriginal(
+                    "generated slot source range escaped its substituted row",
+                ));
+            }
             if separate {
                 output.push_str(generated_row_close);
             } else {
@@ -2245,6 +2233,14 @@ impl RenderService {
         if wants_content {
             expansion_budget.consume_content_rows(rendered_rows);
         }
+        let output = seal_list_pages_delayed_output(
+            output,
+            delayed_occurrences,
+            delayed_html_fragments,
+            page_info,
+            settings,
+            compat_html,
+        )?;
         Ok(ListPagesBlockRenderResult::Expanded(IncludeExpansion {
             wikitext: output,
             included_pages,

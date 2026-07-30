@@ -234,6 +234,7 @@ impl RenderService {
                 compat_html,
                 None,
                 page_info,
+                settings,
                 list_pages_arguments,
                 &template,
                 *include_budget,
@@ -244,6 +245,7 @@ impl RenderService {
                 &mut permission_cache,
                 &mut score_filter_cache,
                 &mut author_resolution_cache,
+                compat_html,
                 compat_text,
             ))
             .await?;

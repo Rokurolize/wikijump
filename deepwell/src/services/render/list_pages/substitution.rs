@@ -19,9 +19,15 @@
  */
 
 mod date_selectors;
+mod generated_values;
 mod selectors;
 
 pub(in crate::services::render) use self::date_selectors::parse_list_pages_date_selector;
+pub(in crate::services::render) use self::generated_values::substitute_list_pages_rating_only;
+use self::generated_values::{
+    list_pages_first_paragraph, list_pages_variable_starts_triple_link_target,
+    protect_list_pages_content_insertion,
+};
 use self::selectors::{ListPagesNameSelector, compose_list_pages_name_selectors};
 pub(in crate::services::render) use self::selectors::{
     UrlSelector, is_dynamic_list_pages_value,
@@ -50,6 +56,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use wikidot_normalize::normalize;
 
 use super::super::compat::CompatHtmlFragments;
+use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
 use super::super::literal_regions::LiteralRegionCursor;
 use super::super::module_arguments::{
@@ -66,6 +73,7 @@ use super::data_forms::{
     substitute_list_pages_form_hint, substitute_list_pages_form_label,
     substitute_list_pages_form_raw,
 };
+use super::delayed::ListPagesGeneratedSlot;
 use super::parents::ListPagesParentDisplay;
 use super::presentation::{
     format_list_pages_created_at, is_list_pages_hidden_tag, is_list_pages_visible_tag,
@@ -1895,23 +1903,6 @@ pub(in crate::services::render) fn list_pages_body_uses_content_variable(
     ListPagesTemplatePlan::compile(body).is_some_and(|plan| plan.uses_content())
 }
 
-pub(in crate::services::render) fn substitute_list_pages_rating_only(
-    template: &str,
-    page: &FoundPageRow,
-) -> String {
-    let rating = format_list_pages_rating(page.score);
-    let substituted = LISTPAGES_VARIABLE_REGEX
-        .replace_all(template, |captures: &regex::Captures<'_>| {
-            if captures["name"].eq_ignore_ascii_case("rating") {
-                rating.clone()
-            } else {
-                captures[0].to_owned()
-            }
-        })
-        .into_owned();
-    RenderService::resolve_wikidot_parser_functions(&substituted)
-}
-
 pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) authored_limit: Option<u64>,
     pub(in crate::services::render) ajax_module_response: bool,
@@ -1937,7 +1928,8 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) render_generated_html: bool,
 }
 
-pub(in crate::services::render) fn substitute_list_pages_variables_with_fragments(
+#[allow(clippy::too_many_arguments)]
+pub(super) fn substitute_list_pages_variables_inner(
     template: &str,
     page: &FoundPageRow,
     index: usize,
@@ -1945,6 +1937,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
     context: &ListPagesSubstitutionContext<'_>,
     compat_html: &mut CompatHtmlFragments,
     compat_text: &mut CompatTextFragments,
+    mut generated_slots: Option<&mut Vec<ListPagesGeneratedSlot>>,
 ) -> String {
     let full_slug = page.slug.as_deref().unwrap_or("");
     // Page-query rows already retain Wikidot's normalized full slug, including
@@ -2158,14 +2151,34 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         .map(|wikitext| wikidot_content_section(wikitext, Some(1)))
         .unwrap_or_default();
     let first_paragraph = list_pages_first_paragraph(&summary);
+    let mut source_cursor = 0usize;
+    let mut substituted_cursor = 0usize;
     let substituted = LISTPAGES_VARIABLE_REGEX
         .replace_all(template, |captures: &regex::Captures<'_>| {
-            if !list_pages_variable_capture_is_valid(captures) {
-                return captures[0].to_owned();
-            }
-            match captures["name"].to_ascii_lowercase().as_str() {
-                "title_linked" => title_linked.clone(),
-                "linked_title" => title_linked.clone(),
+            let matched = captures
+                .get(0)
+                .expect("ListPages variable capture exists");
+            substituted_cursor += matched.start() - source_cursor;
+            let replacement_start = substituted_cursor;
+            let mut replacement = if !list_pages_variable_capture_is_valid(captures) {
+                captures[0].to_owned()
+            } else {
+                match captures["name"].to_ascii_lowercase().as_str() {
+                "title_linked" | "linked_title"
+                    if let Some(slots) = generated_slots.as_mut() =>
+                {
+                    let marker = captures[0].to_owned();
+                    slots.push(ListPagesGeneratedSlot {
+                        source_range: replacement_start
+                            ..replacement_start + marker.len(),
+                        value: ftml::delayed::GeneratedValue::PageLink {
+                            page: ftml::data::PageRef::page_only(full_slug),
+                            label: Cow::Owned(title.clone()),
+                        },
+                    });
+                    marker
+                }
+                "title_linked" | "linked_title" => title_linked.clone(),
                 "title" => title.clone(),
                 "name" | "slug" | "page_name" => slug.to_owned(),
                 "fullname" | "full_slug" | "page_unix_name" | "full_page_name"
@@ -2263,12 +2276,39 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
                 "rating_votes" | "ratingvotes" => rating_votes.clone(),
                 "comments" => comments.clone(),
                 "tags" => tags_text.clone(),
-                "tags_linked" | "tagslinked" => render_list_pages_tags(
-                    &visible_tags,
-                    captures.name("format").map(|matched| matched.as_str()),
-                    context.render_generated_html,
-                    compat_html,
-                ),
+                "tags_linked" | "tagslinked"
+                    if generated_slots.is_some()
+                        && captures.name("format").is_none() =>
+                {
+                    let marker = captures[0].to_owned();
+                    generated_slots
+                        .as_mut()
+                        .expect("generated slot registry exists")
+                        .push(ListPagesGeneratedSlot {
+                            source_range: replacement_start
+                                ..replacement_start + marker.len(),
+                            value: ftml::delayed::GeneratedValue::TagLinks {
+                                tags: Cow::Owned(
+                                    visible_tags
+                                        .iter()
+                                        .map(|tag| ftml::delayed::ResolvedTagRef {
+                                            tag: Cow::Owned(tag.clone()),
+                                        })
+                                        .collect(),
+                                ),
+                                separator: Cow::Borrowed(" "),
+                            },
+                        });
+                    marker
+                }
+                "tags_linked" | "tagslinked" => {
+                    render_list_pages_tags(
+                        &visible_tags,
+                        captures.name("format").map(|matched| matched.as_str()),
+                        context.render_generated_html,
+                        compat_html,
+                    )
+                }
                 "_tags_linked" => render_list_pages_tags(
                     &hidden_tags,
                     captures.name("format").map(|matched| matched.as_str()),
@@ -2437,45 +2477,20 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
                     .get(0)
                     .map_or("", |matched| matched.as_str())
                     .to_owned(),
+                }
+            };
+            if generated_slots.is_some() {
+                neutralize_authored_markers(&mut replacement);
             }
+            source_cursor = matched.end();
+            substituted_cursor = replacement_start + replacement.len();
+            replacement
         })
         .into_owned();
 
-    RenderService::resolve_wikidot_parser_functions(&substituted)
-}
-
-fn list_pages_first_paragraph(wikitext: &str) -> &str {
-    wikitext
-        .split_once("\r\n\r\n")
-        .map(|(paragraph, _)| paragraph)
-        .or_else(|| wikitext.split_once("\n\n").map(|(paragraph, _)| paragraph))
-        .unwrap_or(wikitext)
-        .trim()
-}
-
-fn protect_list_pages_content_insertion(
-    content: &str,
-    compat_text: &mut CompatTextFragments,
-) -> String {
-    let mut protected = String::with_capacity(content.len());
-    let mut cursor = 0;
-    while let Some(relative_start) = content[cursor..].find("[[") {
-        let start = cursor + relative_start;
-        protected.push_str(&content[cursor..start]);
-        let Some(relative_end) = content[start + 2..].find("]]") else {
-            protected.push_str(&compat_text.push_escaped_html_text(&content[start..]));
-            return protected;
-        };
-        let end = start + 2 + relative_end + 2;
-        protected.push_str(&compat_text.push_escaped_html_text(&content[start..end]));
-        cursor = end;
+    if generated_slots.is_some() {
+        substituted
+    } else {
+        RenderService::resolve_wikidot_parser_functions(&substituted)
     }
-    protected.push_str(&content[cursor..]);
-    protected
-}
-
-fn list_pages_variable_starts_triple_link_target(template: &str, start: usize) -> bool {
-    template[..start]
-        .rfind("[[[")
-        .is_some_and(|opening| template[opening + 3..start].trim().is_empty())
 }

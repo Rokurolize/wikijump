@@ -84,6 +84,7 @@ use super::list_pages::ResolvedListPagesAuthors;
 use super::list_pages::{
     ListPagesExpansion, ListPagesExpansionOptions,
     build_wikidot_list_pages_module_request,
+    resolve_wikidot_parser_functions_outside_list_pages,
 };
 use super::literal_regions::LiteralRegionIndex;
 use super::metacomponent::{
@@ -2363,7 +2364,7 @@ impl RenderService {
     ) {
         resolve_unbound_include_variable_iftags(wikitext);
         if wikitext.contains("[[#") {
-            *wikitext = ftml::preproc::resolve_wikidot_parser_functions(wikitext);
+            *wikitext = resolve_wikidot_parser_functions_outside_list_pages(wikitext);
         }
         Self::resolve_wikidot_iftags(wikitext, page_info, preserved);
     }
@@ -2470,7 +2471,7 @@ impl RenderService {
             resolve_unbound_include_variable_iftags(wikitext);
         }
         if wikitext.contains("[[#") {
-            *wikitext = ftml::preproc::resolve_wikidot_parser_functions(wikitext);
+            *wikitext = resolve_wikidot_parser_functions_outside_list_pages(wikitext);
         }
         resolve_outermost_wikidot_iftags_before_include_expansion(
             wikitext,

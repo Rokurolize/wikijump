@@ -23,11 +23,30 @@ use super::super::literal_regions::{ListPagesSourceProjection, LiteralRegionInde
 use super::super::service::{IncludeExpansion, IncludeExpansionBudget, RenderService};
 use super::ListPagesExpansionBudget;
 use super::scanner::{CountPagesCloseReachabilityIndex, ListPagesModuleMatch};
+use super::substitution::{ExactNameListPagesBatchKey, ListPagesArguments};
+use super::template::ListPagesTemplatePlan;
 use crate::services::render::UrlArguments;
 use ftml::data::PageInfo;
 use sea_orm::FromQueryResult;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+
+pub(in crate::services::render) enum ListPagesBlockPlan {
+    Static(String),
+    PreserveOriginal(&'static str),
+    Render {
+        arguments: ListPagesArguments,
+        template: ListPagesTemplatePlan,
+        batch_key: Option<ExactNameListPagesBatchKey>,
+        legacy_tail: Option<String>,
+    },
+}
+
+pub(in crate::services::render) struct ListPagesBlock {
+    pub start: usize,
+    pub end: usize,
+    pub plan: ListPagesBlockPlan,
+}
 
 pub(in crate::services::render) fn raw_module_close_end(
     source: &str,

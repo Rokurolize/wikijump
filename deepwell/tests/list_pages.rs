@@ -2349,6 +2349,172 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
 }
 
 #[tokio::test]
+async fn linked_listpages_values_keep_typed_owner_boundaries_in_preview() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (label, template, expected) in [
+        (
+            "active page link",
+            "**%%title_linked%%**",
+            concat!(
+                "<strong><a href=\"/component:image-block\">",
+                "Standard Image Block</a></strong>",
+            ),
+        ),
+        (
+            "page legacy raw projection",
+            "@@%%title_linked%%@@",
+            concat!(
+                "<span style=\"white-space: pre-wrap;\">",
+                "[[[component:image-block | Standard Image Block]]]</span>",
+            ),
+        ),
+        (
+            "page code shell",
+            "[[code]]\n%%title_linked%%\n[[/code]]",
+            concat!(
+                "[[code]]<br>\n",
+                "<a href=\"/component:image-block\">Standard Image Block</a>",
+                "<br>\n[[/code]]",
+            ),
+        ),
+        (
+            "page parser function recovery",
+            "[[#if true | %%title_linked%% | NO]]",
+            "[[[component:image-block] | NO]]",
+        ),
+        (
+            "page link in outer-page tag conditional",
+            "[[iftags +component]]%%title_linked%%[[/iftags]]",
+            "BEGIN||END",
+        ),
+        (
+            "active tag link",
+            "**%%tags_linked%%**",
+            concat!(
+                "<strong><a href=\"/system:page-tags/tag/component\">",
+                "component</a></strong>",
+            ),
+        ),
+        (
+            "tag external label recovery",
+            "[https://example.com %%tags_linked%%]",
+            concat!(
+                "<a href=\"https://example.com\">",
+                "[/system:page-tags/tag/component component</a>]",
+            ),
+        ),
+        (
+            "tag image link projection",
+            "[[image https://example.com/x.png link=\"%%tags_linked%%\"]]",
+            concat!(
+                "<a href=\"/[/system:page-tags/tag/component%20component]\">",
+                "<img src=\"https://example.com/x.png\"",
+            ),
+        ),
+        (
+            "tag link in outer-page tag conditional",
+            "[[iftags +component]]%%tags_linked%%[[/iftags]]",
+            "BEGIN||END",
+        ),
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Typed ListPages preview",
+            format!(
+                concat!(
+                    "[[module ListPages category=\"*\" ",
+                    "name=\"component:image-block\" separate=\"no\" wrapper=\"no\"]]\n",
+                    "BEGIN|{template}|END\n",
+                    "[[/module]]",
+                ),
+                template = template,
+            ),
+        )
+        .await
+        .unwrap_or_else(|error| panic!("{label} should render: {error:?}"))
+        .html_output
+        .body;
+
+        assert!(
+            preview.contains(expected),
+            "{label} should preserve its evidenced owner boundary:\n{preview}",
+        );
+        assert!(
+            !preview.contains("%%title_linked%%")
+                && !preview.contains("%%tags_linked%%")
+                && !preview.contains("TODO: module ListPages"),
+            "{label} must not leak a generated slot or module placeholder:\n{preview}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn linked_listpages_slot_ranges_do_not_bind_marker_shaped_metadata() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let target_slug = format!(
+        "listpages-linked-slot-collision-{}",
+        Uuid::new_v4().as_simple(),
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(target_slug.clone().into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Marker-shaped metadata collision target",
+            "title": "%%title_linked%%",
+            "alt_title": null,
+            "slug": target_slug.clone(),
+            "layout": "wikidot",
+            "revision_comments": "typed ListPages slot collision regression",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Typed ListPages slot collision",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{target_slug}\" ",
+                "separate=\"no\" wrapper=\"no\"]]\n",
+                "%%title%%|%%title_linked%%|%%title%%\n",
+                "[[/module]]",
+            ),
+            target_slug = target_slug,
+        ),
+    )
+    .await
+    .expect("marker-shaped metadata should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(&format!(
+            "%%title_linked%%|<a href=\"/{target_slug}\">%%title_linked%%</a>|%%title_linked%%",
+        )),
+        "only the out-of-band generated slot range may acquire link authority:\n{preview}",
+    );
+}
+
+#[tokio::test]
 async fn random_listpages_reuses_the_same_idle_cached_order_for_one_invocation() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

@@ -33,7 +33,7 @@ use super::parents::ListPagesParentDisplay;
 use super::substitution::{ListPagesSnapshotDisplay, WikidotUserDisplay};
 #[cfg(test)]
 use super::substitution::{
-    ListPagesSubstitutionContext, substitute_list_pages_variables_with_fragments,
+    ListPagesSubstitutionContext, substitute_list_pages_variables_inner,
 };
 use super::template::LISTPAGES_VARIABLE_REGEX;
 use crate::services::page_query::FoundPageRow;
@@ -49,7 +49,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables(
 ) -> String {
     let mut compat_html = CompatHtmlFragments::new(template);
     let mut compat_text = CompatTextFragments::new(template);
-    let protected = substitute_list_pages_variables_with_fragments(
+    let protected = substitute_list_pages_variables_inner(
         template,
         page,
         index,
@@ -57,6 +57,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables(
         context,
         &mut compat_html,
         &mut compat_text,
+        None,
     );
     compat_text.restore(&compat_html.restore(&protected))
 }

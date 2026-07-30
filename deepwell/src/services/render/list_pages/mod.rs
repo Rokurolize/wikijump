@@ -27,6 +27,7 @@ pub(super) mod content_sections;
 mod current_data_form;
 mod current_page;
 mod data_forms;
+mod delayed;
 mod feed;
 mod generated_html;
 mod pagination;
@@ -67,6 +68,15 @@ pub(super) use self::current_page::{
     current_page_info_list_pages_row, requested_page_info_score,
 };
 pub(super) use self::data_forms::load_list_pages_data_form_definitions;
+#[cfg(test)]
+pub(super) use self::delayed::substitute_list_pages_variables_with_fragments;
+pub(super) use self::delayed::{
+    MAX_NESTED_LISTPAGES_DEPTH, MAX_NESTED_LISTPAGES_MODULES_PER_PASS,
+    append_list_pages_delayed_occurrences,
+    find_list_pages_module_matches_with_delayed_links, list_pages_row_markup_bytes,
+    prepare_delayed_list_pages_row, raw_module_close_end,
+    resolve_wikidot_parser_functions_outside_list_pages, seal_list_pages_delayed_output,
+};
 pub(super) use self::generated_html::{
     preserve_list_pages_following_paragraph_boundary, register_generated_list_pages_html,
     url_offset_list_pages_content_bytes,
@@ -105,8 +115,7 @@ pub(super) use self::substitution::{
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
     list_pages_static_parent_fullname_with_url, parse_list_pages_arguments,
-    parse_list_pages_arguments_with_url, substitute_list_pages_rating_only,
-    substitute_list_pages_variables_with_fragments, union_found_page_fields,
+    parse_list_pages_arguments_with_url, union_found_page_fields,
     unsupported_list_pages_replacement,
 };
 #[cfg(test)]
