@@ -904,6 +904,8 @@ impl<'a> ModuleEventScanner<'a> {
                             ) || surplus_list_pages_close_after_spacing(
                                 bytes,
                                 cursor + 1,
+                            ) || list_pages_inert_at_markers_follow_quote(
+                                bytes, cursor,
                             ) || crossing_list_pages_quote_ends_before_close(
                                 bytes,
                                 cursor,
@@ -946,9 +948,19 @@ impl<'a> ModuleEventScanner<'a> {
                             (end.saturating_sub(cursor) >= 3).then_some(end)
                         })
                         .flatten();
-                    if right_block || surplus_list_pages_close_end.is_some() {
-                        let closing_end =
-                            surplus_list_pages_close_end.unwrap_or(cursor + token_len);
+                    let inert_at_marker_close_end = (list_pages_compatibility
+                        && bytes.get(cursor..cursor + 2) == Some(&b"]]"[..])
+                        && source[subname_end..cursor]
+                            .trim_end_matches([' ', '\t'])
+                            .ends_with("@@"))
+                    .then_some(cursor + 2);
+                    if right_block
+                        || surplus_list_pages_close_end.is_some()
+                        || inert_at_marker_close_end.is_some()
+                    {
+                        let closing_end = surplus_list_pages_close_end
+                            .or(inert_at_marker_close_end)
+                            .unwrap_or(cursor + token_len);
                         let raw_head = &source[subname_end..cursor];
                         let validation_head = raw_head.trim_start_matches([' ', '\t']);
                         let mut validation = validate_module_head(
@@ -1721,6 +1733,10 @@ fn surplus_list_pages_close_after_spacing(bytes: &[u8], mut cursor: usize) -> bo
     cursor.saturating_sub(run_start) >= 3
 }
 
+fn list_pages_inert_at_markers_follow_quote(bytes: &[u8], quote: usize) -> bool {
+    bytes.get(quote + 1..quote + 3) == Some(&b"@@"[..])
+}
+
 fn crossing_list_pages_quote_ends_before_close(
     bytes: &[u8],
     quote: usize,
@@ -1771,6 +1787,9 @@ fn list_pages_url_value_quote_ends_at(
 
 fn evidenced_legacy_list_pages_head_boundary(head: &str) -> bool {
     let arguments = wikidot_list_pages_arguments(head);
+    if arguments.is_empty() {
+        return false;
+    }
     if arguments
         .iter()
         .any(|argument| matches!(argument.op, "<" | ">" | "<=" | ">=" | "!=" | "<>"))
@@ -1793,7 +1812,36 @@ fn evidenced_legacy_list_pages_head_boundary(head: &str) -> bool {
         }
         cursor = quote + 1;
     }
-    false
+
+    let trimmed = head.trim_matches([' ', '\t', '\n', '\r']);
+    inert_head_prefix(trimmed, "|")
+        || inert_head_prefix(trimmed, "size")
+        || trailing_empty_assignment(trimmed, "prependLine")
+        || trimmed.ends_with("@@")
+}
+
+fn inert_head_prefix(head: &str, token: &str) -> bool {
+    head.get(..token.len())
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(token))
+        && head[token.len()..]
+            .as_bytes()
+            .first()
+            .is_some_and(|byte| is_module_argument_spacing(*byte))
+}
+
+fn trailing_empty_assignment(head: &str, key: &str) -> bool {
+    let Some(before_equals) = head.strip_suffix('=') else {
+        return false;
+    };
+    let before_key = before_equals.trim_end_matches([' ', '\t']);
+    let Some(key_start) = before_key.len().checked_sub(key.len()) else {
+        return false;
+    };
+    before_key
+        .get(key_start..)
+        .is_some_and(|candidate| candidate.eq_ignore_ascii_case(key))
+        && key_start > 0
+        && before_key.as_bytes()[key_start - 1].is_ascii_whitespace()
 }
 
 fn continuation_revealed_argument_boundary(

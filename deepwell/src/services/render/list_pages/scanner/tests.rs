@@ -1510,6 +1510,33 @@ fn corpus_legacy_list_pages_heads_remain_structurally_visible() {
 }
 
 #[test]
+fn live_inert_list_pages_head_tokens_remain_structurally_visible() {
+    for head in [
+        r#"| name="target" limit="1" order="name""#,
+        r#"size name="target" limit="1" order="name""#,
+        r#"name="target" limit="1" order="name" prependLine="#,
+        r#"name="target" limit="1" order="name"@@"#,
+    ] {
+        let source = format!("[[module ListPages {head}]]ROW|%%fullname%%[[/module]]");
+        let modules = find_list_pages_module_matches(&source);
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+        assert_eq!(modules[0].head, head);
+    }
+
+    for head in [
+        r#"| only-inert-tokens"#,
+        r#"size prependLine="#,
+        r#"name="target" [[module ListUsers]]"#,
+    ] {
+        let source = format!("[[module ListPages {head}]]ROW|%%fullname%%[[/module]]");
+        assert!(
+            find_list_pages_module_matches(&source).is_empty(),
+            "unsupported malformed head must fail closed: {source:?}",
+        );
+    }
+}
+
+#[test]
 fn list_pages_scanner_keeps_adjacent_custom_listing_modules() {
     let source = r#"[[div class="top-border"]]
 [[/div]]
