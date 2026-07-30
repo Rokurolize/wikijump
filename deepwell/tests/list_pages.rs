@@ -1879,9 +1879,6 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
             "[[module ListPages name=\"{TARGET_SLUG}\" parent=\"-=\"]]\nROW %%fullname%%\n[[/module]]",
         ),
         format!(
-            "[[module ListPages name=\"{TARGET_SLUG}\" rating=\"=\"]]\nROW %%fullname%%\n[[/module]]",
-        ),
-        format!(
             "[[module ListPages name=\"{TARGET_SLUG}\" offset=\"\"]]\nROW %%fullname%%\n[[/module]]",
         ),
         format!(
@@ -1982,6 +1979,28 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
                 && !preview.contains("ROW ")
                 && !preview.contains("[[module ListPages"),
             "canonical and alias name selectors compose rather than overwrite for {source}:\n{preview}",
+        );
+    }
+
+    for selector in [r#"rating="=""#, r#"votes="=""#] {
+        let source = format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" {selector}]]\nROW %%fullname%%\n[[/module]]",
+        );
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            source.clone(),
+        )
+        .await
+        .expect("a current-page score selector without a current page should render")
+        .html_output
+        .body;
+        assert!(
+            preview.contains(r#"<div class="list-pages-box"></div>"#)
+                && !preview.contains("ROW ")
+                && !preview.contains("[[module ListPages"),
+            "an unsaved preview has no current-page operand for {selector}:\n{preview}",
         );
     }
 

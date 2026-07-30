@@ -1518,8 +1518,10 @@ fn unquoted_comparison_discriminators_remain_structurally_executable() {
         "created_at>2100",
         "createdat>2100",
         "date>2100",
+        "name!=definitely-missing",
         "parent>=component:image-block",
         "limit>=1",
+        "offset!=1",
     ] {
         let head = format!(r#"fullname="scp-002" {token}"#);
         assert!(

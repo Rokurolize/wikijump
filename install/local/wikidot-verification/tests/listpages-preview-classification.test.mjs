@@ -553,7 +553,7 @@ test("classification CLI and writer preserve authoritative evidence", async () =
   );
 });
 
-test("preview classifier separates oracle defects from fixture-state mismatches", async () => {
+test("preview classifier separates oracle defects from unexplained query or row mismatches", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
   const referencesPath = path.join(root, "references.jsonl");
   const verdictPath = path.join(root, "verdict.json");
@@ -603,7 +603,10 @@ test("preview classifier separates oracle defects from fixture-state mismatches"
     referencesPath,
   });
   assert.equal(result.summary.classifications["invalid-range-error"], 1);
-  assert.equal(result.summary.classifications["inconclusive-fixture-data-state"], 1);
+  assert.equal(
+    result.summary.classifications["listpages-query-or-row-render-divergence"],
+    1,
+  );
   assert.equal(
     result.summary.classifications["local-listpages-unsupported-diagnostic"],
     1,
@@ -655,7 +658,7 @@ test("preview classifier recognizes executed wrapper-free modules", async () => 
   });
   assert.equal(
     result.cases[0].classification,
-    "inconclusive-fixture-data-state",
+    "listpages-query-or-row-render-divergence",
   );
 });
 
@@ -706,6 +709,43 @@ test("preview classifier does not mask a missing zero-row line as fixture state"
     "prepend-append-line-divergence",
   );
   assert.equal(result.cases[0].disposition, "investigate-renderer");
+});
+
+test("preview classifier keeps a current-page selector mismatch actionable", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages name="scp-002" votes="="]]',
+    "ROW=%%fullname%%",
+    "[[/module]]",
+  ].join("\n");
+  const liveHtml = '<div class="list-pages-box"></div>';
+  const localHtml = [
+    '<div class="list-pages-box">',
+    '<div class="list-pages-item"><p>ROW=scp-002</p></div>',
+    "</div>",
+  ].join("");
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference("current-votes", source, liveHtml))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase("current-votes", liveHtml, localHtml)],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "listpages-query-or-row-render-divergence",
+  );
+  assert.equal(
+    result.cases[0].disposition,
+    "investigate-query-or-renderer",
+  );
 });
 
 test("literal-context replay isolates ListPages ownership from unrelated rendering drift", async () => {
@@ -873,9 +913,9 @@ test("preview classifier does not discard live siblings when proving a missing w
   });
   assert.equal(
     result.cases[0].classification,
-    "inconclusive-fixture-data-state",
+    "listpages-query-or-row-render-divergence",
   );
-  assert.equal(result.cases[0].disposition, "replay-synchronized-fixture");
+  assert.equal(result.cases[0].disposition, "investigate-query-or-renderer");
 });
 
 test("preview classifier ignores descendant wrapper classes in wrapper-free row data", async () => {
@@ -907,9 +947,9 @@ test("preview classifier ignores descendant wrapper classes in wrapper-free row 
   });
   assert.equal(
     result.cases[0].classification,
-    "inconclusive-fixture-data-state",
+    "listpages-query-or-row-render-divergence",
   );
-  assert.equal(result.cases[0].disposition, "replay-synchronized-fixture");
+  assert.equal(result.cases[0].disposition, "investigate-query-or-renderer");
 });
 
 test("preview classifier uses a variable-bearing body anchor to detect a missing authored head", async () => {
@@ -980,7 +1020,7 @@ test("preview classifier uses a variable-bearing body anchor to detect a missing
   assert.equal(result.cases[0].disposition, "investigate-renderer");
 });
 
-test("preview classifier leaves an ambiguous section and row-text collision as fixture state", async () => {
+test("preview classifier keeps an ambiguous section and row-text collision actionable", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
   const referencesPath = path.join(root, "references.jsonl");
   const verdictPath = path.join(root, "verdict.json");
@@ -1007,9 +1047,9 @@ test("preview classifier leaves an ambiguous section and row-text collision as f
   });
   assert.equal(
     result.cases[0].classification,
-    "inconclusive-fixture-data-state",
+    "listpages-query-or-row-render-divergence",
   );
-  assert.equal(result.cases[0].disposition, "replay-synchronized-fixture");
+  assert.equal(result.cases[0].disposition, "investigate-query-or-renderer");
 });
 
 test("preview classifier checks all foot occurrences around a variable-bearing body anchor", async () => {
@@ -1047,9 +1087,9 @@ test("preview classifier checks all foot occurrences around a variable-bearing b
   });
   assert.equal(
     result.cases[0].classification,
-    "inconclusive-fixture-data-state",
+    "listpages-query-or-row-render-divergence",
   );
-  assert.equal(result.cases[0].disposition, "replay-synchronized-fixture");
+  assert.equal(result.cases[0].disposition, "investigate-query-or-renderer");
 });
 
 test("preview classifier requires an authored foot after the final body row", async () => {

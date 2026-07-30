@@ -431,9 +431,10 @@ function classifyMismatch(row, reference) {
   }
   if (liveHasListPages && localHasListPages) {
     return {
-      classification: "inconclusive-fixture-data-state",
-      disposition: "replay-synchronized-fixture",
-      rationale: "Both runtimes execute ListPages, but the live and local sites contain different pages.",
+      classification: "listpages-query-or-row-render-divergence",
+      disposition: "investigate-query-or-renderer",
+      rationale:
+        "Both runtimes execute ListPages, but no synchronized-fixture proof explains the query result or rendered-row difference.",
     };
   }
   if (liveHasListPages) {

@@ -1372,15 +1372,16 @@ impl RenderService {
                 };
             }
         }
-        if score_equals_current_page {
+        if score_equals_current_page && current_page_identity.is_some() {
             score.push(ScoreSelector {
                 score: page_info.score,
                 comparison: ComparisonOperation::Equal,
             });
         }
         let mut votes_equal_current_zero_votes = false;
-        if votes_equals_current_page {
-            let current_votes = if current_page_identity.is_some() {
+        if votes_equals_current_page && let Some(current_page_id) = current_page_identity
+        {
+            let current_votes =
                 PageQueryService::effective_vote_count(ctx, current_page_id)
                     .await
                     .or_raise(|| {
@@ -1388,11 +1389,8 @@ impl RenderService {
                             "failed to load current page vote count for ListPages render",
                             ErrorType::Render,
                         )
-                    })?
-            } else {
-                0
-            };
-            if current_page_identity.is_some() && current_votes == 0 {
+                    })?;
+            if current_votes == 0 {
                 votes_equal_current_zero_votes = true;
             } else {
                 votes.push(ScoreSelector {
@@ -1548,7 +1546,10 @@ impl RenderService {
 
         let mut list_pages_metadata = None;
         let missing_current_page_for_selector = current_page_identity.is_none()
-            && (current_page_only || exclude_current_page_author);
+            && (current_page_only
+                || exclude_current_page_author
+                || score_equals_current_page
+                || votes_equals_current_page);
         let pages = if zero_page_size
             || oversized_offset_initial_page
             || current_page_date_missing

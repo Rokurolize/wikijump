@@ -37,8 +37,10 @@ pub(super) fn list_pages_bare_comparison_key_is_evidenced(key: &str) -> bool {
             | "created_at"
             | "createdat"
             | "date"
+            | "name"
             | "parent"
             | "limit"
+            | "offset"
     )
 }
 
