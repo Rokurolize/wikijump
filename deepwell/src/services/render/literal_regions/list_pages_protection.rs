@@ -589,19 +589,33 @@ mod tests {
 
     #[test]
     fn multiline_code_head_prevents_cross_block_color_ownership() {
-        let source = concat!(
-            "[[code\n",
-            "type=\"rust\"]]\n",
-            "##red|inside\n",
-            "[[/code]]\n",
-            "outside##\n",
-            "[[module ListPages name=\"live\"]]C[[/module]]",
-        );
-        let index = LiteralRegionIndex::new_list_pages_syntax(source);
+        for code_open in ["[[code\n", "[[ code\n", "[[\tcode\n"] {
+            let source = format!(
+                concat!(
+                    "{}",
+                    "type=\"rust\"]]\n",
+                    "##red|inside\n",
+                    "[[/code]]\n",
+                    "outside##\n",
+                    "[[module ListPages name=\"live\"]]C[[/module]]",
+                ),
+                code_open,
+            );
+            let index = LiteralRegionIndex::new_list_pages_syntax(&source);
 
-        assert!(index.contains(source.find("inside").unwrap()));
-        assert!(!index.contains(source.find("outside##").unwrap()));
-        assert!(!index.contains(source.find("[[module ListPages").unwrap()));
+            assert!(
+                index.contains(source.find("inside").unwrap()),
+                "{code_open:?}"
+            );
+            assert!(
+                !index.contains(source.find("outside##").unwrap()),
+                "{code_open:?}",
+            );
+            assert!(
+                !index.contains(source.find("[[module ListPages").unwrap()),
+                "{code_open:?}",
+            );
+        }
     }
 
     #[test]

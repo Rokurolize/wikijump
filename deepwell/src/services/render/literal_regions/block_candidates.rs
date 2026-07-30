@@ -231,11 +231,11 @@ fn parse_block_opener(
             let close = heads.next_wikidot_right_block[name_end];
             if close != NO_OFFSET {
                 let close = expanded_offset(close);
-                let exact = source[start + 2..]
-                    .chars()
-                    .next()
-                    .is_some_and(|character| !character.is_whitespace());
-                (close + 2, exact)
+                // `block_family_at` already accepted FTML's optional
+                // whitespace between `[[` and `code`. Once the pinned head
+                // scanner finds its closing right block, the opener is an
+                // exact code owner regardless of that spacing.
+                (close + 2, true)
             } else {
                 (name_end, false)
             }
