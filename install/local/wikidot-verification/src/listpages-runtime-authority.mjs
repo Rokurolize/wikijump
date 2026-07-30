@@ -10,6 +10,39 @@ const BUILD_MANIFEST_VERIFIER =
   "/home/roku/wjlab/scripts/candidate-artifact-manifest.py";
 const REQUIRED_CONTAINERS = ["cache", "database", "files"];
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
+const FIXTURE_SNAPSHOT_SQL = `
+WITH
+  site_pages AS (
+    SELECT page_id FROM page WHERE site_id = $SITE_ID
+  ),
+  relevant_users AS (
+    SELECT user_id FROM page_revision WHERE site_id = $SITE_ID
+    UNION SELECT user_id FROM page_vote WHERE page_id IN (SELECT page_id FROM site_pages)
+    UNION SELECT user_id FROM file_revision WHERE site_id = $SITE_ID
+    UNION SELECT user_id FROM forum_post WHERE site_id = $SITE_ID
+  ),
+  snapshot AS (
+    SELECT 'site:' || to_jsonb(value)::text AS record FROM site value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'site_domain:' || to_jsonb(value)::text FROM site_domain value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'page_category:' || to_jsonb(value)::text FROM page_category value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'page:' || to_jsonb(value)::text FROM page value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'page_revision:' || to_jsonb(value)::text FROM page_revision value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'page_parent:' || to_jsonb(value)::text FROM page_parent value
+      WHERE parent_page_id IN (SELECT page_id FROM site_pages)
+         OR child_page_id IN (SELECT page_id FROM site_pages)
+    UNION ALL SELECT 'page_vote:' || to_jsonb(value)::text FROM page_vote value
+      WHERE page_id IN (SELECT page_id FROM site_pages)
+    UNION ALL SELECT 'file:' || to_jsonb(value)::text FROM file value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'file_revision:' || to_jsonb(value)::text FROM file_revision value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'forum_thread:' || to_jsonb(value)::text FROM forum_thread value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'forum_post:' || to_jsonb(value)::text FROM forum_post value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'known_user:' || to_jsonb(value)::text FROM known_user value
+      WHERE user_id IN (SELECT user_id FROM relevant_users)
+    UNION ALL SELECT 'user:' || to_jsonb(value)::text FROM "user" value
+      WHERE user_id IN (SELECT user_id FROM relevant_users)
+  )
+SELECT record FROM snapshot ORDER BY record;
+`;
 
 export const LISTPAGES_RUNTIME_OBSERVATION_SCHEMA =
   "wikijump_listpages_compat.runtime_observation.v1";
@@ -18,7 +51,7 @@ function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
-async function sha256File(filePath) {
+export async function sha256ListPagesFile(filePath) {
   const hash = createHash("sha256");
   await new Promise((resolve, reject) => {
     const stream = createReadStream(filePath);
@@ -38,7 +71,7 @@ async function command(executable, args) {
   return stdout.trim();
 }
 
-function exactFtmlSha(lockContents) {
+export function exactListPagesFtmlSha(lockContents) {
   const section = lockContents.match(
     /\[\[package\]\]\nname = "ftml"\n[\s\S]*?(?=\n\[\[package\]\]|$)/u,
   )?.[0];
@@ -52,7 +85,7 @@ function exactFtmlSha(lockContents) {
   return revision;
 }
 
-function processStartTicks(statText, pid) {
+export function listPagesProcessStartTicks(statText, pid) {
   const close = statText.lastIndexOf(")");
   const fields = close < 0
     ? []
@@ -189,6 +222,32 @@ function requireCommandLine(commandLine, process, rpcUrl) {
   return sha256(commandLine);
 }
 
+export async function observeListPagesFixtureState({
+  databaseContainerId,
+  siteId,
+  run = command,
+}) {
+  const sql = FIXTURE_SNAPSHOT_SQL.replaceAll("$SITE_ID", String(siteId));
+  const script = [
+    'exec env PGPASSWORD="$POSTGRES_PASSWORD"',
+    "psql -h 127.0.0.1",
+    '-U "${POSTGRES_USER:-wikijump}"',
+    '-d "${POSTGRES_DB:-wikijump}"',
+    "--no-align --tuples-only --set ON_ERROR_STOP=1",
+    '--command "$1"',
+  ].join(" ");
+  const rows = await run("docker", [
+    "exec",
+    databaseContainerId,
+    "sh",
+    "-ec",
+    script,
+    "listpages-fixture-snapshot",
+    sql,
+  ]);
+  return sha256(rows);
+}
+
 export async function observeListPagesRuntimeAuthority({
   identity,
   proof,
@@ -198,8 +257,14 @@ export async function observeListPagesRuntimeAuthority({
   const { process, containers } = requireExactProofLocators(proof);
   const readFile = system.readFile ?? fs.readFile;
   const readlink = system.readlink ?? fs.readlink;
-  const hashFile = system.hashFile ?? sha256File;
+  const hashFile = system.hashFile ?? sha256ListPagesFile;
   const run = system.command ?? command;
+  const fixtureDigest = system.fixtureDigest ??
+    (() => observeListPagesFixtureState({
+      run,
+      databaseContainerId: containers.database,
+      siteId: identity.site_id,
+    }));
   const procRoot = `/proc/${process.pid}`;
   const [
     statText,
@@ -220,7 +285,7 @@ export async function observeListPagesRuntimeAuthority({
     readFile(process.config_path),
     readFile(process.build_manifest_path, "utf8"),
   ]);
-  if (processStartTicks(statText, process.pid) !== process.start_ticks) {
+  if (listPagesProcessStartTicks(statText, process.pid) !== process.start_ticks) {
     throw new Error("running candidate PID was reused or restarted");
   }
   if (
@@ -261,7 +326,7 @@ export async function observeListPagesRuntimeAuthority({
     head !== identity.wikijump_sha ||
     tree !== identity.wikijump_tree ||
     sha256(lockContents) !== identity.dependency_lock_sha256 ||
-    exactFtmlSha(lockContents) !== identity.ftml_sha
+    exactListPagesFtmlSha(lockContents) !== identity.ftml_sha
   ) {
     throw new Error(
       "running candidate checkout differs from the authoritative source",
@@ -306,7 +371,12 @@ export async function observeListPagesRuntimeAuthority({
       ),
     ]),
   );
+  const fixtureStateSha256 = await fixtureDigest();
+  if (!SHA256_PATTERN.test(fixtureStateSha256 ?? "")) {
+    throw new Error("running ListPages fixture-state digest is invalid");
+  }
   const stable = {
+    run_nonce: proof.run_nonce,
     candidate: {
       wikijump_sha: identity.wikijump_sha,
       wikijump_tree: identity.wikijump_tree,
@@ -332,6 +402,7 @@ export async function observeListPagesRuntimeAuthority({
       build_manifest_sha256: manifestSha256,
     },
     rpc_url: identity.rpc_url,
+    fixture_state_sha256: fixtureStateSha256,
     services: Object.fromEntries(serviceEntries),
   };
   return {
@@ -345,13 +416,26 @@ export async function observeListPagesRuntimeAuthority({
 }
 
 export function validateListPagesRuntimeObservation(observation, phase) {
+  const stable = observation?.stable;
   if (
     observation?.schema !== LISTPAGES_RUNTIME_OBSERVATION_SCHEMA ||
     observation.status !== "bound" ||
     observation.phase !== phase ||
     typeof observation.observed_at !== "string" ||
     Number.isNaN(Date.parse(observation.observed_at)) ||
-    !SHA256_PATTERN.test(observation.stable_sha256 ?? "")
+    !SHA256_PATTERN.test(observation.stable_sha256 ?? "") ||
+    stable === null ||
+    typeof stable !== "object" ||
+    Array.isArray(stable) ||
+    !SHA256_PATTERN.test(stable.run_nonce ?? "") ||
+    !SHA256_PATTERN.test(stable.fixture_state_sha256 ?? "") ||
+    stable.candidate === null ||
+    typeof stable.candidate !== "object" ||
+    stable.process === null ||
+    typeof stable.process !== "object" ||
+    stable.services === null ||
+    typeof stable.services !== "object" ||
+    sha256(JSON.stringify(stable)) !== observation.stable_sha256
   ) {
     throw new Error(`authoritative runtime ${phase} observation is invalid`);
   }

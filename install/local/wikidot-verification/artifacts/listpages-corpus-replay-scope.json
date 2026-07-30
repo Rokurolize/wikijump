@@ -1,0 +1,52 @@
+{
+  "schema": "wikijump_listpages_compat.corpus_replay_scope.v1",
+  "campaign_issue": 968,
+  "invocations": {
+    "path": "install/local/wikidot-verification/artifacts/listpages-campaign-matrix/corpus-invocation-cases.jsonl",
+    "sha256": "f7b66809eefcc619add10cf03c38b1c5bbb3436c578d23ed763ef41e0447ea67",
+    "invocation_count": 23964,
+    "unique_invocation_id_count": 23964,
+    "unique_replay_key_count": 18996,
+    "first_invocation_id": "05command:archived:images-team-main:L25:B685",
+    "last_invocation_id": "zh-tr:zh999-contest:L112:B3710"
+  },
+  "replay_key_contract": {
+    "executable": "source_sha256",
+    "literal": "context_replay_source_sha256",
+    "equivalence": "Identical exact source bytes in the same executable or preserved literal-owner context share one page-preview replay. Provenance occurrences remain individually reconciled."
+  },
+  "source_artifacts": [
+    {
+      "path": "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/campaign-inventory.json",
+      "sha256": "a1eedf51ba705443183c596dd546987eff8313f29d71bd981ee73b3fdfb1f277"
+    },
+    {
+      "path": "install/local/wikidot-verification/artifacts/listpages-campaign-matrix/matrix-summary.json",
+      "sha256": "505b0e1ae39a95a89ba081d24f96ae2e49c0ddb0bfd6b605f53199f97beb2565"
+    },
+    {
+      "path": "install/local/wikidot-verification/src/listpages-campaign-inventory.mjs",
+      "sha256": "48c24c4fd49e36ef35c3bf1930118e05c053484eadcce5ec49091135ccbeff7a"
+    },
+    {
+      "path": "install/local/wikidot-verification/src/listpages-campaign-matrix.mjs",
+      "sha256": "58790422a782cb9d14b45533e89b4b163b757fd41eff01d9028d772509eb8d42"
+    }
+  ],
+  "live_reference_contract": {
+    "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+    "site": "sandbox-for-codex",
+    "site_domain": "sandbox-for-codex.wikidot.com",
+    "module": "edit/PagePreviewModule",
+    "authenticated": false,
+    "mutated": false,
+    "required_replay_key_coverage": "exactly-once"
+  },
+  "completion_contract": {
+    "authoritative_only": true,
+    "classified_invocation_count": 23964,
+    "unresolved_invocation_count": 0,
+    "actionable_unique_replay_key_count": 0,
+    "actionable_invocation_count": 0
+  }
+}

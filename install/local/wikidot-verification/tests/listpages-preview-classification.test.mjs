@@ -159,6 +159,7 @@ function authoritativeProof(identity) {
   return {
     schema: LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
     observed_at: "2026-07-30T00:00:00.000Z",
+    run_nonce: "d".repeat(64),
     candidate: {
       wikijump_sha: identity.wikijump_sha,
       wikijump_tree: identity.wikijump_tree,
@@ -301,13 +302,38 @@ test("authoritative classification preserves and revalidates the runtime identit
   await fs.writeFile(runtimeProofPath, runtimeProofText);
   const verdict = JSON.parse(await fs.readFile(fixture.verdictPath, "utf8"));
   const referencesText = await fs.readFile(fixture.referencesPath, "utf8");
+  const observationStable = {
+    run_nonce: "d".repeat(64),
+    fixture_state_sha256: "f".repeat(64),
+    candidate: { wikijump_sha: "1".repeat(40) },
+    process: { pid: 1234 },
+    services: {},
+  };
+  const observationStableSha256 = sha256(JSON.stringify(observationStable));
+  const beforeObservation = {
+    schema: "wikijump_listpages_compat.runtime_observation.v1",
+    status: "bound",
+    phase: "before",
+    observed_at: "2026-07-30T00:00:01.000Z",
+    stable_sha256: observationStableSha256,
+    stable: observationStable,
+  };
+  const afterObservation = {
+    ...beforeObservation,
+    phase: "after",
+    observed_at: "2026-07-30T00:00:02.000Z",
+  };
   verdict.inputs = {
     authority: {
       mode: "authoritative",
       completion_eligible: true,
-      runtime_observation_before_sha256: "a".repeat(64),
-      runtime_observation_after_sha256: "b".repeat(64),
-      runtime_observation_stable_sha256: "c".repeat(64),
+      runtime_observation_before_sha256: sha256(
+        JSON.stringify(beforeObservation),
+      ),
+      runtime_observation_after_sha256: sha256(
+        JSON.stringify(afterObservation),
+      ),
+      runtime_observation_stable_sha256: observationStableSha256,
     },
     references_path: fixture.referencesPath,
     references_sha256: sha256(referencesText),
@@ -315,6 +341,10 @@ test("authoritative classification preserves and revalidates the runtime identit
     runtime_identity_sha256: sha256(runtimeIdentityText),
     runtime_proof_path: runtimeProofPath,
     runtime_proof_sha256: sha256(runtimeProofText),
+  };
+  verdict.runtime_observations = {
+    before: beforeObservation,
+    after: afterObservation,
   };
   verdict.schema = LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA;
   verdict.summary = {
@@ -351,8 +381,20 @@ test("authoritative classification preserves and revalidates the runtime identit
     completion_eligible: true,
     runtime_identity_sha256: sha256(validIdentityText),
     runtime_proof_sha256: sha256(validProofText),
-    runtime_observation_stable_sha256: "c".repeat(64),
+    runtime_observation_stable_sha256: observationStableSha256,
   });
+
+  const forgedVerdict = structuredClone(verdict);
+  delete forgedVerdict.cases[0].local.raw_html;
+  await fs.writeFile(fixture.verdictPath, JSON.stringify(forgedVerdict));
+  await assert.rejects(
+    classifyListPagesPreviewDifferential({
+      ...fixture,
+      authoritative: true,
+    }),
+    /authoritative verdict local or live output is invalid/,
+  );
+  await fs.writeFile(fixture.verdictPath, JSON.stringify(verdict));
 
   await fs.writeFile(runtimeIdentityPath, '{"changed":true}\n');
   await assert.rejects(
@@ -592,13 +634,24 @@ test("literal-context replay isolates ListPages ownership from unrelated renderi
         children: [],
       }],
     },
+    {
+      caseId: "literal-live-executed:literal-context",
+      localText: source,
+      localDom: [{
+        attrs: [{ name: "class", value: "code" }],
+        children: [],
+      }],
+      liveHtml:
+        '<div class="other list-pages-box"><div class="list-pages-item extra">live row</div></div>',
+    },
   ];
   await fs.writeFile(
     referencesPath,
-    cases.map(({ caseId }) => `${JSON.stringify(reference(
+    cases.map(({ caseId, liveHtml }) => `${JSON.stringify(reference(
       caseId,
       source,
-      '<div class="code">[[module ListPages tags="+example"]]\n%%title%%\n[[/module]]</div>',
+      liveHtml ??
+        '<div class="code">[[module ListPages tags="+example"]]\n%%title%%\n[[/module]]</div>',
     ))}\n`).join(""),
   );
   await fs.writeFile(verdictPath, JSON.stringify({
@@ -634,6 +687,7 @@ test("literal-context replay isolates ListPages ownership from unrelated renderi
   for (const caseId of [
     "literal-todo:literal-context",
     "literal-executed:literal-context",
+    "literal-live-executed:literal-context",
   ]) {
     const classified = result.cases.find((row) => row.case_id === caseId);
     assert.notEqual(

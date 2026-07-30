@@ -81,6 +81,7 @@ function artifacts() {
     service_image_sha256: IMAGES,
   };
   const proof = {
+    run_nonce: "d".repeat(64),
     process: {
       pid: PID,
       start_ticks: START_TICKS,
@@ -101,6 +102,7 @@ function fakeSystem({ mutation = null } = {}) {
     return `${JSON.stringify(changed)}\n`;
   })();
   return {
+    fixtureDigest: async () => "f".repeat(64),
     readFile: async (filePath) => {
       if (filePath === `/proc/${PID}/stat`) {
         return processStat(mutation === "pid-reused" ? "9999" : START_TICKS);
@@ -182,6 +184,7 @@ test("runtime authority observes the exact process, source, build, listener, and
   assert.equal(observation.phase, "before");
   assert.match(observation.stable_sha256, /^[0-9a-f]{64}$/u);
   assert.equal(observation.stable.process.pid, PID);
+  assert.equal(observation.stable.fixture_state_sha256, "f".repeat(64));
   assert.equal(
     observation.stable.services.database.container_id,
     CONTAINERS.database,

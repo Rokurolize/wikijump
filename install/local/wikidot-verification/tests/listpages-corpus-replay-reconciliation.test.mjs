@@ -415,6 +415,7 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
   const runtimeProof = {
     schema: LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
     observed_at: "2026-07-30T00:00:00.000Z",
+    run_nonce: "d".repeat(64),
     candidate: {
       wikijump_sha: runtimeIdentity.wikijump_sha,
       wikijump_tree: runtimeIdentity.wikijump_tree,
@@ -471,21 +472,67 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     raw_html_sha256: sha256(rawHtml),
   };
   const referencesText = `${JSON.stringify(reference)}\n`;
+  const campaignScopePath = path.join(root, "scope.json");
+  const validateCampaignScope = async () => ({
+    path: campaignScopePath,
+    sha256: "d".repeat(64),
+    invocation_sha256: sha256(
+      `${JSON.stringify(invocation("en:exact:L1:B0", source, "exact"))}\n`,
+    ),
+    invocation_count: 1,
+    unique_replay_key_count: 1,
+    live_reference_contract: {
+      schema: "wikijump_syntax_differential.wikidot_reference.v1",
+      site: "sandbox-for-codex",
+      site_domain: "sandbox-for-codex.wikidot.com",
+      module: "edit/PagePreviewModule",
+      authenticated: false,
+      mutated: false,
+    },
+    completion_contract: {
+      classified_invocation_count: 1,
+    },
+  });
   await writeJsonl(invocationsPath, [
     invocation("en:exact:L1:B0", source, "exact"),
   ]);
   await fs.writeFile(runtimeIdentityPath, runtimeIdentityText);
   await fs.writeFile(runtimeProofPath, runtimeProofText);
   await fs.writeFile(referencesPath, referencesText);
+  const observationStable = {
+    run_nonce: "d".repeat(64),
+    fixture_state_sha256: "f".repeat(64),
+    candidate: { wikijump_sha: "1".repeat(40) },
+    process: { pid: 1234 },
+    services: {},
+  };
+  const observationStableSha256 = sha256(JSON.stringify(observationStable));
+  const beforeObservation = {
+    schema: "wikijump_listpages_compat.runtime_observation.v1",
+    status: "bound",
+    phase: "before",
+    observed_at: "2026-07-30T00:00:01.000Z",
+    stable_sha256: observationStableSha256,
+    stable: observationStable,
+  };
+  const afterObservation = {
+    ...beforeObservation,
+    phase: "after",
+    observed_at: "2026-07-30T00:00:02.000Z",
+  };
   const verdict = {
     schema: LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA,
     inputs: {
       authority: {
         mode: "authoritative",
         completion_eligible: true,
-        runtime_observation_before_sha256: "a".repeat(64),
-        runtime_observation_after_sha256: "b".repeat(64),
-        runtime_observation_stable_sha256: "c".repeat(64),
+        runtime_observation_before_sha256: sha256(
+          JSON.stringify(beforeObservation),
+        ),
+        runtime_observation_after_sha256: sha256(
+          JSON.stringify(afterObservation),
+        ),
+        runtime_observation_stable_sha256: observationStableSha256,
       },
       runtime_identity_path: runtimeIdentityPath,
       runtime_identity_sha256: sha256(runtimeIdentityText),
@@ -493,6 +540,10 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       runtime_proof_sha256: sha256(runtimeProofText),
       references_path: referencesPath,
       references_sha256: sha256(referencesText),
+    },
+    runtime_observations: {
+      before: beforeObservation,
+      after: afterObservation,
     },
     cases: [{
       schema: `${LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA}.case`,
@@ -532,6 +583,8 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     invocationsPath,
     classificationPaths: [classificationPath],
     authoritative: true,
+    campaignScopePath,
+    validateCampaignScope,
   });
   assert.equal(reconciliation.inputs.authority.completion_eligible, true);
   assert.equal(reconciliation.summary.exit_code, 0);
@@ -542,6 +595,8 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       invocationsPath,
       classificationPaths: [classificationPath],
       authoritative: true,
+      campaignScopePath,
+      validateCampaignScope,
     }),
     /runtime proof changed after (?:the preview verdict|preview classification)/,
   );
@@ -555,6 +610,8 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       invocationsPath,
       classificationPaths: [classificationPath],
       authoritative: true,
+      campaignScopePath,
+      validateCampaignScope,
     }),
     /differs from canonical recomputation/,
   );
@@ -570,6 +627,8 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       invocationsPath,
       classificationPaths: [classificationPath],
       authoritative: true,
+      campaignScopePath,
+      validateCampaignScope,
     }),
     /authoritative reconciliation requires authoritative classifications/,
   );
@@ -584,8 +643,11 @@ test("reconciliation CLI exposes the authoritative completion gate", () => {
     "--classification",
     "classification.json",
     "--authoritative",
+    "--campaign-scope",
+    "scope.json",
     "--output",
     "reconciliation.json",
   ]);
   assert.equal(parsed.authoritative, true);
+  assert.match(parsed.campaignScope, /scope\.json$/u);
 });

@@ -21,6 +21,7 @@ export function parseArgs(argv) {
     classifications: [],
     output: null,
     authoritative: false,
+    campaignScope: null,
   };
   for (let index = 2; index < argv.length; index += 1) {
     const option = argv[index];
@@ -37,6 +38,9 @@ export function parseArgs(argv) {
       index += 1;
     } else if (option === "--authoritative") {
       args.authoritative = true;
+    } else if (option === "--campaign-scope") {
+      args.campaignScope = path.resolve(nextValue(argv, index, option));
+      index += 1;
     } else if (option === "--help" || option === "-h") {
       return { help: true };
     } else {
@@ -48,12 +52,15 @@ export function parseArgs(argv) {
     throw new Error("--classification is required");
   }
   if (!args.output) throw new Error("--output is required");
+  if (args.authoritative && !args.campaignScope) {
+    throw new Error("--campaign-scope is required with --authoritative");
+  }
   return args;
 }
 
 function printHelp() {
   console.log(
-    "Usage: node install/local/wikidot-verification/scripts/reconcile-listpages-corpus-replay.mjs --invocations FILE --classification FILE [--classification FILE ...] --output FILE [--authoritative]",
+    "Usage: node install/local/wikidot-verification/scripts/reconcile-listpages-corpus-replay.mjs --invocations FILE --classification FILE [--classification FILE ...] --output FILE [--authoritative --campaign-scope FILE]",
   );
 }
 
@@ -67,6 +74,7 @@ export async function main(argv = process.argv) {
     invocationsPath: args.invocations,
     classificationPaths: args.classifications,
     authoritative: args.authoritative,
+    campaignScopePath: args.campaignScope,
   });
   await writeListPagesCorpusReplayReconciliation(
     reconciliation,

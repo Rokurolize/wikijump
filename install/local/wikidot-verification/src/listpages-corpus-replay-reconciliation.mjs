@@ -7,6 +7,9 @@ import {
 import {
   publishListPagesJsonNoReplace,
 } from "./listpages-evidence-publication.mjs";
+import {
+  validateListPagesCorpusReplayScope,
+} from "./listpages-corpus-replay-scope.mjs";
 
 export const LISTPAGES_CORPUS_REPLAY_RECONCILIATION_SCHEMA =
   "wikijump_listpages_compat.corpus_replay_reconciliation.v1";
@@ -95,6 +98,8 @@ export async function reconcileListPagesCorpusReplay({
   classificationPath = null,
   classificationPaths = null,
   authoritative = false,
+  campaignScopePath = null,
+  validateCampaignScope = validateListPagesCorpusReplayScope,
 }) {
   const selectedClassificationPaths = classificationPaths ??
     (classificationPath ? [classificationPath] : []);
@@ -117,6 +122,18 @@ export async function reconcileListPagesCorpusReplay({
     invocationIds.add(invocation.id);
     invocationSourceHashes.add(replaySourceHash(invocation));
   }
+  if (authoritative && campaignScopePath === null) {
+    throw new Error(
+      "authoritative reconciliation requires --campaign-scope",
+    );
+  }
+  const campaignScope = authoritative
+    ? await validateCampaignScope({
+        scopePath: campaignScopePath,
+        invocationsText,
+        invocations,
+      })
+    : null;
 
   const classificationsBySource = new Map();
   const classificationCaseKeys = new Set();
@@ -124,6 +141,7 @@ export async function reconcileListPagesCorpusReplay({
   let authoritativeRuntimeIdentitySha256 = null;
   let authoritativeRuntimeProofSha256 = null;
   let authoritativeRuntimeObservationSha256 = null;
+  const authoritativeReferenceReplayKeys = new Set();
   for (const selectedPath of selectedClassificationPaths) {
     const classificationText = await fs.readFile(selectedPath, "utf8");
     const classification = JSON.parse(classificationText);
@@ -183,6 +201,29 @@ export async function reconcileListPagesCorpusReplay({
         throw new Error(
           "live references changed after preview classification",
         );
+      }
+      for (const reference of readJsonlText(referencesText)) {
+        const replayKeySha256 = reference.source_sha256;
+        const provenance = reference.provenance;
+        const contract = campaignScope.live_reference_contract;
+        if (
+          reference.schema !== contract.schema ||
+          provenance?.site !== contract.site ||
+          provenance.site_domain !== contract.site_domain ||
+          provenance.module !== contract.module ||
+          provenance.authenticated !== contract.authenticated ||
+          provenance.mutated !== contract.mutated
+        ) {
+          throw new Error(
+            `live reference ${reference.syntax_case?.case_id} violates the campaign scope`,
+          );
+        }
+        if (authoritativeReferenceReplayKeys.has(replayKeySha256)) {
+          throw new Error(
+            `duplicate authoritative live reference replay key ${replayKeySha256}`,
+          );
+        }
+        authoritativeReferenceReplayKeys.add(replayKeySha256);
       }
       const recomputed = await classifyListPagesPreviewDifferential({
         verdictPath,
@@ -307,6 +348,19 @@ export async function reconcileListPagesCorpusReplay({
       );
     }
   }
+  if (
+    authoritative &&
+    (
+      authoritativeReferenceReplayKeys.size !== invocationSourceHashes.size ||
+      [...invocationSourceHashes].some(
+        (sourceHash) => !authoritativeReferenceReplayKeys.has(sourceHash),
+      )
+    )
+  ) {
+    throw new Error(
+      "authoritative live references do not exactly cover the campaign replay keys",
+    );
+  }
 
   const differentialStatuses = {};
   const classifications = {};
@@ -341,6 +395,7 @@ export async function reconcileListPagesCorpusReplay({
             mode: "diagnostic",
             completion_eligible: false,
           },
+      campaign_scope: campaignScope,
       invocations_path: invocationsPath,
       invocations_sha256: sha256(invocationsText),
       classifications: classificationInputs,

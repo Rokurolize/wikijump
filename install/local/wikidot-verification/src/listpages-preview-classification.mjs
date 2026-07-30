@@ -18,6 +18,9 @@ import {
 import {
   publishListPagesJsonNoReplace,
 } from "./listpages-evidence-publication.mjs";
+import {
+  validateListPagesRuntimeObservation,
+} from "./listpages-runtime-authority.mjs";
 
 export const LISTPAGES_PREVIEW_CLASSIFICATION_SCHEMA =
   "wikijump_listpages_compat.preview_classification.v1";
@@ -501,8 +504,23 @@ export async function classifyListPagesPreviewDifferential({
       authorityArtifacts["runtime proof"],
       runtimeIdentity,
     );
+    const beforeObservation = validateListPagesRuntimeObservation(
+      verdict.runtime_observations?.before,
+      "before",
+    );
+    const afterObservation = validateListPagesRuntimeObservation(
+      verdict.runtime_observations?.after,
+      "after",
+    );
     if (
       verdict.schema !== LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA ||
+      sha256(JSON.stringify(beforeObservation)) !==
+        verdict.inputs.authority.runtime_observation_before_sha256 ||
+      sha256(JSON.stringify(afterObservation)) !==
+        verdict.inputs.authority.runtime_observation_after_sha256 ||
+      beforeObservation.stable_sha256 !== afterObservation.stable_sha256 ||
+      afterObservation.stable_sha256 !==
+        verdict.inputs.authority.runtime_observation_stable_sha256 ||
       !/^[0-9a-f]{64}$/u.test(
         verdict.inputs.authority.runtime_observation_before_sha256 ?? "",
       ) ||

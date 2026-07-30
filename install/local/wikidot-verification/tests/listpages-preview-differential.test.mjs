@@ -93,6 +93,7 @@ function authoritativeProof(identity, overrides = {}) {
   return {
     schema: LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
     observed_at: "2026-07-30T00:00:00.000Z",
+    run_nonce: "d".repeat(64),
     candidate: {
       wikijump_sha: identity.wikijump_sha,
       wikijump_tree: identity.wikijump_tree,
@@ -123,13 +124,21 @@ function authoritativeProof(identity, overrides = {}) {
   };
 }
 
-function boundRuntimeObservation(stableSha256, observedAt, phase) {
+function boundRuntimeObservation(marker, observedAt, phase) {
+  const stable = {
+    run_nonce: "d".repeat(64),
+    fixture_state_sha256: "f".repeat(64),
+    candidate: { marker },
+    process: { pid: 1234 },
+    services: {},
+  };
   return {
     schema: "wikijump_listpages_compat.runtime_observation.v1",
     status: "bound",
     phase,
     observed_at: observedAt,
-    stable_sha256: stableSha256,
+    stable_sha256: sha256(JSON.stringify(stable)),
+    stable,
   };
 }
 
@@ -285,6 +294,7 @@ test("authoritative preview observes the running endpoint before and after every
     ),
   ];
   const phases = [];
+  const expectedStableSha256 = observations[0].stable_sha256;
   const verdict = await runListPagesPreviewDifferential({
     referencesPath,
     ...artifacts,
@@ -303,7 +313,7 @@ test("authoritative preview observes the running endpoint before and after every
   assert.deepEqual(phases, ["before", "after"]);
   assert.equal(
     verdict.inputs.authority.runtime_observation_stable_sha256,
-    "a".repeat(64),
+    expectedStableSha256,
   );
   assert.match(
     verdict.inputs.authority.runtime_observation_before_sha256,

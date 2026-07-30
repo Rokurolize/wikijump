@@ -118,6 +118,9 @@ export function validateListPagesRuntimeProof(proof, identity) {
   ) {
     throw new Error("runtime proof observation time is invalid");
   }
+  if (!SHA256_PATTERN.test(proof.run_nonce ?? "")) {
+    throw new Error("runtime proof run nonce is invalid");
+  }
   const expectedCandidate = {
     wikijump_sha: identity.wikijump_sha,
     wikijump_tree: identity.wikijump_tree,
@@ -469,6 +472,12 @@ export async function runListPagesPreviewDifferential({
       local_site: { slug: site.slug, site_id: site.site_id },
     },
     runtime_identity: runtimeIdentity,
+    runtime_observations: runtimeAuthority.completion_eligible
+      ? {
+          before: runtimeObservationBefore,
+          after: runtimeObservationAfter,
+        }
+      : null,
     cases,
     summary: {
       total: cases.length,
