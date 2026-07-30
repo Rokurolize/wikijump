@@ -1412,15 +1412,20 @@ fn batches_only_simple_unbounded_required_tag_counts() {
 
 #[test]
 fn required_tag_batches_preserve_the_raw_scan_cap_and_uncertain_permissions() {
+    let last_exact = i64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS) - 1;
     assert_eq!(
-        count_pages_required_tag_batch_result(4_999, Some(true)),
-        CountPagesRequiredTagBatchResult::Exact(4_999),
+        count_pages_required_tag_batch_result(last_exact, Some(true)),
+        CountPagesRequiredTagBatchResult::Exact(last_exact as usize),
     );
     assert_eq!(
-        count_pages_required_tag_batch_result(4_999, Some(false)),
+        count_pages_required_tag_batch_result(last_exact, Some(false)),
         CountPagesRequiredTagBatchResult::Exact(0),
     );
-    for raw_total in [5_000, 5_001, i64::MAX] {
+    for raw_total in [
+        i64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
+        i64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS) + 1,
+        i64::MAX,
+    ] {
         assert_eq!(
             count_pages_required_tag_batch_result(raw_total, Some(true)),
             CountPagesRequiredTagBatchResult::PreserveLiteral,
@@ -1878,7 +1883,12 @@ fn data_form_candidate_cap_requires_original_listpages_and_countpages_modules() 
 
 #[test]
 fn capped_random_scan_uses_the_privacy_preserving_sample_count() {
-    let raw_scan_completion = count_pages_raw_scan_completion(5_000);
+    assert_eq!(
+        count_pages_raw_scan_completion(MAX_LISTPAGES_RENDER_SCAN_ROWS as usize - 1,),
+        CountPagesRawScanCompletion::Complete,
+    );
+    let raw_scan_completion =
+        count_pages_raw_scan_completion(MAX_LISTPAGES_RENDER_SCAN_ROWS as usize);
 
     assert_eq!(
         raw_scan_completion,
@@ -1915,6 +1925,10 @@ fn list_pages_scan_target_skips_full_inventory_without_a_pager() {
     );
     assert_eq!(
         list_pages_row_scan_target(1, Some(5_000), Some(1), 0, false),
+        5_000,
+    );
+    assert_eq!(
+        list_pages_row_scan_target(1, None, Some(1), 0, false),
         u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
     );
 }
