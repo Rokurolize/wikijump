@@ -6584,6 +6584,44 @@ fn rate_module_plusminus_body_is_consumed_like_live_wikidot() {
 }
 
 #[test]
+fn rate_module_body_does_not_revisit_nested_rate_heads() {
+    let source = concat!(
+        "[[module Rate]]\n",
+        "body before a later rate head\n",
+        "[[module Rate]]\n",
+        "body after the later rate head\n",
+        "[[/module]]\n",
+        "visible tail\n",
+    );
+    let page_info = fallback_test_page_info("rate-overlap", "Rate overlap");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut fragments = CompatHtmlFragments::new(source);
+    let mut compat_text = CompatTextFragments::new(source);
+
+    let protected = RenderService::expand_rate_modules_with_registry(
+        source.to_owned(),
+        &page_info,
+        &settings,
+        RateModuleContext {
+            rating_type: PageRatingType::PlusMinus,
+            score: page_info.score,
+            rating_votes: Some(0),
+        },
+        &mut fragments,
+        &mut compat_text,
+    );
+
+    assert_eq!(
+        protected
+            .matches("WIKIJUMPWIKIDOTCOMPATHTML")
+            .count(),
+        1,
+    );
+    assert!(protected.ends_with("\nvisible tail\n"), "{protected}");
+    assert!(!protected.contains("[[module Rate]]"), "{protected}");
+}
+
+#[test]
 fn rate_module_block_fragment_restores_only_at_root_and_div_contexts() {
     let source = "[[module Rate]]\n";
     let mut page_info = fallback_test_page_info("scp-9506", "SCP-9506");

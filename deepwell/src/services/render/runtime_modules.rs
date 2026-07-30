@@ -1329,6 +1329,9 @@ impl RenderService {
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
         for matched in RATE_MODULE_REGEX.find_iter(&wikitext) {
+            if matched.start() < cursor {
+                continue;
+            }
             if literal_regions.contains(matched.start()) {
                 continue;
             }
