@@ -58,6 +58,29 @@ class FakeRpc {
   }
 }
 
+class BoundedConcurrencyFakeRpc extends FakeRpc {
+  constructor(previews) {
+    super(previews);
+    this.active = 0;
+    this.maximumActive = 0;
+  }
+
+  async call(method, params) {
+    if (method !== "wikidot_page_preview") {
+      return super.call(method, params);
+    }
+    this.active += 1;
+    this.maximumActive = Math.max(this.maximumActive, this.active);
+    try {
+      const delay = Number(params.wikitext.split(":")[0]);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return { body: this.previews.get(params.wikitext), styles: [] };
+    } finally {
+      this.active -= 1;
+    }
+  }
+}
+
 test("preview differential records matches and mismatches", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-preview-diff-"));
   const referencesPath = path.join(root, "references.jsonl");
@@ -97,4 +120,47 @@ test("preview differential records local errors and writes a verdict", async () 
   assert.equal(verdict.summary.counts["local-error"], 1);
   await writePreviewDifferential(verdict, output);
   assert.equal(JSON.parse(await fs.readFile(output, "utf8")).summary.counts["local-error"], 1);
+});
+
+test("preview differential bounds concurrency and preserves reference order", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-preview-diff-pool-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const rows = [
+    reference("slow-first", "30:first", "<p>first</p>"),
+    reference("fast-second", "1:second", "<p>second</p>"),
+    reference("middle-third", "10:third", "<p>third</p>"),
+    reference("fast-fourth", "1:fourth", "<p>fourth</p>"),
+  ];
+  await writeReferences(referencesPath, rows);
+  const rpcClient = new BoundedConcurrencyFakeRpc(
+    new Map(rows.map((row) => [row.syntax_case.source, row.raw_html])),
+  );
+
+  const verdict = await runListPagesPreviewDifferential({
+    referencesPath,
+    rpcUrl: "http://127.0.0.1:1/jsonrpc",
+    siteSlug: "sandbox-for-codex",
+    rpcClient,
+    concurrency: 2,
+  });
+
+  assert.equal(rpcClient.maximumActive, 2);
+  assert.deepEqual(
+    verdict.cases.map(({ case_id }) => case_id),
+    rows.map(({ syntax_case }) => syntax_case.case_id),
+  );
+  assert.equal(verdict.summary.counts.match, rows.length);
+});
+
+test("preview differential rejects unsafe concurrency values", async () => {
+  await assert.rejects(
+    runListPagesPreviewDifferential({
+      referencesPath: "/does/not/matter.jsonl",
+      rpcUrl: "http://127.0.0.1:1/jsonrpc",
+      siteSlug: "sandbox-for-codex",
+      rpcClient: new FakeRpc(new Map()),
+      concurrency: 0,
+    }),
+    /concurrency must be an integer from 1 through 32/,
+  );
 });
