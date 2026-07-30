@@ -72,6 +72,14 @@ function validateStringArray(value, fieldName) {
   );
 }
 
+function validateUniqueStringArray(value, fieldName) {
+  validateStringArray(value, fieldName);
+  invariant(
+    new Set(value).size === value.length,
+    `${fieldName} must not contain duplicates`,
+  );
+}
+
 function maskRustCommentsAndStrings(source) {
   const output = [];
   let index = 0;
@@ -695,6 +703,10 @@ export function validateWikidotImplementationLedger({
 
   const catalogIds = catalog.features.map((feature) => feature.id).sort();
   const catalogIdSet = new Set(catalogIds);
+  invariant(
+    new Set(liveObservationIds).size === liveObservationIds.length,
+    "Implementation ledger live observation catalog contains duplicates",
+  );
   const liveObservationIdSet = new Set(liveObservationIds);
   const ledgerIds = sortedKeys(ledger.features);
   invariant(
@@ -756,6 +768,16 @@ export function validateWikidotImplementationLedger({
         `Ledger field ${featureId}.${field} must be an array`,
       );
     }
+    validateUniqueStringArray(
+      entry.unresolved_ambiguities_or_blockers,
+      `Ledger field ${featureId}.unresolved_ambiguities_or_blockers`,
+    );
+    if (entry.status === "blocked") {
+      invariant(
+        entry.unresolved_ambiguities_or_blockers.length > 0,
+        `Blocked feature ${featureId} has no reproducible blocker`,
+      );
+    }
   }
 
   const expectedAxes = sortedKeys(WIKIDOT_PROPERTY_AXES);
@@ -790,6 +812,10 @@ export function validateWikidotImplementationLedger({
       validateStringArray(
         property.evidence,
         `Implementation ledger property ${featureId}.${axis}.evidence`,
+      );
+      invariant(
+        new Set(property.evidence).size === property.evidence.length,
+        `Implementation ledger property ${featureId}.${axis}.evidence must not contain duplicates`,
       );
       validateStringArray(
         property.observation_gaps,
@@ -831,6 +857,11 @@ export function validateWikidotImplementationLedger({
             requirePublicTest: false,
             requireAnchor: false,
           });
+        } else {
+          invariant(
+            false,
+            `Implementation ledger property ${featureId}.${axis} contains unknown evidence reference: ${evidence}`,
+          );
         }
       }
 
@@ -861,6 +892,19 @@ export function validateWikidotImplementationLedger({
         invariant(
           property.observation_gaps.length === 0,
           `Not-applicable property ${featureId}.${axis} still has observation gaps`,
+        );
+      } else if (property.status === "blocked") {
+        invariant(
+          property.observation_gaps.length > 0,
+          `Non-terminal property ${featureId}.${axis} must name its observation gap`,
+        );
+        invariant(
+          property.evidence.some(
+            (evidence) =>
+              evidence.startsWith("test:") ||
+              evidence.startsWith("artifact:"),
+          ),
+          `Blocked property ${featureId}.${axis} has no reproducible test or artifact route`,
         );
       } else {
         invariant(

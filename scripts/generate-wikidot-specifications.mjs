@@ -1281,10 +1281,15 @@ Evidence:
 
 ${observation.evidence
   .map(
-    (item) =>
-      `- \`${item.path}\` (SHA-256 \`${item.sha256}\`), cases: ${item.case_ids
-        .map((caseId) => `\`${caseId}\``)
-        .join(", ")}`,
+    (item) => {
+      const cases =
+        item.case_ids.length === 0
+          ? "none"
+          : item.case_ids
+              .map((caseId) => `\`${caseId}\``)
+              .join(", ");
+      return `- \`${item.path}\` (SHA-256 \`${item.sha256}\`), cases: ${cases}`;
+    },
   )
   .join("\n")}
 `,
@@ -1454,7 +1459,7 @@ validateWikidotImplementationLedger({
   ledger: implementationLedger,
   rawCatalog: serializedCatalog,
   catalog,
-  liveObservationIds,
+  liveObservationIds: [...liveObservationIds],
   repositoryRoot,
 });
 

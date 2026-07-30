@@ -496,6 +496,43 @@ Evidence:
 - `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/live-references.jsonl` (SHA-256 `3c6081b73556f41677ac38a3b4f7d03e2bf026344eeb758c15df15f9d51b25c6`), cases: `cn:cerpeo:L202:B4129`, `cn:chicago-factory:L7:B61`, `en:chicago-factory:L11:B132`, `en:workbench:hexick:L3:B59`
 - `install/local/wikidot-verification/artifacts/listpages-unterminated-multiline-head-live.jsonl` (SHA-256 `cd189045c1b8a1dfc0ff20fe40ee6379ed5e2a07ee33f68501a1c2a9fdcd6317`), cases: `listpages-unterminated-multiline-baseline`, `listpages-unterminated-multiline-before-later-module`, `listpages-unterminated-multiline-after-valid-module`, `listpages-unterminated-multiline-own-close`
 
+### Random ListPages uses a sliding idle cache keyed by the complete invocation and pager page
+
+- Observation ID: `listpages-random-idle-cache-live-20260730`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-30`
+- Analysis: Anonymous Ajax Module Connector probes preserve one random selection while the same complete invocation is reused with gaps below one minute, renew that idle lifetime on each hit, choose a new selection after an untouched seventy-second interval, and give different module bodies and pager pages independent identities.
+
+Normative behavior:
+
+- A random ListPages invocation remains byte-stable while successive cache hits arrive less than approximately sixty seconds apart.
+- Each hit renews the approximately sixty-second idle lifetime rather than retaining a fixed creation-time deadline.
+- The module body and Ajax p pager page participate in cache identity.
+- Pager pages randomize independently and can overlap; they are not slices of one duplicate-free cached permutation.
+- Candidate membership and actor visibility are evaluated for each request rather than cached as final HTML.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-random-idle-cache-live-20260730.json` (SHA-256 `0fa2335eb6c8caecba4767c4f09841a4bce3bffc17cac08fd286ca47a1099b8d`), cases: none
+
+### ListPages large responses encounter a temporal gateway boundary with atomic failure
+
+- Observation ID: `listpages-p8-temporal-boundary-live-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: Controlled anonymous ListPages probes near the large-response boundary do not support a fixed byte, row, or module threshold. Comparable sources can complete or terminate as an atomic HTTP 504 near twenty-eight seconds. Wikijump deterministic expansion limits are therefore a local safety invariant, not a claimed replica of a live fixed constant.
+
+Normative behavior:
+
+- A successful large ListPages request returns its complete success markers and output.
+- A boundary failure is an atomic HTTP 504 response without partial ListPages output or success markers.
+- The observed boundary is time and gateway dependent near twenty-eight seconds, not a fixed byte, row, or module count.
+- Wikijump deterministic expansion budgets remain explicit local safety invariants and must preserve atomic failure.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json` (SHA-256 `f324d01d811cd4790be10e856c2027c496e978b9efa5dcecf4418a5cc5db5d4d`), cases: none
+
 
 
 ## Suggested public TDD seams

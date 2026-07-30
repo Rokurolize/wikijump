@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-07-30",
-  "catalog_sha256": "8202be58678c7a3bf2359667e00593f94fd3de1cfeba397be16a8c6c91f693fc",
+  "catalog_sha256": "fa1d1e336de0bc98d86bde63ecebd7c09b81280dc384581156ba1376fe153677",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -1509,7 +1509,7 @@
       ]
     },
     "module-listpages": {
-      "status": "in_progress",
+      "status": "implemented",
       "confirmed_public_seams": [
         "Anonymous PagePreviewModule and run-owned saved-page live Wikidot oracle",
         "Deepwell public saved-page, preview, and AJAX ListPages render/query interfaces",
@@ -1645,9 +1645,7 @@
           "merge_sha": "cb101c737c6a7fc98acd43dc6184ed2c98ba85fc"
         }
       ],
-      "unresolved_ambiguities_or_blockers": [
-        "The 23,893-invocation exact-source corpus replay is in progress. The item cannot return to implemented until the complete replay has no unresolved or actionable classification."
-      ]
+      "unresolved_ambiguities_or_blockers": []
     },
     "module-listusers": {
       "status": "implemented",
@@ -3561,7 +3559,8 @@
           "live:listpages-rating-comment-and-data-form-variables",
           "live:listpages-imported-lifecycle-identity-provenance",
           "test:deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches",
-          "test:deepwell/tests/page.rs#listpages_imported_commenter_identity_uses_structured_corpus_provenance"
+          "test:deepwell/tests/page.rs#listpages_imported_commenter_identity_uses_structured_corpus_provenance",
+          "test:deepwell/tests/list_pages_random.rs#random_listpages_rechecks_actor_visibility_and_deleted_candidates"
         ],
         "observation_gaps": []
       },
@@ -3576,6 +3575,7 @@
           "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history",
           "live:listpages-random-idle-cache-live-20260730",
           "test:deepwell/tests/list_pages.rs#random_listpages_reuses_the_same_idle_cached_order_for_one_invocation",
+          "test:deepwell/tests/list_pages_random.rs#random_listpages_cache_refreshes_expires_and_separates_body_and_page",
           "test:install/local/wikidot-verification/tests/listpages-random-idle-cache-evidence.test.mjs#ListPages random live evidence preserves the sliding idle-cache proof"
         ],
         "observation_gaps": []
@@ -3592,6 +3592,7 @@
           "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history",
           "live:listpages-random-idle-cache-live-20260730",
           "test:deepwell/tests/list_pages.rs#wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",
+          "test:deepwell/tests/list_pages_random.rs#wikidot_ajax_random_listpages_rejects_invalid_pager_values",
           "test:install/local/wikidot-verification/tests/listpages-random-idle-cache-evidence.test.mjs#ListPages random live evidence binds body, idle expiry, and pager state"
         ],
         "observation_gaps": []

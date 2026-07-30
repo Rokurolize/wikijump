@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+} from "node:fs";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
@@ -19,7 +24,7 @@ const liveObservations = JSON.parse(
   readFileSync(
     resolve(
       repositoryRoot,
-      "docs/wikidot-specifications/live-observations.json",
+      "scripts/data/wikidot-live-observations.json",
     ),
     "utf8",
   ),
@@ -49,6 +54,19 @@ function validate(ledger) {
 
 test("canonical compatibility ledger has a valid campaign property matrix", () => {
   assert.doesNotThrow(() => validate(canonicalLedger));
+});
+
+test("generated compatibility ledger cannot drift from its canonical source", () => {
+  const generatedLedger = JSON.parse(
+    readFileSync(
+      resolve(
+        repositoryRoot,
+        "docs/wikidot-specifications/implementation-ledger.json",
+      ),
+      "utf8",
+    ),
+  );
+  assert.deepEqual(generatedLedger, canonicalLedger);
 });
 
 test("campaign scope cannot omit its P1-P8 matrix", () => {
@@ -87,6 +105,11 @@ test("ListPages cannot terminate while live P8 limits remain unobserved", () => 
   ledger.features[
     "module-listpages"
   ].unresolved_ambiguities_or_blockers = [];
+  ledger.feature_property_matrix["module-listpages"].P8 = {
+    status: "unobserved",
+    evidence: [],
+    observation_gaps: ["The live temporal boundary has not been measured."],
+  };
 
   assert.throws(
     () => validate(ledger),
@@ -271,5 +294,167 @@ test("terminal rationales and required observation gaps cannot be whitespace", (
   assert.throws(
     () => validate(vacuousGap),
     /must contain non-empty, trimmed strings/,
+  );
+});
+
+test("feature and property catalogs reject missing unknown and invalid states", () => {
+  const missingFeature = structuredClone(canonicalLedger);
+  delete missingFeature.features["module-listpages"];
+  assert.throws(
+    () => validate(missingFeature),
+    /exactly one entry per catalog feature/,
+  );
+
+  const unknownFeature = structuredClone(canonicalLedger);
+  unknownFeature.features["fabricated-feature"] = structuredClone(
+    unknownFeature.features["module-listpages"],
+  );
+  assert.throws(
+    () => validate(unknownFeature),
+    /exactly one entry per catalog feature/,
+  );
+
+  const invalidFeatureStatus = structuredClone(canonicalLedger);
+  invalidFeatureStatus.features["module-listpages"].status = "complete";
+  assert.throws(
+    () => validate(invalidFeatureStatus),
+    /Invalid ledger status for module-listpages/,
+  );
+
+  const missingAxis = structuredClone(canonicalLedger);
+  delete missingAxis.feature_property_matrix["module-listpages"].P8;
+  assert.throws(
+    () => validate(missingAxis),
+    /must classify exactly P1-P8/,
+  );
+
+  const unknownAxis = structuredClone(canonicalLedger);
+  unknownAxis.feature_property_matrix["module-listpages"].P9 =
+    structuredClone(
+      unknownAxis.feature_property_matrix["module-listpages"].P8,
+    );
+  assert.throws(
+    () => validate(unknownAxis),
+    /must classify exactly P1-P8/,
+  );
+
+  const invalidPropertyStatus = structuredClone(canonicalLedger);
+  invalidPropertyStatus.feature_property_matrix[
+    "module-listpages"
+  ].P8.status = "complete";
+  assert.throws(
+    () => validate(invalidPropertyStatus),
+    /Invalid property status for module-listpages.P8/,
+  );
+});
+
+test("evidence catalogs reject duplicates unknown schemes and duplicate live ids", () => {
+  const duplicateEvidence = structuredClone(canonicalLedger);
+  duplicateEvidence.feature_property_matrix[
+    "module-listpages"
+  ].P1.evidence.push(
+    duplicateEvidence.feature_property_matrix["module-listpages"].P1
+      .evidence[0],
+  );
+  assert.throws(
+    () => validate(duplicateEvidence),
+    /module-listpages.P1.evidence must not contain duplicates/,
+  );
+
+  const unknownEvidence = structuredClone(canonicalLedger);
+  unknownEvidence.feature_property_matrix[
+    "module-listpages"
+  ].P1.evidence.push("claim:unverified-text");
+  assert.throws(
+    () => validate(unknownEvidence),
+    /contains unknown evidence reference: claim:unverified-text/,
+  );
+
+  assert.throws(
+    () =>
+      validateWikidotImplementationLedger({
+        ledger: canonicalLedger,
+        rawCatalog,
+        catalog,
+        liveObservationIds: [
+          ...liveObservationIds,
+          liveObservationIds[0],
+        ],
+        repositoryRoot,
+      }),
+    /live observation catalog contains duplicates/,
+  );
+});
+
+test("repository evidence rejects traversal and symlink escape routes", () => {
+  const traversal = structuredClone(canonicalLedger);
+  traversal.feature_property_matrix["module-listpages"].P1.evidence = [
+    "live:listpages-invalid-numeric-fallbacks",
+    "test:../outside.test.mjs#fabricated",
+  ];
+  assert.throws(
+    () => validate(traversal),
+    /path must not contain empty or traversal segments/,
+  );
+
+  const fixtureRoot = mkdtempSync(
+    resolve(
+      repositoryRoot,
+      "install/local/wikidot-verification/tests/fixtures/ledger-symlink-",
+    ),
+  );
+  const linkPath = resolve(fixtureRoot, "escape.test.mjs");
+  try {
+    symlinkSync("/etc/passwd", linkPath);
+    const symlinkEscape = structuredClone(canonicalLedger);
+    const relativeLink = relative(repositoryRoot, linkPath).replaceAll(
+      "\\",
+      "/",
+    );
+    symlinkEscape.feature_property_matrix[
+      "module-listpages"
+    ].P1.evidence = [
+      "live:listpages-invalid-numeric-fallbacks",
+      `test:${relativeLink}#fabricated`,
+    ];
+    assert.throws(
+      () => validate(symlinkEscape),
+      /path must be a regular non-symlink file/,
+    );
+  } finally {
+    rmSync(fixtureRoot, { force: true, recursive: true });
+  }
+});
+
+test("blocked and implemented states require reproducible closure evidence", () => {
+  const blockedWithoutRoute = structuredClone(canonicalLedger);
+  blockedWithoutRoute.features["module-listpages"].status = "in_progress";
+  blockedWithoutRoute.feature_property_matrix["module-listpages"].P8 = {
+    status: "blocked",
+    evidence: ["live:listpages-p8-temporal-boundary-live-20260730"],
+    observation_gaps: ["An external route is unavailable."],
+  };
+  assert.throws(
+    () => validate(blockedWithoutRoute),
+    /Blocked property module-listpages.P8 has no reproducible test or artifact route/,
+  );
+
+  const whitespaceBlocker = structuredClone(canonicalLedger);
+  whitespaceBlocker.features["module-listpages"].status = "blocked";
+  whitespaceBlocker.features[
+    "module-listpages"
+  ].unresolved_ambiguities_or_blockers = [" "];
+  assert.throws(
+    () => validate(whitespaceBlocker),
+    /unresolved_ambiguities_or_blockers must contain non-empty, trimmed strings/,
+  );
+
+  const implementedWithBlocker = structuredClone(canonicalLedger);
+  implementedWithBlocker.features[
+    "module-listpages"
+  ].unresolved_ambiguities_or_blockers = ["A residual remains."];
+  assert.throws(
+    () => validate(implementedWithBlocker),
+    /Implemented feature module-listpages still has unresolved ambiguities or blockers/,
   );
 });
