@@ -1835,6 +1835,9 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
             "[[module ListPages name=\"{TARGET_SLUG}\" parent=\"-\"]]\nROW %%fullname%%\n[[/module]]",
         ),
         format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" parent=\"-=\"]]\nROW %%fullname%%\n[[/module]]",
+        ),
+        format!(
             "[[module ListPages name=\"{TARGET_SLUG}\" rating=\"=\"]]\nROW %%fullname%%\n[[/module]]",
         ),
         format!(
@@ -2115,7 +2118,6 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "[[module ListPages tags=\"=\"]]\nROW %%fullname%%\n[[/module]]",
         "[[module ListPages parent=\".\"]]\nROW %%fullname%%\n[[/module]]",
         "[[module ListPages parent=\"=\"]]\nROW %%fullname%%\n[[/module]]",
-        "[[module ListPages parent=\"-=\"]]\nROW %%fullname%%\n[[/module]]",
         "[[module ListPages created_at=\"=\"]]\nROW %%fullname%%\n[[/module]]",
         "[[module ListPages updated_at=\"=\"]]\nROW %%fullname%%\n[[/module]]",
         "[[module ListPages created_by=\"=\"]]\nROW %%fullname%%\n[[/module]]",

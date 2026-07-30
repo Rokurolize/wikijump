@@ -1424,11 +1424,18 @@ impl RenderService {
         let static_parent_references = static_parent_fullname
             .as_ref()
             .map(|parent| [Reference::Slug(Cow::Borrowed(parent.as_ref()))]);
-        let page_parent = static_parent_references
-            .as_ref()
-            .map_or(page_parent, |parents| {
-                PageParentSelector::HasParents(parents)
-            });
+        let page_parent = static_parent_references.as_ref().map_or_else(
+            || {
+                if current_page_identity.is_none()
+                    && matches!(page_parent, PageParentSelector::DifferentParents)
+                {
+                    PageParentSelector::All
+                } else {
+                    page_parent
+                }
+            },
+            |parents| PageParentSelector::HasParents(parents),
+        );
         let (category_all, include_current_category) = if category_selector_present {
             (category_all, include_current_category)
         } else {
