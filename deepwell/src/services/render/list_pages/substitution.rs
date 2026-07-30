@@ -2149,11 +2149,9 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         .unwrap_or_default();
     let summary = context
         .page_wikitext
-        .map(|wikitext| {
-            let first_section = wikidot_content_section(wikitext, Some(1));
-            list_pages_first_paragraph(&first_section).to_owned()
-        })
+        .map(|wikitext| wikidot_content_section(wikitext, Some(1)))
         .unwrap_or_default();
+    let first_paragraph = list_pages_first_paragraph(&summary);
     let substituted = LISTPAGES_VARIABLE_REGEX
         .replace_all(template, |captures: &regex::Captures<'_>| {
             if !list_pages_variable_capture_is_valid(captures) {
@@ -2397,9 +2395,8 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
                         })
                         .unwrap_or_default()
                 }
-                "summary" | "first_paragraph" | "description" | "short" => {
-                    summary.to_owned()
-                }
+                "summary" | "description" | "short" => summary.to_owned(),
+                "first_paragraph" => first_paragraph.to_owned(),
                 "preview" => {
                     let preview = context
                         .page_compiled_body_html

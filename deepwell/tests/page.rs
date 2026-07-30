@@ -9073,6 +9073,67 @@ async fn listpages_preview_uses_rendered_plain_text_and_legacy_word_limits() {
 }
 
 #[tokio::test]
+async fn listpages_summary_aliases_cover_the_first_section_but_first_paragraph_does_not()
+{
+    const TARGET_SLUG: &str = "fixture-listpages-summary-family-target";
+    const INDEX_SLUG: &str = "fixture-listpages-summary-family-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Summary Family Target",
+        concat!(
+            "FIRST-PARAGRAPH\n\n",
+            "SECOND-SUMMARY-MARKER\n",
+            "====\n",
+            "EXCLUDED-SECOND-SECTION",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Summary Family Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-summary-family-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "SUMMARY-BEGIN %%summary%% SUMMARY-END\n",
+            "FIRST-BEGIN %%first_paragraph%% FIRST-END\n",
+            "DESCRIPTION-BEGIN %%description%% DESCRIPTION-END\n",
+            "SHORT-BEGIN %%short%% SHORT-END\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert_eq!(
+        html.matches("SECOND-SUMMARY-MARKER").count(),
+        3,
+        "summary, description, and short must include the second paragraph of section one:\n{html}",
+    );
+    let first = html
+        .split_once("FIRST-BEGIN")
+        .and_then(|(_, suffix)| suffix.split_once("FIRST-END"))
+        .map(|(value, _)| value)
+        .expect("first-paragraph sentinels should survive rendering");
+    assert!(
+        first.contains("FIRST-PARAGRAPH") && !first.contains("SECOND-SUMMARY-MARKER"),
+        "first_paragraph must use its own paragraph boundary:\n{html}",
+    );
+    assert!(
+        !html.contains("EXCLUDED-SECOND-SECTION"),
+        "none of the summary-family variables may cross the first content-section separator:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_missing_data_form_variables_stay_literal_without_blocking_rows() {
     const TARGET_SLUG: &str = "fixture-listpages-missing-form-target";
     const INDEX_SLUG: &str = "fixture-listpages-missing-form-index";
