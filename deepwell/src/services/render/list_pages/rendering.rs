@@ -347,7 +347,19 @@ impl RenderService {
                 } else if let Some(arguments) =
                     parse_list_pages_arguments_with_url(head, url)
                 {
-                    if arguments.unsupported_author_filter
+                    if arguments.limit == Some(0)
+                        || arguments.current_page_only
+                            && requested_current_page_id.is_none()
+                    {
+                        let replacement = if arguments.wrapper {
+                            compat_html.push_block_html(
+                                r#"<div class="list-pages-box"></div>"#.to_owned(),
+                            )
+                        } else {
+                            String::new()
+                        };
+                        ListPagesBlockPlan::Static(replacement)
+                    } else if arguments.unsupported_author_filter
                         || arguments.unsupported_list_pages_filter
                         || arguments.unsupported_score_filter
                     {
@@ -1500,10 +1512,15 @@ impl RenderService {
             ));
             found.pages
         };
+        let query_returned_no_candidates =
+            list_pages_metadata.as_ref().is_some_and(|(metadata, _)| {
+                !metadata.cap_exceeded && metadata.candidate_count == Some(0)
+            });
         let query_returned_every_match =
             list_pages_metadata.as_ref().is_some_and(|(metadata, _)| {
                 !metadata.cap_exceeded
-                    && !metadata.filtering_deferred_to_rust
+                    && (!metadata.filtering_deferred_to_rust
+                        || metadata.candidate_count == Some(0))
                     && metadata.candidate_count.is_some_and(|candidate_count| {
                         (candidate_count as u64) < MAX_LISTPAGES_RENDER_LIMIT
                     })
@@ -1586,9 +1603,9 @@ impl RenderService {
         if reverse {
             pages.reverse();
         }
-        let exact_total =
-            (query_returned_every_match && offset == 0 && !exclude_current_page)
-                .then_some(all_selected_total);
+        let exact_total = (query_returned_every_match
+            && (query_returned_no_candidates || offset == 0 && !exclude_current_page))
+            .then_some(all_selected_total);
         if template.uses_total() && exact_total.is_none() {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal(
                 "exact total unavailable",

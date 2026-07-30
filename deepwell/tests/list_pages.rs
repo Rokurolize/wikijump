@@ -1555,6 +1555,82 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "an excessive offset should not preserve the module or query an unsafe window:\n{huge_offset_preview}",
     );
 
+    let empty_random_content_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages category=\"verification-listpages-absent-random-content\" ",
+            "order=\"random\"]]\n",
+            "[[div class=\"taleBlock\"]]\n%%content%%\n[[/div]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an empty random content query should render atomically")
+    .html_output
+    .body;
+    assert!(
+        empty_random_content_preview.contains(r#"<div class="list-pages-box"></div>"#)
+            && !empty_random_content_preview.contains("[[module ListPages")
+            && !empty_random_content_preview.contains("%%content%%"),
+        "an empty random content query has no content rows to charge against the safety budget:\n{empty_random_content_preview}",
+    );
+
+    let empty_dynamic_module_template = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages category=\"verification-listpages-absent-dynamic-module\" ",
+            "limit=\"1\" order=\"_date desc\" _category=\"3\" _original=\"1\" ",
+            "wrapper=\"no\"]]\n",
+            "[[%%content{0}%%module css]]\n.hidden { display: none; }\n",
+            "[[%%content{0}%%/module]]\n%%total%%\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an empty ListPages dynamic module template should render atomically")
+    .html_output
+    .body;
+    assert!(
+        !empty_dynamic_module_template.contains("[[module")
+            && !empty_dynamic_module_template.contains("%%content")
+            && !empty_dynamic_module_template.contains("%%total%%")
+            && !empty_dynamic_module_template.contains(".hidden"),
+        "the ListPages scanner must retain ownership through variable-controlled module tokens:\n{empty_dynamic_module_template}",
+    );
+
+    let absent_current_page_unsupported_template =
+        RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            concat!(
+                "[[module ListPages limit=\"@URL|0\" range=\".\" ",
+                "urlAttrPrefix=\"page5\"]]\n",
+                "%%unsupported%%\n[[%%content{0}%%module css]]\n",
+                ".unused { display: none; }\n[[%%content{0}%%/module]]\n",
+                "[[/module]]",
+            )
+            .to_owned(),
+        )
+        .await
+        .expect("a zero-limit ListPages query should not inspect its row template")
+        .html_output
+        .body;
+    assert!(
+        absent_current_page_unsupported_template
+            .contains(r#"<div class="list-pages-box"></div>"#)
+            && !absent_current_page_unsupported_template.contains("[[module")
+            && !absent_current_page_unsupported_template.contains("%%unsupported%%")
+            && !absent_current_page_unsupported_template.contains(".unused"),
+        "a current-page query without page identity is empty before unsupported row-template syntax matters:\n{absent_current_page_unsupported_template}",
+    );
+
     for source in [
         "[[module ListPages range=\".\"]]\nROW %%fullname%%\n[[/module]]",
         "[[module ListPages name=\"=\"]]\nROW %%fullname%%\n[[/module]]",

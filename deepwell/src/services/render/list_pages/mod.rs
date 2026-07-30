@@ -848,6 +848,7 @@ fn render_error(message: impl Into<String>) -> Error {
 
 #[cfg(test)]
 mod tests {
+    use super::template::ListPagesTemplatePlan;
     use super::*;
 
     #[test]
@@ -878,6 +879,39 @@ mod tests {
         assert!(order.ascending);
         assert_eq!(page_type, PageTypeSelector::Normal);
         assert_eq!(body_template, CONTENT_VARIABLE);
+    }
+
+    #[test]
+    fn parses_corpus_data_form_selector_and_dynamic_css_template() {
+        let arguments = parse_list_pages_arguments(
+            r#"category="attention-jp" limit="1" order="_date desc" _category="3" _original="1""#,
+        )
+        .expect("static data-form ListPages selectors should parse");
+        assert!(!arguments.unsupported_list_pages_filter);
+        assert!(!arguments.unsupported_score_filter);
+        assert_eq!(arguments.data_form_fields.len(), 2);
+
+        let template = ListPagesTemplatePlan::compile(concat!(
+            "[[%%content{0}%%module css]]\n",
+            ".numparent { counter-reset: num %%total%%; }\n",
+            "[[%%content{0}%%/module]]",
+        ));
+        assert!(template.is_some());
+
+        let zero_limit_head = r#"limit="@URL|0" range="." urlAttrPrefix="page5""#;
+        let zero_limit = parse_list_pages_arguments(zero_limit_head)
+            .expect("URL fallback should parse");
+        assert_eq!(
+            zero_limit.limit,
+            Some(1),
+            "the later current-page range owns the effective one-row limit",
+        );
+        let source = format!(
+            "[[module ListPages {zero_limit_head}]]\n%%unsupported%%\n\
+             [[%%content{{0}}%%module css]]\n.unused {{}}\n\
+             [[%%content{{0}}%%/module]]\n[[/module]]",
+        );
+        assert_eq!(scanner::find_list_pages_module_matches(&source).len(), 1);
     }
 
     #[test]
