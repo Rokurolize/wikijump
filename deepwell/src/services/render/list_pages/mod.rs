@@ -67,7 +67,9 @@ pub(super) use self::generated_html::{
     preserve_list_pages_following_paragraph_boundary, register_generated_list_pages_html,
     url_offset_list_pages_content_bytes,
 };
-pub(super) use self::pagination::{list_pages_feed_info_html, push_list_pages_pager};
+pub(super) use self::pagination::{
+    ListPagesPagerRoute, list_pages_feed_info_html, push_list_pages_pager,
+};
 #[cfg(test)]
 pub(super) use self::parents::ListPagesParentDisplay;
 #[cfg(test)]

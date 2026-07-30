@@ -3469,6 +3469,79 @@ async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
 }
 
 #[tokio::test]
+async fn wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let slug = "fixture-preview-html-lifecycle";
+    let source = "[[html]]\n<b>X</b>\n[[/html]]";
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Preview HTML lifecycle",
+            "wikitext": source,
+        }),
+    );
+    assert_eq!(
+        preview.body,
+        "<p>[[html]]<br>\n&lt;b&gt;X&lt;/b&gt;<br>\n[[/html]]</p>",
+    );
+    assert!(!preview.body.contains("<iframe"), "{}", preview.body);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(slug)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": source,
+            "title": "Fixture Preview HTML Lifecycle",
+            "alt_title": null,
+            "slug": slug,
+            "layout": "wikidot",
+            "revision_comments": "create preview HTML lifecycle fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = view
+    else {
+        panic!("expected saved HTML lifecycle page, got {view:?}");
+    };
+    assert_eq!(
+        compiled_body_html,
+        r#"<p><iframe src="https://example.com/" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></p>"#,
+    );
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -5463,8 +5536,13 @@ async fn list_pages_saved_view_preserves_argument_order_around_the_pager() {
     let reverse_order = view("/p/2/tag/alpha").await;
     assert!(
         reverse_order.contains(&format!("ROW3:{ITEM_PREFIX}-3|"))
-            && reverse_order.contains(&format!("href=\"/{HOLDER}/p/1/tag/alpha\"")),
+            && reverse_order.contains(&format!("href=\"/{HOLDER}/p/1/tag/alpha\""))
+            && reverse_order.contains(r#"<div class="pager"><span class="pager-no">"#),
         "the pager replaces a numeric page argument in place without reordering later arguments:\n{reverse_order}",
+    );
+    assert!(
+        !reverse_order.contains(r#"<div class="pager"><p>"#),
+        "saved-page pagers must keep their span children direct:\n{reverse_order}",
     );
 
     let category_path = view("/category/fragment/p/2").await;

@@ -1308,6 +1308,16 @@ async fn listpages_uses_limit_as_total_and_defaults_pagination_to_twenty() {
                 preview.contains(expected_pager),
                 "the live-compatible pager should render for {attributes:?}:\n{preview}",
             );
+            assert!(
+                preview
+                    .contains(r#"<div class="pager"><span class="pager-no">page 1 of "#,)
+                    && preview.contains(r#"href="/ajax-module-connector.php/p/2""#,),
+                "preview pagers must have direct span children and Ajax-module hrefs for {attributes:?}:\n{preview}",
+            );
+            assert!(
+                !preview.contains(r#"<div class="pager"><p>"#),
+                "preview pagers must not gain an FTML paragraph wrapper:\n{preview}",
+            );
         } else {
             assert!(
                 !preview.contains("class=\"pager\""),
@@ -1884,6 +1894,17 @@ async fn wikidot_ajax_listpages_p_parameter_selects_the_rendered_page() {
         "Wikidot AMC's p parameter must route through the ordinary ListPages pager: {}",
         output.body,
     );
+    assert!(
+        output
+            .body
+            .contains(r#"<div class="pager"><span class="pager-no">"#)
+            && output
+                .body
+                .contains(r#"href="/ajax-module-connector.php/p/1""#),
+        "AMC pagers must have direct span children and remain on the Ajax route: {}",
+        output.body,
+    );
+    assert!(!output.body.contains(r#"<div class="pager"><p>"#));
 }
 
 #[tokio::test]

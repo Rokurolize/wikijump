@@ -35,8 +35,9 @@ use super::list_pages::template::ListPagesTemplatePlan;
 use super::list_pages::{
     ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements,
     ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansionBudget,
-    ListPagesPageContext, ResolvedListPagesAuthors, is_list_pages_visible_tag,
-    parse_list_pages_arguments, register_generated_list_pages_html,
+    ListPagesPageContext, ListPagesPagerRoute, ResolvedListPagesAuthors,
+    is_list_pages_visible_tag, parse_list_pages_arguments,
+    register_generated_list_pages_html,
 };
 use super::literal_regions::LiteralRegionIndex;
 use super::service::{
@@ -229,6 +230,8 @@ impl RenderService {
                     page_id: Some(current_page_id),
                     url,
                 },
+                ListPagesPagerRoute::SavedPage,
+                compat_html,
                 None,
                 page_info,
                 list_pages_arguments,

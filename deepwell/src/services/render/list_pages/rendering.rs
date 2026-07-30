@@ -49,7 +49,7 @@ use super::{
     ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements, ListPagesBatchDisplays,
     ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansion,
     ListPagesExpansionBudget, ListPagesExpansionOptions, ListPagesPageContext,
-    ListPagesSubstitutionContext, ResolvedListPagesAuthors,
+    ListPagesPagerRoute, ListPagesSubstitutionContext, ResolvedListPagesAuthors,
     count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
     count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
     count_pages_scan_requires_preservation, count_pages_should_remain_literal,
@@ -161,6 +161,7 @@ impl RenderService {
             viewer_user_id,
             mut include_budget,
             url,
+            pager_route,
         } = options;
         let Some(current_site_id) = current_site_id else {
             return Ok(ListPagesExpansion {
@@ -619,6 +620,8 @@ impl RenderService {
                             page_id: requested_current_page_id,
                             url,
                         },
+                        pager_route,
+                        compat_html,
                         viewer_user_id,
                         page_info,
                         arguments,
@@ -722,6 +725,8 @@ impl RenderService {
                             page_id: requested_current_page_id,
                             url,
                         },
+                        pager_route,
+                        compat_html,
                         viewer_user_id,
                         page_info,
                         arguments,
@@ -825,6 +830,7 @@ impl RenderService {
                     viewer_user_id,
                     include_budget,
                     url,
+                    pager_route,
                 },
                 expansion_budget,
                 seen,
@@ -1221,6 +1227,8 @@ impl RenderService {
     pub(in crate::services::render) async fn render_list_pages_block(
         ctx: &ServiceContext<'_>,
         page_context: ListPagesPageContext<'_>,
+        pager_route: ListPagesPagerRoute,
+        compat_html: &mut CompatHtmlFragments,
         viewer_user_id: Option<i64>,
         page_info: &PageInfo<'_>,
         arguments: ListPagesArguments,
@@ -2173,6 +2181,7 @@ impl RenderService {
         push_list_pages_pager(
             &mut pager,
             page_info,
+            pager_route,
             url,
             url_attr_prefix.as_deref(),
             // The pager numbers pages from after the module's own offset,
@@ -2180,12 +2189,14 @@ impl RenderService {
             u32::try_from(url_page_skip).unwrap_or(u32::MAX),
             per_page,
             total_selected,
-            compat_text,
         );
-        if !push_list_pages_generated_output(&mut output, &pager, expansion_budget) {
+        if !expansion_budget.try_consume_generated_output_bytes(pager.len()) {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal(
                 "pager exceeds generated-output budget",
             ));
+        }
+        if !pager.is_empty() {
+            output.push_str(&compat_html.push_block_html(pager));
         }
 
         if let Some(feed_info) = feed_info

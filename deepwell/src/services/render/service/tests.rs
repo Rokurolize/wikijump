@@ -28,18 +28,19 @@ use super::super::list_pages::scanner::{
 use super::super::list_pages::template::ListPagesTemplatePlan;
 use super::super::list_pages::{
     AJAX_MODULE_LITERAL_MARKER_PREFIX, ListPagesBatchDisplayRequirements,
-    ListPagesExpansionBudget, ListPagesOffsetOrigin, ListPagesParentDisplay,
-    ListPagesRuntimeDisplay, ListPagesSnapshotDisplay, ListPagesSubstitutionContext,
-    WikidotUserDisplay, build_wikidot_list_pages_module_request,
-    build_wikidot_list_pages_module_source, count_pages_capture_is_literal,
-    count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
-    count_pages_required_tag_batch_selector, count_pages_scan_requires_preservation,
-    count_pages_should_remain_literal, count_pages_unbounded_total,
-    current_page_info_list_pages_row, exact_name_list_pages_batch_key,
-    format_list_pages_created_at, list_pages_author_cache_key,
-    list_pages_body_is_no_visible_tracking_markup, list_pages_body_uses_content_variable,
-    list_pages_body_variables_supported, list_pages_content_query_target,
-    list_pages_feed_info_html, list_pages_has_unsupported_page_type_selector,
+    ListPagesExpansionBudget, ListPagesOffsetOrigin, ListPagesPagerRoute,
+    ListPagesParentDisplay, ListPagesRuntimeDisplay, ListPagesSnapshotDisplay,
+    ListPagesSubstitutionContext, WikidotUserDisplay,
+    build_wikidot_list_pages_module_request, build_wikidot_list_pages_module_source,
+    count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
+    count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
+    count_pages_scan_requires_preservation, count_pages_should_remain_literal,
+    count_pages_unbounded_total, current_page_info_list_pages_row,
+    exact_name_list_pages_batch_key, format_list_pages_created_at,
+    list_pages_author_cache_key, list_pages_body_is_no_visible_tracking_markup,
+    list_pages_body_uses_content_variable, list_pages_body_variables_supported,
+    list_pages_content_query_target, list_pages_feed_info_html,
+    list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_parent_fullname,
     list_pages_revision_count, list_pages_row_scan_target, list_pages_tag_link_href,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
@@ -54,6 +55,7 @@ use super::super::list_pages::{
 use super::super::literal_regions::ListPagesSourceProjection;
 use super::super::module_arguments::wikidot_module_argument;
 use super::super::new_page_module::{NewPageTemplateRendering, render_new_page_module};
+use super::super::render_options::RenderLifecycle;
 use super::super::runtime_page_queries::{
     CountPagesRawScanCompletion, count_pages_raw_scan_completion,
     random_page_query_scan_limit, render_page_query_batch_limit,
@@ -310,6 +312,20 @@ fn render_wikidot_page_body_after_compat_restore(wikitext: &str) -> String {
     let (tree, _) = result.into();
     let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
     RenderService::restore_protected_generated_wikidot_compat_html(rendered, &fragments)
+}
+
+fn render_trusted_wikidot_block_html(html: String) -> String {
+    let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut fragments = CompatHtmlFragments::new("");
+    let mut wikitext = fragments.push_block_html(html);
+    ftml::preprocess_for_layout(&mut wikitext, settings.layout);
+    let tokens = ftml::tokenize(&wikitext);
+    let result = ftml::parse(&tokens, &page_info, &settings);
+    let (tree, errors) = result.into();
+    assert!(errors.is_empty(), "{errors:#?}");
+    let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+    fragments.restore(&rendered)
 }
 
 fn render_wikidot_conditionals_with_tags(wikitext: &str, tags: &[&str]) -> String {
@@ -2845,25 +2861,32 @@ fn wikidot_compatibility_fallback_keeps_arbitrary_html_escaped() {
 fn generated_list_pages_pager_still_renders_without_forgeable_marker() {
     let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
     let mut wikitext = String::new();
-    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
         &page_info,
+        ListPagesPagerRoute::SavedPage,
         UrlArguments::default(),
         None,
         0,
         2,
         5,
-        &mut compat_text,
     );
 
-    assert!(wikitext.contains(r#"[[div class="pager"]]"#));
+    assert!(wikitext.starts_with(r#"<div class="pager">"#));
     assert!(!wikitext.contains("data-wikijump-compat-pager"));
 
-    let rendered = render_wikidot_page_body_after_compat_restore(&wikitext);
+    let rendered = render_trusted_wikidot_block_html(wikitext);
 
-    assert!(rendered.contains(r#"<div class="pager">"#));
+    assert!(
+        rendered
+            .contains(r#"<div class="pager"><span class="pager-no">page 1 of 3</span>"#,),
+        "{rendered}",
+    );
+    assert!(
+        !rendered.contains(r#"<div class="pager"><p>"#),
+        "{rendered}"
+    );
     assert!(rendered.contains(r#"<span class="pager-no">page 1 of 3</span>"#));
     assert!(
         rendered.contains(r#"<a href="/scp-7243/p/2">2</a>"#),
@@ -2879,17 +2902,16 @@ fn generated_list_pages_pager_keeps_untrusted_slug_inside_href() {
         "Missing page",
     );
     let mut wikitext = String::new();
-    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
         &page_info,
+        ListPagesPagerRoute::SavedPage,
         UrlArguments::default(),
         None,
         0,
         2,
         5,
-        &mut compat_text,
     );
 
     let encoded_slug = concat!(
@@ -2900,7 +2922,7 @@ fn generated_list_pages_pager_keeps_untrusted_slug_inside_href() {
     assert!(wikitext.contains(&format!("/{encoded_slug}/p/2")));
     assert!(!wikitext.contains(r#"[[span class="owned"]]"#));
 
-    let rendered = render_wikidot_page_body_after_compat_restore(&wikitext);
+    let rendered = render_trusted_wikidot_block_html(wikitext);
 
     assert!(
         rendered.contains(&format!(r#"<a href="/{encoded_slug}/p/2">2</a>"#)),
@@ -2928,11 +2950,11 @@ fn generated_list_pages_pager_preserves_live_url_argument_shape() {
         },
     ];
     let mut wikitext = String::new();
-    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
         &page_info,
+        ListPagesPagerRoute::SavedPage,
         UrlArguments {
             path_arguments: &path_arguments,
             ..UrlArguments::default()
@@ -2941,7 +2963,6 @@ fn generated_list_pages_pager_preserves_live_url_argument_shape() {
         4,
         2,
         10,
-        &mut compat_text,
     );
 
     assert!(
@@ -2963,11 +2984,11 @@ fn generated_list_pages_pager_appends_after_malformed_page_arguments() {
         value: Some("nope".to_owned()),
     }];
     let mut wikitext = String::new();
-    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
         &page_info,
+        ListPagesPagerRoute::SavedPage,
         UrlArguments {
             path_arguments: &path_arguments,
             ..UrlArguments::default()
@@ -2976,7 +2997,6 @@ fn generated_list_pages_pager_appends_after_malformed_page_arguments() {
         0,
         2,
         5,
-        &mut compat_text,
     );
 
     assert!(
@@ -2993,11 +3013,11 @@ fn generated_list_pages_pager_replaces_zero_page_arguments() {
         value: Some("0".to_owned()),
     }];
     let mut wikitext = String::new();
-    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
         &page_info,
+        ListPagesPagerRoute::SavedPage,
         UrlArguments {
             path_arguments: &path_arguments,
             ..UrlArguments::default()
@@ -3006,7 +3026,6 @@ fn generated_list_pages_pager_replaces_zero_page_arguments() {
         0,
         2,
         5,
-        &mut compat_text,
     );
 
     assert!(wikitext.contains("/listpages-zero-pager/p/2"), "{wikitext}");
@@ -3022,11 +3041,11 @@ fn generated_list_pages_pager_uses_url_attr_prefix() {
         value: Some("2".to_owned()),
     }];
     let mut wikitext = String::new();
-    let mut compat_text = CompatTextFragments::new("");
 
     push_list_pages_pager(
         &mut wikitext,
         &page_info,
+        ListPagesPagerRoute::SavedPage,
         UrlArguments {
             path_arguments: &path_arguments,
             ..UrlArguments::default()
@@ -3035,13 +3054,36 @@ fn generated_list_pages_pager_uses_url_attr_prefix() {
         0,
         2,
         5,
-        &mut compat_text,
     );
 
     assert!(
         wikitext.contains("/listpages-prefixed-pager/p/2/a_p/2"),
         "{wikitext}",
     );
+}
+
+#[test]
+fn generated_list_pages_pager_uses_ajax_module_route_and_prefix() {
+    let page_info = fallback_test_page_info("", "ListPages preview");
+    let mut html = String::new();
+
+    push_list_pages_pager(
+        &mut html,
+        &page_info,
+        ListPagesPagerRoute::AjaxModuleConnector,
+        UrlArguments::default(),
+        Some("x"),
+        0,
+        2,
+        5,
+    );
+
+    assert!(
+        html.contains(r#"href="/ajax-module-connector.php/x_p/2""#),
+        "{html}",
+    );
+    assert!(!html.contains("//ajax-module-connector.php"), "{html}");
+    assert!(!html.contains(r#"href="//"#), "{html}");
 }
 
 #[test]
@@ -5966,6 +6008,7 @@ fn page_nav_render_context_keeps_current_page_without_text_block_target() {
             current_category_id: Some(9),
             current_page_id: Some(11),
             text_block_page_id: None,
+            lifecycle: RenderLifecycle::SavedPage,
         },
     );
 }
@@ -5979,6 +6022,7 @@ fn page_render_context_uses_current_page_as_text_block_target() {
             current_category_id: Some(9),
             current_page_id: Some(11),
             text_block_page_id: Some(11),
+            lifecycle: RenderLifecycle::SavedPage,
         },
     );
 }
@@ -6663,6 +6707,31 @@ fn wikidot_compatibility_fallback_collects_html_blocks_as_iframes() {
     assert!(!output.body.contains("&lt;script"));
     assert!(!output.body.contains("[[html]]"));
     assert!(!output.body.contains("[[/html]]"));
+}
+
+#[test]
+fn wikidot_compatibility_fallback_keeps_preview_html_blocks_literal() {
+    let source = "[[html]]\n<b>preview</b>\n[[/html]]";
+
+    let preview = RenderService::render_wikidot_compatibility_fallback_output_for_context(
+        source,
+        None,
+        Some("scp-wiki"),
+        None,
+    );
+    let saved = RenderService::render_wikidot_compatibility_fallback_output_for_context(
+        source,
+        Some("saved-page"),
+        Some("scp-wiki"),
+        None,
+    );
+
+    assert!(preview.html_block_texts.is_empty());
+    assert!(preview.body.contains("[[html]]"), "{}", preview.body);
+    assert!(preview.body.contains("&lt;b&gt;preview&lt;/b&gt;"));
+    assert!(!preview.body.contains("<iframe"));
+    assert_eq!(saved.html_block_texts, vec!["\n<b>preview</b>\n"]);
+    assert!(saved.body.contains(r#"src="/saved-page/html/1""#));
 }
 
 #[test]

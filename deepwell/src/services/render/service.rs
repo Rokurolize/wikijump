@@ -1021,6 +1021,7 @@ impl RenderService {
                 trace: None,
                 // Corpus replay renders stored wikitext, never a live request.
                 url: UrlArguments::default(),
+                list_pages_pager_route: super::list_pages::ListPagesPagerRoute::SavedPage,
             },
         )
         .await?;
@@ -1126,6 +1127,7 @@ impl RenderService {
             max_include_expansions,
             trace,
             url,
+            list_pages_pager_route,
         } = options;
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
@@ -1212,6 +1214,7 @@ impl RenderService {
                     viewer_user_id,
                     include_budget,
                     url,
+                    pager_route: list_pages_pager_route,
                 },
             )
             .await
@@ -1543,11 +1546,13 @@ impl RenderService {
             persist_compiled_text,
             url,
         } = options;
+        let list_pages_pager_route = render_context.list_pages_pager_route();
         let RenderContext {
             current_site_id,
             current_category_id,
             current_page_id,
             text_block_page_id,
+            lifecycle: _,
         } = render_context;
 
         if let Some((trace, CorpusRenderScope::Body)) = trace {
@@ -1581,6 +1586,7 @@ impl RenderService {
                 max_include_expansions,
                 trace,
                 url,
+                list_pages_pager_route,
             },
         )
         .await?;
@@ -1642,7 +1648,9 @@ impl RenderService {
                 &wikitext,
                 current_site.as_ref(),
                 config,
-                page_info.page.as_ref(),
+                settings
+                    .enable_html_blocks
+                    .then_some(page_info.page.as_ref()),
                 Some(&fallback_link_titles),
             );
             let mut wikidot_css_modules = wikidot_css_modules;
