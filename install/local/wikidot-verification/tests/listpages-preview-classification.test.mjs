@@ -558,3 +558,45 @@ test("preview classifier checks all foot occurrences around a variable-bearing b
   );
   assert.equal(result.cases[0].disposition, "replay-synchronized-fixture");
 });
+
+test("preview classifier requires an authored foot after the final body row", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages category="*" separate="no"]]',
+    "[[body]]%%title%%",
+    "ROW_ANCHOR=%%fullname%%[[/body]]",
+    "[[foot]]FOOT[[/foot]]",
+    "[[/module]]",
+  ].join("\n");
+  const liveHtml = [
+    '<div class="list-pages-box"><p>',
+    "Live one<br>ROW_ANCHOR=main:one<br>",
+    "Live two<br>ROW_ANCHOR=main:two<br>FOOT",
+    "</p></div>",
+  ].join("");
+  const localHtml = [
+    '<div class="list-pages-box"><p>',
+    "Local one<br>ROW_ANCHOR=main:one<br>",
+    "FOOT<br>ROW_ANCHOR=main:two",
+    "</p></div>",
+  ].join("");
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference("foot-before-final-row", source, liveHtml))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase("foot-before-final-row", liveHtml, localHtml)],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "listpages-section-template-divergence",
+  );
+  assert.equal(result.cases[0].disposition, "investigate-renderer");
+});
