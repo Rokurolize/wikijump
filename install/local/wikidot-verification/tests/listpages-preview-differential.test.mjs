@@ -75,6 +75,7 @@ function authoritativeIdentity(overrides = {}) {
     build_artifact_key: `candidate-v3-${"b".repeat(64)}`,
     executable_sha256: "5".repeat(64),
     runtime_config_sha256: "6".repeat(64),
+    runtime_environment_sha256: "0".repeat(64),
     profile: "release",
     rpc_url: "http://127.0.0.1:12747/jsonrpc",
     site_slug: "sandbox-for-codex",
@@ -85,6 +86,7 @@ function authoritativeIdentity(overrides = {}) {
       cache: "8".repeat(64),
       files: "9".repeat(64),
     },
+    service_host_port: { cache: 26379, database: 25432, files: 29000 },
     ...overrides,
   };
 }
@@ -103,12 +105,14 @@ function authoritativeProof(identity, overrides = {}) {
       build_artifact_key: identity.build_artifact_key,
       executable_sha256: identity.executable_sha256,
       runtime_config_sha256: identity.runtime_config_sha256,
+      runtime_environment_sha256: identity.runtime_environment_sha256,
       profile: identity.profile,
     },
     rpc_url: identity.rpc_url,
     site_slug: identity.site_slug,
     site_id: identity.site_id,
     service_image_sha256: { ...identity.service_image_sha256 },
+    service_host_port: { ...identity.service_host_port },
     process: {
       pid: 1234,
       start_ticks: "5678",
@@ -124,13 +128,39 @@ function authoritativeProof(identity, overrides = {}) {
   };
 }
 
-function boundRuntimeObservation(marker, observedAt, phase) {
+function boundRuntimeObservation(identity, proof, marker, observedAt, phase) {
   const stable = {
-    run_nonce: "d".repeat(64),
-    fixture_state_sha256: "f".repeat(64),
-    candidate: { marker },
-    process: { pid: 1234 },
-    services: {},
+    run_nonce: proof.run_nonce,
+    candidate: { ...proof.candidate },
+    process: {
+      pid: proof.process.pid,
+      start_ticks: proof.process.start_ticks,
+      executable_path: "/tmp/deepwell",
+      executable_sha256: identity.executable_sha256,
+      repository: "/tmp/wikijump",
+      command_line_sha256: "e".repeat(64),
+      environment_sha256: identity.runtime_environment_sha256,
+      config_path: proof.process.config_path,
+      config_sha256: identity.runtime_config_sha256,
+      config_contents_sha256: identity.runtime_config_sha256,
+      build_manifest_path: proof.process.build_manifest_path,
+      build_manifest_sha256: identity.build_manifest_sha256,
+    },
+    rpc_url: identity.rpc_url,
+    fixture_state_sha256: marker,
+    random_cache_state_sha256: "a".repeat(64),
+    services: Object.fromEntries(
+      ["cache", "database", "files"].map((service) => [
+        service,
+        {
+          container_id: proof.service_containers[service],
+          image_sha256: identity.service_image_sha256[service],
+          started_at: "2026-07-30T00:00:00.000Z",
+          health: "healthy",
+          host_port: identity.service_host_port[service],
+        },
+      ]),
+    ),
   };
   return {
     schema: "wikijump_listpages_compat.runtime_observation.v1",
@@ -221,6 +251,8 @@ test("authoritative preview binds proof, endpoint, site, and every runtime diges
     authoritative: true,
     observeRuntime: async ({ phase }) =>
       boundRuntimeObservation(
+        identity,
+        proof,
         "a".repeat(64),
         phase === "before"
           ? "2026-07-30T00:00:01.000Z"
@@ -283,11 +315,15 @@ test("authoritative preview observes the running endpoint before and after every
   const artifacts = await writeAuthoritativeArtifacts(root, identity, proof);
   const observations = [
     boundRuntimeObservation(
+      identity,
+      proof,
       "a".repeat(64),
       "2026-07-30T00:00:01.000Z",
       "before",
     ),
     boundRuntimeObservation(
+      identity,
+      proof,
       "a".repeat(64),
       "2026-07-30T00:00:02.000Z",
       "after",
@@ -363,11 +399,15 @@ test("authoritative preview fails closed before RPC and on mid-replay replacemen
 
   const observations = [
     boundRuntimeObservation(
+      identity,
+      proof,
       "a".repeat(64),
       "2026-07-30T00:00:01.000Z",
       "before",
     ),
     boundRuntimeObservation(
+      identity,
+      proof,
       "b".repeat(64),
       "2026-07-30T00:00:02.000Z",
       "after",

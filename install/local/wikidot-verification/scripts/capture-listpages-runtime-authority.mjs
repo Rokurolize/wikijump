@@ -16,6 +16,7 @@ import {
 import {
   exactListPagesFtmlSha,
   listPagesProcessStartTicks,
+  listPagesRuntimeEnvironmentAuthority,
   observeListPagesRuntimeAuthority,
   sha256ListPagesFile,
 } from "../src/listpages-runtime-authority.mjs";
@@ -25,6 +26,8 @@ import {
 import { sha256 } from "../src/syntax-differential.mjs";
 
 const execFileAsync = promisify(execFile);
+const TRUSTED_DOCKER = "/usr/bin/docker";
+const TRUSTED_GIT = "/usr/bin/git";
 
 function nextValue(argv, index, option) {
   const value = argv[index + 1];
@@ -110,16 +113,30 @@ async function command(executable, args) {
   return stdout.trim();
 }
 
-async function containerIdentity(container) {
+async function containerIdentity(container, service, expectedHostPort) {
   const inspection = JSON.parse(
-    await command("docker", ["inspect", container]),
+    await command(TRUSTED_DOCKER, ["inspect", container]),
   )[0];
+  const internalPort = {
+    cache: "6379/tcp",
+    database: "5432/tcp",
+    files: "9000/tcp",
+  }[service];
+  const bindings = inspection?.NetworkSettings?.Ports?.[internalPort];
   if (
     !/^[0-9a-f]{64}$/u.test(inspection?.Id ?? "") ||
     !/^sha256:[0-9a-f]{64}$/u.test(inspection?.Image ?? "") ||
-    inspection?.State?.Running !== true
+    inspection?.State?.Running !== true ||
+    !Array.isArray(bindings) ||
+    !bindings.some(
+      (binding) =>
+        binding?.HostIp === "127.0.0.1" &&
+        Number(binding?.HostPort) === expectedHostPort,
+    )
   ) {
-    throw new Error(`runtime service container is not running: ${container}`);
+    throw new Error(
+      `runtime service container does not own its candidate endpoint: ${container}`,
+    );
   }
   return {
     id: inspection.Id,
@@ -134,19 +151,33 @@ export async function captureListPagesRuntimeAuthority(args) {
     statText,
     executableSha256,
     runtimeConfigSha256,
+    runtimeEnvironment,
     manifestText,
-    cache,
-    database,
-    files,
   ] = await Promise.all([
     fs.readlink(path.join(procRoot, "cwd")),
     fs.readFile(path.join(procRoot, "stat"), "utf8"),
     sha256ListPagesFile(path.join(procRoot, "exe")),
     sha256ListPagesFile(args.runtimeConfig),
+    fs.readFile(path.join(procRoot, "environ"))
+      .then(listPagesRuntimeEnvironmentAuthority),
     fs.readFile(args.buildManifest, "utf8"),
-    containerIdentity(args.cacheContainer),
-    containerIdentity(args.databaseContainer),
-    containerIdentity(args.filesContainer),
+  ]);
+  const [cache, database, files] = await Promise.all([
+    containerIdentity(
+      args.cacheContainer,
+      "cache",
+      runtimeEnvironment.service_host_port.cache,
+    ),
+    containerIdentity(
+      args.databaseContainer,
+      "database",
+      runtimeEnvironment.service_host_port.database,
+    ),
+    containerIdentity(
+      args.filesContainer,
+      "files",
+      runtimeEnvironment.service_host_port.files,
+    ),
   ]);
   const manifest = JSON.parse(manifestText);
   const lockText = await fs.readFile(
@@ -154,8 +185,8 @@ export async function captureListPagesRuntimeAuthority(args) {
     "utf8",
   );
   const [wikijumpSha, wikijumpTree] = await Promise.all([
-    command("git", ["-C", repository, "rev-parse", "HEAD"]),
-    command("git", ["-C", repository, "rev-parse", "HEAD^{tree}"]),
+    command(TRUSTED_GIT, ["-C", repository, "rev-parse", "HEAD"]),
+    command(TRUSTED_GIT, ["-C", repository, "rev-parse", "HEAD^{tree}"]),
   ]);
   const site = await new DeepwellJsonRpcClient({
     rpcUrl: args.rpcUrl,
@@ -177,6 +208,7 @@ export async function captureListPagesRuntimeAuthority(args) {
     build_artifact_key: manifest.artifact_key?.key,
     executable_sha256: executableSha256,
     runtime_config_sha256: runtimeConfigSha256,
+    runtime_environment_sha256: runtimeEnvironment.sha256,
     profile: manifest.build?.profile,
     rpc_url: args.rpcUrl,
     site_slug: site.slug,
@@ -187,6 +219,7 @@ export async function captureListPagesRuntimeAuthority(args) {
       database: database.image_sha256,
       files: files.image_sha256,
     },
+    service_host_port: { ...runtimeEnvironment.service_host_port },
   });
   const proof = validateListPagesRuntimeProof({
     schema: LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
@@ -201,12 +234,14 @@ export async function captureListPagesRuntimeAuthority(args) {
       build_artifact_key: identity.build_artifact_key,
       executable_sha256: identity.executable_sha256,
       runtime_config_sha256: identity.runtime_config_sha256,
+      runtime_environment_sha256: identity.runtime_environment_sha256,
       profile: identity.profile,
     },
     rpc_url: identity.rpc_url,
     site_slug: identity.site_slug,
     site_id: identity.site_id,
     service_image_sha256: { ...identity.service_image_sha256 },
+    service_host_port: { ...identity.service_host_port },
     process: {
       pid: args.pid,
       start_ticks: listPagesProcessStartTicks(statText, args.pid),

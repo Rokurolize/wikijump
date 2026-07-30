@@ -43,6 +43,7 @@ export function validateListPagesRuntimeIdentity(identity) {
     "build_manifest_sha256",
     "executable_sha256",
     "runtime_config_sha256",
+    "runtime_environment_sha256",
   ]) {
     if (!SHA256_PATTERN.test(identity[field] ?? "")) {
       throw new Error(`runtime identity ${field} is invalid`);
@@ -84,6 +85,9 @@ export function validateListPagesRuntimeIdentity(identity) {
   if (!isRecord(identity.service_image_sha256)) {
     throw new Error("runtime identity service image identities are invalid");
   }
+  if (!isRecord(identity.service_host_port)) {
+    throw new Error("runtime identity service host ports are invalid");
+  }
   const serviceNames = Object.keys(identity.service_image_sha256).sort();
   if (
     serviceNames.length !== REQUIRED_SERVICES.length ||
@@ -96,6 +100,23 @@ export function validateListPagesRuntimeIdentity(identity) {
   for (const service of REQUIRED_SERVICES) {
     if (!SHA256_PATTERN.test(identity.service_image_sha256[service] ?? "")) {
       throw new Error(`runtime identity ${service} image is invalid`);
+    }
+  }
+  const runtimeServices = REQUIRED_SERVICES.filter(
+    (service) => service !== "deepwell",
+  );
+  if (
+    JSON.stringify(Object.keys(identity.service_host_port).sort()) !==
+      JSON.stringify(runtimeServices)
+  ) {
+    throw new Error(
+      `runtime identity host ports must be exactly ${runtimeServices.join(", ")}`,
+    );
+  }
+  for (const service of runtimeServices) {
+    const port = identity.service_host_port[service];
+    if (!Number.isSafeInteger(port) || port < 1 || port > 65535) {
+      throw new Error(`runtime identity ${service} host port is invalid`);
     }
   }
   if (
@@ -130,6 +151,7 @@ export function validateListPagesRuntimeProof(proof, identity) {
     build_artifact_key: identity.build_artifact_key,
     executable_sha256: identity.executable_sha256,
     runtime_config_sha256: identity.runtime_config_sha256,
+    runtime_environment_sha256: identity.runtime_environment_sha256,
     profile: identity.profile,
   };
   for (const [field, expected] of Object.entries(expectedCandidate)) {
@@ -148,6 +170,19 @@ export function validateListPagesRuntimeProof(proof, identity) {
   }
   if (!isRecord(proof.service_image_sha256)) {
     throw new Error("runtime proof service image identities are invalid");
+  }
+  if (
+    Object.keys(identity.service_host_port).some(
+      (service) =>
+        proof.service_host_port?.[service] !==
+        identity.service_host_port[service],
+    ) ||
+    Object.keys(proof.service_host_port ?? {}).length !==
+      Object.keys(identity.service_host_port).length
+  ) {
+    throw new Error(
+      "runtime proof service host ports differ from runtime identity",
+    );
   }
   for (const service of REQUIRED_SERVICES) {
     if (
@@ -355,6 +390,8 @@ export async function runListPagesPreviewDifferential({
         phase: "before",
       }),
       "before",
+      runtimeIdentity,
+      runtimeAuthority.proof,
     );
   }
   const site = await rpcClient.call("site_get", { site: siteSlug });
@@ -432,6 +469,8 @@ export async function runListPagesPreviewDifferential({
         phase: "after",
       }),
       "after",
+      runtimeIdentity,
+      runtimeAuthority.proof,
     );
     if (
       runtimeObservationAfter.stable_sha256 !==
@@ -482,7 +521,12 @@ export async function runListPagesPreviewDifferential({
     summary: {
       total: cases.length,
       counts,
-      exit_code: (counts.mismatch ?? 0) > 0 || (counts["local-error"] ?? 0) > 0 ? 1 : 0,
+      exit_code: (counts.mismatch ?? 0) > 0 ||
+          (counts["local-error"] ?? 0) > 0
+        ? 1
+        : runtimeAuthority.completion_eligible
+          ? 0
+          : 2,
     },
   };
 }

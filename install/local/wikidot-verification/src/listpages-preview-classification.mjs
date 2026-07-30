@@ -19,6 +19,7 @@ import {
   publishListPagesJsonNoReplace,
 } from "./listpages-evidence-publication.mjs";
 import {
+  observeListPagesRuntimeAuthority,
   validateListPagesRuntimeObservation,
 } from "./listpages-runtime-authority.mjs";
 
@@ -453,10 +454,16 @@ export async function classifyListPagesPreviewDifferential({
   verdictPath,
   referencesPath,
   authoritative = false,
+  observeRuntime = observeListPagesRuntimeAuthority,
+  verdictData = null,
+  referencesData = null,
 }) {
-  const verdictText = await fs.readFile(verdictPath, "utf8");
-  const verdict = JSON.parse(verdictText);
-  const referencesText = await fs.readFile(referencesPath, "utf8");
+  const verdictText = verdictData === null
+    ? await fs.readFile(verdictPath, "utf8")
+    : JSON.stringify(verdictData);
+  const verdict = verdictData ?? JSON.parse(verdictText);
+  const referencesText = referencesData ??
+    await fs.readFile(referencesPath, "utf8");
   const references = readJsonlText(referencesText).map(validateWikidotReference);
   let authority = {
     mode: "diagnostic",
@@ -500,17 +507,21 @@ export async function classifyListPagesPreviewDifferential({
     const runtimeIdentity = validateListPagesRuntimeIdentity(
       authorityArtifacts["runtime identity"],
     );
-    validateListPagesRuntimeProof(
+    const runtimeProof = validateListPagesRuntimeProof(
       authorityArtifacts["runtime proof"],
       runtimeIdentity,
     );
     const beforeObservation = validateListPagesRuntimeObservation(
       verdict.runtime_observations?.before,
       "before",
+      runtimeIdentity,
+      runtimeProof,
     );
     const afterObservation = validateListPagesRuntimeObservation(
       verdict.runtime_observations?.after,
       "after",
+      runtimeIdentity,
+      runtimeProof,
     );
     if (
       verdict.schema !== LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA ||
@@ -532,6 +543,21 @@ export async function classifyListPagesPreviewDifferential({
       )
     ) {
       throw new Error("authoritative preview verdict schema or runtime observations are invalid");
+    }
+    const currentObservation = validateListPagesRuntimeObservation(
+      await observeRuntime({
+        identity: runtimeIdentity,
+        proof: runtimeProof,
+        phase: "classification",
+      }),
+      "classification",
+      runtimeIdentity,
+      runtimeProof,
+    );
+    if (currentObservation.stable_sha256 !== afterObservation.stable_sha256) {
+      throw new Error(
+        "authoritative runtime changed after the preview verdict",
+      );
     }
     authority = {
       mode: "authoritative",

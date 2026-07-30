@@ -35,6 +35,8 @@
   ],
   "live_reference_contract": {
     "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+    "sha256": "591a02b209dd156c25e7eab0e12a8a123eac5daf0d1fd99b8b5629ea3cb39792",
+    "row_count": 18996,
     "site": "sandbox-for-codex",
     "site_domain": "sandbox-for-codex.wikidot.com",
     "module": "edit/PagePreviewModule",
@@ -42,6 +44,20 @@
     "mutated": false,
     "required_replay_key_coverage": "exactly-once"
   },
+  "collector_artifacts": [
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_preview_references.py",
+      "sha256": "3734a71e06b026d881dcd9e415f0cb8dc1365d3599dea0f8717fcb1eb8516b11"
+    },
+    {
+      "path": "install/local/wikidot-verification/requirements.txt",
+      "sha256": "45717e5351f7eb1c46431dd44bf15db9777dbbc4fa40026931bd2e6458b2fcc9"
+    },
+    {
+      "path": "install/local/wikidot-verification/src/syntax-differential.mjs",
+      "sha256": "73d590888cffadb2032b3ebc090f8207c11187f575a4a806a2cec2cf07f67c2d"
+    }
+  ],
   "completion_contract": {
     "authoritative_only": true,
     "classified_invocation_count": 23964,

@@ -39,4 +39,38 @@ test("repository campaign scope binds every current ListPages invocation and rep
     }),
     /differs from the pinned campaign scope/,
   );
+
+  const scopeText = await fs.readFile(
+    LISTPAGES_CORPUS_REPLAY_SCOPE_PATH,
+    "utf8",
+  );
+  const rewritten = JSON.parse(scopeText);
+  rewritten.invocations.invocation_count -= 1;
+  await assert.rejects(
+    validateListPagesCorpusReplayScope({
+      scopePath: LISTPAGES_CORPUS_REPLAY_SCOPE_PATH,
+      invocationsText,
+      invocations,
+      readFile: async (filePath, encoding) =>
+        filePath === LISTPAGES_CORPUS_REPLAY_SCOPE_PATH
+          ? `${JSON.stringify(rewritten)}\n`
+          : fs.readFile(filePath, encoding),
+    }),
+    /campaign scope contract is invalid/,
+  );
+
+  const missingArtifact = JSON.parse(scopeText);
+  missingArtifact.collector_artifacts.pop();
+  await assert.rejects(
+    validateListPagesCorpusReplayScope({
+      scopePath: LISTPAGES_CORPUS_REPLAY_SCOPE_PATH,
+      invocationsText,
+      invocations,
+      readFile: async (filePath, encoding) =>
+        filePath === LISTPAGES_CORPUS_REPLAY_SCOPE_PATH
+          ? `${JSON.stringify(missingArtifact)}\n`
+          : fs.readFile(filePath, encoding),
+    }),
+    /campaign scope contract is invalid/,
+  );
 });

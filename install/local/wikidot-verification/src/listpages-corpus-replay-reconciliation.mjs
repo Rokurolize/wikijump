@@ -5,6 +5,12 @@ import {
   classifyListPagesPreviewDifferential,
 } from "./listpages-preview-classification.mjs";
 import {
+  runListPagesPreviewDifferential,
+} from "./listpages-preview-differential.mjs";
+import {
+  observeListPagesRuntimeAuthority,
+} from "./listpages-runtime-authority.mjs";
+import {
   publishListPagesJsonNoReplace,
 } from "./listpages-evidence-publication.mjs";
 import {
@@ -100,11 +106,18 @@ export async function reconcileListPagesCorpusReplay({
   authoritative = false,
   campaignScopePath = null,
   validateCampaignScope = validateListPagesCorpusReplayScope,
+  observeRuntime = observeListPagesRuntimeAuthority,
+  replayPreview = runListPagesPreviewDifferential,
 }) {
   const selectedClassificationPaths = classificationPaths ??
     (classificationPath ? [classificationPath] : []);
   if (selectedClassificationPaths.length === 0) {
     throw new Error("at least one preview classification is required");
+  }
+  if (authoritative && selectedClassificationPaths.length !== 1) {
+    throw new Error(
+      "authoritative reconciliation requires one scope-pinned reference set",
+    );
   }
   const invocationsText = await fs.readFile(invocationsPath, "utf8");
   const invocations = readJsonlText(invocationsText);
@@ -193,16 +206,21 @@ export async function reconcileListPagesCorpusReplay({
         classification.inputs.references_path,
         "utf8",
       );
+      const referenceRows = readJsonlText(referencesText);
       if (
         sha256(referencesText) !== classification.inputs.references_sha256 ||
         classification.inputs.references_sha256 !==
-          verdict.inputs.references_sha256
+          verdict.inputs.references_sha256 ||
+        classification.inputs.references_sha256 !==
+          campaignScope.live_reference_contract.sha256 ||
+        referenceRows.length !==
+          campaignScope.live_reference_contract.row_count
       ) {
         throw new Error(
-          "live references changed after preview classification",
+          "live references differ from the scope-pinned acquisition",
         );
       }
-      for (const reference of readJsonlText(referencesText)) {
+      for (const reference of referenceRows) {
         const replayKeySha256 = reference.source_sha256;
         const provenance = reference.provenance;
         const contract = campaignScope.live_reference_contract;
@@ -229,6 +247,7 @@ export async function reconcileListPagesCorpusReplay({
         verdictPath,
         referencesPath: classification.inputs.references_path,
         authoritative: true,
+        observeRuntime,
       });
       if (
         JSON.stringify(recomputed.cases) !==
@@ -285,10 +304,45 @@ export async function reconcileListPagesCorpusReplay({
         completion_eligible: false,
       },
     };
-    if (!Array.isArray(classification.cases)) {
+    let effectiveCases = classification.cases;
+    if (!Array.isArray(effectiveCases)) {
       throw new Error("preview classification cases must be an array");
     }
-    for (const row of classification.cases) {
+    if (authoritative) {
+      const verdictPath = classification.inputs.verdict_path;
+      const verdict = JSON.parse(await fs.readFile(verdictPath, "utf8"));
+      const replayedVerdict = await replayPreview({
+        referencesPath: classification.inputs.references_path,
+        runtimeIdentityPath: verdict.inputs.runtime_identity_path,
+        runtimeProofPath: verdict.inputs.runtime_proof_path,
+        authoritative: true,
+        rpcUrl: verdict.inputs.rpc_url,
+        siteSlug: verdict.inputs.site_slug,
+        concurrency: verdict.inputs.concurrency,
+        observeRuntime,
+      });
+      const replayedClassification =
+        await classifyListPagesPreviewDifferential({
+          verdictPath,
+          referencesPath: classification.inputs.references_path,
+          authoritative: true,
+          observeRuntime,
+          verdictData: replayedVerdict,
+          referencesData: await fs.readFile(
+            classification.inputs.references_path,
+            "utf8",
+          ),
+        });
+      effectiveCases = replayedClassification.cases;
+      classificationInput.authoritative_replay = {
+        verdict_sha256: sha256(JSON.stringify(replayedVerdict)),
+        case_count: effectiveCases.length,
+        runtime_observation_stable_sha256:
+          replayedVerdict.inputs.authority
+            .runtime_observation_stable_sha256,
+      };
+    }
+    for (const row of effectiveCases) {
       validateSourceIdentity(row, "preview classification");
       if (!invocationSourceHashes.has(row.source_sha256)) {
         if (authoritative) {

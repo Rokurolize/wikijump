@@ -8,7 +8,43 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const BUILD_MANIFEST_VERIFIER =
   "/home/roku/wjlab/scripts/candidate-artifact-manifest.py";
+const TRUSTED_TOOLS = Object.freeze({
+  docker: "/usr/bin/docker",
+  git: "/usr/bin/git",
+  python: "/usr/bin/python3",
+  ss: "/usr/bin/ss",
+});
 const REQUIRED_CONTAINERS = ["cache", "database", "files"];
+const SERVICE_INTERNAL_PORT = Object.freeze({
+  cache: "6379/tcp",
+  database: "5432/tcp",
+  files: "9000/tcp",
+});
+const REQUIRED_RUNTIME_ENVIRONMENT = [
+  "DATABASE_URL",
+  "REDIS_URL",
+  "S3_ACCESS_KEY_ID",
+  "S3_CUSTOM_ENDPOINT",
+  "S3_FILES_BUCKET",
+  "S3_PATH_STYLE",
+  "S3_REGION_NAME",
+  "S3_SECRET_ACCESS_KEY",
+  "S3_TEXT_BLOCKS_BUCKET",
+];
+const FORBIDDEN_RUNTIME_ENVIRONMENT = new Set([
+  "DOCKER_CONTEXT",
+  "DOCKER_HOST",
+  "GIT_CONFIG",
+  "GIT_CONFIG_COUNT",
+  "GIT_DIR",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_WORK_TREE",
+  "LD_LIBRARY_PATH",
+  "LD_PRELOAD",
+  "NODE_OPTIONS",
+  "PYTHONHOME",
+  "PYTHONPATH",
+]);
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const FIXTURE_SNAPSHOT_SQL = `
 WITH
@@ -21,6 +57,22 @@ WITH
     UNION SELECT user_id FROM file_revision WHERE site_id = $SITE_ID
     UNION SELECT user_id FROM forum_post WHERE site_id = $SITE_ID
   ),
+  relevant_text_hashes AS (
+    SELECT unnest(ARRAY[
+      wikitext_hash,
+      compiled_body_html_hash,
+      compiled_top_bar_html_hash,
+      compiled_side_bar_html_hash,
+      compiled_body_styles_hash
+    ]) AS hash
+    FROM page_revision
+    WHERE site_id = $SITE_ID
+  ),
+  relevant_import_runs AS (
+    SELECT import_run_id
+    FROM wikidot_corpus_import_run
+    WHERE site_id = $SITE_ID
+  ),
   snapshot AS (
     SELECT 'site:' || to_jsonb(value)::text AS record FROM site value WHERE site_id = $SITE_ID
     UNION ALL SELECT 'site_domain:' || to_jsonb(value)::text FROM site_domain value WHERE site_id = $SITE_ID
@@ -30,12 +82,44 @@ WITH
     UNION ALL SELECT 'page_parent:' || to_jsonb(value)::text FROM page_parent value
       WHERE parent_page_id IN (SELECT page_id FROM site_pages)
          OR child_page_id IN (SELECT page_id FROM site_pages)
+    UNION ALL SELECT 'page_connection:' || to_jsonb(value)::text FROM page_connection value
+      WHERE from_page_id IN (SELECT page_id FROM site_pages)
+         OR to_page_id IN (SELECT page_id FROM site_pages)
+    UNION ALL SELECT 'page_connection_missing:' || to_jsonb(value)::text
+      FROM page_connection_missing value
+      WHERE from_page_id IN (SELECT page_id FROM site_pages)
+         OR to_site_id = $SITE_ID
+    UNION ALL SELECT 'page_link:' || to_jsonb(value)::text FROM page_link value
+      WHERE page_id IN (SELECT page_id FROM site_pages)
     UNION ALL SELECT 'page_vote:' || to_jsonb(value)::text FROM page_vote value
       WHERE page_id IN (SELECT page_id FROM site_pages)
     UNION ALL SELECT 'file:' || to_jsonb(value)::text FROM file value WHERE site_id = $SITE_ID
     UNION ALL SELECT 'file_revision:' || to_jsonb(value)::text FROM file_revision value WHERE site_id = $SITE_ID
     UNION ALL SELECT 'forum_thread:' || to_jsonb(value)::text FROM forum_thread value WHERE site_id = $SITE_ID
     UNION ALL SELECT 'forum_post:' || to_jsonb(value)::text FROM forum_post value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'text:' || to_jsonb(value)::text FROM text value
+      WHERE hash IN (SELECT hash FROM relevant_text_hashes WHERE hash IS NOT NULL)
+    UNION ALL SELECT 'text_block:' || to_jsonb(value)::text FROM text_block value
+      WHERE page_id IN (SELECT page_id FROM site_pages)
+    UNION ALL SELECT 'role:' || to_jsonb(value)::text FROM role value
+      WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'role_permission:' || to_jsonb(value)::text FROM role_permission value
+      WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'user_role:' || to_jsonb(value)::text FROM user_role value
+      WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'wikidot_corpus_import_run:' || to_jsonb(value)::text
+      FROM wikidot_corpus_import_run value WHERE site_id = $SITE_ID
+    UNION ALL SELECT 'wikidot_corpus_import_item:' || to_jsonb(value)::text
+      FROM wikidot_corpus_import_item value
+      WHERE import_run_id IN (SELECT import_run_id FROM relevant_import_runs)
+         OR page_id IN (SELECT page_id FROM site_pages)
+    UNION ALL SELECT 'wikidot_page_snapshot:' || to_jsonb(value)::text
+      FROM wikidot_page_snapshot value
+      WHERE page_id IN (SELECT page_id FROM site_pages)
+    UNION ALL SELECT 'wikidot_corpus_render_observation:' || to_jsonb(value)::text
+      FROM wikidot_corpus_render_observation value
+      WHERE import_run_id IN (SELECT import_run_id FROM relevant_import_runs)
+         OR page_id IN (SELECT page_id FROM site_pages)
     UNION ALL SELECT 'known_user:' || to_jsonb(value)::text FROM known_user value
       WHERE user_id IN (SELECT user_id FROM relevant_users)
     UNION ALL SELECT 'user:' || to_jsonb(value)::text FROM "user" value
@@ -100,6 +184,74 @@ export function listPagesProcessStartTicks(statText, pid) {
     throw new Error("running candidate process stat is invalid");
   }
   return startTicks;
+}
+
+export function listPagesRuntimeEnvironmentAuthority(environ) {
+  const entries = Buffer.from(environ)
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean);
+  const values = new Map();
+  for (const entry of entries) {
+    const separator = entry.indexOf("=");
+    if (separator < 1) {
+      throw new Error("running candidate environment is malformed");
+    }
+    const key = entry.slice(0, separator);
+    if (values.has(key)) {
+      throw new Error(`running candidate environment repeats ${key}`);
+    }
+    values.set(key, entry.slice(separator + 1));
+  }
+  for (const key of values.keys()) {
+    if (FORBIDDEN_RUNTIME_ENVIRONMENT.has(key) || key.startsWith("GIT_")) {
+      throw new Error(`running candidate environment contains forbidden ${key}`);
+    }
+  }
+  const authority = Object.fromEntries(
+    REQUIRED_RUNTIME_ENVIRONMENT.map((key) => {
+      const value = values.get(key);
+      if (typeof value !== "string" || value === "") {
+        throw new Error(`running candidate environment has no ${key}`);
+      }
+      return [key, value];
+    }),
+  );
+  const endpoints = [
+    ["database", "DATABASE_URL", new Set(["postgres:", "postgresql:"])],
+    ["cache", "REDIS_URL", new Set(["redis:"])],
+    ["files", "S3_CUSTOM_ENDPOINT", new Set(["http:"])],
+  ];
+  const serviceHostPort = Object.fromEntries(
+    endpoints.map(([service, key, protocols]) => {
+      let url;
+      try {
+        url = new URL(authority[key]);
+      } catch {
+        throw new Error(`running candidate ${key} is not a URL`);
+      }
+      if (
+        !protocols.has(url.protocol) ||
+        url.hostname !== "127.0.0.1" ||
+        url.port === "" ||
+        !/^[1-9][0-9]{0,4}$/u.test(url.port) ||
+        Number(url.port) > 65535
+      ) {
+        throw new Error(
+          `running candidate ${key} must use an explicit loopback service port`,
+        );
+      }
+      return [service, Number(url.port)];
+    }),
+  );
+  return {
+    sha256: sha256(JSON.stringify(authority)),
+    service_host_port: serviceHostPort,
+  };
+}
+
+export function listPagesRuntimeEnvironmentSha256(environ) {
+  return listPagesRuntimeEnvironmentAuthority(environ).sha256;
 }
 
 function requireExactProofLocators(proof) {
@@ -184,15 +336,27 @@ function requireContainerInspection(
   service,
   containerId,
   expectedImage,
+  expectedHostPort,
 ) {
   const parsed = JSON.parse(inspectionText);
   const inspection = Array.isArray(parsed) ? parsed[0] : parsed;
   const health = inspection?.State?.Health?.Status;
+  const bindings = inspection?.NetworkSettings?.Ports?.[
+    SERVICE_INTERNAL_PORT[service]
+  ];
+  const hasExpectedBinding =
+    Array.isArray(bindings) &&
+    bindings.some(
+      (binding) =>
+        binding?.HostIp === "127.0.0.1" &&
+        Number(binding?.HostPort) === expectedHostPort,
+    );
   if (
     inspection?.Id !== containerId ||
     inspection?.Image !== `sha256:${expectedImage}` ||
     inspection?.State?.Running !== true ||
-    (health !== undefined && health !== "healthy")
+    (health !== undefined && health !== "healthy") ||
+    !hasExpectedBinding
   ) {
     throw new Error(
       `running ${service} container does not bind the authoritative identity`,
@@ -203,6 +367,7 @@ function requireContainerInspection(
     image_sha256: expectedImage,
     started_at: inspection.State.StartedAt,
     health: health ?? null,
+    host_port: expectedHostPort,
   };
 }
 
@@ -236,7 +401,7 @@ export async function observeListPagesFixtureState({
     "--no-align --tuples-only --set ON_ERROR_STOP=1",
     '--command "$1"',
   ].join(" ");
-  const rows = await run("docker", [
+  const rows = await run(TRUSTED_TOOLS.docker, [
     "exec",
     databaseContainerId,
     "sh",
@@ -244,6 +409,32 @@ export async function observeListPagesFixtureState({
     script,
     "listpages-fixture-snapshot",
     sql,
+  ]);
+  return sha256(rows);
+}
+
+export async function observeListPagesRandomCacheState({
+  cacheContainerId,
+  run = command,
+}) {
+  const script = [
+    "local keys=redis.call('KEYS',ARGV[1])",
+    "table.sort(keys)",
+    "local rows={}",
+    "for _,key in ipairs(keys) do",
+    "table.insert(rows,key..'='..(redis.call('GET',key) or '<missing>'))",
+    "end",
+    "return rows",
+  ].join(";");
+  const rows = await run(TRUSTED_TOOLS.docker, [
+    "exec",
+    cacheContainerId,
+    "redis-cli",
+    "--raw",
+    "EVAL",
+    script,
+    "0",
+    "listpages:random-order:v1:*",
   ]);
   return sha256(rows);
 }
@@ -265,10 +456,16 @@ export async function observeListPagesRuntimeAuthority({
       databaseContainerId: containers.database,
       siteId: identity.site_id,
     }));
+  const randomCacheDigest = system.randomCacheDigest ??
+    (() => observeListPagesRandomCacheState({
+      run,
+      cacheContainerId: containers.cache,
+    }));
   const procRoot = `/proc/${process.pid}`;
   const [
     statText,
     commandLine,
+    environment,
     executablePath,
     repository,
     executableSha256,
@@ -278,6 +475,7 @@ export async function observeListPagesRuntimeAuthority({
   ] = await Promise.all([
     readFile(path.join(procRoot, "stat"), "utf8"),
     readFile(path.join(procRoot, "cmdline")),
+    readFile(path.join(procRoot, "environ")),
     readlink(path.join(procRoot, "exe")),
     readlink(path.join(procRoot, "cwd")),
     hashFile(path.join(procRoot, "exe")),
@@ -301,19 +499,34 @@ export async function observeListPagesRuntimeAuthority({
     process,
     identity.rpc_url,
   );
+  const environmentAuthority =
+    listPagesRuntimeEnvironmentAuthority(environment);
+  const environmentSha256 = environmentAuthority.sha256;
+  if (
+    environmentSha256 !== identity.runtime_environment_sha256 ||
+    REQUIRED_CONTAINERS.some(
+      (service) =>
+        environmentAuthority.service_host_port[service] !==
+        identity.service_host_port[service],
+    )
+  ) {
+    throw new Error(
+      "running candidate environment differs from the authoritative identity",
+    );
+  }
   const lockPath = path.join(repository, "deepwell", "Cargo.lock");
   const [status, head, tree, lockContents, listenerText] = await Promise.all([
-    run("git", [
+    run(TRUSTED_TOOLS.git, [
       "-C",
       repository,
       "status",
       "--porcelain=v1",
       "--untracked-files=all",
     ]),
-    run("git", ["-C", repository, "rev-parse", "HEAD"]),
-    run("git", ["-C", repository, "rev-parse", "HEAD^{tree}"]),
+    run(TRUSTED_TOOLS.git, ["-C", repository, "rev-parse", "HEAD"]),
+    run(TRUSTED_TOOLS.git, ["-C", repository, "rev-parse", "HEAD^{tree}"]),
     readFile(lockPath, "utf8"),
-    run("ss", [
+    run(TRUSTED_TOOLS.ss, [
       "-H",
       "-ltnp",
       "sport",
@@ -335,7 +548,7 @@ export async function observeListPagesRuntimeAuthority({
   requireListener(listenerText, identity.rpc_url, process.pid);
 
   const manifestSha256 = sha256(manifestContents);
-  const verificationText = await run("python3", [
+  const verificationText = await run(TRUSTED_TOOLS.python, [
     BUILD_MANIFEST_VERIFIER,
     "verify",
     "--manifest",
@@ -364,16 +577,23 @@ export async function observeListPagesRuntimeAuthority({
     REQUIRED_CONTAINERS.map(async (service) => [
       service,
       requireContainerInspection(
-        await run("docker", ["inspect", containers[service]]),
+        await run(TRUSTED_TOOLS.docker, ["inspect", containers[service]]),
         service,
         containers[service],
         identity.service_image_sha256[service],
+        identity.service_host_port[service],
       ),
     ]),
   );
-  const fixtureStateSha256 = await fixtureDigest();
-  if (!SHA256_PATTERN.test(fixtureStateSha256 ?? "")) {
-    throw new Error("running ListPages fixture-state digest is invalid");
+  const [fixtureStateSha256, randomCacheStateSha256] = await Promise.all([
+    fixtureDigest(),
+    randomCacheDigest(),
+  ]);
+  if (
+    !SHA256_PATTERN.test(fixtureStateSha256 ?? "") ||
+    !SHA256_PATTERN.test(randomCacheStateSha256 ?? "")
+  ) {
+    throw new Error("running ListPages fixture or random-cache digest is invalid");
   }
   const stable = {
     run_nonce: proof.run_nonce,
@@ -386,6 +606,7 @@ export async function observeListPagesRuntimeAuthority({
       build_artifact_key: identity.build_artifact_key,
       executable_sha256: identity.executable_sha256,
       runtime_config_sha256: identity.runtime_config_sha256,
+      runtime_environment_sha256: identity.runtime_environment_sha256,
       profile: identity.profile,
     },
     process: {
@@ -395,6 +616,7 @@ export async function observeListPagesRuntimeAuthority({
       executable_sha256: executableSha256,
       repository,
       command_line_sha256: commandLineSha256,
+      environment_sha256: environmentSha256,
       config_path: process.config_path,
       config_sha256: configSha256,
       config_contents_sha256: sha256(configContents),
@@ -403,6 +625,7 @@ export async function observeListPagesRuntimeAuthority({
     },
     rpc_url: identity.rpc_url,
     fixture_state_sha256: fixtureStateSha256,
+    random_cache_state_sha256: randomCacheStateSha256,
     services: Object.fromEntries(serviceEntries),
   };
   return {
@@ -415,7 +638,12 @@ export async function observeListPagesRuntimeAuthority({
   };
 }
 
-export function validateListPagesRuntimeObservation(observation, phase) {
+export function validateListPagesRuntimeObservation(
+  observation,
+  phase,
+  identity = null,
+  proof = null,
+) {
   const stable = observation?.stable;
   if (
     observation?.schema !== LISTPAGES_RUNTIME_OBSERVATION_SCHEMA ||
@@ -429,6 +657,7 @@ export function validateListPagesRuntimeObservation(observation, phase) {
     Array.isArray(stable) ||
     !SHA256_PATTERN.test(stable.run_nonce ?? "") ||
     !SHA256_PATTERN.test(stable.fixture_state_sha256 ?? "") ||
+    !SHA256_PATTERN.test(stable.random_cache_state_sha256 ?? "") ||
     stable.candidate === null ||
     typeof stable.candidate !== "object" ||
     stable.process === null ||
@@ -438,6 +667,57 @@ export function validateListPagesRuntimeObservation(observation, phase) {
     sha256(JSON.stringify(stable)) !== observation.stable_sha256
   ) {
     throw new Error(`authoritative runtime ${phase} observation is invalid`);
+  }
+  if (identity !== null || proof !== null) {
+    const { process, containers } = requireExactProofLocators(proof);
+    const expectedCandidate = {
+      wikijump_sha: identity.wikijump_sha,
+      wikijump_tree: identity.wikijump_tree,
+      ftml_sha: identity.ftml_sha,
+      dependency_lock_sha256: identity.dependency_lock_sha256,
+      build_manifest_sha256: identity.build_manifest_sha256,
+      build_artifact_key: identity.build_artifact_key,
+      executable_sha256: identity.executable_sha256,
+      runtime_config_sha256: identity.runtime_config_sha256,
+      runtime_environment_sha256: identity.runtime_environment_sha256,
+      profile: identity.profile,
+    };
+    if (
+      stable.run_nonce !== proof.run_nonce ||
+      JSON.stringify(stable.candidate) !== JSON.stringify(expectedCandidate) ||
+      stable.rpc_url !== identity.rpc_url ||
+      stable.process.pid !== process.pid ||
+      stable.process.start_ticks !== process.start_ticks ||
+      stable.process.executable_sha256 !== identity.executable_sha256 ||
+      stable.process.config_path !== process.config_path ||
+      stable.process.config_sha256 !== identity.runtime_config_sha256 ||
+      stable.process.config_contents_sha256 !==
+        identity.runtime_config_sha256 ||
+      stable.process.environment_sha256 !==
+        identity.runtime_environment_sha256 ||
+      stable.process.build_manifest_path !== process.build_manifest_path ||
+      stable.process.build_manifest_sha256 !==
+        identity.build_manifest_sha256 ||
+      JSON.stringify(Object.keys(stable.services).sort()) !==
+      JSON.stringify(REQUIRED_CONTAINERS)
+    ) {
+      throw new Error(
+        `authoritative runtime ${phase} observation differs from its identity or proof`,
+      );
+    }
+    for (const service of REQUIRED_CONTAINERS) {
+      if (
+        stable.services[service]?.container_id !== containers[service] ||
+        stable.services[service]?.image_sha256 !==
+          identity.service_image_sha256[service] ||
+        stable.services[service]?.host_port !==
+          identity.service_host_port[service]
+      ) {
+        throw new Error(
+          `authoritative runtime ${phase} ${service} observation differs from its identity or proof`,
+        );
+      }
+    }
   }
   return observation;
 }

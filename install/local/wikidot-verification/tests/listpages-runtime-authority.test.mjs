@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 import {
   LISTPAGES_RUNTIME_OBSERVATION_SCHEMA,
+  listPagesRuntimeEnvironmentSha256,
   observeListPagesRuntimeAuthority,
 } from "../src/listpages-runtime-authority.mjs";
 import { sha256 } from "../src/syntax-differential.mjs";
@@ -26,6 +27,7 @@ const IMAGES = {
   cache: "8".repeat(64),
   files: "9".repeat(64),
 };
+const HOST_PORTS = { cache: 26379, database: 25432, files: 29000 };
 const LOCK = [
   "[[package]]",
   'name = "ftml"',
@@ -34,6 +36,18 @@ const LOCK = [
   "",
 ].join("\n");
 const CONFIG = Buffer.from("runtime configuration\n");
+const ENVIRONMENT = Buffer.from([
+  `DATABASE_URL=postgresql://wikijump@127.0.0.1:${HOST_PORTS.database}/wikijump`,
+  `REDIS_URL=redis://127.0.0.1:${HOST_PORTS.cache}/0`,
+  "S3_ACCESS_KEY_ID=access",
+  `S3_CUSTOM_ENDPOINT=http://127.0.0.1:${HOST_PORTS.files}`,
+  "S3_FILES_BUCKET=files",
+  "S3_PATH_STYLE=true",
+  "S3_REGION_NAME=local",
+  "S3_SECRET_ACCESS_KEY=secret",
+  "S3_TEXT_BLOCKS_BUCKET=text",
+  "",
+].join("\0"));
 const COMMAND_LINE = Buffer.from([
   "/target/release/deepwell",
   "--port",
@@ -76,9 +90,12 @@ function artifacts() {
     build_artifact_key: ARTIFACT_KEY,
     executable_sha256: IMAGES.deepwell,
     runtime_config_sha256: sha256(CONFIG),
+    runtime_environment_sha256:
+      listPagesRuntimeEnvironmentSha256(ENVIRONMENT),
     profile: "release",
     rpc_url: "http://127.0.0.1:12747/jsonrpc",
     service_image_sha256: IMAGES,
+    service_host_port: HOST_PORTS,
   };
   const proof = {
     run_nonce: "d".repeat(64),
@@ -89,6 +106,7 @@ function artifacts() {
       build_manifest_path: MANIFEST_PATH,
     },
     service_containers: CONTAINERS,
+    service_host_port: HOST_PORTS,
   };
   return { identity, proof, manifestContents };
 }
@@ -103,11 +121,13 @@ function fakeSystem({ mutation = null } = {}) {
   })();
   return {
     fixtureDigest: async () => "f".repeat(64),
+    randomCacheDigest: async () => "a".repeat(64),
     readFile: async (filePath) => {
       if (filePath === `/proc/${PID}/stat`) {
         return processStat(mutation === "pid-reused" ? "9999" : START_TICKS);
       }
       if (filePath === `/proc/${PID}/cmdline`) return COMMAND_LINE;
+      if (filePath === `/proc/${PID}/environ`) return ENVIRONMENT;
       if (filePath === CONFIG_PATH) return CONFIG;
       if (filePath === MANIFEST_PATH) return manifestForRead;
       if (filePath === path.join(REPOSITORY, "deepwell", "Cargo.lock")) {
@@ -128,27 +148,28 @@ function fakeSystem({ mutation = null } = {}) {
       throw new Error(`unexpected hash: ${filePath}`);
     },
     command: async (executable, args) => {
-      if (executable === "git" && args.includes("status")) {
+      const tool = path.basename(executable);
+      if (tool === "git" && args.includes("status")) {
         return mutation === "dirty-checkout" ? " M deepwell/src/lib.rs" : "";
       }
-      if (executable === "git" && args.at(-1) === "HEAD") {
+      if (tool === "git" && args.at(-1) === "HEAD") {
         return identity.wikijump_sha;
       }
-      if (executable === "git" && args.at(-1) === "HEAD^{tree}") {
+      if (tool === "git" && args.at(-1) === "HEAD^{tree}") {
         return identity.wikijump_tree;
       }
-      if (executable === "ss") {
+      if (tool === "ss") {
         const listenerPid = mutation === "wrong-listener" ? 9999 : PID;
         return `LISTEN 0 128 127.0.0.1:12747 0.0.0.0:* users:(("deepwell",pid=${listenerPid},fd=14))`;
       }
-      if (executable === "python3") {
+      if (tool === "python3") {
         return JSON.stringify({
           status: "bound",
           verified: true,
           manifest_sha256: sha256(manifestForRead),
         });
       }
-      if (executable === "docker") {
+      if (tool === "docker") {
         const containerId = args.at(-1);
         const service = Object.entries(CONTAINERS)
           .find(([, id]) => id === containerId)?.[0];
@@ -162,6 +183,22 @@ function fakeSystem({ mutation = null } = {}) {
             Running: true,
             StartedAt: "2026-07-30T00:00:00.000Z",
             Health: { Status: "healthy" },
+          },
+          NetworkSettings: {
+            Ports: {
+              cache: { key: "6379/tcp" },
+              database: { key: "5432/tcp" },
+              files: { key: "9000/tcp" },
+            }[service] && {
+              [{
+                cache: "6379/tcp",
+                database: "5432/tcp",
+                files: "9000/tcp",
+              }[service]]: [{
+                HostIp: "127.0.0.1",
+                HostPort: String(HOST_PORTS[service]),
+              }],
+            },
           },
         }]);
       }

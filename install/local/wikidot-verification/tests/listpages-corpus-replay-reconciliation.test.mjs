@@ -401,6 +401,7 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     build_artifact_key: `candidate-v3-${"b".repeat(64)}`,
     executable_sha256: "5".repeat(64),
     runtime_config_sha256: "6".repeat(64),
+    runtime_environment_sha256: "0".repeat(64),
     profile: "release",
     rpc_url: "http://127.0.0.1:12747/jsonrpc",
     site_slug: "sandbox-for-codex",
@@ -411,6 +412,7 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       cache: "8".repeat(64),
       files: "9".repeat(64),
     },
+    service_host_port: { cache: 26379, database: 25432, files: 29000 },
   };
   const runtimeProof = {
     schema: LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
@@ -425,12 +427,15 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       build_artifact_key: runtimeIdentity.build_artifact_key,
       executable_sha256: runtimeIdentity.executable_sha256,
       runtime_config_sha256: runtimeIdentity.runtime_config_sha256,
+      runtime_environment_sha256:
+        runtimeIdentity.runtime_environment_sha256,
       profile: runtimeIdentity.profile,
     },
     rpc_url: runtimeIdentity.rpc_url,
     site_slug: runtimeIdentity.site_slug,
     site_id: runtimeIdentity.site_id,
     service_image_sha256: { ...runtimeIdentity.service_image_sha256 },
+    service_host_port: { ...runtimeIdentity.service_host_port },
     process: {
       pid: 1234,
       start_ticks: "5678",
@@ -483,6 +488,8 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     unique_replay_key_count: 1,
     live_reference_contract: {
       schema: "wikijump_syntax_differential.wikidot_reference.v1",
+      sha256: sha256(referencesText),
+      row_count: 1,
       site: "sandbox-for-codex",
       site_domain: "sandbox-for-codex.wikidot.com",
       module: "edit/PagePreviewModule",
@@ -500,11 +507,37 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
   await fs.writeFile(runtimeProofPath, runtimeProofText);
   await fs.writeFile(referencesPath, referencesText);
   const observationStable = {
-    run_nonce: "d".repeat(64),
+    run_nonce: runtimeProof.run_nonce,
+    candidate: { ...runtimeProof.candidate },
+    process: {
+      pid: runtimeProof.process.pid,
+      start_ticks: runtimeProof.process.start_ticks,
+      executable_path: "/tmp/deepwell",
+      executable_sha256: runtimeIdentity.executable_sha256,
+      repository: "/tmp/wikijump",
+      command_line_sha256: "e".repeat(64),
+      environment_sha256: runtimeIdentity.runtime_environment_sha256,
+      config_path: runtimeProof.process.config_path,
+      config_sha256: runtimeIdentity.runtime_config_sha256,
+      config_contents_sha256: runtimeIdentity.runtime_config_sha256,
+      build_manifest_path: runtimeProof.process.build_manifest_path,
+      build_manifest_sha256: runtimeIdentity.build_manifest_sha256,
+    },
+    rpc_url: runtimeIdentity.rpc_url,
     fixture_state_sha256: "f".repeat(64),
-    candidate: { wikijump_sha: "1".repeat(40) },
-    process: { pid: 1234 },
-    services: {},
+    random_cache_state_sha256: "a".repeat(64),
+    services: Object.fromEntries(
+      ["cache", "database", "files"].map((service) => [
+        service,
+        {
+          container_id: runtimeProof.service_containers[service],
+          image_sha256: runtimeIdentity.service_image_sha256[service],
+          started_at: "2026-07-30T00:00:00.000Z",
+          health: "healthy",
+          host_port: runtimeIdentity.service_host_port[service],
+        },
+      ]),
+    ),
   };
   const observationStableSha256 = sha256(JSON.stringify(observationStable));
   const beforeObservation = {
@@ -520,6 +553,11 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     phase: "after",
     observed_at: "2026-07-30T00:00:02.000Z",
   };
+  const observeRuntime = async ({ phase }) => ({
+    ...beforeObservation,
+    phase,
+    observed_at: "2026-07-30T00:00:03.000Z",
+  });
   const verdict = {
     schema: LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA,
     inputs: {
@@ -573,6 +611,7 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     verdictPath,
     referencesPath,
     authoritative: true,
+    observeRuntime,
   });
   await fs.writeFile(
     classificationPath,
@@ -585,9 +624,38 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     authoritative: true,
     campaignScopePath,
     validateCampaignScope,
+    observeRuntime,
+    replayPreview: async () => verdict,
   });
   assert.equal(reconciliation.inputs.authority.completion_eligible, true);
   assert.equal(reconciliation.summary.exit_code, 0);
+
+  const actualMismatch = structuredClone(verdict);
+  const actualLocalHtml = "<p>TODO: module ListPages</p>";
+  actualMismatch.cases[0].local.raw_html = actualLocalHtml;
+  actualMismatch.cases[0].local.html_sha256 = sha256(actualLocalHtml);
+  actualMismatch.cases[0].local.visible_text = visibleText(actualLocalHtml);
+  actualMismatch.cases[0].comparison = compareListPagesPreviewHtml(
+    reference,
+    actualLocalHtml,
+  );
+  actualMismatch.cases[0].status = "mismatch";
+  actualMismatch.summary = {
+    total: 1,
+    counts: { mismatch: 1 },
+    exit_code: 1,
+  };
+  const replayedMismatch = await reconcileListPagesCorpusReplay({
+    invocationsPath,
+    classificationPaths: [classificationPath],
+    authoritative: true,
+    campaignScopePath,
+    validateCampaignScope,
+    observeRuntime,
+    replayPreview: async () => actualMismatch,
+  });
+  assert.equal(replayedMismatch.summary.actionable_unique_source_count, 1);
+  assert.equal(replayedMismatch.summary.exit_code, 1);
 
   await fs.writeFile(runtimeProofPath, '{"proof":"changed"}\n');
   await assert.rejects(
@@ -597,6 +665,7 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       authoritative: true,
       campaignScopePath,
       validateCampaignScope,
+      observeRuntime,
     }),
     /runtime proof changed after (?:the preview verdict|preview classification)/,
   );
@@ -612,6 +681,7 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       authoritative: true,
       campaignScopePath,
       validateCampaignScope,
+      observeRuntime,
     }),
     /differs from canonical recomputation/,
   );
@@ -629,6 +699,7 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
       authoritative: true,
       campaignScopePath,
       validateCampaignScope,
+      observeRuntime,
     }),
     /authoritative reconciliation requires authoritative classifications/,
   );

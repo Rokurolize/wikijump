@@ -142,6 +142,7 @@ function authoritativeIdentity() {
     build_artifact_key: `candidate-v3-${"b".repeat(64)}`,
     executable_sha256: "5".repeat(64),
     runtime_config_sha256: "6".repeat(64),
+    runtime_environment_sha256: "0".repeat(64),
     profile: "release",
     rpc_url: "http://127.0.0.1:12747/jsonrpc",
     site_slug: "sandbox-for-codex",
@@ -152,6 +153,7 @@ function authoritativeIdentity() {
       cache: "8".repeat(64),
       files: "9".repeat(64),
     },
+    service_host_port: { cache: 26379, database: 25432, files: 29000 },
   };
 }
 
@@ -169,12 +171,14 @@ function authoritativeProof(identity) {
       build_artifact_key: identity.build_artifact_key,
       executable_sha256: identity.executable_sha256,
       runtime_config_sha256: identity.runtime_config_sha256,
+      runtime_environment_sha256: identity.runtime_environment_sha256,
       profile: identity.profile,
     },
     rpc_url: identity.rpc_url,
     site_slug: identity.site_slug,
     site_id: identity.site_id,
     service_image_sha256: { ...identity.service_image_sha256 },
+    service_host_port: { ...identity.service_host_port },
     process: {
       pid: 1234,
       start_ticks: "5678",
@@ -186,6 +190,50 @@ function authoritativeProof(identity) {
       database: "b".repeat(64),
       files: "c".repeat(64),
     },
+  };
+}
+
+function authoritativeObservation(identity, proof, phase) {
+  const stable = {
+    run_nonce: proof.run_nonce,
+    candidate: { ...proof.candidate },
+    process: {
+      pid: proof.process.pid,
+      start_ticks: proof.process.start_ticks,
+      executable_path: "/tmp/deepwell",
+      executable_sha256: identity.executable_sha256,
+      repository: "/tmp/wikijump",
+      command_line_sha256: "e".repeat(64),
+      environment_sha256: identity.runtime_environment_sha256,
+      config_path: proof.process.config_path,
+      config_sha256: identity.runtime_config_sha256,
+      config_contents_sha256: identity.runtime_config_sha256,
+      build_manifest_path: proof.process.build_manifest_path,
+      build_manifest_sha256: identity.build_manifest_sha256,
+    },
+    rpc_url: identity.rpc_url,
+    fixture_state_sha256: "f".repeat(64),
+    random_cache_state_sha256: "a".repeat(64),
+    services: Object.fromEntries(
+      ["cache", "database", "files"].map((service) => [
+        service,
+        {
+          container_id: proof.service_containers[service],
+          image_sha256: identity.service_image_sha256[service],
+          started_at: "2026-07-30T00:00:00.000Z",
+          health: "healthy",
+          host_port: identity.service_host_port[service],
+        },
+      ]),
+    ),
+  };
+  return {
+    schema: "wikijump_listpages_compat.runtime_observation.v1",
+    status: "bound",
+    phase,
+    observed_at: "2026-07-30T00:00:01.000Z",
+    stable_sha256: sha256(JSON.stringify(stable)),
+    stable,
   };
 }
 
@@ -305,6 +353,7 @@ test("authoritative classification preserves and revalidates the runtime identit
   const observationStable = {
     run_nonce: "d".repeat(64),
     fixture_state_sha256: "f".repeat(64),
+    random_cache_state_sha256: "a".repeat(64),
     candidate: { wikijump_sha: "1".repeat(40) },
     process: { pid: 1234 },
     services: {},
@@ -364,25 +413,77 @@ test("authoritative classification preserves and revalidates the runtime identit
 
   const identity = authoritativeIdentity();
   const proof = authoritativeProof(identity);
+  const validBeforeObservation = authoritativeObservation(
+    identity,
+    proof,
+    "before",
+  );
+  const validAfterObservation = authoritativeObservation(
+    identity,
+    proof,
+    "after",
+  );
   const validIdentityText = `${JSON.stringify(identity)}\n`;
   const validProofText = `${JSON.stringify(proof)}\n`;
   await fs.writeFile(runtimeIdentityPath, validIdentityText);
   await fs.writeFile(runtimeProofPath, validProofText);
   verdict.inputs.runtime_identity_sha256 = sha256(validIdentityText);
   verdict.inputs.runtime_proof_sha256 = sha256(validProofText);
+  verdict.inputs.authority.runtime_observation_before_sha256 = sha256(
+    JSON.stringify(validBeforeObservation),
+  );
+  verdict.inputs.authority.runtime_observation_after_sha256 = sha256(
+    JSON.stringify(validAfterObservation),
+  );
+  verdict.inputs.authority.runtime_observation_stable_sha256 =
+    validAfterObservation.stable_sha256;
+  verdict.runtime_observations = {
+    before: validBeforeObservation,
+    after: validAfterObservation,
+  };
   await fs.writeFile(fixture.verdictPath, JSON.stringify(verdict));
 
   const classified = await classifyListPagesPreviewDifferential({
     ...fixture,
     authoritative: true,
+    observeRuntime: async ({ phase }) =>
+      authoritativeObservation(identity, proof, phase),
   });
   assert.deepEqual(classified.inputs.authority, {
     mode: "authoritative",
     completion_eligible: true,
     runtime_identity_sha256: sha256(validIdentityText),
     runtime_proof_sha256: sha256(validProofText),
-    runtime_observation_stable_sha256: observationStableSha256,
+    runtime_observation_stable_sha256: validAfterObservation.stable_sha256,
   });
+
+  const selfHashedObservationVerdict = structuredClone(verdict);
+  for (const phase of ["before", "after"]) {
+    const observation =
+      selfHashedObservationVerdict.runtime_observations[phase];
+    observation.stable.process.pid = 9999;
+    observation.stable_sha256 = sha256(JSON.stringify(observation.stable));
+    selfHashedObservationVerdict.inputs.authority[
+      `runtime_observation_${phase}_sha256`
+    ] = sha256(JSON.stringify(observation));
+  }
+  selfHashedObservationVerdict.inputs.authority
+    .runtime_observation_stable_sha256 =
+      selfHashedObservationVerdict.runtime_observations.after.stable_sha256;
+  await fs.writeFile(
+    fixture.verdictPath,
+    JSON.stringify(selfHashedObservationVerdict),
+  );
+  await assert.rejects(
+    classifyListPagesPreviewDifferential({
+      ...fixture,
+      authoritative: true,
+      observeRuntime: async ({ phase }) =>
+        authoritativeObservation(identity, proof, phase),
+    }),
+    /observation differs from its identity or proof/,
+  );
+  await fs.writeFile(fixture.verdictPath, JSON.stringify(verdict));
 
   const forgedVerdict = structuredClone(verdict);
   delete forgedVerdict.cases[0].local.raw_html;
@@ -391,6 +492,8 @@ test("authoritative classification preserves and revalidates the runtime identit
     classifyListPagesPreviewDifferential({
       ...fixture,
       authoritative: true,
+      observeRuntime: async ({ phase }) =>
+        authoritativeObservation(identity, proof, phase),
     }),
     /authoritative verdict local or live output is invalid/,
   );
@@ -401,6 +504,8 @@ test("authoritative classification preserves and revalidates the runtime identit
     classifyListPagesPreviewDifferential({
       ...fixture,
       authoritative: true,
+      observeRuntime: async ({ phase }) =>
+        authoritativeObservation(identity, proof, phase),
     }),
     /runtime identity changed after the preview verdict/,
   );
@@ -414,6 +519,8 @@ test("authoritative classification preserves and revalidates the runtime identit
     classifyListPagesPreviewDifferential({
       ...fixture,
       authoritative: true,
+      observeRuntime: async ({ phase }) =>
+        authoritativeObservation(identity, proof, phase),
     }),
     /authoritative classification requires an authoritative preview verdict/,
   );
