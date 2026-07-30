@@ -2773,7 +2773,7 @@ impl RenderService {
                     if relative(semantic) {
                         owned_url(owner, semantic)
                     } else {
-                        raw_link.to_owned()
+                        semantic.to_owned()
                     }
                 }
                 None => {
@@ -2789,7 +2789,7 @@ impl RenderService {
                             semantic,
                         )
                     } else {
-                        raw_link.to_owned()
+                        semantic.to_owned()
                     }
                 }
             };

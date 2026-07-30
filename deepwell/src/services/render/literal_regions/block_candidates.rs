@@ -513,7 +513,7 @@ mod tests {
                 candidates[index],
             );
         }
-        for index in [2, 3, 6, 7] {
+        for index in [2, 3, 6] {
             assert_eq!(
                 candidates[index].provenance,
                 BaseCandidateProvenance::FailClosedProtection,
@@ -521,6 +521,12 @@ mod tests {
                 candidates[index],
             );
         }
+        assert_eq!(
+            candidates[7].provenance,
+            BaseCandidateProvenance::ClosedOwner,
+            "candidate 7: {:?}",
+            candidates[7],
+        );
         assert!(
             candidates
                 .iter()

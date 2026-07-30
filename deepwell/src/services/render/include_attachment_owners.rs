@@ -549,6 +549,9 @@ fn next_top_level_pipe(source: &str, mut offset: usize) -> Option<Option<usize>>
 }
 
 pub(super) fn preserve_argument_quotes(raw: &str, value: &str) -> String {
+    if raw == value {
+        return raw.to_owned();
+    }
     if raw.len() >= 2
         && matches!(raw.as_bytes()[0], b'"' | b'\'')
         && raw.as_bytes()[0] == raw.as_bytes()[raw.len() - 1]
