@@ -1861,6 +1861,7 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
             "[[image \"{$spaced}\" link=\"{$spaced}\"]]\n",
             "[[image {$composite} link={$composite}]]\n",
             "[[image literal-thumb.png link=literal-full.png]]\n",
+            "[[image literal-quoted-thumb.png link=\"literal quoted full.png\"]]\n",
         ),
     )
     .await;
@@ -1940,18 +1941,18 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
     );
     for forwarded in ["forwarded.png", "forwarded%20two.png"] {
         let owned = format!("/local--files/fragment:attachment-owner-leaf/{forwarded}");
-        let expected_occurrences = if forwarded == "forwarded.png" { 4 } else { 2 };
+        let expected_occurrences = 2;
         assert_eq!(
             html.matches(&owned).count(),
             expected_occurrences,
-            "a forwarded attachment must use its leaf-owned URL for both href and src: {html}"
+            "a forwarded attachment must use its leaf-owned URL wherever Wikidot accepts the argument shape: {html}"
         );
         let second_owned =
             format!("/local--files/fragment:attachment-owner-second-leaf/{forwarded}");
         assert_eq!(
             html.matches(&second_owned).count(),
             expected_occurrences,
-            "same-valued forwarded occurrences from another leaf must retain their distinct owner: {html}"
+            "same-valued forwarded occurrences from another leaf must retain their distinct owner wherever Wikidot accepts the argument shape: {html}"
         );
     }
     assert_eq!(
@@ -1959,15 +1960,23 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
             "/local--files/component:attachment-owner-wrapper/thumb-forwarded.png",
         )
         .count(),
-        4,
-        "a composite value must retain ordinary substitution and belong to the wrapper that authored the composite: {html}",
+        2,
+        "a bare composite value must retain ordinary substitution for src, belong to the wrapper that authored it, and not acquire an ignored bare link: {html}",
     );
     assert!(
         html.contains("/local--files/component:attachment-owner-base/literal-thumb.png")
-            && html.contains(
+            && !html.contains(
                 "/local--files/component:attachment-owner-base/literal-full.png"
             ),
-        "literal image target and link must independently retain the base source owner: {html}"
+        "a literal bare image target must retain the base source owner while Wikidot's ignored bare link remains absent: {html}"
+    );
+    assert!(
+        html.contains(
+            "/local--files/component:attachment-owner-base/literal-quoted-thumb.png"
+        ) && html.contains(
+            "/local--files/component:attachment-owner-base/literal%20quoted%20full.png"
+        ),
+        "a literal quoted link in included content must retain both its quotes and base source owner: {html}"
     );
     let cross_owned = concat!(
         "test.wdfiles.com/local--files/fragment:attachment-owner-cross-leaf/",
@@ -11127,12 +11136,13 @@ async fn listpages_content_keeps_the_selected_pages_attachment_owner() {
         2,
         "ListPages row image src and href must both retain the selected page owner: {html}",
     );
-    for direct_file in ["direct-row.png", "direct-row-full.png"] {
-        assert!(
-            html.contains(&format!("/local--files/{FRAGMENT_SLUG}/{direct_file}")),
-            "a direct ListPages row image target and link must retain the selected page owner: {html}",
-        );
-    }
+    assert!(
+        html.contains(&format!("/local--files/{FRAGMENT_SLUG}/direct-row.png"))
+            && !html.contains(&format!(
+                "/local--files/{FRAGMENT_SLUG}/direct-row-full.png"
+            )),
+        "a direct ListPages row image target must retain the selected page owner while Wikidot's ignored bare link remains absent: {html}",
+    );
     for forbidden_owner in [
         INDEX_SLUG,
         "component:image-block",
@@ -11238,8 +11248,8 @@ async fn listpages_content_keeps_same_named_attachments_separate_per_row() {
         let row_owner = format!("/local--files/{fragment}/{FILE_NAME}");
         assert_eq!(
             html.matches(&row_owner).count(),
-            2,
-            "each ListPages row must independently own both src and href for the same filename: {html}",
+            1,
+            "each ListPages row must independently own the src while Wikidot's ignored bare link remains absent: {html}",
         );
     }
     for forbidden_owner in [
