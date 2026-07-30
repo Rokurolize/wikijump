@@ -231,11 +231,11 @@ fn parse_block_opener(
             let close = heads.next_wikidot_right_block[name_end];
             if close != NO_OFFSET {
                 let close = expanded_offset(close);
-                // `block_family_at` already accepted FTML's optional
-                // whitespace between `[[` and `code`. Once the pinned head
-                // scanner finds its closing right block, the opener is an
-                // exact code owner regardless of that spacing.
-                (close + 2, true)
+                // The compatibility scanner recognizes whitespace-prefixed
+                // candidates so they can remain fail-closed protection, but
+                // the pinned FTML parser owns only a tight `[[code` opener.
+                let exact = skip_horizontal_whitespace(bytes, start + 2) == start + 2;
+                (close + 2, exact)
             } else {
                 (name_end, false)
             }
@@ -575,26 +575,38 @@ mod tests {
 
     #[test]
     fn pinned_map_head_oddities_determine_exact_provenance() {
-        let sources = [
+        let accepted = [
             "[[code garbage]]x[[/code]]",
             "[[code a=\"x\" trailing]]x[[/code]]",
             "[[code {$k}=\"v\"]]x[[/code]]",
             "[[code a\u{a0}=\"x\"]]x[[/code]]",
         ];
-        for (source, exact) in sources.into_iter().zip([true, true, true, true]) {
+        for source in accepted {
             let candidates = candidates(source);
             assert_eq!(candidates.len(), 1, "{source:?}");
             assert_eq!(
-                candidates[0].provenance == BaseCandidateProvenance::ClosedOwner,
-                exact,
+                candidates[0].provenance,
+                BaseCandidateProvenance::ClosedOwner,
                 "{source:?}: {:?}",
                 candidates[0],
             );
+            assert!(!pinned_tree(source).code_blocks.is_empty(), "{source:?}");
+        }
+
+        for source in [
+            "[[ code]]x[[/code]]",
+            "[[\tcode]]x[[/code]]",
+            "[[ code\ntype=\"rust\"]]x[[/code]]",
+        ] {
+            let candidates = candidates(source);
+            assert_eq!(candidates.len(), 1, "{source:?}");
             assert_eq!(
-                !pinned_tree(source).code_blocks.is_empty(),
-                exact,
-                "{source:?}"
+                candidates[0].provenance,
+                BaseCandidateProvenance::FailClosedProtection,
+                "{source:?}: {:?}",
+                candidates[0],
             );
+            assert!(pinned_tree(source).code_blocks.is_empty(), "{source:?}");
         }
 
         let html = "[[html garbage]]x[[/html]]";
