@@ -68,10 +68,10 @@ use super::{
     preserve_list_pages_following_paragraph_boundary, preserve_list_pages_module_matches,
     protect_ajax_module_literal_markers, push_list_pages_generated_output,
     push_list_pages_pager, register_generated_list_pages_html,
-    should_render_current_page_list_pages_row, substitute_count_pages_variables,
-    substitute_list_pages_rating_only, substitute_list_pages_variables_with_fragments,
-    union_found_page_fields, unsupported_list_pages_replacement,
-    url_offset_list_pages_content_bytes,
+    seed_random_list_pages_order, should_render_current_page_list_pages_row,
+    substitute_count_pages_variables, substitute_list_pages_rating_only,
+    substitute_list_pages_variables_with_fragments, union_found_page_fields,
+    unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::hash::{TextHash, k12_hash};
@@ -1149,6 +1149,7 @@ impl RenderService {
         let current_page_id = current_page_identity.unwrap_or(0);
         let ajax_module_response = page_info.page.as_ref() == "_ajax-module-connector";
         let initial_remaining_include_expansions = include_budget.remaining;
+        let mut arguments = arguments;
         let feed_info = list_pages_feed_info_html(page_info, &arguments);
         if arguments.rss_only
             && let Some(feed_info) = feed_info
@@ -1164,6 +1165,15 @@ impl RenderService {
                 expanded_include_count: 0,
             }));
         }
+        seed_random_list_pages_order(
+            ctx,
+            current_site_id,
+            current_page_identity,
+            url,
+            &mut arguments,
+            template,
+        )
+        .await?;
         let ListPagesArguments {
             current_page_only,
             category_selector_present,

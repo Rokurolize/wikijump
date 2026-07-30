@@ -416,6 +416,7 @@ mod tests {
 
         for source in [
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
             "[[module Rate]]",
             "[[module UnknownWidget]]",
@@ -523,6 +524,7 @@ mod tests {
     fn article_page_cache_eligibility_denies_unsafe_or_unverified_sources() {
         for source in [
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
             "[[module Rate]]",
             "[[module Members]]",
