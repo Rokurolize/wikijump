@@ -1,0 +1,504 @@
+{
+  "schema": "wikijump.listpages_late_evidence_manifest.v1",
+  "authority": "Frozen anonymous Wikidot PagePreview references for issues #984-#1010; issue #983 has saved-page lifecycle evidence outside this JSONL set.",
+  "family_count": 31,
+  "case_count": 1134,
+  "entries": [
+    {
+      "family": "category-name",
+      "issues": [
+        986
+      ],
+      "source_capture": "primary",
+      "case_count": 29,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/category-name-cases.jsonl",
+        "sha256": "1bc035b9cc03ce999302cfd23f044ec73e2ed07f62287da01f984d1eccb022f5"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/category-name-live.jsonl",
+        "sha256": "7ad1c62657ce83a941217ffda098dd755d626f912d30aa86a0c3ec206e24308e"
+      }
+    },
+    {
+      "family": "exact-metadata",
+      "issues": [
+        987
+      ],
+      "source_capture": "primary",
+      "case_count": 19,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/exact-metadata-cases.jsonl",
+        "sha256": "8679ef47141964b7817be622d787dde58183ba17c4f9da0a6e162302fc2a1d5a"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/exact-metadata-live.jsonl",
+        "sha256": "5c2cc26b9bc426e0567a43395ec30bd3f475b3e9c320aec32114277d7f9aac31"
+      }
+    },
+    {
+      "family": "linked-variable-phase",
+      "issues": [
+        988
+      ],
+      "source_capture": "primary",
+      "case_count": 64,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/linked-variable-phase-cases.jsonl",
+        "sha256": "9166b72e5a0e159185a986b2f4ce5d1c144d58171de8a0a43bf45d0efadb1de8"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/linked-variable-phase-live.jsonl",
+        "sha256": "da502fcce598bd4a40f844ecdca8dbf5d69125b39bd77005d0dde2e6795aa062"
+      }
+    },
+    {
+      "family": "section-grammar",
+      "issues": [
+        985
+      ],
+      "source_capture": "primary",
+      "case_count": 55,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/section-grammar-cases.jsonl",
+        "sha256": "c12b6008ac68c60ca285c44b0d1c9b13642086d1d854c980a86711230f741c31"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/section-grammar-live.jsonl",
+        "sha256": "99585877fdbfd4cdad379f017ca2ec97cdec348f92ede3e6c5a46943a3bf73c5"
+      }
+    },
+    {
+      "family": "tag-selector",
+      "issues": [
+        989
+      ],
+      "source_capture": "primary",
+      "case_count": 61,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/tag-selector-cases.jsonl",
+        "sha256": "13f81f96288052b7a716c8f56e184f60166fd98d4de477cdd7aa0d9c14be33b9"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/tag-selector-live.jsonl",
+        "sha256": "a737cca54608fe36841bc31ec373a1c7a4bf843c1436ce09855d23a0584c39b1"
+      }
+    },
+    {
+      "family": "tag-selector-extended",
+      "issues": [
+        989
+      ],
+      "source_capture": "primary",
+      "case_count": 30,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/tag-selector-extended-cases.jsonl",
+        "sha256": "d1622867c206978431d13733bc4e239de780a51b381656ad8566cd15256c5a78"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/tag-selector-extended-live.jsonl",
+        "sha256": "bcf31812dd3355bee949b96f4f5fd690863188fffa862e78effc6078e25d6bbd"
+      }
+    },
+    {
+      "family": "unknown-variable",
+      "issues": [
+        984
+      ],
+      "source_capture": "primary",
+      "case_count": 66,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/unknown-variable-cases.jsonl",
+        "sha256": "1d245d46c17b5e848d8284dc4f365f0c32faf72f35457c41c449e1be391b3a3a"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/unknown-variable-live.jsonl",
+        "sha256": "617f31c30bc3032e8a1d753369e719d7e85c44dd31bea0a74d243c3c2bd697f6"
+      }
+    },
+    {
+      "family": "author-grammar",
+      "issues": [
+        998
+      ],
+      "source_capture": "continuation",
+      "case_count": 43,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/author-grammar-cases.jsonl",
+        "sha256": "9989231040276d0bd9f3e9bbb11ece621bcc7f86871a3041ebf402da35a1353e"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/author-grammar-live.jsonl",
+        "sha256": "4f9195d9e7be6aac21da46380a2285aab21f21961539499db59788d40707141d"
+      }
+    },
+    {
+      "family": "boolean-structure",
+      "issues": [
+        1002
+      ],
+      "source_capture": "continuation",
+      "case_count": 64,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/boolean-structure-cases.jsonl",
+        "sha256": "449742ac148661e7eb1243e569ed907be34201c0a4f48cbb60f59c9c92edd2a0"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/boolean-structure-live.jsonl",
+        "sha256": "4681fb619eaf3eea524ff0852685babf2518a03705c024b66991c99437ed859c"
+      }
+    },
+    {
+      "family": "date-alias",
+      "issues": [
+        996
+      ],
+      "source_capture": "continuation",
+      "case_count": 22,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/date-alias-cases.jsonl",
+        "sha256": "6c27ddf84c5dc305d3ae1c63b8d1f77fe864cb6f664886e9db77fca128431107"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/date-alias-live.jsonl",
+        "sha256": "1227081d252eda3c5c1a897731390f2a99a7bdc2865f69c12a9f5e362af77057"
+      }
+    },
+    {
+      "family": "date-scalar-grammar",
+      "issues": [
+        997
+      ],
+      "source_capture": "continuation",
+      "case_count": 36,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/date-scalar-grammar-cases.jsonl",
+        "sha256": "fc3cd348c2e3d81fef05e485e8cfa0a9fe1190926c7a991978228de7c35616a0"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/date-scalar-grammar-live.jsonl",
+        "sha256": "8c797965334598a89743aee5f889335a910371dc443179d092bc26864dd61ef9"
+      }
+    },
+    {
+      "family": "generated-heading",
+      "issues": [
+        1010
+      ],
+      "source_capture": "continuation",
+      "case_count": 17,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/generated-heading-cases.jsonl",
+        "sha256": "24fb4dedf0fe8fb97257c48506083160859679ebe1678abbf277624ab29335f3"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/generated-heading-live.jsonl",
+        "sha256": "a43e4eef5e6ce633d17d2adb68d184b22e90d000644ccf8edf5807d25fff1629"
+      }
+    },
+    {
+      "family": "line-head",
+      "issues": [
+        1008
+      ],
+      "source_capture": "continuation",
+      "case_count": 48,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/line-head-cases.jsonl",
+        "sha256": "10e286cd90d1ad1865a3f3354b0cf12ac6c76717df1e44b94757befab3f9f5c5"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/line-head-live.jsonl",
+        "sha256": "52c9e10c7ed803a78d83ae52e55d90d54ac2bb22255eb550c9d7ebfcd442b426"
+      }
+    },
+    {
+      "family": "noncomparison-operator",
+      "issues": [
+        990
+      ],
+      "source_capture": "continuation",
+      "case_count": 56,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/noncomparison-operator-cases.jsonl",
+        "sha256": "bc001f1852fb1e37c5bfbfcb893816d260fdbbb2b85f8540667d31c87ff60f4a"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/noncomparison-operator-live.jsonl",
+        "sha256": "c02c21437b9d5dace973bc38b79f8ccf0471e2d6a5b0a46a316b33783df1588f"
+      }
+    },
+    {
+      "family": "numeric-head-grammar",
+      "issues": [
+        1005
+      ],
+      "source_capture": "continuation",
+      "case_count": 32,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/numeric-head-grammar-cases.jsonl",
+        "sha256": "c441350ff47c4dcb7519452f3812f525a8de0c548e04d94b852f279fd8d95057"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/numeric-head-grammar-live.jsonl",
+        "sha256": "b4fab49430cc32ae1dc73d1fd03e154f59c0b8f9792952f4fa57d01834932427"
+      }
+    },
+    {
+      "family": "offset-boundary",
+      "issues": [
+        999
+      ],
+      "source_capture": "continuation",
+      "case_count": 29,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/offset-boundary-cases.jsonl",
+        "sha256": "6ff28f80a4a677a5da86464dfa4c8a0cb8341f18b79ad10f8d7b5f39a085f757"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/offset-boundary-live.jsonl",
+        "sha256": "b345a75117b3341f4da78e9f2cd36b4dacf4c3e292aa83455e836b2403215bba"
+      }
+    },
+    {
+      "family": "offset-i63",
+      "issues": [
+        999
+      ],
+      "source_capture": "continuation",
+      "case_count": 6,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/offset-i63-cases.jsonl",
+        "sha256": "715e216c9658215f0840e0cedb40bd69d054e2786dbe2b4f97c9e881c7923f7c"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/offset-i63-live.jsonl",
+        "sha256": "5dacb967823d2241a8662348c1627796567813d1a1b975a7ffa217122aca8523"
+      }
+    },
+    {
+      "family": "offset-threshold",
+      "issues": [
+        999
+      ],
+      "source_capture": "continuation",
+      "case_count": 13,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/offset-threshold-cases.jsonl",
+        "sha256": "0e833edd71b5f04751fdcf828c3fdb0ba363f4fb199fb788b2082364cd560be1"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/offset-threshold-live.jsonl",
+        "sha256": "fea5ac42b0b9abf028267d1495b7dbce96c07829939d5afc2225b9403223e0a1"
+      }
+    },
+    {
+      "family": "pager-dom",
+      "issues": [
+        1004
+      ],
+      "source_capture": "continuation",
+      "case_count": 10,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/pager-dom-cases.jsonl",
+        "sha256": "26d172b47e356b7594c1b9052dfc84921806ed848c8cf77aefc16a756663db25"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/pager-dom-live.jsonl",
+        "sha256": "ced2c140e10e3557807b7805b8982a6fba0043d2537877f246913ec55b9956f2"
+      }
+    },
+    {
+      "family": "pagetype",
+      "issues": [
+        993
+      ],
+      "source_capture": "continuation",
+      "case_count": 44,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/pagetype-cases.jsonl",
+        "sha256": "2df0c0407987b8a595b9bbcf6bb844e7aef2edc47871becfab60346be1c8c02f"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/pagetype-live.jsonl",
+        "sha256": "e26c97afcf416b17869b19ccf4e2a9bb86a5b3f2ff46b06ed69c9d17a4dcbd00"
+      }
+    },
+    {
+      "family": "parent-selector",
+      "issues": [
+        992
+      ],
+      "source_capture": "continuation",
+      "case_count": 46,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/parent-selector-cases.jsonl",
+        "sha256": "dc478c00eb71371de291433bce5226d965cdff1bf3733511b4b1e9c77ab9c91e"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/parent-selector-live.jsonl",
+        "sha256": "9ede54383f25266263fcbf7c280e49a3fb9a481c48099afe0f2244f8a3ba5924"
+      }
+    },
+    {
+      "family": "perpage-zero",
+      "issues": [
+        1000
+      ],
+      "source_capture": "continuation",
+      "case_count": 26,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/perpage-zero-cases.jsonl",
+        "sha256": "e7a807b6bf33fd3716da7689a6d79dd1316c3b75c9afb9ceec34adb62eae782c"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/perpage-zero-live.jsonl",
+        "sha256": "f61d54143c41ebc320467dbc174c43d6ef5d903c8ab968dc617fead8de5e0421"
+      }
+    },
+    {
+      "family": "range-grammar",
+      "issues": [
+        1001
+      ],
+      "source_capture": "continuation",
+      "case_count": 43,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/range-grammar-cases.jsonl",
+        "sha256": "f218b9e374f20edc682db1aef8b1f9410e105352ddf772206fbd4c6e3f901ce9"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/range-grammar-live.jsonl",
+        "sha256": "8ddf3927794a26b9e440dc497abe22a9177e90bd1e16c4808d672561a64cd90b"
+      }
+    },
+    {
+      "family": "rating-votes-grammar",
+      "issues": [
+        994
+      ],
+      "source_capture": "continuation",
+      "case_count": 37,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/rating-votes-grammar-cases.jsonl",
+        "sha256": "f2c6671f7249d7c9328d96587f7765da005446535fff3351a923569b8864f5ce"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/rating-votes-grammar-live.jsonl",
+        "sha256": "fbb4527bf7b729534567876ab6c36273505f7aead31526db714eb50f39da57e7"
+      }
+    },
+    {
+      "family": "reverse-grammar",
+      "issues": [
+        1003
+      ],
+      "source_capture": "continuation",
+      "case_count": 36,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/reverse-grammar-cases.jsonl",
+        "sha256": "40074e4b1df40ca14989a782915b964cef94c5938353615592d581569cbef695"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/reverse-grammar-live.jsonl",
+        "sha256": "713ba81f711a362d7e46d07d3262fce7b533a69fa12c7552e63a8d62bc2bc861"
+      }
+    },
+    {
+      "family": "rss-grammar",
+      "issues": [
+        1007
+      ],
+      "source_capture": "continuation",
+      "case_count": 75,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/rss-grammar-cases.jsonl",
+        "sha256": "9347f7d371de7a89545b790680cb8d964d44c43f1c51732e8b98d20ad0fc6ee4"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/rss-grammar-live.jsonl",
+        "sha256": "377d8e73fc2eda3036a1234726d325ebc971b5e323808ce61632a31d84786180"
+      }
+    },
+    {
+      "family": "score-alias",
+      "issues": [
+        995
+      ],
+      "source_capture": "continuation",
+      "case_count": 20,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/score-alias-cases.jsonl",
+        "sha256": "0159f73769ceb7167d91180f05b9e61e0c66487bb1f3bfc60317c01c91f8ed10"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/score-alias-live.jsonl",
+        "sha256": "db46e3f1a1ca41ce2d17596a81ce256635650ac7a909dd94c22ee15af0fd189d"
+      }
+    },
+    {
+      "family": "selector-head-grammar",
+      "issues": [
+        1006
+      ],
+      "source_capture": "continuation",
+      "case_count": 46,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/selector-head-grammar-cases.jsonl",
+        "sha256": "b2f2b95e824239248e3fcba2e31e50d605f6bc7f92f4ffb92395c1889877009f"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/selector-head-grammar-live.jsonl",
+        "sha256": "b3dedb78be0e1592b82e516ef47d1c90148f54a964436eb2944895281a0aa654"
+      }
+    },
+    {
+      "family": "unquoted-comparison",
+      "issues": [
+        991
+      ],
+      "source_capture": "continuation",
+      "case_count": 36,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/unquoted-comparison-cases.jsonl",
+        "sha256": "02339f34c12c2f08da411b465eefb3b7e7fb8e414a00f1933ce85a631867c1d9"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/unquoted-comparison-live.jsonl",
+        "sha256": "b28bed6ea175e18d52ac027954e68ffcfa621a2d39ad87f8bc67f747898536b0"
+      }
+    },
+    {
+      "family": "zero-line-block",
+      "issues": [
+        1009
+      ],
+      "source_capture": "continuation",
+      "case_count": 12,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/zero-line-block-cases.jsonl",
+        "sha256": "bba31846d8acae2d81d648deef279431fa8f3d39e398dfff22e038e394fb5d97"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/zero-line-block-live.jsonl",
+        "sha256": "ce567232d7379acc97a119f80a40c7014b36239f0f7fdd81cd9b409699a8082e"
+      }
+    },
+    {
+      "family": "zero-line-dom",
+      "issues": [
+        1009
+      ],
+      "source_capture": "continuation",
+      "case_count": 13,
+      "cases": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/zero-line-dom-cases.jsonl",
+        "sha256": "e10e98d1d491c7272de807cf200e768f6b82ed03a93b27512236c25a67588ec3"
+      },
+      "live_references": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/zero-line-dom-live.jsonl",
+        "sha256": "b6f31b49e4db4fee57483db76809c76590caced899d71c0478eb69ba57d2208a"
+      }
+    }
+  ]
+}
