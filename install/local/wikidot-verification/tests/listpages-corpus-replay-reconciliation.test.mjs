@@ -7,7 +7,10 @@ import test from "node:test";
 import {
   reconcileListPagesCorpusReplay,
 } from "../src/listpages-corpus-replay-reconciliation.mjs";
-import { main as reconcileCli } from "../scripts/reconcile-listpages-corpus-replay.mjs";
+import {
+  main as reconcileCli,
+  parseArgs as parseReconcileArgs,
+} from "../scripts/reconcile-listpages-corpus-replay.mjs";
 import { sha256 } from "../src/syntax-differential.mjs";
 
 async function writeJsonl(filePath, rows) {
@@ -358,4 +361,105 @@ test("CLI accepts repeatable classification shards", async () => {
   const result = JSON.parse(await fs.readFile(output, "utf8"));
   assert.equal(result.summary.classified_invocation_count, 2);
   assert.equal(result.inputs.classifications.length, 2);
+});
+
+test("authoritative reconciliation revalidates the transitive runtime chain", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-authoritative-reconcile-"),
+  );
+  const source = "[[module ListPages]]exact[[/module]]";
+  const invocationsPath = path.join(root, "invocations.jsonl");
+  const classificationPath = path.join(root, "classification.json");
+  const verdictPath = path.join(root, "verdict.json");
+  const referencesPath = path.join(root, "references.jsonl");
+  const runtimeIdentityPath = path.join(root, "runtime-identity.json");
+  const runtimeProofPath = path.join(root, "runtime-proof.json");
+  const runtimeIdentityText = '{"identity":"exact"}\n';
+  const runtimeProofText = '{"proof":"exact"}\n';
+  const referencesText = "frozen references\n";
+  await writeJsonl(invocationsPath, [
+    invocation("en:exact:L1:B0", source, "exact"),
+  ]);
+  await fs.writeFile(runtimeIdentityPath, runtimeIdentityText);
+  await fs.writeFile(runtimeProofPath, runtimeProofText);
+  await fs.writeFile(referencesPath, referencesText);
+  const verdict = {
+    inputs: {
+      authority: { mode: "authoritative", completion_eligible: true },
+      runtime_identity_path: runtimeIdentityPath,
+      runtime_identity_sha256: sha256(runtimeIdentityText),
+      runtime_proof_path: runtimeProofPath,
+      runtime_proof_sha256: sha256(runtimeProofText),
+      references_path: referencesPath,
+      references_sha256: sha256(referencesText),
+    },
+  };
+  const verdictText = `${JSON.stringify(verdict)}\n`;
+  await fs.writeFile(verdictPath, verdictText);
+  await fs.writeFile(
+    classificationPath,
+    `${JSON.stringify({
+      schema: "wikijump_listpages_compat.preview_classification.v1",
+      inputs: {
+        verdict_path: verdictPath,
+        verdict_sha256: sha256(verdictText),
+        references_path: referencesPath,
+        references_sha256: sha256(referencesText),
+        authority: {
+          mode: "authoritative",
+          completion_eligible: true,
+          runtime_identity_sha256: sha256(runtimeIdentityText),
+          runtime_proof_sha256: sha256(runtimeProofText),
+        },
+      },
+      cases: [classifiedCase("en:exact:L1:B0", source)],
+    })}\n`,
+  );
+
+  const reconciliation = await reconcileListPagesCorpusReplay({
+    invocationsPath,
+    classificationPaths: [classificationPath],
+    authoritative: true,
+  });
+  assert.equal(reconciliation.inputs.authority.completion_eligible, true);
+
+  await fs.writeFile(runtimeProofPath, '{"proof":"changed"}\n');
+  await assert.rejects(
+    reconcileListPagesCorpusReplay({
+      invocationsPath,
+      classificationPaths: [classificationPath],
+      authoritative: true,
+    }),
+    /runtime proof changed after preview classification/,
+  );
+
+  const diagnostic = JSON.parse(await fs.readFile(classificationPath, "utf8"));
+  diagnostic.inputs.authority = {
+    mode: "diagnostic",
+    completion_eligible: false,
+  };
+  await fs.writeFile(classificationPath, `${JSON.stringify(diagnostic)}\n`);
+  await assert.rejects(
+    reconcileListPagesCorpusReplay({
+      invocationsPath,
+      classificationPaths: [classificationPath],
+      authoritative: true,
+    }),
+    /authoritative reconciliation requires authoritative classifications/,
+  );
+});
+
+test("reconciliation CLI exposes the authoritative completion gate", () => {
+  const parsed = parseReconcileArgs([
+    "node",
+    "reconcile-listpages-corpus-replay.mjs",
+    "--invocations",
+    "invocations.jsonl",
+    "--classification",
+    "classification.json",
+    "--authoritative",
+    "--output",
+    "reconciliation.json",
+  ]);
+  assert.equal(parsed.authoritative, true);
 });

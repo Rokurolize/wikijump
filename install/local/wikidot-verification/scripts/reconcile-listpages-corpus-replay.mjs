@@ -20,6 +20,7 @@ export function parseArgs(argv) {
     invocations: null,
     classifications: [],
     output: null,
+    authoritative: false,
   };
   for (let index = 2; index < argv.length; index += 1) {
     const option = argv[index];
@@ -34,6 +35,8 @@ export function parseArgs(argv) {
     } else if (option === "--output") {
       args.output = path.resolve(nextValue(argv, index, option));
       index += 1;
+    } else if (option === "--authoritative") {
+      args.authoritative = true;
     } else if (option === "--help" || option === "-h") {
       return { help: true };
     } else {
@@ -50,7 +53,7 @@ export function parseArgs(argv) {
 
 function printHelp() {
   console.log(
-    "Usage: node install/local/wikidot-verification/scripts/reconcile-listpages-corpus-replay.mjs --invocations FILE --classification FILE [--classification FILE ...] --output FILE",
+    "Usage: node install/local/wikidot-verification/scripts/reconcile-listpages-corpus-replay.mjs --invocations FILE --classification FILE [--classification FILE ...] --output FILE [--authoritative]",
   );
 }
 
@@ -63,6 +66,7 @@ export async function main(argv = process.argv) {
   const reconciliation = await reconcileListPagesCorpusReplay({
     invocationsPath: args.invocations,
     classificationPaths: args.classifications,
+    authoritative: args.authoritative,
   });
   await writeListPagesCorpusReplayReconciliation(
     reconciliation,

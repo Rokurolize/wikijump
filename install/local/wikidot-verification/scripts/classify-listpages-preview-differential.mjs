@@ -16,7 +16,12 @@ function nextValue(argv, index, option) {
 }
 
 export function parseArgs(argv) {
-  const args = { verdict: null, references: null, output: null };
+  const args = {
+    verdict: null,
+    references: null,
+    output: null,
+    authoritative: false,
+  };
   for (let index = 2; index < argv.length; index += 1) {
     const option = argv[index];
     if (option === "--verdict") {
@@ -28,6 +33,8 @@ export function parseArgs(argv) {
     } else if (option === "--output") {
       args.output = path.resolve(nextValue(argv, index, option));
       index += 1;
+    } else if (option === "--authoritative") {
+      args.authoritative = true;
     } else if (option === "--help" || option === "-h") {
       return { help: true };
     } else {
@@ -41,7 +48,7 @@ export function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log("Usage: node install/local/wikidot-verification/scripts/classify-listpages-preview-differential.mjs --verdict FILE --references FILE --output FILE");
+  console.log("Usage: node install/local/wikidot-verification/scripts/classify-listpages-preview-differential.mjs --verdict FILE --references FILE --output FILE [--authoritative]");
 }
 
 export async function main(argv = process.argv) {
@@ -53,6 +60,7 @@ export async function main(argv = process.argv) {
   const classification = await classifyListPagesPreviewDifferential({
     verdictPath: args.verdict,
     referencesPath: args.references,
+    authoritative: args.authoritative,
   });
   await writeListPagesPreviewClassification(classification, args.output);
   console.log(JSON.stringify({

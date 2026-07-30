@@ -5,9 +5,14 @@ import path from "node:path";
 import { test } from "node:test";
 
 import {
+  LISTPAGES_REPLAY_RUNTIME_IDENTITY_SCHEMA,
+  LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
   runListPagesPreviewDifferential,
   writePreviewDifferential,
 } from "../src/listpages-preview-differential.mjs";
+import {
+  parseArgs as parsePreviewDifferentialArgs,
+} from "../scripts/run-listpages-preview-differential.mjs";
 import { sha256 } from "../src/syntax-differential.mjs";
 
 function reference(caseId, source, rawHtml) {
@@ -57,6 +62,218 @@ class FakeRpc {
     throw new Error(`unexpected method ${method}`);
   }
 }
+
+function authoritativeIdentity(overrides = {}) {
+  return {
+    schema: LISTPAGES_REPLAY_RUNTIME_IDENTITY_SCHEMA,
+    wikijump_sha: "1".repeat(40),
+    wikijump_tree: "2".repeat(40),
+    ftml_sha: "3".repeat(40),
+    dependency_lock_sha256: "4".repeat(64),
+    executable_sha256: "5".repeat(64),
+    runtime_config_sha256: "6".repeat(64),
+    profile: "dev",
+    rpc_url: "http://127.0.0.1:12747/jsonrpc",
+    site_slug: "sandbox-for-codex",
+    site_id: 7,
+    service_image_sha256: {
+      deepwell: "5".repeat(64),
+      database: "7".repeat(64),
+      cache: "8".repeat(64),
+      files: "9".repeat(64),
+    },
+    ...overrides,
+  };
+}
+
+function authoritativeProof(identity, overrides = {}) {
+  return {
+    schema: LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA,
+    observed_at: "2026-07-30T00:00:00.000Z",
+    candidate: {
+      wikijump_sha: identity.wikijump_sha,
+      wikijump_tree: identity.wikijump_tree,
+      ftml_sha: identity.ftml_sha,
+      dependency_lock_sha256: identity.dependency_lock_sha256,
+      executable_sha256: identity.executable_sha256,
+      runtime_config_sha256: identity.runtime_config_sha256,
+      profile: identity.profile,
+    },
+    rpc_url: identity.rpc_url,
+    site_slug: identity.site_slug,
+    site_id: identity.site_id,
+    service_image_sha256: { ...identity.service_image_sha256 },
+    ...overrides,
+  };
+}
+
+async function writeAuthoritativeArtifacts(root, identity, proof) {
+  const runtimeIdentityPath = path.join(root, "runtime-identity.json");
+  const runtimeProofPath = path.join(root, "runtime-proof.json");
+  await fs.writeFile(runtimeIdentityPath, `${JSON.stringify(identity)}\n`);
+  await fs.writeFile(runtimeProofPath, `${JSON.stringify(proof)}\n`);
+  return { runtimeIdentityPath, runtimeProofPath };
+}
+
+test("authoritative preview rejects absent or malformed runtime authority before RPC", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-preview-authority-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  await writeReferences(
+    referencesPath,
+    [reference("exact", "source", "<p>exact</p>")],
+  );
+  const rpcClient = new FakeRpc(new Map([["source", "<p>exact</p>"]]));
+  rpcClient.calls = [];
+  const call = rpcClient.call.bind(rpcClient);
+  rpcClient.call = async (...args) => {
+    rpcClient.calls.push(args);
+    return call(...args);
+  };
+
+  await assert.rejects(
+    runListPagesPreviewDifferential({
+      referencesPath,
+      rpcUrl: "http://127.0.0.1:12747/jsonrpc",
+      siteSlug: "sandbox-for-codex",
+      rpcClient,
+      authoritative: true,
+    }),
+    /authoritative preview requires --runtime-identity and --runtime-proof/,
+  );
+  assert.equal(rpcClient.calls.length, 0);
+
+  const identity = authoritativeIdentity({ schema: "invented" });
+  const artifacts = await writeAuthoritativeArtifacts(
+    root,
+    identity,
+    authoritativeProof(identity),
+  );
+  await assert.rejects(
+    runListPagesPreviewDifferential({
+      referencesPath,
+      ...artifacts,
+      rpcUrl: "http://127.0.0.1:12747/jsonrpc",
+      siteSlug: "sandbox-for-codex",
+      rpcClient,
+      authoritative: true,
+    }),
+    /runtime identity schema is unsupported/,
+  );
+  assert.equal(rpcClient.calls.length, 0);
+});
+
+test("authoritative preview binds proof, endpoint, site, and every runtime digest", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-preview-binding-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  await writeReferences(
+    referencesPath,
+    [reference("exact", "source", "<p>exact</p>")],
+  );
+  const identity = authoritativeIdentity();
+  const proof = authoritativeProof(identity);
+  const artifacts = await writeAuthoritativeArtifacts(root, identity, proof);
+  const rpcClient = new FakeRpc(new Map([["source", "<p>exact</p>"]]));
+  const verdict = await runListPagesPreviewDifferential({
+    referencesPath,
+    ...artifacts,
+    rpcUrl: identity.rpc_url,
+    siteSlug: identity.site_slug,
+    rpcClient,
+    authoritative: true,
+  });
+  assert.deepEqual(verdict.inputs.authority, {
+    mode: "authoritative",
+    completion_eligible: true,
+  });
+  assert.match(verdict.inputs.runtime_identity_sha256, /^[0-9a-f]{64}$/u);
+  assert.match(verdict.inputs.runtime_proof_sha256, /^[0-9a-f]{64}$/u);
+
+  for (const field of [
+    "wikijump_sha",
+    "wikijump_tree",
+    "ftml_sha",
+    "dependency_lock_sha256",
+    "executable_sha256",
+    "runtime_config_sha256",
+    "profile",
+  ]) {
+    const changed = authoritativeProof(identity);
+    changed.candidate[field] = field === "profile"
+      ? "release"
+      : "0".repeat(identity[field].length);
+    const changedArtifacts = await writeAuthoritativeArtifacts(
+      await fs.mkdtemp(path.join(root, "changed-")),
+      identity,
+      changed,
+    );
+    await assert.rejects(
+      runListPagesPreviewDifferential({
+        referencesPath,
+        ...changedArtifacts,
+        rpcUrl: identity.rpc_url,
+        siteSlug: identity.site_slug,
+        rpcClient,
+        authoritative: true,
+      }),
+      new RegExp(`runtime proof ${field} differs`, "u"),
+    );
+  }
+});
+
+test("diagnostic preview is explicitly completion-ineligible", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-preview-diagnostic-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  await writeReferences(
+    referencesPath,
+    [reference("exact", "source", "<p>exact</p>")],
+  );
+  const verdict = await runListPagesPreviewDifferential({
+    referencesPath,
+    rpcUrl: "http://127.0.0.1:12747/jsonrpc",
+    siteSlug: "sandbox-for-codex",
+    rpcClient: new FakeRpc(new Map([["source", "<p>exact</p>"]])),
+  });
+  assert.deepEqual(verdict.inputs.authority, {
+    mode: "diagnostic",
+    completion_eligible: false,
+  });
+});
+
+test("preview CLI exposes an explicit authoritative contract", () => {
+  const parsed = parsePreviewDifferentialArgs([
+    "node",
+    "run-listpages-preview-differential.mjs",
+    "--references",
+    "references.jsonl",
+    "--runtime-identity",
+    "identity.json",
+    "--runtime-proof",
+    "proof.json",
+    "--authoritative",
+    "--output",
+    "verdict.json",
+  ]);
+  assert.equal(parsed.authoritative, true);
+  assert.match(parsed.runtimeProof, /proof\.json$/u);
+  assert.throws(
+    () => parsePreviewDifferentialArgs([
+      "node",
+      "run-listpages-preview-differential.mjs",
+      "--references",
+      "references.jsonl",
+      "--authoritative",
+      "--output",
+      "verdict.json",
+    ]),
+    /--runtime-identity and --runtime-proof are required with --authoritative/,
+  );
+});
 
 class BoundedConcurrencyFakeRpc extends FakeRpc {
   constructor(previews) {
@@ -120,6 +337,10 @@ test("preview differential records local errors and writes a verdict", async () 
   assert.equal(verdict.summary.counts["local-error"], 1);
   await writePreviewDifferential(verdict, output);
   assert.equal(JSON.parse(await fs.readFile(output, "utf8")).summary.counts["local-error"], 1);
+  await assert.rejects(
+    writePreviewDifferential(verdict, output),
+    (error) => error?.code === "EEXIST",
+  );
 });
 
 test("preview differential bounds concurrency and preserves reference order", async () => {

@@ -6,15 +6,21 @@ import { test } from "node:test";
 
 import {
   classifyListPagesPreviewDifferential,
+  writeListPagesPreviewClassification,
 } from "../src/listpages-preview-classification.mjs";
+import {
+  parseArgs as parsePreviewClassificationArgs,
+} from "../scripts/classify-listpages-preview-differential.mjs";
 import {
   canonicalDom,
   sha256,
   visibleText,
 } from "../src/syntax-differential.mjs";
 
+const referenceIdentities = new Map();
+
 function reference(caseId, source, rawHtml) {
-  return {
+  const row = {
     schema: "wikijump_syntax_differential.wikidot_reference.v1",
     syntax_case: {
       schema: "wikijump_syntax_differential.syntax_case.v1",
@@ -39,6 +45,11 @@ function reference(caseId, source, rawHtml) {
     raw_html: rawHtml,
     raw_html_sha256: sha256(rawHtml),
   };
+  referenceIdentities.set(caseId, {
+    source_sha256: row.source_sha256,
+    live_html_sha256: row.raw_html_sha256,
+  });
+  return row;
 }
 
 function mismatchCase(caseId, liveHtml, localHtml) {
@@ -51,6 +62,7 @@ function mismatchCase(caseId, liveHtml, localHtml) {
       html_sha256: sha256(localHtml),
     },
     comparison: {
+      identities: referenceIdentities.get(caseId),
       checks: {
         dom_tree: {
           status: "mismatch",
@@ -72,8 +84,210 @@ async function liveArtifactReference(fileName, caseId) {
     .map((line) => JSON.parse(line))
     .find((candidate) => candidate.syntax_case?.case_id === caseId);
   assert.ok(row, `missing live artifact case ${caseId}`);
+  referenceIdentities.set(caseId, {
+    source_sha256: row.source_sha256,
+    live_html_sha256: row.raw_html_sha256,
+  });
   return row;
 }
+
+async function writeIdentityFixture({
+  references,
+  cases,
+}) {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-identity-classify-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  await fs.writeFile(
+    referencesPath,
+    references.map((row) => `${JSON.stringify(row)}\n`).join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({ cases }),
+  );
+  return { referencesPath, verdictPath };
+}
+
+function identityBoundMatch(referenceRow, overrides = {}) {
+  return {
+    case_id: referenceRow.syntax_case.case_id,
+    status: "match",
+    comparison: {
+      identities: {
+        source_sha256: referenceRow.source_sha256,
+        live_html_sha256: referenceRow.raw_html_sha256,
+      },
+    },
+    ...overrides,
+  };
+}
+
+test("preview classifier requires a case-ID bijection", async () => {
+  const first = reference("case-a", "source a", "<p>a</p>");
+  const second = reference("case-b", "source b", "<p>b</p>");
+
+  await assert.rejects(
+    classifyListPagesPreviewDifferential(await writeIdentityFixture({
+      references: [first, second],
+      cases: [
+        identityBoundMatch(first),
+        identityBoundMatch(first),
+      ],
+    })),
+    /duplicate verdict case ID case-a/,
+  );
+
+  await assert.rejects(
+    classifyListPagesPreviewDifferential(await writeIdentityFixture({
+      references: [first, first],
+      cases: [
+        identityBoundMatch(first),
+        identityBoundMatch(second),
+      ],
+    })),
+    /duplicate live reference case ID case-a/,
+  );
+
+  await assert.rejects(
+    classifyListPagesPreviewDifferential(await writeIdentityFixture({
+      references: [first, second],
+      cases: [identityBoundMatch(first)],
+    })),
+    /verdict\/reference case IDs differ.*missing case-b/,
+  );
+
+  const extra = reference("case-c", "source c", "<p>c</p>");
+  await assert.rejects(
+    classifyListPagesPreviewDifferential(await writeIdentityFixture({
+      references: [first, second],
+      cases: [
+        identityBoundMatch(first),
+        identityBoundMatch(extra),
+      ],
+    })),
+    /verdict\/reference case IDs differ.*missing case-b.*extra case-c/,
+  );
+});
+
+test("preview classifier binds every verdict row to source and live HTML identities", async () => {
+  const live = reference("case-a", "source a", "<p>a</p>");
+
+  for (const [name, identities] of [
+    ["missing", undefined],
+    ["source", {
+      source_sha256: "0".repeat(64),
+      live_html_sha256: live.raw_html_sha256,
+    }],
+    ["live HTML", {
+      source_sha256: live.source_sha256,
+      live_html_sha256: "0".repeat(64),
+    }],
+  ]) {
+    const row = identityBoundMatch(live);
+    row.comparison.identities = identities;
+    await assert.rejects(
+      classifyListPagesPreviewDifferential(await writeIdentityFixture({
+        references: [live],
+        cases: [row],
+      })),
+      new RegExp(`verdict ${name} identity`, "u"),
+    );
+  }
+});
+
+test("authoritative classification preserves and revalidates the runtime identity chain", async () => {
+  const live = reference("case-a", "source a", "<p>a</p>");
+  const fixture = await writeIdentityFixture({
+    references: [live],
+    cases: [identityBoundMatch(live)],
+  });
+  const runtimeIdentityPath = path.join(
+    path.dirname(fixture.verdictPath),
+    "runtime-identity.json",
+  );
+  const runtimeProofPath = path.join(
+    path.dirname(fixture.verdictPath),
+    "runtime-proof.json",
+  );
+  const runtimeIdentityText = '{"schema":"validated-runtime-identity"}\n';
+  const runtimeProofText = '{"schema":"validated-running-proof"}\n';
+  await fs.writeFile(runtimeIdentityPath, runtimeIdentityText);
+  await fs.writeFile(runtimeProofPath, runtimeProofText);
+  const verdict = JSON.parse(await fs.readFile(fixture.verdictPath, "utf8"));
+  const referencesText = await fs.readFile(fixture.referencesPath, "utf8");
+  verdict.inputs = {
+    authority: { mode: "authoritative", completion_eligible: true },
+    references_path: fixture.referencesPath,
+    references_sha256: sha256(referencesText),
+    runtime_identity_path: runtimeIdentityPath,
+    runtime_identity_sha256: sha256(runtimeIdentityText),
+    runtime_proof_path: runtimeProofPath,
+    runtime_proof_sha256: sha256(runtimeProofText),
+  };
+  await fs.writeFile(fixture.verdictPath, JSON.stringify(verdict));
+
+  const classified = await classifyListPagesPreviewDifferential({
+    ...fixture,
+    authoritative: true,
+  });
+  assert.deepEqual(classified.inputs.authority, {
+    mode: "authoritative",
+    completion_eligible: true,
+    runtime_identity_sha256: sha256(runtimeIdentityText),
+    runtime_proof_sha256: sha256(runtimeProofText),
+  });
+
+  await fs.writeFile(runtimeIdentityPath, '{"changed":true}\n');
+  await assert.rejects(
+    classifyListPagesPreviewDifferential({
+      ...fixture,
+      authoritative: true,
+    }),
+    /runtime identity changed after the preview verdict/,
+  );
+
+  verdict.inputs.authority = {
+    mode: "diagnostic",
+    completion_eligible: false,
+  };
+  await fs.writeFile(fixture.verdictPath, JSON.stringify(verdict));
+  await assert.rejects(
+    classifyListPagesPreviewDifferential({
+      ...fixture,
+      authoritative: true,
+    }),
+    /authoritative classification requires an authoritative preview verdict/,
+  );
+});
+
+test("classification CLI and writer preserve authoritative evidence", async () => {
+  const parsed = parsePreviewClassificationArgs([
+    "node",
+    "classify-listpages-preview-differential.mjs",
+    "--verdict",
+    "verdict.json",
+    "--references",
+    "references.jsonl",
+    "--authoritative",
+    "--output",
+    "classification.json",
+  ]);
+  assert.equal(parsed.authoritative, true);
+
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-classification-output-"),
+  );
+  const output = path.join(root, "classification.json");
+  const classification = { schema: "classification" };
+  await writeListPagesPreviewClassification(classification, output);
+  await assert.rejects(
+    writeListPagesPreviewClassification(classification, output),
+    (error) => error?.code === "EEXIST",
+  );
+});
 
 test("preview classifier separates oracle defects from fixture-state mismatches", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
@@ -157,6 +371,7 @@ test("preview classifier recognizes executed wrapper-free modules", async () => 
       live: { visible_text: "1. live one\n2. live two" },
       local: { visible_text: "1. local", html_sha256: "c".repeat(64) },
       comparison: {
+        identities: referenceIdentities.get("wrapper-free"),
         checks: {
           dom_tree: {
             status: "mismatch",
@@ -204,6 +419,7 @@ test("preview classifier does not mask a missing zero-row line as fixture state"
       live: { visible_text: "ZERO_PRE" },
       local: { visible_text: "", html_sha256: "c".repeat(64) },
       comparison: {
+        identities: referenceIdentities.get("zero-row-prepend"),
         checks: {
           dom_tree: {
             status: "mismatch",
@@ -279,6 +495,7 @@ test("literal-context replay isolates ListPages ownership from unrelated renderi
       },
       local: { visible_text: localText, html_sha256: "d".repeat(64) },
       comparison: {
+        identities: referenceIdentities.get(caseId),
         checks: {
           dom_tree: { status: "mismatch", local: localDom },
         },

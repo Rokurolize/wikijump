@@ -444,19 +444,103 @@ function classifyMismatch(row, reference) {
 export async function classifyListPagesPreviewDifferential({
   verdictPath,
   referencesPath,
+  authoritative = false,
 }) {
   const verdictText = await fs.readFile(verdictPath, "utf8");
   const verdict = JSON.parse(verdictText);
   const referencesText = await fs.readFile(referencesPath, "utf8");
+  let authority = {
+    mode: "diagnostic",
+    completion_eligible: false,
+  };
+  if (authoritative) {
+    if (
+      verdict.inputs?.authority?.mode !== "authoritative" ||
+      verdict.inputs.authority.completion_eligible !== true
+    ) {
+      throw new Error(
+        "authoritative classification requires an authoritative preview verdict",
+      );
+    }
+    if (verdict.inputs.references_sha256 !== sha256(referencesText)) {
+      throw new Error("live references changed after the preview verdict");
+    }
+    for (const [kind, pathField, hashField] of [
+      [
+        "runtime identity",
+        "runtime_identity_path",
+        "runtime_identity_sha256",
+      ],
+      ["runtime proof", "runtime_proof_path", "runtime_proof_sha256"],
+    ]) {
+      const inputPath = verdict.inputs[pathField];
+      const inputHash = verdict.inputs[hashField];
+      if (
+        typeof inputPath !== "string" ||
+        !/^[0-9a-f]{64}$/u.test(inputHash ?? "")
+      ) {
+        throw new Error(`authoritative preview verdict has no ${kind} binding`);
+      }
+      const currentText = await fs.readFile(inputPath, "utf8");
+      if (sha256(currentText) !== inputHash) {
+        throw new Error(`${kind} changed after the preview verdict`);
+      }
+    }
+    authority = {
+      mode: "authoritative",
+      completion_eligible: true,
+      runtime_identity_sha256: verdict.inputs.runtime_identity_sha256,
+      runtime_proof_sha256: verdict.inputs.runtime_proof_sha256,
+    };
+  }
   const references = (await readJsonl(referencesPath)).map(validateWikidotReference);
+  const referenceIds = new Set();
+  for (const reference of references) {
+    const caseId = reference.syntax_case.case_id;
+    if (referenceIds.has(caseId)) {
+      throw new Error(`duplicate live reference case ID ${caseId}`);
+    }
+    referenceIds.add(caseId);
+  }
   const referencesById = new Map(
     references.map((reference) => [reference.syntax_case.case_id, reference]),
   );
+  if (!Array.isArray(verdict.cases)) {
+    throw new Error("preview verdict cases must be an array");
+  }
+  const verdictIds = new Set();
+  for (const row of verdict.cases) {
+    if (verdictIds.has(row.case_id)) {
+      throw new Error(`duplicate verdict case ID ${row.case_id}`);
+    }
+    verdictIds.add(row.case_id);
+  }
+  const missing = [...referenceIds].filter((caseId) => !verdictIds.has(caseId));
+  const extra = [...verdictIds].filter((caseId) => !referenceIds.has(caseId));
+  if (missing.length > 0 || extra.length > 0) {
+    throw new Error(
+      [
+        "verdict/reference case IDs differ",
+        missing.length > 0 ? `missing ${missing.join(", ")}` : null,
+        extra.length > 0 ? `extra ${extra.join(", ")}` : null,
+      ].filter(Boolean).join(": "),
+    );
+  }
 
   const cases = verdict.cases.map((row) => {
     const reference = referencesById.get(row.case_id);
-    if (!reference) {
-      throw new Error(`missing live reference for ${row.case_id}`);
+    const identities = row.comparison?.identities;
+    if (
+      identities?.source_sha256 === undefined ||
+      identities?.live_html_sha256 === undefined
+    ) {
+      throw new Error(`verdict missing identity for ${row.case_id}`);
+    }
+    if (identities.source_sha256 !== reference.source_sha256) {
+      throw new Error(`verdict source identity differs for ${row.case_id}`);
+    }
+    if (identities.live_html_sha256 !== reference.raw_html_sha256) {
+      throw new Error(`verdict live HTML identity differs for ${row.case_id}`);
     }
     const result = row.status === "match"
       ? {
@@ -483,11 +567,6 @@ export async function classifyListPagesPreviewDifferential({
     };
   });
 
-  if (cases.length !== references.length) {
-    throw new Error(
-      `verdict/reference case count differs: ${cases.length} != ${references.length}`,
-    );
-  }
   const counts = {};
   const dispositions = {};
   for (const row of cases) {
@@ -502,6 +581,7 @@ export async function classifyListPagesPreviewDifferential({
       verdict_sha256: sha256(verdictText),
       references_path: referencesPath,
       references_sha256: sha256(referencesText),
+      authority,
     },
     cases,
     summary: {
@@ -520,6 +600,6 @@ export async function writeListPagesPreviewClassification(
   await fs.writeFile(
     outputPath,
     `${JSON.stringify(classification, null, 2)}\n`,
-    { mode: 0o600 },
+    { encoding: "utf8", flag: "wx", mode: 0o600 },
   );
 }

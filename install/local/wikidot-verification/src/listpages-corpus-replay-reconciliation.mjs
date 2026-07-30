@@ -61,6 +61,7 @@ export async function reconcileListPagesCorpusReplay({
   invocationsPath,
   classificationPath = null,
   classificationPaths = null,
+  authoritative = false,
 }) {
   const selectedClassificationPaths = classificationPaths ??
     (classificationPath ? [classificationPath] : []);
@@ -84,6 +85,8 @@ export async function reconcileListPagesCorpusReplay({
   const classificationsBySource = new Map();
   const classificationCaseKeys = new Set();
   const classificationInputs = [];
+  let authoritativeRuntimeIdentitySha256 = null;
+  let authoritativeRuntimeProofSha256 = null;
   for (const selectedPath of selectedClassificationPaths) {
     const classificationText = await fs.readFile(selectedPath, "utf8");
     const classification = JSON.parse(classificationText);
@@ -93,6 +96,86 @@ export async function reconcileListPagesCorpusReplay({
     ) {
       throw new Error("preview classification schema is unsupported");
     }
+    if (authoritative) {
+      const authority = classification.inputs?.authority;
+      if (
+        authority?.mode !== "authoritative" ||
+        authority.completion_eligible !== true
+      ) {
+        throw new Error(
+          "authoritative reconciliation requires authoritative classifications",
+        );
+      }
+      const verdictPath = classification.inputs?.verdict_path;
+      const verdictSha256 = classification.inputs?.verdict_sha256;
+      if (
+        typeof verdictPath !== "string" ||
+        !/^[0-9a-f]{64}$/u.test(verdictSha256 ?? "")
+      ) {
+        throw new Error("authoritative classification has no verdict binding");
+      }
+      const verdictText = await fs.readFile(verdictPath, "utf8");
+      if (sha256(verdictText) !== verdictSha256) {
+        throw new Error("preview verdict changed after classification");
+      }
+      const verdict = JSON.parse(verdictText);
+      if (
+        verdict.inputs?.authority?.mode !== "authoritative" ||
+        verdict.inputs.authority.completion_eligible !== true
+      ) {
+        throw new Error("classification verdict is not authoritative");
+      }
+      if (
+        verdict.inputs.runtime_identity_sha256 !==
+          authority.runtime_identity_sha256 ||
+        verdict.inputs.runtime_proof_sha256 !== authority.runtime_proof_sha256
+      ) {
+        throw new Error(
+          "classification runtime identity chain differs from its verdict",
+        );
+      }
+      const referencesText = await fs.readFile(
+        classification.inputs.references_path,
+        "utf8",
+      );
+      if (
+        sha256(referencesText) !== classification.inputs.references_sha256 ||
+        classification.inputs.references_sha256 !==
+          verdict.inputs.references_sha256
+      ) {
+        throw new Error(
+          "live references changed after preview classification",
+        );
+      }
+      for (const [kind, pathField, hashField] of [
+        [
+          "runtime identity",
+          "runtime_identity_path",
+          "runtime_identity_sha256",
+        ],
+        ["runtime proof", "runtime_proof_path", "runtime_proof_sha256"],
+      ]) {
+        const currentText = await fs.readFile(
+          verdict.inputs[pathField],
+          "utf8",
+        );
+        if (sha256(currentText) !== verdict.inputs[hashField]) {
+          throw new Error(`${kind} changed after preview classification`);
+        }
+      }
+      authoritativeRuntimeIdentitySha256 ??=
+        authority.runtime_identity_sha256;
+      authoritativeRuntimeProofSha256 ??= authority.runtime_proof_sha256;
+      if (
+        authoritativeRuntimeIdentitySha256 !==
+          authority.runtime_identity_sha256 ||
+        authoritativeRuntimeProofSha256 !== authority.runtime_proof_sha256
+      ) {
+        throw new Error(
+          "authoritative classification shards use different runtime identities",
+        );
+      }
+    }
     const classificationInput = {
       path: selectedPath,
       sha256: sha256(classificationText),
@@ -100,6 +183,10 @@ export async function reconcileListPagesCorpusReplay({
       references_path: classification.inputs?.references_path ?? null,
       current_case_count: 0,
       stale_case_count: 0,
+      authority: classification.inputs?.authority ?? {
+        mode: "diagnostic",
+        completion_eligible: false,
+      },
     };
     for (const row of classification.cases ?? []) {
       validateSourceIdentity(row, "preview classification");
@@ -177,6 +264,17 @@ export async function reconcileListPagesCorpusReplay({
     schema: LISTPAGES_CORPUS_REPLAY_RECONCILIATION_SCHEMA,
     generated_at: new Date().toISOString(),
     inputs: {
+      authority: authoritative
+        ? {
+            mode: "authoritative",
+            completion_eligible: true,
+            runtime_identity_sha256: authoritativeRuntimeIdentitySha256,
+            runtime_proof_sha256: authoritativeRuntimeProofSha256,
+          }
+        : {
+            mode: "diagnostic",
+            completion_eligible: false,
+          },
       invocations_path: invocationsPath,
       invocations_sha256: sha256(invocationsText),
       classifications: classificationInputs,
