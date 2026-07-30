@@ -1,8 +1,34 @@
 {
   "schema": "wikijump.listpages_late_evidence_manifest.v1",
-  "authority": "Frozen anonymous Wikidot PagePreview references for issues #984-#1010; issue #983 has saved-page lifecycle evidence outside this JSONL set.",
-  "family_count": 31,
-  "case_count": 1134,
+  "authority": "Frozen live Wikidot PagePreview and saved-page references for issues #983-#1010.",
+  "family_count": 32,
+  "case_count": 1142,
+  "html_preview_context": {
+    "issue": 983,
+    "preview_case_count": 8,
+    "files": {
+      "identity.json": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/identity.json",
+        "sha256": "232430a6ab0c00725a926ea51b76b5af578301e2f6c7889ee6adb3b882dc6699"
+      },
+      "scp-wiki-anonymous.jsonl": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/scp-wiki-anonymous.jsonl",
+        "sha256": "1882f1335a3acc37ebad788787399906d9130a028365fda85163514d6b8c561b"
+      },
+      "fondazionescp-scp-245-live-source.wikidot.txt": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-live-source.wikidot.txt",
+        "sha256": "4290bbfafdc829e20cd99e7639e2e4cf705fa819a64129d07391f8e6bcebe562"
+      },
+      "fondazionescp-scp-245-saved-page.html": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html",
+        "sha256": "c8897e00f3c1ca737de3dd9da23e6059194c5533d39d9459a5521334e963afb0"
+      },
+      "fondazionescp-scp-245-html-frame.html": {
+        "path": "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-html-frame.html",
+        "sha256": "f24d95fb5e7a8118f22bb061ccea72bee6888c3381135175b82fa10bc66bd2a5"
+      }
+    }
+  },
   "entries": [
     {
       "family": "category-name",

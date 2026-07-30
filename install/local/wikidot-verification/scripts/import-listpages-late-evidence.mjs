@@ -14,6 +14,13 @@ const defaultManifest = path.join(
   "artifacts",
   "listpages-late-evidence-manifest.json",
 );
+const htmlContextFiles = [
+  "identity.json",
+  "scp-wiki-anonymous.jsonl",
+  "fondazionescp-scp-245-live-source.wikidot.txt",
+  "fondazionescp-scp-245-saved-page.html",
+  "fondazionescp-scp-245-html-frame.html",
+];
 
 const families = [
   ["primary", "category-name", [986]],
@@ -52,6 +59,7 @@ const families = [
 function parseArgs(argv) {
   const args = {
     check: false,
+    htmlOnly: false,
     primaryRoot: null,
     continuationRoot: null,
     outputRoot: defaultOutputRoot,
@@ -61,6 +69,8 @@ function parseArgs(argv) {
     const option = argv[index];
     if (option === "--check") {
       args.check = true;
+    } else if (option === "--html-only") {
+      args.htmlOnly = true;
     } else if (option === "--primary-root") {
       args.primaryRoot = path.resolve(argv[++index]);
     } else if (option === "--continuation-root") {
@@ -73,7 +83,10 @@ function parseArgs(argv) {
       throw new Error(`unknown argument: ${option}`);
     }
   }
-  if (!args.check && (!args.primaryRoot || !args.continuationRoot)) {
+  if (!args.check && !args.primaryRoot) {
+    throw new Error("--primary-root is required when importing");
+  }
+  if (!args.check && !args.htmlOnly && !args.continuationRoot) {
     throw new Error("--primary-root and --continuation-root are required when importing");
   }
   return args;
@@ -124,6 +137,38 @@ async function readPair(root, family) {
   return { casesBytes, liveBytes, count: cases.length };
 }
 
+async function readHtmlContext(outputRoot) {
+  const contextRoot = path.join(outputRoot, "html-preview-context");
+  const files = {};
+  for (const filename of htmlContextFiles) {
+    const bytes = await fs.readFile(path.join(contextRoot, filename));
+    files[filename] = {
+      path: `install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/${filename}`,
+      sha256: sha256(bytes),
+      bytes,
+    };
+  }
+  const preview = parseJsonl(
+    files["scp-wiki-anonymous.jsonl"].bytes,
+    files["scp-wiki-anonymous.jsonl"].path,
+  );
+  for (const reference of preview) {
+    assert.equal(reference.site, "scp-wiki");
+    assert.equal(reference.actor, "anonymous");
+    assert.equal(reference.authenticated, false);
+  }
+  return {
+    issue: 983,
+    preview_case_count: preview.length,
+    files: Object.fromEntries(
+      Object.entries(files).map(([filename, { path: filePath, sha256: hash }]) => [
+        filename,
+        { path: filePath, sha256: hash },
+      ]),
+    ),
+  };
+}
+
 async function buildManifest(outputRoot) {
   const entries = [];
   for (const [source, family, issues] of families) {
@@ -143,14 +188,31 @@ async function buildManifest(outputRoot) {
       },
     });
   }
+  const htmlPreviewContext = await readHtmlContext(outputRoot);
   return {
     schema: "wikijump.listpages_late_evidence_manifest.v1",
     authority:
-      "Frozen anonymous Wikidot PagePreview references for issues #984-#1010; issue #983 has saved-page lifecycle evidence outside this JSONL set.",
-    family_count: entries.length,
-    case_count: entries.reduce((total, entry) => total + entry.case_count, 0),
+      "Frozen live Wikidot PagePreview and saved-page references for issues #983-#1010.",
+    family_count: entries.length + 1,
+    case_count:
+      entries.reduce((total, entry) => total + entry.case_count, 0) +
+      htmlPreviewContext.preview_case_count,
+    html_preview_context: htmlPreviewContext,
     entries,
   };
+}
+
+async function importHtmlContext(args) {
+  const sourceRoot = path.join(args.primaryRoot, "html-preview-context");
+  const outputRoot = path.join(args.outputRoot, "html-preview-context");
+  await fs.mkdir(outputRoot, { recursive: true });
+  for (const filename of htmlContextFiles) {
+    await fs.copyFile(
+      path.join(sourceRoot, filename),
+      path.join(outputRoot, filename),
+      fs.constants.COPYFILE_EXCL,
+    );
+  }
 }
 
 async function importPairs(args) {
@@ -172,6 +234,18 @@ async function importPairs(args) {
       ),
     ]);
   }
+  await importHtmlContext(args);
+  const manifest = await buildManifest(args.outputRoot);
+  await fs.mkdir(path.dirname(args.manifest), { recursive: true });
+  await fs.writeFile(args.manifest, `${JSON.stringify(manifest, null, 2)}\n`, {
+    flag: "wx",
+    mode: 0o644,
+  });
+  return manifest;
+}
+
+async function importHtmlOnly(args) {
+  await importHtmlContext(args);
   const manifest = await buildManifest(args.outputRoot);
   await fs.mkdir(path.dirname(args.manifest), { recursive: true });
   await fs.writeFile(args.manifest, `${JSON.stringify(manifest, null, 2)}\n`, {
@@ -189,10 +263,14 @@ async function checkPairs(args) {
 }
 
 const args = parseArgs(process.argv);
-const manifest = args.check ? await checkPairs(args) : await importPairs(args);
+const manifest = args.check
+  ? await checkPairs(args)
+  : args.htmlOnly
+    ? await importHtmlOnly(args)
+    : await importPairs(args);
 console.log(
   JSON.stringify({
-    mode: args.check ? "check" : "import",
+    mode: args.check ? "check" : args.htmlOnly ? "html-only" : "import",
     family_count: manifest.family_count,
     case_count: manifest.case_count,
     manifest: args.manifest,
