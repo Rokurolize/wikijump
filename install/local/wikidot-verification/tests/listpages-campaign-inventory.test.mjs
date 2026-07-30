@@ -90,7 +90,7 @@ test("ListPages extraction preserves duplicates, URL attributes, body sections, 
     '[[module ListPages tags="@URL|scp" tags="+featured" perPage="2"]]',
     "[[head]]H[[/head]]",
     "[[body]]%%title_linked%%[[/body]]",
-    "[[/module]]",
+    "[[ /module ]]",
     '[[module ListPages name="unterminated"',
   ].join("\n");
 
@@ -108,8 +108,94 @@ test("ListPages extraction preserves duplicates, URL attributes, body sections, 
   assert.deepEqual(invocations[0].url_driven_attributes, ["tags"]);
   assert.deepEqual(invocations[0].body_sections.sort(), ["body", "head"]);
   assert.deepEqual(invocations[0].template_variables, ["title_linked"]);
+  assert.equal(
+    invocations[0].source,
+    [
+      '[[module ListPages tags="@URL|scp" tags="+featured" perPage="2"]]',
+      "[[head]]H[[/head]]",
+      "[[body]]%%title_linked%%[[/body]]",
+      "[[ /module ]]",
+    ].join("\n"),
+  );
   assert.equal(invocations[1].balanced, false);
   assert.equal(invocations[1].malformed_reason, "unclosed-module-head");
+  assert.equal(invocations[1].source, '[[module ListPages name="unterminated"');
+});
+
+test("ListPages extraction preserves literal surrounding usage for contextual replay", () => {
+  const source = [
+    "@@[[module ListPages tags=\"raw\"]]@@",
+    "[[code]]",
+    '[[module ListPages tags="code"]]',
+    "[[/code]]",
+    "[!-- [[module ListPages tags=\"comment\"]] --]",
+    '[[module ListPages tags="runtime"]]',
+    "%%title%%",
+    "[[/module]]",
+  ].join("\n");
+
+  const invocations = extractListPagesInvocationsFromSource({
+    corpusRoot: "/corpus/en",
+    branch: "en",
+    pageFullname: "literal-examples",
+    sourcePath: "/corpus/en/pages/literal-examples/source.wikidot.txt",
+    source,
+  });
+
+  assert.equal(invocations.length, 4);
+  assert.deepEqual(
+    invocations.map((invocation) => [
+      invocation.execution_context,
+      invocation.literal_owner,
+    ]),
+    [
+      ["literal", "inline-raw"],
+      ["literal", "code-block"],
+      ["literal", "comment"],
+      ["executable", null],
+    ],
+  );
+  assert.equal(
+    invocations[0].context_replay_source,
+    '@@[[module ListPages tags="raw"]]@@',
+  );
+  assert.equal(
+    invocations[1].context_replay_source,
+    '[[code]]\n[[module ListPages tags="code"]]\n[[/code]]',
+  );
+  assert.equal(
+    invocations[2].context_replay_source,
+    '[!-- [[module ListPages tags="comment"]] --]',
+  );
+  assert.equal(invocations[3].context_replay_source, null);
+  assert.equal(invocations[3].source, '[[module ListPages tags="runtime"]]\n%%title%%\n[[/module]]');
+});
+
+test("literal ownership caps an unterminated quoted module head at its comment", () => {
+  const source = [
+    "[!--",
+    '[[module ListPages order="unterminated]',
+    "%%title%%",
+    "[[/module]]",
+    "--]",
+    'outside the comment"',
+    "]]",
+  ].join("\n");
+
+  const [invocation] = extractListPagesInvocationsFromSource({
+    corpusRoot: "/corpus/en",
+    branch: "en",
+    pageFullname: "malformed-literal",
+    sourcePath: "/corpus/en/pages/malformed-literal/source.wikidot.txt",
+    source,
+  });
+
+  assert.equal(invocation.execution_context, "literal");
+  assert.equal(invocation.literal_owner, "comment");
+  assert.equal(invocation.balanced, false);
+  assert.equal(invocation.malformed_reason, "literal-module-opening");
+  assert.ok(invocation.context_replay_source.includes(invocation.source));
+  assert.ok(!invocation.source.includes("outside the comment"));
 });
 
 test("corpus inventory scans selected branches and clusters semantic usages", async () => {

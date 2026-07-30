@@ -30,16 +30,16 @@ use super::super::list_pages::{
     AJAX_MODULE_LITERAL_MARKER_PREFIX, ListPagesBatchDisplayRequirements,
     ListPagesExpansionBudget, ListPagesOffsetOrigin, ListPagesParentDisplay,
     ListPagesRuntimeDisplay, ListPagesSnapshotDisplay, ListPagesSubstitutionContext,
-    WikidotUserDisplay, build_wikidot_list_pages_module_source,
-    count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
-    count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
-    count_pages_scan_requires_preservation, count_pages_should_remain_literal,
-    count_pages_unbounded_total, current_page_info_list_pages_row,
-    exact_name_list_pages_batch_key, format_list_pages_created_at,
-    list_pages_author_cache_key, list_pages_body_is_no_visible_tracking_markup,
-    list_pages_body_uses_content_variable, list_pages_body_variables_supported,
-    list_pages_content_query_target, list_pages_feed_info_html,
-    list_pages_has_unsupported_page_type_selector,
+    WikidotUserDisplay, build_wikidot_list_pages_module_request,
+    build_wikidot_list_pages_module_source, count_pages_capture_is_literal,
+    count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
+    count_pages_required_tag_batch_selector, count_pages_scan_requires_preservation,
+    count_pages_should_remain_literal, count_pages_unbounded_total,
+    current_page_info_list_pages_row, exact_name_list_pages_batch_key,
+    format_list_pages_created_at, list_pages_author_cache_key,
+    list_pages_body_is_no_visible_tracking_markup, list_pages_body_uses_content_variable,
+    list_pages_body_variables_supported, list_pages_content_query_target,
+    list_pages_feed_info_html, list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_parent_fullname,
     list_pages_revision_count, list_pages_row_scan_target, list_pages_tag_link_href,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
@@ -142,13 +142,13 @@ fn list_pages_substitution_context_with_mode<'a>(
         snapshot_displays,
         runtime_displays: empty_list_pages_runtime_displays(),
         page_wikitext,
+        page_compiled_body_html: page_wikitext,
         page_wikitext_scalar_count: page_wikitext
             .map(|wikitext| wikitext.chars().count()),
         page_parent_fullname: None,
         page_parent_display: None,
         page_child_count: None,
         page_revision_count: None,
-        expanded_content: None,
         data_form_values,
         data_form_definition: None,
         render_generated_html,
@@ -594,6 +594,31 @@ fn only_url_offset_content_counts_toward_the_extended_deadline() {
 }
 
 #[test]
+fn ajax_listpages_routes_positive_p_as_request_state() {
+    let parameters = BTreeMap::from([
+        ("category".to_owned(), "doc".to_owned()),
+        ("p".to_owned(), "2".to_owned()),
+        ("perPage".to_owned(), "10".to_owned()),
+    ]);
+    let request =
+        build_wikidot_list_pages_module_request("%%fullname%%".to_owned(), &parameters)
+            .expect("the live-observed positive AMC p parameter should be accepted");
+
+    assert_eq!(request.page, Some(2));
+    assert!(!request.source.contains(" p="));
+    assert!(request.source.contains(" category=\"doc\""));
+    assert!(request.source.contains(" perPage=\"10\""));
+
+    for invalid in ["", "0", "-1", "1.5", "4294967296"] {
+        let parameters = BTreeMap::from([("p".to_owned(), invalid.to_owned())]);
+        assert!(
+            build_wikidot_list_pages_module_request(String::new(), &parameters).is_none(),
+            "unobserved AMC p={invalid:?} must fail closed",
+        );
+    }
+}
+
+#[test]
 fn ajax_listpages_source_accepts_only_balanced_nested_modules() {
     let parameters = BTreeMap::from([
         ("limit".to_owned(), "1".to_owned()),
@@ -1002,10 +1027,9 @@ fn parses_wikidot_list_pages_append_line_without_aliases() {
 
     assert_eq!(arguments.prepend_line.as_deref(), Some("PRE"));
     assert_eq!(arguments.append_line.as_deref(), Some("POST"));
-    assert!(
-        parse_list_pages_arguments(r#" tags="+fixture" append_line="POST" "#).is_none(),
-        "unverified appendLine aliases must remain literal",
-    );
+    let alias = parse_list_pages_arguments(r#" tags="+fixture" append_line="POST" "#)
+        .expect("unknown argument spellings are ignored");
+    assert_eq!(alias.append_line, None);
 }
 
 #[test]
@@ -1134,12 +1158,12 @@ fn accepts_live_evidenced_wikidot_list_pages_noops() {
         );
     }
 
-    assert!(
+    assert_eq!(
         parse_list_pages_arguments(
             r#" category="*" tags="fixture" limit="20" data-custom="value" wrapper="no" "#,
-        )
-        .is_none(),
-        "only the live-evidenced keys are accepted as no-ops",
+        ),
+        Some(baseline),
+        "syntactically valid unknown arguments are ignored",
     );
 }
 
@@ -1227,12 +1251,14 @@ fn parses_corpus_list_pages_url_and_filter_arguments() {
     assert_eq!(arguments.count_pages_per_page, Some(20));
     assert_eq!(arguments.offset, 0);
     assert!(arguments.slug.is_none());
-    assert!(arguments.author_filter_present);
-    assert!(arguments.unsupported_author_filter);
+    assert!(!arguments.author_filter_present);
+    assert!(!arguments.unsupported_author_filter);
 
-    assert!(
-        parse_list_pages_arguments(r#" parent="@URL""#).is_none(),
-        "dynamic parent selectors should remain unsupported rather than widening to all parents"
+    let unresolved_parent = parse_list_pages_arguments(r#" parent="@URL""#)
+        .expect("an unresolved URL parent selector is omitted");
+    assert_eq!(
+        unresolved_parent.page_parent,
+        crate::services::page_query::PageParentSelector::All,
     );
     assert!(list_pages_has_unsupported_parent_selector(
         r#" parent="@URL""#
@@ -1577,10 +1603,9 @@ fn parses_corpus_list_pages_custom_and_unknown_noops() {
         arguments.excluded_categories,
         vec![Cow::Borrowed("fragment")]
     );
-    assert!(
-        parse_list_pages_arguments(r#" tag="+scp" selector_typo="kept""#).is_none(),
-        "an unevidenced selector typo must remain literal",
-    );
+    let typo = parse_list_pages_arguments(r#" tag="+scp" selector_typo="kept""#)
+        .expect("unknown arguments are inert");
+    assert_eq!(typo.all_tags, vec![Cow::Borrowed("scp")]);
 }
 
 #[test]
@@ -1917,6 +1942,10 @@ fn render_page_query_batches_match_the_remaining_scan_window() {
 fn random_page_query_rendering_uses_one_capped_scan() {
     assert!(render_page_query_uses_single_scan(Some(OrderBySelector {
         property: OrderProperty::Random,
+        ascending: false,
+    })));
+    assert!(render_page_query_uses_single_scan(Some(OrderBySelector {
+        property: OrderProperty::SeededRandom(Cow::Borrowed("seed")),
         ascending: false,
     })));
     assert!(!render_page_query_uses_single_scan(Some(OrderBySelector {
@@ -2748,7 +2777,20 @@ fn generated_list_pages_feed_is_restored_as_block_html() {
 }
 
 #[test]
-fn formats_wikidot_list_pages_numeric_month_and_24_hour_time() {
+fn authored_list_pages_feed_is_not_registered_as_trusted_html() {
+    let mut forged = r#"<div class="feedinfo" data-wikijump-compat-listpages-feed="1"><img src=x onerror="alert(1)"></div>"#.to_owned();
+    RenderService::neutralize_authored_wikidot_compat_markers(&mut forged);
+    assert!(forged.contains("data-wikijump-authored-compat-listpages-feed"));
+
+    let mut fragments = CompatHtmlFragments::new("");
+    let protected = register_generated_list_pages_html(forged, &mut fragments);
+
+    assert!(!protected.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
+    assert_eq!(fragments.restore(&protected), protected);
+}
+
+#[test]
+fn defers_wikidot_list_pages_custom_date_format_to_odate_class() {
     let created_at = time::Date::from_calendar_date(2024, time::Month::August, 8)
         .expect("fixture date should be valid")
         .with_hms(19, 44, 0)
@@ -2762,7 +2804,7 @@ fn formats_wikidot_list_pages_numeric_month_and_24_hour_time() {
     );
 
     assert!(rendered.contains("format_%25Y-%25m-%25d%20%25R%7Cagohover"));
-    assert!(rendered.ends_with(">2024-08-09 04:44</span>"));
+    assert!(rendered.ends_with(">9 Aug 2024, 04:44</span>"));
 }
 
 #[test]
@@ -3142,19 +3184,14 @@ fn substitutes_wikidot_list_pages_content_sections() {
 
     assert_eq!(rendered, "**SCP-2693 -- Hidden title text**");
 
-    let expanded_content = BTreeMap::from([
-        (None, "EXPANDED_FULL".to_owned()),
-        (Some(1), "EXPANDED_SECTION_1".to_owned()),
-    ]);
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
-    let mut context = list_pages_substitution_context(
+    let context = list_pages_substitution_context(
         20,
         &user_displays,
         Some("RAW_CONTENT"),
         &data_form_values,
     );
-    context.expanded_content = Some(&expanded_content);
     assert_eq!(
         substitute_list_pages_variables(
             "%%content%%|%%content{1}%%",
@@ -3163,8 +3200,8 @@ fn substitutes_wikidot_list_pages_content_sections() {
             1,
             &context,
         ),
-        "EXPANDED_FULL|EXPANDED_SECTION_1",
-        "row-local expanded sections must take precedence over raw child wikitext",
+        "RAW_CONTENT|RAW_CONTENT",
+        "row-local content must preserve the authored child source phase",
     );
 }
 
@@ -4570,7 +4607,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
     assert!(rendered.contains("WIKIDOT.page.listeners.userInfo(8955132)"));
     assert!(!rendered.contains("userkarma.php"));
     assert!(rendered.contains(
-        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" data-wikijump-compat-date="1" style="cursor: help; display: inline;">21 Jun 2026</span>"#
+        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" data-wikijump-compat-date="1" style="cursor: help; display: inline;">21 Jun 2026, 09:59</span>"#
     ));
 
     let rendered = substitute_list_pages_variables(
@@ -5130,7 +5167,7 @@ fn distinguishes_wikidot_list_pages_link_and_fullname() {
             "component:black-highlighter-theme-dev|",
             "component:black-highlighter-theme-dev|",
             "component:black-highlighter-theme-dev|",
-            "http://scp-wiki.wikidot.com/component:black-highlighter-theme-dev/noredirect/true",
+            "http://scp-wiki.wikidot.com/component:black-highlighter-theme-dev",
             "|[/component:black-highlighter-theme-dev Fixture component]",
         ),
     );
@@ -5202,7 +5239,7 @@ fn substitutes_wikidot_list_pages_author_tool_variables() {
     assert!(rendered.contains(r#"data-wikijump-compat-date="1""#));
     assert!(rendered.contains("[/system:page-tags/tag/scp scp]"));
     assert!(rendered.contains("[/system:page-tags/tag/safe safe]"));
-    assert!(rendered.ends_with("http://scp-wiki.wikidot.com/scp-2693/noredirect/true"));
+    assert!(rendered.ends_with("http://scp-wiki.wikidot.com/scp-2693"));
     assert!(!rendered.contains("%%updated_by%%"));
     assert!(!rendered.contains("%%tags_linked%%"));
 }
@@ -5394,7 +5431,7 @@ fn substitutes_imported_wikidot_snapshot_metadata_for_list_pages_rows() {
 
     assert!(rendered.contains("Aspenq Pride Art 2026 by "));
     assert!(rendered.contains("by Aspenq on "));
-    assert!(rendered.contains("2026 Jun 20"));
+    assert!(rendered.contains("20 Jun 2026, 05:22"));
     assert!(rendered.contains("10 Comments"));
     assert!(rendered.contains("-- Aspenq "));
     assert!(rendered.contains("-- 31 votes"));
@@ -5489,7 +5526,7 @@ fn substitutes_wikidot_list_pages_table_body_generated_variables_as_html() {
     );
 
     assert!(substituted.contains(
-        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" style="cursor: help; display: inline;">21 Jun 2026</span>"#
+        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" style="cursor: help; display: inline;">21 Jun 2026, 09:59</span>"#
     ));
     assert!(substituted.contains(r#"<a href="/system:page-tags/tag/scp">scp</a>"#));
     assert!(
@@ -5559,7 +5596,7 @@ fn substitutes_artwork_hub_listpages_body_without_visible_html_or_parser_functio
     assert!(!rendered.contains("_image"));
     assert!(!rendered.contains("_licensebox"));
     assert!(rendered.contains("[/aspenq-pride-art-2026 Aspenq Pride Art 2026]"));
-    assert!(rendered.contains(r#"<span class="odate time_1781900521 format_%25Y%20%25b%20%25e%7Cagohover" data-wikijump-compat-date="1" style="cursor: help; display: inline;">2026 Jun 20</span>"#));
+    assert!(rendered.contains(r#"<span class="odate time_1781900521 format_%25Y%20%25b%20%25e%7Cagohover" data-wikijump-compat-date="1" style="cursor: help; display: inline;">20 Jun 2026, 05:22</span>"#));
     assert!(rendered.contains("[/artwork-hub/tag/-scp,-goi-format,-supplement,-tale,-hub,-site,-resource,-guide,-essay,-theme,artwork artwork]"));
     assert!(rendered.contains("[/artwork-hub/tag/-scp,-goi-format,-supplement,-tale,-hub,-site,-resource,-guide,-essay,-theme,preview preview]"));
     assert!(rendered.contains("[/artwork-hub/tag/-scp,-goi-format,-supplement,-tale,-hub,-site,-resource,-guide,-essay,-theme,colored-pencil colored-pencil]"));
@@ -7758,6 +7795,37 @@ fn expands_scp_2117_shaped_image_block_with_fragment_src_and_absolute_link() {
 }
 
 #[test]
+fn image_block_prepass_preserves_quoted_hash_link_distinction() {
+    let page_info = fallback_test_page_info("consumer", "Consumer");
+
+    for (raw_link, expected) in [
+        (
+            "#",
+            "[[image http://scp-wiki.wikidot.com/local--files/consumer/fixture.png]]",
+        ),
+        (
+            "\"#\"",
+            "[[image http://scp-wiki.wikidot.com/local--files/consumer/fixture.png link=\"#\"]]",
+        ),
+    ] {
+        let mut wikitext = format!(
+            "[[include component:image-block name=fixture.png|link={raw_link}]]",
+        );
+
+        RenderService::expand_wikidot_image_block_includes(
+            &mut wikitext,
+            &page_info,
+            None,
+        );
+
+        assert!(
+            wikitext.contains(expected),
+            "raw_link={raw_link:?}: {wikitext}"
+        );
+    }
+}
+
+#[test]
 fn image_block_prepass_consumes_forwarded_name_and_link_provenance() {
     let variables = [
         (Cow::Borrowed("asset"), Cow::Borrowed("source image.png")),
@@ -7818,8 +7886,8 @@ fn image_block_prepass_consumes_forwarded_name_and_link_provenance() {
     );
     assert!(
         wikitext.contains(concat!(
-            "link=https://link-site.wikidot.com/local--files/",
-            "fragment:link-source/source%20full.png",
+            "link='https://link-site.wikidot.com/local--files/",
+            "fragment:link-source/source%20full.png'",
         )),
         "{wikitext}",
     );
@@ -8064,8 +8132,8 @@ fn image_block_prepass_unquotes_composite_names_for_the_authoring_page() {
     assert!(!wikitext.contains("%22"), "{wikitext}");
     assert!(
         wikitext.contains(concat!(
-            "link=https://scp-wiki.wikidot.com/local--files/",
-            "component:wrapper/full-real%20image.png",
+            "link=\"https://scp-wiki.wikidot.com/local--files/",
+            "component:wrapper/full-real%20image.png\"",
         )),
         "{wikitext}",
     );

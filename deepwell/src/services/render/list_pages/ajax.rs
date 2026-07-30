@@ -43,19 +43,54 @@ static AJAX_MODULE_LITERAL_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
+#[derive(Debug, PartialEq, Eq)]
+pub(in crate::services::render) struct WikidotListPagesModuleRequest {
+    pub(in crate::services::render) source: String,
+    pub(in crate::services::render) page: Option<u32>,
+}
+
 pub(in crate::services::render) fn build_wikidot_list_pages_module_source(
     module_body: String,
     parameters: &BTreeMap<String, String>,
 ) -> Option<String> {
+    build_wikidot_list_pages_module_request(module_body, parameters)
+        .map(|request| request.source)
+}
+
+pub(in crate::services::render) fn build_wikidot_list_pages_module_request(
+    module_body: String,
+    parameters: &BTreeMap<String, String>,
+) -> Option<WikidotListPagesModuleRequest> {
     if module_body.len() > MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES
         || parameters.len() > MAX_WIKIDOT_AJAX_MODULE_PARAMETERS
     {
         return None;
     }
 
+    let mut page = None;
     let mut source = String::from("[[module ListPages");
     for (key, value) in parameters {
         let normalized_key = key.to_ascii_lowercase();
+        if value.len() > MAX_WIKIDOT_AJAX_MODULE_PARAMETER_BYTES
+            || value.chars().any(|character| character.is_control())
+            || value.contains("]]")
+        {
+            return None;
+        }
+
+        // Live AMC carries the ListPages pager as `p`, but `p` is request
+        // state rather than a module selector. Route it through UrlArguments
+        // so the ordinary pager clamp, generated links, and random cache key
+        // all observe the same page number.
+        if normalized_key == "p" {
+            if page.is_some() {
+                return None;
+            }
+            page = value.trim().parse::<u32>().ok().filter(|page| *page > 0);
+            page?;
+            continue;
+        }
+
         if !matches!(
             normalized_key.as_str(),
             "pagetype"
@@ -91,10 +126,7 @@ pub(in crate::services::render) fn build_wikidot_list_pages_module_source(
                 | "rsshome"
                 | "rsslimit"
                 | "rssonly"
-        ) || value.len() > MAX_WIKIDOT_AJAX_MODULE_PARAMETER_BYTES
-            || value.chars().any(|character| character.is_control())
-            || value.contains("]]")
-        {
+        ) {
             return None;
         }
         let current_page_dependent = (matches!(
@@ -130,14 +162,15 @@ pub(in crate::services::render) fn build_wikidot_list_pages_module_source(
     source.push_str(&module_body);
     source.push_str("\n[[/module]]");
     if wikidot_ajax_list_pages_source_is_safe(&source) {
-        return Some(source);
+        return Some(WikidotListPagesModuleRequest { source, page });
     }
 
     let literalized_body = literalize_ajax_module_markers(&module_body);
     source.truncate(body_start);
     source.push_str(&literalized_body);
     source.push_str("\n[[/module]]");
-    wikidot_ajax_list_pages_source_is_safe(&source).then_some(source)
+    wikidot_ajax_list_pages_source_is_safe(&source)
+        .then_some(WikidotListPagesModuleRequest { source, page })
 }
 
 pub(in crate::services::render) fn protect_ajax_module_literal_markers(

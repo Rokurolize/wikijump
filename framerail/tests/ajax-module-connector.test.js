@@ -128,6 +128,111 @@ test("converts Deepwell failures to a stable Wikidot error envelope", async () =
   }
 })
 
+test("dispatches Wikidot page discussion creation and preserves its wire envelope", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "ForumAction",
+      event: "createPageDiscussionThread",
+      moduleName: "Empty",
+      page_id: "1469071756",
+      callbackIndex: "lane4-callback-success"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render"),
+      createPageDiscussion: async (input) => {
+        received = input
+        return {
+          thread_id: 18232631,
+          thread_unix_title: "lane-4-discussion"
+        }
+      }
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.deepEqual(received, { siteId: 6000006, pageId: 1469071756 })
+  assert.equal(body.status, "ok")
+  assert.equal(body.thread_id, 18232631)
+  assert.equal(body.thread_unix_title, "lane-4-discussion")
+  assert.equal(body.callbackIndex, "lane4-callback-success")
+  assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+})
+
+test("page discussion creation uses Wikidot no_page and stable failure boundaries", async () => {
+  for (const pageId of ["", "-1", "1.5", "9007199254740993"]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({
+        action: "ForumAction",
+        event: "createPageDiscussionThread",
+        moduleName: "Empty",
+        page_id: pageId,
+        callbackIndex: `lane4-callback-${pageId}`
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render"),
+        createPageDiscussion: async () => assert.fail("must not create")
+      }
+    )
+    const body = await response.json()
+    assert.equal(body.status, "no_page")
+    assert.equal(body.message, "The page does not exist")
+    assert.equal(body.callbackIndex, `lane4-callback-${pageId}`)
+    assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+  }
+
+  const missing = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "ForumAction",
+      event: "createPageDiscussionThread",
+      moduleName: "Empty",
+      page_id: "1469071758",
+      callbackIndex: "lane4-callback-missing"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render"),
+      createPageDiscussion: async () => null
+    }
+  )
+  const missingBody = await missing.json()
+  assert.equal(missingBody.status, "no_page")
+  assert.equal(missingBody.message, "The page does not exist")
+  assert.equal(missingBody.callbackIndex, "lane4-callback-missing")
+  assert.equal(Number.isInteger(missingBody.CURRENT_TIMESTAMP), true)
+
+  const originalConsoleError = console.error
+  console.error = () => {}
+  try {
+    const failed = await handleAjaxModuleConnectorRequest(
+      request({
+        action: "ForumAction",
+        event: "createPageDiscussionThread",
+        moduleName: "Empty",
+        page_id: "1469071760",
+        callbackIndex: "lane4-callback-failed"
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render"),
+        createPageDiscussion: async () => {
+          throw new Error("backend unavailable")
+        }
+      }
+    )
+    const failedBody = await failed.json()
+    assert.equal(failedBody.status, "not_ok")
+    assert.equal(failedBody.message, "Unable to create page discussion")
+    assert.equal(failedBody.callbackIndex, "lane4-callback-failed")
+    assert.equal(Number.isInteger(failedBody.CURRENT_TIMESTAMP), true)
+  } finally {
+    console.error = originalConsoleError
+  }
+})
+
 test("dispatches NewPage helper default action with Wikidot edit-routing fields", async () => {
   const pageName = `run-owned:${"x".repeat(51)}`
   const response = await handleAjaxModuleConnectorRequest(

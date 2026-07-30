@@ -75,6 +75,8 @@ async function writeFixtureInventory(root) {
         line_end: 3,
         balanced: true,
         malformed_reason: null,
+        source:
+          '[[module ListPages tags="+scp" limit="2"]]%%title%%[[ /module ]]',
         head: '[[module ListPages tags="+scp" limit="2"]]',
         body: "%%title%%",
         attributes: [
@@ -97,6 +99,7 @@ async function writeFixtureInventory(root) {
         line_end: 5,
         balanced: false,
         malformed_reason: "missing-module-close",
+        source: '[[module ListPages category="fragment"]]',
         head: '[[module ListPages category="fragment"]]',
         body: "",
         attributes: [{ name: "category", value: "fragment" }],
@@ -174,6 +177,14 @@ test("matrix builder emits corpus, generated, navigation, and hash-magic lanes",
     ),
   );
   assert.match(matrix.corpus_cluster_cases[0].source, /\[\[module ListPages/);
+  assert.equal(
+    matrix.corpus_invocation_cases[0].source,
+    '[[module ListPages tags="+scp" limit="2"]]%%title%%[[ /module ]]',
+  );
+  assert.equal(
+    matrix.corpus_invocation_cases[1].source,
+    '[[module ListPages category="fragment"]]',
+  );
   assert.ok(
     matrix.generated_cases.some((row) =>
       row.documentation_claim_ids.includes("doc-include:page-selection:L101"),

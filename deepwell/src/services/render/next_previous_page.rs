@@ -39,7 +39,6 @@ use super::list_pages::{
     parse_list_pages_arguments, register_generated_list_pages_html,
 };
 use super::literal_regions::LiteralRegionIndex;
-use super::runtime::IncludeSourceCache;
 use super::service::{
     IncludeExpansion, IncludeExpansionBudget, MAX_LISTPAGES_RENDER_SCAN_ROWS,
     RenderService,
@@ -133,7 +132,6 @@ impl RenderService {
         include_budget: &mut IncludeExpansionBudget,
         url: UrlArguments<'_>,
         compat_html: &mut CompatHtmlFragments,
-        include_source_cache: &mut IncludeSourceCache,
         compat_text: &mut CompatTextFragments,
     ) -> Result<NextPreviousPageExpansion> {
         if !settings.enable_page_syntax
@@ -231,14 +229,13 @@ impl RenderService {
                     page_id: Some(current_page_id),
                     url,
                 },
+                None,
                 page_info,
-                settings,
                 list_pages_arguments,
                 &template,
                 *include_budget,
                 Some(pages),
                 prefetched_displays.as_ref(),
-                include_source_cache,
                 &mut content_cache,
                 &mut expansion_budget,
                 &mut permission_cache,
@@ -261,7 +258,7 @@ impl RenderService {
                     ));
                     included_pages.extend(replacement_included_pages);
                 }
-                ListPagesBlockRenderResult::PreserveOriginal => {
+                ListPagesBlockRenderResult::PreserveOriginal(_) => {
                     expanded.push_str(
                         &compat_text.push_escaped_html_text(occurrence.original),
                     );

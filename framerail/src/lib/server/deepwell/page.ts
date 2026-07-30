@@ -135,6 +135,26 @@ export async function pageEditPermission(
   return client.request("page_edit_permission", {}, requestContext)
 }
 
+export interface WikidotPageDiscussionOutput {
+  thread_id: number
+  thread_unix_title: string
+}
+
+export async function wikidotPageDiscussionCreate(
+  siteId: number,
+  pageId: number,
+  requestContext: RequestContext = {}
+): Promise<Nullable<WikidotPageDiscussionOutput>> {
+  return client.request(
+    "wikidot_page_discussion_create",
+    {
+      site_id: siteId,
+      page_id: pageId
+    },
+    requestContext
+  )
+}
+
 /* ----- Page History ----- */
 export interface PageRevisionModelFiltered {
   revision_id: number

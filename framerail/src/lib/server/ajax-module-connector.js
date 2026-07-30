@@ -12,6 +12,8 @@ const CONTROL_FIELDS = new Set([
 ])
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
+const PAGE_DISCUSSION_ACTION = "ForumAction"
+const PAGE_DISCUSSION_EVENT = "createPageDiscussionThread"
 const NEWPAGE_AUTOSAVE_MODES = new Set(["save-and-refresh", "save-and-go"])
 const NEWPAGE_NO_NAME_MESSAGE = "You should provide a page name"
 const NEWPAGE_INCORRECT_NAME_MESSAGE =
@@ -46,6 +48,10 @@ const MAX_WIKIDOT_PAGE_UNIX_NAME_LENGTH = 60
  *   createNewPage?: (input: NewPageCreateInput) => Promise<void>
  *   canCreateNewPage?: boolean | (() => boolean | Promise<boolean>)
  *   pageExists?: (slug: string) => boolean | Promise<boolean>
+ *   createPageDiscussion?: (input: {
+ *     siteId: number
+ *     pageId: number
+ *   }) => Promise<{ thread_id: number; thread_unix_title: string } | null>
  * }} AjaxModuleConnectorOptions
  */
 
@@ -291,7 +297,14 @@ const handleNewPageHelperRequest = async (
  */
 export const handleAjaxModuleConnectorRequest = async (
   request,
-  { siteId, renderListPages, createNewPage, canCreateNewPage = true, pageExists }
+  {
+    siteId,
+    renderListPages,
+    createNewPage,
+    canCreateNewPage = true,
+    pageExists,
+    createPageDiscussion
+  }
 ) => {
   if (request.method !== "POST") {
     return jsonResponse(
@@ -331,6 +344,59 @@ export const handleAjaxModuleConnectorRequest = async (
       return jsonResponse({
         status: "not_ok",
         message: "Unable to create NewPage target"
+      })
+    }
+  }
+
+  if (
+    fields.get("action") === PAGE_DISCUSSION_ACTION &&
+    fields.get("event") === PAGE_DISCUSSION_EVENT
+  ) {
+    const callbackIndex = fields.has("callbackIndex")
+      ? fieldValue(fields, "callbackIndex")
+      : null
+    const responseMetadata = () => ({
+      callbackIndex,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+    })
+    const rawPageId = fieldValue(fields, "page_id")
+    if (!/^\d+$/u.test(rawPageId) || !createPageDiscussion) {
+      return jsonResponse({
+        status: "no_page",
+        message: "The page does not exist",
+        ...responseMetadata()
+      })
+    }
+    const pageId = Number.parseInt(rawPageId, 10)
+    if (!Number.isSafeInteger(pageId) || pageId <= 0) {
+      return jsonResponse({
+        status: "no_page",
+        message: "The page does not exist",
+        ...responseMetadata()
+      })
+    }
+
+    try {
+      const discussion = await createPageDiscussion({ siteId, pageId })
+      if (!discussion) {
+        return jsonResponse({
+          status: "no_page",
+          message: "The page does not exist",
+          ...responseMetadata()
+        })
+      }
+      return jsonResponse({
+        status: "ok",
+        thread_id: discussion.thread_id,
+        thread_unix_title: discussion.thread_unix_title,
+        ...responseMetadata()
+      })
+    } catch (error) {
+      console.error("AJAX page discussion action failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        message: "Unable to create page discussion",
+        ...responseMetadata()
       })
     }
   }

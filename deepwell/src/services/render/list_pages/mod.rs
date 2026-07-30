@@ -19,7 +19,9 @@
  */
 
 mod ajax;
+mod argument_errors;
 pub(super) mod authors;
+mod batch_loading;
 mod budget;
 pub(super) mod content_sections;
 mod current_data_form;
@@ -30,6 +32,8 @@ mod generated_html;
 mod pagination;
 mod parents;
 mod presentation;
+mod preview;
+mod random_cache;
 mod rendering;
 mod rendering_support;
 pub(super) mod scanner;
@@ -38,11 +42,17 @@ pub(super) mod template;
 mod titles;
 
 #[cfg(test)]
-pub(super) use self::ajax::AJAX_MODULE_LITERAL_MARKER_PREFIX;
 pub(super) use self::ajax::{
-    build_wikidot_list_pages_module_source, protect_ajax_module_literal_markers,
+    AJAX_MODULE_LITERAL_MARKER_PREFIX, build_wikidot_list_pages_module_source,
+};
+pub(super) use self::ajax::{
+    build_wikidot_list_pages_module_request, protect_ajax_module_literal_markers,
+};
+pub(super) use self::argument_errors::{
+    list_pages_non_range_argument_error, list_pages_range_argument_error,
 };
 pub(super) use self::budget::ListPagesExpansionBudget;
+pub(super) use self::current_data_form::list_pages_head_has_current_data_form_query_selector;
 pub(super) use self::current_page::{
     count_pages_scan_requires_preservation, count_pages_unbounded_total,
     list_pages_content_query_target, list_pages_row_scan_target,
@@ -70,6 +80,7 @@ pub(super) use self::presentation::{
     list_pages_revision_count, render_list_pages_wikidot_user,
     substitute_count_pages_variables,
 };
+pub(super) use self::random_cache::seed_random_list_pages_order;
 pub(super) use self::rendering_support::{
     CountPagesBlockRenderResult, CountPagesExpansionOptions, CountPagesRequiredTagSource,
     CountPagesRequiredTagTotal, ListPagesBlockRenderResult, ListPagesContentCache,
@@ -84,18 +95,19 @@ pub(super) use self::substitution::{
     ResolvedListPagesAuthors, WikidotUserDisplay, count_pages_capture_is_literal,
     count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
     count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
-    exact_name_list_pages_batch_key, list_pages_argument_error,
-    list_pages_author_cache_key, list_pages_has_unsupported_page_type_selector,
-    list_pages_has_unsupported_parent_selector, list_pages_static_parent_fullname,
-    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
-    substitute_list_pages_rating_only, substitute_list_pages_variables_with_fragments,
-    union_found_page_fields, unsupported_list_pages_replacement,
+    exact_name_list_pages_batch_key, list_pages_author_cache_key,
+    list_pages_has_unsupported_page_type_selector,
+    list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
+    list_pages_static_parent_fullname_with_url, parse_list_pages_arguments,
+    parse_list_pages_arguments_with_url, substitute_list_pages_rating_only,
+    substitute_list_pages_variables_with_fragments, union_found_page_fields,
+    unsupported_list_pages_replacement,
 };
 #[cfg(test)]
 pub(super) use self::substitution::{
     ListPagesOffsetOrigin, list_pages_body_is_no_visible_tracking_markup,
     list_pages_body_uses_content_variable, list_pages_body_variables_supported,
-    parse_list_pages_date_selector,
+    list_pages_static_parent_fullname, parse_list_pages_date_selector,
 };
 
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -841,6 +853,7 @@ fn render_error(message: impl Into<String>) -> Error {
 
 #[cfg(test)]
 mod tests {
+    use super::template::ListPagesTemplatePlan;
     use super::*;
 
     #[test]
@@ -871,6 +884,39 @@ mod tests {
         assert!(order.ascending);
         assert_eq!(page_type, PageTypeSelector::Normal);
         assert_eq!(body_template, CONTENT_VARIABLE);
+    }
+
+    #[test]
+    fn parses_corpus_data_form_selector_and_dynamic_css_template() {
+        let arguments = parse_list_pages_arguments(
+            r#"category="attention-jp" limit="1" order="_date desc" _category="3" _original="1""#,
+        )
+        .expect("static data-form ListPages selectors should parse");
+        assert!(!arguments.unsupported_list_pages_filter);
+        assert!(!arguments.unsupported_score_filter);
+        assert_eq!(arguments.data_form_fields.len(), 2);
+
+        let template = ListPagesTemplatePlan::compile(concat!(
+            "[[%%content{0}%%module css]]\n",
+            ".numparent { counter-reset: num %%total%%; }\n",
+            "[[%%content{0}%%/module]]",
+        ));
+        assert!(template.is_some());
+
+        let zero_limit_head = r#"limit="@URL|0" range="." urlAttrPrefix="page5""#;
+        let zero_limit = parse_list_pages_arguments(zero_limit_head)
+            .expect("URL fallback should parse");
+        assert_eq!(
+            zero_limit.limit,
+            Some(1),
+            "the later current-page range owns the effective one-row limit",
+        );
+        let source = format!(
+            "[[module ListPages {zero_limit_head}]]\n%%unsupported%%\n\
+             [[%%content{{0}}%%module css]]\n.unused {{}}\n\
+             [[%%content{{0}}%%/module]]\n[[/module]]",
+        );
+        assert_eq!(scanner::find_list_pages_module_matches(&source).len(), 1);
     }
 
     #[test]
@@ -962,6 +1008,11 @@ mod tests {
         for (head, has_current_page, expected) in [
             (r#"range="others""#, false, Some("Invalid range argument.")),
             (r#"range="others""#, true, None),
+            (
+                r#"range="@URL|others""#,
+                false,
+                Some("Invalid range argument."),
+            ),
             (r#"range="bogus""#, true, Some("Invalid range argument.")),
             (
                 r#"pagetype="bogus""#,
@@ -972,7 +1023,13 @@ mod tests {
             (r#"votes="bad""#, false, Some("Invalid votes argument.")),
         ] {
             assert_eq!(
-                list_pages_argument_error(head, has_current_page),
+                list_pages_non_range_argument_error(head).or_else(|| {
+                    list_pages_range_argument_error(
+                        head,
+                        has_current_page,
+                        crate::services::render::UrlArguments::default(),
+                    )
+                }),
                 expected,
                 "{head:?}",
             );
@@ -980,7 +1037,7 @@ mod tests {
         assert!(parse_list_pages_arguments(r#"rating="<>5""#).is_some());
         assert_eq!(
             list_pages_static_parent_fullname(r#"parent="system:start""#),
-            Some("system:start"),
+            Some("system:start".to_owned()),
         );
         assert_eq!(list_pages_static_parent_fullname(r#"parent=".""#), None,);
         let arguments = parse_list_pages_arguments(r#"parent="system:start""#)
@@ -1045,6 +1102,68 @@ mod tests {
             "live ignores an invalid date selector",
         );
 
+        for head in [
+            r#"created_at<"2018.12.26""#,
+            r#"created_at>="2021.2.16""#,
+            r#"updated_at<"2017.02.04""#,
+            r#"rating>="-7""#,
+            r#"votes!="0""#,
+        ] {
+            assert!(
+                parse_list_pages_arguments(head).is_some(),
+                "legacy comparison operators belong to the selector rather than invalidating {head:?}",
+            );
+        }
+
+        let path_arguments = vec![
+            crate::services::render::UrlArgumentPair {
+                name: "created_by".to_owned(),
+                value: Some("administrator".to_owned()),
+            },
+            crate::services::render::UrlArgumentPair {
+                name: "order".to_owned(),
+                value: Some("name desc".to_owned()),
+            },
+            crate::services::render::UrlArgumentPair {
+                name: "parent".to_owned(),
+                value: Some("System:Start".to_owned()),
+            },
+        ];
+        let url = crate::services::render::UrlArguments {
+            path_arguments: &path_arguments,
+            ..crate::services::render::UrlArguments::default()
+        };
+        let arguments = parse_list_pages_arguments_with_url(
+            r#"created_by="@URL" order="@URL" parent="@URL" rating="@URL" name="@URL""#,
+            url,
+        )
+        .expect("URL-backed selectors should resolve independently and absent URL values should drop");
+        assert_eq!(arguments.authors, vec![Cow::Borrowed("administrator")]);
+        assert_eq!(
+            arguments.order,
+            Some(OrderBySelector {
+                property: OrderProperty::PageSlug,
+                ascending: false,
+            }),
+        );
+        assert_eq!(
+            arguments.static_parent_fullname.as_deref(),
+            Some("system:start"),
+        );
+        assert!(arguments.score.is_empty());
+        assert!(arguments.slug.is_none());
+        assert!(!arguments.unsupported_author_filter);
+        assert!(!arguments.unsupported_list_pages_filter);
+
+        let arguments = parse_list_pages_arguments_with_url(
+            r#"pagetype="@URL" created_at="@URL" updated_at="@URL" link_to="@URL" reverse="@URL""#,
+            crate::services::render::UrlArguments::default(),
+        )
+        .expect("unresolved URL selectors without fallbacks should be omitted like absent arguments");
+        assert_eq!(arguments.page_type, PageTypeSelector::Normal);
+        assert!(arguments.link_to.is_empty());
+        assert!(!arguments.reverse);
+
         let arguments = parse_list_pages_arguments(
             r#"category="fragment" parent="." order="name"" limit="1" offset="@URL|0""#,
         )
@@ -1061,5 +1180,70 @@ mod tests {
         assert_eq!(arguments.default_tags, vec![Cow::Borrowed(r#"rating="<0"#)]);
         assert!(!arguments.separate);
         assert!(!arguments.unsupported_list_pages_filter);
+
+        let arguments = parse_list_pages_arguments(
+            r#"separate="1" tags="+阿尔兹海默症 -中心" order="random"  perPage="50""#,
+        )
+        .expect("the corpus Unicode-tag selector should parse");
+        assert_eq!(arguments.all_tags, vec![Cow::Borrowed("阿尔兹海默症")],);
+        assert_eq!(arguments.no_tags, vec![Cow::Borrowed("中心")]);
+        assert!(!arguments.unsupported_list_pages_filter);
+
+        for unknown in [
+            r#"seperated="no""#,
+            r#"der="title""#,
+            r#"sort="created_by desc""#,
+            r#"hide="hidden""#,
+            r#"show="shown""#,
+            r#"by="someone""#,
+            r#"details="true""#,
+            r#"width="200px""#,
+            r#"create_by="someone""#,
+            r#"creat_by="someone""#,
+            r#"name-="SCP Série*""#,
+            r#"imit="150""#,
+            r#"v="value""#,
+            r#"limite="100""#,
+            r#"author="someone""#,
+        ] {
+            let head = format!(r#"category="*" limit="1" order="name" {unknown}"#);
+            let arguments = parse_list_pages_arguments(&head).unwrap_or_else(|| {
+                panic!("unknown argument should be ignored: {unknown}")
+            });
+            assert!(arguments.category_all);
+            assert_eq!(arguments.limit, Some(1));
+            assert_eq!(
+                arguments.order,
+                Some(OrderBySelector {
+                    property: OrderProperty::PageSlug,
+                    ascending: true,
+                }),
+            );
+            assert!(!arguments.unsupported_list_pages_filter);
+        }
+
+        for (inert, head) in [
+            ("pipe", r#"| name="target" limit="1" order="name""#),
+            ("bare flag", r#"size name="target" limit="1" order="name""#),
+            (
+                "empty assignment",
+                r#"name="target" limit="1" order="name" prependLine="#,
+            ),
+            ("at markers", r#"name="target" limit="1" order="name"@@"#),
+        ] {
+            let arguments = parse_list_pages_arguments(head).unwrap_or_else(|| {
+                panic!("live inert head token should be ignored: {inert}")
+            });
+            assert_eq!(arguments.slug.as_deref(), Some("target"), "{inert}");
+            assert_eq!(arguments.limit, Some(1), "{inert}");
+            assert_eq!(
+                arguments.order,
+                Some(OrderBySelector {
+                    property: OrderProperty::PageSlug,
+                    ascending: true,
+                }),
+                "{inert}",
+            );
+        }
     }
 }

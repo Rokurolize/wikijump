@@ -531,6 +531,41 @@ function usageClusterKey(attributes, body) {
   return sha256(`${attrs}\n${vars}\n${sections}`);
 }
 
+function collectLiteralUsageRanges(source) {
+  const ranges = [];
+  const patterns = [
+    ["inline-raw", /@@[^\r\n]*?@@/gu],
+    ["code-block", /\[\[\s*code(?:\s+[^\]]*)?\]\][\s\S]*?\[\[\s*\/code\s*\]\]/giu],
+    ["comment", /\[!--[\s\S]*?--\]/gu],
+    ["inline-monospace", /\{\{[^\r\n]*?\}\}/gu],
+    ["html-block", /\[\[\s*html(?:\s+[^\]]*)?\]\][\s\S]*?\[\[\s*\/html\s*\]\]/giu],
+    ["embed-block", /\[\[\s*embed(?:\s+[^\]]*)?\]\][\s\S]*?\[\[\s*\/embed\s*\]\]/giu],
+    ["css-module", /\[\[\s*(?:module654|module)_?\s+css\b[^\]]*\]\][\s\S]*?\[\[\s*\/module\s*\]\]/giu],
+  ];
+  for (const [owner, pattern] of patterns) {
+    for (const match of source.matchAll(pattern)) {
+      ranges.push({
+        owner,
+        start: match.index,
+        end: match.index + match[0].length,
+        source: match[0],
+      });
+    }
+  }
+  return ranges.sort(
+    (left, right) =>
+      left.start - right.start ||
+      right.end - left.end ||
+      left.owner.localeCompare(right.owner),
+  );
+}
+
+function literalUsageAt(ranges, offset) {
+  return (
+    ranges.find((range) => range.start <= offset && offset < range.end) ?? null
+  );
+}
+
 export function extractListPagesInvocationsFromSource({
   branch,
   pageFullname,
@@ -540,13 +575,23 @@ export function extractListPagesInvocationsFromSource({
   const starts = lineStarts(source);
   const lines = splitLines(source);
   const invocations = [];
+  const literalUsageRanges = collectLiteralUsageRanges(source);
   const openRegex = /\[\[\s*(?:module654|module)_?\s+listpages\b/giu;
   let match;
   while ((match = openRegex.exec(source)) !== null) {
     const openStart = match.index;
-    const headEnd = findModuleHeadEnd(source, openStart);
+    const literalUsage = literalUsageAt(literalUsageRanges, openStart);
+    const detectedHeadEnd = findModuleHeadEnd(source, openStart);
+    const headEnd =
+      literalUsage !== null &&
+        detectedHeadEnd !== null &&
+        detectedHeadEnd > literalUsage.end
+        ? null
+        : detectedHeadEnd;
     const lineStart = lineNumberForOffset(starts, openStart);
     if (headEnd === null) {
+      const moduleEnd = literalUsage?.end ?? source.length;
+      const exactSource = source.slice(openStart, moduleEnd);
       invocations.push({
         id: `${branch}:${pageFullname}:L${lineStart}:B${openStart}`,
         branch,
@@ -555,28 +600,43 @@ export function extractListPagesInvocationsFromSource({
         line_start: lineStart,
         line_end: lineStart,
         byte_start: openStart,
-        byte_end: source.length,
+        byte_end: moduleEnd,
         balanced: false,
-        malformed_reason: "unclosed-module-head",
-        head: source.slice(openStart),
+        malformed_reason:
+          literalUsage === null ? "unclosed-module-head" : "literal-module-opening",
+        source: exactSource,
+        head: exactSource,
         body: "",
         attributes: [],
         duplicate_attributes: [],
         url_driven_attributes: [],
         template_variables: [],
         body_sections: [],
-        source_sha256: sha256(source.slice(openStart)),
-        semantic_cluster_key: sha256(source.slice(openStart)),
+        execution_context: literalUsage === null ? "executable" : "literal",
+        literal_owner: literalUsage?.owner ?? null,
+        context_replay_source: literalUsage?.source ?? null,
+        context_replay_source_sha256:
+          literalUsage === null ? null : sha256(literalUsage.source),
+        source_sha256: sha256(exactSource),
+        semantic_cluster_key: sha256(exactSource),
         context_lines: contextLines(lines, lineStart, lineStart),
       });
-      break;
+      if (literalUsage === null) break;
+      openRegex.lastIndex = Math.max(openRegex.lastIndex, moduleEnd);
+      continue;
     }
 
     const head = source.slice(openStart, headEnd);
     const parsedHead = parseModuleHead(head);
-    const balanced = findBalancedModuleEnd(source, headEnd);
-    const bodyEnd = balanced?.bodyEnd ?? source.length;
-    const moduleEnd = balanced?.moduleEnd ?? source.length;
+    const balancedCandidate = findBalancedModuleEnd(source, headEnd);
+    const balanced =
+      literalUsage === null || balancedCandidate?.moduleEnd <= literalUsage.end
+        ? balancedCandidate
+        : null;
+    const bodyEnd =
+      balanced?.bodyEnd ?? (literalUsage === null ? source.length : headEnd);
+    const moduleEnd =
+      balanced?.moduleEnd ?? (literalUsage === null ? source.length : headEnd);
     const body = source.slice(headEnd, bodyEnd);
     const lineEnd = lineNumberForOffset(starts, moduleEnd);
     const attributes = parsedHead?.attributes ?? [];
@@ -597,7 +657,13 @@ export function extractListPagesInvocationsFromSource({
       byte_start: openStart,
       byte_end: moduleEnd,
       balanced: balanced !== null,
-      malformed_reason: balanced === null ? "missing-module-close" : null,
+      malformed_reason:
+        balanced === null
+          ? literalUsage === null
+            ? "missing-module-close"
+            : "literal-module-opening"
+          : null,
+      source: source.slice(openStart, moduleEnd),
       wrapper_name: parsedHead?.wrapper_name ?? null,
       module_name: parsedHead?.module_name ?? "ListPages",
       head,
@@ -610,6 +676,11 @@ export function extractListPagesInvocationsFromSource({
       ),
       template_variables: variableNames(body),
       body_sections: sections,
+      execution_context: literalUsage === null ? "executable" : "literal",
+      literal_owner: literalUsage?.owner ?? null,
+      context_replay_source: literalUsage?.source ?? null,
+      context_replay_source_sha256:
+        literalUsage === null ? null : sha256(literalUsage.source),
       source_sha256: sha256(source.slice(openStart, moduleEnd)),
       semantic_cluster_key: usageClusterKey(attributes, body),
       context_lines: contextLines(lines, lineStart, lineEnd),
@@ -780,7 +851,9 @@ export async function buildCorpusListPagesInventory({
         invocations.map((row) => `${row.branch}:${row.page_fullname}`),
       ).size,
       cluster_count: clusters.size,
-      malformed_count: invocations.filter((row) => !row.balanced).length,
+      malformed_count: invocations.filter(
+        (row) => row.execution_context === "executable" && !row.balanced,
+      ).length,
     },
   };
 }

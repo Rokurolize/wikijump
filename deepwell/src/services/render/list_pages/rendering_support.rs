@@ -71,7 +71,7 @@ pub(in crate::services::render) fn list_pages_body_starts_with_preparsed_block(
 #[derive(Debug)]
 pub(in crate::services::render) enum ListPagesBlockRenderResult {
     Expanded(IncludeExpansion),
-    PreserveOriginal,
+    PreserveOriginal(&'static str),
 }
 
 #[derive(Debug)]
@@ -114,6 +114,8 @@ pub(in crate::services::render) struct ListPagesPageContext<'a> {
 #[derive(Debug, Default)]
 pub(in crate::services::render) struct ListPagesContentCache {
     pub(in crate::services::render) wikitext: BTreeMap<(i64, i64), Option<String>>,
+    pub(in crate::services::render) compiled_body_html:
+        BTreeMap<(i64, i64), Option<String>>,
     pub(in crate::services::render) wikitext_scalar_count:
         BTreeMap<(i64, i64), Option<usize>>,
 }
@@ -122,6 +124,7 @@ pub(in crate::services::render) struct ListPagesContentCache {
 pub(in crate::services::render) struct ListPagesExpansionOptions<'a> {
     pub(in crate::services::render) current_site_id: Option<i64>,
     pub(in crate::services::render) current_page_id: Option<i64>,
+    pub(in crate::services::render) viewer_user_id: Option<i64>,
     pub(in crate::services::render) include_budget: IncludeExpansionBudget,
 
     /// The Wikidot URL path arguments this request carried.

@@ -654,6 +654,8 @@ mod tests {
             uuid::Uuid::new_v4(),
         ));
         std::fs::create_dir(&parent).unwrap();
+        std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o700))
+            .unwrap();
         let requested = parent.join("artifacts");
         let root = prepare_root_artifact_dir(&requested).unwrap();
         assert_eq!(

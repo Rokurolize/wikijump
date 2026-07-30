@@ -160,6 +160,12 @@ for (const observation of liveObservations.observations) {
       : [JSON.parse(rawEvidence)];
     const capturedCaseIds = new Set();
     for (const row of evidenceRows) {
+      if (
+        row.schema === "wikijump_syntax_differential.saved_page_probe.v1" &&
+        typeof row.fullname === "string"
+      ) {
+        capturedCaseIds.add(row.fullname);
+      }
       if (row.case_id) {
         capturedCaseIds.add(row.case_id);
       }
@@ -177,6 +183,11 @@ for (const observation of liveObservations.observations) {
       for (const capture of row.cases ?? []) {
         if (capture.case_id) {
           capturedCaseIds.add(capture.case_id);
+        }
+      }
+      for (const observation of row.observations ?? []) {
+        if (observation.case_id) {
+          capturedCaseIds.add(observation.case_id);
         }
       }
     }

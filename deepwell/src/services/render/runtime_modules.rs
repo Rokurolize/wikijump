@@ -2068,6 +2068,7 @@ impl RenderService {
         let mut permission_cache = BTreeMap::new();
         let rows = find_viewable_list_pages_rows(
             ctx,
+            None,
             query,
             arguments.limit,
             &mut permission_cache,

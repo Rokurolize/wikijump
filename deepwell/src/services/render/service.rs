@@ -58,7 +58,8 @@ use super::iftags::{
 use super::include_attachment_owners::{
     AttachmentOwner, AttachmentProvenanceRegistry, AttachmentVariableOwners,
     find_wikidot_directive_end, owned_url, parse_wikidot_include_argument,
-    protect_forwarded_attachment_variables, qualify_included_relative_image_attachments,
+    preserve_argument_quotes, protect_forwarded_attachment_variables,
+    qualify_included_relative_image_attachments,
     qualify_relative_image_variable_attachments, relative, semantic_attachment_value,
     split_wikidot_include_argument_segments, wikidot_include_segment_is_space,
 };
@@ -81,7 +82,8 @@ use super::include_variables::{
 #[cfg(test)]
 use super::list_pages::ResolvedListPagesAuthors;
 use super::list_pages::{
-    ListPagesExpansion, ListPagesExpansionOptions, build_wikidot_list_pages_module_source,
+    ListPagesExpansion, ListPagesExpansionOptions,
+    build_wikidot_list_pages_module_request,
 };
 use super::literal_regions::LiteralRegionIndex;
 use super::metacomponent::{
@@ -673,8 +675,10 @@ impl RenderService {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
-        let wikitext = build_wikidot_list_pages_module_source(module_body, parameters)
+        let request = build_wikidot_list_pages_module_request(module_body, parameters)
             .ok_or_raise(make_error)?;
+        let page = request.page;
+        let wikitext = request.source;
         let page_info = PageInfo {
             page: Cow::Borrowed("_ajax-module-connector"),
             category: None,
@@ -697,13 +701,20 @@ impl RenderService {
             &settings,
             RenderInnerOptions {
                 render_context: RenderContext::ajax_module(site_id),
-                viewer_user_id: None,
+                // The random ListPages cache retains only an order seed.
+                // Re-evaluate candidates and visibility for the current AMC
+                // actor on every request.
+                viewer_user_id: ctx.request().user_id,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 trace: None,
                 persist_compiled_text: false,
-                // An AMC module call carries its own parameters rather than a
-                // page path, so there is no URL argument to route here.
-                url: UrlArguments::default(),
+                // AMC carries pager state as `p`; selectors remain in the
+                // synthesized module head while `p` follows the ordinary page
+                // view path through UrlArguments.
+                url: UrlArguments {
+                    page,
+                    ..UrlArguments::default()
+                },
             },
         ))
         .await
@@ -1198,6 +1209,7 @@ impl RenderService {
                 ListPagesExpansionOptions {
                     current_site_id,
                     current_page_id,
+                    viewer_user_id,
                     include_budget,
                     url,
                 },
@@ -1287,7 +1299,6 @@ impl RenderService {
                 &mut include_budget,
                 url,
                 &mut wikidot_compat_html,
-                &mut include_source_cache,
                 &mut wikidot_compat_text,
             )
             .await
@@ -2772,7 +2783,7 @@ impl RenderService {
                     if relative(semantic) {
                         owned_url(owner, semantic)
                     } else {
-                        raw_link.to_owned()
+                        semantic.to_owned()
                     }
                 }
                 None => {
@@ -2788,7 +2799,7 @@ impl RenderService {
                             semantic,
                         )
                     } else {
-                        raw_link.to_owned()
+                        semantic.to_owned()
                     }
                 }
             };
@@ -2801,10 +2812,10 @@ impl RenderService {
                     format!(r#" {attribute}="{}""#, value.value.replace('"', "&quot;"),)
                 })
                 .unwrap_or_default();
-            let link_attribute = if link == "#" {
+            let link_attribute = if raw_link == "#" {
                 String::new()
             } else {
-                format!(" link={link}")
+                format!(" link={}", preserve_argument_quotes(raw_link, &link),)
             };
 
             let replacement = format!(

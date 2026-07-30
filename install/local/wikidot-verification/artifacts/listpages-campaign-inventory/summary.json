@@ -8,9 +8,9 @@
   },
   "corpus": {
     "branch_count": 26,
-    "invocation_count": 23893,
+    "invocation_count": 23964,
     "page_count_with_invocations": 7148,
-    "cluster_count": 17644,
-    "malformed_count": 69
+    "cluster_count": 17723,
+    "malformed_count": 60
   }
 }

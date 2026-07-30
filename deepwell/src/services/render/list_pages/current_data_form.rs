@@ -26,6 +26,7 @@ use super::data_forms::{
 use super::substitution::substitute_list_pages_current_data_form_variables;
 use crate::error::prelude::Result;
 use crate::services::page_query::parse_static_wikidot_data_form_values;
+use crate::services::render::module_arguments::wikidot_list_pages_arguments;
 use crate::services::{CategoryService, PageRevisionService, ServiceContext};
 use crate::types::Reference;
 use ftml::data::PageInfo;
@@ -52,6 +53,19 @@ pub(in crate::services::render) fn current_data_form_list_pages_head<'a>(
         })
         .map(Cow::Owned)
         .unwrap_or(Cow::Borrowed(head))
+}
+
+pub(in crate::services::render) fn list_pages_head_has_current_data_form_query_selector(
+    head: &str,
+) -> bool {
+    wikidot_list_pages_arguments(head)
+        .into_iter()
+        .any(|argument| {
+            matches!(
+                argument.key.to_ascii_lowercase().as_str(),
+                "tag" | "tags" | "created_by" | "createdby" | "author"
+            ) && argument.value.contains("{$")
+        })
 }
 
 pub(in crate::services::render) async fn load_current_page_data_form_context(

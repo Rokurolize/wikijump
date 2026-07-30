@@ -1,122 +1,13 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-07-30",
-  "catalog_sha256": "05e329f83e0998ce970b99ba131afdcb0f1eabbd76877fd6f66738576c489f67",
+  "catalog_sha256": "8202be58678c7a3bf2359667e00593f94fd3de1cfeba397be16a8c6c91f693fc",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
       "module-listpages"
     ],
     "note": "All catalog entries remain represented as required by IMPLEMENTATION_PROMPT.md. Campaign-scoped features must classify P1-P8 before a terminal implementation claim; unrelated catalog entries remain pending rather than being falsely marked complete."
-  },
-  "property_axes": {
-    "P1": "invocation grammar and scalar interpretation",
-    "P2": "parser stage, nesting, and composition",
-    "P3": "lifecycle, persistence, import, and round trips",
-    "P4": "actors, permissions, visibility, and privacy",
-    "P5": "selection, ordering, counting, and pagination",
-    "P6": "HTTP, API, URL, Ajax, feed, and navigation contracts",
-    "P7": "DOM, CSS, resources, interaction, and geometry",
-    "P8": "temporal behavior, failure atomicity, limits, and resource bounds"
-  },
-  "feature_property_matrix": {
-    "module-listpages": {
-      "P1": {
-        "status": "evidence_backed",
-        "evidence": [
-          "live:listpages-invalid-numeric-fallbacks",
-          "live:listpages-duplicate-and-alias-precedence",
-          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-generated-preview-reconciliation.json",
-          "test:deepwell/tests/page.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
-          "test:deepwell/tests/page.rs#listpages_categories_alias_selects_only_default_category_rows"
-        ],
-        "observation_gaps": []
-      },
-      "P2": {
-        "status": "evidence_backed",
-        "evidence": [
-          "live:listpages-generated-text-typography-boundary",
-          "live:listpages-title-variable-parser-context",
-          "live:listpages-legacy-and-body-edge-behavior",
-          "live:countpages-inside-listpages-body",
-          "test:deepwell/tests/page.rs#ajax_listpages_recursively_renders_balanced_nested_modules",
-          "test:deepwell/tests/page.rs#listpages_generated_pager_keeps_ascii_dots_after_authored_typography",
-          "test:deepwell/tests/page.rs#countpages_inside_listpages_body_matches_live_empty_item_behavior"
-        ],
-        "observation_gaps": []
-      },
-      "P3": {
-        "status": "evidence_backed",
-        "evidence": [
-          "live:listpages-imported-lifecycle-identity-provenance",
-          "live:data-form-checkbox-control-storage-and-variable-contract",
-          "live:data-form-wiki-control-rendering-and-variable-contract",
-          "artifact:install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
-          "test:deepwell/tests/page.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance",
-          "test:deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot"
-        ],
-        "observation_gaps": []
-      },
-      "P4": {
-        "status": "evidence_backed",
-        "evidence": [
-          "live:listpages-rating-comment-and-data-form-variables",
-          "live:listpages-imported-lifecycle-identity-provenance",
-          "test:deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches",
-          "test:deepwell/tests/page.rs#listpages_imported_commenter_identity_uses_structured_corpus_provenance"
-        ],
-        "observation_gaps": []
-      },
-      "P5": {
-        "status": "evidence_backed",
-        "evidence": [
-          "live:listpages-invalid-numeric-fallbacks",
-          "live:listpages-pagination-path-semantics",
-          "live:dataforms-listpages-selection-sorting-live",
-          "test:deepwell/tests/page.rs#listpages_limit_two_caps_ordered_results",
-          "test:deepwell/tests/page.rs#page_query_data_form_field_ordering_uses_static_form_values",
-          "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history"
-        ],
-        "observation_gaps": []
-      },
-      "P6": {
-        "status": "evidence_backed",
-        "evidence": [
-          "live:listpages-pagination-path-semantics",
-          "live:listpages-rss-link-and-rssonly",
-          "live:listpages-live-feed-endpoint",
-          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
-          "test:deepwell/tests/page.rs#listpages_rss_link_and_rss_only_match_live_wikidot_markup",
-          "test:framerail/tests/list-pages-feed.test.ts#renders RSS metadata, items, escaped descriptions, and safe CDATA",
-          "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history"
-        ],
-        "observation_gaps": []
-      },
-      "P7": {
-        "status": "evidence_backed",
-        "evidence": [
-          "live:listpages-template-variable-rendering",
-          "live:listpages-rss-link-and-rssonly",
-          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
-          "test:deepwell/tests/page.rs#listpages_combined_and_separate_templates_match_live_container_dom",
-          "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history"
-        ],
-        "observation_gaps": []
-      },
-      "P8": {
-        "status": "unobserved",
-        "evidence": [
-          "artifact:install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",
-          "test:install/local/wikidot-verification/tests/listpages-runtime-budget-envelope.test.mjs#derives reproducible ListPages runtime envelopes from invocation records",
-          "test:deepwell/tests/page.rs#listpages_template_body_over_the_render_budget_remains_literal",
-          "pr:Rokurolize/wikijump#962@96a067b49aa7afafcafd7858650490d9f6adad58",
-          "standing:receipt@f6dd56a3eb97d2ed822a3d0ef06cb42793950f73c8e6a042a7a0313f9b1f54e8"
-        ],
-        "observation_gaps": [
-          "Live Wikidot's corresponding hard limits and overflow/failure-atomicity behavior have not been measured. PR #962 explicitly records these thresholds as Wikijump runtime invariants rather than claims about live Wikidot limits."
-        ]
-      }
-    }
   },
   "features": {
     "api-categories-select": {
@@ -1670,6 +1561,28 @@
         {
           "path": "install/local/wikidot-verification/tests/listpages-runtime-budget-envelope.test.mjs",
           "scope": "reusable corpus-envelope regression verifies threshold measurements and provenance are recomputed deterministically from invocation records"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_template_parser_functions_run_after_row_variable_substitution",
+          "scope": "public saved-page regression for the corpus-derived #ifexpr/#expr row-template behavior"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-corpus-replay-reconciliation.test.mjs",
+          "scope": "exact-source replay accounting maps every corpus provenance to a live/local classification and fails closed on missing or actionable sources"
+        },
+        {
+          "path": "deepwell/tests/list_pages.rs",
+          "name": "random_listpages_reuses_the_same_idle_cached_order_for_one_invocation; wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",
+          "scope": "public integration regressions verify invocation-stable random ordering and Ajax pager request state"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-random-idle-cache-evidence.test.mjs",
+          "scope": "live-evidence verifier for the sliding idle lifetime, invocation body identity, expiry, and independent pager-page randomization"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-p8-temporal-boundary-evidence.test.mjs",
+          "scope": "live-evidence verifier for mixed same-size outcomes, complete success markers, 504 failure atomicity, and local safety-invariant classification"
         }
       ],
       "implementation_files": [
@@ -1705,7 +1618,10 @@
         "install/local/wikidot-verification/artifacts/countpages-inside-listpages-live.json",
         "install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json",
         "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json",
-        "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json"
+        "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
+        "install/local/wikidot-verification/artifacts/listpages-corpus-parser-functions-live.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-random-idle-cache-live-20260730.json",
+        "install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json"
       ],
       "delivery_evidence": [
         {
@@ -1727,33 +1643,10 @@
           "repository": "Rokurolize/scp-wiki-translation",
           "pull_request": 209,
           "merge_sha": "cb101c737c6a7fc98acd43dc6184ed2c98ba85fc"
-        },
-        {
-          "repository": "Rokurolize/wikijump",
-          "pull_request": 962,
-          "merge_sha": "96a067b49aa7afafcafd7858650490d9f6adad58",
-          "scope": "ListPages root-and-nested runtime bounds, generated-output failure atomicity, deterministic corpus envelope, and permission-safe random CountPages behavior."
-        },
-        {
-          "runtime": "wikijump-standing",
-          "wikijump_sha": "96a067b49aa7afafcafd7858650490d9f6adad58",
-          "wikijump_tree": "27f6073a3b72dc67c95c817c0bd56d324c5a86de",
-          "ftml_sha": "57b6cfc914e62bb2cc6dd45bccfdb8ff1f232408",
-          "receipt_sha256": "f6dd56a3eb97d2ed822a3d0ef06cb42793950f73c8e6a042a7a0313f9b1f54e8",
-          "runtime_identity_sha256": "254c5f1e6321d3db90fed048c6a9eeea477c7f870aebc6c9888a02ebdaffcd6e",
-          "served_url": "https://scp-wiki.wikijump.localhost/scp-9506",
-          "served_status": 200,
-          "served_body_sha256": "716cfb049bada82b8cb203e85e7ad4891d1a4562bb83e3fcf451819d1c27645f",
-          "served_body_bytes": 192377,
-          "required_markers": [
-            "scp-9506",
-            "page-content"
-          ],
-          "scope": "All standing services were healthy, their running image IDs matched the refresh receipt, and an independent HTTPS request returned the exact status, body identity, byte count, and required markers recorded here."
         }
       ],
       "unresolved_ambiguities_or_blockers": [
-        "P8 remains open: live Wikidot hard limits and overflow/failure-atomicity behavior have not been measured. The merged PR #962 thresholds are deliberate Wikijump runtime invariants, not live-limit compatibility claims."
+        "The 23,893-invocation exact-source corpus replay is in progress. The item cannot return to implemented until the complete replay has no unresolved or actionable classification."
       ]
     },
     "module-listusers": {
@@ -3612,6 +3505,123 @@
       ],
       "live_oracle_evidence": [],
       "unresolved_ambiguities_or_blockers": []
+    }
+  },
+  "property_axes": {
+    "P1": "invocation grammar and scalar interpretation",
+    "P2": "parser stage, nesting, and composition",
+    "P3": "lifecycle, persistence, import, and round trips",
+    "P4": "actors, permissions, visibility, and privacy",
+    "P5": "selection, ordering, counting, and pagination",
+    "P6": "HTTP, API, URL, Ajax, feed, and navigation contracts",
+    "P7": "DOM, CSS, resources, interaction, and geometry",
+    "P8": "temporal behavior, failure atomicity, limits, and resource bounds"
+  },
+  "feature_property_matrix": {
+    "module-listpages": {
+      "P1": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-invalid-numeric-fallbacks",
+          "live:listpages-duplicate-and-alias-precedence",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-generated-preview-reconciliation.json",
+          "test:deepwell/tests/page.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
+          "test:deepwell/tests/page.rs#listpages_categories_alias_selects_only_default_category_rows"
+        ],
+        "observation_gaps": []
+      },
+      "P2": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-generated-text-typography-boundary",
+          "live:listpages-title-variable-parser-context",
+          "live:listpages-legacy-and-body-edge-behavior",
+          "live:countpages-inside-listpages-body",
+          "test:deepwell/tests/page.rs#ajax_listpages_recursively_renders_balanced_nested_modules",
+          "test:deepwell/tests/page.rs#listpages_generated_pager_keeps_ascii_dots_after_authored_typography",
+          "test:deepwell/tests/page.rs#countpages_inside_listpages_body_matches_live_empty_item_behavior"
+        ],
+        "observation_gaps": []
+      },
+      "P3": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-imported-lifecycle-identity-provenance",
+          "live:data-form-checkbox-control-storage-and-variable-contract",
+          "live:data-form-wiki-control-rendering-and-variable-contract",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
+          "test:deepwell/tests/page.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance",
+          "test:deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot"
+        ],
+        "observation_gaps": []
+      },
+      "P4": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-rating-comment-and-data-form-variables",
+          "live:listpages-imported-lifecycle-identity-provenance",
+          "test:deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches",
+          "test:deepwell/tests/page.rs#listpages_imported_commenter_identity_uses_structured_corpus_provenance"
+        ],
+        "observation_gaps": []
+      },
+      "P5": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-invalid-numeric-fallbacks",
+          "live:listpages-pagination-path-semantics",
+          "live:dataforms-listpages-selection-sorting-live",
+          "test:deepwell/tests/page.rs#listpages_limit_two_caps_ordered_results",
+          "test:deepwell/tests/page.rs#page_query_data_form_field_ordering_uses_static_form_values",
+          "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history",
+          "live:listpages-random-idle-cache-live-20260730",
+          "test:deepwell/tests/list_pages.rs#random_listpages_reuses_the_same_idle_cached_order_for_one_invocation",
+          "test:install/local/wikidot-verification/tests/listpages-random-idle-cache-evidence.test.mjs#ListPages random live evidence preserves the sliding idle-cache proof"
+        ],
+        "observation_gaps": []
+      },
+      "P6": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-pagination-path-semantics",
+          "live:listpages-rss-link-and-rssonly",
+          "live:listpages-live-feed-endpoint",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
+          "test:deepwell/tests/page.rs#listpages_rss_link_and_rss_only_match_live_wikidot_markup",
+          "test:framerail/tests/list-pages-feed.test.ts#renders RSS metadata, items, escaped descriptions, and safe CDATA",
+          "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history",
+          "live:listpages-random-idle-cache-live-20260730",
+          "test:deepwell/tests/list_pages.rs#wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",
+          "test:install/local/wikidot-verification/tests/listpages-random-idle-cache-evidence.test.mjs#ListPages random live evidence binds body, idle expiry, and pager state"
+        ],
+        "observation_gaps": []
+      },
+      "P7": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-template-variable-rendering",
+          "live:listpages-rss-link-and-rssonly",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
+          "test:deepwell/tests/page.rs#listpages_combined_and_separate_templates_match_live_container_dom",
+          "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history"
+        ],
+        "observation_gaps": []
+      },
+      "P8": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-p8-temporal-boundary-live-20260730",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",
+          "test:install/local/wikidot-verification/tests/listpages-p8-temporal-boundary-evidence.test.mjs#ListPages P8 evidence proves a temporal boundary rather than a fixed byte cap",
+          "test:install/local/wikidot-verification/tests/listpages-runtime-budget-envelope.test.mjs#derives reproducible ListPages runtime envelopes from invocation records",
+          "test:deepwell/tests/page.rs#listpages_template_body_over_the_render_budget_remains_literal",
+          "test:deepwell/tests/page.rs#listpages_aggregate_generated_output_budget_preserves_overflowing_module",
+          "test:deepwell/tests/page.rs#listpages_module_count_over_the_render_budget_remains_literal",
+          "test:deepwell/tests/page.rs#listpages_module_source_over_the_render_budget_remains_literal"
+        ],
+        "observation_gaps": []
+      }
     }
   }
 }
