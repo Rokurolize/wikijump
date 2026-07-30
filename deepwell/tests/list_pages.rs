@@ -1775,6 +1775,80 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "zero-row ListPages must not invent a row or preserve its source:\n{zero_row_once_only_output}",
     );
 
+    let zero_row_plain_line_blocks = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages category=\"verification-listpages-absent-line-blocks\" ",
+            "separate=\"no\" wrapper=\"no\" prependLine=\"PLAIN-PRE\" ",
+            "appendLine=\"PLAIN-POST\"]]\n",
+            "ZERO-ROW\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("zero-row ListPages plain once-only lines should render")
+    .html_output
+    .body;
+    assert!(
+        zero_row_plain_line_blocks.contains("<p>PLAIN-PRE</p><p>PLAIN-POST</p>"),
+        "live Wikidot parses zero-row prependLine and appendLine as independent paragraphs:\n{zero_row_plain_line_blocks}",
+    );
+
+    let zero_row_table_line_blocks = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages category=\"verification-listpages-absent-table-blocks\" ",
+            "separate=\"no\" wrapper=\"no\" prependLine=\"||~ TABLE-PRE ||\" ",
+            "appendLine=\"|| TABLE-POST ||\"]]\n",
+            "ZERO-ROW\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("zero-row ListPages table once-only lines should render")
+    .html_output
+    .body;
+    assert_eq!(
+        zero_row_table_line_blocks
+            .matches(r#"<table class="wiki-content-table">"#)
+            .count(),
+        2,
+        "live Wikidot parses zero-row table once-only lines as independent tables:\n{zero_row_table_line_blocks}",
+    );
+
+    let one_row_table_line_control = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{TARGET_SLUG}\" ",
+                "separate=\"no\" wrapper=\"no\" prependLine=\"||~ TABLE-PRE ||\" ",
+                "appendLine=\"|| TABLE-POST ||\"]]\n",
+                "|| ROW %%fullname%% ||\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("one-row ListPages table lines should preserve their shared table")
+    .html_output
+    .body;
+    assert_eq!(
+        one_row_table_line_control
+            .matches(r#"<table class="wiki-content-table">"#)
+            .count(),
+        1,
+        "the independent block boundary must not split matching one-row table composition:\n{one_row_table_line_control}",
+    );
+
     let empty_dynamic_module_template = RenderService::render_wikidot_page_preview(
         runner.context(),
         site_id,

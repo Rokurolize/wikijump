@@ -70,7 +70,8 @@ use super::{
     push_list_pages_pager, register_generated_list_pages_html,
     seed_random_list_pages_order, should_render_current_page_list_pages_row,
     substitute_count_pages_variables, substitute_list_pages_rating_only,
-    substitute_list_pages_variables_with_fragments, union_found_page_fields,
+    substitute_list_pages_variables_with_fragments,
+    suppress_generated_list_pages_heading_toc, union_found_page_fields,
     unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -1969,6 +1970,10 @@ impl RenderService {
         } else {
             BTreeMap::new()
         };
+        let separate_zero_row_once_only_lines = pages.is_empty()
+            && !separate
+            && prepend_line.as_deref().is_some_and(|line| !line.is_empty())
+            && append_line.as_deref().is_some_and(|line| !line.is_empty());
         let site_title = if template.uses_site_title() {
             Some(
                 SiteService::get(ctx, Reference::Id(current_site_id))
@@ -2125,6 +2130,7 @@ impl RenderService {
             } else {
                 render_list_pages_numbered_rows(&body)
             };
+            let rendered_body = suppress_generated_list_pages_heading_toc(&rendered_body);
             let row_markup_bytes = if separate {
                 "[[div class=\"list-pages-item\"]]\n\n[[/div]]\n".len()
             } else {
@@ -2166,11 +2172,14 @@ impl RenderService {
         if !separate && let Some(append_line) = append_line {
             let mut append_line = append_line;
             neutralize_authored_markers(&mut append_line);
-            if !push_list_pages_generated_output(
-                &mut output,
-                &append_line,
-                expansion_budget,
-            ) || !push_list_pages_generated_output(&mut output, "\n", expansion_budget)
+            if (separate_zero_row_once_only_lines
+                && !push_list_pages_generated_output(&mut output, "\n", expansion_budget))
+                || !push_list_pages_generated_output(
+                    &mut output,
+                    &append_line,
+                    expansion_budget,
+                )
+                || !push_list_pages_generated_output(&mut output, "\n", expansion_budget)
             {
                 return Ok(ListPagesBlockRenderResult::PreserveOriginal(
                     "append line exceeds generated-output budget",

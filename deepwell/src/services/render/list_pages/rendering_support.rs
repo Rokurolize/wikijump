@@ -34,11 +34,55 @@ pub(in crate::services::render) fn push_list_pages_generated_output(
     fragment: &str,
     expansion_budget: &mut ListPagesExpansionBudget,
 ) -> bool {
+    let fragment = suppress_generated_list_pages_heading_toc(fragment);
     if !expansion_budget.try_consume_generated_output_bytes(fragment.len()) {
         return false;
     }
-    output.push_str(fragment);
+    output.push_str(&fragment);
     true
+}
+
+pub(in crate::services::render) fn suppress_generated_list_pages_heading_toc(
+    fragment: &str,
+) -> Cow<'_, str> {
+    let literal_regions = LiteralRegionIndex::new(fragment);
+    let bytes = fragment.as_bytes();
+    let mut insertions = Vec::new();
+    let mut line_start = 0usize;
+
+    while line_start < bytes.len() {
+        if !literal_regions.contains(line_start) {
+            let pluses = bytes[line_start..]
+                .iter()
+                .take_while(|byte| **byte == b'+')
+                .count();
+            if (1..=6).contains(&pluses)
+                && matches!(bytes.get(line_start + pluses), Some(b' ' | b'\t'))
+            {
+                insertions.push(line_start + pluses);
+            }
+        }
+
+        let Some(line_end) = bytes[line_start..].iter().position(|byte| *byte == b'\n')
+        else {
+            break;
+        };
+        line_start += line_end + 1;
+    }
+
+    if insertions.is_empty() {
+        return Cow::Borrowed(fragment);
+    }
+
+    let mut protected = String::with_capacity(fragment.len() + insertions.len());
+    let mut cursor = 0usize;
+    for insertion in insertions {
+        protected.push_str(&fragment[cursor..insertion]);
+        protected.push('*');
+        cursor = insertion;
+    }
+    protected.push_str(&fragment[cursor..]);
+    Cow::Owned(protected)
 }
 
 pub(in crate::services::render) fn preserve_list_pages_module_matches(
@@ -176,5 +220,86 @@ impl RenderService {
             "_default" => page.to_owned(),
             category => format!("{category}:{page}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::render::{Render, html::HtmlRender};
+    use ftml::settings::{WikitextMode, WikitextSettings};
+    use std::borrow::Cow;
+
+    fn render_wikidot_page(source: &str) -> String {
+        let page_info = PageInfo {
+            page: Cow::Borrowed("test"),
+            category: None,
+            site: Cow::Borrowed("test"),
+            title: Cow::Borrowed("Test"),
+            alt_title: None,
+            score: ScoreValue::Float(0.0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let tokens = ftml::tokenize(source);
+        let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+        HtmlRender.render(&tree, &page_info, &settings).body
+    }
+
+    #[test]
+    fn generated_list_pages_headings_do_not_register_page_toc_ids() {
+        let mut output = String::new();
+        let mut budget = ListPagesExpansionBudget::new();
+        assert!(push_list_pages_generated_output(
+            &mut output,
+            "+ GENERATED",
+            &mut budget,
+        ));
+
+        assert_eq!(
+            render_wikidot_page(&output),
+            "<h1><span>GENERATED</span></h1>",
+        );
+    }
+
+    #[test]
+    fn generated_list_pages_heading_protection_is_literal_aware_and_idempotent() {
+        let source = concat!(
+            "+ ONE\n",
+            "++++++ TWO\n",
+            "+* ALREADY PROTECTED\n",
+            "+++++++ NOT A HEADING\n",
+            "[[code]]\n",
+            "+ CODE\n",
+            "[[/code]]\n",
+            "[[html]]\n",
+            "+ HTML\n",
+            "[[/html]]\n",
+            "[!--\n",
+            "+ COMMENT\n",
+            "--]\n",
+        );
+
+        assert_eq!(
+            suppress_generated_list_pages_heading_toc(source),
+            concat!(
+                "+* ONE\n",
+                "++++++* TWO\n",
+                "+* ALREADY PROTECTED\n",
+                "+++++++ NOT A HEADING\n",
+                "[[code]]\n",
+                "+ CODE\n",
+                "[[/code]]\n",
+                "[[html]]\n",
+                "+ HTML\n",
+                "[[/html]]\n",
+                "[!--\n",
+                "+ COMMENT\n",
+                "--]\n",
+            ),
+        );
     }
 }

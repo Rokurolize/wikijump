@@ -88,7 +88,7 @@ pub(super) use self::rendering_support::{
     CountPagesRequiredTagTotal, ListPagesBlockRenderResult, ListPagesContentCache,
     ListPagesExpansion, ListPagesExpansionOptions, ListPagesPageContext,
     list_pages_body_starts_with_preparsed_block, preserve_list_pages_module_matches,
-    push_list_pages_generated_output,
+    push_list_pages_generated_output, suppress_generated_list_pages_heading_toc,
 };
 pub(super) use self::substitution::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesArguments,
