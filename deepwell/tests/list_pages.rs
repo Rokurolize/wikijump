@@ -1848,7 +1848,11 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         runner.context(),
         site_id,
         "Unsaved preview",
-        "[[module ListPages category=\"fragment\"]]\n%%title%%".to_owned(),
+        concat!(
+            "[[module ListPages name=\"definitely-missing-listpages-unclosed\"]]\n",
+            "%%title%%",
+        )
+        .to_owned(),
     )
     .await
     .expect("a complete unclosed ListPages opening should execute")
@@ -2466,7 +2470,8 @@ async fn listpages_legacy_comparisons_and_unresolved_url_selectors_execute_in_pr
         site_id,
         "ListPages parent fallback preview",
         concat!(
-            "[[module ListPages parent=\"@URL|SCP-2019-J\" range=\"others\"]]\n",
+            "[[module ListPages parent=\"@URL|Definitely-Missing-ListPages-Parent\" ",
+            "range=\"others\"]]\n",
             "ROW %%fullname%%\n",
             "[[/module]]",
         )
@@ -2477,9 +2482,10 @@ async fn listpages_legacy_comparisons_and_unresolved_url_selectors_execute_in_pr
     .html_output
     .body;
     assert!(
-        missing_parent.contains(
-            r#"<div class="error-block">Parent page scp-2019-j does not exist</div>"#,
-        ),
+        missing_parent.contains(concat!(
+            r#"<div class="error-block">Parent page "#,
+            r#"definitely-missing-listpages-parent does not exist</div>"#,
+        ),),
         "the normalized missing-parent error must precede invalid range validation:\n{missing_parent}",
     );
     assert!(!missing_parent.contains("Invalid range argument."));
