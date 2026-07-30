@@ -506,7 +506,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     let mut rss_limit = None;
     let mut rss_only = false;
     let mut rss_path = ListPagesRssPath::default();
-    let mut unsupported_author_filter = false;
+    let unsupported_author_filter = false;
     let mut exclude_current_page_author = false;
     let mut unsupported_list_pages_filter = false;
     let mut link_to = Vec::new();
@@ -566,8 +566,6 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     }
                     UrlSelector::Dropped => {
                         unsupported_count_pages_filter = true;
-                        author_filter_present = true;
-                        unsupported_author_filter = true;
                         continue;
                     }
                 };

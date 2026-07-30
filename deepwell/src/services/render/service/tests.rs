@@ -1226,8 +1226,8 @@ fn parses_corpus_list_pages_url_and_filter_arguments() {
     assert_eq!(arguments.count_pages_per_page, Some(20));
     assert_eq!(arguments.offset, 0);
     assert!(arguments.slug.is_none());
-    assert!(arguments.author_filter_present);
-    assert!(arguments.unsupported_author_filter);
+    assert!(!arguments.author_filter_present);
+    assert!(!arguments.unsupported_author_filter);
 
     let unresolved_parent = parse_list_pages_arguments(r#" parent="@URL""#)
         .expect("an unresolved URL parent selector is omitted");

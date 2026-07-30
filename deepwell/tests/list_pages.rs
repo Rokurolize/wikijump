@@ -1796,7 +1796,7 @@ async fn listpages_legacy_comparisons_and_unresolved_url_selectors_execute_in_pr
         ),
         (
             concat!(
-                "[[module ListPages created_by=\"@URL\" parent=\"@URL\" ",
+                "[[module ListPages created_by=\"@URL\" parent=\"@URL\" tags=\"@URL\" ",
                 "pagetype=\"@URL\" rating=\"@URL\" votes=\"@URL\" ",
                 "created_at=\"@URL\" updated_at=\"@URL\" link_to=\"@URL\" ",
                 "name=\"@URL\" order=\"@URL\" reverse=\"@URL\" limit=\"1\" ",
