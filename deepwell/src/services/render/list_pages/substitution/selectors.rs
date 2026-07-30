@@ -234,21 +234,21 @@ pub(in crate::services::render) fn list_pages_has_unsupported_parent_selector(
 pub(in crate::services::render) fn list_pages_has_unsupported_page_type_selector(
     head: &str,
 ) -> bool {
-    wikidot_list_pages_arguments(head)
-        .into_iter()
-        .any(|argument| {
-            if !matches!(
-                argument.key.to_ascii_lowercase().as_str(),
-                "pagetype" | "page_type" | "page-type"
-            ) {
-                return false;
-            }
+    let mut canonical = None;
+    let mut alias = None;
+    for argument in wikidot_list_pages_arguments(head) {
+        if argument.op != "=" {
+            continue;
+        }
+        match argument.key.to_ascii_lowercase().as_str() {
+            "pagetype" => canonical = Some(argument.value),
+            "page_type" | "page-type" => alias = Some(argument.value),
+            _ => {}
+        }
+    }
 
-            let value = argument.value.trim();
-            let value = list_pages_url_fallback(value).unwrap_or(value);
-            !matches!(
-                value.to_ascii_lowercase().as_str(),
-                "all" | "*" | "hidden" | "normal" | ""
-            )
-        })
+    canonical.or(alias).is_some_and(|value| {
+        let value = list_pages_url_fallback(value).unwrap_or(value);
+        value != "0" && super::parse_list_pages_page_type(value).is_none()
+    })
 }

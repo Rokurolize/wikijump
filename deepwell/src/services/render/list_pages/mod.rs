@@ -1370,6 +1370,23 @@ mod tests {
         assert!(parse_list_pages_date_selector("1900").is_some());
         assert!(parse_list_pages_date_selector("1900.01").is_some());
 
+        for (head, unsupported) in [
+            (r#"pagetype="normal""#, false),
+            (r#"pagetype="0""#, false),
+            (r#"pagetype="all""#, true),
+            (r#"pagetype="NORMAL""#, true),
+            (r#"pagetype=" normal""#, true),
+            (r#"page_type="normal" pagetype="hidden""#, false),
+            (r#"pagetype="hidden" page_type="bogus""#, false),
+            (r#"pagetype>"bogus" page_type="normal""#, false),
+        ] {
+            assert_eq!(
+                list_pages_has_unsupported_page_type_selector(head),
+                unsupported,
+                "{head:?}",
+            );
+        }
+
         let arguments = parse_list_pages_arguments(
             r#"rating=">100000" rating=">=-100000" votes=">100000" votes=">=0""#,
         )
