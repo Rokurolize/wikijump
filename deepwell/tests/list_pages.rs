@@ -1555,6 +1555,160 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "an excessive offset should not preserve the module or query an unsafe window:\n{huge_offset_preview}",
     );
 
+    let empty_random_content_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages category=\"verification-listpages-absent-random-content\" ",
+            "order=\"random\" perPage=\"250\" limit=\"250\"]]\n",
+            "[[div class=\"taleBlock\"]]\n%%content%%\n[[/div]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an empty random content query should render atomically")
+    .html_output
+    .body;
+    assert!(
+        empty_random_content_preview.contains(r#"<div class="list-pages-box"></div>"#)
+            && !empty_random_content_preview.contains("[[module ListPages")
+            && !empty_random_content_preview.contains("%%content%%"),
+        "an empty random content query has no content rows to charge against the safety budget:\n{empty_random_content_preview}",
+    );
+
+    let zero_row_once_only_output = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages category=\"verification-listpages-absent-once-output\" ",
+            "separate=\"no\" prependLine=\"ZERO-PREPEND\" ",
+            "appendLine=\"ZERO-APPEND\"]]\n",
+            "[[head]]ZERO-HEAD[[/head]]\n",
+            "[[body]]ZERO-ROW %%fullname%%[[/body]]\n",
+            "[[foot]]ZERO-FOOT[[/foot]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("zero-row ListPages once-only output should render")
+    .html_output
+    .body;
+    for marker in ["ZERO-PREPEND", "ZERO-HEAD", "ZERO-FOOT", "ZERO-APPEND"] {
+        assert!(
+            zero_row_once_only_output.contains(marker),
+            "zero-row ListPages must retain its once-only output ({marker}):\n{zero_row_once_only_output}",
+        );
+    }
+    assert!(
+        !zero_row_once_only_output.contains("ZERO-ROW")
+            && !zero_row_once_only_output.contains("[[module ListPages"),
+        "zero-row ListPages must not invent a row or preserve its source:\n{zero_row_once_only_output}",
+    );
+
+    let empty_dynamic_module_template = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages category=\"verification-listpages-absent-dynamic-module\" ",
+            "limit=\"1\" order=\"_date desc\" _category=\"3\" _original=\"1\" ",
+            "wrapper=\"no\"]]\n",
+            "[[%%content{0}%%module css]]\n.hidden { display: none; }\n",
+            "[[%%content{0}%%/module]]\n%%total%%\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an empty ListPages dynamic module template should render atomically")
+    .html_output
+    .body;
+    assert!(
+        !empty_dynamic_module_template.contains("[[module")
+            && !empty_dynamic_module_template.contains("%%content")
+            && !empty_dynamic_module_template.contains("%%total%%")
+            && !empty_dynamic_module_template.contains(".hidden"),
+        "the ListPages scanner must retain ownership through variable-controlled module tokens:\n{empty_dynamic_module_template}",
+    );
+
+    let absent_current_data_form_context = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages tags=\"{$scp-tag}\" created_by=\"{$user}\" ",
+            "order=\"rating desc\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n",
+            "[[#ifexpr %%total%% > 1 |  | [!-- ]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an unsaved preview has no current data-form context")
+    .html_output
+    .body;
+    assert!(
+        absent_current_data_form_context.is_empty(),
+        "current data-form selectors without a current page resolve to an empty unwrapped module, even when a conditional comment opener appears in its body:\n{absent_current_data_form_context}",
+    );
+
+    let absent_current_page_unsupported_template =
+        RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            concat!(
+                "[[module ListPages limit=\"@URL|0\" range=\".\" ",
+                "urlAttrPrefix=\"page5\"]]\n",
+                "%%unsupported%%\n[[%%content{0}%%module css]]\n",
+                ".unused { display: none; }\n[[%%content{0}%%/module]]\n",
+                "[[/module]]",
+            )
+            .to_owned(),
+        )
+        .await
+        .expect("a zero-limit ListPages query should not inspect its row template")
+        .html_output
+        .body;
+    assert!(
+        absent_current_page_unsupported_template
+            .contains(r#"<div class="list-pages-box"></div>"#)
+            && !absent_current_page_unsupported_template.contains("[[module")
+            && !absent_current_page_unsupported_template.contains("%%unsupported%%")
+            && !absent_current_page_unsupported_template.contains(".unused"),
+        "a current-page query without page identity is empty before unsupported row-template syntax matters:\n{absent_current_page_unsupported_template}",
+    );
+
+    let absent_category_precedes_dropped_url_selectors =
+        RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            concat!(
+                "[[module ListPages category=\"verification-listpages-absent-url-category\" ",
+                "order=\"@URL|name desc\" tags=\"@URL|\" perPage=\"@URL|50\" ",
+                "name=\"@URL\" _original=\"@URL\"]]\n",
+                "UNSUPPORTED %%form_raw{content}%%\n",
+                "[[/module]]",
+            )
+            .to_owned(),
+        )
+        .await
+        .expect("an absent static category should prove the query empty")
+        .html_output
+        .body;
+    assert!(
+        absent_category_precedes_dropped_url_selectors
+            .contains(r#"<div class="list-pages-box"></div>"#)
+            && !absent_category_precedes_dropped_url_selectors.contains("[[module")
+            && !absent_category_precedes_dropped_url_selectors.contains("UNSUPPORTED"),
+        "an absent static category proves the result empty before dropped URL selectors or unsupported row-template variables matter:\n{absent_category_precedes_dropped_url_selectors}",
+    );
+
     for source in [
         "[[module ListPages range=\".\"]]\nROW %%fullname%%\n[[/module]]",
         "[[module ListPages name=\"=\"]]\nROW %%fullname%%\n[[/module]]",
@@ -1597,6 +1751,10 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
             "Invalid range argument.",
         ),
         (
+            "[[module ListPages range=\"@URL|others\"]]\nROW %%fullname%%\n[[/module]]",
+            "Invalid range argument.",
+        ),
+        (
             "[[module ListPages range=\"bogus\"]]\nROW %%fullname%%\n[[/module]]",
             "Invalid range argument.",
         ),
@@ -1620,6 +1778,18 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
             "[[module ListPages parent=\"definitely-missing-listpages-parent\"]]\nROW %%fullname%%\n[[/module]]",
             "Parent page definitely-missing-listpages-parent does not exist",
         ),
+        (
+            "[[module ListPages parent=\"definitely-missing-listpages-parent\" range=\"others\"]]\nROW %%fullname%%\n[[/module]]",
+            "Parent page definitely-missing-listpages-parent does not exist",
+        ),
+        (
+            "[[module ListPages parent=\"definitely-missing-listpages-parent\" range=\"bogus\"]]\nROW %%fullname%%\n[[/module]]",
+            "Parent page definitely-missing-listpages-parent does not exist",
+        ),
+        (
+            "[[module ListPages parent=\"definitely-missing-listpages-parent\" pagetype=\"bogus\"]]\nROW %%fullname%%\n[[/module]]",
+            "Invalid pagetype attribute.",
+        ),
     ] {
         let preview = RenderService::render_wikidot_page_preview(
             runner.context(),
@@ -1634,6 +1804,324 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         assert!(
             preview.contains(&format!(r#"<div class="error-block">{message}</div>"#,)),
             "the exact live ListPages error should render:\n{preview}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn listpages_legacy_comparisons_and_unresolved_url_selectors_execute_in_preview() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (source, marker) in [
+        (
+            concat!(
+                "[[module ListPages created_at<\"1900.1.1\" updated_at>=\"1900.1.1\" ",
+                "separate=\"no\" prependLine=\"LEGACY-COMPARISON-EXECUTED\"]]\n",
+                "ROW %%fullname%%\n",
+                "[[/module]]",
+            ),
+            "LEGACY-COMPARISON-EXECUTED",
+        ),
+        (
+            concat!(
+                "[[module ListPages created_by=\"@URL\" parent=\"@URL\" tags=\"@URL\" ",
+                "pagetype=\"@URL\" rating=\"@URL\" votes=\"@URL\" ",
+                "created_at=\"@URL\" updated_at=\"@URL\" link_to=\"@URL\" ",
+                "name=\"@URL\" order=\"@URL\" reverse=\"@URL\" limit=\"1\" ",
+                "separate=\"no\" prependLine=\"URL-SELECTORS-EXECUTED\"]]\n",
+                "ROW %%fullname%%\n",
+                "[[/module]]",
+            ),
+            "URL-SELECTORS-EXECUTED",
+        ),
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "ListPages legacy selector preview",
+            source.to_owned(),
+        )
+        .await
+        .expect("the live-compatible ListPages selector should render")
+        .html_output
+        .body;
+        assert!(preview.contains(marker), "{source:?}:\n{preview}");
+        assert!(
+            !preview.contains("[[module ListPages")
+                && !preview.contains("TODO: module ListPages"),
+            "the selector must execute rather than leak its authored module: {source:?}:\n{preview}",
+        );
+    }
+
+    let missing_parent = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages parent fallback preview",
+        concat!(
+            "[[module ListPages parent=\"@URL|SCP-2019-J\" range=\"others\"]]\n",
+            "ROW %%fullname%%\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a missing parent fallback should render Wikidot's error")
+    .html_output
+    .body;
+    assert!(
+        missing_parent.contains(
+            r#"<div class="error-block">Parent page scp-2019-j does not exist</div>"#,
+        ),
+        "the normalized missing-parent error must precede invalid range validation:\n{missing_parent}",
+    );
+    assert!(!missing_parent.contains("Invalid range argument."));
+
+    let inert_at_marker_module = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages inert at-marker module preview",
+        concat!(
+            "[[module ListPages limit=\"@URL|0\" range=\".\" ",
+            "urlAttrPrefix=\"page2\"]]\n",
+            "|content=[[module rate]]@@@@@@@@\n",
+            "LISTPAGES-INERT-MODULE-BODY\n",
+            "[[/module]]\n",
+            "LISTPAGES-INERT-MODULE-AFTER",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an at-marker-suffixed module token should not steal the ListPages close")
+    .html_output
+    .body;
+    assert!(
+        inert_at_marker_module.contains("LISTPAGES-INERT-MODULE-AFTER")
+            && !inert_at_marker_module.contains("LISTPAGES-INERT-MODULE-BODY")
+            && !inert_at_marker_module.contains("[[module rate]]"),
+        "the exact live-owned ListPages body must remain atomic:\n{inert_at_marker_module}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_module_heads_accept_live_legacy_boundaries() {
+    const TARGET_SLUG: &str = "listpages-head-boundary-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "ListPages head-boundary target",
+            "title": "ListPages Head Boundary Target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "ListPages head-boundary fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let ordinary_head = format!(r#"name="{TARGET_SLUG}" limit="1" order="name""#);
+    let sources = [
+        format!("[[module ListPages {ordinary_head}]]]\nROW|%%fullname%%\n[[/module]]"),
+        format!("[[module ListPages {ordinary_head}]]]]\nROW|%%fullname%%\n[[/module]]"),
+        format!(
+            "[[module ListPages\nname=\"{TARGET_SLUG}\"\nlimit=\"1\"\norder=\"name\"\n]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\n\"]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages | name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\"]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages size name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\"]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\" prependLine=]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\"@@]]\nROW|%%fullname%%\n[[/module]]",
+        ),
+    ];
+
+    for source in sources {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "ListPages head boundary",
+            source.clone(),
+        )
+        .await
+        .expect("a live-compatible ListPages head boundary should render")
+        .html_output
+        .body;
+        assert!(
+            preview.contains(&format!("ROW|{TARGET_SLUG}")),
+            "the ListPages opening should execute and select its exact row for {source:?}:\n{preview}",
+        );
+        assert!(
+            !preview.contains("[[module ListPages")
+                && !preview.contains("%%fullname%%")
+                && !preview.contains("<p>]</p>"),
+            "the recovered head must not leak source or surplus right brackets for {source:?}:\n{preview}",
+        );
+    }
+
+    for (source, expected_heading) in [
+        (
+            concat!(
+                "[[module ListPages created_by=\"Dr Nordsee\" category=\"*\" ",
+                "pagetype=\"*\" separate=\"no\" tags=\"-admin -_sys +übersetzt\" ",
+                "order=prependLine=\"||~ Übersetzung ||~ Veröffentlichungsdatum ||~ Momentane Bewertung ||\"]]]\n",
+                "|| %%title_linked%% || %%created_at%% || %%rating%% ||\n",
+                "[[/module]]",
+            ),
+            "Veröffentlichungsdatum",
+        ),
+        (
+            concat!(
+                "[[module ListPages created_by=created_by=\"s d locke\" ",
+                "order=\"rating desc\" separate=\"no\" tags=\"tale\" perPage=\"250\" ",
+                "prependLine=\"||~ Title ||~ Rating ||~ Comments ||~ Created ||~ Edited ||\"]]\n",
+                "|| %%title_linked%% || %%rating%% || %%comments%% || %%created_at%% || %%updated_at%% ||\n",
+                "[[/module]]",
+            ),
+            "Comments",
+        ),
+        (
+            concat!(
+                "[[module ListPages rating=\">60\" order=\"rating desc\" category=\"*\" ",
+                "separate=\"false\" limit=\"200\" perPage=\"35\" date=\"@URL|2023\"",
+                "[!-- UPDATE THIS TO CURRENT YEAR --] ",
+                "prependLine=\"||~ タイトル||~ 評価||~ 著者||~ 作成日||\"]]\n",
+                "|| %%title_linked%% || %%rating%% || %%created_by_linked%% || %%created_at%% ||\n",
+                "[[/module]]",
+            ),
+            "作成日",
+        ),
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "ListPages permissive legacy head",
+            source.to_owned(),
+        )
+        .await
+        .expect("an evidenced permissive ListPages head should render")
+        .html_output
+        .body;
+        assert!(
+            preview.contains(expected_heading)
+                && !preview.contains("[[module ListPages")
+                && !preview.contains("TODO: module ListPages"),
+            "the permissive legacy head must recover its later prependLine argument for {source:?}:\n{preview}",
+        );
+    }
+
+    let unclosed_head_before_raw_closer = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages unclosed legacy head",
+        format!(
+            concat!(
+                "[[module ListPages separate=\"no\" limit=\"250\" perPage=\"250\" ",
+                "tags=\"group-of-interest-form, beyond +_entropy-, -scp, -story,\" ",
+                "order=\"title\"\n\n",
+                "[[/module]]\nAFTER_MALFORMED\n",
+                "[[module ListPages name=\"{}\"]]",
+                "SECOND|%%fullname%%[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("a live-compatible unclosed ListPages head should render")
+    .html_output
+    .body;
+    assert!(
+        !unclosed_head_before_raw_closer.contains("[[module ListPages")
+            && !unclosed_head_before_raw_closer.contains("[[/module]]")
+            && unclosed_head_before_raw_closer.contains("AFTER_MALFORMED")
+            && unclosed_head_before_raw_closer.contains(&format!("SECOND|{TARGET_SLUG}")),
+        "an unclosed head ending before a raw closer must consume only its own module and leave the following module independent:\n{unclosed_head_before_raw_closer}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_respects_corpus_literal_context_ownership() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let monospace = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Literal ListPages monospace",
+        "{{[[Module Listpages]]}}".to_owned(),
+    )
+    .await
+    .expect("an inline-monospace ListPages example should render as literal text")
+    .html_output
+    .body;
+    assert!(
+        monospace.contains("[[Module Listpages]]")
+            && !monospace.contains("list-pages-box")
+            && !monospace.contains("TODO: module ListPages"),
+        "inline monospace must own the module-shaped text:\n{monospace}",
+    );
+
+    for comment in [
+        concat!(
+            "[!--\n",
+            "[[module ListPages rating=\">100\" order=\"rating desc\" ",
+            "separate=\"false\" limit=\"1000\" perPage=\"1000\"]]\n",
+            "%%title_linked%%:: rating: %%rating%%\n",
+            "[[/module]]\n\n",
+            "---]",
+        ),
+        concat!(
+            "[!----\n",
+            "temporary hidden region\n",
+            "[[module ListPages order=\"updated_at\" category=\"*\" ",
+            "perPage=\"200\" separate=\"false\"]]\n",
+            "%%title_linked%%\n",
+            "[[/module]]\n",
+            "---]",
+        ),
+    ] {
+        let hidden = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Comment-owned ListPages",
+            comment.to_owned(),
+        )
+        .await
+        .expect("a comment-owned ListPages example should remain hidden")
+        .html_output
+        .body;
+        assert!(
+            !hidden.contains("list-pages-box")
+                && !hidden.contains("TODO: module ListPages")
+                && !hidden.contains("[[module ListPages"),
+            "the complete Wikidot comment must own the module-shaped text:\n{hidden}",
         );
     }
 }

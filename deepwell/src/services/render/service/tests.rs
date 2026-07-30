@@ -142,13 +142,13 @@ fn list_pages_substitution_context_with_mode<'a>(
         snapshot_displays,
         runtime_displays: empty_list_pages_runtime_displays(),
         page_wikitext,
+        page_compiled_body_html: page_wikitext,
         page_wikitext_scalar_count: page_wikitext
             .map(|wikitext| wikitext.chars().count()),
         page_parent_fullname: None,
         page_parent_display: None,
         page_child_count: None,
         page_revision_count: None,
-        expanded_content: None,
         data_form_values,
         data_form_definition: None,
         render_generated_html,
@@ -1002,10 +1002,9 @@ fn parses_wikidot_list_pages_append_line_without_aliases() {
 
     assert_eq!(arguments.prepend_line.as_deref(), Some("PRE"));
     assert_eq!(arguments.append_line.as_deref(), Some("POST"));
-    assert!(
-        parse_list_pages_arguments(r#" tags="+fixture" append_line="POST" "#).is_none(),
-        "unverified appendLine aliases must remain literal",
-    );
+    let alias = parse_list_pages_arguments(r#" tags="+fixture" append_line="POST" "#)
+        .expect("unknown argument spellings are ignored");
+    assert_eq!(alias.append_line, None);
 }
 
 #[test]
@@ -1134,12 +1133,12 @@ fn accepts_live_evidenced_wikidot_list_pages_noops() {
         );
     }
 
-    assert!(
+    assert_eq!(
         parse_list_pages_arguments(
             r#" category="*" tags="fixture" limit="20" data-custom="value" wrapper="no" "#,
-        )
-        .is_none(),
-        "only the live-evidenced keys are accepted as no-ops",
+        ),
+        Some(baseline),
+        "syntactically valid unknown arguments are ignored",
     );
 }
 
@@ -1227,12 +1226,14 @@ fn parses_corpus_list_pages_url_and_filter_arguments() {
     assert_eq!(arguments.count_pages_per_page, Some(20));
     assert_eq!(arguments.offset, 0);
     assert!(arguments.slug.is_none());
-    assert!(arguments.author_filter_present);
-    assert!(arguments.unsupported_author_filter);
+    assert!(!arguments.author_filter_present);
+    assert!(!arguments.unsupported_author_filter);
 
-    assert!(
-        parse_list_pages_arguments(r#" parent="@URL""#).is_none(),
-        "dynamic parent selectors should remain unsupported rather than widening to all parents"
+    let unresolved_parent = parse_list_pages_arguments(r#" parent="@URL""#)
+        .expect("an unresolved URL parent selector is omitted");
+    assert_eq!(
+        unresolved_parent.page_parent,
+        crate::services::page_query::PageParentSelector::All,
     );
     assert!(list_pages_has_unsupported_parent_selector(
         r#" parent="@URL""#
@@ -1577,10 +1578,9 @@ fn parses_corpus_list_pages_custom_and_unknown_noops() {
         arguments.excluded_categories,
         vec![Cow::Borrowed("fragment")]
     );
-    assert!(
-        parse_list_pages_arguments(r#" tag="+scp" selector_typo="kept""#).is_none(),
-        "an unevidenced selector typo must remain literal",
-    );
+    let typo = parse_list_pages_arguments(r#" tag="+scp" selector_typo="kept""#)
+        .expect("unknown arguments are inert");
+    assert_eq!(typo.all_tags, vec![Cow::Borrowed("scp")]);
 }
 
 #[test]
@@ -2761,7 +2761,7 @@ fn authored_list_pages_feed_is_not_registered_as_trusted_html() {
 }
 
 #[test]
-fn formats_wikidot_list_pages_numeric_month_and_24_hour_time() {
+fn defers_wikidot_list_pages_custom_date_format_to_odate_class() {
     let created_at = time::Date::from_calendar_date(2024, time::Month::August, 8)
         .expect("fixture date should be valid")
         .with_hms(19, 44, 0)
@@ -2775,7 +2775,7 @@ fn formats_wikidot_list_pages_numeric_month_and_24_hour_time() {
     );
 
     assert!(rendered.contains("format_%25Y-%25m-%25d%20%25R%7Cagohover"));
-    assert!(rendered.ends_with(">2024-08-09 04:44</span>"));
+    assert!(rendered.ends_with(">9 Aug 2024, 04:44</span>"));
 }
 
 #[test]
@@ -3155,19 +3155,14 @@ fn substitutes_wikidot_list_pages_content_sections() {
 
     assert_eq!(rendered, "**SCP-2693 -- Hidden title text**");
 
-    let expanded_content = BTreeMap::from([
-        (None, "EXPANDED_FULL".to_owned()),
-        (Some(1), "EXPANDED_SECTION_1".to_owned()),
-    ]);
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
-    let mut context = list_pages_substitution_context(
+    let context = list_pages_substitution_context(
         20,
         &user_displays,
         Some("RAW_CONTENT"),
         &data_form_values,
     );
-    context.expanded_content = Some(&expanded_content);
     assert_eq!(
         substitute_list_pages_variables(
             "%%content%%|%%content{1}%%",
@@ -3176,8 +3171,8 @@ fn substitutes_wikidot_list_pages_content_sections() {
             1,
             &context,
         ),
-        "EXPANDED_FULL|EXPANDED_SECTION_1",
-        "row-local expanded sections must take precedence over raw child wikitext",
+        "RAW_CONTENT|RAW_CONTENT",
+        "row-local content must preserve the authored child source phase",
     );
 }
 
@@ -4583,7 +4578,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
     assert!(rendered.contains("WIKIDOT.page.listeners.userInfo(8955132)"));
     assert!(!rendered.contains("userkarma.php"));
     assert!(rendered.contains(
-        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" data-wikijump-compat-date="1" style="cursor: help; display: inline;">21 Jun 2026</span>"#
+        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" data-wikijump-compat-date="1" style="cursor: help; display: inline;">21 Jun 2026, 09:59</span>"#
     ));
 
     let rendered = substitute_list_pages_variables(
@@ -5143,7 +5138,7 @@ fn distinguishes_wikidot_list_pages_link_and_fullname() {
             "component:black-highlighter-theme-dev|",
             "component:black-highlighter-theme-dev|",
             "component:black-highlighter-theme-dev|",
-            "http://scp-wiki.wikidot.com/component:black-highlighter-theme-dev/noredirect/true",
+            "http://scp-wiki.wikidot.com/component:black-highlighter-theme-dev",
             "|[/component:black-highlighter-theme-dev Fixture component]",
         ),
     );
@@ -5215,7 +5210,7 @@ fn substitutes_wikidot_list_pages_author_tool_variables() {
     assert!(rendered.contains(r#"data-wikijump-compat-date="1""#));
     assert!(rendered.contains("[/system:page-tags/tag/scp scp]"));
     assert!(rendered.contains("[/system:page-tags/tag/safe safe]"));
-    assert!(rendered.ends_with("http://scp-wiki.wikidot.com/scp-2693/noredirect/true"));
+    assert!(rendered.ends_with("http://scp-wiki.wikidot.com/scp-2693"));
     assert!(!rendered.contains("%%updated_by%%"));
     assert!(!rendered.contains("%%tags_linked%%"));
 }
@@ -5407,7 +5402,7 @@ fn substitutes_imported_wikidot_snapshot_metadata_for_list_pages_rows() {
 
     assert!(rendered.contains("Aspenq Pride Art 2026 by "));
     assert!(rendered.contains("by Aspenq on "));
-    assert!(rendered.contains("2026 Jun 20"));
+    assert!(rendered.contains("20 Jun 2026, 05:22"));
     assert!(rendered.contains("10 Comments"));
     assert!(rendered.contains("-- Aspenq "));
     assert!(rendered.contains("-- 31 votes"));
@@ -5502,7 +5497,7 @@ fn substitutes_wikidot_list_pages_table_body_generated_variables_as_html() {
     );
 
     assert!(substituted.contains(
-        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" style="cursor: help; display: inline;">21 Jun 2026</span>"#
+        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" style="cursor: help; display: inline;">21 Jun 2026, 09:59</span>"#
     ));
     assert!(substituted.contains(r#"<a href="/system:page-tags/tag/scp">scp</a>"#));
     assert!(
@@ -5572,7 +5567,7 @@ fn substitutes_artwork_hub_listpages_body_without_visible_html_or_parser_functio
     assert!(!rendered.contains("_image"));
     assert!(!rendered.contains("_licensebox"));
     assert!(rendered.contains("[/aspenq-pride-art-2026 Aspenq Pride Art 2026]"));
-    assert!(rendered.contains(r#"<span class="odate time_1781900521 format_%25Y%20%25b%20%25e%7Cagohover" data-wikijump-compat-date="1" style="cursor: help; display: inline;">2026 Jun 20</span>"#));
+    assert!(rendered.contains(r#"<span class="odate time_1781900521 format_%25Y%20%25b%20%25e%7Cagohover" data-wikijump-compat-date="1" style="cursor: help; display: inline;">20 Jun 2026, 05:22</span>"#));
     assert!(rendered.contains("[/artwork-hub/tag/-scp,-goi-format,-supplement,-tale,-hub,-site,-resource,-guide,-essay,-theme,artwork artwork]"));
     assert!(rendered.contains("[/artwork-hub/tag/-scp,-goi-format,-supplement,-tale,-hub,-site,-resource,-guide,-essay,-theme,preview preview]"));
     assert!(rendered.contains("[/artwork-hub/tag/-scp,-goi-format,-supplement,-tale,-hub,-site,-resource,-guide,-essay,-theme,colored-pencil colored-pencil]"));

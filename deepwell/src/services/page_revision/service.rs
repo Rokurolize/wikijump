@@ -1535,6 +1535,47 @@ impl PageRevisionService {
         Ok(wikitext)
     }
 
+    /// Gets the latest compiled body HTML for several page IDs in one query.
+    pub async fn get_compiled_body_html_optional_batch(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_ids: &[i64],
+    ) -> Result<BTreeMap<i64, Option<String>>> {
+        let mut compiled_html = page_ids
+            .iter()
+            .copied()
+            .map(|page_id| (page_id, None))
+            .collect::<BTreeMap<_, _>>();
+        if page_ids.is_empty() {
+            return Ok(compiled_html);
+        }
+
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to get latest compiled body HTML for {} pages in site ID {}",
+                    page_ids.len(),
+                    site_id,
+                ),
+                ErrorType::PageRevision,
+            )
+        };
+        let rows = Page::find()
+            .select_only()
+            .column(page::Column::PageId)
+            .column(text::Column::Contents)
+            .join(JoinType::LeftJoin, page::Relation::PageRevision.def())
+            .join(JoinType::LeftJoin, page_revision::Relation::Text4.def())
+            .filter(page::Column::SiteId.eq(site_id))
+            .filter(page::Column::PageId.is_in(page_ids.iter().copied()))
+            .into_tuple::<(i64, Option<String>)>()
+            .all(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+        compiled_html.extend(rows);
+        Ok(compiled_html)
+    }
+
     /// Gets the Unicode scalar-value count of the latest saved wikitext for several page IDs.
     ///
     /// The stored generated column is `char_length(contents)::BIGINT`, which counts decoded

@@ -75,7 +75,7 @@ enum ListPagesVariable {
 }
 
 impl ListPagesVariable {
-    fn parse(name: &str, has_argument: bool) -> Option<Self> {
+    fn parse(name: &str) -> Option<Self> {
         match name.to_ascii_lowercase().as_str() {
             "title_linked" | "linked_title" => Some(Self::TitleLinked),
             "title" => Some(Self::Title),
@@ -126,9 +126,7 @@ impl ListPagesVariable {
             "parent_title_linked" => Some(Self::ParentTitleLinked),
             "revisions" => Some(Self::Revisions),
             "children" => Some(Self::Children),
-            "form_data" | "form_raw" | "form_label" | "form_hint" if has_argument => {
-                Some(Self::FormData)
-            }
+            "form_data" | "form_raw" | "form_label" | "form_hint" => Some(Self::FormData),
             "content" | "text" | "long" | "body" => Some(Self::Content),
             "preview" => Some(Self::Preview),
             "summary" | "first_paragraph" | "description" | "short" => {
@@ -141,6 +139,49 @@ impl ListPagesVariable {
             _ => None,
         }
     }
+
+    fn supports_suffix(
+        self,
+        argument: Option<&str>,
+        length: Option<&str>,
+        format: Option<&str>,
+    ) -> bool {
+        match self {
+            Self::FormData => argument.is_some() && length.is_none() && format.is_none(),
+            Self::Content => {
+                argument.is_none_or(|value| {
+                    !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit())
+                }) && length.is_none()
+                    && format.is_none()
+            }
+            Self::Preview => {
+                argument.is_none()
+                    && length.is_none_or(|value| {
+                        !value.is_empty()
+                            && value.bytes().all(|byte| byte.is_ascii_digit())
+                    })
+                    && format.is_none()
+            }
+            Self::CreatedAt
+            | Self::UpdatedAt
+            | Self::CommentedAt
+            | Self::TagsLinked
+            | Self::HiddenTagsLinked => argument.is_none() && length.is_none(),
+            _ => argument.is_none() && length.is_none() && format.is_none(),
+        }
+    }
+}
+
+pub(in crate::services::render) fn list_pages_variable_capture_is_valid(
+    captures: &regex::Captures<'_>,
+) -> bool {
+    ListPagesVariable::parse(&captures["name"]).is_some_and(|variable| {
+        variable.supports_suffix(
+            captures.name("argument").map(|matched| matched.as_str()),
+            captures.name("length").map(|matched| matched.as_str()),
+            captures.name("format").map(|matched| matched.as_str()),
+        )
+    })
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -221,12 +262,9 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String)> 
 
     match row_body {
         Some(row_body) => Some((sections, row_body)),
-        // A head or foot with no body has no evidenced row template to pair it
-        // with, so the module is left alone rather than guessed at.
-        None if sections == ListPagesSections::default() => {
-            Some((sections, body.to_owned()))
-        }
-        None => None,
+        // Without a body marker, Wikidot treats head/foot markers as ordinary
+        // per-row template text rather than recognizing a section split.
+        None => Some((ListPagesSections::default(), body.to_owned())),
     }
 }
 
@@ -246,10 +284,14 @@ impl ListPagesTemplatePlan {
         let mut rating_only = true;
 
         for captures in LISTPAGES_VARIABLE_REGEX.captures_iter(body) {
-            let variable = ListPagesVariable::parse(
-                &captures["name"],
-                captures.name("argument").is_some(),
-            )?;
+            let variable = ListPagesVariable::parse(&captures["name"])?;
+            if !variable.supports_suffix(
+                captures.name("argument").map(|matched| matched.as_str()),
+                captures.name("length").map(|matched| matched.as_str()),
+                captures.name("format").map(|matched| matched.as_str()),
+            ) {
+                continue;
+            }
             variable_count += 1;
             rating_only &= variable == ListPagesVariable::Rating;
             variables.insert(variable);
@@ -373,6 +415,10 @@ impl ListPagesTemplatePlan {
         ])
     }
 
+    pub(in crate::services::render) fn uses_preview(&self) -> bool {
+        self.variables.contains(ListPagesVariable::Preview)
+    }
+
     pub(in crate::services::render) fn uses_size(&self) -> bool {
         self.variables.contains(ListPagesVariable::Size)
     }
@@ -415,6 +461,15 @@ impl ListPagesTemplatePlan {
 
     pub(in crate::services::render) fn uses_data_form(&self) -> bool {
         self.variables.contains(ListPagesVariable::FormData)
+    }
+
+    pub(in crate::services::render) fn mentions_data_form(&self) -> bool {
+        LISTPAGES_VARIABLE_REGEX
+            .captures_iter(&self.body)
+            .any(|captures| {
+                ListPagesVariable::parse(&captures["name"])
+                    == Some(ListPagesVariable::FormData)
+            })
     }
 
     pub(in crate::services::render) fn uses_only_rating(&self) -> bool {
@@ -531,11 +586,11 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unknown_and_argumentless_form_variables() {
+    fn rejects_unknown_names_but_preserves_known_invalid_suffixes() {
         assert!(ListPagesTemplatePlan::compile("%%unsupported%%").is_none());
         assert!(ListPagesTemplatePlan::compile("%%createdbyunix%%").is_none());
-        assert!(ListPagesTemplatePlan::compile("%%form_data%%").is_none());
-        assert!(ListPagesTemplatePlan::compile("%%form_raw%%").is_none());
+        assert!(ListPagesTemplatePlan::compile("%%form_data%%").is_some());
+        assert!(ListPagesTemplatePlan::compile("%%form_raw%%").is_some());
     }
 
     #[test]
@@ -552,7 +607,7 @@ mod tests {
     }
 
     #[test]
-    fn accepts_every_supported_alias_and_variable_suffix() {
+    fn accepts_every_supported_bare_alias_and_family_specific_suffix() {
         for name in [
             "title_linked",
             "linked_title",
@@ -630,7 +685,7 @@ mod tests {
             "limit",
             "total_or_limit",
         ] {
-            let body = format!("%%{name}|format suffix%%");
+            let body = format!("%%{name}%%");
             assert!(
                 ListPagesTemplatePlan::compile(&body).is_some(),
                 "unsupported alias: {name}",
@@ -640,6 +695,19 @@ mod tests {
             assert!(
                 ListPagesTemplatePlan::compile(&format!("%%{name}{{field-name}}%%"))
                     .is_some(),
+            );
+        }
+        for body in [
+            "%%content{2}%%",
+            "%%preview(17)%%",
+            "%%created_at|%Y%%",
+            "%%updated_at|%Y|agohover%%",
+            "%%commented_at|%%",
+            "%%tags_linked|#%%",
+        ] {
+            assert!(
+                ListPagesTemplatePlan::compile(body).is_some(),
+                "unsupported family-specific suffix: {body}",
             );
         }
     }
@@ -730,9 +798,14 @@ mod section_tests {
     }
 
     #[test]
-    fn head_or_foot_without_a_body_has_no_row_template() {
-        assert!(ListPagesTemplatePlan::compile("[[head]]H[[/head]]%%name%%").is_none());
-        assert!(ListPagesTemplatePlan::compile("[[foot]]F[[/foot]]%%name%%").is_none());
+    fn head_or_foot_without_a_body_remains_literal_row_template_text() {
+        for body in ["[[head]]H[[/head]]%%name%%", "[[foot]]F[[/foot]]%%name%%"] {
+            let plan = ListPagesTemplatePlan::compile(body)
+                .expect("a standalone head or foot remains ordinary row text");
+            assert_eq!(plan.head_section(), None);
+            assert_eq!(plan.foot_section(), None);
+            assert_eq!(plan.body(), body);
+        }
     }
 
     #[test]

@@ -32,8 +32,10 @@ function firstByCluster(invocations) {
 }
 
 function authoredSource(invocation) {
-  if (!invocation.balanced) return invocation.head;
-  return `${invocation.head}${invocation.body}[[/module]]`;
+  if (typeof invocation.source !== "string") {
+    throw new Error(`corpus invocation ${invocation.id} has no preserved source`);
+  }
+  return invocation.source;
 }
 
 function variablesFromSource(source) {
@@ -538,6 +540,12 @@ export async function buildListPagesMatrix({ inventoryDir }) {
     origin: "corpus-invocation",
     semantic_cluster_key: invocation.semantic_cluster_key,
     source_sha256: invocation.source_sha256,
+    source: authoredSource(invocation),
+    execution_context: invocation.execution_context ?? "executable",
+    literal_owner: invocation.literal_owner ?? null,
+    context_replay_source: invocation.context_replay_source ?? null,
+    context_replay_source_sha256:
+      invocation.context_replay_source_sha256 ?? null,
     provenance: {
       branch: invocation.branch,
       page_fullname: invocation.page_fullname,
