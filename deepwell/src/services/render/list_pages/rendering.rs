@@ -36,6 +36,7 @@ use super::current_data_form::{
     current_data_form_list_pages_head, load_current_page_data_form_context,
 };
 use super::parents::{load_list_pages_child_counts, load_list_pages_parent_displays};
+use super::rendering_support::raw_module_close_end;
 use super::scanner::{
     CountPagesCloseReachabilityIndex, find_list_pages_module_matches,
     has_count_pages_module_opening_candidate, has_list_pages_module_opening_candidate,
@@ -101,16 +102,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 const MAX_NESTED_LISTPAGES_DEPTH: usize = 8;
 const MAX_NESTED_LISTPAGES_MODULES_PER_PASS: usize = 64;
-
-fn raw_module_close_end(source: &str, start: usize) -> Option<usize> {
-    let close = b"[[/module]]";
-    source
-        .as_bytes()
-        .get(start..)?
-        .windows(close.len())
-        .position(|candidate| candidate.eq_ignore_ascii_case(close))
-        .map(|offset| start + offset + close.len())
-}
 
 impl RenderService {
     #[allow(clippy::too_many_arguments)]
@@ -1992,6 +1983,19 @@ impl RenderService {
         } else {
             None
         };
+        let mut pager = String::new();
+        push_list_pages_pager(
+            &mut pager,
+            page_info,
+            pager_route,
+            url,
+            url_attr_prefix.as_deref(),
+            // The pager numbers pages from after the module's own offset,
+            // so it reads the URL-derived skip, not the raw offset.
+            u32::try_from(url_page_skip).unwrap_or(u32::MAX),
+            per_page,
+            total_selected,
+        );
         let mut output = String::new();
         if wrapper
             && !push_list_pages_generated_output(
@@ -2140,8 +2144,17 @@ impl RenderService {
                 render_list_pages_numbered_rows(&body)
             };
             let rendered_body = suppress_generated_list_pages_heading_toc(&rendered_body);
+            let generated_row_close = if separate
+                && !wrapper
+                && !pager.is_empty()
+                && index + 1 == pages.len()
+            {
+                "\n[[/div]]"
+            } else {
+                "\n[[/div]]\n"
+            };
             let row_markup_bytes = if separate {
-                "[[div class=\"list-pages-item\"]]\n\n[[/div]]\n".len()
+                "[[div class=\"list-pages-item\"]]\n".len() + generated_row_close.len()
             } else {
                 1
             };
@@ -2162,7 +2175,7 @@ impl RenderService {
             }
             output.push_str(&rendered_body);
             if separate {
-                output.push_str("\n[[/div]]\n");
+                output.push_str(generated_row_close);
             } else {
                 output.push('\n');
             }
@@ -2196,19 +2209,6 @@ impl RenderService {
             }
         }
 
-        let mut pager = String::new();
-        push_list_pages_pager(
-            &mut pager,
-            page_info,
-            pager_route,
-            url,
-            url_attr_prefix.as_deref(),
-            // The pager numbers pages from after the module's own offset,
-            // so it reads the URL-derived skip, not the raw offset.
-            u32::try_from(url_page_skip).unwrap_or(u32::MAX),
-            per_page,
-            total_selected,
-        );
         if !expansion_budget.try_consume_generated_output_bytes(pager.len()) {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal(
                 "pager exceeds generated-output budget",

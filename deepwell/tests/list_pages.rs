@@ -1502,6 +1502,43 @@ async fn listpages_uses_limit_as_total_and_defaults_pagination_to_twenty() {
     }
 }
 
+/// Anonymous Wikidot PagePreview evidence, 2026-07-30:
+/// `pager-dom-b16b76666.json`, case `scout-pager-dom-wrapper-no`.
+#[tokio::test]
+async fn listpages_unwrapped_separate_row_is_adjacent_to_its_pager() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let body = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "scout-pager-dom-wrapper-no",
+        concat!(
+            "[[module ListPages category=\"*\" name=\"component:image-block*\" ",
+            "order=\"name\" limit=\"2\" perPage=\"1\" wrapper=\"no\"]]\n",
+            "%%fullname%%|\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("unwrapped ListPages pager preview should render")
+    .html_output
+    .body;
+
+    assert_eq!(
+        body,
+        concat!(
+            r#"<div class="list-pages-item"><p>component:image-block|</p></div>"#,
+            r#"<div class="pager"><span class="pager-no">page 1 of 2</span>"#,
+            r#"<span class="current">1</span>"#,
+            r#"<span class="target"><a href="/ajax-module-connector.php/p/2">2</a></span>"#,
+            r#"<span class="target"><a href="/ajax-module-connector.php/p/2">next »</a></span>"#,
+            "</div>\n",
+        ),
+    );
+}
+
 #[tokio::test]
 async fn created_by_exclusion_omits_the_containing_pages_author() {
     const OWN_SLUG: &str = "author-exclusion-own";

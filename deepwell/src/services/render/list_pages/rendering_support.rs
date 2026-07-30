@@ -29,6 +29,19 @@ use sea_orm::FromQueryResult;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
+pub(in crate::services::render) fn raw_module_close_end(
+    source: &str,
+    start: usize,
+) -> Option<usize> {
+    let close = b"[[/module]]";
+    source
+        .as_bytes()
+        .get(start..)?
+        .windows(close.len())
+        .position(|candidate| candidate.eq_ignore_ascii_case(close))
+        .map(|offset| start + offset + close.len())
+}
+
 pub(in crate::services::render) fn push_list_pages_generated_output(
     output: &mut String,
     fragment: &str,
