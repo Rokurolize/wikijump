@@ -26,10 +26,14 @@ use super::super::literal_regions::{
     rollback_start_in_left_run, scan_wikidot_whole_head_value,
     wikidot_right_bracket_token, wikidot_trimmed_name,
 };
+use super::super::module_arguments::wikidot_list_pages_arguments;
 #[path = "scanner/count_reachability.rs"]
 mod count_reachability;
+#[path = "scanner/legacy_heads.rs"]
+mod legacy_heads;
 
 pub(in crate::services::render) use self::count_reachability::CountPagesCloseReachabilityIndex;
+use self::legacy_heads::{paired_inline_comment, recovered_nested_assignment};
 #[cfg(test)]
 use std::cell::Cell;
 use std::ops::Range;
@@ -274,6 +278,7 @@ struct ModuleOpenTag {
 enum ModuleOpeningEnd {
     Complete {
         opening_end: usize,
+        body_start: usize,
         subname_end: usize,
         runtime_safe: bool,
     },
@@ -291,6 +296,7 @@ enum ModuleEvent {
         subname_start: usize,
         subname_end: usize,
         opening_end: usize,
+        body_start: usize,
         direct_candidate: bool,
         runtime_safe: bool,
         projection_guard_start: Option<usize>,
@@ -306,6 +312,7 @@ struct DirectModuleOpen {
     subname_start: usize,
     subname_end: usize,
     opening_end: usize,
+    body_start: usize,
     runtime_safe: bool,
 }
 
@@ -338,6 +345,7 @@ impl OrderedModuleEvent {
                 subname_start,
                 subname_end,
                 opening_end,
+                body_start,
                 direct_candidate: true,
                 runtime_safe,
                 ..
@@ -348,6 +356,7 @@ impl OrderedModuleEvent {
                 subname_start,
                 subname_end,
                 opening_end,
+                body_start,
                 runtime_safe,
             });
         }
@@ -404,7 +413,7 @@ impl<'a> ModuleEventScanner<'a> {
                     (candidate..run_end.saturating_sub(1)).find(|marker| {
                         self.lowercase.as_bytes().get(*marker..*marker + 3)
                             == Some(&b"[[#"[..])
-                            && unresolved_conditional_parser_function_prefix(
+                            && unresolved_block_conditional_prefix(
                                 &self.source[*marker + 3..],
                             )
                     })
@@ -424,9 +433,7 @@ impl<'a> ModuleEventScanner<'a> {
                 continue;
             }
             if self.lowercase.as_bytes().get(start..start + 3) == Some(&b"[[#"[..])
-                && unresolved_conditional_parser_function_prefix(
-                    &self.source[start + 3..],
-                )
+                && unresolved_block_conditional_prefix(&self.source[start + 3..])
             {
                 self.ambiguous_whole_head = true;
                 self.advance_to(self.lowercase.len());
@@ -437,13 +444,14 @@ impl<'a> ModuleEventScanner<'a> {
                 return Some(ModuleEvent::Close { start, end });
             }
             if let Some(tag) = self.module_open_tag(start) {
-                let (opening_end, subname_end, runtime_safe) =
+                let (opening_end, body_start, subname_end, runtime_safe) =
                     match self.module_opening_end(tag.name_end) {
                         ModuleOpeningEnd::Complete {
                             opening_end,
+                            body_start,
                             subname_end,
                             runtime_safe,
-                        } => (opening_end, subname_end, runtime_safe),
+                        } => (opening_end, body_start, subname_end, runtime_safe),
                         ModuleOpeningEnd::Malformed { resume } => {
                             self.advance_to(resume);
                             continue;
@@ -453,7 +461,7 @@ impl<'a> ModuleEventScanner<'a> {
                             return None;
                         }
                     };
-                self.advance_to(opening_end + 2);
+                self.advance_to(body_start);
                 let Some((subname_start, subname_end)) =
                     self.module_subname_span(tag.name_end, subname_end)
                 else {
@@ -465,6 +473,7 @@ impl<'a> ModuleEventScanner<'a> {
                     subname_start,
                     subname_end,
                     opening_end,
+                    body_start,
                     direct_candidate: tag.direct_candidate,
                     runtime_safe,
                     projection_guard_start: self.take_projection_guard(start),
@@ -839,6 +848,32 @@ impl<'a> ModuleEventScanner<'a> {
                 && bytes.get(cursor + 1) == Some(&b'[')
                 && !head_tokens.contains(cursor)
             {
+                let head_end =
+                    source[..cursor].trim_end_matches(char::is_whitespace).len();
+                let whitespace = &source[head_end..cursor];
+                let validation_head =
+                    source[subname_end..head_end].trim_start_matches([' ', '\t']);
+                if list_pages_compatibility
+                    && quote.is_none()
+                    && bytes
+                        .get(cursor..cursor + b"[[/module]]".len())
+                        .is_some_and(|candidate| {
+                            candidate.eq_ignore_ascii_case(b"[[/module]]")
+                        })
+                    && whitespace.contains(['\n', '\r'])
+                    && !wikidot_list_pages_arguments(validation_head).is_empty()
+                    && list_pages_runtime_head_can_execute(validation_head)
+                {
+                    finish_head_scan!(
+                        cursor,
+                        ModuleOpeningEnd::Complete {
+                            opening_end: head_end,
+                            body_start: cursor,
+                            subname_end,
+                            runtime_safe: false,
+                        }
+                    );
+                }
                 let (block_start, run_end) = left_block_start_in_run(bytes, cursor);
                 let rollback_marker =
                     rollback_start_in_left_run(bytes, cursor, block_start, run_end);
@@ -865,19 +900,17 @@ impl<'a> ModuleEventScanner<'a> {
                 );
             }
             if quote.is_some() && matches!(bytes[cursor], b'\n' | b'\r') {
+                if list_pages_compatibility {
+                    trailing_backslashes = 0;
+                    cursor = physical_line_resume(bytes, cursor);
+                    continue;
+                }
                 if trailing_backslashes > 0 {
                     trailing_backslashes -= 1;
                     cursor = physical_line_resume(bytes, cursor);
                     continue;
                 }
                 let resume = physical_line_resume(bytes, cursor);
-                if list_pages_compatibility {
-                    // An unescaped physical newline terminates the pinned
-                    // quoted head but can remain part of the runtime regex's
-                    // bare-value alternative. Do not evaluate either reading.
-                    self.ambiguous_whole_head = true;
-                    finish_head_scan!(resume, ModuleOpeningEnd::Malformed { resume });
-                }
                 finish_head_scan!(
                     resume,
                     ModuleOpeningEnd::Malformed {
@@ -888,12 +921,32 @@ impl<'a> ModuleEventScanner<'a> {
             match (quote, bytes[cursor]) {
                 (Some(b'"'), b'"')
                     if !quote_is_escaped(bytes, cursor, &head_tokens)
-                        && !head_tokens.contains(cursor)
-                        && double_quote_ends_scanner_argument(
+                        && (!head_tokens.contains(cursor)
+                            || (list_pages_compatibility
+                                && list_pages_url_value_quote_ends_at(
+                                    bytes,
+                                    cursor,
+                                    module_name_end,
+                                )))
+                        && (double_quote_ends_scanner_argument(
                             bytes,
                             cursor,
                             &head_tokens,
-                        ) =>
+                        ) || (list_pages_compatibility
+                            && (list_pages_url_value_quote_ends_at(
+                                bytes,
+                                cursor,
+                                module_name_end,
+                            ) || surplus_list_pages_close_after_spacing(
+                                bytes,
+                                cursor + 1,
+                            ) || list_pages_inert_at_markers_follow_quote(
+                                bytes, cursor,
+                            ) || crossing_list_pages_quote_ends_before_close(
+                                bytes,
+                                cursor,
+                                &head_tokens,
+                            )))) =>
                 {
                     quote = None;
                 }
@@ -921,7 +974,29 @@ impl<'a> ModuleEventScanner<'a> {
                         bytes.len(),
                         &mut head_tokens,
                     );
-                    if right_block {
+                    let surplus_list_pages_close_end = (list_pages_compatibility
+                        && !right_block)
+                        .then(|| {
+                            let mut end = cursor;
+                            while bytes.get(end) == Some(&b']') {
+                                end += 1;
+                            }
+                            (end.saturating_sub(cursor) >= 3).then_some(end)
+                        })
+                        .flatten();
+                    let inert_at_marker_close_end = (list_pages_compatibility
+                        && bytes.get(cursor..cursor + 2) == Some(&b"]]"[..])
+                        && source[subname_end..cursor]
+                            .trim_end_matches([' ', '\t'])
+                            .ends_with("@@"))
+                    .then_some(cursor + 2);
+                    if right_block
+                        || surplus_list_pages_close_end.is_some()
+                        || inert_at_marker_close_end.is_some()
+                    {
+                        let closing_end = surplus_list_pages_close_end
+                            .or(inert_at_marker_close_end)
+                            .unwrap_or(cursor + token_len);
                         let raw_head = &source[subname_end..cursor];
                         let validation_head = raw_head.trim_start_matches([' ', '\t']);
                         let mut validation = validate_module_head(
@@ -929,43 +1004,59 @@ impl<'a> ModuleEventScanner<'a> {
                             list_pages_compatibility,
                         );
                         let runtime_recognized = list_pages_compatibility
-                            && runtime_regex_recognizes_entire_head(validation_head);
+                            && !super::super::module_arguments::wikidot_list_pages_arguments(
+                                validation_head,
+                            )
+                            .is_empty();
                         if !self.charge_speculative(raw_head.len().saturating_mul(3)) {
                             record_module_head_scan_bytes(
                                 cursor.saturating_sub(module_name_end),
                             );
                             return ModuleOpeningEnd::Unclosed;
                         }
-                        if (first_rollback_marker.is_some() || runtime_recognized)
-                            && validation == ModuleHeadValidation::DefiniteInvalid
-                        {
-                            validation = if list_pages_compatibility {
-                                ModuleHeadValidation::AmbiguousFailClosed
-                            } else {
+                        if validation == ModuleHeadValidation::DefiniteInvalid {
+                            validation = if list_pages_compatibility
+                                && first_rollback_marker.is_none()
+                                && evidenced_legacy_list_pages_head_boundary(
+                                    validation_head,
+                                ) {
+                                ModuleHeadValidation::ValidRuntimeUnsafe
+                            } else if list_pages_compatibility
+                                && runtime_recognized
+                                && validation_head.contains(['\n', '\r'])
+                            {
+                                self.ambiguous_whole_head = true;
                                 finish_head_scan!(
-                                    cursor + token_len,
+                                    closing_end,
                                     ModuleOpeningEnd::Malformed {
                                         resume: first_rollback_marker
-                                            .expect("suppressed rollback marker exists"),
+                                            .unwrap_or(closing_end),
                                     }
+                                );
+                            } else if first_rollback_marker.is_none() {
+                                finish_head_scan!(
+                                    closing_end,
+                                    ModuleOpeningEnd::Malformed {
+                                        resume: closing_end,
+                                    }
+                                );
+                            } else if let Some(resume) = first_rollback_marker {
+                                finish_head_scan!(
+                                    closing_end,
+                                    ModuleOpeningEnd::Malformed { resume }
+                                );
+                            } else {
+                                unreachable!(
+                                    "the preceding branch owns a missing rollback marker"
                                 );
                             };
                         }
                         let runtime_safe = match validation {
                             ModuleHeadValidation::DefiniteInvalid => {
                                 finish_head_scan!(
-                                    cursor + token_len,
+                                    closing_end,
                                     ModuleOpeningEnd::Malformed {
-                                        resume: cursor + token_len,
-                                    }
-                                );
-                            }
-                            ModuleHeadValidation::AmbiguousFailClosed => {
-                                self.ambiguous_whole_head = true;
-                                finish_head_scan!(
-                                    cursor + token_len,
-                                    ModuleOpeningEnd::Malformed {
-                                        resume: cursor + token_len,
+                                        resume: closing_end,
                                     }
                                 );
                             }
@@ -973,9 +1064,9 @@ impl<'a> ModuleEventScanner<'a> {
                                 if first_rollback_marker.is_none() {
                                     self.ambiguous_whole_head = true;
                                     finish_head_scan!(
-                                        cursor + token_len,
+                                        closing_end,
                                         ModuleOpeningEnd::Malformed {
-                                            resume: cursor + token_len,
+                                            resume: closing_end,
                                         }
                                     );
                                 }
@@ -986,9 +1077,10 @@ impl<'a> ModuleEventScanner<'a> {
                         };
                         self.text_tokens = head_tokens;
                         finish_head_scan!(
-                            cursor + token_len,
+                            closing_end,
                             ModuleOpeningEnd::Complete {
-                                opening_end: cursor,
+                                opening_end: closing_end - 2,
+                                body_start: closing_end,
                                 subname_end,
                                 runtime_safe,
                             }
@@ -1025,9 +1117,12 @@ impl<'a> ModuleEventScanner<'a> {
             return ModuleOpeningEnd::Unclosed;
         }
         if let Some(resume) = first_rollback_marker {
-            self.ambiguous_whole_head |=
-                list_pages_compatibility && !definite_invalid_boundary;
-            ModuleOpeningEnd::Malformed { resume }
+            if list_pages_compatibility && !definite_invalid_boundary {
+                self.ambiguous_whole_head = true;
+                ModuleOpeningEnd::Unclosed
+            } else {
+                ModuleOpeningEnd::Malformed { resume }
+            }
         } else {
             ModuleOpeningEnd::Unclosed
         }
@@ -1281,7 +1376,6 @@ fn module_subname_end(
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum ModuleHeadValidation {
     DefiniteInvalid,
-    AmbiguousFailClosed,
     ValidRuntimeBoundaryDivergence,
     ValidRuntimeUnsafe,
     RuntimeSafe,
@@ -1405,7 +1499,11 @@ fn validate_module_head(
         }
 
         let quote = bytes[cursor];
+        let list_pages_url_value = list_pages_compatibility
+            && quote == b'"'
+            && list_pages_url_value_quote_starts_at(bytes, cursor);
         let quote_owned = matches!(quote, b'\'' | b'"')
+            && !list_pages_url_value
             && (syntax_crossing_token_end.is_some_and(|end| cursor < end)
                 || text_tokens.contains(cursor));
         if matches!(quote, b'\'' | b'"') {
@@ -1422,8 +1520,11 @@ fn validate_module_head(
                     runtime_safe = false;
                 }
                 if bytes[cursor] == quote {
-                    if syntax_crossing_token_end.is_some_and(|end| cursor < end)
-                        || text_tokens.contains(cursor)
+                    let list_pages_url_quote_end = list_pages_url_value
+                        && list_pages_url_value_quote_ends_at(bytes, cursor, key_start);
+                    if !list_pages_url_quote_end
+                        && (syntax_crossing_token_end.is_some_and(|end| cursor < end)
+                            || text_tokens.contains(cursor))
                     {
                         runtime_safe = false;
                         cursor += 1;
@@ -1435,7 +1536,8 @@ fn validate_module_head(
                                 bytes,
                                 cursor,
                                 &text_tokens,
-                            ))
+                            )
+                            && !list_pages_url_quote_end)
                     {
                         runtime_safe = false;
                         cursor += 1;
@@ -1500,16 +1602,16 @@ pub(in crate::services::render) fn runtime_regex_recognizes_entire_head(
     super::super::module_arguments::module_arguments_are_complete(source)
 }
 
-fn unresolved_conditional_parser_function_prefix(source: &str) -> bool {
-    ["ifexpr", "if"].into_iter().any(|name| {
-        source
-            .get(..name.len())
-            .is_some_and(|prefix| prefix.eq_ignore_ascii_case(name))
-            && source[name.len()..]
-                .chars()
-                .next()
-                .is_some_and(char::is_whitespace)
-    })
+fn unresolved_block_conditional_prefix(source: &str) -> bool {
+    const NAME: &str = "if";
+
+    source
+        .get(..NAME.len())
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(NAME))
+        && source[NAME.len()..]
+            .chars()
+            .next()
+            .is_some_and(char::is_whitespace)
 }
 
 pub(in crate::services::render) fn list_pages_runtime_head_is_safe(head: &str) -> bool {
@@ -1519,10 +1621,15 @@ pub(in crate::services::render) fn list_pages_runtime_head_is_safe(head: &str) -
 pub(in crate::services::render) fn list_pages_runtime_head_can_execute(
     head: &str,
 ) -> bool {
-    matches!(
-        validate_module_head(head, true),
-        ModuleHeadValidation::RuntimeSafe | ModuleHeadValidation::ValidRuntimeUnsafe
-    ) && runtime_regex_recognizes_entire_head(head)
+    match validate_module_head(head, true) {
+        ModuleHeadValidation::RuntimeSafe | ModuleHeadValidation::ValidRuntimeUnsafe => {
+            runtime_regex_recognizes_entire_head(head)
+                || !super::super::module_arguments::wikidot_list_pages_arguments(head)
+                    .is_empty()
+        }
+        ModuleHeadValidation::DefiniteInvalid if !head.contains("[[") => true,
+        _ => false,
+    }
 }
 
 fn normalize_module_head(source: &str) -> String {
@@ -1651,6 +1758,130 @@ fn double_quote_ends_scanner_argument(
     }
     matches!(bytes.get(quote + 1), Some(b' ' | b'\t' | b'\0'))
         && scanner_argument_boundary_at(bytes, quote + 1, text_tokens)
+}
+
+fn surplus_list_pages_close_after_spacing(bytes: &[u8], mut cursor: usize) -> bool {
+    while matches!(bytes.get(cursor), Some(b' ' | b'\t' | b'\0')) {
+        cursor += 1;
+    }
+    let run_start = cursor;
+    while bytes.get(cursor) == Some(&b']') {
+        cursor += 1;
+    }
+    cursor.saturating_sub(run_start) >= 3
+}
+
+fn list_pages_inert_at_markers_follow_quote(bytes: &[u8], quote: usize) -> bool {
+    bytes.get(quote + 1..quote + 3) == Some(&b"@@"[..])
+}
+
+fn crossing_list_pages_quote_ends_before_close(
+    bytes: &[u8],
+    quote: usize,
+    text_tokens: &TextTokenCursor,
+) -> bool {
+    if quote == 0 || bytes[quote - 1] != b'=' {
+        return false;
+    }
+    let tail_start = quote + 1;
+    let mut cursor = tail_start;
+    while bytes
+        .get(cursor)
+        .is_some_and(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
+    {
+        cursor += 1;
+    }
+    if cursor == tail_start || bytes.get(cursor) != Some(&b']') {
+        return false;
+    }
+    let mut lookahead_tokens = text_tokens.clone();
+    wikidot_right_bracket_token(bytes, cursor, bytes.len(), &mut lookahead_tokens).0
+        || surplus_list_pages_close_after_spacing(bytes, cursor)
+}
+
+fn list_pages_url_value_quote_starts_at(bytes: &[u8], quote: usize) -> bool {
+    let value = bytes.get(quote + 1..).unwrap_or_default();
+    value
+        .get(..4)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(b"@url"))
+        && matches!(value.get(4), Some(b'"' | b'|'))
+}
+
+fn list_pages_url_value_quote_ends_at(
+    bytes: &[u8],
+    quote: usize,
+    lower_bound: usize,
+) -> bool {
+    let Some(opening) = bytes[lower_bound..quote]
+        .iter()
+        .rposition(|byte| *byte == b'"')
+        .map(|offset| lower_bound + offset)
+    else {
+        return false;
+    };
+    list_pages_url_value_quote_starts_at(bytes, opening)
+        && !bytes[opening + 1..quote].contains(&b'"')
+}
+
+fn evidenced_legacy_list_pages_head_boundary(head: &str) -> bool {
+    let arguments = wikidot_list_pages_arguments(head);
+    if arguments.is_empty() {
+        return false;
+    }
+    if arguments
+        .iter()
+        .any(|argument| matches!(argument.op, "<" | ">" | "<=" | ">=" | "!=" | "<>"))
+    {
+        return true;
+    }
+
+    let bytes = head.as_bytes();
+    let mut cursor = 0usize;
+    while let Some(relative) = bytes[cursor..].iter().position(|byte| *byte == b'"') {
+        let quote = cursor + relative;
+        let mut next = quote + 1;
+        while bytes.get(next).is_some_and(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-')
+        }) {
+            next += 1;
+        }
+        if next > quote + 1 && (bytes.get(next) == Some(&b'=') || next == bytes.len()) {
+            return !arguments.is_empty();
+        }
+        cursor = quote + 1;
+    }
+
+    let trimmed = head.trim_matches([' ', '\t', '\n', '\r']);
+    recovered_nested_assignment(trimmed)
+        || paired_inline_comment(trimmed)
+        || inert_head_prefix(trimmed, "|")
+        || inert_head_prefix(trimmed, "size")
+        || trailing_empty_assignment(trimmed, "prependLine")
+        || trimmed.ends_with("@@")
+}
+
+fn inert_head_prefix(head: &str, token: &str) -> bool {
+    head.get(..token.len())
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(token))
+        && head
+            .as_bytes()
+            .get(token.len())
+            .is_some_and(|byte| is_module_argument_spacing(*byte))
+}
+
+fn trailing_empty_assignment(head: &str, key: &str) -> bool {
+    let Some(before_equals) = head.strip_suffix('=') else {
+        return false;
+    };
+    let before_key = before_equals.trim_end_matches([' ', '\t']);
+    let Some(key_start) = before_key.len().checked_sub(key.len()) else {
+        return false;
+    };
+    before_key
+        .get(key_start..)
+        .is_some_and(|candidate| candidate.eq_ignore_ascii_case(key))
+        && key_start > 0
+        && before_key.as_bytes()[key_start - 1].is_ascii_whitespace()
 }
 
 fn continuation_revealed_argument_boundary(
@@ -1908,10 +2139,14 @@ fn find_list_pages_module_matches_with_cursor_work(
             OrderedModuleEvent::Open {
                 kind,
                 start,
+                end,
                 direct,
                 ..
             } => {
                 if let Some(module) = active.as_mut() {
+                    if nested_module_opening_has_inert_at_marker_suffix(source, end) {
+                        continue;
+                    }
                     let Some(depth) = module.depth.checked_add(1) else {
                         break;
                     };
@@ -1926,6 +2161,7 @@ fn find_list_pages_module_matches_with_cursor_work(
                     subname_start,
                     subname_end,
                     opening_end,
+                    body_start,
                     runtime_safe,
                 }) = direct
                 else {
@@ -1934,8 +2170,10 @@ fn find_list_pages_module_matches_with_cursor_work(
                 if source[subname_start..subname_end].eq_ignore_ascii_case("listpages") {
                     active = Some(ActiveListPagesModule {
                         start,
-                        body_start: opening_end + 2,
-                        head: source[subname_end..opening_end].trim_start(),
+                        body_start,
+                        head: source[subname_end..opening_end]
+                            .trim_start()
+                            .trim_end_matches(']'),
                         depth: 1,
                         runtime_safe,
                     });
@@ -1965,6 +2203,7 @@ fn find_list_pages_module_matches_with_cursor_work(
     if let Some(module) = active
         && module.depth == 1
         && module.runtime_safe
+        && !wikidot_list_pages_arguments(module.head).is_empty()
     {
         matches.push(ListPagesModuleMatch {
             start: module.start,
@@ -1983,6 +2222,24 @@ fn find_list_pages_module_matches_with_cursor_work(
         direct_work + projected_work + literal_range_advances + merge_work,
         literal_range_advances,
     )
+}
+
+fn nested_module_opening_has_inert_at_marker_suffix(
+    source: &str,
+    opening_end: usize,
+) -> bool {
+    let bytes = source.as_bytes();
+    if bytes.get(opening_end..opening_end + 2) != Some(&b"@@"[..]) {
+        return false;
+    }
+    let mut cursor = opening_end + 2;
+    while bytes.get(cursor) == Some(&b'@') {
+        cursor += 1;
+    }
+    while matches!(bytes.get(cursor), Some(b' ' | b'\t')) {
+        cursor += 1;
+    }
+    matches!(bytes.get(cursor), None | Some(b'\r' | b'\n'))
 }
 
 fn collect_module_events(
@@ -2011,17 +2268,19 @@ fn ordered_direct_event(event: ModuleEvent) -> OrderedModuleEvent {
             subname_start,
             subname_end,
             opening_end,
+            body_start,
             direct_candidate,
             runtime_safe,
             ..
         } => OrderedModuleEvent::Open {
             kind,
             start,
-            end: opening_end + 2,
+            end: body_start,
             direct: direct_candidate.then_some(DirectModuleOpen {
                 subname_start,
                 subname_end,
                 opening_end,
+                body_start,
                 runtime_safe,
             }),
             projection_guard_start: None,
@@ -2039,16 +2298,13 @@ fn map_projected_event(
         ModuleEvent::Open {
             kind,
             start,
-            opening_end,
+            body_start,
             projection_guard_start,
             ..
         } => {
-            let mapped = projection.map_range(start..opening_end + 2, original_len);
-            let projection_guard_start = projection_guard_start.map(|guard| {
-                projection
-                    .map_range(guard..opening_end + 2, original_len)
-                    .start
-            });
+            let mapped = projection.map_range(start..body_start, original_len);
+            let projection_guard_start = projection_guard_start
+                .map(|guard| projection.map_range(guard..body_start, original_len).start);
             OrderedModuleEvent::Open {
                 kind,
                 start: mapped.start,
@@ -2201,7 +2457,7 @@ fn direct_event_matches_ordered(
             ModuleEvent::Open {
                 kind: direct_kind,
                 start: direct_start,
-                opening_end,
+                body_start,
                 ..
             },
             OrderedModuleEvent::Open {
@@ -2213,7 +2469,7 @@ fn direct_event_matches_ordered(
         ) => {
             direct_kind == projected_kind
                 && direct_start == projected_start
-                && opening_end + 2 == projected_end
+                && body_start == projected_end
         }
         (
             ModuleEvent::Close {

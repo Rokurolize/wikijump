@@ -74,7 +74,13 @@ function run(command, args, options = {}) {
     encoding: "utf8",
     stdio: "pipe",
     env: options.env ?? process.env,
+    maxBuffer: 64 * 1024 * 1024,
   });
+  if (result.error) {
+    throw new Error(
+      `${command} ${args.join(" ")} failed to start or capture output: ${result.error.message}`,
+    );
+  }
   if (result.status !== 0)
     throw new Error(
       `${command} ${args.join(" ")} failed: ${result.stderr || result.stdout}`,
@@ -321,7 +327,10 @@ async function rpc(url, method, params = {}, headers = {}) {
 
 export async function readSeedAdministrator(repository) {
   const users = JSON.parse(
-    await fs.readFile(path.join(repository, "deepwell/seeder/users.json"), "utf8"),
+    await fs.readFile(
+      path.join(repository, "deepwell/seeder/users.json"),
+      "utf8",
+    ),
   );
   const administrator = users.find((user) => user?.slug === "administrator");
   if (
@@ -342,11 +351,40 @@ export function pageMutationContext(context, slug) {
   return { ...context, "X-Deepwell-Page": slug };
 }
 
-export function replaceFtmlPin(manifest, baselineFtml, candidateFtml) {
-  const current = `rev = "${baselineFtml}"`;
+export function replaceFtmlPin(manifest, sourceFtml, targetFtml) {
+  const current = `rev = "${sourceFtml}"`;
   const matches = manifest.split(current).length - 1;
-  assert.equal(matches, 1, "Deepwell manifest must contain the baseline FTML pin exactly once");
-  return manifest.replace(current, `rev = "${candidateFtml}"`);
+  assert.equal(
+    matches,
+    1,
+    "Deepwell manifest must contain the source FTML pin exactly once",
+  );
+  return manifest.replace(current, `rev = "${targetFtml}"`);
+}
+
+export function selectFtmlPinRewrite(headFtml, baselineFtml, candidateFtml) {
+  assert.notEqual(
+    baselineFtml,
+    candidateFtml,
+    "baseline and candidate FTML revisions must be distinct",
+  );
+  if (headFtml === baselineFtml) {
+    return Object.freeze({
+      stage: "candidate",
+      sourceFtml: baselineFtml,
+      targetFtml: candidateFtml,
+    });
+  }
+  if (headFtml === candidateFtml) {
+    return Object.freeze({
+      stage: "baseline",
+      sourceFtml: candidateFtml,
+      targetFtml: baselineFtml,
+    });
+  }
+  throw new Error(
+    `HEAD FTML pin ${headFtml} matches neither baseline ${baselineFtml} nor candidate ${candidateFtml}`,
+  );
 }
 
 async function seedFixtures({ rpcUrl, fixtures, expectedFtml, administrator }) {
@@ -592,19 +630,31 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
       `owner=${OWNER}; expiry=${expiresAt}`,
       candidateWorktree,
     ]);
-    baselineFtml ??= currentFtmlSha(baselineWorktree);
+    const headFtml = currentFtmlSha(baselineWorktree);
+    baselineFtml ??= headFtml;
     layout.baseline_ftml = baselineFtml;
-    const candidateCargoToml = path.join(candidateWorktree, "deepwell", "Cargo.toml");
+    const rewrite = selectFtmlPinRewrite(
+      headFtml,
+      baselineFtml,
+      args.candidateFtml,
+    );
+    const rewriteWorktree =
+      rewrite.stage === "candidate" ? candidateWorktree : baselineWorktree;
+    const rewriteCargoToml = path.join(
+      rewriteWorktree,
+      "deepwell",
+      "Cargo.toml",
+    );
     await fs.writeFile(
-      candidateCargoToml,
+      rewriteCargoToml,
       replaceFtmlPin(
-        await fs.readFile(candidateCargoToml, "utf8"),
-        baselineFtml,
-        args.candidateFtml,
+        await fs.readFile(rewriteCargoToml, "utf8"),
+        rewrite.sourceFtml,
+        rewrite.targetFtml,
       ),
     );
-    run("cargo", ["update", "-p", "ftml", "--precise", args.candidateFtml], {
-      cwd: path.join(candidateWorktree, "deepwell"),
+    run("cargo", ["update", "-p", "ftml", "--precise", rewrite.targetFtml], {
+      cwd: path.join(rewriteWorktree, "deepwell"),
     });
     assert.equal(
       currentFtmlSha(baselineWorktree),

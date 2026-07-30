@@ -1861,6 +1861,7 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
             "[[image \"{$spaced}\" link=\"{$spaced}\"]]\n",
             "[[image {$composite} link={$composite}]]\n",
             "[[image literal-thumb.png link=literal-full.png]]\n",
+            "[[image literal-quoted-thumb.png link=\"literal quoted full.png\"]]\n",
         ),
     )
     .await;
@@ -1940,18 +1941,18 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
     );
     for forwarded in ["forwarded.png", "forwarded%20two.png"] {
         let owned = format!("/local--files/fragment:attachment-owner-leaf/{forwarded}");
-        let expected_occurrences = if forwarded == "forwarded.png" { 4 } else { 2 };
+        let expected_occurrences = 2;
         assert_eq!(
             html.matches(&owned).count(),
             expected_occurrences,
-            "a forwarded attachment must use its leaf-owned URL for both href and src: {html}"
+            "a forwarded attachment must use its leaf-owned URL wherever Wikidot accepts the argument shape: {html}"
         );
         let second_owned =
             format!("/local--files/fragment:attachment-owner-second-leaf/{forwarded}");
         assert_eq!(
             html.matches(&second_owned).count(),
             expected_occurrences,
-            "same-valued forwarded occurrences from another leaf must retain their distinct owner: {html}"
+            "same-valued forwarded occurrences from another leaf must retain their distinct owner wherever Wikidot accepts the argument shape: {html}"
         );
     }
     assert_eq!(
@@ -1959,15 +1960,23 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
             "/local--files/component:attachment-owner-wrapper/thumb-forwarded.png",
         )
         .count(),
-        4,
-        "a composite value must retain ordinary substitution and belong to the wrapper that authored the composite: {html}",
+        2,
+        "a bare composite value must retain ordinary substitution for src, belong to the wrapper that authored it, and not acquire an ignored bare link: {html}",
     );
     assert!(
         html.contains("/local--files/component:attachment-owner-base/literal-thumb.png")
-            && html.contains(
+            && !html.contains(
                 "/local--files/component:attachment-owner-base/literal-full.png"
             ),
-        "literal image target and link must independently retain the base source owner: {html}"
+        "a literal bare image target must retain the base source owner while Wikidot's ignored bare link remains absent: {html}"
+    );
+    assert!(
+        html.contains(
+            "/local--files/component:attachment-owner-base/literal-quoted-thumb.png"
+        ) && html.contains(
+            "/local--files/component:attachment-owner-base/literal%20quoted%20full.png"
+        ),
+        "a literal quoted link in included content must retain both its quotes and base source owner: {html}"
     );
     let cross_owned = concat!(
         "test.wdfiles.com/local--files/fragment:attachment-owner-cross-leaf/",
@@ -7628,6 +7637,135 @@ async fn listpages_combined_and_separate_templates_match_live_container_dom() {
 }
 
 #[tokio::test]
+async fn listpages_sections_follow_live_separation_and_empty_result_rules() {
+    const DEFAULT_EMPTY: &str = "fixture-listpages-sections-default-empty";
+    const COMBINED_EMPTY: &str = "fixture-listpages-sections-combined-empty";
+    const SEPARATE_ONE: &str = "fixture-listpages-sections-separate-one";
+    const HEAD_ONLY_ONE: &str = "fixture-listpages-sections-head-only-one";
+    const TARGET: &str = "fixture-listpages-sections-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET,
+        "ListPages sections target",
+        "ListPages sections target body.",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        DEFAULT_EMPTY,
+        "ListPages empty sections holder",
+        concat!(
+            "[[module ListPages tags=\"+verification-listpages-empty-sections-absent\"]]\n",
+            "[[head]]EMPTY_SECTIONS_HEAD[[/head]]\n",
+            "[[body]]%%slug%%[[/body]]\n",
+            "[[foot]]EMPTY_SECTIONS_FOOT[[/foot]]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMBINED_EMPTY,
+        "ListPages combined empty sections holder",
+        concat!(
+            "[[module ListPages tags=\"+verification-listpages-empty-sections-absent\" separate=\"no\"]]\n",
+            "[[head]]COMBINED_EMPTY_HEAD[[/head]]\n",
+            "[[body]]ROW=%%fullname%%[[/body]]\n",
+            "[[foot]]COMBINED_EMPTY_FOOT[[/foot]]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SEPARATE_ONE,
+        "ListPages separate sections holder",
+        &format!(
+            concat!(
+                "[[module ListPages category=\"*\" fullname=\"{TARGET}\" separate=\"yes\"]]\n",
+                "[[head]]SEPARATE_ONE_HEAD[[/head]]\n",
+                "[[body]]ROW=%%fullname%%[[/body]]\n",
+                "[[foot]]SEPARATE_ONE_FOOT[[/foot]]\n",
+                "[[/module]]",
+            ),
+            TARGET = TARGET,
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HEAD_ONLY_ONE,
+        "ListPages head-only sections holder",
+        &format!(
+            concat!(
+                "[[module ListPages category=\"*\" fullname=\"{TARGET}\" separate=\"no\"]]\n",
+                "[[head]]HEAD_ONLY_LITERAL[[/head]]\n",
+                "[[/module]]",
+            ),
+            TARGET = TARGET,
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, DEFAULT_EMPTY).await;
+    assert_eq!(
+        html.matches(r#"<div class="list-pages-box">"#).count(),
+        1,
+        "live Wikidot emits the empty ListPages wrapper:\n{html}",
+    );
+    for forbidden in [
+        "EMPTY_SECTIONS_HEAD",
+        "EMPTY_SECTIONS_FOOT",
+        "[[head]]",
+        "[[body]]",
+        "[[foot]]",
+        "TODO: module ListPages",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "empty-result sections must not expose {forbidden:?}:\n{html}",
+        );
+    }
+
+    let combined_empty =
+        load_listpages_test_compiled_html(&runner, site_id, COMBINED_EMPTY).await;
+    assert!(
+        combined_empty.contains("COMBINED_EMPTY_HEAD")
+            && combined_empty.contains("COMBINED_EMPTY_FOOT")
+            && !combined_empty.contains("ROW="),
+        "separate=no emits head and foot even when no rows are selected:\n{combined_empty}",
+    );
+
+    let separate_one =
+        load_listpages_test_compiled_html(&runner, site_id, SEPARATE_ONE).await;
+    assert!(
+        separate_one.contains(&format!("ROW={TARGET}"))
+            && !separate_one.contains("SEPARATE_ONE_HEAD")
+            && !separate_one.contains("SEPARATE_ONE_FOOT"),
+        "separate=yes suppresses head and foot but keeps body as the row template:\n{separate_one}",
+    );
+
+    let head_only_one =
+        load_listpages_test_compiled_html(&runner, site_id, HEAD_ONLY_ONE).await;
+    assert!(
+        head_only_one.contains("[[head]]HEAD_ONLY_LITERAL[[/head]]")
+            && !head_only_one.contains("[[module ListPages"),
+        "a head without a body section remains literal per-row body text:\n{head_only_one}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_stored_title_remains_literal_in_listing_output() {
     const TAG: &str = "verification-list-title-literal";
     const SOURCE_SLUG: &str = "fixture-listpages-title-literal-source";
@@ -8103,9 +8241,15 @@ async fn listpages_append_line_matches_wikidot_row_and_pager_ordering() {
 
     let zero_html =
         load_listpages_test_compiled_html(&runner, site_id, ZERO_INDEX_SLUG).await;
+    let zero_pre = zero_html
+        .find(ZERO_PRE)
+        .expect("live Wikidot renders prependLine for an empty result");
+    let zero_post = zero_html
+        .find(ZERO_POST)
+        .expect("live Wikidot renders appendLine for an empty result");
     assert!(
-        !zero_html.contains(ZERO_PRE) && !zero_html.contains(ZERO_POST),
-        "zero-row ListPages must omit both prelude and postlude:\n{zero_html}"
+        zero_pre < zero_post,
+        "zero-row ListPages must render prependLine before appendLine:\n{zero_html}"
     );
 }
 
@@ -8494,7 +8638,7 @@ async fn listpages_index_remains_absolute_after_offset() {
 }
 
 #[tokio::test]
-async fn listpages_link_and_fullname_keep_distinct_wikidot_identities() {
+async fn listpages_link_uses_the_unsuffixed_wikidot_page_url() {
     const TAG: &str = "verification-listpages-link-fullname";
     const TARGET_SLUG: &str = "component:fixture-listpages-link-fullname-target";
     const INDEX_SLUG: &str = "fixture-listpages-link-fullname-index";
@@ -8521,8 +8665,9 @@ async fn listpages_link_and_fullname_keep_distinct_wikidot_identities() {
         "Fixture ListPages Link Fullname Index",
         concat!(
             "[[module ListPages category=\"*\" tags=\"+verification-listpages-link-fullname\" limit=\"1\"]]\n",
+            "PLAIN=%%link%%\n",
             "[[[%%link%%|absolute link]]]\n",
-            "[[[%%fullname%%/noredirect/true|qualified name]]]\n",
+            "[[[%%fullname%%|qualified name]]]\n",
             "[[/module]]",
         ),
     )
@@ -8530,18 +8675,87 @@ async fn listpages_link_and_fullname_keep_distinct_wikidot_identities() {
 
     let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
     assert!(
+        html.contains(&format!(">http://scp-wiki.wikidot.com/{TARGET_SLUG}</a>")),
+        "plain %%link%% must expose Wikidot's exact page URL:\n{html}"
+    );
+    assert!(
         html.contains(&format!(
-            "href=\"http://scp-wiki.wikidot.com/{TARGET_SLUG}/noredirect/true\""
+            "href=\"http://scp-wiki.wikidot.com/{TARGET_SLUG}\""
         )),
-        "%%link%% must render the complete live-compatible Wikidot URL:\n{html}"
+        "linked %%link%% must use Wikidot's exact page URL:\n{html}"
     );
     assert!(
-        html.contains(&format!("href=\"/{TARGET_SLUG}/noredirect/true\"")),
-        "%%fullname%% must render the category-qualified internal page name:\n{html}"
+        html.contains(&format!("href=\"/{TARGET_SLUG}\"")),
+        "%%fullname%% must remain the category-qualified internal page name:\n{html}"
     );
     assert!(
-        !html.contains(&format!("href=\"/{TARGET_SLUG}\"")),
-        "%%link%% must not collapse to the internal full-name URL:\n{html}"
+        !html.contains("/noredirect/true"),
+        "Wikidot does not append a noredirect suffix to %%link%%:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn listpages_date_formats_are_deferred_to_the_wikidot_client_phase() {
+    const TARGET_SLUG: &str = "fixture-listpages-date-phase-target";
+    const INDEX_SLUG: &str = "fixture-listpages-date-phase-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Date Phase Target",
+        "Date phase target.",
+    )
+    .await;
+    set_listpages_test_created_at(
+        &runner,
+        site_id,
+        TARGET_SLUG,
+        OffsetDateTime::from_unix_timestamp(1_216_474_620)
+            .expect("live-evidenced timestamp is valid"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Date Phase Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-date-phase-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "BARE=%%created_at%%\n",
+            "YEAR=%%created_at|%Y%%\n",
+            "UNKNOWN=%%created_at|x%%\n",
+            "MODIFIER=%%created_at|%Y|agohover%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert_eq!(
+        html.matches(">19 Jul 2008, 22:37</span>").count(),
+        4,
+        "the raw response must retain default date text for every format:\n{html}",
+    );
+    for encoded_format in [
+        "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M",
+        "format_%25Y",
+        "format_x",
+        "format_%25Y%7Cagohover",
+    ] {
+        assert!(
+            html.contains(encoded_format),
+            "the requested client format must survive in the ODate class {encoded_format:?}:\n{html}",
+        );
+    }
+    assert!(
+        !html.contains(">2008</span>") && !html.contains(">x</span>"),
+        "custom format payloads must not execute in the server response:\n{html}",
     );
 }
 
@@ -8728,6 +8942,270 @@ async fn listpages_preview_summary_and_content_aliases_match_live_wikidot() {
             "ListPages must not leave the live-evidenced content variable literal: {unresolved}\n{html}"
         );
     }
+}
+
+#[tokio::test]
+async fn listpages_variable_suffixes_are_specific_to_each_variable_family() {
+    const TARGET_SLUG: &str = "fixture-listpages-variable-suffix-target";
+    const INDEX_SLUG: &str = "fixture-listpages-variable-suffix-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Variable Suffix Target",
+        "First section.\n=====\nSecond section.",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Variable Suffix Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-variable-suffix-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "INVALID=%%title{1}%%|%%fullname(1)%%|%%link|x%%|%%site_name{1}(2)|x%%|%%rating(1)%%|%%comments{1}%%|%%index|x%%|%%total{1}%%|%%created_at{1}(2)|x%%|%%preview{17}%%\n",
+            "VALID=%%title%%|%%content{2}%%|%%preview(5)%%|%%created_at|%Y%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    for literal in [
+        "%%title{1}%%",
+        "%%fullname(1)%%",
+        "%%link|x%%",
+        "%%site_name{1}(2)|x%%",
+        "%%rating(1)%%",
+        "%%comments{1}%%",
+        "%%index|x%%",
+        "%%total{1}%%",
+        "%%created_at{1}(2)|x%%",
+        "%%preview{17}%%",
+    ] {
+        assert!(
+            html.contains(literal),
+            "an unsupported suffix must preserve its complete token {literal:?}:\n{html}",
+        );
+    }
+    for expected in [
+        "Fixture ListPages Variable Suffix Target",
+        "Second section.",
+        "style=\"white-space: pre-wrap;\"",
+        "format_%25Y",
+    ] {
+        assert!(
+            html.contains(expected),
+            "the valid variable-specific suffix should still render {expected:?}:\n{html}",
+        );
+    }
+    for valid_token in [
+        "%%title%%",
+        "%%content{2}%%",
+        "%%preview(5)%%",
+        "%%created_at|%Y%%",
+    ] {
+        assert!(
+            !html.contains(valid_token),
+            "a supported variable-specific form must substitute {valid_token:?}:\n{html}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn listpages_preview_uses_rendered_plain_text_and_legacy_word_limits() {
+    const TARGET_SLUG: &str = "fixture-listpages-rendered-preview-target";
+    const INDEX_SLUG: &str = "fixture-listpages-rendered-preview-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Rendered Preview Target",
+        concat!(
+            "[[>]]\n",
+            "[[module Rate]]\n",
+            "[[/>]]\n",
+            "[[div class=\"preview\"]]SCP-002 in its containment area[[/div]]\n",
+            "**Item #:** SCP-002\n",
+            "**Object Class:** Euclid\n",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Rendered Preview Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-rendered-preview-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "DEFAULT=%%preview%%\n",
+            "N0=%%preview(0)%%\n",
+            "N1=%%preview(1)%%\n",
+            "N2=%%preview(2)%%\n",
+            "N5=%%preview(5)%%\n",
+            "N17=%%preview(17)%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    for expected in [
+        "DEFAULT=<span style=\"white-space: pre-wrap;\">SCP-002 in its containment area Item #: SCP-002 Object Class: Euclid</span>",
+        "N0=<span style=\"white-space: pre-wrap;\">....</span>",
+        "N1=<span style=\"white-space: pre-wrap;\">.....</span>",
+        "N2=<span style=\"white-space: pre-wrap;\">......</span>",
+        "N5=<span style=\"white-space: pre-wrap;\">...</span>",
+        "N17=<span style=\"white-space: pre-wrap;\">SCP-002 in its...</span>",
+    ] {
+        assert!(
+            html.contains(expected),
+            "the rendered preview must contain the live-evidenced value {expected:?}:\n{html}",
+        );
+    }
+    assert!(
+        !html.contains("[[module") && !html.contains("[[div"),
+        "preview text must not expose selected-page source syntax:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_summary_aliases_cover_the_first_section_but_first_paragraph_does_not()
+{
+    const TARGET_SLUG: &str = "fixture-listpages-summary-family-target";
+    const INDEX_SLUG: &str = "fixture-listpages-summary-family-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Summary Family Target",
+        concat!(
+            "FIRST-PARAGRAPH\n\n",
+            "SECOND-SUMMARY-MARKER\n",
+            "====\n",
+            "EXCLUDED-SECOND-SECTION",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Summary Family Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-summary-family-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "SUMMARY-BEGIN %%summary%% SUMMARY-END\n",
+            "FIRST-BEGIN %%first_paragraph%% FIRST-END\n",
+            "DESCRIPTION-BEGIN %%description%% DESCRIPTION-END\n",
+            "SHORT-BEGIN %%short%% SHORT-END\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert_eq!(
+        html.matches("SECOND-SUMMARY-MARKER").count(),
+        3,
+        "summary, description, and short must include the second paragraph of section one:\n{html}",
+    );
+    let first = html
+        .split_once("FIRST-BEGIN")
+        .and_then(|(_, suffix)| suffix.split_once("FIRST-END"))
+        .map(|(value, _)| value)
+        .expect("first-paragraph sentinels should survive rendering");
+    assert!(
+        first.contains("FIRST-PARAGRAPH") && !first.contains("SECOND-SUMMARY-MARKER"),
+        "first_paragraph must use its own paragraph boundary:\n{html}",
+    );
+    assert!(
+        !html.contains("EXCLUDED-SECOND-SECTION"),
+        "none of the summary-family variables may cross the first content-section separator:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_numbered_content_does_not_recursively_expand_selected_page_includes() {
+    const INCLUDED_SLUG: &str = "fixture-listpages-content-phase-included";
+    const TARGET_SLUG: &str = "fixture-listpages-content-phase-target";
+    const INDEX_SLUG: &str = "fixture-listpages-content-phase-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INCLUDED_SLUG,
+        "Fixture ListPages Content Phase Included",
+        "EXPANDED-SELECTED-PAGE-INCLUDE",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Content Phase Target",
+        concat!(
+            "[[>]]\n",
+            "[[module Rate]]\n",
+            "[[/>]]\n",
+            "====\n",
+            "SECOND SECTION\n",
+            "====\n",
+            "[[include fixture-listpages-content-phase-included]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Content Phase Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-content-phase-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "FIRST|%%content{1}%%|FIRST-END\n",
+            "BEGIN|%%content{3}%%|END\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert!(
+        html.contains("[[include fixture-listpages-content-phase-included]]"),
+        "an include-only selected section must remain at Wikidot's authored insertion phase:\n{html}",
+    );
+    assert!(
+        !html.contains("EXPANDED-SELECTED-PAGE-INCLUDE"),
+        "ListPages must not grant selected-page content recursive include authority:\n{html}",
+    );
+    assert!(
+        html.contains("[[&gt;]]")
+            && html.contains("[[module Rate]]")
+            && html.contains("[[/&gt;]]"),
+        "selected-page quote and module delimiters must remain at the authored insertion phase:\n{html}",
+    );
 }
 
 #[tokio::test]
@@ -9980,8 +10458,8 @@ async fn listpages_unclosed_empty_body_uses_the_live_default_template() {
         );
     }
     assert!(
-        !html.contains("Second paragraph."),
-        "the default template renders the summary, not the full content:\n{html}"
+        html.contains("Second paragraph."),
+        "the default template summary spans the complete first content section:\n{html}"
     );
     assert!(!html.contains("[[module ListPages"), "{html}");
 }
@@ -10919,7 +11397,7 @@ async fn listpages_fragment_content_skips_hidden_pages_by_default() {
 }
 
 #[tokio::test]
-async fn listpages_fragment_content_expands_child_includes() {
+async fn listpages_fragment_content_preserves_child_includes_literally() {
     const INDEX_SLUG: &str = "fixture-listpages-fragment-include-index";
     const FRAGMENT_SLUG: &str = "fixture-listpages-fragment-include-child";
     const INCLUDE_SLUG: &str = "fixture-listpages-fragment-include-target";
@@ -11029,24 +11507,21 @@ async fn listpages_fragment_content_expands_child_includes() {
         .compiled_body_html
         .expect("compiled body should be included in page_get details");
 
-    for expected in [
-        "Fragment before include.",
-        INCLUDE_MARKER,
-        "Fragment after include.",
-    ] {
+    for expected in ["Fragment before include.", "Fragment after include."] {
         assert!(
             html.contains(expected),
             "fragment ListPages content should contain {expected:?}:\n{html}"
         );
     }
     assert!(
-        !html.contains("[[include"),
-        "fragment ListPages content should expand child includes before rendering:\n{html}"
+        html.contains(&format!("[[include {INCLUDE_SLUG}]]"))
+            && !html.contains(INCLUDE_MARKER),
+        "fragment ListPages content must keep child includes at the authored insertion phase:\n{html}"
     );
 }
 
 #[tokio::test]
-async fn listpages_content_keeps_the_selected_pages_attachment_owner() {
+async fn listpages_content_keeps_selected_page_attachment_syntax_literal() {
     const INDEX_SLUG: &str = "fixture-listpages-attachment-owner-index";
     const FRAGMENT_SLUG: &str = "fragment:fixture-listpages-attachment-owner-row";
     const FILE_NAME: &str = "2117.png";
@@ -11121,18 +11596,18 @@ async fn listpages_content_keeps_the_selected_pages_attachment_owner() {
     let html = page
         .compiled_body_html
         .expect("ListPages attachment-owner index should have compiled HTML");
-    let selected_owner = format!("/local--files/{FRAGMENT_SLUG}/{FILE_NAME}");
     assert_eq!(
-        html.matches(&selected_owner).count(),
-        2,
-        "ListPages row image src and href must both retain the selected page owner: {html}",
+        html.matches(&format!("/local--files/{FRAGMENT_SLUG}/{FILE_NAME}"))
+            .count(),
+        1,
+        "the authored include URL must survive without being executed: {html}",
     );
-    for direct_file in ["direct-row.png", "direct-row-full.png"] {
-        assert!(
-            html.contains(&format!("/local--files/{FRAGMENT_SLUG}/{direct_file}")),
-            "a direct ListPages row image target and link must retain the selected page owner: {html}",
-        );
-    }
+    assert!(
+        html.contains("[[include component:image-block ")
+            && html.contains("[[image direct-row.png link=direct-row-full.png]]")
+            && !html.contains(&format!("/local--files/{FRAGMENT_SLUG}/direct-row.png")),
+        "selected-page attachment directives must remain authored text: {html}",
+    );
     for forbidden_owner in [
         INDEX_SLUG,
         "component:image-block",
@@ -11152,7 +11627,7 @@ async fn listpages_content_keeps_the_selected_pages_attachment_owner() {
 }
 
 #[tokio::test]
-async fn listpages_content_keeps_same_named_attachments_separate_per_row() {
+async fn listpages_content_keeps_same_named_attachment_directives_literal_per_row() {
     const INDEX_SLUG: &str = "fixture-listpages-two-row-attachment-owner-index";
     const FIRST_FRAGMENT: &str =
         "fragment:fixture-listpages-two-row-attachment-owner-first";
@@ -11234,12 +11709,18 @@ async fn listpages_content_keeps_same_named_attachments_separate_per_row() {
         .compiled_body_html
         .expect("two-row ListPages attachment-owner index should have compiled HTML");
 
+    assert_eq!(
+        html.matches(
+            "[[include component:image-block name=shared-row.png|link=shared-row.png]]",
+        )
+        .count(),
+        2,
+        "each selected row must retain its authored attachment directive: {html}",
+    );
     for fragment in [FIRST_FRAGMENT, SECOND_FRAGMENT] {
-        let row_owner = format!("/local--files/{fragment}/{FILE_NAME}");
-        assert_eq!(
-            html.matches(&row_owner).count(),
-            2,
-            "each ListPages row must independently own both src and href for the same filename: {html}",
+        assert!(
+            !html.contains(&format!("/local--files/{fragment}/{FILE_NAME}")),
+            "literal selected-page directives must not create attachment URLs: {html}",
         );
     }
     for forbidden_owner in [
@@ -11352,8 +11833,8 @@ async fn exact_name_listpages_batch_preserves_order_duplicates_and_permissions()
         20,
         "batched duplicate rows should preserve the live default ListPages page size instead of collapsing to one row:\n{html}",
     );
-    let newest_duplicate = html.find("2030 Jan 02 01:40").unwrap();
-    let next_duplicate = html.find("2030 Jan 02 01:39").unwrap();
+    let newest_duplicate = html.find("2 Jan 2030, 01:40").unwrap();
+    let next_duplicate = html.find("2 Jan 2030, 01:39").unwrap();
     assert!(
         newest_duplicate < next_duplicate,
         "batched duplicate rows should retain PageQuery order:\n{html}"
@@ -14022,7 +14503,7 @@ async fn create_listpages_test_page(
 }
 
 #[tokio::test]
-async fn listpages_content_shares_the_render_include_budget() {
+async fn listpages_content_cannot_consume_the_outer_include_budget() {
     const COMPONENT_SLUG: &str = "component:listpages-include-budget-cell";
     const INDEX_SLUG: &str = "fixture-listpages-include-budget-index";
     const SAME_ROW_CHILD_SLUG: &str = "fixture-listpages-include-budget-same-row-child";
@@ -14167,11 +14648,18 @@ async fn listpages_content_shares_the_render_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("a structurally isolated content section should expand independently");
+    .expect("a structurally isolated content section should remain non-recursive");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        2,
-        "includes outside an isolated requested section must not consume the render budget",
+        1,
+        "only the direct outer include may execute",
+    );
+    assert!(
+        output
+            .html_output
+            .body
+            .contains(&format!("[[include {COMPONENT_SLUG}]]")),
+        "the selected child include must remain authored text",
     );
 
     let generated_separator = format!(
@@ -14261,13 +14749,11 @@ async fn listpages_content_shares_the_render_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect(
-        "full content and a section in one row should share one child include expansion",
-    );
+    .expect("full content and a section in one row must remain non-recursive");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        257,
-        "the once-expanded child include should render through both content variables",
+        255,
+        "only direct outer includes may execute",
     );
     assert_eq!(
         output
@@ -14277,8 +14763,17 @@ async fn listpages_content_shares_the_render_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        256,
-        "overlapping content variables in one row must charge and record the child include once",
+        255,
+        "selected child includes must not create backlinks",
+    );
+    assert_eq!(
+        output
+            .html_output
+            .body
+            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
+            .count(),
+        2,
+        "full content and section one must each preserve the authored include token",
     );
 
     let direct_includes =
@@ -14299,15 +14794,15 @@ async fn listpages_content_shares_the_render_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("128 direct and 128 ListPages includes should fit the public limit");
+    .expect("selected child includes must not consume the public include limit");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        256,
-        "the render at the public limit should expand every include",
+        128,
+        "only direct outer includes may execute",
     );
 
     let repeated_child = format!("{direct_includes}{}{}", list_pages(1), list_pages(1),);
-    let error = RenderService::render_page(
+    let output = RenderService::render_page(
         runner.context(),
         repeated_child.clone(),
         &page_info,
@@ -14316,11 +14811,11 @@ async fn listpages_content_shares_the_render_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect_err("separate ListPages blocks must charge the repeated child occurrence");
-    assert!(
-        format!("{error:?}")
-            .contains("include expansion exceeded maximum total includes 256"),
-        "separate ListPages blocks must share the public include ceiling: {error:?}",
+    .expect("repeated selected child content must remain non-recursive");
+    assert_eq!(
+        output.html_output.body.matches(INCLUDE_MARKER).count(),
+        128,
+        "only direct outer includes may execute",
     );
     let output = RenderService::render_corpus_page(
         runner.context(),
@@ -14330,11 +14825,11 @@ async fn listpages_content_shares_the_render_include_budget() {
         page_id,
     )
     .await
-    .expect("the corpus budget should allow both repeated ListPages block occurrences");
+    .expect("corpus rendering must preserve the same selected-content phase");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        384,
-        "the child content must render at every ListPages block occurrence",
+        128,
+        "corpus rendering must not execute selected child includes",
     );
     assert_eq!(
         output
@@ -14344,12 +14839,12 @@ async fn listpages_content_shares_the_render_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        384,
-        "separate ListPages blocks must record every child include occurrence",
+        128,
+        "only direct outer includes may create backlinks",
     );
 
     let over_budget = format!("{direct_includes}{}", list_pages(2));
-    let error = RenderService::render_page(
+    let output = RenderService::render_page(
         runner.context(),
         over_budget.clone(),
         &page_info,
@@ -14358,11 +14853,11 @@ async fn listpages_content_shares_the_render_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect_err("ListPages child content must not reset the public include budget");
-    assert!(
-        format!("{error:?}")
-            .contains("include expansion exceeded maximum total includes 256"),
-        "the shared-budget failure should report the render's original public limit: {error:?}",
+    .expect("selected child content must not consume the public include budget");
+    assert_eq!(
+        output.html_output.body.matches(INCLUDE_MARKER).count(),
+        128,
+        "only direct outer includes may execute",
     );
 
     let output = RenderService::render_corpus_page(
@@ -14373,11 +14868,11 @@ async fn listpages_content_shares_the_render_include_budget() {
         page_id,
     )
     .await
-    .expect("the trusted corpus limit should remain available to ListPages content");
+    .expect("trusted corpus rendering must keep selected content non-recursive");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        384,
-        "the corpus render should expand direct includes and both ListPages rows",
+        128,
+        "the corpus render must execute only direct outer includes",
     );
     assert_eq!(
         output
@@ -14387,8 +14882,8 @@ async fn listpages_content_shares_the_render_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        384,
-        "separate ListPages rows must record every child include occurrence",
+        128,
+        "selected child includes must not create backlinks",
     );
 }
 
@@ -15306,7 +15801,7 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         "[[/module]]",
     )
     .to_owned();
-    let public_list_pages_error = RenderService::render_page(
+    let public_list_pages_output = RenderService::render_page(
         runner.context(),
         list_pages_wikitext.clone(),
         &page_info,
@@ -15315,10 +15810,23 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         UrlArguments::default(),
     )
     .await
-    .expect_err("ordinary ListPages content must retain the public include ceiling");
-    assert!(
-        format!("{public_list_pages_error:?}")
-            .contains("include expansion exceeded maximum total includes 256")
+    .expect("ordinary ListPages content must not recursively execute selected includes");
+    assert_eq!(
+        public_list_pages_output
+            .html_output
+            .body
+            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
+            .count(),
+        INCLUDE_COUNT,
+        "ordinary ListPages content must preserve every selected include literally",
+    );
+    assert_eq!(
+        public_list_pages_output
+            .html_output
+            .body
+            .matches(MARKER)
+            .count(),
+        0
     );
 
     let list_pages_output = RenderService::render_corpus_page(
@@ -15329,11 +15837,19 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         page_id,
     )
     .await
-    .expect("trusted ListPages content should inherit the corpus include ceiling");
+    .expect("trusted ListPages content must preserve the same insertion phase");
+    assert_eq!(
+        list_pages_output
+            .html_output
+            .body
+            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
+            .count(),
+        INCLUDE_COUNT,
+        "corpus rendering must not grant ListPages child content recursive authority",
+    );
     assert_eq!(
         list_pages_output.html_output.body.matches(MARKER).count(),
-        INCLUDE_COUNT,
-        "ListPages %%content%% should render every corpus-provenanced include",
+        0
     );
 }
 
@@ -16431,6 +16947,69 @@ async fn countpages_substitutes_total_for_tagged_pages() {
         assert!(
             !html.contains(forbidden),
             "CountPages fixture should not contain {forbidden:?}:\n{html}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn listpages_template_parser_functions_run_after_row_variable_substitution() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "verification-listpages-template-parser-functions";
+
+    let target_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-listpages-template-parser-functions-target",
+        "Fixture ListPages Template Parser Functions Target",
+        "Fixture ListPages parser-function target marker.",
+    )
+    .await;
+    set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        "fixture-listpages-template-parser-functions-target",
+        target_revision,
+        &[tag],
+    )
+    .await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-listpages-template-parser-functions-index",
+        "Fixture ListPages Template Parser Functions Index",
+        &format!(
+            r#"[[module ListPages category="*" tags="+{tag}" order="name" limit="1"]]
+[[#ifexpr %%rating_votes%% == 0 | ZERO_VOTES | HAS_VOTES]] [[#expr %%rating_votes%% + %%rating%%]]
+[[/module]]"#
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(
+        &runner,
+        site_id,
+        "fixture-listpages-template-parser-functions-index",
+    )
+    .await;
+
+    assert!(
+        html.contains("<p>ZERO_VOTES 0</p>"),
+        "live Wikidot substitutes the row variables before evaluating #ifexpr and #expr:\n{html}",
+    );
+    for forbidden in [
+        "TODO: module ListPages",
+        "[[#ifexpr",
+        "[[#expr",
+        "%%rating_votes%%",
+        "%%rating%%",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "ListPages parser-function output should not contain {forbidden:?}:\n{html}",
         );
     }
 }

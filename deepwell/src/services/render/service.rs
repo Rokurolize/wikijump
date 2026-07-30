@@ -58,7 +58,8 @@ use super::iftags::{
 use super::include_attachment_owners::{
     AttachmentOwner, AttachmentProvenanceRegistry, AttachmentVariableOwners,
     find_wikidot_directive_end, owned_url, parse_wikidot_include_argument,
-    protect_forwarded_attachment_variables, qualify_included_relative_image_attachments,
+    preserve_argument_quotes, protect_forwarded_attachment_variables,
+    qualify_included_relative_image_attachments,
     qualify_relative_image_variable_attachments, relative, semantic_attachment_value,
     split_wikidot_include_argument_segments, wikidot_include_segment_is_space,
 };
@@ -1294,7 +1295,6 @@ impl RenderService {
                 &mut include_budget,
                 url,
                 &mut wikidot_compat_html,
-                &mut include_source_cache,
                 &mut wikidot_compat_text,
             )
             .await
@@ -2779,7 +2779,7 @@ impl RenderService {
                     if relative(semantic) {
                         owned_url(owner, semantic)
                     } else {
-                        raw_link.to_owned()
+                        semantic.to_owned()
                     }
                 }
                 None => {
@@ -2795,7 +2795,7 @@ impl RenderService {
                             semantic,
                         )
                     } else {
-                        raw_link.to_owned()
+                        semantic.to_owned()
                     }
                 }
             };
@@ -2808,10 +2808,10 @@ impl RenderService {
                     format!(r#" {attribute}="{}""#, value.value.replace('"', "&quot;"),)
                 })
                 .unwrap_or_default();
-            let link_attribute = if link == "#" {
+            let link_attribute = if raw_link == "#" {
                 String::new()
             } else {
-                format!(" link={link}")
+                format!(" link={}", preserve_argument_quotes(raw_link, &link),)
             };
 
             let replacement = format!(

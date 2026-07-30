@@ -103,7 +103,11 @@ fn malformed_list_pages_heads_fail_closed_without_suffix_rescans() {
             find_list_pages_module_matches_with_cursor_work(&source);
         assert!(modules.is_empty(), "{fragment:?}");
         assert_eq!(literal_range_advances, 0, "{fragment:?}");
-        assert!(monotone_cursor_work <= source.len() * 5, "{fragment:?}");
+        assert!(
+            monotone_cursor_work <= source.len() * 5,
+            "{fragment:?}: scanner work {monotone_cursor_work} for {} source bytes",
+            source.len(),
+        );
     }
 }
 

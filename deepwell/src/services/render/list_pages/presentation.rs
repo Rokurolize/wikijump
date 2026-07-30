@@ -307,9 +307,12 @@ pub(in crate::services::render) fn format_list_pages_created_at(
     };
     let created_at = created_at
         .to_offset(time::UtcOffset::from_hms(9, 0, 0).expect("valid JST offset"));
-    let format = format.unwrap_or("%e %b %Y, %H:%M");
-    let display_format = format.split('|').next().unwrap_or(format);
-    let text = format_wikidot_list_pages_date(created_at, display_format);
+    const DEFAULT_FORMAT: &str = "%e %b %Y, %H:%M";
+    let format = format.unwrap_or(DEFAULT_FORMAT);
+    // Wikidot's Ajax response always carries the default server-rendered text.
+    // A requested display format belongs to the later ODate client phase and
+    // is transported only through the `format_*` class.
+    let text = format_wikidot_list_pages_date(created_at, DEFAULT_FORMAT);
     let encoded_format = percent_encode_path_segment(format);
     if render_as_html {
         format!(

@@ -13,6 +13,7 @@
     "listpages-preview-cases": "node scripts/export-listpages-preview-cases.mjs",
     "listpages-preview-differential": "node scripts/run-listpages-preview-differential.mjs",
     "listpages-preview-classification": "node scripts/classify-listpages-preview-differential.mjs",
+    "listpages-corpus-replay-reconciliation": "node scripts/reconcile-listpages-corpus-replay.mjs",
     "listpages-live-fixture-plan": "node scripts/build-listpages-live-fixture-plan.mjs",
     "listpages-live-fixture-classification": "node scripts/classify-listpages-live-fixtures.mjs",
     "listpages-feed-endpoint": "node scripts/capture-listpages-feed-endpoint.mjs",

@@ -33,7 +33,10 @@ use crate::services::render::literal_regions::parser_candidates::{
     ParserDomain, ParserOwnerCandidate, ParserOwnerCertainty, ParserOwnerKind,
     select_two_phase_candidates,
 };
-use crate::services::render::literal_regions::text_owners::collect_text_owner_candidates_with_text_tokens;
+use crate::services::render::literal_regions::text_owners::{
+    collect_monospace_owner_ranges_with_text_tokens,
+    collect_text_owner_candidates_with_text_tokens,
+};
 use crate::services::render::literal_regions::token_boundaries::TextTokenIndex;
 use std::ops::Range;
 
@@ -42,6 +45,7 @@ const PRECEDENCE_PINNED_CSS: u16 = 10;
 const PRECEDENCE_PINNED_ANCHOR: u16 = 15;
 const PRECEDENCE_TEXT_LINK: u16 = 20;
 const PRECEDENCE_COLOR: u16 = 30;
+const PRECEDENCE_MONOSPACE: u16 = 35;
 const PRECEDENCE_BLOCK: u16 = 40;
 const PRECEDENCE_GENERIC_HEAD: u16 = 45;
 const PRECEDENCE_BASE: u16 = 50;
@@ -53,6 +57,7 @@ const DELIMITER_NAMESPACE_COLOR: u16 = 101;
 const DELIMITER_NAMESPACE_CSS: u16 = 102;
 const DELIMITER_NAMESPACE_ANCHOR: u16 = 103;
 const DELIMITER_NAMESPACE_GENERIC_HEAD: u16 = 104;
+const DELIMITER_NAMESPACE_MONOSPACE: u16 = 105;
 
 pub(super) fn collect_candidate_graph_ranges(
     source: &str,
@@ -89,6 +94,13 @@ pub(super) fn collect_candidate_graph_ranges(
         collect_text_owner_candidates_with_text_tokens(source, &text_tokens),
     );
     let links = adapt_text_candidates(&mut arena, text_links);
+    let monospace = adapt_exact_ranges(
+        &mut arena,
+        collect_monospace_owner_ranges_with_text_tokens(source, &text_tokens),
+        ParserDomain::Ftml,
+        PRECEDENCE_MONOSPACE,
+        DELIMITER_NAMESPACE_MONOSPACE,
+    );
     let color_descriptors = adapt_color_descriptor_candidates(&mut arena, colors.clone());
     let pinned_css_ranges = heads.as_ref().map_or_else(
         || collect_pinned_css_module_candidates(source),
@@ -175,6 +187,7 @@ pub(super) fn collect_candidate_graph_ranges(
             base.clone(),
             blocks.clone(),
             links.clone(),
+            monospace.clone(),
             pinned_css.clone(),
             pinned_anchors.clone(),
             generic_heads.clone(),
@@ -194,6 +207,7 @@ pub(super) fn collect_candidate_graph_ranges(
             base.clone(),
             blocks.clone(),
             links.clone(),
+            monospace.clone(),
             original_colors,
             pinned_css.clone(),
             pinned_anchors.clone(),
@@ -209,6 +223,7 @@ pub(super) fn collect_candidate_graph_ranges(
             base.clone(),
             blocks.clone(),
             links.clone(),
+            monospace.clone(),
             pinned_css.clone(),
             pinned_anchors.clone(),
             generic_heads.clone(),
@@ -228,6 +243,7 @@ pub(super) fn collect_candidate_graph_ranges(
             base,
             blocks,
             links,
+            monospace,
             colors,
             pinned_css,
             pinned_anchors,

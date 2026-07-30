@@ -175,6 +175,34 @@ fn compact_comment_uses_the_pinned_close_token() {
 }
 
 #[test]
+fn wikidot_comments_accept_extended_hyphen_closers_contextually() {
+    for source in [
+        "[!-- hidden ---]\nvisible",
+        "[!-- hidden ----]\nvisible",
+        "[!-- hidden -----]\nvisible",
+    ] {
+        let candidates = runtime_candidates(source);
+
+        assert_eq!(candidates.len(), 1, "{source:?}");
+        let close = source.find(']').unwrap();
+        assert_eq!(candidates[0].range, 0..close + 1, "{source:?}");
+        assert_eq!(
+            candidates[0].provenance,
+            BaseCandidateProvenance::ClosedOwner,
+            "{source:?}",
+        );
+        assert_eq!(
+            candidates[0].terminator,
+            Some(DelimiterIdentity {
+                kind: DelimiterKind::CommentClose,
+                start: close - 2,
+            }),
+            "{source:?}",
+        );
+    }
+}
+
+#[test]
 fn compact_nested_comment_close_remains_available_to_each_opener() {
     let source = "[!--[!----]";
     let candidates = runtime_candidates(source);

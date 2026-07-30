@@ -15,6 +15,8 @@
     isWikidotFragmentPage
   } from "$lib/wikidot/wikidot-page-actions"
   import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
+  import { resolveWikidotHashMagicPagePane } from "$lib/wikidot/wikidot-hash-magic"
+  import { onMount } from "svelte"
 
   import CurrentPageActions from "./CurrentPageActions.svelte"
   import CurrentPageMetadata from "./CurrentPageMetadata.svelte"
@@ -130,6 +132,19 @@
     showSource = false
     pagePaneState = pane
   }
+
+  onMount(() => {
+    if (pageLayoutContext.current !== Layout.WIKIDOT || data.options?.edit) return
+
+    switch (resolveWikidotHashMagicPagePane(window.location.href)) {
+      case "history":
+        activatePagePane(PagePane.History)
+        break
+      case "files":
+        activatePagePane(PagePane.File)
+        break
+    }
+  })
 
   $effect(() => {
     if (data.options?.edit) {

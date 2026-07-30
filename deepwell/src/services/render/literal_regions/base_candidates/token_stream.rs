@@ -134,7 +134,12 @@ impl DelimiterIndex {
                 Some(DelimiterKind::CommentClose) => {
                     index.comment_close.push(DelimiterIdentity {
                         kind: DelimiterKind::CommentClose,
-                        start: cursor,
+                        // A Wikidot comment context accepts any run of two or
+                        // more hyphens followed by `]`. Represent the closing
+                        // token by its final `--]` suffix so the existing
+                        // fixed-width candidate accounting reaches the real
+                        // source end for `---]`, `----]`, and longer runs.
+                        start: step.end - 3,
                     });
                 }
                 Some(_) | None => {}
@@ -178,6 +183,12 @@ fn next_token_step(source: &str, start: usize) -> TokenStep {
     }
     if matches!(byte, b' ' | b'\t') {
         return TokenStep::other(scan_space(bytes, start));
+    }
+    if byte == b'-' {
+        let end = scan_same(bytes, start, b'-');
+        if end - start >= 2 && bytes.get(end) == Some(&b']') {
+            return TokenStep::delimiter(DelimiterKind::CommentClose, end + 1);
+        }
     }
     if let Some(step) = scan_literal(bytes, start) {
         return step;

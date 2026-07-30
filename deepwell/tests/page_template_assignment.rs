@@ -24,6 +24,7 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, SAMPLE_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::ErrorType;
+use deepwell::models::page::{Entity as PageTable, Model as PageModel};
 use deepwell::services::RequestContext;
 use deepwell::services::SessionService;
 use deepwell::services::category::CategoryService;
@@ -33,8 +34,11 @@ use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
 use deepwell::services::session::CreateSession;
-use deepwell::services::view::{GetPageViewOutput, PageTemplateSummary};
+use deepwell::services::view::{
+    GetArticleViewOutput, GetPageViewOutput, PageTemplateSummary,
+};
 use deepwell::types::{Action, Permission, Reference, Resource};
+use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, Set};
 use serde_json::json;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -71,6 +75,46 @@ async fn create_page(
             "ip_address": common::IP_ADDRESS,
         }),
     )
+}
+
+async fn mark_page_imported(runner: &TestRunner, page_id: i64) -> PageModel {
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("imported page lookup should not fail")
+        .expect("imported page should exist");
+    let mut page = page.into_active_model();
+    page.from_wikidot = Set(true);
+    page.update(runner.context().transaction())
+        .await
+        .expect("page should be marked as imported")
+}
+
+async fn anonymous_article_html_and_cache_key(
+    runner: &TestRunner,
+    site_id: i64,
+    slug: &str,
+) -> (String, String) {
+    match run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": { "slug": slug, "extra": "" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetArticleViewOutput {
+            page:
+                GetPageViewOutput::Found {
+                    compiled_body_html, ..
+                },
+            article_page_cache_key: Some(cache_key),
+            ..
+        } => (compiled_body_html, cache_key),
+        other => panic!("expected cacheable anonymous article view, got {other:?}"),
+    }
 }
 
 async fn missing_page_template(
@@ -704,6 +748,99 @@ async fn page_view_exposes_category_data_form_definition_in_template_order() {
         } => assert!(!compiled_body_html.contains("form-table")),
         other => panic!("non-bare routes must preserve route rendering: {other:?}"),
     }
+}
+
+#[tokio::test]
+async fn assigned_data_form_template_edit_invalidates_warm_imported_article_cache() {
+    const CATEGORY: &str = "data-form-template-cache-lifecycle";
+    const TEMPLATE_SLUG: &str = "data-form-template-cache-lifecycle:_template";
+    const PAGE_SLUG: &str = "data-form-template-cache-lifecycle:saved";
+    const TEMPLATE_SOURCE_A: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  name:\n",
+        "    label: Lifecycle label A\n",
+        "    type: text\n",
+        "[[/form]]",
+    );
+    const TEMPLATE_SOURCE_B: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  name:\n",
+        "    label: Lifecycle label B\n",
+        "    type: text\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE_A).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form lifecycle category should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let page =
+        create_page(&mut runner, site_id, PAGE_SLUG, "name: 'Lifecycle value'").await;
+    mark_page_imported(&runner, page.page_id).await;
+    runner.set_request_context(RequestContext::default());
+
+    let (cold_html, cold_cache_key) =
+        anonymous_article_html_and_cache_key(&runner, site_id, PAGE_SLUG).await;
+    assert!(cold_html.contains("Lifecycle label A"));
+    assert!(cold_html.contains("Lifecycle value"));
+
+    let (warm_html, warm_cache_key) =
+        anonymous_article_html_and_cache_key(&runner, site_id, PAGE_SLUG).await;
+    assert_eq!(warm_html, cold_html);
+    assert_eq!(warm_cache_key, cold_cache_key);
+
+    set_page_actor(&mut runner, site_id, TEMPLATE_SLUG);
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": TEMPLATE_SLUG,
+            "last_revision_id": template.revision_id,
+            "revision_comments": "replace lifecycle data-form label",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": TEMPLATE_SOURCE_B,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("template edit should create a revision");
+    runner.set_request_context(RequestContext::default());
+
+    let (edited_html, edited_cache_key) =
+        anonymous_article_html_and_cache_key(&runner, site_id, PAGE_SLUG).await;
+    assert!(
+        edited_html.contains("Lifecycle label B"),
+        "saved template edits must replace warm anonymous imported-page output:\n{edited_html}",
+    );
+    assert!(!edited_html.contains("Lifecycle label A"));
+    assert!(edited_html.contains("Lifecycle value"));
+    assert_ne!(
+        edited_cache_key, cold_cache_key,
+        "assigned template revisions must participate in the Deepwell article cache identity",
+    );
 }
 
 #[tokio::test]
