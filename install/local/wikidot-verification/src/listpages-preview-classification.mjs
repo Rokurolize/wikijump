@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import {
+  canonicalDom,
   sha256,
   validateWikidotReference,
 } from "./syntax-differential.mjs";
@@ -68,14 +69,218 @@ function missingVisibleLineArgument(source, liveText, localText) {
     ) ?? null;
 }
 
+function nodeHasClass(node, className) {
+  return node?.attrs
+    ?.find((attribute) => attribute.name === "class")
+    ?.value.split(/\s+/u)
+    .includes(className) ?? false;
+}
+
+function topLevelNodesWithClass(nodes, className) {
+  return (nodes ?? []).filter((node) =>
+    node.type === "element" && nodeHasClass(node, className)
+  );
+}
+
+function exactSingleInvocation(source) {
+  const invocations = extractListPagesInvocationsFromSource({
+    branch: "classification",
+    pageFullname: "preview",
+    sourcePath: "preview",
+    source,
+  });
+  if (
+    invocations.length !== 1 ||
+    invocations[0].source.trim() !== source.trim()
+  ) {
+    return null;
+  }
+  return invocations[0];
+}
+
+function oneArgumentValue(invocation, name) {
+  const values = invocation.attributes
+    .filter((attribute) => attribute.name.toLowerCase() === name)
+    .map((attribute) => attribute.value);
+  return values.length <= 1 ? (values[0] ?? null) : undefined;
+}
+
+function invocationExpectsWrapper(invocation) {
+  const value = oneArgumentValue(invocation, "wrapper");
+  if (value === undefined) return null;
+  return !["no", "false"].includes(value?.trim().toLowerCase() ?? "");
+}
+
+function invocationUsesCombinedSections(invocation) {
+  const value = oneArgumentValue(invocation, "separate");
+  return value !== undefined &&
+    ["no", "false"].includes(value?.trim().toLowerCase() ?? "");
+}
+
+function canonicalNodeLines(node) {
+  const tokens = [];
+  const blockNames = new Set([
+    "p",
+    "div",
+    "blockquote",
+    "li",
+    "dt",
+    "dd",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "tr",
+    "td",
+    "th",
+    "pre",
+  ]);
+  const pushBreak = () => {
+    if (tokens.at(-1) !== "\n") tokens.push("\n");
+  };
+  const visit = (current) => {
+    if (current?.type === "text") {
+      tokens.push(current.value);
+      return;
+    }
+    if (current?.type !== "element") return;
+    if (current.name === "br") {
+      pushBreak();
+      return;
+    }
+    const block = blockNames.has(current.name);
+    if (block) pushBreak();
+    for (const child of current.children ?? []) visit(child);
+    if (block) pushBreak();
+  };
+  visit(node);
+  return tokens
+    .join("")
+    .split("\n")
+    .map((line) => line.replace(/\s+/gu, " ").trim())
+    .filter(Boolean);
+}
+
+function plainSectionTemplates(invocation) {
+  const sections = new Map();
+  for (const match of invocation.body.matchAll(
+    /\[\[(head|body|foot)\]\]([\s\S]*?)\[\[\/\1\]\]/giu,
+  )) {
+    sections.set(match[1].toLowerCase(), match[2]);
+  }
+  return sections;
+}
+
+function plainSectionText(source) {
+  if (/\[\[|\]\]|%%|@@|@<|\{\{|\}\}/u.test(source)) return null;
+  const text = source.replace(/\s+/gu, " ").trim();
+  return text || null;
+}
+
+function plainBodyAnchor(source) {
+  // Row variables are intentionally allowed here and removed below. Reject
+  // only syntax that can change the body structure around the static anchor.
+  if (/\[\[|\]\]|@@|@<|\{\{|\}\}/u.test(source)) return null;
+  const text = source
+    .replace(/%%[A-Za-z0-9_]+%%/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
+  return text.length >= 3 ? text : null;
+}
+
+function missingPlainAuthoredSection({
+  invocation,
+  liveWrapper,
+  localWrapper,
+}) {
+  if (!invocationUsesCombinedSections(invocation)) return null;
+  const sections = plainSectionTemplates(invocation);
+  const bodyAnchor = plainBodyAnchor(sections.get("body") ?? "");
+  const liveLines = canonicalNodeLines(liveWrapper);
+  const localLines = canonicalNodeLines(localWrapper);
+  const liveBodyIndices = bodyAnchor === null
+    ? []
+    : liveLines.flatMap((line, index) =>
+        line.includes(bodyAnchor) ? [index] : []
+      );
+  const localBodyIndices = bodyAnchor === null
+    ? []
+    : localLines.flatMap((line, index) =>
+        line.includes(bodyAnchor) ? [index] : []
+      );
+
+  for (const section of ["head", "foot"]) {
+    const authored = plainSectionText(sections.get(section) ?? "");
+    if (authored === null) continue;
+    const liveIndices = liveLines.flatMap((line, index) =>
+      line === authored ? [index] : []
+    );
+    if (liveIndices.length === 0) continue;
+    const localIndices = localLines.flatMap((line, index) =>
+      line === authored ? [index] : []
+    );
+    if (liveBodyIndices.length > 0 && localBodyIndices.length > 0) {
+      const liveBodyBoundary = section === "head"
+        ? liveBodyIndices[0]
+        : liveBodyIndices.at(-1);
+      const localBodyBoundary = section === "head"
+        ? localBodyIndices[0]
+        : localBodyIndices.at(-1);
+      const liveIsSection = section === "head"
+        ? liveIndices.some((index) => index < liveBodyBoundary)
+        : liveIndices.some((index) => index > liveBodyBoundary);
+      const localIsSection = section === "head"
+        ? localIndices.some((index) => index < localBodyBoundary)
+        : localIndices.some((index) => index > localBodyBoundary);
+      if (liveIsSection && !localIsSection) {
+        return { section, authored };
+      }
+      continue;
+    }
+    if (localLines.length === 0) {
+      return { section, authored };
+    }
+  }
+  return null;
+}
+
+function localOutputIsLiveOutputWithoutGeneratedWrapper(
+  liveNodes,
+  liveTopLevelWrappers,
+  localNodes,
+) {
+  if (liveTopLevelWrappers.length !== 1) return false;
+  const wrapper = liveTopLevelWrappers[0];
+  const wrapperIndex = liveNodes.indexOf(wrapper);
+  if (wrapperIndex < 0) return false;
+  const unwrappedLiveNodes = [
+    ...liveNodes.slice(0, wrapperIndex),
+    ...(wrapper.children ?? []),
+    ...liveNodes.slice(wrapperIndex + 1),
+  ];
+  return JSON.stringify(unwrappedLiveNodes) === JSON.stringify(localNodes ?? []);
+}
+
 function classifyMismatch(row, reference) {
   const source = reference.syntax_case.source;
   const liveText = row.live.visible_text;
   const localText = row.local?.visible_text ?? "";
   const liveHtml = reference.raw_html;
+  const liveNodes = canonicalDom(liveHtml);
   const localNodes = localDom(row);
+  const invocation = exactSingleInvocation(source);
+  const liveTopLevelWrappers = topLevelNodesWithClass(
+    liveNodes,
+    "list-pages-box",
+  );
+  const localTopLevelWrappers = topLevelNodesWithClass(
+    localNodes,
+    "list-pages-box",
+  );
   const liveHasListPages =
-    liveHtml.includes('class="list-pages-box"') ||
+    domHasClass(liveNodes, "list-pages-box") ||
     liveHtml.includes('class="list-pages-item"') ||
     liveHtml.includes('class="pager"') ||
     resolvesTemplateVariables(source, liveText);
@@ -91,6 +296,15 @@ function classifyMismatch(row, reference) {
     /\bTODO:\s*module\s+ListPages\b/iu.test(localText);
   const missingLineArgument =
     missingVisibleLineArgument(source, liveText, localText);
+  const missingAuthoredSection = invocation !== null &&
+      liveTopLevelWrappers.length === 1 &&
+      localTopLevelWrappers.length === 1
+    ? missingPlainAuthoredSection({
+        invocation,
+        liveWrapper: liveTopLevelWrappers[0],
+        localWrapper: localTopLevelWrappers[0],
+      })
+    : null;
 
   const exactErrors = new Map([
     ["Invalid range argument.", ["invalid-range-error", "fix"]],
@@ -121,6 +335,14 @@ function classifyMismatch(row, reference) {
         "Live Wikidot renders an authored prependLine or appendLine value that Wikijump omits.",
     };
   }
+  if (missingAuthoredSection !== null) {
+    return {
+      classification: "listpages-section-template-divergence",
+      disposition: "investigate-renderer",
+      rationale:
+        `Live Wikidot renders the authored ${missingAuthoredSection.section} section text that Wikijump omits.`,
+    };
+  }
   if (liveHasListPages && localUnsupportedDiagnostic) {
     return {
       classification: "local-listpages-unsupported-diagnostic",
@@ -146,6 +368,24 @@ function classifyMismatch(row, reference) {
       classification: "live-parser-accepts-local-preserves",
       disposition: "minimize-parser",
       rationale: "Live executes the module while Wikijump leaves its source literal.",
+    };
+  }
+  if (
+    invocation !== null &&
+    invocationExpectsWrapper(invocation) === true &&
+    liveHasListPages &&
+    localHasListPages &&
+    localOutputIsLiveOutputWithoutGeneratedWrapper(
+      liveNodes,
+      liveTopLevelWrappers,
+      localNodes,
+    )
+  ) {
+    return {
+      classification: "listpages-render-shape-divergence",
+      disposition: "investigate-renderer",
+      rationale:
+        "Live Wikidot and Wikijump disagree on the deterministic ListPages wrapper structure.",
     };
   }
   if (liveHasListPages && localHasListPages) {

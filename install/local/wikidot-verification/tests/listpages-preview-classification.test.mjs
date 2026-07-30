@@ -7,7 +7,11 @@ import { test } from "node:test";
 import {
   classifyListPagesPreviewDifferential,
 } from "../src/listpages-preview-classification.mjs";
-import { sha256 } from "../src/syntax-differential.mjs";
+import {
+  canonicalDom,
+  sha256,
+  visibleText,
+} from "../src/syntax-differential.mjs";
 
 function reference(caseId, source, rawHtml) {
   return {
@@ -37,6 +41,40 @@ function reference(caseId, source, rawHtml) {
   };
 }
 
+function mismatchCase(caseId, liveHtml, localHtml) {
+  return {
+    case_id: caseId,
+    status: "mismatch",
+    live: { visible_text: visibleText(liveHtml) },
+    local: {
+      visible_text: visibleText(localHtml),
+      html_sha256: sha256(localHtml),
+    },
+    comparison: {
+      checks: {
+        dom_tree: {
+          status: "mismatch",
+          local: canonicalDom(localHtml),
+        },
+      },
+    },
+  };
+}
+
+async function liveArtifactReference(fileName, caseId) {
+  const text = await fs.readFile(
+    new URL(`../artifacts/${fileName}`, import.meta.url),
+    "utf8",
+  );
+  const row = text
+    .trimEnd()
+    .split(/\r?\n/u)
+    .map((line) => JSON.parse(line))
+    .find((candidate) => candidate.syntax_case?.case_id === caseId);
+  assert.ok(row, `missing live artifact case ${caseId}`);
+  return row;
+}
+
 test("preview classifier separates oracle defects from fixture-state mismatches", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
   const referencesPath = path.join(root, "references.jsonl");
@@ -64,57 +102,21 @@ test("preview classifier separates oracle defects from fixture-state mismatches"
   );
   await fs.writeFile(verdictPath, JSON.stringify({
     cases: [
-      {
-        case_id: "invalid-range",
-        status: "mismatch",
-        live: { visible_text: "Invalid range argument." },
-        local: { visible_text: "", html_sha256: "a".repeat(64) },
-        comparison: {
-          checks: {
-            dom_tree: { status: "mismatch", local: [] },
-          },
-        },
-      },
-      {
-        case_id: "data",
-        status: "mismatch",
-        live: { visible_text: "live" },
-        local: { visible_text: "local", html_sha256: "b".repeat(64) },
-        comparison: {
-          checks: {
-            dom_tree: {
-              status: "mismatch",
-              local: [{
-                attrs: [{ name: "class", value: "list-pages-box" }],
-                children: [],
-              }],
-            },
-          },
-        },
-      },
-      {
-        case_id: "local-todo",
-        status: "mismatch",
-        live: { visible_text: "" },
-        local: {
-          visible_text: "TODO: module ListPages",
-          html_sha256: "c".repeat(64),
-        },
-        comparison: {
-          checks: {
-            dom_tree: {
-              status: "mismatch",
-              local: [{
-                attrs: [],
-                children: [{
-                  type: "text",
-                  value: "TODO: module ListPages",
-                }],
-              }],
-            },
-          },
-        },
-      },
+      mismatchCase(
+        "invalid-range",
+        '<div class="error-block">Invalid range argument.</div>',
+        "",
+      ),
+      mismatchCase(
+        "data",
+        '<div class="list-pages-box"><div class="list-pages-item">live</div></div>',
+        '<div class="list-pages-box"><div class="list-pages-item">local</div></div>',
+      ),
+      mismatchCase(
+        "local-todo",
+        '<div class="list-pages-box"></div>',
+        "<p>TODO: module ListPages</p>",
+      ),
     ],
   }));
 
@@ -224,4 +226,251 @@ test("preview classifier does not mask a missing zero-row line as fixture state"
     "prepend-append-line-divergence",
   );
   assert.equal(result.cases[0].disposition, "investigate-renderer");
+});
+
+test("preview classifier does not mask a missing wrapper as fixture state", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages wrapper="yes" separate="no"]]',
+    '[[div class="authored-row-content"]]',
+    '[[div class="list-pages-box"]]SAME_ROW[[/div]]',
+    "[[/div]]",
+    "[[/module]]",
+  ].join("\n");
+  const localHtml = [
+    '<div class="authored-row-content">',
+    '<div class="list-pages-box">SAME_ROW</div>',
+    "</div>",
+  ].join("");
+  const liveHtml = `<div class="list-pages-box">${localHtml}</div>`;
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference("missing-wrapper", source, liveHtml))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase("missing-wrapper", liveHtml, localHtml)],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "listpages-render-shape-divergence",
+  );
+  assert.equal(result.cases[0].disposition, "investigate-renderer");
+});
+
+test("preview classifier does not discard live siblings when proving a missing wrapper", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages wrapper="yes" separate="no"]]',
+    "%%content%%",
+    "[[/module]]",
+  ].join("\n");
+  const localHtml = '<div class="authored-row-content">SAME_ROW</div>';
+  const liveHtml = [
+    `<div class="list-pages-box">${localHtml}</div>`,
+    '<div class="pager">PAGE_TWO</div>',
+  ].join("");
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference("wrapper-with-live-sibling", source, liveHtml))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase(
+      "wrapper-with-live-sibling",
+      liveHtml,
+      localHtml,
+    )],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "inconclusive-fixture-data-state",
+  );
+  assert.equal(result.cases[0].disposition, "replay-synchronized-fixture");
+});
+
+test("preview classifier ignores descendant wrapper classes in wrapper-free row data", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages wrapper="no" separate="no"]]',
+    "%%content%%",
+    "[[/module]]",
+  ].join("\n");
+  const liveHtml = [
+    '<div class="authored-row-content">',
+    '<div class="list-pages-box">LIVE_ROW</div>',
+    "</div>",
+  ].join("");
+  const localHtml = '<div class="authored-row-content">LOCAL_ROW</div>';
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference("wrapper-free-row", source, liveHtml))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase("wrapper-free-row", liveHtml, localHtml)],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "inconclusive-fixture-data-state",
+  );
+  assert.equal(result.cases[0].disposition, "replay-synchronized-fixture");
+});
+
+test("preview classifier uses a variable-bearing body anchor to detect a missing authored head", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const liveReference = await liveArtifactReference(
+    "listpages-sections-partial-live.jsonl",
+    "listpages-one-row-head-body-separate-no",
+  );
+  const liveHtml = liveReference.raw_html;
+  const localHtml =
+    '<div class="list-pages-box"><p>ROW=main:about</p></div>';
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(liveReference)}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase(
+      liveReference.syntax_case.case_id,
+      liveHtml,
+      localHtml,
+    )],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "listpages-section-template-divergence",
+  );
+  assert.equal(result.cases[0].disposition, "investigate-renderer");
+});
+
+test("preview classifier uses a variable-bearing body anchor to detect a missing authored foot", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const liveReference = await liveArtifactReference(
+    "listpages-sections-partial-live.jsonl",
+    "listpages-one-row-body-foot-separate-no",
+  );
+  const liveHtml = liveReference.raw_html;
+  const localHtml =
+    '<div class="list-pages-box"><p>ROW=main:about</p></div>';
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(liveReference)}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase(
+      liveReference.syntax_case.case_id,
+      liveHtml,
+      localHtml,
+    )],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "listpages-section-template-divergence",
+  );
+  assert.equal(result.cases[0].disposition, "investigate-renderer");
+});
+
+test("preview classifier leaves an ambiguous section and row-text collision as fixture state", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages category="*" fullname="main:about" separate="no"]]',
+    "[[head]]News[[/head]]",
+    "[[body]]%%title%%[[/body]]",
+    "[[/module]]",
+  ].join("\n");
+  const liveHtml =
+    '<div class="list-pages-box"><p>News<br>Live title</p></div>';
+  const localHtml = '<div class="list-pages-box"><p>News</p></div>';
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference("ambiguous-head-row", source, liveHtml))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase("ambiguous-head-row", liveHtml, localHtml)],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "inconclusive-fixture-data-state",
+  );
+  assert.equal(result.cases[0].disposition, "replay-synchronized-fixture");
+});
+
+test("preview classifier checks all foot occurrences around a variable-bearing body anchor", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages category="*" fullname="main:about" separate="no"]]',
+    "[[body]]%%title%%",
+    "ROW_ANCHOR=%%fullname%%[[/body]]",
+    "[[foot]]FOOT[[/foot]]",
+    "[[/module]]",
+  ].join("\n");
+  const liveHtml = [
+    '<div class="list-pages-box"><p>',
+    "Live title<br>ROW_ANCHOR=main:about<br>FOOT",
+    "</p></div>",
+  ].join("");
+  const localHtml = [
+    '<div class="list-pages-box"><p>',
+    "FOOT<br>ROW_ANCHOR=main:about<br>FOOT",
+    "</p></div>",
+  ].join("");
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference("foot-row-collision", source, liveHtml))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase("foot-row-collision", liveHtml, localHtml)],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "inconclusive-fixture-data-state",
+  );
+  assert.equal(result.cases[0].disposition, "replay-synchronized-fixture");
 });
