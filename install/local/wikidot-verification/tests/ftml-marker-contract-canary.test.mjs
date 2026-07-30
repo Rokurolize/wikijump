@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -21,7 +22,64 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "b3e2cca4bbc80693eb4e1085a3acb8619b3b524b";
+const candidateFtml = "ef7135934f8e72879b3f2f6ec939deb816cc378f";
+const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
+
+test("committed receipt binds the exact manifest, lock, and five-surface contract", () => {
+  const manifest = readFileSync(
+    path.join(repositoryRoot, "deepwell/Cargo.toml"),
+    "utf8",
+  );
+  const lock = readFileSync(
+    path.join(repositoryRoot, "deepwell/Cargo.lock"),
+    "utf8",
+  );
+  const receipt = JSON.parse(
+    readFileSync(
+      path.join(
+        repositoryRoot,
+        "install/local/wikidot-verification/artifacts",
+        "ftml-block-argument-pin-canary-20260730.json",
+      ),
+      "utf8",
+    ),
+  );
+
+  assert.equal(
+    manifest.match(
+      new RegExp(
+        `ftml = \\{ git = "https://github\\.com/Rokurolize/ftml", rev = "${candidateFtml}" \\}`,
+        "gu",
+      ),
+    )?.length,
+    1,
+  );
+  assert.equal(
+    lock.match(
+      new RegExp(
+        `source = "git\\+https://github\\.com/Rokurolize/ftml\\?rev=${candidateFtml}#${candidateFtml}"`,
+        "gu",
+      ),
+    )?.length,
+    1,
+  );
+  assert.equal(receipt.status, "pass");
+  assert.equal(receipt.candidate_ftml_sha, candidateFtml);
+  assert.deepEqual(receipt.required_surfaces, requiredSurfaces);
+  assert.deepEqual(receipt.comparison, {
+    schema: "wikijump_local_lab.render_compare.v1",
+    pairs_total: requiredSurfaces.length,
+    matches: requiredSurfaces.length,
+    accepted_differences: 0,
+    regressions: 0,
+    verdict_sha256:
+      "b839429c7d2e3e45fc221c182cbe072cd9369b08f9d47135b2289380805feaf3",
+  });
+  assert.deepEqual(receipt.resource_disposition, {
+    policy: "delete-on-close",
+    disposable_containers_remaining: 0,
+  });
+});
 
 test("marker canary authenticates page mutations in the exact page context", () => {
   const context = pageMutationContext(
@@ -135,7 +193,7 @@ test("marker canary dry run requires the exact five marker surfaces", () => {
     [
       script,
       "--candidate-ftml",
-      "b3e2cca4bbc80693eb4e1085a3acb8619b3b524b",
+      candidateFtml,
       "--output-dir",
       "/tmp/ftml-marker-contract-test",
       "--dry-run",
@@ -144,13 +202,7 @@ test("marker canary dry run requires the exact five marker surfaces", () => {
   );
   assert.equal(result.status, 0, result.stderr);
   const plan = JSON.parse(result.stdout);
-  assert.deepEqual(plan.required_surfaces, [
-    "heading",
-    "separator",
-    "div",
-    "span",
-    "alignment",
-  ]);
+  assert.deepEqual(plan.required_surfaces, requiredSurfaces);
   assert.deepEqual(
     plan.fixtures.map((fixture) => fixture.surface).sort(),
     [...plan.required_surfaces].sort(),
