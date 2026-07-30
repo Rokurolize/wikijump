@@ -1539,6 +1539,18 @@
           "scope": "corpus inventory, generated matrix, live differential, regression accounting, RSS, and navigation verifier tests"
         },
         {
+          "path": "install/local/wikidot-verification/tests/listpages-late-evidence-manifest.test.mjs",
+          "scope": "frozen late-campaign provenance regression verifies 32 causal families, 1,142 live cases, exact file hashes, and issue ownership"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-unquoted-comparison-discriminators-evidence.test.mjs",
+          "scope": "live-evidence regression distinguishes inert unquoted comparison-shaped head tokens from executable quoted legacy comparisons"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-preview-classification.test.mjs",
+          "scope": "exact-source and literal-context replay classification remains occurrence-aware and cannot relabel executable differences as nonexecution parity"
+        },
+        {
           "path": "deepwell/tests/page.rs",
           "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
           "scope": "public saved-page regression verifies checkbox and wiki data-form variables, canonical multiline source decoding, and wiki parsing in ListPages rows"
@@ -1600,6 +1612,7 @@
       "documentation_evidence": [
         "docs/wikidot-specifications/specifications/module/module-listpages.md",
         "docs/wikidot-specifications/live-observations.json",
+        "install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json",
@@ -1620,6 +1633,10 @@
         "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json",
         "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
         "install/local/wikidot-verification/artifacts/listpages-corpus-parser-functions-live.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
+        "install/local/wikidot-verification/artifacts/listpages-unquoted-comparison-discriminators-live.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-offset-extreme-boundary-live.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-current-tag-selectors-live-20260730.json",
         "install/local/wikidot-verification/artifacts/listpages-random-idle-cache-live-20260730.json",
         "install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json"
       ],
