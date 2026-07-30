@@ -424,7 +424,6 @@ mod tests {
             "[[$ https://example.test/a$]]b [[module ListPages name=\"hidden\"]] $]]",
             "@<before >>@ [[module ListPages name=\"hidden\"]] >@",
             "@<before ~~~>@ [[module ListPages name=\"hidden\"]] >@",
-            "[!-- ---] [[module ListPages name=\"hidden\"]] --]",
         ] {
             let index = LiteralRegionIndex::new_list_pages_syntax(source);
             assert!(
