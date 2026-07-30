@@ -256,6 +256,72 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json` (SHA-256 `70ffe68197540fe292f8343e98d64fe76fbadf73533a3537b12b4a7ea185fd6f`), cases: `vineyard-current-page-form-variables-drive-data-form-selectors`, `vineyard-data-form-order-desc-uses-stored-field-properties`
 
+### separate and wrapper use false-only boolean coercion
+
+- Observation ID: `listpages-separate-wrapper-false-only-booleans`
+- Classification: `documentation-discrepancy`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation limits separate and wrapper to yes/no or true/false. Exact corpus replay exposed executable modules using separate="1", separate="on", and even an unrecognized typo. Minimized anonymous PagePreviewModule probes with both empty and one-row result sets show that these two arguments do not use the true-only coercion used by skipCurrent, reverse, and rssOnly. They are enabled by default and are disabled only by case-insensitive no or false. Every other observed value remains enabled.
+
+Normative behavior:
+
+- An omitted or empty separate value enables per-row `div.list-pages-item` containers.
+- Case-insensitive no and false disable separate row containers.
+- Case-insensitive yes and true enable separate row containers.
+- Numeric 1 and 0, on, off, unrecognized text, and the observed corpus typo trude all enable separate row containers.
+- An omitted or empty wrapper value emits `div.list-pages-box`.
+- Case-insensitive no and false suppress the outer wrapper.
+- Numeric 1 and 0, on, off, and unrecognized text all emit the outer wrapper.
+- These coercion rules apply independently of whether the selector returns zero rows.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-boolean-values-live.jsonl` (SHA-256 `4f81e6e390c38cab067382ed80ae29417e7a4e81be3fcac64311b3c70129b9b9`), cases: `listpages-separate-omitted` through `listpages-separate-trude`, and `listpages-wrapper-omitted` through `listpages-wrapper-random`
+- `install/local/wikidot-verification/artifacts/listpages-separate-values-with-row-live.jsonl` (SHA-256 `a4f2bba89dbb8542acf8bbb8e2accb729a1371f414899e5d804ac1a7eb52dd4a`), cases: `listpages-separate-row-omitted` through `listpages-separate-row-trude`
+
+### Unknown non-data-form arguments are ignored
+
+- Observation ID: `listpages-unknown-arguments-ignored`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation enumerates ListPages arguments but does not say what happens to an unrecognized assignment. Corpus replay contains real modules with misspelled names and attributes apparently swallowed from surrounding constructs. A controlled one-row PagePreviewModule matrix shows that every observed unknown non-underscore argument is an exact no-op: the complete raw HTML is byte-identical to the recognized-argument baseline. Underscore-prefixed names remain data-form selectors and are not part of this rule.
+
+Normative behavior:
+
+- A syntactically valid `key=value` assignment whose key is not a recognized ListPages argument and does not begin with underscore is ignored.
+- Ignoring the argument does not change selection, ordering, row rendering, separation, wrapper markup, or template substitution.
+- Recognized arguments in the same module continue to apply normally.
+- The observed ignored names include `seperated`, `der`, `sort`, `hide`, `show`, `by`, `details`, `width`, `create_by`, `creat_by`, `name-`, `imit`, `v`, `limite`, and `author`, in addition to the previously probed `custom` and `unknown`.
+- An underscore-prefixed name is parsed as a data-form field selector and must not be discarded as unknown.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-unknown-arguments-live.jsonl` (SHA-256 `ac16a2bdb86a764463c3be79699e471fd1fae54552343c3bc2617f193663dd52`), cases: `listpages-unknown-baseline`, `listpages-unknown-seperated`, `listpages-unknown-der`, `listpages-unknown-sort`, `listpages-unknown-hide`, `listpages-unknown-show`, `listpages-unknown-by`, `listpages-unknown-details`, `listpages-unknown-width`, `listpages-unknown-create-by`, `listpages-unknown-creat-by`, `listpages-unknown-name-dash`, `listpages-unknown-imit`, `listpages-unknown-v`, `listpages-unknown-limite`, `listpages-unknown-author`
+- `/home/roku/wjlab/evidence/syntax-differential-20260726/listpages-custom-unknown-live-probe-20260726.json`, cases: `custom-candidate`, `unknown-candidate`
+
+### Module heads accept line breaks, surplus right brackets, and inert tokens
+
+- Observation ID: `listpages-module-head-legacy-boundaries`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation presents ListPages openings on one physical line and does not define token-boundary recovery. Exact corpus replay exposed large, independently authored classes using multiline heads, physical newlines inside quoted selector values, a third right bracket after the apparent module opener, bare words, empty assignments, a pipe after the module name, and escaped-text markers before the close. A minimized anonymous PagePreviewModule matrix shows that these forms do not suppress ListPages execution. In particular, two through six consecutive right brackets after an otherwise complete head produce byte-identical output: surplus right brackets are consumed at this boundary rather than becoming body text or invalidating the opener.
+
+Normative behavior:
+
+- Horizontal whitespace, LF, CRLF, and CR can separate ListPages arguments. A physical line break is also accepted immediately after the ListPages subname and before the closing delimiter.
+- A physical line break inside a double-quoted argument is part of the value-scanning context. The tested order value with a trailing newline behaves as `order="name"`, and line breaks in the tested tags value separate tag tokens.
+- After a complete ListPages head, each observed run of two, three, four, five, or six consecutive right brackets closes the opener and produces identical module output. Surplus right brackets in that run are not visible body text.
+- An unrecognized bare token, an empty assignment such as `prependLine=`, a pipe after the ListPages subname, and `@@` immediately before the closing delimiter are inert in the tested head. Recognized arguments in the same head still apply.
+- A physical newline does not itself close an unterminated quoted value. If a later quote completes the value, the intervening text—including apparent module syntax—participates in the outer head and nesting parse; the outer module can execute while the apparent inner module does not render independently.
+- If no later quote completes the value before the module close, live Wikidot still executes the ListPages opening with the default template rather than leaving the malformed source literal.
+- These are ListPages module-head recovery rules. They do not redefine right-bracket precedence for links, arbitrary block tags, or module closing tags.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-head-boundary-live.jsonl` (SHA-256 `5bfb8a6a689e5ca153312df68e84035a0695898ebc51771e38d9c18ffa3d3895`), cases: `listpages-head-boundary-baseline`, `listpages-head-boundary-three-right-brackets`, `listpages-head-boundary-four-right-brackets`, `listpages-head-boundary-five-right-brackets`, `listpages-head-boundary-six-right-brackets`, `listpages-head-boundary-newline-between-arguments`, `listpages-head-boundary-crlf-between-arguments`, `listpages-head-boundary-newline-inside-order`, `listpages-head-boundary-newline-inside-tags`, `listpages-head-boundary-newline-inside-prepend-line`, `listpages-head-boundary-leading-trailing-newlines`, `listpages-head-boundary-newline-after-subname`, `listpages-head-boundary-bare-size-token`, `listpages-head-boundary-empty-prepend-assignment`, `listpages-head-boundary-pipe-after-subname`, `listpages-head-boundary-at-markers-before-close`
+- `install/local/wikidot-verification/artifacts/listpages-unterminated-multiline-head-live.jsonl` (SHA-256 `cd189045c1b8a1dfc0ff20fe40ee6379ed5e2a07ee33f68501a1c2a9fdcd6317`), cases: `listpages-unterminated-multiline-baseline`, `listpages-unterminated-multiline-before-later-module`, `listpages-unterminated-multiline-after-valid-module`, `listpages-unterminated-multiline-own-close`
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/live-references.jsonl` (SHA-256 `3c6081b73556f41677ac38a3b4f7d03e2bf026344eeb758c15df15f9d51b25c6`), exact corpus-derived multiline and surplus-bracket invocations retain their branch, page, line, and byte-offset provenance.
+
 ### Legacy selectors and pre-parsed module bodies retain production quirks
 
 - Observation ID: `listpages-legacy-and-body-edge-behavior`
@@ -272,6 +338,7 @@ Normative behavior:
 - The deprecated tagTarget argument does not make %%tags%% clickable in the controlled live renderer; the argument is an observed no-op despite the legacy documentation claim.
 - summary and its deprecated description alias render content section 1 when the selected page contains a ==== section separator.
 - prependLine and appendLine are ignored when separate is true.
+- When separate is false, prependLine and appendLine render even when the selector returns zero rows.
 - A ListPages opening with no closing module uses Wikidot's default template: a linked-title heading, a linked author and created date line, and the summary, inside list-pages-box and list-pages-item containers.
 - When a purported ListPages body contains a code or html block, Wikidot's earlier syntax pass removes or owns that block before ListPages evaluates. The ListPages opening consequently uses the default template, and residual authored body or closing-module text may render after the generated list. It does not simply leave the whole module literal or produce no output.
 
@@ -280,6 +347,95 @@ Evidence:
 - `install/local/wikidot-verification/artifacts/listpages-campaign-edge-live-classification.json` (SHA-256 `722c4ef3862e517d64098f508ace5831522db06805686c3d4eb82be228869f28`), cases: `lp-live-edge-behaviors`, `lp-live-default-template`
 - `install/local/wikidot-verification/artifacts/listpages-campaign-edge-reverse-live-classification.json` (SHA-256 `f84fe9ae8c59cd109dacdfc9f48721db4f84b7b1d7a15ffe53e9a4f51396db74`), cases: `lp-live-edge-behaviors`
 - `install/local/wikidot-verification/artifacts/listpages-campaign-edge-link-to-live-classification.json` (SHA-256 `71be02bc784bfe7af7ed68828df6c6991b745bf076b5e528a7431f748e219536`), cases: `lp-live-edge-behaviors`
+
+### Expression parser functions run after row-variable substitution
+
+- Observation ID: `listpages-template-parser-functions-after-row-substitution`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen ListPages documentation inventories template variables and warns that code and html blocks are consumed by an earlier parser pass, but it does not define expression parser functions inside a row template. The corpus contains at least 477 ListPages invocations with `[[#ifexpr ...]]` and a ListPages variable. The first extracted example is `ai-translation:scp-6090:L4380:B103832`, from `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/ai-translation/pages/scp-6090/source.wikidot.txt:4380`. Anonymous `edit/PagePreviewModule` probes show that live Wikidot substitutes the selected row's `%%rating_votes%%` and `%%rating%%` values before evaluating `[[#ifexpr ...]]` and `[[#expr ...]]`. This is a supported row-template path, not the documented code/html pre-parser failure shape.
+
+Normative behavior:
+
+- In a newline-delimited ListPages body, `%%rating_votes%%` and `%%rating%%` are substituted for each selected row before `[[#ifexpr ...]]` and `[[#expr ...]]` evaluate.
+- For a zero-vote, zero-rating row, `[[#ifexpr %%rating_votes%% == 0 | ZERO_VOTES | HAS_VOTES]] [[#expr %%rating_votes%% + %%rating%%]]` renders the visible text `ZERO_VOTES 0`.
+- When the selector returns no rows, the same template renders an empty `div.list-pages-box` with no `div.list-pages-item` and no parser-function or unsupported-module text.
+- A runtime must not emit `TODO: module ListPages`, preserve the outer module literally, or apply the default template merely because a supported expression parser function consumes ListPages row variables.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-corpus-parser-functions-live.jsonl` (SHA-256 `8ebf4be57eca7ca29b057efe84c325b621cd50ab3dcf439faf4c9c92965e5545`), cases: `listpages-parser-functions-empty-result`, `listpages-parser-functions-one-row`
+
+### Line arguments and explicit sections have distinct separation behavior
+
+- Observation ID: `listpages-zero-row-prepend-append`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation says that prependLine and appendLine are prepended or appended to the processed list when separate is false, but it does not say whether the processed list must contain a row. It also describes head/body/foot as replacements for those arguments without defining their separate=true or empty-result behavior. Exact corpus replay first exposed two sandbox previews whose selectors returned no rows while their authored prependLine table headers still rendered. Minimized anonymous PagePreviewModule probes then isolated both line arguments and all documented section subsets with zero and one selected row under both separation modes. Live Wikidot renders line arguments and once-only sections independently of row count when separate is false. Under separate=true, it suppresses head and foot while retaining body as the per-row template.
+
+Normative behavior:
+
+- With separate=false (including the accepted no spelling), a non-empty prependLine renders inside the ListPages wrapper before any rows even when the selector returns zero rows.
+- With separate=false, a non-empty appendLine renders inside the ListPages wrapper after any rows even when the selector returns zero rows.
+- When both are present and the selector returns zero rows, prependLine renders before appendLine.
+- With separate=true, both arguments are ignored, including when the selector returns zero rows.
+- A head or foot becomes a once-only section only when the same template contains a complete body section.
+- With separate=false, recognized head and foot sections render before and after the repeated body respectively. They still render when the selector returns zero rows.
+- With separate=true, recognized head and foot sections are suppressed. The body section remains the per-row template; a zero-row result therefore emits an empty wrapper.
+- A head-only or foot-only construct is not recognized as a section split. With rows, its authored opening, content, and closing remain literal per-row body text. With no rows, it emits an empty wrapper.
+- A body-only construct supplies the per-row body under either separation mode and emits an empty wrapper when there are no rows.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-zero-row-lines-live.jsonl` (SHA-256 `ab340fcce2531448e16e4efd4502b62047646d2be2ae6598723ccca2a48bad88`), cases: `listpages-zero-row-prepend`, `listpages-zero-row-append`, `listpages-zero-row-prepend-append`, `listpages-zero-row-separate`
+- `install/local/wikidot-verification/artifacts/listpages-zero-row-sections-live.jsonl` (SHA-256 `206d8873e8467cc3c10805edcdb747485757ae756590c5b9000e2c08d3d5e390`), cases: `listpages-zero-row-head-body-foot`, `listpages-zero-row-head-body`, `listpages-zero-row-body-foot`, `listpages-zero-row-head-only`, `listpages-zero-row-foot-only`, `listpages-zero-row-body-only`
+- `install/local/wikidot-verification/artifacts/listpages-one-row-sections-live.jsonl` (SHA-256 `514e166ac0ed218f39e1bafc2a4bf19739bdf7f15e7704b88e70eaecac7497d0`), cases: `listpages-one-row-head-body-foot`, `listpages-one-row-head-body`, `listpages-one-row-body-foot`, `listpages-one-row-head-only`, `listpages-one-row-foot-only`, `listpages-one-row-body-only`
+- `install/local/wikidot-verification/artifacts/listpages-sections-separate-live.jsonl` (SHA-256 `c5ab2fe5fc4e5de423204a83a7b41d74e19d966f397f8b297fa8f926627bb490`), cases: `listpages-zero-row-sections-separate-no`, `listpages-one-row-sections-separate-no`, `listpages-one-row-head-only-separate-no`, `listpages-one-row-body-only-separate-no`, `listpages-one-row-sections-separate-yes`, `listpages-zero-row-head-only-separate-no`
+- `install/local/wikidot-verification/artifacts/listpages-sections-partial-live.jsonl` (SHA-256 `325701f1ed5fdf4700891cb4088a1179a4c9001c9e534aa74e035d4e2c819486`), cases: `listpages-one-row-head-body-separate-no`, `listpages-one-row-body-foot-separate-no`, `listpages-zero-row-head-body-separate-no`, `listpages-zero-row-body-foot-separate-no`, `listpages-one-row-foot-only-separate-no`, `listpages-zero-row-foot-only-separate-no`
+- Corpus discovery cases: `05command:archived:reports-5:L522:B35436` from `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/05command/pages/archived:reports-5/source.wikidot.txt:522`; `05command:archived:technical-projects:L53:B2479` from `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/05command/pages/archived:technical-projects/source.wikidot.txt:53`
+
+### Page-preview errors resolve URL range fallbacks and have argument-specific precedence
+
+- Observation ID: `listpages-page-preview-error-order-and-url-range`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation lists the accepted `range` values and says that some selectors can read URL arguments, but it does not define invalid-value output, the behavior of an `@URL` fallback in an unsaved preview, or error precedence when a named parent is missing. Exact corpus replay exposed both an unresolved `range="@URL|others"` fallback and modules combining a missing parent with a range selector. Minimized anonymous `edit/PagePreviewModule` probes establish that live Wikidot resolves the fallback before validating the range. Missing-parent lookup precedes range validation, but invalid `pagetype`, `rating`, and `votes` values precede the missing-parent error.
+
+Normative behavior:
+
+- An unsaved page preview has no current page identity. `range="before"`, `range="after"`, `range="others"`, and `range="other"` therefore emit `<div class="error-block">Invalid range argument.</div>`.
+- When no matching URL path argument is present, `range="@URL|others"` resolves to `others` before validation and emits the same invalid-range error in an unsaved preview.
+- If a module combines a nonexistent static parent with `range="others"`, `range="@URL|others"`, or any other invalid range value, the output is `<div class="error-block">Parent page NAME does not exist</div>`; the parent error takes precedence over the range error.
+- Invalid `pagetype`, `rating`, and `votes` values are validated before named-parent existence. Their exact error texts remain `Invalid pagetype attribute.`, `Invalid rating argument.`, and `Invalid votes argument.` even when the same module names a nonexistent parent.
+- This precedence is argument-specific. An implementation must not use one blanket "validate every argument before query preflight" or "preflight every parent before validation" rule.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-error-precedence-live.jsonl` (SHA-256 `7d43081d3f236bba26da12eb0cde05a197f7dcc31cb6d4b60e572cb4645ed9ff`), cases: `listpages-error-range-others-unsaved`, `listpages-error-range-url-fallback-others-unsaved`, `listpages-error-parent-before-range`, `listpages-error-parent-before-url-range-fallback`, `listpages-error-parent-before-invalid-range`, `listpages-error-parent-before-invalid-pagetype`, `listpages-error-parent-before-invalid-rating`, `listpages-error-parent-before-invalid-votes`
+- Corpus discovery cases: `cn:lowest-rated-pages:L83:B1994` from `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/cn/pages/lowest-rated-pages/source.wikidot.txt:83`; `cn:asriel-s-tools:L310:B10215` from `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/cn/pages/asriel-s-tools/source.wikidot.txt:310`
+
+### Literal owners suppress ListPages recognition before module parsing
+
+- Observation ID: `listpages-literal-context-ownership`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen ListPages documentation uses code blocks for examples but does not comprehensively specify which surrounding syntax prevents a module-shaped token from executing. The exhaustive corpus inventory initially isolated every textual `[[module ListPages...]]` occurrence, which incorrectly turned documentation examples and disabled code into executable previews. Replaying the exact owner context exposed 684 literal occurrences and 335 unique contextual sources. Anonymous `edit/PagePreviewModule` probes prove that inline monospace and complete Wikidot comment regions own ListPages-shaped text before module recognition. This is a parser ownership rule, not an empty query result or an unsupported ListPages fallback.
+
+Normative behavior:
+
+- `{{[[Module Listpages]]}}` renders exactly one inline monospace element whose visible text is `[[Module Listpages]]`. Module-name matching must not execute the text inside `{{...}}`.
+- A complete Wikidot comment beginning with `[!--` or `[!----` suppresses every contained ListPages opening, body, and closing marker.
+- While Wikidot is scanning an open comment, any contiguous run of at least two hyphens immediately followed by `]` closes the comment. The corpus-observed `---]` spelling and controlled `----]` and `-----]` cases therefore close the comment and the entire comment renders no visible or module-generated output.
+- Comment-closing recognition is contextual. The same `---]` and `----]` text outside a comment retains ordinary dash processing and visible `]`; it must not be globally tokenized as one comment closer.
+- A literal-owned ListPages token must not issue a page query, emit `div.list-pages-box`, use the default ListPages template, preserve an unsupported-module diagnostic, or allow typography projection to invalidate the owning comment delimiter.
+- Differential replay of corpus module text must preserve its surrounding literal owner. Executing an extracted token without its owner is not evidence of the original page's runtime behavior.
+
+Evidence:
+
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/live-literal-context-references.jsonl` (SHA-256 `b2d741a0658ca16452280c79857e7d020b951d67ef307377984b7797adebca3f`), cases: `jp:sandbox3guide:L367:B13485:literal-context`, `en:requite-fahrenheit-file:L87:B3216:literal-context`, `fr:page-d-autrice-de-cyrielle-centori:L508:B27158:literal-context`, plus all 335 unique corpus literal contexts
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/comment-extra-hyphen-live.jsonl` (SHA-256 `c023c22de802a994798c55ec88c23e38960ca997fb16b01c5de7c1943d870990`), cases: `comment-close-three-hyphens`, `comment-extra-opener-and-three-hyphen-close`, `comment-close-four-hyphens`, `comment-close-five-hyphens`, `unmatched-comment-close-three-hyphens`, `unmatched-comment-close-four-hyphens`
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/comment-closer-dash-boundary-live.jsonl` (SHA-256 `90c2422f74616f65061d1cda2fa5e2fe8f0029e263c9ea0f65f068d022474368`), cases: all `comment-closer-dashes-{midline,line-start}-{2..8}` boundary probes
+- Corpus sources: `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/sandbox3guide/source.wikidot.txt:367`; `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/requite-fahrenheit-file/source.wikidot.txt:87`; `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/fr/pages/page-d-autrice-de-cyrielle-centori/source.wikidot.txt:508`
 
 ### CountPages inside ListPages follows legacy parser failure shapes
 

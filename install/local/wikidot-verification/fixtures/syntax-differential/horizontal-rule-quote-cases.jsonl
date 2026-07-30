@@ -1,0 +1,2 @@
+{"schema":"wikijump_syntax_differential.syntax_case.v1","case_id":"horizontal-rule-native-quote","source":"> ----\n> next","title":"Four-hyphen rule inside native quote","wikidot_observation_tier":"page-preview","local_execution_tier":"ftml"}
+{"schema":"wikijump_syntax_differential.syntax_case.v1","case_id":"horizontal-rule-native-quote-followed-text","source":"> ---- tail","title":"Disqualified four-hyphen rule inside native quote","wikidot_observation_tier":"page-preview","local_execution_tier":"ftml"}

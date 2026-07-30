@@ -261,7 +261,7 @@ impl RenderService {
                     ));
                     included_pages.extend(replacement_included_pages);
                 }
-                ListPagesBlockRenderResult::PreserveOriginal => {
+                ListPagesBlockRenderResult::PreserveOriginal(_) => {
                     expanded.push_str(
                         &compat_text.push_escaped_html_text(occurrence.original),
                     );

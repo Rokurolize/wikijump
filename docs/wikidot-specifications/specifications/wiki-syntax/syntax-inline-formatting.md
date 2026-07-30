@@ -30,7 +30,20 @@ These seams are recommendations. The implementation agent must present and confi
 
 ## Feature-specific implementation notes
 
-- No feature-specific implementation note beyond the corpus contract.
+- Live Wikidot gives contiguous hyphen runs deterministic overlapping
+  strikethrough/dash semantics. Outside an open comment and outside a valid
+  horizontal-rule position, each complete five-hyphen chunk renders as a
+  strikethrough span containing one literal hyphen. The remaining zero through
+  four hyphens render as zero, a literal hyphen, one em dash, one em dash plus
+  a literal hyphen, or two em dashes, respectively. Controlled PagePreview
+  cases verify this rule for lengths 4 through 15.
+
+Live evidence:
+
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/comment-closer-dash-boundary-live.jsonl`
+  (SHA-256 `90c2422f74616f65061d1cda2fa5e2fe8f0029e263c9ea0f65f068d022474368`)
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/dash-run-extended-live.jsonl`
+  (SHA-256 `5d45e7c2346af3d9da6a4f936b192f6615ba7930ceecf79f41c0cadcc27dd20f`)
 
 ## Source inventory
 

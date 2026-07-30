@@ -5,6 +5,9 @@ import {
   sha256,
   validateWikidotReference,
 } from "./syntax-differential.mjs";
+import {
+  extractListPagesInvocationsFromSource,
+} from "./listpages-campaign-inventory.mjs";
 
 export const LISTPAGES_PREVIEW_CLASSIFICATION_SCHEMA =
   "wikijump_listpages_compat.preview_classification.v1";
@@ -45,6 +48,26 @@ function resolvesTemplateVariables(source, visibleText) {
     variables.every((variable) => !visibleText.includes(variable));
 }
 
+function missingVisibleLineArgument(source, liveText, localText) {
+  const invocations = extractListPagesInvocationsFromSource({
+    branch: "classification",
+    pageFullname: "preview",
+    sourcePath: "preview",
+    source,
+  });
+  return invocations
+    .flatMap((invocation) => invocation.attributes ?? [])
+    .filter((attribute) =>
+      ["prependline", "appendline"].includes(attribute.name.toLowerCase())
+    )
+    .map((attribute) => attribute.value)
+    .find((value) =>
+      value.length > 0 &&
+      liveText.includes(value) &&
+      !localText.includes(value)
+    ) ?? null;
+}
+
 function classifyMismatch(row, reference) {
   const source = reference.syntax_case.source;
   const liveText = row.live.visible_text;
@@ -64,6 +87,10 @@ function classifyMismatch(row, reference) {
   const localPreservedModule =
     localText.includes("[[module ListPages") ||
     localText.includes("[[module\tListPages");
+  const localUnsupportedDiagnostic =
+    /\bTODO:\s*module\s+ListPages\b/iu.test(localText);
+  const missingLineArgument =
+    missingVisibleLineArgument(source, liveText, localText);
 
   const exactErrors = new Map([
     ["Invalid range argument.", ["invalid-range-error", "fix"]],
@@ -84,6 +111,22 @@ function classifyMismatch(row, reference) {
       classification: "missing-parent-error",
       disposition: "fix",
       rationale: "Live Wikidot resolves the static parent and reports that it does not exist.",
+    };
+  }
+  if (missingLineArgument !== null) {
+    return {
+      classification: "prepend-append-line-divergence",
+      disposition: "investigate-renderer",
+      rationale:
+        "Live Wikidot renders an authored prependLine or appendLine value that Wikijump omits.",
+    };
+  }
+  if (liveHasListPages && localUnsupportedDiagnostic) {
+    return {
+      classification: "local-listpages-unsupported-diagnostic",
+      disposition: "investigate-renderer",
+      rationale:
+        "Live Wikidot executes ListPages while Wikijump emits its unsupported-module diagnostic.",
     };
   }
   if (

@@ -202,6 +202,129 @@ pub(in crate::services::render) fn wikidot_module_arguments_ignoring_bare_flags(
     Some(arguments)
 }
 
+/// Parse the permissive legacy argument head used by ListPages.
+///
+/// Live ListPages skips inert bare words, punctuation, and assignments with no
+/// value, then resumes at the next assignment. Other runtime modules use the
+/// stricter parsers above.
+pub(in crate::services::render) fn wikidot_list_pages_arguments(
+    head: &str,
+) -> Vec<WikidotModuleArgument<'_>> {
+    let mut arguments = Vec::new();
+    let mut cursor = 0usize;
+
+    while cursor < head.len() {
+        skip_wikidot_argument_whitespace(head, &mut cursor);
+        if cursor >= head.len() {
+            break;
+        }
+
+        let key_start = cursor;
+        while head.as_bytes().get(cursor).is_some_and(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-')
+        }) {
+            cursor += 1;
+        }
+        if cursor == key_start {
+            cursor += head[cursor..]
+                .chars()
+                .next()
+                .expect("cursor is before the end of the ListPages head")
+                .len_utf8();
+            continue;
+        }
+        if !head.as_bytes()[key_start].is_ascii_alphabetic()
+            && head.as_bytes()[key_start] != b'_'
+        {
+            continue;
+        }
+        let key = &head[key_start..cursor];
+
+        skip_wikidot_argument_whitespace(head, &mut cursor);
+        let op_start = cursor;
+        if matches!(head.as_bytes().get(cursor), Some(b'!' | b'<' | b'>')) {
+            cursor += 1;
+            if matches!(
+                (head.as_bytes().get(op_start), head.as_bytes().get(cursor)),
+                (Some(b'<'), Some(b'>')) | (_, Some(b'='))
+            ) {
+                cursor += 1;
+            }
+        } else if head.as_bytes().get(cursor) == Some(&b'=') {
+            cursor += 1;
+        } else {
+            // A bare alphabetic token is an inert flag on live ListPages.
+            continue;
+        }
+        let op = &head[op_start..cursor];
+
+        skip_wikidot_argument_whitespace(head, &mut cursor);
+        if cursor >= head.len() {
+            // An assignment without a value is inert rather than fatal.
+            continue;
+        }
+
+        let value_start = cursor;
+        let first = head[value_start..]
+            .chars()
+            .next()
+            .expect("cursor is before the end of the ListPages head");
+        let value = if first == '"' {
+            match wikidot_list_pages_double_quoted_argument_value(head, value_start) {
+                Some((value, next)) => {
+                    cursor = next;
+                    value
+                }
+                None => {
+                    cursor = wikidot_bare_argument_end(head, value_start);
+                    &head[value_start..cursor]
+                }
+            }
+        } else if first == '\'' {
+            match wikidot_single_quoted_argument_value(head, value_start) {
+                Some((value, next)) => {
+                    cursor = next;
+                    value
+                }
+                None => {
+                    cursor = wikidot_bare_argument_end(head, value_start);
+                    &head[value_start..cursor]
+                }
+            }
+        } else {
+            cursor = wikidot_bare_argument_end(head, value_start);
+            if cursor == value_start {
+                continue;
+            }
+            &head[value_start..cursor]
+        };
+
+        arguments.push(WikidotModuleArgument { key, op, value });
+    }
+
+    arguments
+}
+
+fn wikidot_list_pages_double_quoted_argument_value(
+    head: &str,
+    quote_start: usize,
+) -> Option<(&str, usize)> {
+    let value_start = quote_start + '"'.len_utf8();
+    let mut cursor = value_start;
+    while cursor < head.len() {
+        let character = head[cursor..].chars().next()?;
+        let next = cursor + character.len_utf8();
+        if character == '"'
+            && (wikidot_argument_boundary_at(head, next)
+                || head.as_bytes().get(next) == Some(&b'@'))
+        {
+            return Some((&head[value_start..cursor], next));
+        }
+        cursor = next;
+    }
+    None
+}
+
 fn wikidot_double_quoted_argument_value(
     head: &str,
     quote_start: usize,

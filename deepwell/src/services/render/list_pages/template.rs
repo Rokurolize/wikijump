@@ -221,12 +221,9 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String)> 
 
     match row_body {
         Some(row_body) => Some((sections, row_body)),
-        // A head or foot with no body has no evidenced row template to pair it
-        // with, so the module is left alone rather than guessed at.
-        None if sections == ListPagesSections::default() => {
-            Some((sections, body.to_owned()))
-        }
-        None => None,
+        // Without a body marker, Wikidot treats head/foot markers as ordinary
+        // per-row template text rather than recognizing a section split.
+        None => Some((ListPagesSections::default(), body.to_owned())),
     }
 }
 
@@ -730,9 +727,14 @@ mod section_tests {
     }
 
     #[test]
-    fn head_or_foot_without_a_body_has_no_row_template() {
-        assert!(ListPagesTemplatePlan::compile("[[head]]H[[/head]]%%name%%").is_none());
-        assert!(ListPagesTemplatePlan::compile("[[foot]]F[[/foot]]%%name%%").is_none());
+    fn head_or_foot_without_a_body_remains_literal_row_template_text() {
+        for body in ["[[head]]H[[/head]]%%name%%", "[[foot]]F[[/foot]]%%name%%"] {
+            let plan = ListPagesTemplatePlan::compile(body)
+                .expect("a standalone head or foot remains ordinary row text");
+            assert_eq!(plan.head_section(), None);
+            assert_eq!(plan.foot_section(), None);
+            assert_eq!(plan.body(), body);
+        }
     }
 
     #[test]

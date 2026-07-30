@@ -71,7 +71,7 @@ pub(in crate::services::render) fn list_pages_body_starts_with_preparsed_block(
 #[derive(Debug)]
 pub(in crate::services::render) enum ListPagesBlockRenderResult {
     Expanded(IncludeExpansion),
-    PreserveOriginal,
+    PreserveOriginal(&'static str),
 }
 
 #[derive(Debug)]

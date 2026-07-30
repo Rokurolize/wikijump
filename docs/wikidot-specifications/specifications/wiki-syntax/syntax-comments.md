@@ -30,7 +30,22 @@ These seams are recommendations. The implementation agent must present and confi
 
 ## Feature-specific implementation notes
 
-- No feature-specific implementation note beyond the corpus contract.
+- Live Wikidot corrects an omission in the frozen documentation: while a
+  comment is open, any contiguous run of at least two hyphens immediately
+  followed by `]` closes it. Thus `--]`, `---]`, `----]`, and longer forms all
+  terminate the comment and render none of its contents.
+- This recognition is parser-contextual. Outside a comment, the same character
+  sequence remains ordinary dash syntax followed by a visible right bracket.
+  For example, live Wikidot renders mid-line `---]` as an em dash plus `-]`
+  and `----]` as two em dashes plus `]`; an implementation MUST NOT globally
+  tokenize the whole longer run as a comment closer.
+
+Live evidence:
+
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/comment-extra-hyphen-live.jsonl`
+  (SHA-256 `c023c22de802a994798c55ec88c23e38960ca997fb16b01c5de7c1943d870990`)
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/comment-closer-dash-boundary-live.jsonl`
+  (SHA-256 `90c2422f74616f65061d1cda2fa5e2fe8f0029e263c9ea0f65f068d022474368`)
 
 ## Source inventory
 

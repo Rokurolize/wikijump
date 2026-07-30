@@ -52,6 +52,11 @@ test("preview classifier separates oracle defects from fixture-state mismatches"
       "[[module ListPages]]\n%%title%%\n[[/module]]",
       '<div class="list-pages-box"><div class="list-pages-item">live</div></div>',
     ),
+    reference(
+      "local-todo",
+      "[[module ListPages]]\n[[#expr 1 + 1]]\n[[/module]]",
+      '<div class="list-pages-box"></div>',
+    ),
   ];
   await fs.writeFile(
     referencesPath,
@@ -87,6 +92,29 @@ test("preview classifier separates oracle defects from fixture-state mismatches"
           },
         },
       },
+      {
+        case_id: "local-todo",
+        status: "mismatch",
+        live: { visible_text: "" },
+        local: {
+          visible_text: "TODO: module ListPages",
+          html_sha256: "c".repeat(64),
+        },
+        comparison: {
+          checks: {
+            dom_tree: {
+              status: "mismatch",
+              local: [{
+                attrs: [],
+                children: [{
+                  type: "text",
+                  value: "TODO: module ListPages",
+                }],
+              }],
+            },
+          },
+        },
+      },
     ],
   }));
 
@@ -96,6 +124,14 @@ test("preview classifier separates oracle defects from fixture-state mismatches"
   });
   assert.equal(result.summary.classifications["invalid-range-error"], 1);
   assert.equal(result.summary.classifications["inconclusive-fixture-data-state"], 1);
+  assert.equal(
+    result.summary.classifications["local-listpages-unsupported-diagnostic"],
+    1,
+  );
+  assert.equal(
+    result.cases.find((row) => row.case_id === "local-todo").disposition,
+    "investigate-renderer",
+  );
 });
 
 test("preview classifier recognizes executed wrapper-free modules", async () => {
@@ -140,4 +176,52 @@ test("preview classifier recognizes executed wrapper-free modules", async () => 
     result.cases[0].classification,
     "inconclusive-fixture-data-state",
   );
+});
+
+test("preview classifier does not mask a missing zero-row line as fixture state", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages tags="+absent" separate="no" prependLine="ZERO_PRE"]]',
+    "%%slug%%",
+    "[[/module]]",
+  ].join("\n");
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference(
+      "zero-row-prepend",
+      source,
+      '<div class="list-pages-box"><p>ZERO_PRE</p></div>',
+    ))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [{
+      case_id: "zero-row-prepend",
+      status: "mismatch",
+      live: { visible_text: "ZERO_PRE" },
+      local: { visible_text: "", html_sha256: "c".repeat(64) },
+      comparison: {
+        checks: {
+          dom_tree: {
+            status: "mismatch",
+            local: [{
+              attrs: [{ name: "class", value: "list-pages-box" }],
+              children: [],
+            }],
+          },
+        },
+      },
+    }],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "prepend-append-line-divergence",
+  );
+  assert.equal(result.cases[0].disposition, "investigate-renderer");
 });
