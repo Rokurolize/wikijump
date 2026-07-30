@@ -28,6 +28,7 @@ use deepwell::services::{RenderService, RequestContext, TextService};
 use deepwell::types::Reference;
 use sea_orm::{ConnectionTrait, Statement, Value};
 use serde_json::json;
+use uuid::Uuid;
 
 /// Reassigns a page's creating revision to another user.
 ///
@@ -1806,6 +1807,83 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
             "the exact live ListPages error should render:\n{preview}",
         );
     }
+}
+
+#[tokio::test]
+async fn random_listpages_reuses_the_same_idle_cached_order_for_one_invocation() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let module_body =
+        format!("LANE5-RANDOM-{} %%fullname%%", Uuid::new_v4().as_simple(),);
+    let request = || {
+        json!({
+            "site_id": site_id,
+            "module_body": module_body.clone(),
+            "parameters": {
+                "category": "_default",
+                "order": "random",
+                "limit": "10",
+                "perPage": "10",
+                "separate": "no",
+                "wrapper": "no"
+            }
+        })
+    };
+    let first = run_endpoint!(runner, wikidot_list_pages_module, request());
+    let second = run_endpoint!(runner, wikidot_list_pages_module, request());
+
+    assert_eq!(
+        second.body, first.body,
+        "live Wikidot renews a one-minute idle cache for the complete random ListPages invocation",
+    );
+}
+
+#[tokio::test]
+async fn wikidot_ajax_listpages_p_parameter_selects_the_rendered_page() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let output = run_endpoint!(
+        runner,
+        wikidot_list_pages_module,
+        json!({
+            "site_id": site_id,
+            "module_body": "LANE5-PAGER %%fullname%%",
+            "parameters": {
+                "category": "_default",
+                "order": "name",
+                "limit": "6",
+                "perPage": "2",
+                "p": "2",
+                "separate": "no",
+                "wrapper": "no"
+            }
+        }),
+    );
+
+    assert!(
+        output.body.contains("page 2 of 3")
+            && output.body.contains(r#"<span class="current">2</span>"#),
+        "Wikidot AMC's p parameter must route through the ordinary ListPages pager: {}",
+        output.body,
+    );
 }
 
 #[tokio::test]

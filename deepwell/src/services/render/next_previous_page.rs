@@ -229,6 +229,7 @@ impl RenderService {
                     page_id: Some(current_page_id),
                     url,
                 },
+                None,
                 page_info,
                 list_pages_arguments,
                 &template,

@@ -780,11 +780,24 @@ impl PageQueryService {
                     let expr = SimpleExpr::FunctionCall(Func::random());
                     query = query.order_by(expr, sql_order);
                 }
+                OrderProperty::SeededRandom(seed) => {
+                    // The seed belongs to one live-compatible ListPages cache key.
+                    // Hashing it with the page ID gives that invocation a stable
+                    // permutation without freezing candidate or permission state.
+                    let expr = Expr::cust_with_values(
+                        "md5($1 || ':' || page.page_id::text)",
+                        [seed.to_string()],
+                    );
+                    query = query
+                        .order_by(expr, sql_order)
+                        .order_by(page::Column::PageId, Order::Asc);
+                }
                 OrderProperty::DataFormFieldName { .. } => {}
             };
             if !matches!(
                 property,
                 OrderProperty::Random
+                    | OrderProperty::SeededRandom(_)
                     | OrderProperty::Score
                     | OrderProperty::DataFormFieldName { .. }
             ) {

@@ -30,16 +30,16 @@ use super::super::list_pages::{
     AJAX_MODULE_LITERAL_MARKER_PREFIX, ListPagesBatchDisplayRequirements,
     ListPagesExpansionBudget, ListPagesOffsetOrigin, ListPagesParentDisplay,
     ListPagesRuntimeDisplay, ListPagesSnapshotDisplay, ListPagesSubstitutionContext,
-    WikidotUserDisplay, build_wikidot_list_pages_module_source,
-    count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
-    count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
-    count_pages_scan_requires_preservation, count_pages_should_remain_literal,
-    count_pages_unbounded_total, current_page_info_list_pages_row,
-    exact_name_list_pages_batch_key, format_list_pages_created_at,
-    list_pages_author_cache_key, list_pages_body_is_no_visible_tracking_markup,
-    list_pages_body_uses_content_variable, list_pages_body_variables_supported,
-    list_pages_content_query_target, list_pages_feed_info_html,
-    list_pages_has_unsupported_page_type_selector,
+    WikidotUserDisplay, build_wikidot_list_pages_module_request,
+    build_wikidot_list_pages_module_source, count_pages_capture_is_literal,
+    count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
+    count_pages_required_tag_batch_selector, count_pages_scan_requires_preservation,
+    count_pages_should_remain_literal, count_pages_unbounded_total,
+    current_page_info_list_pages_row, exact_name_list_pages_batch_key,
+    format_list_pages_created_at, list_pages_author_cache_key,
+    list_pages_body_is_no_visible_tracking_markup, list_pages_body_uses_content_variable,
+    list_pages_body_variables_supported, list_pages_content_query_target,
+    list_pages_feed_info_html, list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_parent_fullname,
     list_pages_revision_count, list_pages_row_scan_target, list_pages_tag_link_href,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
@@ -591,6 +591,31 @@ fn only_url_offset_content_counts_toward_the_extended_deadline() {
         ),
         0,
     );
+}
+
+#[test]
+fn ajax_listpages_routes_positive_p_as_request_state() {
+    let parameters = BTreeMap::from([
+        ("category".to_owned(), "doc".to_owned()),
+        ("p".to_owned(), "2".to_owned()),
+        ("perPage".to_owned(), "10".to_owned()),
+    ]);
+    let request =
+        build_wikidot_list_pages_module_request("%%fullname%%".to_owned(), &parameters)
+            .expect("the live-observed positive AMC p parameter should be accepted");
+
+    assert_eq!(request.page, Some(2));
+    assert!(!request.source.contains(" p="));
+    assert!(request.source.contains(" category=\"doc\""));
+    assert!(request.source.contains(" perPage=\"10\""));
+
+    for invalid in ["", "0", "-1", "1.5", "4294967296"] {
+        let parameters = BTreeMap::from([("p".to_owned(), invalid.to_owned())]);
+        assert!(
+            build_wikidot_list_pages_module_request(String::new(), &parameters).is_none(),
+            "unobserved AMC p={invalid:?} must fail closed",
+        );
+    }
 }
 
 #[test]
@@ -1917,6 +1942,10 @@ fn render_page_query_batches_match_the_remaining_scan_window() {
 fn random_page_query_rendering_uses_one_capped_scan() {
     assert!(render_page_query_uses_single_scan(Some(OrderBySelector {
         property: OrderProperty::Random,
+        ascending: false,
+    })));
+    assert!(render_page_query_uses_single_scan(Some(OrderBySelector {
+        property: OrderProperty::SeededRandom(Cow::Borrowed("seed")),
         ascending: false,
     })));
     assert!(!render_page_query_uses_single_scan(Some(OrderBySelector {

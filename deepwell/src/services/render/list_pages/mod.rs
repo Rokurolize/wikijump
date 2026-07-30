@@ -33,6 +33,7 @@ mod pagination;
 mod parents;
 mod presentation;
 mod preview;
+mod random_cache;
 mod rendering;
 mod rendering_support;
 pub(super) mod scanner;
@@ -41,9 +42,11 @@ pub(super) mod template;
 mod titles;
 
 #[cfg(test)]
-pub(super) use self::ajax::AJAX_MODULE_LITERAL_MARKER_PREFIX;
 pub(super) use self::ajax::{
-    build_wikidot_list_pages_module_source, protect_ajax_module_literal_markers,
+    AJAX_MODULE_LITERAL_MARKER_PREFIX, build_wikidot_list_pages_module_source,
+};
+pub(super) use self::ajax::{
+    build_wikidot_list_pages_module_request, protect_ajax_module_literal_markers,
 };
 pub(super) use self::argument_errors::{
     list_pages_non_range_argument_error, list_pages_range_argument_error,
@@ -77,6 +80,7 @@ pub(super) use self::presentation::{
     list_pages_revision_count, render_list_pages_wikidot_user,
     substitute_count_pages_variables,
 };
+pub(super) use self::random_cache::seed_random_list_pages_order;
 pub(super) use self::rendering_support::{
     CountPagesBlockRenderResult, CountPagesExpansionOptions, CountPagesRequiredTagSource,
     CountPagesRequiredTagTotal, ListPagesBlockRenderResult, ListPagesContentCache,

@@ -68,10 +68,10 @@ use super::{
     preserve_list_pages_following_paragraph_boundary, preserve_list_pages_module_matches,
     protect_ajax_module_literal_markers, push_list_pages_generated_output,
     push_list_pages_pager, register_generated_list_pages_html,
-    should_render_current_page_list_pages_row, substitute_count_pages_variables,
-    substitute_list_pages_rating_only, substitute_list_pages_variables_with_fragments,
-    union_found_page_fields, unsupported_list_pages_replacement,
-    url_offset_list_pages_content_bytes,
+    seed_random_list_pages_order, should_render_current_page_list_pages_row,
+    substitute_count_pages_variables, substitute_list_pages_rating_only,
+    substitute_list_pages_variables_with_fragments, union_found_page_fields,
+    unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::hash::{TextHash, k12_hash};
@@ -158,6 +158,7 @@ impl RenderService {
         let ListPagesExpansionOptions {
             current_site_id,
             current_page_id,
+            viewer_user_id,
             mut include_budget,
             url,
         } = options;
@@ -618,6 +619,7 @@ impl RenderService {
                             page_id: requested_current_page_id,
                             url,
                         },
+                        viewer_user_id,
                         page_info,
                         arguments,
                         &template,
@@ -720,6 +722,7 @@ impl RenderService {
                             page_id: requested_current_page_id,
                             url,
                         },
+                        viewer_user_id,
                         page_info,
                         arguments,
                         &template,
@@ -819,6 +822,7 @@ impl RenderService {
                 ListPagesExpansionOptions {
                     current_site_id: Some(current_site_id),
                     current_page_id: requested_current_page_id,
+                    viewer_user_id,
                     include_budget,
                     url,
                 },
@@ -1217,6 +1221,7 @@ impl RenderService {
     pub(in crate::services::render) async fn render_list_pages_block(
         ctx: &ServiceContext<'_>,
         page_context: ListPagesPageContext<'_>,
+        viewer_user_id: Option<i64>,
         page_info: &PageInfo<'_>,
         arguments: ListPagesArguments,
         template: &ListPagesTemplatePlan,
@@ -1241,6 +1246,7 @@ impl RenderService {
         let current_page_id = current_page_identity.unwrap_or(0);
         let ajax_module_response = page_info.page.as_ref() == "_ajax-module-connector";
         let initial_remaining_include_expansions = include_budget.remaining;
+        let mut arguments = arguments;
         let feed_info = list_pages_feed_info_html(page_info, &arguments);
         if arguments.rss_only
             && let Some(feed_info) = feed_info
@@ -1256,6 +1262,15 @@ impl RenderService {
                 expanded_include_count: 0,
             }));
         }
+        seed_random_list_pages_order(
+            ctx,
+            current_site_id,
+            current_page_identity,
+            url,
+            &mut arguments,
+            template,
+        )
+        .await?;
         let ListPagesArguments {
             current_page_only,
             category_selector_present,
@@ -1573,7 +1588,7 @@ impl RenderService {
                 } else {
                     query_limit
                 };
-            let found = RenderRuntime::new(ctx)
+            let found = RenderRuntime::for_viewer(ctx, viewer_user_id)
                 .find_viewable_list_pages_rows(
                     query,
                     query_target.min(usize::MAX as u64) as usize,
