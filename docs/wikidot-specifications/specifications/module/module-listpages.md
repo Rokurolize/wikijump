@@ -533,6 +533,82 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json` (SHA-256 `f324d01d811cd4790be10e856c2027c496e978b9efa5dcecf4418a5cc5db5d4d`), cases: none
 
+### HTML blocks remain literal in page preview and execute only after save
+
+- Observation ID: `listpages-preview-and-saved-html-context-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: Anonymous and role-differential PagePreviewModule captures keep complete and malformed HTML-block-shaped source literal, while a provenance-matched public saved page executes the same complete construct in an html-block iframe. This is a page lifecycle and runtime-authority distinction rather than a different HTML-block grammar.
+
+Normative behavior:
+
+- PagePreview keeps HTML-block-shaped authored or ListPages-generated source literal and escaped; it does not create an iframe, frame request, or intermediate executable preview state.
+- The rule is actor-independent for the anonymous, administrator, ordinary-member, and non-member roles observed on the controlled sandbox.
+- Saved-page rendering retains the executable html-block-iframe behavior for a complete HTML block.
+- Preview and saved-page behavior must be selected by an explicit render context rather than by rewriting settled HTML.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+
+### ListPages keys, quoting, operators, and duplicate state use per-argument source grammar
+
+- Observation ID: `listpages-per-argument-source-grammar-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation enumerates arguments but does not define a single global normalization grammar. A 30-family PagePreview matrix shows that activation depends on the exact argument family: some keys are case-insensitive while camel-case keys, legacy aliases, comparison operators, quotes, empty values, and duplicate occurrences each have narrower semantics. Unsupported tokens remain inert without aborting the surrounding executable module.
+
+Normative behavior:
+
+- Argument recognition is per key; a global lowercase, alias, quote, or operator normalization changes observable behavior.
+- Comparison-shaped values execute only through the evidenced quoted comparison grammar. Unquoted comparison-shaped tokens and comparison operators on non-comparison arguments are inert.
+- Unsupported score and collapsed date aliases remain inert rather than broadening rating or date selection.
+- Repeated valid arguments follow their evidenced last-occurrence or fallback state, while inert spellings do not overwrite canonical state.
+- Malformed or unsupported head tokens fail locally: later valid assignments and the surrounding ListPages module continue to execute when the live boundary supports recovery.
+- Parent, pagetype, range, rating, votes, creator, tag, name, numeric, boolean, line, RSS, and URL-selected values retain their independently observed validation and error precedence.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+
+### ListPages sections and generated linked values preserve positional and insertion phases
+
+- Observation ID: `listpages-template-section-and-linked-phase-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: Synchronized PagePreview matrices separate three template responsibilities. Section recognition is positional, case-insensitive, and literal-owner-aware. Unknown variable-shaped tokens recover locally. Generated linked values are inserted as structured link fragments only after the surrounding authored syntax has been decided, so their markup cannot retroactively complete a link, image, attribute, parser function, or block.
+
+Normative behavior:
+
+- Head, body, and foot recognition follows authored source order and local recovery; markers hidden by comments, raw, monospace, code, or escaped contexts do not become active sections.
+- Duplicate, crossing, unclosed, close-only, empty, and out-of-order section shapes recover locally according to their observed position instead of globally canonicalizing or preserving the complete module.
+- An unknown ListPages variable remains literal per token while known variables before, after, or adjacent to it continue to substitute.
+- Linked title and tag variables insert sealed generated anchors into the already-determined authored parse. They do not grant surrounding delimiters a second parse as a link, image, parser function, block, or attribute.
+- Generated link labels and targets retain Wikijump-owned page and tag identity while FTML owns syntax recovery, escaping, and final Wikidot DOM.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+
+### ListPages once-only blocks, generated headings, and preview pagers retain runtime boundaries
+
+- Observation ID: `listpages-generated-block-and-heading-boundaries-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: PagePreview matrices with synchronized zero-row and one-row selectors show that ListPages-generated blocks are not one undifferentiated authored source stream. Zero-row prepend and append values are independent blocks, generated headings remain visible without joining page heading identity, and the preview pager has a route-specific Ajax lifecycle and exact sibling DOM.
+
+Normative behavior:
+
+- With zero selected rows and separation disabled, non-empty prependLine and appendLine values parse as independent blocks; one-or-more-row composition retains its separate observed behavior.
+- A heading generated by a row, once-only line, or explicit section has the normal heading element and inline contents but no tocN id, does not consume authored heading numbering, and does not enter the outer page table of contents.
+- Authored headings before and after ListPages retain their own numbering independently of generated headings.
+- PagePreview pager links use the evidenced Ajax href and replacement lifecycle, and the unwrapped separate-row pager is not preceded by an implementation-generated line break.
+- Visible-text equality is insufficient for these cases because paragraph, table, heading, TOC, link, and intermediate browser-state boundaries are observable.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+
 
 
 ## Suggested public TDD seams

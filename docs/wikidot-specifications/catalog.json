@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 57,
+    "observation_count": 61,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -2076,7 +2076,11 @@
         "listpages-unknown-arguments-ignored",
         "listpages-module-head-legacy-boundaries",
         "listpages-random-idle-cache-live-20260730",
-        "listpages-p8-temporal-boundary-live-20260730"
+        "listpages-p8-temporal-boundary-live-20260730",
+        "listpages-preview-and-saved-html-context-20260730",
+        "listpages-per-argument-source-grammar-20260730",
+        "listpages-template-section-and-linked-phase-20260730",
+        "listpages-generated-block-and-heading-boundaries-20260730"
       ]
     },
     {
@@ -4917,7 +4921,9 @@
         "Rendered HTML/DOM at the saved-page boundary for context-dependent forms"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "listpages-generated-block-and-heading-boundaries-20260730"
+      ]
     },
     {
       "id": "syntax-horizontal-rules",
@@ -4974,7 +4980,9 @@
         "Rendered HTML/DOM at the saved-page boundary for context-dependent forms"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "listpages-preview-and-saved-html-context-20260730"
+      ]
     },
     {
       "id": "syntax-iftags",
