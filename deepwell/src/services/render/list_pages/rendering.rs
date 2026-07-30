@@ -21,7 +21,6 @@
 use super::super::compat::CompatHtmlFragments;
 use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
-use super::super::include_attachment_owners::AttachmentOwner;
 use super::super::literal_regions::{ListPagesSourceProjection, LiteralRegionIndex};
 use super::super::runtime::{IncludeSourceCache, RenderRuntime};
 use super::super::runtime_page_queries::{
@@ -30,10 +29,9 @@ use super::super::runtime_page_queries::{
 use super::super::service::{
     COUNTPAGES_MODULE_REGEX, CountPagesRequiredTagBatchResult,
     DEFAULT_LISTPAGES_PER_PAGE, IncludeExpansion, IncludeExpansionBudget,
-    IncludeExpansionOptions, MAX_LISTPAGES_RENDER_LIMIT, MAX_LISTPAGES_RENDER_SCAN_ROWS,
-    RenderService, render_list_pages_numbered_rows, render_list_pages_table_rows,
+    MAX_LISTPAGES_RENDER_LIMIT, MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService,
+    render_list_pages_numbered_rows, render_list_pages_table_rows,
 };
-use super::content_sections::{isolate_wikidot_content_section, wikidot_content_section};
 use super::current_data_form::{
     current_data_form_list_pages_head, load_current_page_data_form_context,
 };
@@ -520,13 +518,11 @@ impl RenderService {
                             url,
                         },
                         page_info,
-                        settings,
                         arguments,
                         &template,
                         include_budget,
                         prefetched_pages,
                         prefetched_displays.as_ref(),
-                        include_source_cache,
                         &mut content_cache,
                         expansion_budget,
                         &mut permission_cache,
@@ -624,13 +620,11 @@ impl RenderService {
                             url,
                         },
                         page_info,
-                        settings,
                         arguments,
                         &template,
                         include_budget,
                         None,
                         None,
-                        include_source_cache,
                         &mut content_cache,
                         expansion_budget,
                         &mut permission_cache,
@@ -1123,13 +1117,11 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         page_context: ListPagesPageContext<'_>,
         page_info: &PageInfo<'_>,
-        settings: &WikitextSettings,
         arguments: ListPagesArguments,
         template: &ListPagesTemplatePlan,
-        mut include_budget: IncludeExpansionBudget,
+        include_budget: IncludeExpansionBudget,
         mut prefetched_pages: Option<FoundPages>,
         prefetched_displays: Option<&ListPagesBatchDisplays>,
-        include_source_cache: &mut IncludeSourceCache,
         content_cache: &mut ListPagesContentCache,
         expansion_budget: &mut ListPagesExpansionBudget,
         permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
@@ -1877,7 +1869,7 @@ impl RenderService {
                 "wrapper opening exceeds generated-output budget",
             ));
         }
-        let mut included_pages = Vec::new();
+        let included_pages = Vec::new();
         if !separate
             && let Some(prepend_line) = prepend_line
             && (!push_list_pages_generated_output(
@@ -1925,100 +1917,17 @@ impl RenderService {
             } else {
                 BTreeMap::new()
             };
-            let isolated_content_section =
-                if wants_content && template.content_sections().len() == 1 {
-                    template
-                        .content_sections()
-                        .iter()
-                        .next()
-                        .copied()
-                        .flatten()
-                        .and_then(|section| {
-                            page_wikitext.as_deref().and_then(|wikitext| {
-                                isolate_wikidot_content_section(wikitext, section)
-                                    .map(|content| (section, content))
-                            })
-                        })
-                } else {
-                    None
-                };
-            let expanded_page_content = if wants_content {
-                match page_wikitext.as_deref() {
-                    Some(wikitext) => {
-                        if page.site_id != current_site_id {
-                            return Err(Error::new(
-                                format!(
-                                    "ListPages content row page ID {} belongs to site ID {}, not current site ID {}",
-                                    page.page_id, page.site_id, current_site_id,
-                                ),
-                                ErrorType::Render,
-                            )
-                            .into());
-                        }
-                        let source_attachment_page_slug = page.slug.as_deref().ok_or_else(
-                            || {
-                                Error::new(
-                                    format!(
-                                        "ListPages content row for page ID {} is missing its attachment-owner slug",
-                                        page.page_id,
-                                    ),
-                                    ErrorType::Render,
-                                )
-                            },
-                        )?;
-                        let source_attachment_owner = AttachmentOwner {
-                            site_slug: page_info.site.to_string(),
-                            page_slug: source_attachment_page_slug.to_owned(),
-                        };
-                        let expansion = Self::expand_includes(
-                            ctx,
-                            isolated_content_section
-                                .as_ref()
-                                .map(|(_, content)| content.as_str())
-                                .unwrap_or(wikitext)
-                                .to_owned(),
-                            page_info,
-                            page_info.site.as_ref(),
-                            settings,
-                            IncludeExpansionOptions {
-                                current_site_id: Some(page.site_id),
-                                source_attachment_owner: Some(source_attachment_owner),
-                                source_cache: include_source_cache,
-                                compat_text,
-                                expand_wikidot_image_blocks: false,
-                                budget: include_budget,
-                            },
-                        )
-                        .await?;
-                        include_budget.consume(expansion.expanded_include_count);
-                        included_pages.extend(expansion.included_pages);
-                        Some(expansion.wikitext)
-                    }
-                    None => None,
-                }
-            } else {
-                None
-            };
-            let expanded_content = expanded_page_content
-                .as_deref()
-                .map(|expanded| {
-                    if let Some((section, _)) = isolated_content_section.as_ref() {
-                        BTreeMap::from([(
-                            Some(*section),
-                            expanded.trim_matches('\n').to_owned(),
-                        )])
-                    } else {
-                        template
-                            .content_sections()
-                            .iter()
-                            .copied()
-                            .map(|section| {
-                                (section, wikidot_content_section(expanded, section))
-                            })
-                            .collect::<BTreeMap<_, _>>()
-                    }
-                })
-                .unwrap_or_default();
+            if wants_content && page_wikitext.is_some() && page.site_id != current_site_id
+            {
+                return Err(Error::new(
+                    format!(
+                        "ListPages content row page ID {} belongs to site ID {}, not current site ID {}",
+                        page.page_id, page.site_id, current_site_id,
+                    ),
+                    ErrorType::Render,
+                )
+                .into());
+            }
             let substitution_context = ListPagesSubstitutionContext {
                 authored_limit: limit,
                 ajax_module_response,
@@ -2063,7 +1972,6 @@ impl RenderService {
                             "revision-backed ListPages rows were validated before substitution",
                         )
                 }),
-                expanded_content: Some(&expanded_content),
                 data_form_values: &data_form_values,
                 data_form_definition: page
                     .page_category_id

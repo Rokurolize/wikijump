@@ -149,7 +149,6 @@ fn list_pages_substitution_context_with_mode<'a>(
         page_parent_display: None,
         page_child_count: None,
         page_revision_count: None,
-        expanded_content: None,
         data_form_values,
         data_form_definition: None,
         render_generated_html,
@@ -3156,19 +3155,14 @@ fn substitutes_wikidot_list_pages_content_sections() {
 
     assert_eq!(rendered, "**SCP-2693 -- Hidden title text**");
 
-    let expanded_content = BTreeMap::from([
-        (None, "EXPANDED_FULL".to_owned()),
-        (Some(1), "EXPANDED_SECTION_1".to_owned()),
-    ]);
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
-    let mut context = list_pages_substitution_context(
+    let context = list_pages_substitution_context(
         20,
         &user_displays,
         Some("RAW_CONTENT"),
         &data_form_values,
     );
-    context.expanded_content = Some(&expanded_content);
     assert_eq!(
         substitute_list_pages_variables(
             "%%content%%|%%content{1}%%",
@@ -3177,8 +3171,8 @@ fn substitutes_wikidot_list_pages_content_sections() {
             1,
             &context,
         ),
-        "EXPANDED_FULL|EXPANDED_SECTION_1",
-        "row-local expanded sections must take precedence over raw child wikitext",
+        "RAW_CONTENT|RAW_CONTENT",
+        "row-local content must preserve the authored child source phase",
     );
 }
 

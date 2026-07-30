@@ -1287,7 +1287,6 @@ impl RenderService {
                 &mut include_budget,
                 url,
                 &mut wikidot_compat_html,
-                &mut include_source_cache,
                 &mut wikidot_compat_text,
             )
             .await

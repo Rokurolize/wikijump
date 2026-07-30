@@ -1923,8 +1923,6 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
         Option<&'a ListPagesParentDisplay>,
     pub(in crate::services::render) page_child_count: Option<u64>,
     pub(in crate::services::render) page_revision_count: Option<u64>,
-    pub(in crate::services::render) expanded_content:
-        Option<&'a BTreeMap<Option<usize>, String>>,
     pub(in crate::services::render) data_form_values: &'a BTreeMap<String, String>,
     pub(in crate::services::render) data_form_definition:
         Option<&'a ListPagesDataFormDefinition>,
@@ -2386,12 +2384,12 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
                         .name("argument")
                         .and_then(|matched| matched.as_str().parse().ok());
                     context
-                        .expanded_content
-                        .and_then(|content| content.get(&section).cloned())
-                        .or_else(|| {
-                            context.page_wikitext.map(|wikitext| {
-                                wikidot_content_section(wikitext, section)
-                            })
+                        .page_wikitext
+                        .map(|wikitext| {
+                            protect_list_pages_content_insertion(
+                                &wikidot_content_section(wikitext, section),
+                                compat_text,
+                            )
                         })
                         .unwrap_or_default()
                 }
@@ -2445,6 +2443,27 @@ fn list_pages_first_paragraph(wikitext: &str) -> &str {
         .or_else(|| wikitext.split_once("\n\n").map(|(paragraph, _)| paragraph))
         .unwrap_or(wikitext)
         .trim()
+}
+
+fn protect_list_pages_content_insertion(
+    content: &str,
+    compat_text: &mut CompatTextFragments,
+) -> String {
+    let mut protected = String::with_capacity(content.len());
+    let mut cursor = 0;
+    while let Some(relative_start) = content[cursor..].find("[[") {
+        let start = cursor + relative_start;
+        protected.push_str(&content[cursor..start]);
+        let Some(relative_end) = content[start + 2..].find("]]") else {
+            protected.push_str(&compat_text.push_escaped_html_text(&content[start..]));
+            return protected;
+        };
+        let end = start + 2 + relative_end + 2;
+        protected.push_str(&compat_text.push_escaped_html_text(&content[start..end]));
+        cursor = end;
+    }
+    protected.push_str(&content[cursor..]);
+    protected
 }
 
 fn list_pages_variable_starts_triple_link_target(template: &str, start: usize) -> bool {
