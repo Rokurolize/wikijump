@@ -885,13 +885,30 @@ impl<'a> ModuleEventScanner<'a> {
             match (quote, bytes[cursor]) {
                 (Some(b'"'), b'"')
                     if !quote_is_escaped(bytes, cursor, &head_tokens)
-                        && !head_tokens.contains(cursor)
+                        && (!head_tokens.contains(cursor)
+                            || (list_pages_compatibility
+                                && list_pages_url_value_quote_ends_at(
+                                    bytes,
+                                    cursor,
+                                    module_name_end,
+                                )))
                         && (double_quote_ends_scanner_argument(
                             bytes,
                             cursor,
                             &head_tokens,
                         ) || (list_pages_compatibility
-                            && bytes.get(cursor + 1) == Some(&b'@'))) =>
+                            && (list_pages_url_value_quote_ends_at(
+                                bytes,
+                                cursor,
+                                module_name_end,
+                            ) || surplus_list_pages_close_after_spacing(
+                                bytes,
+                                cursor + 1,
+                            ) || crossing_list_pages_quote_ends_before_close(
+                                bytes,
+                                cursor,
+                                &head_tokens,
+                            )))) =>
                 {
                     quote = None;
                 }
@@ -952,10 +969,29 @@ impl<'a> ModuleEventScanner<'a> {
                         if validation == ModuleHeadValidation::DefiniteInvalid {
                             validation = if list_pages_compatibility
                                 && first_rollback_marker.is_none()
-                            {
+                                && evidenced_legacy_list_pages_head_boundary(
+                                    validation_head,
+                                ) {
                                 ModuleHeadValidation::ValidRuntimeUnsafe
-                            } else if list_pages_compatibility && runtime_recognized {
-                                ModuleHeadValidation::AmbiguousFailClosed
+                            } else if list_pages_compatibility
+                                && runtime_recognized
+                                && validation_head.contains(['\n', '\r'])
+                            {
+                                self.ambiguous_whole_head = true;
+                                finish_head_scan!(
+                                    closing_end,
+                                    ModuleOpeningEnd::Malformed {
+                                        resume: first_rollback_marker
+                                            .unwrap_or(closing_end),
+                                    }
+                                );
+                            } else if first_rollback_marker.is_none() {
+                                finish_head_scan!(
+                                    closing_end,
+                                    ModuleOpeningEnd::Malformed {
+                                        resume: closing_end,
+                                    }
+                                );
                             } else {
                                 finish_head_scan!(
                                     closing_end,
@@ -968,15 +1004,6 @@ impl<'a> ModuleEventScanner<'a> {
                         }
                         let runtime_safe = match validation {
                             ModuleHeadValidation::DefiniteInvalid => {
-                                finish_head_scan!(
-                                    closing_end,
-                                    ModuleOpeningEnd::Malformed {
-                                        resume: closing_end,
-                                    }
-                                );
-                            }
-                            ModuleHeadValidation::AmbiguousFailClosed => {
-                                self.ambiguous_whole_head = true;
                                 finish_head_scan!(
                                     closing_end,
                                     ModuleOpeningEnd::Malformed {
@@ -1040,9 +1067,12 @@ impl<'a> ModuleEventScanner<'a> {
             return ModuleOpeningEnd::Unclosed;
         }
         if let Some(resume) = first_rollback_marker {
-            self.ambiguous_whole_head |=
-                list_pages_compatibility && !definite_invalid_boundary;
-            ModuleOpeningEnd::Malformed { resume }
+            if list_pages_compatibility && !definite_invalid_boundary {
+                self.ambiguous_whole_head = true;
+                ModuleOpeningEnd::Unclosed
+            } else {
+                ModuleOpeningEnd::Malformed { resume }
+            }
         } else {
             ModuleOpeningEnd::Unclosed
         }
@@ -1296,7 +1326,6 @@ fn module_subname_end(
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum ModuleHeadValidation {
     DefiniteInvalid,
-    AmbiguousFailClosed,
     ValidRuntimeBoundaryDivergence,
     ValidRuntimeUnsafe,
     RuntimeSafe,
@@ -1420,7 +1449,11 @@ fn validate_module_head(
         }
 
         let quote = bytes[cursor];
+        let list_pages_url_value = list_pages_compatibility
+            && quote == b'"'
+            && list_pages_url_value_quote_starts_at(bytes, cursor);
         let quote_owned = matches!(quote, b'\'' | b'"')
+            && !list_pages_url_value
             && (syntax_crossing_token_end.is_some_and(|end| cursor < end)
                 || text_tokens.contains(cursor));
         if matches!(quote, b'\'' | b'"') {
@@ -1437,8 +1470,11 @@ fn validate_module_head(
                     runtime_safe = false;
                 }
                 if bytes[cursor] == quote {
-                    if syntax_crossing_token_end.is_some_and(|end| cursor < end)
-                        || text_tokens.contains(cursor)
+                    let list_pages_url_quote_end = list_pages_url_value
+                        && list_pages_url_value_quote_ends_at(bytes, cursor, key_start);
+                    if !list_pages_url_quote_end
+                        && (syntax_crossing_token_end.is_some_and(|end| cursor < end)
+                            || text_tokens.contains(cursor))
                     {
                         runtime_safe = false;
                         cursor += 1;
@@ -1451,8 +1487,7 @@ fn validate_module_head(
                                 cursor,
                                 &text_tokens,
                             )
-                            && !(list_pages_compatibility
-                                && bytes.get(cursor + 1) == Some(&b'@')))
+                            && !list_pages_url_quote_end)
                     {
                         runtime_safe = false;
                         cursor += 1;
@@ -1673,6 +1708,92 @@ fn double_quote_ends_scanner_argument(
     }
     matches!(bytes.get(quote + 1), Some(b' ' | b'\t' | b'\0'))
         && scanner_argument_boundary_at(bytes, quote + 1, text_tokens)
+}
+
+fn surplus_list_pages_close_after_spacing(bytes: &[u8], mut cursor: usize) -> bool {
+    while matches!(bytes.get(cursor), Some(b' ' | b'\t' | b'\0')) {
+        cursor += 1;
+    }
+    let run_start = cursor;
+    while bytes.get(cursor) == Some(&b']') {
+        cursor += 1;
+    }
+    cursor.saturating_sub(run_start) >= 3
+}
+
+fn crossing_list_pages_quote_ends_before_close(
+    bytes: &[u8],
+    quote: usize,
+    text_tokens: &TextTokenCursor,
+) -> bool {
+    if quote == 0 || bytes[quote - 1] != b'=' {
+        return false;
+    }
+    let tail_start = quote + 1;
+    let mut cursor = tail_start;
+    while bytes
+        .get(cursor)
+        .is_some_and(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
+    {
+        cursor += 1;
+    }
+    if cursor == tail_start || bytes.get(cursor) != Some(&b']') {
+        return false;
+    }
+    let mut lookahead_tokens = text_tokens.clone();
+    wikidot_right_bracket_token(bytes, cursor, bytes.len(), &mut lookahead_tokens).0
+        || surplus_list_pages_close_after_spacing(bytes, cursor)
+}
+
+fn list_pages_url_value_quote_starts_at(bytes: &[u8], quote: usize) -> bool {
+    let value = bytes.get(quote + 1..).unwrap_or_default();
+    value
+        .get(..4)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(b"@url"))
+        && matches!(value.get(4), Some(b'"' | b'|'))
+}
+
+fn list_pages_url_value_quote_ends_at(
+    bytes: &[u8],
+    quote: usize,
+    lower_bound: usize,
+) -> bool {
+    let Some(opening) = bytes[lower_bound..quote]
+        .iter()
+        .rposition(|byte| *byte == b'"')
+        .map(|offset| lower_bound + offset)
+    else {
+        return false;
+    };
+    list_pages_url_value_quote_starts_at(bytes, opening)
+        && !bytes[opening + 1..quote].contains(&b'"')
+}
+
+fn evidenced_legacy_list_pages_head_boundary(head: &str) -> bool {
+    let arguments = wikidot_list_pages_arguments(head);
+    if arguments
+        .iter()
+        .any(|argument| matches!(argument.op, "<" | ">" | "<=" | ">=" | "!=" | "<>"))
+    {
+        return true;
+    }
+
+    let bytes = head.as_bytes();
+    let mut cursor = 0usize;
+    while let Some(relative) = bytes[cursor..].iter().position(|byte| *byte == b'"') {
+        let quote = cursor + relative;
+        let mut next = quote + 1;
+        while bytes.get(next).is_some_and(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-')
+        }) {
+            next += 1;
+        }
+        if next > quote + 1 && (bytes.get(next) == Some(&b'=') || next == bytes.len()) {
+            return !arguments.is_empty();
+        }
+        cursor = quote + 1;
+    }
+    false
 }
 
 fn continuation_revealed_argument_boundary(

@@ -1158,10 +1158,8 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
         "[[module ListPages 1=bare]]x[[/module]]",
         "[[module ListPages [!--=bare]]x[[/module]]",
     ] {
-        assert!(
-            find_list_pages_module_matches(malformed).is_empty(),
-            "{malformed:?}",
-        );
+        let modules = find_list_pages_module_matches(malformed);
+        assert!(modules.is_empty(), "{malformed:?}: {modules:#?}",);
     }
 
     for compatible in [
@@ -1250,11 +1248,37 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
     );
     assert!(find_list_pages_module_matches(invalid_list_pages_head).is_empty());
 
-    for runtime_ambiguous_head in [
-        concat!(
-            "[[module ListPages name=\"x\ny\"]]",
-            "[[module ListPages name=secret]]H[[/module]][[/module]]",
+    for (complete_multiline_head, expected_head, expected_body) in [
+        (
+            concat!(
+                "[[module ListPages name=\"x\ny\"]]",
+                "[[module ListPages name=secret]]H[[/module]][[/module]]",
+            ),
+            "name=\"x\ny\"",
+            "[[module ListPages name=secret]]H[[/module]]",
         ),
+        (
+            concat!(
+                "[[module ListPages name=\"outer\"]]A",
+                "[[module ListPages name=\"x\ny\"]]B[[/module]]C[[/module]]",
+            ),
+            "name=\"outer\"",
+            "A[[module ListPages name=\"x\ny\"]]B[[/module]]C",
+        ),
+    ] {
+        let modules = find_list_pages_module_matches(complete_multiline_head);
+        assert_eq!(modules.len(), 1, "{complete_multiline_head:?}");
+        assert_eq!(
+            modules[0].head, expected_head,
+            "{complete_multiline_head:?}",
+        );
+        assert_eq!(
+            modules[0].body, expected_body,
+            "{complete_multiline_head:?}",
+        );
+    }
+
+    for runtime_ambiguous_head in [
         concat!(
             "[[module ListPages name=foo[[x]]",
             "[[module ListPages name=secret]]H[[/module]][[/module]]",
@@ -1262,10 +1286,6 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
         concat!(
             "[[module ListPages name=\"outer\"]]A",
             "[[module ListPages name=foo[[[[bar]]B[[/module]]C[[/module]]",
-        ),
-        concat!(
-            "[[module ListPages name=\"outer\"]]A",
-            "[[module ListPages name=\"x\ny\"]]B[[/module]]C[[/module]]",
         ),
         concat!(
             "[[module ListPages name=\"outer\"]]A",
@@ -1282,9 +1302,10 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
             "[[/module]]C[[/module]]",
         ),
     ] {
+        let modules = find_list_pages_module_matches(runtime_ambiguous_head);
         assert!(
-            find_list_pages_module_matches(runtime_ambiguous_head).is_empty(),
-            "{runtime_ambiguous_head:?}",
+            modules.is_empty(),
+            "{runtime_ambiguous_head:?}: {modules:#?}",
         );
     }
 
@@ -1457,6 +1478,11 @@ fn corpus_legacy_list_pages_heads_remain_structurally_visible() {
     for source in [
         concat!(
             "[[module ListPages created_by=\"creambox\" order=\"random\"tags=\"+原创 +scp\" separate=\"no\"]]\n",
+            "%%title_linked%%\n[[/module]]",
+        ),
+        concat!(
+            "[[module ListPages created_at<\"2018.12.26\" updated_at>=\"2021.2.16\" ",
+            "rating>=\"-7\" votes!=\"0\"]]\n",
             "%%title_linked%%\n[[/module]]",
         ),
         concat!(
