@@ -2268,7 +2268,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
                     context.render_generated_html,
                     compat_html,
                 ),
-                "_tags" => tags.join(" "),
+                "_tags" => hidden_tags.join(" "),
                 "category" => context.category.to_owned(),
                 "size" => context
                     .page_wikitext_scalar_count

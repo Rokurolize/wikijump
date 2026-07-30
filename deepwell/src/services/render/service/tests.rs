@@ -4503,6 +4503,45 @@ fn render_list_pages_title_variables_through_outer_pipeline(
 }
 
 #[test]
+fn list_pages_plain_tag_variables_keep_visible_and_hidden_tags_disjoint() {
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("Tag matrix".to_owned()),
+        alt_title: None,
+        slug: Some("tag-matrix".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(vec![
+            "visible-one".to_owned(),
+            "_hidden-one".to_owned(),
+            "visible-two".to_owned(),
+            "_hidden-two".to_owned(),
+        ]),
+        created_at: None,
+        created_by: None,
+        updated_at: None,
+        updated_by: None,
+        score: None,
+    };
+    let user_displays = BTreeMap::new();
+    let data_form_values = BTreeMap::new();
+    let context =
+        list_pages_substitution_context(20, &user_displays, None, &data_form_values);
+
+    assert_eq!(
+        substitute_list_pages_variables(
+            "VISIBLE=%%tags%%|HIDDEN=%%_tags%%",
+            &page,
+            1,
+            1,
+            &context,
+        ),
+        "VISIBLE=visible-one visible-two|HIDDEN=_hidden-one _hidden-two",
+    );
+}
+
+#[test]
 fn list_pages_title_variables_match_live_sanitization_and_context() {
     let rendered = render_list_pages_title_variables_through_outer_pipeline(
         "**BOLD** //ITALIC// __UNDER__ --STRIKE--",

@@ -392,6 +392,7 @@ async fn wikidot_ajax_listpages_returns_unwrapped_client_rows() {
             "title": "AJAX ListPages Target",
             "alt_title": null,
             "slug": TARGET_SLUG,
+            "tags": ["visible-listpages-tag", "_hidden-listpages-tag"],
             "layout": "wikidot",
             "revision_comments": "AJAX ListPages compatibility smoke test",
             "user_id": ADMIN_USER_ID,
@@ -514,6 +515,20 @@ async fn wikidot_ajax_listpages_returns_unwrapped_client_rows() {
     assert!(
         output.body.contains(r#"class="set category"><span class="name">category</span> <span class="value">_default</span>"#),
         "AJAX ListPages should substitute the matched page category: {}",
+        output.body,
+    );
+    assert!(
+        output.body.contains(
+            r#"class="set tags"><span class="name">tags</span> <span class="value">visible-listpages-tag</span>"#,
+        ),
+        "AJAX ListPages should emit only visible tags through %%tags%%: {}",
+        output.body,
+    );
+    assert!(
+        output.body.contains(
+            r#"class="set _tags"><span class="name">_tags</span> <span class="value">_hidden-listpages-tag</span>"#,
+        ),
+        "AJAX ListPages should emit only hidden tags through %%_tags%%: {}",
         output.body,
     );
     assert!(
@@ -1595,6 +1610,24 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
     assert!(
         static_preview.contains(&format!("ROW {TARGET_SLUG}")),
         "an unsaved preview should still query its site:\n{static_preview}",
+    );
+
+    let unknown_variable_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\"]]\nKNOWN=%%fullname%%|UNKNOWN=%%unsupported%%\n[[/module]]",
+        ),
+    )
+    .await
+    .expect("an unknown row variable should not reject a valid ListPages body")
+    .html_output
+    .body;
+    assert!(
+        unknown_variable_preview
+            .contains(&format!("KNOWN={TARGET_SLUG}|UNKNOWN=%%unsupported%%",)),
+        "unknown variables should remain literal while known variables execute:\n{unknown_variable_preview}",
     );
 
     let tabbed_preview = RenderService::render_wikidot_page_preview(

@@ -284,7 +284,9 @@ impl ListPagesTemplatePlan {
         let mut rating_only = true;
 
         for captures in LISTPAGES_VARIABLE_REGEX.captures_iter(body) {
-            let variable = ListPagesVariable::parse(&captures["name"])?;
+            let Some(variable) = ListPagesVariable::parse(&captures["name"]) else {
+                continue;
+            };
             if !variable.supports_suffix(
                 captures.name("argument").map(|matched| matched.as_str()),
                 captures.name("length").map(|matched| matched.as_str()),
@@ -586,9 +588,17 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unknown_names_but_preserves_known_invalid_suffixes() {
-        assert!(ListPagesTemplatePlan::compile("%%unsupported%%").is_none());
-        assert!(ListPagesTemplatePlan::compile("%%createdbyunix%%").is_none());
+    fn preserves_unknown_names_without_hiding_known_variable_dependencies() {
+        let plan = ListPagesTemplatePlan::compile(
+            "%%unsupported%%|%%created_at%%|%%createdbyunix%%",
+        )
+        .expect("unknown variable names should remain local to their tokens");
+
+        assert_eq!(
+            plan.body(),
+            "%%unsupported%%|%%created_at%%|%%createdbyunix%%",
+        );
+        assert!(plan.uses_created_at());
         assert!(ListPagesTemplatePlan::compile("%%form_data%%").is_some());
         assert!(ListPagesTemplatePlan::compile("%%form_raw%%").is_some());
     }
