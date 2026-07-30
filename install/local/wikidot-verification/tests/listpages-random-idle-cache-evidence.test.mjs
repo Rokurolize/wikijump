@@ -19,6 +19,15 @@ test("ListPages random live evidence preserves the sliding idle-cache proof", as
   assert.equal(artifact.provenance.authenticated, false);
   assert.equal(artifact.provenance.mutated, false);
   assert.equal(artifact.verdict, "passed");
+  assert.deepEqual(
+    artifact.cases.map(({ case_id }) => case_id),
+    [
+      "listpages-random-sliding-idle-window",
+      "listpages-random-module-body-key",
+      "listpages-random-idle-expiration",
+      "listpages-random-independent-pager-pages",
+    ],
+  );
   assert.equal(window.observed_unix_seconds.at(-1) - window.observed_unix_seconds[0], 165);
   assert.ok(window.span_seconds > 120);
   assert.ok(window.maximum_inter_observation_gap_seconds < 60);

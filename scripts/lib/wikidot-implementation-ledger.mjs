@@ -688,9 +688,10 @@ export function validateWikidotImplementationLedger({
     ledger.schema === WIKIDOT_IMPLEMENTATION_LEDGER_SCHEMA,
     "Unexpected implementation ledger schema",
   );
+  const expectedCatalogSha256 = sha256(rawCatalog);
   invariant(
-    ledger.catalog_sha256 === sha256(rawCatalog),
-    "Implementation ledger catalog hash is stale",
+    ledger.catalog_sha256 === expectedCatalogSha256,
+    `Implementation ledger catalog hash is stale; expected ${expectedCatalogSha256}`,
   );
 
   const catalogIds = catalog.features.map((feature) => feature.id).sort();

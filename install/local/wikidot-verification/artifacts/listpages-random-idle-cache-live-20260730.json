@@ -24,6 +24,24 @@
     "perPage": 5,
     "module_body": "%%fullname%%\\n"
   },
+  "cases": [
+    {
+      "case_id": "listpages-random-sliding-idle-window",
+      "claim": "Repeated hits less than 60 seconds apart renewed one invocation key and preserved byte-identical output for 165 seconds."
+    },
+    {
+      "case_id": "listpages-random-module-body-key",
+      "claim": "Otherwise identical requests with different module bodies received independent random selections."
+    },
+    {
+      "case_id": "listpages-random-idle-expiration",
+      "claim": "Untouched invocation keys selected new orders after a 70-second idle interval."
+    },
+    {
+      "case_id": "listpages-random-independent-pager-pages",
+      "claim": "Ajax pager page p participates in cache identity; pages one and two are independently randomized and may overlap."
+    }
+  ],
   "same_key_sliding_idle_window": {
     "html_sha256": "76e5de52464d6762624e040c999f9c6463b5dd8d04357eb312e52920279eb553",
     "rows": [

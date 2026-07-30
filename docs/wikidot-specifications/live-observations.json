@@ -2285,6 +2285,66 @@
           ]
         }
       ]
+    },
+    {
+      "id": "listpages-random-idle-cache-live-20260730",
+      "title": "Random ListPages uses a sliding idle cache keyed by the complete invocation and pager page",
+      "feature_ids": [
+        "module-listpages"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-07-30",
+      "analysis": "The frozen documentation states that random ListPages results are cached for one minute, but does not define whether the lifetime is fixed or sliding, what participates in the key, or how Ajax pagination composes with the cache. Repeated anonymous Ajax Module Connector requests showed byte-identical output for 165 seconds while every gap remained below 60 seconds, independent selections for different module bodies, new selections after 70 seconds of idleness, and independent randomization for pager pages selected by p.",
+      "normative_behavior": [
+        "A cache hit renews the approximately 60-second idle lifetime for the complete random ListPages invocation.",
+        "The rendered module body participates in cache identity; otherwise identical selectors with different bodies receive independent random selections.",
+        "After at least 60 seconds without a hit, the same invocation key may select a new order.",
+        "Ajax parameter p is request pager state and participates in random cache identity. Separate pager pages are randomized independently and may overlap.",
+        "Wikijump caches only the random seed. Candidate rows and view permissions must be reevaluated for every request."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-random-idle-cache-live-20260730.json",
+          "sha256": "8fc7ac4364460077573be8399600593b834c7220c0cf7437ad6b58ec5eb9d3be",
+          "case_ids": [
+            "listpages-random-sliding-idle-window",
+            "listpages-random-module-body-key",
+            "listpages-random-idle-expiration",
+            "listpages-random-independent-pager-pages"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "listpages-p8-temporal-boundary-live-20260730",
+      "title": "Large ListPages requests expose a temporal gateway boundary with atomic failure",
+      "feature_ids": [
+        "module-listpages"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-07-30",
+      "analysis": "Controlled anonymous Ajax and preview probes measured large one-row templates and dense repeated ListPages modules. Identical 245760-byte and 249856-byte templates each both completed and returned HTTP 504 in separate trials, while failures clustered near 28 seconds. A 2048-module preview returned all markers and a 4096-module preview timed out. Successful responses were complete; failed requests exposed no partial JSON body or partial generated output. This is a temporal or gateway boundary, not a deterministic public byte or module-count cap.",
+      "normative_behavior": [
+        "A successful large-template response is complete and contains both authored boundary markers exactly once.",
+        "Near the production processing boundary, the same request size can either complete or return HTTP 504; compatibility must not model the observation as an exact public byte limit.",
+        "At least 2048 one-row ListPages modules can complete in one preview, while the observed 4096-module request returned HTTP 504 near 28 seconds.",
+        "A failed request does not expose a partial JSON response or partial generated module output to the client.",
+        "Wikijump may enforce lower deterministic safety limits, but must label them as local safety invariants and preserve atomic, controlled failure rather than claim they equal Wikidot hard limits."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json",
+          "sha256": "f324d01d811cd4790be10e856c2027c496e978b9efa5dcecf4418a5cc5db5d4d",
+          "case_ids": [
+            "listpages-p8-template-complete-success",
+            "listpages-p8-template-same-size-mixed-outcome",
+            "listpages-p8-template-gateway-timeout",
+            "listpages-p8-module-count-through-2048",
+            "listpages-p8-module-count-4096-timeout",
+            "listpages-p8-atomic-failure"
+          ]
+        }
+      ]
     }
   ]
 }

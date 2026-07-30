@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-07-30",
-  "catalog_sha256": "8202be58678c7a3bf2359667e00593f94fd3de1cfeba397be16a8c6c91f693fc",
+  "catalog_sha256": "fa1d1e336de0bc98d86bde63ecebd7c09b81280dc384581156ba1376fe153677",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
