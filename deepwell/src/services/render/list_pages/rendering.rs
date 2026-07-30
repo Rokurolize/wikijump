@@ -158,6 +158,7 @@ impl RenderService {
         let ListPagesExpansionOptions {
             current_site_id,
             current_page_id,
+            viewer_user_id,
             mut include_budget,
             url,
         } = options;
@@ -618,6 +619,7 @@ impl RenderService {
                             page_id: requested_current_page_id,
                             url,
                         },
+                        viewer_user_id,
                         page_info,
                         arguments,
                         &template,
@@ -720,6 +722,7 @@ impl RenderService {
                             page_id: requested_current_page_id,
                             url,
                         },
+                        viewer_user_id,
                         page_info,
                         arguments,
                         &template,
@@ -819,6 +822,7 @@ impl RenderService {
                 ListPagesExpansionOptions {
                     current_site_id: Some(current_site_id),
                     current_page_id: requested_current_page_id,
+                    viewer_user_id,
                     include_budget,
                     url,
                 },
@@ -1217,6 +1221,7 @@ impl RenderService {
     pub(in crate::services::render) async fn render_list_pages_block(
         ctx: &ServiceContext<'_>,
         page_context: ListPagesPageContext<'_>,
+        viewer_user_id: Option<i64>,
         page_info: &PageInfo<'_>,
         arguments: ListPagesArguments,
         template: &ListPagesTemplatePlan,
@@ -1583,7 +1588,7 @@ impl RenderService {
                 } else {
                     query_limit
                 };
-            let found = RenderRuntime::new(ctx)
+            let found = RenderRuntime::for_viewer(ctx, viewer_user_id)
                 .find_viewable_list_pages_rows(
                     query,
                     query_target.min(usize::MAX as u64) as usize,

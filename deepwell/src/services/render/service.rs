@@ -701,7 +701,10 @@ impl RenderService {
             &settings,
             RenderInnerOptions {
                 render_context: RenderContext::ajax_module(site_id),
-                viewer_user_id: None,
+                // The random ListPages cache retains only an order seed.
+                // Re-evaluate candidates and visibility for the current AMC
+                // actor on every request.
+                viewer_user_id: ctx.request().user_id,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 trace: None,
                 persist_compiled_text: false,
@@ -1206,6 +1209,7 @@ impl RenderService {
                 ListPagesExpansionOptions {
                     current_site_id,
                     current_page_id,
+                    viewer_user_id,
                     include_budget,
                     url,
                 },

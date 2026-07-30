@@ -41,6 +41,15 @@ use crate::services::page_query::OrderProperty;
 
 const RANDOM_LIST_PAGES_CACHE_PREFIX: &str = "listpages:random-order:v1";
 const RANDOM_LIST_PAGES_IDLE_TTL_SECONDS: u64 = 60;
+const RANDOM_LIST_PAGES_CACHE_SCRIPT: &str = r#"
+local seed = redis.call('GET', KEYS[1])
+if seed then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+    return seed
+end
+redis.call('SETEX', KEYS[1], ARGV[1], ARGV[2])
+return ARGV[2]
+"#;
 
 pub(in crate::services::render) async fn seed_random_list_pages_order(
     ctx: &ServiceContext<'_>,
@@ -61,38 +70,18 @@ pub(in crate::services::render) async fn seed_random_list_pages_order(
     let page = url
         .page_for_prefix(arguments.url_attr_prefix.as_deref())
         .unwrap_or(1);
-    let cache_key = random_order_cache_key(
-        site_id,
-        current_page_id,
-        ctx.request().user_id,
-        page,
-        arguments,
-        template,
-    );
+    let cache_key =
+        random_order_cache_key(site_id, current_page_id, page, arguments, template);
     let candidate_seed = Uuid::new_v4().as_simple().to_string();
     let mut redis = ctx.redis();
-    let seed: String = Script::new(
-        r#"
-        local seed = redis.call('GET', KEYS[1])
-        if seed then
-            redis.call('EXPIRE', KEYS[1], ARGV[1])
-            return seed
-        end
-        redis.call('SETEX', KEYS[1], ARGV[1], ARGV[2])
-        return ARGV[2]
-        "#,
-    )
-    .key(&cache_key)
-    .arg(RANDOM_LIST_PAGES_IDLE_TTL_SECONDS)
-    .arg(candidate_seed)
-    .invoke_async(&mut redis)
-    .await
-    .or_raise(|| {
-        Error::new(
-            "failed to read or renew the random ListPages order cache",
-            ErrorType::RedisQuery,
-        )
-    })?;
+    let seed = resolve_random_seed_cache_result(
+        Script::new(RANDOM_LIST_PAGES_CACHE_SCRIPT)
+            .key(&cache_key)
+            .arg(RANDOM_LIST_PAGES_IDLE_TTL_SECONDS)
+            .arg(candidate_seed)
+            .invoke_async(&mut redis)
+            .await,
+    )?;
 
     arguments
         .order
@@ -102,10 +91,20 @@ pub(in crate::services::render) async fn seed_random_list_pages_order(
     Ok(())
 }
 
+fn resolve_random_seed_cache_result(
+    result: redis::RedisResult<String>,
+) -> Result<String> {
+    result.or_raise(|| {
+        Error::new(
+            "failed to read or renew the random ListPages order cache",
+            ErrorType::RedisQuery,
+        )
+    })
+}
+
 fn random_order_cache_key(
     site_id: i64,
     current_page_id: Option<i64>,
-    viewer_user_id: Option<i64>,
     page: u32,
     arguments: &ListPagesArguments,
     template: &ListPagesTemplatePlan,
@@ -113,7 +112,6 @@ fn random_order_cache_key(
     let mut digest = Sha256::new();
     hash_part(&mut digest, b"site", site_id.to_string().as_bytes());
     hash_optional_i64(&mut digest, b"current-page", current_page_id);
-    hash_optional_i64(&mut digest, b"viewer", viewer_user_id);
     hash_part(&mut digest, b"pager-page", page.to_string().as_bytes());
 
     // This is an ephemeral, versioned key. Debug formatting is useful here
@@ -129,8 +127,9 @@ fn random_order_cache_key(
     hash_part(&mut digest, b"template-body", template.body().as_bytes());
     hash_optional_str(&mut digest, b"template-foot", template.foot_section());
 
+    let body_hash = hex::encode(Sha256::digest(template.body().as_bytes()));
     format!(
-        "{RANDOM_LIST_PAGES_CACHE_PREFIX}:{}",
+        "{RANDOM_LIST_PAGES_CACHE_PREFIX}:body={body_hash}:invocation={}",
         hex::encode(digest.finalize()),
     )
 }
@@ -176,38 +175,64 @@ mod tests {
     }
 
     #[test]
-    fn random_order_cache_key_binds_invocation_body_viewer_and_pager_page() {
+    fn random_order_cache_key_binds_complete_invocation_and_pager_page() {
         let arguments = arguments();
         let body = template("%%fullname%%");
-        let base = random_order_cache_key(1, Some(2), None, 1, &arguments, &body);
+        let base = random_order_cache_key(1, Some(2), 1, &arguments, &body);
 
         assert_eq!(
             base,
-            random_order_cache_key(1, Some(2), None, 1, &arguments, &body),
+            random_order_cache_key(1, Some(2), 1, &arguments, &body),
         );
         assert_ne!(
             base,
-            random_order_cache_key(
-                1,
-                Some(2),
-                None,
-                1,
-                &arguments,
-                &template("%%title%%")
-            ),
+            random_order_cache_key(1, Some(2), 1, &arguments, &template("%%title%%")),
         );
         assert_ne!(
             base,
-            random_order_cache_key(1, Some(2), Some(3), 1, &arguments, &body),
+            random_order_cache_key(1, Some(3), 1, &arguments, &body),
         );
         assert_ne!(
             base,
-            random_order_cache_key(1, Some(2), None, 2, &arguments, &body),
+            random_order_cache_key(1, Some(2), 2, &arguments, &body),
+        );
+        let different_arguments = parse_list_pages_arguments(
+            r#" category="doc" order="random" limit="19" perPage="10""#,
+        )
+        .expect("different test ListPages arguments should parse");
+        assert_ne!(
+            base,
+            random_order_cache_key(1, Some(2), 1, &different_arguments, &body),
+        );
+        assert!(
+            base.contains(&format!(
+                "body={}:",
+                hex::encode(Sha256::digest(body.body().as_bytes())),
+            )),
+            "the opaque body fingerprint keeps TTL diagnostics attributable",
         );
     }
 
     #[test]
     fn random_order_cache_uses_the_observed_one_minute_idle_lifetime() {
         assert_eq!(RANDOM_LIST_PAGES_IDLE_TTL_SECONDS, 60);
+        assert!(RANDOM_LIST_PAGES_CACHE_SCRIPT.contains("EXPIRE"));
+        assert!(RANDOM_LIST_PAGES_CACHE_SCRIPT.contains("SETEX"));
+    }
+
+    #[test]
+    fn redis_failures_remain_typed_and_fail_closed() {
+        let redis_error = redis::RedisError::from((
+            redis::ErrorKind::Io,
+            "controlled random-cache failure",
+        ));
+        let error = resolve_random_seed_cache_result(Err(redis_error))
+            .expect_err("a Redis failure must not silently choose an uncached order");
+
+        assert_eq!(error.error_type, ErrorType::RedisQuery);
+        assert_eq!(
+            error.message,
+            "failed to read or renew the random ListPages order cache",
+        );
     }
 }

@@ -39,11 +39,25 @@ use std::future::Future;
 #[derive(Debug)]
 pub(super) struct RenderRuntime<'context, 'transaction> {
     ctx: &'context ServiceContext<'transaction>,
+    viewer_user_id: Option<i64>,
 }
 
 impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
     pub(super) fn new(ctx: &'context ServiceContext<'transaction>) -> Self {
-        Self { ctx }
+        Self {
+            ctx,
+            viewer_user_id: None,
+        }
+    }
+
+    pub(super) fn for_viewer(
+        ctx: &'context ServiceContext<'transaction>,
+        viewer_user_id: Option<i64>,
+    ) -> Self {
+        Self {
+            ctx,
+            viewer_user_id,
+        }
     }
 
     pub(super) async fn find_viewable_list_pages_rows(
@@ -55,6 +69,7 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
     ) -> Result<ViewableListPagesRows> {
         find_viewable_list_pages_rows(
             self.ctx,
+            self.viewer_user_id,
             query,
             target_count,
             permission_cache,
@@ -69,8 +84,14 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
         target_count: usize,
         permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
     ) -> Result<ViewableCountPagesRows> {
-        find_viewable_count_pages_rows(self.ctx, query, target_count, permission_cache)
-            .await
+        find_viewable_count_pages_rows(
+            self.ctx,
+            self.viewer_user_id,
+            query,
+            target_count,
+            permission_cache,
+        )
+        .await
     }
 
     pub(super) async fn fetch_include_source(

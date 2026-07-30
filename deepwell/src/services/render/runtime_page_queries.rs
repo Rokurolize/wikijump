@@ -57,6 +57,7 @@ pub(in crate::services::render) struct ViewableListPagesRows {
 
 pub(in crate::services::render) async fn find_viewable_list_pages_rows(
     ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
     query: PageQuery<'_>,
     target_count: usize,
     permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
@@ -64,6 +65,7 @@ pub(in crate::services::render) async fn find_viewable_list_pages_rows(
 ) -> Result<ViewableListPagesRows> {
     let found = find_viewable_render_page_rows(
         ctx,
+        viewer_user_id,
         query,
         target_count,
         permission_cache,
@@ -80,12 +82,14 @@ pub(in crate::services::render) async fn find_viewable_list_pages_rows(
 
 pub(in crate::services::render) async fn find_viewable_count_pages_rows(
     ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
     query: PageQuery<'_>,
     target_count: usize,
     permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
 ) -> Result<ViewableCountPagesRows> {
     find_viewable_render_page_rows(
         ctx,
+        viewer_user_id,
         query,
         target_count,
         permission_cache,
@@ -97,6 +101,7 @@ pub(in crate::services::render) async fn find_viewable_count_pages_rows(
 
 async fn find_viewable_render_page_rows(
     ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
     query: PageQuery<'_>,
     target_count: usize,
     permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
@@ -119,8 +124,13 @@ async fn find_viewable_render_page_rows(
             found.metadata.cap_exceeded = false;
         }
         let raw_count = found.pages.pages.len();
-        let mut pages =
-            filter_viewable_rows(ctx, found.pages.pages, permission_cache).await?;
+        let mut pages = filter_viewable_rows(
+            ctx,
+            viewer_user_id,
+            found.pages.pages,
+            permission_cache,
+        )
+        .await?;
         let view_permission_filtering_applied = pages.len() != raw_count;
         pages.truncate(target_count);
         return Ok(ViewableCountPagesRows {
@@ -165,8 +175,13 @@ async fn find_viewable_render_page_rows(
         if raw_count == 0 {
             break;
         }
-        let viewable =
-            filter_viewable_rows(ctx, found.pages.pages, permission_cache).await?;
+        let viewable = filter_viewable_rows(
+            ctx,
+            viewer_user_id,
+            found.pages.pages,
+            permission_cache,
+        )
+        .await?;
         view_permission_filtering_applied |= viewable.len() != raw_count;
         pages.extend(viewable);
         if raw_count < batch_limit as usize {
@@ -188,6 +203,7 @@ async fn find_viewable_render_page_rows(
 
 async fn filter_viewable_rows(
     ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
     pages: Vec<FoundPageRow>,
     category_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
 ) -> Result<Vec<FoundPageRow>> {
@@ -200,7 +216,7 @@ async fn filter_viewable_rows(
             let can_view = PermissionService::check_user_can(
                 ctx,
                 &CheckPermissionContext {
-                    user_id: None,
+                    user_id: viewer_user_id,
                     site_id: page.site_id,
                     page_reference: Some(Reference::Id(page.page_id)),
                 },

@@ -124,6 +124,7 @@ pub(in crate::services::render) struct ListPagesContentCache {
 pub(in crate::services::render) struct ListPagesExpansionOptions<'a> {
     pub(in crate::services::render) current_site_id: Option<i64>,
     pub(in crate::services::render) current_page_id: Option<i64>,
+    pub(in crate::services::render) viewer_user_id: Option<i64>,
     pub(in crate::services::render) include_budget: IncludeExpansionBudget,
 
     /// The Wikidot URL path arguments this request carried.

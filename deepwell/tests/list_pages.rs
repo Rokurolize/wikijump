@@ -1884,6 +1884,8 @@ async fn wikidot_ajax_listpages_p_parameter_selects_the_rendered_page() {
         "Wikidot AMC's p parameter must route through the ordinary ListPages pager: {}",
         output.body,
     );
+}
+
 #[tokio::test]
 async fn listpages_legacy_comparisons_and_unresolved_url_selectors_execute_in_preview() {
     let runner = TestRunner::setup().await;
