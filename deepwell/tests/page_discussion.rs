@@ -17,10 +17,13 @@ use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, ANONYMOUS_USER_ID};
 use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
 use deepwell::services::forum_thread::{CreateForumThread, GetForumThread};
-use deepwell::services::{ForumService, ForumThreadService, RequestContext};
+use deepwell::services::{
+    ForumService, ForumThreadService, PageService, RequestContext, ServiceContext,
+};
 use deepwell::types::Reference;
-use sea_orm::{ConnectionTrait, Statement, Value};
+use sea_orm::{ConnectionTrait, Statement, TransactionTrait, Value};
 use serde_json::json;
+use std::time::Duration;
 
 fn set_actor(
     runner: &mut TestRunner,
@@ -416,5 +419,486 @@ async fn wikidot_page_discussion_rejects_cross_site_thread_associations() {
         runner,
         wikidot_page_discussion_create,
         json!({ "site_id": test_site_id, "page_id": page.page_id }),
+    );
+}
+
+#[tokio::test]
+async fn page_discussion_page_lookup_holds_an_exclusive_row_lock() {
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let page = PageService::get(runner.context(), site_id, Reference::from("home"))
+        .await
+        .expect("the seeded test home page should exist");
+    let state = runner.state().clone();
+
+    let first_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("the first lock transaction should start");
+    let first_context = ServiceContext::new(&state, &first_transaction);
+    let first_page =
+        PageService::get_direct_optional_for_update(&first_context, page.page_id, false)
+            .await
+            .expect("the first page lock should succeed")
+            .expect("the seeded page should remain live");
+    assert_eq!(first_page.page_id, page.page_id);
+
+    let second_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("the competing lock transaction should start");
+    let second_context = ServiceContext::new(&state, &second_transaction);
+    let mut second_lock = Box::pin(PageService::get_direct_optional_for_update(
+        &second_context,
+        page.page_id,
+        false,
+    ));
+    assert!(
+        tokio::time::timeout(Duration::from_millis(100), second_lock.as_mut())
+            .await
+            .is_err(),
+        "a competing page mutation must wait for the first request transaction",
+    );
+
+    drop(first_context);
+    first_transaction
+        .rollback()
+        .await
+        .expect("the first lock transaction should roll back");
+    let second_page = tokio::time::timeout(Duration::from_secs(2), second_lock.as_mut())
+        .await
+        .expect("the competing page lock should proceed after release")
+        .expect("the competing page lookup should succeed")
+        .expect("the seeded page should remain live");
+    assert_eq!(second_page.page_id, page.page_id);
+    drop(second_lock);
+    drop(second_context);
+    second_transaction
+        .rollback()
+        .await
+        .expect("the competing lock transaction should roll back");
+}
+
+#[tokio::test]
+async fn imported_page_discussion_pointer_can_be_claimed_by_only_one_page() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Shared imported discussion fixture group".to_owned(),
+            description: "Shared imported discussion fixture group".to_owned(),
+            visible: false,
+            sort_index: None,
+            from_wikidot: true,
+        },
+    )
+    .await
+    .expect("the shared-pointer forum group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Shared imported per-page discussions".to_owned(),
+            description: "Shared imported per-page discussions".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: true,
+        },
+    )
+    .await
+    .expect("the shared-pointer forum category should be created");
+
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Reference::from("page-discussion-pointer-a"),
+    );
+    let first_page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "First imported pointer fixture",
+            "title": "First imported pointer fixture",
+            "alt_title": null,
+            "slug": "page-discussion-pointer-a",
+            "layout": "wikidot",
+            "revision_comments": "first imported pointer fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Reference::from("page-discussion-pointer-b"),
+    );
+    let second_page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Second imported pointer fixture",
+            "title": "Second imported pointer fixture",
+            "alt_title": null,
+            "slug": "page-discussion-pointer-b",
+            "layout": "wikidot",
+            "revision_comments": "second imported pointer fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: None,
+            title: "Shared imported page discussion".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: true,
+        },
+    )
+    .await
+    .expect("the unclaimed imported discussion should be created");
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "UPDATE page SET discussion_thread_id = $1 ",
+                    "WHERE page_id IN ($2, $3)",
+                ),
+                [
+                    Value::from(thread.forum_thread_id),
+                    Value::from(first_page.page_id),
+                    Value::from(second_page.page_id),
+                ],
+            ))
+            .await
+            .expect("both import-style page pointers should be installed");
+    }
+
+    set_actor(
+        &mut runner,
+        None,
+        site_id,
+        Reference::Id(first_page.page_id),
+    );
+    let claimed = run_endpoint!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": first_page.page_id }),
+    )
+    .expect("the first page should atomically claim the imported discussion");
+    assert_eq!(claimed.thread_id, thread.forum_thread_id);
+
+    set_actor(
+        &mut runner,
+        None,
+        site_id,
+        Reference::Id(second_page.page_id),
+    );
+    run_endpoint_err!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": second_page.page_id }),
+    );
+    let stored_thread = ForumThreadService::get(
+        runner.context(),
+        GetForumThread {
+            forum_thread_id: thread.forum_thread_id,
+            include_deleted: false,
+        },
+    )
+    .await
+    .expect("the claimed imported discussion should remain active");
+    assert_eq!(stored_thread.page_id, Some(first_page.page_id));
+}
+
+#[tokio::test]
+async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let first_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Page discussion lifecycle group one".to_owned(),
+            description: "Page discussion lifecycle group one".to_owned(),
+            visible: false,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("the first lifecycle forum group should be created");
+    let first_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: first_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Page discussion lifecycle category one".to_owned(),
+            description: "Page discussion lifecycle category one".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("the first lifecycle forum category should be created");
+
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Reference::from("page-discussion-container-a"),
+    );
+    let first_page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Container lifecycle fixture A",
+            "title": "Container lifecycle fixture A",
+            "alt_title": null,
+            "slug": "page-discussion-container-a",
+            "layout": "wikidot",
+            "revision_comments": "container lifecycle fixture A",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_actor(
+        &mut runner,
+        None,
+        site_id,
+        Reference::Id(first_page.page_id),
+    );
+    let first_discussion = run_endpoint!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": first_page.page_id }),
+    )
+    .expect("the first page discussion should be created");
+
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "UPDATE forum_category SET deleted_by = $1, deleted_at = now() ",
+                    "WHERE forum_category_id = $2",
+                ),
+                [
+                    Value::from(ADMIN_USER_ID),
+                    Value::from(first_category.forum_category_id),
+                ],
+            ))
+            .await
+            .expect("the first page discussion category should be soft-deleted");
+    }
+    run_endpoint_err!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": first_page.page_id }),
+    );
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                "UPDATE forum_category SET deleted_by = NULL, deleted_at = NULL WHERE forum_category_id = $1",
+                [Value::from(first_category.forum_category_id)],
+            ))
+            .await
+            .expect("the first page discussion category should be restored");
+    }
+    let restored_category = run_endpoint!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": first_page.page_id }),
+    )
+    .expect("the active category should make the existing discussion resolvable");
+    assert_eq!(restored_category.thread_id, first_discussion.thread_id);
+
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "UPDATE forum_group SET deleted_by = $1, deleted_at = now() ",
+                    "WHERE forum_group_id = $2",
+                ),
+                [
+                    Value::from(ADMIN_USER_ID),
+                    Value::from(first_group.forum_group_id),
+                ],
+            ))
+            .await
+            .expect("the first page discussion group should be soft-deleted");
+    }
+    run_endpoint_err!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": first_page.page_id }),
+    );
+
+    let second_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Page discussion lifecycle group two".to_owned(),
+            description: "Page discussion lifecycle group two".to_owned(),
+            visible: false,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("the second lifecycle forum group should be created");
+    let second_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: second_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Page discussion lifecycle category two".to_owned(),
+            description: "Page discussion lifecycle category two".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("the second lifecycle forum category should be created");
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Reference::from("page-discussion-container-b"),
+    );
+    let second_page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Container lifecycle fixture B",
+            "title": "Container lifecycle fixture B",
+            "alt_title": null,
+            "slug": "page-discussion-container-b",
+            "layout": "wikidot",
+            "revision_comments": "container lifecycle fixture B",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_actor(
+        &mut runner,
+        None,
+        site_id,
+        Reference::Id(second_page.page_id),
+    );
+    let second_discussion = run_endpoint!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": second_page.page_id }),
+    )
+    .expect("a category in an active group should be selected");
+    let stored_second_discussion = ForumThreadService::get(
+        runner.context(),
+        GetForumThread {
+            forum_thread_id: second_discussion.thread_id,
+            include_deleted: false,
+        },
+    )
+    .await
+    .expect("the second discussion should remain active");
+    assert_eq!(
+        stored_second_discussion.forum_category_id,
+        second_category.forum_category_id,
+    );
+
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "UPDATE forum_group SET deleted_by = $1, deleted_at = now() ",
+                    "WHERE forum_group_id = $2",
+                ),
+                [
+                    Value::from(ADMIN_USER_ID),
+                    Value::from(second_group.forum_group_id),
+                ],
+            ))
+            .await
+            .expect("the second page discussion group should be soft-deleted");
+    }
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Reference::from("page-discussion-container-c"),
+    );
+    let third_page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Container lifecycle fixture C",
+            "title": "Container lifecycle fixture C",
+            "alt_title": null,
+            "slug": "page-discussion-container-c",
+            "layout": "wikidot",
+            "revision_comments": "container lifecycle fixture C",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_actor(
+        &mut runner,
+        None,
+        site_id,
+        Reference::Id(third_page.page_id),
+    );
+    run_endpoint_err!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": third_page.page_id }),
     );
 }

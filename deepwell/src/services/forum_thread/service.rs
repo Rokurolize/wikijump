@@ -25,7 +25,10 @@ use super::structs::{
     GetForumThreads, TouchForumThread, UpdateForumThread, UpdateForumThreadBody,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::models::forum_category::{self, Entity as ForumCategory};
+use crate::models::forum_category::{
+    self, Entity as ForumCategory, Model as ForumCategoryModel,
+};
+use crate::models::forum_group::Entity as ForumGroup;
 use crate::models::forum_thread::{
     self, Entity as ForumThread, Model as ForumThreadModel,
 };
@@ -66,6 +69,7 @@ impl ForumThreadService {
 
         let pointed_thread = match page.discussion_thread_id {
             Some(thread_id) => ForumThread::find_by_id(thread_id)
+                .lock_exclusive()
                 .one(txn)
                 .await
                 .or_raise(make_error)?,
@@ -73,6 +77,7 @@ impl ForumThreadService {
         };
         let associated_thread = ForumThread::find()
             .filter(forum_thread::Column::PageId.eq(page.page_id))
+            .lock_exclusive()
             .one(txn)
             .await
             .or_raise(make_error)?;
@@ -98,6 +103,7 @@ impl ForumThreadService {
                     ErrorType::ForumThread,
                 ));
             }
+            Self::ensure_page_discussion_container_active(ctx, &thread, page).await?;
 
             if let Some(associated) = associated_thread.as_ref() {
                 Self::ensure_page_discussion_site(associated, page)?;
@@ -114,9 +120,32 @@ impl ForumThreadService {
                 }
             }
             if thread.page_id != Some(page.page_id) {
-                let mut model = thread.clone().into_active_model();
-                model.page_id = Set(Some(page.page_id));
-                thread = model.update(txn).await.or_raise(make_error)?;
+                let claim = ForumThread::update_many()
+                    .set(forum_thread::ActiveModel {
+                        page_id: Set(Some(page.page_id)),
+                        ..Default::default()
+                    })
+                    .filter(
+                        Condition::all()
+                            .add(
+                                forum_thread::Column::ForumThreadId
+                                    .eq(thread.forum_thread_id),
+                            )
+                            .add(forum_thread::Column::PageId.is_null()),
+                    )
+                    .exec(txn)
+                    .await
+                    .or_raise(make_error)?;
+                if claim.rows_affected != 1 {
+                    bail!(Error::new(
+                        format!(
+                            "page discussion thread ID {} could not be claimed by page ID {}",
+                            thread.forum_thread_id, page.page_id,
+                        ),
+                        ErrorType::ForumThread,
+                    ));
+                }
+                thread.page_id = Some(page.page_id);
             }
             return Ok(thread);
         }
@@ -132,6 +161,7 @@ impl ForumThreadService {
                     ErrorType::ForumThread,
                 ));
             }
+            Self::ensure_page_discussion_container_active(ctx, &thread, page).await?;
             if page.discussion_thread_id != Some(thread.forum_thread_id) {
                 let mut page = page.clone().into_active_model();
                 page.discussion_thread_id = Set(Some(thread.forum_thread_id));
@@ -140,24 +170,7 @@ impl ForumThreadService {
             return Ok(thread);
         }
 
-        let category = ForumCategory::find()
-            .filter(forum_category::Column::SiteId.eq(page.site_id))
-            .filter(forum_category::Column::DeletedAt.is_null())
-            .filter(forum_category::Column::PerPageDiscussion.eq(true))
-            .order_by_asc(forum_category::Column::SortIndex)
-            .order_by_asc(forum_category::Column::ForumCategoryId)
-            .one(txn)
-            .await
-            .or_raise(make_error)?
-            .ok_or_else(|| {
-                Error::new(
-                    format!(
-                        "site ID {} has no active per-page discussion forum category",
-                        page.site_id,
-                    ),
-                    ErrorType::ForumCategory,
-                )
-            })?;
+        let category = Self::active_page_discussion_category(ctx, page.site_id).await?;
 
         ForumThread::insert(forum_thread::ActiveModel {
             forum_category_id: Set(category.forum_category_id),
@@ -185,6 +198,7 @@ impl ForumThreadService {
         let thread = ForumThread::find()
             .filter(forum_thread::Column::PageId.eq(page.page_id))
             .filter(forum_thread::Column::DeletedAt.is_null())
+            .lock_exclusive()
             .one(txn)
             .await
             .or_raise(make_error)?
@@ -194,6 +208,79 @@ impl ForumThreadService {
         page.discussion_thread_id = Set(Some(thread.forum_thread_id));
         page.update(txn).await.or_raise(make_error)?;
         Ok(thread)
+    }
+
+    async fn active_page_discussion_category(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+    ) -> Result<ForumCategoryModel> {
+        let txn = ctx.transaction();
+        let categories = ForumCategory::find()
+            .filter(forum_category::Column::SiteId.eq(site_id))
+            .filter(forum_category::Column::DeletedAt.is_null())
+            .filter(forum_category::Column::PerPageDiscussion.eq(true))
+            .order_by_asc(forum_category::Column::SortIndex)
+            .order_by_asc(forum_category::Column::ForumCategoryId)
+            .lock_exclusive()
+            .all(txn)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!(
+                        "failed to find active per-page discussion categories in site ID {}",
+                        site_id,
+                    ),
+                    ErrorType::ForumCategory,
+                )
+            })?;
+
+        for category in categories {
+            let group = ForumGroup::find_by_id(category.forum_group_id)
+                .lock_exclusive()
+                .one(txn)
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        format!(
+                            "failed to load forum group ID {} for page discussion category ID {}",
+                            category.forum_group_id, category.forum_category_id,
+                        ),
+                        ErrorType::ForumGroup,
+                    )
+                })?
+                .ok_or_else(|| {
+                    Error::new(
+                        format!(
+                            "page discussion category ID {} has no forum group ID {}",
+                            category.forum_category_id, category.forum_group_id,
+                        ),
+                        ErrorType::ForumGroup,
+                    )
+                })?;
+            if group.site_id != site_id {
+                bail!(Error::new(
+                    format!(
+                        "page discussion category ID {} belongs to site ID {}, but group ID {} belongs to site ID {}",
+                        category.forum_category_id,
+                        category.site_id,
+                        group.forum_group_id,
+                        group.site_id,
+                    ),
+                    ErrorType::ForumGroup,
+                ));
+            }
+            if group.deleted_at.is_none() {
+                return Ok(category);
+            }
+        }
+
+        bail!(Error::new(
+            format!(
+                "site ID {} has no active per-page discussion forum category in an active group",
+                site_id,
+            ),
+            ErrorType::ForumCategory,
+        ));
     }
 
     fn ensure_page_discussion_site(
@@ -210,6 +297,82 @@ impl ForumThreadService {
             ),
             ErrorType::ForumThread,
         ));
+    }
+
+    async fn ensure_page_discussion_container_active(
+        ctx: &ServiceContext<'_>,
+        thread: &ForumThreadModel,
+        page: &PageModel,
+    ) -> Result<()> {
+        let txn = ctx.transaction();
+        let category = ForumCategory::find_by_id(thread.forum_category_id)
+            .lock_exclusive()
+            .one(txn)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!(
+                        "failed to load forum category ID {} for page discussion thread ID {}",
+                        thread.forum_category_id, thread.forum_thread_id,
+                    ),
+                    ErrorType::ForumCategory,
+                )
+            })?
+            .ok_or_else(|| {
+                Error::new(
+                    format!(
+                        "page discussion thread ID {} has no forum category ID {}",
+                        thread.forum_thread_id, thread.forum_category_id,
+                    ),
+                    ErrorType::ForumCategory,
+                )
+            })?;
+        if category.deleted_at.is_some()
+            || category.site_id != page.site_id
+            || category.forum_group_id != thread.forum_group_id
+        {
+            bail!(Error::new(
+                format!(
+                    "page discussion thread ID {} belongs to an inactive or inconsistent forum category ID {}",
+                    thread.forum_thread_id, category.forum_category_id,
+                ),
+                ErrorType::ForumCategory,
+            ));
+        }
+
+        let group = ForumGroup::find_by_id(thread.forum_group_id)
+            .lock_exclusive()
+            .one(txn)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!(
+                        "failed to load forum group ID {} for page discussion thread ID {}",
+                        thread.forum_group_id, thread.forum_thread_id,
+                    ),
+                    ErrorType::ForumGroup,
+                )
+            })?
+            .ok_or_else(|| {
+                Error::new(
+                    format!(
+                        "page discussion thread ID {} has no forum group ID {}",
+                        thread.forum_thread_id, thread.forum_group_id,
+                    ),
+                    ErrorType::ForumGroup,
+                )
+            })?;
+        if group.deleted_at.is_some() || group.site_id != page.site_id {
+            bail!(Error::new(
+                format!(
+                    "page discussion thread ID {} belongs to inactive or cross-site forum group ID {}",
+                    thread.forum_thread_id, group.forum_group_id,
+                ),
+                ErrorType::ForumGroup,
+            ));
+        }
+
+        Ok(())
     }
 
     pub async fn create(

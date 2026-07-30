@@ -124,9 +124,10 @@ pub async fn wikidot_page_discussion_create(
     params: Params<'static>,
 ) -> Result<Option<WikidotPageDiscussionOutput>> {
     let input: WikidotPageDiscussionInput = parse!(params, Page);
-    let Some(page) = PageService::get_direct_optional(ctx, input.page_id, false)
-        .await
-        .or_raise(|| Error::new("failed to load discussion page", ErrorType::Page))?
+    let Some(page) =
+        PageService::get_direct_optional_for_update(ctx, input.page_id, false)
+            .await
+            .or_raise(|| Error::new("failed to load discussion page", ErrorType::Page))?
     else {
         return Ok(None);
     };
