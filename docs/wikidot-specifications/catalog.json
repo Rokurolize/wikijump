@@ -29,7 +29,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 55,
+    "observation_count": 57,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -2074,7 +2074,9 @@
         "listpages-literal-context-ownership",
         "listpages-separate-wrapper-false-only-booleans",
         "listpages-unknown-arguments-ignored",
-        "listpages-module-head-legacy-boundaries"
+        "listpages-module-head-legacy-boundaries",
+        "listpages-random-idle-cache-live-20260730",
+        "listpages-p8-temporal-boundary-live-20260730"
       ]
     },
     {

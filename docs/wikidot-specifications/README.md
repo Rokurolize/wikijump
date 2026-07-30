@@ -6,7 +6,7 @@ This directory is an exhaustive, documentation-derived implementation inventory 
 - `CATALOG.md` is the human-readable index.
 - `source-coverage.json` proves that all 1,806 corpus pages were enumerated and classified.
 - `live-observations.json` records reproducible live-Wikidot corrections that override conflicting or incomplete corpus claims.
-- `implementation-ledger.json` tracks status, seams, tests, implementation files, evidence, and blockers for every catalog feature.
+- `implementation-ledger.json` tracks status, seams, tests, implementation files, evidence, blockers, and the campaign's P1-P8 feature-property matrix.
 - `specifications/` contains exactly one English Markdown specification for every catalog item.
 - `IMPLEMENTATION_PROMPT.md` instructs a coding agent to implement the complete catalog using vertical-slice TDD.
 

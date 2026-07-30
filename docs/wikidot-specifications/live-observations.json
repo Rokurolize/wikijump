@@ -2285,6 +2285,53 @@
           ]
         }
       ]
+    },
+    {
+      "id": "listpages-random-idle-cache-live-20260730",
+      "title": "Random ListPages uses a sliding idle cache keyed by the complete invocation and pager page",
+      "feature_ids": [
+        "module-listpages"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-07-30",
+      "analysis": "Anonymous Ajax Module Connector probes preserve one random selection while the same complete invocation is reused with gaps below one minute, renew that idle lifetime on each hit, choose a new selection after an untouched seventy-second interval, and give different module bodies and pager pages independent identities.",
+      "normative_behavior": [
+        "A random ListPages invocation remains byte-stable while successive cache hits arrive less than approximately sixty seconds apart.",
+        "Each hit renews the approximately sixty-second idle lifetime rather than retaining a fixed creation-time deadline.",
+        "The module body and Ajax p pager page participate in cache identity.",
+        "Pager pages randomize independently and can overlap; they are not slices of one duplicate-free cached permutation.",
+        "Candidate membership and actor visibility are evaluated for each request rather than cached as final HTML."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-random-idle-cache-live-20260730.json",
+          "sha256": "0fa2335eb6c8caecba4767c4f09841a4bce3bffc17cac08fd286ca47a1099b8d",
+          "case_ids": []
+        }
+      ]
+    },
+    {
+      "id": "listpages-p8-temporal-boundary-live-20260730",
+      "title": "ListPages large responses encounter a temporal gateway boundary with atomic failure",
+      "feature_ids": [
+        "module-listpages"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-07-30",
+      "analysis": "Controlled anonymous ListPages probes near the large-response boundary do not support a fixed byte, row, or module threshold. Comparable sources can complete or terminate as an atomic HTTP 504 near twenty-eight seconds. Wikijump deterministic expansion limits are therefore a local safety invariant, not a claimed replica of a live fixed constant.",
+      "normative_behavior": [
+        "A successful large ListPages request returns its complete success markers and output.",
+        "A boundary failure is an atomic HTTP 504 response without partial ListPages output or success markers.",
+        "The observed boundary is time and gateway dependent near twenty-eight seconds, not a fixed byte, row, or module count.",
+        "Wikijump deterministic expansion budgets remain explicit local safety invariants and must preserve atomic failure."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json",
+          "sha256": "f324d01d811cd4790be10e856c2027c496e978b9efa5dcecf4418a5cc5db5d4d",
+          "case_ids": []
+        }
+      ]
     }
   ]
 }
