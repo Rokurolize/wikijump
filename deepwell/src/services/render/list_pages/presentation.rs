@@ -306,7 +306,7 @@ pub(in crate::services::render) fn format_list_pages_created_at(
         return String::new();
     };
     let created_at = created_at.to_offset(time::UtcOffset::UTC);
-    const DEFAULT_FORMAT: &str = "%e %b %Y, %H:%M";
+    const DEFAULT_FORMAT: &str = "%d %b %Y %H:%M";
     let format = format.unwrap_or(DEFAULT_FORMAT);
     // Wikidot's Ajax response always carries the default server-rendered text.
     // A requested display format belongs to the later ODate client phase and
