@@ -81,7 +81,8 @@ use super::include_variables::{
 #[cfg(test)]
 use super::list_pages::ResolvedListPagesAuthors;
 use super::list_pages::{
-    ListPagesExpansion, ListPagesExpansionOptions, build_wikidot_list_pages_module_source,
+    ListPagesExpansion, ListPagesExpansionOptions,
+    build_wikidot_list_pages_module_request,
 };
 use super::literal_regions::LiteralRegionIndex;
 use super::metacomponent::{
@@ -673,8 +674,10 @@ impl RenderService {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
-        let wikitext = build_wikidot_list_pages_module_source(module_body, parameters)
+        let request = build_wikidot_list_pages_module_request(module_body, parameters)
             .ok_or_raise(make_error)?;
+        let page = request.page;
+        let wikitext = request.source;
         let page_info = PageInfo {
             page: Cow::Borrowed("_ajax-module-connector"),
             category: None,
@@ -701,9 +704,13 @@ impl RenderService {
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 trace: None,
                 persist_compiled_text: false,
-                // An AMC module call carries its own parameters rather than a
-                // page path, so there is no URL argument to route here.
-                url: UrlArguments::default(),
+                // AMC carries pager state as `p`; selectors remain in the
+                // synthesized module head while `p` follows the ordinary page
+                // view path through UrlArguments.
+                url: UrlArguments {
+                    page,
+                    ..UrlArguments::default()
+                },
             },
         ))
         .await

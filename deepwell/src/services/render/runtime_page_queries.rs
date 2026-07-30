@@ -247,7 +247,12 @@ pub(in crate::services::render) fn render_page_query_batch_limit(
 pub(in crate::services::render) fn render_page_query_uses_single_scan(
     order: Option<OrderBySelector>,
 ) -> bool {
-    order.is_some_and(|order| order.property == OrderProperty::Random)
+    order.is_some_and(|order| {
+        matches!(
+            order.property,
+            OrderProperty::Random | OrderProperty::SeededRandom(_)
+        )
+    })
 }
 
 pub(in crate::services::render) fn random_page_query_scan_limit(

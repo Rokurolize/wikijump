@@ -26,9 +26,13 @@
 
 use super::child_pages::CHILD_PAGES_MODULE_REGEX;
 use super::link_modules::{ORPHANED_PAGES_MODULE_REGEX, WANTED_PAGES_MODULE_REGEX};
+use super::list_pages::{
+    parse_list_pages_arguments, scanner::find_list_pages_module_matches,
+};
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
 use super::pages::PAGES_MODULE_REGEX;
 use super::pages_by_tag::PAGES_BY_TAG_MODULE_REGEX;
+use crate::services::page_query::OrderProperty;
 use regex::Regex;
 use std::borrow::Cow;
 use std::sync::LazyLock;
@@ -178,6 +182,16 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || MEMBERSHIP_BY_PASSWORD_MODULE_REGEX.is_match(wikitext)
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
         || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)
+        || wikitext_has_random_list_pages_module(wikitext)
+}
+
+fn wikitext_has_random_list_pages_module(wikitext: &str) -> bool {
+    find_list_pages_module_matches(wikitext)
+        .into_iter()
+        .filter(|module| module.runtime_safe)
+        .filter_map(|module| parse_list_pages_arguments(module.head))
+        .filter_map(|arguments| arguments.order)
+        .any(|order| matches!(order.property, OrderProperty::Random))
 }
 
 fn wikitext_has_bare_pages_module(wikitext: &str) -> bool {
@@ -217,6 +231,15 @@ mod tests {
         ));
         assert!(!wikitext_requires_runtime_render(
             "[[module ListPages category=\"news\"]]%%title%%[[/module]]"
+        ));
+        assert!(wikitext_requires_runtime_render(
+            r#"[[module ListPages category="news" order="random"]]%%title%%[[/module]]"#
+        ));
+        assert!(wikitext_requires_runtime_render(
+            r#"[[MoDuLe listpages ORDER='RANDOM' limit='5']]%%title%%[[/module]]"#
+        ));
+        assert!(!wikitext_requires_runtime_render(
+            r#"[[module ListPages category="random"]]random body text[[/module]]"#
         ));
         assert!(!wikitext_requires_runtime_render(
             "[[module Pages limit=\"5\"]]"

@@ -254,6 +254,7 @@ pub enum OrderProperty {
     Revisions,
     Comments,
     Random,
+    SeededRandom(Cow<'static, str>),
     DataFormFieldName {
         field: Cow<'static, str>,
         numeric: bool,
