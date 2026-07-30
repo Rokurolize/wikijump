@@ -589,6 +589,39 @@ mod tests {
     }
 
     #[test]
+    fn multiline_code_head_prevents_cross_block_color_ownership() {
+        let source = concat!(
+            "[[code\n",
+            "type=\"rust\"]]\n",
+            "##red|inside\n",
+            "[[/code]]\n",
+            "outside##\n",
+            "[[module ListPages name=\"live\"]]C[[/module]]",
+        );
+        let index = LiteralRegionIndex::new_list_pages_syntax(source);
+
+        assert!(index.contains(source.find("inside").unwrap()));
+        assert!(!index.contains(source.find("outside##").unwrap()));
+        assert!(!index.contains(source.find("[[module ListPages").unwrap()));
+    }
+
+    #[test]
+    fn extended_comment_closer_releases_following_listpages_module() {
+        for closer in ["---]", "----]", "-----]"] {
+            let source = format!(
+                "[!-- hidden {closer}\n[[module ListPages name=\"live\"]]C[[/module]]",
+            );
+            let index = LiteralRegionIndex::new_list_pages_syntax(&source);
+
+            assert!(index.contains(source.find("hidden").unwrap()), "{closer}");
+            assert!(
+                !index.contains(source.find("[[module ListPages").unwrap()),
+                "{closer}",
+            );
+        }
+    }
+
+    #[test]
     fn tag_heads_do_not_open_literal_regions() {
         let source = concat!(
             "[[module ListPages name=\"x\" prependLine=\"@@\" comment=\"[!--\"]]X[[/module]]\n",

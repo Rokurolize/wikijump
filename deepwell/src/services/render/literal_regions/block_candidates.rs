@@ -228,8 +228,9 @@ fn parse_block_opener(
 
     let (content_start, exact_head) = match family {
         BlockFamily::Code => {
-            let close = expanded_offset(heads.next_wikidot_right_block[name_end]);
-            if close < line.body_end {
+            let close = heads.next_wikidot_right_block[name_end];
+            if close != NO_OFFSET {
+                let close = expanded_offset(close);
                 let exact = source[start + 2..]
                     .chars()
                     .next()
