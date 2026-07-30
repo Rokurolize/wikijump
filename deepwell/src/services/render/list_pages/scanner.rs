@@ -885,11 +885,12 @@ impl<'a> ModuleEventScanner<'a> {
                 (Some(b'"'), b'"')
                     if !quote_is_escaped(bytes, cursor, &head_tokens)
                         && !head_tokens.contains(cursor)
-                        && double_quote_ends_scanner_argument(
+                        && (double_quote_ends_scanner_argument(
                             bytes,
                             cursor,
                             &head_tokens,
-                        ) =>
+                        ) || (list_pages_compatibility
+                            && bytes.get(cursor + 1) == Some(&b'@'))) =>
                 {
                     quote = None;
                 }
@@ -1448,7 +1449,9 @@ fn validate_module_head(
                                 bytes,
                                 cursor,
                                 &text_tokens,
-                            ))
+                            )
+                            && !(list_pages_compatibility
+                                && bytes.get(cursor + 1) == Some(&b'@')))
                     {
                         runtime_safe = false;
                         cursor += 1;
