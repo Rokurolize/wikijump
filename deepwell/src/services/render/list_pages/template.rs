@@ -500,6 +500,10 @@ impl ListPagesTemplatePlan {
         ])
     }
 
+    pub(in crate::services::render) fn uses_first_paragraph(&self) -> bool {
+        self.variables.contains(ListPagesVariable::Summary)
+    }
+
     pub(in crate::services::render) fn uses_preview(&self) -> bool {
         self.variables.contains(ListPagesVariable::Preview)
     }

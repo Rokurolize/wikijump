@@ -17,6 +17,9 @@ use super::substitution::{
 };
 use super::suppress_generated_list_pages_heading_toc;
 use super::template::ListPagesTemplatePlan;
+use super::{
+    register_generated_list_pages_html, strip_generated_list_pages_html_markers,
+};
 use crate::error::prelude::{Error, ErrorType, Result};
 use crate::services::page_query::FoundPageRow;
 use crate::services::render::compat::CompatHtmlFragments;
@@ -24,7 +27,7 @@ use crate::services::render::compat::preparation::neutralize_authored_markers;
 use crate::services::render::compat::text_fragments::CompatTextFragments;
 use crate::services::render::iftags::resolve_outermost_wikidot_iftags;
 use crate::services::render::service::{
-    render_list_pages_numbered_rows, render_list_pages_table_rows,
+    RenderService, render_list_pages_numbered_rows, render_list_pages_table_rows,
 };
 use ftml::data::PageInfo;
 use ftml::delayed::{
@@ -48,6 +51,20 @@ pub(in crate::services::render) struct PreparedDelayedListPagesRow {
     pub body: String,
     pub generated_slots: Vec<ListPagesGeneratedSlot>,
     pub html_fragments: Option<CompatHtmlFragments>,
+}
+
+#[derive(Debug)]
+pub(in crate::services::render) struct PendingDelayedListPagesOutput {
+    slots: Vec<PendingDelayedListPagesSlot>,
+    html_fragments: Vec<CompatHtmlFragments>,
+    boundary_markers: Option<(String, String)>,
+}
+
+#[derive(Debug)]
+struct PendingDelayedListPagesSlot {
+    marker: String,
+    source: String,
+    value: GeneratedValue<'static>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -82,24 +99,27 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
             compat_text,
             &mut generated_slots,
         );
-        if generated_slots.is_empty() {
-            (fragments.restore(&body), None)
+        let body = if generated_slots.is_empty() {
+            RenderService::resolve_wikidot_parser_functions(&body)
         } else {
-            (body, Some(fragments))
-        }
+            body
+        };
+        let fragments = (!fragments.is_empty()).then_some(fragments);
+        (body, fragments)
     };
 
-    let body = if !generated_slots.is_empty() {
+    let delayed = !generated_slots.is_empty() || html_fragments.is_some();
+    let body = if delayed {
         body
     } else if let Some(table) = render_list_pages_table_rows(&body) {
         table
     } else {
         render_list_pages_numbered_rows(&body)
     };
-    let body = if generated_slots.is_empty() {
-        suppress_generated_list_pages_heading_toc(&body).into_owned()
-    } else {
+    let body = if delayed {
         body
+    } else {
+        suppress_generated_list_pages_heading_toc(&body).into_owned()
     };
     PreparedDelayedListPagesRow {
         body,
@@ -123,13 +143,33 @@ pub(in crate::services::render) fn raw_module_close_end(
 
 pub(in crate::services::render) fn list_pages_row_markup_bytes(
     separate: bool,
+    generated_row_open: &str,
     generated_row_close: &str,
 ) -> usize {
     if separate {
-        "[[div class=\"list-pages-item\"]]\n".len() + generated_row_close.len()
+        generated_row_open.len() + generated_row_close.len()
     } else {
         1
     }
+}
+
+pub(in crate::services::render) fn list_pages_runtime_container_open(
+    compat_html: &mut CompatHtmlFragments,
+    class: &str,
+) -> String {
+    compat_html.push_block_html(format!(r#"<div class="{class}">"#))
+}
+
+pub(in crate::services::render) fn list_pages_runtime_container_close(
+    compat_html: &mut CompatHtmlFragments,
+) -> String {
+    compat_html.push_block_html("</div>".to_owned())
+}
+
+pub(in crate::services::render) fn list_pages_runtime_row_container_close(
+    compat_html: &mut CompatHtmlFragments,
+) -> String {
+    compat_html.push_block_html_trimming_preceding_space("</div>".to_owned())
 }
 
 pub(in crate::services::render) fn append_list_pages_delayed_occurrences(
@@ -299,7 +339,7 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output(
     settings: &WikitextSettings,
     compat_html: &mut CompatHtmlFragments,
 ) -> Result<String> {
-    if delayed_occurrences.is_empty() {
+    if delayed_occurrences.is_empty() && delayed_html_fragments.is_empty() {
         return Ok(output);
     }
 
@@ -368,7 +408,193 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output(
     for fragments in delayed_html_fragments {
         sealed_body = fragments.restore(&sealed_body);
     }
+    sealed_body = strip_generated_list_pages_html_markers(sealed_body);
+    // Wikijump owns the fixed ListPages runtime containers and registers them
+    // as trusted block fragments. Resolve those markers after FTML has parsed
+    // the authored List-mode template, then protect the complete sealed block
+    // for the outer page parse. Leaving nested markers inside the new block
+    // fragment would intentionally prevent recursive restoration.
+    sealed_body = compat_html.restore(&sealed_body);
     Ok(compat_html.push_block_html(sealed_body))
+}
+
+pub(in crate::services::render) fn protect_list_pages_delayed_output(
+    output: String,
+    delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
+    delayed_html_fragments: Vec<CompatHtmlFragments>,
+    compat_text: &mut CompatTextFragments,
+) -> Result<(String, Option<PendingDelayedListPagesOutput>)> {
+    let mut protected = String::with_capacity(output.len());
+    let mut slots = Vec::with_capacity(delayed_occurrences.len());
+    let mut cursor = 0;
+    for (source_range, value) in delayed_occurrences {
+        if source_range.start < cursor || source_range.end > output.len() {
+            return Err(Error::new(
+                "typed ListPages slot escaped or crossed its generated output",
+                ErrorType::Render,
+            )
+            .into());
+        }
+        let Some(source) = output.get(source_range.clone()) else {
+            return Err(Error::new(
+                "typed ListPages slot did not align to UTF-8 boundaries",
+                ErrorType::Render,
+            )
+            .into());
+        };
+        protected.push_str(&output[cursor..source_range.start]);
+        let marker = compat_text.push("");
+        protected.push_str(&marker);
+        slots.push(PendingDelayedListPagesSlot {
+            marker,
+            source: source.to_owned(),
+            value,
+        });
+        cursor = source_range.end;
+    }
+    protected.push_str(&output[cursor..]);
+
+    Ok((
+        protected,
+        Some(PendingDelayedListPagesOutput {
+            slots,
+            html_fragments: delayed_html_fragments,
+            boundary_markers: None,
+        }),
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output(
+    output: String,
+    delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
+    delayed_html_fragments: Vec<CompatHtmlFragments>,
+    defer_for_include_expansion: bool,
+    page_info: &PageInfo<'_>,
+    settings: &WikitextSettings,
+    compat_html: &mut CompatHtmlFragments,
+    compat_text: &mut CompatTextFragments,
+) -> Result<(String, Option<PendingDelayedListPagesOutput>)> {
+    if delayed_occurrences.is_empty() && delayed_html_fragments.is_empty() {
+        Ok((output, None))
+    } else if defer_for_include_expansion {
+        let (protected, pending) = protect_list_pages_delayed_output(
+            output,
+            delayed_occurrences,
+            delayed_html_fragments,
+            compat_text,
+        )?;
+        Ok((
+            register_generated_list_pages_html(protected, compat_html),
+            pending,
+        ))
+    } else {
+        Ok((
+            seal_list_pages_delayed_output(
+                output,
+                delayed_occurrences,
+                delayed_html_fragments,
+                page_info,
+                settings,
+                compat_html,
+            )?,
+            None,
+        ))
+    }
+}
+
+pub(in crate::services::render) fn wrap_pending_list_pages_delayed_output(
+    output: &mut String,
+    pending: &mut PendingDelayedListPagesOutput,
+    compat_text: &mut CompatTextFragments,
+) {
+    let start = compat_text.push("");
+    let end = compat_text.push("");
+    output.insert_str(0, &start);
+    output.push_str(&end);
+    pending.boundary_markers = Some((start, end));
+}
+
+pub(in crate::services::render) fn seal_protected_list_pages_delayed_output(
+    protected: &str,
+    pending: PendingDelayedListPagesOutput,
+    page_info: &PageInfo<'_>,
+    settings: &WikitextSettings,
+    compat_html: &mut CompatHtmlFragments,
+) -> Result<String> {
+    let mut output = String::with_capacity(protected.len());
+    let mut delayed_occurrences = Vec::with_capacity(pending.slots.len());
+    let mut cursor = 0;
+    for slot in pending.slots {
+        let Some(relative_start) = protected[cursor..].find(&slot.marker) else {
+            return Err(Error::new(
+                "typed ListPages slot marker was lost during runtime expansion",
+                ErrorType::Render,
+            )
+            .into());
+        };
+        let marker_start = cursor + relative_start;
+        output.push_str(&protected[cursor..marker_start]);
+        let source_start = output.len();
+        output.push_str(&slot.source);
+        let source_end = output.len();
+        delayed_occurrences.push((source_start..source_end, slot.value));
+        cursor = marker_start + slot.marker.len();
+    }
+    output.push_str(&protected[cursor..]);
+
+    seal_list_pages_delayed_output(
+        output,
+        delayed_occurrences,
+        pending.html_fragments,
+        page_info,
+        settings,
+        compat_html,
+    )
+}
+
+pub(in crate::services::render) fn seal_pending_list_pages_delayed_outputs(
+    wikitext: &mut String,
+    pending_outputs: Vec<PendingDelayedListPagesOutput>,
+    page_info: &PageInfo<'_>,
+    settings: &WikitextSettings,
+    compat_html: &mut CompatHtmlFragments,
+) -> Result<()> {
+    for pending in pending_outputs {
+        let Some((start_marker, end_marker)) = pending.boundary_markers.clone() else {
+            return Err(Error::new(
+                "typed ListPages output was not bounded before runtime expansion",
+                ErrorType::Render,
+            )
+            .into());
+        };
+        let Some(start) = wikitext.find(&start_marker) else {
+            return Err(Error::new(
+                "typed ListPages opening boundary was lost during runtime expansion",
+                ErrorType::Render,
+            )
+            .into());
+        };
+        let body_start = start + start_marker.len();
+        let Some(relative_end) = wikitext[body_start..].find(&end_marker) else {
+            return Err(Error::new(
+                "typed ListPages closing boundary was lost during runtime expansion",
+                ErrorType::Render,
+            )
+            .into());
+        };
+        let body_end = body_start + relative_end;
+        let replacement = seal_protected_list_pages_delayed_output(
+            &wikitext[body_start..body_end],
+            pending,
+            page_info,
+            settings,
+            compat_html,
+        )?;
+        let replacement_end = body_end + end_marker.len();
+        wikitext.replace_range(start..replacement_end, &replacement);
+    }
+    Ok(())
 }
 
 #[allow(dead_code)]
@@ -382,6 +608,35 @@ fn _assert_module_body_ranges_are_original(source: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn deferred_html_fragments_survive_without_generated_slots() {
+        let mut row_fragments = CompatHtmlFragments::new("");
+        let row_marker =
+            row_fragments.push_html(r#"<span class="odate">DATE</span>"#.to_owned());
+        let mut compat_text = CompatTextFragments::new("");
+
+        let (protected, pending) = protect_list_pages_delayed_output(
+            row_marker,
+            Vec::new(),
+            vec![row_fragments],
+            &mut compat_text,
+        )
+        .expect("generated HTML should be protectable without typed slots");
+
+        assert_eq!(
+            protected
+                .matches(
+                    crate::services::render::service::WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX,
+                )
+                .count(),
+            1,
+        );
+        assert!(
+            pending.is_some(),
+            "the row fragment registry must remain pending",
+        );
+    }
 
     #[test]
     fn parser_functions_wait_for_listpages_row_substitution() {

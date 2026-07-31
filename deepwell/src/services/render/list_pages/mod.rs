@@ -72,14 +72,18 @@ pub(super) use self::data_forms::load_list_pages_data_form_definitions;
 pub(super) use self::delayed::substitute_list_pages_variables_with_fragments;
 pub(super) use self::delayed::{
     MAX_NESTED_LISTPAGES_DEPTH, MAX_NESTED_LISTPAGES_MODULES_PER_PASS,
-    append_list_pages_delayed_occurrences,
-    find_list_pages_module_matches_with_delayed_links, list_pages_row_markup_bytes,
-    prepare_delayed_list_pages_row, raw_module_close_end,
-    resolve_wikidot_parser_functions_outside_list_pages, seal_list_pages_delayed_output,
+    PendingDelayedListPagesOutput, append_list_pages_delayed_occurrences,
+    find_list_pages_module_matches_with_delayed_links,
+    finish_or_defer_list_pages_delayed_output, list_pages_row_markup_bytes,
+    list_pages_runtime_container_close, list_pages_runtime_container_open,
+    list_pages_runtime_row_container_close, prepare_delayed_list_pages_row,
+    raw_module_close_end, resolve_wikidot_parser_functions_outside_list_pages,
+    seal_pending_list_pages_delayed_outputs, seal_protected_list_pages_delayed_output,
+    wrap_pending_list_pages_delayed_output,
 };
 pub(super) use self::generated_html::{
-    preserve_list_pages_following_paragraph_boundary, register_generated_list_pages_html,
-    url_offset_list_pages_content_bytes,
+    register_generated_list_pages_html, repair_list_pages_block_boundaries,
+    strip_generated_list_pages_html_markers, url_offset_list_pages_content_bytes,
 };
 pub(super) use self::pagination::{
     ListPagesPagerRoute, list_pages_feed_info_html, push_list_pages_pager,
@@ -101,8 +105,11 @@ pub(super) use self::rendering_support::{
     CountPagesBlockRenderResult, CountPagesExpansionOptions, CountPagesRequiredTagSource,
     CountPagesRequiredTagTotal, ListPagesBlockRenderResult, ListPagesContentCache,
     ListPagesExpansion, ListPagesExpansionOptions, ListPagesPageContext,
-    list_pages_body_starts_with_preparsed_block, preserve_list_pages_module_matches,
-    push_list_pages_generated_output, suppress_generated_list_pages_heading_toc,
+    ListPagesRenderedBlock, expand_list_pages_generated_includes,
+    list_pages_body_starts_with_preparsed_block, list_pages_feed_only_render_result,
+    prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
+    push_list_pages_generated_output, push_list_pages_trailing_runtime_blocks,
+    suppress_generated_list_pages_heading_toc,
 };
 pub(super) use self::substitution::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesArguments,
@@ -112,7 +119,7 @@ pub(super) use self::substitution::{
     count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
     count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
     exact_name_list_pages_batch_key, list_pages_author_cache_key,
-    list_pages_has_unsupported_page_type_selector,
+    list_pages_first_paragraph, list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
     list_pages_static_parent_fullname_with_url, parse_list_pages_arguments,
     parse_list_pages_arguments_with_url, union_found_page_fields,
@@ -1432,6 +1439,31 @@ mod tests {
                 "{head}"
             );
             assert_eq!(arguments.append_line.as_deref(), expected_append, "{head}");
+        }
+    }
+
+    #[test]
+    fn fresh_corpus_heads_do_not_invent_unsupported_runtime_selectors() {
+        for head in [
+            r#"name="*" category="-nav -system -forum -admin" tags="-管理 -" order="created_at desc desc" limit="1" offset="@URL|0""#,
+            r#"limit="1" created_by="@URL" tags="-hub,-návod,-české,-autor""#,
+            r#"category="_default" order="name desc desc" wrapper="no" separate="no" perPage="250""#,
+            "separate=\"no\" tags=\"@URL\" created_at=\"@URL\" updated_at=\"@URL\" created_by=\"@URL\" rating=\"@URL\" offset=\"@URL|0\" perPage=\"1\"\u{3000}limit=\"1\" order=\"@URL|created_at desc\" category=\"*\"",
+            r#"order="random" perPage="250" limit="250""#,
+        ] {
+            let arguments = parse_list_pages_arguments_with_url(
+                head,
+                crate::services::render::UrlArguments::default(),
+            )
+            .unwrap_or_else(|| {
+                panic!("fresh anonymous Wikidot preview executed {head:?}")
+            });
+            assert!(
+                !arguments.unsupported_author_filter
+                    && !arguments.unsupported_list_pages_filter
+                    && !arguments.unsupported_score_filter,
+                "a live-executing corpus head must not be preserved: {head:?}",
+            );
         }
     }
 

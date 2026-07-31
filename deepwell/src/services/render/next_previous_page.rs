@@ -35,9 +35,9 @@ use super::list_pages::template::ListPagesTemplatePlan;
 use super::list_pages::{
     ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements,
     ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansionBudget,
-    ListPagesPageContext, ListPagesPagerRoute, ResolvedListPagesAuthors,
-    is_list_pages_visible_tag, parse_list_pages_arguments,
-    register_generated_list_pages_html,
+    ListPagesPageContext, ListPagesPagerRoute, ListPagesRenderedBlock,
+    ResolvedListPagesAuthors, is_list_pages_visible_tag, parse_list_pages_arguments,
+    register_generated_list_pages_html, seal_protected_list_pages_delayed_output,
 };
 use super::literal_regions::LiteralRegionIndex;
 use super::service::{
@@ -250,12 +250,27 @@ impl RenderService {
             .await?;
 
             match rendered {
-                ListPagesBlockRenderResult::Expanded(IncludeExpansion {
-                    wikitext: replacement,
-                    included_pages: replacement_included_pages,
-                    expanded_include_count,
+                ListPagesBlockRenderResult::Expanded(ListPagesRenderedBlock {
+                    expansion:
+                        IncludeExpansion {
+                            wikitext: replacement,
+                            included_pages: replacement_included_pages,
+                            expanded_include_count,
+                        },
+                    pending_delayed,
                 }) => {
                     include_budget.consume(expanded_include_count);
+                    let replacement = if let Some(pending_delayed) = pending_delayed {
+                        seal_protected_list_pages_delayed_output(
+                            &replacement,
+                            pending_delayed,
+                            page_info,
+                            settings,
+                            compat_html,
+                        )?
+                    } else {
+                        replacement
+                    };
                     expanded.push_str(&register_generated_list_pages_html(
                         replacement,
                         compat_html,

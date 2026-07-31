@@ -18,15 +18,22 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod body;
 mod date_selectors;
 mod generated_values;
 mod selectors;
 
+pub(in crate::services::render) use self::body::unsupported_list_pages_replacement;
+#[cfg(test)]
+pub(in crate::services::render) use self::body::{
+    list_pages_body_uses_content_variable, list_pages_body_variables_supported,
+};
 pub(in crate::services::render) use self::date_selectors::parse_list_pages_date_selector;
-pub(in crate::services::render) use self::generated_values::substitute_list_pages_rating_only;
+pub(in crate::services::render) use self::generated_values::{
+    list_pages_first_paragraph, substitute_list_pages_rating_only,
+};
 use self::generated_values::{
-    list_pages_first_paragraph, list_pages_variable_starts_triple_link_target,
-    protect_list_pages_content_insertion,
+    list_pages_variable_starts_triple_link_target, protect_list_pages_content_insertion,
 };
 use self::selectors::{ListPagesNameSelector, compose_list_pages_name_selectors};
 pub(in crate::services::render) use self::selectors::{
@@ -679,10 +686,15 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     }
                 };
                 rss_path.tags = normalize_list_pages_feed_selector(value);
-                for tag in split_list_pages_tag_values(value) {
+                let tags = split_list_pages_tag_values(value);
+                let select_untagged = tags.len() == 1
+                    && tags.first().is_some_and(|tag| is_no_tags_selector(tag));
+                for tag in tags {
                     if is_no_tags_selector(&tag) {
-                        untagged = true;
-                        unsupported_count_pages_filter = true;
+                        if select_untagged {
+                            untagged = true;
+                            unsupported_count_pages_filter = true;
+                        }
                         continue;
                     }
                     if tag == "=" {
@@ -739,10 +751,15 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     }
                 };
                 rss_path.tags = normalize_list_pages_feed_selector(value);
-                for tag in split_list_pages_tag_values(value) {
+                let tags = split_list_pages_tag_values(value);
+                let select_untagged = tags.len() == 1
+                    && tags.first().is_some_and(|tag| is_no_tags_selector(tag));
+                for tag in tags {
                     if is_no_tags_selector(&tag) {
-                        untagged = true;
-                        unsupported_count_pages_filter = true;
+                        if select_untagged {
+                            untagged = true;
+                            unsupported_count_pages_filter = true;
+                        }
                         continue;
                     }
                     if tag == "=" {
@@ -1724,7 +1741,9 @@ pub(in crate::services::render) fn split_list_pages_values(value: &str) -> Vec<S
 }
 
 fn normalize_list_pages_feed_selector(value: &str) -> Option<String> {
-    let value = split_list_pages_values(value).join(",");
+    let value = split_list_pages_values(value)
+        .join(",")
+        .to_ascii_lowercase();
     (!value.is_empty()).then_some(value)
 }
 
@@ -1839,70 +1858,6 @@ pub(in crate::services::render) fn parse_list_pages_page_type(
     }
 }
 
-#[cfg(test)]
-pub(in crate::services::render) fn list_pages_body_variables_supported(
-    body: &str,
-) -> bool {
-    ListPagesTemplatePlan::compile(body).is_some()
-        && LISTPAGES_VARIABLE_REGEX
-            .captures_iter(body)
-            .all(|captures| list_pages_variable_capture_is_valid(&captures))
-}
-
-pub(in crate::services::render) fn unsupported_list_pages_replacement(
-    module_source: &str,
-    body: &str,
-) -> String {
-    if list_pages_body_has_numbered_rows(body)
-        || list_pages_body_is_no_visible_tracking_markup(body)
-    {
-        "[[div class=\"list-pages-box\"]][[/div]]".to_owned()
-    } else {
-        module_source.to_owned()
-    }
-}
-
-pub(in crate::services::render) fn list_pages_body_has_numbered_rows(body: &str) -> bool {
-    body.lines()
-        .any(|line| native_numbered_list_content(line).is_some())
-}
-
-pub(in crate::services::render) fn list_pages_body_is_no_visible_tracking_markup(
-    body: &str,
-) -> bool {
-    let mut saw_tracking_markup = false;
-
-    for line in body.lines() {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
-
-        let lower = line.to_ascii_lowercase();
-        let allowed = lower.starts_with("[[image ")
-            || lower.starts_with("[[embed]]")
-            || lower.starts_with("[[/embed]]")
-            || lower.starts_with("<iframe ") && lower.contains("display: none")
-            || lower.starts_with("[[module listusers ")
-            || lower.starts_with("[[/module]]")
-            || lower.starts_with("[[%%content{0}%%module listusers ")
-            || lower.starts_with("[[%%content{0}%%/module]]");
-        if !allowed {
-            return false;
-        }
-        saw_tracking_markup = true;
-    }
-
-    saw_tracking_markup
-}
-
-#[cfg(test)]
-pub(in crate::services::render) fn list_pages_body_uses_content_variable(
-    body: &str,
-) -> bool {
-    ListPagesTemplatePlan::compile(body).is_some_and(|plan| plan.uses_content())
-}
-
 pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) authored_limit: Option<u64>,
     pub(in crate::services::render) ajax_module_response: bool,
@@ -1915,6 +1870,8 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) runtime_displays:
         &'a BTreeMap<i64, ListPagesRuntimeDisplay>,
     pub(in crate::services::render) page_wikitext: Option<&'a str>,
+    pub(in crate::services::render) page_rendered_content: Option<&'a str>,
+    pub(in crate::services::render) page_rendered_first_paragraph: Option<&'a str>,
     pub(in crate::services::render) page_compiled_body_html: Option<&'a str>,
     pub(in crate::services::render) page_wikitext_scalar_count: Option<usize>,
     pub(in crate::services::render) page_parent_fullname: Option<&'a str>,
@@ -2147,10 +2104,24 @@ pub(super) fn substitute_list_pages_variables_inner(
         .map(|limit| limit.to_string())
         .unwrap_or_default();
     let summary = context
-        .page_wikitext
-        .map(|wikitext| wikidot_content_section(wikitext, Some(1)))
-        .unwrap_or_default();
-    let first_paragraph = list_pages_first_paragraph(&summary);
+        .page_rendered_first_paragraph
+        .or(context.page_rendered_content)
+        .map_or_else(
+            || {
+                context
+                    .page_wikitext
+                    .map(|wikitext| {
+                        let section = wikidot_content_section(wikitext, Some(1));
+                        list_pages_first_paragraph(&section).to_owned()
+                    })
+                    .unwrap_or_default()
+            },
+            |html| compat_html.push_block_html(html.to_owned()),
+        );
+    let first_paragraph = context.page_rendered_first_paragraph.map_or_else(
+        || list_pages_first_paragraph(&summary).to_owned(),
+        |html| compat_html.push_block_html(html.to_owned()),
+    );
     let mut source_cursor = 0usize;
     let mut substituted_cursor = 0usize;
     let substituted = LISTPAGES_VARIABLE_REGEX
@@ -2431,18 +2402,23 @@ pub(super) fn substitute_list_pages_variables_inner(
                     let section = captures
                         .name("argument")
                         .and_then(|matched| matched.as_str().parse().ok());
-                    context
-                        .page_wikitext
-                        .map(|wikitext| {
+                    if section.is_none()
+                        && let Some(rendered_content) =
+                            context.page_rendered_content
+                    {
+                        compat_html.push_block_html(rendered_content.to_owned())
+                    } else {
+                        context.page_wikitext.map(|wikitext| {
                             protect_list_pages_content_insertion(
                                 &wikidot_content_section(wikitext, section),
                                 compat_text,
                             )
                         })
                         .unwrap_or_default()
+                    }
                 }
                 "summary" | "description" | "short" => summary.to_owned(),
-                "first_paragraph" => first_paragraph.to_owned(),
+                "first_paragraph" => first_paragraph.clone(),
                 "preview" => {
                     let preview = context
                         .page_compiled_body_html

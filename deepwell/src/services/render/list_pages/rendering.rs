@@ -21,7 +21,10 @@
 use super::super::compat::CompatHtmlFragments;
 use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
-use super::super::literal_regions::{ListPagesSourceProjection, LiteralRegionIndex};
+use super::super::literal_regions::{
+    ListPagesSourceProjection, LiteralRegionIndex, collect_list_pages_css_yield_openers,
+};
+use super::super::render_options::{RenderContext, RenderInnerOptions};
 use super::super::runtime::{IncludeSourceCache, RenderRuntime};
 use super::super::runtime_page_queries::{
     CountPagesRawScanCompletion, render_page_query_uses_single_scan,
@@ -30,7 +33,10 @@ use super::super::service::{
     COUNTPAGES_MODULE_REGEX, CountPagesRequiredTagBatchResult,
     DEFAULT_LISTPAGES_PER_PAGE, IncludeExpansion, IncludeExpansionBudget,
     MAX_LISTPAGES_RENDER_LIMIT, MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService,
+    escape_list_pages_html_attr, has_include_opening_candidate,
 };
+use super::super::url_arguments::UrlArguments;
+use super::content_sections::wikidot_content_section;
 use super::current_data_form::{
     current_data_form_list_pages_head, load_current_page_data_form_context,
 };
@@ -49,30 +55,36 @@ use super::{
     ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements, ListPagesBatchDisplays,
     ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansion,
     ListPagesExpansionBudget, ListPagesExpansionOptions, ListPagesPageContext,
-    ListPagesPagerRoute, ListPagesSubstitutionContext, MAX_NESTED_LISTPAGES_DEPTH,
-    MAX_NESTED_LISTPAGES_MODULES_PER_PASS, ResolvedListPagesAuthors,
+    ListPagesPagerRoute, ListPagesRenderedBlock, ListPagesSubstitutionContext,
+    MAX_NESTED_LISTPAGES_DEPTH, MAX_NESTED_LISTPAGES_MODULES_PER_PASS,
+    PendingDelayedListPagesOutput, ResolvedListPagesAuthors,
     append_list_pages_delayed_occurrences, count_pages_capture_is_literal,
     count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
     count_pages_required_tag_batch_selector, count_pages_scan_requires_preservation,
     count_pages_should_remain_literal, count_pages_unbounded_total,
-    exact_name_list_pages_batch_key, find_list_pages_module_matches_with_delayed_links,
-    is_list_pages_visible_tag, list_pages_argument_error_with_parent_precedence,
+    exact_name_list_pages_batch_key, expand_list_pages_generated_includes,
+    find_list_pages_module_matches_with_delayed_links,
+    finish_or_defer_list_pages_delayed_output, is_list_pages_visible_tag,
+    list_pages_argument_error_with_parent_precedence,
     list_pages_body_starts_with_preparsed_block, list_pages_content_query_target,
     list_pages_created_by_unix, list_pages_feed_info_html,
+    list_pages_feed_only_render_result, list_pages_first_paragraph,
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector,
     list_pages_head_has_current_data_form_query_selector, list_pages_parent_fullname,
     list_pages_revision_count, list_pages_row_markup_bytes, list_pages_row_scan_target,
+    list_pages_runtime_container_open, list_pages_runtime_row_container_close,
     list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
     load_list_pages_data_form_definitions, page_query_cap_requires_original_module,
     parse_list_pages_arguments, parse_list_pages_arguments_with_url,
-    prepare_delayed_list_pages_row, preserve_list_pages_following_paragraph_boundary,
+    prepare_delayed_list_pages_row, prepare_list_pages_rendered_block,
     preserve_list_pages_module_matches, protect_ajax_module_literal_markers,
-    push_list_pages_generated_output, push_list_pages_pager, raw_module_close_end,
-    register_generated_list_pages_html, seal_list_pages_delayed_output,
-    seed_random_list_pages_order, should_render_current_page_list_pages_row,
-    substitute_count_pages_variables, union_found_page_fields,
-    unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
+    push_list_pages_generated_output, push_list_pages_pager,
+    push_list_pages_trailing_runtime_blocks, raw_module_close_end,
+    seal_pending_list_pages_delayed_outputs, seed_random_list_pages_order,
+    should_render_current_page_list_pages_row, substitute_count_pages_variables,
+    union_found_page_fields, unsupported_list_pages_replacement,
+    url_offset_list_pages_content_bytes,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::hash::{TextHash, k12_hash};
@@ -80,57 +92,40 @@ use crate::models::page_category::{self, Entity as PageCategory};
 use crate::services::ServiceContext;
 use crate::services::page_query::{
     CategoriesSelector, ComparisonOperation, DateSelector, DateTimeResolution,
-    FoundPageFields, FoundPages, IncludedCategories, ListPagesRenderDiagnosticsInput,
-    OrderProperty, PageParentSelector, PageQuery, PageQueryScoreFilterCache,
-    PaginationSelector, RangeSelector, ScoreSelector, TagCondition,
-    list_pages_render_diagnostics, parse_static_wikidot_data_form_values,
+    FoundPageFields, FoundPageRow, FoundPages, IncludedCategories,
+    ListPagesRenderDiagnosticsInput, OrderProperty, PageParentSelector, PageQuery,
+    PageQueryScoreFilterCache, PaginationSelector, RangeSelector, ScoreSelector,
+    TagCondition, list_pages_render_diagnostics, parse_static_wikidot_data_form_values,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{
     CategoryService, PageQueryService, PageRevisionService, PageService, SiteService,
 };
 use crate::types::{Action, Permission, Reference, Resource};
-use ftml::data::PageInfo;
+use ftml::data::{PageInfo, ScoreValue};
 use ftml::settings::WikitextSettings;
+use regex::Regex;
 use sea_orm::{
     ColumnTrait, ConnectionTrait, EntityTrait, FromQueryResult, QueryFilter, Statement,
     Value,
 };
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::Range;
+use std::sync::LazyLock;
+
+#[path = "rendering/count_block.rs"]
+mod count_block;
+#[path = "rendering/selected_content.rs"]
+mod selected_content;
+
+use self::selected_content::{
+    render_list_pages_selected_content_source, select_list_pages_rows,
+};
 
 impl RenderService {
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::services::render) async fn expand_list_pages(
-        ctx: &ServiceContext<'_>,
-        wikitext: String,
-        page_info: &PageInfo<'_>,
-        settings: &WikitextSettings,
-        compat_html: &mut CompatHtmlFragments,
-        include_source_cache: &mut IncludeSourceCache,
-        compat_text: &mut CompatTextFragments,
-        options: ListPagesExpansionOptions<'_>,
-    ) -> Result<ListPagesExpansion> {
-        let mut expansion_budget = ListPagesExpansionBudget::new();
-        let mut seen = BTreeSet::new();
-        Box::pin(Self::expand_list_pages_nested(
-            ctx,
-            wikitext,
-            page_info,
-            settings,
-            compat_html,
-            include_source_cache,
-            compat_text,
-            options,
-            &mut expansion_budget,
-            &mut seen,
-            0,
-        ))
-        .await
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    async fn expand_list_pages_nested(
+    pub(in crate::services::render) async fn expand_list_pages_nested(
         ctx: &ServiceContext<'_>,
         wikitext: String,
         page_info: &PageInfo<'_>,
@@ -208,6 +203,8 @@ impl RenderService {
             }
         };
         let module_matches = find_list_pages_module_matches_with_delayed_links(&wikitext);
+        let css_yield_openers = collect_list_pages_css_yield_openers(&wikitext);
+        let mut css_yield_opener_index = 0usize;
         let module_source_bytes = module_matches.iter().fold(0usize, |total, module| {
             total.saturating_add(module.original.len())
         });
@@ -392,17 +389,33 @@ impl RenderService {
                     };
                     ListPagesBlockPlan::Static(replacement)
                 } else if unresolved_current_data_form_query
-                    && let Some(arguments) =
+                    && let Some(mut arguments) =
                         parse_list_pages_arguments_with_url(head, url)
                 {
-                    let replacement = if arguments.wrapper {
-                        compat_html.push_block_html(
-                            r#"<div class="list-pages-box"></div>"#.to_owned(),
+                    if zero_row_once_only_output {
+                        arguments.limit = Some(0);
+                        arguments.unsupported_author_filter = false;
+                        arguments.unsupported_list_pages_filter = false;
+                        arguments.unsupported_score_filter = false;
+                        ListPagesTemplatePlan::compile(body).map_or_else(
+                            || unsupported_plan(module_original, body),
+                            |template| ListPagesBlockPlan::Render {
+                                arguments,
+                                template,
+                                batch_key: None,
+                                legacy_tail: None,
+                            },
                         )
                     } else {
-                        String::new()
-                    };
-                    ListPagesBlockPlan::Static(replacement)
+                        let replacement = if arguments.wrapper {
+                            compat_html.push_block_html(
+                                r#"<div class="list-pages-box"></div>"#.to_owned(),
+                            )
+                        } else {
+                            String::new()
+                        };
+                        ListPagesBlockPlan::Static(replacement)
+                    }
                 } else if !head_can_execute {
                     ListPagesBlockPlan::PreserveOriginal(
                         "head, parent, or page-type selector is not executable",
@@ -490,6 +503,7 @@ impl RenderService {
 
         let mut expanded = String::with_capacity(wikitext.len());
         let mut included_pages = Vec::new();
+        let mut pending_delayed_outputs = Vec::<PendingDelayedListPagesOutput>::new();
         let mut url_offset_content_bytes = 0usize;
         let mut content_cache = ListPagesContentCache::default();
         let mut permission_cache = BTreeMap::new();
@@ -570,7 +584,13 @@ impl RenderService {
                 };
 
                 for block in batch {
-                    expanded.push_str(&wikitext[cursor..block.start]);
+                    push_source_without_css_yield_openers(
+                        &mut expanded,
+                        &wikitext,
+                        cursor..block.start,
+                        &css_yield_openers,
+                        &mut css_yield_opener_index,
+                    );
                     let ListPagesBlockPlan::Render {
                         arguments,
                         template,
@@ -613,36 +633,31 @@ impl RenderService {
                     ))
                     .await?;
                     match rendered {
-                        ListPagesBlockRenderResult::Expanded(IncludeExpansion {
-                            wikitext: mut replacement,
-                            included_pages: replacement_included_pages,
-                            expanded_include_count: replacement_expanded_include_count,
-                        }) => {
-                            let following_source =
-                                legacy_tail.as_deref().unwrap_or(&wikitext[block.end..]);
-                            let generated_bytes_before_paragraph_repair =
-                                replacement.len();
-                            preserve_list_pages_following_paragraph_boundary(
-                                &mut replacement,
-                                following_source,
+                        ListPagesBlockRenderResult::Expanded(rendered) => {
+                            let boundaries = (
+                                &wikitext[cursor..block.start],
+                                legacy_tail.as_deref().unwrap_or(&wikitext[block.end..]),
                             );
-                            let paragraph_repair_bytes = replacement
-                                .len()
-                                .saturating_sub(generated_bytes_before_paragraph_repair);
-                            if !expansion_budget.try_consume_generated_output_bytes(
-                                paragraph_repair_bytes,
-                            ) {
+                            let Some(IncludeExpansion {
+                                wikitext: replacement,
+                                included_pages: replacement_included_pages,
+                                expanded_include_count: replacement_expanded_include_count,
+                            }) = prepare_list_pages_rendered_block(
+                                rendered,
+                                boundaries,
+                                expansion_budget,
+                                compat_html,
+                                compat_text,
+                                &mut pending_delayed_outputs,
+                            )
+                            else {
                                 expanded.push_str(&compat_text.push_escaped_html_text(
                                     &wikitext[block.start..block.end],
                                 ));
                                 cursor = block.end;
                                 continue;
-                            }
+                            };
                             include_budget.consume(replacement_expanded_include_count);
-                            let replacement = register_generated_list_pages_html(
-                                replacement,
-                                compat_html,
-                            );
                             url_offset_content_bytes = url_offset_content_bytes
                                 .saturating_add(url_offset_list_pages_content_bytes(
                                     offset_origin,
@@ -670,7 +685,13 @@ impl RenderService {
                 continue;
             }
 
-            expanded.push_str(&wikitext[cursor..block.start]);
+            push_source_without_css_yield_openers(
+                &mut expanded,
+                &wikitext,
+                cursor..block.start,
+                &css_yield_openers,
+                &mut css_yield_opener_index,
+            );
             match block.plan {
                 ListPagesBlockPlan::Static(replacement) => {
                     expanded.push_str(&replacement);
@@ -719,36 +740,31 @@ impl RenderService {
                     ))
                     .await?;
                     match rendered {
-                        ListPagesBlockRenderResult::Expanded(IncludeExpansion {
-                            wikitext: mut replacement,
-                            included_pages: replacement_included_pages,
-                            expanded_include_count: replacement_expanded_include_count,
-                        }) => {
-                            let following_source =
-                                legacy_tail.as_deref().unwrap_or(&wikitext[block.end..]);
-                            let generated_bytes_before_paragraph_repair =
-                                replacement.len();
-                            preserve_list_pages_following_paragraph_boundary(
-                                &mut replacement,
-                                following_source,
+                        ListPagesBlockRenderResult::Expanded(rendered) => {
+                            let boundaries = (
+                                &wikitext[cursor..block.start],
+                                legacy_tail.as_deref().unwrap_or(&wikitext[block.end..]),
                             );
-                            let paragraph_repair_bytes = replacement
-                                .len()
-                                .saturating_sub(generated_bytes_before_paragraph_repair);
-                            if !expansion_budget.try_consume_generated_output_bytes(
-                                paragraph_repair_bytes,
-                            ) {
+                            let Some(IncludeExpansion {
+                                wikitext: replacement,
+                                included_pages: replacement_included_pages,
+                                expanded_include_count: replacement_expanded_include_count,
+                            }) = prepare_list_pages_rendered_block(
+                                rendered,
+                                boundaries,
+                                expansion_budget,
+                                compat_html,
+                                compat_text,
+                                &mut pending_delayed_outputs,
+                            )
+                            else {
                                 expanded.push_str(&compat_text.push_escaped_html_text(
                                     &wikitext[block.start..block.end],
                                 ));
                                 cursor = block.end;
                                 continue;
-                            }
+                            };
                             include_budget.consume(replacement_expanded_include_count);
-                            let replacement = register_generated_list_pages_html(
-                                replacement,
-                                compat_html,
-                            );
                             url_offset_content_bytes = url_offset_content_bytes
                                 .saturating_add(url_offset_list_pages_content_bytes(
                                     offset_origin,
@@ -776,7 +792,13 @@ impl RenderService {
             cursor = block.end;
         }
 
-        expanded.push_str(&wikitext[cursor..]);
+        push_source_without_css_yield_openers(
+            &mut expanded,
+            &wikitext,
+            cursor..wikitext.len(),
+            &css_yield_openers,
+            &mut css_yield_opener_index,
+        );
         let expanded = if page_info.page.as_ref() == "_ajax-module-connector" {
             protect_ajax_module_literal_markers(expanded, compat_text)
         } else {
@@ -789,6 +811,18 @@ impl RenderService {
                 .saturating_sub(include_budget.remaining),
             url_offset_content_bytes,
         };
+        expand_list_pages_generated_includes(
+            ctx,
+            &mut expansion,
+            page_info,
+            settings,
+            current_site_id,
+            include_source_cache,
+            compat_text,
+            &mut include_budget,
+            initial_remaining_include_expansions,
+        )
+        .await?;
         if depth < MAX_NESTED_LISTPAGES_DEPTH
             && has_list_pages_module_opening_candidate(&expansion.wikitext)
         {
@@ -822,9 +856,15 @@ impl RenderService {
                 .url_offset_content_bytes
                 .saturating_add(nested.url_offset_content_bytes);
         }
+        seal_pending_list_pages_delayed_outputs(
+            &mut expansion.wikitext,
+            pending_delayed_outputs,
+            page_info,
+            settings,
+            compat_html,
+        )?;
         Ok(expansion)
     }
-
     pub(in crate::services::render) async fn expand_count_pages(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -998,7 +1038,6 @@ impl RenderService {
         expanded.push_str(&wikitext[cursor..]);
         Ok(expanded)
     }
-
     pub(in crate::services::render) async fn load_count_pages_required_tag_totals(
         ctx: &ServiceContext<'_>,
         wikitext: &str,
@@ -1198,7 +1237,6 @@ impl RenderService {
 
         Ok(totals)
     }
-
     #[allow(clippy::too_many_arguments)]
     pub(in crate::services::render) async fn render_list_pages_block(
         ctx: &ServiceContext<'_>,
@@ -1236,16 +1274,10 @@ impl RenderService {
         if arguments.rss_only
             && let Some(feed_info) = feed_info
         {
-            if !expansion_budget.try_consume_generated_output_bytes(feed_info.len()) {
-                return Ok(ListPagesBlockRenderResult::PreserveOriginal(
-                    "RSS output exceeds generated-output budget",
-                ));
-            }
-            return Ok(ListPagesBlockRenderResult::Expanded(IncludeExpansion {
-                wikitext: feed_info,
-                included_pages: Vec::new(),
-                expanded_include_count: 0,
-            }));
+            return Ok(list_pages_feed_only_render_result(
+                feed_info,
+                expansion_budget,
+            ));
         }
         seed_random_list_pages_order(
             ctx,
@@ -1442,6 +1474,8 @@ impl RenderService {
             exclude_current_page,
         );
         let wants_content = template.uses_content();
+        let wants_rendered_content = template.content_sections().contains(&None);
+        let wants_first_paragraph = template.uses_first_paragraph();
         let wants_preview = template.uses_preview();
         let wants_size = template.uses_size();
         if wants_content
@@ -1529,10 +1563,55 @@ impl RenderService {
 
         let mut list_pages_metadata = None;
         let missing_current_page_for_selector = current_page_identity.is_none()
-            && (current_page_only
-                || exclude_current_page_author
-                || score_equals_current_page
-                || votes_equals_current_page);
+            && (current_page_only || exclude_current_page_author);
+        let rows_are_complete_without_query = zero_page_size
+            || oversized_offset_initial_page
+            || current_page_date_missing
+            || votes_equal_current_zero_votes
+            || missing_current_page_for_selector
+            || (same_visible_tags && current_visible_tags.is_empty())
+            || current_page_only
+            || prefetched_pages.is_some();
+        let exact_total_from_scan =
+            if template.uses_total() && !rows_are_complete_without_query {
+                let mut total_query = query.clone();
+                total_query.pagination.limit =
+                    Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS));
+                total_query.fields = FoundPageFields {
+                    page_category_id: true,
+                    tags: exact_visible_tags,
+                    ..FoundPageFields::default()
+                };
+                let target_count = MAX_LISTPAGES_RENDER_SCAN_ROWS as usize;
+                let found = RenderRuntime::for_viewer(ctx, viewer_user_id)
+                    .find_viewable_count_pages_rows(
+                        total_query,
+                        target_count,
+                        permission_cache,
+                    )
+                    .await?;
+                if page_query_cap_requires_original_module(&found.metadata)
+                    || found.raw_scan_completion != CountPagesRawScanCompletion::Complete
+                {
+                    return Ok(ListPagesBlockRenderResult::PreserveOriginal(
+                        "exact total scan incomplete",
+                    ));
+                }
+                Some(
+                    select_list_pages_rows(
+                        found.pages.pages,
+                        exact_visible_tags,
+                        &current_visible_tags,
+                        relative_range,
+                        current_page_id,
+                        exclude_current_page,
+                        offset,
+                    )
+                    .len(),
+                )
+            } else {
+                None
+            };
         let pages = if zero_page_size
             || oversized_offset_initial_page
             || current_page_date_missing
@@ -1602,19 +1681,6 @@ impl RenderService {
             ));
             found.pages
         };
-        let query_returned_no_candidates =
-            list_pages_metadata.as_ref().is_some_and(|(metadata, _)| {
-                !metadata.cap_exceeded && metadata.candidate_count == Some(0)
-            });
-        let query_returned_every_match =
-            list_pages_metadata.as_ref().is_some_and(|(metadata, _)| {
-                !metadata.cap_exceeded
-                    && (!metadata.filtering_deferred_to_rust
-                        || metadata.candidate_count == Some(0))
-                    && metadata.candidate_count.is_some_and(|candidate_count| {
-                        (candidate_count as u64) < MAX_LISTPAGES_RENDER_LIMIT
-                    })
-            });
         if let Some((metadata, view_permission_filtering_applied)) = list_pages_metadata {
             let diagnostics =
                 list_pages_render_diagnostics(ListPagesRenderDiagnosticsInput {
@@ -1627,46 +1693,15 @@ impl RenderService {
                 });
             debug!("ListPages render diagnostics: {diagnostics:?}");
         }
-        let all_selected_pages = pages
-            .pages
-            .into_iter()
-            .filter(|page| {
-                !exact_visible_tags
-                    || page
-                        .tags
-                        .as_deref()
-                        .unwrap_or_default()
-                        .iter()
-                        .filter(|tag| is_list_pages_visible_tag(tag))
-                        .map(String::as_str)
-                        .collect::<BTreeSet<_>>()
-                        == current_visible_tags
-                            .iter()
-                            .map(String::as_str)
-                            .collect::<BTreeSet<_>>()
-            })
-            .collect::<Vec<_>>();
-        let all_selected_pages = if let Some(relative_range) = relative_range {
-            let current_index = all_selected_pages
-                .iter()
-                .position(|page| page.page_id == current_page_id);
-            match (relative_range, current_index) {
-                (RangeSelector::Before, Some(index)) => {
-                    all_selected_pages.into_iter().take(index).collect()
-                }
-                (RangeSelector::After, Some(index)) => {
-                    all_selected_pages.into_iter().skip(index + 1).collect()
-                }
-                _ => Vec::new(),
-            }
-        } else {
-            all_selected_pages
-        };
-        let all_selected_pages = all_selected_pages
-            .into_iter()
-            .filter(|page| !exclude_current_page || page.page_id != current_page_id)
-            .skip(offset as usize)
-            .collect::<Vec<_>>();
+        let all_selected_pages = select_list_pages_rows(
+            pages.pages,
+            exact_visible_tags,
+            &current_visible_tags,
+            relative_range,
+            current_page_id,
+            exclude_current_page,
+            offset,
+        );
         let all_selected_total = all_selected_pages.len();
         let selected_pages = all_selected_pages
             .into_iter()
@@ -1693,9 +1728,8 @@ impl RenderService {
         if reverse {
             pages.reverse();
         }
-        let exact_total = (query_returned_every_match
-            && (query_returned_no_candidates || offset == 0 && !exclude_current_page))
-            .then_some(all_selected_total);
+        let exact_total = exact_total_from_scan
+            .or_else(|| rows_are_complete_without_query.then_some(all_selected_total));
         if template.uses_total() && exact_total.is_none() {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal(
                 "exact total unavailable",
@@ -1982,16 +2016,18 @@ impl RenderService {
             total_selected,
         );
         let mut output = String::new();
-        if wrapper
-            && !push_list_pages_generated_output(
+        if wrapper {
+            let opening =
+                list_pages_runtime_container_open(compat_html, "list-pages-box");
+            if !push_list_pages_generated_output(
                 &mut output,
-                "[[div class=\"list-pages-box\"]]\n",
+                &format!("{opening}\n\n"),
                 expansion_budget,
-            )
-        {
-            return Ok(ListPagesBlockRenderResult::PreserveOriginal(
-                "wrapper opening exceeds generated-output budget",
-            ));
+            ) {
+                return Ok(ListPagesBlockRenderResult::PreserveOriginal(
+                    "wrapper opening exceeds generated-output budget",
+                ));
+            }
         }
         let included_pages = Vec::new();
         let mut delayed_occurrences = Vec::new();
@@ -2021,7 +2057,6 @@ impl RenderService {
                 "head section exceeds generated-output budget",
             ));
         }
-
         let render_generated_html =
             template.output_shape() == ListPagesOutputShape::TableRows;
         for (index, page) in pages.iter().enumerate() {
@@ -2054,6 +2089,106 @@ impl RenderService {
                 )
                 .into());
             }
+            let (rendered_page_content, rendered_page_first_paragraph) =
+                if wants_rendered_content || wants_first_paragraph {
+                    match page_wikitext.as_deref() {
+                        Some(wikitext) => {
+                            let category = page
+                                .page_category_id
+                                .and_then(|category_id| category_slugs.get(&category_id));
+                            let full_slug = page.slug.as_deref().unwrap_or_default();
+                            let page_name = full_slug
+                                .rsplit_once(':')
+                                .map_or(full_slug, |(_, name)| name);
+                            let selected_page_info = PageInfo {
+                                page: Cow::Owned(page_name.to_owned()),
+                                category: category
+                                    .map(|category| Cow::Owned(category.to_owned())),
+                                site: Cow::Owned(page_info.site.to_string()),
+                                title: Cow::Owned(
+                                    page.title.as_deref().unwrap_or(full_slug).to_owned(),
+                                ),
+                                alt_title: page
+                                    .alt_title
+                                    .as_deref()
+                                    .map(|title| Cow::Owned(title.to_owned())),
+                                score: ScoreValue::Float(
+                                    page.score.unwrap_or(0.0).into(),
+                                ),
+                                tags: page
+                                    .tags
+                                    .as_deref()
+                                    .unwrap_or_default()
+                                    .iter()
+                                    .map(|tag| Cow::Owned(tag.to_owned()))
+                                    .collect(),
+                                language: Cow::Owned(page_info.language.to_string()),
+                            };
+                            let render_passes = usize::from(wants_rendered_content)
+                                + usize::from(wants_first_paragraph);
+                            let max_include_expansions = include_budget
+                                .remaining
+                                .checked_div(rendered_rows.max(1))
+                                .and_then(|per_row| {
+                                    per_row.checked_div(render_passes.max(1))
+                                })
+                                .unwrap_or(0);
+                            let rendered_content = if wants_rendered_content {
+                                Some(
+                                    render_list_pages_selected_content_source(
+                                        ctx,
+                                        wikitext,
+                                        &selected_page_info,
+                                        settings,
+                                        current_site_id,
+                                        viewer_user_id,
+                                        max_include_expansions,
+                                        url,
+                                    )
+                                    .await?,
+                                )
+                            } else {
+                                None
+                            };
+                            let rendered_first_paragraph = if wants_first_paragraph {
+                                let summary = wikidot_content_section(wikitext, Some(1));
+                                let summary =
+                                    Self::suppress_rate_modules_in_list_pages_content(
+                                        summary, settings,
+                                    );
+                                let first_paragraph = list_pages_first_paragraph(
+                                    summary.trim_start_matches(['\r', '\n']),
+                                );
+                                if first_paragraph == wikitext
+                                    && let Some(rendered_content) =
+                                        rendered_content.as_ref()
+                                {
+                                    Some(rendered_content.clone())
+                                } else {
+                                    Some(
+                                        render_list_pages_selected_content_source(
+                                            ctx,
+                                            first_paragraph,
+                                            &selected_page_info,
+                                            settings,
+                                            current_site_id,
+                                            viewer_user_id,
+                                            max_include_expansions,
+                                            url,
+                                        )
+                                        .await?,
+                                    )
+                                }
+                            } else {
+                                None
+                            };
+                            (rendered_content, rendered_first_paragraph)
+                        }
+                        None => (None, None),
+                    }
+                } else {
+                    (None, None)
+                };
             let substitution_context = ListPagesSubstitutionContext {
                 authored_limit: limit,
                 ajax_module_response,
@@ -2068,6 +2203,9 @@ impl RenderService {
                 snapshot_displays,
                 runtime_displays,
                 page_wikitext: page_wikitext.as_deref(),
+                page_rendered_content: rendered_page_content.as_deref(),
+                page_rendered_first_paragraph: rendered_page_first_paragraph
+                    .as_deref(),
                 page_compiled_body_html: wants_preview
                     .then(|| {
                         content_cache
@@ -2122,17 +2260,32 @@ impl RenderService {
                 delayed_html_fragments.push(fragments);
             }
             let rendered_body = prepared_row.body;
-            let generated_row_close = if separate
-                && !wrapper
-                && !pager.is_empty()
-                && index + 1 == pages.len()
-            {
-                "\n[[/div]]"
+            let generated_row_open = if separate {
+                format!(
+                    "{}\n\n",
+                    list_pages_runtime_container_open(compat_html, "list-pages-item"),
+                )
             } else {
-                "\n[[/div]]\n"
+                String::new()
             };
-            let row_markup_bytes =
-                list_pages_row_markup_bytes(separate, generated_row_close);
+            let generated_row_close = if separate {
+                let last_wrapped_row = wrapper && index + 1 == pages.len();
+                let marker = list_pages_runtime_row_container_close(compat_html);
+                if last_wrapped_row {
+                    format!("\n\n{marker}\n")
+                } else if !wrapper && !pager.is_empty() && index + 1 == pages.len() {
+                    format!("\n\n{marker}")
+                } else {
+                    format!("\n\n{marker}\n")
+                }
+            } else {
+                String::new()
+            };
+            let row_markup_bytes = list_pages_row_markup_bytes(
+                separate,
+                &generated_row_open,
+                &generated_row_close,
+            );
             let Some(rendered_row_bytes) =
                 rendered_body.len().checked_add(row_markup_bytes)
             else {
@@ -2146,7 +2299,7 @@ impl RenderService {
                 ));
             }
             if separate {
-                output.push_str("[[div class=\"list-pages-item\"]]\n");
+                output.push_str(&generated_row_open);
             }
             let rendered_body_start = output.len();
             output.push_str(&rendered_body);
@@ -2161,12 +2314,11 @@ impl RenderService {
                 ));
             }
             if separate {
-                output.push_str(generated_row_close);
+                output.push_str(&generated_row_close);
             } else {
                 output.push('\n');
             }
         }
-
         if !separate
             && let Some(foot) = template.foot_section()
             && (!push_list_pages_generated_output(&mut output, foot, expansion_budget)
@@ -2176,7 +2328,6 @@ impl RenderService {
                 "foot section exceeds generated-output budget",
             ));
         }
-
         if !separate && let Some(append_line) = append_line {
             let mut append_line = append_line;
             neutralize_authored_markers(&mut append_line);
@@ -2194,295 +2345,66 @@ impl RenderService {
                 ));
             }
         }
-
-        if !expansion_budget.try_consume_generated_output_bytes(pager.len()) {
-            return Ok(ListPagesBlockRenderResult::PreserveOriginal(
-                "pager exceeds generated-output budget",
-            ));
-        }
-        if !pager.is_empty() {
-            output.push_str(&compat_html.push_block_html(pager));
-        }
-
-        if let Some(feed_info) = feed_info
-            && !push_list_pages_generated_output(
-                &mut output,
-                &feed_info,
-                expansion_budget,
-            )
-        {
-            return Ok(ListPagesBlockRenderResult::PreserveOriginal(
-                "feed metadata exceeds generated-output budget",
-            ));
-        }
-        if wrapper
-            && !push_list_pages_generated_output(
-                &mut output,
-                "[[/div]]",
-                expansion_budget,
-            )
-        {
-            return Ok(ListPagesBlockRenderResult::PreserveOriginal(
-                "wrapper closing exceeds generated-output budget",
-            ));
+        if let Err(reason) = push_list_pages_trailing_runtime_blocks(
+            &mut output,
+            pager,
+            feed_info,
+            wrapper,
+            !separate,
+            compat_html,
+            expansion_budget,
+        ) {
+            return Ok(ListPagesBlockRenderResult::PreserveOriginal(reason));
         }
         if wants_content {
             expansion_budget.consume_content_rows(rendered_rows);
         }
-        let output = seal_list_pages_delayed_output(
+        let defer_for_include_expansion = has_include_opening_candidate(&output);
+        let (output, pending_delayed) = finish_or_defer_list_pages_delayed_output(
             output,
             delayed_occurrences,
             delayed_html_fragments,
+            defer_for_include_expansion,
             page_info,
             settings,
             compat_html,
+            compat_text,
         )?;
-        Ok(ListPagesBlockRenderResult::Expanded(IncludeExpansion {
-            wikitext: output,
-            included_pages,
-            expanded_include_count: initial_remaining_include_expansions
-                .saturating_sub(include_budget.remaining),
-        }))
-    }
-
-    pub(in crate::services::render) async fn render_count_pages_block(
-        ctx: &ServiceContext<'_>,
-        page_context: ListPagesPageContext<'_>,
-        page_info: &PageInfo<'_>,
-        arguments: ListPagesArguments,
-        body: &str,
-        permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
-    ) -> Result<CountPagesBlockRenderResult> {
-        let ListPagesPageContext {
-            site_id: current_site_id,
-            page_id: current_page_identity,
-            // CountPages renders a total, so the requested page does not apply.
-            url: _,
-        } = page_context;
-        let current_page_id = current_page_identity.unwrap_or(0);
-        let ListPagesArguments {
-            current_page_only,
-            category_selector_present,
-            category_all,
-            include_current_category,
-            categories,
-            excluded_categories,
-            mut any_tags,
-            all_tags,
-            default_tags,
-            no_tags,
-            untagged: _,
-            same_visible_tags: _,
-            exact_visible_tags: _,
-            authors,
-            author_filter_present,
-            order,
-            reverse: _,
-            limit,
-            count_pages_explicit_limit,
-            count_pages_per_page: _,
-            url_attr_prefix: _,
-            offset,
-            offset_origin: _,
-            offset_beyond_render_window,
-            exclude_current_page,
-            relative_range: _,
-            page_type,
-            page_parent,
-            static_parent_fullname: _,
-            creation_date,
-            update_date,
-            creation_date_current_page: _,
-            update_date_current_page: _,
-            score,
-            score_equals_current_page: _,
-            votes,
-            votes_equals_current_page: _,
-            slug,
-            name_pattern,
-            prepend_line: _,
-            append_line: _,
-            data_form_fields,
-            exclude_current_page_author: _,
-            unsupported_author_filter: _,
-            unsupported_list_pages_filter: _,
-            link_to,
-            unsupported_score_filter: _,
-            unsupported_count_pages_filter: _,
-            separate: _,
-            wrapper: _,
-            rss_title: _,
-            rss_description: _,
-            rss_home: _,
-            rss_limit: _,
-            rss_only: _,
-            rss_path: _,
-        } = arguments;
-        if offset_beyond_render_window.is_some() {
-            return Ok(CountPagesBlockRenderResult::Expanded(
-                substitute_count_pages_variables(body, 0),
-            ));
-        }
-        let count_pages_query_limit = count_pages_explicit_limit
-            .map(|limit| {
-                limit
-                    .saturating_add(u64::from(offset))
-                    .saturating_add(u64::from(exclude_current_page))
-            })
-            .unwrap_or(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
-            .min(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS));
-        any_tags.extend(default_tags);
-        let link_to_references = link_to
-            .iter()
-            .map(|slug| Reference::Slug(Cow::Borrowed(slug.as_ref())))
-            .collect::<Vec<_>>();
-        let (category_all, include_current_category) = if category_selector_present {
-            (category_all, include_current_category)
-        } else {
-            (false, true)
-        };
-        let categories = if include_current_category && !category_all {
-            Self::categories_with_current_page_category(categories, page_info)
-        } else {
-            categories
-        };
-        let included_categories = if category_all {
-            IncludedCategories::All
-        } else {
-            IncludedCategories::List(&categories)
-        };
-        let resolved_authors = Self::resolve_list_pages_authors(
-            ctx,
-            current_site_id,
-            current_page_id,
-            &authors,
-            author_filter_present,
-            // CountPages keeps its existing literal behavior for the exclusion
-            // sentinel, which `unsupported_count_pages_filter` already drives.
-            false,
-        )
-        .await?;
-        let query = PageQuery {
-            current_page_id,
-            current_site_id,
-            queried_site_id: None,
-            page_type,
-            categories: CategoriesSelector {
-                included_categories,
-                excluded_categories: &excluded_categories,
+        Ok(ListPagesBlockRenderResult::Expanded(
+            ListPagesRenderedBlock {
+                expansion: IncludeExpansion {
+                    wikitext: output,
+                    included_pages,
+                    expanded_include_count: initial_remaining_include_expansions
+                        .saturating_sub(include_budget.remaining),
+                },
+                pending_delayed,
             },
-            tags: TagCondition {
-                any_present: &any_tags,
-                all_present: &all_tags,
-                none_present: &no_tags,
-                untagged: false,
-            },
-            page_parent,
-            contains_outgoing_links: &link_to_references,
-            creation_date,
-            update_date,
-            author: resolved_authors.as_selector(),
-            score: &score,
-            votes: &votes,
-            offset: 0,
-            range: RangeSelector::Current,
-            name: name_pattern,
-            slug,
-            slugs: &[],
-            data_form_fields: &data_form_fields,
-            order: order.clone(),
-            candidate_limit: if data_form_fields.is_empty()
-                && !matches!(
-                    order.as_ref().map(|order| &order.property),
-                    Some(OrderProperty::Score | OrderProperty::DataFormFieldName { .. })
-                ) {
-                None
-            } else {
-                Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
-            },
-            pagination: PaginationSelector {
-                limit: Some(count_pages_query_limit),
-                per_page: PaginationSelector::default().per_page,
-                reversed: false,
-            },
-            variables: &[],
-            fields: FoundPageFields {
-                page_category_id: true,
-                ..Default::default()
-            },
-        };
-
-        let mut count_pages_metadata = None;
-        let mut raw_scan_completion = CountPagesRawScanCompletion::Complete;
-        let pages = if current_page_only && current_page_identity.is_none() {
-            FoundPages { pages: Vec::new() }
-        } else if current_page_only
-            && should_render_current_page_list_pages_row(current_page_only, limit, offset)
-        {
-            Self::current_page_list_pages_row(
-                ctx,
-                current_site_id,
-                current_page_id,
-                page_info,
-                &query.fields,
-            )
-            .await?
-        } else if current_page_only {
-            FoundPages { pages: Vec::new() }
-        } else {
-            let target_count = count_pages_query_limit.min(usize::MAX as u64) as usize;
-            let found = RenderRuntime::new(ctx)
-                .find_viewable_count_pages_rows(query, target_count, permission_cache)
-                .await?;
-            count_pages_metadata = Some((
-                found.metadata.clone(),
-                found.view_permission_filtering_applied,
-            ));
-            raw_scan_completion = found.raw_scan_completion;
-            found.pages
-        };
-        if let Some((metadata, view_permission_filtering_applied)) = count_pages_metadata
-        {
-            let preserve_original = page_query_cap_requires_original_module(&metadata);
-            let diagnostics = count_pages_exact_count_render_diagnostics(
-                metadata,
-                view_permission_filtering_applied,
-                exclude_current_page,
-                offset > 0,
-                count_pages_explicit_limit,
-                count_pages_query_limit,
-            );
-            debug!("CountPages exact count eligibility diagnostics: {diagnostics:?}");
-            if preserve_original {
-                return Ok(CountPagesBlockRenderResult::PreserveOriginal);
-            }
-        }
-        if count_pages_scan_requires_preservation(
-            raw_scan_completion,
-            pages.pages.len(),
-            count_pages_query_limit.min(usize::MAX as u64) as usize,
-        ) {
-            return Ok(CountPagesBlockRenderResult::PreserveOriginal);
-        }
-        let pages = pages
-            .pages
-            .into_iter()
-            .filter(|page| !exclude_current_page || page.page_id != current_page_id)
-            .skip(offset as usize);
-        let total = match count_pages_explicit_limit {
-            Some(limit) => pages.take(limit.min(usize::MAX as u64) as usize).count(),
-            None => {
-                let Some(total) =
-                    count_pages_unbounded_total(raw_scan_completion, pages.count())
-                else {
-                    return Ok(CountPagesBlockRenderResult::PreserveOriginal);
-                };
-                total
-            }
-        };
-
-        Ok(CountPagesBlockRenderResult::Expanded(
-            substitute_count_pages_variables(body, total),
         ))
     }
+}
+
+fn push_source_without_css_yield_openers(
+    output: &mut String,
+    source: &str,
+    segment: Range<usize>,
+    openers: &[Range<usize>],
+    opener_index: &mut usize,
+) {
+    let mut cursor = segment.start;
+    while let Some(opener) = openers.get(*opener_index) {
+        if opener.end <= cursor {
+            *opener_index += 1;
+            continue;
+        }
+        if opener.start >= segment.end {
+            break;
+        }
+        if cursor < opener.start {
+            output.push_str(&source[cursor..opener.start]);
+        }
+        cursor = cursor.max(opener.end);
+        *opener_index += 1;
+    }
+    output.push_str(&source[cursor..segment.end]);
 }

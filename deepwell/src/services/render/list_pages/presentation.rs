@@ -314,17 +314,26 @@ pub(in crate::services::render) fn format_list_pages_created_at(
     // A requested display format belongs to the later ODate client phase and
     // is transported only through the `format_*` class.
     let text = format_wikidot_list_pages_date(created_at, SERVER_FORMAT);
-    let encoded_format = percent_encode_path_segment(format);
+    let mut normalized_format = String::with_capacity(format.len());
+    let mut previous_was_space = false;
+    for character in format.chars() {
+        if character == ' ' && previous_was_space {
+            continue;
+        }
+        normalized_format.push(character);
+        previous_was_space = character == ' ';
+    }
+    let encoded_format = percent_encode_path_segment(&normalized_format);
     if render_as_html {
         format!(
-            r#"<span class="odate time_{} format_{}" style="cursor: help; display: inline;">{}</span>"#,
+            r#"<span class="odate time_{} format_{}">{}</span>"#,
             created_at.unix_timestamp(),
             encoded_format,
             escape_list_pages_html_text(&text),
         )
     } else {
         format!(
-            r#"<span class="odate time_{} format_{}" data-wikijump-compat-date="1" style="cursor: help; display: inline;">{}</span>"#,
+            r#"<span class="odate time_{} format_{}" data-wikijump-compat-date="1">{}</span>"#,
             created_at.unix_timestamp(),
             encoded_format,
             escape_list_pages_html_text(&text),

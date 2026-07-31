@@ -18,18 +18,31 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::super::compat::CompatHtmlFragments;
+use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::CompatTextFragments;
+use super::super::include_comment_branches::remove_unresolved_include_comment_branches;
 use super::super::literal_regions::{ListPagesSourceProjection, LiteralRegionIndex};
+use super::super::runtime::IncludeSourceCache;
 use super::super::service::{IncludeExpansion, IncludeExpansionBudget, RenderService};
-use super::ListPagesExpansionBudget;
 use super::scanner::{CountPagesCloseReachabilityIndex, ListPagesModuleMatch};
 use super::substitution::{ExactNameListPagesBatchKey, ListPagesArguments};
 use super::template::ListPagesTemplatePlan;
+use super::{
+    ListPagesExpansionBudget, PendingDelayedListPagesOutput,
+    register_generated_list_pages_html, repair_list_pages_block_boundaries,
+    wrap_pending_list_pages_delayed_output,
+};
+use crate::error::prelude::Result;
+use crate::hash::TextHash;
+use crate::services::ServiceContext;
 use crate::services::render::UrlArguments;
+use crate::services::render::service::IncludeExpansionOptions;
 use ftml::data::PageInfo;
+use ftml::settings::WikitextSettings;
 use sea_orm::FromQueryResult;
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub(in crate::services::render) enum ListPagesBlockPlan {
     Static(String),
@@ -72,6 +85,69 @@ pub(in crate::services::render) fn push_list_pages_generated_output(
     }
     output.push_str(&fragment);
     true
+}
+
+pub(in crate::services::render) fn push_list_pages_block_boundary(
+    output: &mut String,
+    expansion_budget: &mut ListPagesExpansionBudget,
+) -> bool {
+    let boundary = if output.ends_with("\n\n") {
+        ""
+    } else if output.ends_with('\n') {
+        "\n"
+    } else {
+        "\n\n"
+    };
+    if !expansion_budget.try_consume_generated_output_bytes(boundary.len()) {
+        return false;
+    }
+    output.push_str(boundary);
+    true
+}
+
+pub(in crate::services::render) fn push_list_pages_trailing_runtime_blocks(
+    output: &mut String,
+    pager: String,
+    feed_info: Option<String>,
+    wrapper: bool,
+    wrapper_trailing_space: bool,
+    compat_html: &mut CompatHtmlFragments,
+    expansion_budget: &mut ListPagesExpansionBudget,
+) -> std::result::Result<(), &'static str> {
+    if !expansion_budget.try_consume_generated_output_bytes(pager.len()) {
+        return Err("pager exceeds generated-output budget");
+    }
+    if !pager.is_empty() {
+        if !push_list_pages_block_boundary(output, expansion_budget) {
+            return Err("pager boundary exceeds generated-output budget");
+        }
+        output.push_str(&compat_html.push_block_html(pager));
+    }
+    if let Some(feed_info) = feed_info
+        && !push_list_pages_generated_output(output, &feed_info, expansion_budget)
+    {
+        return Err("feed metadata exceeds generated-output budget");
+    }
+    if wrapper {
+        const WIKIDOT_LISTPAGES_TRAILING_SPACE: &str = "\n    \n    \n    \n    ";
+        let closing = if wrapper_trailing_space {
+            if !expansion_budget.try_consume_generated_output_bytes(
+                WIKIDOT_LISTPAGES_TRAILING_SPACE.len(),
+            ) {
+                return Err("wrapper trailing space exceeds generated-output budget");
+            }
+            compat_html
+                .push_block_html(format!("{WIKIDOT_LISTPAGES_TRAILING_SPACE}</div>",))
+        } else {
+            super::list_pages_runtime_container_close(compat_html)
+        };
+        if !push_list_pages_block_boundary(output, expansion_budget)
+            || !push_list_pages_generated_output(output, &closing, expansion_budget)
+        {
+            return Err("wrapper closing exceeds generated-output budget");
+        }
+    }
+    Ok(())
 }
 
 pub(in crate::services::render) fn suppress_generated_list_pages_heading_toc(
@@ -146,8 +222,76 @@ pub(in crate::services::render) fn list_pages_body_starts_with_preparsed_block(
 
 #[derive(Debug)]
 pub(in crate::services::render) enum ListPagesBlockRenderResult {
-    Expanded(IncludeExpansion),
+    Expanded(ListPagesRenderedBlock),
     PreserveOriginal(&'static str),
+}
+
+#[derive(Debug)]
+pub(in crate::services::render) struct ListPagesRenderedBlock {
+    pub(in crate::services::render) expansion: IncludeExpansion,
+    pub(in crate::services::render) pending_delayed:
+        Option<super::PendingDelayedListPagesOutput>,
+}
+
+pub(in crate::services::render) fn list_pages_feed_only_render_result(
+    feed_info: String,
+    expansion_budget: &mut ListPagesExpansionBudget,
+) -> ListPagesBlockRenderResult {
+    if !expansion_budget.try_consume_generated_output_bytes(feed_info.len()) {
+        return ListPagesBlockRenderResult::PreserveOriginal(
+            "RSS output exceeds generated-output budget",
+        );
+    }
+    ListPagesBlockRenderResult::Expanded(ListPagesRenderedBlock {
+        expansion: IncludeExpansion {
+            wikitext: feed_info,
+            included_pages: Vec::new(),
+            expanded_include_count: 0,
+        },
+        pending_delayed: None,
+    })
+}
+
+pub(in crate::services::render) fn prepare_list_pages_rendered_block(
+    rendered: ListPagesRenderedBlock,
+    boundaries: (&str, &str),
+    expansion_budget: &mut ListPagesExpansionBudget,
+    compat_html: &mut CompatHtmlFragments,
+    compat_text: &mut CompatTextFragments,
+    pending_delayed_outputs: &mut Vec<PendingDelayedListPagesOutput>,
+) -> Option<IncludeExpansion> {
+    let ListPagesRenderedBlock {
+        expansion:
+            IncludeExpansion {
+                mut wikitext,
+                included_pages,
+                expanded_include_count,
+            },
+        pending_delayed,
+    } = rendered;
+    let generated_bytes_before_boundary_repair = wikitext.len();
+    repair_list_pages_block_boundaries(&mut wikitext, boundaries);
+    let boundary_repair_bytes = wikitext
+        .len()
+        .saturating_sub(generated_bytes_before_boundary_repair);
+    if !expansion_budget.try_consume_generated_output_bytes(boundary_repair_bytes) {
+        return None;
+    }
+    if let Some(mut pending_delayed) = pending_delayed {
+        wrap_pending_list_pages_delayed_output(
+            &mut wikitext,
+            &mut pending_delayed,
+            compat_text,
+        );
+        pending_delayed_outputs.push(pending_delayed);
+    } else {
+        wikitext = register_generated_list_pages_html(wikitext, compat_html);
+    }
+    Some(IncludeExpansion {
+        wikitext,
+        included_pages,
+        expanded_include_count,
+    })
 }
 
 #[derive(Debug)]
@@ -156,6 +300,55 @@ pub(in crate::services::render) struct ListPagesExpansion {
     pub(in crate::services::render) included_pages: Vec<ftml::data::PageRef>,
     pub(in crate::services::render) expanded_include_count: usize,
     pub(in crate::services::render) url_offset_content_bytes: usize,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::services::render) async fn expand_list_pages_generated_includes(
+    ctx: &ServiceContext<'_>,
+    expansion: &mut ListPagesExpansion,
+    page_info: &PageInfo<'_>,
+    settings: &WikitextSettings,
+    current_site_id: i64,
+    include_source_cache: &mut IncludeSourceCache,
+    compat_text: &mut CompatTextFragments,
+    include_budget: &mut IncludeExpansionBudget,
+    initial_remaining_include_expansions: usize,
+) -> Result<()> {
+    let IncludeExpansion {
+        wikitext,
+        included_pages,
+        expanded_include_count,
+    } = RenderService::expand_includes(
+        ctx,
+        std::mem::take(&mut expansion.wikitext),
+        page_info,
+        page_info.site.as_ref(),
+        settings,
+        IncludeExpansionOptions {
+            current_site_id: Some(current_site_id),
+            source_attachment_owner: None,
+            source_cache: include_source_cache,
+            compat_text,
+            expand_wikidot_image_blocks: true,
+            budget: *include_budget,
+        },
+    )
+    .await?;
+    include_budget.consume(expanded_include_count);
+    expansion.wikitext = wikitext;
+    expansion.included_pages.extend(included_pages);
+    expansion.expanded_include_count =
+        initial_remaining_include_expansions.saturating_sub(include_budget.remaining);
+    if expanded_include_count > 0 {
+        remove_unresolved_include_comment_branches(&mut expansion.wikitext);
+        RenderService::prepare_wikidot_conditionals_for_include_expansion(
+            &mut expansion.wikitext,
+            page_info,
+            compat_text,
+        );
+        neutralize_authored_markers(&mut expansion.wikitext);
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
@@ -219,6 +412,35 @@ pub(in crate::services::render) struct CountPagesExpansionOptions<'a> {
 }
 
 impl RenderService {
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::services::render) async fn expand_list_pages(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+        include_source_cache: &mut IncludeSourceCache,
+        compat_text: &mut CompatTextFragments,
+        options: ListPagesExpansionOptions<'_>,
+    ) -> Result<ListPagesExpansion> {
+        let mut expansion_budget = ListPagesExpansionBudget::new();
+        let mut seen = BTreeSet::<TextHash>::new();
+        Box::pin(Self::expand_list_pages_nested(
+            ctx,
+            wikitext,
+            page_info,
+            settings,
+            compat_html,
+            include_source_cache,
+            compat_text,
+            options,
+            &mut expansion_budget,
+            &mut seen,
+            0,
+        ))
+        .await
+    }
+
     pub(in crate::services::render) fn categories_with_current_page_category(
         mut categories: Vec<Cow<'static, str>>,
         page_info: &PageInfo<'_>,

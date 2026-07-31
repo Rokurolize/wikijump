@@ -33,7 +33,7 @@ pub(in crate::services::render) fn substitute_list_pages_rating_only(
     RenderService::resolve_wikidot_parser_functions(&substituted)
 }
 
-pub(super) fn list_pages_first_paragraph(wikitext: &str) -> &str {
+pub(in crate::services::render) fn list_pages_first_paragraph(wikitext: &str) -> &str {
     wikitext
         .split_once("\r\n\r\n")
         .map(|(paragraph, _)| paragraph)
