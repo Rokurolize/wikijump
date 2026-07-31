@@ -205,31 +205,28 @@ async fn filter_viewable_rows(
     ctx: &ServiceContext<'_>,
     viewer_user_id: Option<i64>,
     pages: Vec<FoundPageRow>,
-    category_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
+    _category_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
 ) -> Result<Vec<FoundPageRow>> {
     let mut viewable = Vec::with_capacity(pages.len());
     for page in pages {
-        let permission_key = (page.site_id, page.page_category_id);
-        let can_view = if let Some(can_view) = category_permissions.get(&permission_key) {
-            *can_view
-        } else {
-            let can_view = PermissionService::check_user_can(
-                ctx,
-                &CheckPermissionContext {
-                    user_id: viewer_user_id,
-                    site_id: page.site_id,
-                    page_reference: Some(Reference::Id(page.page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: page.page_category_id.map(Reference::Id),
-                    action: Action::View,
-                },
-            )
-            .await?;
-            category_permissions.insert(permission_key, can_view);
-            can_view
-        };
+        // A page reference can grant page-specific virtual roles such as
+        // PageAuthor, so its decision must not be reused for another page in
+        // the same category. PermissionService still applies its own safe
+        // caching rules for checks that do not depend on page-scoped roles.
+        let can_view = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: viewer_user_id,
+                site_id: page.site_id,
+                page_reference: Some(Reference::Id(page.page_id)),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: page.page_category_id.map(Reference::Id),
+                action: Action::View,
+            },
+        )
+        .await?;
         if can_view {
             viewable.push(page);
         }
