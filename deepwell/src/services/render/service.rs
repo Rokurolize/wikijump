@@ -133,6 +133,7 @@ use ftml::render::html::HtmlOutput;
 use ftml::tree::{CodeBlock, VariableMap};
 use ftml::{self};
 use regex::Regex;
+use sha1::{Digest as _, Sha1};
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
@@ -275,12 +276,13 @@ pub(super) const MAX_INCLUDE_EXPANSION_TOTAL: usize = 256;
 // trusted corpus finalizer receives this higher ceiling; user-controlled
 // render paths retain the ordinary limit above.
 const MAX_CORPUS_INCLUDE_EXPANSION_TOTAL: usize = 4096;
-pub(super) const DEFAULT_LISTPAGES_RENDER_LIMIT: u64 = 100;
 pub(super) const DEFAULT_LISTPAGES_PER_PAGE: u64 = 20;
 pub(super) const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
-// Keep runtime-owned content expansion within the ordinary ListPages page size. Explicitly larger content modules remain literal before revision loading and nested include expansion.
+// Keep runtime-owned content expansion within the largest supported ListPages
+// page. The render-scoped module, generated-output, include, and scan budgets
+// still bound revision loading and nested expansion across the whole render.
 pub(super) const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
-    DEFAULT_LISTPAGES_RENDER_LIMIT as usize;
+    MAX_LISTPAGES_RENDER_LIMIT as usize;
 // Content-backed ListPages modules can trigger permission filtering, revision loading, and nested include expansion. Three modules cover the common corpus shape while stopping dense author-page compositions before they exhaust the render budget.
 pub(super) const MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER: usize = 3;
 pub(super) const MAX_LISTPAGES_RENDER_OFFSET: u32 = 1_000;
@@ -354,7 +356,7 @@ pub(super) static REGISTRY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">[^<>]*</span>|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">.*?</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">[^<>]*</span>|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">.*?</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
     )
     .unwrap()
 });
@@ -362,7 +364,7 @@ pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::ne
 #[cfg(test)]
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</div>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">[^<>]*</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</div>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">[^<>]*</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
     )
     .unwrap()
 });
@@ -1457,6 +1459,7 @@ impl RenderService {
         expanded.wikitext = rendered;
         let wikidot_css_modules = extract_css_modules(
             &mut expanded.wikitext,
+            page_info,
             settings,
             &mut expanded.wikidot_compat_html,
         );
@@ -1529,6 +1532,57 @@ impl RenderService {
             wikidot_embed_iframes,
             timings: outer.timings,
         }
+    }
+
+    fn rewrite_wikidot_html_block_iframe_urls(
+        mut body: String,
+        page_info: &PageInfo<'_>,
+        html_blocks: &[String],
+    ) -> String {
+        const PLACEHOLDER: &str = concat!(
+            r#"<iframe src="https://example.com/" allowtransparency="true" "#,
+            r#"frameborder="0" class="html-block-iframe"></iframe>"#,
+        );
+        if html_blocks.is_empty() || !body.contains(PLACEHOLDER) {
+            return body;
+        }
+
+        let full_slug = Self::page_info_full_slug(page_info);
+        let mut search_start = 0;
+        for (index, html) in html_blocks.iter().enumerate() {
+            let Some(relative_start) = body[search_start..].find(PLACEHOLDER) else {
+                break;
+            };
+            let start = search_start + relative_start;
+            let end = start + PLACEHOLDER.len();
+            let digest = Sha1::digest(html.as_bytes());
+            let mut content_hash = String::with_capacity(40);
+            for byte in &digest {
+                use std::fmt::Write as _;
+                write!(&mut content_hash, "{byte:02x}")
+                    .expect("writing a SHA-1 digest to String cannot fail");
+            }
+            let route_nonce = full_slug
+                .bytes()
+                .chain((index + 1).to_le_bytes())
+                .chain(digest.iter().copied())
+                .fold(0xcbf2_9ce4_8422_2325_u64, |hash, byte| {
+                    hash.wrapping_mul(0x100_0000_01b3)
+                        .wrapping_add(u64::from(byte))
+                });
+            let iframe = format!(
+                concat!(
+                    r#"<iframe src="/{}/html/{}-{}" allowtransparency="true" "#,
+                    r#"frameborder="0" class="html-block-iframe"></iframe>"#,
+                ),
+                escape_list_pages_html_attr(&full_slug),
+                content_hash,
+                route_nonce,
+            );
+            body.replace_range(start..end, &iframe);
+            search_start = start + iframe.len();
+        }
+        body
     }
 
     pub(super) async fn render_inner(
@@ -1933,7 +1987,7 @@ impl RenderService {
                 );
                 html_output.body = wikidot_compat_text.restore(&html_output.body);
                 html_output.backlinks.included_pages.extend(included_pages);
-                let html_block_texts = tree
+                let html_block_texts: Vec<String> = tree
                     .html_blocks
                     .iter()
                     .map(|html| {
@@ -1946,6 +2000,16 @@ impl RenderService {
                         wikidot_compat_text.restore(&html)
                     })
                     .collect();
+                if render_settings.layout == Layout::Wikidot
+                    && render_settings.enable_html_blocks
+                    && !html_block_texts.is_empty()
+                {
+                    html_output.body = Self::rewrite_wikidot_html_block_iframe_urls(
+                        html_output.body,
+                        &render_page_info,
+                        &html_block_texts,
+                    );
+                }
                 let code_blocks = tree
                     .code_blocks
                     .iter()
@@ -2357,7 +2421,7 @@ impl RenderService {
         Some((level, body))
     }
 
-    fn prepare_wikidot_conditionals_for_include_expansion(
+    pub(in crate::services::render) fn prepare_wikidot_conditionals_for_include_expansion(
         wikitext: &mut String,
         page_info: &ftml::data::PageInfo<'_>,
         preserved: &mut CompatTextFragments,
@@ -3535,15 +3599,6 @@ impl RenderService {
         settings: &WikitextSettings,
     ) -> Option<CompatTextFragments> {
         protect_css_modules_before_first_list_pages(wikitext, settings)
-    }
-
-    #[cfg(test)]
-    fn extract_wikidot_css_modules(
-        wikitext: &mut String,
-        settings: &WikitextSettings,
-    ) -> Vec<String> {
-        let mut compat_html = CompatHtmlFragments::new(wikitext);
-        extract_css_modules(wikitext, settings, &mut compat_html)
     }
 
     #[cfg(test)]
@@ -4884,7 +4939,7 @@ fn own_include_ref(include: &IncludeRef<'_>) -> IncludeRef<'static> {
         .with_spaced_empty_separator(include.has_spaced_empty_separator())
 }
 
-fn has_include_opening_candidate(content: &str) -> bool {
+pub(in crate::services::render) fn has_include_opening_candidate(content: &str) -> bool {
     let bytes = content.as_bytes();
     let mut search = 0;
     while search + 1 < bytes.len() {

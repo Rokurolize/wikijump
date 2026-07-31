@@ -32,7 +32,9 @@ use super::super::service::{
     decode_wikidot_email_html_entities, escape_list_pages_html_attr,
     escape_list_pages_html_text, rendered_wikidot_mailform_attribute,
 };
-use super::footnote_dom::restore_wikidot_footnote_list_dom;
+use super::footnote_dom::{
+    enclose_list_pages_footnote_footer, restore_wikidot_footnote_list_dom,
+};
 use crate::config::Config;
 use crate::models::site::Model as SiteModel;
 
@@ -102,6 +104,11 @@ impl RenderService {
         if html.contains("wj-footnote") {
             html = Self::restore_wikidot_footnote_dom_compatibility(&html);
         }
+        if html.contains(r#"<div class="list-pages-box">"#)
+            && html.contains(r#"<div class="footnotes-footer">"#)
+        {
+            html = enclose_list_pages_footnote_footer(&html);
+        }
         if html.contains("<u>") || html.contains("</u>") {
             html = Self::remove_wikijump_underline_wrappers(&html);
         }
@@ -136,16 +143,8 @@ impl RenderService {
         html: &str,
     ) -> String {
         let html = WIKIJUMP_CODE_BLOCK_PANEL_REGEX.replace_all(html, "");
-        let html = WIKIJUMP_CODE_BLOCK_OPEN_REGEX.replace_all(
-            &html,
-            |captures: &regex::Captures<'_>| match captures.name("language") {
-                Some(language) => format!(
-                    r#"<div class="code" data-wj-language="{}">"#,
-                    language.as_str(),
-                ),
-                None => r#"<div class="code">"#.to_owned(),
-            },
-        );
+        let html =
+            WIKIJUMP_CODE_BLOCK_OPEN_REGEX.replace_all(&html, r#"<div class="code">"#);
         html.replace("</wj-code>", "</div>")
     }
 

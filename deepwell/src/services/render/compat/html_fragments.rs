@@ -10,6 +10,29 @@ use super::super::html_text::{
 };
 use super::super::literal_regions::LiteralRegionIndex;
 
+#[cfg(test)]
+use std::cell::Cell;
+
+#[cfg(test)]
+thread_local! {
+    static HTML_PARENT_SCANNED_BYTES: Cell<usize> = const { Cell::new(0) };
+}
+
+#[inline]
+fn record_html_parent_scanned_bytes(bytes: usize) {
+    #[cfg(test)]
+    HTML_PARENT_SCANNED_BYTES.with(|total| {
+        total.set(total.get().saturating_add(bytes));
+    });
+    #[cfg(not(test))]
+    let _ = bytes;
+}
+
+#[cfg(test)]
+fn take_html_parent_scanned_bytes() -> usize {
+    HTML_PARENT_SCANNED_BYTES.with(|total| total.replace(0))
+}
+
 pub(in crate::services::render) const COMPAT_HTML_MARKER_PREFIX: &str =
     "WIKIJUMPWIKIDOTCOMPATHTML";
 
@@ -22,8 +45,14 @@ pub(in crate::services::render) struct CompatHtmlFragments {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum CompatFragment {
     Html(String),
-    BlockHtml(String),
-    Plain { plain: String, html: String },
+    BlockHtml {
+        html: String,
+        trim_preceding_space: bool,
+    },
+    Plain {
+        plain: String,
+        html: String,
+    },
 }
 
 impl CompatHtmlFragments {
@@ -49,7 +78,20 @@ impl CompatHtmlFragments {
         &mut self,
         html: String,
     ) -> String {
-        self.push_fragment(CompatFragment::BlockHtml(html))
+        self.push_fragment(CompatFragment::BlockHtml {
+            html,
+            trim_preceding_space: false,
+        })
+    }
+
+    pub(in crate::services::render) fn push_block_html_trimming_preceding_space(
+        &mut self,
+        html: String,
+    ) -> String {
+        self.push_fragment(CompatFragment::BlockHtml {
+            html,
+            trim_preceding_space: true,
+        })
     }
 
     pub(in crate::services::render) fn push_plain(&mut self, plain: &str) -> String {
@@ -57,6 +99,10 @@ impl CompatHtmlFragments {
             plain: plain.to_owned(),
             html: escape_in_any_html_context(plain),
         })
+    }
+
+    pub(in crate::services::render) fn is_empty(&self) -> bool {
+        self.fragments.is_empty()
     }
 
     fn push_fragment(&mut self, fragment: CompatFragment) -> String {
@@ -70,7 +116,7 @@ impl CompatHtmlFragments {
         let data_segments = html_data_segments(&text);
         self.restore_with(&text, None, Some(&data_segments), true, |fragment| {
             match fragment {
-                CompatFragment::Html(html) | CompatFragment::BlockHtml(html) => {
+                CompatFragment::Html(html) | CompatFragment::BlockHtml { html, .. } => {
                     Some(html.as_str())
                 }
                 CompatFragment::Plain { html, .. } => Some(html.as_str()),
@@ -85,6 +131,7 @@ impl CompatHtmlFragments {
 
         let mut output = String::with_capacity(text.len());
         let mut cursor = 0;
+        let mut parent_stack = IncrementalHtmlElementStack::default();
         while let Some(relative_start) = text[cursor..].find("<p>") {
             let start = cursor + relative_start;
             let body_start = start + "<p>".len();
@@ -94,9 +141,13 @@ impl CompatHtmlFragments {
             let body_end = body_start + relative_end;
             output.push_str(&text[cursor..start]);
             let body = &text[body_start..body_end];
-            if block_html_parent_is_safe(&output)
-                && let Some(restored) = self.block_marker_paragraph(body)
+            if parent_stack.parent_is_safe(&output)
+                && let Some((restored, trim_preceding_space)) =
+                    self.block_marker_paragraph(body)
             {
+                if trim_preceding_space && output.ends_with(' ') {
+                    output.pop();
+                }
                 output.push_str(&restored);
                 cursor = body_end + "</p>".len();
                 continue;
@@ -108,10 +159,11 @@ impl CompatHtmlFragments {
         output
     }
 
-    fn block_marker_paragraph(&self, body: &str) -> Option<String> {
+    fn block_marker_paragraph(&self, body: &str) -> Option<(String, bool)> {
         let mut output = String::new();
         let mut cursor = 0;
         let mut count = 0;
+        let mut trim_preceding_space = false;
         while cursor < body.len() {
             let rest = &body[cursor..];
             if let Some(stripped) = rest.strip_prefix("<br>") {
@@ -131,14 +183,19 @@ impl CompatHtmlFragments {
                 continue;
             }
             let (index, len) = self.marker_at(rest)?;
-            let CompatFragment::BlockHtml(html) = &self.fragments[index] else {
+            let CompatFragment::BlockHtml {
+                html,
+                trim_preceding_space: trim,
+            } = &self.fragments[index]
+            else {
                 return None;
             };
+            trim_preceding_space |= count == 0 && *trim;
             output.push_str(html);
             count += 1;
             cursor += len;
         }
-        (count > 0).then_some(output)
+        (count > 0).then_some((output, trim_preceding_space))
     }
 
     #[cfg(test)]
@@ -149,7 +206,7 @@ impl CompatHtmlFragments {
         let data_segments = html_data_segments(text);
         self.restore_with(text, None, Some(&data_segments), true, |fragment| {
             match fragment {
-                CompatFragment::Html(html) | CompatFragment::BlockHtml(html) => {
+                CompatFragment::Html(html) | CompatFragment::BlockHtml { html, .. } => {
                     Some(html.as_str())
                 }
                 CompatFragment::Plain { html, .. } => Some(html.as_str()),
@@ -164,7 +221,7 @@ impl CompatHtmlFragments {
         let literal_regions = LiteralRegionIndex::new_html_color_restoration(text);
         self.restore_with(text, Some(&literal_regions), None, true, |fragment| {
             match fragment {
-                CompatFragment::Html(html) | CompatFragment::BlockHtml(html) => {
+                CompatFragment::Html(html) | CompatFragment::BlockHtml { html, .. } => {
                     Some(html.as_str())
                 }
                 CompatFragment::Plain { html, .. } => Some(html.as_str()),
@@ -175,7 +232,7 @@ impl CompatHtmlFragments {
     pub(in crate::services::render) fn restore_plain(&self, text: &str) -> String {
         self.restore_with(text, None, None, false, |fragment| match fragment {
             CompatFragment::Plain { plain, .. } => Some(plain.as_str()),
-            CompatFragment::Html(_) | CompatFragment::BlockHtml(_) => None,
+            CompatFragment::Html(_) | CompatFragment::BlockHtml { .. } => None,
         })
     }
 
@@ -192,6 +249,7 @@ impl CompatHtmlFragments {
         }
         let mut output = String::with_capacity(text.len());
         let mut cursor = 0;
+        let mut parent_stack = IncrementalHtmlElementStack::default();
         while let Some(offset) = text[cursor..].find(&self.namespace) {
             let start = cursor + offset;
             output.push_str(&text[cursor..start]);
@@ -210,8 +268,21 @@ impl CompatHtmlFragments {
                     continue;
                 }
                 if let Some(fragment) = value(&self.fragments[index]) {
+                    if matches!(
+                        &self.fragments[index],
+                        CompatFragment::BlockHtml {
+                            trim_preceding_space: true,
+                            ..
+                        }
+                    ) && output.ends_with(' ')
+                    {
+                        output.pop();
+                    }
                     if unwrap_block_paragraphs
-                        && matches!(&self.fragments[index], CompatFragment::BlockHtml(_))
+                        && matches!(
+                            &self.fragments[index],
+                            CompatFragment::BlockHtml { .. },
+                        )
                     {
                         if restore_block_html_from_paragraph(
                             &mut output,
@@ -219,10 +290,11 @@ impl CompatHtmlFragments {
                             marker_end,
                             fragment,
                             &mut cursor,
+                            &mut parent_stack,
                         ) {
                             continue;
                         }
-                        if !block_html_parent_is_safe(&output) {
+                        if !parent_stack.parent_is_safe(&output) {
                             output.push_str(&text[start..marker_end]);
                             cursor = marker_end;
                             continue;
@@ -265,6 +337,7 @@ fn restore_block_html_from_paragraph(
     marker_end: usize,
     fragment: &str,
     cursor: &mut usize,
+    parent_stack: &mut IncrementalHtmlElementStack,
 ) -> bool {
     let Some(paragraph_start) = output.rfind("<p>") else {
         return false;
@@ -281,7 +354,7 @@ fn restore_block_html_from_paragraph(
     if !contains_only_text_and_breaks(trailing) {
         return false;
     }
-    if !block_html_parent_is_safe(&output[..paragraph_start]) {
+    if !parent_stack.parent_is_safe(&output[..paragraph_start]) {
         return false;
     }
 
@@ -340,45 +413,77 @@ fn leading_break_end(value: &str) -> Option<usize> {
     })
 }
 
-/// A trusted block fragment may enter only the root or an open block container.
-/// Determine that parent from the full emitted HTML stack rather than its last
-/// tag: a preceding sibling normally ends with `</p>`, which is not the current
-/// parent of a following marker.
-fn block_html_parent_is_safe(prefix: &str) -> bool {
-    let Some(stack) = open_html_element_stack(prefix) else {
-        return false;
-    };
-    stack
-        .last()
-        .is_none_or(|parent| is_safe_block_html_container(parent))
+#[derive(Debug)]
+struct IncrementalHtmlElementStack {
+    parsed: usize,
+    stack: Vec<String>,
+    valid: bool,
 }
 
-/// A conservative HTML stack for trusted-fragment placement. It is not an HTML
-/// reserializer: malformed tags, mismatched closers, and unsupported raw-text
-/// contexts fail closed, leaving the opaque marker untouched.
-fn open_html_element_stack(html: &str) -> Option<Vec<String>> {
-    let mut stack = Vec::new();
-    let mut cursor = 0;
-    while let Some(relative) = html[cursor..].find('<') {
-        let start = cursor + relative;
+impl Default for IncrementalHtmlElementStack {
+    fn default() -> Self {
+        Self {
+            parsed: 0,
+            stack: Vec::new(),
+            valid: true,
+        }
+    }
+}
+
+impl IncrementalHtmlElementStack {
+    fn parent_is_safe(&mut self, html: &str) -> bool {
+        if self.parsed > html.len() {
+            *self = Self::default();
+        }
+        if self.valid {
+            record_html_parent_scanned_bytes(html.len().saturating_sub(self.parsed));
+            self.valid =
+                advance_open_html_element_stack(html, &mut self.parsed, &mut self.stack);
+        }
+        self.valid
+            && self
+                .stack
+                .last()
+                .is_none_or(|parent| is_safe_block_html_container(parent))
+    }
+}
+
+fn advance_open_html_element_stack(
+    html: &str,
+    cursor: &mut usize,
+    stack: &mut Vec<String>,
+) -> bool {
+    while let Some(relative) = html[*cursor..].find('<') {
+        let start = *cursor + relative;
         match tag_kind(&html[start..]) {
             Some(kind @ (TagKind::Comment | TagKind::BogusComment)) => {
-                cursor = protected_construct_end(html, start, kind)?;
+                let Some(end) = protected_construct_end(html, start, kind) else {
+                    return false;
+                };
+                *cursor = end;
                 continue;
             }
-            Some(TagKind::Cdata | TagKind::Declaration) => return None,
+            Some(TagKind::Cdata | TagKind::Declaration) => return false,
             Some(TagKind::Element { .. }) => {}
             // A literal or malformed `<` is not a tag that can contribute a
             // trustworthy parent. Failing closed prevents the hand parser
             // below from treating `< div>` as a real `<div>` and admitting a
             // block fragment beneath an actual inline ancestor.
-            None => return None,
+            None => return false,
         }
-        let end = html_tag_end(html, start)?;
+        let Some(end) = html_tag_end(html, start) else {
+            return false;
+        };
         let raw_tag = &html[start..end];
-        let tag = raw_tag.strip_prefix('<')?.strip_suffix('>')?.trim();
+        let Some(tag) = raw_tag
+            .strip_prefix('<')
+            .and_then(|tag| tag.strip_suffix('>'))
+        else {
+            return false;
+        };
+        let tag = tag.trim();
         if tag.starts_with('!') || tag.starts_with('?') {
-            cursor = end;
+            *cursor = end;
             continue;
         }
         let closing = tag.starts_with('/');
@@ -392,28 +497,32 @@ fn open_html_element_stack(html: &str) -> Option<Vec<String>> {
                 .bytes()
                 .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
         {
-            return None;
+            return false;
         }
         if closing {
             if stack.last().is_none_or(|open| open != &name) {
-                return None;
+                return false;
             }
             stack.pop();
         } else if is_foreign_self_closing(&name, raw_tag) {
-            cursor = end;
+            *cursor = end;
             continue;
         } else if OPAQUE_ELEMENTS.contains(&name.as_str()) {
-            cursor = opaque_element_end(html, end, &name)?;
+            let Some(opaque_end) = opaque_element_end(html, end, &name) else {
+                return false;
+            };
+            *cursor = opaque_end;
             continue;
         } else if !is_void_html_element(&name) {
             if tag.trim_end().ends_with('/') {
-                return None;
+                return false;
             }
             stack.push(name);
         }
-        cursor = end;
+        *cursor = end;
     }
-    Some(stack)
+    *cursor = html.len();
+    true
 }
 
 fn html_tag_end(html: &str, start: usize) -> Option<usize> {
@@ -543,6 +652,31 @@ mod tests {
     }
 
     #[test]
+    fn opted_in_block_html_trims_exactly_one_preceding_ascii_space() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let ordinary = fragments.push_block_html("</div>".to_owned());
+        let trimming =
+            fragments.push_block_html_trimming_preceding_space("</div>".to_owned());
+
+        assert_eq!(
+            fragments.restore(&format!("after <p>{ordinary}</p>")),
+            "after </div>",
+        );
+        assert_eq!(
+            fragments.restore(&format!("after <p>{trimming}</p>")),
+            "after</div>",
+        );
+        assert_eq!(
+            fragments.restore(&format!("after  <p>{trimming}</p>")),
+            "after </div>",
+        );
+        assert_eq!(
+            fragments.restore(&format!("after<p>{trimming}</p>")),
+            "after</div>",
+        );
+    }
+
+    #[test]
     fn block_html_restores_after_preceding_siblings_at_root_and_in_safe_parents() {
         let mut fragments = CompatHtmlFragments::new("");
         let marker = fragments.push_block_html("<ul><li>trusted</li></ul>".to_owned());
@@ -654,6 +788,19 @@ mod tests {
     }
 
     #[test]
+    fn opaque_marker_does_not_poison_a_later_safe_block_parent() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let opaque = fragments.push_block_html("<div>opaque</div>".to_owned());
+        let safe = fragments.push_block_html("<div>safe</div>".to_owned());
+        let html = format!(r#"<script>const marker = "{opaque}";</script><p>{safe}</p>"#);
+
+        assert_eq!(
+            fragments.restore(&html),
+            format!(r#"<script>const marker = "{opaque}";</script><div>safe</div>"#,),
+        );
+    }
+
+    #[test]
     fn block_html_never_uses_paragraph_unwrapping_inside_unsafe_parents() {
         let mut fragments = CompatHtmlFragments::new("");
         let marker = fragments.push_block_html("<div>trusted block</div>".to_owned());
@@ -673,6 +820,50 @@ mod tests {
         assert_eq!(
             fragments.restore(&format!("<p>{first}<br>{second}</p>")),
             "<div>first</div><div>second</div>",
+        );
+    }
+
+    #[test]
+    fn block_parent_validation_scans_many_runtime_rows_linearly() {
+        const ROWS: usize = 500;
+        let mut fragments = CompatHtmlFragments::new("");
+        let mut html = String::new();
+        for index in 0..ROWS {
+            let marker = fragments.push_block_html(format!("<div>row {index}</div>"));
+            html.push_str(&format!("<p>{marker}</p>"));
+        }
+
+        take_html_parent_scanned_bytes();
+        let restored = fragments.restore(&html);
+        let scanned = take_html_parent_scanned_bytes();
+
+        assert_eq!(restored.matches("<div>row ").count(), ROWS);
+        assert!(
+            scanned <= html.len().saturating_mul(3),
+            "parent validation rescanned {scanned} bytes for {} input bytes",
+            html.len(),
+        );
+    }
+
+    #[test]
+    fn block_parent_validation_scans_split_runtime_rows_linearly() {
+        const ROWS: usize = 500;
+        let mut fragments = CompatHtmlFragments::new("");
+        let mut html = String::new();
+        for index in 0..ROWS {
+            let marker = fragments.push_block_html(format!("<div>row {index}</div>"));
+            html.push_str(&format!("<p>before {marker} after</p>"));
+        }
+
+        take_html_parent_scanned_bytes();
+        let restored = fragments.restore(&html);
+        let scanned = take_html_parent_scanned_bytes();
+
+        assert_eq!(restored.matches("<div>row ").count(), ROWS);
+        assert!(
+            scanned <= html.len().saturating_mul(3),
+            "split-paragraph validation rescanned {scanned} bytes for {} input bytes",
+            html.len(),
         );
     }
 

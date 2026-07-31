@@ -33,7 +33,7 @@ femme = "2"
 filemagic = "0.13"
 fluent = "0.17"
 fluent-syntax = "0"
-ftml = { git = "https://github.com/Rokurolize/ftml", rev = "ba47ad9438c27359ac2448746d61bf19f01dd10f" }
+ftml = { git = "https://github.com/Rokurolize/ftml", rev = "f4e43ff6c6ef5c2d8df7e069589f475b9d2c954d" }
 futures = { version = "0.3", features = ["async-await"], default-features = false }
 hex = { version = "0.4", features = ["serde"] }
 hostname = "0.4"
@@ -56,6 +56,7 @@ sea-orm = { version = "2", features = ["sqlx-postgres", "runtime-tokio-rustls", 
 sea-query = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha1 = "0.11"
 sha2 = "0.11"
 static_assertions = "1.1"
 str-macro = "1"

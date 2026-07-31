@@ -22,8 +22,12 @@ use super::super::list_pages::scanner::first_list_pages_module_opening_candidate
 use super::super::literal_regions::{LiteralRegionIndex, WikidotNativeQuoteIndex};
 use super::CompatHtmlFragments;
 use super::text_fragments::CompatTextFragments;
+use ftml::data::PageInfo;
+use ftml::render::{Render, html::HtmlRender};
 use ftml::settings::WikitextSettings;
+use ftml::tree::{CodeBlock, Element, SyntaxTree};
 use regex::Regex;
+use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;
 
@@ -41,7 +45,7 @@ static AUTHORED_WIKIDOT_COMPAT_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 });
 static AUTHORED_WIKIDOT_COMPAT_OPEN_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">|<ul data-wikijump-compat-list="1">|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>|<a class="button" data-wikijump-compat-clone="1"[^>]*>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">|<style data-wikijump-compat-css-module="1">"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">|<ul data-wikijump-compat-list="1">|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>|<a class="button" data-wikijump-compat-clone="1"[^>]*>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">|<style data-wikijump-compat-css-module="1">"#,
     )
     .unwrap()
 });
@@ -102,6 +106,7 @@ pub(in crate::services::render) fn protect_css_modules_before_first_list_pages(
 
 pub(in crate::services::render) fn extract_css_modules(
     wikitext: &mut String,
+    page_info: &PageInfo<'_>,
     settings: &WikitextSettings,
     compat_html: &mut CompatHtmlFragments,
 ) -> Vec<String> {
@@ -141,9 +146,9 @@ pub(in crate::services::render) fn extract_css_modules(
         let flags = css_module_flags(open.as_str());
         output.push_str(&source[cursor..open.start()]);
         if flags.show {
-            output.push_str(
-                &compat_html.push_block_html(render_css_module_code_block(body)),
-            );
+            output.push_str(&compat_html.push_block_html(render_css_module_code_block(
+                body, page_info, settings,
+            )));
         }
         if !flags.disable {
             styles.push(escape_css_module_body(body));
@@ -241,18 +246,21 @@ fn skip_css_module_non_whitespace(head: &str, cursor: &mut usize) {
     }
 }
 
-fn render_css_module_code_block(body: &str) -> String {
-    let mut output =
-        String::from(r#"<div class="code" data-wj-language="css"><pre><code>"#);
-    output.push_str(&escape_css_module_code_html(body));
-    output.push_str("</code></pre></div>");
-    output
-}
-
-fn escape_css_module_code_html(body: &str) -> String {
-    body.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
+fn render_css_module_code_block(
+    body: &str,
+    page_info: &PageInfo<'_>,
+    settings: &WikitextSettings,
+) -> String {
+    let tree = SyntaxTree {
+        elements: vec![Element::Code(CodeBlock {
+            contents: Cow::Borrowed(body),
+            language: Some(Cow::Borrowed("css")),
+            name: None,
+        })],
+        wikitext_len: body.len(),
+        ..SyntaxTree::default()
+    };
+    HtmlRender.render(&tree, page_info, settings).body
 }
 
 fn escape_css_module_body(body: &str) -> String {
@@ -288,5 +296,50 @@ pub(in crate::services::render) fn neutralize_authored_markers(wikitext: &mut St
 
     for (range, replacement) in replacements.into_iter().rev() {
         wikitext.replace_range(range, &replacement);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::render_css_module_code_block;
+    use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::settings::{WikitextMode, WikitextSettings};
+    use std::borrow::Cow;
+
+    #[test]
+    fn visible_css_module_code_uses_wikidot_css_highlighting() {
+        let page_info = PageInfo {
+            page: Cow::Borrowed("test"),
+            category: None,
+            site: Cow::Borrowed("test"),
+            title: Cow::Borrowed("Test"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        assert_eq!(
+            render_css_module_code_block(
+                ":root {\n     --right-1: 0%;\n}",
+                &page_info,
+                &settings,
+            ),
+            concat!(
+                r#"<div class="code"><div class="hl-main"><pre>"#,
+                r#"<span class="hl-special">:root</span>"#,
+                r#"<span class="hl-code"> </span>"#,
+                r#"<span class="hl-brackets">{</span>"#,
+                "<span class=\"hl-code\">\n     --</span>",
+                r#"<span class="hl-reserved">right-1:</span>"#,
+                r#"<span class="hl-code"> </span>"#,
+                r#"<span class="hl-number">0</span>"#,
+                r#"<span class="hl-string">%</span>"#,
+                "<span class=\"hl-code\">;\n</span>",
+                r#"<span class="hl-brackets">}</span>"#,
+                "</pre></div></div>",
+            ),
+        );
     }
 }
