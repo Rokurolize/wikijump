@@ -65,6 +65,562 @@ function literalContextKeepsListPagesInactive({
   return !liveExecuted && !localExecuted && !localUnsupportedDiagnostic;
 }
 
+function outermostListPagesOwnedSubtrees(nodes) {
+  const output = [];
+  const ownedClasses = new Set([
+    "list-pages-box",
+    "list-pages-item",
+    "pager",
+  ]);
+  const visit = (node) => {
+    if (node?.type !== "element") return;
+    const classes = node.attrs
+      ?.find((attribute) => attribute.name === "class")
+      ?.value.split(/\s+/u) ?? [];
+    if (classes.some((className) => ownedClasses.has(className))) {
+      output.push(node);
+      return;
+    }
+    for (const child of node.children ?? []) visit(child);
+  };
+  for (const node of nodes ?? []) visit(node);
+  return output;
+}
+
+function literalContextHasExactListPagesExecution({
+  row,
+  liveNodes,
+  localNodes,
+  localUnsupportedDiagnostic,
+}) {
+  if (
+    !row.case_id.endsWith(":literal-context") ||
+    localUnsupportedDiagnostic
+  ) {
+    return false;
+  }
+  const liveOwned = outermostListPagesOwnedSubtrees(liveNodes);
+  const localOwned = outermostListPagesOwnedSubtrees(localNodes);
+  return liveOwned.length > 0 &&
+    JSON.stringify(liveOwned) === JSON.stringify(localOwned);
+}
+
+function hasExactListPagesOwnedExecution({
+  liveNodes,
+  localNodes,
+  localUnsupportedDiagnostic,
+}) {
+  if (localUnsupportedDiagnostic) return false;
+  const liveOwned = outermostListPagesOwnedSubtrees(liveNodes);
+  const localOwned = outermostListPagesOwnedSubtrees(localNodes);
+  return liveOwned.length > 0 &&
+    JSON.stringify(liveOwned) === JSON.stringify(localOwned);
+}
+
+function nodeAttribute(node, name) {
+  return node?.attrs?.find((attribute) => attribute.name === name)?.value ?? null;
+}
+
+function nodeText(node) {
+  if (node?.type === "text") return node.value;
+  if (node?.type !== "element") return "";
+  return (node.children ?? []).map(nodeText).join("");
+}
+
+function descendantElements(node, predicate) {
+  const output = [];
+  const visit = (current) => {
+    if (current?.type !== "element") return;
+    if (predicate(current)) output.push(current);
+    for (const child of current.children ?? []) visit(child);
+  };
+  visit(node);
+  return output;
+}
+
+function featuredSiteBoxHasCanonicalStructure(node) {
+  if (!nodeHasClass(node, "featured-site-box")) return false;
+  const exactlyOne = (className) => {
+    const matches = descendantElements(
+      node,
+      (candidate) => nodeHasClass(candidate, className),
+    );
+    return matches.length === 1 ? matches[0] : null;
+  };
+  const container = exactlyOne("container");
+  const hovertipContainer = exactlyOne("hovertip-container");
+  const hovertip = exactlyOne("featured-site-hovertip");
+  const thumbnail = exactlyOne("thumbnail");
+  const description = exactlyOne("description");
+  const name = exactlyOne("name");
+  const stats = exactlyOne("stats");
+  const taglines = descendantElements(
+    node,
+    (candidate) => nodeHasClass(candidate, "tagline"),
+  );
+  if (
+    !container ||
+    !hovertipContainer ||
+    !hovertip ||
+    !thumbnail ||
+    !description ||
+    !name ||
+    !stats ||
+    taglines.length > 1 ||
+    nodeAttribute(hovertipContainer, "id") !== "special9387424" ||
+    nodeAttribute(hovertipContainer, "style") !== "display: none"
+  ) {
+    return false;
+  }
+  const links = descendantElements(container, (candidate) =>
+    candidate.name === "a"
+  );
+  const images = descendantElements(container, (candidate) =>
+    candidate.name === "img"
+  );
+  const href = links.length === 1 ? nodeAttribute(links[0], "href") : null;
+  const imageId = images.length === 1 ? nodeAttribute(images[0], "id") : null;
+  const imageSource = images.length === 1
+    ? nodeAttribute(images[0], "src")
+    : null;
+  const thumbnailSource = nodeAttribute(thumbnail, "src");
+  const statsText = nodeText(stats).replace(/\s+/gu, " ").trim();
+  return (
+    /^http:\/\/[^/]+\.wikidot\.com$/u.test(href ?? "") &&
+    /^featured-site-image-[0-9]+$/u.test(imageId ?? "") &&
+    /^(?:http:\/\/thumbnails\.wdfiles\.com|https:\/\/thumbnails\.files\.invalid)\/thumbnail\/site\/[^/]+\.wikidot\.com\/160\.jpg$/u
+      .test(imageSource ?? "") &&
+    imageSource === thumbnailSource &&
+    nodeText(name).trim().length > 0 &&
+    /^Contributions last month: 0\s*Contributors: 1$/u.test(statsText)
+  );
+}
+
+const WIKIDOT_SOCIAL_SELECTED_TITLES = ["Reddit", "Facebook"];
+const WIKIDOT_SOCIAL_DEFAULT_TITLES = [
+  "BlinkList",
+  "blogmarks",
+  "del.icio.us",
+  "digg",
+  "Fark",
+  "feedmelinks",
+  "Furl",
+  "LinkaGoGo",
+  "NewsVine",
+  "Netvouz",
+  "Reddit",
+  "YahooMyWeb",
+  "Facebook",
+];
+
+function wikidotSocialSpanNonce(node) {
+  if (node?.name !== "span") return null;
+  const nonce = nodeAttribute(node, "id");
+  if (!/^social[0-9]{5}$/u.test(nonce ?? "")) return null;
+  const links = (node.children ?? []).filter((child) =>
+    child.type === "element" && child.name === "a"
+  );
+  if (
+    links.length !== (node.children ?? [])
+      .filter((child) => child.type === "element").length
+  ) {
+    return null;
+  }
+  const titles = links.map((link) => nodeAttribute(link, "title"));
+  if (
+    JSON.stringify(titles) !== JSON.stringify(WIKIDOT_SOCIAL_SELECTED_TITLES) &&
+    JSON.stringify(titles) !== JSON.stringify(WIKIDOT_SOCIAL_DEFAULT_TITLES)
+  ) {
+    return null;
+  }
+  for (const [index, link] of links.entries()) {
+    const images = (link.children ?? []).filter((child) =>
+      child.type === "element" && child.name === "img"
+    );
+    const href = nodeAttribute(link, "href") ?? "";
+    if (
+      images.length !== 1 ||
+      nodeAttribute(link, "style") !== "margin: 0 2px" ||
+      !/http%3A%2F%2F[a-z0-9-]+[.]wikidot[.]com%2Fajax-module-connector[.]php/iu
+        .test(href) ||
+      nodeAttribute(images[0], "alt") !== titles[index] ||
+      !/^http:\/\/d3g0gp89917ko0\.cloudfront\.net\/v--7690939296dc\/common--images\/social\/[a-z]+[.](?:png|gif)$/u
+        .test(nodeAttribute(images[0], "src") ?? "")
+    ) {
+      return null;
+    }
+  }
+  return nonce;
+}
+
+function wikidotSocialScript(nonce) {
+  return [
+    "\n//<![CDATA[\n\n",
+    `            var socialspan = $j("#${nonce}")[0];\n`,
+    "            var els = socialspan.getElementsByTagName(\"a\");\n",
+    "            for (var i=0;i<els.length;i++) {\n",
+    "                els[i].href = els[i].href.replace(\"TITLE\", encodeURIComponent(document.title));\n",
+    "            }\n",
+    "//]]>\n",
+  ].join("");
+}
+
+function parseFootnoteRoute(value, prefix) {
+  const match = new RegExp(`^${prefix}-(?:(?<nonce>[0-9]+)-)?(?<index>[0-9]+)$`, "u")
+    .exec(value ?? "");
+  if (!match) return null;
+  return {
+    nonce: match.groups.nonce ?? null,
+    index: match.groups.index,
+  };
+}
+
+function normalizeCanonicalFootnoteNonces(nodes) {
+  const state = {
+    references: 0,
+    footers: 0,
+    invalid: 0,
+    nonces: new Set(),
+  };
+  const normalizeAttributes = (node, replacements) => ({
+    ...node,
+    attrs: (node.attrs ?? []).map((attribute) => ({
+      ...attribute,
+      value: replacements.get(attribute.name) ?? attribute.value,
+    })),
+  });
+  const normalizeNode = (node) => {
+    if (node?.type !== "element") return { ...node };
+    let normalized = {
+      ...node,
+      children: (node.children ?? []).map(normalizeNode),
+    };
+    if (node.name === "a" && nodeHasClass(node, "footnoteref")) {
+      state.references += 1;
+      const route = parseFootnoteRoute(
+        nodeAttribute(node, "id"),
+        "footnoteref",
+      );
+      const expectedTarget = route === null
+        ? null
+        : `WIKIDOT.page.utils.scrollToReference('footnote-${
+          route.nonce === null ? "" : `${route.nonce}-`
+        }${route.index}')`;
+      if (
+        route === null ||
+        nodeAttribute(node, "href") !== "javascript:;" ||
+        nodeAttribute(node, "onclick") !== expectedTarget ||
+        nodeText(node).trim() !== route.index
+      ) {
+        state.invalid += 1;
+      } else {
+        if (route.nonce !== null) state.nonces.add(route.nonce);
+        normalized = normalizeAttributes(normalized, new Map([
+          ["id", `footnoteref-${route.index}`],
+          [
+            "onclick",
+            `WIKIDOT.page.utils.scrollToReference('footnote-${route.index}')`,
+          ],
+        ]));
+      }
+    }
+    if (node.name === "div" && nodeHasClass(node, "footnote-footer")) {
+      state.footers += 1;
+      const route = parseFootnoteRoute(nodeAttribute(node, "id"), "footnote");
+      const backlinkEntries = (node.children ?? [])
+        .map((child, index) => ({ child, index }))
+        .filter(({ child }) =>
+          child.type === "element" &&
+          child.name === "a" &&
+          nodeAttribute(child, "href") === "javascript:;" &&
+          /^WIKIDOT[.]page[.]utils[.]scrollToReference[(]'footnoteref-/u
+            .test(nodeAttribute(child, "onclick") ?? "")
+        );
+      const backlink = backlinkEntries.length === 1
+        ? backlinkEntries[0]
+        : null;
+      const link = backlink?.child ?? null;
+      const expectedTarget = route === null
+        ? null
+        : `WIKIDOT.page.utils.scrollToReference('footnoteref-${
+          route.nonce === null ? "" : `${route.nonce}-`
+        }${route.index}')`;
+      if (
+        route === null ||
+        link === null ||
+        nodeAttribute(link, "href") !== "javascript:;" ||
+        nodeAttribute(link, "onclick") !== expectedTarget ||
+        nodeText(link).trim() !== route.index
+      ) {
+        state.invalid += 1;
+      } else {
+        if (route.nonce !== null) state.nonces.add(route.nonce);
+        normalized = normalizeAttributes(normalized, new Map([
+          ["id", `footnote-${route.index}`],
+        ]));
+        normalized.children = normalized.children.map((child, index) =>
+          index === backlink.index
+            ? normalizeAttributes(child, new Map([
+                [
+                  "onclick",
+                  `WIKIDOT.page.utils.scrollToReference('footnoteref-${route.index}')`,
+                ],
+              ]))
+            : child
+        );
+      }
+    }
+    return normalized;
+  };
+  const normalized = (nodes ?? []).map(normalizeNode);
+  if (
+    state.references !== state.footers ||
+    state.references === 0 ||
+    state.nonces.size > 1
+  ) {
+    state.invalid += 1;
+  }
+  return { nodes: normalized, state };
+}
+
+function synchronizedImportedAuthorNames(nodes) {
+  return new Set(
+    (nodes ?? [])
+      .flatMap((node) =>
+        descendantElements(node, (candidate) =>
+          nodeHasClass(candidate, "printuser")
+        )
+      )
+      .map((node) => nodeText(node).trim())
+      .filter(Boolean),
+  );
+}
+
+function normalizeSynchronizedLinkedTitleSpaces(nodes) {
+  let normalizedSpaces = 0;
+  const normalizeNode = (node, insideLink = false) => {
+    if (node?.type === "text") {
+      if (!insideLink || !node.value.includes("\u00a0")) return { ...node };
+      const value = node.value.replace(/\u00a0/gu, " ");
+      normalizedSpaces += node.value.match(/\u00a0/gu)?.length ?? 0;
+      return { ...node, value };
+    }
+    if (node?.type !== "element") return { ...node };
+    const linked = insideLink ||
+      (node.name === "a" && nodeAttribute(node, "href") !== null);
+    return {
+      ...node,
+      children: (node.children ?? []).map((child) =>
+        normalizeNode(child, linked)
+      ),
+    };
+  };
+  return {
+    nodes: (nodes ?? []).map((node) => normalizeNode(node)),
+    normalizedSpaces,
+  };
+}
+
+function normalizeSynchronizedImportedFileOrigins(nodes) {
+  let normalizedOrigins = 0;
+  const normalizeNode = (node) => {
+    if (node?.type !== "element") return { ...node };
+    return {
+      ...node,
+      attrs: (node.attrs ?? []).map((attribute) => {
+        if (!["href", "src"].includes(attribute.name)) {
+          return { ...attribute };
+        }
+        const match =
+          /^http:\/\/(?<site>[a-z0-9-]+)[.]wikidot[.]com(?<path>\/local--files\/.*)$/iu
+            .exec(attribute.value);
+        if (!match) return { ...attribute };
+        normalizedOrigins += 1;
+        return {
+          ...attribute,
+          value:
+            `https://${match.groups.site}.files.invalid${match.groups.path}`,
+        };
+      }),
+      children: (node.children ?? []).map(normalizeNode),
+    };
+  };
+  return {
+    nodes: (nodes ?? []).map(normalizeNode),
+    normalizedOrigins,
+  };
+}
+
+function normalizeSynchronizedRuntimeFixtures(nodes, {
+  importedAuthorNames = new Set(),
+  normalizeFeaturedSite = false,
+  normalizeSocialNonce = false,
+  normalizeHtmlBlockNonce = false,
+} = {}) {
+  const state = {
+    importedAuthors: 0,
+    dates: 0,
+    featuredSites: 0,
+    invalidFeaturedSites: 0,
+    socialWidgets: 0,
+    socialScripts: 0,
+    invalidSocialWidgets: 0,
+    htmlBlocks: 0,
+    invalidHtmlBlocks: 0,
+  };
+  const socialNonces = new Set();
+  const normalizeImportedAuthor = (node, appendSpace) => {
+    state.importedAuthors += 1;
+    return {
+      type: "text",
+      value: `${nodeText(node).trim()}${appendSpace ? " " : ""}`,
+    };
+  };
+  const normalizeChildren = (children) => {
+    const output = [];
+    const childNodes = children ?? [];
+    for (const [index, child] of childNodes.entries()) {
+      const following = childNodes[index + 1];
+      const normalizedChildren = child?.type === "element" &&
+          nodeHasClass(child, "printuser")
+        ? [
+            normalizeImportedAuthor(
+              child,
+              following?.type === "element" &&
+                !["br", "sup"].includes(following.name),
+            ),
+          ]
+        : normalizeNode(child);
+      for (const normalized of normalizedChildren) {
+        const previous = output.at(-1);
+        if (previous?.type === "text" && normalized.type === "text") {
+          previous.value += normalized.value;
+        } else {
+          output.push(normalized);
+        }
+      }
+    }
+    return output;
+  };
+  const normalizeNode = (node) => {
+    if (node?.type === "text") {
+      const importedAuthor = node.value.trim();
+      if (importedAuthorNames.has(importedAuthor)) {
+        return [{ ...node, value: importedAuthor }];
+      }
+      return [{ ...node }];
+    }
+    if (node?.type !== "element") return [{ ...node }];
+    if (nodeHasClass(node, "printuser")) {
+      return [normalizeImportedAuthor(node, false)];
+    }
+    if (nodeHasClass(node, "odate")) {
+      state.dates += 1;
+      return [{ type: "text", value: nodeText(node) }];
+    }
+    if (normalizeFeaturedSite && nodeHasClass(node, "featured-site-box")) {
+      state.featuredSites += 1;
+      if (!featuredSiteBoxHasCanonicalStructure(node)) {
+        state.invalidFeaturedSites += 1;
+      } else {
+        return [{ type: "text", value: "__ROTATING_FEATURED_SITE__" }];
+      }
+    }
+    if (normalizeSocialNonce) {
+      const socialNonce = wikidotSocialSpanNonce(node);
+      if (node.name === "span" && /^social/u.test(nodeAttribute(node, "id") ?? "")) {
+        state.socialWidgets += 1;
+        if (socialNonce === null) {
+          state.invalidSocialWidgets += 1;
+        } else {
+          socialNonces.add(socialNonce);
+          return [{
+            ...node,
+            attrs: (node.attrs ?? []).map((attribute) => ({
+              ...attribute,
+              value: attribute.name === "id"
+                ? "social__NONCE__"
+                : attribute.value,
+            })),
+            children: normalizeChildren(node.children).map((child) => {
+              if (
+                child.type !== "element" ||
+                child.name !== "a" ||
+                nodeAttribute(child, "title") !== "Fark"
+              ) {
+                return child;
+              }
+              return {
+                ...child,
+                attrs: (child.attrs ?? []).map((attribute) => ({
+                  ...attribute,
+                  value: attribute.name === "href"
+                    ? attribute.value.replace(
+                      /(&new_comment=TITLE&new_comment=)[^&]+/u,
+                      "$1__SYNCHRONIZED_SITE_NAME__",
+                    )
+                    : attribute.value,
+                })),
+              };
+            }),
+          }];
+        }
+      }
+      if (node.name === "script") {
+        const script = nodeText(node);
+        const nonce = [...socialNonces]
+          .find((candidate) => script === wikidotSocialScript(candidate));
+        if (nonce !== undefined) {
+          state.socialScripts += 1;
+          return [{
+            ...node,
+            attrs: (node.attrs ?? []).map((attribute) => ({ ...attribute })),
+            children: [{
+              type: "text",
+              value: wikidotSocialScript("social__NONCE__"),
+            }],
+          }];
+        }
+      }
+    }
+    if (
+      normalizeHtmlBlockNonce &&
+      node.name === "iframe" &&
+      nodeHasClass(node, "html-block-iframe")
+    ) {
+      state.htmlBlocks += 1;
+      const src = nodeAttribute(node, "src") ?? "";
+      if (
+        !/^\/[a-z0-9_:-]+\/html\/[a-f0-9]{40}-[0-9]+$/iu.test(src) ||
+        nodeAttribute(node, "allowtransparency") !== "true" ||
+        nodeAttribute(node, "frameborder") !== "0"
+      ) {
+        state.invalidHtmlBlocks += 1;
+      } else {
+        return [{
+          ...node,
+          attrs: (node.attrs ?? []).map((attribute) => ({
+            ...attribute,
+            value: attribute.name === "src"
+              ? attribute.value.replace(/-[0-9]+$/u, "-__NONCE__")
+              : attribute.value,
+          })),
+          children: normalizeChildren(node.children),
+        }];
+      }
+    }
+    return [{
+      ...node,
+      attrs: (node.attrs ?? []).map((attribute) => ({ ...attribute })),
+      children: normalizeChildren(node.children),
+    }];
+  };
+  return {
+    nodes: normalizeChildren(nodes),
+    state,
+  };
+}
+
 function templateVariables(source) {
   return [...source.matchAll(/%%[A-Za-z0-9_]+%%/gu)]
     .map((match) => match[0]);
@@ -130,6 +686,13 @@ function oneArgumentValue(invocation, name) {
     .filter((attribute) => attribute.name.toLowerCase() === name)
     .map((attribute) => attribute.value);
   return values.length <= 1 ? (values[0] ?? null) : undefined;
+}
+
+function lastArgumentValue(invocation, name) {
+  return invocation.attributes
+    .filter((attribute) => attribute.name.toLowerCase() === name)
+    .map((attribute) => attribute.value)
+    .at(-1) ?? null;
 }
 
 function invocationExpectsWrapper(invocation) {
@@ -344,6 +907,245 @@ function classifyMismatch(row, reference) {
       disposition: "none",
       rationale:
         "The context-preserving replay keeps ListPages inactive in both runtimes; unrelated code, HTML, typography, or whitespace differences remain outside the ListPages campaign.",
+    };
+  }
+  if (literalContextHasExactListPagesExecution({
+    row,
+    liveNodes,
+    localNodes,
+    localUnsupportedDiagnostic,
+  })) {
+    return {
+      classification: "literal-context-listpages-execution-parity",
+      disposition: "none",
+      rationale:
+        "The complete canonical ListPages-owned subtree matches exactly in this context-preserving replay; the remaining DOM drift is outside ListPages ownership.",
+    };
+  }
+  if (hasExactListPagesOwnedExecution({
+    liveNodes,
+    localNodes,
+    localUnsupportedDiagnostic,
+  })) {
+    return {
+      classification: "listpages-owned-execution-parity",
+      disposition: "none",
+      rationale:
+        "The complete canonical ListPages-owned subtree matches exactly; all remaining DOM drift is outside ListPages ownership.",
+    };
+  }
+  const randomOrder = invocation === null
+    ? null
+    : lastArgumentValue(invocation, "order")?.trim().toLowerCase();
+  const randomLimit = invocation === null
+    ? null
+    : lastArgumentValue(invocation, "limit")?.trim();
+  if (
+    invocation !== null &&
+    randomOrder === "random" &&
+    /(?:^|\|)1$/u.test(randomLimit ?? "") &&
+    /%%(?:size|link)%%/iu.test(invocation.body) &&
+    liveText === localText &&
+    liveHasListPages &&
+    localHasListPages &&
+    !localUnsupportedDiagnostic
+  ) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+        "The exact one-row invocation orders randomly and exposes selected-page size or link state in its body. Both runtimes execute with identical visible output, but their independently cached random fixture selections cannot have comparable metadata DOM.",
+    };
+  }
+  const importedAuthorNames = new Set([
+    ...synchronizedImportedAuthorNames(liveNodes),
+    ...synchronizedImportedAuthorNames(localNodes),
+  ]);
+  const liveAuthorFixture = normalizeSynchronizedRuntimeFixtures(
+    liveNodes,
+    { importedAuthorNames },
+  );
+  const localAuthorFixture = normalizeSynchronizedRuntimeFixtures(
+    localNodes,
+    { importedAuthorNames },
+  );
+  if (
+    liveText === localText &&
+    (liveAuthorFixture.state.importedAuthors > 0 ||
+      localAuthorFixture.state.importedAuthors > 0) &&
+    JSON.stringify(liveAuthorFixture.nodes) ===
+      JSON.stringify(localAuthorFixture.nodes)
+  ) {
+    return {
+      classification: "synchronized-imported-author-state",
+      disposition: "none",
+      rationale:
+        "Visible row output and all non-provenance DOM match after normalizing only live printuser identities, their exact plain imported-name fallback, and ODate metadata.",
+    };
+  }
+  const liveLinkedTitle = normalizeSynchronizedLinkedTitleSpaces(
+    liveAuthorFixture.nodes,
+  );
+  const localLinkedTitle = normalizeSynchronizedLinkedTitleSpaces(
+    localAuthorFixture.nodes,
+  );
+  const sourceUsesLinkedTitle =
+    /%%(?:title_linked|linked_title)%%/iu.test(source);
+  if (
+    sourceUsesLinkedTitle &&
+    liveText === localText &&
+    liveLinkedTitle.normalizedSpaces + localLinkedTitle.normalizedSpaces > 0 &&
+    JSON.stringify(liveLinkedTitle.nodes) ===
+      JSON.stringify(localLinkedTitle.nodes)
+  ) {
+    return {
+      classification: "synchronized-imported-page-title-state",
+      disposition: "none",
+      rationale:
+        "The source uses ListPages linked-title substitution and the complete DOM matches after normalizing only nonbreaking spaces in generated page-link text plus synchronized imported-author and ODate metadata.",
+    };
+  }
+  const liveImportedFile = normalizeSynchronizedImportedFileOrigins(
+    sourceUsesLinkedTitle
+      ? liveLinkedTitle.nodes
+      : liveAuthorFixture.nodes,
+  );
+  const localImportedFile = normalizeSynchronizedImportedFileOrigins(
+    sourceUsesLinkedTitle
+      ? localLinkedTitle.nodes
+      : localAuthorFixture.nodes,
+  );
+  if (
+    liveText === localText &&
+    liveImportedFile.normalizedOrigins +
+        localImportedFile.normalizedOrigins >
+      0 &&
+    JSON.stringify(liveImportedFile.nodes) ===
+      JSON.stringify(localImportedFile.nodes)
+  ) {
+    return {
+      classification: "synchronized-imported-file-origin-state",
+      disposition: "none",
+      rationale:
+        "The complete DOM and visible output match after mapping only identical imported local-file paths between the live Wikidot site origin and the fixture's reserved files.invalid origin, plus synchronized imported metadata.",
+    };
+  }
+  const liveSocialNonce = normalizeSynchronizedRuntimeFixtures(
+    liveNodes,
+    { normalizeSocialNonce: true },
+  );
+  const localSocialNonce = normalizeSynchronizedRuntimeFixtures(
+    localNodes,
+    { normalizeSocialNonce: true },
+  );
+  if (
+    liveSocialNonce.state.socialWidgets > 0 &&
+    liveSocialNonce.state.socialWidgets ===
+      localSocialNonce.state.socialWidgets &&
+    liveSocialNonce.state.socialScripts ===
+      liveSocialNonce.state.socialWidgets &&
+    localSocialNonce.state.socialScripts ===
+      localSocialNonce.state.socialWidgets &&
+    liveSocialNonce.state.invalidSocialWidgets === 0 &&
+    localSocialNonce.state.invalidSocialWidgets === 0 &&
+    JSON.stringify(liveSocialNonce.nodes) ===
+      JSON.stringify(localSocialNonce.nodes)
+  ) {
+    return {
+      classification: "canonical-social-widget-nonce",
+      disposition: "none",
+      rationale:
+        "The complete canonical legacy social-widget DOM and script match; only Wikidot's per-render five-digit element nonce differs.",
+    };
+  }
+  const liveFootnoteNonce = normalizeCanonicalFootnoteNonces(
+    liveImportedFile.nodes,
+  );
+  const localFootnoteNonce = normalizeCanonicalFootnoteNonces(
+    localImportedFile.nodes,
+  );
+  if (
+    liveText === localText &&
+    liveFootnoteNonce.state.invalid === 0 &&
+    localFootnoteNonce.state.invalid === 0 &&
+    liveFootnoteNonce.state.references ===
+      localFootnoteNonce.state.references &&
+    JSON.stringify(liveFootnoteNonce.nodes) ===
+      JSON.stringify(localFootnoteNonce.nodes)
+  ) {
+    return {
+      classification: "canonical-footnote-route-nonce",
+      disposition: "none",
+      rationale:
+        "The complete generated footnote reference/footer pairs and visible output match after synchronized imported metadata and exact imported local-file origin mapping; only Wikidot's consistent per-render numeric route nonce differs.",
+    };
+  }
+  const liveHtmlBlockNonce = normalizeSynchronizedRuntimeFixtures(
+    liveNodes,
+    { normalizeHtmlBlockNonce: true },
+  );
+  const localHtmlBlockNonce = normalizeSynchronizedRuntimeFixtures(
+    localNodes,
+    { normalizeHtmlBlockNonce: true },
+  );
+  if (
+    liveHtmlBlockNonce.state.htmlBlocks > 0 &&
+    liveHtmlBlockNonce.state.htmlBlocks ===
+      localHtmlBlockNonce.state.htmlBlocks &&
+    liveHtmlBlockNonce.state.invalidHtmlBlocks === 0 &&
+    localHtmlBlockNonce.state.invalidHtmlBlocks === 0 &&
+    JSON.stringify(liveHtmlBlockNonce.nodes) ===
+      JSON.stringify(localHtmlBlockNonce.nodes)
+  ) {
+    return {
+      classification: "canonical-html-block-route-nonce",
+      disposition: "none",
+      rationale:
+        "The selected-page HTML iframe route, page slug, exact SHA-1 content identity, attributes, and placement match; only Wikidot's per-render decimal route nonce differs.",
+    };
+  }
+  const liveFeaturedFixture = normalizeSynchronizedRuntimeFixtures(
+    liveNodes,
+    {
+      normalizeFeaturedSite: true,
+      normalizeSocialNonce: true,
+      normalizeHtmlBlockNonce: true,
+    },
+  );
+  const localFeaturedFixture = normalizeSynchronizedRuntimeFixtures(
+    localNodes,
+    {
+      normalizeFeaturedSite: true,
+      normalizeSocialNonce: true,
+      normalizeHtmlBlockNonce: true,
+    },
+  );
+  if (
+    liveFeaturedFixture.state.featuredSites > 0 &&
+    liveFeaturedFixture.state.featuredSites ===
+      localFeaturedFixture.state.featuredSites &&
+    liveFeaturedFixture.state.invalidFeaturedSites === 0 &&
+    localFeaturedFixture.state.invalidFeaturedSites === 0 &&
+    liveFeaturedFixture.state.socialWidgets ===
+      localFeaturedFixture.state.socialWidgets &&
+    liveFeaturedFixture.state.socialScripts ===
+      liveFeaturedFixture.state.socialWidgets &&
+    localFeaturedFixture.state.socialScripts ===
+      localFeaturedFixture.state.socialWidgets &&
+    liveFeaturedFixture.state.invalidSocialWidgets === 0 &&
+    localFeaturedFixture.state.invalidSocialWidgets === 0 &&
+    liveFeaturedFixture.state.htmlBlocks ===
+      localFeaturedFixture.state.htmlBlocks &&
+    liveFeaturedFixture.state.invalidHtmlBlocks === 0 &&
+    localFeaturedFixture.state.invalidHtmlBlocks === 0 &&
+    JSON.stringify(liveFeaturedFixture.nodes) ===
+      JSON.stringify(localFeaturedFixture.nodes)
+  ) {
+    return {
+      classification: "rotating-featured-site-state",
+      disposition: "none",
+      rationale:
+        "Both runtimes emit the complete canonical FeaturedSite, legacy social-widget, and selected HTML-block structures; only the rotating live site record, synchronized local author provenance, and per-render social or iframe route nonces differ.",
     };
   }
 

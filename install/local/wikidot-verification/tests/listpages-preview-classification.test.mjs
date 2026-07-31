@@ -845,6 +845,512 @@ test("literal-context replay isolates ListPages ownership from unrelated renderi
   }
 });
 
+test("literal-context execution parity requires exact ListPages-owned subtrees", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-literal-execution-classify-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    "[[module CSS]]",
+    '[[module ListPages name="="]]',
+    "%%title%%",
+    "[[/module]]",
+  ].join("\n");
+  const exactOwned =
+    '<div class="list-pages-box"><table><tbody><tr><th>Title</th></tr></tbody></table></div>';
+  const liveExact = `<div class="live-fixture">${exactOwned}</div>`;
+  const localExact = `<div class="local-fixture">${exactOwned}</div>`;
+  const liveDifferent =
+    '<div class="live-fixture"><div class="list-pages-box">LIVE ROW</div></div>';
+  const localDifferent =
+    '<div class="local-fixture"><div class="list-pages-box">LOCAL ROW</div></div>';
+  const references = [
+    reference(
+      "literal-exact-execution:literal-context",
+      source,
+      liveExact,
+    ),
+    reference(
+      "literal-different-execution:literal-context",
+      source,
+      liveDifferent,
+    ),
+  ];
+  await fs.writeFile(
+    referencesPath,
+    references.map((row) => `${JSON.stringify(row)}\n`).join(""),
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [
+      mismatchCase(
+        "literal-exact-execution:literal-context",
+        liveExact,
+        localExact,
+      ),
+      mismatchCase(
+        "literal-different-execution:literal-context",
+        liveDifferent,
+        localDifferent,
+      ),
+    ],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [
+      row.case_id,
+      row.classification,
+      row.disposition,
+    ]),
+    [
+      [
+        "literal-exact-execution:literal-context",
+        "literal-context-listpages-execution-parity",
+        "none",
+      ],
+      [
+        "literal-different-execution:literal-context",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    ],
+  );
+});
+
+test("preview classifier narrowly separates owned parity and synchronized runtime fixtures", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-owned-fixture-classify-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = "[[module ListPages]]\n%%title_linked%%\n[[/module]]";
+  const owned =
+    '<div class="list-pages-box"><div class="list-pages-item">SAME ROW</div></div>';
+  const liveAuthor = [
+    '<div class="list-pages-box"><div class="list-pages-item"><p>by ',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)"><img src="avatar-7" alt="User"></a>',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)">User</a>',
+    '</span> <span class="odate time_1 format_live">1 Jan 2026</span>',
+    "</p></div></div>",
+  ].join("");
+  const localAuthor = [
+    '<div class="list-pages-box"><div class="list-pages-item"><p>',
+    'by User <span class="odate time_1 format_local">1 Jan 2026</span>',
+    "</p></div></div>",
+  ].join("");
+  const liveAuthorTable = [
+    '<div class="list-pages-box"><table><tbody><tr><td>',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)"><img src="avatar-7" alt="User"></a>',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)">User</a>',
+    '</span></td><td><span class="odate time_1 format_live">',
+    "1 Jan 2026</span></td></tr></tbody></table></div>",
+  ].join("");
+  const localAuthorTable = [
+    '<div class="list-pages-box"><table><tbody><tr><td>User</td>',
+    '<td><span class="odate time_1 format_local">',
+    "1 Jan 2026</span></td></tr></tbody></table></div>",
+  ].join("");
+  const liveAuthorMetadata = [
+    '<div class="list-pages-box"><p>',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)"><img src="avatar-7" alt="User"></a>',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)">User</a>',
+    "</span></p></div>",
+  ].join("");
+  const localAuthorMetadata = [
+    '<div class="list-pages-box"><p>',
+    '<span class="printuser avatarhover">',
+    '<a href="/user:info/user" onclick="listener(0)"><img src="avatar-0" alt="User"></a>',
+    '<a href="/user:info/user" onclick="listener(0)">User</a>',
+    "</span></p></div>",
+  ].join("");
+  const liveAuthorLine = [
+    '<div class="list-pages-box"><p>ROW<br>',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)"><img src="avatar-7" alt="User"></a>',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)">User</a>',
+    "</span><br></p></div>",
+  ].join("");
+  const localAuthorLine =
+    '<div class="list-pages-box"><p>ROW<br>\nUser<br></p></div>';
+  const liveAuthorPhrase = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)"><img src="avatar-7" alt="User"></a>',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)">User</a>',
+    "</span>, last edited</p></div>",
+  ].join("");
+  const localAuthorPhrase =
+    '<div class="list-pages-box"><p>By User, last edited</p></div>';
+  const liveLinkedTitle =
+    '<div class="list-pages-box"><a href="/same-page">Title A B</a></div>';
+  const localLinkedTitle =
+    '<div class="list-pages-box"><a href="/same-page">Title A\u00a0B</a></div>';
+  const footnote = (nonce, footerNonce = nonce) => {
+    const refId = nonce === null ? "1" : `${nonce}-1`;
+    const footerId = footerNonce === null ? "1" : `${footerNonce}-1`;
+    return [
+      '<div class="list-pages-box"><p>ROW',
+      '<sup class="footnoteref"><a ',
+      `id="footnoteref-${refId}" href="javascript:;" class="footnoteref" `,
+      `onclick="WIKIDOT.page.utils.scrollToReference('footnote-${refId}')">1</a></sup></p>`,
+      '<div class="footnotes-footer"><div class="title">Footnotes</div>',
+      `<div class="footnote-footer" id="footnote-${footerId}">`,
+      `<a href="javascript:;" onclick="WIKIDOT.page.utils.scrollToReference('footnoteref-${footerId}')">1</a>. NOTE`,
+      "</div></div></div>",
+    ].join("");
+  };
+  const liveFootnoteWithAuthor = footnote("123456").replace(
+    "ROW",
+    [
+      "ROW ",
+      '<span class="printuser avatarhover">',
+      '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)"><img src="avatar-7" alt="User"></a>',
+      '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)">User</a>',
+      "</span>",
+    ].join(""),
+  );
+  const localFootnoteWithAuthor = footnote(null).replace("ROW", "ROW User");
+  const liveImportedFile =
+    '<div class="list-pages-box"><img src="http://storage.wikidot.com/local--files/page/image.png" alt="image"></div>';
+  const localImportedFile =
+    '<div class="list-pages-box"><img src="https://storage.files.invalid/local--files/page/image.png" alt="image"></div>';
+  const liveFootnoteWithImportedFile = footnote("123456").replace(
+    "ROW",
+    'ROW<img src="http://storage.wikidot.com/local--files/page/image.png" alt="image">',
+  );
+  const localFootnoteWithImportedFile = footnote(null).replace(
+    "ROW",
+    'ROW<img src="https://storage.files.invalid/local--files/page/image.png" alt="image">',
+  );
+  const featured = ({ id, slug, name, tagline = "" }) => [
+    '<div class="featured-site-box">',
+    `<div class="container"><a href="http://${slug}.wikidot.com">`,
+    `<img id="featured-site-image-${id}" src="http://thumbnails.wdfiles.com/thumbnail/site/${slug}.wikidot.com/160.jpg" alt="${name} wiki">`,
+    "</a></div>",
+    '<div class="hovertip-container" id="special9387424" style="display: none">',
+    `<div id="featured-site-image-${id}-hovertip1" class="featured-site-hovertip">`,
+    `<img src="http://thumbnails.wdfiles.com/thumbnail/site/${slug}.wikidot.com/160.jpg" alt="${name} wiki" class="thumbnail">`,
+    `<div class="description"><div class="name">${name}</div>`,
+    tagline ? `<div class="tagline">${tagline}</div>` : "",
+    "<hr><div class=\"stats\">Contributions last month: 0<br>Contributors: 1</div>",
+    "</div></div></div></div>",
+  ].join("");
+  const liveFeatured = [
+    '<div class="list-pages-box"><div class="list-pages-item">',
+    "<p>FEATURED_START</p>",
+    featured({ id: 7, slug: "live-site", name: "Live Site" }),
+    "<p>FEATURED_END</p>",
+    "</div></div>",
+  ].join("");
+  const localFeatured = [
+    '<div class="list-pages-box"><div class="list-pages-item">',
+    "<p>FEATURED_START</p>",
+    featured({
+      id: 9,
+      slug: "local-site",
+      name: "Local Site",
+      tagline: "Local fixture",
+    }),
+    "<p>FEATURED_END</p>",
+    "</div></div>",
+  ].join("");
+  const social = (id) => [
+    `<span id="social${id}">`,
+    '<a href="http://reddit.com/submit?url=http%3A%2F%2Fsandbox-for-codex.wikidot.com%2Fajax-module-connector.php&amp;title=TITLE" style="margin: 0 2px" title="Reddit">',
+    '<img src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--images/social/reddit.png" alt="Reddit"></a>',
+    '<a href="http://www.facebook.com/share.php?u=http%3A%2F%2Fsandbox-for-codex.wikidot.com%2Fajax-module-connector.php" style="margin: 0 2px" title="Facebook" onclick="window.open(\'http://www.facebook.com/sharer.php?u=\'+encodeURIComponent(location.href)+\'&amp;t=\'+encodeURIComponent(document.title),\'sharer\',\'toolbar=0,status=0,width=626,height=436\');return false;">',
+    '<img src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--images/social/facebook.gif" alt="Facebook"></a>',
+    "</span>",
+    "<script type=\"text/javascript\">\n//<![CDATA[\n\n",
+    `            var socialspan = $j("#social${id}")[0];\n`,
+    "            var els = socialspan.getElementsByTagName(\"a\");\n",
+    "            for (var i=0;i<els.length;i++) {\n",
+    "                els[i].href = els[i].href.replace(\"TITLE\", encodeURIComponent(document.title));\n",
+    "            }\n",
+    "//]]>\n</script>",
+  ].join("");
+  const cases = [
+    ["owned-parity", `${owned}<p>LIVE TAIL</p>`, `${owned}<p>LOCAL TAIL</p>`],
+    ["author-fixture", liveAuthor, localAuthor],
+    ["author-table-fixture", liveAuthorTable, localAuthorTable],
+    ["author-metadata-fixture", liveAuthorMetadata, localAuthorMetadata],
+    ["author-plain-line-fixture", liveAuthorLine, localAuthorLine],
+    [
+      "author-plain-line-altered",
+      liveAuthorLine,
+      '<div class="list-pages-box"><p>ROW<br>\nUser altered<br></p></div>',
+    ],
+    ["author-plain-phrase-fixture", liveAuthorPhrase, localAuthorPhrase],
+    [
+      "author-plain-phrase-altered",
+      liveAuthorPhrase,
+      localAuthorPhrase.replace("By User,", "By Altered,"),
+    ],
+    ["linked-title-space-fixture", liveLinkedTitle, localLinkedTitle],
+    [
+      "linked-title-space-altered",
+      liveLinkedTitle,
+      '<div class="list-pages-box"><a href="/same-page">Title A\u00a0C</a></div>',
+    ],
+    ["footnote-nonce", footnote("123456"), footnote(null)],
+    [
+      "footnote-author-fixture",
+      liveFootnoteWithAuthor,
+      localFootnoteWithAuthor,
+    ],
+    [
+      "footnote-author-altered",
+      liveFootnoteWithAuthor,
+      localFootnoteWithAuthor.replace("ROW User", "ROW Altered"),
+    ],
+    ["imported-file-origin", liveImportedFile, localImportedFile],
+    [
+      "imported-file-origin-altered",
+      liveImportedFile,
+      localImportedFile.replace("image.png", "altered.png"),
+    ],
+    [
+      "footnote-imported-file",
+      liveFootnoteWithImportedFile,
+      localFootnoteWithImportedFile,
+    ],
+    [
+      "inconsistent-footnote-nonce",
+      footnote("123456", "654321"),
+      footnote(null),
+    ],
+    ["featured-fixture", liveFeatured, localFeatured],
+    [
+      "social-nonce",
+      `<div class="list-pages-box"><p>${social(12345)}</p></div>`,
+      `<div class="list-pages-box"><p>${social(67890)}</p></div>`,
+    ],
+    [
+      "html-block-nonce",
+      '<div class="list-pages-box"><iframe src="/target/html/4587713091c90020f4639c0c8a574dc6035899fe-123" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></div>',
+      '<div class="list-pages-box"><iframe src="/target/html/4587713091c90020f4639c0c8a574dc6035899fe-456" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></div>',
+    ],
+    [
+      "html-block-hash-differs",
+      '<div class="list-pages-box"><iframe src="/target/html/4587713091c90020f4639c0c8a574dc6035899fe-123" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></div>',
+      '<div class="list-pages-box"><iframe src="/target/html/9adab2bd917d980be17b6b4f961e26713b9e6996-456" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></div>',
+    ],
+    [
+      "different-row",
+      '<div class="list-pages-box"><div class="list-pages-item">LIVE ROW</div></div>',
+      '<div class="list-pages-box"><div class="list-pages-item">LOCAL ROW</div></div>',
+    ],
+  ];
+  const references = cases.map(([caseId, liveHtml]) =>
+    reference(caseId, source, liveHtml)
+  );
+  await fs.writeFile(
+    referencesPath,
+    references.map((row) => `${JSON.stringify(row)}\n`).join(""),
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: cases.map(([caseId, liveHtml, localHtml]) =>
+      mismatchCase(caseId, liveHtml, localHtml)
+    ),
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [
+      row.case_id,
+      row.classification,
+      row.disposition,
+    ]),
+    [
+      ["owned-parity", "listpages-owned-execution-parity", "none"],
+      ["author-fixture", "synchronized-imported-author-state", "none"],
+      [
+        "author-table-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-metadata-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-plain-line-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-plain-line-altered",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      [
+        "author-plain-phrase-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-plain-phrase-altered",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      [
+        "linked-title-space-fixture",
+        "synchronized-imported-page-title-state",
+        "none",
+      ],
+      [
+        "linked-title-space-altered",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      ["footnote-nonce", "canonical-footnote-route-nonce", "none"],
+      [
+        "footnote-author-fixture",
+        "canonical-footnote-route-nonce",
+        "none",
+      ],
+      [
+        "footnote-author-altered",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      [
+        "imported-file-origin",
+        "synchronized-imported-file-origin-state",
+        "none",
+      ],
+      [
+        "imported-file-origin-altered",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      [
+        "footnote-imported-file",
+        "canonical-footnote-route-nonce",
+        "none",
+      ],
+      [
+        "inconsistent-footnote-nonce",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      ["featured-fixture", "rotating-featured-site-state", "none"],
+      ["social-nonce", "canonical-social-widget-nonce", "none"],
+      ["html-block-nonce", "canonical-html-block-route-nonce", "none"],
+      [
+        "html-block-hash-differs",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      [
+        "different-row",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    ],
+  );
+});
+
+test("preview classifier isolates unsynchronized random selected-row state", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const cases = [
+    {
+      id: "random-size",
+      source: [
+        '[[module ListPages order="random" limit="1"]]',
+        '[[div class="num[[#expr %%size%%%10]]"]]SAME[[/div]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="num2">SAME</div></div>',
+      local:
+        '<div class="list-pages-box"><div class="num7">SAME</div></div>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-link",
+      source: [
+        '[[module ListPages order="created_at desc" order="random" limit="@URL|1"]]',
+        "[[[%%link%%|SAME]]]",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><a href="/one">SAME</a></div>',
+      local: '<div class="list-pages-box"><a href="/two">SAME</a></div>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-visible-change",
+      source: [
+        '[[module ListPages order="random" limit="1"]]',
+        "%%link%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box">ONE</div>',
+      local: '<div class="list-pages-box">TWO</div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "deterministic-size",
+      source: [
+        '[[module ListPages order="name" limit="1"]]',
+        '[[div class="num[[#expr %%size%%%10]]"]]SAME[[/div]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="num2">SAME</div></div>',
+      local:
+        '<div class="list-pages-box"><div class="num7">SAME</div></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases
+      .map(({ id, source, live }) =>
+        `${JSON.stringify(reference(id, source, live))}\n`
+      )
+      .join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({ id, live, local }) =>
+        mismatchCase(id, live, local)
+      ),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [
+      row.case_id,
+      row.classification,
+      row.disposition,
+    ]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+});
+
 test("preview classifier does not mask a missing wrapper as fixture state", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
   const referencesPath = path.join(root, "references.jsonl");
