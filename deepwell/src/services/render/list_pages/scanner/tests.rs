@@ -55,6 +55,22 @@ fn runtime_head_validation_accepts_static_wildcard_selectors() {
 }
 
 #[test]
+fn corpus_complete_heads_that_execute_live_remain_runtime_executable() {
+    for head in [
+        r#"name="*" category="-nav -system -forum -admin" tags="-管理 -" order="created_at desc desc" limit="1" offset="@URL|0""#,
+        r#"limit="1" created_by="@URL" tags="-hub,-návod,-české,-autor""#,
+        r#"category="_default" order="name desc desc" wrapper="no" separate="no" perPage="250""#,
+        "separate=\"no\" tags=\"@URL\" created_at=\"@URL\" updated_at=\"@URL\" created_by=\"@URL\" rating=\"@URL\" offset=\"@URL|0\" perPage=\"1\"\u{3000}limit=\"1\" order=\"@URL|created_at desc\" category=\"*\"",
+        r#"order="random" perPage="250" limit="250""#,
+    ] {
+        assert!(
+            list_pages_runtime_head_can_execute(head),
+            "fresh anonymous Wikidot preview executed {head:?}",
+        );
+    }
+}
+
+#[test]
 fn corpus_unicode_tag_head_remains_runtime_executable() {
     let head = r#"separate="1" tags="+阿尔兹海默症 -中心" order="random"  perPage="50""#;
     assert_eq!(
@@ -779,10 +795,6 @@ fn list_pages_scanner_ignores_modules_inside_pinned_literal_forms() {
             "empty embed block",
             "[[embed]]\n[[module ListPages name=\"fake\"]]body[[/module]]\n[[/embed]]",
         ),
-        (
-            "CSS module",
-            "[[module CSS]]\n[[module ListPages name=\"fake\"]]body\n[[/module]]",
-        ),
     ];
 
     for (label, literal) in cases {
@@ -794,6 +806,24 @@ fn list_pages_scanner_ignores_modules_inside_pinned_literal_forms() {
         assert_eq!(modules[0].head, "name=\"live\"", "{label}");
         assert_eq!(modules[0].body, "kept", "{label}");
     }
+
+    let wikidot_unclosed_css = concat!(
+        "[[module CSS]]\n",
+        "[[module ListPages name=\"recovered\"]]body\n",
+        "[[/module]]\n",
+        "[[module ListPages name=\"live\"]]kept[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(wikidot_unclosed_css);
+
+    // Anonymous Wikidot PagePreview executes both root ListPages modules for
+    // this boundary family. The matching two-module evidence has raw HTML
+    // SHA-256
+    // 48a80a2dd6ca8c27d1813e82ed7e0f9a1700214d34095cb81fdefda88344365f.
+    assert_eq!(modules.len(), 2);
+    assert_eq!(modules[0].head, "name=\"recovered\"");
+    assert_eq!(modules[0].body, "body\n");
+    assert_eq!(modules[1].head, "name=\"live\"");
+    assert_eq!(modules[1].body, "kept");
 
     for (label, opener) in [
         ("unclosed inline raw", "@@"),
@@ -1474,6 +1504,82 @@ fn list_pages_scanner_keeps_completed_matches_before_an_unclosed_body() {
 }
 
 #[test]
+fn corpus_unclosed_listpages_body_owns_legacy_quoted_continuation() {
+    let source = concat!(
+        "[[module ListPages offset=\"@URL|0\" range=\".\"]]@@\n",
+        "> @@%%content{2}%%@@\n",
+        "> @@[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1);
+    assert_eq!(modules[0].head, "offset=\"@URL|0\" range=\".\"");
+    assert_eq!(modules[0].body, "@@\n> @@%%content{2}%%@@\n> @@[[/module]]",);
+    assert_eq!(modules[0].original, source);
+    assert_eq!(modules[0].end, source.len());
+}
+
+#[test]
+fn corpus_complete_argumentless_listpages_openers_execute_at_eof() {
+    for source in ["[[module ListPages]]", "[[Module Listpages]]"] {
+        let modules = find_list_pages_module_matches(source);
+
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+        assert_eq!(modules[0].head, "");
+        assert_eq!(modules[0].body, "");
+        assert_eq!(modules[0].original, source);
+        assert_eq!(modules[0].end, source.len());
+    }
+}
+
+#[test]
+fn corpus_complete_runtime_unsafe_listpages_openers_execute_at_eof() {
+    for source in [
+        concat!(
+            "[[module ListPages created_by=\"morhadow\" tags=\"es\" ",
+            "order=\"rating\" limit=\"5\" separate=\"no\"@@]]",
+        ),
+        concat!(
+            "[[module ListPages created_by=\"여기다 이름을 적으시오\" separate=\"no\" ",
+            "limit=\"250\" perPage=\"250\"tags=\"농담, -이야기, -번역\" order=\"title\"]]",
+        ),
+    ] {
+        let modules = find_list_pages_module_matches(source);
+
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+        assert_eq!(modules[0].body, "");
+        assert_eq!(modules[0].original, source);
+        assert_eq!(modules[0].end, source.len());
+    }
+}
+
+#[test]
+fn corpus_single_bracket_head_with_a_dangling_quote_keeps_its_module_close() {
+    let source = concat!(
+        "[[module ListPages tags=\"+hiscon2017\" perPage=\"100\" order=\"评分：]\n",
+        "* **%%title_linked%%**\n",
+        "[[/module]]\n",
+        "TAIL",
+    );
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(
+        modules[0].head,
+        "tags=\"+hiscon2017\" perPage=\"100\" order=\"评分：",
+    );
+    assert_eq!(modules[0].body, "\n* **%%title_linked%%**\n");
+    assert_eq!(
+        modules[0].original,
+        concat!(
+            "[[module ListPages tags=\"+hiscon2017\" perPage=\"100\" order=\"评分：]\n",
+            "* **%%title_linked%%**\n",
+            "[[/module]]",
+        ),
+    );
+}
+
+#[test]
 fn corpus_legacy_list_pages_heads_remain_structurally_visible() {
     for source in [
         concat!(
@@ -1503,10 +1609,104 @@ fn corpus_legacy_list_pages_heads_remain_structurally_visible() {
             "limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n",
             "%%content{0}%%\n[[/module]]",
         ),
+        "[[module ListPages 属性...]]\n模块主体\n[[/module]]",
     ] {
         let modules = find_list_pages_module_matches(source);
         assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
     }
+
+    for source in [
+        "[[module ListPages 属性..]]\n模块主体\n[[/module]]",
+        "[[module ListPages 任意...]]\n模块主体\n[[/module]]",
+        "[[module ListPages 属性... 额外]]\n模块主体\n[[/module]]",
+    ] {
+        assert!(
+            find_list_pages_module_matches(source).is_empty(),
+            "unsupported prose-like heads must remain fail-closed: {source:?}",
+        );
+    }
+}
+
+#[test]
+fn documented_placeholder_head_reaches_the_direct_scanner() {
+    let source = "[[module ListPages 属性...]]\n模块主体\n[[/module]]";
+    let lowercase = source.to_ascii_lowercase();
+    let ListPagesScannerLiteralIndexes { direct, .. } =
+        LiteralRegionIndex::new_list_pages_scanner_indexes(source, None);
+    assert!(
+        direct.containing_range(0).is_none(),
+        "the exact runtime head must not be claimed by a literal owner",
+    );
+    let (events, _, _, ambiguous) =
+        collect_module_events(ModuleEventScanner::new(source, &lowercase, &direct));
+    assert!(!ambiguous);
+    assert!(
+        matches!(
+            events.first(),
+            Some(ModuleEvent::Open {
+                direct_candidate: true,
+                ..
+            }),
+        ),
+        "the exact runtime head must reach the structural event stream",
+    );
+
+    let projection = ListPagesSourceProjection::new(source)
+        .expect("the ASCII ellipsis has a pinned typography projection");
+    let projected = projection.source();
+    let projected_lowercase = projected.to_ascii_lowercase();
+    let ListPagesScannerLiteralIndexes {
+        projected: projected_literals,
+        ..
+    } = LiteralRegionIndex::new_list_pages_scanner_indexes(source, Some(&projection));
+    let projected_literals =
+        projected_literals.expect("a source projection has a projected literal index");
+    let (projected_events, _, _, projected_ambiguous) = collect_module_events(
+        ModuleEventScanner::new(projected, &projected_lowercase, &projected_literals),
+    );
+    assert!(!projected_ambiguous);
+    assert!(
+        matches!(
+            projected_events.first(),
+            Some(ModuleEvent::Open {
+                direct_candidate: true,
+                ..
+            }),
+        ),
+        "{projected:?}: {projected_events:#?}"
+    );
+}
+
+#[test]
+fn corpus_at_marker_footnote_tail_executes_as_default_list_pages() {
+    let source = "[[module Listpages @@以降という認識で良い。 [[/footnote]]";
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(modules[0].start, 0);
+    assert_eq!(modules[0].body_start, source.len());
+    assert_eq!(modules[0].end, source.len());
+    assert_eq!(modules[0].head, "");
+    assert_eq!(modules[0].body, "");
+    assert_eq!(modules[0].original, source);
+}
+
+#[test]
+fn at_marker_footnote_tail_does_not_hide_a_later_valid_module() {
+    let malformed = "[[module Listpages @@以降という認識で良い。 [[/footnote]]";
+    let valid = concat!(
+        "[[module ListPages name=\"later-valid\"]]\n",
+        "%%fullname%%\n",
+        "[[/module]]",
+    );
+    let source = format!("{malformed}\n{valid}");
+    let modules = find_list_pages_module_matches(&source);
+
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(modules[0].start, malformed.len() + 1);
+    assert_eq!(modules[0].head, r#"name="later-valid""#);
+    assert_eq!(modules[0].body, "\n%%fullname%%\n");
+    assert_eq!(modules[0].original, valid);
 }
 
 #[test]

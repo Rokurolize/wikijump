@@ -11,7 +11,212 @@
  */
 
 use super::super::super::super::LiteralRegionIndex;
-use super::collect_downstream_css_module_ranges;
+use super::{
+    collect_downstream_css_module_ranges, collect_wikidot_unclosed_css_yield_openers,
+};
+
+#[test]
+fn wikidot_unclosed_css_yields_to_a_complete_root_list_pages_module() {
+    let source = concat!(
+        "[[module CSS]]\n\n",
+        "[[module ListPages name=\"=\"]]\n",
+        "%%title%%\n",
+        "[[/module]]",
+    );
+    let list_pages = source.find("[[module ListPages").unwrap();
+
+    // Anonymous Wikidot PagePreview emits an empty ListPages wrapper for this
+    // shape. The provenance-backed raw HTML SHA-256 is
+    // b3e8cc0484ab7b9d9291bad408d2668491e4d052edfe91e320e205cb3d31418c.
+    assert!(collect_downstream_css_module_ranges(source).is_empty());
+    assert_eq!(
+        collect_wikidot_unclosed_css_yield_openers(source),
+        vec![0.."[[module CSS]]".len()],
+    );
+    assert!(!LiteralRegionIndex::new_list_pages_syntax(source).contains(list_pages));
+}
+
+#[test]
+fn wikidot_unclosed_css_yields_to_multiple_complete_list_pages_modules() {
+    let source = concat!(
+        "[[module CSS]]\n",
+        "[[module ListPages name=\"missing-one\"]]\n",
+        "ONE\n",
+        "[[/module]]\n",
+        "[[module ListPages name=\"missing-two\"]]\n",
+        "TWO\n",
+        "[[/module]]",
+    );
+
+    // Anonymous Wikidot PagePreview emits two ListPages wrappers. The
+    // provenance-backed raw HTML SHA-256 is
+    // 48a80a2dd6ca8c27d1813e82ed7e0f9a1700214d34095cb81fdefda88344365f.
+    assert!(collect_downstream_css_module_ranges(source).is_empty());
+    let index = LiteralRegionIndex::new_list_pages_syntax(source);
+    assert!(!index.contains(source.find("missing-one").unwrap()));
+    assert!(!index.contains(source.find("missing-two").unwrap()));
+}
+
+#[test]
+fn wikidot_closed_css_keeps_complete_list_pages_markers_raw() {
+    let source = concat!(
+        "[[module CSS]]\n",
+        "[[module ListPages name=\"missing-one\"]]\n",
+        "ONE\n",
+        "[[/module]]\n",
+        "[[module ListPages name=\"missing-two\"]]\n",
+        "TWO\n",
+        "[[/module]]\n",
+        "[[/module]]",
+    );
+
+    // Adding the true outer close makes the matching anonymous Wikidot
+    // PagePreview empty. Its raw HTML SHA-256 is
+    // 545c38b0922de19734fbffde62792c37c2aef6a3216cfa472449173165220f7d.
+    assert_eq!(
+        collect_downstream_css_module_ranges(source),
+        vec![0..source.len()],
+    );
+    assert!(collect_wikidot_unclosed_css_yield_openers(source).is_empty());
+    let index = LiteralRegionIndex::new_list_pages_syntax(source);
+    assert!(index.contains(source.find("missing-one").unwrap()));
+    assert!(index.contains(source.find("missing-two").unwrap()));
+}
+
+#[test]
+fn wikidot_unclosed_css_yields_across_a_css_comment_and_malformed_head() {
+    for (source, live_sha256) in [
+        (
+            concat!(
+                "[[module CSS]]\n",
+                "/*\n",
+                "[[module ListPages name=\"=\"]]\n",
+                "*/\n",
+                "[[/module]]",
+            ),
+            "1c6db6ed75b7c27d758433d4a7157af459157d4e183c342997bef5366d093853",
+        ),
+        (
+            concat!(
+                "[[module CSS]]\n",
+                "[[module ListPages name=\"=\n",
+                "%%title%%\n",
+                "[[/module]]",
+            ),
+            "5884e46ecf111e5e587c9cd0a911fa7bbeefd31b1a9f74021c14141a71f8d1fd",
+        ),
+    ] {
+        assert!(
+            collect_downstream_css_module_ranges(source).is_empty(),
+            "{live_sha256}: {source:?}",
+        );
+        assert!(
+            {
+                let index = LiteralRegionIndex::new_list_pages_scanner_syntax(source);
+                !index.contains(source.find("[[module ListPages").unwrap())
+            },
+            "{live_sha256}: {source:?}: {:?}",
+            LiteralRegionIndex::new_list_pages_scanner_syntax(source).ranges,
+        );
+    }
+}
+
+#[test]
+fn wikidot_inline_css_keeps_nested_list_pages_markers_raw() {
+    let source = "[[module CSS]][[module ListPages name=\"=\"]]%%title%%[[/module]]";
+    let list_pages = source.find("[[module ListPages").unwrap();
+
+    // Same-line module ownership remains a fail-closed nonexecution boundary
+    // pending the broader exact-literal work in FTML issue #330.
+    assert_eq!(
+        collect_downstream_css_module_ranges(source),
+        vec![0..source.len()],
+    );
+    assert!(collect_wikidot_unclosed_css_yield_openers(source).is_empty());
+    assert!(LiteralRegionIndex::new_list_pages_syntax(source).contains(list_pages));
+}
+
+#[test]
+fn wikidot_unclosed_css_does_not_recover_list_pages_heads_in_literal_contexts() {
+    for source in [
+        concat!(
+            "[[module CSS]]\n",
+            "[!--\n",
+            "[[module ListPages name=\"comment\"]]\n",
+            "[[/module]]\n",
+            "--]",
+        ),
+        concat!(
+            "[[module CSS]]\n",
+            "[[code]]\n",
+            "[[module ListPages name=\"code\"]]\n",
+            "[[/module]]\n",
+            "[[/code]]",
+        ),
+        concat!(
+            "[[module CSS]]\n",
+            "[[html]]\n",
+            "[[module ListPages name=\"html\"]]\n",
+            "[[/module]]\n",
+            "[[/html]]",
+        ),
+        concat!(
+            "[[module CSS]]\n",
+            "[[raw]]\n",
+            "[[module ListPages name=\"raw\"]]\n",
+            "[[/module]]\n",
+            "[[/raw]]",
+        ),
+        concat!(
+            "[[module CSS]]\n",
+            "@@\n",
+            "[[module ListPages name=\"inline-raw\"]]\n",
+            "[[/module]]\n",
+            "@@",
+        ),
+        concat!(
+            "[[module CSS]]\n",
+            "\\[[module ListPages name=\"escaped\"]]\n",
+            "[[/module]]",
+        ),
+    ] {
+        let list_pages = source.find("[[module ListPages").unwrap();
+        let close_end = source.find("[[/module]]").unwrap() + "[[/module]]".len();
+        let ranges = collect_downstream_css_module_ranges(source);
+
+        assert_eq!(ranges, vec![0..close_end], "{source:?}");
+        assert!(ranges[0].contains(&list_pages), "{source:?}");
+    }
+}
+
+#[test]
+fn wikidot_unclosed_css_stops_before_list_pages_after_a_root_tab_close() {
+    let source = concat!(
+        "[[module CSS]]\n",
+        "[[tabview]]\n",
+        "[[tab first]]\n",
+        "FIRST\n",
+        "[[/tab]]\n",
+        "[[tab second]]\n",
+        "[[module ListPages name=\"owned\"]]BODY\n",
+        "[[/module]]",
+    );
+    let list_pages = source.find("[[module ListPages").unwrap();
+
+    // Three exact-source literal replays (CN, JP, and KO translations of the
+    // same hub) have empty anonymous Wikidot output when a completed root tab
+    // precedes the ListPages head. Their source SHA-256 values are
+    // c48edee0c7d5e0d7e35d35c28d00148b1097b0a88206a355952de6a9cdff8437,
+    // d9c089fd53d7c95f6b71c9d79f2583e05e63025630247d45dd1be2b5d2491f52,
+    // and 809311718037764d189b63533687b8a79052ebae37b8e988e0ffa35f41d35cde.
+    assert_eq!(
+        collect_downstream_css_module_ranges(source),
+        vec![0..source.len()],
+    );
+    assert!(
+        LiteralRegionIndex::new_list_pages_scanner_syntax(source).contains(list_pages)
+    );
+}
 
 #[test]
 fn tight_quote_css_uses_original_downstream_ownership() {

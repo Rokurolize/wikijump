@@ -12,6 +12,7 @@
 
 use super::super::super::block_candidates::HeadContext;
 use super::super::super::left_block_start_in_run;
+use super::ranges::{WikidotCssListPagesBoundary, WikidotCssListPagesBoundaryIndex};
 use super::syntax::{PinnedModuleCloseIndex, pinned_css_module_scan_start};
 use std::ops::Range;
 
@@ -33,11 +34,22 @@ pub(in crate::services::render::literal_regions::list_pages_protection) fn colle
     if openers.is_empty() {
         return Vec::new();
     }
-    let close_ends = PinnedModuleCloseIndex::new(source).first_ends_for_openers(&openers);
+    let closes = PinnedModuleCloseIndex::new(source);
+    let close_ends = closes.first_ends_for_openers(&openers);
+    let wikidot_boundaries =
+        WikidotCssListPagesBoundaryIndex::new(source, closes.ranges());
     openers
         .into_iter()
         .zip(close_ends)
-        .filter_map(|(open, close_end)| close_end.map(|close_end| open.start..close_end))
+        .filter_map(|(open, close_end)| {
+            match wikidot_boundaries.boundary(source, &open) {
+                WikidotCssListPagesBoundary::Original => {
+                    close_end.map(|close_end| open.start..close_end)
+                }
+                WikidotCssListPagesBoundary::Yield => None,
+                WikidotCssListPagesBoundary::Closed { end } => Some(open.start..end),
+            }
+        })
         .collect()
 }
 
