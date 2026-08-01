@@ -387,9 +387,21 @@ export async function reconcileListPagesCorpusReplay({
     const replaySourceSha256 = replaySourceHash(invocation);
     const classified = classificationsBySource.get(replaySourceSha256);
     if (!classified) {
-      throw new Error(
-        `missing live/local classification for corpus replay source ${replaySourceSha256} (${invocation.id})`,
-      );
+      return {
+        case_id: invocation.id,
+        source_sha256: invocation.source_sha256,
+        replay_source_sha256: replaySourceSha256,
+        semantic_cluster_key: invocation.semantic_cluster_key,
+        representative_case_id: null,
+        direct_live_capture: false,
+        verification_status: "unresolved",
+        differential_status: "unresolved",
+        classification: "unresolved",
+        disposition: "unresolved",
+        rationale:
+          `No live/local classification covers replay source ${replaySourceSha256}`,
+        provenance: invocation.provenance,
+      };
     }
     return {
       case_id: invocation.id,
@@ -488,8 +500,12 @@ export async function reconcileListPagesCorpusReplay({
       directly_captured_invocation_count: cases.filter(
         (row) => row.direct_live_capture,
       ).length,
-      classified_invocation_count: cases.length,
-      unresolved_invocation_count: 0,
+      classified_invocation_count: cases.filter(
+        (row) => row.verification_status === "classified",
+      ).length,
+      unresolved_invocation_count: cases.filter(
+        (row) => row.verification_status === "unresolved",
+      ).length,
       actionable_unique_source_count: actionableSourceHashes.size,
       actionable_invocation_count: actionableCases.length,
       differential_statuses: differentialStatuses,

@@ -301,7 +301,7 @@ test("reconciles repeated literal occurrences inside an argument-bearing code he
   assert.equal(reconciliation.cases[0].replay_source_sha256, sha256(replay));
 });
 
-test("fails closed when an invocation has no exact-source classification", async () => {
+test("measures an invocation with no exact-source classification", async () => {
   const classified = "[[module ListPages]]x[[/module]]";
   const missing = "[[module ListPages]]y[[/module]]";
   const inputs = await fixture({
@@ -309,10 +309,16 @@ test("fails closed when an invocation has no exact-source classification", async
     cases: [classifiedCase("en:other:L1:B0", classified)],
   });
 
-  await assert.rejects(
-    reconcileListPagesCorpusReplay(inputs),
-    /missing live\/local classification for corpus replay source/,
-  );
+  const reconciliation = await reconcileListPagesCorpusReplay(inputs);
+
+  assert.equal(reconciliation.summary.unresolved_invocation_count, 1);
+  assert.equal(reconciliation.summary.classified_invocation_count, 0);
+  assert.equal(reconciliation.summary.actionable_unique_source_count, 1);
+  assert.equal(reconciliation.summary.actionable_invocation_count, 1);
+  assert.equal(reconciliation.summary.exit_code, 1);
+  assert.deepEqual(reconciliation.actionable_case_ids, ["en:missing:L1:B0"]);
+  assert.equal(reconciliation.cases[0].verification_status, "unresolved");
+  assert.equal(reconciliation.cases[0].classification, "unresolved");
 });
 
 test("rejects an invocation whose preserved source identity is inconsistent", async () => {
