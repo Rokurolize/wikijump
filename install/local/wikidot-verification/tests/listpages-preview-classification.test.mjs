@@ -1105,6 +1105,21 @@ test("preview classifier narrowly separates owned parity and synchronized runtim
   ].join("");
   const localAuthorPhrase =
     '<div class="list-pages-box"><p>By User, last edited</p></div>';
+  const liveAuthorFallback = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)">User does not match any existing user name</a>',
+    '</span></p></div>',
+  ].join("");
+  const localAuthorFallback =
+    '<div class="list-pages-box"><p>By User</p></div>';
+  const liveAuthorErrorInline = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="error-inline"><em>User</em> does not match any existing user name</span>',
+    "</p></div>",
+  ].join("");
+  const localAuthorErrorInline =
+    '<div class="list-pages-box"><p>By User</p></div>';
   const liveLinkedTitle =
     '<div class="list-pages-box"><a href="/same-page">Title A B</a></div>';
   const localLinkedTitle =
@@ -1239,6 +1254,17 @@ test("preview classifier narrowly separates owned parity and synchronized runtim
       '<div class="list-pages-box"><p>ROW<br>\nUser altered<br></p></div>',
     ],
     ["author-plain-phrase-fixture", liveAuthorPhrase, localAuthorPhrase],
+    ["author-fallback-fixture", liveAuthorFallback, localAuthorFallback],
+    [
+      "author-error-inline-fixture",
+      liveAuthorErrorInline,
+      localAuthorErrorInline,
+    ],
+    [
+      "author-error-inline-altered",
+      liveAuthorErrorInline,
+      localAuthorErrorInline.replace("By User", "By Altered"),
+    ],
     [
       "author-plain-phrase-altered",
       liveAuthorPhrase,
@@ -1433,6 +1459,21 @@ test("preview classifier narrowly separates owned parity and synchronized runtim
         "none",
       ],
       [
+        "author-fallback-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-error-inline-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-error-inline-altered",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      [
         "author-plain-phrase-altered",
         "listpages-query-or-row-render-divergence",
         "investigate-query-or-renderer",
@@ -1609,6 +1650,40 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
       ],
     },
     {
+      id: "random-linked-title-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="1"]]',
+        "Random Page: %%title_linked%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item">Random Page: <a href="/one">Live</a></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item">Random Page: <a href="/two">Local</a></div></div>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-name-title-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="13" wrapper="no"]]',
+        '[[a_ href="/%%fullname%%" class="book"]][[span]]%%name%%[[/span]][[span]]%%title%%[[/span]][[/a]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><a class="book" href="/one"><span>ONE</span><span>Live title</span></a></div>',
+      local: '<div class="list-pages-box"><a class="book" href="/two"><span>TWO</span><span>Local title</span></a></div>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-size-branch-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%14 != 1 | [!-- ]]TWO[[#ifexpr %%size%%%14 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><p>ONE</p></div>',
+      local: '<div class="list-pages-box"><p>TWO</p></div>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
       id: "deterministic-size",
       source: [
         '[[module ListPages order="name" limit="1"]]',
@@ -1653,6 +1728,239 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
     ]),
     cases.map(({ id, expected }) => [id, ...expected]),
   );
+});
+
+test("preview classifier isolates synchronized relative-time query state", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const cases = [
+    {
+      id: "relative-empty-local-fixture",
+      source: [
+        '[[module ListPages limit="1" updated_at="last 3 day"]]',
+        "%%updated_at|%Y-%m-%d%% %%title%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_1 format_live">1 Jan 2026</span> Live</p></div></div>',
+      local: '<div class="list-pages-box"></div>',
+      expected: ["synchronized-relative-time-query-state", "none"],
+    },
+    {
+      id: "relative-date-only-row",
+      source: [
+        '[[module ListPages limit="1" updated_at="older than 2 days"]]',
+        "%%updated_at|%Y-%m-%d%% Fixed row",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_2 format_live">1 Jan 2026</span> Fixed row</p></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_3 format_live">2 Jan 2026</span> Fixed row</p></div></div>',
+      expected: ["synchronized-relative-time-query-state", "none"],
+    },
+    {
+      id: "relative-arbitrary-row-change",
+      source: [
+        '[[module ListPages limit="1" updated_at="last 3 day"]]',
+        "%%updated_at%% Fixed row",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_2 format_live">1 Jan 2026</span> LIVE</p></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_3 format_live">2 Jan 2026</span> LOCAL</p></div></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "relative-static-body-change",
+      source: [
+        '[[module ListPages limit="1" updated_at="last 3 day"]]',
+        "STATIC BODY",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p>LIVE</p></div></div>',
+      local: '<div class="list-pages-box"></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases
+      .map(({ id, source, live }) =>
+        `${JSON.stringify(reference(id, source, live))}\n`
+      )
+      .join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({ id, live, local }) =>
+        mismatchCase(id, live, local)
+      ),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [
+      row.case_id,
+      row.classification,
+      row.disposition,
+    ]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+});
+
+test("preview classifier isolates the bounded URL selector fixture shell", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-url-selector-classify-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages separate="no" created_at="@URL" order="created_by" perPage="250" tags="-jp" category="_default art"]]',
+    '> %%created_at%%@@[[*user %%created_by%%]]@@',
+    '> [[a href="/%%fullname%%" target="_blank"]]%%title%%[[/a]]',
+    "[[/module]]",
+  ].join("\n");
+  const wrapper = (rows, pagerTarget = "/ajax-module-connector.php/p/2") => [
+    '<div class="list-pages-box">',
+    '<blockquote class="row-shell">',
+    ...rows,
+    "</blockquote>",
+    `<div class="pager"><a href="${pagerTarget}">next</a></div>`,
+    "</div>",
+  ].join("");
+  const live = wrapper([
+    '<p data-source="live"><a href="/alice" target="_blank">Alice</a></p>',
+    '<p data-source="live"><a href="/bob" target="_blank">Bob</a></p>',
+  ]);
+  const local = wrapper([
+    '<p data-source="local"><a href="/carol" target="_blank">Carol</a></p>',
+    '<p data-source="local"><a href="/dave" target="_blank">Dave</a></p>',
+  ]);
+  const alteredPager = wrapper(
+    [
+      '<p data-source="local"><a href="/carol" target="_blank">Carol</a></p>',
+      '<p data-source="local"><a href="/dave" target="_blank">Dave</a></p>',
+    ],
+    "/ajax-module-connector.php/p/3",
+  );
+  const alteredShape = [
+    '<div class="list-pages-box"><blockquote class="row-shell">',
+    '<p data-source="local"><a href="/carol" target="_blank">Carol</a></p>',
+    "</blockquote>",
+    '<div class="pager"><a href="/ajax-module-connector.php/p/2">next</a></div>',
+    "</div>",
+  ].join("");
+  const cases = [
+    {
+      id: "url-selector-selected-set",
+      local,
+      expected: ["synchronized-url-selector-fixture-state", "none"],
+    },
+    {
+      id: "url-selector-pager-changed",
+      local: alteredPager,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "url-selector-row-shape-changed",
+      local: alteredShape,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases.map(({ id }) => `${JSON.stringify(reference(id, source, live))}\n`).join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({ id, local: caseLocal }) =>
+        mismatchCase(id, live, caseLocal)
+      ),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [row.case_id, row.classification, row.disposition]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test("preview classifier isolates synchronized imported include state", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-include-classify-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const common = '<div class="list-pages-box"></div><div class="list-pages-box"></div>';
+  const fixture = (targets) => ({
+    source: [
+      '[[module ListPages order="name" limit="1"]]%%title%%[[/module]]',
+      ...targets.map((target) => `[[include :mirror:${target}]]`),
+    ].join("\n"),
+    live: `${common}<div class="license-shell"><div class="list-pages-box"> </div></div>`,
+    local: `${common}${targets.map((target) =>
+      `<div class="error-block">Included page "${target}" does not exist (<a href="/${target}/edit/true">create it now</a>)</div>`
+    ).join("")}`,
+  });
+  const positiveOne = fixture(["component:license-box", "component:license-box-end"]);
+  const positiveTwo = fixture(["theme:license", "theme:license-end"]);
+  const negativeError = {
+    ...positiveOne,
+    local: positiveOne.local.replace("component:license-box-end", "other:page"),
+  };
+  const negativeRows = {
+    ...positiveTwo,
+    live: `${common}<div class="license-shell"><div class="list-pages-box"><div class="list-pages-item">row</div></div></div>`,
+  };
+  const cases = [
+    { id: "imported-include-license", ...positiveOne, expected: ["synchronized-imported-include-state", "none"] },
+    { id: "imported-include-theme", ...positiveTwo, expected: ["synchronized-imported-include-state", "none"] },
+    { id: "imported-include-error-altered", ...negativeError, expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"] },
+    { id: "imported-include-row-altered", ...negativeRows, expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"] },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases.map(({ id, source, live }) =>
+      `${JSON.stringify(reference(id, source, live))}\n`
+    ).join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({ id, live, local }) => mismatchCase(id, live, local)),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [row.case_id, row.classification, row.disposition]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+  await fs.rm(root, { recursive: true, force: true });
 });
 
 test("preview classifier isolates random redirect rows selected from different fixtures", async () => {

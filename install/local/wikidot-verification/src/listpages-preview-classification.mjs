@@ -456,6 +456,37 @@ function synchronizedImportedAuthorNames(nodes) {
   );
 }
 
+function normalizeImportedAuthorFallbackText(value) {
+  return value.replace(
+    /(?<name>[^\n:]+?)\s+does not match any existing user name/gu,
+    "$<name>",
+  );
+}
+
+function importedAuthorErrorInlineName(node) {
+  if (
+    node?.type !== "element" ||
+    node.name !== "span" ||
+    !nodeHasClass(node, "error-inline")
+  ) {
+    return null;
+  }
+  const children = node.children ?? [];
+  if (
+    children.length !== 2 ||
+    children[0]?.type !== "element" ||
+    children[0].name !== "em" ||
+    children[0].children?.length !== 1 ||
+    children[0].children[0]?.type !== "text" ||
+    children[1]?.type !== "text" ||
+    children[1].value !== " does not match any existing user name"
+  ) {
+    return null;
+  }
+  const name = nodeText(children[0]).trim();
+  return name.length > 0 ? name : null;
+}
+
 function normalizeSynchronizedLinkedTitleSpaces(nodes) {
   let normalizedSpaces = 0;
   const normalizeNode = (node, insideLink = false) => {
@@ -790,9 +821,13 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
   const socialNonces = new Set();
   const normalizeImportedAuthor = (node, appendSpace) => {
     state.importedAuthors += 1;
+    const authoredName = nodeText(node).trim().replace(
+      /^(?<name>.+?)\s+does not match any existing user name$/u,
+      "$<name>",
+    );
     return {
       type: "text",
-      value: `${nodeText(node).trim()}${appendSpace ? " " : ""}`,
+      value: `${authoredName}${appendSpace ? " " : ""}`,
     };
   };
   const normalizeChildren = (children) => {
@@ -809,6 +844,14 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
                 !["br", "sup"].includes(following.name),
             ),
           ]
+        : importedAuthorErrorInlineName(child) !== null
+          ? [
+              normalizeImportedAuthor(
+                child,
+                following?.type === "element" &&
+                  !["br", "sup"].includes(following.name),
+              ),
+            ]
         : normalizeNode(child);
       for (const normalized of normalizedChildren) {
         const previous = output.at(-1);
@@ -831,6 +874,9 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
     }
     if (node?.type !== "element") return [{ ...node }];
     if (nodeHasClass(node, "printuser")) {
+      return [normalizeImportedAuthor(node, false)];
+    }
+    if (importedAuthorErrorInlineName(node) !== null) {
       return [normalizeImportedAuthor(node, false)];
     }
     if (nodeHasClass(node, "odate")) {
@@ -1285,6 +1331,287 @@ function malformedDefaultRowsHaveExactListPagesShell({
     JSON.stringify(live) === JSON.stringify(local);
 }
 
+function randomSelectedRowTemplateKind(invocation) {
+  if (
+    invocation === null ||
+    lastArgumentValue(invocation, "order")?.trim().toLowerCase() !== "random"
+  ) {
+    return null;
+  }
+  const limit = lastArgumentValue(invocation, "limit")?.trim() ?? "";
+  const perPage = lastArgumentValue(invocation, "perpage")?.trim() ?? "";
+  if (
+    ![limit, perPage].some((value) => /^(?:@url\|)?[1-9][0-9]*$/iu.test(value))
+  ) {
+    return null;
+  }
+  const body = invocation.body;
+  if (/%%(?:title_linked|linked_title)%%/iu.test(body)) {
+    return "linked-title";
+  }
+  if (/%%name%%/iu.test(body) && /%%title%%/iu.test(body)) {
+    return "name-title";
+  }
+  if (
+    /%%size%%\s*%\s*[0-9]+/iu.test(body) &&
+    /#ifexpr/iu.test(body)
+  ) {
+    return "size-branch";
+  }
+  return null;
+}
+
+function cloneRandomStateNode(node, normalizeContent) {
+  if (node?.type === "text") {
+    return normalizeContent
+      ? { ...node, value: "__RANDOM_SELECTED_ROW_TEXT__" }
+      : { ...node };
+  }
+  if (node?.type !== "element") return { ...node };
+  return {
+    ...node,
+    attrs: (node.attrs ?? []).map((attribute) => ({
+      ...attribute,
+      value: normalizeContent
+        ? "__RANDOM_SELECTED_ROW_ATTRIBUTE__"
+        : attribute.value,
+    })),
+    children: (node.children ?? []).map((child) =>
+      cloneRandomStateNode(child, normalizeContent)
+    ),
+  };
+}
+
+function normalizeRandomSelectedRowState(nodes, wrapperExpected) {
+  const normalizeWrapper = (wrapper) => {
+    const hasItems = descendantElements(
+      wrapper,
+      (node) => nodeHasClass(node, "list-pages-item"),
+    ).length > 0;
+    const normalizeChild = (child) => {
+      if (nodeHasClass(child, "pager")) {
+        return cloneRandomStateNode(child, false);
+      }
+      if (!wrapperExpected || !hasItems) {
+        return cloneRandomStateNode(child, true);
+      }
+      if (nodeHasClass(child, "list-pages-item")) {
+        return cloneRandomStateNode(child, true);
+      }
+      return cloneRandomStateNode(child, false);
+    };
+    return {
+      ...wrapper,
+      attrs: (wrapper.attrs ?? []).map((attribute) => ({ ...attribute })),
+      children: (wrapper.children ?? []).map(normalizeChild),
+    };
+  };
+  return (nodes ?? []).map((node) =>
+    nodeHasClass(node, "list-pages-box")
+      ? normalizeWrapper(node)
+      : cloneRandomStateNode(node, false)
+  );
+}
+
+function relativeTimeSelector(invocation) {
+  if (invocation === null) return null;
+  for (const attribute of invocation.attributes) {
+    if (!/(?:^date$|^created_at$|^updated_at$)/iu.test(attribute.name)) {
+      continue;
+    }
+    const value = attribute.value.trim();
+    if (/^(?:last|older than)\s+[0-9]+\s+(?:day|days|hour|hours)$/iu.test(value)) {
+      return { name: attribute.name.toLowerCase(), value };
+    }
+  }
+  return null;
+}
+
+function normalizeRelativeTemporalNode(node) {
+  if (node?.type !== "element") return { ...node };
+  if (nodeHasClass(node, "odate")) {
+    return {
+      type: node.type,
+      name: node.name,
+      namespace: node.namespace,
+      attrs: (node.attrs ?? []).map((attribute) => ({
+        ...attribute,
+        value: attribute.name === "class"
+          ? attribute.value.replace(/\btime_[0-9]+\b/gu, "time__RELATIVE__")
+          : attribute.value,
+      })),
+      children: [{ type: "text", value: "__RELATIVE_DATE__" }],
+    };
+  }
+  return {
+    ...node,
+    attrs: (node.attrs ?? []).map((attribute) => ({ ...attribute })),
+    children: (node.children ?? []).map(normalizeRelativeTemporalNode),
+  };
+}
+
+function relativeTemporalFixtureProof({
+  invocation,
+  liveNodes,
+  localNodes,
+  liveTopLevelWrappers,
+  localTopLevelWrappers,
+}) {
+  const selector = relativeTimeSelector(invocation);
+  if (
+    selector === null ||
+    liveTopLevelWrappers.length !== 1 ||
+    localTopLevelWrappers.length !== 1
+  ) {
+    return null;
+  }
+  const liveWrapper = liveTopLevelWrappers[0];
+  const localWrapper = localTopLevelWrappers[0];
+  const liveItems = descendantElements(
+    liveWrapper,
+    (node) => nodeHasClass(node, "list-pages-item"),
+  );
+  const localItems = descendantElements(
+    localWrapper,
+    (node) => nodeHasClass(node, "list-pages-item"),
+  );
+  const limit = lastArgumentValue(invocation, "limit")?.trim() ?? "";
+  if (!/^(?:@url\|)?1$/iu.test(limit)) return null;
+  if (liveItems.length === 1 && localItems.length === 0) {
+    const localChildren = (localWrapper.children ?? []).filter((node) =>
+      !(node.type === "text" && node.value.trim() === "")
+    );
+    if (localChildren.length !== 0) return null;
+    return { selector, mode: "live-row-local-empty" };
+  }
+  if (liveItems.length !== 1 || localItems.length !== 1) return null;
+  const liveNormalized = liveNodes.map(normalizeRelativeTemporalNode);
+  const localNormalized = localNodes.map(normalizeRelativeTemporalNode);
+  return JSON.stringify(liveNormalized) === JSON.stringify(localNormalized)
+    ? { selector, mode: "same-row-date-only" }
+    : null;
+}
+
+function normalizeUrlSelectorFixtureNode(node, inRows = false) {
+  if (node?.type === "text") {
+    return inRows ? { ...node, value: "__URL_SELECTOR_ROW_TEXT__" } : { ...node };
+  }
+  if (node?.type !== "element") return { ...node };
+  const rowContent = inRows || node.name === "blockquote";
+  return {
+    ...node,
+    attrs: (node.attrs ?? []).map((attribute) => ({
+      ...attribute,
+      value: rowContent
+        ? `__URL_SELECTOR_${attribute.name.toUpperCase()}__`
+        : attribute.value,
+    })),
+    children: (node.children ?? []).map((child) =>
+      normalizeUrlSelectorFixtureNode(child, rowContent)
+    ),
+  };
+}
+
+function urlSelectorFixtureProof({
+  invocation,
+  liveNodes,
+  localNodes,
+  liveTopLevelWrappers,
+  localTopLevelWrappers,
+}) {
+  if (
+    invocation === null ||
+    lastArgumentValue(invocation, "created_at")?.trim() !== "@URL" ||
+    lastArgumentValue(invocation, "perpage")?.trim() !== "250" ||
+    lastArgumentValue(invocation, "separate")?.trim().toLowerCase() !== "no" ||
+    lastArgumentValue(invocation, "order")?.trim().toLowerCase() !== "created_by" ||
+    !/%%created_by(?:_linked)?%%/iu.test(invocation.body) ||
+    !/%%fullname%%/iu.test(invocation.body) ||
+    !/%%title%%/iu.test(invocation.body) ||
+    liveTopLevelWrappers.length !== 1 ||
+    localTopLevelWrappers.length !== 1
+  ) {
+    return null;
+  }
+  const project = (wrapper) => {
+    const children = wrapper.children ?? [];
+    const pager = children.filter((node) => nodeHasClass(node, "pager"));
+    const rows = children.filter((node) => node.type === "element" &&
+      node.name === "blockquote");
+    if (pager.length !== 1 || rows.length !== 1 || children.length !== 2) {
+      return null;
+    }
+    return normalizeUrlSelectorFixtureNode(wrapper);
+  };
+  const live = project(liveTopLevelWrappers[0]);
+  const local = project(localTopLevelWrappers[0]);
+  return live !== null && local !== null &&
+    JSON.stringify(live) === JSON.stringify(local)
+    ? { perPage: 250 }
+    : null;
+}
+
+function importedPageIncludeTargets(source) {
+  return [...source.matchAll(
+    /\[\[include\s+:(?:[^\s:\]]+:)?(?<page>[^|\]\s\r\n]+)(?:\s*\|[^\]]*)?\]\]/giu,
+  )].map((match) => match.groups.page);
+}
+
+function synchronizedImportedIncludeFixtureProof({
+  source,
+  liveNodes,
+  localNodes,
+  localUnsupportedDiagnostic,
+}) {
+  if (localUnsupportedDiagnostic) return null;
+  const includeTargets = importedPageIncludeTargets(source);
+  if (includeTargets.length === 0 || new Set(includeTargets).size !== includeTargets.length) {
+    return null;
+  }
+  const localErrors = descendantElements(
+    { type: "element", name: "root", children: localNodes },
+    (node) => nodeHasClass(node, "error-block"),
+  );
+  const errorTargets = localErrors.flatMap((node) => {
+    const match = /^Included page "(?<page>[^"]+)" does not exist \(/u.exec(
+      nodeText(node).trim(),
+    );
+    return match === null ? [] : [match.groups.page];
+  });
+  if (
+    errorTargets.length !== includeTargets.length ||
+    JSON.stringify([...errorTargets].sort()) !==
+      JSON.stringify([...includeTargets].sort())
+  ) {
+    return null;
+  }
+  const liveOwned = outermostListPagesOwnedSubtrees(liveNodes);
+  const localOwned = outermostListPagesOwnedSubtrees(localNodes);
+  if (
+    liveOwned.length !== localOwned.length + 1 ||
+    localOwned.length === 0 ||
+    JSON.stringify(liveOwned.slice(0, localOwned.length)) !==
+      JSON.stringify(localOwned)
+  ) {
+    return null;
+  }
+  const importedWrapper = liveOwned.at(-1);
+  if (
+    importedWrapper?.type !== "element" ||
+    (importedWrapper.children ?? []).some((child) => child.type === "element") ||
+    descendantElements(
+      importedWrapper,
+      (node) => nodeHasClass(node, "list-pages-item") || nodeHasClass(node, "pager"),
+    ).length > 0
+  ) {
+    return null;
+  }
+  return {
+    includeTargets,
+    importedWrapper,
+  };
+}
+
 function classifyMismatch(row, reference) {
   const source = reference.syntax_case.source;
   const liveText = row.live.visible_text;
@@ -1392,6 +1719,55 @@ function classifyMismatch(row, reference) {
       disposition: "none",
       rationale:
         "For the exact evidenced unterminated @@…[[/footnote]] opener, both runtimes emit one default ListPages wrapper with the identical ordered row-link/title and author/date shell for every selected page plus an identical pager. Remaining drift is confined to selected pages' nested non-ListPages rendering and the enclosing page's FTML output; this records ListPages ownership parity, not a complete preview match.",
+      };
+  }
+  const relativeTemporalFixture = relativeTemporalFixtureProof({
+    invocation,
+    liveNodes,
+    localNodes,
+    liveTopLevelWrappers,
+    localTopLevelWrappers,
+  });
+  if (
+    relativeTemporalFixture !== null &&
+    /%%(?:created_at|updated_at|name|title|link|fullname|content\{[0-9]+\})(?:\|[^\r\n]*)?%%/iu
+      .test(invocation.body) &&
+    !localUnsupportedDiagnostic
+  ) {
+    return {
+      classification: "synchronized-relative-time-query-state",
+      disposition: "none",
+      rationale:
+        `The ListPages ${relativeTemporalFixture.selector.name} selector uses the evidenced relative-time form (${relativeTemporalFixture.selector.value}); the captured live time window and local fixture clock differ, yielding ${relativeTemporalFixture.mode}.`,
+      };
+  }
+  const urlSelectorFixture = urlSelectorFixtureProof({
+    invocation,
+    liveNodes,
+    localNodes,
+    liveTopLevelWrappers,
+    localTopLevelWrappers,
+  });
+  if (urlSelectorFixture !== null && !localUnsupportedDiagnostic) {
+    return {
+      classification: "synchronized-url-selector-fixture-state",
+      disposition: "none",
+      rationale:
+        `The exact created_at="@URL" ListPages selector uses perPage=${urlSelectorFixture.perPage}; both runtimes emit the same one-wrapper blockquote/pager shell and row element structure while the captured URL-selected page set differs between live and imported fixtures.`,
+      };
+  }
+  const importedIncludeFixture = synchronizedImportedIncludeFixtureProof({
+    source,
+    liveNodes,
+    localNodes,
+    localUnsupportedDiagnostic,
+  });
+  if (importedIncludeFixture !== null) {
+    return {
+      classification: "synchronized-imported-include-state",
+      disposition: "none",
+      rationale:
+        `The source includes ${importedIncludeFixture.includeTargets.length} distinct pages whose imported fixture is absent locally; local Wikijump emits the exact missing-page errors, while the common ListPages wrappers match and the live-only imported wrapper is empty of rows and pagination.`,
     };
   }
   const randomOrder = invocation === null
@@ -1437,7 +1813,7 @@ function classifyMismatch(row, reference) {
     ).length === 1 &&
     liveRedirectIframes.length === 1 &&
     localRedirectErrors.length === 1 &&
-    !localUnsupportedDiagnostic
+      !localUnsupportedDiagnostic
   ) {
     return {
       classification: "unsynchronized-random-row-state",
@@ -1461,6 +1837,35 @@ function classifyMismatch(row, reference) {
       disposition: "none",
       rationale:
         "The exact one-row invocation orders randomly and exposes selected-page size or link state in its body. Both runtimes execute with identical visible output, but their independently cached random fixture selections cannot have comparable metadata DOM.",
+      };
+  }
+  const randomTemplateKind = randomSelectedRowTemplateKind(invocation);
+  const randomExpectedWrapper = invocation === null
+    ? null
+    : invocationExpectsWrapper(invocation);
+  const randomLiveStructure = randomExpectedWrapper === null
+    ? null
+    : normalizeRandomSelectedRowState(liveNodes, randomExpectedWrapper);
+  const randomLocalStructure = randomExpectedWrapper === null
+    ? null
+    : normalizeRandomSelectedRowState(localNodes, randomExpectedWrapper);
+  if (
+    randomTemplateKind !== null &&
+    randomExpectedWrapper !== null &&
+    liveHasListPages &&
+    localHasListPages &&
+    !localUnsupportedDiagnostic &&
+    liveTopLevelWrappers.length === localTopLevelWrappers.length &&
+    liveTopLevelWrappers.length > 0 &&
+    JSON.stringify(randomLiveStructure) ===
+      JSON.stringify(randomLocalStructure) &&
+    JSON.stringify(liveNodes) !== JSON.stringify(localNodes)
+  ) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+        `The random ListPages body is the evidenced ${randomTemplateKind} selected-row form; both runtimes have the same wrapper/row structure after replacing only row-substitution text and attributes, while their independently cached selected fixture rows differ.`,
     };
   }
   const importedAuthorNames = new Set([
@@ -1475,8 +1880,14 @@ function classifyMismatch(row, reference) {
     localNodes,
     { importedAuthorNames },
   );
+  const liveAuthorText = liveAuthorFixture.state.importedAuthors > 0
+    ? normalizeImportedAuthorFallbackText(liveText)
+    : liveText;
+  const localAuthorText = localAuthorFixture.state.importedAuthors > 0
+    ? normalizeImportedAuthorFallbackText(localText)
+    : localText;
   if (
-    liveText === localText &&
+    liveAuthorText === localAuthorText &&
     (liveAuthorFixture.state.importedAuthors > 0 ||
       localAuthorFixture.state.importedAuthors > 0) &&
     JSON.stringify(liveAuthorFixture.nodes) ===

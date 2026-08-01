@@ -1,0 +1,32 @@
+{
+  "schema": "wikijump.ftml_pin_marker_contract_receipt.v1",
+  "run_id": "ftml-marker-de12339b-844b7012",
+  "status": "pass",
+  "wikijump_base_sha": "16daf08df6ee0483b90ebf3997a216cbffc35001",
+  "baseline_ftml_sha": "3d25e445800f799d86457f0975e81d10c5879fa2",
+  "candidate_ftml_sha": "de12339bdf398bd8f7e11b7b81885feb7415076d",
+  "required_surfaces": [
+    "heading",
+    "separator",
+    "div",
+    "span",
+    "alignment"
+  ],
+  "comparison": {
+    "schema": "wikijump_local_lab.render_compare.v1",
+    "pairs_total": 5,
+    "matches": 5,
+    "accepted_differences": 0,
+    "regressions": 0,
+    "verdict_sha256": "6c160cee22fb40ee1bde2dede1a33a2beca4ae4e9295db677b47d341f8fe75cb"
+  },
+  "artifact_manifests": {
+    "baseline_sha256": "6ce7aeef800ef393455db20925ddeb2ae87c6aabd7279ad6074a64a4105fce4a",
+    "candidate_sha256": "9f6d64ce0669e3812abb36da6b4faf979ad4d8c18da85fd4dac85add80795f95"
+  },
+  "canary_summary_sha256": "9c6f803067b00cb9c806f08b50137c3d6812f2150d787b24e0e841ec32a64633",
+  "resource_disposition": {
+    "policy": "delete-on-close",
+    "disposable_containers_remaining": 0
+  }
+}
