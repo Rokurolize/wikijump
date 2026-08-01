@@ -311,9 +311,12 @@ pub(in crate::services::render) fn format_list_pages_created_at(
     let Some(created_at) = created_at else {
         return String::new();
     };
-    let created_at = created_at
-        .to_offset(time::UtcOffset::from_hms(9, 0, 0).expect("valid JST offset"));
-    const DEFAULT_FORMAT: &str = "%e %b %Y, %H:%M";
+    // The anonymous PagePreview/ListPages response carries the Wikidot server
+    // text in UTC, without the comma used by the later ODate browser phase.
+    // Keep the requested format in the class; only the server text belongs in
+    // this response body.
+    let created_at = created_at.to_offset(time::UtcOffset::UTC);
+    const DEFAULT_FORMAT: &str = "%e %b %Y %H:%M";
     let format = format.unwrap_or(DEFAULT_FORMAT);
     // Wikidot's Ajax response always carries the default server-rendered text.
     // A requested display format belongs to the later ODate client phase and

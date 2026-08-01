@@ -8856,7 +8856,7 @@ async fn listpages_date_formats_are_deferred_to_the_wikidot_client_phase() {
 
     let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
     assert_eq!(
-        html.matches(">19 Jul 2008, 22:37</span>").count(),
+        html.matches(">19 Jul 2008 22:37</span>").count(),
         4,
         "the raw response must retain default date text for every format:\n{html}",
     );
