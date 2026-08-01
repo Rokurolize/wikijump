@@ -10,6 +10,8 @@
  * (at your option) any later version.
  */
 
+#![allow(clippy::wildcard_imports)]
+
 use super::*;
 
 fn rate_module_occurrence_body(source: &str, open_end: usize) -> (usize, Option<&str>) {

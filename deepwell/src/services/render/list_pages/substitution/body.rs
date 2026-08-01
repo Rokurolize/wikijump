@@ -10,6 +10,8 @@
  * (at your option) any later version.
  */
 
+#![allow(clippy::wildcard_imports)]
+
 use super::*;
 
 #[cfg(test)]

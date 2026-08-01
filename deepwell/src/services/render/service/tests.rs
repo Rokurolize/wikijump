@@ -1945,6 +1945,7 @@ fn list_pages_scan_target_skips_full_inventory_without_a_pager() {
 }
 
 #[test]
+#[allow(clippy::assertions_on_constants)]
 fn list_pages_scan_envelope_covers_the_synchronized_live_inventory() {
     const SYNCHRONIZED_SANDBOX_PAGE_COUNT: u32 = 6_566;
 

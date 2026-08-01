@@ -1676,6 +1676,7 @@ impl RenderService {
         .await
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn render_inner_expanded(
         ctx: &ServiceContext<'_>,
         expanded: ExpandedRenderWikitext,

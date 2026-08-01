@@ -1935,7 +1935,7 @@ fn list_pages_head_quotes_are_balanced(head: &str, quote: u8) -> bool {
     let mut open = false;
     let mut backslashes = 0usize;
     for byte in bytes {
-        if *byte == quote && backslashes % 2 == 0 {
+        if *byte == quote && backslashes.is_multiple_of(2) {
             open = !open;
         }
         backslashes = if *byte == b'\\' { backslashes + 1 } else { 0 };
