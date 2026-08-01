@@ -73,6 +73,19 @@ node install/local/wikidot-verification/scripts/rerender-saved-page-runtime.mjs 
 
 Repeat `--case-id <case-id>` on both the rerender and differential commands to run an explicit source-current subset while retaining a larger frozen reference file. Unknown or duplicate filters fail. The subsequent browser-facing differential requires the source- and revision-bound rerender receipt for the exact selected reference set and exactly one serialized `compiled_generator` whose FTML revision matches the runtime identity. A source-drifted page or stale, missing, or duplicated generator fails even when the selected DOM happens to match.
 
+## Wikijump identifier leaks
+
+Imported content must carry Wikidot's own DOM names. The Wikidot stylesheet the page loads has no `.wj-` rules, so a leaked `wj-` class is an unstyled element as well as a tree difference.
+
+```sh
+pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- \
+  --site scp-wiki --rpc-url http://127.0.0.1:2747/jsonrpc
+```
+
+The check renders a battery of constructs through the local Deepwell runtime by anonymous page preview and fails if any `wj-` class, tag, id, or `data-wj-` attribute appears. The battery covers the constructs FTML renders differently under `Layout::Wikidot` (footnotes, bibliography, collapsible, code, tabview, math, table of contents, user, date, image, video, audio, tables, every link variant, alignment, lists, monospace, raw), the Wikijump-only blocks that must stay literal rather than render (`[[hidden]]`, `[[invisible]]`), and ListPages and CountPages row bodies. A construct that fails to render counts as a failure, since a render error hides whatever it would have emitted.
+
+It requires a running local stack and creates no page. The `--rpc-url` must be loopback: pointing the battery at a remote host would send wikitext off the machine and describe someone else's runtime.
+
 ## Corpus-pinned compatibility rules
 
 A compatibility rule earns its place by implementing what Wikidot does, not by recognizing a page the corpus happens to contain. A predicate that compares against a byte-exact fragment of a captured page reproduces that one page and diverges again as soon as a word or a line moves.
