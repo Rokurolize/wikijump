@@ -44,6 +44,7 @@ use super::current_data_form::{
 use super::parents::{load_list_pages_child_counts, load_list_pages_parent_displays};
 use super::rendering_support::{
     ListPagesBlock, ListPagesBlockPlan, list_pages_raw_footnote_prefix_end,
+    list_pages_template_has_block_section,
 };
 use super::scanner::{
     CountPagesCloseReachabilityIndex, has_count_pages_module_opening_candidate,
@@ -2549,7 +2550,10 @@ impl RenderService {
             || delayed_html_fragments
                 .iter()
                 .any(CompatHtmlFragments::has_exact_fragments);
-        let block_output = wrapper || separate || render_generated_html;
+        let block_output = wrapper
+            || separate
+            || render_generated_html
+            || list_pages_template_has_block_section(&template);
         let (output, pending_delayed) =
             finish_or_defer_list_pages_delayed_output_with_mode(
                 output,

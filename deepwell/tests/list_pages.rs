@@ -2432,6 +2432,53 @@ async fn listpages_unwrapped_separate_row_is_adjacent_to_its_pager() {
     );
 }
 
+/// Anonymous Wikidot PagePreview evidence, 2026-07-29:
+/// `cn:wikidot-module-tech:L363:B11414`.
+///
+/// A sectioned, unwrapped module keeps its generated list in the surrounding
+/// block stream.  Wrapping the `<ul>` in an FTML paragraph changes the live
+/// DOM and makes the sectioned template unusable in ordinary page markup.
+#[tokio::test]
+async fn listpages_unwrapped_sectioned_block_template_stays_outside_paragraph() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let body = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "wikidot-module-tech-sectioned-block",
+        concat!(
+            "[[module ListPages separate=\"no\" wrapper=\"no\" limit=\"5\"]]\n",
+            "[[head]]\n",
+            "[[ul id=\"u-myList\"]]\n",
+            "[[/head]]\n",
+            "[[body]]\n",
+            "[[li class=\"list-item\"]]%%title_linked%% by (%%created_by%%)[[/li]]\n",
+            "[[/body]]\n",
+            "[[foot]]\n",
+            "[[/ul]]\n",
+            "[[/foot]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("sectioned unwrapped ListPages preview should render")
+    .html_output
+    .body;
+
+    assert!(
+        body.contains(r#"<ul id="u-myList">"#),
+        "the sectioned template should emit its list: {body}"
+    );
+    assert!(
+        !body.contains("<p><ul"),
+        "a block section must not acquire an FTML paragraph wrapper: {body}"
+    );
+
+    runner.teardown().await;
+}
+
 #[tokio::test]
 async fn created_by_exclusion_omits_the_containing_pages_author() {
     const OWN_SLUG: &str = "author-exclusion-own";

@@ -270,6 +270,58 @@ pub(in crate::services::render) fn list_pages_body_starts_with_preparsed_block(
             .is_some_and(|opening| opening.eq_ignore_ascii_case("[[html]]"))
 }
 
+/// A sectioned ListPages template can emit a block element even when the
+/// module itself is unwrapped and combined.  Keep that generated section in
+/// FTML's block stream so the outer page parser does not manufacture a
+/// paragraph around the block (for example, a `[[head]]` containing
+/// `[[ul]]`).
+pub(in crate::services::render) fn list_pages_template_has_block_section(
+    template: &ListPagesTemplatePlan,
+) -> bool {
+    const BLOCK_OPENERS: &[&str] = &[
+        "[[address",
+        "[[article",
+        "[[aside",
+        "[[blockquote",
+        "[[div",
+        "[[dl",
+        "[[fieldset",
+        "[[figure",
+        "[[footer",
+        "[[form",
+        "[[h1",
+        "[[h2",
+        "[[h3",
+        "[[h4",
+        "[[h5",
+        "[[h6",
+        "[[header",
+        "[[hr",
+        "[[main",
+        "[[nav",
+        "[[ol",
+        "[[pre",
+        "[[section",
+        "[[table",
+        "[[ul",
+    ];
+    [
+        template.head_section(),
+        Some(template.body()),
+        template.foot_section(),
+    ]
+    .into_iter()
+    .flatten()
+    .map(str::trim_start)
+    .any(|section| {
+        BLOCK_OPENERS.iter().any(|opener| {
+            section
+                .get(..opener.len())
+                .is_some_and(|prefix| prefix.eq_ignore_ascii_case(opener))
+        })
+    })
+}
+
 pub(in crate::services::render) fn list_pages_raw_footnote_prefix_end(
     head: &str,
     suffix: &str,
