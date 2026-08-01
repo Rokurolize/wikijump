@@ -1,0 +1,5 @@
+{
+  "schema": "wikijump_compat.corpus_pinned_literals.allowlist.v1",
+  "note": "A literal belongs here only when the pinned form is the whole of Wikidot's behaviour and live observation with negative controls proves it. Recognising one captured page is not a reason. Every entry must cite at least two live observations.",
+  "entries": []
+}

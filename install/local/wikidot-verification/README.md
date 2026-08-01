@@ -73,6 +73,24 @@ node install/local/wikidot-verification/scripts/rerender-saved-page-runtime.mjs 
 
 Repeat `--case-id <case-id>` on both the rerender and differential commands to run an explicit source-current subset while retaining a larger frozen reference file. Unknown or duplicate filters fail. The subsequent browser-facing differential requires the source- and revision-bound rerender receipt for the exact selected reference set and exactly one serialized `compiled_generator` whose FTML revision matches the runtime identity. A source-drifted page or stale, missing, or duplicated generator fails even when the selected DOM happens to match.
 
+## Corpus-pinned compatibility rules
+
+A compatibility rule earns its place by implementing what Wikidot does, not by recognizing a page the corpus happens to contain. A predicate that compares against a byte-exact fragment of a captured page reproduces that one page and diverges again as soon as a word or a line moves.
+
+```sh
+pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- \
+  --corpus /absolute/evidence/path/fresh-exact-live-references.jsonl \
+  --corpus /absolute/evidence/path/fresh-literal-live-references.jsonl
+```
+
+The check is factual rather than stylistic. It extracts every string literal that sits where source text is matched against it, then reports the literals that occur verbatim in no more than eight captured pages. Measured against the 19,612-source campaign corpus, rules pinned to page content occur in one to eight captured pages while genuine module syntax occurs in 321 (`[[collapsible show="`), 658 (`[!--`), 7,803 (`created_at`) and 19,421 (`[[/module]]`); the threshold sits in that fortyfold gap. Pass every lane, because a literal absent from one lane can still be pinned in another. Rust `#[cfg(test)]` modules are skipped, since regression tests are supposed to hold corpus source.
+
+Matches of sixteen characters or more are findings; shorter ones are notices. Short markup vocabulary such as `<br>`, `&quot;`, `[[html]]` and `~~~~` is also rare in a ListPages corpus without having been lifted from any page, and on the current render tree every rare literal at or above that length was genuine page content while every shorter one was vocabulary. Notices still deserve a look, since `属性...` and `@@*@@ ` are short and genuinely pinned; they simply cannot carry a gate on their own. The command reports without failing by default. Pass `--strict` to exit non-zero on findings.
+
+Findings name the exact pages a literal came from. Resolve one by implementing the rule those pages demonstrate, proven by live observation including negative controls, or by leaving the case actionable and recording it as unimplemented. `fixtures/corpus-pinned-literals/allowlist.json` accepts a literal only when the pinned form is genuinely the whole of Wikidot's behavior, and requires at least two live observations per entry.
+
+The check reads string literals only. A rule can overfit through an exact conjunction of ordinary syntax tokens without any corpus-derived literal, so a clean report is not proof that a rule generalizes.
+
 ## Generic marker runtime differential
 
 `scripts/run-generic-runtime-differential.mjs` replays the generic saved-page marker captures against an already-running disposable Deepwell runtime. It validates every case, capture, page plan, saved-source hash, marker identity, PagePreview reclassification, and candidate runtime identity before mutation. For each selected capture page it creates exactly one local page, reads its compiled body, compares the marked fragments, and deletes the page in `finally` before moving to the next capture page. The runner does not start or own Docker resources.
