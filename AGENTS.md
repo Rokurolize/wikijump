@@ -2,9 +2,11 @@
 
 ## Product and documentation
 
-1. Use `docs/dom-compatibility.md` for DOM expectations, `docs/compatibility-ids.md` for imported ids and URLs, `deepwell/README.md` for the trusted internal API boundary, and `docs/ftml-boundary.md` for FTML/Wikijump ownership.
-2. Browser parity tools live in `install/local/wikidot-verification/`. The sandbox oracle design is `install/local/wikidot-verification/docs/sandbox-oracle-design.md`.
-3. Wikijump is a Wikidot-compatible local runtime. For imported content, live Wikidot evidence or provenance-backed corpus observations outrank local Wikijump output.
+1. Use `docs/dom-compatibility.md` for DOM expectations, `docs/compatibility-ids.md` for the imported id ranges, `deepwell/README.md` for the trusted internal API boundary, and `docs/ftml-boundary.md` for FTML/Wikijump ownership.
+2. `docs/wikidot-specifications/` is the feature catalog for the compatibility campaign: `catalog.json` is the work queue, `specifications/` holds one specification per feature, `implementation-ledger.json` holds status and the P1-P8 property matrix, and `live-observations.json` records live corrections that override the snapshot. Read the specification for a feature before designing against it, and read `IMPLEMENTATION_PROMPT.md` there for the test-first process the campaign follows.
+3. `docs/local-authoring-boundary.md` says which local site is a mirror and which is editable. `scp-wiki` and `scp-jp` are mirrors; local drafts belong in `scpaiueouiuiuiui`. Authoring into a mirror corrupts the comparison baseline.
+4. Browser parity tools live in `install/local/wikidot-verification/`; its README documents each checker. The sandbox oracle design is `install/local/wikidot-verification/docs/sandbox-oracle-design.md`.
+5. Wikijump is a Wikidot-compatible local runtime. For imported content, live Wikidot evidence or provenance-backed corpus observations outrank local Wikijump output.
 
 ## Compatibility evidence
 
@@ -22,6 +24,7 @@
 - FTML owns syntax parsing and rendering primitives. Wikijump owns behavior requiring site, page, query, import, file, permission, actor, or browser runtime state.
 - `ListPages` and `CountPages` remain delayed structures in FTML; Wikijump owns selectors, queries, URL arguments, pagination, variables, and runtime rendering.
 - Put syntax-level Wikidot DOM differences in FTML `Layout::Wikidot`. Do not add new Deepwell post-render rewriting when the syntax renderer can own the result.
+- If a syntax-level shim must land in Deepwell anyway, it needs a deviation note in `docs/ftml-boundary-deviations/` in the same pull request, following the template in `docs/ftml-boundary.md`. The note must state why FTML is not yet sufficient and what would let the shim shrink. Without it the debt becomes invisible, and the surfaces already inventoried there may receive correctness fixes but must not grow new capability.
 - Unsupported or unverified module and query shapes must fail closed, remain literal, or use an evidenced fallback. Do not silently widen a query.
 - Imported uploads are runtime data, not repository seed fixtures. Never delete runtime database or files volumes without explicit user authorization.
 
@@ -41,8 +44,8 @@
 
 - Run focused tests while developing, then broaden according to the changed surface. Useful commands include `cargo fmt --manifest-path deepwell/Cargo.toml --check`, focused `cargo test`, `RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps`, `pnpm --dir framerail build`, `pnpm --dir framerail lint`, and focused verifier tests.
 - For browser-visible parity, capture fresh browser evidence against the exact source, dependency, fixture, and runtime identities. Test every observable interval when the defect is temporal.
-- Before opening a pull request that changes compatibility scanning or classification, run `pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --corpus <live references JSONL>`, passing every lane. It names the captured pages each literal came from. Resolve every finding, and read the notices, which catch short pinned literals that cannot carry a gate on their own. It reads string literals only, so a clean report is not proof that a rule generalizes.
+- Before opening a pull request that changes compatibility scanning, classification, or a rendered construct, run the two compatibility checkers in `install/local/wikidot-verification`: `corpus-pinned-literals` finds rules pinned to captured page content, and `wikijump-identifier-leaks` finds `wj-` identifiers reaching the Wikidot layout. Its README gives the arguments. Both report only what they can see mechanically, so a clean report is not proof that a rule generalizes.
 - Push a branch as soon as it holds work worth keeping, and open its pull request early, as a draft when it is not ready. `CI / gate` takes one to two minutes and draft pull requests take a lighter path, so an open pull request costs almost nothing while unpushed commits are a real risk.
 - When a gate reports counts, pin and record the exact identity of both its reference inputs and its denominator file, then keep them fixed for the life of the campaign. A gate whose inputs move cannot be compared across runs or audited afterwards.
 - Do not force or admin merge and do not push to `scpwiki/*`.
-- A merge is not a deployment. Refresh the standing runtime after browser-visible changes and verify the served URL before reporting the defect fixed.
+- A merge is not a deployment. Refresh the standing runtime after browser-visible changes and verify the served URL before reporting the defect fixed. `docs/deployment/runtime-drift-policy.md` defines which revision the standing runtime must serve and how to attribute an observation to it.
