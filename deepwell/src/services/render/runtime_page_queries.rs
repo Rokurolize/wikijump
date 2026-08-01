@@ -113,12 +113,12 @@ async fn find_viewable_render_page_rows(
         let mut query = query;
         query.offset = 0;
         query.pagination.limit = Some(random_page_query_scan_limit(target_count));
-        let mut found = PageQueryService::find_with_metadata_cached(
+        let mut found = Box::pin(PageQueryService::find_with_metadata_cached(
             ctx,
             query,
             score_filter_cache.as_deref_mut(),
             retain_score_filter_session.then_some(&mut score_filter_session),
-        )
+        ))
         .await?;
         if found.metadata.cap_exceeded {
             found.metadata.cap_exceeded = false;
@@ -154,12 +154,12 @@ async fn find_viewable_render_page_rows(
             render_page_query_batch_limit(target_count, pages.len(), raw_offset);
         query.pagination.limit = Some(batch_limit);
 
-        let found = PageQueryService::find_with_metadata_cached(
+        let found = Box::pin(PageQueryService::find_with_metadata_cached(
             ctx,
             query,
             score_filter_cache.as_deref_mut(),
             retain_score_filter_session.then_some(&mut score_filter_session),
-        )
+        ))
         .await?;
         let cap_exceeded = found.metadata.cap_exceeded;
         merge_render_page_query_metadata(&mut metadata, found.metadata);

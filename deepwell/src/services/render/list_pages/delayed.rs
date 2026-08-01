@@ -94,41 +94,40 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
     substitute_literal_advanced_table_opener_typography(&mut prepared_body);
     resolve_outermost_wikidot_iftags(&mut prepared_body, outer_page_tags, compat_text);
     neutralize_authored_markers(&mut prepared_body);
-    let (mut body, mut html_fragments) =
-        if template.uses_only_rating() && !uses_star_rating {
-            let mut body = substitute_list_pages_rating_only(&prepared_body, page);
-            neutralize_authored_markers(&mut body);
-            (body, None)
+    let mut fragments = CompatHtmlFragments::new(&prepared_body);
+    let mut body = if template.uses_only_rating() && !uses_star_rating {
+        let mut body = substitute_list_pages_rating_only(&prepared_body, page);
+        neutralize_authored_markers(&mut body);
+        body
+    } else {
+        RenderService::protect_list_pages_wikidot_embed_iframes(
+            &mut prepared_body,
+            &mut fragments,
+        );
+        let mut body = substitute_list_pages_variables_delayed(
+            &prepared_body,
+            page,
+            index,
+            total,
+            context,
+            &mut fragments,
+            compat_text,
+            &mut generated_slots,
+            &mut runtime_scalar_ranges,
+        );
+        resolve_list_pages_expr_parser_functions(
+            &mut body,
+            &mut generated_slots,
+            &mut runtime_scalar_ranges,
+        );
+        if generated_slots.is_empty() && runtime_scalar_ranges.is_empty() {
+            RenderService::resolve_wikidot_parser_functions(&body)
         } else {
-            let mut fragments = CompatHtmlFragments::new(&prepared_body);
-            RenderService::protect_list_pages_wikidot_embed_iframes(
-                &mut prepared_body,
-                &mut fragments,
-            );
-            let mut body = substitute_list_pages_variables_delayed(
-                &prepared_body,
-                page,
-                index,
-                total,
-                context,
-                &mut fragments,
-                compat_text,
-                &mut generated_slots,
-                &mut runtime_scalar_ranges,
-            );
-            resolve_list_pages_expr_parser_functions(
-                &mut body,
-                &mut generated_slots,
-                &mut runtime_scalar_ranges,
-            );
-            let body = if generated_slots.is_empty() && runtime_scalar_ranges.is_empty() {
-                RenderService::resolve_wikidot_parser_functions(&body)
-            } else {
-                body
-            };
-            let fragments = (!fragments.is_empty()).then_some(fragments);
-            (body, fragments)
-        };
+            body
+        }
+    };
+    body = protect_nested_list_pages(&body, &mut fragments);
+    let mut html_fragments = (!fragments.is_empty()).then_some(fragments);
     if generated_slots.is_empty()
         && runtime_scalar_ranges.is_empty()
         && let Some(fragments) = html_fragments.as_ref()
@@ -821,6 +820,79 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output(
     Ok(compat_html.push_block_html_allowing_span_parent(sealed_body))
 }
 
+fn protect_nested_list_pages(
+    source: &str,
+    fragments: &mut CompatHtmlFragments,
+) -> String {
+    let mut ranges = nested_list_pages_boundary_ranges(source);
+    if ranges.is_empty() {
+        return source.to_owned();
+    }
+
+    ranges.sort_unstable_by_key(|(_, start, _)| *start);
+
+    let mut protected = source.to_owned();
+    for (marker_index, start, end) in ranges.into_iter().rev() {
+        if start == end {
+            continue;
+        }
+        let original = source[start..end].to_owned();
+        let Some(marker) =
+            nested_list_pages_marker(&protected, marker_index, original.len())
+        else {
+            continue;
+        };
+        let marker = fragments.push_exact_html(marker, original);
+        protected.replace_range(start..end, &marker);
+    }
+    protected
+}
+
+fn nested_list_pages_boundary_ranges(source: &str) -> Vec<(usize, usize, usize)> {
+    let mut pending = vec![(0usize, source.len())];
+    let mut ranges = Vec::new();
+    while let Some((base, end)) = pending.pop() {
+        let segment = &source[base..end];
+        for module in find_list_pages_module_matches_with_delayed_links(segment) {
+            let body_start = base + module.body_start;
+            let body_end = body_start + module.body.len();
+            ranges.push((0, base + module.start, body_start));
+            ranges.push((0, body_end, base + module.end));
+            // A malformed or crossing scanner match must not enqueue the same
+            // source span forever. Nested protection is a compatibility guard,
+            // not an alternate parser, so leave non-shrinking matches alone.
+            if body_start > base && body_start < body_end && body_end <= end {
+                pending.push((body_start, body_end));
+            }
+        }
+    }
+    ranges
+        .into_iter()
+        .enumerate()
+        .map(|(index, (_, start, end))| (index, start, end))
+        .collect()
+}
+
+fn nested_list_pages_marker(source: &str, index: usize, length: usize) -> Option<String> {
+    let prefix = format!("WJLP{index}Z");
+    if prefix.len() > length {
+        return None;
+    }
+    let mut marker = String::with_capacity(length);
+    for (offset, byte) in prefix
+        .bytes()
+        .chain(std::iter::repeat_n(b'X', length - prefix.len()))
+        .enumerate()
+    {
+        if offset < prefix.len() {
+            marker.push(byte as char);
+        } else {
+            marker.push('X');
+        }
+    }
+    (!source.contains(&marker)).then_some(marker)
+}
+
 pub(in crate::services::render) fn seal_zero_row_list_pages_wrapper(
     output: &str,
     page_info: &PageInfo<'_>,
@@ -1091,6 +1163,22 @@ pub(in crate::services::render) fn seal_pending_list_pages_delayed_outputs(
         wikitext.replace_range(start..replacement_end, &replacement);
     }
     Ok(())
+}
+
+pub(in crate::services::render) fn restore_pending_nested_list_pages(
+    source: &str,
+    pending_outputs: &[PendingDelayedListPagesOutput],
+) -> String {
+    pending_outputs
+        .iter()
+        .fold(source.to_owned(), |source, pending| {
+            pending
+                .html_fragments
+                .iter()
+                .fold(source, |source, fragments| {
+                    fragments.restore_exact_fragments(&source)
+                })
+        })
 }
 
 #[allow(dead_code)]

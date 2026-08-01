@@ -86,11 +86,11 @@ use super::{
     prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
     protect_ajax_module_literal_markers, push_list_pages_generated_output,
     push_list_pages_pager, push_list_pages_trailing_runtime_blocks, raw_module_close_end,
-    resolve_list_pages_first_image, seal_pending_list_pages_delayed_outputs,
-    seal_zero_row_list_pages_wrapper, seed_random_list_pages_order,
-    should_render_current_page_list_pages_row, substitute_count_pages_variables,
-    union_found_page_fields, unsupported_list_pages_replacement,
-    url_offset_list_pages_content_bytes,
+    resolve_list_pages_first_image, restore_pending_nested_list_pages,
+    seal_pending_list_pages_delayed_outputs, seal_zero_row_list_pages_wrapper,
+    seed_random_list_pages_order, should_render_current_page_list_pages_row,
+    substitute_count_pages_variables, union_found_page_fields,
+    unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::hash::{TextHash, k12_hash};
@@ -144,6 +144,7 @@ impl RenderService {
         seen: &mut BTreeSet<TextHash>,
         depth: usize,
     ) -> Result<ListPagesExpansion> {
+        tokio::task::yield_now().await;
         let ListPagesExpansionOptions {
             current_site_id,
             current_page_id,
@@ -887,12 +888,16 @@ impl RenderService {
             initial_remaining_include_expansions,
         )
         .await?;
+        let nested_source = restore_pending_nested_list_pages(
+            &expansion.wikitext,
+            &pending_delayed_outputs,
+        );
         if depth < MAX_NESTED_LISTPAGES_DEPTH
-            && has_list_pages_module_opening_candidate(&expansion.wikitext)
+            && has_list_pages_module_opening_candidate(&nested_source)
         {
             let nested = Box::pin(Self::expand_list_pages_nested(
                 ctx,
-                std::mem::take(&mut expansion.wikitext),
+                nested_source,
                 page_info,
                 settings,
                 compat_html,
@@ -919,6 +924,10 @@ impl RenderService {
             expansion.url_offset_content_bytes = expansion
                 .url_offset_content_bytes
                 .saturating_add(nested.url_offset_content_bytes);
+        } else if depth >= MAX_NESTED_LISTPAGES_DEPTH
+            && has_list_pages_module_opening_candidate(&nested_source)
+        {
+            expansion.wikitext = nested_source;
         }
         seal_pending_list_pages_delayed_outputs(
             &mut expansion.wikitext,
@@ -929,6 +938,7 @@ impl RenderService {
         )?;
         Ok(expansion)
     }
+
     pub(in crate::services::render) async fn expand_count_pages(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -2485,7 +2495,11 @@ impl RenderService {
         if wants_content {
             expansion_budget.consume_content_rows(rendered_rows);
         }
-        let defer_for_include_expansion = has_include_opening_candidate(&output);
+        let defer_for_include_expansion = has_include_opening_candidate(&output)
+            || has_list_pages_module_opening_candidate(&output)
+            || delayed_html_fragments
+                .iter()
+                .any(CompatHtmlFragments::has_exact_fragments);
         let (output, pending_delayed) = finish_or_defer_list_pages_delayed_output(
             output,
             delayed_occurrences,

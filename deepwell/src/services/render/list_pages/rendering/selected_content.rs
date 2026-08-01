@@ -342,6 +342,62 @@ fn prepare_list_pages_selected_content_runtime(
     output
 }
 
+/// Selected `%%content%%` is rendered in a nested pass so ordinary Wikidot
+/// syntax in the row still receives the page renderer. Includes are a
+/// deliberate exception: executing them here would make selected page rows
+/// consume the caller's include budget. Hide only include directives from
+/// that nested pass and restore them as authored text after rendering. Literal
+/// regions are excluded so comments, raw text, and code do not acquire a new
+/// executable boundary.
+fn protect_selected_content_includes(
+    source: &str,
+    compat_text: &mut CompatTextFragments,
+) -> String {
+    let literal_regions = LiteralRegionIndex::new_wikidot_syntax(source);
+    let bytes = source.as_bytes();
+    let mut protected = String::with_capacity(source.len());
+    let mut cursor = 0usize;
+    while cursor + 1 < bytes.len() {
+        let Some(relative_start) =
+            bytes[cursor..].windows(2).position(|pair| pair == b"[[")
+        else {
+            break;
+        };
+        let start = cursor + relative_start;
+        if literal_regions.contains(start) {
+            protected.push_str(&source[cursor..start + 2]);
+            cursor = start + 2;
+            continue;
+        }
+        let mut head = start + 2;
+        while bytes.get(head).is_some_and(u8::is_ascii_whitespace) {
+            head += 1;
+        }
+        let Some(keyword) = bytes.get(head..head.saturating_add(7)) else {
+            protected.push_str(&source[cursor..start + 2]);
+            cursor = start + 2;
+            continue;
+        };
+        if !keyword.eq_ignore_ascii_case(b"include")
+            || bytes
+                .get(head + 7)
+                .is_some_and(|byte| byte.is_ascii_alphanumeric() || *byte == b'_')
+        {
+            protected.push_str(&source[cursor..start + 2]);
+            cursor = start + 2;
+            continue;
+        }
+        let end = source[start + 2..]
+            .find("]]")
+            .map_or(source.len(), |relative_end| start + 2 + relative_end + 2);
+        protected.push_str(&source[cursor..start]);
+        protected.push_str(&compat_text.push_escaped_html_text(&source[start..end]));
+        cursor = end;
+    }
+    protected.push_str(&source[cursor..]);
+    protected
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn render_list_pages_selected_content_source(
     ctx: &ServiceContext<'_>,
@@ -370,6 +426,9 @@ pub(super) async fn render_list_pages_selected_content_source(
             .as_ref()
             .map_or("", |site| site.name.as_str()),
     );
+    let mut selected_content_text = CompatTextFragments::new(&wikitext);
+    let wikitext =
+        protect_selected_content_includes(&wikitext, &mut selected_content_text);
     let wikitext =
         RenderService::suppress_rate_modules_in_list_pages_content(wikitext, settings);
     let mut selected_content_settings = settings.clone();
@@ -389,5 +448,6 @@ pub(super) async fn render_list_pages_selected_content_source(
         },
     ))
     .await?;
-    Ok(selected_content_fragments.restore(&rendered.html_output.body))
+    let rendered_body = selected_content_text.restore(&rendered.html_output.body);
+    Ok(selected_content_fragments.restore(&rendered_body))
 }

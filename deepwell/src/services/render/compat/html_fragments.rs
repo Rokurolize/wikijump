@@ -40,6 +40,8 @@ pub(in crate::services::render) const COMPAT_HTML_MARKER_PREFIX: &str =
 pub(in crate::services::render) struct CompatHtmlFragments {
     namespace: String,
     fragments: Vec<CompatFragment>,
+    #[serde(default)]
+    exact_fragments: Vec<(String, String)>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -68,6 +70,7 @@ impl CompatHtmlFragments {
         Self {
             namespace,
             fragments: Vec::new(),
+            exact_fragments: Vec::new(),
         }
     }
 
@@ -120,7 +123,25 @@ impl CompatHtmlFragments {
     }
 
     pub(in crate::services::render) fn is_empty(&self) -> bool {
-        self.fragments.is_empty()
+        self.fragments.is_empty() && self.exact_fragments.is_empty()
+    }
+
+    pub(in crate::services::render) fn has_exact_fragments(&self) -> bool {
+        !self.exact_fragments.is_empty()
+    }
+
+    /// Register a source-preserving marker whose byte length must remain
+    /// unchanged while the delayed List-mode parser runs. This is used for
+    /// nested ListPages openers/closers because generated slot ranges still
+    /// point into the substituted row body.
+    pub(in crate::services::render) fn push_exact_html(
+        &mut self,
+        marker: String,
+        html: String,
+    ) -> String {
+        debug_assert_eq!(marker.len(), html.len());
+        self.exact_fragments.push((marker.clone(), html));
+        marker
     }
 
     fn push_fragment(&mut self, fragment: CompatFragment) -> String {
@@ -130,7 +151,8 @@ impl CompatHtmlFragments {
     }
 
     pub(in crate::services::render) fn restore(&self, text: &str) -> String {
-        let text = self.restore_block_marker_paragraphs(text);
+        let text = self.restore_exact_fragments(text);
+        let text = self.restore_block_marker_paragraphs(&text);
         let data_segments = html_data_segments(&text);
         self.restore_with(&text, None, Some(&data_segments), true, |fragment| {
             match fragment {
@@ -140,6 +162,17 @@ impl CompatHtmlFragments {
                 CompatFragment::Plain { html, .. } => Some(html.as_str()),
             }
         })
+    }
+
+    pub(in crate::services::render) fn restore_exact_fragments(
+        &self,
+        text: &str,
+    ) -> String {
+        self.exact_fragments
+            .iter()
+            .fold(text.to_owned(), |text, (marker, html)| {
+                text.replace(marker, html)
+            })
     }
 
     fn restore_block_marker_paragraphs(&self, text: &str) -> String {

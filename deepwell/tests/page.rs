@@ -5308,8 +5308,30 @@ async fn list_pages_url_page_number_composes_with_the_module_offset() {
     }
 }
 
-#[tokio::test]
-async fn list_pages_saved_view_preserves_live_pagination_path_shapes() {
+#[test]
+fn list_pages_saved_view_preserves_live_pagination_path_shapes() {
+    // The fixture intentionally exercises five ListPages passes and a very
+    // large offset. Keep the test's async poll stack separate from the test
+    // harness's 2 MiB stack so the compatibility assertion measures rendering,
+    // not the harness's stack budget.
+    std::thread::Builder::new()
+        .name("list-pages-pagination-test".to_owned())
+        .stack_size(4 * 1024 * 1024)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("ListPages pagination test runtime should build")
+                .block_on(
+                    list_pages_saved_view_preserves_live_pagination_path_shapes_impl(),
+                );
+        })
+        .expect("ListPages pagination test thread should spawn")
+        .join()
+        .expect("ListPages pagination test thread should complete");
+}
+
+async fn setup_list_pages_saved_view_path_fixture() -> (TestRunner, i64) {
     const HOLDER: &str = "fixture-lp-path-holder";
     const A_PREFIX: &str = "fixture-lp-path-a";
     const B_PREFIX: &str = "fixture-lp-path-b";
@@ -5372,6 +5394,17 @@ async fn list_pages_saved_view_preserves_live_pagination_path_shapes() {
         ),
     )
     .await;
+
+    (runner, site_id)
+}
+
+async fn list_pages_saved_view_preserves_live_pagination_path_shapes_impl() {
+    const HOLDER: &str = "fixture-lp-path-holder";
+    const A_PREFIX: &str = "fixture-lp-path-a";
+    const B_PREFIX: &str = "fixture-lp-path-b";
+    const OFFSET_HUGE_PREFIX: &str = "fixture-lp-path-offset-huge";
+
+    let (runner, site_id) = setup_list_pages_saved_view_path_fixture().await;
 
     let view = async |extra: &str| match run_endpoint!(
         runner,

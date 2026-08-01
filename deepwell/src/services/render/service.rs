@@ -83,7 +83,7 @@ use super::include_variables::{
 use super::list_pages::ResolvedListPagesAuthors;
 use super::list_pages::{
     ListPagesExpansion, ListPagesExpansionOptions,
-    build_wikidot_list_pages_module_request,
+    build_wikidot_list_pages_module_request, protect_ajax_module_literal_markers,
     resolve_wikidot_parser_functions_outside_list_pages,
 };
 use super::literal_regions::LiteralRegionIndex;
@@ -1605,7 +1605,11 @@ impl RenderService {
         settings: &WikitextSettings,
         options: RenderInnerOptions<'_>,
     ) -> Result<RenderInnerOutput> {
-        let config = ctx.config();
+        // Recursive ListPages/content renders can otherwise complete several
+        // ready futures synchronously on the caller's stack. Yield once at
+        // this boundary so each nested render resumes from its heap-owned
+        // future instead of accumulating poll frames.
+        tokio::task::yield_now().await;
         let RenderInnerOptions {
             render_context,
             viewer_user_id,
@@ -1658,6 +1662,34 @@ impl RenderService {
             },
         )
         .await?;
+        Box::pin(Self::render_inner_expanded(
+            ctx,
+            expanded,
+            page_info,
+            settings,
+            current_site_id,
+            text_block_page_id,
+            current_site,
+            trace,
+            persist_compiled_text,
+        ))
+        .await
+    }
+
+    async fn render_inner_expanded(
+        ctx: &ServiceContext<'_>,
+        expanded: ExpandedRenderWikitext,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        current_site_id: Option<i64>,
+        text_block_page_id: Option<i64>,
+        current_site: Option<SiteModel>,
+        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
+        persist_compiled_text: bool,
+    ) -> Result<RenderInnerOutput> {
+        let config = ctx.config();
+        let make_error =
+            || Error::new("failed to perform render operation", ErrorType::Render);
         let outer = Self::prepare_outer_render_wikitext(expanded, page_info, settings);
         if let Some((trace, scope)) = trace {
             trace.add_us(
@@ -1938,7 +1970,7 @@ impl RenderService {
                 wikidot_compat_links,
                 wikidot_wikipedia_links,
                 wikidot_compat_html,
-                wikidot_compat_text,
+                mut wikidot_compat_text,
                 native_list_wikipedia_links,
                 wikidot_embed_iframes,
                 timings: _,
@@ -1977,6 +2009,12 @@ impl RenderService {
                     &wikidot_inline_html,
                 );
                 html_output.body = wikidot_compat_html.restore(&html_output.body);
+                if render_page_info.page.as_ref() == "_ajax-module-connector" {
+                    html_output.body = protect_ajax_module_literal_markers(
+                        html_output.body,
+                        &mut wikidot_compat_text,
+                    );
+                }
                 html_output.body = Self::restore_protected_wikidot_wikipedia_links(
                     html_output.body,
                     &wikidot_wikipedia_links,

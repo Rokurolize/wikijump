@@ -80,8 +80,9 @@ pub(super) use self::delayed::{
     list_pages_runtime_container_close, list_pages_runtime_container_open,
     list_pages_runtime_row_container_close, prepare_delayed_list_pages_row,
     raw_module_close_end, resolve_wikidot_parser_functions_outside_list_pages,
-    seal_pending_list_pages_delayed_outputs, seal_protected_list_pages_delayed_output,
-    seal_zero_row_list_pages_wrapper, wrap_pending_list_pages_delayed_output,
+    restore_pending_nested_list_pages, seal_pending_list_pages_delayed_outputs,
+    seal_protected_list_pages_delayed_output, seal_zero_row_list_pages_wrapper,
+    wrap_pending_list_pages_delayed_output,
 };
 pub(super) use self::first_image::{
     list_pages_body_uses_first_image, load_list_pages_first_images,
