@@ -1120,6 +1120,38 @@ test("preview classifier narrowly separates owned parity and synchronized runtim
   ].join("");
   const localAuthorErrorInline =
     '<div class="list-pages-box"><p>By User</p></div>';
+  const liveAuthorSeparator = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/dr-talcite"><img src="avatar-7" alt="Dr Talcite"></a>',
+    '<a href="http://www.wikidot.com/user:info/dr-talcite">Dr Talcite</a>',
+    "</span></p></div>",
+  ].join("");
+  const localAuthorSeparator = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="/user:info/Dr Talcite"><img src="avatar-0" alt="Dr Talcite"></a>',
+    '<a href="/user:info/Dr Talcite">Dr Talcite</a>',
+    "</span></p></div>",
+  ].join("");
+  const liveAuthorUnderscore = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/dc-yerko"><img src="avatar-7" alt="Dc-Yerko"></a>',
+    '<a href="http://www.wikidot.com/user:info/dc-yerko">Dc-Yerko</a>',
+    "</span></p></div>",
+  ].join("");
+  const localAuthorUnderscore = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="/user:info/dc_yerko"><img src="avatar-0" alt="Dc_Yerko"></a>',
+    '<a href="/user:info/dc_yerko">Dc_Yerko</a>',
+    "</span></p></div>",
+  ].join("");
+  const localAuthorGenuinelyDifferent = localAuthorSeparator.replace(
+    "/user:info/Dr Talcite",
+    "/user:info/other-user",
+  ).replaceAll("Dr Talcite", "Other User");
   const liveLinkedTitle =
     '<div class="list-pages-box"><a href="/same-page">Title A B</a></div>';
   const localLinkedTitle =
@@ -1264,6 +1296,13 @@ test("preview classifier narrowly separates owned parity and synchronized runtim
       "author-error-inline-altered",
       liveAuthorErrorInline,
       localAuthorErrorInline.replace("By User", "By Altered"),
+    ],
+    ["author-separator-fixture", liveAuthorSeparator, localAuthorSeparator],
+    ["author-underscore-fixture", liveAuthorUnderscore, localAuthorUnderscore],
+    [
+      "author-genuinely-different",
+      liveAuthorSeparator,
+      localAuthorGenuinelyDifferent,
     ],
     [
       "author-plain-phrase-altered",
@@ -1470,6 +1509,21 @@ test("preview classifier narrowly separates owned parity and synchronized runtim
       ],
       [
         "author-error-inline-altered",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      [
+        "author-separator-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-underscore-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-genuinely-different",
         "listpages-query-or-row-render-divergence",
         "investigate-query-or-renderer",
       ],

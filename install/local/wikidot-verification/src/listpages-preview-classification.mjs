@@ -461,6 +461,15 @@ function synchronizedImportedAuthorNames(nodes) {
   );
 }
 
+function canonicalImportedAuthorIdentity(value) {
+  return String(value ?? "")
+    .normalize("NFKC")
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/[\p{Z}\p{P}\p{S}_]+/gu, "-")
+    .replace(/^-+|-+$/gu, "");
+}
+
 function importedAuthorErrorInlineName(node) {
   if (
     node?.type !== "element" ||
@@ -818,7 +827,8 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
   };
   const importedAuthorIdentities = new Map(
     [...importedAuthorNames].map((name) => [
-      name.toLowerCase(), `__IMPORTED_AUTHOR_${name.toLowerCase()}__`,
+      name.toLowerCase(),
+      `__IMPORTED_AUTHOR_${canonicalImportedAuthorIdentity(name)}__`,
     ]),
   );
   const socialNonces = new Set();
@@ -835,7 +845,9 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
     const textIdentity = nodeText(node)
       .replace(/\s+does not match any existing user name$/iu, "")
       .trim();
-    const identity = (hrefIdentity ?? textIdentity).toLocaleLowerCase();
+    const identity = canonicalImportedAuthorIdentity(
+      hrefIdentity ?? textIdentity,
+    );
     return {
       type: "text",
       value: `__IMPORTED_AUTHOR_${identity}__${appendSpace ? " " : ""}`,
@@ -877,7 +889,9 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
   };
   const normalizeNode = (node) => {
     if (node?.type === "text") {
-      const exactIdentity = importedAuthorIdentities.get(node.value.trim().toLowerCase());
+      const exactIdentity = importedAuthorIdentities.get(
+        node.value.trim().toLowerCase(),
+      );
       if (exactIdentity !== undefined) {
         return [{ ...node, value: exactIdentity }];
       }
