@@ -45,7 +45,7 @@ static AUTHORED_WIKIDOT_COMPAT_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 });
 static AUTHORED_WIKIDOT_COMPAT_OPEN_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">|<ul data-wikijump-compat-list="1">|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>|<a class="button" data-wikijump-compat-clone="1"[^>]*>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">|<style data-wikijump-compat-css-module="1">"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">|<ol data-wikijump-compat-listpages="1">|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">|<ul data-wikijump-compat-list="1">|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>|<a class="button" data-wikijump-compat-clone="1"[^>]*>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">|<style data-wikijump-compat-css-module="1">"#,
     )
     .unwrap()
 });
@@ -301,11 +301,25 @@ pub(in crate::services::render) fn neutralize_authored_markers(wikitext: &mut St
 
 #[cfg(test)]
 mod tests {
-    use super::render_css_module_code_block;
+    use super::{neutralize_authored_markers, render_css_module_code_block};
     use ftml::data::{PageInfo, ScoreValue};
     use ftml::layout::Layout;
     use ftml::settings::{WikitextMode, WikitextSettings};
     use std::borrow::Cow;
+
+    #[test]
+    fn authored_ordered_list_marker_cannot_enter_the_listpages_compatibility_boundary() {
+        let mut source =
+            r#"<ol data-wikijump-compat-listpages="1"><li>authored</li></ol>"#
+                .to_owned();
+
+        neutralize_authored_markers(&mut source);
+
+        assert_eq!(
+            source,
+            r#"<ol data-wikijump-authored-compat-listpages="1"><li>authored</li></ol>"#,
+        );
+    }
 
     #[test]
     fn visible_css_module_code_uses_wikidot_css_highlighting() {
