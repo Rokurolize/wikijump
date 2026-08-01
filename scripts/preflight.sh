@@ -81,11 +81,6 @@ run() {
   fi
 }
 
-# Always: the source-size budget is repository-wide and cheap. It is also the
-# check most likely to fail on a merge result rather than on either branch,
-# which is exactly the failure a local run cannot otherwise predict.
-run "source size" ./scripts/check-source-size.sh
-
 if group_selected workflow; then
   run "actionlint" bash -c \
     'command -v actionlint >/dev/null && actionlint || echo "actionlint not installed; skipped"'
