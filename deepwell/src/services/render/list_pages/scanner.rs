@@ -995,6 +995,16 @@ impl<'a> ModuleEventScanner<'a> {
                 );
             }
             if quote.is_some() && matches!(bytes[cursor], b'\n' | b'\r') {
+                if list_pages_compatibility && quote == Some(b'\'') {
+                    self.ambiguous_whole_head = true;
+                    let resume = physical_line_resume(bytes, cursor);
+                    finish_head_scan!(
+                        resume,
+                        ModuleOpeningEnd::Malformed {
+                            resume: first_rollback_marker.unwrap_or(resume),
+                        }
+                    );
+                }
                 if list_pages_compatibility
                     && quote == Some(b'"')
                     && let Some(opening_end) =
@@ -1147,21 +1157,6 @@ impl<'a> ModuleEventScanner<'a> {
                             validation_head,
                             list_pages_compatibility,
                         );
-                        if list_pages_compatibility
-                            && validation_head.contains(['\n', '\r'])
-                            && list_pages_head_contains_nested_module_token(
-                                validation_head,
-                            )
-                        {
-                            self.ambiguous_whole_head = true;
-                            finish_head_scan!(
-                                closing_end,
-                                ModuleOpeningEnd::Malformed {
-                                    resume: first_rollback_marker
-                                        .unwrap_or(closing_end),
-                                }
-                            );
-                        }
                         let runtime_recognized = list_pages_compatibility
                             && !super::super::module_arguments::wikidot_list_pages_arguments(
                                 validation_head,
@@ -1862,9 +1857,10 @@ fn list_pages_definite_invalid_head_can_execute(head: &str) -> bool {
         || head.contains("[!--")
         || head.contains("--]")
         || head.contains('@') && !head.trim_end().ends_with("@@")
-        || head.contains(']')
         || head.contains("\n=")
         || head.contains("\r=")
+        || !list_pages_head_quotes_are_balanced(head, b'\'')
+        || !list_pages_head_bracket_tokens_are_supported(head)
     {
         return false;
     }
@@ -1875,6 +1871,32 @@ fn list_pages_definite_invalid_head_can_execute(head: &str) -> bool {
     } else {
         !list_pages_head_contains_nested_module_token(head)
     }
+}
+
+fn list_pages_head_bracket_tokens_are_supported(head: &str) -> bool {
+    let bytes = head.as_bytes();
+    let mut cursor = 0usize;
+    while cursor < bytes.len() {
+        match bytes[cursor] {
+            b'[' => {
+                if bytes.get(cursor + 1) != Some(&b'[')
+                    || nested_list_pages_head_token_is_module(bytes, cursor)
+                {
+                    return false;
+                }
+                let Some(relative_end) = bytes[cursor + 2..]
+                    .windows(2)
+                    .position(|pair| pair == b"]]")
+                else {
+                    return false;
+                };
+                cursor += 2 + relative_end + 2;
+            }
+            b']' => return false,
+            _ => cursor += 1,
+        }
+    }
+    true
 }
 
 fn list_pages_head_contains_nested_module_token(head: &str) -> bool {
@@ -1895,11 +1917,15 @@ fn list_pages_head_contains_nested_module_token(head: &str) -> bool {
 }
 
 fn list_pages_head_double_quotes_are_balanced(head: &str) -> bool {
+    list_pages_head_quotes_are_balanced(head, b'"')
+}
+
+fn list_pages_head_quotes_are_balanced(head: &str, quote: u8) -> bool {
     let bytes = head.as_bytes();
     let mut open = false;
     let mut backslashes = 0usize;
     for byte in bytes {
-        if *byte == b'"' && backslashes % 2 == 0 {
+        if *byte == quote && backslashes % 2 == 0 {
             open = !open;
         }
         backslashes = if *byte == b'\\' {

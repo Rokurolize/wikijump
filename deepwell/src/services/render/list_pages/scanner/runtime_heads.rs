@@ -19,7 +19,7 @@
  */
 
 use super::{
-    ModuleHeadValidation, list_pages_head_contains_nested_module_token,
+    ModuleHeadValidation, list_pages_definite_invalid_head_can_execute,
     physical_line_resume, validate_module_head,
 };
 
@@ -81,8 +81,7 @@ pub(in crate::services::render) fn list_pages_runtime_head_can_execute(
                 .is_empty()
         }
         ModuleHeadValidation::DefiniteInvalid
-            if !list_pages_head_contains_nested_module_token(head) =>
-        {
+            if list_pages_definite_invalid_head_can_execute(head) => {
             true
         }
         _ => false,

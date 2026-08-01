@@ -845,10 +845,8 @@ fn list_pages_scanner_fails_closed_when_a_single_quoted_head_reaches_a_physical_
              [[module ListPages name='unterminated{line_end}\
              [[module ListPages name='second']]B[[/module]]",
         );
-        assert!(
-            find_list_pages_module_matches(&source).is_empty(),
-            "{label}"
-        );
+        let modules = find_list_pages_module_matches(&source);
+        assert!(modules.is_empty(), "{label}: {modules:#?}");
     }
 }
 
