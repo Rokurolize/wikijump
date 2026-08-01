@@ -2879,7 +2879,7 @@ fn defers_wikidot_list_pages_custom_date_format_to_odate_class() {
     assert!(rendered.contains("format_%25Y-%25m-%25d%20%25R%7Cagohover"));
     // ListPages' anonymous PagePreview response carries the UTC server text;
     // the requested format is carried by the ODate class.
-    assert!(rendered.ends_with(">8 Aug 2024 19:44</span>"));
+    assert!(rendered.ends_with(">08 Aug 2024 19:44</span>"));
 }
 
 #[test]

@@ -316,7 +316,10 @@ pub(in crate::services::render) fn format_list_pages_created_at(
     // Keep the requested format in the class; only the server text belongs in
     // this response body.
     let created_at = created_at.to_offset(time::UtcOffset::UTC);
-    const SERVER_FORMAT: &str = "%e %b %Y %H:%M";
+    // Wikidot's PagePreview server phase uses a zero-padded day.  The
+    // subsequent ODate browser phase may use `%e` in its format class, but
+    // the text emitted by the preview endpoint is `%d`.
+    const SERVER_FORMAT: &str = "%d %b %Y %H:%M";
     const DEFAULT_ODATE_FORMAT: &str = "%e %b %Y, %H:%M|agohover";
     let format = format.unwrap_or(DEFAULT_ODATE_FORMAT);
     // Wikidot's Ajax response always carries the default server-rendered text.
