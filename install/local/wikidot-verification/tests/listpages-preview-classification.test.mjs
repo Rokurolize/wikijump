@@ -1655,6 +1655,95 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
   );
 });
 
+test("preview classifier isolates random redirect rows selected from different fixtures", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const live = [
+    '<div class="list-pages-box"><div class="list-pages-item">',
+    '<p><iframe src="https://snippets.wdfiles.com/local--code/code:iframe-redirect#http://sandbox-for-codex.wikidot.com/target" frameborder="0" scrolling="no" style="width: 9px; height: 9px;"></iframe></p>',
+    "</div></div>",
+  ].join("");
+  const local = [
+    '<div class="list-pages-box"><div class="list-pages-item">',
+    '<div class="error-block">Sorry, no match for the embedded content.</div>',
+    "</div></div>",
+  ].join("");
+  const cases = [
+    {
+      id: "random-redirect-default",
+      source: [
+        '[[module ListPages category="*" order="random" limit="1"]]',
+        "[[include :snippets:redirect url=%%link%%]]",
+        "[[/module]]",
+      ].join("\n"),
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-redirect-tagged",
+      source: [
+        '[[module ListPages category="_default" order="random" limit="1" tag="-admin"]]',
+        "[[include :snippets:redirect url=%%link%%]]",
+        "[[/module]]",
+      ].join("\n"),
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "deterministic-redirect-row",
+      source: [
+        '[[module ListPages category="*" order="name" limit="1"]]',
+        "[[include :snippets:redirect url=%%link%%]]",
+        "[[/module]]",
+      ].join("\n"),
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "random-redirect-visible-row-change",
+      source: [
+        '[[module ListPages category="*" order="random" limit="1"]]',
+        "[[include :snippets:redirect url=%%link%%]]",
+        "[[/module]]",
+      ].join("\n"),
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p>LOCAL ROW</p></div></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases
+      .map(({ id, source }) => `${JSON.stringify(reference(id, source, live))}\n`)
+      .join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({ id, local: caseLocal }) =>
+        mismatchCase(id, live, caseLocal ?? local)
+      ),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [
+      row.case_id,
+      row.classification,
+      row.disposition,
+    ]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+  await fs.rm(root, { recursive: true, force: true });
+});
+
 test("preview classifier isolates the evidenced malformed default-row shell from nested non-ListPages rendering", async () => {
   const root = await fs.mkdtemp(
     path.join(os.tmpdir(), "wj-listpages-malformed-shell-classify-"),

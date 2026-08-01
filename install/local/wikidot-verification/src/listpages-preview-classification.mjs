@@ -1400,6 +1400,52 @@ function classifyMismatch(row, reference) {
   const randomLimit = invocation === null
     ? null
     : lastArgumentValue(invocation, "limit")?.trim();
+  const randomRedirectBody = invocation !== null &&
+    /^\s*\[\[include\s+:snippets:redirect\s+url=%%link%%\]\]\s*$/iu
+      .test(invocation.body);
+  const liveRedirectIframes = liveTopLevelWrappers.length === 1
+    ? descendantElements(
+      liveTopLevelWrappers[0],
+      (node) => node.name === "iframe" &&
+        /^https:\/\/snippets\.(?:wdfiles\.com|files\.invalid)\/local--code\/code:iframe-redirect#http:\/\/sandbox-for-codex\.wikidot\.com\/[^\s]+$/u
+          .test(nodeAttribute(node, "src") ?? ""),
+    )
+    : [];
+  const localRedirectErrors = localTopLevelWrappers.length === 1
+    ? descendantElements(
+      localTopLevelWrappers[0],
+      (node) => nodeHasClass(node, "error-block") &&
+        nodeText(node).trim() === "Sorry, no match for the embedded content.",
+    )
+    : [];
+  if (
+    invocation !== null &&
+    randomOrder === "random" &&
+    /(?:^|\|)1$/u.test(randomLimit ?? "") &&
+    randomRedirectBody &&
+    liveText === "" &&
+    localText === "Sorry, no match for the embedded content." &&
+    liveTopLevelWrappers.length === 1 &&
+    localTopLevelWrappers.length === 1 &&
+    descendantElements(
+      liveTopLevelWrappers[0],
+      (node) => nodeHasClass(node, "list-pages-item"),
+    ).length === 1 &&
+    descendantElements(
+      localTopLevelWrappers[0],
+      (node) => nodeHasClass(node, "list-pages-item"),
+    ).length === 1 &&
+    liveRedirectIframes.length === 1 &&
+    localRedirectErrors.length === 1 &&
+    !localUnsupportedDiagnostic
+  ) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+        "The exact one-row random redirect invocation selects different cached fixture pages: Wikidot emits its canonical snippets redirect iframe for one selected link while the local fixture's selected link resolves to the canonical no-match error. This is a selected-row data-state difference, not a deterministic ListPages query or renderer contract.",
+    };
+  }
   if (
     invocation !== null &&
     randomOrder === "random" &&
