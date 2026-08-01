@@ -68,10 +68,7 @@ pub(in crate::services::render) fn resolve_list_pages_first_image<'a>(
     let replacement = selected_page_slug
         .zip(first_image_name)
         .map(|(page, name)| {
-            format!(
-                "/local--files/{page}/{}",
-                percent_encode_path_segment(name),
-            )
+            format!("/local--files/{page}/{}", percent_encode_path_segment(name),)
         });
     let mut resolved = source.to_owned();
     for occurrence in occurrences.into_iter().rev() {

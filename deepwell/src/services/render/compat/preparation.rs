@@ -310,8 +310,7 @@ mod tests {
     #[test]
     fn authored_ordered_list_marker_cannot_enter_the_listpages_compatibility_boundary() {
         let mut source =
-            r#"<ol data-wikijump-compat-listpages="1"><li>authored</li></ol>"#
-                .to_owned();
+            r#"<ol data-wikijump-compat-listpages="1"><li>authored</li></ol>"#.to_owned();
 
         neutralize_authored_markers(&mut source);
 

@@ -33,16 +33,14 @@ static WIKIDOT_RAW_EMBED_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 static WIKIDOT_NAME_ONLY_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"^<iframe name="[A-Za-z][A-Za-z0-9_:-]{0,127}"></iframe>$"#)
-        .unwrap()
+    Regex::new(r#"^<iframe name="[A-Za-z][A-Za-z0-9_:-]{0,127}"></iframe>$"#).unwrap()
 });
-static LISTPAGES_DYNAMIC_EMBED_OPENER_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| {
-        Regex::new(
+static LISTPAGES_DYNAMIC_EMBED_OPENER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
             r#"(?im)^(?P<indent>[ \t>]*)\[\[%%content(?:\{[0-9]+\})?%%(?P<block>embed|embedaudio|embedvideo)\]\][ \t]*$"#,
         )
         .unwrap()
-    });
+});
 static WIKIDOT_EMBED_BLOCK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"(?is)\[\[(?P<block>embed|embedaudio|embedvideo)\]\](?P<payload>.*?)\[\[/(?P<close>embed|embedaudio|embedvideo)\]\]"#,

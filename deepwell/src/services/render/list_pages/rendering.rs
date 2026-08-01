@@ -70,29 +70,27 @@ use super::{
     find_list_pages_module_matches_with_delayed_links,
     finish_or_defer_list_pages_delayed_output, is_list_pages_visible_tag,
     list_pages_argument_error_with_parent_precedence,
-    list_pages_body_uses_first_image,
-    list_pages_body_starts_with_preparsed_block, list_pages_content_query_target,
-    list_pages_created_by_unix, list_pages_feed_info_html,
-    list_pages_feed_only_render_result, list_pages_first_paragraph,
-    list_pages_has_unsupported_page_type_selector,
+    list_pages_body_starts_with_preparsed_block, list_pages_body_uses_first_image,
+    list_pages_content_query_target, list_pages_created_by_unix,
+    list_pages_feed_info_html, list_pages_feed_only_render_result,
+    list_pages_first_paragraph, list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector,
     list_pages_head_has_current_data_form_query_selector,
     list_pages_html_encoded_head_owns_script_tail, list_pages_parent_fullname,
     list_pages_revision_count, list_pages_row_markup_bytes, list_pages_row_scan_target,
     list_pages_runtime_container_open, list_pages_runtime_row_container_close,
     list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
-    load_list_pages_data_form_definitions, page_query_cap_requires_original_module,
-    load_list_pages_first_images,
-    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
-    prepare_delayed_list_pages_row, prepare_list_pages_rendered_block,
-    preserve_list_pages_module_matches, protect_ajax_module_literal_markers,
-    push_list_pages_generated_output, push_list_pages_pager,
-    push_list_pages_trailing_runtime_blocks, raw_module_close_end,
-    resolve_list_pages_first_image,
-    seal_pending_list_pages_delayed_outputs, seal_zero_row_list_pages_wrapper,
-    seed_random_list_pages_order, should_render_current_page_list_pages_row,
-    substitute_count_pages_variables, union_found_page_fields,
-    unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
+    load_list_pages_data_form_definitions, load_list_pages_first_images,
+    page_query_cap_requires_original_module, parse_list_pages_arguments,
+    parse_list_pages_arguments_with_url, prepare_delayed_list_pages_row,
+    prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
+    protect_ajax_module_literal_markers, push_list_pages_generated_output,
+    push_list_pages_pager, push_list_pages_trailing_runtime_blocks, raw_module_close_end,
+    resolve_list_pages_first_image, seal_pending_list_pages_delayed_outputs,
+    seal_zero_row_list_pages_wrapper, seed_random_list_pages_order,
+    should_render_current_page_list_pages_row, substitute_count_pages_variables,
+    union_found_page_fields, unsupported_list_pages_replacement,
+    url_offset_list_pages_content_bytes,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::hash::{TextHash, k12_hash};
@@ -329,24 +327,23 @@ impl RenderService {
                 } else {
                     module.body
                 };
-                let zero_row_runtime_output = parse_list_pages_arguments_with_url(
-                    head, url,
-                )
-                .is_some_and(|arguments| {
-                    arguments
-                        .rss_title
-                        .as_deref()
-                        .is_some_and(|title| !title.is_empty())
-                        || !arguments.separate
-                            && (arguments.prepend_line.is_some()
-                            || arguments.append_line.is_some()
-                            || ListPagesTemplatePlan::compile(body).is_some_and(
-                                |template| {
-                                    template.head_section().is_some()
-                                        || template.foot_section().is_some()
-                                },
-                            ))
-                });
+                let zero_row_runtime_output =
+                    parse_list_pages_arguments_with_url(head, url).is_some_and(
+                        |arguments| {
+                            arguments
+                                .rss_title
+                                .as_deref()
+                                .is_some_and(|title| !title.is_empty())
+                                || !arguments.separate
+                                    && (arguments.prepend_line.is_some()
+                                        || arguments.append_line.is_some()
+                                        || ListPagesTemplatePlan::compile(body)
+                                            .is_some_and(|template| {
+                                                template.head_section().is_some()
+                                                    || template.foot_section().is_some()
+                                            }))
+                        },
+                    );
                 let static_categories_prove_empty = !zero_row_runtime_output
                     && static_category_preflight.as_ref().is_some_and(
                         |(categories, _)| {

@@ -83,13 +83,13 @@ pub(super) use self::delayed::{
     seal_pending_list_pages_delayed_outputs, seal_protected_list_pages_delayed_output,
     seal_zero_row_list_pages_wrapper, wrap_pending_list_pages_delayed_output,
 };
-pub(super) use self::generated_html::{
-    register_generated_list_pages_html, repair_list_pages_block_boundaries,
-    strip_generated_list_pages_html_markers, url_offset_list_pages_content_bytes,
-};
 pub(super) use self::first_image::{
     list_pages_body_uses_first_image, load_list_pages_first_images,
     resolve_list_pages_first_image,
+};
+pub(super) use self::generated_html::{
+    register_generated_list_pages_html, repair_list_pages_block_boundaries,
+    strip_generated_list_pages_html_markers, url_offset_list_pages_content_bytes,
 };
 pub(super) use self::pagination::{
     ListPagesPagerRoute, list_pages_feed_info_html, push_list_pages_pager,

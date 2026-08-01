@@ -310,7 +310,10 @@ impl CompatHtmlFragments {
                         },
                     );
                     if unwrap_block_paragraphs
-                        && matches!(&self.fragments[index], CompatFragment::BlockHtml { .. },)
+                        && matches!(
+                            &self.fragments[index],
+                            CompatFragment::BlockHtml { .. },
+                        )
                     {
                         if restore_block_html_from_paragraph(
                             &mut output,
@@ -542,13 +545,10 @@ impl IncrementalHtmlElementStack {
                 advance_open_html_element_stack(html, &mut self.parsed, &mut self.stack);
         }
         self.valid
-            && self
-                .stack
-                .last()
-                .is_none_or(|parent| {
-                    is_safe_block_html_container(parent)
-                        || (allow_span_parent && parent == "span")
-                })
+            && self.stack.last().is_none_or(|parent| {
+                is_safe_block_html_container(parent)
+                    || (allow_span_parent && parent == "span")
+            })
     }
 }
 
@@ -807,8 +807,9 @@ mod tests {
     #[test]
     fn opted_in_flow_html_restores_only_beneath_a_span_parent() {
         let mut fragments = CompatHtmlFragments::new("");
-        let marker = fragments
-            .push_block_html_allowing_span_parent("<div>trusted ListPages</div>".to_owned());
+        let marker = fragments.push_block_html_allowing_span_parent(
+            "<div>trusted ListPages</div>".to_owned(),
+        );
 
         assert_eq!(
             fragments.restore(&format!("<span>{marker}</span>")),

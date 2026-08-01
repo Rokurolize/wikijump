@@ -87,10 +87,10 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
     let mut generated_slots = Vec::new();
     let mut runtime_scalar_ranges = Vec::new();
     let mut prepared_body = suppress_generated_list_pages_heading_toc(body).into_owned();
-        ftml::preproc::whitespace::normalize_wikidot_whitespace_only_lines(
-            &mut prepared_body,
-        );
-        ftml::preproc::typography::substitute_wikidot(&mut prepared_body);
+    ftml::preproc::whitespace::normalize_wikidot_whitespace_only_lines(
+        &mut prepared_body,
+    );
+    ftml::preproc::typography::substitute_wikidot(&mut prepared_body);
     substitute_literal_advanced_table_opener_typography(&mut prepared_body);
     resolve_outermost_wikidot_iftags(&mut prepared_body, outer_page_tags, compat_text);
     neutralize_authored_markers(&mut prepared_body);
@@ -231,11 +231,8 @@ fn resolve_list_pages_expr_parser_functions(
     let mut resolved =
         RenderService::resolve_wikidot_list_pages_parser_functions(&protected);
     if let Some((opening, closing)) = generated_comment_gates {
-        resolved = prune_generated_parser_function_comment_gates(
-            resolved,
-            &opening,
-            &closing,
-        );
+        resolved =
+            prune_generated_parser_function_comment_gates(resolved, &opening, &closing);
     }
     let mut present_occurrences = Vec::new();
     for occurrence in protected_occurrences {
@@ -295,9 +292,7 @@ fn protect_generated_parser_function_comment_gates(
         let leading = line_body.len() - line_body.trim_start_matches([' ', '\t']).len();
         let trimmed = &line_body[leading..];
         let lowercase = trimmed.to_ascii_lowercase();
-        if !lowercase.starts_with("[[#ifexpr ")
-            && !lowercase.starts_with("[[#if ")
-        {
+        if !lowercase.starts_with("[[#ifexpr ") && !lowercase.starts_with("[[#if ") {
             line_start += line.len();
             continue;
         }
@@ -305,9 +300,8 @@ fn protect_generated_parser_function_comment_gates(
             line_start += line.len();
             continue;
         };
-        let branch_start =
-            pipe + 1 + trimmed[pipe + 1..].len()
-                - trimmed[pipe + 1..].trim_start_matches([' ', '\t']).len();
+        let branch_start = pipe + 1 + trimmed[pipe + 1..].len()
+            - trimmed[pipe + 1..].trim_start_matches([' ', '\t']).len();
         let branch = &trimmed[branch_start..];
         let (token, marker) = if branch.starts_with("[!--")
             && branch["[!--".len()..].trim_start_matches([' ', '\t']) == "]]"
@@ -322,11 +316,7 @@ fn protect_generated_parser_function_comment_gates(
             continue;
         };
         let start = line_start + leading + branch_start;
-        replacements.push((
-            start..start + token.len(),
-            line_start + leading,
-            marker,
-        ));
+        replacements.push((start..start + token.len(), line_start + leading, marker));
         line_start += line.len();
     }
 
@@ -343,9 +333,8 @@ fn protect_generated_parser_function_comment_gates(
         literal_projection.replace_range(range.clone(), &" ".repeat(range.len()));
     }
     let literal_regions = LiteralRegionIndex::new(&literal_projection);
-    replacements.retain(|(_, function_start, _)| {
-        !literal_regions.contains(*function_start)
-    });
+    replacements
+        .retain(|(_, function_start, _)| !literal_regions.contains(*function_start));
     if replacements.is_empty() {
         return None;
     }

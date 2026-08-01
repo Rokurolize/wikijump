@@ -119,8 +119,7 @@ fn scanner_ignores_inert_prose_after_supported_list_pages_arguments() {
         r#"limit="1" category="*" order="name" NOTE: arbitrary [[span]] words."#,
         r#"limit="1" category="*" order="name" NOTE: arbitrary "quoted words"."#,
     ] {
-        let source =
-            format!("[[module ListPages {head}]]\nALPHA\nBRAVO\n[[/module]]");
+        let source = format!("[[module ListPages {head}]]\nALPHA\nBRAVO\n[[/module]]");
         let modules = find_list_pages_module_matches(&source);
         assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
         assert_eq!(modules[0].head, head, "{source:?}: {modules:#?}");

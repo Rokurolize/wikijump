@@ -38,9 +38,8 @@ pub(in crate::services::render) use self::count_reachability::CountPagesCloseRea
 use self::legacy_heads::{
     crossing_list_pages_quote_ends_before_close, double_quote_ends_scanner_argument,
     is_module_argument_spacing, legacy_single_bracket_list_pages_opening,
-    list_pages_inert_at_markers_follow_quote,
-    skip_count_pages_module_subname_delimiter, skip_horizontal_whitespace,
-    skip_module_argument_spacing, skip_module_close_spacing,
+    list_pages_inert_at_markers_follow_quote, skip_count_pages_module_subname_delimiter,
+    skip_horizontal_whitespace, skip_module_argument_spacing, skip_module_close_spacing,
     skip_module_subname_delimiter, surplus_list_pages_close_after_spacing,
 };
 pub(in crate::services::render) use self::runtime_heads::list_pages_runtime_head_can_execute;
@@ -486,30 +485,29 @@ impl<'a> ModuleEventScanner<'a> {
                     subname_end,
                     runtime_safe,
                     default_template,
-                ) =
-                    match self.module_opening_end(tag.name_end) {
-                        ModuleOpeningEnd::Complete {
-                            opening_end,
-                            body_start,
-                            subname_end,
-                            runtime_safe,
-                            default_template,
-                        } => (
-                            opening_end,
-                            body_start,
-                            subname_end,
-                            runtime_safe,
-                            default_template,
-                        ),
-                        ModuleOpeningEnd::Malformed { resume } => {
-                            self.advance_to(resume);
-                            continue;
-                        }
-                        ModuleOpeningEnd::Unclosed => {
-                            self.advance_to(self.lowercase.len());
-                            return None;
-                        }
-                    };
+                ) = match self.module_opening_end(tag.name_end) {
+                    ModuleOpeningEnd::Complete {
+                        opening_end,
+                        body_start,
+                        subname_end,
+                        runtime_safe,
+                        default_template,
+                    } => (
+                        opening_end,
+                        body_start,
+                        subname_end,
+                        runtime_safe,
+                        default_template,
+                    ),
+                    ModuleOpeningEnd::Malformed { resume } => {
+                        self.advance_to(resume);
+                        continue;
+                    }
+                    ModuleOpeningEnd::Unclosed => {
+                        self.advance_to(self.lowercase.len());
+                        return None;
+                    }
+                };
                 self.advance_to(body_start);
                 let Some((subname_start, subname_end)) =
                     self.module_subname_span(tag.name_end, subname_end)
@@ -931,8 +929,7 @@ impl<'a> ModuleEventScanner<'a> {
                     &source[subname_end..cursor],
                 )
                 && !nested_list_pages_head_token_is_module(bytes, cursor)
-                && let Some(nested_end) =
-                    nested_list_pages_head_token_end(source, cursor)
+                && let Some(nested_end) = nested_list_pages_head_token_end(source, cursor)
             {
                 trailing_backslashes = 0;
                 cursor = nested_end;
@@ -1007,12 +1004,11 @@ impl<'a> ModuleEventScanner<'a> {
                 }
                 if list_pages_compatibility
                     && quote == Some(b'"')
-                    && let Some(opening_end) =
-                        final_unclosed_list_pages_head_boundary(
-                            source,
-                            subname_end,
-                            cursor,
-                        )
+                    && let Some(opening_end) = final_unclosed_list_pages_head_boundary(
+                        source,
+                        subname_end,
+                        cursor,
+                    )
                 {
                     let body_start = physical_line_resume(bytes, cursor);
                     self.text_tokens = head_tokens;
@@ -1173,8 +1169,7 @@ impl<'a> ModuleEventScanner<'a> {
                                 && first_rollback_marker.is_none()
                                 && list_pages_definite_invalid_head_can_execute(
                                     validation_head,
-                                )
-                            {
+                                ) {
                                 ModuleHeadValidation::ValidRuntimeUnsafe
                             } else if list_pages_compatibility
                                 && runtime_recognized
@@ -1792,10 +1787,7 @@ fn list_pages_url_value_quote_ends_at(
         && !bytes[opening + 1..quote].contains(&b'"')
 }
 
-pub(super) fn nested_list_pages_head_token_is_module(
-    bytes: &[u8],
-    start: usize,
-) -> bool {
+pub(super) fn nested_list_pages_head_token_is_module(bytes: &[u8], start: usize) -> bool {
     let mut cursor = start + 2;
     skip_horizontal_whitespace(bytes, &mut cursor);
     if bytes.get(cursor) == Some(&b'/') {
@@ -1806,8 +1798,7 @@ pub(super) fn nested_list_pages_head_token_is_module(
         return false;
     };
     let name = name.strip_suffix(b"_").unwrap_or(name);
-    name.eq_ignore_ascii_case(b"module")
-        || name.eq_ignore_ascii_case(b"module654")
+    name.eq_ignore_ascii_case(b"module") || name.eq_ignore_ascii_case(b"module654")
 }
 
 fn nested_list_pages_head_token_end(source: &str, start: usize) -> Option<usize> {
@@ -1928,11 +1919,7 @@ fn list_pages_head_quotes_are_balanced(head: &str, quote: u8) -> bool {
         if *byte == quote && backslashes % 2 == 0 {
             open = !open;
         }
-        backslashes = if *byte == b'\\' {
-            backslashes + 1
-        } else {
-            0
-        };
+        backslashes = if *byte == b'\\' { backslashes + 1 } else { 0 };
     }
     !open
 }

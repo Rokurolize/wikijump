@@ -1845,9 +1845,7 @@ pub(in crate::services::render) fn parse_list_pages_order(
         "title" => OrderProperty::Title,
         "alt_title" | "alttitle" => OrderProperty::AltTitle,
         "created_by" | "createdby" => OrderProperty::CreatedBy,
-        "created_at" | "createdat" | "date" | "datecreated" => {
-            OrderProperty::CreatedAt
-        }
+        "created_at" | "createdat" | "date" | "datecreated" => OrderProperty::CreatedAt,
         "updated_at" | "updatedat" | "updated" | "dateedited" => OrderProperty::UpdatedAt,
         "size" | "pagelength" => OrderProperty::Size,
         "rating" | "score" => OrderProperty::Score,
@@ -1969,9 +1967,7 @@ fn collect_list_pages_html_body_ranges(source: &str) -> Vec<Range<usize>> {
         source[line_start..start]
             .chars()
             .all(|character| matches!(character, ' ' | '\t' | '>'))
-            && source[end..line_end]
-                .chars()
-                .all(char::is_whitespace)
+            && source[end..line_end].chars().all(char::is_whitespace)
     }
 
     fn is_supported_html_head(head: &str) -> bool {
@@ -2015,8 +2011,7 @@ fn collect_list_pages_html_body_ranges(source: &str) -> Vec<Range<usize>> {
         let body_start = opener_end;
         let mut close_cursor = body_start;
         let close = loop {
-            let Some(close) =
-                find_ascii_case_insensitive(bytes, close_cursor, CLOSE)
+            let Some(close) = find_ascii_case_insensitive(bytes, close_cursor, CLOSE)
             else {
                 return ranges;
             };

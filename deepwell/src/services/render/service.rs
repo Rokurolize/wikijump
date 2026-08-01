@@ -2573,9 +2573,7 @@ impl RenderService {
         ftml::preproc::resolve_wikidot_parser_functions(value)
     }
 
-    pub(super) fn resolve_wikidot_list_pages_parser_functions(
-        value: &str,
-    ) -> String {
+    pub(super) fn resolve_wikidot_list_pages_parser_functions(value: &str) -> String {
         if !value.contains("[[#") {
             return value.to_owned();
         }
@@ -4016,8 +4014,7 @@ pub(super) fn render_list_pages_numbered_rows_with_titles(
             {
                 list_end += 1;
                 while list_end < lines.len()
-                    && native_numbered_list_span_continuation(lines[list_end])
-                        .is_some()
+                    && native_numbered_list_span_continuation(lines[list_end]).is_some()
                 {
                     list_end += 1;
                 }
@@ -4569,9 +4566,9 @@ fn render_native_list_page_link(
     link_titles: Option<&WikidotCompatLinkTitleMap>,
 ) -> String {
     let target = target.trim();
-    let external_target = target.strip_prefix('*').filter(|target| {
-        target.starts_with("http://") || target.starts_with("https://")
-    });
+    let external_target = target
+        .strip_prefix('*')
+        .filter(|target| target.starts_with("http://") || target.starts_with("https://"));
     let page_ref = native_list_page_link_ref(target);
     let page_is_missing = page_ref.as_ref().is_some_and(|page_ref| {
         link_titles.is_some_and(|titles| titles.page_is_missing(page_ref))

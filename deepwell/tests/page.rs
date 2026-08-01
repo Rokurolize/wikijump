@@ -15137,10 +15137,7 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
             .contains("BROAD PRESERVED %%content%%")
     );
     assert!(
-        output
-            .html_output
-            .body
-            .contains("RANDOM PRESERVED"),
+        output.html_output.body.contains("RANDOM PRESERVED"),
         "a random query with an actual selected content row must consume one content-module slot: {}",
         output.html_output.body,
     );
@@ -15151,11 +15148,8 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
             .contains("RANDOM PRESERVED %%content%%"),
     );
     assert!(
-        output.html_output.body.contains("EXPANDED ONE") &&
-            !output
-                .html_output
-                .body
-                .contains("EXPANDED ONE %%content%%"),
+        output.html_output.body.contains("EXPANDED ONE")
+            && !output.html_output.body.contains("EXPANDED ONE %%content%%"),
         "the third nonempty content-backed module must render: {}",
         output.html_output.body,
     );

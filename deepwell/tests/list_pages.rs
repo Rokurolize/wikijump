@@ -1479,15 +1479,15 @@ async fn imported_wikidot_revision_count_controls_revisions_order_and_substituti
     .html_output
     .body;
 
-    let large_row = html
-        .find("z-live-large|53")
-        .unwrap_or_else(|| panic!("the imported large revision count should render:\n{html}"));
-    let small_row = html
-        .find("a-live-small|2")
-        .unwrap_or_else(|| panic!("the imported small revision count should render:\n{html}"));
-    let tied_row = html
-        .find("a-live-tied|53")
-        .unwrap_or_else(|| panic!("the tied imported revision count should render:\n{html}"));
+    let large_row = html.find("z-live-large|53").unwrap_or_else(|| {
+        panic!("the imported large revision count should render:\n{html}")
+    });
+    let small_row = html.find("a-live-small|2").unwrap_or_else(|| {
+        panic!("the imported small revision count should render:\n{html}")
+    });
+    let tied_row = html.find("a-live-tied|53").unwrap_or_else(|| {
+        panic!("the tied imported revision count should render:\n{html}")
+    });
     assert!(
         large_row < tied_row && tied_row < small_row,
         "Wikidot's captured revision count must control both ordering and \
@@ -4404,9 +4404,8 @@ async fn static_listpages_numbered_rows_retain_inline_footnotes() {
         preview.contains(concat!(
             "<ol>\n<li>Row<sup class=\"footnoteref\">",
             "<a id=\"footnoteref-1\" href=\"javascript:;\" ",
-        )) && preview.contains(
-            r#"<div class="footnote-footer" id="footnote-1">"#,
-        ) && preview.contains("<em>Author.</em>")
+        )) && preview.contains(r#"<div class="footnote-footer" id="footnote-1">"#,)
+            && preview.contains("<em>Author.</em>")
             && !preview.contains("[[footnote]]")
             && !preview.contains("[[/footnote]]"),
         "generated numbered rows must leave inline footnotes to FTML List mode:\n{preview}",
@@ -5375,9 +5374,8 @@ async fn listpages_first_image_token_uses_the_selected_pages_first_image_attachm
     .body;
 
     assert!(
-        preview.contains(&format!(
-            "/local--files/{TARGET_SLUG}/first%20image.png"
-        )) && preview.contains(r#"alt="Selected preview""#),
+        preview.contains(&format!("/local--files/{TARGET_SLUG}/first%20image.png"))
+            && preview.contains(r#"alt="Selected preview""#),
         "the image token should bind to the first image attachment, not the first non-image file:\n{preview}",
     );
     assert!(
