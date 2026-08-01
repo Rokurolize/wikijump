@@ -1725,7 +1725,12 @@ impl RenderService {
                 .as_str();
             output.push_str(&wikitext[cursor..matched.start()]);
             let rendered = Self::render_static_account_module(name);
-            if !rendered.is_empty() {
+            if rendered.is_empty() && name.eq_ignore_ascii_case("Watchers") {
+                // Wikidot leaves an empty paragraph for an executed
+                // Watchers module.  Retain that block boundary even though
+                // the module has no visible body.
+                output.push_str(&compat_html.push_block_html("<p></p>".to_owned()));
+            } else if !rendered.is_empty() {
                 output.push_str(&compat_html.push_block_html(rendered.to_owned()));
             }
             cursor = matched.end();

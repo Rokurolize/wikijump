@@ -758,6 +758,13 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
     {
         return Ok(output);
     }
+    // ListPages bodies are extracted before the outer page enters FTML's
+    // preprocessing pass.  Run the same layout compatibility pass on the
+    // sealed row stream so legacy boundaries (notably tight native quote
+    // lines) retain Wikidot's fail-closed semantics inside delayed rows.
+    if settings.enable_page_syntax {
+        ftml::preprocess_for_layout(&mut output, settings.layout);
+    }
     if delayed_occurrences.is_empty() && runtime_scalar_ranges.is_empty() {
         // Static rows may already contain the narrowly generated table or
         // numbered-list HTML produced by Wikijump's ListPages compatibility
@@ -1360,6 +1367,47 @@ mod tests {
             data_form_definition: None,
             render_generated_html: false,
         }
+    }
+
+    #[test]
+    fn delayed_rows_apply_wikidot_tight_quote_boundaries() {
+        let source = "BEFORE\n> quoted\n>tight\nAFTER";
+        let page_info = PageInfo {
+            page: Cow::Borrowed("preview"),
+            category: None,
+            site: Cow::Borrowed("sandbox-for-codex"),
+            title: Cow::Borrowed("Preview"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(
+            WikitextMode::Page,
+            ftml::layout::Layout::Wikidot,
+        );
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let sealed = seal_list_pages_delayed_output_with_mode(
+            source.to_owned(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            &page_info,
+            &settings,
+            &mut compat_html,
+            true,
+        )
+        .expect("delayed row should seal");
+        let rendered = compat_html.restore(&sealed);
+
+        assert!(
+            rendered.contains("<blockquote><p>quoted</p></blockquote>"),
+            "the valid quoted row should remain rendered: {rendered}",
+        );
+        assert!(
+            !rendered.contains("tight"),
+            "a tight quoted row should be pruned like Wikidot: {rendered}",
+        );
     }
 
     #[test]
