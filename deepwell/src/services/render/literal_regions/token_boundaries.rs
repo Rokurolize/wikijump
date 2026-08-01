@@ -180,14 +180,24 @@ fn scan_email(bytes: &[u8], start: usize, identifier_end: usize) -> EmailScan {
         _ => {}
     }
 
-    // Keep these stops in lockstep with FTML 4fc7df28's context-free email
+    // Keep these stops in lockstep with the pinned FTML context-free email
     // scanner. Punctuation outside this set remains owned by the email token.
     let mut at = identifier_end;
     while at < bytes.len()
         && !is_discarded_control(bytes[at])
         && !matches!(
             bytes[at],
-            b' ' | b'\t' | b'@' | b'[' | b']' | b'{' | b'}' | b'<' | b'>' | b'\n' | b'\r'
+            b' ' | b'\t'
+                | b'%'
+                | b'@'
+                | b'['
+                | b']'
+                | b'{'
+                | b'}'
+                | b'<'
+                | b'>'
+                | b'\n'
+                | b'\r'
         )
     {
         at += 1;
@@ -227,7 +237,7 @@ fn scan_email(bytes: &[u8], start: usize, identifier_end: usize) -> EmailScan {
         && !is_discarded_control(bytes[end])
         && !matches!(
             bytes[end],
-            b' ' | b'\t' | b'[' | b']' | b'{' | b'}' | b'<' | b'>' | b'\n' | b'\r'
+            b' ' | b'\t' | b'@' | b'[' | b']' | b'{' | b'}' | b'<' | b'>' | b'\n' | b'\r'
         )
     {
         end += 1;
