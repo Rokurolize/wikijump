@@ -122,7 +122,7 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
                 &mut runtime_scalar_ranges,
             );
             let body = if generated_slots.is_empty() && runtime_scalar_ranges.is_empty() {
-                RenderService::resolve_wikidot_list_pages_parser_functions(&body)
+                RenderService::resolve_wikidot_parser_functions(&body)
             } else {
                 body
             };
@@ -170,6 +170,19 @@ fn resolve_list_pages_expr_parser_functions(
     runtime_scalar_ranges: &mut Vec<Range<usize>>,
 ) {
     if !body.contains("[[#") {
+        return;
+    }
+
+    // FTML's delayed parser owns the recovery of a generated link inside a
+    // parser-function branch. Resolving that branch textually here would turn
+    // Wikidot's evidenced malformed triple-link result into a normal active
+    // link after slot binding. Leave the complete linked branch intact; the
+    // delayed parser can bind its generated slot and preserve that boundary.
+    if linked_parser_function_ranges(body).iter().any(|range| {
+        generated_slots.iter().any(|slot| {
+            range.start <= slot.source_range.start && slot.source_range.end <= range.end
+        })
+    }) {
         return;
     }
 
@@ -228,8 +241,7 @@ fn resolve_list_pages_expr_parser_functions(
 
     let generated_comment_gates =
         protect_generated_parser_function_comment_gates(&mut protected);
-    let mut resolved =
-        RenderService::resolve_wikidot_list_pages_parser_functions(&protected);
+    let mut resolved = RenderService::resolve_wikidot_parser_functions(&protected);
     if let Some((opening, closing)) = generated_comment_gates {
         resolved =
             prune_generated_parser_function_comment_gates(resolved, &opening, &closing);

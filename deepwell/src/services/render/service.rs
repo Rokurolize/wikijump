@@ -2565,25 +2565,11 @@ impl RenderService {
         resolve_outermost_wikidot_iftags(wikitext, &page_info.tags, preserved);
     }
 
-    #[cfg(test)]
     pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String {
         if !value.contains("[[#") {
             return value.to_owned();
         }
         ftml::preproc::resolve_wikidot_parser_functions(value)
-    }
-
-    pub(super) fn resolve_wikidot_list_pages_parser_functions(value: &str) -> String {
-        if !value.contains("[[#") {
-            return value.to_owned();
-        }
-        ftml::preproc::resolve_wikidot_parser_functions_with_options(
-            value,
-            ftml::preproc::WikidotParserFunctionOptions {
-                zero_operator_policy:
-                    ftml::preproc::WikidotZeroOperatorPolicy::ReplaceOperationWithZero,
-            },
-        )
     }
 
     fn normalize_wikidot_div_style_url_quotes(wikitext: &mut String) {

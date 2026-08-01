@@ -9,7 +9,10 @@ the bounded legacy ListPages head forms that Wikidot executes, including a
 quoted argument followed by a complete inline comment and a malformed head
 whose immediate raw module closer is owned by the recovered module. The
 renderer in `list_pages/rendering.rs` consumes that closer only when the
-scanner has established the same ownership.
+scanner has established the same ownership. The delayed-row guard in
+`list_pages/delayed.rs` likewise leaves a generated linked value inside a
+parser-function branch for FTML's typed recovery instead of textually
+rewriting the branch.
 
 ## Reason it lives in Wikijump
 

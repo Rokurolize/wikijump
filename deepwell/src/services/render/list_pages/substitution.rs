@@ -2637,6 +2637,6 @@ pub(super) fn substitute_list_pages_variables_inner(
     if generated_slots.is_some() {
         substituted
     } else {
-        RenderService::resolve_wikidot_list_pages_parser_functions(&substituted)
+        RenderService::resolve_wikidot_parser_functions(&substituted)
     }
 }

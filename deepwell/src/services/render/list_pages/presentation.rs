@@ -79,8 +79,7 @@ pub(in crate::services::render) fn substitute_count_pages_variables(
             }
         })
         .into_owned();
-    let mut substituted =
-        RenderService::resolve_wikidot_list_pages_parser_functions(&substituted);
+    let mut substituted = RenderService::resolve_wikidot_parser_functions(&substituted);
     neutralize_authored_markers(&mut substituted);
     substituted
 }
