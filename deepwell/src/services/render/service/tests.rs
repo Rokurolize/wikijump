@@ -79,7 +79,7 @@ use super::{
     find_balanced_ul_end, has_include_opening_candidate, include_error,
     native_list_page_link_default_label, parse_wikidot_compat_color_descriptor,
     protect_forwarded_attachment_variables, render_clone_module,
-    render_list_pages_numbered_rows, render_list_pages_table_rows,
+    render_list_pages_numbered_rows_with_titles, render_list_pages_table_rows,
     render_members_module_placeholder, render_native_list_inline_wikidot_spans,
     render_native_list_page_link, wikidot_no_such_include_replacement,
 };
@@ -2554,6 +2554,7 @@ fn forged_pager_html_is_not_restored_as_trusted_html_after_render() {
 fn authored_compat_markers_are_neutralized_before_html_protection() {
     let forgeries = [
         r#"<table class="wiki-content-table" data-wikijump-compat-listpages="1"><tr><td><img src=x onerror="alert(1)"></td></tr></table>"#,
+        r#"<ol data-wikijump-compat-listpages="1"><li><img src=x onerror="alert(1)"></li></ol>"#,
         r#"<ul data-wikijump-compat-list="1"><li><img src=x onerror="alert(1)"></li></ul>"#,
         r#"<div id="ml-1" data-wikijump-compat-members="1"><img src=x onerror="alert(1)"></div>"#,
         r#"<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"><img src=x onerror="alert(1)"></div>"#,
@@ -3189,8 +3190,8 @@ fn accepts_corpus_list_pages_comments_placeholder() {
         "# () [/scp-655-jp SCP-655-JP] (評価: 12 コメント: 0 最終コメント: )",
     );
     assert_eq!(
-        render_list_pages_numbered_rows(&substituted),
-        "<ol>\n<li>() <a href=\"/scp-655-jp\">SCP-655-JP</a> (評価: 12 コメント: 0 最終コメント: )</li>\n</ol>\n",
+        render_list_pages_numbered_rows_with_titles(&substituted, None),
+        "<ol data-wikijump-compat-listpages=\"1\">\n<li>() <a href=\"/scp-655-jp\">SCP-655-JP</a> (評価: 12 コメント: 0 最終コメント: )</li>\n</ol>\n",
     );
 }
 
@@ -3429,6 +3430,34 @@ fn renders_wikidot_list_pages_table_rows_as_raw_html() {
 }
 
 #[test]
+fn registered_list_pages_tables_remain_block_html_in_the_outer_page() {
+    let generated = render_list_pages_table_rows(concat!(
+        "||~ Today's date is: ||\n",
+        "||= <span class=\"odate time_1785291693 format_%25d%20%25B%20%25Y\">",
+        "29 Jul 2026 02:21</span> ||",
+    ))
+    .expect("complete generated table rows");
+    let mut fragments = CompatHtmlFragments::new("");
+    let mut protected = register_generated_list_pages_html(generated, &mut fragments);
+    let page_info = fallback_test_page_info("table-probe", "Table Probe");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+
+    ftml::preprocess_for_layout(&mut protected, settings.layout);
+    let tokens = ftml::tokenize(&protected);
+    let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{errors:#?}");
+    let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+    let restored = fragments.restore(&rendered);
+
+    assert!(
+        restored.starts_with(r#"<table class="wiki-content-table">"#),
+        "{restored:?}",
+    );
+    assert!(!restored.contains("<p><table"));
+    assert!(!restored.contains("data-wikijump-compat-listpages"));
+}
+
+#[test]
 fn unsupported_numbered_list_pages_body_does_not_leak_to_ftml() {
     let module_source = concat!(
         "[[module ListPages unsupported=\"yes\"]]\n",
@@ -3631,6 +3660,19 @@ fn defaults_empty_scp_style_page_link_labels_to_canonical_slug_text() {
         r#"<a href="/scp-8066">SCP-8066</a>"#
     );
     assert_eq!(
+        render_native_list_page_link(
+            "*http://sandbox-for-codex.wikidot.com/example",
+            None,
+            None,
+        ),
+        concat!(
+            r#"<a target="_blank" href="http://sandbox-for-codex.wikidot.com/example">"#,
+            "http://sandbox-for-codex.wikidot.com/example</a>",
+        ),
+        "Wikidot removes only the leading new-window marker from an unlabeled \
+         absolute link; the displayed default label retains the scheme",
+    );
+    assert_eq!(
         render_native_list_page_link("scp-8066", Some("the article"), None),
         r#"<a href="/scp-8066">the article</a>"#
     );
@@ -3678,6 +3720,10 @@ fn fallback_page_links_mark_only_resolved_missing_targets_as_newpage() {
         PageExistenceSnapshot::from_pages([
             (("scp-wiki".to_owned(), "present".to_owned()), true),
             (("scp-wiki".to_owned(), "missing".to_owned()), false),
+            (
+                ("scp-wiki".to_owned(), "missing-empty-label".to_owned()),
+                false,
+            ),
             (("remote".to_owned(), "missing".to_owned()), false),
         ]),
     );
@@ -3689,6 +3735,10 @@ fn fallback_page_links_mark_only_resolved_missing_targets_as_newpage() {
     assert_eq!(
         render_native_list_page_link("missing", None, Some(&titles)),
         r#"<a class="newpage" href="/missing">Missing</a>"#
+    );
+    assert_eq!(
+        render_native_list_page_link("missing-empty-label", Some(""), Some(&titles)),
+        r#"<a class="newpage" href="/missing-empty-label">missing-empty-label</a>"#
     );
     assert_eq!(
         render_native_list_page_link("unresolved", None, Some(&titles)),
@@ -4757,7 +4807,13 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
     assert!(rendered.contains("Codex virtual Wikidot DOM 001"));
     assert!(rendered.contains("user:info/scpaiueouiuiuiui"));
     assert!(rendered.contains("WIKIDOT.page.listeners.userInfo(8955132)"));
-    assert!(!rendered.contains("userkarma.php"));
+    assert!(
+        rendered
+            .contains("avatar.php?userid=8955132&amp;amp;size=small&amp;amp;timestamp=")
+    );
+    assert!(rendered.contains(
+        r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u=8955132)""#
+    ));
     assert!(rendered.contains(
         r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" data-wikijump-compat-date="1">21 Jun 2026 00:59</span>"#
     ));
@@ -4964,6 +5020,7 @@ fn resolves_wikidot_list_pages_revision_count_from_import_before_local_history()
         score: None,
     };
     let snapshot = ListPagesSnapshotDisplay {
+        title_shown: None,
         created_at: time::OffsetDateTime::UNIX_EPOCH,
         updated_at: time::OffsetDateTime::UNIX_EPOCH,
         created_by_user_id: None,
@@ -5063,6 +5120,7 @@ fn resolves_wikidot_list_pages_parent_fullname_from_import_before_relations() {
     };
     let source_created_at = time::OffsetDateTime::UNIX_EPOCH;
     let snapshot = ListPagesSnapshotDisplay {
+        title_shown: None,
         created_at: source_created_at,
         updated_at: source_created_at,
         created_by_user_id: None,
@@ -5197,6 +5255,7 @@ fn substitutes_wikidot_list_pages_created_by_unix_from_account_unix_name() {
     let imported_snapshots = BTreeMap::from([(
         1,
         ListPagesSnapshotDisplay {
+            title_shown: None,
             created_at: time::OffsetDateTime::UNIX_EPOCH,
             updated_at: time::OffsetDateTime::UNIX_EPOCH,
             created_by_user_id: None,
@@ -5549,6 +5608,7 @@ fn substitutes_imported_wikidot_snapshot_metadata_for_list_pages_rows() {
     snapshots.insert(
         101,
         ListPagesSnapshotDisplay {
+            title_shown: None,
             created_at: source_created_at,
             updated_at: source_created_at,
             created_by_user_id: None,
@@ -7497,6 +7557,26 @@ fn protects_wikidot_jp_interwiki_embed_iframe_before_ftml() {
 }
 
 #[test]
+fn allows_only_inert_name_only_wikidot_embed_iframes() {
+    let iframe = r#"<iframe name="isJPExist"></iframe>"#;
+    assert_eq!(
+        RenderService::allowed_wikidot_embed_iframe(iframe),
+        Some(iframe.to_owned()),
+    );
+    for unsafe_iframe in [
+        r#"<iframe name="isJPExist" src="//example.com"></iframe>"#,
+        r#"<iframe name="isJPExist" onload="alert(1)"></iframe>"#,
+        r#"<iframe name="<invalid>"></iframe>"#,
+    ] {
+        assert_eq!(
+            RenderService::allowed_wikidot_embed_iframe(unsafe_iframe),
+            None,
+            "{unsafe_iframe}",
+        );
+    }
+}
+
+#[test]
 fn renders_wikidot_no_match_error_for_an_unsupported_embed_payload() {
     for (block, payload) in [
         (
@@ -8727,6 +8807,62 @@ fn resolves_nested_wikidot_include_variables() {
 
     assert!(source.contains(r#"class="badges badge-action action atrue bfalse""#));
     assert!(!source.contains("{$action}"));
+}
+
+#[test]
+fn nested_include_argument_self_reference_uses_later_fallback() {
+    let outer = IncludeRef::new(
+        PageRef::page_and_site("scp-jp", "component:coltop"),
+        VariableMap::from([
+            (Cow::Borrowed("show"), Cow::Borrowed("+ New Messages: 1")),
+            (Cow::Borrowed("nohide"), Cow::Borrowed("true")),
+        ]),
+    );
+    let mut source = concat!(
+        "[[include :scp-jp:component:coltop-deep\n",
+        "ifprot={$ifprot}\n",
+        "|ifprot=0\n",
+        "|nohide={$nohide}\n",
+        "|nohide=0\n",
+        "|folded={$folded}\n",
+        "|folded=1\n",
+        "|show={$show}\n",
+        "|show=+ show block\n",
+        "]]",
+    )
+    .to_owned();
+    super::apply_include_variables(&mut source, &outer);
+
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut includes = Vec::new();
+    ftml::include(
+        &source,
+        &settings,
+        CollectingIncluder {
+            includes: &mut includes,
+        },
+        include_error,
+    )
+    .expect("nested include fallback should parse");
+
+    assert_eq!(includes.len(), 1, "{source}");
+    let variables = includes[0].variables();
+    assert_eq!(
+        variables.get("ifprot").map(|value| value.trim_end()),
+        Some("0"),
+    );
+    assert_eq!(
+        variables.get("nohide").map(|value| value.trim_end()),
+        Some("true"),
+    );
+    assert_eq!(
+        variables.get("folded").map(|value| value.trim_end()),
+        Some("1"),
+    );
+    assert_eq!(
+        variables.get("show").map(|value| value.trim_end()),
+        Some("+ New Messages: 1"),
+    );
 }
 
 #[test]

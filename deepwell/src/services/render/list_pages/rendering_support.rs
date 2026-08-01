@@ -31,7 +31,7 @@ use super::template::ListPagesTemplatePlan;
 use super::{
     ListPagesExpansionBudget, PendingDelayedListPagesOutput,
     register_generated_list_pages_html, repair_list_pages_block_boundaries,
-    wrap_pending_list_pages_delayed_output,
+    strip_generated_list_pages_html_markers, wrap_pending_list_pages_delayed_output,
 };
 use crate::error::prelude::Result;
 use crate::hash::TextHash;
@@ -114,30 +114,49 @@ pub(in crate::services::render) fn push_list_pages_trailing_runtime_blocks(
     compat_html: &mut CompatHtmlFragments,
     expansion_budget: &mut ListPagesExpansionBudget,
 ) -> std::result::Result<(), &'static str> {
-    if !expansion_budget.try_consume_generated_output_bytes(pager.len()) {
+    const WIKIDOT_LISTPAGES_PAGER_SPACE: &str = "    \n    ";
+    let wrapper_pager_space = wrapper && wrapper_trailing_space && !pager.is_empty();
+    let pager_bytes = pager.len()
+        + if wrapper_pager_space {
+            WIKIDOT_LISTPAGES_PAGER_SPACE.len()
+        } else {
+            0
+        };
+    if !expansion_budget.try_consume_generated_output_bytes(pager_bytes) {
         return Err("pager exceeds generated-output budget");
     }
     if !pager.is_empty() {
         if !push_list_pages_block_boundary(output, expansion_budget) {
             return Err("pager boundary exceeds generated-output budget");
         }
+        let pager = if wrapper_pager_space {
+            format!("{WIKIDOT_LISTPAGES_PAGER_SPACE}{pager}")
+        } else {
+            pager
+        };
         output.push_str(&compat_html.push_block_html(pager));
     }
-    if let Some(feed_info) = feed_info
-        && !push_list_pages_generated_output(output, &feed_info, expansion_budget)
-    {
-        return Err("feed metadata exceeds generated-output budget");
+    if let Some(feed_info) = feed_info {
+        if !expansion_budget.try_consume_generated_output_bytes(feed_info.len()) {
+            return Err("feed metadata exceeds generated-output budget");
+        }
+        output.push_str(
+            &compat_html
+                .push_block_html(strip_generated_list_pages_html_markers(feed_info)),
+        );
     }
     if wrapper {
         const WIKIDOT_LISTPAGES_TRAILING_SPACE: &str = "\n    \n    \n    \n    ";
         let closing = if wrapper_trailing_space {
-            if !expansion_budget.try_consume_generated_output_bytes(
-                WIKIDOT_LISTPAGES_TRAILING_SPACE.len(),
-            ) {
+            let whitespace = if wrapper_pager_space {
+                WIKIDOT_LISTPAGES_PAGER_SPACE
+            } else {
+                WIKIDOT_LISTPAGES_TRAILING_SPACE
+            };
+            if !expansion_budget.try_consume_generated_output_bytes(whitespace.len()) {
                 return Err("wrapper trailing space exceeds generated-output budget");
             }
-            compat_html
-                .push_block_html(format!("{WIKIDOT_LISTPAGES_TRAILING_SPACE}</div>",))
+            compat_html.push_block_html(format!("{whitespace}</div>",))
         } else {
             super::list_pages_runtime_container_close(compat_html)
         };
@@ -218,6 +237,40 @@ pub(in crate::services::render) fn list_pages_body_starts_with_preparsed_block(
         || body
             .get(.."[[html]]".len())
             .is_some_and(|opening| opening.eq_ignore_ascii_case("[[html]]"))
+}
+
+pub(in crate::services::render) fn list_pages_raw_footnote_prefix_end(
+    head: &str,
+    suffix: &str,
+) -> Option<usize> {
+    const EVIDENCED_HEAD: &str = r#"range="." wrapper="no" separate="no""#;
+    const OPEN: &str = "@@[[footnote]]";
+    const CLOSE_AND_LINE_END: &str = "[[/footnote]]\n";
+
+    if head.trim() != EVIDENCED_HEAD || !suffix.starts_with(OPEN) {
+        return None;
+    }
+    suffix[OPEN.len()..]
+        .find(CLOSE_AND_LINE_END)
+        .map(|offset| OPEN.len() + offset + CLOSE_AND_LINE_END.len())
+}
+
+pub(in crate::services::render) fn list_pages_html_encoded_head_owns_script_tail(
+    head: &str,
+    body: &str,
+) -> bool {
+    if !head.contains("=&quot;") {
+        return false;
+    }
+
+    let body = body.trim_start_matches(char::is_whitespace);
+    if body.starts_with("</p>") {
+        return true;
+    }
+
+    body.strip_prefix('\'')
+        .map(str::trim_start)
+        .is_some_and(|tail| tail.starts_with("+ '<p>"))
 }
 
 #[derive(Debug)]
@@ -554,6 +607,68 @@ mod tests {
                 "+ COMMENT\n",
                 "--]\n",
             ),
+        );
+    }
+
+    #[test]
+    fn html_encoded_heads_only_own_evidenced_script_tail_shapes() {
+        let encoded_head = concat!(
+            "[[module ListPages category=&quot;fragment&quot; ",
+            "parent=&quot;.&quot;]]",
+        );
+
+        assert!(list_pages_html_encoded_head_owns_script_tail(
+            encoded_head,
+            "</p>\n<p>%%title%%</p>\n<p>",
+        ));
+        assert!(list_pages_html_encoded_head_owns_script_tail(
+            encoded_head,
+            "'\n    + '<p>%%content%%</p>' + '<p>",
+        ));
+        assert!(!list_pages_html_encoded_head_owns_script_tail(
+            encoded_head,
+            "ordinary %%title%%",
+        ));
+        assert!(!list_pages_html_encoded_head_owns_script_tail(
+            "[[module ListPages category=\"fragment\"]]",
+            "</p>\n<p>%%title%%</p>\n<p>",
+        ));
+        assert!(!list_pages_html_encoded_head_owns_script_tail(
+            encoded_head,
+            "' + ordinary %%title%%",
+        ));
+    }
+
+    #[test]
+    fn nonseparate_pager_keeps_wikidot_wrapper_whitespace_on_both_sides() {
+        let mut compat_html = CompatHtmlFragments::new("");
+        let opening = super::super::list_pages_runtime_container_open(
+            &mut compat_html,
+            "list-pages-box",
+        );
+        let table = compat_html.push_block_html("[[/table]]\n".to_owned());
+        let mut output = format!("{opening}\n\n{table}");
+        let mut budget = ListPagesExpansionBudget::new();
+
+        push_list_pages_trailing_runtime_blocks(
+            &mut output,
+            "<div class=\"pager\">PAGER</div>\n".to_owned(),
+            None,
+            true,
+            true,
+            &mut compat_html,
+            &mut budget,
+        )
+        .expect("pager and wrapper should fit the generated-output budget");
+
+        let rendered = compat_html.restore(&render_wikidot_page(&output));
+        assert!(
+            rendered.contains("[[/table]]\n    \n    <div class=\"pager\">PAGER</div>"),
+            "{rendered:?}",
+        );
+        assert!(
+            rendered.contains("<div class=\"pager\">PAGER</div>\n    \n    </div>"),
+            "{rendered:?}",
         );
     }
 }

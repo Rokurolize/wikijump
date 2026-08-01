@@ -38,9 +38,9 @@ pub(in crate::services::render) use self::count_reachability::CountPagesCloseRea
 use self::legacy_heads::{
     crossing_list_pages_quote_ends_before_close, double_quote_ends_scanner_argument,
     is_module_argument_spacing, legacy_single_bracket_list_pages_opening,
-    list_pages_inert_at_markers_follow_quote, paired_inline_comment,
-    recovered_nested_assignment, skip_count_pages_module_subname_delimiter,
-    skip_horizontal_whitespace, skip_module_argument_spacing, skip_module_close_spacing,
+    list_pages_inert_at_markers_follow_quote,
+    skip_count_pages_module_subname_delimiter, skip_horizontal_whitespace,
+    skip_module_argument_spacing, skip_module_close_spacing,
     skip_module_subname_delimiter, surplus_list_pages_close_after_spacing,
 };
 pub(in crate::services::render) use self::runtime_heads::list_pages_runtime_head_can_execute;
@@ -259,6 +259,9 @@ pub(in crate::services::render) struct ListPagesModuleMatch<'a> {
     pub(in crate::services::render) body: &'a str,
     pub(in crate::services::render) original: &'a str,
     pub(in crate::services::render) runtime_safe: bool,
+    pub(in crate::services::render) preserve_original: bool,
+    pub(in crate::services::render) preserve_as_module654: bool,
+    pub(in crate::services::render) consume_empty_tail: bool,
 }
 
 #[derive(Debug)]
@@ -268,6 +271,16 @@ struct ActiveListPagesModule<'a> {
     head: &'a str,
     depth: usize,
     runtime_safe: bool,
+    default_template: bool,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PreservedAtMarkerDocumentationOpening {
+    start: usize,
+    body_start: usize,
+    resume: usize,
+    subname_end: usize,
+    opening_end: usize,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -299,6 +312,7 @@ enum ModuleOpeningEnd {
         body_start: usize,
         subname_end: usize,
         runtime_safe: bool,
+        default_template: bool,
     },
     Malformed {
         resume: usize,
@@ -317,6 +331,7 @@ enum ModuleEvent {
         body_start: usize,
         direct_candidate: bool,
         runtime_safe: bool,
+        default_template: bool,
         projection_guard_start: Option<usize>,
     },
     Close {
@@ -332,6 +347,7 @@ struct DirectModuleOpen {
     opening_end: usize,
     body_start: usize,
     runtime_safe: bool,
+    default_template: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -366,6 +382,7 @@ impl OrderedModuleEvent {
                 body_start,
                 direct_candidate: true,
                 runtime_safe,
+                default_template,
                 ..
             },
         ) = (self, event)
@@ -376,6 +393,7 @@ impl OrderedModuleEvent {
                 opening_end,
                 body_start,
                 runtime_safe,
+                default_template,
             });
         }
     }
@@ -462,14 +480,27 @@ impl<'a> ModuleEventScanner<'a> {
                 return Some(ModuleEvent::Close { start, end });
             }
             if let Some(tag) = self.module_open_tag(start) {
-                let (opening_end, body_start, subname_end, runtime_safe) =
+                let (
+                    opening_end,
+                    body_start,
+                    subname_end,
+                    runtime_safe,
+                    default_template,
+                ) =
                     match self.module_opening_end(tag.name_end) {
                         ModuleOpeningEnd::Complete {
                             opening_end,
                             body_start,
                             subname_end,
                             runtime_safe,
-                        } => (opening_end, body_start, subname_end, runtime_safe),
+                            default_template,
+                        } => (
+                            opening_end,
+                            body_start,
+                            subname_end,
+                            runtime_safe,
+                            default_template,
+                        ),
                         ModuleOpeningEnd::Malformed { resume } => {
                             self.advance_to(resume);
                             continue;
@@ -494,6 +525,7 @@ impl<'a> ModuleEventScanner<'a> {
                     body_start,
                     direct_candidate: tag.direct_candidate,
                     runtime_safe,
+                    default_template,
                     projection_guard_start: self.take_projection_guard(start),
                 });
             }
@@ -862,6 +894,50 @@ impl<'a> ModuleEventScanner<'a> {
         let mut first_rollback_marker = None;
         let mut definite_invalid_boundary = false;
         while cursor + 1 < bytes.len() {
+            if list_pages_compatibility
+                && quote.is_some()
+                && bytes.get(cursor..cursor + 2) == Some(&b"]]"[..])
+                && list_pages_head_double_quotes_are_balanced(
+                    &source[subname_end..cursor],
+                )
+            {
+                let mut closing_tokens = head_tokens.clone();
+                let (right_block, token_len) = wikidot_right_bracket_token(
+                    bytes,
+                    cursor,
+                    bytes.len(),
+                    &mut closing_tokens,
+                );
+                if right_block
+                    && right_boundary_ends_physical_line(bytes, cursor + token_len)
+                {
+                    self.text_tokens = closing_tokens;
+                    finish_head_scan!(
+                        cursor + token_len,
+                        ModuleOpeningEnd::Complete {
+                            opening_end: cursor,
+                            body_start: cursor + token_len,
+                            subname_end,
+                            runtime_safe: false,
+                            default_template: false,
+                        }
+                    );
+                }
+            }
+            if list_pages_compatibility
+                && cursor >= subname_end
+                && bytes.get(cursor..cursor + 2) == Some(&b"[["[..])
+                && list_pages_head_double_quotes_are_balanced(
+                    &source[subname_end..cursor],
+                )
+                && !nested_list_pages_head_token_is_module(bytes, cursor)
+                && let Some(nested_end) =
+                    nested_list_pages_head_token_end(source, cursor)
+            {
+                trailing_backslashes = 0;
+                cursor = nested_end;
+                continue;
+            }
             if bytes[cursor] == b'['
                 && bytes.get(cursor + 1) == Some(&b'[')
                 && !head_tokens.contains(cursor)
@@ -889,6 +965,7 @@ impl<'a> ModuleEventScanner<'a> {
                             body_start: cursor,
                             subname_end,
                             runtime_safe: false,
+                            default_template: false,
                         }
                     );
                 }
@@ -920,6 +997,28 @@ impl<'a> ModuleEventScanner<'a> {
             if quote.is_some() && matches!(bytes[cursor], b'\n' | b'\r') {
                 if list_pages_compatibility
                     && quote == Some(b'"')
+                    && let Some(opening_end) =
+                        final_unclosed_list_pages_head_boundary(
+                            source,
+                            subname_end,
+                            cursor,
+                        )
+                {
+                    let body_start = physical_line_resume(bytes, cursor);
+                    self.text_tokens = head_tokens;
+                    finish_head_scan!(
+                        body_start,
+                        ModuleOpeningEnd::Complete {
+                            opening_end,
+                            body_start,
+                            subname_end,
+                            runtime_safe: false,
+                            default_template: true,
+                        }
+                    );
+                }
+                if list_pages_compatibility
+                    && quote == Some(b'"')
                     && let Some((opening_end, body_start)) =
                         legacy_single_bracket_list_pages_opening(
                             source,
@@ -935,6 +1034,7 @@ impl<'a> ModuleEventScanner<'a> {
                             body_start,
                             subname_end,
                             runtime_safe: false,
+                            default_template: false,
                         }
                     );
                 }
@@ -1006,6 +1106,13 @@ impl<'a> ModuleEventScanner<'a> {
                     quote = Some(bytes[cursor]);
                 }
                 (None, b']') => {
+                    if cursor < subname_end {
+                        self.ambiguous_whole_head = true;
+                        let resume = cursor.saturating_add(1);
+                        finish_head_scan!(resume, ModuleOpeningEnd::Malformed { resume });
+                    }
+                    let validation_head =
+                        source[subname_end..cursor].trim_start_matches([' ', '\t']);
                     let (right_block, token_len) = wikidot_right_bracket_token(
                         bytes,
                         cursor,
@@ -1036,11 +1143,25 @@ impl<'a> ModuleEventScanner<'a> {
                             .or(inert_at_marker_close_end)
                             .unwrap_or(cursor + token_len);
                         let raw_head = &source[subname_end..cursor];
-                        let validation_head = raw_head.trim_start_matches([' ', '\t']);
                         let mut validation = validate_module_head(
                             validation_head,
                             list_pages_compatibility,
                         );
+                        if list_pages_compatibility
+                            && validation_head.contains(['\n', '\r'])
+                            && list_pages_head_contains_nested_module_token(
+                                validation_head,
+                            )
+                        {
+                            self.ambiguous_whole_head = true;
+                            finish_head_scan!(
+                                closing_end,
+                                ModuleOpeningEnd::Malformed {
+                                    resume: first_rollback_marker
+                                        .unwrap_or(closing_end),
+                                }
+                            );
+                        }
                         let runtime_recognized = list_pages_compatibility
                             && !super::super::module_arguments::wikidot_list_pages_arguments(
                                 validation_head,
@@ -1055,9 +1176,10 @@ impl<'a> ModuleEventScanner<'a> {
                         if validation == ModuleHeadValidation::DefiniteInvalid {
                             validation = if list_pages_compatibility
                                 && first_rollback_marker.is_none()
-                                && evidenced_legacy_list_pages_head_boundary(
+                                && list_pages_definite_invalid_head_can_execute(
                                     validation_head,
-                                ) {
+                                )
+                            {
                                 ModuleHeadValidation::ValidRuntimeUnsafe
                             } else if list_pages_compatibility
                                 && runtime_recognized
@@ -1121,6 +1243,7 @@ impl<'a> ModuleEventScanner<'a> {
                                 body_start: closing_end,
                                 subname_end,
                                 runtime_safe,
+                                default_template: false,
                             }
                         );
                     }
@@ -1674,73 +1797,118 @@ fn list_pages_url_value_quote_ends_at(
         && !bytes[opening + 1..quote].contains(&b'"')
 }
 
-fn evidenced_legacy_list_pages_head_boundary(head: &str) -> bool {
-    // Wikidot's own ListPages documentation uses this exact Chinese
-    // placeholder as an executable default-query head. Keep the exception
-    // byte-narrow so arbitrary non-ASCII prose cannot become a module.
-    if head.trim_matches([' ', '\t']) == "属性..." {
-        return true;
+pub(super) fn nested_list_pages_head_token_is_module(
+    bytes: &[u8],
+    start: usize,
+) -> bool {
+    let mut cursor = start + 2;
+    skip_horizontal_whitespace(bytes, &mut cursor);
+    if bytes.get(cursor) == Some(&b'/') {
+        cursor += 1;
+        skip_horizontal_whitespace(bytes, &mut cursor);
+    }
+    let (Some(name), _) = wikidot_trimmed_name(bytes, cursor) else {
+        return false;
+    };
+    let name = name.strip_suffix(b"_").unwrap_or(name);
+    name.eq_ignore_ascii_case(b"module")
+        || name.eq_ignore_ascii_case(b"module654")
+}
+
+fn nested_list_pages_head_token_end(source: &str, start: usize) -> Option<usize> {
+    source
+        .get(start + 2..)?
+        .find("]]")
+        .map(|relative| start + 2 + relative + 2)
+}
+
+fn right_boundary_ends_physical_line(bytes: &[u8], mut cursor: usize) -> bool {
+    while matches!(bytes.get(cursor), Some(b' ' | b'\t')) {
+        cursor += 1;
+    }
+    matches!(bytes.get(cursor), None | Some(b'\n' | b'\r'))
+}
+
+fn final_unclosed_list_pages_head_boundary(
+    source: &str,
+    subname_end: usize,
+    line_end: usize,
+) -> Option<usize> {
+    let bytes = source.as_bytes();
+    let mut opening_end = line_end;
+    let mut right_brackets = 0usize;
+    while opening_end > subname_end {
+        match bytes[opening_end - 1] {
+            b']' => {
+                right_brackets += 1;
+                opening_end -= 1;
+            }
+            b' ' | b'\t' => opening_end -= 1,
+            _ => break,
+        }
+    }
+    if right_brackets == 0 {
+        return None;
+    }
+
+    let head = source[subname_end..opening_end].trim_start_matches([' ', '\t']);
+    (!list_pages_head_double_quotes_are_balanced(head)
+        && !wikidot_list_pages_arguments(head).is_empty())
+    .then_some(opening_end)
+}
+
+fn list_pages_definite_invalid_head_can_execute(head: &str) -> bool {
+    if head.contains(['\u{000b}', '\u{000c}', '\u{00a0}', '\u{2007}'])
+        || head.contains("[!--")
+        || head.contains("--]")
+        || head.contains('@') && !head.trim_end().ends_with("@@")
+        || head.contains(']')
+        || head.contains("\n=")
+        || head.contains("\r=")
+    {
+        return false;
     }
 
     let arguments = wikidot_list_pages_arguments(head);
     if arguments.is_empty() {
-        return false;
+        !head.contains(['=', '"', '\'', '['])
+    } else {
+        !list_pages_head_contains_nested_module_token(head)
     }
-    if arguments
-        .iter()
-        .any(|argument| matches!(argument.op, "<" | ">" | "<=" | ">=" | "!=" | "<>"))
-    {
-        return true;
-    }
+}
 
+fn list_pages_head_contains_nested_module_token(head: &str) -> bool {
     let bytes = head.as_bytes();
     let mut cursor = 0usize;
-    while let Some(relative) = bytes[cursor..].iter().position(|byte| *byte == b'"') {
-        let quote = cursor + relative;
-        let mut next = quote + 1;
-        while bytes.get(next).is_some_and(|byte| {
-            byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-')
-        }) {
-            next += 1;
+    while cursor + 1 < bytes.len() {
+        let Some(relative) = bytes[cursor..].windows(2).position(|pair| pair == b"[[")
+        else {
+            return false;
+        };
+        let start = cursor + relative;
+        if nested_list_pages_head_token_is_module(bytes, start) {
+            return true;
         }
-        if next > quote + 1 && (bytes.get(next) == Some(&b'=') || next == bytes.len()) {
-            return !arguments.is_empty();
-        }
-        cursor = quote + 1;
+        cursor = start + 2;
     }
-
-    let trimmed = head.trim_matches([' ', '\t', '\n', '\r']);
-    recovered_nested_assignment(trimmed)
-        || paired_inline_comment(trimmed)
-        || inert_head_prefix(trimmed, "|")
-        || inert_head_prefix(trimmed, "size")
-        || trailing_empty_assignment(trimmed, "prependLine")
-        || trailing_empty_assignment(trimmed, "appendLine")
-        || trimmed.ends_with("@@")
+    false
 }
 
-fn inert_head_prefix(head: &str, token: &str) -> bool {
-    head.get(..token.len())
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(token))
-        && head
-            .as_bytes()
-            .get(token.len())
-            .is_some_and(|byte| is_module_argument_spacing(*byte))
-}
-
-fn trailing_empty_assignment(head: &str, key: &str) -> bool {
-    let Some(before_equals) = head.strip_suffix('=') else {
-        return false;
-    };
-    let before_key = before_equals.trim_end_matches([' ', '\t']);
-    let Some(key_start) = before_key.len().checked_sub(key.len()) else {
-        return false;
-    };
-    before_key
-        .get(key_start..)
-        .is_some_and(|candidate| candidate.eq_ignore_ascii_case(key))
-        && key_start > 0
-        && before_key.as_bytes()[key_start - 1].is_ascii_whitespace()
+fn list_pages_head_double_quotes_are_balanced(head: &str) -> bool {
+    let bytes = head.as_bytes();
+    let mut open = false;
+    let mut backslashes = 0usize;
+    for byte in bytes {
+        if *byte == b'"' && backslashes % 2 == 0 {
+            open = !open;
+        }
+        backslashes = if *byte == b'\\' {
+            backslashes + 1
+        } else {
+            0
+        };
+    }
+    !open
 }
 
 fn continuation_revealed_argument_boundary(
@@ -1910,25 +2078,41 @@ fn legacy_at_marker_footnote_tail_end(source: &str, lowercase: &str) -> Option<u
 fn legacy_at_marker_footnote_default_list_pages<'a>(
     source: &'a str,
     lowercase: &str,
-) -> Option<ListPagesModuleMatch<'a>> {
-    let end = legacy_at_marker_footnote_tail_end(source, lowercase)?;
-    if end != source.len() {
-        return None;
-    }
-    Some(ListPagesModuleMatch {
-        start: 0,
-        body_start: source.len(),
-        end: source.len(),
-        head: &source[source.len()..],
-        body: &source[source.len()..],
-        original: source,
-        runtime_safe: false,
-    })
+) -> Option<(ListPagesModuleMatch<'a>, usize)> {
+    let body_start = legacy_at_marker_footnote_tail_end(source, lowercase)?;
+    let end = unclosed_at_marker_collapsible_prefix_end(
+        &source[..body_start],
+        &source[body_start..],
+    )
+    .map(|tail_end| body_start + tail_end)
+    .unwrap_or(body_start);
+    Some((
+        ListPagesModuleMatch {
+            start: 0,
+            body_start,
+            end,
+            head: &source[body_start..body_start],
+            body: &source[body_start..body_start],
+            original: &source[..end],
+            runtime_safe: false,
+            preserve_original: false,
+            preserve_as_module654: false,
+            consume_empty_tail: end > body_start,
+        },
+        end,
+    ))
 }
 
 /// The work value measures source-cursor displacement, speculative head bytes, literal-range cursor advances, projection-offset advances, and projected/direct event merge advances.
 fn find_list_pages_module_matches_with_cursor_work(
     source: &str,
+) -> (Vec<ListPagesModuleMatch<'_>>, usize, usize) {
+    find_list_pages_module_matches_with_cursor_work_context(source, false)
+}
+
+fn find_list_pages_module_matches_with_cursor_work_context(
+    source: &str,
+    allow_literal_documentation_example: bool,
 ) -> (Vec<ListPagesModuleMatch<'_>>, usize, usize) {
     let lowercase = source.to_ascii_lowercase();
     if !lowercase.contains("[[") {
@@ -1937,20 +2121,23 @@ fn find_list_pages_module_matches_with_cursor_work(
     if !lowercase.contains("listpages") {
         return (Vec::new(), source.len(), 0);
     }
-    if let Some(module) = legacy_at_marker_footnote_default_list_pages(source, &lowercase)
+    if let Some((module, end)) =
+        legacy_at_marker_footnote_default_list_pages(source, &lowercase)
     {
-        return (vec![module], source.len(), 0);
-    }
-    if let Some(end) = legacy_at_marker_footnote_tail_end(source, &lowercase)
-        && end < source.len()
-    {
+        if end == source.len() {
+            return (vec![module], source.len(), 0);
+        }
         let (mut matches, work, literal_advances) =
-            find_list_pages_module_matches_with_cursor_work(&source[end..]);
+            find_list_pages_module_matches_with_cursor_work_context(
+                &source[end..],
+                allow_literal_documentation_example,
+            );
         for module in &mut matches {
             module.start += end;
             module.body_start += end;
             module.end += end;
         }
+        matches.insert(0, module);
         return (matches, end.saturating_add(work), literal_advances);
     }
     let projection = ListPagesSourceProjection::new(source);
@@ -1977,6 +2164,54 @@ fn find_list_pages_module_matches_with_cursor_work(
             direct_work + direct_literal_advances,
             direct_literal_advances,
         );
+    }
+
+    if let Some(boundary) = preserved_at_marker_documentation_opening(
+        source,
+        &lowercase,
+        &direct_events,
+        allow_literal_documentation_example,
+    ) {
+        let mut total_work = direct_work.saturating_add(direct_literal_advances);
+        let mut total_literal_advances = direct_literal_advances;
+        let (mut matches, prefix_work, prefix_literal_advances) =
+            find_list_pages_module_matches_with_cursor_work_context(
+                &source[..boundary.start],
+                false,
+            );
+        total_work = total_work.saturating_add(prefix_work);
+        total_literal_advances =
+            total_literal_advances.saturating_add(prefix_literal_advances);
+        matches.push(ListPagesModuleMatch {
+            start: boundary.start,
+            body_start: boundary.body_start,
+            end: boundary.body_start,
+            head: source[boundary.subname_end..boundary.opening_end]
+                .trim_start()
+                .trim_end_matches(']'),
+            body: &source[boundary.body_start..boundary.body_start],
+            original: &source[boundary.start..boundary.body_start],
+            runtime_safe: false,
+            preserve_original: true,
+            preserve_as_module654: false,
+            consume_empty_tail: false,
+        });
+
+        let (mut suffix_matches, suffix_work, suffix_literal_advances) =
+            find_list_pages_module_matches_with_cursor_work_context(
+                &source[boundary.resume..],
+                true,
+            );
+        for module in &mut suffix_matches {
+            module.start += boundary.resume;
+            module.body_start += boundary.resume;
+            module.end += boundary.resume;
+        }
+        matches.extend(suffix_matches);
+        total_work = total_work.saturating_add(suffix_work);
+        total_literal_advances =
+            total_literal_advances.saturating_add(suffix_literal_advances);
+        return (matches, total_work, total_literal_advances);
     }
 
     let changed_quote_ranges = projection
@@ -2111,6 +2346,7 @@ fn find_list_pages_module_matches_with_cursor_work(
                     opening_end,
                     body_start,
                     runtime_safe,
+                    default_template,
                 }) = direct
                 else {
                     continue;
@@ -2124,6 +2360,7 @@ fn find_list_pages_module_matches_with_cursor_work(
                             .trim_end_matches(']'),
                         depth: 1,
                         runtime_safe,
+                        default_template,
                     });
                 }
             }
@@ -2134,47 +2371,174 @@ fn find_list_pages_module_matches_with_cursor_work(
                 module.depth -= 1;
                 if module.depth == 0 {
                     let module = active.take().unwrap();
+                    let body_start = if module.default_template {
+                        start
+                    } else {
+                        module.body_start
+                    };
                     matches.push(ListPagesModuleMatch {
                         start: module.start,
-                        body_start: module.body_start,
+                        body_start,
                         end,
                         head: module.head,
-                        body: &source[module.body_start..start],
+                        body: &source[body_start..start],
                         original: &source[module.start..end],
                         runtime_safe: module.runtime_safe,
+                        preserve_original: false,
+                        preserve_as_module654: false,
+                        consume_empty_tail: false,
                     });
                 }
             }
         }
     }
 
-    if let Some(module) = active
-        && module.depth == 1
-        && (if module.head.is_empty() {
-            module.body_start == source.len()
-        } else {
-            module.runtime_safe || list_pages_runtime_head_can_execute(module.head)
-        })
-    {
-        let owns_legacy_quoted_continuation =
-            unclosed_list_pages_owns_legacy_quoted_continuation(
-                source,
-                module.body_start,
-            );
-        let end = if owns_legacy_quoted_continuation {
-            source.len()
-        } else {
-            module.body_start
-        };
-        matches.push(ListPagesModuleMatch {
-            start: module.start,
-            body_start: module.body_start,
-            end,
-            head: module.head,
-            body: &source[module.body_start..end],
-            original: &source[module.start..end],
-            runtime_safe: module.runtime_safe,
-        });
+    if let Some(module) = active {
+        let executable_unclosed = module.depth == 1
+            && if module.head.is_empty() {
+                module.body_start == source.len()
+            } else {
+                module.runtime_safe || list_pages_runtime_head_can_execute(module.head)
+            };
+        if executable_unclosed {
+            let suffix = &source[module.body_start..];
+            if let Some((body_end, end)) =
+                complete_multiline_at_marker_template_boundary(suffix)
+            {
+                matches.push(ListPagesModuleMatch {
+                    start: module.start,
+                    body_start: module.body_start,
+                    end: module.body_start + end,
+                    head: module.head,
+                    body: &source[module.body_start..module.body_start + body_end],
+                    original: &source[module.start..module.body_start + end],
+                    runtime_safe: module.runtime_safe,
+                    preserve_original: false,
+                    preserve_as_module654: false,
+                    consume_empty_tail: false,
+                });
+            } else if let Some(end) = unclosed_at_marker_collapsible_prefix_end(
+                &source[module.start..module.body_start],
+                suffix,
+            ) {
+                let end = module.body_start + end;
+                matches.push(ListPagesModuleMatch {
+                    start: module.start,
+                    body_start: module.body_start,
+                    end,
+                    head: module.head,
+                    body: &source[module.body_start..module.body_start],
+                    original: &source[module.start..end],
+                    runtime_safe: module.runtime_safe,
+                    preserve_original: false,
+                    preserve_as_module654: false,
+                    consume_empty_tail: true,
+                });
+                let (mut suffix_matches, suffix_work, suffix_literal_advances) =
+                    find_list_pages_module_matches_with_cursor_work_context(
+                        &source[end..],
+                        false,
+                    );
+                for suffix_module in &mut suffix_matches {
+                    suffix_module.start += end;
+                    suffix_module.body_start += end;
+                    suffix_module.end += end;
+                }
+                matches.extend(suffix_matches);
+                let literal_range_advances = direct_literal_advances
+                    + projected_literal_advances
+                    + suffix_literal_advances;
+                return (
+                    matches,
+                    direct_work
+                        + projected_work
+                        + literal_range_advances
+                        + merge_work
+                        + suffix_work,
+                    literal_range_advances,
+                );
+            } else if let Some(end) =
+                trailing_at_marker_raw_row_tail_end(module.head, suffix)
+            {
+                let end = module.body_start + end;
+                matches.push(ListPagesModuleMatch {
+                    start: module.start,
+                    body_start: module.body_start,
+                    end,
+                    head: module.head,
+                    body: &source[module.body_start..module.body_start],
+                    original: &source[module.start..end],
+                    runtime_safe: module.runtime_safe,
+                    preserve_original: false,
+                    preserve_as_module654: false,
+                    consume_empty_tail: true,
+                });
+            } else {
+                let owns_legacy_quoted_continuation =
+                    unclosed_list_pages_owns_legacy_quoted_continuation(
+                        source,
+                        module.body_start,
+                    );
+                if !owns_legacy_quoted_continuation
+                    && unclosed_at_marker_requires_module654_preservation(
+                        module.head,
+                        suffix,
+                    )
+                {
+                    matches.push(ListPagesModuleMatch {
+                        start: module.start,
+                        body_start: module.body_start,
+                        end: module.body_start,
+                        head: module.head,
+                        body: &source[module.body_start..module.body_start],
+                        original: &source[module.start..module.body_start],
+                        runtime_safe: module.runtime_safe,
+                        preserve_original: true,
+                        preserve_as_module654: true,
+                        consume_empty_tail: false,
+                    });
+                    let (mut suffix_matches, suffix_work, suffix_literal_advances) =
+                        find_list_pages_module_matches_with_cursor_work_context(
+                            suffix, false,
+                        );
+                    for suffix_module in &mut suffix_matches {
+                        suffix_module.start += module.body_start;
+                        suffix_module.body_start += module.body_start;
+                        suffix_module.end += module.body_start;
+                    }
+                    matches.extend(suffix_matches);
+                    let literal_range_advances = direct_literal_advances
+                        + projected_literal_advances
+                        + suffix_literal_advances;
+                    return (
+                        matches,
+                        direct_work
+                            + projected_work
+                            + literal_range_advances
+                            + merge_work
+                            + suffix_work,
+                        literal_range_advances,
+                    );
+                }
+                let end = if owns_legacy_quoted_continuation {
+                    source.len()
+                } else {
+                    module.body_start
+                };
+                matches.push(ListPagesModuleMatch {
+                    start: module.start,
+                    body_start: module.body_start,
+                    end,
+                    head: module.head,
+                    body: &source[module.body_start..end],
+                    original: &source[module.start..end],
+                    runtime_safe: module.runtime_safe,
+                    preserve_original: false,
+                    preserve_as_module654: false,
+                    consume_empty_tail: false,
+                });
+            }
+        }
     }
 
     let literal_range_advances = direct_literal_advances + projected_literal_advances;
@@ -2185,6 +2549,63 @@ fn find_list_pages_module_matches_with_cursor_work(
     )
 }
 
+fn unclosed_at_marker_collapsible_prefix_end(
+    opener: &str,
+    suffix: &str,
+) -> Option<usize> {
+    let starts_with_raw_line = suffix.starts_with("@@\n");
+    let raw_footnote_head =
+        opener.contains("@@") && opener.to_ascii_lowercase().contains("[[/footnote");
+    if !starts_with_raw_line && !raw_footnote_head {
+        return None;
+    }
+    let mut offset = if starts_with_raw_line {
+        "@@\n".len()
+    } else {
+        0
+    };
+    for line_with_ending in suffix[offset..].split_inclusive('\n') {
+        let line = line_with_ending
+            .strip_suffix('\n')
+            .unwrap_or(line_with_ending);
+        let lowercase = line.to_ascii_lowercase();
+        if lowercase.starts_with("[[collapsible show=\"")
+            && lowercase.ends_with("\"]]")
+            && lowercase.contains("\" hide=\"")
+        {
+            return Some(offset + line.len());
+        }
+        offset += line_with_ending.len();
+    }
+    None
+}
+
+fn unclosed_at_marker_requires_module654_preservation(head: &str, suffix: &str) -> bool {
+    if !suffix.starts_with("@@") {
+        return false;
+    }
+    let lowercase = suffix.to_ascii_lowercase();
+    !lowercase.starts_with("@@[[footnote]]")
+        && !lowercase.contains("@@[[%%content{")
+        && trailing_at_marker_raw_row_tail_end(head, suffix).is_none()
+}
+
+fn trailing_at_marker_raw_row_tail_end(head: &str, suffix: &str) -> Option<usize> {
+    if !head.trim_end().ends_with("@@") {
+        return None;
+    }
+    let mut lines = suffix.lines();
+    (lines.next() == Some("@@")
+        && lines
+            .next()
+            .is_some_and(|line| line.starts_with("@@*@@ ") && !line.contains("[["))
+        && lines
+            .next()
+            .is_some_and(|line| line.eq_ignore_ascii_case("@@[[/module]]"))
+        && lines.next().is_none())
+    .then_some(suffix.len())
+}
+
 fn unclosed_list_pages_owns_legacy_quoted_continuation(
     source: &str,
     body_start: usize,
@@ -2192,6 +2613,109 @@ fn unclosed_list_pages_owns_legacy_quoted_continuation(
     let Some(suffix) = source.get(body_start..) else {
         return false;
     };
+    list_pages_at_marker_body_is_legacy_quoted_continuation(suffix)
+}
+
+fn complete_multiline_at_marker_template_boundary(
+    suffix: &str,
+) -> Option<(usize, usize)> {
+    const CLOSE: &str = "@@[[/module]]";
+    if !suffix.starts_with("@@\n")
+        || suffix.len() <= CLOSE.len()
+        || !suffix[suffix.len() - CLOSE.len()..].eq_ignore_ascii_case(CLOSE)
+    {
+        return None;
+    }
+    let close_start = suffix.len() - CLOSE.len();
+    let body = &suffix[..close_start];
+    if body.to_ascii_lowercase().contains("[[%%content{") {
+        return None;
+    }
+    let mut lines = body.split_terminator('\n');
+    if lines.next() != Some("@@") {
+        return None;
+    }
+    let mut row_lines = 0usize;
+    for line in lines {
+        if line.len() < 4 || !line.starts_with("@@") || !line.ends_with("@@") {
+            return None;
+        }
+        row_lines += 1;
+    }
+    (row_lines > 0).then_some((close_start, suffix.len()))
+}
+
+fn preserved_at_marker_documentation_opening(
+    source: &str,
+    lowercase: &str,
+    events: &[ModuleEvent],
+    allow_literal_documentation_example: bool,
+) -> Option<PreservedAtMarkerDocumentationOpening> {
+    for event in events {
+        let ModuleEvent::Open {
+            kind,
+            start,
+            subname_start,
+            subname_end,
+            opening_end,
+            body_start,
+            direct_candidate,
+            ..
+        } = *event
+        else {
+            continue;
+        };
+        if kind != ModuleOpenKind::Standard
+            || !direct_candidate
+            || !source[subname_start..subname_end].eq_ignore_ascii_case("listpages")
+        {
+            continue;
+        }
+        let head = source[subname_end..opening_end]
+            .trim_start()
+            .trim_end_matches(']');
+        if head.is_empty()
+            && list_pages_argumentless_documentation_body_prefix(&source[body_start..])
+        {
+            let suffix = &source[body_start..];
+            let resume = if suffix.starts_with("@@}}") {
+                body_start + "@@}}".len()
+            } else if suffix.starts_with("}}") {
+                body_start + "}}".len()
+            } else {
+                let close = b"@@[[/module]]";
+                suffix
+                    .as_bytes()
+                    .windows(close.len())
+                    .position(|window| window.eq_ignore_ascii_case(close))
+                    .map_or(body_start, |offset| body_start + offset + close.len())
+            };
+            return Some(PreservedAtMarkerDocumentationOpening {
+                start,
+                body_start,
+                resume,
+                subname_end,
+                opening_end,
+            });
+        }
+    }
+    if allow_literal_documentation_example {
+        const LITERAL_EXAMPLE: &str = "[[module listpages]]}}";
+        let start = lowercase.find(LITERAL_EXAMPLE)?;
+        let subname_end = start + "[[module listpages".len();
+        let body_start = start + "[[module listpages]]".len();
+        return Some(PreservedAtMarkerDocumentationOpening {
+            start,
+            body_start,
+            resume: body_start + "}}".len(),
+            subname_end,
+            opening_end: body_start,
+        });
+    }
+    None
+}
+
+fn list_pages_at_marker_body_is_legacy_quoted_continuation(suffix: &str) -> bool {
     let mut lines = suffix.lines();
     if lines.next() != Some("@@") {
         return false;
@@ -2203,6 +2727,17 @@ fn unclosed_list_pages_owns_legacy_quoted_continuation(
     quoted.iter().all(|line| line.starts_with("> "))
         && last.starts_with("> @@")
         && last.to_ascii_lowercase().ends_with("[[/module]]")
+}
+
+fn list_pages_argumentless_documentation_body_prefix(suffix: &str) -> bool {
+    let lowercase = suffix.to_ascii_lowercase();
+    lowercase.starts_with("}}")
+        || lowercase.starts_with("@@}}")
+        || lowercase.starts_with("@@\n@@[[div")
+        || lowercase.starts_with("@@")
+            && lowercase.as_bytes()[..lowercase.len().min(256)]
+                .windows(b"@@[[html]]".len())
+                .any(|window| window == b"@@[[html]]")
 }
 
 fn nested_module_opening_has_inert_at_marker_suffix(
@@ -2252,6 +2787,7 @@ fn ordered_direct_event(event: ModuleEvent) -> OrderedModuleEvent {
             body_start,
             direct_candidate,
             runtime_safe,
+            default_template,
             ..
         } => OrderedModuleEvent::Open {
             kind,
@@ -2263,6 +2799,7 @@ fn ordered_direct_event(event: ModuleEvent) -> OrderedModuleEvent {
                 opening_end,
                 body_start,
                 runtime_safe,
+                default_template,
             }),
             projection_guard_start: None,
         },

@@ -283,7 +283,11 @@ pub(super) const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
 // still bound revision loading and nested expansion across the whole render.
 pub(super) const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
     MAX_LISTPAGES_RENDER_LIMIT as usize;
-// Content-backed ListPages modules can trigger permission filtering, revision loading, and nested include expansion. Three modules cover the common corpus shape while stopping dense author-page compositions before they exhaust the render budget.
+// Content-backed ListPages modules with selected rows can trigger revision
+// loading and nested include expansion. Zero-row queries never load content
+// and therefore do not consume this budget. Three nonempty modules cover the
+// common corpus shape while stopping dense author-page compositions before
+// they exhaust the render budget.
 pub(super) const MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER: usize = 3;
 pub(super) const MAX_LISTPAGES_RENDER_OFFSET: u32 = 1_000;
 pub(super) const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 50_000;
@@ -356,7 +360,7 @@ pub(super) static REGISTRY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">[^<>]*</span>|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">.*?</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<ol data-wikijump-compat-listpages="1">.*?</ol>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">[^<>]*</span>|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">.*?</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
     )
     .unwrap()
 });
@@ -364,7 +368,7 @@ pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::ne
 #[cfg(test)]
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</div>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">[^<>]*</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<ol data-wikijump-compat-listpages="1">.*?</ol>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</div>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">[^<>]*</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
     )
     .unwrap()
 });
@@ -1534,7 +1538,7 @@ impl RenderService {
         }
     }
 
-    fn rewrite_wikidot_html_block_iframe_urls(
+    pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(
         mut body: String,
         page_info: &PageInfo<'_>,
         html_blocks: &[String],
@@ -1548,6 +1552,15 @@ impl RenderService {
         }
 
         let full_slug = Self::page_info_full_slug(page_info);
+        // PagePreviewModule uses `search:site` for the otherwise anonymous
+        // preview page identity. Keep that route fallback local to HTML-block
+        // registration: treating it as the query's current page changes
+        // ListPages selection and exclusion semantics.
+        let full_slug = if full_slug.is_empty() {
+            "search:site".to_owned()
+        } else {
+            full_slug
+        };
         let mut search_start = 0;
         for (index, html) in html_blocks.iter().enumerate() {
             let Some(relative_start) = body[search_start..].find(PLACEHOLDER) else {
@@ -2556,15 +2569,7 @@ impl RenderService {
         if !value.contains("[[#") {
             return value.to_owned();
         }
-        // Frozen ListPages rows use zero for a missing vote count. Preserve the
-        // evidenced operator-level result without maintaining another parser.
-        ftml::preproc::resolve_wikidot_parser_functions_with_options(
-            value,
-            ftml::preproc::WikidotParserFunctionOptions {
-                zero_operator_policy:
-                    ftml::preproc::WikidotZeroOperatorPolicy::ReplaceOperationWithZero,
-            },
-        )
+        ftml::preproc::resolve_wikidot_parser_functions(value)
     }
 
     fn normalize_wikidot_div_style_url_quotes(wikitext: &mut String) {
@@ -3978,28 +3983,82 @@ pub(super) fn native_numbered_list_content(line: &str) -> Option<&str> {
         .map(|content| content.trim_end_matches(['\r', '\n']))
 }
 
-pub(super) fn render_list_pages_numbered_rows(value: &str) -> String {
+pub(super) fn render_list_pages_numbered_rows_with_titles(
+    value: &str,
+    link_titles: Option<&WikidotCompatLinkTitleMap>,
+) -> String {
     let lines = value.split_inclusive('\n').collect::<Vec<_>>();
     let mut output = String::with_capacity(value.len());
     let mut index = 0;
 
     while index < lines.len() {
-        let mut end = index;
-        while end < lines.len() && native_numbered_list_content(lines[end]).is_some() {
-            end += 1;
-        }
-
-        if end > index {
-            output.push_str("<ol>\n");
-            for line in &lines[index..end] {
-                if let Some(content) = native_numbered_list_content(line) {
-                    output.push_str("<li>");
-                    output.push_str(&render_native_list_inline_html(content));
-                    output.push_str("</li>\n");
+        if native_numbered_list_content(lines[index]).is_some() {
+            let list_start = index;
+            let mut list_end = index;
+            while list_end < lines.len()
+                && native_numbered_list_content(lines[list_end]).is_some()
+            {
+                list_end += 1;
+                while list_end < lines.len()
+                    && native_numbered_list_span_continuation(lines[list_end])
+                        .is_some()
+                {
+                    list_end += 1;
                 }
             }
+            if lines[list_start..list_end]
+                .iter()
+                .any(|line| line.to_ascii_lowercase().contains("[[footnote"))
+            {
+                // FTML owns footnote allocation and the corresponding footer
+                // registry. Leave the complete ordered-list run as syntax
+                // when any item contains a footnote instead of partially
+                // rendering the item through the compatibility inline helper.
+                for line in &lines[list_start..list_end] {
+                    output.push_str(line);
+                }
+                index = list_end;
+                continue;
+            }
+            output.push_str("<ol data-wikijump-compat-listpages=\"1\">\n");
+            while index < lines.len() {
+                let Some(content) = native_numbered_list_content(lines[index]) else {
+                    break;
+                };
+                let has_span_continuation = lines
+                    .get(index + 1)
+                    .and_then(|line| native_numbered_list_span_continuation(line))
+                    .is_some();
+                let content = if has_span_continuation {
+                    content.strip_suffix(" _").unwrap_or(content)
+                } else {
+                    content
+                };
+                output.push_str("<li>");
+                output.push_str(&render_native_list_inline_html_with_titles(
+                    content,
+                    link_titles,
+                ));
+                index += 1;
+                while index < lines.len()
+                    && let Some((continuation, continuation_body)) =
+                        native_numbered_list_span_continuation(lines[index])
+                {
+                    output.push_str("<br>\n");
+                    if !continuation_body
+                        .trim_matches([' ', '\t', '\r', '\n'])
+                        .is_empty()
+                    {
+                        output.push_str(&render_native_list_inline_html_with_titles(
+                            continuation,
+                            link_titles,
+                        ));
+                    }
+                    index += 1;
+                }
+                output.push_str("</li>\n");
+            }
             output.push_str("</ol>\n");
-            index = end;
         } else {
             output.push_str(lines[index]);
             index += 1;
@@ -4007,6 +4066,17 @@ pub(super) fn render_list_pages_numbered_rows(value: &str) -> String {
     }
 
     output
+}
+
+fn native_numbered_list_span_continuation(line: &str) -> Option<(&str, &str)> {
+    let line = line.trim_end_matches(['\r', '\n']);
+    let trimmed = line.trim();
+    let marker_end = trimmed.find("]]")? + "]]".len();
+    wikidot_inline_span_marker_open(&trimmed[..marker_end])?;
+    let body = &trimmed[marker_end..];
+    let close_start = find_matching_wikidot_span_close(body)?;
+    (close_start + "[[/span]]".len() == body.len())
+        .then_some((trimmed, &body[..close_start]))
 }
 
 pub(super) fn render_list_pages_table_rows(value: &str) -> Option<String> {
@@ -4483,21 +4553,41 @@ fn render_native_list_page_link(
     link_titles: Option<&WikidotCompatLinkTitleMap>,
 ) -> String {
     let target = target.trim();
+    let external_target = target.strip_prefix('*').filter(|target| {
+        target.starts_with("http://") || target.starts_with("https://")
+    });
+    let page_ref = native_list_page_link_ref(target);
+    let page_is_missing = page_ref.as_ref().is_some_and(|page_ref| {
+        link_titles.is_some_and(|titles| titles.page_is_missing(page_ref))
+    });
+    let explicitly_empty_label = label.is_some_and(|label| label.trim().is_empty());
     let label = label
         .map(str::trim)
         .filter(|label| !label.is_empty())
         .map(str::to_owned)
         .unwrap_or_else(|| {
-            native_list_page_link_title_label(target, link_titles)
-                .unwrap_or_else(|| native_list_page_link_default_label(target))
+            if explicitly_empty_label && page_is_missing {
+                escape_list_pages_html_text(target)
+            } else if let Some(external_target) = external_target {
+                escape_list_pages_html_text(external_target)
+            } else {
+                native_list_page_link_title_label(target, link_titles)
+                    .unwrap_or_else(|| native_list_page_link_default_label(target))
+            }
         });
+    if let Some(external_target) = external_target {
+        return format!(
+            r#"<a target="_blank" href="{href}">{label}</a>"#,
+            href = escape_list_pages_html_attr(external_target),
+            label = label,
+        );
+    }
     let href = native_list_page_link_href(target);
-    let class = native_list_page_link_ref(target)
-        .filter(|page_ref| {
-            link_titles.is_some_and(|titles| titles.page_is_missing(page_ref))
-        })
-        .map(|_| r#" class="newpage""#)
-        .unwrap_or_default();
+    let class = if page_is_missing {
+        r#" class="newpage""#
+    } else {
+        ""
+    };
     format!(
         r#"<a{class} href="{href}">{label}</a>"#,
         class = class,

@@ -19,6 +19,7 @@
  */
 
 use super::super::service::RenderService;
+use super::CompatHtmlFragments;
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -31,6 +32,17 @@ static WIKIDOT_RAW_EMBED_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     )
     .unwrap()
 });
+static WIKIDOT_NAME_ONLY_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"^<iframe name="[A-Za-z][A-Za-z0-9_:-]{0,127}"></iframe>$"#)
+        .unwrap()
+});
+static LISTPAGES_DYNAMIC_EMBED_OPENER_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| {
+        Regex::new(
+            r#"(?im)^(?P<indent>[ \t>]*)\[\[%%content(?:\{[0-9]+\})?%%(?P<block>embed|embedaudio|embedvideo)\]\][ \t]*$"#,
+        )
+        .unwrap()
+    });
 static WIKIDOT_EMBED_BLOCK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"(?is)\[\[(?P<block>embed|embedaudio|embedvideo)\]\](?P<payload>.*?)\[\[/(?P<close>embed|embedaudio|embedvideo)\]\]"#,
@@ -55,6 +67,27 @@ static WIKIDOT_INTERWIKI_FRAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 });
 
 impl RenderService {
+    pub(in crate::services::render) fn protect_list_pages_wikidot_embed_iframes(
+        wikitext: &mut String,
+        compat_html: &mut CompatHtmlFragments,
+    ) {
+        if wikitext.contains("%%content") {
+            *wikitext = LISTPAGES_DYNAMIC_EMBED_OPENER_REGEX
+                .replace_all(wikitext, "${indent}[[${block}]]")
+                .into_owned();
+        }
+        let iframes = Self::protect_wikidot_embed_iframes(wikitext);
+        for (index, iframe) in iframes.into_iter().enumerate() {
+            let marker = format!("{WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX}{index}X");
+            let trusted = if iframe == WIKIDOT_EMBED_NO_MATCH_HTML {
+                compat_html.push_block_html_allowing_span_parent(iframe)
+            } else {
+                compat_html.push_html(iframe)
+            };
+            *wikitext = wikitext.replace(&marker, &trusted);
+        }
+    }
+
     pub(in crate::services::render) fn protect_wikidot_embed_iframes(
         wikitext: &mut String,
     ) -> Vec<String> {
@@ -104,6 +137,9 @@ impl RenderService {
     pub(in crate::services::render) fn allowed_wikidot_embed_iframe(
         iframe: &str,
     ) -> Option<String> {
+        if WIKIDOT_NAME_ONLY_IFRAME_REGEX.is_match(iframe) {
+            return Some(iframe.to_owned());
+        }
         if let Some(captures) = WIKIDOT_STYLEFRAME_IFRAME_REGEX.captures(iframe) {
             return Some(Self::rewrite_wikidot_interwiki_iframe_src(
                 iframe,

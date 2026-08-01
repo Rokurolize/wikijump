@@ -29,6 +29,7 @@ mod current_page;
 mod data_forms;
 mod delayed;
 mod feed;
+mod first_image;
 mod generated_html;
 mod pagination;
 mod parents;
@@ -73,17 +74,22 @@ pub(super) use self::delayed::substitute_list_pages_variables_with_fragments;
 pub(super) use self::delayed::{
     MAX_NESTED_LISTPAGES_DEPTH, MAX_NESTED_LISTPAGES_MODULES_PER_PASS,
     PendingDelayedListPagesOutput, append_list_pages_delayed_occurrences,
+    append_list_pages_runtime_scalar_ranges,
     find_list_pages_module_matches_with_delayed_links,
     finish_or_defer_list_pages_delayed_output, list_pages_row_markup_bytes,
     list_pages_runtime_container_close, list_pages_runtime_container_open,
     list_pages_runtime_row_container_close, prepare_delayed_list_pages_row,
     raw_module_close_end, resolve_wikidot_parser_functions_outside_list_pages,
     seal_pending_list_pages_delayed_outputs, seal_protected_list_pages_delayed_output,
-    wrap_pending_list_pages_delayed_output,
+    seal_zero_row_list_pages_wrapper, wrap_pending_list_pages_delayed_output,
 };
 pub(super) use self::generated_html::{
     register_generated_list_pages_html, repair_list_pages_block_boundaries,
     strip_generated_list_pages_html_markers, url_offset_list_pages_content_bytes,
+};
+pub(super) use self::first_image::{
+    list_pages_body_uses_first_image, load_list_pages_first_images,
+    resolve_list_pages_first_image,
 };
 pub(super) use self::pagination::{
     ListPagesPagerRoute, list_pages_feed_info_html, push_list_pages_pager,
@@ -107,9 +113,9 @@ pub(super) use self::rendering_support::{
     ListPagesExpansion, ListPagesExpansionOptions, ListPagesPageContext,
     ListPagesRenderedBlock, expand_list_pages_generated_includes,
     list_pages_body_starts_with_preparsed_block, list_pages_feed_only_render_result,
-    prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
-    push_list_pages_generated_output, push_list_pages_trailing_runtime_blocks,
-    suppress_generated_list_pages_heading_toc,
+    list_pages_html_encoded_head_owns_script_tail, prepare_list_pages_rendered_block,
+    preserve_list_pages_module_matches, push_list_pages_generated_output,
+    push_list_pages_trailing_runtime_blocks, suppress_generated_list_pages_heading_toc,
 };
 pub(super) use self::substitution::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesArguments,
@@ -942,6 +948,46 @@ mod tests {
     }
 
     #[test]
+    fn composite_category_url_selector_preserves_modifiers_and_fallback() {
+        const HEAD: &str = concat!(
+            r#"category="@URL -geheim -deleted|"#,
+            r#"* -system -admin -geheim -forum -nav -search""#,
+        );
+
+        let fallback = parse_list_pages_arguments(HEAD)
+            .expect("the corpus composite URL category fallback should parse");
+        assert!(fallback.category_selector_present);
+        assert!(fallback.category_all);
+        assert!(fallback.categories.is_empty());
+        assert_eq!(
+            fallback.excluded_categories,
+            ["system", "admin", "geheim", "forum", "nav", "search"],
+        );
+
+        let path_arguments = [crate::services::render::UrlArgumentPair {
+            name: "category".to_owned(),
+            value: Some("fragment".to_owned()),
+        }];
+        let url = crate::services::render::UrlArguments {
+            path_arguments: &path_arguments,
+            ..crate::services::render::UrlArguments::default()
+        };
+        let resolved = parse_list_pages_arguments_with_url(HEAD, url)
+            .expect("the composite URL category selector should resolve");
+        assert!(resolved.category_selector_present);
+        assert!(!resolved.category_all);
+        assert_eq!(resolved.categories, ["fragment"]);
+        assert_eq!(resolved.excluded_categories, ["geheim", "deleted"]);
+
+        let near_miss =
+            parse_list_pages_arguments(r#"category="@URLish -hidden|* -system""#)
+                .expect("a near-miss URL token remains a static selector");
+        assert!(!near_miss.category_all);
+        assert_eq!(near_miss.categories, ["@urlish"]);
+        assert_eq!(near_miss.excluded_categories, ["hidden|*", "system"]);
+    }
+
+    #[test]
     fn parses_wrapped_content_with_safe_query_attributes() {
         let specification = parse_supported_specification(
             r#" parent="." category="fragment" order="updated_at desc" limit="2" offset="@URL|1" pagetype="all""#,
@@ -1186,6 +1232,40 @@ mod tests {
         assert!(arguments.link_to.is_empty());
         assert!(!arguments.reverse);
 
+        let arguments = parse_list_pages_arguments_with_url(
+            "tags=\"@URL|\u{202f}\" separate=\"no\"",
+            crate::services::render::UrlArguments::default(),
+        )
+        .expect("an explicit whitespace-only URL tag fallback should parse");
+        assert_eq!(
+            arguments.all_tags,
+            vec![Cow::Borrowed("")],
+            "live treats an explicit empty URL tag fallback as a no-row selector, \
+             not as an omitted selector",
+        );
+
+        let arguments = parse_list_pages_arguments_with_url(
+            r#"tags="+ko @URL" separate="no""#,
+            crate::services::render::UrlArguments::default(),
+        )
+        .expect("a mixed unresolved URL tag selector should still parse");
+        assert_eq!(arguments.all_tags, vec![Cow::Borrowed("ko")]);
+        assert_eq!(
+            arguments.default_tags,
+            vec![Cow::Borrowed("@url")],
+            "live retains @URL as a literal required-alternative tag when it is \
+             only one token in a mixed tags selector",
+        );
+
+        let arguments = parse_list_pages_arguments(r#"order="created""#)
+            .expect("an unsupported order alias should use the live default order");
+        assert_eq!(
+            arguments.order,
+            Some(OrderBySelector::default()),
+            "live does not recognize created as created_at and falls back to \
+             the default newest-first order",
+        );
+
         let arguments = parse_list_pages_arguments(
             r#"category="fragment" parent="." order="name"" limit="1" offset="@URL|0""#,
         )
@@ -1267,6 +1347,31 @@ mod tests {
                 "{inert}",
             );
         }
+    }
+
+    #[test]
+    fn html_escaped_quote_assignments_remain_inert() {
+        let arguments = parse_list_pages_arguments(
+            "category=&quot;fragment&quot; parent=&quot;.&quot; \
+             limit=&quot;1&quot; order=&quot;name&quot; offset=&quot;@URL|0&quot;",
+        )
+        .expect("the structurally valid ListPages head should execute");
+
+        assert!(arguments.category_all);
+        assert!(!arguments.category_selector_present);
+        assert!(arguments.categories.is_empty());
+        assert_eq!(arguments.page_parent, PageParentSelector::All);
+        assert_eq!(arguments.static_parent_fullname, None);
+        assert_eq!(arguments.limit, None);
+        assert_eq!(arguments.order, None);
+        assert_eq!(arguments.offset, 0);
+        assert!(!arguments.unsupported_list_pages_filter);
+        assert!(!arguments.unsupported_author_filter);
+        assert!(!arguments.unsupported_score_filter);
+        assert_eq!(
+            list_pages_static_parent_fullname("parent=&quot;.&quot; limit=&quot;1&quot;",),
+            None,
+        );
     }
 
     #[test]
@@ -1508,6 +1613,31 @@ mod tests {
             .expect("an exact category-local name should execute");
         assert_eq!(arguments.categories, vec![Cow::Borrowed("nav")]);
         assert_eq!(arguments.slug, Some(Cow::Borrowed("side")));
+    }
+
+    #[test]
+    fn list_pages_name_selector_resolves_exact_raw_color_markup() {
+        let arguments = parse_list_pages_arguments(
+            r#"fullname="@@##red|scp-series##@@" separate="yes" limit="250""#,
+        )
+        .expect("the exact live raw-color fullname selector should execute");
+
+        assert_eq!(arguments.slug.as_deref(), Some("scp-series"));
+        assert_eq!(arguments.name_pattern, None);
+
+        for malformed in [
+            r#"fullname="@@##red|scp-series@@" "#,
+            r#"fullname="@@##redscp-series##@@" "#,
+            r#"fullname="prefix@@##red|scp-series##@@" "#,
+        ] {
+            let arguments = parse_list_pages_arguments(malformed)
+                .expect("malformed inline markup remains a static selector");
+            assert_ne!(
+                arguments.slug.as_deref(),
+                Some("scp-series"),
+                "{malformed:?}",
+            );
+        }
     }
 
     #[test]

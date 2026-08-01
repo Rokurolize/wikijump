@@ -58,6 +58,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables(
         &mut compat_html,
         &mut compat_text,
         None,
+        None,
     );
     compat_text.restore(&compat_html.restore(&protected))
 }
@@ -184,16 +185,19 @@ pub(in crate::services::render) fn render_list_pages_wikidot_user(
         return escape_list_pages_html_text(&user.name);
     }
     let slug = user.slug.as_deref().unwrap_or(&user.name);
+    let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
     format!(
         concat!(
             r#"<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">"#,
             r#"<a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
-            r#"<img alt="{name}" class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;size=small"/>"#,
+            r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
+            r#"alt="{name}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})" />"#,
             r#"</a><a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">{name}</a>"#,
             r#"</span>"#
         ),
         slug = escape_list_pages_html_attr(slug),
         user_id = user.user_id,
+        avatar_timestamp = avatar_timestamp,
         name = escape_list_pages_html_text(&user.name),
     )
 }

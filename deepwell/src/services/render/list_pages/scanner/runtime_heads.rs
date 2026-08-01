@@ -18,7 +18,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::{ModuleHeadValidation, physical_line_resume, validate_module_head};
+use super::{
+    ModuleHeadValidation, list_pages_head_contains_nested_module_token,
+    physical_line_resume, validate_module_head,
+};
 
 pub(super) fn runtime_list_pages_key_is_supported(key: &str) -> bool {
     let mut bytes = key.bytes();
@@ -77,7 +80,11 @@ pub(in crate::services::render) fn list_pages_runtime_head_can_execute(
                 )
                 .is_empty()
         }
-        ModuleHeadValidation::DefiniteInvalid if !head.contains("[[") => true,
+        ModuleHeadValidation::DefiniteInvalid
+            if !list_pages_head_contains_nested_module_token(head) =>
+        {
+            true
+        }
         _ => false,
     }
 }

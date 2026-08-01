@@ -48,6 +48,7 @@ enum CompatFragment {
     BlockHtml {
         html: String,
         trim_preceding_space: bool,
+        allow_span_parent: bool,
     },
     Plain {
         plain: String,
@@ -81,6 +82,22 @@ impl CompatHtmlFragments {
         self.push_fragment(CompatFragment::BlockHtml {
             html,
             trim_preceding_space: false,
+            allow_span_parent: false,
+        })
+    }
+
+    /// Registers trusted flow content that live Wikidot permits beneath an
+    /// authored `[[span]]`. This remains deliberately narrower than generic
+    /// block restoration: only a `span` parent is admitted, while links,
+    /// opaque elements, and all other inline parents continue to fail closed.
+    pub(in crate::services::render) fn push_block_html_allowing_span_parent(
+        &mut self,
+        html: String,
+    ) -> String {
+        self.push_fragment(CompatFragment::BlockHtml {
+            html,
+            trim_preceding_space: false,
+            allow_span_parent: true,
         })
     }
 
@@ -91,6 +108,7 @@ impl CompatHtmlFragments {
         self.push_fragment(CompatFragment::BlockHtml {
             html,
             trim_preceding_space: true,
+            allow_span_parent: false,
         })
     }
 
@@ -145,7 +163,12 @@ impl CompatHtmlFragments {
                 && let Some((restored, trim_preceding_space)) =
                     self.block_marker_paragraph(body)
             {
-                if trim_preceding_space && output.ends_with(' ') {
+                if trim_preceding_space
+                    && output
+                        .as_bytes()
+                        .last()
+                        .is_some_and(u8::is_ascii_whitespace)
+                {
                     output.pop();
                 }
                 output.push_str(&restored);
@@ -186,6 +209,7 @@ impl CompatHtmlFragments {
             let CompatFragment::BlockHtml {
                 html,
                 trim_preceding_space: trim,
+                ..
             } = &self.fragments[index]
             else {
                 return None;
@@ -278,11 +302,15 @@ impl CompatHtmlFragments {
                     {
                         output.pop();
                     }
+                    let allow_span_parent = matches!(
+                        &self.fragments[index],
+                        CompatFragment::BlockHtml {
+                            allow_span_parent: true,
+                            ..
+                        },
+                    );
                     if unwrap_block_paragraphs
-                        && matches!(
-                            &self.fragments[index],
-                            CompatFragment::BlockHtml { .. },
-                        )
+                        && matches!(&self.fragments[index], CompatFragment::BlockHtml { .. },)
                     {
                         if restore_block_html_from_paragraph(
                             &mut output,
@@ -294,7 +322,9 @@ impl CompatHtmlFragments {
                         ) {
                             continue;
                         }
-                        if !parent_stack.parent_is_safe(&output) {
+                        if !parent_stack
+                            .parent_accepts_block_fragment(&output, allow_span_parent)
+                        {
                             output.push_str(&text[start..marker_end]);
                             cursor = marker_end;
                             continue;
@@ -343,7 +373,7 @@ fn restore_block_html_from_paragraph(
         return false;
     };
     let leading = &output[paragraph_start + 3..];
-    if !contains_only_text_and_breaks(leading) {
+    if !contains_only_text_breaks_and_balanced_inline_elements(leading) {
         return false;
     }
     let Some(paragraph_end) = text[marker_end..].find("</p>") else {
@@ -351,7 +381,7 @@ fn restore_block_html_from_paragraph(
     };
     let trailing_end = marker_end + paragraph_end;
     let trailing = &text[marker_end..trailing_end];
-    if !contains_only_text_and_breaks(trailing) {
+    if !contains_only_text_breaks_and_balanced_inline_elements(trailing) {
         return false;
     }
     if !parent_stack.parent_is_safe(&output[..paragraph_start]) {
@@ -378,21 +408,84 @@ fn restore_block_html_from_paragraph(
     true
 }
 
-fn contains_only_text_and_breaks(value: &str) -> bool {
-    let mut rest = value;
-    while let Some(start) = rest.find('<') {
-        rest = &rest[start..];
-        if let Some(after) = rest
-            .strip_prefix("<br>")
-            .or_else(|| rest.strip_prefix("<br/>"))
-            .or_else(|| rest.strip_prefix("<br />"))
-        {
-            rest = after;
-        } else {
+fn contains_only_text_breaks_and_balanced_inline_elements(value: &str) -> bool {
+    let mut cursor = 0;
+    let mut stack = Vec::new();
+    while let Some(relative_start) = value[cursor..].find('<') {
+        let start = cursor + relative_start;
+        let Some(TagKind::Element { .. }) = tag_kind(&value[start..]) else {
+            return false;
+        };
+        let Some(end) = html_tag_end(value, start) else {
+            return false;
+        };
+        let Some(tag) = value[start..end]
+            .strip_prefix('<')
+            .and_then(|tag| tag.strip_suffix('>'))
+        else {
+            return false;
+        };
+        let tag = tag.trim();
+        let closing = tag.starts_with('/');
+        let tag = if closing { tag[1..].trim_start() } else { tag };
+        let name_end = tag
+            .find(|character: char| character.is_ascii_whitespace() || character == '/')
+            .unwrap_or(tag.len());
+        let name = tag[..name_end].to_ascii_lowercase();
+        if !is_safe_paragraph_inline_element(&name) {
             return false;
         }
+        if closing {
+            if stack.last().is_none_or(|open| open != &name) {
+                return false;
+            }
+            stack.pop();
+        } else if is_void_html_element(&name) {
+            // HTML void elements are balanced by definition.
+        } else {
+            if tag.trim_end().ends_with('/') {
+                return false;
+            }
+            stack.push(name);
+        }
+        cursor = end;
     }
-    true
+    stack.is_empty()
+}
+
+fn is_safe_paragraph_inline_element(name: &str) -> bool {
+    matches!(
+        name,
+        "a" | "abbr"
+            | "b"
+            | "bdi"
+            | "bdo"
+            | "br"
+            | "cite"
+            | "code"
+            | "del"
+            | "em"
+            | "font"
+            | "i"
+            | "img"
+            | "ins"
+            | "kbd"
+            | "mark"
+            | "q"
+            | "s"
+            | "samp"
+            | "small"
+            | "span"
+            | "strike"
+            | "strong"
+            | "sub"
+            | "sup"
+            | "time"
+            | "tt"
+            | "u"
+            | "var"
+            | "wbr"
+    )
 }
 
 fn trailing_break_start(value: &str) -> Option<usize> {
@@ -432,6 +525,14 @@ impl Default for IncrementalHtmlElementStack {
 
 impl IncrementalHtmlElementStack {
     fn parent_is_safe(&mut self, html: &str) -> bool {
+        self.parent_accepts_block_fragment(html, false)
+    }
+
+    fn parent_accepts_block_fragment(
+        &mut self,
+        html: &str,
+        allow_span_parent: bool,
+    ) -> bool {
         if self.parsed > html.len() {
             *self = Self::default();
         }
@@ -444,7 +545,10 @@ impl IncrementalHtmlElementStack {
             && self
                 .stack
                 .last()
-                .is_none_or(|parent| is_safe_block_html_container(parent))
+                .is_none_or(|parent| {
+                    is_safe_block_html_container(parent)
+                        || (allow_span_parent && parent == "span")
+                })
     }
 }
 
@@ -649,10 +753,79 @@ mod tests {
             fragments.restore(&format!("<p>before<br>\n{marker}<br>\nafter</p>")),
             "<p>before</p><div>trusted block</div><p>after</p>",
         );
+        assert_eq!(
+            fragments.restore(&format!(
+                concat!(
+                    "<p>{}<br>\n",
+                    r#"<span style="white-space: pre-wrap;"> </span>"#,
+                    "<br>\nafter</p>",
+                ),
+                marker,
+            )),
+            concat!(
+                "<div>trusted block</div><p>",
+                r#"<span style="white-space: pre-wrap;"> </span>"#,
+                "<br>\nafter</p>",
+            ),
+        );
     }
 
     #[test]
-    fn opted_in_block_html_trims_exactly_one_preceding_ascii_space() {
+    fn block_html_splits_a_paragraph_after_balanced_inline_content() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker = fragments.push_block_html("<div>trusted block</div>".to_owned());
+
+        assert_eq!(
+            fragments.restore(&format!(
+                r#"<p><span><a href="/safe">row</a></span><br>{marker}</p>"#,
+            )),
+            concat!(
+                r#"<p><span><a href="/safe">row</a></span></p>"#,
+                "<div>trusted block</div>",
+            ),
+        );
+        assert_eq!(
+            fragments.restore(&format!(
+                r#"<p>before<br>{marker}<br>after <a href="/safe">link</a></p>"#,
+            )),
+            concat!(
+                "<p>before</p>",
+                "<div>trusted block</div>",
+                r#"<p>after <a href="/safe">link</a></p>"#,
+            ),
+        );
+        assert_eq!(
+            fragments.restore(&format!("<p><span>unclosed<br>{marker}</p>")),
+            format!("<p><span>unclosed<br>{marker}</p>"),
+        );
+        assert_eq!(
+            fragments.restore(&format!("<p><script>unsafe</script><br>{marker}</p>")),
+            format!("<p><script>unsafe</script><br>{marker}</p>"),
+        );
+    }
+
+    #[test]
+    fn opted_in_flow_html_restores_only_beneath_a_span_parent() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker = fragments
+            .push_block_html_allowing_span_parent("<div>trusted ListPages</div>".to_owned());
+
+        assert_eq!(
+            fragments.restore(&format!("<span>{marker}</span>")),
+            "<span><div>trusted ListPages</div></span>",
+        );
+        assert_eq!(
+            fragments.restore(&format!("<a href=\"/safe\">{marker}</a>")),
+            format!("<a href=\"/safe\">{marker}</a>"),
+        );
+        assert_eq!(
+            fragments.restore(&format!("<script>{marker}</script>")),
+            format!("<script>{marker}</script>"),
+        );
+    }
+
+    #[test]
+    fn opted_in_block_html_trims_exactly_one_preceding_ascii_whitespace() {
         let mut fragments = CompatHtmlFragments::new("");
         let ordinary = fragments.push_block_html("</div>".to_owned());
         let trimming =
@@ -669,6 +842,14 @@ mod tests {
         assert_eq!(
             fragments.restore(&format!("after  <p>{trimming}</p>")),
             "after </div>",
+        );
+        assert_eq!(
+            fragments.restore(&format!("after\n<p>{trimming}</p>")),
+            "after</div>",
+        );
+        assert_eq!(
+            fragments.restore(&format!("after\n\n<p>{trimming}</p>")),
+            "after\n</div>",
         );
         assert_eq!(
             fragments.restore(&format!("after<p>{trimming}</p>")),

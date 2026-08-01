@@ -44,12 +44,15 @@ pub(in crate::services::render) fn register_generated_list_pages_html(
 
             let block_html = full_match
                 .as_str()
-                .contains(r#"data-wikijump-compat-listpages-feed="1""#);
+                .contains(r#"data-wikijump-compat-listpages="1""#)
+                || full_match
+                    .as_str()
+                    .contains(r#"data-wikijump-compat-listpages-feed="1""#);
             let html = strip_generated_list_pages_html_markers(
                 compat_html.restore(full_match.as_str()),
             );
             if block_html {
-                compat_html.push_block_html(html)
+                compat_html.push_block_html_allowing_span_parent(html)
             } else {
                 compat_html.push_html(html)
             }
@@ -61,6 +64,7 @@ pub(in crate::services::render) fn strip_generated_list_pages_html_markers(
     html: String,
 ) -> String {
     html.replace(r#" data-wikijump-compat-date="1""#, "")
+        .replace(r#" data-wikijump-compat-listpages="1""#, "")
         .replace(r#" data-wikijump-compat-listpages-user="1""#, "")
         .replace(r#" data-wikijump-compat-listpages-feed="1""#, "")
         .replace(r#" data-wikijump-compat-listpages-rating="1""#, "")

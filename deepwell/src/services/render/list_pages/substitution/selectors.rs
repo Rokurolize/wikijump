@@ -93,16 +93,44 @@ pub(super) fn compose_list_pages_name_selectors(
     }
 }
 
+fn is_list_pages_url_token_delimiter(byte: u8) -> bool {
+    byte.is_ascii_whitespace() || matches!(byte, b',' | b';')
+}
+
+fn list_pages_url_token_range(value: &str) -> Option<(usize, usize)> {
+    let selector = value
+        .split_once('|')
+        .map(|(selector, _)| selector)
+        .unwrap_or(value);
+    selector
+        .as_bytes()
+        .windows(4)
+        .enumerate()
+        .find_map(|(start, token)| {
+            if !token.eq_ignore_ascii_case(b"@url")
+                || start.checked_sub(1).is_some_and(|left| {
+                    !is_list_pages_url_token_delimiter(selector.as_bytes()[left])
+                })
+                || selector
+                    .as_bytes()
+                    .get(start + token.len())
+                    .is_some_and(|right| !is_list_pages_url_token_delimiter(*right))
+            {
+                return None;
+            }
+            Some((start, start + token.len()))
+        })
+}
+
 pub(in crate::services::render) fn is_dynamic_list_pages_value(value: &str) -> bool {
-    value.eq_ignore_ascii_case("@url")
-        || value
-            .split_once('|')
-            .is_some_and(|(selector, _)| selector.eq_ignore_ascii_case("@url"))
+    list_pages_url_token_range(value).is_some()
 }
 
 pub(in crate::services::render) fn list_pages_url_fallback(value: &str) -> Option<&str> {
     value.split_once('|').and_then(|(selector, fallback)| {
-        selector.eq_ignore_ascii_case("@url").then_some(fallback)
+        list_pages_url_token_range(selector)
+            .is_some()
+            .then_some(fallback)
     })
 }
 
@@ -120,7 +148,8 @@ pub(in crate::services::render) enum UrlSelector<'a> {
     /// The selector names no `@URL`, or names one whose fallback applies.
     Static(&'a str),
 
-    /// The URL supplied a tag, which replaces the whole `@URL` selector.
+    /// The URL supplied a value, which replaces its standalone `@URL` token
+    /// while retaining any adjacent selector modifiers.
     Resolved(String),
 
     /// `@URL` with nothing to resolve to and no fallback. Live drops the
@@ -142,12 +171,21 @@ pub(in crate::services::render) fn resolve_url_selector<'a>(
     value: &'a str,
     url_value: Option<&str>,
 ) -> UrlSelector<'a> {
-    if !is_dynamic_list_pages_value(value) {
+    let selector = value
+        .split_once('|')
+        .map(|(selector, _)| selector)
+        .unwrap_or(value);
+    let Some((start, end)) = list_pages_url_token_range(selector) else {
         return UrlSelector::Static(value);
-    }
+    };
     match url_value {
         Some(resolved) if !resolved.is_empty() => {
-            UrlSelector::Resolved(resolved.to_owned())
+            let mut value =
+                String::with_capacity(selector.len() - (end - start) + resolved.len());
+            value.push_str(&selector[..start]);
+            value.push_str(resolved);
+            value.push_str(&selector[end..]);
+            UrlSelector::Resolved(value)
         }
         _ => match list_pages_url_fallback(value) {
             Some(fallback) => UrlSelector::Static(fallback),

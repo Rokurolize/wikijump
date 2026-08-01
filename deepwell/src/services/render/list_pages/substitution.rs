@@ -61,6 +61,7 @@ use crate::services::render::UrlArguments;
 use sea_orm::FromQueryResult;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::Range;
 use wikidot_normalize::normalize;
 
 use super::super::compat::CompatHtmlFragments;
@@ -91,7 +92,10 @@ use super::presentation::{
 };
 use super::preview::{list_pages_plain_text, list_pages_preview};
 use super::scanner::list_pages_runtime_head_can_execute;
-use super::titles::{render_list_pages_linked_title, sanitize_list_pages_title};
+use super::titles::{
+    render_list_pages_linked_title, sanitize_list_pages_title,
+    wikidot_empty_imported_title_label,
+};
 use ftml::{self};
 
 #[derive(Debug, Clone)]
@@ -104,6 +108,7 @@ pub(in crate::services::render) struct WikidotUserDisplay {
 
 #[derive(Debug, Clone)]
 pub(in crate::services::render) struct ListPagesSnapshotDisplay {
+    pub(in crate::services::render) title_shown: Option<String>,
     pub(in crate::services::render) created_at: time::OffsetDateTime,
     pub(in crate::services::render) updated_at: time::OffsetDateTime,
     pub(in crate::services::render) created_by_user_id: Option<i64>,
@@ -319,7 +324,8 @@ impl ListPagesBatchDisplayRequirements {
     ) {
         let users = template.uses_created_by() || template.uses_updated_by();
         self.users |= users;
-        self.snapshots |= users
+        self.snapshots |= template.uses_title()
+            || users
             || template.uses_created_at()
             || template.uses_updated_at()
             || template.uses_parent_metadata()
@@ -452,6 +458,11 @@ pub(in crate::services::render) fn list_pages_static_parent_fullname_with_url(
     let value = arguments
         .into_iter()
         .filter(|argument| argument.key.eq_ignore_ascii_case("parent"))
+        .filter(|argument| {
+            argument.value_kind != WikidotModuleArgumentValueKind::Bare
+                || !(argument.value.starts_with("&quot;")
+                    && argument.value.ends_with("&quot;"))
+        })
         .map(|argument| argument.value.trim())
         .next_back()
         .and_then(|value| {
@@ -654,6 +665,12 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
         };
         let raw_value = raw_value.as_ref();
         let value = raw_value.trim();
+        if argument.value_kind == WikidotModuleArgumentValueKind::Bare
+            && value.starts_with("&quot;")
+            && value.ends_with("&quot;")
+        {
+            continue;
+        }
 
         match key.as_str() {
             "tags" => {
@@ -669,11 +686,16 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 rss_path.tags = None;
 
                 let resolved_url_tag;
+                let mut empty_url_fallback = false;
                 let value = match resolve_url_selector(
                     value,
                     url.value_for_list_pages_argument(url_attr_prefix.as_deref(), "tag"),
                 ) {
-                    UrlSelector::Static(value) => value,
+                    UrlSelector::Static(resolved) => {
+                        empty_url_fallback = is_dynamic_list_pages_value(value)
+                            && resolved.trim().is_empty();
+                        resolved
+                    }
                     UrlSelector::Resolved(tag) => {
                         // A resolved `@URL` still leaves CountPages literal:
                         // its own URL-argument behavior has not been captured.
@@ -683,9 +705,28 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     }
                     UrlSelector::Dropped => {
                         unsupported_count_pages_filter = true;
-                        continue;
+                        if split_list_pages_tag_values(value).len() > 1 {
+                            // A bare unresolved tags="@URL" drops the whole
+                            // selector. Live keeps the token literal when it
+                            // is only one member of a mixed tag expression,
+                            // so "+ko @URL" remains a conjunction with an
+                            // impossible required-alternative tag instead of
+                            // widening to every +ko page.
+                            value
+                        } else {
+                            continue;
+                        }
                     }
                 };
+                if empty_url_fallback {
+                    // An explicit `@URL|` fallback is a present-but-empty
+                    // selector on Wikidot. Required empty tags cannot exist,
+                    // so retaining one as the conjunction produces the
+                    // evidenced zero-row result without conflating it with a
+                    // bare unresolved `@URL`, which drops the selector.
+                    all_tags.push(Cow::Borrowed(""));
+                    continue;
+                }
                 rss_path.tags = normalize_list_pages_feed_selector(value);
                 let tags = split_list_pages_tag_values(value);
                 let select_untagged = tags.len() == 1
@@ -1109,6 +1150,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         continue;
                     }
                 };
+                let value = exact_raw_color_list_pages_name(value).unwrap_or(value);
                 let selector = if value == "=" {
                     limit = Some(1);
                     Some(ListPagesNameSelector::CurrentPage)
@@ -1733,6 +1775,22 @@ pub(in crate::services::render) fn wikidot_list_pages_name_slug(value: &str) -> 
     value.trim().to_ascii_lowercase().replace(' ', "-")
 }
 
+fn exact_raw_color_list_pages_name(value: &str) -> Option<&str> {
+    let inner = value.strip_prefix("@@##")?.strip_suffix("##@@")?;
+    let (color, content) = inner.split_once('|')?;
+    let color = color.trim();
+    if color.is_empty()
+        || color.len() > 32
+        || !color
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || character == '#')
+        || content.contains("##")
+    {
+        return None;
+    }
+    Some(content)
+}
+
 pub(in crate::services::render) fn split_list_pages_values(value: &str) -> Vec<String> {
     value
         .split(|ch: char| ch.is_whitespace() || ch == ',')
@@ -1787,7 +1845,7 @@ pub(in crate::services::render) fn parse_list_pages_order(
         "title" => OrderProperty::Title,
         "alt_title" | "alttitle" => OrderProperty::AltTitle,
         "created_by" | "createdby" => OrderProperty::CreatedBy,
-        "created_at" | "createdat" | "created" | "date" | "datecreated" => {
+        "created_at" | "createdat" | "date" | "datecreated" => {
             OrderProperty::CreatedAt
         }
         "updated_at" | "updatedat" | "updated" | "dateedited" => OrderProperty::UpdatedAt,
@@ -1886,6 +1944,94 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) render_generated_html: bool,
 }
 
+fn collect_list_pages_html_body_ranges(source: &str) -> Vec<Range<usize>> {
+    const OPEN: &[u8] = b"[[";
+    const HEAD_CLOSE: &[u8] = b"]]";
+    const CLOSE: &[u8] = b"[[/html]]";
+
+    fn find_ascii_case_insensitive(
+        source: &[u8],
+        start: usize,
+        needle: &[u8],
+    ) -> Option<usize> {
+        source
+            .get(start..)?
+            .windows(needle.len())
+            .position(|candidate| candidate.eq_ignore_ascii_case(needle))
+            .map(|offset| start + offset)
+    }
+
+    fn is_complete_block_line(source: &str, start: usize, end: usize) -> bool {
+        let line_start = source[..start].rfind('\n').map_or(0, |index| index + 1);
+        let line_end = source[end..]
+            .find('\n')
+            .map_or(source.len(), |offset| end + offset);
+        source[line_start..start]
+            .chars()
+            .all(|character| matches!(character, ' ' | '\t' | '>'))
+            && source[end..line_end]
+                .chars()
+                .all(char::is_whitespace)
+    }
+
+    fn is_supported_html_head(head: &str) -> bool {
+        if head.eq_ignore_ascii_case("html") {
+            return true;
+        }
+        let Some(variable) = head
+            .strip_prefix("%%")
+            .and_then(|head| head.strip_suffix("%%html"))
+        else {
+            return false;
+        };
+        let variable = variable.to_ascii_lowercase();
+        variable == "content"
+            || variable
+                .strip_prefix("content{")
+                .and_then(|value| value.strip_suffix('}'))
+                .is_some_and(|section| {
+                    !section.is_empty()
+                        && section.bytes().all(|byte| byte.is_ascii_digit())
+                })
+    }
+
+    let bytes = source.as_bytes();
+    let mut ranges = Vec::new();
+    let mut cursor = 0usize;
+    while let Some(open) = find_ascii_case_insensitive(bytes, cursor, OPEN) {
+        let Some(head_close) =
+            find_ascii_case_insensitive(bytes, open + OPEN.len(), HEAD_CLOSE)
+        else {
+            break;
+        };
+        let opener_end = head_close + HEAD_CLOSE.len();
+        let head = &source[open + OPEN.len()..head_close];
+        if !is_supported_html_head(head)
+            || !is_complete_block_line(source, open, opener_end)
+        {
+            cursor = open + OPEN.len();
+            continue;
+        }
+        let body_start = opener_end;
+        let mut close_cursor = body_start;
+        let close = loop {
+            let Some(close) =
+                find_ascii_case_insensitive(bytes, close_cursor, CLOSE)
+            else {
+                return ranges;
+            };
+            let close_end = close + CLOSE.len();
+            if is_complete_block_line(source, close, close_end) {
+                break close;
+            }
+            close_cursor = close + OPEN.len();
+        };
+        ranges.push(body_start..close);
+        cursor = close + CLOSE.len();
+    }
+    ranges
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) fn substitute_list_pages_variables_inner(
     template: &str,
@@ -1896,7 +2042,9 @@ pub(super) fn substitute_list_pages_variables_inner(
     compat_html: &mut CompatHtmlFragments,
     compat_text: &mut CompatTextFragments,
     mut generated_slots: Option<&mut Vec<ListPagesGeneratedSlot>>,
+    mut runtime_scalar_ranges: Option<&mut Vec<Range<usize>>>,
 ) -> String {
+    let html_body_ranges = collect_list_pages_html_body_ranges(template);
     let full_slug = page.slug.as_deref().unwrap_or("");
     // Page-query rows already retain Wikidot's normalized full slug, including
     // a non-default category prefix. Reconstructing it would duplicate that prefix.
@@ -1909,11 +2057,15 @@ pub(super) fn substitute_list_pages_variables_inner(
             .unwrap_or(full_slug)
     };
     let link = format!("http://{}.wikidot.com/{full_slug}", context.site);
-    let title = page.title.as_deref().unwrap_or(slug);
-    let title = sanitize_list_pages_title(title);
-    let title_linked = render_list_pages_linked_title(full_slug, &title, compat_text);
     let snapshot = context.snapshot_displays.get(&page.page_id);
     let runtime = context.runtime_displays.get(&page.page_id);
+    let title = match snapshot.and_then(|snapshot| snapshot.title_shown.as_deref()) {
+        Some("") => wikidot_empty_imported_title_label(full_slug),
+        Some(title) => title.to_owned(),
+        None => page.title.as_deref().unwrap_or(slug).to_owned(),
+    };
+    let title = sanitize_list_pages_title(&title);
+    let title_linked = render_list_pages_linked_title(full_slug, &title, compat_text);
     let created_by_snapshot =
         snapshot.and_then(|snapshot| snapshot.created_by_name.as_deref());
     let updated_by_snapshot =
@@ -2130,8 +2282,15 @@ pub(super) fn substitute_list_pages_variables_inner(
             let matched = captures
                 .get(0)
                 .expect("ListPages variable capture exists");
+            let inside_html_block = html_body_ranges
+                .iter()
+                .any(|range| range.start <= matched.start() && matched.end() <= range.end);
             substituted_cursor += matched.start() - source_cursor;
             let replacement_start = substituted_cursor;
+            let runtime_scalar = generated_slots.is_some()
+                && runtime_scalar_ranges.is_some()
+                && list_pages_variable_capture_is_valid(captures)
+                && captures["name"].eq_ignore_ascii_case("title");
             let mut replacement = if !list_pages_variable_capture_is_valid(captures) {
                 captures[0].to_owned()
             } else {
@@ -2184,15 +2343,24 @@ pub(super) fn substitute_list_pages_variables_inner(
                     .clone()
                     .unwrap_or_else(|| captures[0].to_owned()),
                 "created_by_id" => created_by_id.clone(),
-                "created_at" | "createdat" | "date" => protect_list_pages_generated_html(
-                    format_list_pages_created_at(
-                        created_at,
-                        captures.name("format").map(|matched| matched.as_str()),
+                "created_at" | "createdat" | "date"
+                    if inside_html_block && captures.name("format").is_none() =>
+                {
+                    created_at.map_or_else(String::new, |created_at| {
+                        format!("%%date|{}%%", created_at.unix_timestamp())
+                    })
+                }
+                "created_at" | "createdat" | "date" => {
+                    protect_list_pages_generated_html(
+                        format_list_pages_created_at(
+                            created_at,
+                            captures.name("format").map(|matched| matched.as_str()),
+                            context.render_generated_html,
+                        ),
                         context.render_generated_html,
-                    ),
-                    context.render_generated_html,
-                    compat_html,
-                ),
+                        compat_html,
+                    )
+                }
                 "updated_by" | "updatedby" => updated_by.clone(),
                 "updated_by_linked"
                 | "updatedbylinked"
@@ -2458,6 +2626,12 @@ pub(super) fn substitute_list_pages_variables_inner(
             };
             if generated_slots.is_some() {
                 neutralize_authored_markers(&mut replacement);
+            }
+            if runtime_scalar
+                && !replacement.is_empty()
+                && let Some(ranges) = runtime_scalar_ranges.as_mut()
+            {
+                ranges.push(replacement_start..replacement_start + replacement.len());
             }
             source_cursor = matched.end();
             substituted_cursor = replacement_start + replacement.len();

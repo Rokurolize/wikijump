@@ -24,9 +24,14 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, SAMPLE_USER_ID, SYSTEM_USER_ID};
 use deepwell::hash::k12_hash;
-use deepwell::services::{RenderService, RequestContext, TextService};
+use deepwell::models::file;
+use deepwell::services::blob::EMPTY_BLOB_HASH;
+use deepwell::services::file_revision::CreateFirstFileRevision;
+use deepwell::services::{
+    FileRevisionService, RenderService, RequestContext, TextService,
+};
 use deepwell::types::Reference;
-use sea_orm::{ConnectionTrait, Statement, Value};
+use sea_orm::{ActiveModelTrait, ConnectionTrait, Set, Statement, Value};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -89,6 +94,41 @@ async fn set_page_category(
         ))
         .await
         .expect("failed to set deterministic page category");
+}
+
+async fn create_listpages_file_fixture(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    name: &str,
+    mime: &str,
+) {
+    let file = file::ActiveModel {
+        name: Set(name.to_owned()),
+        site_id: Set(site_id),
+        page_id: Set(page_id),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("ListPages file fixture should be inserted");
+    FileRevisionService::create_first(
+        runner.context(),
+        CreateFirstFileRevision {
+            site_id,
+            page_id,
+            file_id: file.file_id,
+            user_id: ADMIN_USER_ID,
+            name: name.to_owned(),
+            s3_hash: EMPTY_BLOB_HASH,
+            size: 0,
+            mime: mime.to_owned(),
+            blob_created: false,
+            revision_comments: "create ListPages file fixture".to_owned(),
+        },
+    )
+    .await
+    .expect("ListPages file revision fixture should be created");
 }
 
 #[tokio::test]
@@ -216,6 +256,98 @@ After"#;
 }
 
 #[tokio::test]
+async fn listpages_title_order_is_case_insensitive() {
+    const CATEGORY: &str = "listpages-title-order";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title) in [
+        ("listpages-title-order:3law", "3law Japanese preview"),
+        (
+            "listpages-title-order:3law-7ow",
+            "3law-7ow Japanese preview",
+        ),
+        (
+            "listpages-title-order:3lawcracked",
+            "3lawcracked Japanese preview",
+        ),
+        (
+            "listpages-title-order:3law-pride",
+            "3law-pride Japanese preview",
+        ),
+        ("listpages-title-order:aces", "Aces"),
+        ("listpages-title-order:anon", "Anon"),
+        ("listpages-title-order:a-problematic", "A-problematic"),
+        ("listpages-title-order:ar", "Ar"),
+        ("listpages-title-order:creating-pages", "Creating Pages"),
+        ("listpages-title-order:css-themes", "CSS Themes"),
+        ("listpages-title-order:template", "_template"),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(slug.into())),
+        });
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": "ListPages title-order fixture.",
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "ListPages case-insensitive title-order fixture",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+    }
+
+    let html = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages title order",
+        format!(
+            "[[module ListPages category=\"{CATEGORY}\" order=\"title\" \
+             separate=\"no\"]]\n%%title%%\n[[/module]]",
+        ),
+    )
+    .await
+    .expect("ListPages title-order preview should render")
+    .html_output
+    .body;
+
+    let ordered_titles = [
+        "3law Japanese preview",
+        "3law-7ow Japanese preview",
+        "3lawcracked Japanese preview",
+        "3law-pride Japanese preview",
+        "Aces",
+        "Anon",
+        "A-problematic",
+        "Ar",
+        "Creating Pages",
+        "CSS Themes",
+        "_template",
+    ];
+    let positions = ordered_titles.map(|title| {
+        html.find(title)
+            .unwrap_or_else(|| panic!("{title} row should render:\n{html}"))
+    });
+    assert!(
+        positions.windows(2).all(|pair| pair[0] < pair[1]),
+        "live Wikidot title order is case-insensitive and ignores punctuation for its primary collation key:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn linked_listpages_values_keep_authored_row_block_syntax() {
     const TARGET_SLUG: &str = "listpages-linked-block-row-target";
 
@@ -272,6 +404,167 @@ async fn linked_listpages_values_keep_authored_row_block_syntax() {
             && preview.contains(&format!(r#"href="/{TARGET_SLUG}""#))
             && !preview.contains("[[div"),
         "typed linked slots must not make their authored row block syntax literal:\n{preview}",
+    );
+}
+
+#[tokio::test]
+async fn delayed_listpages_rows_keep_wikidot_whitespace_boundaries() {
+    const TARGET_SLUG: &str = "listpages-delayed-whitespace-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "ListPages delayed whitespace target",
+            "title": "ListPages Delayed Whitespace Target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "ListPages delayed whitespace fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages delayed whitespace row",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{}\" separate=\"no\"]]\n",
+                "ROW %%updated_at%%\n",
+                "     \n",
+                "[[=]]\n",
+                "CENTER\n",
+                "[[/=]]\n",
+                "> = ##brown|**%%updated_at%%**##\n",
+                "En date: [[span style=\"color: rgb(255, 230, 0);\"]] JAUNE [[/span]].\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("a delayed row with runtime scalars and legacy whitespace should render")
+    .html_output
+    .body;
+
+    assert!(
+        !preview.contains("<br>"),
+        "a spaces-only source line must not become an active break after scalar binding:\n{preview}",
+    );
+    assert!(
+        preview.contains(r#"<div style="text-align: center;"><p>CENTER</p></div>"#),
+        "the centered block after a delayed scalar should retain its block boundary:\n{preview}",
+    );
+    assert!(
+        preview.contains(r#"<p style="text-align: center;">"#)
+            && !preview.contains("<p>= ")
+            && !preview.contains("<p> = "),
+        "the centered quote marker must not become visible row text:\n{preview}",
+    );
+    assert!(
+        preview.contains(r#">JAUNE</span> .</p>"#),
+        "an authored space before the span closer belongs outside the closed span:\n{preview}",
+    );
+
+    let static_quote_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages static quote row",
+        format!(
+            concat!(
+                r#"[[module ListPages name=\"{}\" category=\"*\" limit="1"]]"#,
+                "\n> = ##brown|**DATE**##\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("the live-observed legacy opener and static quote row should render")
+    .html_output
+    .body;
+
+    assert!(
+        static_quote_preview.contains(r#"<blockquote><p style="text-align: center;">"#)
+            && !static_quote_preview.contains("<p>= ")
+            && !static_quote_preview.contains("<p> = "),
+        "a static centered quote row must not expose its alignment marker:\n{static_quote_preview}",
+    );
+}
+
+#[tokio::test]
+async fn delayed_listpages_rows_register_authored_html_blocks() {
+    const TARGET_SLUG: &str = "listpages-delayed-html-block-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "ListPages delayed HTML block target",
+            "title": "ListPages Delayed HTML Block Target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "ListPages delayed HTML block fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages delayed HTML block row",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{}\" separate=\"no\"]]\n",
+                "%%title%%\n",
+                "[[html]]<strong>ROW_HTML_PAYLOAD</strong>[[/html]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("an authored HTML block in a delayed ListPages row should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(r#"class="html-block-iframe""#)
+            && preview.contains(r#"src="/search:site/html/"#)
+            && !preview.contains(r#"src="https://example.com/""#)
+            && !preview.contains("ROW_HTML_PAYLOAD"),
+        "ListPages HTML blocks must retain their runtime route metadata after delayed binding:\n{preview}",
     );
 }
 
@@ -802,6 +1095,407 @@ async fn ensure_wikidot_import_snapshot_tables(runner: &TestRunner) {
         "#,
     )
     .await;
+    execute_sql(
+        runner,
+        r#"
+        ALTER TABLE wikidot_page_snapshot
+        ADD COLUMN IF NOT EXISTS wikidot_size BIGINT
+            CHECK (wikidot_size >= 0)
+        "#,
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn imported_wikidot_size_controls_size_order_and_substitution() {
+    const CATEGORY: &str = "listpages-imported-size";
+    const LARGE_SLUG: &str = "listpages-imported-size:live-large";
+    const SMALL_SLUG: &str = "listpages-imported-size:live-small";
+    const IMPORT_RUN_ID: i64 = 7_700_002;
+
+    let mut runner = TestRunner::setup().await;
+    ensure_wikidot_import_snapshot_tables(&runner).await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let mut created_pages = Vec::new();
+    for (slug, wikitext, title) in [
+        (LARGE_SLUG, "x", "Imported Live Large"),
+        (
+            SMALL_SLUG,
+            "this local source is deliberately much longer",
+            "Imported Live Small",
+        ),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(slug.into())),
+        });
+        created_pages.push(run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": wikitext,
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "imported Wikidot size compatibility fixture",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        ));
+    }
+    let large = &created_pages[0];
+    let small = &created_pages[1];
+
+    execute_sql(
+        &runner,
+        &format!(
+            r#"
+            INSERT INTO wikidot_corpus_import_run (
+                import_run_id,
+                site_id,
+                source_branch,
+                source_site,
+                manifest_sha256,
+                manifest_row_count,
+                complete_inventory,
+                state,
+                summary
+            ) VALUES (
+                {IMPORT_RUN_ID},
+                {site_id},
+                'size-fixture',
+                'sandbox-for-codex',
+                decode(repeat('33', 32), 'hex'),
+                2,
+                false,
+                'metadata_done',
+                '{{}}'::jsonb
+            )
+            "#,
+        ),
+    )
+    .await;
+    execute_sql(
+        &runner,
+        &format!(
+            r#"
+            INSERT INTO wikidot_page_snapshot (
+                page_id,
+                source_branch,
+                source_site,
+                source_entity_id,
+                source_fullname,
+                source_created_at,
+                source_updated_at,
+                source_revision_count,
+                imported_rating,
+                created_by_name,
+                updated_by_name,
+                title_shown,
+                parent_fullname,
+                comments,
+                commented_at,
+                commented_by_name,
+                source_sha256,
+                meta_sha256,
+                meta_json,
+                last_import_run_id,
+                wikidot_size
+            ) VALUES
+            (
+                {},
+                'size-fixture',
+                'sandbox-for-codex',
+                '22222222-2222-4222-8222-222222222222',
+                '{LARGE_SLUG}',
+                TIMESTAMPTZ '2026-05-26T00:00:00Z',
+                TIMESTAMPTZ '2026-05-26T00:00:00Z',
+                1,
+                0,
+                NULL,
+                NULL,
+                'Imported Live Large',
+                NULL,
+                0,
+                NULL,
+                NULL,
+                decode(repeat('44', 32), 'hex'),
+                decode(repeat('55', 32), 'hex'),
+                '{{"fullname":"{LARGE_SLUG}","size":100}}'::jsonb,
+                {IMPORT_RUN_ID},
+                100
+            ),
+            (
+                {},
+                'size-fixture',
+                'sandbox-for-codex',
+                '33333333-3333-4333-8333-333333333333',
+                '{SMALL_SLUG}',
+                TIMESTAMPTZ '2026-05-26T00:00:01Z',
+                TIMESTAMPTZ '2026-05-26T00:00:01Z',
+                1,
+                0,
+                NULL,
+                NULL,
+                'Imported Live Small',
+                NULL,
+                0,
+                NULL,
+                NULL,
+                decode(repeat('66', 32), 'hex'),
+                decode(repeat('77', 32), 'hex'),
+                '{{"fullname":"{SMALL_SLUG}","size":2}}'::jsonb,
+                {IMPORT_RUN_ID},
+                2
+            )
+            "#,
+            large.page_id, small.page_id,
+        ),
+    )
+    .await;
+
+    let html = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Imported size preview",
+        format!(
+            "[[module ListPages category=\"{CATEGORY}\" order=\"size desc\" \
+             separate=\"no\"]]\n%%name%%|%%size%%\n[[/module]]",
+        ),
+    )
+    .await
+    .expect("imported size ListPages preview should render")
+    .html_output
+    .body;
+
+    let large_row = html
+        .find("live-large|100")
+        .unwrap_or_else(|| panic!("the imported large size should render:\n{html}"));
+    let small_row = html
+        .find("live-small|2")
+        .unwrap_or_else(|| panic!("the imported small size should render:\n{html}"));
+    assert!(
+        large_row < small_row,
+        "Wikidot's captured page size must control both ordering and %%size%% \
+         even when the normalized local source lengths imply the opposite:\n{html}",
+    );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn imported_wikidot_revision_count_controls_revisions_order_and_substitution() {
+    const CATEGORY: &str = "listpages-imported-revisions";
+    const LARGE_SLUG: &str = "listpages-imported-revisions:z-live-large";
+    const TIED_SLUG: &str = "listpages-imported-revisions:a-live-tied";
+    const SMALL_SLUG: &str = "listpages-imported-revisions:a-live-small";
+    const IMPORT_RUN_ID: i64 = 7_700_003;
+
+    let mut runner = TestRunner::setup().await;
+    ensure_wikidot_import_snapshot_tables(&runner).await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let mut created_pages = Vec::new();
+    for (slug, title) in [
+        (LARGE_SLUG, "Imported Live Revision Large"),
+        (TIED_SLUG, "Imported Live Revision Tied"),
+        (SMALL_SLUG, "Imported Live Revision Small"),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(slug.into())),
+        });
+        created_pages.push(run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": "one normalized local revision",
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "imported Wikidot revision-count compatibility fixture",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        ));
+    }
+    let large = &created_pages[0];
+    let tied = &created_pages[1];
+    let small = &created_pages[2];
+
+    execute_sql(
+        &runner,
+        &format!(
+            r#"
+            INSERT INTO wikidot_corpus_import_run (
+                import_run_id,
+                site_id,
+                source_branch,
+                source_site,
+                manifest_sha256,
+                manifest_row_count,
+                complete_inventory,
+                state,
+                summary
+            ) VALUES (
+                {IMPORT_RUN_ID},
+                {site_id},
+                'revision-count-fixture',
+                'sandbox-for-codex',
+                decode(repeat('88', 32), 'hex'),
+                3,
+                false,
+                'metadata_done',
+                '{{}}'::jsonb
+            )
+            "#,
+        ),
+    )
+    .await;
+    execute_sql(
+        &runner,
+        &format!(
+            r#"
+            INSERT INTO wikidot_page_snapshot (
+                page_id,
+                source_branch,
+                source_site,
+                source_entity_id,
+                source_fullname,
+                source_created_at,
+                source_updated_at,
+                source_revision_count,
+                imported_rating,
+                created_by_name,
+                updated_by_name,
+                title_shown,
+                parent_fullname,
+                comments,
+                commented_at,
+                commented_by_name,
+                source_sha256,
+                meta_sha256,
+                meta_json,
+                last_import_run_id
+            ) VALUES
+            (
+                {},
+                'revision-count-fixture',
+                'sandbox-for-codex',
+                '44444444-4444-4444-8444-444444444444',
+                '{LARGE_SLUG}',
+                TIMESTAMPTZ '2026-05-26T00:00:00Z',
+                TIMESTAMPTZ '2026-05-26T00:00:00Z',
+                53,
+                0,
+                NULL,
+                NULL,
+                'Imported Live Revision Large',
+                NULL,
+                0,
+                NULL,
+                NULL,
+                decode(repeat('99', 32), 'hex'),
+                decode(repeat('aa', 32), 'hex'),
+                '{{"fullname":"{LARGE_SLUG}","page_id":200,"revision_count":53}}'::jsonb,
+                {IMPORT_RUN_ID}
+            ),
+            (
+                {},
+                'revision-count-fixture',
+                'sandbox-for-codex',
+                '55555555-5555-4555-8555-555555555555',
+                '{TIED_SLUG}',
+                TIMESTAMPTZ '2026-05-26T00:00:01Z',
+                TIMESTAMPTZ '2026-05-26T00:00:01Z',
+                53,
+                0,
+                NULL,
+                NULL,
+                'Imported Live Revision Tied',
+                NULL,
+                0,
+                NULL,
+                NULL,
+                decode(repeat('bb', 32), 'hex'),
+                decode(repeat('cc', 32), 'hex'),
+                '{{"fullname":"{TIED_SLUG}","page_id":100,"revision_count":53}}'::jsonb,
+                {IMPORT_RUN_ID}
+            ),
+            (
+                {},
+                'revision-count-fixture',
+                'sandbox-for-codex',
+                '66666666-6666-4666-8666-666666666666',
+                '{SMALL_SLUG}',
+                TIMESTAMPTZ '2026-05-26T00:00:02Z',
+                TIMESTAMPTZ '2026-05-26T00:00:02Z',
+                2,
+                0,
+                NULL,
+                NULL,
+                'Imported Live Revision Small',
+                NULL,
+                0,
+                NULL,
+                NULL,
+                decode(repeat('dd', 32), 'hex'),
+                decode(repeat('ee', 32), 'hex'),
+                '{{"fullname":"{SMALL_SLUG}","page_id":50,"revision_count":2}}'::jsonb,
+                {IMPORT_RUN_ID}
+            )
+            "#,
+            large.page_id, tied.page_id, small.page_id,
+        ),
+    )
+    .await;
+
+    let html = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Imported revision count preview",
+        format!(
+            "[[module ListPages category=\"{CATEGORY}\" order=\"revisions desc\" \
+             separate=\"no\"]]\n%%name%%|%%revisions%%\n[[/module]]",
+        ),
+    )
+    .await
+    .expect("imported revision-count ListPages preview should render")
+    .html_output
+    .body;
+
+    let large_row = html
+        .find("z-live-large|53")
+        .unwrap_or_else(|| panic!("the imported large revision count should render:\n{html}"));
+    let small_row = html
+        .find("a-live-small|2")
+        .unwrap_or_else(|| panic!("the imported small revision count should render:\n{html}"));
+    let tied_row = html
+        .find("a-live-tied|53")
+        .unwrap_or_else(|| panic!("the tied imported revision count should render:\n{html}"));
+    assert!(
+        large_row < tied_row && tied_row < small_row,
+        "Wikidot's captured revision count must control both ordering and \
+         %%revisions%%, with live page identity breaking equal-count ties in \
+         the same direction, even when normalized local histories tie:\n{html}",
+    );
+
+    runner.teardown().await;
 }
 
 #[tokio::test]
@@ -1408,6 +2102,37 @@ async fn link_to_listpages_selects_only_linking_pages() {
 }
 
 #[tokio::test]
+async fn preview_link_to_dot_drops_the_selector_without_a_current_page_identity() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let html = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved ListPages link_to current-page preview",
+        concat!(
+            "[[module ListPages category=\"*\" name=\"component:image-block\" ",
+            "link_to=\".\" separate=\"no\"]]\n",
+            "ROW|%%fullname%%\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an unresolved preview link_to current-page selector should render")
+    .html_output
+    .body;
+
+    assert!(
+        html.contains("ROW|component:image-block"),
+        "live Wikidot drops link_to=\".\" when PagePreview has no persisted \
+         current page identity instead of querying a made-up preview slug:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_total_counts_matches_beyond_the_rendered_page() {
     // Deliberately outside the selector glob below; a source page that matched
     // its own query would be counted among the results.
@@ -1855,6 +2580,244 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "an unsaved preview should still query its site:\n{static_preview}",
     );
 
+    let empty_body_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        "[[module ListPages]]\n\n[[/module]]".to_owned(),
+    )
+    .await
+    .expect("an empty ListPages body should use the default row template")
+    .html_output
+    .body;
+    assert!(
+        empty_body_preview.contains("ListPages Preview Context Target")
+            && empty_body_preview.contains("[[/module]]"),
+        "Wikidot executes an empty ListPages body with its default row template \
+         while leaving the raw closer literal:\n{empty_body_preview}",
+    );
+
+    let html_encoded_script_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages category=&quot;fragment&quot; ",
+            "limit=&quot;1&quot; order=&quot;name&quot;]]",
+            "</p><p>ENCODED-BODY=%%title%%</p><p>[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an HTML-encoded script fragment should retain the live module boundary")
+    .html_output
+    .body;
+    assert!(
+        html_encoded_script_preview.contains("ListPages Preview Context Target")
+            && html_encoded_script_preview.contains("by Administrator")
+            && !html_encoded_script_preview.contains("ENCODED-BODY=")
+            && !html_encoded_script_preview.contains("[[/module]]"),
+        "Wikidot drops the HTML-encoded script tail and executes the default \
+         ListPages row template:\n{html_encoded_script_preview}",
+    );
+
+    let inline_raw_documentation_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[module ListPages]]@@. @@[[html]]@@ DOC PROSE\n",
+                "more @@[[html]]@@ prose\n",
+                "@@[[/module]]\n",
+                "[[module ListPages name=\"{}\"]]",
+                "LATER=%%title%%[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("an inline-raw documentation tail should not swallow later modules")
+    .html_output
+    .body;
+    assert!(
+        inline_raw_documentation_preview.contains("[[module ListPages]]")
+            && inline_raw_documentation_preview.contains("DOC PROSE")
+            && inline_raw_documentation_preview
+                .contains("LATER=ListPages Preview Context Target")
+            && !inline_raw_documentation_preview.contains("TODO: module ListPages"),
+        "Wikidot keeps the fake opener literal and executes the later module:\n\
+         {inline_raw_documentation_preview}",
+    );
+
+    let sticky_note_documentation_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages]]@@\n",
+            "@@[[div class=\"seed\"]]DOC@@[[/div]]@@\n",
+            "@@[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("the sticky-note documentation opener should remain literal")
+    .html_output
+    .body;
+    assert!(
+        sticky_note_documentation_preview
+            .contains("[[module ListPages]] [[div class=&quot;seed&quot;]]"),
+        "Wikidot retains one collapsed raw-marker space after the documented \
+         opener:\n{sticky_note_documentation_preview}",
+    );
+
+    let raw_footnote_boundary_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages range=\".\" wrapper=\"no\" separate=\"no\"]]",
+            "@@[[footnote]] **range=\".\"** NOTE [[/footnote]]\n",
+            "@@----@@\n",
+            "@@%%content{2}%%@@\n",
+            "@@----@@\n",
+            "@@[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("the raw leading footnote boundary should render")
+    .html_output
+    .body;
+    assert!(
+        raw_footnote_boundary_preview
+            .starts_with(r#"<p><span style="white-space: pre-wrap;">----</span>"#)
+            && raw_footnote_boundary_preview.contains("%%content{2}%%")
+            && raw_footnote_boundary_preview.contains("@@[[/module]]")
+            && !raw_footnote_boundary_preview.contains("footnoteref")
+            && !raw_footnote_boundary_preview.contains("footnotes-footer")
+            && !raw_footnote_boundary_preview.contains("NOTE"),
+        "Wikidot consumes the leading raw footnote with the ListPages opener but \
+         leaves the later raw template literal:\n{raw_footnote_boundary_preview}",
+    );
+
+    let raw_collapsible_boundary_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages fullname=\"@@##red|definitely-missing-page##@@\" ",
+            "separate=\"yes\" limit=\"250\"]]@@\n",
+            "CONSUMED-DOCUMENTATION\n",
+            "> @@[[module ListPages fullname=\"@@##red|example##@@\"]]@@\n",
+            "[[collapsible show=\"+ Syntax\" hide=\"- Syntax\"]]\n",
+            "VISIBLE-AFTER-BOUNDARY\n",
+            "[[/collapsible]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("the raw collapsible ListPages boundary should render")
+    .html_output
+    .body;
+    assert!(
+        raw_collapsible_boundary_preview
+            .contains(r#"<div class="list-pages-box"></div>"#)
+            && raw_collapsible_boundary_preview.contains("VISIBLE-AFTER-BOUNDARY")
+            && raw_collapsible_boundary_preview.contains("[[/collapsible]]")
+            && !raw_collapsible_boundary_preview.contains("CONSUMED-DOCUMENTATION")
+            && !raw_collapsible_boundary_preview.contains("collapsible-block")
+            && !raw_collapsible_boundary_preview.contains("TODO: module ListPages"),
+        "Wikidot executes the unclosed ListPages opener, consumes through the \
+         first evidenced collapsible opening, and resumes at its body:\n\
+         {raw_collapsible_boundary_preview}",
+    );
+
+    let raw_footnote_head_collapsible_preview =
+        RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            concat!(
+                "[[module ListPages @@raw head [[/footnote]]",
+                "CONSUMED-FOOTNOTE-PROSE-ONE\n\n",
+                "CONSUMED-FOOTNOTE-PROSE-TWO\n",
+                "[[collapsible show=\"CONSUMED-OPEN\" hide=\"CONSUMED-CLOSE\"]]\n",
+                "VISIBLE-FOOTNOTE-BOUNDARY-BODY\n",
+                "[[/collapsible]]",
+            )
+            .to_owned(),
+        )
+        .await
+        .expect("the raw-footnote head collapsible boundary should render")
+        .html_output
+        .body;
+    assert!(
+        raw_footnote_head_collapsible_preview.contains("VISIBLE-FOOTNOTE-BOUNDARY-BODY")
+            && raw_footnote_head_collapsible_preview.contains("[[/collapsible]]")
+            && !raw_footnote_head_collapsible_preview.contains("CONSUMED-FOOTNOTE-PROSE")
+            && !raw_footnote_head_collapsible_preview.contains("CONSUMED-OPEN")
+            && !raw_footnote_head_collapsible_preview.contains("TODO: module ListPages"),
+        "Wikidot consumes a raw-footnote ListPages opener through the first \
+         collapsible opening and resumes at its body:\n\
+         {raw_footnote_head_collapsible_preview}",
+    );
+
+    let raw_unclosed_preservation_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[module ListPages fullname=\"definitely-missing-page\" ",
+                "separate=\"yes\" limit=\"250\"]]@@\n",
+                "PRESERVED-DOCUMENTATION\n",
+                "@@\n",
+                "[[module ListPages name=\"{TARGET_SLUG}\"]]",
+                "LATER=%%fullname%%[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("the unsupported unclosed raw boundary should fail closed")
+    .html_output
+    .body;
+    assert!(
+        raw_unclosed_preservation_preview.contains(
+            "[[module654 ListPages fullname=&quot;definitely-missing-page&quot;",
+        ) && raw_unclosed_preservation_preview.contains("PRESERVED-DOCUMENTATION")
+            && raw_unclosed_preservation_preview
+                .contains(&format!("LATER={TARGET_SLUG}"))
+            && !raw_unclosed_preservation_preview.contains("TODO: module ListPages"),
+        "Wikidot preserves the unsupported opener as legacy module654 text \
+         without hiding a later valid module:\n{raw_unclosed_preservation_preview}",
+    );
+
+    let trailing_at_marker_row_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages created_by=\"morhadow\" tags=\"es\" ",
+            "order=\"rating\" limit=\"5\" separate=\"no\"@@]]@@\n",
+            "@@*@@ %%title_linked%% (+%%rating%%)\n",
+            "@@[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("the corpus trailing-at-marker row tail should execute")
+    .html_output
+    .body;
+    assert_eq!(
+        trailing_at_marker_row_preview.trim(),
+        r#"<div class="list-pages-box"></div>"#,
+        "Wikidot executes this exact raw-row tail as an empty query instead of \
+         preserving its opener as module654 text:\n{trailing_at_marker_row_preview}",
+    );
+
     let unknown_variable_preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site_id,
@@ -2288,6 +3251,60 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
     assert!(
         zero_row_plain_line_blocks.contains("<p>PLAIN-PRE</p><p>PLAIN-POST</p>"),
         "live Wikidot parses zero-row prependLine and appendLine as independent paragraphs:\n{zero_row_plain_line_blocks}",
+    );
+
+    let zero_row_continued_prepend = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages ",
+            "category=\"verification-listpages-absent-continued-prepend\" ",
+            "separate=\"no\" prependLine=\"\n**Seiten mit Wertung:** _\n\"]]\n",
+            "%%title_linked%%\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a continued zero-row prepend line should render")
+    .html_output
+    .body;
+    assert!(
+        zero_row_continued_prepend.contains(concat!(
+            r#"<div class="list-pages-box"><strong>Seiten mit Wertung:</strong><br>"#,
+            "\n<br>",
+        )) && !zero_row_continued_prepend.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
+        "the wrapper close must remain a block boundary after a continued prepend line:\n\
+         {zero_row_continued_prepend}",
+    );
+
+    let zero_row_before_escaped_inline = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        concat!(
+            "[[module ListPages ",
+            "category=\"verification-listpages-absent-before-escaped-inline\"]]\n",
+            "ZERO-ROW\n",
+            "[[/module]]\n",
+            "@@ @@\n",
+            "AFTER",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a zero-row wrapper before escaped inline source should render")
+    .html_output
+    .body;
+    assert!(
+        zero_row_before_escaped_inline.contains(r#"<div class="list-pages-box"></div>"#)
+            && zero_row_before_escaped_inline
+                .contains(r#"<span style="white-space: pre-wrap;"> </span>"#)
+            && zero_row_before_escaped_inline.contains("AFTER")
+            && !zero_row_before_escaped_inline.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
+        "the generated wrapper must remain a sibling block before escaped source:\n\
+         {zero_row_before_escaped_inline}",
     );
 
     let zero_row_table_line_blocks = RenderService::render_wikidot_page_preview(
@@ -3304,6 +4321,99 @@ async fn linked_listpages_values_keep_the_runtime_wrapper_outside_list_mode() {
 }
 
 #[tokio::test]
+async fn static_listpages_numbered_rows_remain_generated_block_html() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages numbered rows",
+        concat!(
+            "[[module ListPages category=\"*\" ",
+            "name=\"component:image-block\" separate=\"no\"]]\n",
+            "# [[[first-target|First row]]] _\n",
+            "[[span class=\"page_tags\"]] [[/span]]\n",
+            "# [[[*https://example.com/second-target|Second row]]] _\n",
+            "[[span class=\"page_tags\"]]Second detail[[/span]]\n",
+            "# [[[third-target|Third row]]] _\n",
+            "[[span class=\"page_tags\"]]\u{3000}[[/span]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("static numbered ListPages rows should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(r#"<div class="list-pages-box"><ol>"#)
+            && preview.contains(concat!(
+                r#"<li><a class="newpage" href="/first-target">First row</a><br>"#,
+                "\n</li>",
+            ))
+            && !preview.contains(r#"<span class="page_tags"> </span>"#)
+            && preview.contains(concat!(
+                r#"<li><a target="_blank" href="https://example.com/second-target">"#,
+                "Second row</a><br>",
+                "\n",
+                r#"<span class="page_tags">Second detail</span></li>"#,
+            ))
+            && preview.contains(concat!(
+                r#"<li><a class="newpage" href="/third-target">Third row</a><br>"#,
+                "\n",
+                r#"<span class="page_tags">　</span></li>"#,
+            ))
+            && preview.matches("<ol>").count() == 1
+            && preview.contains("</ol>")
+            && !preview.contains("&lt;ol")
+            && !preview.contains("data-wikijump-compat-listpages"),
+        "generated numbered rows must cross the trusted block boundary intact:\n{preview}",
+    );
+}
+
+#[tokio::test]
+async fn static_listpages_numbered_rows_retain_inline_footnotes() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages numbered-row footnote",
+        concat!(
+            "[[module ListPages category=\"*\" ",
+            "name=\"component:image-block\" separate=\"no\"]]\n",
+            "# Row[[footnote]]Detail -- //Author.//[[/footnote]]\n",
+            "[[footnoteblock]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a static numbered ListPages row with a footnote should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(concat!(
+            "<ol>\n<li>Row<sup class=\"footnoteref\">",
+            "<a id=\"footnoteref-1\" href=\"javascript:;\" ",
+        )) && preview.contains(
+            r#"<div class="footnote-footer" id="footnote-1">"#,
+        ) && preview.contains("<em>Author.</em>")
+            && !preview.contains("[[footnote]]")
+            && !preview.contains("[[/footnote]]"),
+        "generated numbered rows must leave inline footnotes to FTML List mode:\n{preview}",
+    );
+}
+
+#[tokio::test]
 async fn linked_listpages_values_keep_separate_row_containers_outside_list_mode() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -3480,6 +4590,274 @@ async fn one_row_listpages_expands_generated_missing_includes() {
 }
 
 #[tokio::test]
+async fn zero_row_listpages_still_renders_its_wikidot_rss_link() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Zero-row ListPages RSS link",
+        concat!(
+            "[[module ListPages perPage=\"1\" range=\".\" ",
+            "rss=\"Most Recently Translated\"]]\n",
+            "NO MATCH\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a zero-row ListPages feed should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(r#"<div class="feedinfo">"#)
+            && preview.contains(concat!(
+                "http://scp-wiki.wikidot.com/feed/pages/category/_default/",
+                "range/./limit/1/t/Most+Recently+Translated",
+            ))
+            && preview.contains(">RSS feed</a>")
+            && !preview.contains("NO MATCH"),
+        "zero selected rows must not suppress the independent RSS link:\n{preview}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_row_keeps_content_across_repeated_empty_raw_boundaries() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages repeated empty raw boundaries",
+        concat!(
+            "[[module ListPages limit=\"1\" category=\"*\" ",
+            "order=\"updated_at desc\" NOTA: o fim do module está na parte de ",
+            "baixo da página. Também, se você tentar importar um component de ",
+            "outra wiki dentro do module, que tudo entro do module desaparecerá.]]\n",
+            "ALPHA %%updated_at|%Y/%m/%d%%",
+            "[[footnote]]ALPHA NOTE[[/footnote]]\n\n",
+            "@@@@\n",
+            "@@@@\n",
+            "BRAVO\n\n",
+            "@@@@\n",
+            "@@@@\n",
+            "[[=]]\n",
+            "[[div class=\"addendum\"]]\n",
+            "CHARLIE\n",
+            "[[/div]]\n",
+            "[[/=]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("the complete legacy ListPages row should render")
+    .html_output
+    .body;
+
+    for marker in ["ALPHA", "ALPHA NOTE", "BRAVO", "CHARLIE"] {
+        assert!(
+            preview.contains(marker),
+            "the row prefix or suffix disappeared at an empty raw boundary ({marker}):\n\
+             {preview}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn delayed_listpages_row_keeps_trailing_feed_as_generated_block_html() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Generated ListPages feed after delayed row",
+        concat!(
+            "[[module ListPages category=\"*\" name=\"component:image-block\" ",
+            "separate=\"no\" rss=\"Delayed row feed\"]]\n",
+            "%%created_by%%\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a generated feed after a delayed author row should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(r#"<div class="feedinfo">"#)
+            && preview.contains(">RSS feed</a>")
+            && !preview.contains("&lt;div class=&quot;feedinfo&quot;")
+            && !preview.contains("data-wikijump-compat-listpages-feed"),
+        "the trailing feed must remain registered block HTML through delayed parsing:\n\
+         {preview}",
+    );
+}
+
+#[tokio::test]
+async fn delayed_listpages_inline_span_row_keeps_trailing_feed_as_generated_block_html() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Generated ListPages feed after a delayed inline-span row",
+        concat!(
+            "[[module ListPages category=\"*\" name=\"component:image-block\" ",
+            "separate=\"no\" rss=\"Delayed inline row feed\"]]\n",
+            "[[span]]%%title_linked%% [[user %%created_by%%]] ",
+            "%%created_at%%[[/span]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a generated feed after a delayed inline-span row should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(r#"<div class="feedinfo">"#)
+            && preview.contains(">RSS feed</a>")
+            && !preview.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
+        "the trailing feed marker must not be stranded inside the inline row paragraph:\n\
+         {preview}",
+    );
+}
+
+#[tokio::test]
+async fn delayed_listpages_table_keeps_trailing_feed_as_generated_block_html() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Generated ListPages feed after delayed table",
+        concat!(
+            "[[module ListPages category=\"*\" name=\"component:image-block\" ",
+            "order=\"rating desc\" separate=\"no\" rss=\"Delayed table feed\" ",
+            "prependLine=\"||~ Page ||~ Rating ||\"]]\n",
+            "|| %%title_linked%% || %%rating%% ||\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a generated feed after a delayed table row should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(r#"<table class="wiki-content-table">"#)
+            && preview.contains(r#"<div class="feedinfo">"#)
+            && preview.contains(">RSS feed</a>")
+            && !preview.contains("&lt;div class=&quot;feedinfo&quot;")
+            && !preview.contains("data-wikijump-compat-listpages-feed"),
+        "the trailing feed must cross the delayed table parse as trusted block HTML:\n\
+         {preview}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_rating_vote_scalars_resolve_authored_expr_envelopes() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages runtime scalar expression",
+        concat!(
+            "[[module ListPages category=\"*\" name=\"component:image-block\" ",
+            "separate=\"no\"]]\n",
+            "%%title_linked%% ",
+            "{{[%%rating%%](+[[#expr (%%rating_votes%%+%%rating%%)/2]]/",
+            "-[[#expr (%%rating_votes%%-%%rating%%)/2]])}} ",
+            "comments=%%comments%% ",
+            "rating-branch=[[#ifexpr %%rating%% < 20 | LOW | HIGH]] ",
+            "size-color=##[[#ifexpr %%size%% > 0 | green | red]]|%%size%%## ",
+            "percent=[[#expr (%%rating_votes%%+%%rating%%)/2/",
+            "%%rating_votes%%*10000%10001/100]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a ListPages expression over rating scalars should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains("<tt>[0](+0/-0)</tt>")
+            && preview.contains("comments=0")
+            && preview.contains("rating-branch=LOW")
+            && preview.contains(r#"size-color=<span style="color: green">"#)
+            && preview.contains("percent=run-time error: division by zero")
+            && !preview.contains("[[#expr")
+            && !preview.contains("[[#ifexpr"),
+        "FTML parser functions should resolve after runtime scalar substitution:\n\
+         {preview}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_empty_runtime_monospace_shells_collapse_authored_spaces() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages empty runtime monospace shells",
+        concat!(
+            "[[module ListPages category=\"*\" name=\"component:image-block\" ",
+            "separate=\"no\"]]\n",
+            "**%%title_linked%%**\n",
+            "##grey|**{{[+%%rating%%](+[[#expr ",
+            "(%%rating_votes%%+%%rating%%)/2]]/-[[#expr ",
+            "(%%rating_votes%%-%%rating%%)/2]])}}** **{{%%comments%%}}**",
+            "[[size 0.9em]]A {{**%%commented_by%%**}} ",
+            "{{**%%commented_at|%y-%m-%d %H:%M%%**}} B[[/size]]##\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("empty ListPages runtime monospace shells should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(r#"<span style="font-size:0.9em;">A B</span>"#)
+            && !preview.contains("<tt></tt>")
+            && !preview.contains("A   B"),
+        "suppressed runtime shells must not preserve one space per removed owner:\n\
+         {preview}",
+    );
+}
+
+#[tokio::test]
 async fn generated_include_keeps_html_only_row_fragments_pending() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -3509,6 +4887,42 @@ async fn generated_include_keeps_html_only_row_fragments_pending() {
             && preview.contains(r#"<span class="odate time_"#)
             && !preview.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
         "HTML-only delayed row fragments must survive generated include expansion:\n{preview}",
+    );
+}
+
+#[tokio::test]
+async fn dynamic_listpages_embed_opener_keeps_a_safe_name_only_iframe() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages dynamic embed opener",
+        concat!(
+            "[[module ListPages category=\"*\" ",
+            "name=\"component:image-block\" separate=\"no\"]]\n",
+            "[[%%content{0}%%embed]]\n",
+            "<iframe name=\"isJPExist\"></iframe>\n",
+            "[[/embed]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a dynamically opened ListPages embed should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(r#"<p><iframe name="isJPExist"></iframe></p>"#)
+            && !preview.contains("[[embed]]")
+            && !preview.contains("[[/embed]]")
+            && !preview.contains("&lt;iframe"),
+        "the exact no-src iframe must cross the existing embed allowlist boundary:\n\
+         {preview}",
     );
 }
 
@@ -3831,6 +5245,148 @@ async fn wikidot_ajax_listpages_p_parameter_selects_the_rendered_page() {
 }
 
 #[tokio::test]
+async fn listpages_first_image_token_disappears_when_the_selected_page_has_no_image() {
+    const TARGET_SLUG: &str = "listpages-first-image-empty-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Target without attachments",
+            "title": "ListPages first-image empty target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "ListPages :first image regression fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages first image",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{}\" separate=\"yes\"]]\n",
+                "[[image :first]]\n",
+                "ROW|%%fullname%%\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("ListPages :first image source should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(&format!("ROW|{TARGET_SLUG}")),
+        "the selected row should still render:\n{preview}",
+    );
+    assert!(
+        !preview.contains(":first")
+            && !preview.contains("local--files//")
+            && !preview.contains("local--resized-images//"),
+        "Wikidot drops :first when the selected page has no attached image:\n{preview}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_first_image_token_uses_the_selected_pages_first_image_attachment() {
+    const TARGET_SLUG: &str = "listpages-first-image-attached-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    let target = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Target with attachments",
+            "title": "ListPages first-image attached target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "ListPages :first image attachment fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    create_listpages_file_fixture(
+        &runner,
+        site_id,
+        target.page_id,
+        "notes.txt",
+        "text/plain",
+    )
+    .await;
+    create_listpages_file_fixture(
+        &runner,
+        site_id,
+        target.page_id,
+        "first image.png",
+        "image/png",
+    )
+    .await;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages first image",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{}\" separate=\"yes\"]]\n",
+                "[[image :first alt=\"Selected preview\"]]\n",
+                "ROW|%%fullname%%\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("ListPages :first image source should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(&format!(
+            "/local--files/{TARGET_SLUG}/first%20image.png"
+        )) && preview.contains(r#"alt="Selected preview""#),
+        "the image token should bind to the first image attachment, not the first non-image file:\n{preview}",
+    );
+    assert!(
+        !preview.contains("notes.txt") && !preview.contains(":first"),
+        "the selected row must not leak the non-image attachment or pseudo target:\n{preview}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_legacy_comparisons_and_unresolved_url_selectors_execute_in_preview() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -3910,22 +5466,89 @@ async fn listpages_legacy_comparisons_and_unresolved_url_selectors_execute_in_pr
         );
     }
 
-    let documented_placeholder = RenderService::render_wikidot_page_preview(
-        runner.context(),
-        site_id,
-        "ListPages documented placeholder preview",
-        "[[module ListPages 属性...]]\n模块主体\n[[/module]]".to_owned(),
-    )
-    .await
-    .expect("the exact live-executing documentation placeholder should render")
-    .html_output
-    .body;
-    assert!(
-        documented_placeholder.contains(r#"<div class="list-pages-box">"#)
-            && !documented_placeholder.contains("[[module ListPages")
-            && documented_placeholder.contains("模块主体"),
-        "the exact corpus placeholder shape executes Wikidot's default ListPages query and row template:\n{documented_placeholder}",
-    );
+    for bare_head in ["属性...", "任意属性...", "???"] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "ListPages inert bare head preview",
+            format!("[[module ListPages {bare_head}]]\n模块主体\n[[/module]]"),
+        )
+        .await
+        .expect("a live-evidenced inert ListPages head should render")
+        .html_output
+        .body;
+        assert!(
+            preview.contains(r#"<div class="list-pages-box">"#)
+                && !preview.contains("[[module ListPages")
+                && preview.contains("模块主体"),
+            "an inert bare head executes Wikidot's default ListPages query and custom row template ({bare_head:?}):\n{preview}",
+        );
+    }
+
+    for prose_tail in [
+        "NOTE: arbitrary words can move freely.",
+        "NOTA: conteúdo muda livremente.",
+        "NOTE: arbitrary [[span]] words.",
+        "NOTE: arbitrary \"quoted words\".",
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "ListPages inert prose tail preview",
+            format!(
+                concat!(
+                    "[[module ListPages category=\"*\" limit=\"1\" ",
+                    "order=\"name\" {}]]\n",
+                    "INERT-PROSE-CUSTOM-ROW|%%fullname%%\n",
+                    "[[/module]]",
+                ),
+                prose_tail,
+            ),
+        )
+        .await
+        .expect("a live-evidenced inert ListPages prose tail should render")
+        .html_output
+        .body;
+        assert!(
+            preview.contains("INERT-PROSE-CUSTOM-ROW")
+                && !preview.contains("[[module ListPages"),
+            "the supported assignments and custom row must execute despite an inert prose tail ({prose_tail:?}):\n{preview}",
+        );
+    }
+
+    for malformed_tail in [
+        r#"mystery="alpha]]"#,
+        r#"alternate="bravo-42]]"#,
+        r#"fullname="main:about]]"#,
+        r#"mystery="alpha   ]]"#,
+        r#"mystery="alpha]"#,
+        r#"mystery="alpha] ]"#,
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "ListPages final unclosed quote preview",
+            format!(
+                concat!(
+                    "[[module ListPages category=\"*\" limit=\"1\" order=\"name\" ",
+                    "{}\n",
+                    "UNTERMINATED-HEAD-CUSTOM-ROW|%%fullname%%\n",
+                    "[[/module]]",
+                ),
+                malformed_tail,
+            ),
+        )
+        .await
+        .expect("a live-evidenced final unclosed quote should render")
+        .html_output
+        .body;
+        assert!(
+            preview.contains(r#"<div class="list-pages-box">"#)
+                && !preview.contains("UNTERMINATED-HEAD-CUSTOM-ROW")
+                && !preview.contains("[[module ListPages"),
+            "the final unclosed quote must consume the authored row and use Wikidot's default template ({malformed_tail:?}):\n{preview}",
+        );
+    }
 
     let missing_parent = RenderService::render_wikidot_page_preview(
         runner.context(),

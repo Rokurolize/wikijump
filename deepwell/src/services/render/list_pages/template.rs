@@ -21,8 +21,7 @@ static LISTPAGES_SECTION_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         .expect("the ListPages section marker regex is valid")
 });
 
-const DEFAULT_LISTPAGES_TEMPLATE: &str =
-    "+ %%title_linked%%\n\nby %%created_by_linked%% %%created_at%%\n\n%%summary%%";
+const DEFAULT_LISTPAGES_TEMPLATE: &str = "+ %%title_linked%%\n\nby %%created_by_linked%% %%created_at|%O ago (%e %b %Y, %H:%M)%%\n\n%%summary%%";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::services::render) enum ListPagesOutputShape {
@@ -437,6 +436,11 @@ impl ListPagesTemplatePlan {
 
     pub(in crate::services::render) fn output_shape(&self) -> ListPagesOutputShape {
         self.output_shape
+    }
+
+    pub(in crate::services::render) fn uses_title(&self) -> bool {
+        self.variables
+            .intersects(&[ListPagesVariable::Title, ListPagesVariable::TitleLinked])
     }
 
     pub(in crate::services::render) fn uses_created_by(&self) -> bool {
@@ -993,7 +997,15 @@ mod section_tests {
         .expect("an empty body section should compile");
 
         assert_eq!(plan.head_section(), Some("H"));
-        assert_eq!(plan.body(), DEFAULT_LISTPAGES_TEMPLATE);
+        assert_eq!(
+            plan.body(),
+            concat!(
+                "+ %%title_linked%%\n\n",
+                "by %%created_by_linked%% ",
+                "%%created_at|%O ago (%e %b %Y, %H:%M)%%\n\n",
+                "%%summary%%",
+            ),
+        );
         assert_eq!(plan.foot_section(), Some("F"));
     }
 
