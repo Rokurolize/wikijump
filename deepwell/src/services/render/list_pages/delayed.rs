@@ -109,10 +109,11 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
     );
     ftml::preproc::typography::substitute_wikidot(&mut prepared_body);
     substitute_literal_advanced_table_opener_typography(&mut prepared_body);
-    if let Some((opening, closing)) = generated_comment_gates {
+    if let Some((opening, closing, standalone_closing)) = generated_comment_gates {
         prepared_body = prepared_body
             .replace(&opening, "[!--")
-            .replace(&closing, "--]");
+            .replace(&closing, "--]")
+            .replace(&standalone_closing, "[!-- --]");
     }
     resolve_outermost_wikidot_iftags(&mut prepared_body, outer_page_tags, compat_text);
     neutralize_authored_markers(&mut prepared_body);
@@ -279,7 +280,8 @@ fn resolve_list_pages_expr_parser_functions(
     let generated_comment_gates =
         protect_generated_parser_function_comment_gates(&mut protected);
     let mut resolved = RenderService::resolve_wikidot_parser_functions(&protected);
-    if let Some((opening, closing)) = generated_comment_gates {
+    if let Some((opening, closing, standalone_closing)) = generated_comment_gates {
+        resolved = resolved.replace(&standalone_closing, "[!-- --]");
         resolved =
             prune_generated_parser_function_comment_gates(resolved, &opening, &closing);
     }
@@ -327,12 +329,13 @@ fn resolve_list_pages_expr_parser_functions(
     *body = restored;
 }
 
-fn protect_generated_parser_function_comment_gates(
+pub(in crate::services::render) fn protect_generated_parser_function_comment_gates(
     source: &mut String,
-) -> Option<(String, String)> {
+) -> Option<(String, String, String)> {
     let mut fragments = CompatTextFragments::new(source);
     let opening = fragments.push("");
     let closing = fragments.push("");
+    let standalone_closing = fragments.push("");
     let mut replacements = Vec::new();
     let mut line_start = 0usize;
 
@@ -419,15 +422,16 @@ fn protect_generated_parser_function_comment_gates(
             replacements.push((
                 line_start + leading..line_start + leading + "[!-- --]".len(),
                 line_start + leading,
-                closing.as_str(),
+                standalone_closing.as_str(),
             ));
         }
         line_start += line.len();
     }
+    replacements.sort_by_key(|(range, _, _)| range.start);
     for (range, _, marker) in replacements.into_iter().rev() {
         source.replace_range(range, marker);
     }
-    Some((opening, closing))
+    Some((opening, closing, standalone_closing))
 }
 
 fn prune_generated_parser_function_comment_gates(
@@ -765,8 +769,11 @@ pub(in crate::services::render) fn resolve_wikidot_parser_functions_outside_list
     let generated_comment_gates =
         protect_generated_parser_function_comment_gates(&mut protected);
     let mut resolved = ftml::preproc::resolve_wikidot_parser_functions(&protected);
-    if let Some((opening, closing)) = generated_comment_gates {
-        resolved = resolved.replace(&opening, "[!--").replace(&closing, "--]");
+    if let Some((opening, closing, standalone_closing)) = generated_comment_gates {
+        resolved = resolved
+            .replace(&opening, "[!--")
+            .replace(&closing, "--]")
+            .replace(&standalone_closing, "[!-- --]");
     }
     fragments.restore(&resolved)
 }
