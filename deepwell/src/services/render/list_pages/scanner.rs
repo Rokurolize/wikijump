@@ -45,7 +45,8 @@ use self::legacy_heads::{
 };
 pub(in crate::services::render) use self::runtime_heads::list_pages_runtime_head_can_execute;
 use self::runtime_heads::{
-    list_pages_bare_comparison_key_is_evidenced, normalize_module_head,
+    list_pages_bare_comparison_key_is_evidenced,
+    list_pages_url_quote_crossing_head_can_execute, normalize_module_head,
     runtime_list_pages_key_is_supported, unresolved_block_conditional_prefix,
 };
 #[cfg(test)]
@@ -896,9 +897,11 @@ impl<'a> ModuleEventScanner<'a> {
             if list_pages_compatibility
                 && quote.is_some()
                 && bytes.get(cursor..cursor + 2) == Some(&b"]]"[..])
-                && list_pages_head_double_quotes_are_balanced(
+                && (list_pages_head_double_quotes_are_balanced(
                     &source[subname_end..cursor],
-                )
+                ) || list_pages_url_quote_crossing_head_can_execute(
+                    source[subname_end..cursor].trim_start(),
+                ))
             {
                 let mut closing_tokens = head_tokens.clone();
                 let (right_block, token_len) = wikidot_right_bracket_token(
@@ -1170,9 +1173,16 @@ impl<'a> ModuleEventScanner<'a> {
                         if validation == ModuleHeadValidation::DefiniteInvalid {
                             validation = if list_pages_compatibility
                                 && first_rollback_marker.is_none()
-                                && list_pages_definite_invalid_head_can_execute(
+                                && list_pages_url_quote_crossing_head_can_execute(
                                     validation_head,
                                 ) {
+                                ModuleHeadValidation::ValidRuntimeUnsafe
+                            } else if list_pages_compatibility
+                                && first_rollback_marker.is_none()
+                                && list_pages_definite_invalid_head_can_execute(
+                                    validation_head,
+                                )
+                            {
                                 ModuleHeadValidation::ValidRuntimeUnsafe
                             } else if list_pages_compatibility
                                 && runtime_recognized

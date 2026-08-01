@@ -803,6 +803,26 @@ fn list_pages_scanner_ignores_right_block_tokens_inside_single_quoted_arguments(
 }
 
 #[test]
+fn list_pages_scanner_keeps_crossing_url_quote_heads_visible() {
+    let source = concat!(
+        r#"[[module ListPages category="fragment" parent="." limit="1" order="name" offset="@URL|1 "created_by="Fireknight"]]"#,
+        "\n%%content%%\n[[/module]]",
+    );
+    assert!(list_pages_url_quote_crossing_head_can_execute(
+        r#" category="fragment" parent="." limit="1" order="name" offset="@URL|1 "created_by="Fireknight""#,
+    ));
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1);
+    assert_eq!(modules[0].body, "\n%%content%%\n");
+    assert!(
+        modules[0]
+            .head
+            .contains(r#"offset="@URL|1 "created_by="Fireknight"#)
+    );
+}
+
+#[test]
 fn list_pages_scanner_consumes_surplus_right_brackets_at_module_head_boundary() {
     for right_brackets in ["]]]", "]]]]", "]]]]]", "]]]]]]"] {
         let source =
