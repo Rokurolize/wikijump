@@ -2017,10 +2017,48 @@ fn list_pages_rendered_inline_fragment(html: &str) -> String {
     else {
         return html.to_owned();
     };
-    inner
+    let (inner, empty_paragraphs) = protect_empty_rendered_paragraphs(inner);
+    let joined = inner
         .replace("</p>\n<p>", "\n")
         .replace("</p>\r\n<p>", "\n")
-        .replace("</p><p>", "\n")
+        .replace("</p><p>", "\n");
+    let output = empty_paragraphs
+        .into_iter()
+        .fold(joined, |joined, (marker, whitespace)| {
+            joined.replace(&marker, whitespace.as_str())
+        });
+    output
+}
+
+fn protect_empty_rendered_paragraphs(value: &str) -> (String, Vec<(String, String)>) {
+    let mut marker_prefix = '\u{e000}'.to_string();
+    while value.contains(&marker_prefix) {
+        marker_prefix.push('\u{e001}');
+    }
+    let mut output = String::with_capacity(value.len());
+    let mut replacements = Vec::new();
+    let mut cursor = 0;
+    while let Some(relative_start) = value[cursor..].find("<p>") {
+        let start = cursor + relative_start;
+        let body_start = start + "<p>".len();
+        let Some(relative_end) = value[body_start..].find("</p>") else {
+            break;
+        };
+        let end = body_start + relative_end;
+        let body = &value[body_start..end];
+        if body.trim().is_empty() {
+            let marker = format!("{marker_prefix}{}\u{e002}", replacements.len());
+            output.push_str(&value[cursor..start]);
+            output.push_str(&marker);
+            replacements.push((marker, body.to_owned()));
+            cursor = end + "</p>".len();
+        } else {
+            output.push_str(&value[cursor..end + "</p>".len()]);
+            cursor = end + "</p>".len();
+        }
+    }
+    output.push_str(&value[cursor..]);
+    (output, replacements)
 }
 
 fn push_list_pages_rendered_fragment(
@@ -2837,5 +2875,27 @@ pub(super) fn substitute_list_pages_variables_inner(
         substituted
     } else {
         RenderService::resolve_wikidot_parser_functions(&substituted)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::list_pages_rendered_inline_fragment;
+
+    #[test]
+    fn rendered_inline_fragment_keeps_empty_paragraph_boundaries() {
+        let source = "<p>before</p>\n<p>\n\n</p>\n<p>after</p>";
+
+        assert_eq!(
+            list_pages_rendered_inline_fragment(source),
+            "before</p>\n\n\n\n<p>after",
+        );
+    }
+
+    #[test]
+    fn rendered_inline_fragment_still_flattens_ordinary_paragraphs() {
+        let source = "<p>before</p>\n<p>after</p>";
+
+        assert_eq!(list_pages_rendered_inline_fragment(source), "before\nafter");
     }
 }

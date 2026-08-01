@@ -838,6 +838,17 @@ mod tests {
     }
 
     #[test]
+    fn block_html_preserves_an_empty_paragraph_fragment_between_text() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker = fragments.push_block_html("<p>\n\n</p>".to_owned());
+
+        assert_eq!(
+            fragments.restore(&format!("<p>before<br>\n{marker}<br>\nafter</p>")),
+            "<p>before</p><p>\n\n</p><p>after</p>",
+        );
+    }
+
+    #[test]
     fn opted_in_flow_html_restores_only_beneath_a_span_parent() {
         let mut fragments = CompatHtmlFragments::new("");
         let marker = fragments.push_block_html_allowing_span_parent(

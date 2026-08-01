@@ -1727,9 +1727,13 @@ impl RenderService {
             let rendered = Self::render_static_account_module(name);
             if rendered.is_empty() && name.eq_ignore_ascii_case("Watchers") {
                 // Wikidot leaves an empty paragraph for an executed
-                // Watchers module.  Retain that block boundary even though
-                // the module has no visible body.
-                output.push_str(&compat_html.push_block_html("<p>\n\n</p>".to_owned()));
+                // Wikidot's empty Watchers block leaves five newline bytes
+                // between the surrounding paragraphs in PagePreview. Keep
+                // that observed block boundary even though the module has no
+                // visible body.
+                output.push_str(
+                    &compat_html.push_block_html("<p>\n\n\n\n\n</p>".to_owned()),
+                );
             } else if !rendered.is_empty() {
                 output.push_str(&compat_html.push_block_html(rendered.to_owned()));
             }

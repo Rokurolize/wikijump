@@ -3660,7 +3660,7 @@ async fn listpages_default_rows_expand_page_body_runtime_modules() {
             && preview.contains("DASH_END")
             && preview.contains("WATCHERS_START")
             && preview.contains("WATCHERS_END")
-            && preview.contains("WATCHERS_START</p><p>WATCHERS_END")
+            && preview.contains("WATCHERS_START</p>\n\n\n\n\n<p>WATCHERS_END")
             && preview.contains("THEME_START")
             && preview.contains(
                 r#"<div class="error-block">Preview mode error: please contact Wikidot.com for a better error message</div>"#,
