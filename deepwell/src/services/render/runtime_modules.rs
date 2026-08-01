@@ -1819,7 +1819,11 @@ impl RenderService {
         Ok(output)
     }
 
-    fn expand_ad_modules(wikitext: String, settings: &WikitextSettings) -> String {
+    fn expand_ad_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
         if !settings.enable_page_syntax
             || (!AD_MODULE_REGEX.is_match(&wikitext)
                 && !ADSENSEUNIT_MODULE_REGEX.is_match(&wikitext))
@@ -1841,6 +1845,7 @@ impl RenderService {
                 continue;
             }
             output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&compat_html.push_block_html("<p>\n\n</p>".to_owned()));
             cursor = matched.end();
         }
         if cursor == 0 {
@@ -1948,7 +1953,7 @@ impl RenderService {
         )
         .await
         .or_raise(make_error)?;
-        wikitext = Self::expand_ad_modules(wikitext, settings);
+        wikitext = Self::expand_ad_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_featured_site_modules(
             ctx,
             wikitext,

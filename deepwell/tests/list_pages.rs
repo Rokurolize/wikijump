@@ -4084,6 +4084,10 @@ async fn listpages_default_rows_expand_secondary_page_body_modules() {
         "selected block-valued module errors must split their surrounding paragraphs exactly once:\n{preview}",
     );
     assert!(
+        preview.contains("ADSENSE_START</p>\n\n<p>ADSENSE_END"),
+        "the empty AdSenseUnit module must retain Wikidot's paragraph boundary:\n{preview}",
+    );
+    assert!(
         preview.contains(r#"class="html-block-iframe""#)
             && preview.contains(concat!(
                 r#"src="/listpages-default-secondary-module-target/html/"#,
