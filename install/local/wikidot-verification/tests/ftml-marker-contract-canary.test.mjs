@@ -22,7 +22,7 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "de12339bdf398bd8f7e11b7b81885feb7415076d";
+const candidateFtml = "a55ba794b10ea06604fa4b5f34f82a64543bbcae";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
 
 test("committed receipt binds the exact manifest, lock, and five-surface contract", () => {
@@ -73,7 +73,7 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
     accepted_differences: 0,
     regressions: 0,
     verdict_sha256:
-      "6c160cee22fb40ee1bde2dede1a33a2beca4ae4e9295db677b47d341f8fe75cb",
+      "f917943aae1bdb97b4de8f4a2cfb6be6c8958404c0c208fe07878524fdc2e378",
   });
   assert.deepEqual(receipt.resource_disposition, {
     policy: "delete-on-close",
