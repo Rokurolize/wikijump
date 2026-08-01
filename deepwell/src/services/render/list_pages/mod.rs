@@ -76,7 +76,7 @@ pub(super) use self::delayed::{
     PendingDelayedListPagesOutput, append_list_pages_delayed_occurrences,
     append_list_pages_runtime_scalar_ranges,
     find_list_pages_module_matches_with_delayed_links,
-    finish_or_defer_list_pages_delayed_output_with_mode, list_pages_row_markup_bytes,
+    finish_or_defer_list_pages_delayed_output_with_modes, list_pages_row_markup_bytes,
     list_pages_runtime_container_close, list_pages_runtime_container_open,
     list_pages_runtime_row_container_close, prepare_delayed_list_pages_row,
     protect_generated_parser_function_comment_gates, raw_module_close_end,
