@@ -2479,6 +2479,74 @@ async fn listpages_unwrapped_sectioned_block_template_stays_outside_paragraph() 
     runner.teardown().await;
 }
 
+/// Anonymous Wikidot PagePreview evidence, 2026-07-29:
+/// `cn:wanderers:enter-the-library:L388:B15100`.
+///
+/// A combined (`separate="no"`) wrapper keeps an inline generated body in
+/// the wrapper's own flow. FTML must not manufacture a paragraph around the
+/// inline link, even though the ListPages box itself remains a block.
+#[tokio::test]
+async fn listpages_combined_wrapper_keeps_inline_rows_outside_paragraph() {
+    const TARGET_SLUG: &str = "listpages-inline-row-target-20260802";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "inline ListPages row target",
+            "title": "Inline ListPages row target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "combined inline ListPages row fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let body = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "combined inline ListPages row source",
+        concat!(
+            "[[module ListPages name=\"listpages-inline-row-target-20260802\" separate=\"no\"]]",
+            "[[a_ href=\"/%%fullname%%\" class=\"book\"]]",
+            "[[span]]%%name%%[[/span]]",
+            "[[/a]]",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("combined inline ListPages preview should render")
+    .html_output
+    .body;
+
+    assert!(
+        body.contains(
+            r#"<div class="list-pages-box"><a class="book" href="/listpages-inline-row-target-20260802">"#,
+        ),
+        "the combined row should stay directly inside the ListPages box: {body}",
+    );
+    assert!(
+        !body.contains(r#"<div class="list-pages-box"><p><a"#),
+        "the combined inline row must not acquire an FTML paragraph: {body}",
+    );
+
+    runner.teardown().await;
+}
+
 #[tokio::test]
 async fn created_by_exclusion_omits_the_containing_pages_author() {
     const OWN_SLUG: &str = "author-exclusion-own";

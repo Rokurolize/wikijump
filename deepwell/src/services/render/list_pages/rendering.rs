@@ -2550,7 +2550,7 @@ impl RenderService {
             || delayed_html_fragments
                 .iter()
                 .any(CompatHtmlFragments::has_exact_fragments);
-        let block_output = wrapper
+        let block_output = !wrapper
             || separate
             || render_generated_html
             || list_pages_template_has_block_section(template);
