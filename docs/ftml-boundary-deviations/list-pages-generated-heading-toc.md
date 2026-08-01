@@ -20,7 +20,7 @@ outer-TOC entry. Ordinary authored headings retain the normal FTML path.
 ## Why FTML is not yet sufficient
 
 The pinned FTML interface
-(`ef7135934f8e72879b3f2f6ec939deb816cc378f`) has the correct syntax-rendering
+(`a8fcd3dce089aefd6a9a3619116d4777c9ebd7cc`) has the correct syntax-rendering
 primitive for a visible heading excluded from TOC registration (`+*` through
 `++++++*`). Its delayed ListPages representation does not expose a typed
 generated-fragment parse mode through which Wikijump can preserve that

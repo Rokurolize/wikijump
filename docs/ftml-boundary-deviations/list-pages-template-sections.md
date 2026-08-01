@@ -20,7 +20,7 @@ and an explicitly empty body selects the default row template.
 ## Why FTML is not yet sufficient
 
 The pinned FTML interface
-(`ef7135934f8e72879b3f2f6ec939deb816cc378f`) exposes ListPages as a delayed
+(`a8fcd3dce089aefd6a9a3619116d4777c9ebd7cc`) exposes ListPages as a delayed
 structure but does not expose typed, source-spanned head/body/foot template
 sections or its literal-owner decisions for runtime consumption. Deepwell
 therefore cannot ask FTML for the ordered section split after it has resolved
