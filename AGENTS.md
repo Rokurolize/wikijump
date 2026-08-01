@@ -13,6 +13,9 @@
 - Browser-visible behavior includes intermediate paints and transitions as well as the settled page. A final screenshot or final DOM match does not prove compatibility when users can see stale themes, layout shifts, loading states, or transient controls.
 - Do not hide meaningful differences through broad normalization, CSS masking, source surgery, or validator shortcuts. Record attempted observation routes when live behavior cannot be captured.
 - Faithful Wikidot DOM, CSS cascade, interaction, and legacy quirks take priority over modernization for imported content. Escaping and sanitization boundaries remain intact.
+- A compatibility rule must implement the behavior a page demonstrates, not recognize the page. Do not decide behavior by comparing against a byte-exact fragment of captured page content, and do not gate on a conjunction that only one captured page satisfies, such as a tail of exactly three lines with nothing following it. Both reproduce a single page and diverge from Wikidot the moment a word or a line moves.
+- Before narrowing a rule to an evidenced shape, observe the boundary live: at least two observations where the behavior holds and two where it stops, varying the part you are about to fix in place. A negative control showing that one changed character no longer matches proves the rule is narrow, not that it is right.
+- When the general rule cannot be established from the evidence available, leave the case actionable and record it as unimplemented. Do not close it with a rule that only the captured page satisfies. A gate driven to zero by page recognition has measured nothing.
 
 ## Architecture
 
@@ -38,6 +41,7 @@
 
 - Run focused tests while developing, then broaden according to the changed surface. Useful commands include `cargo fmt --manifest-path deepwell/Cargo.toml --check`, focused `cargo test`, `RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps`, `pnpm --dir framerail build`, `pnpm --dir framerail lint`, and focused verifier tests.
 - For browser-visible parity, capture fresh browser evidence against the exact source, dependency, fixture, and runtime identities. Test every observable interval when the defect is temporal.
+- Before opening a pull request that changes compatibility scanning or classification, run `pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --corpus <live references JSONL>`, passing every lane. It names the captured pages each literal came from. Resolve every finding, and read the notices, which catch short pinned literals that cannot carry a gate on their own. It reads string literals only, so a clean report is not proof that a rule generalizes.
 - Push a branch as soon as it holds work worth keeping, and open its pull request early, as a draft when it is not ready. `CI / gate` takes one to two minutes and draft pull requests take a lighter path, so an open pull request costs almost nothing while unpushed commits are a real risk.
 - When a gate reports counts, pin and record the exact identity of both its reference inputs and its denominator file, then keep them fixed for the life of the campaign. A gate whose inputs move cannot be compared across runs or audited afterwards.
 - Do not force or admin merge and do not push to `scpwiki/*`.

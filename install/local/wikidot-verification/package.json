@@ -6,6 +6,7 @@
     "test": "node --test tests/*.test.mjs",
     "completion": "node scripts/run-completion-controller.mjs",
     "syntax-dispositions": "node scripts/check-syntax-differential-dispositions.mjs",
+    "corpus-pinned-literals": "node scripts/check-corpus-pinned-literals.mjs",
     "reference-inventory": "node scripts/build-reference-acquisition-inventory.mjs",
     "listpages-campaign-inventory": "node scripts/build-listpages-campaign-inventory.mjs",
     "listpages-runtime-budget-envelope": "node scripts/build-listpages-runtime-budget-envelope.mjs",
