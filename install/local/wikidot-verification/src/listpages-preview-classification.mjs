@@ -448,18 +448,16 @@ function synchronizedImportedAuthorNames(nodes) {
     (nodes ?? [])
       .flatMap((node) =>
         descendantElements(node, (candidate) =>
-          nodeHasClass(candidate, "printuser")
+          nodeHasClass(candidate, "printuser") ||
+          importedAuthorErrorInlineName(candidate) !== null
         )
       )
-      .map((node) => nodeText(node).trim())
+      .map((node) =>
+        nodeText(node)
+          .replace(/\s+does not match any existing user name$/iu, "")
+          .trim()
+      )
       .filter(Boolean),
-  );
-}
-
-function normalizeImportedAuthorFallbackText(value) {
-  return value.replace(
-    /(?<name>[^\n:]+?)\s+does not match any existing user name/gu,
-    "$<name>",
   );
 }
 
@@ -818,16 +816,29 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
     htmlBlocks: 0,
     invalidHtmlBlocks: 0,
   };
+  const importedAuthorIdentities = new Map(
+    [...importedAuthorNames].map((name) => [
+      name.toLowerCase(), `__IMPORTED_AUTHOR_${name.toLowerCase()}__`,
+    ]),
+  );
   const socialNonces = new Set();
   const normalizeImportedAuthor = (node, appendSpace) => {
     state.importedAuthors += 1;
-    const authoredName = nodeText(node).trim().replace(
-      /^(?<name>.+?)\s+does not match any existing user name$/u,
-      "$<name>",
-    );
+    const userLink = descendantElements(
+      node,
+      (candidate) => candidate.name === "a" &&
+        /(?:^|\/)user:info\//iu.test(nodeAttribute(candidate, "href") ?? ""),
+    ).at(-1);
+    const hrefIdentity = /(?:^|\/)user:info\/(?<name>[^/?#]+)$/iu.exec(
+      nodeAttribute(userLink, "href") ?? "",
+    )?.groups?.name;
+    const textIdentity = nodeText(node)
+      .replace(/\s+does not match any existing user name$/iu, "")
+      .trim();
+    const identity = (hrefIdentity ?? textIdentity).toLocaleLowerCase();
     return {
       type: "text",
-      value: `${authoredName}${appendSpace ? " " : ""}`,
+      value: `__IMPORTED_AUTHOR_${identity}__${appendSpace ? " " : ""}`,
     };
   };
   const normalizeChildren = (children) => {
@@ -866,9 +877,23 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
   };
   const normalizeNode = (node) => {
     if (node?.type === "text") {
-      const importedAuthor = node.value.trim();
-      if (importedAuthorNames.has(importedAuthor)) {
-        return [{ ...node, value: importedAuthor }];
+      const exactIdentity = importedAuthorIdentities.get(node.value.trim().toLowerCase());
+      if (exactIdentity !== undefined) {
+        return [{ ...node, value: exactIdentity }];
+      }
+      let value = node.value;
+      for (const [name, identity] of importedAuthorIdentities) {
+        const escaped = name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+        value = value.replace(
+          new RegExp(
+            `(?<![\\p{L}\\p{N}_])${escaped}(?![\\p{L}\\p{N}_])`,
+            "giu",
+          ),
+          identity,
+        );
+      }
+      if (value !== node.value) {
+        return [{ ...node, value }];
       }
       return [{ ...node }];
     }
@@ -1476,8 +1501,22 @@ function relativeTemporalFixtureProof({
     (node) => nodeHasClass(node, "list-pages-item"),
   );
   const limit = lastArgumentValue(invocation, "limit")?.trim() ?? "";
-  if (!/^(?:@url\|)?1$/iu.test(limit)) return null;
-  if (liveItems.length === 1 && localItems.length === 0) {
+  const perPage = lastArgumentValue(invocation, "perpage")?.trim() ?? "";
+  if (
+    ![limit, perPage].some((value) =>
+      /^(?:@url\|)?[1-9][0-9]*$/iu.test(value)
+    )
+  ) return null;
+  const bound = [limit, perPage]
+    .map((value) => /^(?:@url\|)?(?<count>[1-9][0-9]*)$/iu.exec(value)?.groups?.count)
+    .filter(Boolean)
+    .map(Number)
+    .at(0) ?? 0;
+  if (
+    liveItems.length > 0 &&
+    liveItems.length <= bound &&
+    localItems.length === 0
+  ) {
     const localChildren = (localWrapper.children ?? []).filter((node) =>
       !(node.type === "text" && node.value.trim() === "")
     );
@@ -1880,24 +1919,23 @@ function classifyMismatch(row, reference) {
     localNodes,
     { importedAuthorNames },
   );
-  const liveAuthorText = liveAuthorFixture.state.importedAuthors > 0
-    ? normalizeImportedAuthorFallbackText(liveText)
-    : liveText;
-  const localAuthorText = localAuthorFixture.state.importedAuthors > 0
-    ? normalizeImportedAuthorFallbackText(localText)
-    : localText;
+  const liveAuthorPageExistence = normalizeSynchronizedImportedPageExistence(
+    liveAuthorFixture.nodes,
+  );
+  const localAuthorPageExistence = normalizeSynchronizedImportedPageExistence(
+    localAuthorFixture.nodes,
+  );
   if (
-    liveAuthorText === localAuthorText &&
     (liveAuthorFixture.state.importedAuthors > 0 ||
       localAuthorFixture.state.importedAuthors > 0) &&
-    JSON.stringify(liveAuthorFixture.nodes) ===
-      JSON.stringify(localAuthorFixture.nodes)
+    JSON.stringify(liveAuthorPageExistence.nodes) ===
+      JSON.stringify(localAuthorPageExistence.nodes)
   ) {
     return {
       classification: "synchronized-imported-author-state",
       disposition: "none",
       rationale:
-        "Visible row output and all non-provenance DOM match after normalizing only live printuser identities, their exact plain imported-name fallback, and ODate metadata.",
+        "Visible row output and all non-provenance DOM match after normalizing only live printuser identities, their exact plain imported-name fallback, ODate metadata, and identical imported internal-link existence markers.",
     };
   }
   const liveLinkedTitle = normalizeSynchronizedLinkedTitleSpaces(

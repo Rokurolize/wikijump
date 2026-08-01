@@ -1758,6 +1758,17 @@ test("preview classifier isolates synchronized relative-time query state", async
       expected: ["synchronized-relative-time-query-state", "none"],
     },
     {
+      id: "relative-bounded-multiple-empty-local",
+      source: [
+        '[[module ListPages limit="5" date="last 24 hours"]]',
+        "%%title%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><span class="odate time_1">1 Jan</span> One</div><div class="list-pages-item"><span class="odate time_2">1 Jan</span> Two</div></div>',
+      local: '<div class="list-pages-box"></div>',
+      expected: ["synchronized-relative-time-query-state", "none"],
+    },
+    {
       id: "relative-arbitrary-row-change",
       source: [
         '[[module ListPages limit="1" updated_at="last 3 day"]]',
