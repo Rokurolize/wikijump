@@ -88,6 +88,12 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
     let mut generated_slots = Vec::new();
     let mut runtime_scalar_ranges = Vec::new();
     let mut prepared_body = suppress_generated_list_pages_heading_toc(body).into_owned();
+    // ListPages rows are extracted before the outer page's FTML pass. Apply
+    // the same Wikidot compatibility preprocessing while the row is still
+    // authored source, before typed/generated slots are inserted. Running it
+    // after slot insertion would reinterpret `%%...%%` slot ranges as source
+    // syntax and leave residual percent prefixes in later rows.
+    ftml::preprocess_for_layout(&mut prepared_body, ftml::layout::Layout::Wikidot);
     ftml::preproc::whitespace::normalize_wikidot_whitespace_only_lines(
         &mut prepared_body,
     );
@@ -758,11 +764,14 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
     {
         return Ok(output);
     }
-    // ListPages bodies are extracted before the outer page enters FTML's
-    // preprocessing pass.  Run the same layout compatibility pass on the
-    // sealed row stream so legacy boundaries (notably tight native quote
-    // lines) retain Wikidot's fail-closed semantics inside delayed rows.
-    if settings.enable_page_syntax {
+    // Static rows have no typed source ranges to preserve. Apply FTML's
+    // compatibility pass here as a final guard for direct/static sealing;
+    // delayed rows are preprocessed before their typed ranges are allocated
+    // above, so their `%%...%%` markers remain byte-stable.
+    if settings.enable_page_syntax
+        && delayed_occurrences.is_empty()
+        && runtime_scalar_ranges.is_empty()
+    {
         ftml::preprocess_for_layout(&mut output, settings.layout);
     }
     if delayed_occurrences.is_empty() && runtime_scalar_ranges.is_empty() {
