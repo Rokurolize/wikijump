@@ -4,6 +4,8 @@ This document freezes the working responsibility boundary between the FTML libra
 
 This is a contract document, not a migration plan. Nothing here changes runtime behavior. Migration happens in later staged PRs, each gated on evidence.
 
+The BND findings are defined in that evidence root, which is not in this repository. A reader here can verify the code paths named below but not the findings themselves, so treat a BND reference as a label for a known surface rather than as an argument. Where this document names a function or module, verify the path before relying on it: the `compat/` extraction moved several of them after this document was written.
+
 ## FTML-owned responsibilities
 
 - Tokenization, parsing, and AST representation for Wikidot/FTML syntax, including malformed-but-real Wikidot shapes that appear in corpus evidence.
@@ -69,7 +71,7 @@ These surfaces are frozen: they may receive correctness fixes, but they must not
 
 ## Marker protocol and pin-bump canary requirement
 
-FTML main has begun consuming canonical Wikidot source markers at parse time (ftml PR #178, section markers), while this repository carries HTML-side restorers for overlapping marker classes (`restore_residual_wikidot_*` in `deepwell/src/services/render/service.rs`). The two mechanisms must not silently double-handle or orphan each other.
+FTML main has begun consuming canonical Wikidot source markers at parse time (ftml PR #178, section markers), while this repository carries HTML-side restorers for overlapping marker classes (`restore_residual_wikidot_*` in `deepwell/src/services/render/compat/wikidot_residual_markers.rs`). The two mechanisms must not silently double-handle or orphan each other.
 
 Rules:
 
