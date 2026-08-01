@@ -211,6 +211,39 @@ fn scanner_executes_the_live_factory_head_with_a_crossing_rating_quote() {
 }
 
 #[test]
+fn scanner_accepts_an_inline_comment_between_legacy_arguments() {
+    let source = concat!(
+        "[[module ListPages rating=\">60\" order=\"rating desc\" category=\"*\" ",
+        "separate=\"false\" limit=\"200\" perPage=\"35\" date=\"@URL|2023\"",
+        "[!-- UPDATE THIS TO CURRENT YEAR --] ",
+        "prependLine=\"||~ Title ||~ Rating ||\"]]\n",
+        "ROW\n[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(modules[0].body, "\nROW\n");
+    assert!(list_pages_runtime_head_can_execute(modules[0].head));
+}
+
+#[test]
+fn unclosed_listpages_head_consumes_immediate_raw_closer() {
+    let source = concat!(
+        "[[module ListPages separate=\"no\" limit=\"250\" perPage=\"250\" ",
+        "tags=\"group-of-interest-form, beyond +_entropy-, -scp, -story,\" ",
+        "order=\"title\"\n\n",
+        "[[/module]]\nAFTER_MALFORMED\n",
+        "[[module ListPages name=\"listpages-head-boundary-target\"]]",
+        "SECOND|%%fullname%%[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert!(modules[0].consume_empty_tail, "{modules:#?}");
+    assert_eq!(modules[0].body, "");
+    assert!(modules[0].original.ends_with("[[/module]]"));
+    assert_eq!(modules[1].body, "SECOND|%%fullname%%");
+}
+
+#[test]
 fn corpus_unicode_tag_head_remains_runtime_executable() {
     let head = r#"separate="1" tags="+阿尔兹海默症 -中心" order="random"  perPage="50""#;
     assert_eq!(
@@ -1809,6 +1842,10 @@ fn corpus_single_bracket_head_with_a_dangling_quote_uses_the_default_template() 
     assert_eq!(
         modules[0].body, "",
         "the final unclosed quote consumes the authored row and selects Wikidot's default template",
+    );
+    assert!(
+        modules[0].consume_empty_tail,
+        "a recovered default-template head must own its authored closing module",
     );
     assert_eq!(
         modules[0].original,

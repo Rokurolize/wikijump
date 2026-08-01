@@ -5781,9 +5781,6 @@ async fn listpages_module_heads_accept_live_legacy_boundaries() {
         format!(
             "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" order=\"name\"@@]]\nROW|%%fullname%%\n[[/module]]",
         ),
-        format!(
-            "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" order=\"评分：]\nROW|%%fullname%%\n[[/module]]",
-        ),
     ];
 
     for source in sources {
@@ -5808,6 +5805,33 @@ async fn listpages_module_heads_accept_live_legacy_boundaries() {
             "the recovered head must not leak source or surplus right brackets for {source:?}:\n{preview}",
         );
     }
+
+    // Anonymous PagePreview boundary probe (2026-08-01): a final unmatched
+    // double quote is executable, but Wikidot consumes the authored row and
+    // renders its default template rather than treating that row as custom
+    // ListPages body content. Keep this malformed-head behavior distinct from
+    // the complete and surplus-bracket cases above.
+    let dangling_quote_source = format!(
+        "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" order=\"评分：]\nROW|%%fullname%%\n[[/module]]",
+    );
+    let dangling_quote_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages dangling quote boundary",
+        dangling_quote_source,
+    )
+    .await
+    .expect("the live-compatible dangling quote boundary should render")
+    .html_output
+    .body;
+    assert!(
+        dangling_quote_preview.contains(r#"<div class="list-pages-box">"#)
+            && !dangling_quote_preview.contains(&format!("ROW|{TARGET_SLUG}"))
+            && !dangling_quote_preview.contains("[[module ListPages")
+            && !dangling_quote_preview.contains("%%fullname%%")
+            && !dangling_quote_preview.contains("[[/module]]"),
+        "an unmatched final quote must consume the authored row and close cleanly with Wikidot's default template:\n{dangling_quote_preview}",
+    );
 
     let argumentless_eof = RenderService::render_wikidot_page_preview(
         runner.context(),

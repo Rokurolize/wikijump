@@ -128,6 +128,20 @@ pub(super) fn double_quote_ends_scanner_argument(
         && scanner_argument_boundary_at(bytes, quote + 1, text_tokens)
 }
 
+pub(super) fn list_pages_quote_ends_before_comment(bytes: &[u8], quote: usize) -> bool {
+    bytes
+        .get(quote + 1..)
+        .is_some_and(|tail| tail.starts_with(b"[!--"))
+}
+
+pub(super) fn list_pages_head_comment_end(bytes: &[u8], start: usize) -> Option<usize> {
+    let relative_end = bytes
+        .get(start + b"[!--".len()..)?
+        .windows(b"--]".len())
+        .position(|window| window == b"--]")?;
+    Some(start + b"[!--".len() + relative_end + b"--]".len())
+}
+
 pub(super) fn surplus_list_pages_close_after_spacing(
     bytes: &[u8],
     mut cursor: usize,

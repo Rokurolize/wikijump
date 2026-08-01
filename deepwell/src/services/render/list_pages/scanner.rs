@@ -38,7 +38,8 @@ pub(in crate::services::render) use self::count_reachability::CountPagesCloseRea
 use self::legacy_heads::{
     crossing_list_pages_quote_ends_before_close, double_quote_ends_scanner_argument,
     is_module_argument_spacing, legacy_single_bracket_list_pages_opening,
-    list_pages_inert_at_markers_follow_quote, skip_count_pages_module_subname_delimiter,
+    list_pages_head_comment_end, list_pages_inert_at_markers_follow_quote,
+    list_pages_quote_ends_before_comment, skip_count_pages_module_subname_delimiter,
     skip_horizontal_whitespace, skip_module_argument_spacing, skip_module_close_spacing,
     skip_module_subname_delimiter, surplus_list_pages_close_after_spacing,
 };
@@ -1086,6 +1087,8 @@ impl<'a> ModuleEventScanner<'a> {
                                 cursor + 1,
                             ) || list_pages_inert_at_markers_follow_quote(
                                 bytes, cursor,
+                            ) || list_pages_quote_ends_before_comment(
+                                bytes, cursor,
                             ) || crossing_list_pages_quote_ends_before_close(
                                 bytes,
                                 cursor,
@@ -1697,7 +1700,11 @@ fn validate_module_head(
                 if bytes[cursor] == quote {
                     let list_pages_url_quote_end = list_pages_url_value
                         && list_pages_url_value_quote_ends_at(bytes, cursor, key_start);
+                    let list_pages_comment_quote_end = list_pages_compatibility
+                        && quote == b'"'
+                        && list_pages_quote_ends_before_comment(bytes, cursor);
                     if !list_pages_url_quote_end
+                        && !list_pages_comment_quote_end
                         && (syntax_crossing_token_end.is_some_and(|end| cursor < end)
                             || text_tokens.contains(cursor))
                     {
@@ -1712,7 +1719,8 @@ fn validate_module_head(
                                 cursor,
                                 &text_tokens,
                             )
-                            && !list_pages_url_quote_end)
+                            && !list_pages_url_quote_end
+                            && !list_pages_comment_quote_end)
                     {
                         runtime_safe = false;
                         cursor += 1;
@@ -1727,6 +1735,17 @@ fn validate_module_head(
             }
             if !closed {
                 return ModuleHeadValidation::DefiniteInvalid;
+            }
+            if list_pages_compatibility
+                && bytes
+                    .get(cursor..)
+                    .is_some_and(|tail| tail.starts_with(b"[!--"))
+            {
+                let Some(comment_end) = list_pages_head_comment_end(bytes, cursor) else {
+                    return ModuleHeadValidation::DefiniteInvalid;
+                };
+                cursor = comment_end;
+                runtime_safe = false;
             }
         } else if list_pages_compatibility && runtime_key_supported {
             runtime_safe &= !quote_owned;
@@ -2389,6 +2408,12 @@ fn find_list_pages_module_matches_with_cursor_work_context(
                     } else {
                         module.body_start
                     };
+                    let consume_empty_tail = module.default_template
+                        || (module.body_start == start
+                            && !module.head.is_empty()
+                            && unclosed_list_pages_has_immediate_raw_closer(
+                                source, start,
+                            ));
                     matches.push(ListPagesModuleMatch {
                         start: module.start,
                         body_start,
@@ -2399,7 +2424,11 @@ fn find_list_pages_module_matches_with_cursor_work_context(
                         runtime_safe: module.runtime_safe,
                         preserve_original: false,
                         preserve_as_module654: false,
-                        consume_empty_tail: false,
+                        // A recovered malformed head with a real closing
+                        // module owns that close even when Wikidot selects
+                        // its default row template. Keep the close inside
+                        // the replacement instead of exposing it as prose.
+                        consume_empty_tail,
                     });
                 }
             }
@@ -2428,7 +2457,7 @@ fn find_list_pages_module_matches_with_cursor_work_context(
                     runtime_safe: module.runtime_safe,
                     preserve_original: false,
                     preserve_as_module654: false,
-                    consume_empty_tail: false,
+                    consume_empty_tail: module.default_template,
                 });
             } else if let Some(end) = unclosed_at_marker_collapsible_prefix_end(
                 &source[module.start..module.body_start],
@@ -2538,6 +2567,12 @@ fn find_list_pages_module_matches_with_cursor_work_context(
                 } else {
                     module.body_start
                 };
+                let consume_empty_tail = module.default_template
+                    || !module.head.is_empty()
+                        && unclosed_list_pages_has_immediate_raw_closer(
+                            source,
+                            module.body_start,
+                        );
                 matches.push(ListPagesModuleMatch {
                     start: module.start,
                     body_start: module.body_start,
@@ -2548,7 +2583,7 @@ fn find_list_pages_module_matches_with_cursor_work_context(
                     runtime_safe: module.runtime_safe,
                     preserve_original: false,
                     preserve_as_module654: false,
-                    consume_empty_tail: false,
+                    consume_empty_tail,
                 });
             }
         }
@@ -2627,6 +2662,13 @@ fn unclosed_list_pages_owns_legacy_quoted_continuation(
         return false;
     };
     list_pages_at_marker_body_is_legacy_quoted_continuation(suffix)
+}
+
+fn unclosed_list_pages_has_immediate_raw_closer(source: &str, body_start: usize) -> bool {
+    source
+        .get(body_start..)
+        .map(str::trim_start)
+        .is_some_and(|suffix| suffix.as_bytes().starts_with(b"[[/module]]"))
 }
 
 fn complete_multiline_at_marker_template_boundary(

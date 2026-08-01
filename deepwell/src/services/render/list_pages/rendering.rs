@@ -367,6 +367,12 @@ impl RenderService {
                         .unwrap_or(module.end)
                 } else if body_is_empty && !consume_empty_tail {
                     module.body_start
+                } else if body_is_empty
+                    && consume_empty_tail
+                    && module.end == module.body_start
+                {
+                    raw_module_close_end(&wikitext, module.body_start)
+                        .unwrap_or(module.end)
                 } else {
                     module.end
                 };
