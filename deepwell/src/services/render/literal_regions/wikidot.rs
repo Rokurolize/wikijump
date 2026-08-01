@@ -495,40 +495,67 @@ mod tests {
     }
 
     #[test]
-    fn url_and_email_owned_raw_openers_do_not_steal_following_blocks() {
-        for (source, opener) in [
-            ("foo@bar.example@@x [[code]] @@ LP [[/code]]", "@@"),
-            ("https://e.test/a@@b [[code]] @@ LP [[/code]]", "@@"),
-            ("foo@bar.example@<x [[code]] >@ LP [[/code]]", "@<"),
-            ("https://e.test/a@<b [[code]] >@ LP [[/code]]", "@<"),
+    fn pinned_url_email_delimiters_follow_ftml_token_boundaries() {
+        for (source, opener, opener_owned, lp_owned) in [
+            (
+                "foo@bar.example@@x [[code]] @@ LP [[/code]]",
+                "@@",
+                true,
+                false,
+            ),
+            (
+                "https://e.test/a@@b [[code]] @@ LP [[/code]]",
+                "@@",
+                true,
+                false,
+            ),
+            (
+                "foo@bar.example@<x [[code]] >@ LP [[/code]]",
+                "@<",
+                true,
+                false,
+            ),
+            (
+                "https://e.test/a@<b [[code]] >@ LP [[/code]]",
+                "@<",
+                false,
+                true,
+            ),
         ] {
             let ranges = literal_ranges(source);
 
-            assert!(
-                !is_owned(&ranges, source.find(opener).unwrap()),
+            assert_eq!(
+                is_owned(&ranges, source.find(opener).unwrap()),
+                opener_owned,
+                "{source:?}",
+            );
+            assert_eq!(
+                is_owned(&ranges, source.find("LP").unwrap()),
+                lp_owned,
                 "{source:?}"
             );
-            assert!(is_owned(&ranges, source.find("LP").unwrap()), "{source:?}");
         }
     }
 
     #[test]
-    fn url_and_email_owned_delimiters_do_not_close_inline_literals() {
+    fn pinned_url_email_delimiters_preserve_inline_literal_boundaries() {
         for owner in ["foo@bar.example", "https://e.test/a"] {
-            for source in [
-                format!("@@{owner}@@x hidden @@ live"),
-                format!("[[$ {owner}$]]x hidden $]] live"),
-                format!("[!--{owner}--]x hidden --] live"),
+            for (source, hidden, live) in [
+                (format!("@@{owner}@@x hidden @@ live"), false, true),
+                (format!("[[$ {owner}$]]x hidden $]] live"), true, false),
+                (format!("[!--{owner}--]x hidden --] live"), true, false),
             ] {
                 let ranges = literal_ranges(&source);
 
-                assert!(
+                assert_eq!(
                     is_owned(&ranges, source.find("hidden").unwrap()),
-                    "{source:?}",
+                    hidden,
+                    "{source:?}"
                 );
-                assert!(
-                    !is_owned(&ranges, source.find("live").unwrap()),
-                    "{source:?}",
+                assert_eq!(
+                    is_owned(&ranges, source.find("live").unwrap()),
+                    live,
+                    "{source:?}"
                 );
             }
         }

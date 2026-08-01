@@ -475,16 +475,20 @@ mod tests {
 
     #[test]
     fn inline_closers_embedded_in_other_tokens_do_not_end_literals() {
-        for source in [
+        for (source, expected_owned) in [
             "@@before https://example.test/a@@b [[module ListPages name=\"hidden\"]] @@",
             "[!-- https://example.test/a--]b [[module ListPages name=\"hidden\"]] --]",
             "[[$ https://example.test/a$]]b [[module ListPages name=\"hidden\"]] $]]",
             "@<before >>@ [[module ListPages name=\"hidden\"]] >@",
             "@<before ~~~>@ [[module ListPages name=\"hidden\"]] >@",
-        ] {
+        ]
+        .into_iter()
+        .zip([false, true, true, true, true])
+        {
             let index = LiteralRegionIndex::new_list_pages_syntax(source);
-            assert!(
+            assert_eq!(
                 index.contains(source.find("[[module ListPages").unwrap()),
+                expected_owned,
                 "{source:?}",
             );
         }

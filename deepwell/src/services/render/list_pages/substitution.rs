@@ -1971,6 +1971,7 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) page_wikitext: Option<&'a str>,
     pub(in crate::services::render) page_rendered_content: Option<&'a str>,
     pub(in crate::services::render) page_rendered_summary: Option<&'a str>,
+    pub(in crate::services::render) default_summary_first_paragraph: bool,
     pub(in crate::services::render) fallback_link_titles:
         Option<&'a WikidotCompatLinkTitleMap>,
     pub(in crate::services::render) page_rendered_first_paragraph: Option<&'a str>,
@@ -2020,6 +2021,68 @@ fn list_pages_rendered_inline_fragment(html: &str) -> String {
         .replace("</p>\n<p>", "\n")
         .replace("</p>\r\n<p>", "\n")
         .replace("</p><p>", "\n")
+}
+
+fn push_list_pages_rendered_fragment(
+    html: &str,
+    compat_html: &mut CompatHtmlFragments,
+) -> String {
+    let rendered = list_pages_rendered_inline_fragment(html);
+    // The embed compatibility path intentionally splits one paragraph around
+    // Wikidot's terminal "no match" block. Restore that flow fragment as a
+    // block so it can close the surrounding row paragraph; other runtime
+    // module errors may contain nested trusted markers and must stay inline
+    // until their own fragment stack is restored.
+    if list_pages_rendered_fragment_has_block_root(&rendered)
+        && rendered.contains(
+            r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#,
+        )
+    {
+        compat_html.push_block_html(rendered)
+    } else {
+        compat_html.push_html(rendered)
+    }
+}
+
+fn list_pages_rendered_fragment_has_block_root(html: &str) -> bool {
+    let trimmed = html.trim_start();
+    let Some(paragraph_end) = trimmed.find("</p>") else {
+        return false;
+    };
+    let remainder = trimmed[paragraph_end + "</p>".len()..].trim_start();
+    const BLOCK_TAGS: &[&str] = &[
+        "address",
+        "article",
+        "aside",
+        "blockquote",
+        "div",
+        "dl",
+        "fieldset",
+        "figure",
+        "footer",
+        "form",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "header",
+        "hr",
+        "main",
+        "nav",
+        "ol",
+        "pre",
+        "section",
+        "table",
+        "ul",
+    ];
+    BLOCK_TAGS.iter().any(|tag| {
+        remainder
+            .strip_prefix('<')
+            .and_then(|value| value.strip_prefix(tag))
+            .is_some_and(|value| value.starts_with([' ', '>', '/']))
+    })
 }
 
 fn collect_list_pages_html_body_ranges(source: &str) -> Vec<Range<usize>> {
@@ -2336,19 +2399,29 @@ pub(super) fn substitute_list_pages_variables_inner(
         .authored_limit
         .map(|limit| limit.to_string())
         .unwrap_or_default();
-    let summary = context
-        .page_rendered_summary
-        .or(context.page_rendered_first_paragraph)
-        .or(context.page_rendered_content)
-        .map_or_else(
-            || {
-                context
-                    .page_wikitext
-                    .map(|wikitext| wikidot_content_section(wikitext, Some(1)))
-                    .unwrap_or_default()
-            },
-            |html| compat_html.push_html(list_pages_rendered_inline_fragment(html)),
-        );
+    let summary_html = if context.default_summary_first_paragraph {
+        context
+            .page_rendered_first_paragraph
+            .or(context.page_rendered_summary)
+    } else {
+        context
+            .page_rendered_summary
+            .or(context.page_rendered_first_paragraph)
+    };
+    let summary = summary_html.or(context.page_rendered_content).map_or_else(
+        || {
+            let section = context
+                .page_wikitext
+                .map(|wikitext| wikidot_content_section(wikitext, Some(1)))
+                .unwrap_or_default();
+            if context.default_summary_first_paragraph {
+                list_pages_first_paragraph(&section).to_owned()
+            } else {
+                section
+            }
+        },
+        |html| push_list_pages_rendered_fragment(html, compat_html),
+    );
     let first_paragraph = context.page_rendered_first_paragraph.map_or_else(
         || {
             context
@@ -2359,7 +2432,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                 })
                 .unwrap_or_else(|| list_pages_first_paragraph(&summary).to_owned())
         },
-        |html| compat_html.push_html(list_pages_rendered_inline_fragment(html)),
+        |html| push_list_pages_rendered_fragment(html, compat_html),
     );
     let mut source_cursor = 0usize;
     let mut substituted_cursor = 0usize;
@@ -2696,9 +2769,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                         && let Some(rendered_content) =
                             context.page_rendered_content
                     {
-                        compat_html.push_html(list_pages_rendered_inline_fragment(
-                            rendered_content,
-                        ))
+                        push_list_pages_rendered_fragment(rendered_content, compat_html)
                     } else {
                         context.page_wikitext.map(|wikitext| {
                             protect_list_pages_content_insertion(

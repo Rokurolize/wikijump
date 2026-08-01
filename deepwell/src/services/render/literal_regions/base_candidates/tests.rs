@@ -143,15 +143,23 @@ fn overlapping_inline_math_close_is_not_a_token() {
 }
 
 #[test]
-fn text_token_delimiters_are_not_candidate_events() {
+fn pinned_text_token_delimiters_remain_visible_to_candidate_scanning() {
     let source = concat!(
         "https://e.test/a@@b foo@bar.example@<tail ",
         "[!-- live --]",
     );
     let candidates = runtime_candidates(source);
 
-    assert_eq!(candidates.len(), 1);
-    assert_eq!(candidates[0].opener.kind, DelimiterKind::CommentOpen);
+    assert_eq!(candidates.len(), 3);
+    assert_eq!(candidates[0].opener.kind, DelimiterKind::DoubleAt);
+    assert_eq!(candidates[0].opener.start, source.find("@@").unwrap());
+    assert_eq!(candidates[1].opener.kind, DelimiterKind::LeftRaw);
+    assert_eq!(candidates[1].opener.start, source.find("@<").unwrap());
+    assert_eq!(candidates[2].opener.kind, DelimiterKind::CommentOpen);
+    assert_eq!(
+        candidates[2].provenance,
+        BaseCandidateProvenance::ClosedOwner
+    );
 }
 
 #[test]

@@ -2355,6 +2355,8 @@ impl RenderService {
                 page_wikitext: page_wikitext.as_deref(),
                 page_rendered_content: rendered_page_content.as_deref(),
                 page_rendered_summary: rendered_page_summary.as_deref(),
+                default_summary_first_paragraph:
+                    template.is_default_template() && page_info.page.is_empty(),
                 fallback_link_titles: numbered_link_titles.as_ref(),
                 page_rendered_first_paragraph: rendered_page_first_paragraph
                     .as_deref(),

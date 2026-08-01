@@ -212,6 +212,7 @@ impl ListPagesVariables {
 #[derive(Debug)]
 pub(in crate::services::render) struct ListPagesTemplatePlan {
     body: String,
+    default_template: bool,
     sections: ListPagesSections,
     variables: ListPagesVariables,
     fields: FoundPageFields,
@@ -366,6 +367,7 @@ impl ListPagesTemplatePlan {
             return None;
         }
         let (sections, body) = split_list_pages_sections(body)?;
+        let default_template = body.trim().is_empty();
         let body = match body.trim() {
             "" => DEFAULT_LISTPAGES_TEMPLATE,
             body => body,
@@ -400,6 +402,7 @@ impl ListPagesTemplatePlan {
 
         Some(Self {
             body: body.to_owned(),
+            default_template,
             sections,
             variables,
             fields: found_page_fields(variables),
@@ -413,6 +416,10 @@ impl ListPagesTemplatePlan {
 
     pub(in crate::services::render) fn body(&self) -> &str {
         &self.body
+    }
+
+    pub(in crate::services::render) fn is_default_template(&self) -> bool {
+        self.default_template
     }
 
     /// The section emitted once before the rows, if the template declares one.

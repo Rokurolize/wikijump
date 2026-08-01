@@ -1347,6 +1347,7 @@ mod tests {
             page_wikitext: None,
             page_rendered_content: None,
             page_rendered_summary: None,
+            default_summary_first_paragraph: false,
             fallback_link_titles: None,
             page_rendered_first_paragraph: None,
             page_compiled_body_html: None,
