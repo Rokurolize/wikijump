@@ -2064,7 +2064,12 @@ fn push_list_pages_rendered_fragment(
     html: &str,
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
-    let rendered = list_pages_rendered_inline_fragment(html);
+    let has_html_block = list_pages_rendered_fragment_has_html_block(html);
+    let rendered = if has_html_block {
+        html.to_owned()
+    } else {
+        list_pages_rendered_inline_fragment(html)
+    };
     // The embed compatibility path intentionally splits one paragraph around
     // Wikidot's terminal "no match" block. Restore that flow fragment as a
     // block so it can close the surrounding row paragraph; other runtime
@@ -2074,7 +2079,7 @@ fn push_list_pages_rendered_fragment(
         && rendered.contains(
             r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#,
         ))
-        || list_pages_rendered_fragment_has_html_block(&rendered)
+        || has_html_block
     {
         compat_html.push_block_html(rendered)
     } else {
@@ -2884,8 +2889,11 @@ pub(super) fn substitute_list_pages_variables_inner(
 
 #[cfg(test)]
 mod tests {
+    use crate::services::render::compat::CompatHtmlFragments;
+
     use super::{
         list_pages_rendered_fragment_has_html_block, list_pages_rendered_inline_fragment,
+        push_list_pages_rendered_fragment,
     };
 
     #[test]
@@ -2916,5 +2924,29 @@ mod tests {
         assert!(!list_pages_rendered_fragment_has_html_block(
             r#"<p><iframe src="/page/html/hash-1" class="other-iframe"></iframe></p>"#,
         ));
+    }
+
+    #[test]
+    fn rendered_html_block_fragment_preserves_wikidot_paragraph_boundaries() {
+        let mut compat_html = CompatHtmlFragments::new("");
+        let marker = push_list_pages_rendered_fragment(
+            concat!(
+                "<p>DOC_HTML_BEGIN</p>\n",
+                "<p><iframe src=\"/page/html/hash-1\" ",
+                "class=\"html-block-iframe\"></iframe></p>",
+            ),
+            &mut compat_html,
+        );
+
+        let restored = compat_html.restore(&format!("<div><p>{marker}</p></div>"));
+
+        assert_eq!(
+            restored,
+            concat!(
+                "<div><p>DOC_HTML_BEGIN</p>\n",
+                "<p><iframe src=\"/page/html/hash-1\" ",
+                "class=\"html-block-iframe\"></iframe></p></div>",
+            ),
+        );
     }
 }
