@@ -140,3 +140,101 @@ now` named exactly those two entries:
 
 - `/tmp/wikijump-ftml-marker-contract/ftml-marker-e79129f6-00d361a8-kV7VZi/baseline`
 - `/tmp/wikijump-ftml-marker-contract/ftml-marker-e79129f6-00d361a8-kV7VZi/candidate`
+
+## Continuation revalidation
+
+Revalidated before continuing builds and replay on 2026-07-31:
+
+- Both Git registries still contain the same 124 worktrees recorded by the
+  post-cleanup machine-readable inventory: 68 Wikijump and 56 FTML.
+- The 42 worktrees below `/home/roku/.herdr/` remain externally owned,
+  inventory-only exclusions. No state below that path was changed.
+- The canonical Wikijump workspace is
+  `/home/roku/src/Rokurolize/wikijump`, branch
+  `compat/listpages-late-integration-20260730`, committed HEAD
+  `399f2b9c180ca83660ceb2c226817f81231645f7`, 38 commits ahead of and
+  zero commits behind
+  `origin/develop@7c666e62a1e8423952af6faa5cab83ca3f074736`.
+  Its 15 dirty tracked paths are the recovered campaign changes; none are
+  untracked or conflicted.
+- The currently needed FTML precursor is the primary workspace
+  `/home/roku/src/Rokurolize/ftml`, branch
+  `fix/wikidot-quote-whitespace-20260731`, committed HEAD
+  `9cae5ed93e7898e67165740194edd9e87411ae2c`, seven commits ahead of and
+  zero commits behind
+  `origin/main@f4e43ff6c6ef5c2d8df7e069589f475b9d2c954d`.
+  It has three dirty tracked paths and no untracked or conflicted paths.
+- The checked-in Wikijump dependency pin is the exact FTML main identity
+  `f4e43ff6c6ef5c2d8df7e069589f475b9d2c954d`; candidate validation
+  temporarily uses the dirty FTML primary workspace through Cargo's local
+  `paths` configuration.
+- The standing runtime remains bound to the protected rollback worktree
+  `/home/roku/wjlab/worktrees/wikijump/campaign-final-7c666e62a` and its
+  persistent PostgreSQL, Redis, MinIO, uploads, and Caddy data remain outside
+  cleanup scope.
+- The task candidate runtime is the only runtime referencing the canonical
+  source and its task build output. It is separate from the standing runtime.
+- No replay, Cargo, test-server, or browser process from a retired Codex
+  worker was live. The remaining Codex processes are the current session.
+- After the completed cleanup, free space at revalidation was 132 GiB on the
+  root filesystem and 27 GiB on `/mnt/oracle-store`.
+
+Remote fetches were read-only with respect to both dirty trees. The identities
+above are the fetched remote tips, not stale tracking refs.
+
+## Continuation revalidation — 2026-08-01
+
+Revalidated at `2026-08-01T01:21:09Z` after the recovery-cleanup prompt was
+reissued and before further compatibility builds:
+
+- The Git registries currently contain 121 existing worktrees: 65 Wikijump
+  and 56 FTML. There are no missing or prunable registrations. The prior
+  after-cleanup inventory remains the full per-worktree record of branch,
+  HEAD, dirty state, size, lock state, process and Docker references, and
+  recovery classification.
+- The current registry contains 70 worktrees previously classified as
+  recoverable unmerged work, seven standing runtime/rollback worktrees, one
+  canonical integration worktree, one currently needed FTML precursor, and
+  42 externally owned `/home/roku/.herdr/` exclusions. No path under
+  `/home/roku/.herdr/` was inspected beyond Git's registered metadata or
+  changed.
+- Three cleanly unregistered DevSpace worktrees disappeared after the prior
+  inventory, through activity outside this campaign:
+  `/home/roku/.devspace/worktrees/wikijump-1b138c4b` at
+  `0c54eaea5f5fcfe4ade8395065cd517317486b03`,
+  `/home/roku/.devspace/worktrees/wikijump-5ae71a52` at
+  `b10c4a094c847c0bf14cbf4c0de2f7115b2d5de3`, and
+  `/home/roku/.devspace/worktrees/wikijump-6ebe5574` at
+  `54fd1da10418e2b866f9c28017cd7a0f8092c5a2`. The first had only an
+  untracked `deepwell/examples/scout_server_without_workers.rs` (already
+  present in the canonical campaign workspace), the third had only
+  regenerable untracked `node_modules`, and the second was clean. This
+  campaign did not remove them or delete any branch ref.
+- The canonical Wikijump workspace remains
+  `/home/roku/src/Rokurolize/wikijump` on
+  `compat/listpages-late-integration-20260730` at
+  `399f2b9c180ca83660ceb2c226817f81231645f7`. It is 38 commits ahead of
+  and four commits behind
+  `origin/develop@ff82d1e18ae5d36f69030670f7a1f2a342fb0cb7`,
+  with 31 dirty tracked or untracked paths and no conflicts.
+- The required FTML precursor remains the primary workspace
+  `/home/roku/src/Rokurolize/ftml` on
+  `fix/wikidot-quote-whitespace-20260731` at
+  `9cae5ed93e7898e67165740194edd9e87411ae2c`, seven commits ahead of and
+  zero behind
+  `origin/main@f4e43ff6c6ef5c2d8df7e069589f475b9d2c954d`,
+  with 19 dirty tracked paths and no conflicts.
+- The checked-in FTML dependency remains exactly
+  `f4e43ff6c6ef5c2d8df7e069589f475b9d2c954d`; local candidate builds use
+  the primary FTML workspace through Cargo's path override.
+- The canonical Wikijump workspace occupies 46 GiB, the FTML primary
+  workspace 4.6 GiB, and the current task replay directory
+  `/tmp/listpages-campaign-replay-20260802-OgngDZ` 519 MiB. The root
+  filesystem has 161 GiB free (84% used), so no additional cleanup is
+  presently required before focused builds.
+- Two task candidate containers bind the canonical debug example binary and
+  locales. The protected standing Deepwell runtime remains bound only to its
+  configuration and the rollback locale tree at
+  `/home/roku/wjlab/worktrees/wikijump/campaign-final-7c666e62a`.
+  Persistent standing PostgreSQL, Redis, MinIO, uploads, Caddy state, and
+  rollback resources remain untouched.

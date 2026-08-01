@@ -1,0 +1,55 @@
+{
+  "generatedAt": "2026-08-01T00:27:11.422Z",
+  "source": {
+    "path": "/home/roku/.claude/jobs/39d2eb25/tmp/src.txt",
+    "sha256": "b05f1ab55746c5dec75a79f526276e9974c68dfb1334b99f64a55fe1a35bf138",
+    "bytes": 233,
+    "manifestMatched": false,
+    "manifestIndex": null,
+    "corpusSlug": null
+  },
+  "request": {
+    "rpcUrl": "http://127.0.0.1:12747/jsonrpc",
+    "site": "scp-wiki",
+    "title": "tmp",
+    "previewSlug": "preview-tmp",
+    "slugPrefix": "preview-",
+    "rpcTimeoutMs": 10000
+  },
+  "html": {
+    "path": "",
+    "bytes": 0
+  },
+  "diagnostics": {
+    "status": "failed-import",
+    "severity": "S4",
+    "category": "wikijump-import",
+    "warnings": [],
+    "errors": [
+      "JSON-RPC page_create failed: HTTP 200 {\"code\":3106,\"message\":\"User does not have permission to perform this action\",\"data\":{\"call_trace\":\"[1001] method 'page_create' failed, at src/api.rs:385:5\\n|-- [1009] failed to authenticate page create actor, at src/endpoints/page.rs:288:10\\n|-- [3106] page mutation requires an authenticated request context, at src/endpoints/page.rs:715:51\\n`-- [1001] user ID not present in request context, at src/services/context.rs:61:22\",\"code_trace\":[1001,1009,3106],\"extra\":null}}"
+    ],
+    "parserErrors": [],
+    "rawSyntaxLeaks": []
+  },
+  "dependencies": {
+    "includes": [],
+    "missingIncludes": []
+  },
+  "assets": {
+    "references": [
+      "nonexistent-file.png"
+    ],
+    "missingAssets": []
+  },
+  "wikijump": {
+    "action": "failed",
+    "pageId": null,
+    "revisionId": null,
+    "revisionNumber": null,
+    "url": "/preview-tmp"
+  },
+  "timing": {
+    "connectMs": 402,
+    "totalMs": 419
+  }
+}

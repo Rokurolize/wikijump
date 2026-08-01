@@ -1,0 +1,5 @@
+site	fullname	title	source_bytes	source_sha256	capture_method
+snippets	redirect	Redirect	165	7e21657d7ad2a2babd6daaec3c2dd499abf8e3dad1099ee9e95cda008230956f	wikidot.py Client anonymous Page.source
+snippets	redirect-backend	Redirect Backend	57	d97bd76048b05e6b79902a3acc09bf767146e1866123b5992afd646644e2050a	wikidot.py Client anonymous Page.source
+snippets	redirect-backend-advanced	Redirect Backend Advanced	228	7d7e90ec5ea3b874086b83c42577ba6355bf276e6e260d191f7252a62f19f03c	wikidot.py Client anonymous Page.source
+snippets	redirect-backend-default	Redirect Backend Default	250	70216dfe774b179e2c4b8508b74e29558e51bf72d04de84c05415490a704593d	wikidot.py Client anonymous Page.source
