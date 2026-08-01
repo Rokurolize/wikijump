@@ -58,8 +58,8 @@ pub(in crate::services::render) fn list_pages_body_is_no_visible_tracking_markup
             || lower.starts_with("<iframe ") && lower.contains("display: none")
             || lower.starts_with("[[module listusers ")
             || lower.starts_with("[[/module]]")
-            || lower.starts_with("[[%%content{0}%%module listusers ")
-            || lower.starts_with("[[%%content{0}%%/module]]");
+            || list_pages_content_module_listusers(&lower)
+            || list_pages_content_module_close(&lower);
         if !allowed {
             return false;
         }
@@ -69,9 +69,65 @@ pub(in crate::services::render) fn list_pages_body_is_no_visible_tracking_markup
     saw_tracking_markup
 }
 
+fn list_pages_content_marker_suffix(line: &str) -> Option<&str> {
+    let rest = line.strip_prefix("[[%%content{")?;
+    let marker_end = rest.find("}%%")?;
+    let marker = &rest[..marker_end];
+    if marker.is_empty() || !marker.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    Some(&rest[marker_end..])
+}
+
+fn list_pages_content_module_listusers(line: &str) -> bool {
+    let Some(module) = list_pages_content_marker_suffix(line)
+        .and_then(|suffix| suffix.strip_prefix("}%%module "))
+    else {
+        return false;
+    };
+    module
+        .split_ascii_whitespace()
+        .next()
+        .is_some_and(|name| name == "listusers")
+}
+
+fn list_pages_content_module_close(line: &str) -> bool {
+    list_pages_content_marker_suffix(line)
+        .is_some_and(|suffix| suffix.starts_with("}%%/module]]"))
+}
+
 #[cfg(test)]
 pub(in crate::services::render) fn list_pages_body_uses_content_variable(
     body: &str,
 ) -> bool {
     ListPagesTemplatePlan::compile(body).is_some_and(|plan| plan.uses_content())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn content_tracking_markers_accept_any_numeric_slot() {
+        assert!(list_pages_content_module_listusers(
+            "[[%%content{0}%%module listusers limit=\"1\"]]"
+        ));
+        assert!(list_pages_content_module_listusers(
+            "[[%%content{123}%%module listusers limit=\"1\"]]"
+        ));
+        assert!(list_pages_content_module_close("[[%%content{1}%%/module]]"));
+    }
+
+    #[test]
+    fn content_tracking_markers_reject_non_numeric_or_other_modules() {
+        assert!(!list_pages_content_module_listusers(
+            "[[%%content{slot}%%module listusers limit=\"1\"]]"
+        ));
+        assert!(!list_pages_content_module_listusers(
+            "[[%%content{1}%%module listpages limit=\"1\"]]"
+        ));
+        assert!(!list_pages_content_module_close(
+            "[[%%content{1}%%/module css]]"
+        ));
+    }
 }

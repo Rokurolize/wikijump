@@ -8763,7 +8763,7 @@ fn collects_single_line_wikidot_include_variables() {
         "]]\n",
     )
     .to_owned();
-    RenderService::normalize_wikidot_ta_badge_multiline_includes(&mut multiline_include);
+    RenderService::normalize_wikidot_multiline_includes(&mut multiline_include);
 
     ftml::include(
         &multiline_include,
@@ -8787,6 +8787,42 @@ fn collects_single_line_wikidot_include_variables() {
             .map(Cow::as_ref),
         Some("background-color: #fff "),
     );
+}
+
+#[test]
+fn normalizes_generic_wikidot_multiline_include_arguments() {
+    let mut include = concat!(
+        "[[include component:generic\n",
+        "|first=one\n",
+        "|second=two\n",
+        "]]\n",
+    )
+    .to_owned();
+
+    RenderService::normalize_wikidot_multiline_includes(&mut include);
+
+    assert_eq!(
+        include,
+        "[[include component:generic |first=one |second=two]]\n"
+    );
+}
+
+#[test]
+fn leaves_malformed_multiline_include_boundaries_untouched() {
+    let mut include = concat!(
+        "[[include component:generic\n",
+        "not-an-argument\n",
+        "]]\n",
+        "[[includex component:not-an-include\n",
+        "|first=one\n",
+        "]]\n",
+    )
+    .to_owned();
+    let original = include.clone();
+
+    RenderService::normalize_wikidot_multiline_includes(&mut include);
+
+    assert_eq!(include, original);
 }
 
 #[test]

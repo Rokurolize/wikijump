@@ -640,8 +640,8 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
             continue;
         }
         let comparison_value;
-        let raw_value = if argument.op == "=" || raw_key.starts_with('_') {
-            if raw_key.starts_with('_') && !matches!(argument.op, "=" | "!=") {
+        let raw_value = if argument.op == "=" || raw_key.starts_with("_") {
+            if raw_key.starts_with("_") && !matches!(argument.op, "=" | "!=") {
                 continue;
             }
             Cow::Borrowed(argument.value)
@@ -651,12 +651,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 "rating" | "votes" | "created_at" | "date" | "updated_at"
             )
         {
-            let comparison = if argument.op == "!=" {
-                "<>"
-            } else {
-                argument.op
-            };
-            comparison_value = format!("{comparison}{}", argument.value);
+            comparison_value = list_pages_comparison_value(argument.op, argument.value);
             Cow::Owned(comparison_value)
         } else {
             // Live ListPages treats operator forms outside the narrow,
@@ -1575,6 +1570,14 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
         unsupported_score_filter,
         unsupported_count_pages_filter,
     })
+}
+
+fn list_pages_comparison_value(operator: &str, value: &str) -> String {
+    if operator == "!=" {
+        format!("<>{value}")
+    } else {
+        format!("{operator}{value}")
+    }
 }
 
 pub(in crate::services::render) fn count_pages_should_remain_literal(

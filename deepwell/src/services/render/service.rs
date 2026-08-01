@@ -2689,33 +2689,39 @@ impl RenderService {
         html.replace("<u>", "").replace("</u>", "")
     }
 
-    fn normalize_wikidot_ta_badge_multiline_includes(wikitext: &mut String) {
-        const INCLUDE_PREFIX: &str = "[[include :scp-jp:user-component:ta-badge";
-
+    fn normalize_wikidot_multiline_includes(wikitext: &mut String) {
         let lines = Self::wikitext_line_ranges(wikitext);
         let mut replacements = Vec::new();
         let mut line_index = 0;
 
         while line_index < lines.len() {
             let (start, _, line) = lines[line_index];
-            if !Self::trim_wikitext_line(line).starts_with(INCLUDE_PREFIX) {
+            let trimmed = Self::trim_wikitext_line(line);
+            if !Self::is_wikidot_multiline_include_head(trimmed) {
                 line_index += 1;
                 continue;
             }
 
-            let mut include_lines = vec![Self::trim_wikitext_line(line).to_owned()];
+            let mut include_lines = vec![trimmed.to_owned()];
             let mut end_line_index = line_index;
+            let mut valid = true;
             while !Self::trim_wikitext_line(lines[end_line_index].2).ends_with("]]") {
                 end_line_index += 1;
                 if end_line_index >= lines.len() {
+                    valid = false;
                     break;
                 }
-                include_lines
-                    .push(Self::trim_wikitext_line(lines[end_line_index].2).to_owned());
+                let continuation = Self::trim_wikitext_line(lines[end_line_index].2);
+                if !continuation.ends_with("]]") && !continuation.starts_with('|') {
+                    valid = false;
+                    break;
+                }
+                include_lines.push(continuation.to_owned());
             }
 
-            if end_line_index >= lines.len() {
-                break;
+            if !valid || end_line_index >= lines.len() {
+                line_index += 1;
+                continue;
             }
 
             let (_, end, _) = lines[end_line_index];
@@ -2732,6 +2738,27 @@ impl RenderService {
         for (range, replacement) in replacements.into_iter().rev() {
             wikitext.replace_range(range, &replacement);
         }
+    }
+
+    fn is_wikidot_multiline_include_head(line: &str) -> bool {
+        let Some(rest) = line.strip_prefix("[[include") else {
+            return false;
+        };
+        if !rest
+            .chars()
+            .next()
+            .is_some_and(|character| character.is_ascii_whitespace())
+        {
+            return false;
+        }
+        let rest = rest.trim_start();
+        if rest.is_empty() || rest.contains("]]") {
+            return false;
+        }
+        let target_end = rest
+            .find(|character: char| character.is_ascii_whitespace() || character == '|')
+            .unwrap_or(rest.len());
+        target_end > 0
     }
 
     fn remove_preview_component_separator_markers(wikitext: &mut String) {
@@ -3366,7 +3393,7 @@ impl RenderService {
     ) -> Pin<Box<dyn Future<Output = Result<IncludeExpansion>> + Send + 'a>> {
         Box::pin(async move {
             let mut wikitext = wikitext;
-            Self::normalize_wikidot_ta_badge_multiline_includes(&mut wikitext);
+            Self::normalize_wikidot_multiline_includes(&mut wikitext);
             if expansion_context.settings.layout.legacy() {
                 expand_malformed_include_targets(&mut wikitext);
             }
