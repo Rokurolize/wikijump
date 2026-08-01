@@ -30,7 +30,7 @@ pub(in crate::services::render) fn substitute_list_pages_rating_only(
             }
         })
         .into_owned();
-    RenderService::resolve_wikidot_parser_functions(&substituted)
+    RenderService::resolve_wikidot_list_pages_parser_functions(&substituted)
 }
 
 pub(in crate::services::render) fn list_pages_first_paragraph(wikitext: &str) -> &str {
