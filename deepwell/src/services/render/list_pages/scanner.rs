@@ -1173,16 +1173,11 @@ impl<'a> ModuleEventScanner<'a> {
                         if validation == ModuleHeadValidation::DefiniteInvalid {
                             validation = if list_pages_compatibility
                                 && first_rollback_marker.is_none()
-                                && list_pages_url_quote_crossing_head_can_execute(
+                                && (list_pages_url_quote_crossing_head_can_execute(
                                     validation_head,
-                                ) {
-                                ModuleHeadValidation::ValidRuntimeUnsafe
-                            } else if list_pages_compatibility
-                                && first_rollback_marker.is_none()
-                                && list_pages_definite_invalid_head_can_execute(
+                                ) || list_pages_definite_invalid_head_can_execute(
                                     validation_head,
-                                )
-                            {
+                                )) {
                                 ModuleHeadValidation::ValidRuntimeUnsafe
                             } else if list_pages_compatibility
                                 && runtime_recognized
