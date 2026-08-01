@@ -25,13 +25,6 @@ which is why an unrelated change does not pay for the whole matrix. Its jobs:
 `full-ci.yaml` is opt-in through the `full-ci` label and runs the Playwright
 browser suite. It does not generate or export coverage.
 
-`source-size.yaml` enforces `scripts/source-size-baseline.txt`. It runs on
-every pull request because it is repository-wide and cheap, and because it is
-the check most likely to fail on a *merge result* rather than on either branch:
-two PRs that each add to one file can both pass alone and fail together. The
-`pre-commit` hook runs the same script so a file crossing its ceiling is caught
-as it is written.
-
 ## Post-merge and deployment
 
 `docker-build-*.yaml` build the container images per service and environment,
