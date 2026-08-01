@@ -4871,6 +4871,48 @@ async fn listpages_rating_vote_scalars_resolve_authored_expr_envelopes() {
 }
 
 #[tokio::test]
+async fn listpages_created_by_id_comment_gates_resolve_after_row_substitution() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "ListPages created-by-id comment gates",
+        concat!(
+            "[[module ListPages category=\"*\" order=\"name\" limit=\"1\"]]\n",
+            "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+            "LOW\n",
+            "[!-- --]\n",
+            "[[#ifexpr %%created_by_id%% > 6000000 |  | [!-- ]]\n",
+            "HIGH\n",
+            "[!-- --]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("created-by-id conditional ListPages preview should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains("LOW") || preview.contains("HIGH"),
+        "one selected branch should remain visible after row substitution:\n{preview}",
+    );
+    assert!(
+        !preview.contains("%%created_by_id%%")
+            && !preview.contains("[[#ifexpr")
+            && !preview.contains("[!--")
+            && !preview.contains("[!—"),
+        "generated comment gates and row variables must not leak into preview HTML:\n{preview}",
+    );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
 async fn listpages_empty_runtime_monospace_shells_collapse_authored_spaces() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

@@ -108,6 +108,39 @@ fn scanner_keeps_the_body_after_an_executable_head_with_trailing_note_text() {
 }
 
 #[test]
+fn scanner_keeps_generated_comment_gate_rows_inside_the_module() {
+    let source = concat!(
+        "[[module ListPages name=\"gate\"]]\n",
+        "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+        "LOW\n",
+        "[!-- --]\n",
+        "[[#ifexpr %%created_by_id%% > 6000000 |  | [!-- ]]\n",
+        "HIGH\n",
+        "[!-- --]\n",
+        "[[/module]]\n",
+        "[[module ListPages name=\"later\"]]LATER[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 2, "later modules must remain visible");
+    assert!(modules[0].body.contains("[[#ifexpr %%created_by_id%%"));
+    assert!(!modules[0].body.contains("[[/module]]"));
+
+    let literal = concat!(
+        "[[code]]\n",
+        "[[module ListPages name=\"literal\"]]\n",
+        "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+        "LOW\n",
+        "[!-- --]\n",
+        "[[/module]]\n",
+        "[[/code]]",
+    );
+    assert!(
+        find_list_pages_module_matches(literal).is_empty(),
+        "generated-looking gates in code remain literal",
+    );
+}
+
+#[test]
 fn scanner_ignores_inert_prose_after_supported_list_pages_arguments() {
     // Anonymous PagePreview boundary matrix:
     // listpages-head-recovery-{prose-ascii,prose-unicode,prose-nested-block,

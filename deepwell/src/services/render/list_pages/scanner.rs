@@ -163,6 +163,54 @@ fn find_module_close_ascii_case_insensitive(source: &str) -> Option<usize> {
         .position(|window| window.eq_ignore_ascii_case(b"[[/module]]"))
 }
 
+/// Locate a module closer hidden from the ordinary literal index by
+/// Wikidot's generated parser-function comment gates.  The gate idiom keeps
+/// an inactive branch in `[!-- ... [!-- --]` comments, so a structural scan
+/// that treats every comment as authored literal text can incorrectly make a
+/// complete ListPages module appear unclosed.  Recover only when the body has
+/// an executable, line-oriented `#if`/`#ifexpr` opener whose false branch is
+/// the evidenced `[!-- ]]` token and whose opener is outside a literal region.
+fn generated_gate_module_close(source: &str, body_start: usize) -> Option<usize> {
+    let literal_regions = LiteralRegionIndex::new_list_pages_scanner_syntax(source);
+    let mut saw_gate = false;
+    let mut line_start = body_start;
+    for line_with_ending in source[body_start..].split_inclusive('\n') {
+        let line = line_with_ending
+            .strip_suffix('\n')
+            .unwrap_or(line_with_ending);
+        let leading = line.len() - line.trim_start_matches([' ', '\t']).len();
+        let trimmed = &line[leading..];
+        let lowered = trimmed.to_ascii_lowercase();
+        if (lowered.starts_with("[[#if ")
+                || lowered.starts_with("[[#ifexpr ")
+                // `find_list_pages_module_matches_with_delayed_links` masks
+                // the three-byte `[[#` prefix in its scanner projection;
+                // retain the same narrow gate shape in that equal-width view.
+                || lowered.starts_with("if ")
+                || lowered.starts_with("ifexpr "))
+            && trimmed
+                .rsplit_once('|')
+                .is_some_and(|(_, branch)| branch.trim() == "[!-- ]]")
+            && literal_regions
+                .containing_range(line_start + leading)
+                .is_none()
+        {
+            saw_gate = true;
+        }
+        line_start += line_with_ending.len();
+    }
+    if !saw_gate {
+        return None;
+    }
+
+    let suffix = &source[body_start..];
+    let close = suffix
+        .as_bytes()
+        .windows(b"[[/module]]".len())
+        .position(|window| window.eq_ignore_ascii_case(b"[[/module]]"))?;
+    Some(body_start + close + b"[[/module]]".len())
+}
+
 fn first_module_opening_candidate(
     source: &str,
     subname: &[u8],
@@ -2441,6 +2489,46 @@ fn find_list_pages_module_matches_with_cursor_work_context(
     }
 
     if let Some(module) = active {
+        if module.depth == 1
+            && let Some(end) = generated_gate_module_close(source, module.body_start)
+        {
+            let body_end = end.saturating_sub(b"[[/module]]".len());
+            matches.push(ListPagesModuleMatch {
+                start: module.start,
+                body_start: module.body_start,
+                end,
+                head: module.head,
+                body: &source[module.body_start..body_end],
+                original: &source[module.start..end],
+                runtime_safe: module.runtime_safe,
+                preserve_original: false,
+                preserve_as_module654: false,
+                consume_empty_tail: false,
+            });
+            let (mut suffix_matches, suffix_work, suffix_literal_advances) =
+                find_list_pages_module_matches_with_cursor_work_context(
+                    &source[end..],
+                    false,
+                );
+            for suffix_module in &mut suffix_matches {
+                suffix_module.start += end;
+                suffix_module.body_start += end;
+                suffix_module.end += end;
+            }
+            matches.extend(suffix_matches);
+            let literal_range_advances = direct_literal_advances
+                + projected_literal_advances
+                + suffix_literal_advances;
+            return (
+                matches,
+                direct_work
+                    + projected_work
+                    + literal_range_advances
+                    + merge_work
+                    + suffix_work,
+                literal_range_advances,
+            );
+        }
         let executable_unclosed = module.depth == 1
             && if module.head.is_empty() {
                 module.body_start == source.len()

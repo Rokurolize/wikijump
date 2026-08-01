@@ -93,12 +93,27 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
     // authored source, before typed/generated slots are inserted. Running it
     // after slot insertion would reinterpret `%%...%%` slot ranges as source
     // syntax and leave residual percent prefixes in later rows.
+    // The legacy row idiom
+    // `[[#ifexpr ... |  | [!-- ]] ... [!-- --]` uses comments as the
+    // inactive branch.  FTML's normal preprocessing would consume those
+    // comments and typographically rewrite the opener before the row
+    // variables have been substituted, leaving the parser function literal.
+    // Preserve only these structurally recognized gate tokens through that
+    // pass; the ordinary delayed parser-function pass below still decides
+    // whether the branch is retained.
+    let generated_comment_gates =
+        protect_generated_parser_function_comment_gates(&mut prepared_body);
     ftml::preprocess_for_layout(&mut prepared_body, ftml::layout::Layout::Wikidot);
     ftml::preproc::whitespace::normalize_wikidot_whitespace_only_lines(
         &mut prepared_body,
     );
     ftml::preproc::typography::substitute_wikidot(&mut prepared_body);
     substitute_literal_advanced_table_opener_typography(&mut prepared_body);
+    if let Some((opening, closing)) = generated_comment_gates {
+        prepared_body = prepared_body
+            .replace(&opening, "[!--")
+            .replace(&closing, "--]");
+    }
     resolve_outermost_wikidot_iftags(&mut prepared_body, outer_page_tags, compat_text);
     neutralize_authored_markers(&mut prepared_body);
     let mut fragments = CompatHtmlFragments::new(&prepared_body);
@@ -366,11 +381,48 @@ fn protect_generated_parser_function_comment_gates(
     for (range, _, _) in replacements.iter().rev() {
         literal_projection.replace_range(range.clone(), &" ".repeat(range.len()));
     }
+    // Neutralize the matching standalone close while constructing the literal
+    // index; otherwise the generated opener makes that close look comment-
+    // owned and prevents us from preserving it through preprocessing.
+    let mut projection_line_start = 0usize;
+    for line in source.split_inclusive('\n') {
+        let line_body = line.strip_suffix('\n').unwrap_or(line);
+        let leading = line_body.len() - line_body.trim_start_matches([' ', '\t']).len();
+        if line_body[leading..].trim() == "[!-- --]" {
+            let range = projection_line_start + leading
+                ..projection_line_start + leading + "[!-- --]".len();
+            literal_projection.replace_range(range, &" ".repeat("[!-- --]".len()));
+        }
+        projection_line_start += line.len();
+    }
     let literal_regions = LiteralRegionIndex::new(&literal_projection);
     replacements
         .retain(|(_, function_start, _)| !literal_regions.contains(*function_start));
     if replacements.is_empty() {
         return None;
+    }
+
+    // The matching generated close is a standalone `[!-- --]` line rather
+    // than another parser-function opener.  Preserve those lines too, while
+    // keeping authored comments in code/raw/HTML owned by their literal
+    // context.
+    let generated_gate_present = !replacements.is_empty();
+    let mut line_start = 0usize;
+    for line in source.split_inclusive('\n') {
+        let line_body = line.strip_suffix('\n').unwrap_or(line);
+        let leading = line_body.len() - line_body.trim_start_matches([' ', '\t']).len();
+        let trimmed = &line_body[leading..];
+        if trimmed == "[!-- --]"
+            && generated_gate_present
+            && !literal_regions.contains(line_start + leading)
+        {
+            replacements.push((
+                line_start + leading..line_start + leading + "[!-- --]".len(),
+                line_start + leading,
+                closing.as_str(),
+            ));
+        }
+        line_start += line.len();
     }
     for (range, _, marker) in replacements.into_iter().rev() {
         source.replace_range(range, marker);
@@ -710,7 +762,13 @@ pub(in crate::services::render) fn resolve_wikidot_parser_functions_outside_list
     }
     protected.push_str(&source[cursor..]);
 
-    fragments.restore(&ftml::preproc::resolve_wikidot_parser_functions(&protected))
+    let generated_comment_gates =
+        protect_generated_parser_function_comment_gates(&mut protected);
+    let mut resolved = ftml::preproc::resolve_wikidot_parser_functions(&protected);
+    if let Some((opening, closing)) = generated_comment_gates {
+        resolved = resolved.replace(&opening, "[!--").replace(&closing, "--]");
+    }
+    fragments.restore(&resolved)
 }
 
 pub(in crate::services::render) fn seal_list_pages_delayed_output(
