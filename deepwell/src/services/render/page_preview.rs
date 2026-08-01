@@ -47,7 +47,9 @@ impl RenderService {
             tags: Vec::new(),
             language: Cow::Owned(locale_for_ftml(&site.locale).to_owned()),
         };
-        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut settings =
+            WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        settings.enable_html_blocks = false;
         let RenderInnerOutput {
             html_output,
             errors,

@@ -18,7 +18,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::services::render::module_arguments::wikidot_list_pages_arguments;
+use crate::services::render::module_arguments::{
+    WikidotModuleArgumentValueKind, wikidot_list_pages_arguments,
+};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use super::super::data_forms::{
@@ -29,17 +32,115 @@ use super::super::data_forms::{
 use super::super::template::LISTPAGES_VARIABLE_REGEX;
 use super::split_list_pages_values;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(super) enum ListPagesNameSelector {
+    CurrentPage,
+    Exact(Cow<'static, str>),
+    Pattern(Cow<'static, str>),
+}
+
+pub(super) struct ComposedListPagesNameSelector {
+    pub(super) current_page_only: bool,
+    pub(super) slug: Option<Cow<'static, str>>,
+    pub(super) name_pattern: Option<Cow<'static, str>>,
+    pub(super) unsupported: bool,
+}
+
+pub(super) fn compose_list_pages_name_selectors(
+    canonical: Option<ListPagesNameSelector>,
+    alias: Option<ListPagesNameSelector>,
+) -> ComposedListPagesNameSelector {
+    let mut selectors = [canonical, alias].into_iter().flatten();
+    let first = selectors.next();
+    let second = selectors.next();
+    let (current_page_only, slug, name_pattern, unsupported) = match (first, second) {
+        (None, None) => (false, None, None, false),
+        (Some(ListPagesNameSelector::CurrentPage), None) => (true, None, None, false),
+        (Some(ListPagesNameSelector::Exact(exact)), None) => {
+            (false, Some(exact), None, false)
+        }
+        (Some(ListPagesNameSelector::Pattern(pattern)), None) => {
+            (false, None, Some(pattern), false)
+        }
+        (Some(first), Some(second)) if first == second => match first {
+            ListPagesNameSelector::CurrentPage => (true, None, None, false),
+            ListPagesNameSelector::Exact(exact) => (false, Some(exact), None, false),
+            ListPagesNameSelector::Pattern(pattern) => {
+                (false, None, Some(pattern), false)
+            }
+        },
+        (
+            Some(ListPagesNameSelector::Exact(first)),
+            Some(ListPagesNameSelector::Exact(second)),
+        ) => (false, Some(first), Some(second), false),
+        (
+            Some(ListPagesNameSelector::Exact(exact)),
+            Some(ListPagesNameSelector::Pattern(pattern)),
+        )
+        | (
+            Some(ListPagesNameSelector::Pattern(pattern)),
+            Some(ListPagesNameSelector::Exact(exact)),
+        ) => (false, Some(exact), Some(pattern), false),
+        (Some(_), Some(_)) => (false, None, None, true),
+        (None, Some(_)) => unreachable!("the second name selector follows the first"),
+    };
+
+    ComposedListPagesNameSelector {
+        current_page_only,
+        slug,
+        name_pattern,
+        unsupported,
+    }
+}
+
+fn is_list_pages_url_token_delimiter(byte: u8) -> bool {
+    byte.is_ascii_whitespace() || matches!(byte, b',' | b';')
+}
+
+fn list_pages_url_token_range(value: &str) -> Option<(usize, usize)> {
+    let selector = value
+        .split_once('|')
+        .map(|(selector, _)| selector)
+        .unwrap_or(value);
+    selector
+        .as_bytes()
+        .windows(4)
+        .enumerate()
+        .find_map(|(start, token)| {
+            if !token.eq_ignore_ascii_case(b"@url")
+                || start.checked_sub(1).is_some_and(|left| {
+                    !is_list_pages_url_token_delimiter(selector.as_bytes()[left])
+                })
+                || selector
+                    .as_bytes()
+                    .get(start + token.len())
+                    .is_some_and(|right| !is_list_pages_url_token_delimiter(*right))
+            {
+                return None;
+            }
+            Some((start, start + token.len()))
+        })
+}
+
 pub(in crate::services::render) fn is_dynamic_list_pages_value(value: &str) -> bool {
-    value.eq_ignore_ascii_case("@url")
-        || value
-            .split_once('|')
-            .is_some_and(|(selector, _)| selector.eq_ignore_ascii_case("@url"))
+    list_pages_url_token_range(value).is_some()
 }
 
 pub(in crate::services::render) fn list_pages_url_fallback(value: &str) -> Option<&str> {
     value.split_once('|').and_then(|(selector, fallback)| {
-        selector.eq_ignore_ascii_case("@url").then_some(fallback)
+        list_pages_url_token_range(selector)
+            .is_some()
+            .then_some(fallback)
     })
+}
+
+pub(in crate::services::render) fn parse_list_pages_numeric_argument(
+    value: &str,
+) -> Option<u64> {
+    let value = list_pages_url_fallback(value).unwrap_or(value);
+    (!value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()))
+        .then(|| value.parse().ok())
+        .flatten()
 }
 
 /// What an `@URL` selector resolves to once the request's URL is known.
@@ -47,7 +148,8 @@ pub(in crate::services::render) enum UrlSelector<'a> {
     /// The selector names no `@URL`, or names one whose fallback applies.
     Static(&'a str),
 
-    /// The URL supplied a tag, which replaces the whole `@URL` selector.
+    /// The URL supplied a value, which replaces its standalone `@URL` token
+    /// while retaining any adjacent selector modifiers.
     Resolved(String),
 
     /// `@URL` with nothing to resolve to and no fallback. Live drops the
@@ -69,12 +171,21 @@ pub(in crate::services::render) fn resolve_url_selector<'a>(
     value: &'a str,
     url_value: Option<&str>,
 ) -> UrlSelector<'a> {
-    if !is_dynamic_list_pages_value(value) {
+    let selector = value
+        .split_once('|')
+        .map(|(selector, _)| selector)
+        .unwrap_or(value);
+    let Some((start, end)) = list_pages_url_token_range(selector) else {
         return UrlSelector::Static(value);
-    }
+    };
     match url_value {
         Some(resolved) if !resolved.is_empty() => {
-            UrlSelector::Resolved(resolved.to_owned())
+            let mut value =
+                String::with_capacity(selector.len() - (end - start) + resolved.len());
+            value.push_str(&selector[..start]);
+            value.push_str(resolved);
+            value.push_str(&selector[end..]);
+            UrlSelector::Resolved(value)
         }
         _ => match list_pages_url_fallback(value) {
             Some(fallback) => UrlSelector::Static(fallback),
@@ -101,9 +212,11 @@ pub(in crate::services::render) fn list_pages_static_category_preflight(
     head: &str,
 ) -> Option<(Vec<String>, bool)> {
     let arguments = wikidot_list_pages_arguments(head);
-    let mut categories = arguments
-        .iter()
-        .filter(|argument| argument.key.eq_ignore_ascii_case("category"));
+    let mut categories = arguments.iter().filter(|argument| {
+        argument.key == "category"
+            && argument.op == "="
+            && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
+    });
     let category = categories.next()?;
     if categories.next().is_some() || category.op != "=" {
         return None;
@@ -119,7 +232,11 @@ pub(in crate::services::render) fn list_pages_static_category_preflight(
         {
             return None;
         }
-        included.push(category);
+        let category = category.strip_prefix('+').unwrap_or(&category);
+        if category.is_empty() {
+            return None;
+        }
+        included.push(category.to_lowercase());
     }
     if included.is_empty() {
         return None;
@@ -127,16 +244,32 @@ pub(in crate::services::render) fn list_pages_static_category_preflight(
 
     let wrapper = arguments
         .iter()
-        .filter(|argument| argument.key.eq_ignore_ascii_case("wrapper"))
-        .map(|argument| {
-            !matches!(
-                argument.value.trim().to_ascii_lowercase().as_str(),
-                "false" | "no"
-            )
+        .filter(|argument| {
+            argument.key == "wrapper"
+                && argument.op == "="
+                && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
         })
+        .map(|argument| !matches!(argument.value, "false" | "no"))
         .next_back()
         .unwrap_or(true);
     Some((included, wrapper))
+}
+
+pub(in crate::services::render) fn split_list_pages_tag_values(
+    value: &str,
+) -> Vec<String> {
+    value
+        .split(|character: char| {
+            character.is_whitespace() || matches!(character, ',' | ';')
+        })
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            part.strip_prefix('"')
+                .and_then(|part| part.strip_suffix('"'))
+                .unwrap_or(part)
+                .to_lowercase()
+        })
+        .collect()
 }
 
 pub(in crate::services::render) fn substitute_list_pages_current_data_form_variables(
@@ -210,21 +343,18 @@ pub(in crate::services::render) fn list_pages_has_unsupported_parent_selector(
 pub(in crate::services::render) fn list_pages_has_unsupported_page_type_selector(
     head: &str,
 ) -> bool {
-    wikidot_list_pages_arguments(head)
-        .into_iter()
-        .any(|argument| {
-            if !matches!(
-                argument.key.to_ascii_lowercase().as_str(),
-                "pagetype" | "page_type" | "page-type"
-            ) {
-                return false;
-            }
+    let mut canonical = None;
+    for argument in wikidot_list_pages_arguments(head) {
+        if argument.op != "=" {
+            continue;
+        }
+        if argument.key.eq_ignore_ascii_case("pagetype") {
+            canonical = Some(argument.value);
+        }
+    }
 
-            let value = argument.value.trim();
-            let value = list_pages_url_fallback(value).unwrap_or(value);
-            !matches!(
-                value.to_ascii_lowercase().as_str(),
-                "all" | "*" | "hidden" | "normal" | ""
-            )
-        })
+    canonical.is_some_and(|value| {
+        let value = list_pages_url_fallback(value).unwrap_or(value);
+        value != "0" && super::parse_list_pages_page_type(value).is_none()
+    })
 }

@@ -49,7 +49,7 @@ use wikidot_normalize::normalize;
 
 static WIKIDOT_LIST_PAGES_SET_PAIR_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?s)<span class="set (?P<name_class>[^"]+)"><span class="name">(?P<name>.*?)</span></span><span class="set (?P<value_class>[^"]+)"><span class="value">(?P<value>.*?)</span></span>"#,
+        r#"(?s)<span class="set (?P<name_class>[^"]+)"><span class="name">(?P<name>.*?)</span>\s*</span>\s*<span class="set (?P<value_class>[^"]+)"><span class="value">(?P<value>.*?)</span>\s*</span>"#,
     )
     .expect("Wikidot ListPages set-pair expression is valid")
 });

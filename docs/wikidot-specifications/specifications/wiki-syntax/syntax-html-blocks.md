@@ -20,6 +20,30 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### HTML blocks remain literal in page preview and execute only after save
+
+- Observation ID: `listpages-preview-and-saved-html-context-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: Anonymous and role-differential PagePreviewModule captures keep complete and malformed HTML-block-shaped source literal, while a provenance-matched public saved page executes the same complete construct in an html-block iframe. This is a page lifecycle and runtime-authority distinction rather than a different HTML-block grammar.
+
+Normative behavior:
+
+- PagePreview keeps HTML-block-shaped authored or ListPages-generated source literal and escaped; it does not create an iframe, frame request, or intermediate executable preview state.
+- The rule is actor-independent for the anonymous, administrator, ordinary-member, and non-member roles observed on the controlled sandbox.
+- Saved-page rendering retains the executable html-block-iframe behavior for a complete HTML block.
+- Preview and saved-page behavior must be selected by an explicit render context rather than by rewriting settled HTML.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+
+
 
 ## Suggested public TDD seams
 

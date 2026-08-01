@@ -281,7 +281,7 @@ impl RenderService {
         wikitext: &str,
         current_site: Option<&SiteModel>,
         config: &Config,
-        current_page: &str,
+        current_page: Option<&str>,
         link_titles: Option<&WikidotCompatLinkTitleMap>,
     ) -> WikidotCompatibilityFallbackOutput {
         let localized =
@@ -292,7 +292,7 @@ impl RenderService {
         }) {
             return Self::render_wikidot_compatibility_fallback_output_for_context(
                 &localized,
-                Some(current_page),
+                current_page,
                 current_site.map(|site| site.slug.as_str()),
                 link_titles,
             );
@@ -301,7 +301,7 @@ impl RenderService {
         if Self::wikidot_compat_text_has_markup(&localized) {
             return Self::render_wikidot_compatibility_fallback_output_for_context(
                 &localized,
-                Some(current_page),
+                current_page,
                 current_site.map(|site| site.slug.as_str()),
                 link_titles,
             );
@@ -1446,7 +1446,7 @@ impl RenderService {
         Self::render_wikidot_compat_fallback_inline_html_for_page(value, None, None)
     }
 
-    fn render_wikidot_compat_fallback_inline_html_for_page(
+    pub(in crate::services::render) fn render_wikidot_compat_fallback_inline_html_for_page(
         value: &str,
         _current_page: Option<&str>,
         link_titles: Option<&WikidotCompatLinkTitleMap>,

@@ -110,6 +110,9 @@ function validateMeta(meta, rowPath) {
   assertNonNegativeInteger(meta.comments, 'comments', rowPath);
   assertInteger(meta.rating, 'rating', rowPath);
   assertNonNegativeInteger(meta.revisions, 'revisions', rowPath);
+  if (Object.hasOwn(meta, 'size') && meta.size !== null) {
+    assertNonNegativeInteger(meta.size, 'size', rowPath);
+  }
 
   if (!Array.isArray(meta.tags) || meta.tags.some((tag) => typeof tag !== 'string')) {
     throw new Error(`${rowPath}: meta.tags must be an array of strings`);
@@ -211,6 +214,9 @@ function normalizeSourceBundleMeta(meta, rowPath) {
     comments: coerceNonNegativeInteger(meta.comments ?? meta.comments_count ?? 0, 'comments_count', rowPath),
     rating: Object.hasOwn(meta, 'rating') ? coerceInteger(meta.rating, 'rating', rowPath) : 0,
     revisions: coerceNonNegativeInteger(meta.revisions ?? meta.revisions_count ?? 0, 'revisions_count', rowPath),
+    size: Object.hasOwn(meta, 'size')
+      ? coerceNonNegativeInteger(meta.size, 'size', rowPath)
+      : null,
     tags: meta.tags,
     source_bytes: Object.hasOwn(meta, 'source_bytes') ? coerceNonNegativeInteger(meta.source_bytes, 'source_bytes', rowPath) : null,
     source_sha256: meta.source_sha256 ?? null,
@@ -573,6 +579,7 @@ function rowFromRecord({
     comments: meta.comments,
     rating: meta.rating,
     revisions: meta.revisions,
+    wikidot_size: meta.size ?? null,
     tags: [...meta.tags].sort(codePointCompare),
     source_sha256: sha256Hex(sourceFile.buffer),
     meta_sha256: sha256Hex(metaFile.buffer),

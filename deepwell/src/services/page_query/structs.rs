@@ -41,7 +41,7 @@ pub enum PageTypeSelector {
 pub type CategoryList<'a> = &'a [Cow<'a, str>];
 pub type TagList<'a> = &'a [Cow<'a, str>];
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IncludedCategories<'a> {
     All,
     List(CategoryList<'a>),

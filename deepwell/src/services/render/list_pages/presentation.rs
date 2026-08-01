@@ -33,7 +33,7 @@ use super::parents::ListPagesParentDisplay;
 use super::substitution::{ListPagesSnapshotDisplay, WikidotUserDisplay};
 #[cfg(test)]
 use super::substitution::{
-    ListPagesSubstitutionContext, substitute_list_pages_variables_with_fragments,
+    ListPagesSubstitutionContext, substitute_list_pages_variables_inner,
 };
 use super::template::LISTPAGES_VARIABLE_REGEX;
 use crate::services::page_query::FoundPageRow;
@@ -49,7 +49,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables(
 ) -> String {
     let mut compat_html = CompatHtmlFragments::new(template);
     let mut compat_text = CompatTextFragments::new(template);
-    let protected = substitute_list_pages_variables_with_fragments(
+    let protected = substitute_list_pages_variables_inner(
         template,
         page,
         index,
@@ -57,6 +57,9 @@ pub(in crate::services::render) fn substitute_list_pages_variables(
         context,
         &mut compat_html,
         &mut compat_text,
+        None,
+        None,
+        false,
     );
     compat_text.restore(&compat_html.restore(&protected))
 }
@@ -183,16 +186,19 @@ pub(in crate::services::render) fn render_list_pages_wikidot_user(
         return escape_list_pages_html_text(&user.name);
     }
     let slug = user.slug.as_deref().unwrap_or(&user.name);
+    let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
     format!(
         concat!(
             r#"<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">"#,
             r#"<a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
-            r#"<img alt="{name}" class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;size=small"/>"#,
+            r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
+            r#"alt="{name}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})" />"#,
             r#"</a><a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">{name}</a>"#,
             r#"</span>"#
         ),
         slug = escape_list_pages_html_attr(slug),
         user_id = user.user_id,
+        avatar_timestamp = avatar_timestamp,
         name = escape_list_pages_html_text(&user.name),
     )
 }
@@ -313,17 +319,26 @@ pub(in crate::services::render) fn format_list_pages_created_at(
     // A requested display format belongs to the later ODate client phase and
     // is transported only through the `format_*` class.
     let text = format_wikidot_list_pages_date(created_at, DEFAULT_FORMAT);
-    let encoded_format = percent_encode_path_segment(format);
+    let mut normalized_format = String::with_capacity(format.len());
+    let mut previous_was_space = false;
+    for character in format.chars() {
+        if character == ' ' && previous_was_space {
+            continue;
+        }
+        normalized_format.push(character);
+        previous_was_space = character == ' ';
+    }
+    let encoded_format = percent_encode_path_segment(&normalized_format);
     if render_as_html {
         format!(
-            r#"<span class="odate time_{} format_{}" style="cursor: help; display: inline;">{}</span>"#,
+            r#"<span class="odate time_{} format_{}">{}</span>"#,
             created_at.unix_timestamp(),
             encoded_format,
             escape_list_pages_html_text(&text),
         )
     } else {
         format!(
-            r#"<span class="odate time_{} format_{}" data-wikijump-compat-date="1" style="cursor: help; display: inline;">{}</span>"#,
+            r#"<span class="odate time_{} format_{}" data-wikijump-compat-date="1">{}</span>"#,
             created_at.unix_timestamp(),
             encoded_format,
             escape_list_pages_html_text(&text),

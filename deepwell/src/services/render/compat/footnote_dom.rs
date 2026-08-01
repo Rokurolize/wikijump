@@ -42,6 +42,59 @@ pub(in crate::services::render) fn restore_wikidot_footnote_list_dom(
     restored
 }
 
+pub(in crate::services::render) fn enclose_list_pages_footnote_footer(
+    html: &str,
+) -> String {
+    const WRAPPER_OPENS: [&str; 2] = [
+        r#"<div class="list-pages-box">"#,
+        r#"<div class="list-pages-item">"#,
+    ];
+    const FOOTNOTES_OPEN: &str = r#"<div class="footnotes-footer">"#;
+    const DIV_CLOSE: &str = "</div>";
+
+    let mut enclosed = html.to_owned();
+    let mut search_start = 0usize;
+    while let Some(relative_start) = enclosed[search_start..].find(FOOTNOTES_OPEN) {
+        let mut footnotes_start = search_start + relative_start;
+        loop {
+            let close_end = enclosed[..footnotes_start]
+                .trim_end_matches([' ', '\t', '\r', '\n'])
+                .len();
+            let Some(before_close) = enclosed[..close_end].strip_suffix(DIV_CLOSE) else {
+                break;
+            };
+            let close_start = before_close.len();
+            let wrapper_start = WRAPPER_OPENS
+                .iter()
+                .filter_map(|wrapper| enclosed[..close_start].rfind(wrapper))
+                .filter(|start| {
+                    balanced_element_end(&enclosed, *start, "<div", DIV_CLOSE)
+                        == Some(close_end)
+                })
+                .max();
+            let Some(_wrapper_start) = wrapper_start else {
+                break;
+            };
+            let Some(footnotes_end) =
+                balanced_element_end(&enclosed, footnotes_start, "<div", DIV_CLOSE)
+            else {
+                break;
+            };
+
+            let move_start = enclosed[..close_start]
+                .trim_end_matches([' ', '\t', '\r', '\n'])
+                .len();
+            let moved_close = enclosed[move_start..close_end].to_owned();
+            enclosed.replace_range(move_start..close_end, "");
+            footnotes_start -= moved_close.len();
+            let insertion = footnotes_end - moved_close.len();
+            enclosed.insert_str(insertion, &moved_close);
+        }
+        search_start = footnotes_start + FOOTNOTES_OPEN.len();
+    }
+    enclosed
+}
+
 fn restore_list(list: &str) -> String {
     const TITLE_OPEN: &str = r#"<div class="wj-title">"#;
     let Some(body) = list
@@ -177,5 +230,59 @@ mod tests {
         assert!(!restored.contains("wj-footnote"));
         assert!(!restored.contains("<ol>"));
         assert!(!restored.contains("<li"));
+    }
+
+    #[test]
+    fn keeps_an_adjacent_generated_footer_inside_a_list_pages_wrapper() {
+        let html = concat!(
+            r#"<div class="list-pages-box"><p>HEAD</p>"#,
+            "\n    </div>",
+            r#"<div class="footnotes-footer"><div class="title">Footnotes</div>"#,
+            r#"<div class="footnote-footer" id="footnote-1">NOTE</div></div>"#,
+        );
+
+        let enclosed = enclose_list_pages_footnote_footer(html);
+
+        assert_eq!(
+            enclosed,
+            concat!(
+                r#"<div class="list-pages-box"><p>HEAD</p>"#,
+                r#"<div class="footnotes-footer"><div class="title">Footnotes</div>"#,
+                r#"<div class="footnote-footer" id="footnote-1">NOTE</div></div>"#,
+                "\n    </div>",
+            ),
+        );
+    }
+
+    #[test]
+    fn keeps_an_adjacent_generated_footer_inside_the_list_pages_item() {
+        let html = concat!(
+            r#"<div class="list-pages-box"><div class="list-pages-item"><p>ROW</p>"#,
+            "</div></div>",
+            r#"<div class="footnotes-footer"><div class="title">Footnotes</div>"#,
+            r#"<div class="footnote-footer" id="footnote-1">NOTE</div></div>"#,
+        );
+
+        let enclosed = enclose_list_pages_footnote_footer(html);
+
+        assert_eq!(
+            enclosed,
+            concat!(
+                r#"<div class="list-pages-box"><div class="list-pages-item"><p>ROW</p>"#,
+                r#"<div class="footnotes-footer"><div class="title">Footnotes</div>"#,
+                r#"<div class="footnote-footer" id="footnote-1">NOTE</div></div>"#,
+                "</div></div>",
+            ),
+        );
+    }
+
+    #[test]
+    fn ignores_a_nonclosing_utf8_prefix_before_a_footnote_footer() {
+        let html = concat!(
+            r#"<div class="list-pages-box">a。abcd"#,
+            r#"<div class="footnotes-footer"><div class="title">Footnotes</div></div>"#,
+        );
+
+        assert_eq!(enclose_list_pages_footnote_footer(html), html);
     }
 }

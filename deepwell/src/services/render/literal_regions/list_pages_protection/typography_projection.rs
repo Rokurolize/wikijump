@@ -190,10 +190,10 @@ mod tests {
     #[test]
     fn projected_email_ownership_matches_pinned_ellipsis_output() {
         for (source, delimiter, raw_owned, projected_owned) in [
-            ("a@b...@@ tail", "@@", true, false),
-            ("a@b...@< tail", "@<", true, false),
-            ("a@b.c. . .@@ tail", "@@", false, true),
-            ("a@b.c. . .@< tail", "@<", false, true),
+            ("a@b...@@ tail", "@@", false, false),
+            ("a@b...@< tail", "@<", false, false),
+            ("a@b.c. . .@@ tail", "@@", false, false),
+            ("a@b.c. . .@< tail", "@<", false, false),
             ("a@b.c. . . @@ tail", "@@", false, false),
             ("a@b... @@ tail", "@@", false, false),
             ("a@b... . . . ...@@ tail", "@@", false, false),
@@ -217,9 +217,9 @@ mod tests {
     #[test]
     fn projected_url_ownership_matches_pinned_typography_output() {
         for (source, delimiter, raw_owned, projected_owned) in [
-            ("https://e.test/a...@@ tail", "@@", true, true),
+            ("https://e.test/a...@@ tail", "@@", false, false),
             ("https://e.test/a...@< tail", "@<", true, true),
-            ("https://e.test/a. . .@@ tail", "@@", false, true),
+            ("https://e.test/a. . .@@ tail", "@@", false, false),
             ("https://e.test/a. . .@< tail", "@<", false, true),
         ] {
             let inert = inert_projection(source);
@@ -243,20 +243,13 @@ mod tests {
         for source in [
             r#"a@b...@@ [[module ListPages name="hidden"]]x[[/module]] @@"#,
             r#"a@b...@< [[module ListPages name="hidden"]]x[[/module]] >@"#,
+            r#"a@b.c. . .@@ [[module ListPages name="visible"]]x[[/module]] @@"#,
+            r#"a@b.c. . .@< [[module ListPages name="visible"]]x[[/module]] >@"#,
         ] {
             assert!(
                 find_list_pages_module_matches(source).is_empty(),
                 "{source:?}"
             );
-        }
-
-        for source in [
-            r#"a@b.c. . .@@ [[module ListPages name="visible"]]x[[/module]] @@"#,
-            r#"a@b.c. . .@< [[module ListPages name="visible"]]x[[/module]] >@"#,
-        ] {
-            let modules = find_list_pages_module_matches(source);
-            assert_eq!(modules.len(), 1, "{source:?}");
-            assert_eq!(modules[0].head, r#"name="visible""#, "{source:?}");
         }
     }
 

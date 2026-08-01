@@ -132,6 +132,7 @@ impl RenderService {
         #[derive(FromQueryResult, Debug)]
         struct SnapshotDisplayRow {
             page_id: i64,
+            title_shown: Option<String>,
             source_created_at: time::OffsetDateTime,
             source_updated_at: time::OffsetDateTime,
             created_by_user_id: Option<i64>,
@@ -172,7 +173,8 @@ impl RenderService {
             txn.get_database_backend(),
             format!(
                 "WITH input(page_id) AS (VALUES {values}) \
-                 SELECT snapshot.page_id, snapshot.source_created_at, snapshot.source_updated_at, \
+                 SELECT snapshot.page_id, snapshot.title_shown, \
+                        snapshot.source_created_at, snapshot.source_updated_at, \
                         CASE \
                             WHEN snapshot.meta_json ->> 'created_by_id' ~ '^[1-9][0-9]{{0,18}}$' \
                                  AND (length(snapshot.meta_json ->> 'created_by_id') < 19 \
@@ -217,6 +219,7 @@ impl RenderService {
                     .map(
                         |SnapshotDisplayRow {
                              page_id,
+                             title_shown,
                              source_created_at,
                              source_updated_at,
                              created_by_user_id,
@@ -235,6 +238,7 @@ impl RenderService {
                             (
                                 page_id,
                                 ListPagesSnapshotDisplay {
+                                    title_shown,
                                     created_at: source_created_at,
                                     updated_at: source_updated_at,
                                     created_by_user_id,

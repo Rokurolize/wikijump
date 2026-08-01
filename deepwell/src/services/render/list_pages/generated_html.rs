@@ -22,7 +22,9 @@
 
 use super::super::compat::CompatHtmlFragments;
 use super::super::literal_regions::LiteralRegionIndex;
-use super::super::service::GENERATED_LISTPAGES_HTML_REGEX;
+use super::super::service::{
+    GENERATED_LISTPAGES_HTML_REGEX, WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX,
+};
 use super::substitution::ListPagesOffsetOrigin;
 
 pub(in crate::services::render) fn register_generated_list_pages_html(
@@ -42,21 +44,31 @@ pub(in crate::services::render) fn register_generated_list_pages_html(
 
             let block_html = full_match
                 .as_str()
-                .contains(r#"data-wikijump-compat-listpages-feed="1""#);
-            let html = compat_html
-                .restore(full_match.as_str())
-                .replace(r#" data-wikijump-compat-date="1""#, "")
-                .replace(r#" data-wikijump-compat-listpages-user="1""#, "")
-                .replace(r#" data-wikijump-compat-listpages-feed="1""#, "")
-                .replace(r#" data-wikijump-compat-listpages-rating="1""#, "")
-                .replace(r#" data-wikijump-compat-listpages-preview="1""#, "");
+                .contains(r#"data-wikijump-compat-listpages="1""#)
+                || full_match
+                    .as_str()
+                    .contains(r#"data-wikijump-compat-listpages-feed="1""#);
+            let html = strip_generated_list_pages_html_markers(
+                compat_html.restore(full_match.as_str()),
+            );
             if block_html {
-                compat_html.push_block_html(html)
+                compat_html.push_block_html_allowing_span_parent(html)
             } else {
                 compat_html.push_html(html)
             }
         })
         .into_owned()
+}
+
+pub(in crate::services::render) fn strip_generated_list_pages_html_markers(
+    html: String,
+) -> String {
+    html.replace(r#" data-wikijump-compat-date="1""#, "")
+        .replace(r#" data-wikijump-compat-listpages="1""#, "")
+        .replace(r#" data-wikijump-compat-listpages-user="1""#, "")
+        .replace(r#" data-wikijump-compat-listpages-feed="1""#, "")
+        .replace(r#" data-wikijump-compat-listpages-rating="1""#, "")
+        .replace(r#" data-wikijump-compat-listpages-preview="1""#, "")
 }
 
 pub(in crate::services::render) fn url_offset_list_pages_content_bytes(
@@ -71,13 +83,16 @@ pub(in crate::services::render) fn url_offset_list_pages_content_bytes(
     }
 }
 
-pub(in crate::services::render) fn preserve_list_pages_following_paragraph_boundary(
+pub(in crate::services::render) fn repair_list_pages_block_boundaries(
     replacement: &mut String,
-    suffix: &str,
+    (prefix, suffix): (&str, &str),
 ) {
-    if !replacement.starts_with("[[div class=\"list-pages-box\"]]\n")
-        || !replacement.ends_with("[[/div]]")
-    {
+    preserve_list_pages_preceding_paragraph_boundary(replacement, prefix);
+    let is_raw_wrapper = replacement.starts_with("[[div class=\"list-pages-box\"]]\n")
+        && replacement.ends_with("[[/div]]");
+    let is_registered_wrapper =
+        replacement.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX);
+    if !is_raw_wrapper && !is_registered_wrapper {
         return;
     }
 
@@ -90,5 +105,33 @@ pub(in crate::services::render) fn preserve_list_pages_following_paragraph_bound
         && !suffix.starts_with(['\r', '\n'])
     {
         replacement.push('\n');
+    }
+}
+
+fn preserve_list_pages_preceding_paragraph_boundary(
+    replacement: &mut String,
+    prefix: &str,
+) -> usize {
+    if prefix.is_empty() || !replacement.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
+    {
+        return 0;
+    }
+
+    let trailing = prefix.trim_end_matches([' ', '\t', '\r']);
+    if let Some(before_last_newline) = trailing.strip_suffix('\n') {
+        let prior_line = before_last_newline
+            .rsplit_once('\n')
+            .map_or(before_last_newline, |(_, line)| line)
+            .trim_matches([' ', '\t', '\r']);
+        if prior_line.is_empty() {
+            return 0;
+        }
+        replacement.insert(0, '\n');
+        1
+    } else if trailing.is_empty() {
+        0
+    } else {
+        replacement.insert_str(0, "\n\n");
+        2
     }
 }

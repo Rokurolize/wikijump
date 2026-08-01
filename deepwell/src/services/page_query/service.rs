@@ -500,15 +500,44 @@ impl PageQueryService {
                 .into());
             }
             let slug = slug.as_ref();
-            condition = condition.add(page::Column::Slug.eq(slug));
+            if let Some(patterns) =
+                category_local_wikidot_name_patterns(included_categories, slug)
+            {
+                let mut local_name = Condition::any();
+                for pattern in patterns {
+                    local_name = local_name.add(
+                        Expr::col((Page, page::Column::Slug))
+                            .binary(PgBinOper::ILike, Expr::val(pattern)),
+                    );
+                }
+                condition = condition.add(local_name);
+            } else {
+                condition = condition.add(page::Column::Slug.eq(slug));
+            }
         }
         if !slugs.is_empty() {
             condition = condition
                 .add(page::Column::Slug.is_in(slugs.iter().map(|slug| slug.as_ref())));
         }
         if let Some(name) = name {
-            let pattern = wikidot_name_pattern(name.as_ref());
-            condition = condition.add(page::Column::Slug.like(pattern));
+            if let Some(patterns) =
+                category_local_wikidot_name_patterns(included_categories, name.as_ref())
+            {
+                let mut local_name = Condition::any();
+                for pattern in patterns {
+                    local_name = local_name.add(
+                        Expr::col((Page, page::Column::Slug))
+                            .binary(PgBinOper::ILike, Expr::val(pattern)),
+                    );
+                }
+                condition = condition.add(local_name);
+            } else {
+                let pattern = wikidot_name_pattern(name.as_ref());
+                condition = condition.add(
+                    Expr::col((Page, page::Column::Slug))
+                        .binary(PgBinOper::ILike, Expr::val(pattern)),
+                );
+            }
         }
 
         // Initial page author. Local pages use the user ID on their earliest available revision. Corpus imports intentionally keep the Wikidot display name in wikidot_page_snapshot instead of fabricating local users, so the two representations are combined with OR semantics.
@@ -720,18 +749,42 @@ impl PageQueryService {
                         "regexp_replace(regexp_replace($1, '^.*:', ''), '[^[:alnum:]]', '', 'g')",
                         Expr::col((Page, page::Column::Slug)),
                     );
+                    let identity = SimpleExpr::Custom(
+                        wikidot_page_ordering_identity_sql("page.page_id").into(),
+                    );
                     query = query
                         .order_by(expr, sql_order.clone())
-                        .order_by(Expr::col((Page, page::Column::Slug)), sql_order);
+                        .order_by(identity, sql_order.clone())
+                        .order_by(page::Column::PageId, sql_order);
                 }
                 OrderProperty::FullSlug => {
                     query = query.order_by(page::Column::Slug, sql_order);
                 }
                 OrderProperty::Title => {
-                    query = query.order_by(page_revision::Column::Title, sql_order);
+                    let normalized = Expr::cust_with_expr(
+                        "regexp_replace(lower($1), '[^[:alnum:][:space:]]', '', 'g')",
+                        Expr::col(page_revision::Column::Title),
+                    );
+                    query = query
+                        .order_by(normalized, sql_order.clone())
+                        .order_by(
+                            Func::lower(Expr::col(page_revision::Column::Title)),
+                            sql_order.clone(),
+                        )
+                        .order_by(page_revision::Column::Title, sql_order);
                 }
                 OrderProperty::AltTitle => {
-                    query = query.order_by(page_revision::Column::AltTitle, sql_order);
+                    let normalized = Expr::cust_with_expr(
+                        "regexp_replace(lower($1), '[^[:alnum:][:space:]]', '', 'g')",
+                        Expr::col(page_revision::Column::AltTitle),
+                    );
+                    query = query
+                        .order_by(normalized, sql_order.clone())
+                        .order_by(
+                            Func::lower(Expr::col(page_revision::Column::AltTitle)),
+                            sql_order.clone(),
+                        )
+                        .order_by(page_revision::Column::AltTitle, sql_order);
                 }
                 OrderProperty::CreatedBy => {
                     let expr = SimpleExpr::Custom(
@@ -740,10 +793,22 @@ impl PageQueryService {
                     query = query.order_by(expr, sql_order);
                 }
                 OrderProperty::CreatedAt => {
-                    query = query.order_by(page::Column::CreatedAt, sql_order);
+                    let identity = SimpleExpr::Custom(
+                        wikidot_page_ordering_identity_sql("page.page_id").into(),
+                    );
+                    query = query
+                        .order_by(page::Column::CreatedAt, sql_order.clone())
+                        .order_by(identity, sql_order.clone())
+                        .order_by(page::Column::PageId, sql_order);
                 }
                 OrderProperty::UpdatedAt => {
-                    query = query.order_by(page::Column::UpdatedAt, sql_order);
+                    let identity = SimpleExpr::Custom(
+                        wikidot_page_ordering_identity_sql("page.page_id").into(),
+                    );
+                    query = query
+                        .order_by(page::Column::UpdatedAt, sql_order.clone())
+                        .order_by(identity, sql_order.clone())
+                        .order_by(page::Column::PageId, sql_order);
                 }
                 OrderProperty::Size => {
                     query = query.join(
@@ -754,8 +819,21 @@ impl PageQueryService {
                         },
                         page_revision::Relation::Text1.def(),
                     );
-                    let expr = SimpleExpr::Custom("text.character_count".into());
-                    query = query.order_by(expr, sql_order);
+                    let expr = SimpleExpr::Custom(
+                        "COALESCE((
+                            SELECT snapshot.wikidot_size
+                            FROM wikidot_page_snapshot snapshot
+                            WHERE snapshot.page_id = page.page_id
+                        ), text.character_count)"
+                            .into(),
+                    );
+                    let identity = SimpleExpr::Custom(
+                        wikidot_page_ordering_identity_sql("page.page_id").into(),
+                    );
+                    query = query
+                        .order_by(expr, sql_order.clone())
+                        .order_by(identity, sql_order.clone())
+                        .order_by(page::Column::PageId, sql_order);
                 }
                 OrderProperty::Score => {}
                 OrderProperty::Votes => {
@@ -766,9 +844,24 @@ impl PageQueryService {
                 }
                 OrderProperty::Revisions => {
                     let expr = SimpleExpr::Custom(
-                        "COALESCE((SELECT COUNT(*) FROM page_revision pr WHERE pr.page_id = page.page_id), 0)".into(),
+                        "COALESCE((
+                            SELECT snapshot.source_revision_count
+                            FROM wikidot_page_snapshot snapshot
+                            WHERE snapshot.page_id = page.page_id
+                        ), (
+                            SELECT COUNT(*)
+                            FROM page_revision pr
+                            WHERE pr.page_id = page.page_id
+                        ), 0)"
+                            .into(),
                     );
-                    query = query.order_by(expr, sql_order);
+                    let identity = SimpleExpr::Custom(
+                        wikidot_page_ordering_identity_sql("page.page_id").into(),
+                    );
+                    query = query
+                        .order_by(expr, sql_order.clone())
+                        .order_by(identity, sql_order.clone())
+                        .order_by(page::Column::PageId, sql_order);
                 }
                 OrderProperty::Comments => {
                     let expr = SimpleExpr::Custom(
@@ -801,11 +894,27 @@ impl PageQueryService {
                     | OrderProperty::Score
                     | OrderProperty::DataFormFieldName { .. }
             ) {
-                if !matches!(property, OrderProperty::PageSlug | OrderProperty::FullSlug)
-                {
+                if !matches!(
+                    property,
+                    OrderProperty::PageSlug
+                        | OrderProperty::FullSlug
+                        | OrderProperty::CreatedAt
+                        | OrderProperty::UpdatedAt
+                        | OrderProperty::Size
+                        | OrderProperty::Revisions
+                ) {
                     query = query.order_by(page::Column::Slug, Order::Asc);
                 }
-                query = query.order_by(page::Column::PageId, Order::Asc);
+                if !matches!(
+                    property,
+                    OrderProperty::PageSlug
+                        | OrderProperty::CreatedAt
+                        | OrderProperty::UpdatedAt
+                        | OrderProperty::Size
+                        | OrderProperty::Revisions
+                ) {
+                    query = query.order_by(page::Column::PageId, Order::Asc);
+                }
             }
         }
 
@@ -1035,6 +1144,13 @@ async fn project_page_query_results(
         } else {
             BTreeMap::new()
         };
+    let ordering_identity_by_page_id = if ordering_deferred_to_rust {
+        load_page_ordering_identities(ctx, &page_ids)
+            .await
+            .or_raise(make_error)?
+    } else {
+        BTreeMap::new()
+    };
 
     let defer_offset_limit = ordering_deferred_to_rust || filtering_deferred_to_rust;
     if defer_offset_limit {
@@ -1052,6 +1168,14 @@ async fn project_page_query_results(
                         list_pages_deferred_ordering(
                             ordering,
                             order.ascending,
+                            ordering_identity_by_page_id
+                                .get(&left.page_id)
+                                .copied()
+                                .unwrap_or(left.page_id),
+                            ordering_identity_by_page_id
+                                .get(&right.page_id)
+                                .copied()
+                                .unwrap_or(right.page_id),
                             left,
                             right,
                         )
@@ -1079,6 +1203,14 @@ async fn project_page_query_results(
                         list_pages_deferred_ordering(
                             ordering,
                             order.ascending,
+                            ordering_identity_by_page_id
+                                .get(&left.page_id)
+                                .copied()
+                                .unwrap_or(left.page_id),
+                            ordering_identity_by_page_id
+                                .get(&right.page_id)
+                                .copied()
+                                .unwrap_or(right.page_id),
                             left,
                             right,
                         )
@@ -1218,17 +1350,92 @@ async fn project_page_query_results(
     })
 }
 
+#[derive(Debug, FromQueryResult)]
+struct PageOrderingIdentityRow {
+    page_id: i64,
+    ordering_id: i64,
+}
+
+async fn load_page_ordering_identities(
+    ctx: &ServiceContext<'_>,
+    page_ids: &[i64],
+) -> Result<BTreeMap<i64, i64>> {
+    if page_ids.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    let statement = Statement::from_sql_and_values(
+        ctx.transaction().get_database_backend(),
+        "SELECT input.page_id,
+                CASE
+                    WHEN snapshot.meta_json->>'page_id' ~ '^[0-9]{1,18}$'
+                    THEN (snapshot.meta_json->>'page_id')::bigint
+                    ELSE input.page_id
+                END AS ordering_id
+           FROM UNNEST($1::bigint[]) AS input(page_id)
+           LEFT JOIN wikidot_page_snapshot snapshot
+             ON snapshot.page_id = input.page_id",
+        [Value::from(page_ids.to_vec())],
+    );
+    Ok(PageOrderingIdentityRow::find_by_statement(statement)
+        .all(ctx.transaction())
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to load ListPages ordering identities",
+                ErrorType::PageQuery,
+            )
+        })?
+        .into_iter()
+        .map(|row| (row.page_id, row.ordering_id))
+        .collect())
+}
+
 fn wikidot_name_pattern(value: &str) -> String {
     let mut pattern = String::with_capacity(value.len());
-    for character in value.chars() {
+    let trailing_star = value.ends_with('*') && value.matches('*').count() == 1;
+    for (index, character) in value.char_indices() {
         match character {
-            '*' | '%' => pattern.push('%'),
+            '*' if trailing_star && index + character.len_utf8() == value.len() => {
+                pattern.push('%');
+            }
+            '*' => pattern.push_str("\\*"),
+            '?' => pattern.push('_'),
+            '%' => pattern.push_str("\\%"),
             '_' => pattern.push_str("\\_"),
             '\\' => pattern.push_str("\\\\"),
             _ => pattern.push(character),
         }
     }
     pattern
+}
+
+fn category_local_wikidot_name_patterns(
+    included_categories: IncludedCategories<'_>,
+    value: &str,
+) -> Option<Vec<String>> {
+    let IncludedCategories::List(categories) = included_categories else {
+        return None;
+    };
+    if value.contains(':') {
+        return None;
+    }
+
+    let local_pattern = wikidot_name_pattern(value);
+    Some(
+        categories
+            .iter()
+            .map(|category| {
+                if category.as_ref() == "_default" {
+                    local_pattern.clone()
+                } else {
+                    format!(
+                        "{}:{local_pattern}",
+                        wikidot_name_pattern(category.as_ref())
+                    )
+                }
+            })
+            .collect(),
+    )
 }
 
 fn date_selector_condition(column: page::Column, selector: DateSelector) -> Condition {
@@ -1411,6 +1618,19 @@ fn effective_vote_count_sql(page_id_sql: &str) -> String {
                 AND (snapshot.page_id IS NULL OR vote.from_wikidot = FALSE) \
             GROUP BY snapshot.page_id, snapshot.meta_json\
         ), 0)"
+    )
+}
+
+fn wikidot_page_ordering_identity_sql(page_id_sql: &str) -> String {
+    format!(
+        "COALESCE((\
+            SELECT CASE \
+                WHEN snapshot.meta_json->>'page_id' ~ '^[0-9]{{1,18}}$' \
+                THEN (snapshot.meta_json->>'page_id')::bigint \
+            END \
+            FROM wikidot_page_snapshot snapshot \
+            WHERE snapshot.page_id = {page_id_sql}\
+        ), {page_id_sql})"
     )
 }
 
@@ -1669,6 +1889,8 @@ fn score_to_f32(score: ScoreValue) -> f32 {
 fn list_pages_deferred_ordering(
     ordering: Ordering,
     ascending: bool,
+    left_ordering_id: i64,
+    right_ordering_id: i64,
     left: &page::Model,
     right: &page::Model,
 ) -> Ordering {
@@ -1678,8 +1900,22 @@ fn list_pages_deferred_ordering(
         ordering.reverse()
     };
     ordering
-        .then_with(|| left.slug.cmp(&right.slug))
-        .then_with(|| left.page_id.cmp(&right.page_id))
+        .then_with(|| {
+            let identity_ordering = left_ordering_id.cmp(&right_ordering_id);
+            if ascending {
+                identity_ordering
+            } else {
+                identity_ordering.reverse()
+            }
+        })
+        .then_with(|| {
+            let page_id_ordering = left.page_id.cmp(&right.page_id);
+            if ascending {
+                page_id_ordering
+            } else {
+                page_id_ordering.reverse()
+            }
+        })
 }
 
 fn data_form_field_value_ordering(
@@ -1776,14 +2012,15 @@ mod tests {
         MAX_CACHED_SCORE_FILTER_PAGE_IDS, MAX_CORRELATED_SCORE_CANDIDATES,
         MAX_TOTAL_CACHED_SCORE_FILTER_PAGE_IDS, PageQueryScoreFilterCache,
         PageQueryScoreFilterSession, ScoreFilterCacheKey, ScoreFilterCacheLookup,
-        ScoreFilterMembership, ScoreFilterPlan, bounded_score_page_ids, date_span_bounds,
-        score_filter_plan_from_probe, score_membership_condition,
-        score_membership_polarity_order, score_selector_condition,
-        score_selectors_condition, wikidot_name_pattern,
+        ScoreFilterMembership, ScoreFilterPlan, bounded_score_page_ids,
+        category_local_wikidot_name_patterns, date_span_bounds,
+        list_pages_deferred_ordering, score_filter_plan_from_probe,
+        score_membership_condition, score_membership_polarity_order,
+        score_selector_condition, score_selectors_condition, wikidot_name_pattern,
     };
     use crate::models::page;
     use crate::services::page_query::{
-        ComparisonOperation, DateTimeResolution, ScoreSelector,
+        ComparisonOperation, DateTimeResolution, IncludedCategories, ScoreSelector,
     };
     use crate::services::score::ScoreValue;
     use sea_orm::{
@@ -1791,12 +2028,81 @@ mod tests {
         Value,
     };
     use sea_query::{SimpleExpr, func::Func};
+    use std::borrow::Cow;
+    use std::cmp::Ordering;
+
+    fn ordering_page(page_id: i64, slug: &str) -> page::Model {
+        page::Model {
+            page_id,
+            created_at: time::OffsetDateTime::UNIX_EPOCH,
+            updated_at: None,
+            deleted_at: None,
+            from_wikidot: true,
+            site_id: 1,
+            latest_revision_id: None,
+            page_category_id: 1,
+            slug: slug.to_owned(),
+            discussion_thread_id: None,
+            layout: None,
+        }
+    }
 
     #[test]
-    fn wikidot_name_patterns_translate_both_wildcard_spellings() {
+    fn deferred_score_ties_follow_page_identity_in_the_requested_direction() {
+        let older = ordering_page(20, "z-last-by-slug");
+        let newer = ordering_page(10, "a-first-by-slug");
+
+        assert_eq!(
+            list_pages_deferred_ordering(Ordering::Equal, true, 100, 200, &older, &newer,),
+            Ordering::Less,
+        );
+        assert_eq!(
+            list_pages_deferred_ordering(
+                Ordering::Equal,
+                false,
+                100,
+                200,
+                &older,
+                &newer,
+            ),
+            Ordering::Greater,
+        );
+    }
+
+    #[test]
+    fn wikidot_name_patterns_preserve_the_evidenced_wildcard_boundary() {
         assert_eq!(wikidot_name_pattern("scp-*"), "scp-%");
-        assert_eq!(wikidot_name_pattern("fragment:part%"), "fragment:part%");
+        assert_eq!(wikidot_name_pattern("*block"), "\\*block");
+        assert_eq!(wikidot_name_pattern("image*base"), "image\\*base");
+        assert_eq!(wikidot_name_pattern("image?block"), "image_block");
+        assert_eq!(wikidot_name_pattern("fragment:part%"), "fragment:part\\%");
         assert_eq!(wikidot_name_pattern("literal_name"), "literal\\_name");
+    }
+
+    #[test]
+    fn explicit_categories_project_short_names_to_stored_full_slugs() {
+        let categories = vec![Cow::Borrowed("component"), Cow::Borrowed("_default")];
+        assert_eq!(
+            category_local_wikidot_name_patterns(
+                IncludedCategories::List(&categories),
+                "image?block",
+            ),
+            Some(vec![
+                "component:image_block".to_owned(),
+                "image_block".to_owned(),
+            ]),
+        );
+        assert_eq!(
+            category_local_wikidot_name_patterns(
+                IncludedCategories::List(&categories),
+                "component:image-block",
+            ),
+            None,
+        );
+        assert_eq!(
+            category_local_wikidot_name_patterns(IncludedCategories::All, "image-block",),
+            None,
+        );
     }
 
     #[test]

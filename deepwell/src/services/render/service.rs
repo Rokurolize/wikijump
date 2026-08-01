@@ -83,7 +83,8 @@ use super::include_variables::{
 use super::list_pages::ResolvedListPagesAuthors;
 use super::list_pages::{
     ListPagesExpansion, ListPagesExpansionOptions,
-    build_wikidot_list_pages_module_request,
+    build_wikidot_list_pages_module_request, protect_ajax_module_literal_markers,
+    resolve_wikidot_parser_functions_outside_list_pages,
 };
 use super::literal_regions::LiteralRegionIndex;
 use super::metacomponent::{
@@ -132,6 +133,7 @@ use ftml::render::html::HtmlOutput;
 use ftml::tree::{CodeBlock, VariableMap};
 use ftml::{self};
 use regex::Regex;
+use sha1::{Digest as _, Sha1};
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
@@ -274,16 +276,21 @@ pub(super) const MAX_INCLUDE_EXPANSION_TOTAL: usize = 256;
 // trusted corpus finalizer receives this higher ceiling; user-controlled
 // render paths retain the ordinary limit above.
 const MAX_CORPUS_INCLUDE_EXPANSION_TOTAL: usize = 4096;
-pub(super) const DEFAULT_LISTPAGES_RENDER_LIMIT: u64 = 100;
 pub(super) const DEFAULT_LISTPAGES_PER_PAGE: u64 = 20;
 pub(super) const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
-// Keep runtime-owned content expansion within the ordinary ListPages page size. Explicitly larger content modules remain literal before revision loading and nested include expansion.
+// Keep runtime-owned content expansion within the largest supported ListPages
+// page. The render-scoped module, generated-output, include, and scan budgets
+// still bound revision loading and nested expansion across the whole render.
 pub(super) const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
-    DEFAULT_LISTPAGES_RENDER_LIMIT as usize;
-// Content-backed ListPages modules can trigger permission filtering, revision loading, and nested include expansion. Three modules cover the common corpus shape while stopping dense author-page compositions before they exhaust the render budget.
+    MAX_LISTPAGES_RENDER_LIMIT as usize;
+// Content-backed ListPages modules with selected rows can trigger revision
+// loading and nested include expansion. Zero-row queries never load content
+// and therefore do not consume this budget. Three nonempty modules cover the
+// common corpus shape while stopping dense author-page compositions before
+// they exhaust the render budget.
 pub(super) const MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER: usize = 3;
 pub(super) const MAX_LISTPAGES_RENDER_OFFSET: u32 = 1_000;
-pub(super) const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 5_000;
+pub(super) const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 50_000;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES: usize = 65_536;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_PARAMETERS: usize = 64;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_PARAMETER_BYTES: usize = 4_096;
@@ -353,7 +360,7 @@ pub(super) static REGISTRY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">[^<>]*</span>|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">.*?</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<ol data-wikijump-compat-listpages="1">.*?</ol>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">[^<>]*</span>|<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">.*?</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
     )
     .unwrap()
 });
@@ -361,7 +368,7 @@ pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::ne
 #[cfg(test)]
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</div>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1" style="cursor: help; display: inline;">[^<>]*</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
+        r#"(?is)<table class="wiki-content-table" data-wikijump-compat-listpages="1">.*?</table>|<ol data-wikijump-compat-listpages="1">.*?</ol>|<div class="feedinfo" data-wikijump-compat-listpages-feed="1">.*?</div>|<div id="ml-[0-9]+" data-wikijump-compat-members="1"[^>]*>.*?</div>|<div class="backlinks-module-box" data-wikijump-compat-backlinks="1"[^>]*>.*?</div>|<div class="new-page-box" data-wikijump-compat-new-page="1"[^>]*>.*?</div>|<a class="button" data-wikijump-compat-clone="1"[^>]*>.*?</a>|<span class="odate time_-?[0-9]+ format_[A-Za-z0-9%_.-]+" data-wikijump-compat-date="1">[^<>]*</span>|<span class="page-rate-list-pages-start" data-rating="[^"]*" data-wikijump-compat-listpages-rating="1">[^<>]*</span>|<span data-wikijump-compat-listpages-preview="1" style="white-space: pre-wrap;">[^<>]*</span>"#,
     )
     .unwrap()
 });
@@ -1021,6 +1028,7 @@ impl RenderService {
                 trace: None,
                 // Corpus replay renders stored wikitext, never a live request.
                 url: UrlArguments::default(),
+                list_pages_pager_route: super::list_pages::ListPagesPagerRoute::SavedPage,
             },
         )
         .await?;
@@ -1126,6 +1134,7 @@ impl RenderService {
             max_include_expansions,
             trace,
             url,
+            list_pages_pager_route,
         } = options;
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
@@ -1212,6 +1221,7 @@ impl RenderService {
                     viewer_user_id,
                     include_budget,
                     url,
+                    pager_route: list_pages_pager_route,
                 },
             )
             .await
@@ -1453,6 +1463,7 @@ impl RenderService {
         expanded.wikitext = rendered;
         let wikidot_css_modules = extract_css_modules(
             &mut expanded.wikitext,
+            page_info,
             settings,
             &mut expanded.wikidot_compat_html,
         );
@@ -1527,6 +1538,66 @@ impl RenderService {
         }
     }
 
+    pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(
+        mut body: String,
+        page_info: &PageInfo<'_>,
+        html_blocks: &[String],
+    ) -> String {
+        const PLACEHOLDER: &str = concat!(
+            r#"<iframe src="https://example.com/" allowtransparency="true" "#,
+            r#"frameborder="0" class="html-block-iframe"></iframe>"#,
+        );
+        if html_blocks.is_empty() || !body.contains(PLACEHOLDER) {
+            return body;
+        }
+
+        let full_slug = Self::page_info_full_slug(page_info);
+        // PagePreviewModule uses `search:site` for the otherwise anonymous
+        // preview page identity. Keep that route fallback local to HTML-block
+        // registration: treating it as the query's current page changes
+        // ListPages selection and exclusion semantics.
+        let full_slug = if full_slug.is_empty() {
+            "search:site".to_owned()
+        } else {
+            full_slug
+        };
+        let mut search_start = 0;
+        for (index, html) in html_blocks.iter().enumerate() {
+            let Some(relative_start) = body[search_start..].find(PLACEHOLDER) else {
+                break;
+            };
+            let start = search_start + relative_start;
+            let end = start + PLACEHOLDER.len();
+            let digest = Sha1::digest(html.as_bytes());
+            let mut content_hash = String::with_capacity(40);
+            for byte in &digest {
+                use std::fmt::Write as _;
+                write!(&mut content_hash, "{byte:02x}")
+                    .expect("writing a SHA-1 digest to String cannot fail");
+            }
+            let route_nonce = full_slug
+                .bytes()
+                .chain((index + 1).to_le_bytes())
+                .chain(digest.iter().copied())
+                .fold(0xcbf2_9ce4_8422_2325_u64, |hash, byte| {
+                    hash.wrapping_mul(0x100_0000_01b3)
+                        .wrapping_add(u64::from(byte))
+                });
+            let iframe = format!(
+                concat!(
+                    r#"<iframe src="/{}/html/{}-{}" allowtransparency="true" "#,
+                    r#"frameborder="0" class="html-block-iframe"></iframe>"#,
+                ),
+                escape_list_pages_html_attr(&full_slug),
+                content_hash,
+                route_nonce,
+            );
+            body.replace_range(start..end, &iframe);
+            search_start = start + iframe.len();
+        }
+        body
+    }
+
     pub(super) async fn render_inner(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -1534,7 +1605,11 @@ impl RenderService {
         settings: &WikitextSettings,
         options: RenderInnerOptions<'_>,
     ) -> Result<RenderInnerOutput> {
-        let config = ctx.config();
+        // Recursive ListPages/content renders can otherwise complete several
+        // ready futures synchronously on the caller's stack. Yield once at
+        // this boundary so each nested render resumes from its heap-owned
+        // future instead of accumulating poll frames.
+        tokio::task::yield_now().await;
         let RenderInnerOptions {
             render_context,
             viewer_user_id,
@@ -1543,11 +1618,13 @@ impl RenderService {
             persist_compiled_text,
             url,
         } = options;
+        let list_pages_pager_route = render_context.list_pages_pager_route();
         let RenderContext {
             current_site_id,
             current_category_id,
             current_page_id,
             text_block_page_id,
+            lifecycle: _,
         } = render_context;
 
         if let Some((trace, CorpusRenderScope::Body)) = trace {
@@ -1581,9 +1658,39 @@ impl RenderService {
                 max_include_expansions,
                 trace,
                 url,
+                list_pages_pager_route,
             },
         )
         .await?;
+        Box::pin(Self::render_inner_expanded(
+            ctx,
+            expanded,
+            page_info,
+            settings,
+            current_site_id,
+            text_block_page_id,
+            current_site,
+            trace,
+            persist_compiled_text,
+        ))
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn render_inner_expanded(
+        ctx: &ServiceContext<'_>,
+        expanded: ExpandedRenderWikitext,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        current_site_id: Option<i64>,
+        text_block_page_id: Option<i64>,
+        current_site: Option<SiteModel>,
+        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
+        persist_compiled_text: bool,
+    ) -> Result<RenderInnerOutput> {
+        let config = ctx.config();
+        let make_error =
+            || Error::new("failed to perform render operation", ErrorType::Render);
         let outer = Self::prepare_outer_render_wikitext(expanded, page_info, settings);
         if let Some((trace, scope)) = trace {
             trace.add_us(
@@ -1642,7 +1749,9 @@ impl RenderService {
                 &wikitext,
                 current_site.as_ref(),
                 config,
-                page_info.page.as_ref(),
+                settings
+                    .enable_html_blocks
+                    .then_some(page_info.page.as_ref()),
                 Some(&fallback_link_titles),
             );
             let mut wikidot_css_modules = wikidot_css_modules;
@@ -1862,7 +1971,7 @@ impl RenderService {
                 wikidot_compat_links,
                 wikidot_wikipedia_links,
                 wikidot_compat_html,
-                wikidot_compat_text,
+                mut wikidot_compat_text,
                 native_list_wikipedia_links,
                 wikidot_embed_iframes,
                 timings: _,
@@ -1901,6 +2010,12 @@ impl RenderService {
                     &wikidot_inline_html,
                 );
                 html_output.body = wikidot_compat_html.restore(&html_output.body);
+                if render_page_info.page.as_ref() == "_ajax-module-connector" {
+                    html_output.body = protect_ajax_module_literal_markers(
+                        html_output.body,
+                        &mut wikidot_compat_text,
+                    );
+                }
                 html_output.body = Self::restore_protected_wikidot_wikipedia_links(
                     html_output.body,
                     &wikidot_wikipedia_links,
@@ -1924,7 +2039,7 @@ impl RenderService {
                 );
                 html_output.body = wikidot_compat_text.restore(&html_output.body);
                 html_output.backlinks.included_pages.extend(included_pages);
-                let html_block_texts = tree
+                let html_block_texts: Vec<String> = tree
                     .html_blocks
                     .iter()
                     .map(|html| {
@@ -1937,6 +2052,16 @@ impl RenderService {
                         wikidot_compat_text.restore(&html)
                     })
                     .collect();
+                if render_settings.layout == Layout::Wikidot
+                    && render_settings.enable_html_blocks
+                    && !html_block_texts.is_empty()
+                {
+                    html_output.body = Self::rewrite_wikidot_html_block_iframe_urls(
+                        html_output.body,
+                        &render_page_info,
+                        &html_block_texts,
+                    );
+                }
                 let code_blocks = tree
                     .code_blocks
                     .iter()
@@ -2348,14 +2473,14 @@ impl RenderService {
         Some((level, body))
     }
 
-    fn prepare_wikidot_conditionals_for_include_expansion(
+    pub(in crate::services::render) fn prepare_wikidot_conditionals_for_include_expansion(
         wikitext: &mut String,
         page_info: &ftml::data::PageInfo<'_>,
         preserved: &mut CompatTextFragments,
     ) {
         resolve_unbound_include_variable_iftags(wikitext);
         if wikitext.contains("[[#") {
-            *wikitext = ftml::preproc::resolve_wikidot_parser_functions(wikitext);
+            *wikitext = resolve_wikidot_parser_functions_outside_list_pages(wikitext);
         }
         Self::resolve_wikidot_iftags(wikitext, page_info, preserved);
     }
@@ -2462,7 +2587,7 @@ impl RenderService {
             resolve_unbound_include_variable_iftags(wikitext);
         }
         if wikitext.contains("[[#") {
-            *wikitext = ftml::preproc::resolve_wikidot_parser_functions(wikitext);
+            *wikitext = resolve_wikidot_parser_functions_outside_list_pages(wikitext);
         }
         resolve_outermost_wikidot_iftags_before_include_expansion(
             wikitext,
@@ -2483,15 +2608,7 @@ impl RenderService {
         if !value.contains("[[#") {
             return value.to_owned();
         }
-        // Frozen ListPages rows use zero for a missing vote count. Preserve the
-        // evidenced operator-level result without maintaining another parser.
-        ftml::preproc::resolve_wikidot_parser_functions_with_options(
-            value,
-            ftml::preproc::WikidotParserFunctionOptions {
-                zero_operator_policy:
-                    ftml::preproc::WikidotZeroOperatorPolicy::ReplaceOperationWithZero,
-            },
-        )
+        ftml::preproc::resolve_wikidot_parser_functions(value)
     }
 
     fn normalize_wikidot_div_style_url_quotes(wikitext: &mut String) {
@@ -2611,33 +2728,39 @@ impl RenderService {
         html.replace("<u>", "").replace("</u>", "")
     }
 
-    fn normalize_wikidot_ta_badge_multiline_includes(wikitext: &mut String) {
-        const INCLUDE_PREFIX: &str = "[[include :scp-jp:user-component:ta-badge";
-
+    fn normalize_wikidot_multiline_includes(wikitext: &mut String) {
         let lines = Self::wikitext_line_ranges(wikitext);
         let mut replacements = Vec::new();
         let mut line_index = 0;
 
         while line_index < lines.len() {
             let (start, _, line) = lines[line_index];
-            if !Self::trim_wikitext_line(line).starts_with(INCLUDE_PREFIX) {
+            let trimmed = Self::trim_wikitext_line(line);
+            if !Self::is_wikidot_multiline_include_head(trimmed) {
                 line_index += 1;
                 continue;
             }
 
-            let mut include_lines = vec![Self::trim_wikitext_line(line).to_owned()];
+            let mut include_lines = vec![trimmed.to_owned()];
             let mut end_line_index = line_index;
+            let mut valid = true;
             while !Self::trim_wikitext_line(lines[end_line_index].2).ends_with("]]") {
                 end_line_index += 1;
                 if end_line_index >= lines.len() {
+                    valid = false;
                     break;
                 }
-                include_lines
-                    .push(Self::trim_wikitext_line(lines[end_line_index].2).to_owned());
+                let continuation = Self::trim_wikitext_line(lines[end_line_index].2);
+                if !continuation.ends_with("]]") && !continuation.starts_with('|') {
+                    valid = false;
+                    break;
+                }
+                include_lines.push(continuation.to_owned());
             }
 
-            if end_line_index >= lines.len() {
-                break;
+            if !valid || end_line_index >= lines.len() {
+                line_index += 1;
+                continue;
             }
 
             let (_, end, _) = lines[end_line_index];
@@ -2654,6 +2777,27 @@ impl RenderService {
         for (range, replacement) in replacements.into_iter().rev() {
             wikitext.replace_range(range, &replacement);
         }
+    }
+
+    fn is_wikidot_multiline_include_head(line: &str) -> bool {
+        let Some(rest) = line.strip_prefix("[[include") else {
+            return false;
+        };
+        if !rest
+            .chars()
+            .next()
+            .is_some_and(|character| character.is_ascii_whitespace())
+        {
+            return false;
+        }
+        let rest = rest.trim_start();
+        if rest.is_empty() || rest.contains("]]") {
+            return false;
+        }
+        let target_end = rest
+            .find(|character: char| character.is_ascii_whitespace() || character == '|')
+            .unwrap_or(rest.len());
+        target_end > 0
     }
 
     fn remove_preview_component_separator_markers(wikitext: &mut String) {
@@ -3288,7 +3432,7 @@ impl RenderService {
     ) -> Pin<Box<dyn Future<Output = Result<IncludeExpansion>> + Send + 'a>> {
         Box::pin(async move {
             let mut wikitext = wikitext;
-            Self::normalize_wikidot_ta_badge_multiline_includes(&mut wikitext);
+            Self::normalize_wikidot_multiline_includes(&mut wikitext);
             if expansion_context.settings.layout.legacy() {
                 expand_malformed_include_targets(&mut wikitext);
             }
@@ -3526,15 +3670,6 @@ impl RenderService {
         settings: &WikitextSettings,
     ) -> Option<CompatTextFragments> {
         protect_css_modules_before_first_list_pages(wikitext, settings)
-    }
-
-    #[cfg(test)]
-    fn extract_wikidot_css_modules(
-        wikitext: &mut String,
-        settings: &WikitextSettings,
-    ) -> Vec<String> {
-        let mut compat_html = CompatHtmlFragments::new(wikitext);
-        extract_css_modules(wikitext, settings, &mut compat_html)
     }
 
     #[cfg(test)]
@@ -3914,28 +4049,81 @@ pub(super) fn native_numbered_list_content(line: &str) -> Option<&str> {
         .map(|content| content.trim_end_matches(['\r', '\n']))
 }
 
-pub(super) fn render_list_pages_numbered_rows(value: &str) -> String {
+pub(super) fn render_list_pages_numbered_rows_with_titles(
+    value: &str,
+    link_titles: Option<&WikidotCompatLinkTitleMap>,
+) -> String {
     let lines = value.split_inclusive('\n').collect::<Vec<_>>();
     let mut output = String::with_capacity(value.len());
     let mut index = 0;
 
     while index < lines.len() {
-        let mut end = index;
-        while end < lines.len() && native_numbered_list_content(lines[end]).is_some() {
-            end += 1;
-        }
-
-        if end > index {
-            output.push_str("<ol>\n");
-            for line in &lines[index..end] {
-                if let Some(content) = native_numbered_list_content(line) {
-                    output.push_str("<li>");
-                    output.push_str(&render_native_list_inline_html(content));
-                    output.push_str("</li>\n");
+        if native_numbered_list_content(lines[index]).is_some() {
+            let list_start = index;
+            let mut list_end = index;
+            while list_end < lines.len()
+                && native_numbered_list_content(lines[list_end]).is_some()
+            {
+                list_end += 1;
+                while list_end < lines.len()
+                    && native_numbered_list_span_continuation(lines[list_end]).is_some()
+                {
+                    list_end += 1;
                 }
             }
+            if lines[list_start..list_end]
+                .iter()
+                .any(|line| line.to_ascii_lowercase().contains("[[footnote"))
+            {
+                // FTML owns footnote allocation and the corresponding footer
+                // registry. Leave the complete ordered-list run as syntax
+                // when any item contains a footnote instead of partially
+                // rendering the item through the compatibility inline helper.
+                for line in &lines[list_start..list_end] {
+                    output.push_str(line);
+                }
+                index = list_end;
+                continue;
+            }
+            output.push_str("<ol data-wikijump-compat-listpages=\"1\">\n");
+            while index < lines.len() {
+                let Some(content) = native_numbered_list_content(lines[index]) else {
+                    break;
+                };
+                let has_span_continuation = lines
+                    .get(index + 1)
+                    .and_then(|line| native_numbered_list_span_continuation(line))
+                    .is_some();
+                let content = if has_span_continuation {
+                    content.strip_suffix(" _").unwrap_or(content)
+                } else {
+                    content
+                };
+                output.push_str("<li>");
+                output.push_str(&render_native_list_inline_html_with_titles(
+                    content,
+                    link_titles,
+                ));
+                index += 1;
+                while index < lines.len()
+                    && let Some((continuation, continuation_body)) =
+                        native_numbered_list_span_continuation(lines[index])
+                {
+                    output.push_str("<br>\n");
+                    if !continuation_body
+                        .trim_matches([' ', '\t', '\r', '\n'])
+                        .is_empty()
+                    {
+                        output.push_str(&render_native_list_inline_html_with_titles(
+                            continuation,
+                            link_titles,
+                        ));
+                    }
+                    index += 1;
+                }
+                output.push_str("</li>\n");
+            }
             output.push_str("</ol>\n");
-            index = end;
         } else {
             output.push_str(lines[index]);
             index += 1;
@@ -3943,6 +4131,17 @@ pub(super) fn render_list_pages_numbered_rows(value: &str) -> String {
     }
 
     output
+}
+
+fn native_numbered_list_span_continuation(line: &str) -> Option<(&str, &str)> {
+    let line = line.trim_end_matches(['\r', '\n']);
+    let trimmed = line.trim();
+    let marker_end = trimmed.find("]]")? + "]]".len();
+    wikidot_inline_span_marker_open(&trimmed[..marker_end])?;
+    let body = &trimmed[marker_end..];
+    let close_start = find_matching_wikidot_span_close(body)?;
+    (close_start + "[[/span]]".len() == body.len())
+        .then_some((trimmed, &body[..close_start]))
 }
 
 pub(super) fn render_list_pages_table_rows(value: &str) -> Option<String> {
@@ -4419,21 +4618,41 @@ fn render_native_list_page_link(
     link_titles: Option<&WikidotCompatLinkTitleMap>,
 ) -> String {
     let target = target.trim();
+    let external_target = target
+        .strip_prefix('*')
+        .filter(|target| target.starts_with("http://") || target.starts_with("https://"));
+    let page_ref = native_list_page_link_ref(target);
+    let page_is_missing = page_ref.as_ref().is_some_and(|page_ref| {
+        link_titles.is_some_and(|titles| titles.page_is_missing(page_ref))
+    });
+    let explicitly_empty_label = label.is_some_and(|label| label.trim().is_empty());
     let label = label
         .map(str::trim)
         .filter(|label| !label.is_empty())
         .map(str::to_owned)
         .unwrap_or_else(|| {
-            native_list_page_link_title_label(target, link_titles)
-                .unwrap_or_else(|| native_list_page_link_default_label(target))
+            if explicitly_empty_label && page_is_missing {
+                escape_list_pages_html_text(target)
+            } else if let Some(external_target) = external_target {
+                escape_list_pages_html_text(external_target)
+            } else {
+                native_list_page_link_title_label(target, link_titles)
+                    .unwrap_or_else(|| native_list_page_link_default_label(target))
+            }
         });
+    if let Some(external_target) = external_target {
+        return format!(
+            r#"<a target="_blank" href="{href}">{label}</a>"#,
+            href = escape_list_pages_html_attr(external_target),
+            label = label,
+        );
+    }
     let href = native_list_page_link_href(target);
-    let class = native_list_page_link_ref(target)
-        .filter(|page_ref| {
-            link_titles.is_some_and(|titles| titles.page_is_missing(page_ref))
-        })
-        .map(|_| r#" class="newpage""#)
-        .unwrap_or_default();
+    let class = if page_is_missing {
+        r#" class="newpage""#
+    } else {
+        ""
+    };
     format!(
         r#"<a{class} href="{href}">{label}</a>"#,
         class = class,
@@ -4875,7 +5094,7 @@ fn own_include_ref(include: &IncludeRef<'_>) -> IncludeRef<'static> {
         .with_spaced_empty_separator(include.has_spaced_empty_separator())
 }
 
-fn has_include_opening_candidate(content: &str) -> bool {
+pub(in crate::services::render) fn has_include_opening_candidate(content: &str) -> bool {
     let bytes = content.as_bytes();
     let mut search = 0;
     while search + 1 < bytes.len() {

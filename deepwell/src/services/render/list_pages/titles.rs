@@ -29,6 +29,18 @@ pub(super) fn sanitize_list_pages_title(title: &str) -> String {
         .collect()
 }
 
+pub(super) fn wikidot_empty_imported_title_label(full_slug: &str) -> String {
+    let page_name = full_slug
+        .rsplit_once(':')
+        .map_or(full_slug, |(_, page_name)| page_name);
+    let label = page_name.replace('-', " ");
+    let mut characters = label.chars();
+    let Some(first) = characters.next() else {
+        return String::new();
+    };
+    first.to_uppercase().chain(characters).collect::<String>()
+}
+
 pub(super) fn render_list_pages_linked_title(
     full_slug: &str,
     title: &str,

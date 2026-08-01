@@ -24,7 +24,31 @@ use super::substitution::{
     resolve_url_selector,
 };
 use crate::services::render::UrlArguments;
-use crate::services::render::module_arguments::wikidot_list_pages_arguments;
+use crate::services::render::module_arguments::{
+    WikidotModuleArgumentValueKind, wikidot_list_pages_arguments,
+};
+
+#[derive(Debug, PartialEq, Eq)]
+pub(in crate::services::render) enum ListPagesArgumentError {
+    Message(&'static str),
+    MissingParent(String),
+}
+
+pub(in crate::services::render) fn list_pages_argument_error_with_parent_precedence(
+    head: &str,
+    has_current_page: bool,
+    url: UrlArguments<'_>,
+    missing_static_parent: Option<String>,
+) -> Option<ListPagesArgumentError> {
+    if let Some(error) = list_pages_non_range_argument_error(head) {
+        Some(ListPagesArgumentError::Message(error))
+    } else if let Some(parent) = missing_static_parent {
+        Some(ListPagesArgumentError::MissingParent(parent))
+    } else {
+        list_pages_range_argument_error(head, has_current_page, url)
+            .map(ListPagesArgumentError::Message)
+    }
+}
 
 pub(in crate::services::render) fn list_pages_non_range_argument_error(
     head: &str,
@@ -34,28 +58,75 @@ pub(in crate::services::render) fn list_pages_non_range_argument_error(
     }
     let head_arguments = wikidot_list_pages_arguments(head);
 
+    let mut canonical_page_type = None;
+    let mut rating = None;
+    let mut votes = None;
+    let mut offset = None;
     for argument in head_arguments {
-        let key = argument.key.to_ascii_lowercase();
-        let value = argument.value.trim();
-        if is_dynamic_list_pages_value(value) {
-            continue;
-        }
-        match key.as_str() {
-            "pagetype" | "page_type" | "page-type"
-                if parse_list_pages_page_type(value).is_none() =>
-            {
-                return Some("Invalid pagetype attribute.");
+        let double_quoted =
+            argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted;
+        match argument.key {
+            "pagetype" if argument.op == "=" => {
+                canonical_page_type = Some(argument.value);
             }
-            "rating" | "score"
-                if value != "=" && !list_pages_numeric_selector_is_valid(value) =>
-            {
-                return Some("Invalid rating argument.");
+            "rating" if argument.op == "=" || double_quoted => {
+                rating = Some((argument.op, argument.value));
             }
-            "votes" if value != "=" && !list_pages_numeric_selector_is_valid(value) => {
-                return Some("Invalid votes argument.");
+            "votes" if argument.op == "=" || double_quoted => {
+                votes = Some((argument.op, argument.value));
+            }
+            "offset"
+                if argument.op == "="
+                    && argument.value_kind
+                        == WikidotModuleArgumentValueKind::DoubleQuoted =>
+            {
+                offset = Some(argument.value);
             }
             _ => {}
         }
+    }
+
+    if let Some(value) = canonical_page_type
+        && !is_dynamic_list_pages_value(value)
+        && value != "0"
+        && parse_list_pages_page_type(value).is_none()
+    {
+        return Some("Invalid pagetype attribute.");
+    }
+    if let Some((op, value)) = rating
+        && !is_dynamic_list_pages_value(value)
+    {
+        let comparison_value = format!("{}{value}", if op == "!=" { "<>" } else { op });
+        let value = if op == "=" {
+            value
+        } else {
+            comparison_value.as_str()
+        };
+        if !value.trim().is_empty()
+            && value != "="
+            && !list_pages_numeric_selector_is_valid(value)
+        {
+            return Some("Invalid rating argument.");
+        }
+    }
+    if let Some((op, value)) = votes
+        && !is_dynamic_list_pages_value(value)
+    {
+        let comparison_value = format!("{}{value}", if op == "!=" { "<>" } else { op });
+        let value = if op == "=" {
+            value
+        } else {
+            comparison_value.as_str()
+        };
+        if !value.trim().is_empty()
+            && value != "="
+            && !list_pages_numeric_selector_is_valid(value)
+        {
+            return Some("Invalid votes argument.");
+        }
+    }
+    if offset.is_some_and(list_pages_offset_exceeds_processing_boundary) {
+        return Some("An error occurred when processing your request.");
     }
     None
 }
@@ -75,10 +146,12 @@ pub(in crate::services::render) fn list_pages_range_argument_error(
         .map(|argument| argument.value.trim())
         .rfind(|prefix| !prefix.is_empty());
 
-    for argument in head_arguments {
-        if !argument.key.eq_ignore_ascii_case("range") {
-            continue;
-        }
+    let argument = head_arguments.into_iter().rev().find(|argument| {
+        argument.key == "range"
+            && argument.op == "="
+            && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
+    });
+    if let Some(argument) = argument {
         let value = match resolve_url_selector(
             argument.value.trim(),
             url.value_for_list_pages_argument(url_attr_prefix, "range"),
@@ -86,15 +159,15 @@ pub(in crate::services::render) fn list_pages_range_argument_error(
             UrlSelector::Static(value) => value,
             UrlSelector::Resolved(value) => {
                 return match value.as_str() {
-                    "" | "." => None,
+                    "" | "0" | "." => None,
                     "before" | "after" | "others" | "other" if has_current_page => None,
                     _ => Some("Invalid range argument."),
                 };
             }
-            UrlSelector::Dropped => continue,
+            UrlSelector::Dropped => return None,
         };
         match value {
-            "" | "." => {}
+            "" | "0" | "." => {}
             "before" | "after" | "others" | "other" if has_current_page => {}
             _ => return Some("Invalid range argument."),
         }
@@ -104,10 +177,24 @@ pub(in crate::services::render) fn list_pages_range_argument_error(
 
 fn list_pages_numeric_selector_is_valid(value: &str) -> bool {
     let value = value.trim();
-    let value = [">=", "<=", "!=", "<>", ">", "<", "="]
+    let value = [">=", "<=", "<>", ">", "<", "="]
         .into_iter()
         .find_map(|prefix| value.strip_prefix(prefix))
         .unwrap_or(value)
         .trim();
-    !value.is_empty() && value.parse::<f64>().is_ok()
+    let digits = value.strip_prefix('-').unwrap_or(value);
+    !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit())
+}
+
+fn list_pages_offset_exceeds_processing_boundary(value: &str) -> bool {
+    const MAX_EMPTY: &str = "9223372036855000063";
+
+    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+        return false;
+    }
+    let value = value.trim_start_matches('0');
+    if value.is_empty() {
+        return false;
+    }
+    value.len() > MAX_EMPTY.len() || value.len() == MAX_EMPTY.len() && value > MAX_EMPTY
 }

@@ -1576,23 +1576,23 @@ impl PageRevisionService {
         Ok(compiled_html)
     }
 
-    /// Gets the Unicode scalar-value count of the latest saved wikitext for several page IDs.
+    /// Gets the Wikidot-compatible page size for several page IDs.
     ///
-    /// The stored generated column is `char_length(contents)::BIGINT`, which counts decoded
-    /// PostgreSQL text characters rather than UTF-8 bytes. With PostgreSQL's valid UTF-8 text
-    /// invariant, this is the same count as Rust `str::chars()`.
+    /// Imported pages retain Wikidot's own ListPages `size` metadata because it
+    /// is not reliably derivable from ViewSourceModule's normalized source.
+    /// Native pages fall back to the latest source's Unicode scalar-value count.
     pub async fn get_wikitext_scalar_count_optional_batch(
         ctx: &ServiceContext<'_>,
         site_id: i64,
         page_ids: &[i64],
     ) -> Result<BTreeMap<i64, Option<usize>>> {
-        let mut scalar_counts = page_ids
+        let mut page_sizes = page_ids
             .iter()
             .copied()
             .map(|page_id| (page_id, None))
             .collect::<BTreeMap<_, _>>();
         if page_ids.is_empty() {
-            return Ok(scalar_counts);
+            return Ok(page_sizes);
         }
 
         let make_error = || {
@@ -1609,8 +1609,15 @@ impl PageRevisionService {
             .select_only()
             .column(page::Column::PageId)
             .expr_as(
-                SimpleExpr::Custom("text.character_count".into()),
-                "wikitext_scalar_count",
+                SimpleExpr::Custom(
+                    "COALESCE((
+                        SELECT snapshot.wikidot_size
+                        FROM wikidot_page_snapshot snapshot
+                        WHERE snapshot.page_id = page.page_id
+                    ), text.character_count)"
+                        .into(),
+                ),
+                "wikidot_page_size",
             )
             .join(JoinType::LeftJoin, page::Relation::PageRevision.def())
             .join(JoinType::LeftJoin, page_revision::Relation::Text1.def())
@@ -1620,14 +1627,14 @@ impl PageRevisionService {
             .all(ctx.transaction())
             .await
             .or_raise(make_error)?;
-        for (page_id, scalar_count) in rows {
-            let scalar_count = scalar_count
+        for (page_id, page_size) in rows {
+            let page_size = page_size
                 .map(usize::try_from)
                 .transpose()
                 .map_err(|_| make_error())?;
-            scalar_counts.insert(page_id, scalar_count);
+            page_sizes.insert(page_id, page_size);
         }
-        Ok(scalar_counts)
+        Ok(page_sizes)
     }
 
     /// Gets the number of stored revisions for several page IDs.

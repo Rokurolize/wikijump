@@ -88,6 +88,10 @@ impl PinnedModuleCloseIndex {
         }
         output
     }
+
+    pub(super) fn ranges(&self) -> &[Range<usize>] {
+        &self.ranges
+    }
 }
 
 pub(super) fn pinned_css_module_scan_start(bytes: &[u8], start: usize) -> Option<usize> {

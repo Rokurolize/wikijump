@@ -18,27 +18,229 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::super::compat::CompatHtmlFragments;
+use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::CompatTextFragments;
+use super::super::include_comment_branches::remove_unresolved_include_comment_branches;
 use super::super::literal_regions::{ListPagesSourceProjection, LiteralRegionIndex};
+use super::super::runtime::IncludeSourceCache;
 use super::super::service::{IncludeExpansion, IncludeExpansionBudget, RenderService};
-use super::ListPagesExpansionBudget;
 use super::scanner::{CountPagesCloseReachabilityIndex, ListPagesModuleMatch};
+use super::substitution::{ExactNameListPagesBatchKey, ListPagesArguments};
+use super::template::ListPagesTemplatePlan;
+use super::{
+    ListPagesExpansionBudget, PendingDelayedListPagesOutput,
+    register_generated_list_pages_html, repair_list_pages_block_boundaries,
+    strip_generated_list_pages_html_markers, wrap_pending_list_pages_delayed_output,
+};
+use crate::error::prelude::Result;
+use crate::hash::TextHash;
+use crate::services::ServiceContext;
 use crate::services::render::UrlArguments;
+use crate::services::render::service::IncludeExpansionOptions;
 use ftml::data::PageInfo;
+use ftml::settings::WikitextSettings;
 use sea_orm::FromQueryResult;
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+
+pub(in crate::services::render) enum ListPagesBlockPlan {
+    Static(String),
+    PreserveOriginal(&'static str),
+    Render {
+        arguments: ListPagesArguments,
+        template: ListPagesTemplatePlan,
+        batch_key: Option<ExactNameListPagesBatchKey>,
+        legacy_tail: Option<String>,
+    },
+}
+
+pub(in crate::services::render) struct ListPagesBlock {
+    pub start: usize,
+    pub end: usize,
+    pub plan: ListPagesBlockPlan,
+}
+
+pub(in crate::services::render) fn raw_module_close_end(
+    source: &str,
+    start: usize,
+) -> Option<usize> {
+    let close = b"[[/module]]";
+    source
+        .as_bytes()
+        .get(start..)?
+        .windows(close.len())
+        .position(|candidate| candidate.eq_ignore_ascii_case(close))
+        .map(|offset| start + offset + close.len())
+}
 
 pub(in crate::services::render) fn push_list_pages_generated_output(
     output: &mut String,
     fragment: &str,
     expansion_budget: &mut ListPagesExpansionBudget,
 ) -> bool {
-    if !expansion_budget.try_consume_generated_output_bytes(fragment.len()) {
+    let fragment = suppress_generated_list_pages_heading_toc(fragment);
+    push_list_pages_generated_output_with_cost(
+        output,
+        &fragment,
+        fragment.len(),
+        expansion_budget,
+    )
+}
+
+pub(in crate::services::render) fn push_list_pages_generated_output_with_cost(
+    output: &mut String,
+    fragment: &str,
+    cost: usize,
+    expansion_budget: &mut ListPagesExpansionBudget,
+) -> bool {
+    if !expansion_budget.try_consume_generated_output_bytes(cost) {
         return false;
     }
     output.push_str(fragment);
     true
+}
+
+pub(in crate::services::render) fn push_list_pages_block_boundary(
+    output: &mut String,
+    expansion_budget: &mut ListPagesExpansionBudget,
+) -> bool {
+    let boundary = if output.ends_with("\n\n") {
+        ""
+    } else if output.ends_with('\n') {
+        "\n"
+    } else {
+        "\n\n"
+    };
+    if !expansion_budget.try_consume_generated_output_bytes(boundary.len()) {
+        return false;
+    }
+    output.push_str(boundary);
+    true
+}
+
+pub(in crate::services::render) fn push_list_pages_trailing_runtime_blocks(
+    output: &mut String,
+    pager: String,
+    feed_info: Option<String>,
+    wrapper: bool,
+    wrapper_trailing_space: bool,
+    compat_html: &mut CompatHtmlFragments,
+    expansion_budget: &mut ListPagesExpansionBudget,
+) -> std::result::Result<(), &'static str> {
+    const WIKIDOT_LISTPAGES_PAGER_SPACE: &str = "    \n    ";
+    let wrapper_pager_space = wrapper && wrapper_trailing_space && !pager.is_empty();
+    let pager_bytes = pager.len()
+        + if wrapper_pager_space {
+            WIKIDOT_LISTPAGES_PAGER_SPACE.len()
+        } else {
+            0
+        };
+    if !pager.is_empty() {
+        if !push_list_pages_block_boundary(output, expansion_budget) {
+            return Err("pager boundary exceeds generated-output budget");
+        }
+        let pager = if wrapper_pager_space {
+            format!("{WIKIDOT_LISTPAGES_PAGER_SPACE}{pager}")
+        } else {
+            pager
+        };
+        let pager = compat_html.push_block_html(pager);
+        if !push_list_pages_generated_output_with_cost(
+            output,
+            &pager,
+            pager_bytes,
+            expansion_budget,
+        ) {
+            return Err("pager exceeds generated-output budget");
+        }
+    }
+    if let Some(feed_info) = feed_info {
+        let feed_info = strip_generated_list_pages_html_markers(feed_info);
+        let feed_info_marker = compat_html.push_block_html(feed_info.clone());
+        if !push_list_pages_generated_output_with_cost(
+            output,
+            &feed_info_marker,
+            feed_info.len(),
+            expansion_budget,
+        ) {
+            return Err("feed metadata exceeds generated-output budget");
+        }
+    }
+    if wrapper {
+        const WIKIDOT_LISTPAGES_TRAILING_SPACE: &str = "\n    \n    \n    \n    ";
+        let closing = if wrapper_trailing_space {
+            let whitespace = if wrapper_pager_space {
+                WIKIDOT_LISTPAGES_PAGER_SPACE
+            } else {
+                WIKIDOT_LISTPAGES_TRAILING_SPACE
+            };
+            if !expansion_budget.try_consume_generated_output_bytes(whitespace.len()) {
+                return Err("wrapper trailing space exceeds generated-output budget");
+            }
+            compat_html.push_block_html(format!("{whitespace}</div>",))
+        } else {
+            super::list_pages_runtime_container_close(compat_html)
+        };
+        // Charge the stable Wikidot source delimiter rather than the random
+        // internal HTML-fragment marker. The shared budget is defined over
+        // generated source bytes, so marker IDs must never affect admission.
+        let closing_cost = "[[/div]]".len();
+        if !push_list_pages_block_boundary(output, expansion_budget)
+            || !push_list_pages_generated_output_with_cost(
+                output,
+                &closing,
+                closing_cost,
+                expansion_budget,
+            )
+        {
+            return Err("wrapper closing exceeds generated-output budget");
+        }
+    }
+    Ok(())
+}
+
+pub(in crate::services::render) fn suppress_generated_list_pages_heading_toc(
+    fragment: &str,
+) -> Cow<'_, str> {
+    let literal_regions = LiteralRegionIndex::new(fragment);
+    let bytes = fragment.as_bytes();
+    let mut insertions = Vec::new();
+    let mut line_start = 0usize;
+
+    while line_start < bytes.len() {
+        if !literal_regions.contains(line_start) {
+            let pluses = bytes[line_start..]
+                .iter()
+                .take_while(|byte| **byte == b'+')
+                .count();
+            if (1..=6).contains(&pluses)
+                && matches!(bytes.get(line_start + pluses), Some(b' ' | b'\t'))
+            {
+                insertions.push(line_start + pluses);
+            }
+        }
+
+        let Some(line_end) = bytes[line_start..].iter().position(|byte| *byte == b'\n')
+        else {
+            break;
+        };
+        line_start += line_end + 1;
+    }
+
+    if insertions.is_empty() {
+        return Cow::Borrowed(fragment);
+    }
+
+    let mut protected = String::with_capacity(fragment.len() + insertions.len());
+    let mut cursor = 0usize;
+    for insertion in insertions {
+        protected.push_str(&fragment[cursor..insertion]);
+        protected.push('*');
+        cursor = insertion;
+    }
+    protected.push_str(&fragment[cursor..]);
+    Cow::Owned(protected)
 }
 
 pub(in crate::services::render) fn preserve_list_pages_module_matches(
@@ -68,10 +270,112 @@ pub(in crate::services::render) fn list_pages_body_starts_with_preparsed_block(
             .is_some_and(|opening| opening.eq_ignore_ascii_case("[[html]]"))
 }
 
+pub(in crate::services::render) fn list_pages_raw_footnote_prefix_end(
+    head: &str,
+    suffix: &str,
+) -> Option<usize> {
+    const EVIDENCED_HEAD: &str = r#"range="." wrapper="no" separate="no""#;
+    const OPEN: &str = "@@[[footnote]]";
+    const CLOSE_AND_LINE_END: &str = "[[/footnote]]\n";
+
+    if head.trim() != EVIDENCED_HEAD || !suffix.starts_with(OPEN) {
+        return None;
+    }
+    suffix[OPEN.len()..]
+        .find(CLOSE_AND_LINE_END)
+        .map(|offset| OPEN.len() + offset + CLOSE_AND_LINE_END.len())
+}
+
+pub(in crate::services::render) fn list_pages_html_encoded_head_owns_script_tail(
+    head: &str,
+    body: &str,
+) -> bool {
+    if !head.contains("=&quot;") {
+        return false;
+    }
+
+    let body = body.trim_start_matches(char::is_whitespace);
+    if body.starts_with("</p>") {
+        return true;
+    }
+
+    body.strip_prefix('\'')
+        .map(str::trim_start)
+        .is_some_and(|tail| tail.starts_with("+ '<p>"))
+}
+
 #[derive(Debug)]
 pub(in crate::services::render) enum ListPagesBlockRenderResult {
-    Expanded(IncludeExpansion),
+    Expanded(ListPagesRenderedBlock),
     PreserveOriginal(&'static str),
+}
+
+#[derive(Debug)]
+pub(in crate::services::render) struct ListPagesRenderedBlock {
+    pub(in crate::services::render) expansion: IncludeExpansion,
+    pub(in crate::services::render) pending_delayed:
+        Option<super::PendingDelayedListPagesOutput>,
+}
+
+pub(in crate::services::render) fn list_pages_feed_only_render_result(
+    feed_info: String,
+    expansion_budget: &mut ListPagesExpansionBudget,
+) -> ListPagesBlockRenderResult {
+    if !expansion_budget.try_consume_generated_output_bytes(feed_info.len()) {
+        return ListPagesBlockRenderResult::PreserveOriginal(
+            "RSS output exceeds generated-output budget",
+        );
+    }
+    ListPagesBlockRenderResult::Expanded(ListPagesRenderedBlock {
+        expansion: IncludeExpansion {
+            wikitext: feed_info,
+            included_pages: Vec::new(),
+            expanded_include_count: 0,
+        },
+        pending_delayed: None,
+    })
+}
+
+pub(in crate::services::render) fn prepare_list_pages_rendered_block(
+    rendered: ListPagesRenderedBlock,
+    boundaries: (&str, &str),
+    expansion_budget: &mut ListPagesExpansionBudget,
+    compat_html: &mut CompatHtmlFragments,
+    compat_text: &mut CompatTextFragments,
+    pending_delayed_outputs: &mut Vec<PendingDelayedListPagesOutput>,
+) -> Option<IncludeExpansion> {
+    let ListPagesRenderedBlock {
+        expansion:
+            IncludeExpansion {
+                mut wikitext,
+                included_pages,
+                expanded_include_count,
+            },
+        pending_delayed,
+    } = rendered;
+    let generated_bytes_before_boundary_repair = wikitext.len();
+    repair_list_pages_block_boundaries(&mut wikitext, boundaries);
+    let boundary_repair_bytes = wikitext
+        .len()
+        .saturating_sub(generated_bytes_before_boundary_repair);
+    if !expansion_budget.try_consume_generated_output_bytes(boundary_repair_bytes) {
+        return None;
+    }
+    if let Some(mut pending_delayed) = pending_delayed {
+        wrap_pending_list_pages_delayed_output(
+            &mut wikitext,
+            &mut pending_delayed,
+            compat_text,
+        );
+        pending_delayed_outputs.push(pending_delayed);
+    } else {
+        wikitext = register_generated_list_pages_html(wikitext, compat_html);
+    }
+    Some(IncludeExpansion {
+        wikitext,
+        included_pages,
+        expanded_include_count,
+    })
 }
 
 #[derive(Debug)]
@@ -80,6 +384,55 @@ pub(in crate::services::render) struct ListPagesExpansion {
     pub(in crate::services::render) included_pages: Vec<ftml::data::PageRef>,
     pub(in crate::services::render) expanded_include_count: usize,
     pub(in crate::services::render) url_offset_content_bytes: usize,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::services::render) async fn expand_list_pages_generated_includes(
+    ctx: &ServiceContext<'_>,
+    expansion: &mut ListPagesExpansion,
+    page_info: &PageInfo<'_>,
+    settings: &WikitextSettings,
+    current_site_id: i64,
+    include_source_cache: &mut IncludeSourceCache,
+    compat_text: &mut CompatTextFragments,
+    include_budget: &mut IncludeExpansionBudget,
+    initial_remaining_include_expansions: usize,
+) -> Result<()> {
+    let IncludeExpansion {
+        wikitext,
+        included_pages,
+        expanded_include_count,
+    } = RenderService::expand_includes(
+        ctx,
+        std::mem::take(&mut expansion.wikitext),
+        page_info,
+        page_info.site.as_ref(),
+        settings,
+        IncludeExpansionOptions {
+            current_site_id: Some(current_site_id),
+            source_attachment_owner: None,
+            source_cache: include_source_cache,
+            compat_text,
+            expand_wikidot_image_blocks: true,
+            budget: *include_budget,
+        },
+    )
+    .await?;
+    include_budget.consume(expanded_include_count);
+    expansion.wikitext = wikitext;
+    expansion.included_pages.extend(included_pages);
+    expansion.expanded_include_count =
+        initial_remaining_include_expansions.saturating_sub(include_budget.remaining);
+    if expanded_include_count > 0 {
+        remove_unresolved_include_comment_branches(&mut expansion.wikitext);
+        RenderService::prepare_wikidot_conditionals_for_include_expansion(
+            &mut expansion.wikitext,
+            page_info,
+            compat_text,
+        );
+        neutralize_authored_markers(&mut expansion.wikitext);
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
@@ -129,6 +482,7 @@ pub(in crate::services::render) struct ListPagesExpansionOptions<'a> {
 
     /// The Wikidot URL path arguments this request carried.
     pub(in crate::services::render) url: UrlArguments<'a>,
+    pub(in crate::services::render) pager_route: super::ListPagesPagerRoute,
 }
 
 /// The request a CountPages expansion is answering.
@@ -142,6 +496,35 @@ pub(in crate::services::render) struct CountPagesExpansionOptions<'a> {
 }
 
 impl RenderService {
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::services::render) async fn expand_list_pages(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+        include_source_cache: &mut IncludeSourceCache,
+        compat_text: &mut CompatTextFragments,
+        options: ListPagesExpansionOptions<'_>,
+    ) -> Result<ListPagesExpansion> {
+        let mut expansion_budget = ListPagesExpansionBudget::new();
+        let mut seen = BTreeSet::<TextHash>::new();
+        Box::pin(Self::expand_list_pages_nested(
+            ctx,
+            wikitext,
+            page_info,
+            settings,
+            compat_html,
+            include_source_cache,
+            compat_text,
+            options,
+            &mut expansion_budget,
+            &mut seen,
+            0,
+        ))
+        .await
+    }
+
     pub(in crate::services::render) fn categories_with_current_page_category(
         mut categories: Vec<Cow<'static, str>>,
         page_info: &PageInfo<'_>,
@@ -175,5 +558,148 @@ impl RenderService {
             "_default" => page.to_owned(),
             category => format!("{category}:{page}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::render::{Render, html::HtmlRender};
+    use ftml::settings::{WikitextMode, WikitextSettings};
+    use std::borrow::Cow;
+
+    fn render_wikidot_page(source: &str) -> String {
+        let page_info = PageInfo {
+            page: Cow::Borrowed("test"),
+            category: None,
+            site: Cow::Borrowed("test"),
+            title: Cow::Borrowed("Test"),
+            alt_title: None,
+            score: ScoreValue::Float(0.0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let tokens = ftml::tokenize(source);
+        let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+        HtmlRender.render(&tree, &page_info, &settings).body
+    }
+
+    #[test]
+    fn generated_list_pages_headings_do_not_register_page_toc_ids() {
+        let mut output = String::new();
+        let mut budget = ListPagesExpansionBudget::new();
+        assert!(push_list_pages_generated_output(
+            &mut output,
+            "+ GENERATED",
+            &mut budget,
+        ));
+
+        assert_eq!(
+            render_wikidot_page(&output),
+            "<h1><span>GENERATED</span></h1>",
+        );
+    }
+
+    #[test]
+    fn generated_list_pages_heading_protection_is_literal_aware_and_idempotent() {
+        let source = concat!(
+            "+ ONE\n",
+            "++++++ TWO\n",
+            "+* ALREADY PROTECTED\n",
+            "+++++++ NOT A HEADING\n",
+            "[[code]]\n",
+            "+ CODE\n",
+            "[[/code]]\n",
+            "[[html]]\n",
+            "+ HTML\n",
+            "[[/html]]\n",
+            "[!--\n",
+            "+ COMMENT\n",
+            "--]\n",
+        );
+
+        assert_eq!(
+            suppress_generated_list_pages_heading_toc(source),
+            concat!(
+                "+* ONE\n",
+                "++++++* TWO\n",
+                "+* ALREADY PROTECTED\n",
+                "+++++++ NOT A HEADING\n",
+                "[[code]]\n",
+                "+ CODE\n",
+                "[[/code]]\n",
+                "[[html]]\n",
+                "+ HTML\n",
+                "[[/html]]\n",
+                "[!--\n",
+                "+ COMMENT\n",
+                "--]\n",
+            ),
+        );
+    }
+
+    #[test]
+    fn html_encoded_heads_only_own_evidenced_script_tail_shapes() {
+        let encoded_head = concat!(
+            "[[module ListPages category=&quot;fragment&quot; ",
+            "parent=&quot;.&quot;]]",
+        );
+
+        assert!(list_pages_html_encoded_head_owns_script_tail(
+            encoded_head,
+            "</p>\n<p>%%title%%</p>\n<p>",
+        ));
+        assert!(list_pages_html_encoded_head_owns_script_tail(
+            encoded_head,
+            "'\n    + '<p>%%content%%</p>' + '<p>",
+        ));
+        assert!(!list_pages_html_encoded_head_owns_script_tail(
+            encoded_head,
+            "ordinary %%title%%",
+        ));
+        assert!(!list_pages_html_encoded_head_owns_script_tail(
+            "[[module ListPages category=\"fragment\"]]",
+            "</p>\n<p>%%title%%</p>\n<p>",
+        ));
+        assert!(!list_pages_html_encoded_head_owns_script_tail(
+            encoded_head,
+            "' + ordinary %%title%%",
+        ));
+    }
+
+    #[test]
+    fn nonseparate_pager_keeps_wikidot_wrapper_whitespace_on_both_sides() {
+        let mut compat_html = CompatHtmlFragments::new("");
+        let opening = super::super::list_pages_runtime_container_open(
+            &mut compat_html,
+            "list-pages-box",
+        );
+        let table = compat_html.push_block_html("[[/table]]\n".to_owned());
+        let mut output = format!("{opening}\n\n{table}");
+        let mut budget = ListPagesExpansionBudget::new();
+
+        push_list_pages_trailing_runtime_blocks(
+            &mut output,
+            "<div class=\"pager\">PAGER</div>\n".to_owned(),
+            None,
+            true,
+            true,
+            &mut compat_html,
+            &mut budget,
+        )
+        .expect("pager and wrapper should fit the generated-output budget");
+
+        let rendered = compat_html.restore(&render_wikidot_page(&output));
+        assert!(
+            rendered.contains("[[/table]]\n    \n    <div class=\"pager\">PAGER</div>"),
+            "{rendered:?}",
+        );
+        assert!(
+            rendered.contains("<div class=\"pager\">PAGER</div>\n    \n    </div>"),
+            "{rendered:?}",
+        );
     }
 }

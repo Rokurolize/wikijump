@@ -20,7 +20,7 @@
 
 //! Pager targets and RSS-link presentation for ListPages.
 
-use super::super::compat::text_fragments::CompatTextFragments;
+use super::super::compat::text_fragments::escape_html_text;
 use super::super::percent_encoding::percent_encode_path_segment;
 use super::super::service::{
     MAX_LISTPAGES_RENDER_LIMIT, RenderService, escape_list_pages_html_attr,
@@ -31,16 +31,22 @@ use crate::services::render::UrlArguments;
 use ftml::data::PageInfo;
 use std::collections::BTreeSet;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::services::render) enum ListPagesPagerRoute {
+    SavedPage,
+    AjaxModuleConnector,
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(in crate::services::render) fn push_list_pages_pager(
     output: &mut String,
     page_info: &PageInfo<'_>,
+    route: ListPagesPagerRoute,
     url: UrlArguments<'_>,
     url_attr_prefix: Option<&str>,
     offset: u32,
     per_page: u64,
     total_selected: usize,
-    compat_text: &mut CompatTextFragments,
 ) {
     let per_page = per_page
         .min(MAX_LISTPAGES_RENDER_LIMIT)
@@ -55,9 +61,9 @@ pub(in crate::services::render) fn push_list_pages_pager(
         return;
     }
 
-    output.push_str("[[div class=\"pager\"]]\n");
+    output.push_str(r#"<div class="pager">"#);
     output.push_str(&format!(
-        r#"[[span class="pager-no"]]page {current_page} of {page_count}[[/span]]"#
+        r#"<span class="pager-no">page {current_page} of {page_count}</span>"#
     ));
 
     let mut pages = BTreeSet::from([1, current_page, page_count]);
@@ -80,17 +86,15 @@ pub(in crate::services::render) fn push_list_pages_pager(
     let mut previous = 0;
     for page in pages {
         if previous != 0 && page > previous + 1 {
-            let dots = compat_text.push_escaped_html_text("...");
-            output.push_str(r#"[[span class="dots"]]"#);
-            output.push_str(&dots);
-            output.push_str("[[/span]]");
+            output.push_str(r#"<span class="dots">...</span>"#);
         }
         if page == current_page {
-            output.push_str(&format!(r#"[[span class="current"]]{page}[[/span]]"#));
+            output.push_str(&format!(r#"<span class="current">{page}</span>"#));
         } else {
             push_list_pages_pager_target(
                 output,
                 page_info,
+                route,
                 url,
                 url_attr_prefix,
                 page,
@@ -104,6 +108,7 @@ pub(in crate::services::render) fn push_list_pages_pager(
         push_list_pages_pager_target(
             output,
             page_info,
+            route,
             url,
             url_attr_prefix,
             current_page + 1,
@@ -111,27 +116,29 @@ pub(in crate::services::render) fn push_list_pages_pager(
         );
     }
 
-    output.push_str("\n[[/div]]\n");
+    output.push_str("</div>\n");
 }
 
 pub(in crate::services::render) fn push_list_pages_pager_target(
     output: &mut String,
     page_info: &PageInfo<'_>,
+    route: ListPagesPagerRoute,
     url: UrlArguments<'_>,
     url_attr_prefix: Option<&str>,
     target_page: usize,
     label: &str,
 ) {
-    output.push_str(r#"[[span class="target"]][[[/"#);
-    output.push_str(&list_pages_pager_href_path(
+    output.push_str(r#"<span class="target"><a href=""#);
+    output.push_str(&escape_list_pages_html_attr(&list_pages_pager_href_path(
         page_info,
+        route,
         url,
         url_attr_prefix,
         target_page,
-    ));
-    output.push('|');
-    output.push_str(label);
-    output.push_str("]]][[/span]]");
+    )));
+    output.push_str(r#"">"#);
+    output.push_str(&escape_html_text(label));
+    output.push_str("</a></span>");
 }
 
 pub(in crate::services::render) fn list_pages_feed_info_html(
@@ -266,13 +273,21 @@ fn encode_list_pages_feed_path_segment(value: &str) -> String {
 
 fn list_pages_pager_href_path(
     page_info: &PageInfo<'_>,
+    route: ListPagesPagerRoute,
     url: UrlArguments<'_>,
     url_attr_prefix: Option<&str>,
     target_page: usize,
 ) -> String {
     let key = list_pages_page_argument_key(url_attr_prefix);
     let mut segments = Vec::with_capacity(1 + url.path_arguments.len() * 2 + 2);
-    segments.push(percent_encode_path_segment(page_info.page.as_ref()));
+    segments.push(match route {
+        ListPagesPagerRoute::SavedPage => {
+            percent_encode_path_segment(page_info.page.as_ref())
+        }
+        ListPagesPagerRoute::AjaxModuleConnector => {
+            "ajax-module-connector.php".to_owned()
+        }
+    });
     let mut replaced = false;
 
     for argument in url.path_arguments {
@@ -296,5 +311,5 @@ fn list_pages_pager_href_path(
         segments.push(target_page.to_string());
     }
 
-    segments.join("/")
+    format!("/{}", segments.join("/"))
 }

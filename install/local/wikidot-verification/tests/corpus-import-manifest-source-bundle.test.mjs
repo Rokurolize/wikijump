@@ -49,6 +49,7 @@ test('buildCorpusImportManifest accepts source bundles without entity IDs', () =
   assert.equal(rows[0].children, 2);
   assert.equal(rows[0].comments, 3);
   assert.equal(rows[0].revisions, 4);
+  assert.equal(rows[0].wikidot_size, Buffer.byteLength('sandbox start'));
   assert.equal(rows[0].rating, -1);
   assert.equal(rows[0].created_at, '1970-01-01T00:00:00+00:00');
   assert.equal(rows[0].updated_at, '1970-01-01T00:00:00+00:00');

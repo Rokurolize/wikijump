@@ -137,3 +137,18 @@ impl ListPagesExpansionBudget {
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::services::render::service::MAX_LISTPAGES_RENDER_LIMIT;
+
+    #[test]
+    fn content_row_budget_covers_the_supported_listpages_page_size() {
+        let budget = ListPagesExpansionBudget::new();
+        let maximum_page_rows = MAX_LISTPAGES_RENDER_LIMIT as usize;
+
+        assert!(budget.can_expand_content_rows(maximum_page_rows));
+        assert!(!budget.can_expand_content_rows(maximum_page_rows + 1));
+    }
+}

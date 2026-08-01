@@ -21,10 +21,18 @@
 //! Parsing for argument heads shared by Wikidot runtime modules.
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(in crate::services::render) enum WikidotModuleArgumentValueKind {
+    DoubleQuoted,
+    SingleQuoted,
+    Bare,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::services::render) struct WikidotModuleArgument<'a> {
     pub(in crate::services::render) key: &'a str,
     pub(in crate::services::render) op: &'a str,
     pub(in crate::services::render) value: &'a str,
+    pub(in crate::services::render) value_kind: WikidotModuleArgumentValueKind,
 }
 
 pub(in crate::services::render) fn module_arguments_are_complete(head: &str) -> bool {
@@ -82,7 +90,9 @@ pub(in crate::services::render) fn wikidot_module_arguments(
 
         let value_start = cursor;
         let first = head[value_start..].chars().next()?;
+        let value_kind;
         let value = if first == '"' {
+            value_kind = WikidotModuleArgumentValueKind::DoubleQuoted;
             match wikidot_double_quoted_argument_value(head, value_start) {
                 Some((value, next)) => {
                     cursor = next;
@@ -94,6 +104,7 @@ pub(in crate::services::render) fn wikidot_module_arguments(
                 }
             }
         } else if first == '\'' {
+            value_kind = WikidotModuleArgumentValueKind::SingleQuoted;
             match wikidot_single_quoted_argument_value(head, value_start) {
                 Some((value, next)) => {
                     cursor = next;
@@ -105,6 +116,7 @@ pub(in crate::services::render) fn wikidot_module_arguments(
                 }
             }
         } else {
+            value_kind = WikidotModuleArgumentValueKind::Bare;
             cursor = wikidot_bare_argument_end(head, value_start);
             if cursor == value_start {
                 return None;
@@ -112,7 +124,12 @@ pub(in crate::services::render) fn wikidot_module_arguments(
             &head[value_start..cursor]
         };
 
-        arguments.push(WikidotModuleArgument { key, op, value });
+        arguments.push(WikidotModuleArgument {
+            key,
+            op,
+            value,
+            value_kind,
+        });
         skip_wikidot_argument_whitespace(head, &mut cursor);
     }
 
@@ -165,7 +182,9 @@ pub(in crate::services::render) fn wikidot_module_arguments_ignoring_bare_flags(
 
         let value_start = cursor;
         let first = head[value_start..].chars().next()?;
+        let value_kind;
         let value = if first == '"' {
+            value_kind = WikidotModuleArgumentValueKind::DoubleQuoted;
             match wikidot_double_quoted_argument_value(head, value_start) {
                 Some((value, next)) => {
                     cursor = next;
@@ -177,6 +196,7 @@ pub(in crate::services::render) fn wikidot_module_arguments_ignoring_bare_flags(
                 }
             }
         } else if first == '\'' {
+            value_kind = WikidotModuleArgumentValueKind::SingleQuoted;
             match wikidot_single_quoted_argument_value(head, value_start) {
                 Some((value, next)) => {
                     cursor = next;
@@ -188,6 +208,7 @@ pub(in crate::services::render) fn wikidot_module_arguments_ignoring_bare_flags(
                 }
             }
         } else {
+            value_kind = WikidotModuleArgumentValueKind::Bare;
             cursor = wikidot_bare_argument_end(head, value_start);
             if cursor == value_start {
                 return None;
@@ -195,7 +216,12 @@ pub(in crate::services::render) fn wikidot_module_arguments_ignoring_bare_flags(
             &head[value_start..cursor]
         };
 
-        arguments.push(WikidotModuleArgument { key, op, value });
+        arguments.push(WikidotModuleArgument {
+            key,
+            op,
+            value,
+            value_kind,
+        });
         skip_wikidot_argument_whitespace(head, &mut cursor);
     }
 
@@ -269,6 +295,7 @@ pub(in crate::services::render) fn wikidot_list_pages_arguments(
             .chars()
             .next()
             .expect("cursor is before the end of the ListPages head");
+        let value_kind;
         let value = if first != '"'
             && first != '\''
             && wikidot_argument_key_assignment_at(head, value_start)
@@ -277,6 +304,7 @@ pub(in crate::services::render) fn wikidot_list_pages_arguments(
             // at the nested key (for example `created_by=created_by="name"`).
             continue;
         } else if first == '"' {
+            value_kind = WikidotModuleArgumentValueKind::DoubleQuoted;
             match wikidot_list_pages_double_quoted_argument_value(head, value_start) {
                 Some((value, next)) => {
                     cursor = next;
@@ -288,6 +316,7 @@ pub(in crate::services::render) fn wikidot_list_pages_arguments(
                 }
             }
         } else if first == '\'' {
+            value_kind = WikidotModuleArgumentValueKind::SingleQuoted;
             match wikidot_single_quoted_argument_value(head, value_start) {
                 Some((value, next)) => {
                     cursor = next;
@@ -299,6 +328,7 @@ pub(in crate::services::render) fn wikidot_list_pages_arguments(
                 }
             }
         } else {
+            value_kind = WikidotModuleArgumentValueKind::Bare;
             cursor = wikidot_bare_argument_end(head, value_start);
             if cursor == value_start {
                 continue;
@@ -306,7 +336,12 @@ pub(in crate::services::render) fn wikidot_list_pages_arguments(
             &head[value_start..cursor]
         };
 
-        arguments.push(WikidotModuleArgument { key, op, value });
+        arguments.push(WikidotModuleArgument {
+            key,
+            op,
+            value,
+            value_kind,
+        });
     }
 
     arguments
@@ -425,5 +460,32 @@ fn skip_wikidot_argument_whitespace(head: &str, cursor: &mut usize) {
             break;
         }
         *cursor += character.len_utf8();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{WikidotModuleArgumentValueKind, wikidot_list_pages_arguments};
+
+    #[test]
+    fn list_pages_arguments_preserve_the_scalar_source_form() {
+        let arguments = wikidot_list_pages_arguments(
+            r#"limit="1" offset='2' reverse=yes range = "." "#,
+        );
+
+        assert_eq!(arguments.len(), 4);
+        assert_eq!(
+            arguments
+                .iter()
+                .map(|argument| argument.value_kind)
+                .collect::<Vec<_>>(),
+            vec![
+                WikidotModuleArgumentValueKind::DoubleQuoted,
+                WikidotModuleArgumentValueKind::SingleQuoted,
+                WikidotModuleArgumentValueKind::Bare,
+                WikidotModuleArgumentValueKind::DoubleQuoted,
+            ],
+        );
+        assert_eq!(arguments[3].value, ".");
     }
 }

@@ -1,5 +1,7 @@
 //! Runtime-backed Wikidot module expansion.
 
+mod rate;
+
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::LazyLock;
@@ -48,7 +50,8 @@ use crate::services::score::ScoreValue;
 use crate::services::settings::PageRatingType;
 use crate::services::user::User;
 use crate::services::{
-    PageRevisionService, PageService, RelationService, ServiceContext, UserService,
+    PageRevisionService, PageService, RelationService, ServiceContext, SiteService,
+    UserService,
 };
 use crate::types::Reference;
 use crate::types::{Action, Permission, Resource};
@@ -72,9 +75,12 @@ const SIMPLETODO_MISSING_ID_ERROR: &str = "The SimpleTodo module must have an id
 const SENDINVITATIONS_DISABLED_ERROR_HTML: &str = r#"<div class="error-block">Inviting users has been disabled due to severe abuse. Admins can still send email invitations via <a href="/_admin">site admin dashboard</a>.</div>"#;
 const ANONYMOUS_NOTIFICATIONS_UNSUBSCRIBE_INVALID_TOKEN_HTML: &str =
     r#"<div class="error-block">Invalid indentification token.</div>"#;
+const DASHBOARD_NOT_ALLOWED_HTML: &str =
+    r#"<div class="error-block">Not allowed. Error.</div>"#;
 const USERINFO_NO_USER_HTML: &str =
     r#"<div class="error-block">No user specified.</div>"#;
 const SEARCHUSERS_DISABLED_HTML: &str = r#"<div class="error-block">User search has been (temporarily) disabled. Sorry!</div>"#;
+const THEME_PREVIEWER_PREVIEW_ERROR_HTML: &str = r#"<div class="error-block">Preview mode error: please contact Wikidot.com for a better error message</div>"#;
 const MEMBERSHIP_EMAIL_INVITATION_MISSING_HTML: &str = concat!(
     r#"<div id="membership-email-invitation-box">"#,
     "\n\t\n\t\t\t<p>\n\t\t\t",
@@ -150,7 +156,7 @@ static SENDINVITATIONS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static STATIC_ACCOUNT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)\[\[module\s+(?P<name>AnonymousNotificationsUnsubscribe|UserInfo|SearchUsers|MembershipEmailInvitation|WhoInvited)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
+        r#"(?is)\[\[module\s+(?P<name>AnonymousNotificationsUnsubscribe|Dashboard|UserInfo|SearchUsers|Watchers|WhoInvited|ThemePreviewer|MembershipEmailInvitation)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
     )
     .expect("static account module expression is valid")
 });
@@ -167,6 +173,10 @@ static AD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 static ADSENSEUNIT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+AdSenseUnit\b(?:[^\]"]+|"[^"]*")*\]\]"#)
         .expect("AdSenseUnit module expression is valid")
+});
+static FEATUREDSITE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+FeaturedSite\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("FeaturedSite module expression is valid")
 });
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -346,6 +356,77 @@ fn render_join_module(head: &str) -> String {
         ),
         class = escape_list_pages_html_attr(class),
         button = escape_list_pages_html_text(button),
+    )
+}
+
+fn render_featured_site_module(
+    site_id: i64,
+    slug: &str,
+    name: &str,
+    tagline: &str,
+) -> String {
+    let slug = escape_list_pages_html_attr(slug);
+    let name_attr = escape_list_pages_html_attr(name);
+    let name_text = escape_list_pages_html_text(name);
+    let tagline = (!tagline.trim().is_empty()).then(|| {
+        format!(
+            concat!(
+                "\n\t\t \t\t\t<div class=\"tagline\">\n",
+                "\t\t \t\t\t\t{}\n",
+                "\t\t \t\t\t</div>",
+            ),
+            escape_list_pages_html_text(tagline),
+        )
+    });
+    format!(
+        concat!(
+            "<div class=\"featured-site-box\">\n",
+            "\t<div class=\"container\">\n",
+            "\t\t<a  href=\"http://{slug}.wikidot.com\"><img id=\"featured-site-image-{site_id}\" ",
+            "src=\"http://thumbnails.wdfiles.com/thumbnail/site/{slug}.wikidot.com/160.jpg\" ",
+            "alt=\"{name_attr} wiki\"/></a>\n",
+            "\t</div>\n",
+            "\t<div class=\"hovertip-container\" id=\"special9387424\" style=\"display: none\">\n",
+            "\t\t<div id=\"featured-site-image-{site_id}-hovertip1\" class=\"featured-site-hovertip\">\n",
+            "\t\t\t<img src=\"http://thumbnails.wdfiles.com/thumbnail/site/{slug}.wikidot.com/160.jpg\" ",
+            "alt=\"{name_attr} wiki\" class=\"thumbnail\"/>\n",
+            "\t\t\t<div class=\"description\">\n",
+            "\t\t\t \t<div class=\"name\">\n",
+            "\t\t\t \t\t{name_text}\n",
+            "\t\t \t\t</div>{tagline}\n",
+            "\t\t \t\t<hr/>\n",
+            "\t\t \t\t<div class=\"stats\">\n",
+            "\t\t \t\t\tContributions last month: 0\n",
+            "\t\t \t\t\t<br/>\n",
+            "\t\t \t\t\tContributors: 1\n",
+            "\t\t \t\t</div>\n",
+            "\t\t\t</div>\n",
+            "\t\t</div>\n",
+            "\t</div>\n",
+            "</div>\n",
+            "<script type=\"text/javascript\">\n",
+            "\t\n",
+            "//<![CDATA[\n",
+            "\tOZONE.dom.onDomReady(function(){{\n",
+            "\t\tvar els = YAHOO.util.Dom.getElementsByClassName('featured-site-hovertip', 'div', 'special9387424');\n",
+            "\t\tfor(var i=0; i<els.length; i++){{\n",
+            "\t\t\tels[i].id = els[i].id.replace(/1$/, '');\n",
+            "\t\t}}\n",
+            "\t\tvar els = YAHOO.util.Dom.getElementsByClassName('thumbnail', 'img', 'special9387424');\n",
+            "\t\tfor(var i=0; i<els.length; i++){{\n",
+            "\t\t\tels[i].alt = '';\n",
+            "\t\t}}\n",
+            "\t\tOZONE.dialog.hovertip.dominit(\"special9387424\", {{delay: 100, noCursorHelp: true}});\n",
+            "\t}}, \"dummy-ondomready-block\");\n",
+            "//]]>\n",
+            "\t\n",
+            "</script>",
+        ),
+        slug = slug,
+        site_id = site_id,
+        name_attr = name_attr,
+        name_text = name_text,
+        tagline = tagline.unwrap_or_default(),
     )
 }
 
@@ -1280,106 +1361,7 @@ fn render_tag_cloud_module(
     }
 }
 
-fn rate_module_occurrence_body(source: &str, open_end: usize) -> (usize, Option<&str>) {
-    let suffix = &source[open_end..];
-    if suffix.starts_with("[[/module]]") {
-        return (open_end + "[[/module]]".len(), Some(""));
-    }
-
-    if !suffix
-        .chars()
-        .next()
-        .is_some_and(|character| matches!(character, '\n' | '\r'))
-    {
-        return (open_end, None);
-    }
-
-    match suffix
-        .to_ascii_lowercase()
-        .find("[[/module]]")
-        .map(|offset| open_end + offset)
-    {
-        Some(close_start) => (
-            close_start + "[[/module]]".len(),
-            Some(&source[open_end..close_start]),
-        ),
-        None => (open_end, None),
-    }
-}
-
 impl RenderService {
-    pub(super) fn expand_rate_modules_with_registry(
-        wikitext: String,
-        page_info: &PageInfo<'_>,
-        settings: &WikitextSettings,
-        rate_context: RateModuleContext,
-        compat_html: &mut CompatHtmlFragments,
-        compat_text: &mut CompatTextFragments,
-    ) -> String {
-        if !settings.enable_page_syntax || !RATE_MODULE_REGEX.is_match(&wikitext) {
-            return wikitext;
-        }
-
-        let literal_regions =
-            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
-        let footnote_ranges = collect_unproven_scope_ranges(&wikitext, &literal_regions)
-            .into_iter()
-            .filter(|range| wikidot_scope_head_is(&wikitext, range.start, "footnote"))
-            .collect::<Vec<_>>();
-        let mut output = String::with_capacity(wikitext.len());
-        let mut cursor = 0;
-        for matched in RATE_MODULE_REGEX.find_iter(&wikitext) {
-            if literal_regions.contains(matched.start()) {
-                continue;
-            }
-            let line_start = wikitext[..matched.start()]
-                .rfind('\n')
-                .map_or(0, |index| index + 1);
-            if wikitext[line_start..matched.start()]
-                .trim_start()
-                .starts_with('>')
-            {
-                continue;
-            }
-            let (occurrence_end, body) =
-                rate_module_occurrence_body(&wikitext, matched.end());
-            output.push_str(&wikitext[cursor..matched.start()]);
-            if footnote_ranges
-                .iter()
-                .any(|range| range.start < matched.start() && occurrence_end <= range.end)
-            {
-                output.push_str(
-                    &compat_text.push_escaped_html_text(
-                        &wikitext[matched.start()..occurrence_end],
-                    ),
-                );
-                cursor = occurrence_end;
-                continue;
-            }
-            let rendered = match rate_context.rating_type {
-                PageRatingType::Stars => render_read_only_star_rate_module(
-                    rate_context.score,
-                    rate_context.rating_votes,
-                    body.unwrap_or(""),
-                ),
-                PageRatingType::Plus | PageRatingType::PlusMinus => {
-                    render_read_only_rate_module(
-                        rate_context.score,
-                        &page_info.language,
-                        rate_context.rating_type,
-                    )
-                }
-            };
-            output.push_str(&compat_html.push_block_html(rendered));
-            cursor = occurrence_end;
-        }
-        if cursor == 0 {
-            return wikitext;
-        }
-        output.push_str(&wikitext[cursor..]);
-        output
-    }
-
     pub(super) fn expand_registry_modules_with_registry(
         wikitext: String,
         settings: &WikitextSettings,
@@ -1647,7 +1629,7 @@ impl RenderService {
             {
                 simpletodo_index += 1;
             }
-            output.push_str(&compat_html.push_html(rendered));
+            output.push_str(&compat_html.push_block_html(rendered));
             cursor = matched.end();
         }
         if cursor == 0 {
@@ -1678,7 +1660,8 @@ impl RenderService {
             }
             output.push_str(&wikitext[cursor..matched.start()]);
             output.push_str(
-                &compat_html.push_html(SENDINVITATIONS_DISABLED_ERROR_HTML.to_owned()),
+                &compat_html
+                    .push_block_html(SENDINVITATIONS_DISABLED_ERROR_HTML.to_owned()),
             );
             cursor = matched.end();
         }
@@ -1692,10 +1675,16 @@ impl RenderService {
     fn render_static_account_module(name: &str) -> &'static str {
         if name.eq_ignore_ascii_case("AnonymousNotificationsUnsubscribe") {
             ANONYMOUS_NOTIFICATIONS_UNSUBSCRIBE_INVALID_TOKEN_HTML
+        } else if name.eq_ignore_ascii_case("Dashboard") {
+            DASHBOARD_NOT_ALLOWED_HTML
         } else if name.eq_ignore_ascii_case("UserInfo") {
             USERINFO_NO_USER_HTML
         } else if name.eq_ignore_ascii_case("SearchUsers") {
             SEARCHUSERS_DISABLED_HTML
+        } else if name.eq_ignore_ascii_case("Watchers") {
+            ""
+        } else if name.eq_ignore_ascii_case("ThemePreviewer") {
+            THEME_PREVIEWER_PREVIEW_ERROR_HTML
         } else if name.eq_ignore_ascii_case("MembershipEmailInvitation") {
             MEMBERSHIP_EMAIL_INVITATION_MISSING_HTML
         } else {
@@ -1735,10 +1724,10 @@ impl RenderService {
                 .expect("a static account module capture always has a name")
                 .as_str();
             output.push_str(&wikitext[cursor..matched.start()]);
-            output.push_str(
-                &compat_html
-                    .push_html(Self::render_static_account_module(name).to_owned()),
-            );
+            let rendered = Self::render_static_account_module(name);
+            if !rendered.is_empty() {
+                output.push_str(&compat_html.push_block_html(rendered.to_owned()));
+            }
             cursor = matched.end();
         }
         if cursor == 0 {
@@ -1811,7 +1800,7 @@ impl RenderService {
                 continue;
             };
             output.push_str(&wikitext[cursor..matched.start()]);
-            output.push_str(&compat_html.push_html(rendered.to_owned()));
+            output.push_str(&compat_html.push_block_html(rendered.to_owned()));
             cursor = matched.end();
         }
         if cursor == 0 {
@@ -1850,6 +1839,53 @@ impl RenderService {
         }
         output.push_str(&wikitext[cursor..]);
         output
+    }
+
+    async fn expand_featured_site_modules(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        settings: &WikitextSettings,
+        current_site_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> Result<String> {
+        if !settings.enable_page_syntax || !FEATUREDSITE_MODULE_REGEX.is_match(&wikitext)
+        {
+            return Ok(wikitext);
+        }
+        let Some(current_site_id) = current_site_id else {
+            return Ok(wikitext);
+        };
+        let site = SiteService::get(ctx, Reference::Id(current_site_id)).await?;
+        let rendered = render_featured_site_module(
+            site.site_id,
+            &site.slug,
+            &site.name,
+            &site.tagline,
+        );
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in FEATUREDSITE_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a FeaturedSite capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            if !head.trim().is_empty() {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&compat_html.push_block_html(rendered.clone()));
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return Ok(wikitext);
+        }
+        output.push_str(&wikitext[cursor..]);
+        Ok(output)
     }
 
     pub(super) async fn expand_secondary_runtime_modules(
@@ -1904,6 +1940,15 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = Self::expand_ad_modules(wikitext, settings);
+        wikitext = Self::expand_featured_site_modules(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
         if PAGECALENDAR_MODULE_REGEX.is_match(&wikitext) {
             wikitext = {
                 let _stage =

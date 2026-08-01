@@ -2105,9 +2105,12 @@ async fn page_view_separates_generated_css_modules_from_compiled_body_html() {
         compiled_body_html.contains(r#"<div class="code""#),
         "show=true CSS module should render a visible code block: {compiled_body_html}",
     );
-    assert!(compiled_body_html.contains(".shown { color: blue; }"));
-    assert!(compiled_body_html.contains("&lt;unsafe&gt;"));
-    assert!(compiled_body_html.contains(".shown-disabled { color: purple; }"));
+    assert!(compiled_body_html.contains(r#"<span class="hl-identifier">.shown</span>"#));
+    assert!(compiled_body_html.contains(r#"&quot;&lt;unsafe&gt;&quot;"#));
+    assert!(
+        compiled_body_html
+            .contains(r#"<span class="hl-identifier">.shown-disabled</span>"#)
+    );
     assert!(!compiled_body_html.contains(".show-uppercase { color: orange; }"));
     assert!(!compiled_body_html.contains(".show-spaced { color: cyan; }"));
 
@@ -3465,6 +3468,83 @@ async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
             && !preview.body.contains("[[module SendInvitations"),
         "implemented modules should not leak raw module source:\n{}",
         preview.body,
+    );
+}
+
+#[tokio::test]
+async fn wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let slug = "fixture-preview-html-lifecycle";
+    let source = "[[html]]\n<b>X</b>\n[[/html]]";
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Preview HTML lifecycle",
+            "wikitext": source,
+        }),
+    );
+    assert_eq!(
+        preview.body,
+        "<p>[[html]]<br>\n&lt;b&gt;X&lt;/b&gt;<br>\n[[/html]]</p>",
+    );
+    assert!(!preview.body.contains("<iframe"), "{}", preview.body);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(slug)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": source,
+            "title": "Fixture Preview HTML Lifecycle",
+            "alt_title": null,
+            "slug": slug,
+            "layout": "wikidot",
+            "revision_comments": "create preview HTML lifecycle fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = view
+    else {
+        panic!("expected saved HTML lifecycle page, got {view:?}");
+    };
+    assert!(
+        compiled_body_html
+            .strip_prefix(r#"<p><iframe src="/fixture-preview-html-lifecycle/html/"#)
+            .is_some_and(|body| body.ends_with(
+                r#"" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></p>"#,
+            )),
+        "saved HTML blocks must execute through the local runtime route: {compiled_body_html}",
     );
 }
 
@@ -5235,8 +5315,30 @@ async fn list_pages_url_page_number_composes_with_the_module_offset() {
     }
 }
 
-#[tokio::test]
-async fn list_pages_saved_view_preserves_live_pagination_path_shapes() {
+#[test]
+fn list_pages_saved_view_preserves_live_pagination_path_shapes() {
+    // The fixture intentionally exercises five ListPages passes and a very
+    // large offset. Keep the test's async poll stack separate from the test
+    // harness's 2 MiB stack so the compatibility assertion measures rendering,
+    // not the harness's stack budget.
+    std::thread::Builder::new()
+        .name("list-pages-pagination-test".to_owned())
+        .stack_size(4 * 1024 * 1024)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("ListPages pagination test runtime should build")
+                .block_on(
+                    list_pages_saved_view_preserves_live_pagination_path_shapes_impl(),
+                );
+        })
+        .expect("ListPages pagination test thread should spawn")
+        .join()
+        .expect("ListPages pagination test thread should complete");
+}
+
+async fn setup_list_pages_saved_view_path_fixture() -> (TestRunner, i64) {
     const HOLDER: &str = "fixture-lp-path-holder";
     const A_PREFIX: &str = "fixture-lp-path-a";
     const B_PREFIX: &str = "fixture-lp-path-b";
@@ -5299,6 +5401,17 @@ async fn list_pages_saved_view_preserves_live_pagination_path_shapes() {
         ),
     )
     .await;
+
+    (runner, site_id)
+}
+
+async fn list_pages_saved_view_preserves_live_pagination_path_shapes_impl() {
+    const HOLDER: &str = "fixture-lp-path-holder";
+    const A_PREFIX: &str = "fixture-lp-path-a";
+    const B_PREFIX: &str = "fixture-lp-path-b";
+    const OFFSET_HUGE_PREFIX: &str = "fixture-lp-path-offset-huge";
+
+    let (runner, site_id) = setup_list_pages_saved_view_path_fixture().await;
 
     let view = async |extra: &str| match run_endpoint!(
         runner,
@@ -5463,8 +5576,13 @@ async fn list_pages_saved_view_preserves_argument_order_around_the_pager() {
     let reverse_order = view("/p/2/tag/alpha").await;
     assert!(
         reverse_order.contains(&format!("ROW3:{ITEM_PREFIX}-3|"))
-            && reverse_order.contains(&format!("href=\"/{HOLDER}/p/1/tag/alpha\"")),
+            && reverse_order.contains(&format!("href=\"/{HOLDER}/p/1/tag/alpha\""))
+            && reverse_order.contains(r#"<div class="pager"><span class="pager-no">"#),
         "the pager replaces a numeric page argument in place without reordering later arguments:\n{reverse_order}",
+    );
+    assert!(
+        !reverse_order.contains(r#"<div class="pager"><p>"#),
+        "saved-page pagers must keep their span children direct:\n{reverse_order}",
     );
 
     let category_path = view("/category/fragment/p/2").await;
@@ -7317,7 +7435,7 @@ async fn listpages_rss_link_and_rss_only_match_live_wikidot_markup() {
     assert!(!only.contains("list-pages-item"), "{only}");
 
     let empty = section("EMPTY");
-    assert!(empty.contains(&format!("EMPTY_ROW {PREFIX}-1")), "{empty}");
+    assert!(empty.contains(&format!("EMPTY_ROW {PREFIX}-2")), "{empty}");
     assert!(!empty.contains("feedinfo"), "{empty}");
 
     let path = section("PATH");
@@ -9266,7 +9384,7 @@ async fn listpages_missing_data_form_variables_stay_literal_without_blocking_row
 async fn listpages_data_form_variables_match_live_wikidot() {
     const CATEGORY: &str = "fixture-listpages-form";
     const TEMPLATE_SLUG: &str = "fixture-listpages-form-template";
-    const TARGET_SLUG: &str = "fixture-listpages-form-target";
+    const TARGET_SLUG: &str = "fixture-listpages-form:fixture-listpages-form-target";
     const INDEX_SLUG: &str = "fixture-listpages-form-index";
 
     let mut runner = TestRunner::setup().await;
@@ -9407,7 +9525,7 @@ async fn listpages_checkbox_and_wiki_variables_match_live_wikidot() {
         site_id,
         TARGET_SLUG,
         "Fixture ListPages Checkbox Wiki Target",
-        "enabled: '1'\ndetails: \"**Bold**\\n[[[start|Home]]]\"",
+        "enabled: '1'\ndetails: \"**Bold**\\n[[[fixture-listpages-checkbox-wiki-missing-start|Home]]]\"",
     )
     .await;
     create_listpages_test_page(
@@ -9438,7 +9556,9 @@ async fn listpages_checkbox_and_wiki_variables_match_live_wikidot() {
         "both form_data and form_raw must parse wiki field syntax:\n{html}",
     );
     assert_eq!(
-        html.matches(r#"<a class="newpage" href="/start">Home</a>"#)
+        html.matches(
+            r#"<a class="newpage" href="/fixture-listpages-checkbox-wiki-missing-start">Home</a>"#,
+        )
             .count(),
         2,
         "both wiki variables must decode the stored newline and internal link:\n{html}",
@@ -9655,6 +9775,12 @@ async fn listpages_imported_creator_identity_uses_structured_corpus_provenance()
         format!("created_by_id=[{CREATOR_ID}]"),
         format!("http://www.wikidot.com/user:info/{CREATOR_SLUG}"),
         format!("WIKIDOT.page.listeners.userInfo({CREATOR_ID})"),
+        format!(
+            "src=\"http://www.wikidot.com/avatar.php?userid={CREATOR_ID}&amp;amp;size=small&amp;amp;timestamp="
+        ),
+        format!(
+            r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
+        ),
     ] {
         assert!(
             html.contains(&expected),
@@ -9664,6 +9790,81 @@ async fn listpages_imported_creator_identity_uses_structured_corpus_provenance()
     assert!(
         !html.contains("[[module ListPages") && !html.contains("%%created_by"),
         "a fully identified imported creator must not make ListPages fail closed:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_imported_empty_title_uses_wikidot_page_name_label() {
+    const IMPORT_RUN_ID: i64 = 944_005;
+    const TARGET_SLUG: &str = "fixtureemptytitle:dfui-a-dfuixp04";
+    const INDEX_SLUG: &str = "fixture-listpages-imported-empty-title-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        TARGET_SLUG,
+        "Imported empty-title target.",
+    )
+    .await;
+    let target_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
+    create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
+    set_imported_author(
+        &runner,
+        site_id,
+        IMPORT_RUN_ID,
+        (target_id, TARGET_SLUG, 944_005, "Fixture Creator"),
+    )
+    .await;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE wikidot_page_snapshot \
+             SET title_shown = '', \
+                 meta_json = jsonb_build_object( \
+                     'title', '', \
+                     'title_shown', '' \
+                 ) \
+             WHERE page_id = $1",
+            [Value::from(target_id)],
+        ))
+        .await
+        .expect("imported empty-title provenance should be attached");
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture Imported Empty Title Index",
+        concat!(
+            "[[module ListPages category=\"*\" ",
+            "fullname=\"fixtureemptytitle:dfui-a-dfuixp04\" ",
+            "separate=\"no\" wrapper=\"no\"]]\n",
+            "TITLE=[%%title%%]\n",
+            "LINK=[%%title_linked%%]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert!(
+        html.contains("TITLE=[Dfui a dfuixp04]"),
+        "an imported empty title should use Wikidot's page-name label:\n{html}",
+    );
+    assert!(
+        html.contains(">Dfui a dfuixp04</a>"),
+        "the linked-title label should use the same Wikidot fallback:\n{html}",
+    );
+    assert!(
+        !html.contains("TITLE=[fixtureemptytitle:dfui-a-dfuixp04]"),
+        "the import-only storage fallback must not leak as the visible title:\n{html}",
     );
 }
 
@@ -10445,7 +10646,7 @@ async fn listpages_unclosed_empty_body_uses_the_live_default_template() {
     for expected in [
         r#"<div class="list-pages-box">"#,
         r#"<div class="list-pages-item">"#,
-        "<h1 ",
+        "<h1>",
         r#"href="/fixture-listpages-default-template-target""#,
         "Fixture ListPages Default Template Target",
         "by Administrator",
@@ -14964,13 +15165,10 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
     assert_eq!(
         output.html_output.body.matches(CHILD_MARKER).count(),
         3,
-        "the first three deterministic content-backed modules should render",
+        "the first three nonempty content-backed modules should render",
     );
     assert!(
-        output
-            .html_output
-            .body
-            .contains(&format!("BROAD PRESERVED {CHILD_MARKER}")),
+        output.html_output.body.contains("BROAD PRESERVED"),
         "a broad deterministic request with a sparse result must expand its actual row: {}",
         output.html_output.body,
     );
@@ -14981,19 +15179,31 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
             .contains("BROAD PRESERVED %%content%%")
     );
     assert!(
-        output
-            .html_output
-            .body
-            .contains("RANDOM PRESERVED %%content%%"),
-        "a random content-backed module must remain literal without consuming the deterministic module budget: {}",
+        output.html_output.body.contains("RANDOM PRESERVED"),
+        "a random query with an actual selected content row must consume one content-module slot: {}",
         output.html_output.body,
     );
     assert!(
-        output
+        !output
             .html_output
             .body
-            .contains("EXPANDED THREE %%content%%"),
-        "the fourth deterministic content-backed query must remain literal: {}",
+            .contains("RANDOM PRESERVED %%content%%"),
+    );
+    assert!(
+        output.html_output.body.contains("EXPANDED ONE")
+            && !output.html_output.body.contains("EXPANDED ONE %%content%%"),
+        "the third nonempty content-backed module must render: {}",
+        output.html_output.body,
+    );
+    assert!(
+        [
+            "EXPANDED TWO %%content%%",
+            "EXPANDED THREE %%content%%",
+            "PRESERVED %%content%%",
+        ]
+        .iter()
+        .all(|module| output.html_output.body.contains(module)),
+        "content-backed modules after the third nonempty module must remain literal: {}",
         output.html_output.body,
     );
     assert!(
@@ -15003,6 +15213,96 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
             .contains("METADATA ListPages Content Row Budget Child"),
         "a later metadata-only module should still render: {}",
         output.html_output.body,
+    );
+}
+
+#[tokio::test]
+async fn listpages_zero_row_content_modules_do_not_exhaust_the_work_budget() {
+    const INDEX_SLUG: &str = "fixture-listpages-zero-row-content-budget-index";
+    const CHILD_SLUG: &str = "fixture-listpages-zero-row-content-budget-child";
+    const CHILD_MARKER: &str = "ZERO_ROW_CONTENT_BUDGET_CHILD";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        CHILD_SLUG,
+        "ListPages Zero Row Content Budget Child",
+        CHILD_MARKER,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "ListPages Zero Row Content Budget Index",
+        "placeholder",
+    )
+    .await;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+        }),
+    )
+    .expect("zero-row content budget index should exist");
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("ListPages Zero Row Content Budget Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id: page.page_id,
+    };
+    let empty_modules = (0..41)
+        .map(|index| {
+            format!(
+                "[[module ListPages name=\"definitely-missing-{INDEX_SLUG}\" \
+                 limit=\"250\"]]EMPTY-{index} %%content%%[[/module]]\n",
+            )
+        })
+        .collect::<String>();
+    let source = format!(
+        "{empty_modules}[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]\
+         SELECTED %%content%%[[/module]]",
+    );
+
+    let output = RenderService::render_page(
+        runner.context(),
+        source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("zero-row content modules should not exhaust selected-content work");
+    let html = output.html_output.body;
+    assert_eq!(
+        html.matches(r#"<div class="list-pages-box"></div>"#)
+            .count(),
+        41,
+        "all zero-row modules should execute as empty wrappers:\n{html}",
+    );
+    assert!(
+        html.contains(CHILD_MARKER)
+            && !html.contains("SELECTED %%content%%")
+            && !html.contains("EMPTY-0 %%content%%")
+            && !html.contains("EMPTY-40 %%content%%"),
+        "the later nonempty content module should retain the full work budget:\n\
+         {html}",
     );
 }
 
@@ -15237,7 +15537,9 @@ async fn listpages_following_paragraph_boundary_counts_toward_generated_output_b
     const TITLE_VARIABLE_REPETITIONS: usize = 20_701;
     const GENERATED_BYTE_BUDGET: usize = 16 * 1024 * 1024;
     const WRAPPER_OPEN: &str = "[[div class=\"list-pages-box\"]]\n";
+    const WRAPPER_TRAILING_SPACE: &str = "\n    \n    \n    \n    ";
     const WRAPPER_CLOSE: &str = "[[/div]]";
+    const WRAPPER_CLOSING_BOUNDARY_BYTES: usize = 1;
     const SENTINEL: &str = "PARAGRAPH_BYTE_BUDGET_SENTINEL";
 
     let mut runner = TestRunner::setup().await;
@@ -15248,7 +15550,9 @@ async fn listpages_following_paragraph_boundary_counts_toward_generated_output_b
     let mut title_lengths = [200usize; ROW_COUNT];
     let fixed_without_padding = |title_lengths: &[usize; ROW_COUNT]| {
         WRAPPER_OPEN.len()
+            + WRAPPER_TRAILING_SPACE.len()
             + WRAPPER_CLOSE.len()
+            + WRAPPER_CLOSING_BOUNDARY_BYTES
             + ROW_COUNT * (SENTINEL.len() + 1)
             + TITLE_VARIABLE_REPETITIONS * title_lengths.iter().sum::<usize>()
     };
@@ -15276,7 +15580,9 @@ async fn listpages_following_paragraph_boundary_counts_toward_generated_output_b
     );
     assert_eq!(
         WRAPPER_OPEN.len()
+            + WRAPPER_TRAILING_SPACE.len()
             + WRAPPER_CLOSE.len()
+            + WRAPPER_CLOSING_BOUNDARY_BYTES
             + title_lengths
                 .iter()
                 .map(|title_length| {
@@ -16568,6 +16874,30 @@ async fn set_listpages_test_created_at(
         .update(runner.context().transaction())
         .await
         .expect("created_at test page update should not fail");
+}
+
+async fn set_listpages_test_updated_at(
+    runner: &TestRunner,
+    site_id: i64,
+    slug: &str,
+    updated_at: OffsetDateTime,
+) {
+    let page = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(slug)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("updated_at test page lookup should not fail")
+        .expect("updated_at test page should exist");
+    let mut model = page.into_active_model();
+    model.updated_at = Set(Some(updated_at));
+    model
+        .update(runner.context().transaction())
+        .await
+        .expect("updated_at test page update should not fail");
 }
 
 async fn set_listpages_test_revision_number(
@@ -17873,7 +18203,7 @@ async fn countpages_limit_above_scan_cap_remains_literal() {
         site.site.site_id,
         "fixture-countpages-limit-cap-literal",
         "verification-count-limit-cap-literal",
-        r#"category="*" tags="+verification-count-limit-cap-literal" limit="5001""#,
+        r#"category="*" tags="+verification-count-limit-cap-literal" limit="50001""#,
         "LIMIT_CAP_COUNT=%%total%%",
         &[(
             "target-a",
@@ -19309,6 +19639,347 @@ async fn page_query_orders_by_page_slug_without_category_prefix() {
         slugs,
         ["zcategory:alpha", "acategory:beta", "mcategory:gamma"],
         "PageSlug order should sort by page slug, not by full category-qualified slug",
+    );
+}
+
+#[tokio::test]
+async fn page_query_page_slug_ties_follow_wikidot_source_identity() {
+    const IMPORT_RUN_ID: i64 = 7_130_562;
+    const B_OLDER: &str = "bcategory:alpha";
+    const C_MIDDLE: &str = "ccategory:alpha";
+    const A_NEWER: &str = "acategory:alpha";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title) in [
+        (B_OLDER, "Page name tie older"),
+        (A_NEWER, "Page name tie newer"),
+        (C_MIDDLE, "Page name tie middle"),
+    ] {
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            title,
+            "Page name tie marker.",
+        )
+        .await;
+    }
+
+    let b_older_id = listpages_test_page_id(&runner, site_id, B_OLDER).await;
+    let a_newer_id = listpages_test_page_id(&runner, site_id, A_NEWER).await;
+    let c_middle_id = listpages_test_page_id(&runner, site_id, C_MIDDLE).await;
+    create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 3).await;
+    for fixture in [
+        (b_older_id, B_OLDER, 601, "Page Name Tie Author"),
+        (a_newer_id, A_NEWER, 602, "Page Name Tie Author"),
+        (c_middle_id, C_MIDDLE, 603, "Page Name Tie Author"),
+    ] {
+        set_imported_author(&runner, site_id, IMPORT_RUN_ID, fixture).await;
+    }
+    let transaction = runner.context().transaction();
+    for (page_id, source_page_id) in [
+        (b_older_id, 100_i64),
+        (c_middle_id, 200_i64),
+        (a_newer_id, 300_i64),
+    ] {
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                "UPDATE wikidot_page_snapshot \
+                 SET meta_json = jsonb_build_object('page_id', $1::text) \
+                 WHERE page_id = $2",
+                [Value::from(source_page_id), Value::from(page_id)],
+            ))
+            .await
+            .expect("page-name tie fixture should receive a source page ID");
+    }
+
+    let fixture_slugs = [
+        Cow::Borrowed(B_OLDER),
+        Cow::Borrowed(C_MIDDLE),
+        Cow::Borrowed(A_NEWER),
+    ];
+    let mut query = PageQuery {
+        current_page_id: 0,
+        current_site_id: site_id,
+        queried_site_id: Some(site_id),
+        page_type: PageTypeSelector::All,
+        categories: CategoriesSelector {
+            included_categories: IncludedCategories::All,
+            excluded_categories: &[],
+        },
+        tags: TagCondition {
+            any_present: &[],
+            all_present: &[],
+            none_present: &[],
+            untagged: false,
+        },
+        page_parent: PageParentSelector::All,
+        contains_outgoing_links: &[],
+        creation_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        update_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        author: AuthorSelector::All,
+        score: &[],
+        votes: &[],
+        offset: 0,
+        range: RangeSelector::Current,
+        name: None,
+        slug: None,
+        slugs: &fixture_slugs,
+        data_form_fields: &[],
+        order: Some(OrderBySelector {
+            property: OrderProperty::PageSlug,
+            ascending: true,
+        }),
+        candidate_limit: None,
+        pagination: PaginationSelector {
+            limit: Some(10),
+            ..Default::default()
+        },
+        variables: &[],
+        fields: FoundPageFields {
+            slug: true,
+            ..Default::default()
+        },
+    };
+
+    let ordered_slugs = |pages: deepwell::services::page_query::FoundPages| {
+        pages
+            .pages
+            .into_iter()
+            .map(|row| row.slug.expect("slug field should be requested"))
+            .collect::<Vec<_>>()
+    };
+    let ascending = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("ascending page-name tie query should succeed");
+    assert_eq!(
+        ordered_slugs(ascending),
+        [B_OLDER, C_MIDDLE, A_NEWER],
+        "equal category-local page names should follow Wikidot source identity",
+    );
+
+    query.order = Some(OrderBySelector {
+        property: OrderProperty::PageSlug,
+        ascending: false,
+    });
+    let descending = PageQueryService::find(runner.context(), query)
+        .await
+        .expect("descending page-name tie query should succeed");
+    assert_eq!(
+        ordered_slugs(descending),
+        [A_NEWER, C_MIDDLE, B_OLDER],
+        "descending name order should reverse the source-identity tie-break",
+    );
+}
+
+#[tokio::test]
+async fn page_query_equal_sort_values_follow_wikidot_source_identity() {
+    const IMPORT_RUN_ID: i64 = 7_130_563;
+    const SOURCE_OLDER: &str = "bcategory:created-at-tie";
+    const SOURCE_MIDDLE: &str = "ccategory:created-at-tie";
+    const SOURCE_NEWER: &str = "acategory:created-at-tie";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tied_created_at = OffsetDateTime::from_unix_timestamp(1_700_000_000)
+        .expect("fixture timestamp is valid");
+
+    for (slug, title) in [
+        (SOURCE_OLDER, "Created-at tie older source"),
+        (SOURCE_NEWER, "Created-at tie newer source"),
+        (SOURCE_MIDDLE, "Created-at tie middle source"),
+    ] {
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            title,
+            "Created-at tie marker.",
+        )
+        .await;
+        set_listpages_test_created_at(&runner, site_id, slug, tied_created_at).await;
+    }
+
+    let source_older_id = listpages_test_page_id(&runner, site_id, SOURCE_OLDER).await;
+    let source_newer_id = listpages_test_page_id(&runner, site_id, SOURCE_NEWER).await;
+    let source_middle_id = listpages_test_page_id(&runner, site_id, SOURCE_MIDDLE).await;
+    create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 3).await;
+    for fixture in [
+        (source_older_id, SOURCE_OLDER, 611, "Created At Tie Author"),
+        (source_newer_id, SOURCE_NEWER, 612, "Created At Tie Author"),
+        (
+            source_middle_id,
+            SOURCE_MIDDLE,
+            613,
+            "Created At Tie Author",
+        ),
+    ] {
+        set_imported_author(&runner, site_id, IMPORT_RUN_ID, fixture).await;
+    }
+    let transaction = runner.context().transaction();
+    for (page_id, source_page_id) in [
+        (source_older_id, 100_i64),
+        (source_middle_id, 200_i64),
+        (source_newer_id, 300_i64),
+    ] {
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                "UPDATE wikidot_page_snapshot \
+                 SET meta_json = jsonb_build_object('page_id', $1::text) \
+                 WHERE page_id = $2",
+                [Value::from(source_page_id), Value::from(page_id)],
+            ))
+            .await
+            .expect("created-at tie fixture should receive a source page ID");
+    }
+
+    let fixture_slugs = [
+        Cow::Borrowed(SOURCE_OLDER),
+        Cow::Borrowed(SOURCE_MIDDLE),
+        Cow::Borrowed(SOURCE_NEWER),
+    ];
+    let mut query = PageQuery {
+        current_page_id: 0,
+        current_site_id: site_id,
+        queried_site_id: Some(site_id),
+        page_type: PageTypeSelector::All,
+        categories: CategoriesSelector {
+            included_categories: IncludedCategories::All,
+            excluded_categories: &[],
+        },
+        tags: TagCondition {
+            any_present: &[],
+            all_present: &[],
+            none_present: &[],
+            untagged: false,
+        },
+        page_parent: PageParentSelector::All,
+        contains_outgoing_links: &[],
+        creation_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        update_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        author: AuthorSelector::All,
+        score: &[],
+        votes: &[],
+        offset: 0,
+        range: RangeSelector::Current,
+        name: None,
+        slug: None,
+        slugs: &fixture_slugs,
+        data_form_fields: &[],
+        order: Some(OrderBySelector {
+            property: OrderProperty::CreatedAt,
+            ascending: true,
+        }),
+        candidate_limit: None,
+        pagination: PaginationSelector {
+            limit: Some(10),
+            ..Default::default()
+        },
+        variables: &[],
+        fields: FoundPageFields {
+            slug: true,
+            ..Default::default()
+        },
+    };
+
+    let ordered_slugs = |pages: deepwell::services::page_query::FoundPages| {
+        pages
+            .pages
+            .into_iter()
+            .map(|row| row.slug.expect("slug field should be requested"))
+            .collect::<Vec<_>>()
+    };
+    let ascending = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("ascending created-at tie query should succeed");
+    assert_eq!(
+        ordered_slugs(ascending),
+        [SOURCE_OLDER, SOURCE_MIDDLE, SOURCE_NEWER],
+        "equal creation timestamps should follow Wikidot source identity",
+    );
+
+    query.order = Some(OrderBySelector {
+        property: OrderProperty::CreatedAt,
+        ascending: false,
+    });
+    let descending = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("descending created-at tie query should succeed");
+    assert_eq!(
+        ordered_slugs(descending),
+        [SOURCE_NEWER, SOURCE_MIDDLE, SOURCE_OLDER],
+        "descending creation order should reverse the source-identity tie-break",
+    );
+
+    for slug in [SOURCE_OLDER, SOURCE_MIDDLE, SOURCE_NEWER] {
+        set_listpages_test_updated_at(&runner, site_id, slug, tied_created_at).await;
+    }
+    query.order = Some(OrderBySelector {
+        property: OrderProperty::UpdatedAt,
+        ascending: true,
+    });
+    let ascending = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("ascending updated-at tie query should succeed");
+    assert_eq!(
+        ordered_slugs(ascending),
+        [SOURCE_OLDER, SOURCE_MIDDLE, SOURCE_NEWER],
+        "equal update timestamps should follow Wikidot source identity",
+    );
+
+    query.order = Some(OrderBySelector {
+        property: OrderProperty::UpdatedAt,
+        ascending: false,
+    });
+    let descending = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("descending updated-at tie query should succeed");
+    assert_eq!(
+        ordered_slugs(descending),
+        [SOURCE_NEWER, SOURCE_MIDDLE, SOURCE_OLDER],
+        "descending update order should reverse the source-identity tie-break",
+    );
+
+    query.order = Some(OrderBySelector {
+        property: OrderProperty::Size,
+        ascending: true,
+    });
+    let ascending = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("ascending size tie query should succeed");
+    assert_eq!(
+        ordered_slugs(ascending),
+        [SOURCE_OLDER, SOURCE_MIDDLE, SOURCE_NEWER],
+        "equal page sizes should follow Wikidot source identity",
+    );
+
+    query.order = Some(OrderBySelector {
+        property: OrderProperty::Size,
+        ascending: false,
+    });
+    let descending = PageQueryService::find(runner.context(), query)
+        .await
+        .expect("descending size tie query should succeed");
+    assert_eq!(
+        ordered_slugs(descending),
+        [SOURCE_NEWER, SOURCE_MIDDLE, SOURCE_OLDER],
+        "descending size order should reverse the source-identity tie-break",
     );
 }
 
