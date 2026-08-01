@@ -78,7 +78,7 @@ impl RenderService {
             unsupported_list_pages_filter: _,
             link_to,
             unsupported_score_filter: _,
-            unsupported_count_pages_filter: _,
+            unsupported_count_pages_filter,
             separate: _,
             wrapper: _,
             rss_title: _,
@@ -88,6 +88,16 @@ impl RenderService {
             rss_only: _,
             rss_path: _,
         } = arguments;
+        if unsupported_count_pages_filter
+            || count_pages_explicit_limit.is_some_and(|limit| {
+                limit
+                    .saturating_add(u64::from(offset))
+                    .saturating_add(u64::from(exclude_current_page))
+                    > u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS)
+            })
+        {
+            return Ok(CountPagesBlockRenderResult::PreserveOriginal);
+        }
         if offset_beyond_render_window.is_some() {
             return Ok(CountPagesBlockRenderResult::Expanded(
                 substitute_count_pages_variables(body, 0),

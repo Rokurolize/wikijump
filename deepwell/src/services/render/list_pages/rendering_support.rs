@@ -80,10 +80,24 @@ pub(in crate::services::render) fn push_list_pages_generated_output(
     expansion_budget: &mut ListPagesExpansionBudget,
 ) -> bool {
     let fragment = suppress_generated_list_pages_heading_toc(fragment);
-    if !expansion_budget.try_consume_generated_output_bytes(fragment.len()) {
+    push_list_pages_generated_output_with_cost(
+        output,
+        &fragment,
+        fragment.len(),
+        expansion_budget,
+    )
+}
+
+pub(in crate::services::render) fn push_list_pages_generated_output_with_cost(
+    output: &mut String,
+    fragment: &str,
+    cost: usize,
+    expansion_budget: &mut ListPagesExpansionBudget,
+) -> bool {
+    if !expansion_budget.try_consume_generated_output_bytes(cost) {
         return false;
     }
-    output.push_str(&fragment);
+    output.push_str(fragment);
     true
 }
 
@@ -122,9 +136,6 @@ pub(in crate::services::render) fn push_list_pages_trailing_runtime_blocks(
         } else {
             0
         };
-    if !expansion_budget.try_consume_generated_output_bytes(pager_bytes) {
-        return Err("pager exceeds generated-output budget");
-    }
     if !pager.is_empty() {
         if !push_list_pages_block_boundary(output, expansion_budget) {
             return Err("pager boundary exceeds generated-output budget");
@@ -134,16 +145,27 @@ pub(in crate::services::render) fn push_list_pages_trailing_runtime_blocks(
         } else {
             pager
         };
-        output.push_str(&compat_html.push_block_html(pager));
+        let pager = compat_html.push_block_html(pager);
+        if !push_list_pages_generated_output_with_cost(
+            output,
+            &pager,
+            pager_bytes,
+            expansion_budget,
+        ) {
+            return Err("pager exceeds generated-output budget");
+        }
     }
     if let Some(feed_info) = feed_info {
-        if !expansion_budget.try_consume_generated_output_bytes(feed_info.len()) {
+        let feed_info = strip_generated_list_pages_html_markers(feed_info);
+        let feed_info_marker = compat_html.push_block_html(feed_info.clone());
+        if !push_list_pages_generated_output_with_cost(
+            output,
+            &feed_info_marker,
+            feed_info.len(),
+            expansion_budget,
+        ) {
             return Err("feed metadata exceeds generated-output budget");
         }
-        output.push_str(
-            &compat_html
-                .push_block_html(strip_generated_list_pages_html_markers(feed_info)),
-        );
     }
     if wrapper {
         const WIKIDOT_LISTPAGES_TRAILING_SPACE: &str = "\n    \n    \n    \n    ";
@@ -160,8 +182,17 @@ pub(in crate::services::render) fn push_list_pages_trailing_runtime_blocks(
         } else {
             super::list_pages_runtime_container_close(compat_html)
         };
+        // Charge the stable Wikidot source delimiter rather than the random
+        // internal HTML-fragment marker. The shared budget is defined over
+        // generated source bytes, so marker IDs must never affect admission.
+        let closing_cost = "[[/div]]".len();
         if !push_list_pages_block_boundary(output, expansion_budget)
-            || !push_list_pages_generated_output(output, &closing, expansion_budget)
+            || !push_list_pages_generated_output_with_cost(
+                output,
+                &closing,
+                closing_cost,
+                expansion_budget,
+            )
         {
             return Err("wrapper closing exceeds generated-output budget");
         }

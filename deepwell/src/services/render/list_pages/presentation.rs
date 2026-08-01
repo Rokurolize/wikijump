@@ -59,6 +59,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables(
         &mut compat_text,
         None,
         None,
+        false,
     );
     compat_text.restore(&compat_html.restore(&protected))
 }
@@ -310,34 +311,25 @@ pub(in crate::services::render) fn format_list_pages_created_at(
     let Some(created_at) = created_at else {
         return String::new();
     };
-    let created_at = created_at.to_offset(time::UtcOffset::UTC);
-    const SERVER_FORMAT: &str = "%d %b %Y %H:%M";
-    const DEFAULT_ODATE_FORMAT: &str = "%e %b %Y, %H:%M|agohover";
-    let format = format.unwrap_or(DEFAULT_ODATE_FORMAT);
+    let created_at = created_at
+        .to_offset(time::UtcOffset::from_hms(9, 0, 0).expect("valid JST offset"));
+    const DEFAULT_FORMAT: &str = "%e %b %Y, %H:%M";
+    let format = format.unwrap_or(DEFAULT_FORMAT);
     // Wikidot's Ajax response always carries the default server-rendered text.
     // A requested display format belongs to the later ODate client phase and
     // is transported only through the `format_*` class.
-    let text = format_wikidot_list_pages_date(created_at, SERVER_FORMAT);
-    let mut normalized_format = String::with_capacity(format.len());
-    let mut previous_was_space = false;
-    for character in format.chars() {
-        if character == ' ' && previous_was_space {
-            continue;
-        }
-        normalized_format.push(character);
-        previous_was_space = character == ' ';
-    }
-    let encoded_format = percent_encode_path_segment(&normalized_format);
+    let text = format_wikidot_list_pages_date(created_at, DEFAULT_FORMAT);
+    let encoded_format = percent_encode_path_segment(format);
     if render_as_html {
         format!(
-            r#"<span class="odate time_{} format_{}">{}</span>"#,
+            r#"<span class="odate time_{} format_{}" style="cursor: help; display: inline;">{}</span>"#,
             created_at.unix_timestamp(),
             encoded_format,
             escape_list_pages_html_text(&text),
         )
     } else {
         format!(
-            r#"<span class="odate time_{} format_{}" data-wikijump-compat-date="1">{}</span>"#,
+            r#"<span class="odate time_{} format_{}" data-wikijump-compat-date="1" style="cursor: help; display: inline;">{}</span>"#,
             created_at.unix_timestamp(),
             encoded_format,
             escape_list_pages_html_text(&text),

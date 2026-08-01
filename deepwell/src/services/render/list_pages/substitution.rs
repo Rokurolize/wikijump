@@ -67,6 +67,7 @@ use wikidot_normalize::normalize;
 use super::super::compat::CompatHtmlFragments;
 use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
+use super::super::ftml_page_existence::WikidotCompatLinkTitleMap;
 use super::super::literal_regions::LiteralRegionCursor;
 use super::super::module_arguments::{
     WikidotModuleArgumentValueKind, wikidot_list_pages_arguments,
@@ -550,8 +551,10 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     let mut creation_date_current_page = false;
     let mut update_date_current_page = false;
     let mut score = Vec::new();
+    let mut score_assignment_count = 0usize;
     let mut score_equals_current_page = false;
     let mut votes = Vec::new();
+    let mut votes_assignment_count = 0usize;
     let mut votes_equals_current_page = false;
     let mut canonical_name_selector = None;
     let mut alias_name_selector = None;
@@ -616,6 +619,8 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 | "tag"
                 | "name"
                 | "fullname"
+                | "full_slug"
+                | "fullslug"
                 | "limit"
                 | "offset"
                 | "perPage"
@@ -633,10 +638,23 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 | "rssOnly"
                 | "prependLine"
                 | "appendLine"
-        ) && double_quoted_assignment;
+        ) && (double_quoted_assignment
+            || matches!(raw_key, "appendLine")
+                && argument.op == "="
+                && argument.value_kind == WikidotModuleArgumentValueKind::SingleQuoted);
         if exact_grammar_family && !exact_grammar_token
-            || matches!(key.as_str(), "score" | "createdat" | "updatedat")
+            || matches!(key.as_str(), "createdat" | "updatedat")
         {
+            continue;
+        }
+        if key == "score" {
+            score_assignment_count = score_assignment_count.saturating_add(1);
+            if score_assignment_count > MAX_PAGE_QUERY_SCORE_SELECTORS {
+                unsupported_score_filter = true;
+            }
+            // `score` is a legacy discriminator that remains inert when used
+            // once; repeated occurrences beyond the supported selector
+            // budget must still fail closed instead of widening a query.
             continue;
         }
         let comparison_value;
@@ -1311,6 +1329,10 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         continue;
                     }
                 };
+                score_assignment_count = score_assignment_count.saturating_add(1);
+                if score_assignment_count > MAX_PAGE_QUERY_SCORE_SELECTORS {
+                    unsupported_score_filter = true;
+                }
                 score.clear();
                 score_equals_current_page = false;
                 if value.is_empty() {
@@ -1321,7 +1343,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     unsupported_count_pages_filter = true;
                     continue;
                 }
-                if score.len() == MAX_PAGE_QUERY_SCORE_SELECTORS {
+                if score.len() >= MAX_PAGE_QUERY_SCORE_SELECTORS {
                     unsupported_score_filter = true;
                 } else {
                     if let Some(selector) = parse_list_pages_score_selector(value) {
@@ -1346,6 +1368,10 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     }
                     UrlSelector::Dropped => continue,
                 };
+                votes_assignment_count = votes_assignment_count.saturating_add(1);
+                if votes_assignment_count > MAX_PAGE_QUERY_SCORE_SELECTORS {
+                    unsupported_score_filter = true;
+                }
                 votes.clear();
                 votes_equals_current_page = false;
                 if value.is_empty() {
@@ -1355,7 +1381,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     votes_equals_current_page = true;
                     continue;
                 }
-                if votes.len() == MAX_PAGE_QUERY_SCORE_SELECTORS {
+                if votes.len() >= MAX_PAGE_QUERY_SCORE_SELECTORS {
                     unsupported_score_filter = true;
                 } else {
                     if let Some(selector) = parse_list_pages_score_selector(value) {
@@ -1583,12 +1609,24 @@ fn list_pages_comparison_value(operator: &str, value: &str) -> String {
 pub(in crate::services::render) fn count_pages_should_remain_literal(
     arguments: &ListPagesArguments,
 ) -> bool {
+    // `+==`/`-==` are accepted as legacy signed tag tokens by ListPages,
+    // where `=` and `==` are ordinary tag names.  CountPages has no
+    // evidenced equivalent for those signed forms; expanding them as a
+    // database query would silently turn an unsupported current-page shape
+    // into a zero count.  Keep that narrow family literal while preserving
+    // the ordinary ListPages parser behavior.
+    let has_unsupported_signed_current_tag = arguments
+        .all_tags
+        .iter()
+        .chain(arguments.no_tags.iter())
+        .any(|tag| matches!(tag.as_ref(), "=" | "=="));
     let count_pages_bound = arguments
         .count_pages_explicit_limit
         .or(arguments.count_pages_per_page);
     arguments.unsupported_author_filter
         || arguments.unsupported_score_filter
         || arguments.unsupported_count_pages_filter
+        || has_unsupported_signed_current_tag
         || count_pages_bound.is_some_and(|limit| {
             limit
                 .saturating_add(u64::from(arguments.offset))
@@ -1832,6 +1870,7 @@ pub(in crate::services::render) fn parse_list_pages_order(
             Some(value) => (value, false),
             None => parse_wikidot_camel_case_order(value).unwrap_or((value, true)),
         },
+        [value, direction] if direction.eq_ignore_ascii_case("asc") => (*value, true),
         [value, direction] if direction.eq_ignore_ascii_case("desc") => (*value, false),
         [value, first, second]
             if first.eq_ignore_ascii_case("desc")
@@ -1931,6 +1970,9 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
         &'a BTreeMap<i64, ListPagesRuntimeDisplay>,
     pub(in crate::services::render) page_wikitext: Option<&'a str>,
     pub(in crate::services::render) page_rendered_content: Option<&'a str>,
+    pub(in crate::services::render) page_rendered_summary: Option<&'a str>,
+    pub(in crate::services::render) fallback_link_titles:
+        Option<&'a WikidotCompatLinkTitleMap>,
     pub(in crate::services::render) page_rendered_first_paragraph: Option<&'a str>,
     pub(in crate::services::render) page_compiled_body_html: Option<&'a str>,
     pub(in crate::services::render) page_wikitext_scalar_count: Option<usize>,
@@ -1943,6 +1985,41 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) data_form_definition:
         Option<&'a ListPagesDataFormDefinition>,
     pub(in crate::services::render) render_generated_html: bool,
+}
+
+fn render_list_pages_form_wiki_value(
+    value: &str,
+    link_titles: Option<&WikidotCompatLinkTitleMap>,
+    compat_html: &mut CompatHtmlFragments,
+) -> String {
+    let mut rendered = String::with_capacity(value.len());
+    for (index, line) in value.split('\n').enumerate() {
+        if index > 0 {
+            rendered.push_str("<br>\n");
+        }
+        rendered.push_str(
+            &RenderService::render_wikidot_compat_fallback_inline_html_for_page(
+                line,
+                None,
+                link_titles,
+            ),
+        );
+    }
+    compat_html.push_html(rendered)
+}
+
+fn list_pages_rendered_inline_fragment(html: &str) -> String {
+    let trimmed = html.trim();
+    let Some(inner) = trimmed
+        .strip_prefix("<p>")
+        .and_then(|value| value.strip_suffix("</p>"))
+    else {
+        return html.to_owned();
+    };
+    inner
+        .replace("</p>\n<p>", "\n")
+        .replace("</p>\r\n<p>", "\n")
+        .replace("</p><p>", "\n")
 }
 
 fn collect_list_pages_html_body_ranges(source: &str) -> Vec<Range<usize>> {
@@ -2041,6 +2118,7 @@ pub(super) fn substitute_list_pages_variables_inner(
     compat_text: &mut CompatTextFragments,
     mut generated_slots: Option<&mut Vec<ListPagesGeneratedSlot>>,
     mut runtime_scalar_ranges: Option<&mut Vec<Range<usize>>>,
+    runtime_title_is_delayed: bool,
 ) -> String {
     let html_body_ranges = collect_list_pages_html_body_ranges(template);
     let full_slug = page.slug.as_deref().unwrap_or("");
@@ -2063,6 +2141,10 @@ pub(super) fn substitute_list_pages_variables_inner(
         None => page.title.as_deref().unwrap_or(slug).to_owned(),
     };
     let title = sanitize_list_pages_title(&title);
+    let mut title_plain = title.clone();
+    if !runtime_title_is_delayed {
+        ftml::preproc::typography::substitute_wikidot(&mut title_plain);
+    }
     let title_linked = render_list_pages_linked_title(full_slug, &title, compat_text);
     let created_by_snapshot =
         snapshot.and_then(|snapshot| snapshot.created_by_name.as_deref());
@@ -2255,23 +2337,29 @@ pub(super) fn substitute_list_pages_variables_inner(
         .map(|limit| limit.to_string())
         .unwrap_or_default();
     let summary = context
-        .page_rendered_first_paragraph
+        .page_rendered_summary
+        .or(context.page_rendered_first_paragraph)
         .or(context.page_rendered_content)
         .map_or_else(
             || {
                 context
                     .page_wikitext
-                    .map(|wikitext| {
-                        let section = wikidot_content_section(wikitext, Some(1));
-                        list_pages_first_paragraph(&section).to_owned()
-                    })
+                    .map(|wikitext| wikidot_content_section(wikitext, Some(1)))
                     .unwrap_or_default()
             },
-            |html| compat_html.push_block_html(html.to_owned()),
+            |html| compat_html.push_html(list_pages_rendered_inline_fragment(html)),
         );
     let first_paragraph = context.page_rendered_first_paragraph.map_or_else(
-        || list_pages_first_paragraph(&summary).to_owned(),
-        |html| compat_html.push_block_html(html.to_owned()),
+        || {
+            context
+                .page_wikitext
+                .map(|wikitext| {
+                    let section = wikidot_content_section(wikitext, Some(1));
+                    list_pages_first_paragraph(&section).to_owned()
+                })
+                .unwrap_or_else(|| list_pages_first_paragraph(&summary).to_owned())
+        },
+        |html| compat_html.push_html(list_pages_rendered_inline_fragment(html)),
     );
     let mut source_cursor = 0usize;
     let mut substituted_cursor = 0usize;
@@ -2288,7 +2376,8 @@ pub(super) fn substitute_list_pages_variables_inner(
             let runtime_scalar = generated_slots.is_some()
                 && runtime_scalar_ranges.is_some()
                 && list_pages_variable_capture_is_valid(captures)
-                && captures["name"].eq_ignore_ascii_case("title");
+                && captures["name"].eq_ignore_ascii_case("title")
+                && runtime_title_is_delayed;
             let mut replacement = if !list_pages_variable_capture_is_valid(captures) {
                 captures[0].to_owned()
             } else {
@@ -2308,7 +2397,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                     marker
                 }
                 "title_linked" | "linked_title" => title_linked.clone(),
-                "title" => title.clone(),
+                "title" => title_plain.clone(),
                 "name" | "slug" | "page_name" => slug.to_owned(),
                 "fullname" | "full_slug" | "page_unix_name" | "full_page_name"
                     if list_pages_variable_starts_triple_link_target(
@@ -2533,6 +2622,23 @@ pub(super) fn substitute_list_pages_variables_inner(
                             context.data_form_definition,
                         )
                     })
+                    .map(|value| {
+                        if context
+                            .data_form_definition
+                            .and_then(|definition| definition.field(
+                                captures["argument"].as_ref(),
+                            ))
+                            .is_some_and(|field| field.field_type.as_deref() == Some("wiki"))
+                        {
+                            render_list_pages_form_wiki_value(
+                                &value,
+                                context.fallback_link_titles,
+                                compat_html,
+                            )
+                        } else {
+                            value
+                        }
+                    })
                     .unwrap_or_else(|| captures[0].to_owned()),
                 "form_raw" => captures
                     .name("argument")
@@ -2543,6 +2649,23 @@ pub(super) fn substitute_list_pages_variables_inner(
                             context.data_form_values,
                             context.data_form_definition,
                         )
+                    })
+                    .map(|value| {
+                        if context
+                            .data_form_definition
+                            .and_then(|definition| definition.field(
+                                captures["argument"].as_ref(),
+                            ))
+                            .is_some_and(|field| field.field_type.as_deref() == Some("wiki"))
+                        {
+                            render_list_pages_form_wiki_value(
+                                &value,
+                                context.fallback_link_titles,
+                                compat_html,
+                            )
+                        } else {
+                            value
+                        }
                     })
                     .unwrap_or_else(|| captures[0].to_owned()),
                 "form_label" => captures
@@ -2573,7 +2696,9 @@ pub(super) fn substitute_list_pages_variables_inner(
                         && let Some(rendered_content) =
                             context.page_rendered_content
                     {
-                        compat_html.push_block_html(rendered_content.to_owned())
+                        compat_html.push_html(list_pages_rendered_inline_fragment(
+                            rendered_content,
+                        ))
                     } else {
                         context.page_wikitext.map(|wikitext| {
                             protect_list_pages_content_insertion(

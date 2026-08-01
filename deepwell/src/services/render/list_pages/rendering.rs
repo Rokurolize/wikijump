@@ -68,7 +68,7 @@ use super::{
     count_pages_unbounded_total, exact_name_list_pages_batch_key,
     expand_list_pages_generated_includes,
     find_list_pages_module_matches_with_delayed_links,
-    finish_or_defer_list_pages_delayed_output, is_list_pages_visible_tag,
+    finish_or_defer_list_pages_delayed_output_with_mode, is_list_pages_visible_tag,
     list_pages_argument_error_with_parent_precedence,
     list_pages_body_starts_with_preparsed_block, list_pages_body_uses_first_image,
     list_pages_content_query_target, list_pages_created_by_unix,
@@ -85,7 +85,8 @@ use super::{
     parse_list_pages_arguments_with_url, prepare_delayed_list_pages_row,
     prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
     protect_ajax_module_literal_markers, push_list_pages_generated_output,
-    push_list_pages_pager, push_list_pages_trailing_runtime_blocks, raw_module_close_end,
+    push_list_pages_generated_output_with_cost, push_list_pages_pager,
+    push_list_pages_trailing_runtime_blocks, raw_module_close_end,
     resolve_list_pages_first_image, restore_pending_nested_list_pages,
     seal_pending_list_pages_delayed_outputs, seal_zero_row_list_pages_wrapper,
     seed_random_list_pages_order, should_render_current_page_list_pages_row,
@@ -1550,7 +1551,8 @@ impl RenderService {
         );
         let wants_content = template.uses_content();
         let wants_rendered_content = template.content_sections().contains(&None);
-        let wants_first_paragraph = template.uses_first_paragraph();
+        let wants_summary = template.uses_first_paragraph();
+        let wants_first_paragraph = wants_summary;
         let wants_preview = template.uses_preview();
         let wants_size = template.uses_size();
         let wants_first_image = list_pages_body_uses_first_image(template.body());
@@ -1629,7 +1631,6 @@ impl RenderService {
             variables: &[],
             fields: query_fields,
         };
-
         let mut list_pages_metadata = None;
         let missing_current_page_for_selector = current_page_identity.is_none()
             && (current_page_only || exclude_current_page_author);
@@ -2107,9 +2108,10 @@ impl RenderService {
         if wrapper && !seal_zero_row_wrapper {
             let opening =
                 list_pages_runtime_container_open(compat_html, "list-pages-box");
-            if !push_list_pages_generated_output(
+            if !push_list_pages_generated_output_with_cost(
                 &mut output,
                 &format!("{opening}\n\n"),
+                "[[div class=\"list-pages-box\"]]\n".len(),
                 expansion_budget,
             ) {
                 return Ok(ListPagesBlockRenderResult::PreserveOriginal(
@@ -2148,16 +2150,35 @@ impl RenderService {
         }
         let render_generated_html =
             template.output_shape() == ListPagesOutputShape::TableRows;
+        // Form wiki fields are inserted after the outer ListPages template has
+        // been expanded. Their links therefore are not visible to the normal
+        // page-level fallback-title scan; include the selected source values
+        // in the same narrowly scoped existence snapshot so missing targets
+        // retain Wikidot's `newpage` class.
         let numbered_link_titles = if body
             .lines()
             .any(|line| native_numbered_list_content(line).is_some())
+            || wants_data_form_values
         {
+            let mut fallback_source = body.to_owned();
+            if wants_data_form_values {
+                for page in &pages {
+                    if let Some(wikitext) = content_cache
+                        .wikitext
+                        .get(&(page.site_id, page.page_id))
+                        .and_then(Option::as_deref)
+                    {
+                        fallback_source.push('\n');
+                        fallback_source.push_str(wikitext);
+                    }
+                }
+            }
             Some(
                 RenderService::load_wikidot_compat_fallback_link_titles(
                     ctx,
                     current_site_id,
                     page_info.site.as_ref(),
-                    body,
+                    &fallback_source,
                 )
                 .await?,
             )
@@ -2194,55 +2215,79 @@ impl RenderService {
                 )
                 .into());
             }
-            let (rendered_page_content, rendered_page_first_paragraph) =
-                if wants_rendered_content || wants_first_paragraph {
-                    match page_wikitext.as_deref() {
-                        Some(wikitext) => {
-                            let category = page
-                                .page_category_id
-                                .and_then(|category_id| category_slugs.get(&category_id));
-                            let full_slug = page.slug.as_deref().unwrap_or_default();
-                            let page_name = full_slug
-                                .rsplit_once(':')
-                                .map_or(full_slug, |(_, name)| name);
-                            let selected_page_info = PageInfo {
-                                page: Cow::Owned(page_name.to_owned()),
-                                category: category
-                                    .map(|category| Cow::Owned(category.to_owned())),
-                                site: Cow::Owned(page_info.site.to_string()),
-                                title: Cow::Owned(
-                                    page.title.as_deref().unwrap_or(full_slug).to_owned(),
-                                ),
-                                alt_title: page
-                                    .alt_title
-                                    .as_deref()
-                                    .map(|title| Cow::Owned(title.to_owned())),
-                                score: ScoreValue::Float(
-                                    page.score.unwrap_or(0.0).into(),
-                                ),
-                                tags: page
-                                    .tags
-                                    .as_deref()
-                                    .unwrap_or_default()
-                                    .iter()
-                                    .map(|tag| Cow::Owned(tag.to_owned()))
-                                    .collect(),
-                                language: Cow::Owned(page_info.language.to_string()),
-                            };
-                            let render_passes = usize::from(wants_rendered_content)
-                                + usize::from(wants_first_paragraph);
-                            let max_include_expansions = include_budget
-                                .remaining
-                                .checked_div(rendered_rows.max(1))
-                                .and_then(|per_row| {
-                                    per_row.checked_div(render_passes.max(1))
-                                })
-                                .unwrap_or(0);
-                            let rendered_content = if wants_rendered_content {
+            let (
+                rendered_page_content,
+                rendered_page_summary,
+                rendered_page_first_paragraph,
+            ) = if wants_rendered_content || wants_first_paragraph {
+                match page_wikitext.as_deref() {
+                    Some(wikitext) => {
+                        let category = page
+                            .page_category_id
+                            .and_then(|category_id| category_slugs.get(&category_id));
+                        let full_slug = page.slug.as_deref().unwrap_or_default();
+                        let page_name = full_slug
+                            .rsplit_once(':')
+                            .map_or(full_slug, |(_, name)| name);
+                        let selected_page_info = PageInfo {
+                            page: Cow::Owned(page_name.to_owned()),
+                            category: category
+                                .map(|category| Cow::Owned(category.to_owned())),
+                            site: Cow::Owned(page_info.site.to_string()),
+                            title: Cow::Owned(
+                                page.title.as_deref().unwrap_or(full_slug).to_owned(),
+                            ),
+                            alt_title: page
+                                .alt_title
+                                .as_deref()
+                                .map(|title| Cow::Owned(title.to_owned())),
+                            score: ScoreValue::Float(page.score.unwrap_or(0.0).into()),
+                            tags: page
+                                .tags
+                                .as_deref()
+                                .unwrap_or_default()
+                                .iter()
+                                .map(|tag| Cow::Owned(tag.to_owned()))
+                                .collect(),
+                            language: Cow::Owned(page_info.language.to_string()),
+                        };
+                        let render_passes = usize::from(wants_rendered_content)
+                            + usize::from(wants_summary)
+                            + usize::from(wants_first_paragraph);
+                        let max_include_expansions = include_budget
+                            .remaining
+                            .checked_div(rendered_rows.max(1))
+                            .and_then(|per_row| per_row.checked_div(render_passes.max(1)))
+                            .unwrap_or(0);
+                        let rendered_content = if wants_rendered_content {
+                            Some(
+                                render_list_pages_selected_content_source(
+                                    ctx,
+                                    wikitext,
+                                    &selected_page_info,
+                                    settings,
+                                    current_site_id,
+                                    viewer_user_id,
+                                    max_include_expansions,
+                                    url,
+                                )
+                                .await?,
+                            )
+                        } else {
+                            None
+                        };
+                        let summary_source = wants_summary.then(|| {
+                            Self::suppress_rate_modules_in_list_pages_content(
+                                wikidot_content_section(wikitext, Some(1)),
+                                settings,
+                            )
+                        });
+                        let rendered_summary =
+                            if let Some(summary) = summary_source.as_deref() {
                                 Some(
                                     render_list_pages_selected_content_source(
                                         ctx,
-                                        wikitext,
+                                        summary,
                                         &selected_page_info,
                                         settings,
                                         current_site_id,
@@ -2255,45 +2300,45 @@ impl RenderService {
                             } else {
                                 None
                             };
-                            let rendered_first_paragraph = if wants_first_paragraph {
-                                let summary = wikidot_content_section(wikitext, Some(1));
-                                let summary =
-                                    Self::suppress_rate_modules_in_list_pages_content(
-                                        summary, settings,
-                                    );
-                                let first_paragraph = list_pages_first_paragraph(
-                                    summary.trim_start_matches(['\r', '\n']),
-                                );
-                                if first_paragraph == wikitext
-                                    && let Some(rendered_content) =
-                                        rendered_content.as_ref()
-                                {
-                                    Some(rendered_content.clone())
-                                } else {
-                                    Some(
-                                        render_list_pages_selected_content_source(
-                                            ctx,
-                                            first_paragraph,
-                                            &selected_page_info,
-                                            settings,
-                                            current_site_id,
-                                            viewer_user_id,
-                                            max_include_expansions,
-                                            url,
-                                        )
-                                        .await?,
+                        let rendered_first_paragraph = if wants_first_paragraph {
+                            let first_paragraph = summary_source
+                                .as_deref()
+                                .map(|summary| {
+                                    list_pages_first_paragraph(
+                                        summary.trim_start_matches(['\r', '\n']),
                                     )
-                                }
+                                })
+                                .unwrap_or_default();
+                            if summary_source
+                                .as_deref()
+                                .is_some_and(|summary| summary == first_paragraph)
+                            {
+                                rendered_summary.clone()
                             } else {
-                                None
-                            };
-                            (rendered_content, rendered_first_paragraph)
-                        }
-                        None => (None, None),
+                                Some(
+                                    render_list_pages_selected_content_source(
+                                        ctx,
+                                        first_paragraph,
+                                        &selected_page_info,
+                                        settings,
+                                        current_site_id,
+                                        viewer_user_id,
+                                        max_include_expansions,
+                                        url,
+                                    )
+                                    .await?,
+                                )
+                            }
+                        } else {
+                            None
+                        };
+                        (rendered_content, rendered_summary, rendered_first_paragraph)
                     }
-                } else {
-                    (None, None)
-                };
+                    None => (None, None, None),
+                }
+            } else {
+                (None, None, None)
+            };
             let substitution_context = ListPagesSubstitutionContext {
                 authored_limit: limit,
                 ajax_module_response,
@@ -2309,6 +2354,8 @@ impl RenderService {
                 runtime_displays,
                 page_wikitext: page_wikitext.as_deref(),
                 page_rendered_content: rendered_page_content.as_deref(),
+                page_rendered_summary: rendered_page_summary.as_deref(),
+                fallback_link_titles: numbered_link_titles.as_ref(),
                 page_rendered_first_paragraph: rendered_page_first_paragraph
                     .as_deref(),
                 page_compiled_body_html: wants_preview
@@ -2500,17 +2547,20 @@ impl RenderService {
             || delayed_html_fragments
                 .iter()
                 .any(CompatHtmlFragments::has_exact_fragments);
-        let (output, pending_delayed) = finish_or_defer_list_pages_delayed_output(
-            output,
-            delayed_occurrences,
-            delayed_runtime_scalar_ranges,
-            delayed_html_fragments,
-            defer_for_include_expansion,
-            page_info,
-            settings,
-            compat_html,
-            compat_text,
-        )?;
+        let block_output = wrapper || separate || render_generated_html;
+        let (output, pending_delayed) =
+            finish_or_defer_list_pages_delayed_output_with_mode(
+                output,
+                delayed_occurrences,
+                delayed_runtime_scalar_ranges,
+                delayed_html_fragments,
+                defer_for_include_expansion,
+                page_info,
+                settings,
+                compat_html,
+                compat_text,
+                block_output,
+            )?;
         Ok(ListPagesBlockRenderResult::Expanded(
             ListPagesRenderedBlock {
                 expansion: IncludeExpansion {

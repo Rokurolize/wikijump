@@ -76,7 +76,7 @@ pub(super) use self::delayed::{
     PendingDelayedListPagesOutput, append_list_pages_delayed_occurrences,
     append_list_pages_runtime_scalar_ranges,
     find_list_pages_module_matches_with_delayed_links,
-    finish_or_defer_list_pages_delayed_output, list_pages_row_markup_bytes,
+    finish_or_defer_list_pages_delayed_output_with_mode, list_pages_row_markup_bytes,
     list_pages_runtime_container_close, list_pages_runtime_container_open,
     list_pages_runtime_row_container_close, prepare_delayed_list_pages_row,
     raw_module_close_end, resolve_wikidot_parser_functions_outside_list_pages,
@@ -116,7 +116,8 @@ pub(super) use self::rendering_support::{
     list_pages_body_starts_with_preparsed_block, list_pages_feed_only_render_result,
     list_pages_html_encoded_head_owns_script_tail, prepare_list_pages_rendered_block,
     preserve_list_pages_module_matches, push_list_pages_generated_output,
-    push_list_pages_trailing_runtime_blocks, suppress_generated_list_pages_heading_toc,
+    push_list_pages_generated_output_with_cost, push_list_pages_trailing_runtime_blocks,
+    suppress_generated_list_pages_heading_toc,
 };
 pub(super) use self::substitution::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesArguments,
@@ -913,6 +914,17 @@ mod tests {
         assert!(order.ascending);
         assert_eq!(page_type, PageTypeSelector::Normal);
         assert_eq!(body_template, CONTENT_VARIABLE);
+    }
+
+    #[test]
+    fn parses_explicit_ascending_order_direction() {
+        let arguments =
+            parse_list_pages_arguments(r#"name="fixture-*" order="name asc" limit="2""#)
+                .expect("explicit ascending order should parse");
+
+        let order = arguments.order.expect("order should be present");
+        assert_eq!(order.property, OrderProperty::PageSlug);
+        assert!(order.ascending);
     }
 
     #[test]

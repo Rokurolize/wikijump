@@ -88,9 +88,11 @@ pub(in crate::services::render) fn repair_list_pages_block_boundaries(
     (prefix, suffix): (&str, &str),
 ) {
     preserve_list_pages_preceding_paragraph_boundary(replacement, prefix);
-    if !replacement.starts_with("[[div class=\"list-pages-box\"]]\n")
-        || !replacement.ends_with("[[/div]]")
-    {
+    let is_raw_wrapper = replacement.starts_with("[[div class=\"list-pages-box\"]]\n")
+        && replacement.ends_with("[[/div]]");
+    let is_registered_wrapper =
+        replacement.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX);
+    if !is_raw_wrapper && !is_registered_wrapper {
         return;
     }
 

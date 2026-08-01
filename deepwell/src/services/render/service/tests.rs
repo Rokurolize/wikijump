@@ -145,6 +145,8 @@ fn list_pages_substitution_context_with_mode<'a>(
         runtime_displays: empty_list_pages_runtime_displays(),
         page_wikitext,
         page_rendered_content: None,
+        page_rendered_summary: None,
+        fallback_link_titles: None,
         page_rendered_first_paragraph: None,
         page_compiled_body_html: page_wikitext,
         page_wikitext_scalar_count: page_wikitext

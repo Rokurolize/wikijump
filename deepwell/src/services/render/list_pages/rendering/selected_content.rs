@@ -347,10 +347,10 @@ fn prepare_list_pages_selected_content_runtime(
 /// Selected `%%content%%` is rendered in a nested pass so ordinary Wikidot
 /// syntax in the row still receives the page renderer. Includes are a
 /// deliberate exception: executing them here would make selected page rows
-/// consume the caller's include budget. Hide only include directives from
-/// that nested pass and restore them as authored text after rendering. Literal
-/// regions are excluded so comments, raw text, and code do not acquire a new
-/// executable boundary.
+/// consume the caller's include budget. Hide only include and image directives
+/// from that nested pass and restore them as authored text after rendering.
+/// Literal regions are excluded so comments, raw text, and code do not acquire
+/// a new executable boundary.
 fn protect_selected_content_includes(
     source: &str,
     compat_text: &mut CompatTextFragments,
@@ -375,16 +375,19 @@ fn protect_selected_content_includes(
         while bytes.get(head).is_some_and(u8::is_ascii_whitespace) {
             head += 1;
         }
-        let Some(keyword) = bytes.get(head..head.saturating_add(7)) else {
-            protected.push_str(&source[cursor..start + 2]);
-            cursor = start + 2;
-            continue;
-        };
-        if !keyword.eq_ignore_ascii_case(b"include")
-            || bytes
+        let is_include = bytes
+            .get(head..head.saturating_add(7))
+            .is_some_and(|keyword| keyword.eq_ignore_ascii_case(b"include"))
+            && !bytes
                 .get(head + 7)
-                .is_some_and(|byte| byte.is_ascii_alphanumeric() || *byte == b'_')
-        {
+                .is_some_and(|byte| byte.is_ascii_alphanumeric() || *byte == b'_');
+        let is_image = bytes
+            .get(head..head.saturating_add(5))
+            .is_some_and(|keyword| keyword.eq_ignore_ascii_case(b"image"))
+            && !bytes
+                .get(head + 5)
+                .is_some_and(|byte| byte.is_ascii_alphanumeric() || *byte == b'_');
+        if !is_include && !is_image {
             protected.push_str(&source[cursor..start + 2]);
             cursor = start + 2;
             continue;

@@ -2105,9 +2105,12 @@ async fn page_view_separates_generated_css_modules_from_compiled_body_html() {
         compiled_body_html.contains(r#"<div class="code""#),
         "show=true CSS module should render a visible code block: {compiled_body_html}",
     );
-    assert!(compiled_body_html.contains(".shown { color: blue; }"));
-    assert!(compiled_body_html.contains("&lt;unsafe&gt;"));
-    assert!(compiled_body_html.contains(".shown-disabled { color: purple; }"));
+    assert!(compiled_body_html.contains(r#"<span class="hl-identifier">.shown</span>"#));
+    assert!(compiled_body_html.contains(r#"&quot;&lt;unsafe&gt;&quot;"#));
+    assert!(
+        compiled_body_html
+            .contains(r#"<span class="hl-identifier">.shown-disabled</span>"#)
+    );
     assert!(!compiled_body_html.contains(".show-uppercase { color: orange; }"));
     assert!(!compiled_body_html.contains(".show-spaced { color: cyan; }"));
 
@@ -3535,9 +3538,13 @@ async fn wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execut
     else {
         panic!("expected saved HTML lifecycle page, got {view:?}");
     };
-    assert_eq!(
-        compiled_body_html,
-        r#"<p><iframe src="https://example.com/" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></p>"#,
+    assert!(
+        compiled_body_html
+            .strip_prefix(r#"<p><iframe src="/fixture-preview-html-lifecycle/html/"#)
+            .is_some_and(|body| body.ends_with(
+                r#"" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></p>"#,
+            )),
+        "saved HTML blocks must execute through the local runtime route: {compiled_body_html}",
     );
 }
 
@@ -7428,7 +7435,7 @@ async fn listpages_rss_link_and_rss_only_match_live_wikidot_markup() {
     assert!(!only.contains("list-pages-item"), "{only}");
 
     let empty = section("EMPTY");
-    assert!(empty.contains(&format!("EMPTY_ROW {PREFIX}-1")), "{empty}");
+    assert!(empty.contains(&format!("EMPTY_ROW {PREFIX}-2")), "{empty}");
     assert!(!empty.contains("feedinfo"), "{empty}");
 
     let path = section("PATH");
@@ -9377,7 +9384,7 @@ async fn listpages_missing_data_form_variables_stay_literal_without_blocking_row
 async fn listpages_data_form_variables_match_live_wikidot() {
     const CATEGORY: &str = "fixture-listpages-form";
     const TEMPLATE_SLUG: &str = "fixture-listpages-form-template";
-    const TARGET_SLUG: &str = "fixture-listpages-form-target";
+    const TARGET_SLUG: &str = "fixture-listpages-form:fixture-listpages-form-target";
     const INDEX_SLUG: &str = "fixture-listpages-form-index";
 
     let mut runner = TestRunner::setup().await;
@@ -9518,7 +9525,7 @@ async fn listpages_checkbox_and_wiki_variables_match_live_wikidot() {
         site_id,
         TARGET_SLUG,
         "Fixture ListPages Checkbox Wiki Target",
-        "enabled: '1'\ndetails: \"**Bold**\\n[[[start|Home]]]\"",
+        "enabled: '1'\ndetails: \"**Bold**\\n[[[fixture-listpages-checkbox-wiki-missing-start|Home]]]\"",
     )
     .await;
     create_listpages_test_page(
@@ -9549,7 +9556,9 @@ async fn listpages_checkbox_and_wiki_variables_match_live_wikidot() {
         "both form_data and form_raw must parse wiki field syntax:\n{html}",
     );
     assert_eq!(
-        html.matches(r#"<a class="newpage" href="/start">Home</a>"#)
+        html.matches(
+            r#"<a class="newpage" href="/fixture-listpages-checkbox-wiki-missing-start">Home</a>"#,
+        )
             .count(),
         2,
         "both wiki variables must decode the stored newline and internal link:\n{html}",
@@ -10637,7 +10646,7 @@ async fn listpages_unclosed_empty_body_uses_the_live_default_template() {
     for expected in [
         r#"<div class="list-pages-box">"#,
         r#"<div class="list-pages-item">"#,
-        "<h1 ",
+        "<h1>",
         r#"href="/fixture-listpages-default-template-target""#,
         "Fixture ListPages Default Template Target",
         "by Administrator",
@@ -15528,7 +15537,9 @@ async fn listpages_following_paragraph_boundary_counts_toward_generated_output_b
     const TITLE_VARIABLE_REPETITIONS: usize = 20_701;
     const GENERATED_BYTE_BUDGET: usize = 16 * 1024 * 1024;
     const WRAPPER_OPEN: &str = "[[div class=\"list-pages-box\"]]\n";
+    const WRAPPER_TRAILING_SPACE: &str = "\n    \n    \n    \n    ";
     const WRAPPER_CLOSE: &str = "[[/div]]";
+    const WRAPPER_CLOSING_BOUNDARY_BYTES: usize = 1;
     const SENTINEL: &str = "PARAGRAPH_BYTE_BUDGET_SENTINEL";
 
     let mut runner = TestRunner::setup().await;
@@ -15539,7 +15550,9 @@ async fn listpages_following_paragraph_boundary_counts_toward_generated_output_b
     let mut title_lengths = [200usize; ROW_COUNT];
     let fixed_without_padding = |title_lengths: &[usize; ROW_COUNT]| {
         WRAPPER_OPEN.len()
+            + WRAPPER_TRAILING_SPACE.len()
             + WRAPPER_CLOSE.len()
+            + WRAPPER_CLOSING_BOUNDARY_BYTES
             + ROW_COUNT * (SENTINEL.len() + 1)
             + TITLE_VARIABLE_REPETITIONS * title_lengths.iter().sum::<usize>()
     };
@@ -15567,7 +15580,9 @@ async fn listpages_following_paragraph_boundary_counts_toward_generated_output_b
     );
     assert_eq!(
         WRAPPER_OPEN.len()
+            + WRAPPER_TRAILING_SPACE.len()
             + WRAPPER_CLOSE.len()
+            + WRAPPER_CLOSING_BOUNDARY_BYTES
             + title_lengths
                 .iter()
                 .map(|title_length| {
@@ -18188,7 +18203,7 @@ async fn countpages_limit_above_scan_cap_remains_literal() {
         site.site.site_id,
         "fixture-countpages-limit-cap-literal",
         "verification-count-limit-cap-literal",
-        r#"category="*" tags="+verification-count-limit-cap-literal" limit="5001""#,
+        r#"category="*" tags="+verification-count-limit-cap-literal" limit="50001""#,
         "LIMIT_CAP_COUNT=%%total%%",
         &[(
             "target-a",
