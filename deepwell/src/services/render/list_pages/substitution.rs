@@ -2022,12 +2022,11 @@ fn list_pages_rendered_inline_fragment(html: &str) -> String {
         .replace("</p>\n<p>", "\n")
         .replace("</p>\r\n<p>", "\n")
         .replace("</p><p>", "\n");
-    let output = empty_paragraphs
+    empty_paragraphs
         .into_iter()
         .fold(joined, |joined, (marker, whitespace)| {
             joined.replace(&marker, whitespace.as_str())
-        });
-    output
+        })
 }
 
 fn protect_empty_rendered_paragraphs(value: &str) -> (String, Vec<(String, String)>) {
@@ -2071,15 +2070,20 @@ fn push_list_pages_rendered_fragment(
     // block so it can close the surrounding row paragraph; other runtime
     // module errors may contain nested trusted markers and must stay inline
     // until their own fragment stack is restored.
-    if list_pages_rendered_fragment_has_block_root(&rendered)
+    if (list_pages_rendered_fragment_has_block_root(&rendered)
         && rendered.contains(
             r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#,
-        )
+        ))
+        || list_pages_rendered_fragment_has_html_block(&rendered)
     {
         compat_html.push_block_html(rendered)
     } else {
         compat_html.push_html(rendered)
     }
+}
+
+fn list_pages_rendered_fragment_has_html_block(html: &str) -> bool {
+    html.contains(r#"<iframe "#) && html.contains(r#"class="html-block-iframe""#)
 }
 
 fn list_pages_rendered_fragment_has_block_root(html: &str) -> bool {
@@ -2880,7 +2884,9 @@ pub(super) fn substitute_list_pages_variables_inner(
 
 #[cfg(test)]
 mod tests {
-    use super::list_pages_rendered_inline_fragment;
+    use super::{
+        list_pages_rendered_fragment_has_html_block, list_pages_rendered_inline_fragment,
+    };
 
     #[test]
     fn rendered_inline_fragment_keeps_empty_paragraph_boundaries() {
@@ -2897,5 +2903,18 @@ mod tests {
         let source = "<p>before</p>\n<p>after</p>";
 
         assert_eq!(list_pages_rendered_inline_fragment(source), "before\nafter");
+    }
+
+    #[test]
+    fn rendered_fragment_recognizes_only_the_trusted_html_block_iframe() {
+        assert!(list_pages_rendered_fragment_has_html_block(
+            r#"<p>HTML_START</p><p><iframe src="/page/html/hash-1" class="html-block-iframe"></iframe></p>"#,
+        ));
+        assert!(!list_pages_rendered_fragment_has_html_block(
+            r#"<p><iframe src="/user-content/frame"></iframe></p>"#,
+        ));
+        assert!(!list_pages_rendered_fragment_has_html_block(
+            r#"<p><iframe src="/page/html/hash-1" class="other-iframe"></iframe></p>"#,
+        ));
     }
 }
