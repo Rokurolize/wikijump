@@ -2553,7 +2553,7 @@ impl RenderService {
         let block_output = wrapper
             || separate
             || render_generated_html
-            || list_pages_template_has_block_section(&template);
+            || list_pages_template_has_block_section(template);
         let (output, pending_delayed) =
             finish_or_defer_list_pages_delayed_output_with_mode(
                 output,
