@@ -4835,7 +4835,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
     );
     assert_eq!(
         rendered,
-        r#"<span class="odate time_1782003564 format_%25e%20%25b%20%25Y%20%25H%3A%25M" data-wikijump-compat-date="1">21 Jun 2026 00:59</span>"#
+        r#"<span class="odate time_1782003564 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover" data-wikijump-compat-date="1">21 Jun 2026 00:59</span>"#
     );
 
     let rendered = substitute_list_pages_variables(
