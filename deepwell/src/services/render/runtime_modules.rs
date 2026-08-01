@@ -1729,7 +1729,7 @@ impl RenderService {
                 // Wikidot leaves an empty paragraph for an executed
                 // Watchers module.  Retain that block boundary even though
                 // the module has no visible body.
-                output.push_str(&compat_html.push_block_html("<p></p>".to_owned()));
+                output.push_str(&compat_html.push_block_html("<p>\n\n</p>".to_owned()));
             } else if !rendered.is_empty() {
                 output.push_str(&compat_html.push_block_html(rendered.to_owned()));
             }
