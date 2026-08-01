@@ -515,6 +515,10 @@ function fallbackTitle(row) {
   return row.title || row.title_shown || row.fullname;
 }
 
+function sqlNullableInt(value) {
+  return value === null || value === undefined ? 'NULL' : sqlInt(value);
+}
+
 function readManifestFile(row, pathKey, shaKey) {
   const filePath = row[pathKey];
   const expectedSha = String(row[shaKey]).toLowerCase();
@@ -734,7 +738,7 @@ FROM corpus_shell_import_result;
 
 const rerenderPage = (args, pageId, categoryId) => rerenderCorpusImportPage(args, rpc, pageId, categoryId);
 
-function upsertSnapshotSql(args, row, pageId, revisionId, importRunId) {
+export function upsertSnapshotSql(args, row, pageId, revisionId, importRunId) {
   const metaText = metaJsonText(row);
   const title = fallbackTitle(row);
   return `
@@ -762,6 +766,7 @@ INSERT INTO wikidot_page_snapshot (
   source_created_at,
   source_updated_at,
   source_revision_count,
+  wikidot_size,
   imported_rating,
   created_by_name,
   updated_by_name,
@@ -783,6 +788,7 @@ INSERT INTO wikidot_page_snapshot (
   ${sqlTimestamp(row.created_at)},
   ${sqlTimestamp(row.updated_at)},
   ${sqlInt(row.revisions)},
+  ${sqlNullableInt(row.wikidot_size)},
   ${sqlInt(row.rating)},
   ${sqlQuote(row.created_by)},
   ${sqlQuote(row.updated_by)},
@@ -804,6 +810,7 @@ ON CONFLICT (page_id) DO UPDATE SET
   source_created_at = EXCLUDED.source_created_at,
   source_updated_at = EXCLUDED.source_updated_at,
   source_revision_count = EXCLUDED.source_revision_count,
+  wikidot_size = EXCLUDED.wikidot_size,
   imported_rating = EXCLUDED.imported_rating,
   created_by_name = EXCLUDED.created_by_name,
   updated_by_name = EXCLUDED.updated_by_name,
@@ -988,18 +995,23 @@ function recordImportResult(results, summary, result) {
   console.log(JSON.stringify(result));
 }
 
-function batchShellCreatePageValues(args, rows) {
-  const bodyHash = shellBodyHashHex(args);
+export function batchShellCreatePageValues(args, rows, {
+  categoryIds = precreatedCategoryIds,
+  sourceTextFullnames = precreatedSourceTextHashes,
+  textHash = textHashHex,
+  shellHash = shellBodyHashHex,
+} = {}) {
+  const bodyHash = shellHash(args);
   return rows.map((row, index) => {
-    const categoryId = precreatedCategoryIds.get(categoryName(row.fullname));
+    const categoryId = categoryIds.get(categoryName(row.fullname));
     if (categoryId === undefined) {
       throw new Error(`missing precreated category id for ${row.fullname}`);
     }
-    const sourceTextPrecreated = precreatedSourceTextHashes.has(row.fullname);
+    const sourceTextPrecreated = sourceTextFullnames.has(row.fullname);
     if (!sourceTextPrecreated) {
       throw new Error(`missing precreated source text for ${row.fullname}`);
     }
-    const wikitextHash = textHashHex(args, '', row.fullname);
+    const wikitextHash = textHash(args, '', row.fullname);
     const title = fallbackTitle(row);
     const metaText = metaJsonText(row);
     return `(
@@ -1012,6 +1024,7 @@ function batchShellCreatePageValues(args, rows) {
       ${sqlTimestamp(row.created_at)},
       ${sqlTimestamp(row.updated_at)},
       ${sqlInt(row.revisions)},
+      ${sqlNullableInt(row.wikidot_size)},
       ${sqlInt(row.rating)},
       ${sqlQuote(row.created_by)},
       ${sqlQuote(row.updated_by)},
@@ -1057,6 +1070,7 @@ WITH input_rows (
   created_at,
   updated_at,
   source_revision_count,
+  wikidot_size,
   imported_rating,
   created_by_name,
   updated_by_name,
@@ -1138,6 +1152,7 @@ ${values}
     source_created_at,
     source_updated_at,
     source_revision_count,
+    wikidot_size,
     imported_rating,
     created_by_name,
     updated_by_name,
@@ -1160,6 +1175,7 @@ ${values}
     input_rows.created_at,
     input_rows.updated_at,
     input_rows.source_revision_count,
+    input_rows.wikidot_size,
     input_rows.imported_rating,
     input_rows.created_by_name,
     input_rows.updated_by_name,

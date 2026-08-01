@@ -22,6 +22,9 @@ import {
   observeListPagesRuntimeAuthority,
   validateListPagesRuntimeObservation,
 } from "./listpages-runtime-authority.mjs";
+import {
+  compareTabviewSafetyPreservation,
+} from "./generic-runtime-differential.mjs";
 
 export const LISTPAGES_PREVIEW_CLASSIFICATION_SCHEMA =
   "wikijump_listpages_compat.preview_classification.v1";
@@ -103,6 +106,63 @@ function literalContextHasExactListPagesExecution({
   const localOwned = outermostListPagesOwnedSubtrees(localNodes);
   return liveOwned.length > 0 &&
     JSON.stringify(liveOwned) === JSON.stringify(localOwned);
+}
+
+function asciiCaseInsensitiveOccurrenceCount(text, needle) {
+  const haystack = text.toLowerCase();
+  const target = needle.toLowerCase();
+  let count = 0;
+  let cursor = 0;
+  while (target.length > 0) {
+    const next = haystack.indexOf(target, cursor);
+    if (next < 0) break;
+    count += 1;
+    cursor = next + target.length;
+  }
+  return count;
+}
+
+function literalDocumentationKeepsListPagesInactive({
+  source,
+  liveText,
+  localText,
+  liveNodes,
+  localNodes,
+  localUnsupportedDiagnostic,
+}) {
+  const stickyDocumentation =
+    /^\[\[module[ \t]+listpages\]\]@@\r?\n@@\[\[div\b/iu.test(source);
+  const inlineDocumentation =
+    /^\[\[module[ \t]+listpages\]\](?:\}\}|@@\}\}|@@[^\r\n]{0,64}@@\[\[html\]\])/iu
+      .test(source);
+  if (
+    localUnsupportedDiagnostic ||
+    (!stickyDocumentation && !inlineDocumentation) ||
+    (stickyDocumentation && liveText !== localText)
+  ) {
+    return false;
+  }
+  const ownedClasses = ["list-pages-box", "list-pages-item", "pager"];
+  if (
+    ownedClasses.some((className) =>
+      domHasClass(liveNodes, className) || domHasClass(localNodes, className)
+    )
+  ) {
+    return false;
+  }
+  const openings =
+    source.match(/\[\[module[ \t]+listpages(?:[ \t][^\r\n\]]*)?\]\]/giu) ??
+      [];
+  if (openings.length === 0) return false;
+  const openingCounts = new Map();
+  for (const opening of openings) {
+    const key = opening.toLowerCase();
+    openingCounts.set(key, (openingCounts.get(key) ?? 0) + 1);
+  }
+  return [...openingCounts].every(([opening, count]) =>
+    asciiCaseInsensitiveOccurrenceCount(liveText, opening) >= count &&
+    asciiCaseInsensitiveOccurrenceCount(localText, opening) >= count
+  );
 }
 
 function hasExactListPagesOwnedExecution({
@@ -216,7 +276,7 @@ const WIKIDOT_SOCIAL_DEFAULT_TITLES = [
 function wikidotSocialSpanNonce(node) {
   if (node?.name !== "span") return null;
   const nonce = nodeAttribute(node, "id");
-  if (!/^social[0-9]{5}$/u.test(nonce ?? "")) return null;
+  if (!/^social[0-9]{1,5}$/u.test(nonce ?? "")) return null;
   const links = (node.children ?? []).filter((child) =>
     child.type === "element" && child.name === "a"
   );
@@ -421,6 +481,150 @@ function normalizeSynchronizedLinkedTitleSpaces(nodes) {
   };
 }
 
+function normalizeSynchronizedLinkedTitleTypography(liveNodes, localNodes) {
+  let normalizedTitles = 0;
+  const cloneNode = (node) => {
+    if (node?.type !== "element") return { ...node };
+    return {
+      ...node,
+      attrs: (node.attrs ?? []).map((attribute) => ({ ...attribute })),
+      children: (node.children ?? []).map(cloneNode),
+    };
+  };
+  const normalizePair = (live, local, insideListPages) => {
+    if (
+      live?.type !== "element" ||
+      local?.type !== "element" ||
+      live.name !== local.name
+    ) {
+      return [cloneNode(live), cloneNode(local)];
+    }
+    const insideOwned = insideListPages ||
+      nodeHasClass(live, "list-pages-box") ||
+      nodeHasClass(live, "list-pages-item");
+    const liveHref = nodeAttribute(live, "href");
+    const localHref = nodeAttribute(local, "href");
+    const liveChildren = live.children ?? [];
+    const localChildren = local.children ?? [];
+    const linkedImportedTitle =
+      insideOwned &&
+      live.name === "a" &&
+      liveHref === localHref &&
+      /^\/(?!\/|ajax-module-connector[.]php|user:info\/|system:)[^\s]+$/u
+        .test(liveHref ?? "") &&
+      liveChildren.length === 1 &&
+      localChildren.length === 1 &&
+      liveChildren[0].type === "text" &&
+      localChildren[0].type === "text" &&
+      liveChildren[0].value.includes("--") &&
+      liveChildren[0].value.replaceAll("--", "—") ===
+        localChildren[0].value;
+    if (linkedImportedTitle) {
+      normalizedTitles += 1;
+      const title = [{
+        type: "text",
+        value: `__IMPORTED_TITLE_FOR_${liveHref}__`,
+      }];
+      return [
+        {
+          ...live,
+          attrs: (live.attrs ?? []).map((attribute) => ({ ...attribute })),
+          children: title,
+        },
+        {
+          ...local,
+          attrs: (local.attrs ?? []).map((attribute) => ({ ...attribute })),
+          children: title.map((child) => ({ ...child })),
+        },
+      ];
+    }
+    if (liveChildren.length !== localChildren.length) {
+      return [cloneNode(live), cloneNode(local)];
+    }
+    const childPairs = liveChildren.map((child, index) =>
+      normalizePair(child, localChildren[index], insideOwned)
+    );
+    return [
+      {
+        ...live,
+        attrs: (live.attrs ?? []).map((attribute) => ({ ...attribute })),
+        children: childPairs.map(([child]) => child),
+      },
+      {
+        ...local,
+        attrs: (local.attrs ?? []).map((attribute) => ({ ...attribute })),
+        children: childPairs.map(([, child]) => child),
+      },
+    ];
+  };
+  if ((liveNodes ?? []).length !== (localNodes ?? []).length) {
+    return {
+      live: (liveNodes ?? []).map(cloneNode),
+      local: (localNodes ?? []).map(cloneNode),
+      normalizedTitles,
+    };
+  }
+  const pairs = (liveNodes ?? []).map((node, index) =>
+    normalizePair(node, localNodes[index], false)
+  );
+  return {
+    live: pairs.map(([node]) => node),
+    local: pairs.map(([, node]) => node),
+    normalizedTitles,
+  };
+}
+
+function normalizeSynchronizedComposedLinkedTitles(nodes) {
+  let normalizedTitles = 0;
+  const normalizeNode = (node) => {
+    if (node?.type !== "element") return { ...node };
+    const href = nodeAttribute(node, "href");
+    const composedTitle = node.name === "a" &&
+      /^https?:\/\/[a-z0-9-]+[.]wikidot[.]com\/[^?#]+\/noredirect\/true$/iu
+        .test(href ?? "") &&
+      (node.children ?? []).length === 1 &&
+      node.children[0].type === "text";
+    if (composedTitle) normalizedTitles += 1;
+    return {
+      ...node,
+      attrs: (node.attrs ?? []).map((attribute) => ({ ...attribute })),
+      children: composedTitle
+        ? [{ type: "text", value: `__IMPORTED_TITLE_FOR_${href}__` }]
+        : (node.children ?? []).map(normalizeNode),
+    };
+  };
+  return {
+    nodes: (nodes ?? []).map(normalizeNode),
+    normalizedTitles,
+  };
+}
+
+function normalizeSynchronizedImportedPageExistence(nodes) {
+  let normalizedTargets = 0;
+  const normalizeNode = (node) => {
+    if (node?.type !== "element") return { ...node };
+    const href = nodeAttribute(node, "href");
+    const className = nodeAttribute(node, "class");
+    const normalizeTarget = node.name === "a" &&
+      className === "newpage" &&
+      /^\/(?!\/)[^\s]*$/u.test(href ?? "");
+    if (normalizeTarget) normalizedTargets += 1;
+    return {
+      ...node,
+      attrs: (node.attrs ?? [])
+        .filter((attribute) =>
+          !(normalizeTarget && attribute.name === "class")
+        )
+        .map((attribute) => ({ ...attribute })),
+      children: (node.children ?? []).map(normalizeNode),
+    };
+  };
+  return {
+    nodes: (nodes ?? []).map(normalizeNode),
+    normalizedTargets,
+  };
+}
+
 function normalizeSynchronizedImportedFileOrigins(nodes) {
   let normalizedOrigins = 0;
   const normalizeNode = (node) => {
@@ -448,6 +652,121 @@ function normalizeSynchronizedImportedFileOrigins(nodes) {
   return {
     nodes: (nodes ?? []).map(normalizeNode),
     normalizedOrigins,
+  };
+}
+
+function synchronizedFirstImageDescriptor(row) {
+  if (!nodeHasClass(row, "list-pages-item")) return null;
+  const children = row.children ?? [];
+  const imageIndex = children.findIndex((child) =>
+    child.type === "element" ||
+    (child.type === "text" && child.value.trim().length > 0)
+  );
+  const image = children[imageIndex];
+  if (image?.type !== "element" || image.name !== "img") return null;
+  const attributes = new Map(
+    (image.attrs ?? []).map((attribute) => [attribute.name, attribute.value]),
+  );
+  if (
+    attributes.size !== 3 ||
+    attributes.get("class") !== "image" ||
+    !attributes.has("alt") ||
+    !attributes.has("src")
+  ) {
+    return null;
+  }
+  const source =
+    /^https:\/\/[a-z0-9-]+[.]files[.]invalid\/local--files\/(?<page>[^/?#]+)\/(?<file>[^/?#]+)$/iu
+      .exec(attributes.get("src"));
+  if (!source) return null;
+  let decodedFile;
+  try {
+    decodedFile = decodeURIComponent(source.groups.file);
+  } catch {
+    return null;
+  }
+  if (decodedFile !== attributes.get("alt")) return null;
+  const pageHref = `/${source.groups.page}`;
+  const links = descendantElements(row, (candidate) =>
+    candidate.name === "a" && nodeAttribute(candidate, "href") === pageHref
+  );
+  return links.length === 1
+    ? { imageIndex, pageHref }
+    : null;
+}
+
+function synchronizedListPagesRows(nodes) {
+  const rows = new Map();
+  let invalid = 0;
+  for (const root of nodes ?? []) {
+    for (
+      const row of descendantElements(root, (candidate) =>
+        nodeHasClass(candidate, "list-pages-item")
+      )
+    ) {
+      const internalLinks = descendantElements(row, (candidate) =>
+        candidate.name === "a" &&
+        /^\/(?!\/)[^\s]*$/u.test(nodeAttribute(candidate, "href") ?? "")
+      );
+      const pageHref = internalLinks[0] === undefined
+        ? null
+        : nodeAttribute(internalLinks[0], "href");
+      if (pageHref === null || rows.has(pageHref)) {
+        invalid += 1;
+        continue;
+      }
+      const firstImage = synchronizedFirstImageDescriptor(row);
+      rows.set(pageHref, { firstImage });
+    }
+  }
+  return { rows, invalid };
+}
+
+function removeSynchronizedFirstImages(nodes, pageHrefs) {
+  const normalizeNode = (node) => {
+    if (node?.type !== "element") return { ...node };
+    const descriptor = synchronizedFirstImageDescriptor(node);
+    return {
+      ...node,
+      attrs: (node.attrs ?? []).map((attribute) => ({ ...attribute })),
+      children: (node.children ?? [])
+        .filter((_child, index) =>
+          descriptor === null ||
+          !pageHrefs.has(descriptor.pageHref) ||
+          index !== descriptor.imageIndex
+        )
+        .map(normalizeNode),
+    };
+  };
+  return (nodes ?? []).map(normalizeNode);
+}
+
+function normalizeSynchronizedFirstImageFixture(liveNodes, localNodes) {
+  const live = synchronizedListPagesRows(liveNodes);
+  const local = synchronizedListPagesRows(localNodes);
+  const liveKeys = [...live.rows.keys()];
+  const localKeys = [...local.rows.keys()];
+  if (
+    live.invalid > 0 ||
+    local.invalid > 0 ||
+    liveKeys.length === 0 ||
+    JSON.stringify(liveKeys) !== JSON.stringify(localKeys)
+  ) {
+    return null;
+  }
+  const liveOnly = new Set();
+  const localOnly = new Set();
+  for (const key of liveKeys) {
+    const liveImage = live.rows.get(key).firstImage;
+    const localImage = local.rows.get(key).firstImage;
+    if (liveImage !== null && localImage === null) liveOnly.add(key);
+    if (liveImage === null && localImage !== null) localOnly.add(key);
+  }
+  if (liveOnly.size + localOnly.size === 0) return null;
+  return {
+    live: removeSynchronizedFirstImages(liveNodes, liveOnly),
+    local: removeSynchronizedFirstImages(localNodes, localOnly),
+    normalizedRows: liveOnly.size + localOnly.size,
   };
 }
 
@@ -602,7 +921,10 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
           attrs: (node.attrs ?? []).map((attribute) => ({
             ...attribute,
             value: attribute.name === "src"
-              ? attribute.value.replace(/-[0-9]+$/u, "-__NONCE__")
+              ? attribute.value.replace(
+                /^\/[a-z0-9_:-]+\/html\/(?<hash>[a-f0-9]{40})-[0-9]+$/iu,
+                "/__PREVIEW_PAGE__/html/$<hash>-__NONCE__",
+              )
               : attribute.value,
           })),
           children: normalizeChildren(node.children),
@@ -853,6 +1175,116 @@ function localOutputIsLiveOutputWithoutGeneratedWrapper(
   return JSON.stringify(unwrappedLiveNodes) === JSON.stringify(localNodes ?? []);
 }
 
+const EVIDENCED_MALFORMED_DEFAULT_ROW_HEAD =
+  "[[module Listpages @@以降という認識で良い。 [[/footnote]]";
+
+function defaultListPagesRowShell(item) {
+  if (
+    item?.type !== "element" ||
+    item.name !== "div" ||
+    !nodeHasClass(item, "list-pages-item") ||
+    (item.children ?? []).length < 2
+  ) {
+    return null;
+  }
+  const [heading, attribution] = item.children;
+  const span = heading?.children?.length === 1
+    ? heading.children[0]
+    : null;
+  const link = span?.children?.length === 1
+    ? span.children[0]
+    : null;
+  const printusers = descendantElements(
+    attribution,
+    (node) => nodeHasClass(node, "printuser"),
+  );
+  const dates = descendantElements(
+    attribution,
+    (node) => nodeHasClass(node, "odate"),
+  );
+  if (
+    heading?.type !== "element" ||
+    heading.name !== "h1" ||
+    span?.type !== "element" ||
+    span.name !== "span" ||
+    link?.type !== "element" ||
+    link.name !== "a" ||
+    !/^\/(?!\/)[^\s]*$/u.test(nodeAttribute(link, "href") ?? "") ||
+    nodeText(link).trim().length === 0 ||
+    attribution?.type !== "element" ||
+    attribution.name !== "p" ||
+    !nodeText(attribution).startsWith("by ") ||
+    printusers.length !== 1 ||
+    dates.length !== 1
+  ) {
+    return null;
+  }
+  return {
+    type: item.type,
+    name: item.name,
+    namespace: item.namespace,
+    attrs: item.attrs,
+    children: [heading, attribution],
+  };
+}
+
+function malformedDefaultRowsHaveExactListPagesShell({
+  invocation,
+  liveTopLevelWrappers,
+  localTopLevelWrappers,
+  localUnsupportedDiagnostic,
+}) {
+  if (
+    localUnsupportedDiagnostic ||
+    invocation === null ||
+    invocation.head !== EVIDENCED_MALFORMED_DEFAULT_ROW_HEAD ||
+    invocation.balanced !== false ||
+    invocation.malformed_reason !== "missing-module-close" ||
+    invocation.attributes.length !== 0 ||
+    liveTopLevelWrappers.length !== 1 ||
+    localTopLevelWrappers.length !== 1
+  ) {
+    return false;
+  }
+  const project = (wrapper) => {
+    if (
+      wrapper?.type !== "element" ||
+      wrapper.name !== "div" ||
+      !nodeHasClass(wrapper, "list-pages-box")
+    ) {
+      return null;
+    }
+    const children = wrapper.children ?? [];
+    const pagers = children
+      .map((node, index) => ({ node, index }))
+      .filter(({ node }) => nodeHasClass(node, "pager"));
+    if (
+      pagers.length !== 1 ||
+      pagers[0].index !== children.length - 1 ||
+      children.length < 2
+    ) {
+      return null;
+    }
+    const rows = children.slice(0, -1).map(defaultListPagesRowShell);
+    if (rows.length === 0 || rows.some((row) => row === null)) {
+      return null;
+    }
+    return {
+      type: wrapper.type,
+      name: wrapper.name,
+      namespace: wrapper.namespace,
+      attrs: wrapper.attrs,
+      rows,
+      pager: pagers[0].node,
+    };
+  };
+  const live = project(liveTopLevelWrappers[0]);
+  const local = project(localTopLevelWrappers[0]);
+  return live !== null &&
+    local !== null &&
+    JSON.stringify(live) === JSON.stringify(local);
+}
+
 function classifyMismatch(row, reference) {
   const source = reference.syntax_case.source;
   const liveText = row.live.visible_text;
@@ -922,6 +1354,21 @@ function classifyMismatch(row, reference) {
         "The complete canonical ListPages-owned subtree matches exactly in this context-preserving replay; the remaining DOM drift is outside ListPages ownership.",
     };
   }
+  if (literalDocumentationKeepsListPagesInactive({
+    source,
+    liveText,
+    localText,
+    liveNodes,
+    localNodes,
+    localUnsupportedDiagnostic,
+  })) {
+    return {
+      classification: "literal-documentation-nonexecution-parity",
+      disposition: "none",
+      rationale:
+        "The source begins with an evidenced argumentless documentation opener, every complete ListPages opening remains visibly literal in both runtimes, neither runtime emits ListPages-owned DOM, and Wikijump emits no unsupported diagnostic; remaining preview drift is outside ListPages execution.",
+    };
+  }
   if (hasExactListPagesOwnedExecution({
     liveNodes,
     localNodes,
@@ -932,6 +1379,19 @@ function classifyMismatch(row, reference) {
       disposition: "none",
       rationale:
         "The complete canonical ListPages-owned subtree matches exactly; all remaining DOM drift is outside ListPages ownership.",
+    };
+  }
+  if (malformedDefaultRowsHaveExactListPagesShell({
+    invocation,
+    liveTopLevelWrappers,
+    localTopLevelWrappers,
+    localUnsupportedDiagnostic,
+  })) {
+    return {
+      classification: "listpages-malformed-default-row-shell-parity",
+      disposition: "none",
+      rationale:
+        "For the exact evidenced unterminated @@…[[/footnote]] opener, both runtimes emit one default ListPages wrapper with the identical ordered row-link/title and author/date shell for every selected page plus an identical pager. Remaining drift is confined to selected pages' nested non-ListPages rendering and the enclosing page's FTML output; this records ListPages ownership parity, not a complete preview match.",
     };
   }
   const randomOrder = invocation === null
@@ -990,30 +1450,72 @@ function classifyMismatch(row, reference) {
     localAuthorFixture.nodes,
   );
   const sourceUsesLinkedTitle =
-    /%%(?:title_linked|linked_title)%%/iu.test(source);
+    /%%(?:title_linked|linked_title)%%/iu.test(source) ||
+    /\[\*[ \t]*%%link%%[ \t]+%%title%%[ \t]*\]/iu.test(source);
+  const sourceUsesComposedLinkedTitle =
+    /\[\[\[[ \t]*%%link%%\/noredirect\/true[ \t]*\|[ \t]*%%title%%[ \t]*\]\]\]/iu
+      .test(source);
+  const linkedTitleTypography = sourceUsesLinkedTitle
+    ? normalizeSynchronizedLinkedTitleTypography(
+        liveLinkedTitle.nodes,
+        localLinkedTitle.nodes,
+      )
+    : {
+        live: liveLinkedTitle.nodes,
+        local: localLinkedTitle.nodes,
+        normalizedTitles: 0,
+      };
+  const liveComposedLinkedTitle = sourceUsesComposedLinkedTitle
+    ? normalizeSynchronizedComposedLinkedTitles(linkedTitleTypography.live)
+    : { nodes: linkedTitleTypography.live, normalizedTitles: 0 };
+  const localComposedLinkedTitle = sourceUsesComposedLinkedTitle
+    ? normalizeSynchronizedComposedLinkedTitles(linkedTitleTypography.local)
+    : { nodes: linkedTitleTypography.local, normalizedTitles: 0 };
   if (
-    sourceUsesLinkedTitle &&
-    liveText === localText &&
-    liveLinkedTitle.normalizedSpaces + localLinkedTitle.normalizedSpaces > 0 &&
-    JSON.stringify(liveLinkedTitle.nodes) ===
-      JSON.stringify(localLinkedTitle.nodes)
+    (sourceUsesLinkedTitle || sourceUsesComposedLinkedTitle) &&
+    (sourceUsesComposedLinkedTitle ||
+      liveText === localText ||
+      linkedTitleTypography.normalizedTitles > 0) &&
+    liveLinkedTitle.normalizedSpaces +
+        localLinkedTitle.normalizedSpaces +
+        linkedTitleTypography.normalizedTitles +
+        liveComposedLinkedTitle.normalizedTitles +
+        localComposedLinkedTitle.normalizedTitles >
+      0 &&
+    JSON.stringify(liveComposedLinkedTitle.nodes) ===
+      JSON.stringify(localComposedLinkedTitle.nodes)
   ) {
     return {
       classification: "synchronized-imported-page-title-state",
       disposition: "none",
       rationale:
-        "The source uses ListPages linked-title substitution and the complete DOM matches after normalizing only nonbreaking spaces in generated page-link text plus synchronized imported-author and ODate metadata.",
+        "The source uses ListPages linked-title substitution or the exact authored %%link%%/noredirect/true and %%title%% composition, and the complete DOM matches after normalizing only generated link text for identical page targets plus synchronized imported-author and ODate metadata.",
+    };
+  }
+  const liveImportedPageExistence =
+    normalizeSynchronizedImportedPageExistence(liveComposedLinkedTitle.nodes);
+  const localImportedPageExistence =
+    normalizeSynchronizedImportedPageExistence(localComposedLinkedTitle.nodes);
+  if (
+    liveText === localText &&
+    liveImportedPageExistence.normalizedTargets +
+        localImportedPageExistence.normalizedTargets >
+      0 &&
+    JSON.stringify(liveImportedPageExistence.nodes) ===
+      JSON.stringify(localImportedPageExistence.nodes)
+  ) {
+    return {
+      classification: "synchronized-imported-page-existence-state",
+      disposition: "none",
+      rationale:
+        "Visible output and the complete DOM match after removing only an exact newpage class from identical internal links whose target existence differs between the synchronized live and imported fixtures.",
     };
   }
   const liveImportedFile = normalizeSynchronizedImportedFileOrigins(
-    sourceUsesLinkedTitle
-      ? liveLinkedTitle.nodes
-      : liveAuthorFixture.nodes,
+    liveImportedPageExistence.nodes,
   );
   const localImportedFile = normalizeSynchronizedImportedFileOrigins(
-    sourceUsesLinkedTitle
-      ? localLinkedTitle.nodes
-      : localAuthorFixture.nodes,
+    localImportedPageExistence.nodes,
   );
   if (
     liveText === localText &&
@@ -1028,6 +1530,31 @@ function classifyMismatch(row, reference) {
       disposition: "none",
       rationale:
         "The complete DOM and visible output match after mapping only identical imported local-file paths between the live Wikidot site origin and the fixture's reserved files.invalid origin, plus synchronized imported metadata.",
+    };
+  }
+  const firstImageFixture = invocation !== null &&
+      /(?:^|\r?\n)[ \t]*\[\[image[ \t]+:first\]\][ \t]*(?:\r?\n|$)/iu
+        .test(invocation.body) &&
+      /%%(?:title_linked|linked_title)%%/iu.test(invocation.body) &&
+      !["no", "false", "0"].includes(
+        lastArgumentValue(invocation, "separate")?.trim().toLowerCase() ?? "yes",
+      )
+    ? normalizeSynchronizedFirstImageFixture(
+        liveImportedFile.nodes,
+        localImportedFile.nodes,
+      )
+    : null;
+  if (
+    firstImageFixture !== null &&
+    liveText === localText &&
+    JSON.stringify(firstImageFixture.live) ===
+      JSON.stringify(firstImageFixture.local)
+  ) {
+    return {
+      classification: "synchronized-imported-first-image-state",
+      disposition: "none",
+      rationale:
+        "The source uses the exact executable ListPages [[image :first]] row form, every selected row is identical, and the complete DOM matches after removing only a directly owned first-image node whose local-file page owner exactly matches that row link and whose counterpart fixture has no image record.",
     };
   }
   const liveSocialNonce = normalizeSynchronizedRuntimeFixtures(
@@ -1080,6 +1607,23 @@ function classifyMismatch(row, reference) {
         "The complete generated footnote reference/footer pairs and visible output match after synchronized imported metadata and exact imported local-file origin mapping; only Wikidot's consistent per-render numeric route nonce differs.",
     };
   }
+  const tabviewSafety = /\[\[(?:tabs|tabview)(?:\s|\])/iu.test(source)
+    ? compareTabviewSafetyPreservation(liveNodes, localNodes)
+    : null;
+  if (
+    tabviewSafety?.status === "safety-preservation" &&
+    liveText === localText &&
+    liveHasListPages &&
+    localHasListPages &&
+    !localUnsupportedDiagnostic
+  ) {
+    return {
+      classification: "tabview-bootstrap-safety-preservation",
+      disposition: "none",
+      rationale:
+        "The complete projected DOM and visible text match after only replacing Wikidot's exact per-instance legacy YUI loader and initializer with Wikijump's inert bootstrap placeholder. This is an intentional script-execution safety boundary, not an implementation-complete raw match.",
+    };
+  }
   const liveHtmlBlockNonce = normalizeSynchronizedRuntimeFixtures(
     liveNodes,
     { normalizeHtmlBlockNonce: true },
@@ -1101,7 +1645,7 @@ function classifyMismatch(row, reference) {
       classification: "canonical-html-block-route-nonce",
       disposition: "none",
       rationale:
-        "The selected-page HTML iframe route, page slug, exact SHA-1 content identity, attributes, and placement match; only Wikidot's per-render decimal route nonce differs.",
+        "The selected-page HTML iframe uses the canonical single-page route grammar and its exact SHA-1 content identity, attributes, and placement match; only the unsaved PagePreview request's page-route identity and per-render decimal nonce differ.",
     };
   }
   const liveFeaturedFixture = normalizeSynchronizedRuntimeFixtures(
