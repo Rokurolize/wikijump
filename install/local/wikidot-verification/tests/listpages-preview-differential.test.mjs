@@ -464,6 +464,33 @@ test("preview CLI exposes an explicit authoritative contract", () => {
   ]);
   assert.equal(parsed.authoritative, true);
   assert.match(parsed.runtimeProof, /proof\.json$/u);
+  assert.equal(parsed.rpcTimeoutMs, 30_000);
+  assert.equal(
+    parsePreviewDifferentialArgs([
+      "node",
+      "run-listpages-preview-differential.mjs",
+      "--references",
+      "references.jsonl",
+      "--rpc-timeout-ms",
+      "120000",
+      "--output",
+      "verdict.json",
+    ]).rpcTimeoutMs,
+    120_000,
+  );
+  assert.throws(
+    () => parsePreviewDifferentialArgs([
+      "node",
+      "run-listpages-preview-differential.mjs",
+      "--references",
+      "references.jsonl",
+      "--rpc-timeout-ms",
+      "120001",
+      "--output",
+      "verdict.json",
+    ]),
+    /--rpc-timeout-ms must be an integer from 1 through 120000/,
+  );
   assert.throws(
     () => parsePreviewDifferentialArgs([
       "node",
@@ -521,6 +548,7 @@ test("preview differential records matches and mismatches", async () => {
   assert.equal(verdict.summary.counts.match, 1);
   assert.equal(verdict.summary.counts.mismatch, 1);
   assert.equal(verdict.summary.exit_code, 1);
+  assert.equal(verdict.inputs.rpc_timeout_ms, 30_000);
   const mismatch = verdict.cases.find((row) => row.case_id === "mismatch");
   assert.equal(mismatch.comparison.checks.visible_text.live, "live");
   assert.equal(mismatch.comparison.checks.visible_text.local, "local");
