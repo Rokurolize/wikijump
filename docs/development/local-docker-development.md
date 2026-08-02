@@ -41,8 +41,12 @@ cargo test --manifest-path deepwell/Cargo.toml --profile debugging
 
 `DEEPWELL_BUILD_PROFILE` and `WWS_BUILD_PROFILE` accept only `debug`,
 `debugging`, and `release`; an unsupported value exits 64. `release` is never
-the default. `CARGO_BUILD_JOBS` is explicit and configurable (default `4`),
-and `CARGO_INCREMENTAL=1` is retained for the normal loop.
+the default. `CARGO_BUILD_JOBS` is explicit and configurable (default `2` per
+Rust service, four concurrent compiler jobs when Deepwell and WWS are both
+building), which keeps the two independent watchers within the documented
+16-vCPU WSL budget. Set it lower on a constrained host or raise it only with
+an explicit measurement. `CARGO_INCREMENTAL=1` is retained for the normal
+loop.
 
 ## Compose lifecycle and safe cleanup
 

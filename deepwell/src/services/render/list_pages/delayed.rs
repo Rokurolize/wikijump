@@ -111,9 +111,6 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
     let generated_comment_gates =
         protect_generated_parser_function_comment_gates(&mut prepared_body);
     ftml::preprocess_for_layout(&mut prepared_body, ftml::layout::Layout::Wikidot);
-    ftml::preproc::whitespace::normalize_wikidot_whitespace_only_lines(
-        &mut prepared_body,
-    );
     ftml::preproc::typography::substitute_wikidot(&mut prepared_body);
     substitute_literal_advanced_table_opener_typography(&mut prepared_body);
     if let Some(fragments) = linked_parser_fragments {

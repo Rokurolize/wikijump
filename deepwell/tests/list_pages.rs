@@ -555,6 +555,34 @@ async fn delayed_listpages_rows_keep_wikidot_whitespace_boundaries() {
         "an authored space before the span closer belongs outside the closed span:\n{preview}",
     );
 
+    let nbsp_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages delayed NBSP row",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{}\" separate=\"no\"]]\n",
+                "HEAD %%updated_at%%\n",
+                "\u{00a0}\n",
+                "TAIL\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("a delayed row should preserve an NBSP-only source line")
+    .html_output
+    .body;
+    assert!(
+        nbsp_preview.contains('\u{00a0}'),
+        "an NBSP-only delayed source line remains authored content:\n{nbsp_preview}",
+    );
+    assert!(
+        !nbsp_preview.contains("<p>&nbsp;</p>"),
+        "the NBSP-only line stays in the surrounding delayed paragraph:\n{nbsp_preview}",
+    );
+
     let static_quote_preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site_id,

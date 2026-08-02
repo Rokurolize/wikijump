@@ -9,7 +9,7 @@ RUN apt update
 RUN apt install -y build-essential libmagic-dev pkg-config
 
 # Install helpers
-RUN cargo install sqlx-cli --no-default-features --features rustls,postgres
+RUN cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features rustls,postgres
 
 # Copy source
 RUN mkdir /src

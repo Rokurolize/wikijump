@@ -1765,6 +1765,35 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
       ],
     },
     {
+      id: "random-css-size-branch-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="1" offset="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%6 != 0 | [!-- ]]',
+        '[[module CSS show="true"]]\\n:root { --selected: one; }\\n[[/module]]',
+        '[[#ifexpr %%size%%%6 != 0 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="code"><div class="hl-main"><pre><span class="hl-code">LIVE CSS</span></pre></div></div>',
+      local: '<div class="code"><div class="hl-main"><pre><span class="hl-reserved">LOCAL CSS</span></pre></div></div>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-css-size-branch-local-empty-remains-actionable",
+      source: [
+        '[[module ListPages order="random" limit="1" offset="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%6 != 0 | [!-- ]]',
+        '[[module CSS show="true"]]\\n:root { --selected: one; }\\n[[/module]]',
+        '[[#ifexpr %%size%%%6 != 0 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="code"><div class="hl-main"><pre><span class="hl-code">LIVE CSS</span></pre></div></div>',
+      local: "",
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
       id: "random-direct-deterministic-size-branch",
       source: [
         '[[module ListPages order="name" limit="1" wrapper="no"]]',
@@ -2047,6 +2076,24 @@ test("preview classifier isolates the bounded URL selector fixture shell", async
     'data-source="stable"',
     'data-source="unexpected"',
   );
+  const metadataLive = wrapper([
+    '<p data-source="stable"><span class="odate time_100 format_%25Y">01 Jan 2026</span><span class="printuser"><a href="http://www.wikidot.com/user:info/live-user" onclick="WIKIDOT.page.listeners.userInfo(1); return false;"><img alt="live-user" class="small" src="http://www.wikidot.com/avatar.php?userid=1&amp%3Bsize=small" style="background-image:url(http://www.wikidot.com/userkarma.php?u=1)"></a></span><a href="/alice" target="_blank">Alice</a></p>',
+    '<p data-source="stable"><span class="odate time_101 format_%25Y">02 Jan 2026</span><span class="printuser"><a href="http://www.wikidot.com/user:info/live-user" onclick="WIKIDOT.page.listeners.userInfo(1); return false;"><img alt="live-user" class="small" src="http://www.wikidot.com/avatar.php?userid=1&amp%3Bsize=small" style="background-image:url(http://www.wikidot.com/userkarma.php?u=1)"></a></span><a href="/bob" target="_blank">Bob</a></p>',
+  ]);
+  const metadataLocal = wrapper([
+    '<p data-source="stable"><span class="odate time_200 format_%25Y">03 Mar 2026</span><span class="printuser"><a href="http://www.wikidot.com/user:info/local-user" onclick="WIKIDOT.page.listeners.userInfo(2); return false;"><img alt="local-user" class="small" src="http://www.wikidot.com/avatar.php?userid=2&amp%3Bsize=small" style="background-image:url(http://www.wikidot.com/userkarma.php?u=2)"></a></span><a href="/carol" target="_blank">Carol</a></p>',
+    '<p data-source="stable"><span class="odate time_201 format_%25Y">04 Mar 2026</span><span class="printuser"><a href="http://www.wikidot.com/user:info/local-user" onclick="WIKIDOT.page.listeners.userInfo(2); return false;"><img alt="local-user" class="small" src="http://www.wikidot.com/avatar.php?userid=2&amp%3Bsize=small" style="background-image:url(http://www.wikidot.com/userkarma.php?u=2)"></a></span><a href="/dave" target="_blank">Dave</a></p>',
+  ]);
+  const staticLabelSource = source.replace(
+    "> %%created_at%%@@",
+    "> AUDIT LABEL %%created_at%%@@",
+  );
+  const staticLabelLive = wrapper([
+    '<p data-source="stable">AUDIT LABEL <a href="/alice" target="_blank">Alice</a></p>',
+  ]);
+  const staticLabelLocal = wrapper([
+    '<p data-source="stable">CHANGED LABEL <a href="/carol" target="_blank">Carol</a></p>',
+  ]);
   const cases = [
     {
       id: "url-selector-selected-set",
@@ -2077,16 +2124,39 @@ test("preview classifier isolates the bounded URL selector fixture shell", async
         "investigate-query-or-renderer",
       ],
     },
+    {
+      id: "url-selector-row-metadata-changed",
+      live: metadataLive,
+      local: metadataLocal,
+      expected: ["synchronized-url-selector-fixture-state", "none"],
+    },
+    {
+      id: "url-selector-authored-label-changed",
+      source: staticLabelSource,
+      live: staticLabelLive,
+      local: staticLabelLocal,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
   ];
   await fs.writeFile(
     referencesPath,
-    cases.map(({ id }) => `${JSON.stringify(reference(id, source, live))}\n`).join(""),
+    cases.map(({ id, source: caseSource = source, live: caseLive = live }) =>
+      `${JSON.stringify(reference(id, caseSource, caseLive))}\n`
+    ).join(""),
   );
   await fs.writeFile(
     verdictPath,
     JSON.stringify({
-      cases: cases.map(({ id, local: caseLocal }) =>
-        mismatchCase(id, live, caseLocal)
+      cases: cases.map(({
+        id,
+        source: caseSource = source,
+        live: caseLive = live,
+        local: caseLocal,
+      }) =>
+        mismatchCase(id, caseLive, caseLocal)
       ),
     }),
   );
@@ -2709,6 +2779,18 @@ test("preview classifier records only the strict tabview bootstrap safety bounda
     before: "<!-- Wikidot tabview bootstrap omitted -->",
     after: "",
   };
+  const footnote = (nonce) => {
+    const suffix = nonce === null ? "1" : `${nonce}-1`;
+    return [
+      '<p>ROW <sup class="footnoteref"><a ',
+      `id="footnoteref-${suffix}" href="javascript:;" class="footnoteref" `,
+      `onclick="WIKIDOT.page.utils.scrollToReference('footnote-${suffix}')">1</a></sup></p>`,
+      '<div class="footnotes-footer"><div class="title">Footnotes</div>',
+      `<div class="footnote-footer" id="footnote-${suffix}">`,
+      `<a href="javascript:;" onclick="WIKIDOT.page.utils.scrollToReference('footnoteref-${suffix}')">1</a>. NOTE`,
+      "</div></div>",
+    ].join("");
+  };
   const liveId = `wiki-tabview-${"a".repeat(32)}`;
   const localId = `wiki-tabview-${"b".repeat(32)}`;
   const liveHtml = `<div class="list-pages-box">${
@@ -2717,8 +2799,17 @@ test("preview classifier records only the strict tabview bootstrap safety bounda
   const validLocal = `<div class="list-pages-box">${
     tabview(localId, localTransport)
   }</div>`;
+  const liveFootnoteId = `wiki-tabview-${"c".repeat(32)}`;
+  const localFootnoteId = `wiki-tabview-${"d".repeat(32)}`;
+  const liveFootnote = `<div class="list-pages-box">${
+    tabview(liveFootnoteId, liveTransport(liveFootnoteId))
+  }${footnote("987654")}</div>`;
+  const localFootnote = `<div class="list-pages-box">${
+    tabview(localFootnoteId, localTransport)
+  }${footnote(null)}</div>`;
   const cases = [
     ["tabview-safety", liveHtml, validLocal],
+    ["tabview-footnote-route-safety", liveFootnote, localFootnote],
     [
       "tabview-static-altered",
       liveHtml,
@@ -2771,6 +2862,11 @@ test("preview classifier records only the strict tabview bootstrap safety bounda
     [
       [
         "tabview-safety",
+        "tabview-bootstrap-safety-preservation",
+        "none",
+      ],
+      [
+        "tabview-footnote-route-safety",
         "tabview-bootstrap-safety-preservation",
         "none",
       ],

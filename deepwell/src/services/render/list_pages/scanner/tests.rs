@@ -43,6 +43,20 @@ fn runtime_head_recognizer_matches_the_execution_regex() {
 }
 
 #[test]
+fn crossing_url_quote_rejects_trailing_unsupported_head_bytes() {
+    let malformed = r#"offset="@URL|1 "created_by="Fireknight" unsupported"#;
+
+    assert!(
+        !list_pages_url_quote_crossing_head_can_execute(malformed),
+        "a recovered created_by quote must end at the head boundary: {malformed:?}",
+    );
+    assert!(
+        !list_pages_runtime_head_can_execute(malformed),
+        "unsupported bytes after the recovered quote must fail closed: {malformed:?}",
+    );
+}
+
+#[test]
 fn runtime_head_validation_accepts_static_wildcard_selectors() {
     for head in [r#" category="*" "#, r#" category="*" tags="codex" "#] {
         assert_eq!(

@@ -1556,26 +1556,56 @@ function relativeTemporalFixtureProof({
 
 function normalizeUrlSelectorFixtureNode(node, inRows = false) {
   if (node?.type === "text") {
-    return inRows ? { ...node, value: "__URL_SELECTOR_SELECTED_LINK_TEXT__" } : { ...node };
+    return inRows
+      ? { ...node, value: "__URL_SELECTOR_ROW_TEXT__" }
+      : { ...node };
   }
   if (node?.type !== "element") return { ...node };
+  const row = inRows || node.name === "blockquote";
   const selectedLink =
-    !inRows &&
+    row &&
     node.name === "a" &&
     nodeAttribute(node, "target") === "_blank" &&
     /^\/(?!\/)/u.test(nodeAttribute(node, "href") ?? "");
+  const importedUserLink = row &&
+    node.name === "a" &&
+    /(?:^|\/)user:info\//iu.test(nodeAttribute(node, "href") ?? "");
   return {
     ...node,
     attrs: (node.attrs ?? []).map((attribute) => ({
       ...attribute,
       value: selectedLink && attribute.name === "href"
         ? "__URL_SELECTOR_SELECTED_LINK_HREF__"
-        : attribute.value,
+        : row && nodeHasClass(node, "odate") && attribute.name === "class"
+          ? attribute.value.replace(/\btime_[0-9]+\b/gu, "time__URL_SELECTOR_DATE__")
+          : importedUserLink &&
+              ["href", "onclick"].includes(attribute.name)
+            ? `__URL_SELECTOR_USER_${attribute.name.toUpperCase()}__`
+            : row && node.name === "img" &&
+                ["alt", "src", "style"].includes(attribute.name)
+              ? `__URL_SELECTOR_AVATAR_${attribute.name.toUpperCase()}__`
+              : attribute.value,
     })),
     children: (node.children ?? []).map((child) =>
-      normalizeUrlSelectorFixtureNode(child, inRows || selectedLink)
+      normalizeUrlSelectorFixtureNode(child, row || selectedLink)
     ),
   };
+}
+
+function urlSelectorBodyUsesOnlyDynamicFields(body) {
+  const withoutDynamicFields = body
+    .replace(
+      /%%(?:created_at|created_by|fullname|title)(?:\|.*?)?%%/giu,
+      "",
+    )
+    // The URL-selector proof is deliberately limited to the captured body
+    // grammar: after removing its four row variables and Wikidot's structural
+    // tokens, no authored word may remain for the row-text projection to
+    // replace.  A label or any other static text therefore stays actionable.
+    .replace(/\[\[[\s\S]*?\]\]/gu, "")
+    .replace(/@@/gu, "")
+    .replace(/[\s>*|()[\]{}"=:/%?&;,_+\-]/gu, "");
+  return !/[\p{L}\p{N}]/u.test(withoutDynamicFields);
 }
 
 function urlSelectorFixtureProof({
@@ -1594,6 +1624,7 @@ function urlSelectorFixtureProof({
     !/%%created_by(?:_linked)?%%/iu.test(invocation.body) ||
     !/%%fullname%%/iu.test(invocation.body) ||
     !/%%title%%/iu.test(invocation.body) ||
+    !urlSelectorBodyUsesOnlyDynamicFields(invocation.body) ||
     liveTopLevelWrappers.length !== 1 ||
     localTopLevelWrappers.length !== 1
   ) {
@@ -2000,6 +2031,32 @@ function classifyMismatch(row, reference) {
         `The random wrapper-free ListPages body is the evidenced ${randomTemplateKind} selected-row form; both runtimes emit the same direct element structure after replacing only selected-row text and attributes, while the cached random row differs.`,
     };
   }
+  const randomCssBranchFixture =
+    invocation !== null &&
+    relativeTimeSelector(invocation) === null &&
+    randomTemplateKind === "size-branch" &&
+    randomExpectedWrapper === false &&
+    liveTopLevelWrappers.length === 0 &&
+    localTopLevelWrappers.length === 0 &&
+    liveNodes.length === 1 &&
+    localNodes.length === 1 &&
+    liveNodes[0]?.type === "element" &&
+    localNodes[0]?.type === "element" &&
+    nodeHasClass(liveNodes[0], "code") &&
+    nodeHasClass(localNodes[0], "code") &&
+    descendantElements(liveNodes[0], (node) => node.name === "pre").length === 1 &&
+    descendantElements(localNodes[0], (node) => node.name === "pre").length === 1 &&
+    nodeText(liveNodes[0]).trim().length > 0 &&
+    nodeText(localNodes[0]).trim().length > 0 &&
+    JSON.stringify(liveNodes) !== JSON.stringify(localNodes);
+  if (randomCssBranchFixture) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+        "The wrapper-free random ListPages body is the evidenced generated CSS size-branch form. Both runtimes selected a non-empty CSS code row with the same code container/pre structure, while the independently selected imported row changes the CSS text and syntax spans.",
+    };
+  }
   const importedAuthorNames = new Set([
     ...synchronizedImportedAuthorNames(liveNodes),
     ...synchronizedImportedAuthorNames(localNodes),
@@ -2196,7 +2253,14 @@ function classifyMismatch(row, reference) {
     };
   }
   const tabviewSafety = /\[\[(?:tabs|tabview)(?:\s|\])/iu.test(source)
-    ? compareTabviewSafetyPreservation(liveNodes, localNodes)
+    ? compareTabviewSafetyPreservation(
+      liveFootnoteNonce.state.invalid === 0
+        ? liveFootnoteNonce.nodes
+        : liveNodes,
+      localFootnoteNonce.state.invalid === 0
+        ? localFootnoteNonce.nodes
+        : localNodes,
+    )
     : null;
   if (
     tabviewSafety?.status === "safety-preservation" &&
