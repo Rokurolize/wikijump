@@ -1105,6 +1105,53 @@ test("preview classifier narrowly separates owned parity and synchronized runtim
   ].join("");
   const localAuthorPhrase =
     '<div class="list-pages-box"><p>By User, last edited</p></div>';
+  const liveAuthorFallback = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/user" onclick="listener(7)">User does not match any existing user name</a>',
+    '</span></p></div>',
+  ].join("");
+  const localAuthorFallback =
+    '<div class="list-pages-box"><p>By User</p></div>';
+  const liveAuthorErrorInline = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="error-inline"><em>User</em> does not match any existing user name</span>',
+    "</p></div>",
+  ].join("");
+  const localAuthorErrorInline =
+    '<div class="list-pages-box"><p>By User</p></div>';
+  const liveAuthorSeparator = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/dr-talcite"><img src="avatar-7" alt="Dr Talcite"></a>',
+    '<a href="http://www.wikidot.com/user:info/dr-talcite">Dr Talcite</a>',
+    "</span></p></div>",
+  ].join("");
+  const localAuthorSeparator = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="/user:info/Dr Talcite"><img src="avatar-0" alt="Dr Talcite"></a>',
+    '<a href="/user:info/Dr Talcite">Dr Talcite</a>',
+    "</span></p></div>",
+  ].join("");
+  const liveAuthorUnderscore = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="http://www.wikidot.com/user:info/dc-yerko"><img src="avatar-7" alt="Dc-Yerko"></a>',
+    '<a href="http://www.wikidot.com/user:info/dc-yerko">Dc-Yerko</a>',
+    "</span></p></div>",
+  ].join("");
+  const localAuthorUnderscore = [
+    '<div class="list-pages-box"><p>By ',
+    '<span class="printuser avatarhover">',
+    '<a href="/user:info/dc_yerko"><img src="avatar-0" alt="Dc_Yerko"></a>',
+    '<a href="/user:info/dc_yerko">Dc_Yerko</a>',
+    "</span></p></div>",
+  ].join("");
+  const localAuthorGenuinelyDifferent = localAuthorSeparator.replace(
+    "/user:info/Dr Talcite",
+    "/user:info/other-user",
+  ).replaceAll("Dr Talcite", "Other User");
   const liveLinkedTitle =
     '<div class="list-pages-box"><a href="/same-page">Title A B</a></div>';
   const localLinkedTitle =
@@ -1239,6 +1286,24 @@ test("preview classifier narrowly separates owned parity and synchronized runtim
       '<div class="list-pages-box"><p>ROW<br>\nUser altered<br></p></div>',
     ],
     ["author-plain-phrase-fixture", liveAuthorPhrase, localAuthorPhrase],
+    ["author-fallback-fixture", liveAuthorFallback, localAuthorFallback],
+    [
+      "author-error-inline-fixture",
+      liveAuthorErrorInline,
+      localAuthorErrorInline,
+    ],
+    [
+      "author-error-inline-altered",
+      liveAuthorErrorInline,
+      localAuthorErrorInline.replace("By User", "By Altered"),
+    ],
+    ["author-separator-fixture", liveAuthorSeparator, localAuthorSeparator],
+    ["author-underscore-fixture", liveAuthorUnderscore, localAuthorUnderscore],
+    [
+      "author-genuinely-different",
+      liveAuthorSeparator,
+      localAuthorGenuinelyDifferent,
+    ],
     [
       "author-plain-phrase-altered",
       liveAuthorPhrase,
@@ -1433,6 +1498,36 @@ test("preview classifier narrowly separates owned parity and synchronized runtim
         "none",
       ],
       [
+        "author-fallback-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-error-inline-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-error-inline-altered",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      [
+        "author-separator-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-underscore-fixture",
+        "synchronized-imported-author-state",
+        "none",
+      ],
+      [
+        "author-genuinely-different",
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+      [
         "author-plain-phrase-altered",
         "listpages-query-or-row-render-divergence",
         "investigate-query-or-renderer",
@@ -1609,6 +1704,140 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
       ],
     },
     {
+      id: "random-linked-title-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="1"]]',
+        "Random Page: %%title_linked%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item">Random Page: <a href="/one">Live</a></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item">Random Page: <a href="/two">Local</a></div></div>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-name-title-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="13" wrapper="no"]]',
+        '[[a_ href="/%%fullname%%" class="book"]][[span]]%%name%%[[/span]][[span]]%%title%%[[/span]][[/a]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><a class="book" href="/one"><span>ONE</span><span>Live title</span></a></div>',
+      local: '<div class="list-pages-box"><a class="book" href="/two"><span>TWO</span><span>Local title</span></a></div>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-size-branch-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%14 != 1 | [!-- ]]TWO[[#ifexpr %%size%%%14 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><p>ONE</p></div>',
+      local: '<div class="list-pages-box"><p>TWO</p></div>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-direct-size-branch-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%14 != 1 | [!-- ]]TWO[[#ifexpr %%size%%%14 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<p><span class="live">ONE</span></p>',
+      local: '<p><span class="local">TWO</span></p>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-direct-size-branch-local-empty-remains-actionable",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%14 != 1 | [!-- ]]TWO[[#ifexpr %%size%%%14 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: "<p>ONE</p>",
+      local: "",
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "random-css-size-branch-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="1" offset="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%6 != 0 | [!-- ]]',
+        '[[module CSS show="true"]]\\n:root { --selected: one; }\\n[[/module]]',
+        '[[#ifexpr %%size%%%6 != 0 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="code"><div class="hl-main"><pre><span class="hl-code">LIVE CSS</span></pre></div></div>',
+      local: '<div class="code"><div class="hl-main"><pre><span class="hl-reserved">LOCAL CSS</span></pre></div></div>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-css-size-branch-local-empty-remains-actionable",
+      source: [
+        '[[module ListPages order="random" limit="1" offset="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%6 != 0 | [!-- ]]',
+        '[[module CSS show="true"]]\\n:root { --selected: one; }\\n[[/module]]',
+        '[[#ifexpr %%size%%%6 != 0 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="code"><div class="hl-main"><pre><span class="hl-code">LIVE CSS</span></pre></div></div>',
+      local: "",
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "random-direct-deterministic-size-branch",
+      source: [
+        '[[module ListPages order="name" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%14 != 1 | [!-- ]]TWO[[#ifexpr %%size%%%14 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: "<p><strong>ONE</strong></p>",
+      local: "<p><em>TWO</em></p>",
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "random-direct-arbitrary-body",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        "%%link%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: "<p>ONE</p>",
+      local: "<p>TWO</p>",
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "random-direct-size-branch-structure-altered",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%14 != 1 | [!-- ]]TWO[[#ifexpr %%size%%%14 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: "<p><strong>ONE</strong></p>",
+      local: "<div><p><em>TWO</em></p></div>",
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
       id: "deterministic-size",
       source: [
         '[[module ListPages order="name" limit="1"]]',
@@ -1653,6 +1882,550 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
     ]),
     cases.map(({ id, expected }) => [id, ...expected]),
   );
+});
+
+test("preview classifier isolates synchronized relative-time query state", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const cases = [
+    {
+      id: "relative-empty-local-fixture",
+      source: [
+        '[[module ListPages limit="1" updated_at="last 3 day"]]',
+        "%%updated_at|%Y-%m-%d%% %%title%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_1 format_live">1 Jan 2026</span> Live</p></div></div>',
+      local: '<div class="list-pages-box"></div>',
+      expected: [
+        "synchronized-relative-time-query-state",
+        "none",
+      ],
+    },
+    {
+      id: "relative-date-only-row",
+      source: [
+        '[[module ListPages limit="1" updated_at="older than 2 days"]]',
+        "%%updated_at|%Y-%m-%d%% Fixed row",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_2 format_live">1 Jan 2026</span> Fixed row</p></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_3 format_live">2 Jan 2026</span> Fixed row</p></div></div>',
+      expected: ["synchronized-relative-time-query-state", "none"],
+    },
+    {
+      id: "relative-bounded-multiple-empty-local",
+      source: [
+        '[[module ListPages limit="5" date="last 24 hours"]]',
+        "%%title%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><span class="odate time_1">1 Jan</span> One</div><div class="list-pages-item"><span class="odate time_2">1 Jan</span> Two</div></div>',
+      local: '<div class="list-pages-box"></div>',
+      expected: [
+        "synchronized-relative-time-query-state",
+        "none",
+      ],
+    },
+    {
+      id: "relative-arbitrary-row-change",
+      source: [
+        '[[module ListPages limit="1" updated_at="last 3 day"]]',
+        "%%updated_at%% Fixed row",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_2 format_live">1 Jan 2026</span> LIVE</p></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_3 format_live">2 Jan 2026</span> LOCAL</p></div></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "relative-static-body-change",
+      source: [
+        '[[module ListPages limit="1" updated_at="last 3 day"]]',
+        "STATIC BODY",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p>LIVE</p></div></div>',
+      local: '<div class="list-pages-box"></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "relative-random-link-empty-local",
+      source: [
+        '[[module Listpages date="last 24 hours" order="random" limit="1"]]',
+        "[[*%%link%%|Random Work!]]",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><a target="_blank" href="http://sandbox-for-codex.wikidot.com/random-work">Random Work!</a></p></div></div>',
+      local: '<div class="list-pages-box"></div>',
+      expected: [
+        "synchronized-relative-time-query-state",
+        "none",
+      ],
+    },
+    {
+      id: "relative-random-static-body-empty-local",
+      source: [
+        '[[module Listpages date="last 24 hours" order="random" limit="1"]]',
+        "STATIC",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p>LIVE</p></div></div>',
+      local: '<div class="list-pages-box"></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "relative-random-link-local-row-changed",
+      source: [
+        '[[module Listpages date="last 24 hours" order="random" limit="1"]]',
+        "[[*%%link%%|Random Work!]]",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><a target="_blank" href="/one">Random Work!</a></p></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p><a target="_blank" href="/two">Random Work!</a></p></div></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases
+      .map(({ id, source, live }) =>
+        `${JSON.stringify(reference(id, source, live))}\n`
+      )
+      .join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({ id, live, local }) =>
+        mismatchCase(id, live, local)
+      ),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [
+      row.case_id,
+      row.classification,
+      row.disposition,
+    ]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+});
+
+test("preview classifier isolates the bounded URL selector fixture shell", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-url-selector-classify-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages separate="no" created_at="@URL" order="created_by" perPage="250" tags="-jp" category="_default art"]]',
+    '> %%created_at%%@@[[*user %%created_by%%]]@@',
+    '> [[a href="/%%fullname%%" target="_blank"]]%%title%%[[/a]]',
+    "[[/module]]",
+  ].join("\n");
+  const wrapper = (rows, pagerTarget = "/ajax-module-connector.php/p/2") => [
+    '<div class="list-pages-box">',
+    '<blockquote class="row-shell">',
+    ...rows,
+    "</blockquote>",
+    `<div class="pager"><a href="${pagerTarget}">next</a></div>`,
+    "</div>",
+  ].join("");
+  const live = wrapper([
+    '<p data-source="stable"><a href="/alice" target="_blank">Alice</a></p>',
+    '<p data-source="stable"><a href="/bob" target="_blank">Bob</a></p>',
+  ]);
+  const local = wrapper([
+    '<p data-source="stable"><a href="/carol" target="_blank">Carol</a></p>',
+    '<p data-source="stable"><a href="/dave" target="_blank">Dave</a></p>',
+  ]);
+  const alteredPager = wrapper(
+    [
+      '<p data-source="stable"><a href="/carol" target="_blank">Carol</a></p>',
+      '<p data-source="stable"><a href="/dave" target="_blank">Dave</a></p>',
+    ],
+    "/ajax-module-connector.php/p/3",
+  );
+  const alteredShape = [
+    '<div class="list-pages-box"><blockquote class="row-shell">',
+    '<p data-source="stable"><a href="/carol" target="_blank">Carol</a></p>',
+    "</blockquote>",
+    '<div class="pager"><a href="/ajax-module-connector.php/p/2">next</a></div>',
+    "</div>",
+  ].join("");
+  const alteredRowAttribute = local.replace(
+    'data-source="stable"',
+    'data-source="unexpected"',
+  );
+  const metadataLive = wrapper([
+    '<p data-source="stable"><span class="odate time_100 format_%25Y">01 Jan 2026</span><span class="printuser"><a href="http://www.wikidot.com/user:info/live-user" onclick="WIKIDOT.page.listeners.userInfo(1); return false;"><img alt="live-user" class="small" src="http://www.wikidot.com/avatar.php?userid=1&amp%3Bsize=small" style="background-image:url(http://www.wikidot.com/userkarma.php?u=1)"></a></span><a href="/alice" target="_blank">Alice</a></p>',
+    '<p data-source="stable"><span class="odate time_101 format_%25Y">02 Jan 2026</span><span class="printuser"><a href="http://www.wikidot.com/user:info/live-user" onclick="WIKIDOT.page.listeners.userInfo(1); return false;"><img alt="live-user" class="small" src="http://www.wikidot.com/avatar.php?userid=1&amp%3Bsize=small" style="background-image:url(http://www.wikidot.com/userkarma.php?u=1)"></a></span><a href="/bob" target="_blank">Bob</a></p>',
+  ]);
+  const metadataLocal = wrapper([
+    '<p data-source="stable"><span class="odate time_200 format_%25Y">03 Mar 2026</span><span class="printuser"><a href="http://www.wikidot.com/user:info/local-user" onclick="WIKIDOT.page.listeners.userInfo(2); return false;"><img alt="local-user" class="small" src="http://www.wikidot.com/avatar.php?userid=2&amp%3Bsize=small" style="background-image:url(http://www.wikidot.com/userkarma.php?u=2)"></a></span><a href="/carol" target="_blank">Carol</a></p>',
+    '<p data-source="stable"><span class="odate time_201 format_%25Y">04 Mar 2026</span><span class="printuser"><a href="http://www.wikidot.com/user:info/local-user" onclick="WIKIDOT.page.listeners.userInfo(2); return false;"><img alt="local-user" class="small" src="http://www.wikidot.com/avatar.php?userid=2&amp%3Bsize=small" style="background-image:url(http://www.wikidot.com/userkarma.php?u=2)"></a></span><a href="/dave" target="_blank">Dave</a></p>',
+  ]);
+  const staticLabelSource = source.replace(
+    "> %%created_at%%@@",
+    "> AUDIT LABEL %%created_at%%@@",
+  );
+  const staticLabelLive = wrapper([
+    '<p data-source="stable">AUDIT LABEL <a href="/alice" target="_blank">Alice</a></p>',
+  ]);
+  const staticLabelLocal = wrapper([
+    '<p data-source="stable">CHANGED LABEL <a href="/carol" target="_blank">Carol</a></p>',
+  ]);
+  const cases = [
+    {
+      id: "url-selector-selected-set",
+      local,
+      expected: ["synchronized-url-selector-fixture-state", "none"],
+    },
+    {
+      id: "url-selector-pager-changed",
+      local: alteredPager,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "url-selector-row-shape-changed",
+      local: alteredShape,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "url-selector-row-attribute-changed",
+      local: alteredRowAttribute,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "url-selector-row-metadata-changed",
+      live: metadataLive,
+      local: metadataLocal,
+      expected: ["synchronized-url-selector-fixture-state", "none"],
+    },
+    {
+      id: "url-selector-authored-label-changed",
+      source: staticLabelSource,
+      live: staticLabelLive,
+      local: staticLabelLocal,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases.map(({ id, source: caseSource = source, live: caseLive = live }) =>
+      `${JSON.stringify(reference(id, caseSource, caseLive))}\n`
+    ).join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({
+        id,
+        source: caseSource = source,
+        live: caseLive = live,
+        local: caseLocal,
+      }) =>
+        mismatchCase(id, caseLive, caseLocal)
+      ),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [row.case_id, row.classification, row.disposition]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test("preview classifier isolates synchronized imported include state", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-include-classify-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const common = '<div class="list-pages-box"></div><div class="list-pages-box"></div>';
+  const fixture = (targets) => ({
+    source: [
+      '[[module ListPages order="name" limit="1"]]%%title%%[[/module]]',
+      ...targets.map((target) => `[[include :mirror:${target}]]`),
+    ].join("\n"),
+    live: `${common}<div class="license-shell"><div class="list-pages-box"> </div></div>`,
+    local: `${common}${targets.map((target) =>
+      `<div class="error-block">Included page "${target}" does not exist (<a href="/${target}/edit/true">create it now</a>)</div>`
+    ).join("")}`,
+  });
+  const positiveOne = fixture(["component:license-box", "component:license-box-end"]);
+  const positiveTwo = fixture(["theme:license", "theme:license-end"]);
+  const negativeError = {
+    ...positiveOne,
+    local: positiveOne.local.replace("component:license-box-end", "other:page"),
+  };
+  const negativeRows = {
+    ...positiveTwo,
+    live: `${common}<div class="license-shell"><div class="list-pages-box"><div class="list-pages-item">row</div></div></div>`,
+  };
+  const cases = [
+    { id: "imported-include-license", ...positiveOne, expected: ["synchronized-imported-include-state", "none"] },
+    { id: "imported-include-theme", ...positiveTwo, expected: ["synchronized-imported-include-state", "none"] },
+    { id: "imported-include-error-altered", ...negativeError, expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"] },
+    { id: "imported-include-row-altered", ...negativeRows, expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"] },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases.map(({ id, source, live }) =>
+      `${JSON.stringify(reference(id, source, live))}\n`
+    ).join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({ id, live, local }) => mismatchCase(id, live, local)),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [row.case_id, row.classification, row.disposition]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test("preview classifier isolates repeated conditional imported include state without a wrapper", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-repeated-include-classify-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const fixture = (target, liveClass = "oracle__game") => {
+    const source = [
+      '[[module ListPages limit="1" offset="1" wrapper="no" separate="no" order="random" category="*"]]',
+      `[[#ifexpr %%size%%%22 != 0 | [!-- ]][[include :test74p:${target}]]`,
+      '[[#ifexpr %%size%%%22 != 0 | --] ]]',
+      `[[#ifexpr %%size%%%22 != 1 | [!-- ]][[include :test74p:${target}]]`,
+      '[[#ifexpr %%size%%%22 != 1 | --] ]]',
+      "[[/module]]",
+    ].join("\n");
+    return {
+      source,
+      live: `<div class="${liveClass}"><span>LIVE IMPORT</span></div>`,
+      local: `<div class="error-block">Included page "${target}" does not exist (<a href="/${target}/edit/true">create it now</a>)</div>`,
+    };
+  };
+  const positiveOne = fixture("component:todays-one-oracle");
+  const positiveTwo = fixture("component:alternate-oracle", "card-shell");
+  const positiveDynamic = {
+    ...positiveOne,
+    id: "repeated-conditional-include-dynamic-prefix",
+    source: positiveOne.source.replaceAll(
+      "[[include :test74p:component:todays-one-oracle]]",
+      "[[%%content{0}%%include :test74p:component:todays-one-oracle]]",
+    ),
+  };
+  const negativeOrder = {
+    ...positiveOne,
+    source: positiveOne.source.replace('order="random"', 'order="name"'),
+  };
+  const negativeTarget = {
+    ...positiveOne,
+    local: positiveOne.local.replace(
+      "component:todays-one-oracle",
+      "component:other-oracle",
+    ),
+  };
+  const negativeSibling = {
+    ...positiveTwo,
+    live: `${positiveTwo.live}<p>UNRELATED</p>`,
+  };
+  const cases = [
+    {
+      id: "repeated-conditional-include-one",
+      ...positiveOne,
+      expected: ["synchronized-imported-include-state", "none"],
+    },
+    {
+      id: "repeated-conditional-include-two",
+      ...positiveTwo,
+      expected: ["synchronized-imported-include-state", "none"],
+    },
+    {
+      ...positiveDynamic,
+      expected: ["synchronized-imported-include-state", "none"],
+    },
+    {
+      id: "repeated-conditional-include-deterministic",
+      ...negativeOrder,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "repeated-conditional-include-target-altered",
+      ...negativeTarget,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "repeated-conditional-include-sibling-altered",
+      ...negativeSibling,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases.map(({ id, source, live }) =>
+      `${JSON.stringify(reference(id, source, live))}\n`
+    ).join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({ id, live, local }) => mismatchCase(id, live, local)),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [row.case_id, row.classification, row.disposition]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test("preview classifier isolates random redirect rows selected from different fixtures", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const live = [
+    '<div class="list-pages-box"><div class="list-pages-item">',
+    '<p><iframe src="https://snippets.wdfiles.com/local--code/code:iframe-redirect#http://sandbox-for-codex.wikidot.com/target" frameborder="0" scrolling="no" style="width: 9px; height: 9px;"></iframe></p>',
+    "</div></div>",
+  ].join("");
+  const local = [
+    '<div class="list-pages-box"><div class="list-pages-item">',
+    '<div class="error-block">Sorry, no match for the embedded content.</div>',
+    "</div></div>",
+  ].join("");
+  const cases = [
+    {
+      id: "random-redirect-default",
+      source: [
+        '[[module ListPages category="*" order="random" limit="1"]]',
+        "[[include :snippets:redirect url=%%link%%]]",
+        "[[/module]]",
+      ].join("\n"),
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-redirect-tagged",
+      source: [
+        '[[module ListPages category="_default" order="random" limit="1" tag="-admin"]]',
+        "[[include :snippets:redirect url=%%link%%]]",
+        "[[/module]]",
+      ].join("\n"),
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "deterministic-redirect-row",
+      source: [
+        '[[module ListPages category="*" order="name" limit="1"]]',
+        "[[include :snippets:redirect url=%%link%%]]",
+        "[[/module]]",
+      ].join("\n"),
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "random-redirect-visible-row-change",
+      source: [
+        '[[module ListPages category="*" order="random" limit="1"]]',
+        "[[include :snippets:redirect url=%%link%%]]",
+        "[[/module]]",
+      ].join("\n"),
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p>LOCAL ROW</p></div></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases
+      .map(({ id, source }) => `${JSON.stringify(reference(id, source, live))}\n`)
+      .join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({ id, local: caseLocal }) =>
+        mismatchCase(id, live, caseLocal ?? local)
+      ),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [
+      row.case_id,
+      row.classification,
+      row.disposition,
+    ]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+  await fs.rm(root, { recursive: true, force: true });
 });
 
 test("preview classifier isolates the evidenced malformed default-row shell from nested non-ListPages rendering", async () => {
@@ -2006,6 +2779,18 @@ test("preview classifier records only the strict tabview bootstrap safety bounda
     before: "<!-- Wikidot tabview bootstrap omitted -->",
     after: "",
   };
+  const footnote = (nonce) => {
+    const suffix = nonce === null ? "1" : `${nonce}-1`;
+    return [
+      '<p>ROW <sup class="footnoteref"><a ',
+      `id="footnoteref-${suffix}" href="javascript:;" class="footnoteref" `,
+      `onclick="WIKIDOT.page.utils.scrollToReference('footnote-${suffix}')">1</a></sup></p>`,
+      '<div class="footnotes-footer"><div class="title">Footnotes</div>',
+      `<div class="footnote-footer" id="footnote-${suffix}">`,
+      `<a href="javascript:;" onclick="WIKIDOT.page.utils.scrollToReference('footnoteref-${suffix}')">1</a>. NOTE`,
+      "</div></div>",
+    ].join("");
+  };
   const liveId = `wiki-tabview-${"a".repeat(32)}`;
   const localId = `wiki-tabview-${"b".repeat(32)}`;
   const liveHtml = `<div class="list-pages-box">${
@@ -2014,8 +2799,17 @@ test("preview classifier records only the strict tabview bootstrap safety bounda
   const validLocal = `<div class="list-pages-box">${
     tabview(localId, localTransport)
   }</div>`;
+  const liveFootnoteId = `wiki-tabview-${"c".repeat(32)}`;
+  const localFootnoteId = `wiki-tabview-${"d".repeat(32)}`;
+  const liveFootnote = `<div class="list-pages-box">${
+    tabview(liveFootnoteId, liveTransport(liveFootnoteId))
+  }${footnote("987654")}</div>`;
+  const localFootnote = `<div class="list-pages-box">${
+    tabview(localFootnoteId, localTransport)
+  }${footnote(null)}</div>`;
   const cases = [
     ["tabview-safety", liveHtml, validLocal],
+    ["tabview-footnote-route-safety", liveFootnote, localFootnote],
     [
       "tabview-static-altered",
       liveHtml,
@@ -2068,6 +2862,11 @@ test("preview classifier records only the strict tabview bootstrap safety bounda
     [
       [
         "tabview-safety",
+        "tabview-bootstrap-safety-preservation",
+        "none",
+      ],
+      [
+        "tabview-footnote-route-safety",
         "tabview-bootstrap-safety-preservation",
         "none",
       ],

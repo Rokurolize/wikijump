@@ -234,6 +234,7 @@ impl RenderService {
                 compat_html,
                 None,
                 page_info,
+                false,
                 settings,
                 list_pages_arguments,
                 &template,

@@ -1616,7 +1616,8 @@
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json",
-        "install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json"
+        "install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",
+        "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json"
       ],
       "live_oracle_evidence": [
         "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json",
@@ -1660,6 +1661,14 @@
           "repository": "Rokurolize/scp-wiki-translation",
           "pull_request": 209,
           "merge_sha": "cb101c737c6a7fc98acd43dc6184ed2c98ba85fc"
+        },
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json",
+          "scope": "Pinned authoritative exact replay and corpus reconciliation: 23,964 invocations, 18,996 unique replay keys, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. Novel and literal lanes are recorded as diagnostic only."
+        },
+        {
+          "path": "docs/development/local-docker-development-receipt.json",
+          "scope": "Exact pinned Docker local-development images, compact Cargo profile/cache policy, and measured cold/warm/hot/restart/recreation evidence."
         }
       ],
       "unresolved_ambiguities_or_blockers": []

@@ -22,7 +22,7 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "a8fcd3dce089aefd6a9a3619116d4777c9ebd7cc";
+const candidateFtml = "4413efe44429c9612b27439bad7071702e15d541";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
 
 test("committed receipt binds the exact manifest, lock, and five-surface contract", () => {
@@ -39,7 +39,7 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
       path.join(
         repositoryRoot,
         "install/local/wikidot-verification/artifacts",
-        "ftml-block-argument-pin-canary-20260801.json",
+        "ftml-block-argument-pin-canary-20260802-4413efe4.json",
       ),
       "utf8",
     ),
@@ -64,6 +64,7 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
     1,
   );
   assert.equal(receipt.status, "pass");
+  assert.equal(receipt.baseline_ftml_sha, "306f935dfc9b68da52d26775ce6dc4aefcd41c09");
   assert.equal(receipt.candidate_ftml_sha, candidateFtml);
   assert.deepEqual(receipt.required_surfaces, requiredSurfaces);
   assert.deepEqual(receipt.comparison, {
@@ -73,11 +74,46 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
     accepted_differences: 0,
     regressions: 0,
     verdict_sha256:
-      "6463d478a6a1b087240deb1b1ac0d54f6f87608372c3f4f0c5e9510400217f83",
+      "e4220f67c0040e2ee54599a36330f5a4b1f66418c04563e6c7d80c89ea896a79",
   });
   assert.deepEqual(receipt.resource_disposition, {
     policy: "delete-on-close",
     disposable_containers_remaining: 0,
+  });
+});
+
+test("the prior marker canary receipt remains immutable", () => {
+  const receipt = JSON.parse(
+    readFileSync(
+      path.join(
+        repositoryRoot,
+        "install/local/wikidot-verification/artifacts",
+        "ftml-block-argument-pin-canary-20260801.json",
+      ),
+      "utf8",
+    ),
+  );
+  assert.equal(receipt.run_id, "ftml-marker-a8fcd3dc-2a7ca167");
+  assert.equal(
+    receipt.wikijump_base_sha,
+    "4ec938ea409e68de0eea5d459d5fd03c4b01046c",
+  );
+  assert.equal(
+    receipt.baseline_ftml_sha,
+    "3a5d874f485eb6ac64638bb5aa189beffbcff410",
+  );
+  assert.equal(
+    receipt.candidate_ftml_sha,
+    "a8fcd3dce089aefd6a9a3619116d4777c9ebd7cc",
+  );
+  assert.deepEqual(receipt.comparison, {
+    schema: "wikijump_local_lab.render_compare.v1",
+    pairs_total: 5,
+    matches: 5,
+    accepted_differences: 0,
+    regressions: 0,
+    verdict_sha256:
+      "6463d478a6a1b087240deb1b1ac0d54f6f87608372c3f4f0c5e9510400217f83",
   });
 });
 

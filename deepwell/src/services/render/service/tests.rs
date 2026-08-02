@@ -137,6 +137,7 @@ fn list_pages_substitution_context_with_mode<'a>(
     ListPagesSubstitutionContext {
         authored_limit: Some(rendered_limit as u64),
         ajax_module_response: false,
+        page_preview: true,
         site: "scp-wiki",
         site_title: "SCP Wiki",
         category: "",
@@ -2799,7 +2800,7 @@ fn generated_list_pages_date_is_registered_before_authored_marker_neutralization
     let created_at = time::OffsetDateTime::from_unix_timestamp(1_782_003_564)
         .expect("fixture timestamp should be valid");
     let generated =
-        format_list_pages_created_at(Some(created_at), Some("%d %b %Y"), false);
+        format_list_pages_created_at(Some(created_at), Some("%d %b %Y"), false, true);
     let mut fragments = CompatHtmlFragments::new("");
     let mut protected = register_generated_list_pages_html(generated, &mut fragments);
 
@@ -2874,12 +2875,13 @@ fn defers_wikidot_list_pages_custom_date_format_to_odate_class() {
         Some(created_at),
         Some("%Y-%m-%d %R|agohover"),
         true,
+        true,
     );
 
     assert!(rendered.contains("format_%25Y-%25m-%25d%20%25R%7Cagohover"));
-    // ListPages' Ajax date text is formatted in the sandbox's JST server
-    // timezone; the requested format is carried by the ODate class.
-    assert!(rendered.ends_with(">9 Aug 2024, 04:44</span>"));
+    // ListPages' anonymous PagePreview response carries the UTC server text;
+    // the requested format is carried by the ODate class.
+    assert!(rendered.ends_with(">08 Aug 2024 19:44</span>"));
 }
 
 #[test]
@@ -2893,6 +2895,7 @@ fn list_pages_custom_date_format_collapses_repeated_ascii_spaces() {
     let rendered = format_list_pages_created_at(
         Some(created_at),
         Some("%Y年 %m月%d日  %H:%M"),
+        true,
         true,
     );
 
@@ -4823,7 +4826,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
         r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u=8955132)""#
     ));
     assert!(rendered.contains(
-        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" data-wikijump-compat-date="1">21 Jun 2026, 09:59</span>"#
+        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" data-wikijump-compat-date="1">21 Jun 2026 00:59</span>"#
     ));
 
     let rendered = substitute_list_pages_variables(
@@ -4835,7 +4838,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
     );
     assert_eq!(
         rendered,
-        r#"<span class="odate time_1782003564 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M" data-wikijump-compat-date="1">21 Jun 2026, 09:59</span>"#
+        r#"<span class="odate time_1782003564 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover" data-wikijump-compat-date="1">21 Jun 2026 00:59</span>"#
     );
 
     let rendered = substitute_list_pages_variables(
@@ -5651,7 +5654,7 @@ fn substitutes_imported_wikidot_snapshot_metadata_for_list_pages_rows() {
 
     assert!(rendered.contains("Aspenq Pride Art 2026 by "));
     assert!(rendered.contains("by Aspenq on "));
-    assert!(rendered.contains("20 Jun 2026, 05:22"));
+    assert!(rendered.contains("19 Jun 2026 20:22"));
     assert!(rendered.contains("10 Comments"));
     assert!(rendered.contains("-- Aspenq "));
     assert!(rendered.contains("-- 31 votes"));
@@ -5732,23 +5735,22 @@ fn substitutes_wikidot_list_pages_table_body_generated_variables_as_html() {
         "||= %%tags_linked%% ||",
     );
 
-    let substituted = substitute_list_pages_variables(
-        body,
-        &page,
-        1,
-        1,
-        &list_pages_substitution_context_with_mode(
-            20,
-            &BTreeMap::new(),
-            empty_list_pages_snapshot_displays(),
-            None,
-            &BTreeMap::new(),
-            true,
-        ),
+    let empty_users = BTreeMap::new();
+    let empty_data_form = BTreeMap::new();
+    let mut preview_context = list_pages_substitution_context_with_mode(
+        20,
+        &empty_users,
+        empty_list_pages_snapshot_displays(),
+        None,
+        &empty_data_form,
+        true,
     );
+    preview_context.page_preview = true;
+    let substituted =
+        substitute_list_pages_variables(body, &page, 1, 1, &preview_context);
 
     assert!(substituted.contains(
-        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y">21 Jun 2026, 09:59</span>"#
+        r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y">21 Jun 2026 00:59</span>"#
     ));
     assert!(substituted.contains(r#"<a href="/system:page-tags/tag/scp">scp</a>"#));
     assert!(
@@ -5818,7 +5820,7 @@ fn substitutes_artwork_hub_listpages_body_without_visible_html_or_parser_functio
     assert!(!rendered.contains("_image"));
     assert!(!rendered.contains("_licensebox"));
     assert!(rendered.contains("[/aspenq-pride-art-2026 Aspenq Pride Art 2026]"));
-    assert!(rendered.contains(r#"<span class="odate time_1781900521 format_%25Y%20%25b%20%25e%7Cagohover" data-wikijump-compat-date="1">20 Jun 2026, 05:22</span>"#));
+    assert!(rendered.contains(r#"<span class="odate time_1781900521 format_%25Y%20%25b%20%25e%7Cagohover" data-wikijump-compat-date="1">19 Jun 2026 20:22</span>"#));
     assert!(rendered.contains("[/artwork-hub/tag/-scp,-goi-format,-supplement,-tale,-hub,-site,-resource,-guide,-essay,-theme,artwork artwork]"));
     assert!(rendered.contains("[/artwork-hub/tag/-scp,-goi-format,-supplement,-tale,-hub,-site,-resource,-guide,-essay,-theme,preview preview]"));
     assert!(rendered.contains("[/artwork-hub/tag/-scp,-goi-format,-supplement,-tale,-hub,-site,-resource,-guide,-essay,-theme,colored-pencil colored-pencil]"));

@@ -45,7 +45,8 @@ use self::legacy_heads::{
 };
 pub(in crate::services::render) use self::runtime_heads::list_pages_runtime_head_can_execute;
 use self::runtime_heads::{
-    list_pages_bare_comparison_key_is_evidenced, normalize_module_head,
+    list_pages_bare_comparison_key_is_evidenced,
+    list_pages_url_quote_crossing_head_can_execute, normalize_module_head,
     runtime_list_pages_key_is_supported, unresolved_block_conditional_prefix,
 };
 #[cfg(test)]
@@ -160,6 +161,74 @@ fn find_module_close_ascii_case_insensitive(source: &str) -> Option<usize> {
         .as_bytes()
         .windows(b"[[/module]]".len())
         .position(|window| window.eq_ignore_ascii_case(b"[[/module]]"))
+}
+
+/// Locate a module closer hidden from the ordinary literal index by
+/// Wikidot's generated parser-function comment gates.  The gate idiom keeps
+/// an inactive branch in `[!-- ... [!-- --]` comments, so a structural scan
+/// that treats every comment as authored literal text can incorrectly make a
+/// complete ListPages module appear unclosed.  Recover only when the body has
+/// an executable, line-oriented `#if`/`#ifexpr` opener whose false branch is
+/// the evidenced `[!-- ]]` token and whose opener is outside a literal region.
+fn generated_gate_module_close(source: &str, body_start: usize) -> Option<usize> {
+    let literal_regions = LiteralRegionIndex::new_list_pages_scanner_syntax(source);
+    let mut saw_gate = false;
+    let mut inactive_branch_ranges = Vec::new();
+    let mut line_start = body_start;
+    for line_with_ending in source[body_start..].split_inclusive('\n') {
+        let line = line_with_ending
+            .strip_suffix('\n')
+            .unwrap_or(line_with_ending);
+        let leading = line.len() - line.trim_start_matches([' ', '\t']).len();
+        let trimmed = &line[leading..];
+        let lowered = trimmed.to_ascii_lowercase();
+        if (lowered.starts_with("[[#if ")
+                || lowered.starts_with("[[#ifexpr ")
+                // `find_list_pages_module_matches_with_delayed_links` masks
+                // the three-byte `[[#` prefix in its scanner projection;
+                // retain the same narrow gate shape in that equal-width view.
+                || lowered.starts_with("if ")
+                || lowered.starts_with("ifexpr "))
+            && trimmed
+                .rsplit_once('|')
+                .is_some_and(|(_, branch)| branch.trim() == "[!-- ]]")
+            && literal_regions
+                .containing_range(line_start + leading)
+                .is_none()
+        {
+            saw_gate = true;
+            let marker_start = line_start + leading + trimmed.find("[!-- ]]")?;
+            let branch_start = marker_start + "[!-- ]]".len();
+            let close_start = source[branch_start..].find("[!-- --]")? + branch_start;
+            inactive_branch_ranges.push(branch_start..close_start + "[!-- --]".len());
+        }
+        line_start += line_with_ending.len();
+    }
+    if !saw_gate {
+        return None;
+    }
+
+    let suffix = &source[body_start..];
+    let close_len = b"[[/module]]".len();
+    let mut search = 0;
+    while let Some(close) = suffix
+        .as_bytes()
+        .get(search..)
+        .unwrap_or_default()
+        .windows(close_len)
+        .position(|window| window.eq_ignore_ascii_case(b"[[/module]]"))
+    {
+        let close = search + close;
+        let absolute = body_start + close;
+        if !inactive_branch_ranges
+            .iter()
+            .any(|range| range.contains(&absolute))
+        {
+            return Some(absolute + close_len);
+        }
+        search = close + 1;
+    }
+    None
 }
 
 fn first_module_opening_candidate(
@@ -896,9 +965,11 @@ impl<'a> ModuleEventScanner<'a> {
             if list_pages_compatibility
                 && quote.is_some()
                 && bytes.get(cursor..cursor + 2) == Some(&b"]]"[..])
-                && list_pages_head_double_quotes_are_balanced(
+                && (list_pages_head_double_quotes_are_balanced(
                     &source[subname_end..cursor],
-                )
+                ) || list_pages_url_quote_crossing_head_can_execute(
+                    source[subname_end..cursor].trim_start(),
+                ))
             {
                 let mut closing_tokens = head_tokens.clone();
                 let (right_block, token_len) = wikidot_right_bracket_token(
@@ -1170,9 +1241,11 @@ impl<'a> ModuleEventScanner<'a> {
                         if validation == ModuleHeadValidation::DefiniteInvalid {
                             validation = if list_pages_compatibility
                                 && first_rollback_marker.is_none()
-                                && list_pages_definite_invalid_head_can_execute(
+                                && (list_pages_url_quote_crossing_head_can_execute(
                                     validation_head,
-                                ) {
+                                ) || list_pages_definite_invalid_head_can_execute(
+                                    validation_head,
+                                )) {
                                 ModuleHeadValidation::ValidRuntimeUnsafe
                             } else if list_pages_compatibility
                                 && runtime_recognized
@@ -2436,6 +2509,46 @@ fn find_list_pages_module_matches_with_cursor_work_context(
     }
 
     if let Some(module) = active {
+        if module.depth == 1
+            && let Some(end) = generated_gate_module_close(source, module.body_start)
+        {
+            let body_end = end.saturating_sub(b"[[/module]]".len());
+            matches.push(ListPagesModuleMatch {
+                start: module.start,
+                body_start: module.body_start,
+                end,
+                head: module.head,
+                body: &source[module.body_start..body_end],
+                original: &source[module.start..end],
+                runtime_safe: module.runtime_safe,
+                preserve_original: false,
+                preserve_as_module654: false,
+                consume_empty_tail: false,
+            });
+            let (mut suffix_matches, suffix_work, suffix_literal_advances) =
+                find_list_pages_module_matches_with_cursor_work_context(
+                    &source[end..],
+                    false,
+                );
+            for suffix_module in &mut suffix_matches {
+                suffix_module.start += end;
+                suffix_module.body_start += end;
+                suffix_module.end += end;
+            }
+            matches.extend(suffix_matches);
+            let literal_range_advances = direct_literal_advances
+                + projected_literal_advances
+                + suffix_literal_advances;
+            return (
+                matches,
+                direct_work
+                    + projected_work
+                    + literal_range_advances
+                    + merge_work
+                    + suffix_work,
+                literal_range_advances,
+            );
+        }
         let executable_unclosed = module.depth == 1
             && if module.head.is_empty() {
                 module.body_start == source.len()

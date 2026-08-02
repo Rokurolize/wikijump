@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+# The named pnpm store and node_modules volume survive container recreation.
+# This runs only at process start, so source edits handled by Vite never
+# reinstall dependencies; a manifest/lockfile change is intentionally handled
+# by the next recreation.
+pnpm install --frozen-lockfile --store-dir "${PNPM_STORE_DIR:-/pnpm/store}"
+
 case "${FRAMERAIL_MODE:-dev}" in
     dev)
         exec pnpm dev

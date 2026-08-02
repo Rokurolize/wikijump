@@ -82,6 +82,7 @@ pub(super) struct RenderExpansionOptions<'a> {
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) url: UrlArguments<'a>,
     pub(super) list_pages_pager_route: ListPagesPagerRoute,
+    pub(super) page_preview: bool,
 }
 
 impl RenderContext {

@@ -62,6 +62,7 @@ pub(in crate::services::render) struct PendingDelayedListPagesOutput {
     slots: Vec<PendingDelayedListPagesSlot>,
     html_fragments: Vec<CompatHtmlFragments>,
     block_output: bool,
+    list_pages_inline: bool,
     boundary_markers: Option<(String, String)>,
 }
 
@@ -88,11 +89,39 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
     let mut generated_slots = Vec::new();
     let mut runtime_scalar_ranges = Vec::new();
     let mut prepared_body = suppress_generated_list_pages_heading_toc(body).into_owned();
-    ftml::preproc::whitespace::normalize_wikidot_whitespace_only_lines(
-        &mut prepared_body,
-    );
+    // ListPages rows are extracted before the outer page's FTML pass. Apply
+    // the same Wikidot compatibility preprocessing while the row is still
+    // authored source, before typed/generated slots are inserted. Running it
+    // after slot insertion would reinterpret `%%...%%` slot ranges as source
+    // syntax and leave residual percent prefixes in later rows.
+    // The legacy row idiom
+    // `[[#ifexpr ... |  | [!-- ]] ... [!-- --]` uses comments as the
+    // inactive branch.  FTML's normal preprocessing would consume those
+    // comments and typographically rewrite the opener before the row
+    // variables have been substituted, leaving the parser function literal.
+    // Preserve only these structurally recognized gate tokens through that
+    // pass; the ordinary delayed parser-function pass below still decides
+    // whether the branch is retained.
+    // Linked parser-function branches must survive FTML's document-level
+    // preprocessing until the delayed ListPages slots have been bound.  The
+    // preprocessing pass otherwise evaluates `[[#if ...]]` against the
+    // unresolved `%%title_linked%%` marker and loses the branch shape that
+    // Wikidot exposes for generated links.
+    let linked_parser_fragments = protect_linked_parser_functions(&mut prepared_body);
+    let generated_comment_gates =
+        protect_generated_parser_function_comment_gates(&mut prepared_body);
+    ftml::preprocess_for_layout(&mut prepared_body, ftml::layout::Layout::Wikidot);
     ftml::preproc::typography::substitute_wikidot(&mut prepared_body);
     substitute_literal_advanced_table_opener_typography(&mut prepared_body);
+    if let Some(fragments) = linked_parser_fragments {
+        prepared_body = fragments.restore(&prepared_body);
+    }
+    if let Some((opening, closing, standalone_closing)) = generated_comment_gates {
+        prepared_body = prepared_body
+            .replace(&opening, "[!--")
+            .replace(&closing, "--]")
+            .replace(&standalone_closing, "[!-- --]");
+    }
     resolve_outermost_wikidot_iftags(&mut prepared_body, outer_page_tags, compat_text);
     neutralize_authored_markers(&mut prepared_body);
     let mut fragments = CompatHtmlFragments::new(&prepared_body);
@@ -162,6 +191,20 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
         runtime_scalar_ranges,
         html_fragments,
     }
+}
+
+fn protect_linked_parser_functions(source: &mut String) -> Option<CompatTextFragments> {
+    let ranges = linked_parser_function_ranges(source);
+    if ranges.is_empty() {
+        return None;
+    }
+
+    let mut fragments = CompatTextFragments::new(source);
+    for range in ranges.into_iter().rev() {
+        let marker = fragments.push(&source[range.clone()]);
+        source.replace_range(range, &marker);
+    }
+    Some(fragments)
 }
 
 fn list_pages_template_requires_runtime_title(source: &str) -> bool {
@@ -258,7 +301,8 @@ fn resolve_list_pages_expr_parser_functions(
     let generated_comment_gates =
         protect_generated_parser_function_comment_gates(&mut protected);
     let mut resolved = RenderService::resolve_wikidot_parser_functions(&protected);
-    if let Some((opening, closing)) = generated_comment_gates {
+    if let Some((opening, closing, standalone_closing)) = generated_comment_gates {
+        resolved = resolved.replace(&standalone_closing, "[!-- --]");
         resolved =
             prune_generated_parser_function_comment_gates(resolved, &opening, &closing);
     }
@@ -306,12 +350,13 @@ fn resolve_list_pages_expr_parser_functions(
     *body = restored;
 }
 
-fn protect_generated_parser_function_comment_gates(
+pub(in crate::services::render) fn protect_generated_parser_function_comment_gates(
     source: &mut String,
-) -> Option<(String, String)> {
+) -> Option<(String, String, String)> {
     let mut fragments = CompatTextFragments::new(source);
     let opening = fragments.push("");
     let closing = fragments.push("");
+    let standalone_closing = fragments.push("");
     let mut replacements = Vec::new();
     let mut line_start = 0usize;
 
@@ -360,16 +405,54 @@ fn protect_generated_parser_function_comment_gates(
     for (range, _, _) in replacements.iter().rev() {
         literal_projection.replace_range(range.clone(), &" ".repeat(range.len()));
     }
+    // Neutralize the matching standalone close while constructing the literal
+    // index; otherwise the generated opener makes that close look comment-
+    // owned and prevents us from preserving it through preprocessing.
+    let mut projection_line_start = 0usize;
+    for line in source.split_inclusive('\n') {
+        let line_body = line.strip_suffix('\n').unwrap_or(line);
+        let leading = line_body.len() - line_body.trim_start_matches([' ', '\t']).len();
+        if line_body[leading..].trim() == "[!-- --]" {
+            let range = projection_line_start + leading
+                ..projection_line_start + leading + "[!-- --]".len();
+            literal_projection.replace_range(range, &" ".repeat("[!-- --]".len()));
+        }
+        projection_line_start += line.len();
+    }
     let literal_regions = LiteralRegionIndex::new(&literal_projection);
     replacements
         .retain(|(_, function_start, _)| !literal_regions.contains(*function_start));
     if replacements.is_empty() {
         return None;
     }
+
+    // The matching generated close is a standalone `[!-- --]` line rather
+    // than another parser-function opener.  Preserve those lines too, while
+    // keeping authored comments in code/raw/HTML owned by their literal
+    // context.
+    let generated_gate_present = !replacements.is_empty();
+    let mut line_start = 0usize;
+    for line in source.split_inclusive('\n') {
+        let line_body = line.strip_suffix('\n').unwrap_or(line);
+        let leading = line_body.len() - line_body.trim_start_matches([' ', '\t']).len();
+        let trimmed = &line_body[leading..];
+        if trimmed == "[!-- --]"
+            && generated_gate_present
+            && !literal_regions.contains(line_start + leading)
+        {
+            replacements.push((
+                line_start + leading..line_start + leading + "[!-- --]".len(),
+                line_start + leading,
+                standalone_closing.as_str(),
+            ));
+        }
+        line_start += line.len();
+    }
+    replacements.sort_by_key(|(range, _, _)| range.start);
     for (range, _, marker) in replacements.into_iter().rev() {
         source.replace_range(range, marker);
     }
-    Some((opening, closing))
+    Some((opening, closing, standalone_closing))
 }
 
 fn prune_generated_parser_function_comment_gates(
@@ -704,7 +787,16 @@ pub(in crate::services::render) fn resolve_wikidot_parser_functions_outside_list
     }
     protected.push_str(&source[cursor..]);
 
-    fragments.restore(&ftml::preproc::resolve_wikidot_parser_functions(&protected))
+    let generated_comment_gates =
+        protect_generated_parser_function_comment_gates(&mut protected);
+    let mut resolved = ftml::preproc::resolve_wikidot_parser_functions(&protected);
+    if let Some((opening, closing, standalone_closing)) = generated_comment_gates {
+        resolved = resolved
+            .replace(&opening, "[!--")
+            .replace(&closing, "--]")
+            .replace(&standalone_closing, "[!-- --]");
+    }
+    fragments.restore(&resolved)
 }
 
 pub(in crate::services::render) fn seal_list_pages_delayed_output(
@@ -730,6 +822,30 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output(
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
+    output: String,
+    delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
+    runtime_scalar_ranges: Vec<Range<usize>>,
+    delayed_html_fragments: Vec<CompatHtmlFragments>,
+    page_info: &PageInfo<'_>,
+    settings: &WikitextSettings,
+    compat_html: &mut CompatHtmlFragments,
+    block_output: bool,
+) -> Result<String> {
+    seal_list_pages_delayed_output_with_modes(
+        output,
+        delayed_occurrences,
+        runtime_scalar_ranges,
+        delayed_html_fragments,
+        page_info,
+        settings,
+        compat_html,
+        block_output,
+        false,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn seal_list_pages_delayed_output_with_modes(
     mut output: String,
     delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
     runtime_scalar_ranges: Vec<Range<usize>>,
@@ -738,6 +854,7 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
     settings: &WikitextSettings,
     compat_html: &mut CompatHtmlFragments,
     block_output: bool,
+    list_pages_inline: bool,
 ) -> Result<String> {
     if output.is_empty()
         && delayed_occurrences.is_empty()
@@ -757,6 +874,16 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
         && delayed_html_fragments.is_empty()
     {
         return Ok(output);
+    }
+    // Static rows have no typed source ranges to preserve. Apply FTML's
+    // compatibility pass here as a final guard for direct/static sealing;
+    // delayed rows are preprocessed before their typed ranges are allocated
+    // above, so their `%%...%%` markers remain byte-stable.
+    if settings.enable_page_syntax
+        && delayed_occurrences.is_empty()
+        && runtime_scalar_ranges.is_empty()
+    {
+        ftml::preprocess_for_layout(&mut output, settings.layout);
     }
     if delayed_occurrences.is_empty() && runtime_scalar_ranges.is_empty() {
         // Static rows may already contain the narrowly generated table or
@@ -831,7 +958,9 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
             ErrorType::Render,
         )
     })?;
-    let list_settings = WikitextSettings::from_mode(WikitextMode::List, settings.layout);
+    let mut list_settings =
+        WikitextSettings::from_mode(WikitextMode::List, settings.layout);
+    list_settings.list_pages_inline = list_pages_inline;
     let delayed_tree = parse_delayed_list(&delayed_input, page_info, &list_settings)
         .map_err(|error| {
             Error::new(
@@ -1056,6 +1185,27 @@ pub(in crate::services::render) fn protect_list_pages_delayed_output_with_mode(
     compat_text: &mut CompatTextFragments,
     block_output: bool,
 ) -> Result<(String, Option<PendingDelayedListPagesOutput>)> {
+    protect_list_pages_delayed_output_with_modes(
+        output,
+        delayed_occurrences,
+        runtime_scalar_ranges,
+        delayed_html_fragments,
+        compat_text,
+        block_output,
+        false,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn protect_list_pages_delayed_output_with_modes(
+    output: String,
+    delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
+    runtime_scalar_ranges: Vec<Range<usize>>,
+    delayed_html_fragments: Vec<CompatHtmlFragments>,
+    compat_text: &mut CompatTextFragments,
+    block_output: bool,
+    list_pages_inline: bool,
+) -> Result<(String, Option<PendingDelayedListPagesOutput>)> {
     let mut occurrences = delayed_occurrences
         .into_iter()
         .map(|(range, value)| (range, Some(value)))
@@ -1099,6 +1249,7 @@ pub(in crate::services::render) fn protect_list_pages_delayed_output_with_mode(
             slots,
             html_fragments: delayed_html_fragments,
             block_output,
+            list_pages_inline,
             boundary_markers: None,
         }),
     ))
@@ -1143,6 +1294,35 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
     compat_text: &mut CompatTextFragments,
     block_output: bool,
 ) -> Result<(String, Option<PendingDelayedListPagesOutput>)> {
+    finish_or_defer_list_pages_delayed_output_with_modes(
+        output,
+        delayed_occurrences,
+        runtime_scalar_ranges,
+        delayed_html_fragments,
+        defer_for_include_expansion,
+        page_info,
+        settings,
+        compat_html,
+        compat_text,
+        block_output,
+        false,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_with_modes(
+    output: String,
+    delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
+    runtime_scalar_ranges: Vec<Range<usize>>,
+    delayed_html_fragments: Vec<CompatHtmlFragments>,
+    defer_for_include_expansion: bool,
+    page_info: &PageInfo<'_>,
+    settings: &WikitextSettings,
+    compat_html: &mut CompatHtmlFragments,
+    compat_text: &mut CompatTextFragments,
+    block_output: bool,
+    list_pages_inline: bool,
+) -> Result<(String, Option<PendingDelayedListPagesOutput>)> {
     // Every executed ListPages body belongs to FTML's List mode, including a
     // wholly authored/static row. Parsing only rows with typed values here
     // makes otherwise identical templates depend on whether they happen to
@@ -1150,13 +1330,14 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
     // generated outer containers. Include-bearing output is protected until
     // expansion, then sealed through this same path.
     if defer_for_include_expansion {
-        let (protected, pending) = protect_list_pages_delayed_output_with_mode(
+        let (protected, pending) = protect_list_pages_delayed_output_with_modes(
             output,
             delayed_occurrences,
             runtime_scalar_ranges,
             delayed_html_fragments,
             compat_text,
             block_output,
+            list_pages_inline,
         )?;
         Ok((
             register_generated_list_pages_html(protected, compat_html),
@@ -1164,7 +1345,7 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
         ))
     } else {
         Ok((
-            seal_list_pages_delayed_output_with_mode(
+            seal_list_pages_delayed_output_with_modes(
                 output,
                 delayed_occurrences,
                 runtime_scalar_ranges,
@@ -1173,6 +1354,7 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
                 settings,
                 compat_html,
                 block_output,
+                list_pages_inline,
             )?,
             None,
         ))
@@ -1216,6 +1398,7 @@ fn seal_protected_list_pages_delayed_output_with_mode(
     compat_html: &mut CompatHtmlFragments,
     block_output: bool,
 ) -> Result<String> {
+    let list_pages_inline = pending.list_pages_inline;
     let mut output = String::with_capacity(protected.len());
     let mut delayed_occurrences = Vec::with_capacity(pending.slots.len());
     let mut runtime_scalar_ranges = Vec::with_capacity(pending.slots.len());
@@ -1242,7 +1425,7 @@ fn seal_protected_list_pages_delayed_output_with_mode(
     }
     output.push_str(&protected[cursor..]);
 
-    seal_list_pages_delayed_output_with_mode(
+    seal_list_pages_delayed_output_with_modes(
         output,
         delayed_occurrences,
         runtime_scalar_ranges,
@@ -1251,6 +1434,7 @@ fn seal_protected_list_pages_delayed_output_with_mode(
         settings,
         compat_html,
         block_output,
+        list_pages_inline,
     )
 }
 
@@ -1338,6 +1522,7 @@ mod tests {
         ListPagesSubstitutionContext {
             authored_limit: Some(1),
             ajax_module_response: false,
+            page_preview: false,
             site: "sandbox-for-codex",
             site_title: "Sandbox",
             category: "",
@@ -1360,6 +1545,47 @@ mod tests {
             data_form_definition: None,
             render_generated_html: false,
         }
+    }
+
+    #[test]
+    fn delayed_rows_apply_wikidot_tight_quote_boundaries() {
+        let source = "BEFORE\n> quoted\n>tight\nAFTER";
+        let page_info = PageInfo {
+            page: Cow::Borrowed("preview"),
+            category: None,
+            site: Cow::Borrowed("sandbox-for-codex"),
+            title: Cow::Borrowed("Preview"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(
+            WikitextMode::Page,
+            ftml::layout::Layout::Wikidot,
+        );
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let sealed = seal_list_pages_delayed_output_with_mode(
+            source.to_owned(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            &page_info,
+            &settings,
+            &mut compat_html,
+            true,
+        )
+        .expect("delayed row should seal");
+        let rendered = compat_html.restore(&sealed);
+
+        assert!(
+            rendered.contains("<blockquote><p>quoted</p></blockquote>"),
+            "the valid quoted row should remain rendered: {rendered}",
+        );
+        assert!(
+            !rendered.contains("tight"),
+            "a tight quoted row should be pruned like Wikidot: {rendered}",
+        );
     }
 
     #[test]
@@ -1747,6 +1973,75 @@ mod tests {
                 && !prepared.body.contains("--]")
                 && !prepared.body.contains('—'),
             "generated comment gates must not leak into the delayed row: {}",
+            prepared.body,
+        );
+    }
+
+    #[test]
+    fn runtime_size_ifexpr_keeps_selected_generated_css_module() {
+        let source = concat!(
+            "[[#ifexpr %%size%%%2 != 0 | [!-- ]]\n",
+            "[[%%content{0}%%module CSS]]\n",
+            ":root { --selected: one; }\n",
+            "[[%%content{0}%%/module]]\n",
+            "[[#ifexpr %%size%%%2 != 0 | --] ]]\n",
+            "[[#ifexpr %%size%%%2 != 1 | [!-- ]]\n",
+            "[[%%content{0}%%module CSS]]\n",
+            ":root { --selected: two; }\n",
+            "[[%%content{0}%%/module]]\n",
+            "[[#ifexpr %%size%%%2 != 1 | --] ]]",
+        );
+        let template =
+            ListPagesTemplatePlan::compile(source).expect("supported template");
+        let page = FoundPageRow {
+            page_id: 1,
+            site_id: 1,
+            title: Some("Generated".to_owned()),
+            alt_title: None,
+            slug: Some("generated".to_owned()),
+            page_category_id: None,
+            page_revision_id: None,
+            tags: None,
+            created_at: None,
+            created_by: None,
+            updated_at: None,
+            updated_by: None,
+            score: None,
+        };
+        let user_displays = BTreeMap::new();
+        let snapshot_displays = BTreeMap::new();
+        let runtime_displays = BTreeMap::new();
+        let data_form_values = BTreeMap::new();
+        let mut context = empty_substitution_context(
+            &user_displays,
+            &snapshot_displays,
+            &runtime_displays,
+            &data_form_values,
+        );
+        context.page_wikitext_scalar_count = Some(1);
+        let mut compat_text = CompatTextFragments::new(source);
+
+        let prepared = prepare_delayed_list_pages_row(
+            &template,
+            template.body(),
+            &page,
+            1,
+            1,
+            &context,
+            &[],
+            &mut compat_text,
+            false,
+            None,
+        );
+
+        assert!(
+            prepared.body.contains("--selected: two"),
+            "the selected generated CSS module must survive row substitution: {}",
+            prepared.body,
+        );
+        assert!(
+            !prepared.body.contains("--selected: one"),
+            "the inactive generated CSS module must be pruned: {}",
             prepared.body,
         );
     }

@@ -43,6 +43,20 @@ fn runtime_head_recognizer_matches_the_execution_regex() {
 }
 
 #[test]
+fn crossing_url_quote_rejects_trailing_unsupported_head_bytes() {
+    let malformed = r#"offset="@URL|1 "created_by="Fireknight" unsupported"#;
+
+    assert!(
+        !list_pages_url_quote_crossing_head_can_execute(malformed),
+        "a recovered created_by quote must end at the head boundary: {malformed:?}",
+    );
+    assert!(
+        !list_pages_runtime_head_can_execute(malformed),
+        "unsupported bytes after the recovered quote must fail closed: {malformed:?}",
+    );
+}
+
+#[test]
 fn runtime_head_validation_accepts_static_wildcard_selectors() {
     for head in [r#" category="*" "#, r#" category="*" tags="codex" "#] {
         assert_eq!(
@@ -105,6 +119,57 @@ fn scanner_keeps_the_body_after_an_executable_head_with_trailing_note_text() {
     );
     assert!(modules[0].body.starts_with("\nALPHA\n"), "{modules:#?}");
     assert!(modules[0].body.contains("BRAVO"), "{modules:#?}");
+}
+
+#[test]
+fn scanner_keeps_generated_comment_gate_rows_inside_the_module() {
+    let source = concat!(
+        "[[module ListPages name=\"gate\"]]\n",
+        "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+        "LOW\n",
+        "[!-- --]\n",
+        "[[#ifexpr %%created_by_id%% > 6000000 |  | [!-- ]]\n",
+        "HIGH\n",
+        "[!-- --]\n",
+        "[[/module]]\n",
+        "[[module ListPages name=\"later\"]]LATER[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 2, "later modules must remain visible");
+    assert!(modules[0].body.contains("[[#ifexpr %%created_by_id%%"));
+    assert!(!modules[0].body.contains("[[/module]]"));
+
+    let literal = concat!(
+        "[[code]]\n",
+        "[[module ListPages name=\"literal\"]]\n",
+        "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+        "LOW\n",
+        "[!-- --]\n",
+        "[[/module]]\n",
+        "[[/code]]",
+    );
+    assert!(
+        find_list_pages_module_matches(literal).is_empty(),
+        "generated-looking gates in code remain literal",
+    );
+
+    let decoy = concat!(
+        "[[module ListPages name=\"gate-decoy\"]]\n",
+        "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+        "LOW [[/module]]\n",
+        "[!-- --]\n",
+        "REAL\n",
+        "[[/module]]\n",
+        "[[module ListPages name=\"later\"]]LATER[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(decoy);
+    assert_eq!(
+        modules.len(),
+        2,
+        "the inactive-branch closer is not structural"
+    );
+    assert!(modules[0].body.contains("LOW [[/module]]"));
+    assert!(modules[0].body.contains("REAL"));
 }
 
 #[test]
@@ -800,6 +865,30 @@ fn list_pages_scanner_ignores_right_block_tokens_inside_single_quoted_arguments(
     assert_eq!(modules[1].body, "B");
     assert_eq!(modules[2].head, "name='last'");
     assert_eq!(modules[2].body, "C");
+}
+
+#[test]
+fn list_pages_scanner_keeps_crossing_url_quote_heads_visible() {
+    let source = concat!(
+        r#"[[module ListPages category="fragment" parent="." limit="1" order="name" offset="@URL|1 "created_by="Fireknight"]]"#,
+        "\n%%content%%\n[[/module]]",
+    );
+    assert!(list_pages_url_quote_crossing_head_can_execute(
+        r#" category="fragment" parent="." limit="1" order="name" offset="@URL|1 "created_by="Fireknight""#,
+    ));
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1);
+    assert_eq!(modules[0].body, "\n%%content%%\n");
+    assert!(
+        modules[0]
+            .head
+            .contains(r#"offset="@URL|1 "created_by="Fireknight"#)
+    );
+
+    assert!(!list_pages_url_quote_crossing_head_can_execute(
+        r#" category="fragment" parent="." limit="1" order="name" offset="@URL|1 "created_by="Fireknight" unsupported"#,
+    ));
 }
 
 #[test]

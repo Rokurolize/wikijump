@@ -33,7 +33,7 @@ femme = "2"
 filemagic = "0.13"
 fluent = "0.17"
 fluent-syntax = "0"
-ftml = { git = "https://github.com/Rokurolize/ftml", rev = "a8fcd3dce089aefd6a9a3619116d4777c9ebd7cc" }
+ftml = { git = "https://github.com/Rokurolize/ftml", rev = "4413efe44429c9612b27439bad7071702e15d541" }
 futures = { version = "0.3", features = ["async-await"], default-features = false }
 hex = { version = "0.4", features = ["serde"] }
 hostname = "0.4"

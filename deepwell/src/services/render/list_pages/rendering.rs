@@ -44,6 +44,7 @@ use super::current_data_form::{
 use super::parents::{load_list_pages_child_counts, load_list_pages_parent_displays};
 use super::rendering_support::{
     ListPagesBlock, ListPagesBlockPlan, list_pages_raw_footnote_prefix_end,
+    list_pages_template_has_block_section, list_pages_template_starts_with_inline_anchor,
 };
 use super::scanner::{
     CountPagesCloseReachabilityIndex, has_count_pages_module_opening_candidate,
@@ -68,7 +69,7 @@ use super::{
     count_pages_unbounded_total, exact_name_list_pages_batch_key,
     expand_list_pages_generated_includes,
     find_list_pages_module_matches_with_delayed_links,
-    finish_or_defer_list_pages_delayed_output_with_mode, is_list_pages_visible_tag,
+    finish_or_defer_list_pages_delayed_output_with_modes, is_list_pages_visible_tag,
     list_pages_argument_error_with_parent_precedence,
     list_pages_body_starts_with_preparsed_block, list_pages_body_uses_first_image,
     list_pages_content_query_target, list_pages_created_by_unix,
@@ -149,6 +150,7 @@ impl RenderService {
         let ListPagesExpansionOptions {
             current_site_id,
             current_page_id,
+            page_preview,
             viewer_user_id,
             mut include_budget,
             url,
@@ -679,6 +681,7 @@ impl RenderService {
                         compat_html,
                         viewer_user_id,
                         page_info,
+                        page_preview,
                         settings,
                         arguments,
                         &template,
@@ -791,6 +794,7 @@ impl RenderService {
                         compat_html,
                         viewer_user_id,
                         page_info,
+                        page_preview,
                         settings,
                         arguments,
                         &template,
@@ -907,6 +911,7 @@ impl RenderService {
                 ListPagesExpansionOptions {
                     current_site_id: Some(current_site_id),
                     current_page_id: requested_current_page_id,
+                    page_preview,
                     viewer_user_id,
                     include_budget,
                     url,
@@ -1320,6 +1325,7 @@ impl RenderService {
         compat_html: &mut CompatHtmlFragments,
         viewer_user_id: Option<i64>,
         page_info: &PageInfo<'_>,
+        page_preview: bool,
         settings: &WikitextSettings,
         arguments: ListPagesArguments,
         template: &ListPagesTemplatePlan,
@@ -2342,6 +2348,7 @@ impl RenderService {
             let substitution_context = ListPagesSubstitutionContext {
                 authored_limit: limit,
                 ajax_module_response,
+                page_preview,
                 site: page_info.site.as_ref(),
                 site_title: site_title.as_deref().unwrap_or_default(),
                 category: page
@@ -2549,9 +2556,15 @@ impl RenderService {
             || delayed_html_fragments
                 .iter()
                 .any(CompatHtmlFragments::has_exact_fragments);
-        let block_output = wrapper || separate || render_generated_html;
+        let block_output = wrapper
+            || separate
+            || render_generated_html
+            || list_pages_template_has_block_section(template);
+        let list_pages_inline = wrapper
+            && !separate
+            && list_pages_template_starts_with_inline_anchor(template);
         let (output, pending_delayed) =
-            finish_or_defer_list_pages_delayed_output_with_mode(
+            finish_or_defer_list_pages_delayed_output_with_modes(
                 output,
                 delayed_occurrences,
                 delayed_runtime_scalar_ranges,
@@ -2562,6 +2575,7 @@ impl RenderService {
                 compat_html,
                 compat_text,
                 block_output,
+                list_pages_inline,
             )?;
         Ok(ListPagesBlockRenderResult::Expanded(
             ListPagesRenderedBlock {

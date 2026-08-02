@@ -1,0 +1,68 @@
+{
+  "schema": "wikijump_listpages_compat.final_corpus_replay_receipt.v1",
+  "status": "pass",
+  "wikijump_revision": "636fee7fec5c9a42232ad4e7cefa498e8e8a353c",
+  "ftml_revision": "4413efe44429c9612b27439bad7071702e15d541",
+  "authority": {
+    "mode": "authoritative",
+    "references_sha256": "591a02b209dd156c25e7eab0e12a8a123eac5daf0d1fd99b8b5629ea3cb39792",
+    "invocations_sha256": "b9fd4f5fdfa775cba403682ec67485d6c13f5131a30999420cbc14f7a244f641",
+    "scope_sha256": "d1d9aca68fa8377a6381a96e132c2db94b4f81ceca92c5ca52568f6b7e2aabe1",
+    "reference_count": 18996,
+    "invocation_count": 23964,
+    "runtime_identity_sha256": "390fa2dfad6b1d9da8894399c77b3e535e2d334008107ae4166e5e9bedac194a",
+    "runtime_proof_sha256": "1da2f0d42e94a9af49068f309d29f01de6c24f003fda853fb586e392eacf941d",
+    "runtime_observation_stable_sha256": "4c9e10c52d8625ea244d3c691a2d9a05ad105b61d452bc6329d72230dbe6527a"
+  },
+  "exact_lane": {
+    "verdict_sha256": "82b52674ca93b0d08c2ffc24cbb6a10e45e15e1601da5e9e948f5463eaf7bdaa",
+    "classification_sha256": "fc40e328614ba8990947af67ff55a137e2a64fbae7315c45d8e63fbc9f74f720",
+    "matches": 18769,
+    "mismatches": 227,
+    "local_errors": 0,
+    "classified_cases": 18996,
+    "actionable_unique_source_count": 0
+  },
+  "authoritative_reconciliation": {
+    "receipt_sha256": "786a0ab28422a4de0701e24b8e544c74a8eddbf119165262f0ad2f09b8f13bfa",
+    "invocation_count": 23964,
+    "unique_source_count": 18996,
+    "exact_source_duplicate_count": 4968,
+    "classified_invocation_count": 23964,
+    "unresolved_invocation_count": 0,
+    "actionable_unique_source_count": 0,
+    "actionable_invocation_count": 0,
+    "differential_statuses": {"match": 23630, "mismatch": 334},
+    "dispositions": {"none": 23964},
+    "exit_code": 0
+  },
+  "diagnostic_lanes": {
+    "novel": {
+      "reference_count": 119,
+      "verdict_sha256": "3d8ce82116900c67b482fe64c83a7af58d8ab5572b5a17792733f4e38bb65a36",
+      "classification_sha256": "4f189125456a40dee830c445183d78b20d4ac7507c876b45d74e608223d9580b",
+      "dispositions": {"none": 119},
+      "acceptance_eligible": false
+    },
+    "literal": {
+      "reference_count": 335,
+      "verdict_sha256": "1199c38f8c58d5e4432db3de82096633c2334d0f9c4b1101c7716ae6f9716970",
+      "classification_sha256": "6199835f2ec17e9770fac85dcd8566d7b03b04a93ce45367f05aafc88a398c32",
+      "dispositions": {"none": 335},
+      "acceptance_eligible": false
+    }
+  },
+  "scope_set_relationship": {
+    "pinned_exact_keys": 18996,
+    "fresh_exact_keys": 19017,
+    "fresh_literal_keys": 335,
+    "fresh_novel_keys": 119,
+    "fresh_exact_minus_pinned": 356,
+    "pinned_minus_fresh_exact": 335,
+    "fresh_literal_intersection_pinned": 335,
+    "fresh_literal_intersection_fresh_exact": 0,
+    "fresh_novel_intersection_pinned": 47,
+    "symmetric_difference": 691,
+    "acceptance_scope_revised": false
+  }
+}

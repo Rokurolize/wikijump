@@ -38,7 +38,24 @@ test("base edits rerun central CI while metadata edits stay isolated", () => {
   assert.match(concurrency, /format\('ci-pr-\{0\}', github\.event\.pull_request\.number\)/)
   assert.match(concurrency, /format\('ci-run-\{0\}', github\.run_id\)/)
   assert.match(concurrency, /cancel-in-progress:/)
-  assert.match(gate, /format\('CI \/ metadata no-op \(\{0\}\)', github\.run_id\)/)
+  assert.match(gate, /github\.event\.action == 'edited' && github\.event\.changes\.base == null && 'CI \/ gate'/)
+})
+
+test("metadata edits publish the required gate context without running component checks", () => {
+  const source = workflow("ci-gate.yaml")
+  const gate = source.slice(source.indexOf("  gate:\n"))
+
+  assert.match(
+    gate,
+    /github\.event\.action == 'edited' && github\.event\.changes\.base == null && 'CI \/ gate'/,
+  )
+  assert.match(gate, /^    if: \$\{\{ always\(\) \}\}$/m)
+  assert.match(gate, /name: Metadata edit no-op/)
+  assert.match(gate, /echo "This pull request metadata change does not affect CI\."/)
+  assert.match(
+    gate,
+    /if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.action != 'edited' \|\| github\.event\.changes\.base != null \}\}/,
+  )
 })
 
 test("PR classification uses three-dot history while push classification uses two endpoints", () => {

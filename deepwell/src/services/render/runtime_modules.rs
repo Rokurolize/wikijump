@@ -1725,7 +1725,16 @@ impl RenderService {
                 .as_str();
             output.push_str(&wikitext[cursor..matched.start()]);
             let rendered = Self::render_static_account_module(name);
-            if !rendered.is_empty() {
+            if rendered.is_empty() && name.eq_ignore_ascii_case("Watchers") {
+                // Wikidot leaves an empty paragraph for an executed
+                // Wikidot's empty Watchers block leaves five newline bytes
+                // between the surrounding paragraphs in PagePreview. Keep
+                // that observed block boundary even though the module has no
+                // visible body.
+                output.push_str(
+                    &compat_html.push_block_html("<p>\n\n\n\n\n</p>".to_owned()),
+                );
+            } else if !rendered.is_empty() {
                 output.push_str(&compat_html.push_block_html(rendered.to_owned()));
             }
             cursor = matched.end();
@@ -1810,7 +1819,11 @@ impl RenderService {
         Ok(output)
     }
 
-    fn expand_ad_modules(wikitext: String, settings: &WikitextSettings) -> String {
+    fn expand_ad_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
         if !settings.enable_page_syntax
             || (!AD_MODULE_REGEX.is_match(&wikitext)
                 && !ADSENSEUNIT_MODULE_REGEX.is_match(&wikitext))
@@ -1832,6 +1845,7 @@ impl RenderService {
                 continue;
             }
             output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&compat_html.push_block_html("<p>\n\n</p>".to_owned()));
             cursor = matched.end();
         }
         if cursor == 0 {
@@ -1939,7 +1953,7 @@ impl RenderService {
         )
         .await
         .or_raise(make_error)?;
-        wikitext = Self::expand_ad_modules(wikitext, settings);
+        wikitext = Self::expand_ad_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_featured_site_modules(
             ctx,
             wikitext,

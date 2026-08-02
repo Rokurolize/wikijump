@@ -71,6 +71,21 @@ async fn set_page_created_at(runner: &TestRunner, page_id: i64, created_at: &str
         .expect("failed to set deterministic page creation timestamp");
 }
 
+async fn set_page_updated_at(runner: &TestRunner, page_id: i64, updated_at: &str) {
+    let transaction = runner.context().transaction();
+    let statement = Statement::from_string(
+        transaction.get_database_backend(),
+        format!(
+            "UPDATE \"page\" SET updated_at = TIMESTAMPTZ '{updated_at}' WHERE page_id = {page_id}",
+        ),
+    );
+
+    transaction
+        .execute_raw(statement)
+        .await
+        .expect("failed to set deterministic page update timestamp");
+}
+
 async fn set_page_category(
     runner: &TestRunner,
     page_id: i64,
@@ -252,6 +267,64 @@ After"#;
     assert!(
         !html.contains("data-wikijump-compat-date"),
         "the internal ODate trust marker must not leak from delayed rows:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_updated_at_preview_keeps_server_date_spaces_breakable() {
+    const TARGET_SLUG: &str = "listpages-date-space-target-20260802";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    let target = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Date-space target",
+            "title": "ListPages date-space target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "ListPages date-space fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_page_updated_at(&runner, target.page_id, "2026-07-29T02:21:00Z").await;
+
+    let html = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages date-space preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{}\" limit=\"1\"]]\n",
+                "||~ Today's date is: ||\n",
+                "||= %%updated_at|%d %B %Y%% ||\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("ListPages updated_at preview should render")
+    .html_output
+    .body;
+
+    assert!(
+        html.contains("29 Jul 2026 02:21") && !html.contains("29 Jul 2026\u{00a0}02:21"),
+        "the server-rendered ODate text must keep ordinary breakable spaces:\n{html}",
     );
 }
 
@@ -480,6 +553,34 @@ async fn delayed_listpages_rows_keep_wikidot_whitespace_boundaries() {
     assert!(
         preview.contains(r#">JAUNE</span> .</p>"#),
         "an authored space before the span closer belongs outside the closed span:\n{preview}",
+    );
+
+    let nbsp_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages delayed NBSP row",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{}\" separate=\"no\"]]\n",
+                "HEAD %%updated_at%%\n",
+                "\u{00a0}\n",
+                "TAIL\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("a delayed row should preserve an NBSP-only source line")
+    .html_output
+    .body;
+    assert!(
+        nbsp_preview.contains('\u{00a0}'),
+        "an NBSP-only delayed source line remains authored content:\n{nbsp_preview}",
+    );
+    assert!(
+        !nbsp_preview.contains("<p>&nbsp;</p>"),
+        "the NBSP-only line stays in the surrounding delayed paragraph:\n{nbsp_preview}",
     );
 
     let static_quote_preview = RenderService::render_wikidot_page_preview(
@@ -2432,6 +2533,121 @@ async fn listpages_unwrapped_separate_row_is_adjacent_to_its_pager() {
     );
 }
 
+/// Anonymous Wikidot PagePreview evidence, 2026-07-29:
+/// `cn:wikidot-module-tech:L363:B11414`.
+///
+/// A sectioned, unwrapped module keeps its generated list in the surrounding
+/// block stream.  Wrapping the `<ul>` in an FTML paragraph changes the live
+/// DOM and makes the sectioned template unusable in ordinary page markup.
+#[tokio::test]
+async fn listpages_unwrapped_sectioned_block_template_stays_outside_paragraph() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let body = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "wikidot-module-tech-sectioned-block",
+        concat!(
+            "[[module ListPages separate=\"no\" wrapper=\"no\" limit=\"5\"]]\n",
+            "[[head]]\n",
+            "[[ul id=\"u-myList\"]]\n",
+            "[[/head]]\n",
+            "[[body]]\n",
+            "[[li class=\"list-item\"]]%%title_linked%% by (%%created_by%%)[[/li]]\n",
+            "[[/body]]\n",
+            "[[foot]]\n",
+            "[[/ul]]\n",
+            "[[/foot]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("sectioned unwrapped ListPages preview should render")
+    .html_output
+    .body;
+
+    assert!(
+        body.contains(r#"<ul id="u-myList">"#),
+        "the sectioned template should emit its list: {body}"
+    );
+    assert!(
+        !body.contains("<p><ul"),
+        "a block section must not acquire an FTML paragraph wrapper: {body}"
+    );
+
+    runner.teardown().await;
+}
+
+/// Anonymous Wikidot PagePreview evidence, 2026-07-29:
+/// `cn:wanderers:enter-the-library:L388:B15100`.
+///
+/// A combined (`separate="no"`) wrapper keeps an inline generated body in
+/// the wrapper's own flow. FTML must not manufacture a paragraph around the
+/// inline link, even though the ListPages box itself remains a block.
+#[tokio::test]
+async fn listpages_combined_wrapper_keeps_inline_rows_outside_paragraph() {
+    const TARGET_SLUG: &str = "listpages-inline-row-target-20260802";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "inline ListPages row target",
+            "title": "Inline ListPages row target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "combined inline ListPages row fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let body = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "combined inline ListPages row source",
+        concat!(
+            "[[module ListPages name=\"listpages-inline-row-target-20260802\" separate=\"no\"]]",
+            "[[a_ href=\"/%%fullname%%\" class=\"book\"]]",
+            "[[span]]%%name%%[[/span]]",
+            "[[/a]]",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("combined inline ListPages preview should render")
+    .html_output
+    .body;
+
+    assert!(
+        body.contains(
+            r#"<div class="list-pages-box"><a class="book" href="/listpages-inline-row-target-20260802">"#,
+        ),
+        "the combined row should stay directly inside the ListPages box: {body}",
+    );
+    assert!(
+        !body.contains(r#"<div class="list-pages-box"><p><a"#),
+        "the combined inline row must not acquire an FTML paragraph: {body}",
+    );
+
+    runner.teardown().await;
+}
+
 #[tokio::test]
 async fn created_by_exclusion_omits_the_containing_pages_author() {
     const OWN_SLUG: &str = "author-exclusion-own";
@@ -3660,6 +3876,7 @@ async fn listpages_default_rows_expand_page_body_runtime_modules() {
             && preview.contains("DASH_END")
             && preview.contains("WATCHERS_START")
             && preview.contains("WATCHERS_END")
+            && preview.contains("WATCHERS_START</p>\n\n\n\n\n<p>WATCHERS_END")
             && preview.contains("THEME_START")
             && preview.contains(
                 r#"<div class="error-block">Preview mode error: please contact Wikidot.com for a better error message</div>"#,
@@ -4081,6 +4298,10 @@ async fn listpages_default_rows_expand_secondary_page_body_modules() {
             "<p>TODO_END",
         )),
         "selected block-valued module errors must split their surrounding paragraphs exactly once:\n{preview}",
+    );
+    assert!(
+        preview.contains("ADSENSE_START</p>\n\n<p>ADSENSE_END"),
+        "the empty AdSenseUnit module must retain Wikidot's paragraph boundary:\n{preview}",
     );
     assert!(
         preview.contains(r#"class="html-block-iframe""#)
@@ -4816,6 +5037,48 @@ async fn listpages_rating_vote_scalars_resolve_authored_expr_envelopes() {
         "FTML parser functions should resolve after runtime scalar substitution:\n\
          {preview}",
     );
+}
+
+#[tokio::test]
+async fn listpages_created_by_id_comment_gates_resolve_after_row_substitution() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "ListPages created-by-id comment gates",
+        concat!(
+            "[[module ListPages category=\"*\" order=\"name\" limit=\"1\"]]\n",
+            "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+            "LOW\n",
+            "[!-- --]\n",
+            "[[#ifexpr %%created_by_id%% > 6000000 |  | [!-- ]]\n",
+            "HIGH\n",
+            "[!-- --]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("created-by-id conditional ListPages preview should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains("LOW") || preview.contains("HIGH"),
+        "one selected branch should remain visible after row substitution:\n{preview}",
+    );
+    assert!(
+        !preview.contains("%%created_by_id%%")
+            && !preview.contains("[[#ifexpr")
+            && !preview.contains("[!--")
+            && !preview.contains("[!—"),
+        "generated comment gates and row variables must not leak into preview HTML:\n{preview}",
+    );
+
+    runner.teardown().await;
 }
 
 #[tokio::test]

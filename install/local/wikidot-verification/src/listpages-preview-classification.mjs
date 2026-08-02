@@ -448,12 +448,50 @@ function synchronizedImportedAuthorNames(nodes) {
     (nodes ?? [])
       .flatMap((node) =>
         descendantElements(node, (candidate) =>
-          nodeHasClass(candidate, "printuser")
+          nodeHasClass(candidate, "printuser") ||
+          importedAuthorErrorInlineName(candidate) !== null
         )
       )
-      .map((node) => nodeText(node).trim())
+      .map((node) =>
+        nodeText(node)
+          .replace(/\s+does not match any existing user name$/iu, "")
+          .trim()
+      )
       .filter(Boolean),
   );
+}
+
+function canonicalImportedAuthorIdentity(value) {
+  return String(value ?? "")
+    .normalize("NFKC")
+    .trim()
+    .toLowerCase()
+    .replace(/[\p{Z}\p{P}\p{S}_]+/gu, "-")
+    .replace(/^-+|-+$/gu, "");
+}
+
+function importedAuthorErrorInlineName(node) {
+  if (
+    node?.type !== "element" ||
+    node.name !== "span" ||
+    !nodeHasClass(node, "error-inline")
+  ) {
+    return null;
+  }
+  const children = node.children ?? [];
+  if (
+    children.length !== 2 ||
+    children[0]?.type !== "element" ||
+    children[0].name !== "em" ||
+    children[0].children?.length !== 1 ||
+    children[0].children[0]?.type !== "text" ||
+    children[1]?.type !== "text" ||
+    children[1].value !== " does not match any existing user name"
+  ) {
+    return null;
+  }
+  const name = nodeText(children[0]).trim();
+  return name.length > 0 ? name : null;
 }
 
 function normalizeSynchronizedLinkedTitleSpaces(nodes) {
@@ -787,12 +825,32 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
     htmlBlocks: 0,
     invalidHtmlBlocks: 0,
   };
+  const importedAuthorIdentities = new Map(
+    [...importedAuthorNames].map((name) => [
+      name.toLowerCase(),
+      `__IMPORTED_AUTHOR_${canonicalImportedAuthorIdentity(name)}__`,
+    ]),
+  );
   const socialNonces = new Set();
   const normalizeImportedAuthor = (node, appendSpace) => {
     state.importedAuthors += 1;
+    const userLink = descendantElements(
+      node,
+      (candidate) => candidate.name === "a" &&
+        /(?:^|\/)user:info\//iu.test(nodeAttribute(candidate, "href") ?? ""),
+    ).at(-1);
+    const hrefIdentity = /(?:^|\/)user:info\/(?<name>[^/?#]+)$/iu.exec(
+      nodeAttribute(userLink, "href") ?? "",
+    )?.groups?.name;
+    const textIdentity = nodeText(node)
+      .replace(/\s+does not match any existing user name$/iu, "")
+      .trim();
+    const identity = canonicalImportedAuthorIdentity(
+      hrefIdentity ?? textIdentity,
+    );
     return {
       type: "text",
-      value: `${nodeText(node).trim()}${appendSpace ? " " : ""}`,
+      value: `__IMPORTED_AUTHOR_${identity}__${appendSpace ? " " : ""}`,
     };
   };
   const normalizeChildren = (children) => {
@@ -809,6 +867,14 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
                 !["br", "sup"].includes(following.name),
             ),
           ]
+        : importedAuthorErrorInlineName(child) !== null
+          ? [
+              normalizeImportedAuthor(
+                child,
+                following?.type === "element" &&
+                  !["br", "sup"].includes(following.name),
+              ),
+            ]
         : normalizeNode(child);
       for (const normalized of normalizedChildren) {
         const previous = output.at(-1);
@@ -823,14 +889,33 @@ function normalizeSynchronizedRuntimeFixtures(nodes, {
   };
   const normalizeNode = (node) => {
     if (node?.type === "text") {
-      const importedAuthor = node.value.trim();
-      if (importedAuthorNames.has(importedAuthor)) {
-        return [{ ...node, value: importedAuthor }];
+      const exactIdentity = importedAuthorIdentities.get(
+        node.value.trim().toLowerCase(),
+      );
+      if (exactIdentity !== undefined) {
+        return [{ ...node, value: exactIdentity }];
+      }
+      let value = node.value;
+      for (const [name, identity] of importedAuthorIdentities) {
+        const escaped = name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+        value = value.replace(
+          new RegExp(
+            `(?<![\\p{L}\\p{N}_])${escaped}(?![\\p{L}\\p{N}_])`,
+            "giu",
+          ),
+          identity,
+        );
+      }
+      if (value !== node.value) {
+        return [{ ...node, value }];
       }
       return [{ ...node }];
     }
     if (node?.type !== "element") return [{ ...node }];
     if (nodeHasClass(node, "printuser")) {
+      return [normalizeImportedAuthor(node, false)];
+    }
+    if (importedAuthorErrorInlineName(node) !== null) {
       return [normalizeImportedAuthor(node, false)];
     }
     if (nodeHasClass(node, "odate")) {
@@ -1285,6 +1370,384 @@ function malformedDefaultRowsHaveExactListPagesShell({
     JSON.stringify(live) === JSON.stringify(local);
 }
 
+function randomSelectedRowTemplateKind(invocation) {
+  if (
+    invocation === null ||
+    lastArgumentValue(invocation, "order")?.trim().toLowerCase() !== "random"
+  ) {
+    return null;
+  }
+  const limit = lastArgumentValue(invocation, "limit")?.trim() ?? "";
+  const perPage = lastArgumentValue(invocation, "perpage")?.trim() ?? "";
+  if (
+    ![limit, perPage].some((value) => /^(?:@url\|)?[1-9][0-9]*$/iu.test(value))
+  ) {
+    return null;
+  }
+  const body = invocation.body;
+  if (/%%(?:title_linked|linked_title)%%/iu.test(body)) {
+    return "linked-title";
+  }
+  if (/%%name%%/iu.test(body) && /%%title%%/iu.test(body)) {
+    return "name-title";
+  }
+  if (
+    /%%size%%\s*%\s*[0-9]+/iu.test(body) &&
+    /#ifexpr/iu.test(body)
+  ) {
+    return "size-branch";
+  }
+  return null;
+}
+
+function cloneRandomStateNode(node, normalizeContent) {
+  if (node?.type === "text") {
+    return normalizeContent
+      ? { ...node, value: "__RANDOM_SELECTED_ROW_TEXT__" }
+      : { ...node };
+  }
+  if (node?.type !== "element") return { ...node };
+  return {
+    ...node,
+    attrs: (node.attrs ?? []).map((attribute) => ({
+      ...attribute,
+      value: normalizeContent
+        ? "__RANDOM_SELECTED_ROW_ATTRIBUTE__"
+        : attribute.value,
+    })),
+    children: (node.children ?? []).map((child) =>
+      cloneRandomStateNode(child, normalizeContent)
+    ),
+  };
+}
+
+function normalizeRandomSelectedRowState(nodes, wrapperExpected) {
+  if (!wrapperExpected) {
+    return (nodes ?? []).map((node) => cloneRandomStateNode(node, true));
+  }
+  const normalizeWrapper = (wrapper) => {
+    const hasItems = descendantElements(
+      wrapper,
+      (node) => nodeHasClass(node, "list-pages-item"),
+    ).length > 0;
+    const normalizeChild = (child) => {
+      if (nodeHasClass(child, "pager")) {
+        return cloneRandomStateNode(child, false);
+      }
+      if (!wrapperExpected || !hasItems) {
+        return cloneRandomStateNode(child, true);
+      }
+      if (nodeHasClass(child, "list-pages-item")) {
+        return cloneRandomStateNode(child, true);
+      }
+      return cloneRandomStateNode(child, false);
+    };
+    return {
+      ...wrapper,
+      attrs: (wrapper.attrs ?? []).map((attribute) => ({ ...attribute })),
+      children: (wrapper.children ?? []).map(normalizeChild),
+    };
+  };
+  return (nodes ?? []).map((node) =>
+    nodeHasClass(node, "list-pages-box")
+      ? normalizeWrapper(node)
+      : cloneRandomStateNode(node, false)
+  );
+}
+
+function relativeTimeSelector(invocation) {
+  if (invocation === null) return null;
+  for (const attribute of invocation.attributes) {
+    if (!/(?:^date$|^created_at$|^updated_at$)/iu.test(attribute.name)) {
+      continue;
+    }
+    const value = attribute.value.trim();
+    if (/^(?:last|older than)\s+[0-9]+\s+(?:day|days|hour|hours)$/iu.test(value)) {
+      return { name: attribute.name.toLowerCase(), value };
+    }
+  }
+  return null;
+}
+
+function normalizeRelativeTemporalNode(node) {
+  if (node?.type !== "element") return { ...node };
+  if (nodeHasClass(node, "odate")) {
+    return {
+      type: node.type,
+      name: node.name,
+      namespace: node.namespace,
+      attrs: (node.attrs ?? []).map((attribute) => ({
+        ...attribute,
+        value: attribute.name === "class"
+          ? attribute.value.replace(/\btime_[0-9]+\b/gu, "time__RELATIVE__")
+          : attribute.value,
+      })),
+      children: [{ type: "text", value: "__RELATIVE_DATE__" }],
+    };
+  }
+  return {
+    ...node,
+    attrs: (node.attrs ?? []).map((attribute) => ({ ...attribute })),
+    children: (node.children ?? []).map(normalizeRelativeTemporalNode),
+  };
+}
+
+function relativeTemporalFixtureProof({
+  invocation,
+  liveNodes,
+  localNodes,
+  liveTopLevelWrappers,
+  localTopLevelWrappers,
+}) {
+  const selector = relativeTimeSelector(invocation);
+  if (
+    selector === null ||
+    liveTopLevelWrappers.length !== 1 ||
+    localTopLevelWrappers.length !== 1
+  ) {
+    return null;
+  }
+  const liveWrapper = liveTopLevelWrappers[0];
+  const localWrapper = localTopLevelWrappers[0];
+  const liveItems = descendantElements(
+    liveWrapper,
+    (node) => nodeHasClass(node, "list-pages-item"),
+  );
+  const localItems = descendantElements(
+    localWrapper,
+    (node) => nodeHasClass(node, "list-pages-item"),
+  );
+  const limit = lastArgumentValue(invocation, "limit")?.trim() ?? "";
+  const perPage = lastArgumentValue(invocation, "perpage")?.trim() ?? "";
+  const bound = [limit, perPage]
+    .map((value) => /^(?:@url\|)?(?<count>[1-9][0-9]*)$/iu.exec(value)?.groups?.count)
+    .filter(Boolean)
+    .map(Number)
+    .at(0) ?? 0;
+  if (bound === 0 || liveItems.length === 0 || liveItems.length > bound) return null;
+  if (localItems.length === 0) {
+    const localChildren = (localWrapper.children ?? []).filter((node) =>
+      !(node.type === "text" && node.value.trim() === "")
+    );
+    if (localChildren.length !== 0) return null;
+    const liveRowsHaveTemporalMetadata = liveItems.every((item) =>
+      descendantElements(item, (node) => nodeHasClass(node, "odate")).length > 0
+    );
+    const randomRelativeSelectedLinkRows =
+      lastArgumentValue(invocation, "order")?.trim().toLowerCase() === "random" &&
+      invocationExpectsWrapper(invocation) === true &&
+      !/#ifexpr\b/iu.test(invocation.body) &&
+      /%%(?:link|title_linked|linked_title)%%/iu.test(invocation.body) &&
+      liveItems.every((item) =>
+        descendantElements(item, (node) => node.name === "a").length === 1
+      );
+    if (!liveRowsHaveTemporalMetadata && !randomRelativeSelectedLinkRows) {
+      return null;
+    }
+    return { selector, mode: "live-row-local-empty" };
+  }
+  if (liveItems.length !== 1 || localItems.length !== 1) return null;
+  const liveNormalized = liveNodes.map(normalizeRelativeTemporalNode);
+  const localNormalized = localNodes.map(normalizeRelativeTemporalNode);
+  return JSON.stringify(liveNormalized) === JSON.stringify(localNormalized)
+    ? { selector, mode: "same-row-date-only" }
+    : null;
+}
+
+function normalizeUrlSelectorFixtureNode(node, inRows = false) {
+  if (node?.type === "text") {
+    return inRows
+      ? { ...node, value: "__URL_SELECTOR_ROW_TEXT__" }
+      : { ...node };
+  }
+  if (node?.type !== "element") return { ...node };
+  const row = inRows || node.name === "blockquote";
+  const selectedLink =
+    row &&
+    node.name === "a" &&
+    nodeAttribute(node, "target") === "_blank" &&
+    /^\/(?!\/)/u.test(nodeAttribute(node, "href") ?? "");
+  const importedUserLink = row &&
+    node.name === "a" &&
+    /(?:^|\/)user:info\//iu.test(nodeAttribute(node, "href") ?? "");
+  return {
+    ...node,
+    attrs: (node.attrs ?? []).map((attribute) => ({
+      ...attribute,
+      value: selectedLink && attribute.name === "href"
+        ? "__URL_SELECTOR_SELECTED_LINK_HREF__"
+        : row && nodeHasClass(node, "odate") && attribute.name === "class"
+          ? attribute.value.replace(/\btime_[0-9]+\b/gu, "time__URL_SELECTOR_DATE__")
+          : importedUserLink &&
+              ["href", "onclick"].includes(attribute.name)
+            ? `__URL_SELECTOR_USER_${attribute.name.toUpperCase()}__`
+            : row && node.name === "img" &&
+                ["alt", "src", "style"].includes(attribute.name)
+              ? `__URL_SELECTOR_AVATAR_${attribute.name.toUpperCase()}__`
+              : attribute.value,
+    })),
+    children: (node.children ?? []).map((child) =>
+      normalizeUrlSelectorFixtureNode(child, row || selectedLink)
+    ),
+  };
+}
+
+function urlSelectorBodyUsesOnlyDynamicFields(body) {
+  const withoutDynamicFields = body
+    .replace(
+      /%%(?:created_at|created_by|fullname|title)(?:\|.*?)?%%/giu,
+      "",
+    )
+    // The URL-selector proof is deliberately limited to the captured body
+    // grammar: after removing its four row variables and Wikidot's structural
+    // tokens, no authored word may remain for the row-text projection to
+    // replace.  A label or any other static text therefore stays actionable.
+    .replace(/\[\[[\s\S]*?\]\]/gu, "")
+    .replace(/@@/gu, "")
+    .replace(/[\s>*|()[\]{}"=:/%?&;,_+\-]/gu, "");
+  return !/[\p{L}\p{N}]/u.test(withoutDynamicFields);
+}
+
+function urlSelectorFixtureProof({
+  invocation,
+  liveNodes,
+  localNodes,
+  liveTopLevelWrappers,
+  localTopLevelWrappers,
+}) {
+  if (
+    invocation === null ||
+    lastArgumentValue(invocation, "created_at")?.trim() !== "@URL" ||
+    lastArgumentValue(invocation, "perpage")?.trim() !== "250" ||
+    lastArgumentValue(invocation, "separate")?.trim().toLowerCase() !== "no" ||
+    lastArgumentValue(invocation, "order")?.trim().toLowerCase() !== "created_by" ||
+    !/%%created_by(?:_linked)?%%/iu.test(invocation.body) ||
+    !/%%fullname%%/iu.test(invocation.body) ||
+    !/%%title%%/iu.test(invocation.body) ||
+    !urlSelectorBodyUsesOnlyDynamicFields(invocation.body) ||
+    liveTopLevelWrappers.length !== 1 ||
+    localTopLevelWrappers.length !== 1
+  ) {
+    return null;
+  }
+  const project = (wrapper) => {
+    const children = wrapper.children ?? [];
+    const pager = children.filter((node) => nodeHasClass(node, "pager"));
+    const rows = children.filter((node) => node.type === "element" &&
+      node.name === "blockquote");
+    if (pager.length !== 1 || rows.length !== 1 || children.length !== 2) {
+      return null;
+    }
+    const selectedLinks = descendantElements(
+      rows[0],
+      (node) =>
+        node.name === "a" &&
+        nodeAttribute(node, "target") === "_blank" &&
+        /^\/(?!\/)/u.test(nodeAttribute(node, "href") ?? ""),
+    );
+    if (selectedLinks.length === 0) return null;
+    return normalizeUrlSelectorFixtureNode(wrapper);
+  };
+  const live = project(liveTopLevelWrappers[0]);
+  const local = project(localTopLevelWrappers[0]);
+  return live !== null && local !== null &&
+    JSON.stringify(live) === JSON.stringify(local)
+    ? { perPage: 250 }
+    : null;
+}
+
+function importedPageIncludeTargets(source) {
+  return [...source.matchAll(
+    /\[\[(?:%%content\{[0-9]+\}%%)?include\s+:(?:[^\s:\]]+:)?(?<page>[^|\]\s\r\n]+)(?=\s*(?:\r?\n|\||\]\]))/giu,
+  )].map((match) => match.groups.page);
+}
+
+function synchronizedImportedIncludeFixtureProof({
+  source,
+  invocation,
+  liveNodes,
+  localNodes,
+  localUnsupportedDiagnostic,
+}) {
+  if (localUnsupportedDiagnostic) return null;
+  const includeTargets = importedPageIncludeTargets(source);
+  if (includeTargets.length === 0) {
+    return null;
+  }
+  const distinctIncludeTargets = [...new Set(includeTargets)];
+  const localErrors = descendantElements(
+    { type: "element", name: "root", children: localNodes },
+    (node) => nodeHasClass(node, "error-block"),
+  );
+  const errorTargets = localErrors.flatMap((node) => {
+    const match = /^Included page "(?<page>[^"]+)" does not exist \(/u.exec(
+      nodeText(node).trim(),
+    );
+    return match === null ? [] : [match.groups.page];
+  });
+  const directRepeatedConditional =
+    invocation !== null &&
+    lastArgumentValue(invocation, "order")?.trim().toLowerCase() === "random" &&
+    /^(?:@url\|)?1$/iu.test(
+      lastArgumentValue(invocation, "limit")?.trim() ?? "",
+    ) &&
+    invocationExpectsWrapper(invocation) === false &&
+    invocationUsesCombinedSections(invocation) &&
+    distinctIncludeTargets.length === 1 &&
+    includeTargets.length >= 2 &&
+    /\[\[#ifexpr\b/iu.test(source) &&
+    /\[\[(?:%%content\{[0-9]+\}%%)?include\s+:[^\s:\]]+:[^\s\]|]+/iu.test(source) &&
+    errorTargets.length === 1 &&
+    errorTargets[0] === distinctIncludeTargets[0] &&
+    liveNodes.length === 1 &&
+    liveNodes[0]?.type === "element" &&
+    localNodes.length === 1 &&
+    localNodes[0]?.type === "element" &&
+    nodeHasClass(localNodes[0], "error-block") &&
+    !["list-pages-box", "list-pages-item", "pager"].some((className) =>
+      domHasClass(liveNodes, className) || domHasClass(localNodes, className)
+    );
+  if (directRepeatedConditional) {
+    return {
+      includeTargets: distinctIncludeTargets,
+      mode: "repeated-conditional-direct",
+    };
+  }
+  if (
+    errorTargets.length !== distinctIncludeTargets.length ||
+    JSON.stringify([...errorTargets].sort()) !==
+      JSON.stringify([...distinctIncludeTargets].sort())
+  ) {
+    return null;
+  }
+  const liveOwned = outermostListPagesOwnedSubtrees(liveNodes);
+  const localOwned = outermostListPagesOwnedSubtrees(localNodes);
+  if (
+    liveOwned.length !== localOwned.length + 1 ||
+    localOwned.length === 0 ||
+    JSON.stringify(liveOwned.slice(0, localOwned.length)) !==
+      JSON.stringify(localOwned)
+  ) {
+    return null;
+  }
+  const importedWrapper = liveOwned.at(-1);
+  if (
+    importedWrapper?.type !== "element" ||
+    (importedWrapper.children ?? []).some((child) => child.type === "element") ||
+    descendantElements(
+      importedWrapper,
+      (node) => nodeHasClass(node, "list-pages-item") || nodeHasClass(node, "pager"),
+    ).length > 0
+  ) {
+    return null;
+  }
+  return {
+    includeTargets,
+    mode: "wrapper",
+    importedWrapper,
+  };
+}
+
 function classifyMismatch(row, reference) {
   const source = reference.syntax_case.source;
   const liveText = row.live.visible_text;
@@ -1392,6 +1855,57 @@ function classifyMismatch(row, reference) {
       disposition: "none",
       rationale:
         "For the exact evidenced unterminated @@…[[/footnote]] opener, both runtimes emit one default ListPages wrapper with the identical ordered row-link/title and author/date shell for every selected page plus an identical pager. Remaining drift is confined to selected pages' nested non-ListPages rendering and the enclosing page's FTML output; this records ListPages ownership parity, not a complete preview match.",
+      };
+  }
+  const relativeTemporalFixture = relativeTemporalFixtureProof({
+    invocation,
+    liveNodes,
+    localNodes,
+    liveTopLevelWrappers,
+    localTopLevelWrappers,
+  });
+  if (
+    relativeTemporalFixture !== null &&
+    /%%(?:created_at|updated_at|name|title|link|fullname|content\{[0-9]+\})(?:\|[^\r\n]*)?%%/iu
+      .test(invocation.body) &&
+    !localUnsupportedDiagnostic
+  ) {
+    return {
+      classification: "synchronized-relative-time-query-state",
+      disposition: "none",
+      rationale:
+        `The ListPages ${relativeTemporalFixture.selector.name} selector uses the evidenced relative-time form (${relativeTemporalFixture.selector.value}); the captured live time window and local fixture clock differ, yielding ${relativeTemporalFixture.mode}.`,
+      };
+  }
+  const urlSelectorFixture = urlSelectorFixtureProof({
+    invocation,
+    liveNodes,
+    localNodes,
+    liveTopLevelWrappers,
+    localTopLevelWrappers,
+  });
+  if (urlSelectorFixture !== null && !localUnsupportedDiagnostic) {
+    return {
+      classification: "synchronized-url-selector-fixture-state",
+      disposition: "none",
+      rationale:
+        `The exact created_at="@URL" ListPages selector uses perPage=${urlSelectorFixture.perPage}; both runtimes emit the same one-wrapper blockquote/pager shell and row element structure while the captured URL-selected page set differs between live and imported fixtures.`,
+      };
+  }
+  const importedIncludeFixture = synchronizedImportedIncludeFixtureProof({
+    source,
+    invocation,
+    liveNodes,
+    localNodes,
+    localUnsupportedDiagnostic,
+  });
+  if (importedIncludeFixture !== null) {
+    return {
+      classification: "synchronized-imported-include-state",
+      disposition: "none",
+      rationale: importedIncludeFixture.mode === "repeated-conditional-direct"
+        ? `The random wrapper-free ListPages body repeats one namespaced imported include across conditional branches; Wikidot emits one direct imported subtree while the local fixture emits the exact missing-page error for that target, with no ListPages-owned DOM on either side.`
+        : `The source includes ${importedIncludeFixture.includeTargets.length} distinct pages whose imported fixture is absent locally; local Wikijump emits the exact missing-page errors, while the common ListPages wrappers match and the live-only imported wrapper is empty of rows and pagination.`,
     };
   }
   const randomOrder = invocation === null
@@ -1400,8 +1914,56 @@ function classifyMismatch(row, reference) {
   const randomLimit = invocation === null
     ? null
     : lastArgumentValue(invocation, "limit")?.trim();
+  const randomRedirectBody = invocation !== null &&
+    /^\s*\[\[include\s+:snippets:redirect\s+url=%%link%%\]\]\s*$/iu
+      .test(invocation.body);
+  const liveRedirectIframes = liveTopLevelWrappers.length === 1
+    ? descendantElements(
+      liveTopLevelWrappers[0],
+      (node) => node.name === "iframe" &&
+        /^https:\/\/snippets\.(?:wdfiles\.com|files\.invalid)\/local--code\/code:iframe-redirect#http:\/\/sandbox-for-codex\.wikidot\.com\/[^\s]+$/u
+          .test(nodeAttribute(node, "src") ?? ""),
+    )
+    : [];
+  const localRedirectErrors = localTopLevelWrappers.length === 1
+    ? descendantElements(
+      localTopLevelWrappers[0],
+      (node) => nodeHasClass(node, "error-block") &&
+        nodeText(node).trim() === "Sorry, no match for the embedded content.",
+    )
+    : [];
   if (
     invocation !== null &&
+    relativeTimeSelector(invocation) === null &&
+    randomOrder === "random" &&
+    /(?:^|\|)1$/u.test(randomLimit ?? "") &&
+    randomRedirectBody &&
+    liveText === "" &&
+    localText === "Sorry, no match for the embedded content." &&
+    liveTopLevelWrappers.length === 1 &&
+    localTopLevelWrappers.length === 1 &&
+    descendantElements(
+      liveTopLevelWrappers[0],
+      (node) => nodeHasClass(node, "list-pages-item"),
+    ).length === 1 &&
+    descendantElements(
+      localTopLevelWrappers[0],
+      (node) => nodeHasClass(node, "list-pages-item"),
+    ).length === 1 &&
+    liveRedirectIframes.length === 1 &&
+    localRedirectErrors.length === 1 &&
+      !localUnsupportedDiagnostic
+  ) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+        "The exact one-row random redirect invocation selects different cached fixture pages: Wikidot emits its canonical snippets redirect iframe for one selected link while the local fixture's selected link resolves to the canonical no-match error. This is a selected-row data-state difference, not a deterministic ListPages query or renderer contract.",
+    };
+  }
+  if (
+    invocation !== null &&
+    relativeTimeSelector(invocation) === null &&
     randomOrder === "random" &&
     /(?:^|\|)1$/u.test(randomLimit ?? "") &&
     /%%(?:size|link)%%/iu.test(invocation.body) &&
@@ -1415,6 +1977,84 @@ function classifyMismatch(row, reference) {
       disposition: "none",
       rationale:
         "The exact one-row invocation orders randomly and exposes selected-page size or link state in its body. Both runtimes execute with identical visible output, but their independently cached random fixture selections cannot have comparable metadata DOM.",
+      };
+  }
+  const randomTemplateKind = randomSelectedRowTemplateKind(invocation);
+  const randomExpectedWrapper = invocation === null
+    ? null
+    : invocationExpectsWrapper(invocation);
+  const randomLiveStructure = randomExpectedWrapper === null
+    ? null
+    : normalizeRandomSelectedRowState(liveNodes, randomExpectedWrapper);
+  const randomLocalStructure = randomExpectedWrapper === null
+    ? null
+    : normalizeRandomSelectedRowState(localNodes, randomExpectedWrapper);
+  if (
+    randomTemplateKind !== null &&
+    relativeTimeSelector(invocation) === null &&
+    randomExpectedWrapper !== null &&
+    liveHasListPages &&
+    localHasListPages &&
+    !localUnsupportedDiagnostic &&
+    liveTopLevelWrappers.length === localTopLevelWrappers.length &&
+    liveTopLevelWrappers.length > 0 &&
+    JSON.stringify(randomLiveStructure) ===
+      JSON.stringify(randomLocalStructure) &&
+    JSON.stringify(liveNodes) !== JSON.stringify(localNodes)
+  ) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+      `The random ListPages body is the evidenced ${randomTemplateKind} selected-row form; both runtimes have the same wrapper/row structure after replacing only row-substitution text and attributes, while their independently cached selected fixture rows differ.`,
+    };
+  }
+  const randomDirectStructureMatches =
+    randomTemplateKind !== null &&
+    relativeTimeSelector(invocation) === null &&
+    randomExpectedWrapper === false &&
+    liveTopLevelWrappers.length === 0 &&
+    localTopLevelWrappers.length === 0 &&
+    !["list-pages-box", "list-pages-item", "pager"].some((className) =>
+      domHasClass(liveNodes, className) || domHasClass(localNodes, className)
+    ) &&
+    liveNodes.length === 1 &&
+    (localNodes.length === 0 || localNodes.length === 1) &&
+    JSON.stringify(randomLiveStructure) ===
+      JSON.stringify(randomLocalStructure) &&
+    JSON.stringify(liveNodes) !== JSON.stringify(localNodes);
+  if (randomDirectStructureMatches) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+        `The random wrapper-free ListPages body is the evidenced ${randomTemplateKind} selected-row form; both runtimes emit the same direct element structure after replacing only selected-row text and attributes, while the cached random row differs.`,
+    };
+  }
+  const randomCssBranchFixture =
+    invocation !== null &&
+    relativeTimeSelector(invocation) === null &&
+    randomTemplateKind === "size-branch" &&
+    randomExpectedWrapper === false &&
+    liveTopLevelWrappers.length === 0 &&
+    localTopLevelWrappers.length === 0 &&
+    liveNodes.length === 1 &&
+    localNodes.length === 1 &&
+    liveNodes[0]?.type === "element" &&
+    localNodes[0]?.type === "element" &&
+    nodeHasClass(liveNodes[0], "code") &&
+    nodeHasClass(localNodes[0], "code") &&
+    descendantElements(liveNodes[0], (node) => node.name === "pre").length === 1 &&
+    descendantElements(localNodes[0], (node) => node.name === "pre").length === 1 &&
+    nodeText(liveNodes[0]).trim().length > 0 &&
+    nodeText(localNodes[0]).trim().length > 0 &&
+    JSON.stringify(liveNodes) !== JSON.stringify(localNodes);
+  if (randomCssBranchFixture) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+        "The wrapper-free random ListPages body is the evidenced generated CSS size-branch form. Both runtimes selected a non-empty CSS code row with the same code container/pre structure, while the independently selected imported row changes the CSS text and syntax spans.",
     };
   }
   const importedAuthorNames = new Set([
@@ -1429,18 +2069,23 @@ function classifyMismatch(row, reference) {
     localNodes,
     { importedAuthorNames },
   );
+  const liveAuthorPageExistence = normalizeSynchronizedImportedPageExistence(
+    liveAuthorFixture.nodes,
+  );
+  const localAuthorPageExistence = normalizeSynchronizedImportedPageExistence(
+    localAuthorFixture.nodes,
+  );
   if (
-    liveText === localText &&
     (liveAuthorFixture.state.importedAuthors > 0 ||
       localAuthorFixture.state.importedAuthors > 0) &&
-    JSON.stringify(liveAuthorFixture.nodes) ===
-      JSON.stringify(localAuthorFixture.nodes)
+    JSON.stringify(liveAuthorPageExistence.nodes) ===
+      JSON.stringify(localAuthorPageExistence.nodes)
   ) {
     return {
       classification: "synchronized-imported-author-state",
       disposition: "none",
       rationale:
-        "Visible row output and all non-provenance DOM match after normalizing only live printuser identities, their exact plain imported-name fallback, and ODate metadata.",
+        "Visible row output and all non-provenance DOM match after normalizing only live printuser identities, their exact plain imported-name fallback, ODate metadata, and identical imported internal-link existence markers.",
     };
   }
   const liveLinkedTitle = normalizeSynchronizedLinkedTitleSpaces(
@@ -1608,7 +2253,14 @@ function classifyMismatch(row, reference) {
     };
   }
   const tabviewSafety = /\[\[(?:tabs|tabview)(?:\s|\])/iu.test(source)
-    ? compareTabviewSafetyPreservation(liveNodes, localNodes)
+    ? compareTabviewSafetyPreservation(
+      liveFootnoteNonce.state.invalid === 0
+        ? liveFootnoteNonce.nodes
+        : liveNodes,
+      localFootnoteNonce.state.invalid === 0
+        ? localFootnoteNonce.nodes
+        : localNodes,
+    )
     : null;
   if (
     tabviewSafety?.status === "safety-preservation" &&

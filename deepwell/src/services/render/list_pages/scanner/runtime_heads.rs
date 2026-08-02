@@ -47,6 +47,33 @@ pub(super) fn list_pages_bare_comparison_key_is_evidenced(key: &str) -> bool {
     )
 }
 
+/// Wikidot accepts the corpus-backed legacy boundary where an @URL value is
+/// closed by the quote immediately before a following created_by= pair.
+/// Keep this recovery deliberately narrow: arbitrary unbalanced quoted text
+/// remains fail-closed.
+pub(super) fn list_pages_url_quote_crossing_head_can_execute(head: &str) -> bool {
+    let lower = head.to_ascii_lowercase();
+    let Some(offset_start) = lower.find("offset=\"@url|") else {
+        return false;
+    };
+    let value_start = offset_start + "offset=\"@url|".len();
+    let Some(value_quote_relative) = head[value_start..].find('"') else {
+        return false;
+    };
+    let after_value = &head[value_start + value_quote_relative + 1..];
+    let after_value = after_value.trim_start_matches([' ', '\t']);
+    let Some(rest) = after_value.strip_prefix("created_by=") else {
+        return false;
+    };
+    let Some(value) = rest.strip_prefix('"') else {
+        return false;
+    };
+    let Some(value_close) = value.find('"') else {
+        return false;
+    };
+    !value[..value_close].is_empty() && value[value_close + 1..].trim().is_empty()
+}
+
 pub(in crate::services::render) fn runtime_regex_recognizes_entire_head(
     source: &str,
 ) -> bool {
@@ -72,6 +99,9 @@ pub(in crate::services::render) fn list_pages_runtime_head_is_safe(head: &str) -
 pub(in crate::services::render) fn list_pages_runtime_head_can_execute(
     head: &str,
 ) -> bool {
+    if list_pages_url_quote_crossing_head_can_execute(head) {
+        return true;
+    }
     match validate_module_head(head, true) {
         ModuleHeadValidation::RuntimeSafe | ModuleHeadValidation::ValidRuntimeUnsafe => {
             runtime_regex_recognizes_entire_head(head)

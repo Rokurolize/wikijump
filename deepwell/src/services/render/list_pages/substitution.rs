@@ -1960,6 +1960,7 @@ pub(in crate::services::render) fn parse_list_pages_page_type(
 pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) authored_limit: Option<u64>,
     pub(in crate::services::render) ajax_module_response: bool,
+    pub(in crate::services::render) page_preview: bool,
     pub(in crate::services::render) site: &'a str,
     pub(in crate::services::render) site_title: &'a str,
     pub(in crate::services::render) category: &'a str,
@@ -2017,31 +2018,84 @@ fn list_pages_rendered_inline_fragment(html: &str) -> String {
     else {
         return html.to_owned();
     };
-    inner
+    let (inner, empty_paragraphs) = protect_empty_rendered_paragraphs(inner);
+    let joined = inner
         .replace("</p>\n<p>", "\n")
         .replace("</p>\r\n<p>", "\n")
-        .replace("</p><p>", "\n")
+        .replace("</p><p>", "\n");
+    empty_paragraphs
+        .into_iter()
+        .fold(joined, |joined, (marker, whitespace)| {
+            joined.replace(&marker, whitespace.as_str())
+        })
+}
+
+fn protect_empty_rendered_paragraphs(value: &str) -> (String, Vec<(String, String)>) {
+    let mut marker_prefix = '\u{e000}'.to_string();
+    while value.contains(&marker_prefix) {
+        marker_prefix.push('\u{e001}');
+    }
+    let mut output = String::with_capacity(value.len());
+    let mut replacements = Vec::new();
+    let mut cursor = 0;
+    while let Some(relative_start) = value[cursor..].find("<p>") {
+        let start = cursor + relative_start;
+        let body_start = start + "<p>".len();
+        let Some(relative_end) = value[body_start..].find("</p>") else {
+            break;
+        };
+        let end = body_start + relative_end;
+        let body = &value[body_start..end];
+        if body.trim().is_empty() {
+            let marker = format!("{marker_prefix}{}\u{e002}", replacements.len());
+            output.push_str(&value[cursor..start]);
+            output.push_str(&marker);
+            replacements.push((marker, body.to_owned()));
+            cursor = end + "</p>".len();
+        } else {
+            output.push_str(&value[cursor..end + "</p>".len()]);
+            cursor = end + "</p>".len();
+        }
+    }
+    output.push_str(&value[cursor..]);
+    (output, replacements)
 }
 
 fn push_list_pages_rendered_fragment(
     html: &str,
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
-    let rendered = list_pages_rendered_inline_fragment(html);
+    // The secondary Ad/AdSense handlers emit this exact empty paragraph as a
+    // block marker in an ordinary page render.  Inside a ListPages content
+    // value Wikidot leaves the surrounding paragraph boundary in place and
+    // does not nest a second empty `<p>`; remove only that handler-owned shape
+    // before deciding whether the selected content is inline or block HTML.
+    let html = html.replace("<p>\n\n</p>", "\n\n");
+    let has_html_block = list_pages_rendered_fragment_has_html_block(&html);
+    let rendered = if has_html_block {
+        html
+    } else {
+        list_pages_rendered_inline_fragment(&html)
+    };
     // The embed compatibility path intentionally splits one paragraph around
     // Wikidot's terminal "no match" block. Restore that flow fragment as a
     // block so it can close the surrounding row paragraph; other runtime
     // module errors may contain nested trusted markers and must stay inline
     // until their own fragment stack is restored.
-    if list_pages_rendered_fragment_has_block_root(&rendered)
+    if (list_pages_rendered_fragment_has_block_root(&rendered)
         && rendered.contains(
             r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#,
-        )
+        ))
+        || has_html_block
     {
         compat_html.push_block_html(rendered)
     } else {
         compat_html.push_html(rendered)
     }
+}
+
+fn list_pages_rendered_fragment_has_html_block(html: &str) -> bool {
+    html.contains(r#"<iframe "#) && html.contains(r#"class="html-block-iframe""#)
 }
 
 fn list_pages_rendered_fragment_has_block_root(html: &str) -> bool {
@@ -2516,8 +2570,9 @@ pub(super) fn substitute_list_pages_variables_inner(
                             created_at,
                             captures.name("format").map(|matched| matched.as_str()),
                             context.render_generated_html,
+                            context.page_preview,
                         ),
-                        context.render_generated_html,
+                        context.render_generated_html && !context.page_preview,
                         compat_html,
                     )
                 }
@@ -2540,8 +2595,9 @@ pub(super) fn substitute_list_pages_variables_inner(
                             updated_at,
                             captures.name("format").map(|matched| matched.as_str()),
                             context.render_generated_html,
+                            context.page_preview,
                         ),
-                        context.render_generated_html,
+                        context.render_generated_html && !context.page_preview,
                         compat_html,
                     )
                 }
@@ -2568,8 +2624,9 @@ pub(super) fn substitute_list_pages_variables_inner(
                         commented_at,
                         captures.name("format").map(|matched| matched.as_str()),
                         context.render_generated_html,
+                        context.page_preview,
                     ),
-                    context.render_generated_html,
+                    context.render_generated_html && !context.page_preview,
                     compat_html,
                 ),
                 "rating" => rating.clone(),
@@ -2837,5 +2894,69 @@ pub(super) fn substitute_list_pages_variables_inner(
         substituted
     } else {
         RenderService::resolve_wikidot_parser_functions(&substituted)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::services::render::compat::CompatHtmlFragments;
+
+    use super::{
+        list_pages_rendered_fragment_has_html_block, list_pages_rendered_inline_fragment,
+        push_list_pages_rendered_fragment,
+    };
+
+    #[test]
+    fn rendered_inline_fragment_keeps_empty_paragraph_boundaries() {
+        let source = "<p>before</p>\n<p>\n\n</p>\n<p>after</p>";
+
+        assert_eq!(
+            list_pages_rendered_inline_fragment(source),
+            "before</p>\n\n\n\n<p>after",
+        );
+    }
+
+    #[test]
+    fn rendered_inline_fragment_still_flattens_ordinary_paragraphs() {
+        let source = "<p>before</p>\n<p>after</p>";
+
+        assert_eq!(list_pages_rendered_inline_fragment(source), "before\nafter");
+    }
+
+    #[test]
+    fn rendered_fragment_recognizes_only_the_trusted_html_block_iframe() {
+        assert!(list_pages_rendered_fragment_has_html_block(
+            r#"<p>HTML_START</p><p><iframe src="/page/html/hash-1" class="html-block-iframe"></iframe></p>"#,
+        ));
+        assert!(!list_pages_rendered_fragment_has_html_block(
+            r#"<p><iframe src="/user-content/frame"></iframe></p>"#,
+        ));
+        assert!(!list_pages_rendered_fragment_has_html_block(
+            r#"<p><iframe src="/page/html/hash-1" class="other-iframe"></iframe></p>"#,
+        ));
+    }
+
+    #[test]
+    fn rendered_html_block_fragment_preserves_wikidot_paragraph_boundaries() {
+        let mut compat_html = CompatHtmlFragments::new("");
+        let marker = push_list_pages_rendered_fragment(
+            concat!(
+                "<p>DOC_HTML_BEGIN</p>\n",
+                "<p><iframe src=\"/page/html/hash-1\" ",
+                "class=\"html-block-iframe\"></iframe></p>",
+            ),
+            &mut compat_html,
+        );
+
+        let restored = compat_html.restore(&format!("<div><p>{marker}</p></div>"));
+
+        assert_eq!(
+            restored,
+            concat!(
+                "<div><p>DOC_HTML_BEGIN</p>\n",
+                "<p><iframe src=\"/page/html/hash-1\" ",
+                "class=\"html-block-iframe\"></iframe></p></div>",
+            ),
+        );
     }
 }
