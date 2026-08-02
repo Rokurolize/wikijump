@@ -1981,6 +1981,75 @@ mod tests {
     }
 
     #[test]
+    fn runtime_size_ifexpr_keeps_selected_generated_css_module() {
+        let source = concat!(
+            "[[#ifexpr %%size%%%2 != 0 | [!-- ]]\n",
+            "[[%%content{0}%%module CSS]]\n",
+            ":root { --selected: one; }\n",
+            "[[%%content{0}%%/module]]\n",
+            "[[#ifexpr %%size%%%2 != 0 | --] ]]\n",
+            "[[#ifexpr %%size%%%2 != 1 | [!-- ]]\n",
+            "[[%%content{0}%%module CSS]]\n",
+            ":root { --selected: two; }\n",
+            "[[%%content{0}%%/module]]\n",
+            "[[#ifexpr %%size%%%2 != 1 | --] ]]",
+        );
+        let template =
+            ListPagesTemplatePlan::compile(source).expect("supported template");
+        let page = FoundPageRow {
+            page_id: 1,
+            site_id: 1,
+            title: Some("Generated".to_owned()),
+            alt_title: None,
+            slug: Some("generated".to_owned()),
+            page_category_id: None,
+            page_revision_id: None,
+            tags: None,
+            created_at: None,
+            created_by: None,
+            updated_at: None,
+            updated_by: None,
+            score: None,
+        };
+        let user_displays = BTreeMap::new();
+        let snapshot_displays = BTreeMap::new();
+        let runtime_displays = BTreeMap::new();
+        let data_form_values = BTreeMap::new();
+        let mut context = empty_substitution_context(
+            &user_displays,
+            &snapshot_displays,
+            &runtime_displays,
+            &data_form_values,
+        );
+        context.page_wikitext_scalar_count = Some(1);
+        let mut compat_text = CompatTextFragments::new(source);
+
+        let prepared = prepare_delayed_list_pages_row(
+            &template,
+            template.body(),
+            &page,
+            1,
+            1,
+            &context,
+            &[],
+            &mut compat_text,
+            false,
+            None,
+        );
+
+        assert!(
+            prepared.body.contains("--selected: two"),
+            "the selected generated CSS module must survive row substitution: {}",
+            prepared.body,
+        );
+        assert!(
+            !prepared.body.contains("--selected: one"),
+            "the inactive generated CSS module must be pruned: {}",
+            prepared.body,
+        );
+    }
+
+    #[test]
     fn parser_functions_wait_for_listpages_row_substitution() {
         let source = concat!(
             "[[#if true | OUTER | NO]]\n",
