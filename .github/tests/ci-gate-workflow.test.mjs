@@ -39,7 +39,8 @@ test("base edits rerun central CI while metadata edits stay isolated", () => {
   assert.match(concurrency, /format\('ci-pr-\{0\}', github\.event\.pull_request\.number\)/)
   assert.match(concurrency, /format\('ci-run-\{0\}', github\.run_id\)/)
   assert.match(concurrency, /cancel-in-progress:/)
-  assert.match(gate, /github\.event\.action == 'edited' && github\.event\.changes\.base == null && 'CI \/ gate'/)
+  assert.match(gate, /^    name: CI \/ gate$/m)
+  assert.doesNotMatch(gate, /CI \/ draft gate/)
 })
 
 test("metadata edits publish the required gate context without running component checks", () => {
@@ -48,7 +49,7 @@ test("metadata edits publish the required gate context without running component
 
   assert.match(
     gate,
-    /github\.event\.action == 'edited' && github\.event\.changes\.base == null && 'CI \/ gate'/,
+    /^    name: CI \/ gate$/m,
   )
   assert.match(gate, /^    if: \$\{\{ always\(\) \}\}$/m)
   assert.match(gate, /name: Metadata edit no-op/)
@@ -125,7 +126,8 @@ test("Deepwell validation stays fast and service-free", () => {
     "cargo fmt --manifest-path deepwell/Cargo.toml --all -- --check"
   ]) assert.ok(deepwell.includes(command), command)
   assert.ok(hasYamlLine(gate, "- deepwell"))
-  assert.match(gate, /needs\.classify\.outputs\.draft == 'true' && 'CI \/ draft gate' \|\| 'CI \/ gate'/)
+  assert.match(gate, /^    name: CI \/ gate$/m)
+  assert.doesNotMatch(gate, /CI \/ draft gate/)
   assert.doesNotMatch(source, /deepwell_(?:draft|candidate)|tarpaulin|coverage\/cobertura/)
 })
 

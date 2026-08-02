@@ -219,7 +219,10 @@ jobs:
           cargo run --locked
 
   gate:
-    name: ${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / gate' || needs.classify.outputs.draft == 'true' && 'CI / draft gate' || 'CI / gate' }}
+    # Keep one stable status context: branch protection requires CI / gate.
+    # Draft mode still selects the cheaper validation set through the classifier;
+    # it must not publish a different check name that GitHub treats as missing.
+    name: CI / gate
     needs:
       - classify
       - workflow_policy
