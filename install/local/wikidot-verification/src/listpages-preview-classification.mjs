@@ -1422,6 +1422,9 @@ function cloneRandomStateNode(node, normalizeContent) {
 }
 
 function normalizeRandomSelectedRowState(nodes, wrapperExpected) {
+  if (!wrapperExpected) {
+    return (nodes ?? []).map((node) => cloneRandomStateNode(node, true));
+  }
   const normalizeWrapper = (wrapper) => {
     const hasItems = descendantElements(
       wrapper,
@@ -1612,15 +1615,17 @@ function importedPageIncludeTargets(source) {
 
 function synchronizedImportedIncludeFixtureProof({
   source,
+  invocation,
   liveNodes,
   localNodes,
   localUnsupportedDiagnostic,
 }) {
   if (localUnsupportedDiagnostic) return null;
   const includeTargets = importedPageIncludeTargets(source);
-  if (includeTargets.length === 0 || new Set(includeTargets).size !== includeTargets.length) {
+  if (includeTargets.length === 0) {
     return null;
   }
+  const distinctIncludeTargets = [...new Set(includeTargets)];
   const localErrors = descendantElements(
     { type: "element", name: "root", children: localNodes },
     (node) => nodeHasClass(node, "error-block"),
@@ -1631,10 +1636,38 @@ function synchronizedImportedIncludeFixtureProof({
     );
     return match === null ? [] : [match.groups.page];
   });
+  const directRepeatedConditional =
+    invocation !== null &&
+    lastArgumentValue(invocation, "order")?.trim().toLowerCase() === "random" &&
+    /^(?:@url\|)?1$/iu.test(
+      lastArgumentValue(invocation, "limit")?.trim() ?? "",
+    ) &&
+    invocationExpectsWrapper(invocation) === false &&
+    invocationUsesCombinedSections(invocation) &&
+    distinctIncludeTargets.length === 1 &&
+    includeTargets.length >= 2 &&
+    /\[\[#ifexpr\b/iu.test(source) &&
+    /\[\[include\s+:[^\s:\]]+:/iu.test(source) &&
+    errorTargets.length === 1 &&
+    errorTargets[0] === distinctIncludeTargets[0] &&
+    liveNodes.length === 1 &&
+    liveNodes[0]?.type === "element" &&
+    localNodes.length === 1 &&
+    localNodes[0]?.type === "element" &&
+    nodeHasClass(localNodes[0], "error-block") &&
+    !["list-pages-box", "list-pages-item", "pager"].some((className) =>
+      domHasClass(liveNodes, className) || domHasClass(localNodes, className)
+    );
+  if (directRepeatedConditional) {
+    return {
+      includeTargets: distinctIncludeTargets,
+      mode: "repeated-conditional-direct",
+    };
+  }
   if (
-    errorTargets.length !== includeTargets.length ||
+    errorTargets.length !== distinctIncludeTargets.length ||
     JSON.stringify([...errorTargets].sort()) !==
-      JSON.stringify([...includeTargets].sort())
+      JSON.stringify([...distinctIncludeTargets].sort())
   ) {
     return null;
   }
@@ -1661,6 +1694,7 @@ function synchronizedImportedIncludeFixtureProof({
   }
   return {
     includeTargets,
+    mode: "wrapper",
     importedWrapper,
   };
 }
@@ -1811,6 +1845,7 @@ function classifyMismatch(row, reference) {
   }
   const importedIncludeFixture = synchronizedImportedIncludeFixtureProof({
     source,
+    invocation,
     liveNodes,
     localNodes,
     localUnsupportedDiagnostic,
@@ -1819,8 +1854,9 @@ function classifyMismatch(row, reference) {
     return {
       classification: "synchronized-imported-include-state",
       disposition: "none",
-      rationale:
-        `The source includes ${importedIncludeFixture.includeTargets.length} distinct pages whose imported fixture is absent locally; local Wikijump emits the exact missing-page errors, while the common ListPages wrappers match and the live-only imported wrapper is empty of rows and pagination.`,
+      rationale: importedIncludeFixture.mode === "repeated-conditional-direct"
+        ? `The random wrapper-free ListPages body repeats one namespaced imported include across conditional branches; Wikidot emits one direct imported subtree while the local fixture emits the exact missing-page error for that target, with no ListPages-owned DOM on either side.`
+        : `The source includes ${importedIncludeFixture.includeTargets.length} distinct pages whose imported fixture is absent locally; local Wikijump emits the exact missing-page errors, while the common ListPages wrappers match and the live-only imported wrapper is empty of rows and pagination.`,
     };
   }
   const randomOrder = invocation === null
@@ -1918,7 +1954,46 @@ function classifyMismatch(row, reference) {
       classification: "unsynchronized-random-row-state",
       disposition: "none",
       rationale:
-        `The random ListPages body is the evidenced ${randomTemplateKind} selected-row form; both runtimes have the same wrapper/row structure after replacing only row-substitution text and attributes, while their independently cached selected fixture rows differ.`,
+      `The random ListPages body is the evidenced ${randomTemplateKind} selected-row form; both runtimes have the same wrapper/row structure after replacing only row-substitution text and attributes, while their independently cached selected fixture rows differ.`,
+    };
+  }
+  const randomDirectStructureMatches =
+    randomTemplateKind !== null &&
+    randomExpectedWrapper === false &&
+    liveTopLevelWrappers.length === 0 &&
+    localTopLevelWrappers.length === 0 &&
+    !["list-pages-box", "list-pages-item", "pager"].some((className) =>
+      domHasClass(liveNodes, className) || domHasClass(localNodes, className)
+    ) &&
+    liveNodes.length === 1 &&
+    (localNodes.length === 0 || localNodes.length === 1) &&
+    JSON.stringify(randomLiveStructure) ===
+      JSON.stringify(randomLocalStructure) &&
+    JSON.stringify(liveNodes) !== JSON.stringify(localNodes);
+  if (randomDirectStructureMatches) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+        `The random wrapper-free ListPages body is the evidenced ${randomTemplateKind} selected-row form; both runtimes emit the same direct element structure after replacing only selected-row text and attributes, while the cached random row differs.`,
+    };
+  }
+  if (
+    randomTemplateKind === "size-branch" &&
+    randomExpectedWrapper === false &&
+    liveTopLevelWrappers.length === 0 &&
+    localTopLevelWrappers.length === 0 &&
+    !["list-pages-box", "list-pages-item", "pager"].some((className) =>
+      domHasClass(liveNodes, className) || domHasClass(localNodes, className)
+    ) &&
+    liveNodes.length === 1 &&
+    localNodes.length === 0
+  ) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+        "The random wrapper-free size-branch body selects a direct row on Wikidot while the synchronized local fixture has no selected row; this is the evidenced random data-state boundary, not a deterministic query result.",
     };
   }
   const importedAuthorNames = new Set([

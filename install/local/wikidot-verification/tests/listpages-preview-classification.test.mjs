@@ -1738,6 +1738,74 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
       expected: ["unsynchronized-random-row-state", "none"],
     },
     {
+      id: "random-direct-size-branch-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%14 != 1 | [!-- ]]TWO[[#ifexpr %%size%%%14 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: '<p><span class="live">ONE</span></p>',
+      local: '<p><span class="local">TWO</span></p>',
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-direct-size-branch-local-empty",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%14 != 1 | [!-- ]]TWO[[#ifexpr %%size%%%14 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: "<p>ONE</p>",
+      local: "",
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
+      id: "random-direct-deterministic-size-branch",
+      source: [
+        '[[module ListPages order="name" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%14 != 1 | [!-- ]]TWO[[#ifexpr %%size%%%14 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: "<p><strong>ONE</strong></p>",
+      local: "<p><em>TWO</em></p>",
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "random-direct-arbitrary-body",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        "%%link%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: "<p>ONE</p>",
+      local: "<p>TWO</p>",
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "random-direct-size-branch-structure-altered",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%14 != 1 | [!-- ]]TWO[[#ifexpr %%size%%%14 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: "<p><strong>ONE</strong></p>",
+      local: "<div><p><em>TWO</em></p></div>",
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
       id: "deterministic-size",
       source: [
         '[[module ListPages order="name" limit="1"]]',
@@ -2003,6 +2071,104 @@ test("preview classifier isolates synchronized imported include state", async ()
     { id: "imported-include-theme", ...positiveTwo, expected: ["synchronized-imported-include-state", "none"] },
     { id: "imported-include-error-altered", ...negativeError, expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"] },
     { id: "imported-include-row-altered", ...negativeRows, expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"] },
+  ];
+  await fs.writeFile(
+    referencesPath,
+    cases.map(({ id, source, live }) =>
+      `${JSON.stringify(reference(id, source, live))}\n`
+    ).join(""),
+  );
+  await fs.writeFile(
+    verdictPath,
+    JSON.stringify({
+      cases: cases.map(({ id, live, local }) => mismatchCase(id, live, local)),
+    }),
+  );
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [row.case_id, row.classification, row.disposition]),
+    cases.map(({ id, expected }) => [id, ...expected]),
+  );
+  await fs.rm(root, { recursive: true, force: true });
+});
+
+test("preview classifier isolates repeated conditional imported include state without a wrapper", async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wj-listpages-repeated-include-classify-"),
+  );
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const fixture = (target, liveClass = "oracle__game") => {
+    const source = [
+      '[[module ListPages limit="1" offset="1" wrapper="no" separate="no" order="random" category="*"]]',
+      `[[#ifexpr %%size%%%22 != 0 | [!-- ]][[include :test74p:${target}]]`,
+      '[[#ifexpr %%size%%%22 != 0 | --] ]]',
+      `[[#ifexpr %%size%%%22 != 1 | [!-- ]][[include :test74p:${target}]]`,
+      '[[#ifexpr %%size%%%22 != 1 | --] ]]',
+      "[[/module]]",
+    ].join("\n");
+    return {
+      source,
+      live: `<div class="${liveClass}"><span>LIVE IMPORT</span></div>`,
+      local: `<div class="error-block">Included page "${target}" does not exist (<a href="/${target}/edit/true">create it now</a>)</div>`,
+    };
+  };
+  const positiveOne = fixture("component:todays-one-oracle");
+  const positiveTwo = fixture("component:alternate-oracle", "card-shell");
+  const negativeOrder = {
+    ...positiveOne,
+    source: positiveOne.source.replace('order="random"', 'order="name"'),
+  };
+  const negativeTarget = {
+    ...positiveOne,
+    local: positiveOne.local.replace(
+      "component:todays-one-oracle",
+      "component:other-oracle",
+    ),
+  };
+  const negativeSibling = {
+    ...positiveTwo,
+    live: `${positiveTwo.live}<p>UNRELATED</p>`,
+  };
+  const cases = [
+    {
+      id: "repeated-conditional-include-one",
+      ...positiveOne,
+      expected: ["synchronized-imported-include-state", "none"],
+    },
+    {
+      id: "repeated-conditional-include-two",
+      ...positiveTwo,
+      expected: ["synchronized-imported-include-state", "none"],
+    },
+    {
+      id: "repeated-conditional-include-deterministic",
+      ...negativeOrder,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "repeated-conditional-include-target-altered",
+      ...negativeTarget,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "repeated-conditional-include-sibling-altered",
+      ...negativeSibling,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
   ];
   await fs.writeFile(
     referencesPath,
