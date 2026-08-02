@@ -1,8 +1,8 @@
 {
   "schema": "wikijump.local_docker_development_receipt.v1",
   "status": "pass",
-  "wikijump_revision": "ca20153a9f78d16eb25a69ed9addbb61b5245f70",
-  "ftml_revision": "a55ba794b10ea06604fa4b5f34f82a64543bbcae",
+  "wikijump_revision": "636fee7fec5c9a42232ad4e7cefa498e8e8a353c",
+  "ftml_revision": "4413efe44429c9612b27439bad7071702e15d541",
   "toolchain": {
     "rust_toolchain": "1.95.0",
     "rustc": "1.95.0",
@@ -24,8 +24,8 @@
     "caddy": "caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d"
   },
   "built_images": {
-    "deepwell": {"id": "sha256:6bbe023c6a5f83bb93a5fb78b38e0cdd83377f14189cd21b8d39ab267ca74b05", "size_bytes": 674940529},
-    "wws": {"id": "sha256:35eaae69c4d97abad145d2661714f01d29bf50d8d0d563f014f36e5e2d01eca3", "size_bytes": 621144628},
+    "deepwell": {"id": "sha256:ed780eb5887876c3c96edca881250812b34d88bb20b3a2abcd25745dc80a271e", "size_bytes": 674940280},
+    "wws": {"id": "sha256:717732f298417d789b089c8b5a3fb2c9cf823450bd43252389b6cdec789b53e3", "size_bytes": 621142535},
     "framerail": {"id": "sha256:5fb62f64339cb72777abde2686a1e111f95c6a5e4a70ade147db4ab4f93e66d9", "size_bytes": 301704310},
     "database": {"id": "sha256:f1d4fb223142cce40d8cf395e2358b5697330c6367e1d4d3d72187ad26d929dc", "size_bytes": 127290632},
     "files": {"id": "sha256:33a27d3e6533723ef728f34fa7b31b4ac3c66806b78e3b8dc8abb13ebaf66c08", "size_bytes": 75081763},
@@ -46,7 +46,7 @@
     "target_volume": "local-rust-1-95-0-target",
     "registry_volume": "local-rust-1-95-0-cargo-registry",
     "git_volume": "local-rust-1-95-0-cargo-git",
-    "build_jobs": 4,
+    "build_jobs": 2,
     "incremental": true,
     "rustflags": ""
   },
@@ -65,26 +65,26 @@
   "expiry": null,
   "measurements": {
     "host": {"cpu_count": 16, "memory_bytes": 33654710272, "swap_bytes": 12884901888},
-    "cold_image_build_seconds": 217.56,
+    "cold_image_build_seconds": 210.00,
     "warm_image_build_seconds": 4.11,
-    "first_container_cargo_check_seconds": 178.91,
-    "warm_cargo_check_seconds": 0.51,
-    "hot_single_file_check_seconds": 10.25,
-    "focused_listpages_test_seconds": 110.74,
-    "deepwell_restart_to_healthy_ms": 22802,
-    "compose_recreate_to_healthy_ms": 26574,
-    "post_recreate_warm_check_seconds": 0.60,
+    "first_container_cargo_check_seconds": 64.46,
+    "warm_cargo_check_seconds": 1.95,
+    "hot_single_file_check_seconds": 6.81,
+    "focused_listpages_test_seconds": 87.89,
+    "deepwell_restart_to_healthy_ms": 24931,
+    "compose_recreate_to_healthy_ms": 28781,
+    "post_recreate_warm_check_seconds": 2.15,
     "cache_sizes_bytes": {
-      "local-rust-1-95-0-target": 8940819200,
-      "local-rust-1-95-0-cargo-registry": 802063715,
-      "local-rust-1-95-0-cargo-git": 13835224,
+      "local-rust-1-95-0-target": 11329872119,
+      "local-rust-1-95-0-cargo-registry": 833420093,
+      "local-rust-1-95-0-cargo-git": 20041957,
       "local-node-24-18-0-pnpm-store": 195036405,
       "local-framerail-node-modules": 201916607
     },
     "runtime_volume_sizes_bytes": {
-      "local-postgres-data": 70206686,
-      "local-minio-data": 2012209,
-      "local-valkey-data": 568863
+      "local-postgres-data": 70045754,
+      "local-minio-data": 1922880,
+      "local-valkey-data": 574852
     },
     "recreation": {
       "ordinary_down_preserved_named_volumes": true,
