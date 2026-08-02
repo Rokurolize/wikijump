@@ -8,7 +8,7 @@ Here is the specification set. Implement every feature listed in `docs/wikidot-s
 2. Read `docs/wikidot-specifications/catalog.json`. It is the complete work queue; do not substitute a hand-selected subset.
 3. Read `docs/wikidot-specifications/CATALOG.md` and `docs/wikidot-specifications/README.md`.
 4. For each catalog item, read the exact Markdown file named by its `specification` field before designing or changing code.
-5. Use `docs/wikidot-specifications/source-coverage.json` to inspect corroborating, redirect, runtime-composition, and non-feature source classifications when provenance is relevant.
+5. Use `docs/wikidot-specifications/source-coverage.json` to inspect corroborating, redirect, runtime-composition, and non-feature source classifications when provenance is relevant. User-submitted data-record groups are aggregate-only and are never behavioral evidence.
 6. Follow the repository architecture boundaries: FTML owns syntax parsing and rendering primitives; Wikijump/Deepwell owns site, page, query, import, file, permission, actor, module evaluation, and URL state; Framerail owns HTTP and browser runtime behavior.
 
 ## Authority and ambiguity

@@ -6,8 +6,10 @@ This is the human-readable index of every feature extracted from the frozen loca
 
 - Features: 210
 - Corpus pages enumerated: 1806
-- Corpus pages connected to one or more feature IDs: 1801
-- Corpus pages classified without a feature ID: 5
+- Corpus pages listed individually: 246
+- User data records excluded from repository documentation: 1560
+- Corpus pages connected to one or more feature IDs: 241
+- Corpus pages classified without a feature ID: 1565
 - Unclassified corpus pages: 0
 
 Features by category:

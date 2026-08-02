@@ -35,19 +35,9 @@ These seams are recommendations. The implementation agent must present and confi
 
 ## Source inventory
 
-- `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites:1457/source.wikidot.txt:2` through line 2 (invocation-only)
 - `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/new-site/source.wikidot.txt:1` through line 1 (invocation-only)
 
 ## Documentation-derived behavioral evidence
-
-### community-sites:1457 (invocation-only)
-
-Source: `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites:1457/source.wikidot.txt:2` through line 2  
-SHA-256 of complete source file: `72891f9daaf8afc7d6a1000773c9c029272bd09d29e3ff78996d5b5da005f57e`
-
-```wikidot
-L0002 desc: '[[module NewSite]]'
-```
 
 ### new-site (invocation-only)
 

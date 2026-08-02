@@ -780,15 +780,10 @@ addFeature({
   category: "platform",
   summary:
     "Represent Community Sites, their application and ownership rules, advertising rules, deletion constraints, and directory records stored as structured page data.",
-  sources: [
-    lineReference("community-sites"),
-    lineReference("faq:community-sites"),
-    lineReference("community-sites:1", 1, 1, "representative-data-record"),
-    lineReference("community-sites:1", 3, 6, "representative-data-record"),
-  ],
+  sources: [lineReference("community-sites"), lineReference("faq:community-sites")],
   seams: [...platformSeams, ...dataFormSeams],
   implementationNotes: [
-    "The corpus contains 1,560 `community-sites:*` records. The representative ranges document non-free-text record fields; source-coverage.json inventories every record without copying user-submitted descriptions or contact details into the specification.",
+    "The corpus contains 1,560 user-submitted `community-sites:*` application records. They are excluded from specifications and feature provenance; use the public application flow or a run-owned sandbox to establish any undocumented record shape.",
   ],
 });
 
@@ -806,6 +801,9 @@ const moduleInvocationPattern = /\[\[module\s+([A-Za-z0-9_]+)/gi;
 const moduleOccurrences = new Map();
 
 for (const sourcePage of pages.values()) {
+  if (classifySource(sourcePage).classification === "structured-data-record") {
+    continue;
+  }
   for (let index = 0; index < sourcePage.lines.length; index += 1) {
     const line = sourcePage.lines[index];
     moduleInvocationPattern.lastIndex = 0;
@@ -971,12 +969,6 @@ for (const sourcePage of pages.values()) {
   }
 }
 
-for (const fullname of pages.keys()) {
-  if (fullname.startsWith("community-sites:")) {
-    sourceFeatureMap.get(fullname).add("community-site-directory");
-  }
-}
-
 for (const fullname of ["doc:quick-reference", "doc:quick-reference-mini"]) {
   for (const feature of features.filter(
     (candidate) => candidate.category === "wiki-syntax",
@@ -1051,7 +1043,7 @@ function classifySource(sourcePage) {
     return {
       classification: "structured-data-record",
       reason:
-        "A Community Site data-form record; evidence for the directory record shape, not a distinct platform feature.",
+        "A user-submitted Community Site data-form record; excluded from compatibility evidence and individual repository documentation.",
     };
   }
   if (/\[\[module\s+Redirect\b/i.test(source)) {
@@ -1354,40 +1346,73 @@ for (const feature of features) {
   specificationFiles.set(relativePath, renderSpecification(feature));
 }
 
-const coverageEntries = [...pages.values()]
+const classifiedPages = [...pages.values()]
   .sort((left, right) => left.fullname.localeCompare(right.fullname))
-  .map((sourcePage) => {
-    const classification = classifySource(sourcePage);
+  .map((sourcePage) => ({ sourcePage, classification: classifySource(sourcePage) }));
+
+const coverageEntries = classifiedPages
+  .filter(
+    ({ classification }) =>
+      classification.classification !== "structured-data-record",
+  )
+  .map(({ sourcePage, classification }) => ({
+    fullname: sourcePage.fullname,
+    title: sourcePage.metadata.title ?? "",
+    source_path: corpusPath(sourcePage.fullname),
+    source_sha256: sourcePage.sha256,
+    source_bytes: Buffer.byteLength(sourcePage.source),
+    source_lines: sourcePage.lineCount,
+    classification: classification.classification,
+    classification_reason: classification.reason,
+    feature_ids: [...sourceFeatureMap.get(sourcePage.fullname)].sort(),
+  }));
+
+const excludedDataGroups = [...new Set(
+  classifiedPages
+    .filter(
+      ({ classification }) =>
+        classification.classification === "structured-data-record",
+    )
+    .map(({ classification }) => classification.classification),
+)]
+  .sort()
+  .map((classificationName) => {
+    const group = classifiedPages.filter(
+      ({ classification }) => classification.classification === classificationName,
+    );
     return {
-      fullname: sourcePage.fullname,
-      title:
-        classification.classification === "structured-data-record"
-          ? "Community Site data record"
-          : (sourcePage.metadata.title ?? ""),
-      source_path: corpusPath(sourcePage.fullname),
-      source_sha256: sourcePage.sha256,
-      source_bytes: Buffer.byteLength(sourcePage.source),
-      source_lines: sourcePage.lineCount,
-      classification: classification.classification,
-      classification_reason: classification.reason,
-      feature_ids: [...sourceFeatureMap.get(sourcePage.fullname)].sort(),
+      classification: classificationName,
+      classification_reason: group[0].classification.reason,
+      path_prefix: "community-sites:",
+      page_count: group.length,
+      source_bytes: group.reduce(
+        (total, { sourcePage }) => total + Buffer.byteLength(sourcePage.source),
+        0,
+      ),
+      source_inventory_sha256: sha256(
+        group
+          .map(({ sourcePage }) => `${sourcePage.fullname}\t${sourcePage.sha256}`)
+          .join("\n"),
+      ),
     };
   });
 
 const classificationCounts = Object.fromEntries(
-  [...new Set(coverageEntries.map((entry) => entry.classification))]
+  [...new Set(
+    classifiedPages.map(({ classification }) => classification.classification),
+  )]
     .sort()
     .map((classification) => [
       classification,
-      coverageEntries.filter((entry) => entry.classification === classification)
-        .length,
+      classifiedPages.filter(
+        ({ classification: candidate }) => candidate.classification === classification,
+      ).length,
     ]),
 );
-const sourcePagesWithFeatures = coverageEntries.filter(
-  (entry) => entry.feature_ids.length > 0,
+const sourcePagesWithFeatures = classifiedPages.filter(
+  ({ sourcePage }) => sourceFeatureMap.get(sourcePage.fullname).size > 0,
 ).length;
-const sourcePagesWithoutFeatures =
-  coverageEntries.length - sourcePagesWithFeatures;
+const sourcePagesWithoutFeatures = pages.size - sourcePagesWithFeatures;
 
 const catalog = {
   schema_version: schemaVersion,
@@ -1397,9 +1422,14 @@ const catalog = {
     root: displayedCorpusRoot,
     expanded_root: corpusRoot,
     page_count: pages.size,
-    source_file_count: coverageEntries.length,
-    source_bytes: coverageEntries.reduce(
-      (total, entry) => total + entry.source_bytes,
+    source_file_count: pages.size,
+    listed_source_file_count: coverageEntries.length,
+    excluded_data_record_count: excludedDataGroups.reduce(
+      (total, group) => total + group.page_count,
+      0,
+    ),
+    source_bytes: classifiedPages.reduce(
+      (total, { sourcePage }) => total + Buffer.byteLength(sourcePage.source),
       0,
     ),
     classification_counts: classificationCounts,
@@ -1468,11 +1498,17 @@ const coverage = {
   generated_date: generatedDate,
   language: "English",
   corpus_root: displayedCorpusRoot,
-  page_count: coverageEntries.length,
+  page_count: pages.size,
+  listed_page_count: coverageEntries.length,
+  excluded_data_record_count: excludedDataGroups.reduce(
+    (total, group) => total + group.page_count,
+    0,
+  ),
   unclassified_count: 0,
   classification_counts: classificationCounts,
   source_pages_with_features: sourcePagesWithFeatures,
   source_pages_without_features: sourcePagesWithoutFeatures,
+  excluded_data_groups: excludedDataGroups,
   pages: coverageEntries,
 };
 
@@ -1493,6 +1529,8 @@ This is the human-readable index of every feature extracted from the frozen loca
 
 - Features: ${catalog.feature_count}
 - Corpus pages enumerated: ${pages.size}
+- Corpus pages listed individually: ${coverageEntries.length}
+- User data records excluded from repository documentation: ${coverage.excluded_data_record_count}
 - Corpus pages connected to one or more feature IDs: ${sourcePagesWithFeatures}
 - Corpus pages classified without a feature ID: ${sourcePagesWithoutFeatures}
 - Unclassified corpus pages: 0
@@ -1524,7 +1562,7 @@ This directory is an exhaustive, documentation-derived implementation inventory 
 
 - \`catalog.json\` is the authoritative machine-readable feature index.
 - \`CATALOG.md\` is the human-readable index.
-- \`source-coverage.json\` proves that all ${pages.size.toLocaleString("en-US")} corpus pages were enumerated and classified.
+- \`source-coverage.json\` proves that all ${pages.size.toLocaleString("en-US")} corpus pages were enumerated and classified, while listing only non-user pages individually.
 - \`live-observations.json\` records reproducible live-Wikidot corrections that override conflicting or incomplete corpus claims.
 - \`implementation-ledger.json\` tracks status, seams, tests, implementation files, evidence, blockers, and the campaign's P1-P8 feature-property matrix.
 - \`specifications/\` contains exactly one English Markdown specification for every catalog item.
@@ -1532,7 +1570,7 @@ This directory is an exhaustive, documentation-derived implementation inventory 
 
 ## Interpretation rules
 
-1. A corpus page is not automatically a feature. The 1,560 \`community-sites:*\` pages, for example, are structured records created through one directory/data-form feature.
+1. A corpus page is not automatically a feature. The 1,560 \`community-sites:*\` pages are user-submitted application records, not compatibility evidence. They are excluded from specifications and individual coverage entries; coverage keeps only an aggregate count, byte total, and inventory digest.
 2. Redirects, indexes, navigation fragments, marketing repetitions, policies, and runtime composition pages are retained in \`source-coverage.json\`; relevant pages are attached to canonical feature specs as supporting evidence.
 3. Every normative source extract retains its exact corpus page, original line numbers, and complete-file SHA-256.
 4. Documentation status matters. \`invocation-only\`, \`high-level-documentation\`, and \`partially-documented\` specs identify real features but do not authorize invented behavior.
@@ -1558,7 +1596,7 @@ Here is the specification set. Implement every feature listed in \`docs/wikidot-
 2. Read \`docs/wikidot-specifications/catalog.json\`. It is the complete work queue; do not substitute a hand-selected subset.
 3. Read \`docs/wikidot-specifications/CATALOG.md\` and \`docs/wikidot-specifications/README.md\`.
 4. For each catalog item, read the exact Markdown file named by its \`specification\` field before designing or changing code.
-5. Use \`docs/wikidot-specifications/source-coverage.json\` to inspect corroborating, redirect, runtime-composition, and non-feature source classifications when provenance is relevant.
+5. Use \`docs/wikidot-specifications/source-coverage.json\` to inspect corroborating, redirect, runtime-composition, and non-feature source classifications when provenance is relevant. User-submitted data-record groups are aggregate-only and are never behavioral evidence.
 6. Follow the repository architecture boundaries: FTML owns syntax parsing and rendering primitives; Wikijump/Deepwell owns site, page, query, import, file, permission, actor, module evaluation, and URL state; Framerail owns HTTP and browser runtime behavior.
 
 ## Authority and ambiguity
@@ -1670,13 +1708,22 @@ function validateGeneratedFiles() {
     "Catalog feature IDs are not unique",
   );
   invariant(
-    coverage.pages.length === pages.size,
-    "Source coverage does not include every corpus page",
+    coverage.pages.length + coverage.excluded_data_record_count === pages.size,
+    "Source coverage totals do not include every corpus page",
   );
   invariant(
     coverage.unclassified_count === 0,
     "Unclassified source pages remain",
   );
+  for (const feature of features) {
+    for (const source of feature.sources) {
+      invariant(
+        classifySource(page(source.fullname)).classification !==
+          "structured-data-record",
+        `Feature ${feature.id} references a user data record`,
+      );
+    }
+  }
   for (const feature of catalog.features) {
     invariant(
       specificationFiles.has(feature.specification),
