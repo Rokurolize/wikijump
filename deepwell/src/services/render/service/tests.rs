@@ -137,7 +137,7 @@ fn list_pages_substitution_context_with_mode<'a>(
     ListPagesSubstitutionContext {
         authored_limit: Some(rendered_limit as u64),
         ajax_module_response: false,
-        page_preview: false,
+        page_preview: true,
         site: "scp-wiki",
         site_title: "SCP Wiki",
         category: "",
@@ -5746,13 +5746,8 @@ fn substitutes_wikidot_list_pages_table_body_generated_variables_as_html() {
         true,
     );
     preview_context.page_preview = true;
-    let substituted = substitute_list_pages_variables(
-        body,
-        &page,
-        1,
-        1,
-        &preview_context,
-    );
+    let substituted =
+        substitute_list_pages_variables(body, &page, 1, 1, &preview_context);
 
     assert!(substituted.contains(
         r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y">21 Jun 2026 00:59</span>"#
