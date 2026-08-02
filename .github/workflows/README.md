@@ -22,6 +22,12 @@ which is why an unrelated change does not pay for the whole matrix. Its jobs:
 - CI / gate: the single required check that aggregates the rest, so branch
   protection has one status to require rather than a list that changes.
 
+The gate also listens for `merge_group`, so a protected-branch merge queue gets
+the same required `CI / gate` context as a pull request. External actions in all
+workflows are pinned to full commit SHAs; the version comments are the human
+readable release references. Runtime tool setup uses the versions declared by
+the corresponding package manifests rather than a moving `latest` tag.
+
 `full-ci.yaml` is opt-in through the `full-ci` label and runs the Playwright
 browser suite. It does not generate or export coverage.
 
