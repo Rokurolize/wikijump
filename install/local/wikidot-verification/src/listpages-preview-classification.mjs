@@ -1617,7 +1617,7 @@ function urlSelectorFixtureProof({
 
 function importedPageIncludeTargets(source) {
   return [...source.matchAll(
-    /\[\[(?:%%content\{[0-9]+\}%%)?include\s+:(?:[^\s:\]]+:)?(?<page>[^|\]\s\r\n]+)(?:\s*\|[^\]]*)?\]\]/giu,
+    /\[\[(?:%%content\{[0-9]+\}%%)?include\s+:(?:[^\s:\]]+:)?(?<page>[^|\]\s\r\n]+)(?=\s*(?:\r?\n|\||\]\]))/giu,
   )].map((match) => match.groups.page);
 }
 
@@ -1655,7 +1655,7 @@ function synchronizedImportedIncludeFixtureProof({
     distinctIncludeTargets.length === 1 &&
     includeTargets.length >= 2 &&
     /\[\[#ifexpr\b/iu.test(source) &&
-    /\[\[(?:%%content\{[0-9]+\}%%)?include\s+:[^\s:\]]+:/iu.test(source) &&
+    /\[\[(?:%%content\{[0-9]+\}%%)?include\s+:[^\s:\]]+:[^\s\]|]+/iu.test(source) &&
     errorTargets.length === 1 &&
     errorTargets[0] === distinctIncludeTargets[0] &&
     liveNodes.length === 1 &&
