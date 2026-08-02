@@ -2,7 +2,7 @@
 # DEEPWELL build
 #
 
-FROM rust:latest AS rust
+FROM rust:1.95.0@sha256:f49565f188ee00bc2a18dd418183f2c5f23ef7d6e691890517ed341a598f67c3 AS rust
 
 # Install system dependencies
 RUN apt update
@@ -29,7 +29,7 @@ RUN cargo build --release
 # Final image
 #
 
-FROM debian:latest
+FROM debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818
 
 ENV LOCALIZATION_PATH="/opt/locales"
 
