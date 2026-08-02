@@ -187,6 +187,7 @@ test("prototype-sensitive field names use only backend-provided own values", () 
   const state = buildWikidotDataFormState(prototypeDefinition, {})
 
   assert.equal(state["constructor"], "")
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- reading the shadowed prototype key is the point of this fixture
   assert.equal(state["toString"], "")
   assert.equal(state["__proto__"], "")
   assert.equal(
