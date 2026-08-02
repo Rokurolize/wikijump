@@ -2137,6 +2137,14 @@ test("preview classifier isolates repeated conditional imported include state wi
   };
   const positiveOne = fixture("component:todays-one-oracle");
   const positiveTwo = fixture("component:alternate-oracle", "card-shell");
+  const positiveDynamic = {
+    ...positiveOne,
+    id: "repeated-conditional-include-dynamic-prefix",
+    source: positiveOne.source.replaceAll(
+      "[[include :test74p:component:todays-one-oracle]]",
+      "[[%%content{0}%%include :test74p:component:todays-one-oracle]]",
+    ),
+  };
   const negativeOrder = {
     ...positiveOne,
     source: positiveOne.source.replace('order="random"', 'order="name"'),
@@ -2161,6 +2169,10 @@ test("preview classifier isolates repeated conditional imported include state wi
     {
       id: "repeated-conditional-include-two",
       ...positiveTwo,
+      expected: ["synchronized-imported-include-state", "none"],
+    },
+    {
+      ...positiveDynamic,
       expected: ["synchronized-imported-include-state", "none"],
     },
     {
