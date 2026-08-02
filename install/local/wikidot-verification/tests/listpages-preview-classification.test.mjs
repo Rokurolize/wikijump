@@ -1866,7 +1866,10 @@ test("preview classifier isolates synchronized relative-time query state", async
       ].join("\n"),
       live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_1 format_live">1 Jan 2026</span> Live</p></div></div>',
       local: '<div class="list-pages-box"></div>',
-      expected: ["synchronized-relative-time-query-state", "none"],
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
     },
     {
       id: "relative-date-only-row",
@@ -1888,7 +1891,10 @@ test("preview classifier isolates synchronized relative-time query state", async
       ].join("\n"),
       live: '<div class="list-pages-box"><div class="list-pages-item"><span class="odate time_1">1 Jan</span> One</div><div class="list-pages-item"><span class="odate time_2">1 Jan</span> Two</div></div>',
       local: '<div class="list-pages-box"></div>',
-      expected: ["synchronized-relative-time-query-state", "none"],
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
     },
     {
       id: "relative-arbitrary-row-change",
@@ -1971,27 +1977,31 @@ test("preview classifier isolates the bounded URL selector fixture shell", async
     "</div>",
   ].join("");
   const live = wrapper([
-    '<p data-source="live"><a href="/alice" target="_blank">Alice</a></p>',
-    '<p data-source="live"><a href="/bob" target="_blank">Bob</a></p>',
+    '<p data-source="stable"><a href="/alice" target="_blank">Alice</a></p>',
+    '<p data-source="stable"><a href="/bob" target="_blank">Bob</a></p>',
   ]);
   const local = wrapper([
-    '<p data-source="local"><a href="/carol" target="_blank">Carol</a></p>',
-    '<p data-source="local"><a href="/dave" target="_blank">Dave</a></p>',
+    '<p data-source="stable"><a href="/carol" target="_blank">Carol</a></p>',
+    '<p data-source="stable"><a href="/dave" target="_blank">Dave</a></p>',
   ]);
   const alteredPager = wrapper(
     [
-      '<p data-source="local"><a href="/carol" target="_blank">Carol</a></p>',
-      '<p data-source="local"><a href="/dave" target="_blank">Dave</a></p>',
+      '<p data-source="stable"><a href="/carol" target="_blank">Carol</a></p>',
+      '<p data-source="stable"><a href="/dave" target="_blank">Dave</a></p>',
     ],
     "/ajax-module-connector.php/p/3",
   );
   const alteredShape = [
     '<div class="list-pages-box"><blockquote class="row-shell">',
-    '<p data-source="local"><a href="/carol" target="_blank">Carol</a></p>',
+    '<p data-source="stable"><a href="/carol" target="_blank">Carol</a></p>',
     "</blockquote>",
     '<div class="pager"><a href="/ajax-module-connector.php/p/2">next</a></div>',
     "</div>",
   ].join("");
+  const alteredRowAttribute = local.replace(
+    'data-source="stable"',
+    'data-source="unexpected"',
+  );
   const cases = [
     {
       id: "url-selector-selected-set",
@@ -2009,6 +2019,14 @@ test("preview classifier isolates the bounded URL selector fixture shell", async
     {
       id: "url-selector-row-shape-changed",
       local: alteredShape,
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "url-selector-row-attribute-changed",
+      local: alteredRowAttribute,
       expected: [
         "listpages-query-or-row-render-divergence",
         "investigate-query-or-renderer",

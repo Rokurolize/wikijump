@@ -312,13 +312,27 @@ pub(in crate::services::render) fn list_pages_template_has_block_section(
     ]
     .into_iter()
     .flatten()
-    .map(str::trim_start)
     .any(|section| {
-        BLOCK_OPENERS.iter().any(|opener| {
-            section
-                .get(..opener.len())
-                .is_some_and(|prefix| prefix.eq_ignore_ascii_case(opener))
-        })
+        let literal_regions = LiteralRegionIndex::new_list_pages_scanner_syntax(section);
+        let mut search = 0;
+        while let Some(relative) = section[search..].find("[[") {
+            let start = search + relative;
+            if literal_regions.containing_range(start).is_none()
+                && BLOCK_OPENERS.iter().any(|opener| {
+                    section[start..]
+                        .get(..opener.len())
+                        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(opener))
+                        && matches!(
+                            section.as_bytes().get(start + opener.len()),
+                            Some(b']' | b'_' | b' ' | b'\t' | b'\r' | b'\n')
+                        )
+                })
+            {
+                return true;
+            }
+            search = start + 2;
+        }
+        false
     })
 }
 
@@ -756,6 +770,20 @@ mod tests {
         ));
         assert!(!list_pages_template_starts_with_inline_anchor(&text));
         assert!(!list_pages_template_starts_with_inline_anchor(&block));
+    }
+
+    #[test]
+    fn sectioned_combined_templates_detect_blocks_after_leading_text() {
+        let delayed_block = ListPagesTemplatePlan::compile(
+            "caption\n[[ul]]\n[[li]]%%name%%[[/li]]\n[[/ul]]",
+        )
+        .expect("delayed block template should compile");
+        let literal_block =
+            ListPagesTemplatePlan::compile("[[code]][[ul]]literal[[/ul]][[/code]]")
+                .expect("literal block template should compile");
+
+        assert!(list_pages_template_has_block_section(&delayed_block));
+        assert!(!list_pages_template_has_block_section(&literal_block));
     }
 
     #[test]

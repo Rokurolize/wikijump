@@ -138,6 +138,24 @@ fn scanner_keeps_generated_comment_gate_rows_inside_the_module() {
         find_list_pages_module_matches(literal).is_empty(),
         "generated-looking gates in code remain literal",
     );
+
+    let decoy = concat!(
+        "[[module ListPages name=\"gate-decoy\"]]\n",
+        "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+        "LOW [[/module]]\n",
+        "[!-- --]\n",
+        "REAL\n",
+        "[[/module]]\n",
+        "[[module ListPages name=\"later\"]]LATER[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(decoy);
+    assert_eq!(
+        modules.len(),
+        2,
+        "the inactive-branch closer is not structural"
+    );
+    assert!(modules[0].body.contains("LOW [[/module]]"));
+    assert!(modules[0].body.contains("REAL"));
 }
 
 #[test]
@@ -853,6 +871,10 @@ fn list_pages_scanner_keeps_crossing_url_quote_heads_visible() {
             .head
             .contains(r#"offset="@URL|1 "created_by="Fireknight"#)
     );
+
+    assert!(!list_pages_url_quote_crossing_head_can_execute(
+        r#" category="fragment" parent="." limit="1" order="name" offset="@URL|1 "created_by="Fireknight" unsupported"#,
+    ));
 }
 
 #[test]

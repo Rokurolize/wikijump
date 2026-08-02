@@ -173,6 +173,7 @@ fn find_module_close_ascii_case_insensitive(source: &str) -> Option<usize> {
 fn generated_gate_module_close(source: &str, body_start: usize) -> Option<usize> {
     let literal_regions = LiteralRegionIndex::new_list_pages_scanner_syntax(source);
     let mut saw_gate = false;
+    let mut inactive_branch_ranges = Vec::new();
     let mut line_start = body_start;
     for line_with_ending in source[body_start..].split_inclusive('\n') {
         let line = line_with_ending
@@ -196,6 +197,10 @@ fn generated_gate_module_close(source: &str, body_start: usize) -> Option<usize>
                 .is_none()
         {
             saw_gate = true;
+            let marker_start = line_start + leading + trimmed.find("[!-- ]]")?;
+            let branch_start = marker_start + "[!-- ]]".len();
+            let close_start = source[branch_start..].find("[!-- --]")? + branch_start;
+            inactive_branch_ranges.push(branch_start..close_start + "[!-- --]".len());
         }
         line_start += line_with_ending.len();
     }
@@ -204,11 +209,26 @@ fn generated_gate_module_close(source: &str, body_start: usize) -> Option<usize>
     }
 
     let suffix = &source[body_start..];
-    let close = suffix
+    let close_len = b"[[/module]]".len();
+    let mut search = 0;
+    while let Some(close) = suffix
         .as_bytes()
-        .windows(b"[[/module]]".len())
-        .position(|window| window.eq_ignore_ascii_case(b"[[/module]]"))?;
-    Some(body_start + close + b"[[/module]]".len())
+        .get(search..)
+        .unwrap_or_default()
+        .windows(close_len)
+        .position(|window| window.eq_ignore_ascii_case(b"[[/module]]"))
+    {
+        let close = search + close;
+        let absolute = body_start + close;
+        if !inactive_branch_ranges
+            .iter()
+            .any(|range| range.contains(&absolute))
+        {
+            return Some(absolute + close_len);
+        }
+        search = close + 1;
+    }
+    None
 }
 
 fn first_module_opening_candidate(

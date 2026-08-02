@@ -465,7 +465,7 @@ function canonicalImportedAuthorIdentity(value) {
   return String(value ?? "")
     .normalize("NFKC")
     .trim()
-    .toLocaleLowerCase()
+    .toLowerCase()
     .replace(/[\p{Z}\p{P}\p{S}_]+/gu, "-")
     .replace(/^-+|-+$/gu, "");
 }
@@ -1519,27 +1519,12 @@ function relativeTemporalFixtureProof({
   );
   const limit = lastArgumentValue(invocation, "limit")?.trim() ?? "";
   const perPage = lastArgumentValue(invocation, "perpage")?.trim() ?? "";
-  if (
-    ![limit, perPage].some((value) =>
-      /^(?:@url\|)?[1-9][0-9]*$/iu.test(value)
-    )
-  ) return null;
   const bound = [limit, perPage]
     .map((value) => /^(?:@url\|)?(?<count>[1-9][0-9]*)$/iu.exec(value)?.groups?.count)
     .filter(Boolean)
     .map(Number)
     .at(0) ?? 0;
-  if (
-    liveItems.length > 0 &&
-    liveItems.length <= bound &&
-    localItems.length === 0
-  ) {
-    const localChildren = (localWrapper.children ?? []).filter((node) =>
-      !(node.type === "text" && node.value.trim() === "")
-    );
-    if (localChildren.length !== 0) return null;
-    return { selector, mode: "live-row-local-empty" };
-  }
+  if (bound === 0 || liveItems.length > bound) return null;
   if (liveItems.length !== 1 || localItems.length !== 1) return null;
   const liveNormalized = liveNodes.map(normalizeRelativeTemporalNode);
   const localNormalized = localNodes.map(normalizeRelativeTemporalNode);
@@ -1550,20 +1535,24 @@ function relativeTemporalFixtureProof({
 
 function normalizeUrlSelectorFixtureNode(node, inRows = false) {
   if (node?.type === "text") {
-    return inRows ? { ...node, value: "__URL_SELECTOR_ROW_TEXT__" } : { ...node };
+    return inRows ? { ...node, value: "__URL_SELECTOR_SELECTED_LINK_TEXT__" } : { ...node };
   }
   if (node?.type !== "element") return { ...node };
-  const rowContent = inRows || node.name === "blockquote";
+  const selectedLink =
+    !inRows &&
+    node.name === "a" &&
+    nodeAttribute(node, "target") === "_blank" &&
+    /^\/(?!\/)/u.test(nodeAttribute(node, "href") ?? "");
   return {
     ...node,
     attrs: (node.attrs ?? []).map((attribute) => ({
       ...attribute,
-      value: rowContent
-        ? `__URL_SELECTOR_${attribute.name.toUpperCase()}__`
+      value: selectedLink && attribute.name === "href"
+        ? "__URL_SELECTOR_SELECTED_LINK_HREF__"
         : attribute.value,
     })),
     children: (node.children ?? []).map((child) =>
-      normalizeUrlSelectorFixtureNode(child, rowContent)
+      normalizeUrlSelectorFixtureNode(child, inRows || selectedLink)
     ),
   };
 }
@@ -1597,6 +1586,14 @@ function urlSelectorFixtureProof({
     if (pager.length !== 1 || rows.length !== 1 || children.length !== 2) {
       return null;
     }
+    const selectedLinks = descendantElements(
+      rows[0],
+      (node) =>
+        node.name === "a" &&
+        nodeAttribute(node, "target") === "_blank" &&
+        /^\/(?!\/)/u.test(nodeAttribute(node, "href") ?? ""),
+    );
+    if (selectedLinks.length === 0) return null;
     return normalizeUrlSelectorFixtureNode(wrapper);
   };
   const live = project(liveTopLevelWrappers[0]);

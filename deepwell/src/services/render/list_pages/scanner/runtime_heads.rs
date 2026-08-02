@@ -68,7 +68,10 @@ pub(super) fn list_pages_url_quote_crossing_head_can_execute(head: &str) -> bool
     let Some(value) = rest.strip_prefix('"') else {
         return false;
     };
-    !value.is_empty() && value.contains('"')
+    let Some(value_close) = value.find('"') else {
+        return false;
+    };
+    !value[..value_close].is_empty() && value[value_close + 1..].trim().is_empty()
 }
 
 pub(in crate::services::render) fn runtime_regex_recognizes_entire_head(
