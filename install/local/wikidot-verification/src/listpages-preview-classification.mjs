@@ -1533,7 +1533,17 @@ function relativeTemporalFixtureProof({
     const liveRowsHaveTemporalMetadata = liveItems.every((item) =>
       descendantElements(item, (node) => nodeHasClass(node, "odate")).length > 0
     );
-    if (!liveRowsHaveTemporalMetadata) return null;
+    const randomRelativeSelectedLinkRows =
+      lastArgumentValue(invocation, "order")?.trim().toLowerCase() === "random" &&
+      invocationExpectsWrapper(invocation) === true &&
+      !/#ifexpr\b/iu.test(invocation.body) &&
+      /%%(?:link|title_linked|linked_title)%%/iu.test(invocation.body) &&
+      liveItems.every((item) =>
+        descendantElements(item, (node) => node.name === "a").length === 1
+      );
+    if (!liveRowsHaveTemporalMetadata && !randomRelativeSelectedLinkRows) {
+      return null;
+    }
     return { selector, mode: "live-row-local-empty" };
   }
   if (liveItems.length !== 1 || localItems.length !== 1) return null;
@@ -1893,6 +1903,7 @@ function classifyMismatch(row, reference) {
     : [];
   if (
     invocation !== null &&
+    relativeTimeSelector(invocation) === null &&
     randomOrder === "random" &&
     /(?:^|\|)1$/u.test(randomLimit ?? "") &&
     randomRedirectBody &&
@@ -1921,6 +1932,7 @@ function classifyMismatch(row, reference) {
   }
   if (
     invocation !== null &&
+    relativeTimeSelector(invocation) === null &&
     randomOrder === "random" &&
     /(?:^|\|)1$/u.test(randomLimit ?? "") &&
     /%%(?:size|link)%%/iu.test(invocation.body) &&
@@ -1948,6 +1960,7 @@ function classifyMismatch(row, reference) {
     : normalizeRandomSelectedRowState(localNodes, randomExpectedWrapper);
   if (
     randomTemplateKind !== null &&
+    relativeTimeSelector(invocation) === null &&
     randomExpectedWrapper !== null &&
     liveHasListPages &&
     localHasListPages &&
@@ -1967,6 +1980,7 @@ function classifyMismatch(row, reference) {
   }
   const randomDirectStructureMatches =
     randomTemplateKind !== null &&
+    relativeTimeSelector(invocation) === null &&
     randomExpectedWrapper === false &&
     liveTopLevelWrappers.length === 0 &&
     localTopLevelWrappers.length === 0 &&
@@ -1988,6 +2002,7 @@ function classifyMismatch(row, reference) {
   }
   if (
     randomTemplateKind === "size-branch" &&
+    relativeTimeSelector(invocation) === null &&
     randomExpectedWrapper === false &&
     liveTopLevelWrappers.length === 0 &&
     localTopLevelWrappers.length === 0 &&

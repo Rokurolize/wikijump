@@ -1924,6 +1924,48 @@ test("preview classifier isolates synchronized relative-time query state", async
         "investigate-query-or-renderer",
       ],
     },
+    {
+      id: "relative-random-link-empty-local",
+      source: [
+        '[[module Listpages date="last 24 hours" order="random" limit="1"]]',
+        "[[*%%link%%|Random Work!]]",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><a target="_blank" href="http://sandbox-for-codex.wikidot.com/random-work">Random Work!</a></p></div></div>',
+      local: '<div class="list-pages-box"></div>',
+      expected: [
+        "synchronized-relative-time-query-state",
+        "none",
+      ],
+    },
+    {
+      id: "relative-random-static-body-empty-local",
+      source: [
+        '[[module Listpages date="last 24 hours" order="random" limit="1"]]',
+        "STATIC",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p>LIVE</p></div></div>',
+      local: '<div class="list-pages-box"></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "relative-random-link-local-row-changed",
+      source: [
+        '[[module Listpages date="last 24 hours" order="random" limit="1"]]',
+        "[[*%%link%%|Random Work!]]",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><a target="_blank" href="/one">Random Work!</a></p></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p><a target="_blank" href="/two">Random Work!</a></p></div></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
   ];
   await fs.writeFile(
     referencesPath,
