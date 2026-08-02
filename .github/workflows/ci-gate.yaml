@@ -141,7 +141,7 @@ jobs:
             ~/.cargo/bin
             ~/.cargo/.crates.toml
             ~/.cargo/.crates2.json
-            wws/target
+            target
           key: ${{ runner.os }}-${{ runner.arch }}-wws-required-${{ hashFiles('wws/Cargo.lock', 'rust-toolchain.toml') }}
 
       - name: Install cargo-machete
@@ -207,7 +207,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            locales/validator/target
+            target
           key: ${{ runner.os }}-${{ runner.arch }}-locales-required-${{ hashFiles('locales/validator/Cargo.lock', 'rust-toolchain.toml') }}
 
       - name: Validate

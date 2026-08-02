@@ -54,3 +54,18 @@ missing_debug_implementations = "deny"
 
 [package.metadata.cargo-machete]
 ignored = ["rust-s3"]  # renamed to s3
+
+# Keep ordinary development and test artifacts bounded. Full debug information
+# is opt-in through `cargo --profile debugging` below.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.debugging]
+inherits = "dev"
+debug = true
+
+[profile.debugging.package."*"]
+debug = true

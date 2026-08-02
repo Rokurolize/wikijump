@@ -32,6 +32,7 @@
 
 - Search existing helpers and tests before changing high-touch render code. Keep coherent changes together and keep modules understandable; split a module when its responsibilities no longer fit locally.
 - Remove task-owned branches, worktrees, target directories, containers, images, and browser profiles after they cease to be useful. Preserve anything referenced by a standing runtime or needed for rollback.
+- Cargo targets: normal development uses the repository-level `target/` from `.cargo/config.toml` and the compact profiles in each Rust manifest. Candidate builds must use a revision-specific `CARGO_TARGET_DIR` outside the checkout; retain only the active and immediate rollback candidates. Read `docs/development/cargo-target-policy.md` before changing build or cleanup behavior.
 
 ## Long-running work
 
