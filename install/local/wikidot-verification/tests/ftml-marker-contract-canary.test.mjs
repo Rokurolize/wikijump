@@ -22,7 +22,7 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "a55ba794b10ea06604fa4b5f34f82a64543bbcae";
+const candidateFtml = "306f935dfc9b68da52d26775ce6dc4aefcd41c09";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
 
 test("committed receipt binds the exact manifest, lock, and five-surface contract", () => {
@@ -39,7 +39,7 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
       path.join(
         repositoryRoot,
         "install/local/wikidot-verification/artifacts",
-        "ftml-block-argument-pin-canary-20260802.json",
+        "ftml-block-argument-pin-canary-20260802-306f935d.json",
       ),
       "utf8",
     ),
@@ -64,6 +64,7 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
     1,
   );
   assert.equal(receipt.status, "pass");
+  assert.equal(receipt.baseline_ftml_sha, "a55ba794b10ea06604fa4b5f34f82a64543bbcae");
   assert.equal(receipt.candidate_ftml_sha, candidateFtml);
   assert.deepEqual(receipt.required_surfaces, requiredSurfaces);
   assert.deepEqual(receipt.comparison, {
@@ -73,7 +74,7 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
     accepted_differences: 0,
     regressions: 0,
     verdict_sha256:
-      "f917943aae1bdb97b4de8f4a2cfb6be6c8958404c0c208fe07878524fdc2e378",
+      "54ea63ff5de27da0439e6a69b9ce777d85b4af4c1cde4d354c619f8df1c2ecdc",
   });
   assert.deepEqual(receipt.resource_disposition, {
     policy: "delete-on-close",
