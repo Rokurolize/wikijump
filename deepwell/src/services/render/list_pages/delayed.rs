@@ -102,6 +102,12 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
     // Preserve only these structurally recognized gate tokens through that
     // pass; the ordinary delayed parser-function pass below still decides
     // whether the branch is retained.
+    // Linked parser-function branches must survive FTML's document-level
+    // preprocessing until the delayed ListPages slots have been bound.  The
+    // preprocessing pass otherwise evaluates `[[#if ...]]` against the
+    // unresolved `%%title_linked%%` marker and loses the branch shape that
+    // Wikidot exposes for generated links.
+    let linked_parser_fragments = protect_linked_parser_functions(&mut prepared_body);
     let generated_comment_gates =
         protect_generated_parser_function_comment_gates(&mut prepared_body);
     ftml::preprocess_for_layout(&mut prepared_body, ftml::layout::Layout::Wikidot);
@@ -110,6 +116,9 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
     );
     ftml::preproc::typography::substitute_wikidot(&mut prepared_body);
     substitute_literal_advanced_table_opener_typography(&mut prepared_body);
+    if let Some(fragments) = linked_parser_fragments {
+        prepared_body = fragments.restore(&prepared_body);
+    }
     if let Some((opening, closing, standalone_closing)) = generated_comment_gates {
         prepared_body = prepared_body
             .replace(&opening, "[!--")
@@ -185,6 +194,20 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
         runtime_scalar_ranges,
         html_fragments,
     }
+}
+
+fn protect_linked_parser_functions(source: &mut String) -> Option<CompatTextFragments> {
+    let ranges = linked_parser_function_ranges(source);
+    if ranges.is_empty() {
+        return None;
+    }
+
+    let mut fragments = CompatTextFragments::new(source);
+    for range in ranges.into_iter().rev() {
+        let marker = fragments.push(&source[range.clone()]);
+        source.replace_range(range, &marker);
+    }
+    Some(fragments)
 }
 
 fn list_pages_template_requires_runtime_title(source: &str) -> bool {

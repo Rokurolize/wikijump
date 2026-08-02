@@ -150,6 +150,7 @@ impl RenderService {
         let ListPagesExpansionOptions {
             current_site_id,
             current_page_id,
+            page_preview,
             viewer_user_id,
             mut include_budget,
             url,
@@ -680,6 +681,7 @@ impl RenderService {
                         compat_html,
                         viewer_user_id,
                         page_info,
+                        page_preview,
                         settings,
                         arguments,
                         &template,
@@ -792,6 +794,7 @@ impl RenderService {
                         compat_html,
                         viewer_user_id,
                         page_info,
+                        page_preview,
                         settings,
                         arguments,
                         &template,
@@ -908,6 +911,7 @@ impl RenderService {
                 ListPagesExpansionOptions {
                     current_site_id: Some(current_site_id),
                     current_page_id: requested_current_page_id,
+                    page_preview,
                     viewer_user_id,
                     include_budget,
                     url,
@@ -1321,6 +1325,7 @@ impl RenderService {
         compat_html: &mut CompatHtmlFragments,
         viewer_user_id: Option<i64>,
         page_info: &PageInfo<'_>,
+        page_preview: bool,
         settings: &WikitextSettings,
         arguments: ListPagesArguments,
         template: &ListPagesTemplatePlan,
@@ -1344,7 +1349,6 @@ impl RenderService {
         } = page_context;
         let current_page_id = current_page_identity.unwrap_or(0);
         let ajax_module_response = page_info.page.as_ref() == "_ajax-module-connector";
-        let page_preview = current_page_identity.is_none() && !ajax_module_response;
         let initial_remaining_include_expansions = include_budget.remaining;
         let mut arguments = arguments;
         let feed_info = list_pages_feed_info_html(page_info, &arguments);

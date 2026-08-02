@@ -97,7 +97,8 @@ use super::next_previous_page::NextPreviousPageExpansion;
 use super::pages::expand_page_index_modules;
 use super::percent_encoding::percent_encode_path_segment;
 use super::render_options::{
-    RenderContext, RenderExpansionOptions, RenderInnerOptions, RenderPageOptions,
+    RenderContext, RenderExpansionOptions, RenderInnerOptions, RenderLifecycle,
+    RenderPageOptions,
 };
 use super::runtime::{IncludeSource, IncludeSourceCache, RenderRuntime};
 use super::runtime_modules::{RateModuleContext, SecondaryRuntimeModuleExpansionOptions};
@@ -1030,6 +1031,7 @@ impl RenderService {
                 // Corpus replay renders stored wikitext, never a live request.
                 url: UrlArguments::default(),
                 list_pages_pager_route: super::list_pages::ListPagesPagerRoute::SavedPage,
+                page_preview: false,
             },
         )
         .await?;
@@ -1136,6 +1138,7 @@ impl RenderService {
             trace,
             url,
             list_pages_pager_route,
+            page_preview,
         } = options;
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
@@ -1233,6 +1236,7 @@ impl RenderService {
                 ListPagesExpansionOptions {
                     current_site_id,
                     current_page_id,
+                    page_preview,
                     viewer_user_id,
                     include_budget,
                     url,
@@ -1639,7 +1643,7 @@ impl RenderService {
             current_category_id,
             current_page_id,
             text_block_page_id,
-            lifecycle: _,
+            lifecycle,
         } = render_context;
 
         if let Some((trace, CorpusRenderScope::Body)) = trace {
@@ -1674,6 +1678,7 @@ impl RenderService {
                 trace,
                 url,
                 list_pages_pager_route,
+                page_preview: lifecycle == RenderLifecycle::PagePreview,
             },
         )
         .await?;

@@ -137,7 +137,7 @@ fn list_pages_substitution_context_with_mode<'a>(
     ListPagesSubstitutionContext {
         authored_limit: Some(rendered_limit as u64),
         ajax_module_response: false,
-        page_preview: false,
+        page_preview: true,
         site: "scp-wiki",
         site_title: "SCP Wiki",
         category: "",
@@ -2800,7 +2800,7 @@ fn generated_list_pages_date_is_registered_before_authored_marker_neutralization
     let created_at = time::OffsetDateTime::from_unix_timestamp(1_782_003_564)
         .expect("fixture timestamp should be valid");
     let generated =
-        format_list_pages_created_at(Some(created_at), Some("%d %b %Y"), false);
+        format_list_pages_created_at(Some(created_at), Some("%d %b %Y"), false, true);
     let mut fragments = CompatHtmlFragments::new("");
     let mut protected = register_generated_list_pages_html(generated, &mut fragments);
 
@@ -2875,6 +2875,7 @@ fn defers_wikidot_list_pages_custom_date_format_to_odate_class() {
         Some(created_at),
         Some("%Y-%m-%d %R|agohover"),
         true,
+        true,
     );
 
     assert!(rendered.contains("format_%25Y-%25m-%25d%20%25R%7Cagohover"));
@@ -2894,6 +2895,7 @@ fn list_pages_custom_date_format_collapses_repeated_ascii_spaces() {
     let rendered = format_list_pages_created_at(
         Some(created_at),
         Some("%Y年 %m月%d日  %H:%M"),
+        true,
         true,
     );
 

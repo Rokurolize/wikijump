@@ -307,25 +307,37 @@ pub(in crate::services::render) fn format_list_pages_created_at(
     created_at: Option<time::OffsetDateTime>,
     format: Option<&str>,
     render_as_html: bool,
+    page_preview: bool,
 ) -> String {
     let Some(created_at) = created_at else {
         return String::new();
     };
-    // The anonymous PagePreview/ListPages response carries the Wikidot server
-    // text in UTC, without the comma used by the later ODate browser phase.
-    // Keep the requested format in the class; only the server text belongs in
-    // this response body.
-    let created_at = created_at.to_offset(time::UtcOffset::UTC);
-    // Wikidot's PagePreview server phase uses a zero-padded day.  The
-    // subsequent ODate browser phase may use `%e` in its format class, but
-    // the text emitted by the preview endpoint is `%d`.
+    // PagePreview/ListPages responses carry the Wikidot server text in UTC,
+    // without the comma used by the saved-page ODate phase. Saved generated
+    // rows retain that later phase's JST text while the requested format
+    // remains in the class for browser-side ODate handling.
+    let saved_page_html = !page_preview;
+    let created_at = if saved_page_html {
+        created_at
+            .to_offset(time::UtcOffset::from_hms(9, 0, 0).expect("valid JST offset"))
+    } else {
+        created_at.to_offset(time::UtcOffset::UTC)
+    };
     const SERVER_FORMAT: &str = "%d %b %Y %H:%M";
+    const SAVED_PAGE_FORMAT: &str = "%e %b %Y, %H:%M";
     const DEFAULT_ODATE_FORMAT: &str = "%e %b %Y, %H:%M|agohover";
     let format = format.unwrap_or(DEFAULT_ODATE_FORMAT);
     // Wikidot's Ajax response always carries the default server-rendered text.
     // A requested display format belongs to the later ODate client phase and
     // is transported only through the `format_*` class.
-    let text = format_wikidot_list_pages_date(created_at, SERVER_FORMAT);
+    let text = format_wikidot_list_pages_date(
+        created_at,
+        if saved_page_html {
+            SAVED_PAGE_FORMAT
+        } else {
+            SERVER_FORMAT
+        },
+    );
     let mut normalized_format = String::with_capacity(format.len());
     let mut previous_was_space = false;
     for character in format.chars() {

@@ -2065,11 +2065,17 @@ fn push_list_pages_rendered_fragment(
     html: &str,
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
-    let has_html_block = list_pages_rendered_fragment_has_html_block(html);
+    // The secondary Ad/AdSense handlers emit this exact empty paragraph as a
+    // block marker in an ordinary page render.  Inside a ListPages content
+    // value Wikidot leaves the surrounding paragraph boundary in place and
+    // does not nest a second empty `<p>`; remove only that handler-owned shape
+    // before deciding whether the selected content is inline or block HTML.
+    let html = html.replace("<p>\n\n</p>", "\n\n");
+    let has_html_block = list_pages_rendered_fragment_has_html_block(&html);
     let rendered = if has_html_block {
-        html.to_owned()
+        html
     } else {
-        list_pages_rendered_inline_fragment(html)
+        list_pages_rendered_inline_fragment(&html)
     };
     // The embed compatibility path intentionally splits one paragraph around
     // Wikidot's terminal "no match" block. Restore that flow fragment as a
@@ -2564,6 +2570,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                             created_at,
                             captures.name("format").map(|matched| matched.as_str()),
                             context.render_generated_html && !context.page_preview,
+                            context.page_preview,
                         ),
                         context.render_generated_html && !context.page_preview,
                         compat_html,
@@ -2588,6 +2595,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                             updated_at,
                             captures.name("format").map(|matched| matched.as_str()),
                             context.render_generated_html && !context.page_preview,
+                            context.page_preview,
                         ),
                         context.render_generated_html && !context.page_preview,
                         compat_html,
@@ -2616,6 +2624,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                         commented_at,
                         captures.name("format").map(|matched| matched.as_str()),
                         context.render_generated_html && !context.page_preview,
+                        context.page_preview,
                     ),
                     context.render_generated_html && !context.page_preview,
                     compat_html,
