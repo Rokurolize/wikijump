@@ -1,7 +1,7 @@
 {
   "schema": "wikijump_listpages_compat.final_corpus_replay_receipt.v1",
   "status": "pass",
-  "wikijump_revision": "636fee7fec5c9a42232ad4e7cefa498e8e8a353c",
+  "wikijump_revision": "0bf7112825f36d504e3b04fe32d7257804a8d684",
   "ftml_revision": "4413efe44429c9612b27439bad7071702e15d541",
   "authority": {
     "mode": "authoritative",
@@ -10,21 +10,21 @@
     "scope_sha256": "d1d9aca68fa8377a6381a96e132c2db94b4f81ceca92c5ca52568f6b7e2aabe1",
     "reference_count": 18996,
     "invocation_count": 23964,
-    "runtime_identity_sha256": "390fa2dfad6b1d9da8894399c77b3e535e2d334008107ae4166e5e9bedac194a",
-    "runtime_proof_sha256": "1da2f0d42e94a9af49068f309d29f01de6c24f003fda853fb586e392eacf941d",
-    "runtime_observation_stable_sha256": "4c9e10c52d8625ea244d3c691a2d9a05ad105b61d452bc6329d72230dbe6527a"
+    "runtime_identity_sha256": "785236dbb672ed7b8b15f45238701185310f83b9d8b7b8da4b1b76c345443dce",
+    "runtime_proof_sha256": "db72914a6fb69a5b0cc8c798813f733eb581d3bdc5018fc31ed3c450f2443cf6",
+    "runtime_observation_stable_sha256": "e15bf427706f2b8bb8c33780c9d4af639ec586a206e906de77e6e84d9797bb1a"
   },
   "exact_lane": {
-    "verdict_sha256": "82b52674ca93b0d08c2ffc24cbb6a10e45e15e1601da5e9e948f5463eaf7bdaa",
-    "classification_sha256": "fc40e328614ba8990947af67ff55a137e2a64fbae7315c45d8e63fbc9f74f720",
-    "matches": 18769,
-    "mismatches": 227,
+    "verdict_sha256": "44f013facc651614aa16cb6b81e65431818abc056a81a0339bbf38b371ed9156",
+    "classification_sha256": "988fdc9bb5b03ebf0fdaa7b8caa30b4fd4ac1cf2b80b0cf04ea13ca7e2000c34",
+    "matches": 18770,
+    "mismatches": 226,
     "local_errors": 0,
     "classified_cases": 18996,
     "actionable_unique_source_count": 0
   },
   "authoritative_reconciliation": {
-    "receipt_sha256": "786a0ab28422a4de0701e24b8e544c74a8eddbf119165262f0ad2f09b8f13bfa",
+    "receipt_sha256": "f1a899457fafb1396a511876c46d5a27c2269ee85f8d88377997ee1a244c2da1",
     "invocation_count": 23964,
     "unique_source_count": 18996,
     "exact_source_duplicate_count": 4968,
@@ -32,22 +32,22 @@
     "unresolved_invocation_count": 0,
     "actionable_unique_source_count": 0,
     "actionable_invocation_count": 0,
-    "differential_statuses": {"match": 23630, "mismatch": 334},
+    "differential_statuses": {"match": 23632, "mismatch": 332},
     "dispositions": {"none": 23964},
     "exit_code": 0
   },
   "diagnostic_lanes": {
     "novel": {
       "reference_count": 119,
-      "verdict_sha256": "3d8ce82116900c67b482fe64c83a7af58d8ab5572b5a17792733f4e38bb65a36",
-      "classification_sha256": "4f189125456a40dee830c445183d78b20d4ac7507c876b45d74e608223d9580b",
+      "verdict_sha256": "d08d8fcec6a0532497eb84489b3e4094a7347cd1d4a95dc5315e79f1e31161ac",
+      "classification_sha256": "2b61b1b1e8d380286808303de5615790a602ddd95e08d58f04e8261ca0af4aaf",
       "dispositions": {"none": 119},
       "acceptance_eligible": false
     },
     "literal": {
       "reference_count": 335,
-      "verdict_sha256": "1199c38f8c58d5e4432db3de82096633c2334d0f9c4b1101c7716ae6f9716970",
-      "classification_sha256": "6199835f2ec17e9770fac85dcd8566d7b03b04a93ce45367f05aafc88a398c32",
+      "verdict_sha256": "9596c60cb161ffa13d5a8c3d4dedc2fe1d98247614b00be19b295fe0c07e5b27",
+      "classification_sha256": "b739a3cd246bde6981efb53b1cfa6652a8fbcdac6ab84a0a7484af342febfa64",
       "dispositions": {"none": 335},
       "acceptance_eligible": false
     }
