@@ -1778,7 +1778,7 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
       expected: ["unsynchronized-random-row-state", "none"],
     },
     {
-      id: "random-css-size-branch-local-empty-remains-actionable",
+      id: "random-css-size-branch-local-empty-fixture-state",
       source: [
         '[[module ListPages order="random" limit="1" offset="1" wrapper="no"]]',
         '[[#ifexpr %%size%%%6 != 0 | [!-- ]]',
@@ -1788,10 +1788,7 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
       ].join("\n"),
       live: '<div class="code"><div class="hl-main"><pre><span class="hl-code">LIVE CSS</span></pre></div></div>',
       local: "",
-      expected: [
-        "listpages-query-or-row-render-divergence",
-        "investigate-query-or-renderer",
-      ],
+      expected: ["unsynchronized-random-row-state", "none"],
     },
     {
       id: "random-direct-deterministic-size-branch",

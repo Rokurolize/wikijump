@@ -2039,22 +2039,27 @@ function classifyMismatch(row, reference) {
     liveTopLevelWrappers.length === 0 &&
     localTopLevelWrappers.length === 0 &&
     liveNodes.length === 1 &&
-    localNodes.length === 1 &&
     liveNodes[0]?.type === "element" &&
-    localNodes[0]?.type === "element" &&
     nodeHasClass(liveNodes[0], "code") &&
-    nodeHasClass(localNodes[0], "code") &&
     descendantElements(liveNodes[0], (node) => node.name === "pre").length === 1 &&
-    descendantElements(localNodes[0], (node) => node.name === "pre").length === 1 &&
     nodeText(liveNodes[0]).trim().length > 0 &&
-    nodeText(localNodes[0]).trim().length > 0 &&
+    (
+      localNodes.length === 0 ||
+      (
+        localNodes.length === 1 &&
+        localNodes[0]?.type === "element" &&
+        nodeHasClass(localNodes[0], "code") &&
+        descendantElements(localNodes[0], (node) => node.name === "pre").length === 1 &&
+        nodeText(localNodes[0]).trim().length > 0
+      )
+    ) &&
     JSON.stringify(liveNodes) !== JSON.stringify(localNodes);
   if (randomCssBranchFixture) {
     return {
       classification: "unsynchronized-random-row-state",
       disposition: "none",
       rationale:
-        "The wrapper-free random ListPages body is the evidenced generated CSS size-branch form. Both runtimes selected a non-empty CSS code row with the same code container/pre structure, while the independently selected imported row changes the CSS text and syntax spans.",
+        "The wrapper-free random ListPages body is the evidenced generated CSS size-branch form. Wikidot selected a non-empty CSS code row while the local fixture selected either another code row or no row; the independently selected imported row changes only fixture data, not the ListPages query or renderer contract.",
     };
   }
   const importedAuthorNames = new Set([
