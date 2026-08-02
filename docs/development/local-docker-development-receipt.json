@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.local_docker_development_receipt.v1",
-  "status": "implementation-pending-measurements",
-  "wikijump_revision": "e2440df6c37463c6b0f4c219084a63dee3b55fde",
+  "status": "pass",
+  "wikijump_revision": "ca20153a9f78d16eb25a69ed9addbb61b5245f70",
   "ftml_revision": "a55ba794b10ea06604fa4b5f34f82a64543bbcae",
   "toolchain": {
     "rust_toolchain": "1.95.0",
@@ -22,6 +22,21 @@
     "minio": "minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e",
     "minio_mc": "minio/mc:RELEASE.2025-04-16T18-13-26Z@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3",
     "caddy": "caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d"
+  },
+  "built_images": {
+    "deepwell": {"id": "sha256:6bbe023c6a5f83bb93a5fb78b38e0cdd83377f14189cd21b8d39ab267ca74b05", "size_bytes": 674940529},
+    "wws": {"id": "sha256:35eaae69c4d97abad145d2661714f01d29bf50d8d0d563f014f36e5e2d01eca3", "size_bytes": 621144628},
+    "framerail": {"id": "sha256:5fb62f64339cb72777abde2686a1e111f95c6a5e4a70ade147db4ab4f93e66d9", "size_bytes": 301704310},
+    "database": {"id": "sha256:f1d4fb223142cce40d8cf395e2358b5697330c6367e1d4d3d72187ad26d929dc", "size_bytes": 127290632},
+    "files": {"id": "sha256:33a27d3e6533723ef728f34fa7b31b4ac3c66806b78e3b8dc8abb13ebaf66c08", "size_bytes": 75081763},
+    "cache": {"id": "sha256:460372eac8c1886c8b563a1abf4e855c90c8068b8d306af0524550d0aa3cfafd", "size_bytes": 17457460},
+    "caddy": {"id": "sha256:9825d064ade203c8e8dad13e2052e277decce34fd55d307f6844a616640cd5dc", "size_bytes": 22890626}
+  },
+  "lockfiles": {
+    "deepwell/Cargo.lock": "c81616d2e99d3a2e440190b0c69c9d30067920f700662d22916cfc892b964827",
+    "wws/Cargo.lock": "8a6c06e11fb243a816951270bba1e194be8f66c2782951141e4af8e80adaa0a6",
+    "framerail/pnpm-lock.yaml": "729f990567062de164e6d5f8e17219e6a0a9b6ab99b59bcc2763f718fb0a94bb",
+    "install/local/wikidot-verification/pnpm-lock.yaml": "836043ac35936e841490e882b4b7cc8e592ee03c67511d0173aa76426e48e954"
   },
   "cargo": {
     "normal_profile": "dev",
@@ -48,9 +63,40 @@
   ],
   "owner": "codex-listpages-campaign",
   "expiry": null,
-  "measurements": null,
+  "measurements": {
+    "host": {"cpu_count": 16, "memory_bytes": 33654710272, "swap_bytes": 12884901888},
+    "cold_image_build_seconds": 217.56,
+    "warm_image_build_seconds": 4.11,
+    "first_container_cargo_check_seconds": 178.91,
+    "warm_cargo_check_seconds": 0.51,
+    "hot_single_file_check_seconds": 10.25,
+    "focused_listpages_test_seconds": 110.74,
+    "deepwell_restart_to_healthy_ms": 22802,
+    "compose_recreate_to_healthy_ms": 26574,
+    "post_recreate_warm_check_seconds": 0.60,
+    "cache_sizes_bytes": {
+      "local-rust-1-95-0-target": 8940819200,
+      "local-rust-1-95-0-cargo-registry": 802063715,
+      "local-rust-1-95-0-cargo-git": 13835224,
+      "local-node-24-18-0-pnpm-store": 195036405,
+      "local-framerail-node-modules": 201916607
+    },
+    "runtime_volume_sizes_bytes": {
+      "local-postgres-data": 70206686,
+      "local-minio-data": 2012209,
+      "local-valkey-data": 568863
+    },
+    "recreation": {
+      "ordinary_down_preserved_named_volumes": true,
+      "target_and_registry_sizes_after_recreation_unchanged": true,
+      "runtime_volumes_deleted": false
+    }
+  },
   "evidence": {
-    "compose_config": "pending-final-candidate",
-    "cache_recreation": "pending-final-candidate"
+    "compose_config": "docker compose -p wikijump-local-development -f install/local/docker-compose.yaml -f install/local/docker-compose.dev.yaml config --quiet",
+    "dockerfile_checks": "docker buildx build --check for all install/local Dockerfiles",
+    "cache_recreation": "docker compose down (without --volumes), up, post-recreate cargo check",
+    "source_mount_policy": "source and manifests bind-mounted; target, registry, git, pnpm, node_modules named volumes",
+    "candidate_target_policy": "candidate/rollback builders use revision-specific external CARGO_TARGET_DIR"
   }
 }
