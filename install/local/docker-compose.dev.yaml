@@ -14,6 +14,14 @@ services:
         source: ../../deepwell/Cargo.toml
         target: /src/deepwell/Cargo.toml
         read_only: true
+      - type: bind
+        source: ../../deepwell/Cargo.lock
+        target: /src/deepwell/Cargo.lock
+        read_only: true
+      - type: bind
+        source: ../../.cargo/config.toml
+        target: /src/.cargo/config.toml
+        read_only: true
       # Database files
       - type: bind
         source: ../../deepwell/migrations
@@ -92,4 +100,12 @@ services:
       - type: bind
         source: ../../wws/Cargo.toml
         target: /src/wws/Cargo.toml
+        read_only: true
+      - type: bind
+        source: ../../wws/Cargo.lock
+        target: /src/wws/Cargo.lock
+        read_only: true
+      - type: bind
+        source: ../../.cargo/config.toml
+        target: /src/.cargo/config.toml
         read_only: true

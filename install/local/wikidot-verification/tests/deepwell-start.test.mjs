@@ -8,13 +8,26 @@ import {fileURLToPath} from "node:url";
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const START_SCRIPT = path.resolve(PACKAGE_ROOT, "..", "deepwell", "deepwell-start");
 
-test("deepwell cargo-watch commands preserve the lockfile in both profiles", () => {
+test("deepwell cargo-watch selects the compact, debugging, and release profiles", () => {
   const syntax = spawnSync("/bin/sh", ["-n", START_SCRIPT], {encoding: "utf8"});
   assert.equal(syntax.status, 0, syntax.stderr);
 
   const source = readFileSync(START_SCRIPT, "utf8");
-  assert.match(source, /^RUN_COMMAND="run --locked -- \/etc\/deepwell\.toml"$/mu);
-  assert.match(source, /^ {4}RUN_COMMAND="run --locked --release -- \/etc\/deepwell\.toml"$/mu);
+  assert.match(source, /debugging\)\n\s+RUN_COMMAND="run --locked --profile debugging -- \/etc\/deepwell\.toml"/u);
+  assert.match(source, /release\)\n\s+RUN_COMMAND="run --locked --release -- \/etc\/deepwell\.toml"/u);
+  assert.match(source, /\*\)\n\s+echo "Unsupported DEEPWELL_BUILD_PROFILE/u);
+  assert.match(source, /-w \/src\/\.cargo\/config\.toml/u);
   assert.match(source, /^ {8}-x "\$RUN_COMMAND"$/mu);
-  assert.doesNotMatch(source, /PROFILE_FLAG/u);
+});
+
+test("wws cargo-watch selects the compact, debugging, and release profiles", () => {
+  const wwsStart = path.resolve(PACKAGE_ROOT, "..", "wws", "wws-start");
+  const syntax = spawnSync("/bin/sh", ["-n", wwsStart], {encoding: "utf8"});
+  assert.equal(syntax.status, 0, syntax.stderr);
+
+  const source = readFileSync(wwsStart, "utf8");
+  assert.match(source, /debugging\)\n\s+RUN_COMMAND="run --locked --profile debugging -- --disable-deepwell-check"/u);
+  assert.match(source, /release\)\n\s+RUN_COMMAND="run --locked --release -- --disable-deepwell-check"/u);
+  assert.match(source, /\*\)\n\s+echo "Unsupported WWS_BUILD_PROFILE/u);
+  assert.match(source, /-w \/src\/\.cargo\/config\.toml/u);
 });

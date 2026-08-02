@@ -3,10 +3,24 @@ set -e
 
 # Start watcher
 #
-# This will recompile and restart the deepwell daemon on any source changes
-# The commandline being run for the daemon is "wws".
+case "${WWS_BUILD_PROFILE:-debug}" in
+    debug)
+        RUN_COMMAND="run --locked -- --disable-deepwell-check"
+        ;;
+    debugging)
+        RUN_COMMAND="run --locked --profile debugging -- --disable-deepwell-check"
+        ;;
+    release)
+        RUN_COMMAND="run --locked --release -- --disable-deepwell-check"
+        ;;
+    *)
+        echo "Unsupported WWS_BUILD_PROFILE: ${WWS_BUILD_PROFILE}" >&2
+        exit 64
+        ;;
+esac
 
 exec /usr/local/cargo/bin/cargo watch \
         --why \
         -w /src/wws \
-        -x 'run -- --disable-deepwell-check'
+        -w /src/.cargo/config.toml \
+        -x "$RUN_COMMAND"
