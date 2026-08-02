@@ -8855,8 +8855,12 @@ async fn listpages_date_formats_are_deferred_to_the_wikidot_client_phase() {
     .await;
 
     let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    // This helper calls saved-page `page_get`, whose ODate phase uses the
+    // saved-page timezone/text contract. Anonymous PagePreview uses the
+    // separate UTC/no-comma contract covered by the renderer unit tests and
+    // the live PagePreview evidence.
     assert_eq!(
-        html.matches(">19 Jul 2008 22:37</span>").count(),
+        html.matches(">19 Jul 2008, 22:37</span>").count(),
         4,
         "the raw response must retain default date text for every format:\n{html}",
     );
