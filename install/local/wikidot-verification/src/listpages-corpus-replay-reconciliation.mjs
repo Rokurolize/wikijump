@@ -331,6 +331,7 @@ export async function reconcileListPagesCorpusReplay({
         rpcUrl: verdict.inputs.rpc_url,
         siteSlug: verdict.inputs.site_slug,
         concurrency: verdict.inputs.concurrency,
+        rpcTimeoutMs: verdict.inputs.rpc_timeout_ms,
         observeRuntime,
       });
       const replayedClassification =

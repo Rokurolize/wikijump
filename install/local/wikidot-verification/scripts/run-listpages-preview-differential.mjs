@@ -22,6 +22,7 @@ export function parseArgs(argv) {
     rpcUrl: "http://127.0.0.1:12747/jsonrpc",
     site: "sandbox-for-codex",
     concurrency: 8,
+    rpcTimeoutMs: 30_000,
     output: null,
   };
   for (let index = 2; index < argv.length; index += 1) {
@@ -46,6 +47,9 @@ export function parseArgs(argv) {
     } else if (option === "--concurrency") {
       args.concurrency = Number(nextValue(argv, index, option));
       index += 1;
+    } else if (option === "--rpc-timeout-ms") {
+      args.rpcTimeoutMs = Number(nextValue(argv, index, option));
+      index += 1;
     } else if (option === "--output") {
       args.output = path.resolve(nextValue(argv, index, option));
       index += 1;
@@ -58,6 +62,15 @@ export function parseArgs(argv) {
   if (!args.references) throw new Error("--references is required");
   if (!args.output) throw new Error("--output is required");
   if (
+    !Number.isSafeInteger(args.rpcTimeoutMs) ||
+    args.rpcTimeoutMs < 1 ||
+    args.rpcTimeoutMs > 120_000
+  ) {
+    throw new Error(
+      "--rpc-timeout-ms must be an integer from 1 through 120000",
+    );
+  }
+  if (
     args.authoritative &&
     (!args.runtimeIdentity || !args.runtimeProof)
   ) {
@@ -69,7 +82,7 @@ export function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log("Usage: node install/local/wikidot-verification/scripts/run-listpages-preview-differential.mjs --references FILE --output FILE [--runtime-identity FILE --runtime-proof FILE --authoritative] [--rpc-url URL] [--site sandbox-for-codex] [--concurrency 8]");
+  console.log("Usage: node install/local/wikidot-verification/scripts/run-listpages-preview-differential.mjs --references FILE --output FILE [--runtime-identity FILE --runtime-proof FILE --authoritative] [--rpc-url URL] [--site sandbox-for-codex] [--concurrency 8] [--rpc-timeout-ms 30000]");
 }
 
 export async function main(argv = process.argv) {
@@ -86,6 +99,7 @@ export async function main(argv = process.argv) {
     rpcUrl: args.rpcUrl,
     siteSlug: args.site,
     concurrency: args.concurrency,
+    rpcTimeoutMs: args.rpcTimeoutMs,
   });
   await writePreviewDifferential(verdict, args.output);
   console.log(JSON.stringify({

@@ -16,6 +16,8 @@ import {
 
 export const LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA =
   "wikijump_listpages_compat.preview_differential.v1";
+export const DEFAULT_LISTPAGES_RPC_TIMEOUT_MS = 30_000;
+export const MAX_LISTPAGES_RPC_TIMEOUT_MS = 120_000;
 export const LISTPAGES_REPLAY_RUNTIME_IDENTITY_SCHEMA =
   "wikijump_listpages_compat.authoritative_runtime_identity.v1";
 export const LISTPAGES_REPLAY_RUNTIME_PROOF_SCHEMA =
@@ -249,7 +251,12 @@ async function loadRuntimeAuthority({
 }
 
 export class DeepwellJsonRpcClient {
-  constructor({ rpcUrl, fetchImpl = globalThis.fetch, timeoutMs = 30000 }) {
+  constructor({
+    rpcUrl,
+    fetchImpl = globalThis.fetch,
+    timeoutMs = DEFAULT_LISTPAGES_RPC_TIMEOUT_MS,
+  }) {
+    validateRpcTimeout(timeoutMs);
     this.rpcUrl = rpcUrl;
     this.fetchImpl = fetchImpl;
     this.timeoutMs = timeoutMs;
@@ -287,6 +294,19 @@ export class DeepwellJsonRpcClient {
     }
     return body.result;
   }
+}
+
+function validateRpcTimeout(value) {
+  if (
+    !Number.isSafeInteger(value) ||
+    value < 1 ||
+    value > MAX_LISTPAGES_RPC_TIMEOUT_MS
+  ) {
+    throw new Error(
+      `preview differential RPC timeout must be an integer from 1 through ${MAX_LISTPAGES_RPC_TIMEOUT_MS}`,
+    );
+  }
+  return value;
 }
 
 function readJsonlText(text) {
@@ -355,11 +375,14 @@ export async function runListPagesPreviewDifferential({
   authoritative = false,
   rpcUrl,
   siteSlug,
-  rpcClient = new DeepwellJsonRpcClient({ rpcUrl }),
+  rpcClient = null,
+  rpcTimeoutMs = DEFAULT_LISTPAGES_RPC_TIMEOUT_MS,
   concurrency = 8,
   observeRuntime = observeListPagesRuntimeAuthority,
 }) {
   concurrency = validateConcurrency(concurrency);
+  rpcTimeoutMs = validateRpcTimeout(rpcTimeoutMs);
+  rpcClient ??= new DeepwellJsonRpcClient({ rpcUrl, timeoutMs: rpcTimeoutMs });
   const referencesText = await fs.readFile(referencesPath, "utf8");
   const references = readJsonlText(referencesText).map(validateWikidotReference);
   const referenceIds = new Set();
@@ -508,6 +531,7 @@ export async function runListPagesPreviewDifferential({
       rpc_url: rpcUrl,
       site_slug: siteSlug,
       concurrency,
+      rpc_timeout_ms: rpcTimeoutMs,
       local_site: { slug: site.slug, site_id: site.site_id },
     },
     runtime_identity: runtimeIdentity,
