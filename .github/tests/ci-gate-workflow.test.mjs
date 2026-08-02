@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
@@ -20,6 +20,7 @@ test("one central workflow owns required checks without reacting to labels", () 
   for (const action of ["opened", "synchronize", "reopened", "edited", "ready_for_review", "converted_to_draft"]) {
     assert.ok(hasYamlLine(trigger, `- ${action}`), action)
   }
+  assert.match(trigger, /^\s*merge_group:\s*$/m)
   assert.doesNotMatch(trigger, /^      - (?:labeled|unlabeled)$/m)
   assert.doesNotMatch(source, /landing|full-ci/)
   assert.match(source, /^permissions:\n  contents: read$/m)
@@ -225,6 +226,17 @@ test("actions in touched workflows are immutable pins with version comments", ()
       assert.match(version, /^v\d+(?:\.\d+)*$/, `${name}: ${version}`)
     }
     assert.equal(uses.length, (source.match(/^\s*uses:/gm) ?? []).length, name)
+  }
+})
+
+test("external actions in every workflow are immutable pins", () => {
+  const workflowRoot = path.join(root, ".github/workflows")
+  for (const name of readdirSync(workflowRoot).filter((entry) => entry.endsWith(".yml") || entry.endsWith(".yaml"))) {
+    const source = read(`.github/workflows/${name}`)
+    for (const [, action] of source.matchAll(/^\s*uses:\s*([^\s#]+)(?:\s+#\s*\S+)?$/gm)) {
+      if (action.startsWith("./")) continue
+      assert.match(action, /^[^@]+@[0-9a-f]{40}$/, `${name}: ${action}`)
+    }
   }
 })
 
