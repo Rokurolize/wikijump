@@ -218,7 +218,7 @@ jobs:
           cargo run --locked
 
   gate:
-    name: ${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && format('CI / metadata no-op ({0})', github.run_id) || needs.classify.outputs.draft == 'true' && 'CI / draft gate' || 'CI / gate' }}
+    name: ${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / gate' || needs.classify.outputs.draft == 'true' && 'CI / draft gate' || 'CI / gate' }}
     needs:
       - classify
       - workflow_policy
@@ -226,7 +226,7 @@ jobs:
       - wws
       - framerail
       - locales
-    if: ${{ always() && (github.event_name != 'pull_request' || github.event.action != 'edited' || github.event.changes.base != null) }}
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     env:
       CLASSIFY_RESULT: ${{ needs.classify.result }}
@@ -243,7 +243,12 @@ jobs:
       LOCALES_SELECTED: ${{ needs.classify.outputs.locales }}
       LOCALES_RESULT: ${{ needs.locales.result }}
     steps:
+      - name: Metadata edit no-op
+        if: ${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null }}
+        run: echo "This pull request metadata change does not affect CI."
+
       - name: Require every selected check
+        if: ${{ github.event_name != 'pull_request' || github.event.action != 'edited' || github.event.changes.base != null }}
         run: |
           set -euo pipefail
           validate_selection() {
