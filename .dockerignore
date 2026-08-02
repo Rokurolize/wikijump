@@ -9,6 +9,7 @@ ftml/test
 
 # Vendored files and artifacts
 *.log
+target
 ftml/target
 ftml/pkg
 deepwell/target
