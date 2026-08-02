@@ -7,6 +7,8 @@
     "expanded_root": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/www/pages",
     "page_count": 1806,
     "source_file_count": 1806,
+    "listed_source_file_count": 246,
+    "excluded_data_record_count": 1560,
     "source_bytes": 1211797,
     "classification_counts": {
       "documentation": 142,
@@ -19,8 +21,8 @@
       "structured-data-record": 1560
     },
     "unclassified_count": 0,
-    "source_pages_with_features": 1801,
-    "source_pages_without_features": 5,
+    "source_pages_with_features": 241,
+    "source_pages_without_features": 1565,
     "coverage_file": "source-coverage.json"
   },
   "conventions": {
@@ -2418,15 +2420,8 @@
       "documentation_status": "invocation-only",
       "specification": "specifications/module/module-newsite.md",
       "summary": "Recognize and implement the `NewSite` module at the documented invocation sites. The corpus does not provide a dedicated module reference page.",
-      "source_count": 2,
+      "source_count": 1,
       "sources": [
-        {
-          "path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites:1457/source.wikidot.txt",
-          "start_line": 2,
-          "end_line": 2,
-          "role": "invocation-only",
-          "source_sha256": "72891f9daaf8afc7d6a1000773c9c029272bd09d29e3ff78996d5b5da005f57e"
-        },
         {
           "path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/new-site/source.wikidot.txt",
           "start_line": 1,
@@ -3273,7 +3268,7 @@
       "documentation_status": "documented",
       "specification": "specifications/platform/community-site-directory.md",
       "summary": "Represent Community Sites, their application and ownership rules, advertising rules, deletion constraints, and directory records stored as structured page data.",
-      "source_count": 4,
+      "source_count": 2,
       "sources": [
         {
           "path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites/source.wikidot.txt",
@@ -3281,20 +3276,6 @@
           "end_line": 24,
           "role": "canonical",
           "source_sha256": "63c3b5e0ca4982adb42003fb2b274bf1c663c3b0b916550284ed867c4abf5f35"
-        },
-        {
-          "path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites:1/source.wikidot.txt",
-          "start_line": 1,
-          "end_line": 1,
-          "role": "representative-data-record",
-          "source_sha256": "b8c3cdb12fed29bd642c82ac1361aac53d660138e903b09ea1ae805da0075afc"
-        },
-        {
-          "path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites:1/source.wikidot.txt",
-          "start_line": 3,
-          "end_line": 6,
-          "role": "representative-data-record",
-          "source_sha256": "b8c3cdb12fed29bd642c82ac1361aac53d660138e903b09ea1ae805da0075afc"
         },
         {
           "path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/faq:community-sites/source.wikidot.txt",
