@@ -73,6 +73,10 @@ services:
         target: /app/pnpm-lock.yaml
         read_only: true
       - type: bind
+        source: ../../framerail/pnpm-workspace.yaml
+        target: /app/pnpm-workspace.yaml
+        read_only: true
+      - type: bind
         source: ../../framerail/svelte.config.js
         target: /app/svelte.config.js
         read_only: true

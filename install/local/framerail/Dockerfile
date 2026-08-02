@@ -13,7 +13,7 @@ ENV PNPM_HOME=/pnpm \
 
 # Keep dependency installation in a manifest-only layer. Source edits are
 # bind-mounted by docker-compose.dev.yaml and do not rebuild this layer.
-COPY framerail/package.json framerail/pnpm-lock.yaml ./
+COPY framerail/package.json framerail/pnpm-lock.yaml framerail/pnpm-workspace.yaml ./
 RUN pnpm config set store-dir /pnpm/store && \
     pnpm install --frozen-lockfile
 COPY framerail ./
