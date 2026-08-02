@@ -1750,7 +1750,7 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
       expected: ["unsynchronized-random-row-state", "none"],
     },
     {
-      id: "random-direct-size-branch-local-empty",
+      id: "random-direct-size-branch-local-empty-remains-actionable",
       source: [
         '[[module ListPages order="random" limit="1" wrapper="no"]]',
         '[[#ifexpr %%size%%%14 != 0 | [!-- ]]ONE[[#ifexpr %%size%%%14 != 0 | --] ]]',
@@ -1759,7 +1759,10 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
       ].join("\n"),
       live: "<p>ONE</p>",
       local: "",
-      expected: ["unsynchronized-random-row-state", "none"],
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
     },
     {
       id: "random-direct-deterministic-size-branch",

@@ -2000,25 +2000,6 @@ function classifyMismatch(row, reference) {
         `The random wrapper-free ListPages body is the evidenced ${randomTemplateKind} selected-row form; both runtimes emit the same direct element structure after replacing only selected-row text and attributes, while the cached random row differs.`,
     };
   }
-  if (
-    randomTemplateKind === "size-branch" &&
-    relativeTimeSelector(invocation) === null &&
-    randomExpectedWrapper === false &&
-    liveTopLevelWrappers.length === 0 &&
-    localTopLevelWrappers.length === 0 &&
-    !["list-pages-box", "list-pages-item", "pager"].some((className) =>
-      domHasClass(liveNodes, className) || domHasClass(localNodes, className)
-    ) &&
-    liveNodes.length === 1 &&
-    localNodes.length === 0
-  ) {
-    return {
-      classification: "unsynchronized-random-row-state",
-      disposition: "none",
-      rationale:
-        "The random wrapper-free size-branch body selects a direct row on Wikidot while the synchronized local fixture has no selected row; this is the evidenced random data-state boundary, not a deterministic query result.",
-    };
-  }
   const importedAuthorNames = new Set([
     ...synchronizedImportedAuthorNames(liveNodes),
     ...synchronizedImportedAuthorNames(localNodes),
