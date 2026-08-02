@@ -137,7 +137,7 @@ fn list_pages_substitution_context_with_mode<'a>(
     ListPagesSubstitutionContext {
         authored_limit: Some(rendered_limit as u64),
         ajax_module_response: false,
-        page_preview: true,
+        page_preview: false,
         site: "scp-wiki",
         site_title: "SCP Wiki",
         category: "",
@@ -5735,19 +5735,23 @@ fn substitutes_wikidot_list_pages_table_body_generated_variables_as_html() {
         "||= %%tags_linked%% ||",
     );
 
+    let empty_users = BTreeMap::new();
+    let empty_data_form = BTreeMap::new();
+    let mut preview_context = list_pages_substitution_context_with_mode(
+        20,
+        &empty_users,
+        empty_list_pages_snapshot_displays(),
+        None,
+        &empty_data_form,
+        true,
+    );
+    preview_context.page_preview = true;
     let substituted = substitute_list_pages_variables(
         body,
         &page,
         1,
         1,
-        &list_pages_substitution_context_with_mode(
-            20,
-            &BTreeMap::new(),
-            empty_list_pages_snapshot_displays(),
-            None,
-            &BTreeMap::new(),
-            true,
-        ),
+        &preview_context,
     );
 
     assert!(substituted.contains(

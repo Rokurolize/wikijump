@@ -2569,7 +2569,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                         format_list_pages_created_at(
                             created_at,
                             captures.name("format").map(|matched| matched.as_str()),
-                            context.render_generated_html && !context.page_preview,
+                            context.render_generated_html,
                             context.page_preview,
                         ),
                         context.render_generated_html && !context.page_preview,
@@ -2594,7 +2594,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                         format_list_pages_created_at(
                             updated_at,
                             captures.name("format").map(|matched| matched.as_str()),
-                            context.render_generated_html && !context.page_preview,
+                            context.render_generated_html,
                             context.page_preview,
                         ),
                         context.render_generated_html && !context.page_preview,
@@ -2623,7 +2623,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                     format_list_pages_created_at(
                         commented_at,
                         captures.name("format").map(|matched| matched.as_str()),
-                        context.render_generated_html && !context.page_preview,
+                        context.render_generated_html,
                         context.page_preview,
                     ),
                     context.render_generated_html && !context.page_preview,
