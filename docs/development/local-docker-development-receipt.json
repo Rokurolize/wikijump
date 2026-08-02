@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.local_docker_development_receipt.v1",
   "status": "pass",
-  "wikijump_revision": "636fee7fec5c9a42232ad4e7cefa498e8e8a353c",
+  "wikijump_revision": "0bf7112825f36d504e3b04fe32d7257804a8d684",
   "ftml_revision": "4413efe44429c9612b27439bad7071702e15d541",
   "toolchain": {
     "rust_toolchain": "1.95.0",
@@ -33,9 +33,9 @@
     "caddy": {"id": "sha256:9825d064ade203c8e8dad13e2052e277decce34fd55d307f6844a616640cd5dc", "size_bytes": 22890626}
   },
   "lockfiles": {
-    "deepwell/Cargo.lock": "c81616d2e99d3a2e440190b0c69c9d30067920f700662d22916cfc892b964827",
-    "wws/Cargo.lock": "8a6c06e11fb243a816951270bba1e194be8f66c2782951141e4af8e80adaa0a6",
-    "framerail/pnpm-lock.yaml": "729f990567062de164e6d5f8e17219e6a0a9b6ab99b59bcc2763f718fb0a94bb",
+    "deepwell/Cargo.lock": "2c7570744fedd38d2e7741834588a7e148c627e68270b5ab8b6729b2fecb73c3",
+    "wws/Cargo.lock": "b08563c1fb7d21a82170ee7da499a52b8a8a703da466db60232e9212cca43521",
+    "framerail/pnpm-lock.yaml": "4fb4efdfdfc7cfa9510e6fbe1388f9d206b84de1b0484048ea84c461a7c5b6c5",
     "install/local/wikidot-verification/pnpm-lock.yaml": "836043ac35936e841490e882b4b7cc8e592ee03c67511d0173aa76426e48e954"
   },
   "cargo": {
