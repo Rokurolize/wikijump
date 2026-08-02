@@ -1524,7 +1524,18 @@ function relativeTemporalFixtureProof({
     .filter(Boolean)
     .map(Number)
     .at(0) ?? 0;
-  if (bound === 0 || liveItems.length > bound) return null;
+  if (bound === 0 || liveItems.length === 0 || liveItems.length > bound) return null;
+  if (localItems.length === 0) {
+    const localChildren = (localWrapper.children ?? []).filter((node) =>
+      !(node.type === "text" && node.value.trim() === "")
+    );
+    if (localChildren.length !== 0) return null;
+    const liveRowsHaveTemporalMetadata = liveItems.every((item) =>
+      descendantElements(item, (node) => nodeHasClass(node, "odate")).length > 0
+    );
+    if (!liveRowsHaveTemporalMetadata) return null;
+    return { selector, mode: "live-row-local-empty" };
+  }
   if (liveItems.length !== 1 || localItems.length !== 1) return null;
   const liveNormalized = liveNodes.map(normalizeRelativeTemporalNode);
   const localNormalized = localNodes.map(normalizeRelativeTemporalNode);

@@ -1867,8 +1867,8 @@ test("preview classifier isolates synchronized relative-time query state", async
       live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_1 format_live">1 Jan 2026</span> Live</p></div></div>',
       local: '<div class="list-pages-box"></div>',
       expected: [
-        "listpages-query-or-row-render-divergence",
-        "investigate-query-or-renderer",
+        "synchronized-relative-time-query-state",
+        "none",
       ],
     },
     {
@@ -1892,8 +1892,8 @@ test("preview classifier isolates synchronized relative-time query state", async
       live: '<div class="list-pages-box"><div class="list-pages-item"><span class="odate time_1">1 Jan</span> One</div><div class="list-pages-item"><span class="odate time_2">1 Jan</span> Two</div></div>',
       local: '<div class="list-pages-box"></div>',
       expected: [
-        "listpages-query-or-row-render-divergence",
-        "investigate-query-or-renderer",
+        "synchronized-relative-time-query-state",
+        "none",
       ],
     },
     {
