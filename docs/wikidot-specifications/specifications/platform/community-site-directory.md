@@ -32,13 +32,11 @@ These seams are recommendations. The implementation agent must present and confi
 
 ## Feature-specific implementation notes
 
-- The corpus contains 1,560 `community-sites:*` records. The representative ranges document non-free-text record fields; source-coverage.json inventories every record without copying user-submitted descriptions or contact details into the specification.
+- The corpus contains 1,560 user-submitted `community-sites:*` application records. They are excluded from specifications and feature provenance; use the public application flow or a run-owned sandbox to establish any undocumented record shape.
 
 ## Source inventory
 
 - `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites/source.wikidot.txt:1` through line 24 (canonical)
-- `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites:1/source.wikidot.txt:1` through line 1 (representative-data-record)
-- `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites:1/source.wikidot.txt:3` through line 6 (representative-data-record)
 - `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/faq:community-sites/source.wikidot.txt:1` through line 65 (canonical)
 
 ## Documentation-derived behavioral evidence
@@ -73,27 +71,6 @@ L0021 [[size 14px]]
 L0022 For more information, please visit [[[faq:community-sites | Community Sites FAQ and documentation]]].
 L0023 [[/size]]
 L0024 [[/div]]
-```
-
-### community-sites:1 (representative-data-record)
-
-Source: `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites:1/source.wikidot.txt:1` through line 1  
-SHA-256 of complete source file: `b8c3cdb12fed29bd642c82ac1361aac53d660138e903b09ea1ae805da0075afc`
-
-```wikidot
-L0001 address: downwave.wikidot.com
-```
-
-### community-sites:1 (representative-data-record)
-
-Source: `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites:1/source.wikidot.txt:3` through line 6  
-SHA-256 of complete source file: `b8c3cdb12fed29bd642c82ac1361aac53d660138e903b09ea1ae805da0075afc`
-
-```wikidot
-L0003 state: idea
-L0004 feature_support: '1'
-L0005 feature_promotion: '0'
-L0006 feature_features: '0'
 ```
 
 ### faq:community-sites (canonical)
