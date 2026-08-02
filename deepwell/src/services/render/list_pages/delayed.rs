@@ -1502,6 +1502,7 @@ mod tests {
         ListPagesSubstitutionContext {
             authored_limit: Some(1),
             ajax_module_response: false,
+            page_preview: false,
             site: "sandbox-for-codex",
             site_title: "Sandbox",
             category: "",

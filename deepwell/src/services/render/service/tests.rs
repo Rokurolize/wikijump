@@ -137,6 +137,7 @@ fn list_pages_substitution_context_with_mode<'a>(
     ListPagesSubstitutionContext {
         authored_limit: Some(rendered_limit as u64),
         ajax_module_response: false,
+        page_preview: false,
         site: "scp-wiki",
         site_title: "SCP Wiki",
         category: "",

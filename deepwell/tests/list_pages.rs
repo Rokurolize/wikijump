@@ -71,6 +71,21 @@ async fn set_page_created_at(runner: &TestRunner, page_id: i64, created_at: &str
         .expect("failed to set deterministic page creation timestamp");
 }
 
+async fn set_page_updated_at(runner: &TestRunner, page_id: i64, updated_at: &str) {
+    let transaction = runner.context().transaction();
+    let statement = Statement::from_string(
+        transaction.get_database_backend(),
+        format!(
+            "UPDATE \"page\" SET updated_at = TIMESTAMPTZ '{updated_at}' WHERE page_id = {page_id}",
+        ),
+    );
+
+    transaction
+        .execute_raw(statement)
+        .await
+        .expect("failed to set deterministic page update timestamp");
+}
+
 async fn set_page_category(
     runner: &TestRunner,
     page_id: i64,
@@ -252,6 +267,64 @@ After"#;
     assert!(
         !html.contains("data-wikijump-compat-date"),
         "the internal ODate trust marker must not leak from delayed rows:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_updated_at_preview_keeps_server_date_spaces_breakable() {
+    const TARGET_SLUG: &str = "listpages-date-space-target-20260802";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    let target = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Date-space target",
+            "title": "ListPages date-space target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "ListPages date-space fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_page_updated_at(&runner, target.page_id, "2026-07-29T02:21:00Z").await;
+
+    let html = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages date-space preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{}\" limit=\"1\"]]\n",
+                "||~ Today's date is: ||\n",
+                "||= %%updated_at|%d %B %Y%% ||\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("ListPages updated_at preview should render")
+    .html_output
+    .body;
+
+    assert!(
+        html.contains("29 Jul 2026 02:21") && !html.contains("29 Jul 2026\u{00a0}02:21"),
+        "the server-rendered ODate text must keep ordinary breakable spaces:\n{html}",
     );
 }
 

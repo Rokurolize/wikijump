@@ -1960,6 +1960,7 @@ pub(in crate::services::render) fn parse_list_pages_page_type(
 pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) authored_limit: Option<u64>,
     pub(in crate::services::render) ajax_module_response: bool,
+    pub(in crate::services::render) page_preview: bool,
     pub(in crate::services::render) site: &'a str,
     pub(in crate::services::render) site_title: &'a str,
     pub(in crate::services::render) category: &'a str,
@@ -2562,9 +2563,9 @@ pub(super) fn substitute_list_pages_variables_inner(
                         format_list_pages_created_at(
                             created_at,
                             captures.name("format").map(|matched| matched.as_str()),
-                            context.render_generated_html,
+                            context.render_generated_html && !context.page_preview,
                         ),
-                        context.render_generated_html,
+                        context.render_generated_html && !context.page_preview,
                         compat_html,
                     )
                 }
@@ -2586,9 +2587,9 @@ pub(super) fn substitute_list_pages_variables_inner(
                         format_list_pages_created_at(
                             updated_at,
                             captures.name("format").map(|matched| matched.as_str()),
-                            context.render_generated_html,
+                            context.render_generated_html && !context.page_preview,
                         ),
-                        context.render_generated_html,
+                        context.render_generated_html && !context.page_preview,
                         compat_html,
                     )
                 }
@@ -2614,9 +2615,9 @@ pub(super) fn substitute_list_pages_variables_inner(
                     format_list_pages_created_at(
                         commented_at,
                         captures.name("format").map(|matched| matched.as_str()),
-                        context.render_generated_html,
+                        context.render_generated_html && !context.page_preview,
                     ),
-                    context.render_generated_html,
+                    context.render_generated_html && !context.page_preview,
                     compat_html,
                 ),
                 "rating" => rating.clone(),

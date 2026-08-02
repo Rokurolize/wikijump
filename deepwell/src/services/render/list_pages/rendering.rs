@@ -1344,6 +1344,7 @@ impl RenderService {
         } = page_context;
         let current_page_id = current_page_identity.unwrap_or(0);
         let ajax_module_response = page_info.page.as_ref() == "_ajax-module-connector";
+        let page_preview = current_page_identity.is_none() && !ajax_module_response;
         let initial_remaining_include_expansions = include_budget.remaining;
         let mut arguments = arguments;
         let feed_info = list_pages_feed_info_html(page_info, &arguments);
@@ -2343,6 +2344,7 @@ impl RenderService {
             let substitution_context = ListPagesSubstitutionContext {
                 authored_limit: limit,
                 ajax_module_response,
+                page_preview,
                 site: page_info.site.as_ref(),
                 site_title: site_title.as_deref().unwrap_or_default(),
                 category: page
