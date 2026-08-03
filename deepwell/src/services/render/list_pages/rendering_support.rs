@@ -26,7 +26,9 @@ use super::super::literal_regions::{ListPagesSourceProjection, LiteralRegionInde
 use super::super::runtime::IncludeSourceCache;
 use super::super::service::{IncludeExpansion, IncludeExpansionBudget, RenderService};
 use super::scanner::{CountPagesCloseReachabilityIndex, ListPagesModuleMatch};
-use super::substitution::{ExactNameListPagesBatchKey, ListPagesArguments};
+use super::substitution::{
+    ExactNameListPagesBatchKey, ListPagesArguments, parse_list_pages_arguments,
+};
 use super::template::ListPagesTemplatePlan;
 use super::{
     ListPagesExpansionBudget, PendingDelayedListPagesOutput,
@@ -358,11 +360,15 @@ pub(in crate::services::render) fn list_pages_raw_footnote_prefix_end(
     head: &str,
     suffix: &str,
 ) -> Option<usize> {
-    const EVIDENCED_HEAD: &str = r#"range="." wrapper="no" separate="no""#;
     const OPEN: &str = "@@[[footnote]]";
     const CLOSE_AND_LINE_END: &str = "[[/footnote]]\n";
 
-    if head.trim() != EVIDENCED_HEAD || !suffix.starts_with(OPEN) {
+    let arguments = parse_list_pages_arguments(head)?;
+    if !arguments.current_page_only
+        || arguments.wrapper
+        || arguments.separate
+        || !suffix.starts_with(OPEN)
+    {
         return None;
     }
     suffix[OPEN.len()..]

@@ -1664,7 +1664,7 @@
         },
         {
           "path": "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json",
-          "scope": "Pinned authoritative exact replay on Wikijump b7b196392ddd610d1fab91b03e54a41c4dad335d with FTML 6d1550f283f93ec3f4257ffda238a8f9003eed19: 23,964 invocations, 18,996 unique replay keys, classified 23,964, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. Novel (119) and literal (335) lanes are recorded as diagnostic only; the final standing runtime is 2b762e153dc9c2e59c5e1de5c5099184fad8c131 with identity-bound HTTPS and browser evidence."
+          "scope": "Pinned authoritative exact replay on Wikijump fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0 with FTML 6d1550f283f93ec3f4257ffda238a8f9003eed19: 23,964 invocations, 18,996 unique replay keys, classified 23,964, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. Novel (119) and literal (335) lanes are recorded as diagnostic only; the final standing runtime is fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0 with identity-bound HTTPS and browser evidence."
         },
         {
           "path": "install/standing/compose.yaml; install/standing/tests/test_refresh.py",

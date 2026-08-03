@@ -1,13 +1,13 @@
 {
   "schema": "wikijump_listpages_compat.final_corpus_replay_receipt.v1",
   "status": "pass",
-  "wikijump_revision": "b7b196392ddd610d1fab91b03e54a41c4dad335d",
+  "wikijump_revision": "fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0",
   "ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
-  "acceptance_candidate_revision": "b7b196392ddd610d1fab91b03e54a41c4dad335d",
-  "final_standing_revision": "2b762e153dc9c2e59c5e1de5c5099184fad8c131",
-  "final_standing_tree": "db7eba2ee3d261129906fd09fdf5cb74b4ffa68d",
+  "acceptance_candidate_revision": "fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0",
+  "final_standing_revision": "fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0",
+  "final_standing_tree": "8debc40672235f1a5003e8248eba3bf9b43eeb27",
   "final_standing_ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
-  "final_standing_dependency_lock_sha256": "2ef9805743280b942d14d5438c1566b8578dc0f0cfb9209cd4690e0785d7645c",
+  "final_standing_dependency_lock_sha256": "b4d2a0d89d1faf2587c05427831ebde40a16a6fdbd321dc0162a2e28a80d7303",
   "authority": {
     "mode": "authoritative",
     "references_sha256": "591a02b209dd156c25e7eab0e12a8a123eac5daf0d1fd99b8b5629ea3cb39792",
@@ -15,21 +15,21 @@
     "scope_sha256": "d1d9aca68fa8377a6381a96e132c2db94b4f81ceca92c5ca52568f6b7e2aabe1",
     "reference_count": 18996,
     "invocation_count": 23964,
-    "runtime_identity_sha256": "e90c7ace5fac6b5ae80aca8d67c87411bd53dd1cc5528c3b7400c02ef5ce1620",
-    "runtime_proof_sha256": "40fa7602e62d8b991770d8f01ee2f520032ef3bf9fd810248103c1f7a8a8e842",
-    "runtime_observation_stable_sha256": "7228ca174b316acaef00a369b793ef7dc58fd2b0bb2599019cb7fc8a50f374f8"
+    "runtime_identity_sha256": "5d7dd056af586253c3987964760deb1d58aa9316f8e1360f0e2e9b97e39041ea",
+    "runtime_proof_sha256": "38d2cd066382f5651eaf7a73257560038737f4422d2a3d193e481e1e3c6d69a1",
+    "runtime_observation_stable_sha256": "cb1aff235e2b834d00786f22f82881f4da880ea9d9a6412269ffa82d81189ea9"
   },
   "exact_lane": {
-    "verdict_sha256": "8a2bb78ebe88e145e408e7505f342e6603395443010e1d50b6158fdc9f671489",
-    "classification_sha256": "6c30f599fdb4188c04a81f0308134a5001202a962f2eac08dce74ee761b41523",
-    "matches": 18769,
-    "mismatches": 227,
+    "verdict_sha256": "21601c1059ab1716c1b8cfcb30e4a46eeb2e890915ef89e719ebe2212a15edf5",
+    "classification_sha256": "1282c446764cfd0f0e15990db2b42e8936ba7e3b38672f571e561ae254fe92e0",
+    "matches": 18767,
+    "mismatches": 229,
     "local_errors": 0,
     "classified_cases": 18996,
     "actionable_unique_source_count": 0
   },
   "authoritative_reconciliation": {
-    "receipt_sha256": "0ddb0704a753b90bd41308f657c15432c734a196d9c5d027995281269f703f7c",
+    "receipt_sha256": "6b6249a8658b2683aa40ab5f0305b250f479f5244a2fd186a3fed0a12a62e61e",
     "invocation_count": 23964,
     "unique_source_count": 18996,
     "exact_source_duplicate_count": 4968,
@@ -44,8 +44,8 @@
   "diagnostic_lanes": {
     "novel": {
       "reference_count": 119,
-      "verdict_sha256": "ce89b06aa76ec1c7bfcaf43cef593b742c656bfcd95a75eccfd2c42571831233",
-      "classification_sha256": "0501b9e9baf8c0e6bcea83d4e09162695b23ec892e1b4e92135e550d02bed94c",
+      "verdict_sha256": "6febec85fe9fd0fc31e57abc65542532403285883f171162ad71fc45d0f71df7",
+      "classification_sha256": "b931f9e18d8b0fa3d88355183ab7201c2cd998d912a98a3c93e4538c3a0d4b8f",
       "matches": 115,
       "mismatches": 4,
       "dispositions": {"none": 119},
@@ -53,8 +53,8 @@
     },
     "literal": {
       "reference_count": 335,
-      "verdict_sha256": "46ff23776d0c66d381252e603281f5e4e6d69b0d11b7552f76ee3dfce00be60a",
-      "classification_sha256": "e71e4ff25f8cfb0188ca242fcdd727e82fe82595483989c19a808067c50a6524",
+      "verdict_sha256": "98086ecbcfc6da943239398b7d82937b6d404b0ffdd57dc2b9d979b3ab379c71",
+      "classification_sha256": "8f363d6254d6aee71e4c68a8d95b39ce8c429316100d56656aa4a9b64f0de47b",
       "matches": 312,
       "mismatches": 23,
       "dispositions": {"none": 335},
@@ -75,20 +75,19 @@
     "acceptance_scope_revised": false
   },
   "standing_verification": {
-    "refresh_receipt_sha256": "d8bb0c5435a164e8371e77d89f06522c2cdc4a80165732c73fe6013d4d3cdacf",
-    "prepared_receipt_sha256": "fdba620cef1a47dd783f659e16d7e82acddea076f10ba14574f92eef871b36f3",
-    "render_receipt_sha256": "21ce2c1d89f9c907abdabb949a99ceca3c8ffb1602a95c7e215957ace2b309df",
-    "runtime_differential_identity_sha256": "3d13acea5f4e8d1f1327bd377c567046128803b3bccc7aa52e112c0a167b04e9",
-    "served_verification_sha256": "4cbb9ed5a8f273360caa24c66bef4f8f7cbc69ccb449112c466679163c234c79",
-    "browser_integrity_sha256": "6cd7c3553430e3e58f5faf6bfc1e4df917b384e71a17301727a5a4cb3f1d6613",
+    "refresh_receipt_sha256": "1e2fd6d878bc0147b4a4c6957c44947dc1847c39ed413e872f67ed827710c777",
+    "prepared_receipt_sha256": "5c7b6340eba4980147b658e8a908859fbeb4eb49ccd3f01f19e2aa407bbece9d",
+    "render_receipt_sha256": "6d47f32036271e37b718ae2d98bcefa00380e2dc1d5c3ad8b1499a87ada64e78",
+    "runtime_differential_identity_sha256": "1c22c123c2b03cc0557d3bdd463c8100f9c8eb6158f6cb2e362d733ccb60ef1a",
+    "served_verification_sha256": "4d258c512043311b7a338eba82cd2c4a2b72f0200d914f92039863f8d0841eea",
     "runtime_identity": {
-      "wikijump_revision": "2b762e153dc9c2e59c5e1de5c5099184fad8c131",
-      "wikijump_tree": "db7eba2ee3d261129906fd09fdf5cb74b4ffa68d",
+      "wikijump_revision": "fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0",
+      "wikijump_tree": "8debc40672235f1a5003e8248eba3bf9b43eeb27",
       "ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
-      "deepwell_image": "sha256:39f4f4145658f3dfeb6561620f85848924388cafd37e7d69ba5ff9c7f06734cb",
-      "framerail_image": "sha256:3560f99ef068bfb76caa6895428dc7cf7c7b4e4967c9801f495521a83462f1b",
-      "wws_image": "sha256:c4dbf00c78d8c135da5bec7d75422dec7bf8cd4f8fb70cd94d30d4eb321cfd58",
-      "caddy_image": "sha256:afccd452d7136a926fa99a1dc5892ba8605e9441300083af2144fc8e74a27a3c"
+      "deepwell_image": "sha256:d9113a916487ba9bd10b7c0816e3087d982f4b281768d316ecf910a0346027a7",
+      "framerail_image": "sha256:c3ff77092adf17b190b667e8e100eef058db41d5beee1725fa9b020b165bb00d",
+      "wws_image": "sha256:c8fe739b41e38f417960b8ee4fe01a399331c220ec73ad1a1ab7f90a0c20cfc3",
+      "caddy_image": "sha256:d7a713ea0ce7d65b62866058e38a432f09cd86937bbdf2a192640c487ab8d820"
     },
     "assertions": [
       "identity-bound browser integrity: 3 pages passed, 0 anomalies",

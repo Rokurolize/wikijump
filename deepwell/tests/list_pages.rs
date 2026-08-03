@@ -2918,6 +2918,64 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
          leaves the later raw template literal:\n{raw_footnote_boundary_preview}",
     );
 
+    let raw_footnote_boundary_with_limit_preview =
+        RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            concat!(
+                "[[module ListPages range=\".\" wrapper=\"no\" separate=\"no\" ",
+                "limit=\"1\"]]",
+                "@@[[footnote]] **range=\".\"** NOTE [[/footnote]]\n",
+                "@@----@@\n",
+                "@@%%content{2}%%@@\n",
+                "@@----@@\n",
+                "@@[[/module]]",
+            )
+            .to_owned(),
+        )
+        .await
+        .expect("a semantically equivalent raw footnote boundary should render")
+        .html_output
+        .body;
+    assert!(
+        raw_footnote_boundary_with_limit_preview
+            .starts_with(r#"<p><span style="white-space: pre-wrap;">----</span>"#)
+            && raw_footnote_boundary_with_limit_preview.contains("%%content{2}%%")
+            && raw_footnote_boundary_with_limit_preview.contains("@@[[/module]]")
+            && !raw_footnote_boundary_with_limit_preview.contains("footnoteref")
+            && !raw_footnote_boundary_with_limit_preview.contains("footnotes-footer")
+            && !raw_footnote_boundary_with_limit_preview.contains("NOTE"),
+        "the raw footnote boundary should follow parsed current-page semantics, not an exact head:\n{raw_footnote_boundary_with_limit_preview}",
+    );
+
+    let raw_footnote_non_current_range_preview =
+        RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            concat!(
+                "[[module ListPages range=\"others\" wrapper=\"no\" separate=\"no\" ",
+                "limit=\"1\"]]",
+                "@@[[footnote]] **range=\"others\"** NOTE [[/footnote]]\n",
+                "@@----@@\n",
+                "@@%%content{2}%%@@\n",
+                "@@----@@\n",
+                "@@[[/module]]",
+            )
+            .to_owned(),
+        )
+        .await
+        .expect("a non-current raw footnote range should keep ordinary footnotes")
+        .html_output
+        .body;
+    assert!(
+        raw_footnote_non_current_range_preview.contains("footnoteref")
+            && raw_footnote_non_current_range_preview.contains("footnotes-footer")
+            && raw_footnote_non_current_range_preview.contains("NOTE"),
+        "only the current-page raw footnote boundary should be consumed:\n{raw_footnote_non_current_range_preview}",
+    );
+
     let raw_collapsible_boundary_preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site_id,
