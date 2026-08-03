@@ -24,5 +24,8 @@ COPY ./install/local/framerail/health-check.sh /usr/local/bin/wikijump-health-ch
 COPY ./install/local/framerail/framerail-start /usr/local/bin/framerail-start
 
 EXPOSE 3393
-ENV FRAMERAIL_ENV=local
+ARG FRAMERAIL_ENV=local
+ARG FRAMERAIL_CSRF_CHECK_ORIGIN=true
+ENV FRAMERAIL_ENV=${FRAMERAIL_ENV}
+ENV FRAMERAIL_CSRF_CHECK_ORIGIN=${FRAMERAIL_CSRF_CHECK_ORIGIN}
 CMD ["framerail-start"]

@@ -140,6 +140,14 @@ class RefreshStandingTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "exact SHA-derived reference"):
                 REFRESH.load_prepared_receipt(path, root, identity)
 
+    def test_standing_framerail_keeps_csrf_origin_checks_enabled(self) -> None:
+        compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")
+        dockerfile = (SCRIPT.parents[1] / "prod/framerail/Dockerfile").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('FRAMERAIL_CSRF_CHECK_ORIGIN: "true"', compose)
+        self.assertIn("ARG FRAMERAIL_CSRF_CHECK_ORIGIN=true", dockerfile)
+
     def test_environment_rewrite_is_atomic_and_preserves_unrelated_values(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
             path = Path(temporary_dir) / ".env"

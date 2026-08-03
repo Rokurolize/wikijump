@@ -37,6 +37,8 @@ Preparation records the cold image-build duration and exact image IDs. Activatio
 4. Run `docker compose --project-name wikijump-standing up --detach --no-deps --no-build deepwell framerail wws` with the checked-in refresh label overlay. The overlay adds owner and expiry labels to the three recreated containers and has no volume declarations.
 5. Wait for all three services to become healthy, fetch `http://scp-wiki.wikijump.localhost/scp-9506`, require the expected document markers, and overwrite `runtime-differential-identity.json` and `refresh-receipt.json` with the preparation receipt, exact source, FTML pin, dependency lock, application image IDs, effective Compose configuration, phase timings, health, canary, and resource-disposition record.
 
+The standing Framerail image is built from the production Dockerfile with origin checks enabled by default, and the standing Compose environment repeats `FRAMERAIL_CSRF_CHECK_ORIGIN=true` so the runtime cannot silently disable the check.
+
 The standing image tier is deliberately separate from `install/local`: local images retain bind mounts and watch-mode startup for source iteration, while prepared standing images start already-built artifacts. Deepwell's prepared image contains the pinned `sqlx-cli` and migrations and runs `sqlx migrate run` before the binary; migration handling is therefore explicit rather than silently lost when the local startup script is removed.
 
 The script refuses unknown arguments, including `-v`, `--volumes`, and `--remove-volumes`. There is no argument that is forwarded to Docker or Docker Compose.
