@@ -30,11 +30,18 @@
 //! expiry (30 minutes) which needs to be renewed by the client
 //! periodically.
 
-use super::prelude::*;
+use super::structs::{CreateSession, RenewSession};
+use crate::config::Config;
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::session::{self, Entity as Session, Model as SessionModel};
-use crate::models::user::{self, Entity as User, Model as UserModel};
+use crate::models::user::{Entity as User, Model as UserModel};
+use crate::services::ServiceContext;
 use crate::utils::assert_is_csprng;
+use crate::utils::now;
 use rand::distr::{Alphanumeric, SampleString};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, DeleteResult, EntityTrait, QueryFilter, Set,
+};
 
 #[derive(Debug)]
 pub struct SessionService;
@@ -112,7 +119,7 @@ impl SessionService {
         ctx: &ServiceContext<'_>,
         session_token: &str,
     ) -> Result<SessionModel> {
-        info!("Looking up session with token {session_token}");
+        info!("Looking up session by token");
 
         let make_error =
             |error_type| Error::new("failed to look up session by token", error_type);
@@ -301,7 +308,7 @@ impl SessionService {
         }: RenewSession,
         restricted: bool,
     ) -> Result<String> {
-        info!("Renewing session ID {old_session_token}");
+        info!("Renewing session");
 
         let make_error = || {
             Error::new(
@@ -363,13 +370,13 @@ impl SessionService {
         ctx: &ServiceContext<'_>,
         session_token: String,
     ) -> Result<()> {
-        info!("Invalidating session ID {session_token}");
+        info!("Invalidating session");
 
         let make_error =
             || Error::new("failed to invalidate session", ErrorType::Session);
 
         let txn = ctx.transaction();
-        let DeleteResult { rows_affected } = Session::delete_by_id(session_token)
+        let DeleteResult { rows_affected, .. } = Session::delete_by_id(session_token)
             .exec(txn)
             .await
             .or_raise(make_error)?;
@@ -431,7 +438,7 @@ impl SessionService {
         }
 
         // Delete all sessions from user_id, except if it's this session_token
-        let DeleteResult { rows_affected } = Session::delete_many()
+        let DeleteResult { rows_affected, .. } = Session::delete_many()
             .filter(
                 Condition::all()
                     .add(session::Column::SessionToken.ne(session_token))
@@ -456,7 +463,7 @@ impl SessionService {
             || Error::new("failed to prune all expired sessions", ErrorType::Session);
 
         let txn = ctx.transaction();
-        let DeleteResult { rows_affected } = Session::delete_many()
+        let DeleteResult { rows_affected, .. } = Session::delete_many()
             .filter(session::Column::ExpiresAt.lte(now()))
             .exec(txn)
             .await

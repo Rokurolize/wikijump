@@ -21,10 +21,24 @@
 use crate::error::prelude::*;
 use unic_langid::LanguageIdentifier;
 
+const WIKIDOT_JAPANESE_CORRECTIONS_LOCALE: &str = "ja-corrections";
+
+/// Map Wikidot locale identifiers to the language identifiers accepted by FTML.
+pub fn locale_for_ftml(locale_str: &str) -> &str {
+    match locale_str {
+        WIKIDOT_JAPANESE_CORRECTIONS_LOCALE => "ja",
+        _ => locale_str,
+    }
+}
+
+fn parse_locale_identifier(locale_str: &str) -> Option<LanguageIdentifier> {
+    LanguageIdentifier::from_bytes(locale_for_ftml(locale_str).as_bytes()).ok()
+}
+
 /// Ensure the given locale string is valid, returning the parsed locale.
 /// If it is invalid, then the appropriate `Error` variant is returned.
 pub fn validate_locale(locale_str: &str) -> Result<LanguageIdentifier> {
-    LanguageIdentifier::from_bytes(locale_str.as_bytes()).or_raise(|| {
+    parse_locale_identifier(locale_str).ok_or_raise(|| {
         Error::new(
             format!("failed to validate locale for '{locale_str}'"),
             ErrorType::LocaleInvalid {
@@ -44,8 +58,7 @@ pub fn parse_locales<S: AsRef<str>>(
     let mut locales = Vec::with_capacity(locales_str.len());
     for locale_str in locales_str {
         let locale_str = locale_str.as_ref();
-        let locale_bytes = locale_str.as_bytes();
-        let locale = LanguageIdentifier::from_bytes(locale_bytes).or_raise(|| {
+        let locale = parse_locale_identifier(locale_str).ok_or_raise(|| {
             Error::new(
                 format!("failed to parse locale '{locale_str}'"),
                 ErrorType::LocaleInvalid {
@@ -68,6 +81,19 @@ fn validate_locale_accepts_valid_locale() {
 }
 
 #[test]
+fn validate_locale_maps_wikidot_japanese_corrections_to_japanese() {
+    let locale = validate_locale("ja-corrections").unwrap();
+
+    assert_eq!(locale.to_string(), "ja");
+}
+
+#[test]
+fn locale_for_ftml_preserves_standard_identifiers() {
+    assert_eq!(locale_for_ftml("ja-corrections"), "ja");
+    assert_eq!(locale_for_ftml("en-US"), "en-US");
+}
+
+#[test]
 fn validate_locale_rejects_invalid_locale() {
     let error = validate_locale("not a locale").unwrap_err();
 
@@ -83,6 +109,16 @@ fn parse_locales_accepts_empty_and_valid_locale_lists() {
     assert_eq!(
         locales.iter().map(ToString::to_string).collect::<Vec<_>>(),
         vec!["en-US", "ja"],
+    );
+}
+
+#[test]
+fn parse_locales_maps_wikidot_japanese_corrections_to_japanese() {
+    let locales = parse_locales(&["ja-corrections", "en"]).unwrap();
+
+    assert_eq!(
+        locales.iter().map(ToString::to_string).collect::<Vec<_>>(),
+        vec!["ja", "en"],
     );
 }
 

@@ -1,0 +1,107 @@
+{
+  "schema": "wikijump.wikidot_live_observation_artifact.v1",
+  "feature_id": "module-newpage",
+  "captured_at": "2026-07-28T22:46:26.947385+00:00",
+  "site": "sandbox-for-codex",
+  "oracle": "live Wikidot edit/PagePreviewModule plus run-owned template pages created and deleted on sandbox-for-codex",
+  "mutations": {
+    "created_then_deleted": [
+      "template:codex-newpage-a-1785278681",
+      "template:codex-newpage-b-1785278681",
+      "codex-newpage-plain-1785278681"
+    ],
+    "cleanup_verified": true
+  },
+  "cases": [
+    {
+      "case_id": "newpage-default",
+      "source": "[[module NewPage]]",
+      "observations": [
+        "The module renders a div.new-page-box wrapper with inline style text-align: center; margin: 1em 0.",
+        "The form action is dummy.html, method is get, and onsubmit calls WIKIDOT.modules.NewPageHelperModule.listeners.create(event).",
+        "The page-name field is input.text name=pageName type=text size=30 maxlength=128 style=margin: 1px.",
+        "The default submit button is value 'Create page', capitalized, not the documentation-derived lowercase 'create page'."
+      ],
+      "body_sha256": "0a5438c845aed5eb722de915e687d232315e9e1e2a189be7f99241057af11261",
+      "body": "\n\n\n<div class=\"new-page-box\" style=\"text-align: center; margin: 1em 0;\">\n\t<form action=\"dummy.html\" method=\"get\" onsubmit=\"WIKIDOT.modules.NewPageHelperModule.listeners.create(event);\">\n\t\t<input class=\"text\" name=\"pageName\" type=\"text\" size=\"30\" maxlength=\"128\" style=\"margin: 1px\"/>\n\t\t\t\t<input type=\"submit\" class=\"button\" value=\"Create page\" style=\"margin: 1px;\"/>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n\t</form>\n</div>\n"
+    },
+    {
+      "case_id": "newpage-documented-hidden-fields",
+      "source": "[[module NewPage size=\"30\" category=\"band\" parent=\"bands\" tags=\"rock\" button=\"Add a new rock band\"]]",
+      "observations": [
+        "A non-empty category attribute renders hidden input name=categoryName.",
+        "A non-empty tags attribute renders hidden input name=tags.",
+        "A non-empty parent attribute renders hidden input name=parent.",
+        "The button attribute overrides the submit value exactly after HTML attribute escaping."
+      ],
+      "body_sha256": "d8713b5c4530f3e09676552708f689b15e6f1890499da1cafea9ff33a6ca2318",
+      "body": "\n\n\n<div class=\"new-page-box\" style=\"text-align: center; margin: 1em 0;\">\n\t<form action=\"dummy.html\" method=\"get\" onsubmit=\"WIKIDOT.modules.NewPageHelperModule.listeners.create(event);\">\n\t\t<input class=\"text\" name=\"pageName\" type=\"text\" size=\"30\" maxlength=\"128\" style=\"margin: 1px\"/>\n\t\t\t\t<input type=\"submit\" class=\"button\" value=\"Add a new rock band\" style=\"margin: 1px;\"/>\n\t\t\t\t\t\t\t\t\t<input type=\"hidden\" name=\"categoryName\" value=\"band\"/>\n\t\t\t\t\t\t\t\t\t\t\t<input type=\"hidden\" name=\"tags\" value=\"rock\"/>\n\t\t\t\t\t\t\t<input type=\"hidden\" name=\"parent\" value=\"bands\"/>\n\t\t\t\t\n\t</form>\n</div>\n"
+    },
+    {
+      "case_id": "newpage-format-mode-goto",
+      "source": "[[module NewPage format=\"/^[0-9]{5}$/\" mode=\"save-and-go\" goTo=\"target\"]]",
+      "observations": [
+        "The format attribute renders hidden input name=format when non-empty.",
+        "The mode attribute renders hidden input name=mode for any non-empty value, including documented autosave modes and invalid values.",
+        "The goTo attribute renders hidden input name=goTo only when mode is also present and non-empty."
+      ]
+    },
+    {
+      "case_id": "newpage-argument-quirks",
+      "source": "[[module NewPage size=\"999\" button=\"   \" SIZE=\"15\" button='ignored' category=doc]]",
+      "observations": [
+        "NewPage recognized attributes are exact-case, not case-insensitive: SIZE is ignored.",
+        "NewPage uses double-quoted values; bare values and single-quoted values are ignored in observed cases.",
+        "Duplicate recognized attributes use the last recognized double-quoted value.",
+        "size=\"0\" and size=\"\" fall back to 30, but negative, non-numeric, whitespace-padded, and large values are echoed into the size attribute.",
+        "button=\"\" falls back to Create page, but whitespace-only button values are preserved."
+      ]
+    },
+    {
+      "case_id": "newpage-category-default",
+      "source": "[[module NewPage category=\"_default\"]]",
+      "observations": [
+        "Despite the documentation saying _default cannot be used as a category, live rendering still emits hidden input name=categoryName value=_default. Any rejection is deferred to the create action rather than the module renderer."
+      ],
+      "body_sha256": "4d2c1793aef3ef48fbdcded2c3b2a37b174f4b46d692747fa3f03696eabf5388"
+    },
+    {
+      "case_id": "newpage-template-one-existing",
+      "source": "[[module NewPage template=\"template:codex-newpage-a-1785278681\"]]",
+      "observations": [
+        "A single existing template page in the template: category renders hidden input name=template whose value is the template page id."
+      ],
+      "body_sha256": "fcb35dcfc6c4392b27433f385c6589d8647272530ba35adf260f006600d9d0f7",
+      "body": "\n\n\n<div class=\"new-page-box\" style=\"text-align: center; margin: 1em 0;\">\n\t<form action=\"dummy.html\" method=\"get\" onsubmit=\"WIKIDOT.modules.NewPageHelperModule.listeners.create(event);\">\n\t\t<input class=\"text\" name=\"pageName\" type=\"text\" size=\"30\" maxlength=\"128\" style=\"margin: 1px\"/>\n\t\t\t\t<input type=\"submit\" class=\"button\" value=\"Create page\" style=\"margin: 1px;\"/>\n\t\t\t\t\t\t\t\t\t\t\t<input type=\"hidden\" name=\"template\" value=\"1469067415\"/>\n\t\t\t\t\t\t\t\t\t\t\n\t</form>\n</div>\n"
+    },
+    {
+      "case_id": "newpage-template-two-existing",
+      "source": "[[module NewPage template=\"template:codex-newpage-a-1785278681,template:codex-newpage-b-1785278681\"]]",
+      "observations": [
+        "Two or more existing templates render a select name=template before the submit input.",
+        "The first option is value=\"\" selected=\"selected\" with visible text '-- Select a template --'.",
+        "Each template option value is the page id and visible text is the template page title."
+      ],
+      "body_sha256": "ff902adb6771c22e07d940fa80391731aac51dab070945e9bd2a925f9d798fd8",
+      "body": "\n\n\n<div class=\"new-page-box\" style=\"text-align: center; margin: 1em 0;\">\n\t<form action=\"dummy.html\" method=\"get\" onsubmit=\"WIKIDOT.modules.NewPageHelperModule.listeners.create(event);\">\n\t\t<input class=\"text\" name=\"pageName\" type=\"text\" size=\"30\" maxlength=\"128\" style=\"margin: 1px\"/>\n\t\t\t\t<select name=\"template\" style=\"margin: 1px\">\n\t\t\t<option value=\"\" selected=\"selected\">-- Select a template --</option>\n\t\t\t\t\t\t\t<option value=\"1469067415\">Codex NewPage Template A</option>\n\t\t\t\t\t\t\t<option value=\"1469067416\">Codex NewPage Template B</option>\n\t\t\t\t\t</select>\n\t\t\t\t<input type=\"submit\" class=\"button\" value=\"Create page\" style=\"margin: 1px;\"/>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n\t</form>\n</div>\n"
+    },
+    {
+      "case_id": "newpage-template-missing",
+      "source": "[[module NewPage template=\"template:codex-newpage-missing-1785278681\"]]",
+      "observations": [
+        "A missing template renders div.error-block with text Template \"<template>\" can not be found."
+      ],
+      "body_sha256": "715d26201b484345055a239c578cb84d832d3a7f9ef77303dd4c75e0e0f95af9",
+      "body": "\n\n<div class=\"error-block\">Template \"template:codex-newpage-missing-1785278681\" can not be found.</div>"
+    },
+    {
+      "case_id": "newpage-template-non-template-category",
+      "source": "[[module NewPage template=\"codex-newpage-plain-1785278681\"]]",
+      "observations": [
+        "An existing template argument outside the template: category renders div.error-block with text \"<page>\" is not in the \"template:\" category."
+      ],
+      "body_sha256": "154301cd9d250858342a8e7845d4e99857f35d65188897ce572aa2a400a3855e",
+      "body": "\n\n<div class=\"error-block\">\"codex-newpage-plain-1785278681\" is not in the \"template:\" category.</div>"
+    }
+  ]
+}

@@ -27,9 +27,18 @@
 //! This relation describes which site a site-user corresponds to.
 //! As such, it is an invariant that all users linked here are of the type `site`.
 
-use super::prelude::*;
+use super::RelationService;
+use super::structs::{
+    RelationDirection, RelationObject, RelationReference, relation_type_condition,
+};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::models::relation::{self, Entity as Relation, Model as RelationModel};
+use crate::services::ServiceContext;
 use crate::services::UserService;
+use crate::types::Reference;
 use crate::types::{RelationObjectType, RelationType, UserType};
+use paste::paste;
+use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder};
 
 impl_relation!(SiteUser, Site, site_id, User, user_id, (), NO_CREATE_IMPL);
 
@@ -54,7 +63,8 @@ impl RelationService {
         };
 
         // User to be added must of type 'site'
-        let user = UserService::get(ctx, Reference::Id(user_id))
+        // Which must necessarily be a Wikijump user
+        let user = UserService::get_real(ctx, Reference::Id(user_id))
             .await
             .or_raise(make_error)?;
 
@@ -198,13 +208,7 @@ async fn get_relation(
 
     let txn = ctx.transaction();
     let model = Relation::find()
-        .filter(
-            Condition::all()
-                .add(relation::Column::RelationType.eq(RelationType::SiteUser))
-                .add(condition)
-                .add(relation::Column::OverwrittenAt.is_null())
-                .add(relation::Column::DeletedAt.is_null()),
-        )
+        .filter(site_user_relation_condition(condition))
         .order_by_asc(relation::Column::CreatedAt)
         .one(txn)
         .await
@@ -216,5 +220,37 @@ async fn get_relation(
             "no site user relation found",
             ErrorType::RelationNotFound,
         )),
+    }
+}
+
+fn site_user_relation_condition(condition: Condition) -> Condition {
+    Condition::all()
+        .add(relation_type_condition(RelationType::SiteUser))
+        .add(condition)
+        .add(relation::Column::OverwrittenAt.is_null())
+        .add(relation::Column::DeletedAt.is_null())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::site_user_relation_condition;
+    use crate::models::relation;
+    use sea_orm::{
+        ColumnTrait, Condition, DatabaseBackend, EntityTrait, QueryFilter, QueryTrait,
+    };
+
+    #[test]
+    fn site_user_lookup_matches_legacy_and_namespaced_database_values() {
+        let statement = relation::Entity::find()
+            .filter(site_user_relation_condition(
+                Condition::all().add(relation::Column::DestId.eq(42)),
+            ))
+            .build(DatabaseBackend::Postgres);
+
+        let sql = statement.to_string();
+        assert!(
+            sql.contains(r#""relation"."relation_type" IN ('user', 'site-user')"#),
+            "{sql}"
+        );
     }
 }

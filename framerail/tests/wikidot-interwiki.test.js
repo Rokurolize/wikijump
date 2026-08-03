@@ -1,15 +1,109 @@
 import { strict as assert } from "node:assert"
 import test from "node:test"
+import vm from "node:vm"
 
 import {
   buildWikidotInterwikiFrameHtml,
   extractWikidotInterwikiLinks
-} from "../src/lib/wikidot-interwiki.js"
+} from "../src/lib/wikidot/wikidot-interwiki.js"
 import {
-  buildWikidotStyleFrameHtml,
   isUsableStyleFrameCss,
-  localizeWikidotThemeUrl
-} from "../src/lib/wikidot-styleframe.js"
+  localizeWikidotThemeUrl,
+  safeStyleFrameScriptJson
+} from "../src/lib/wikidot/wikidot-styleframe-contract.js"
+import { STYLEFRAME_INSERTION_RUNTIME_SOURCE } from "../src/lib/wikidot/wikidot-styleframe-runtime-insertion.js"
+import { STYLEFRAME_ORDERING_RUNTIME_SOURCE } from "../src/lib/wikidot/wikidot-styleframe-runtime-ordering.js"
+import { STYLEFRAME_OWNER_RUNTIME_SOURCE } from "../src/lib/wikidot/wikidot-styleframe-runtime-owner.js"
+import { buildWikidotStyleFrameRuntime } from "../src/lib/wikidot/wikidot-styleframe-runtime.js"
+import {
+  extractWikidotStyleFrameDeclarations,
+  extractWikidotStyleFrameStylesheets
+} from "../src/lib/wikidot/wikidot-styleframe-stylesheets.js"
+import { buildWikidotStyleFrameHtml } from "../src/lib/wikidot/wikidot-styleframe.js"
+
+test("serializes styleFrame runtime values without closing the script", () => {
+  const script = buildWikidotStyleFrameRuntime({
+    priority: "2<script>",
+    themes: ["https://example.com/theme.css?<unsafe>"],
+    css: "body::before { content: '</script>'; }"
+  })
+
+  assert.match(script, /const priority = "2\\u003cscript>"/u)
+  assert.match(script, /theme\.css\?\\u003cunsafe>/u)
+  assert.match(script, /const css = "body::before \{ content: '\\u003c\/script>'/u)
+  assert.match(STYLEFRAME_OWNER_RUNTIME_SOURCE, /node !== registration\?\.frame/u)
+  assert.match(STYLEFRAME_ORDERING_RUNTIME_SOURCE, /restoreStyleFrameOrder/u)
+  assert.match(
+    STYLEFRAME_INSERTION_RUNTIME_SOURCE,
+    /delete link\.dataset\.wikidotStylePreloaded/u
+  )
+  assert.ok(script.includes(STYLEFRAME_OWNER_RUNTIME_SOURCE))
+  assert.ok(script.includes(STYLEFRAME_ORDERING_RUNTIME_SOURCE))
+  assert.ok(script.includes(STYLEFRAME_INSERTION_RUNTIME_SOURCE))
+  assert.doesNotMatch(script, /<\/script>/u)
+  assert.equal(safeStyleFrameScriptJson("<script>"), '"\\u003cscript>"')
+})
+
+test("extracts priority-ordered styleFrame stylesheets for initial document CSS", () => {
+  assert.deepEqual(
+    extractWikidotStyleFrameStylesheets(
+      [
+        '<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=2&amp;theme=https%3A%2F%2Fcdn.scpwiki.com%2Ftheme%2Fen%2Fbasalt%2Fbasalt-bedrock-min.css&amp;css=%7B%24css%7D"></iframe>',
+        '<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&theme=https%3A%2F%2Fscp-wiki.wdfiles.com%2Flocal--code%2Ftheme%253Abasalt%2F1"></iframe>'
+      ],
+      "https://scp-wiki.wikijump.localhost"
+    ),
+    [
+      {
+        href: "https://scp-wiki.wjfiles.localhost/local--code/theme%3Abasalt/1",
+        priority: "1",
+        priorityValue: 1,
+        order: 1
+      },
+      {
+        href: "https://cdn.scpwiki.com/theme/en/basalt/basalt-bedrock-min.css",
+        priority: "2",
+        priorityValue: 2,
+        order: 0
+      }
+    ]
+  )
+})
+
+test("extracts external and inline styleFrame CSS in canonical cascade order", () => {
+  assert.deepEqual(
+    extractWikidotStyleFrameDeclarations(
+      [
+        '<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=2&amp;theme=https%3A%2F%2Fexample.com%2Flate.css&amp;css=.late%7Bdisplay%3Anone%7D"></iframe>',
+        '<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&amp;css=.early%7Bdisplay%3Ablock%7D"></iframe>'
+      ],
+      "https://scp-wiki.wikijump.localhost"
+    ),
+    [
+      {
+        css: ".early{display:block}",
+        kind: "inline",
+        order: 2,
+        priority: "1",
+        priorityValue: 1
+      },
+      {
+        href: "https://example.com/late.css",
+        kind: "theme",
+        order: 0,
+        priority: "2",
+        priorityValue: 2
+      },
+      {
+        css: ".late{display:none}",
+        kind: "inline",
+        order: 1,
+        priority: "2",
+        priorityValue: 2
+      }
+    ]
+  )
+})
 
 const cromPage = {
   translations: [
@@ -23,6 +117,105 @@ const cromPage = {
   translationOf: null
 }
 
+const executeStyleFrame = (
+  html,
+  head,
+  scheduledCallbacks = [],
+  { frameElement = null, parentWindow = null } = {}
+) => {
+  const script = html.match(/<script>([\s\S]*?)<\/script>/u)?.[1]
+  assert.ok(script)
+
+  const document = {
+    baseURI: "https://scp-wiki.wikijump.localhost/",
+    head,
+    documentElement: head,
+    defaultView: {},
+    querySelectorAll: (selector) => head.querySelectorAll(selector),
+    createElement: (tagName) => ({
+      dataset: {},
+      tagName: tagName.toUpperCase(),
+      remove() {
+        head.removeChild(this)
+      }
+    })
+  }
+  const listeners = new Map()
+  const window = {
+    addEventListener: (type, callback) => listeners.set(type, callback),
+    document,
+    frameElement
+  }
+  if (parentWindow) parentWindow.document = document
+  window.parent = parentWindow ?? window
+  vm.runInNewContext(script, {
+    document,
+    setTimeout: (callback) => scheduledCallbacks.push(callback),
+    URL,
+    window
+  })
+  return { listeners, window }
+}
+
+const createHead = (...initialNodes) => {
+  const children = [...initialNodes]
+  let moveCount = 0
+  const moveBefore = (node, referenceNode = null) => {
+    moveCount += 1
+    node.moveCount = (node.moveCount ?? 0) + 1
+    const previousIndex = children.indexOf(node)
+    if (previousIndex !== -1) children.splice(previousIndex, 1)
+    const referenceIndex = referenceNode === null ? -1 : children.indexOf(referenceNode)
+    if (referenceNode !== null) assert.notEqual(referenceIndex, -1)
+    children.splice(referenceIndex === -1 ? children.length : referenceIndex, 0, node)
+  }
+
+  return {
+    appendChild: (node) => moveBefore(node),
+    children,
+    get moveCount() {
+      return moveCount
+    },
+    insertBefore: moveBefore,
+    removeChild: (node) => {
+      const index = children.indexOf(node)
+      if (index !== -1) children.splice(index, 1)
+    },
+    querySelectorAll: (selector) => {
+      if (selector === '[data-wikidot-style-frame="wikidot-style-frame"]') {
+        return children.filter(
+          (node) => node.dataset.wikidotStyleFrame === "wikidot-style-frame"
+        )
+      }
+      if (selector === "[data-wikijump-generated-css]") {
+        return children.filter((node) => node.dataset.wikijumpGeneratedCss !== undefined)
+      }
+      if (selector === "[data-wikijump-generated-css-clone]") {
+        return children.filter(
+          (node) => node.dataset.wikijumpGeneratedCssClone !== undefined
+        )
+      }
+      if (selector === "link[data-wikidot-style-preloaded]") {
+        return children.filter(
+          (node) =>
+            node.tagName === "LINK" && node.dataset.wikidotStylePreloaded !== undefined
+        )
+      }
+      if (selector === "style[data-wikidot-style-preloaded]") {
+        return children.filter(
+          (node) =>
+            node.tagName === "STYLE" && node.dataset.wikidotStylePreloaded !== undefined
+        )
+      }
+      const owner = selector.match(/^\[data-wikidot-style-owner="(.+)"\]$/u)?.[1]
+      if (owner) {
+        return children.filter((node) => node.dataset.wikidotStyleOwner === owner)
+      }
+      assert.fail(`Unexpected selector: ${selector}`)
+    }
+  }
+}
+
 test("builds SCP interwiki language links from Crom translations", () => {
   assert.deepEqual(
     extractWikidotInterwikiLinks({
@@ -33,6 +226,119 @@ test("builds SCP interwiki language links from Crom translations", () => {
     }).map((link) => link.label),
     ["中文", "Français", "日本語", "한국어", "Русский", "Tiếng Việt"]
   )
+})
+
+test("replaces styles owned by a reused styleFrame across page navigation", () => {
+  const baseStyle = { dataset: {}, id: "base" }
+  const generatedPageStyle = {
+    dataset: { wikijumpGeneratedCss: "0" },
+    id: "generated-page"
+  }
+  const head = createHead(baseStyle, generatedPageStyle)
+  const parentWindow = {}
+  const frameElement = { dataset: {}, isConnected: true }
+  const firstCallbacks = []
+
+  const first = executeStyleFrame(
+    buildWikidotStyleFrameHtml({
+      priority: "1",
+      themes: ["https://example.com/page-a.css"]
+    }),
+    head,
+    firstCallbacks,
+    { frameElement, parentWindow }
+  )
+  const firstOwner = frameElement.dataset.wikidotStyleOwner
+  executeStyleFrame(
+    buildWikidotStyleFrameHtml({
+      priority: "2",
+      themes: ["https://example.com/page-b.css"]
+    }),
+    head,
+    [],
+    { frameElement, parentWindow }
+  )
+
+  assert.notEqual(frameElement.dataset.wikidotStyleOwner, firstOwner)
+  assert.deepEqual(
+    head.children.map(
+      (node) =>
+        node.href ??
+        node.id ??
+        `generated-clone-${node.dataset.wikijumpGeneratedCssClone}`
+    ),
+    ["base", "generated-page", "https://example.com/page-b.css", "generated-clone-0"]
+  )
+
+  const moveCount = head.moveCount
+  firstCallbacks.forEach((callback) => callback())
+  assert.equal(head.moveCount, moveCount)
+
+  first.listeners.get("pagehide")?.()
+  assert.deepEqual(
+    head.children.map(
+      (node) =>
+        node.href ??
+        node.id ??
+        `generated-clone-${node.dataset.wikijumpGeneratedCssClone}`
+    ),
+    ["base", "generated-page", "https://example.com/page-b.css", "generated-clone-0"]
+  )
+
+  executeStyleFrame(
+    buildWikidotStyleFrameHtml({
+      priority: "1",
+      themes: ["https://example.com/page-a.css"]
+    }),
+    head,
+    [],
+    { frameElement, parentWindow }
+  )
+  assert.deepEqual(
+    head.children.map(
+      (node) =>
+        node.href ??
+        node.id ??
+        `generated-clone-${node.dataset.wikijumpGeneratedCssClone}`
+    ),
+    ["base", "generated-page", "https://example.com/page-a.css", "generated-clone-0"]
+  )
+})
+
+test("removes only the styles owned by the unloaded styleFrame", () => {
+  const baseStyle = { dataset: {}, id: "base" }
+  const head = createHead(baseStyle)
+  const parentWindow = {}
+  const firstFrame = { dataset: {}, isConnected: true }
+  const secondFrame = { dataset: {}, isConnected: true }
+  const first = executeStyleFrame(
+    buildWikidotStyleFrameHtml({ themes: ["https://example.com/a.css"] }),
+    head,
+    [],
+    { frameElement: firstFrame, parentWindow }
+  )
+  executeStyleFrame(
+    buildWikidotStyleFrameHtml({ themes: ["https://example.com/b.css"] }),
+    head,
+    [],
+    { frameElement: secondFrame, parentWindow }
+  )
+
+  first.listeners.get("pagehide")?.({ persisted: true })
+
+  assert.deepEqual(
+    head.children.map((node) => node.href ?? node.id),
+    ["base", "https://example.com/a.css", "https://example.com/b.css"]
+  )
+
+  first.listeners.get("unload")?.()
+
+  assert.deepEqual(
+    head.children.map((node) => node.href ?? node.id),
+    ["base", "https://example.com/b.css"]
+  )
+  assert.equal(firstFrame.dataset.wikidotStyleOwner, undefined)
+  assert.ok(secondFrame.dataset.wikidotStyleOwner)
 })
 
 test("renders Wikidot-compatible interwiki visible text for translated SCP pages", () => {
@@ -67,14 +373,160 @@ test("builds styleFrame parent injection for theme stylesheets", () => {
   })
 
   assert.match(html, /wikidot-style-theme-count" content="2"/)
-  assert.match(html, /window\.parent\.document/)
+  assert.match(html, /targetWindow\.document/)
   assert.match(html, /head\.insertBefore\(element, laterStyle\)/)
   assert.match(html, /restoreStyleFrameOrder/)
-  assert.match(html, /head\.appendChild\(node\)/)
+  assert.match(html, /link\[data-wikidot-style-preloaded\]/)
+  assert.match(html, /generatedCssNodes/)
+  assert.match(html, /generatedCssCloneNodes/)
+  assert.match(html, /if \(!alreadyOrdered\)/)
   assert.match(html, /cdn\.scpwiki\.com\/theme\/en\/basalt\/basalt-bedrock-min\.css/)
   assert.match(html, /scp-wiki\.wjfiles\.localhost\/local--code\/theme%3Abasalt\/1/)
   assert.doesNotMatch(html, /<style>\{\$css\}<\/style>/)
   assert.doesNotMatch(html, /<style>\$css<\/style>/)
+})
+
+test("adopts an SSR stylesheet instead of loading the styleFrame theme twice", () => {
+  const preloaded = {
+    dataset: { wikidotStylePreloaded: "", wikidotStylePriority: "2" },
+    href: "https://example.com/theme.css",
+    tagName: "LINK"
+  }
+  const head = createHead(preloaded)
+
+  executeStyleFrame(
+    buildWikidotStyleFrameHtml({
+      priority: "2",
+      themes: ["https://example.com/theme.css"]
+    }),
+    head
+  )
+
+  assert.equal(head.children.length, 1)
+  assert.equal(head.children[0], preloaded)
+  assert.equal(preloaded.dataset.wikidotStylePreloaded, undefined)
+  assert.equal(preloaded.dataset.wikidotStyleFrame, "wikidot-style-frame")
+  assert.match(preloaded.dataset.wikidotStyleOwner, /^wikidot-style-frame-/u)
+  assert.equal(head.moveCount, 0)
+})
+
+test("adopts SSR inline styleFrame CSS without moving the parser-created node", () => {
+  const preloaded = {
+    dataset: { wikidotStylePreloaded: "", wikidotStylePriority: "2" },
+    tagName: "STYLE",
+    textContent: ".included { display: none; }"
+  }
+  const generatedPageStyle = {
+    dataset: { wikijumpGeneratedCss: "0" },
+    id: "generated-page"
+  }
+  const head = createHead(preloaded, generatedPageStyle)
+  const scheduledCallbacks = []
+
+  executeStyleFrame(
+    buildWikidotStyleFrameHtml({
+      priority: "2",
+      css: ".included { display: none; }"
+    }),
+    head,
+    scheduledCallbacks
+  )
+
+  assert.equal(head.children.length, 2)
+  assert.equal(head.children[0], preloaded)
+  assert.equal(preloaded.dataset.wikidotStylePreloaded, undefined)
+  assert.equal(preloaded.dataset.wikidotStyleFrame, "wikidot-style-frame")
+  assert.equal(head.moveCount, 0)
+  assert.deepEqual(scheduledCallbacks, [])
+})
+
+test("keeps app styles before styleFrame CSS and generated CSS clones", () => {
+  const baseStyle = { dataset: {}, id: "base" }
+  const generatedPageStyle0 = {
+    dataset: { wikijumpGeneratedCss: "0" },
+    id: "generated-page-0"
+  }
+  const generatedPageStyle1 = {
+    dataset: { wikijumpGeneratedCss: "1" },
+    id: "generated-page-1"
+  }
+  const appStyle = { dataset: {}, id: "app" }
+  const head = createHead(baseStyle, generatedPageStyle0, generatedPageStyle1, appStyle)
+  const scheduledCallbacks = []
+
+  executeStyleFrame(
+    buildWikidotStyleFrameHtml({
+      priority: "2",
+      themes: ["https://example.com/late.css"]
+    }),
+    head,
+    scheduledCallbacks
+  )
+  executeStyleFrame(
+    buildWikidotStyleFrameHtml({
+      priority: "1",
+      themes: ["https://example.com/early.css"],
+      css: ".included { display: none; }"
+    }),
+    head,
+    scheduledCallbacks
+  )
+
+  assert.deepEqual(
+    head.children.map((node) =>
+      node.dataset.wikidotStyleFrame
+        ? `${node.dataset.wikidotStylePriority}:${node.dataset.wikidotStyleId}`
+        : (node.id ?? `generated-clone-${node.dataset.wikijumpGeneratedCssClone}`)
+    ),
+    [
+      "base",
+      "generated-page-0",
+      "generated-page-1",
+      "app",
+      "1:theme-0",
+      "1:inline-css",
+      "2:theme-0",
+      "generated-clone-0",
+      "generated-clone-1"
+    ]
+  )
+
+  const nodeCount = head.children.length
+  const moveCount = head.moveCount
+  scheduledCallbacks.forEach((callback) => callback())
+  assert.equal(head.children.length, nodeCount)
+  assert.equal(head.moveCount, moveCount)
+  assert.equal(generatedPageStyle0.moveCount, undefined)
+  assert.equal(generatedPageStyle1.moveCount, undefined)
+  assert.deepEqual(
+    head.children.map((node) => node.id ?? node.dataset.wikidotStylePriority),
+    [
+      "base",
+      "generated-page-0",
+      "generated-page-1",
+      "app",
+      "1",
+      "1",
+      "2",
+      undefined,
+      undefined
+    ]
+  )
+})
+
+test("appends styleFrame CSS when there is no generated page CSS", () => {
+  const baseStyle = { dataset: {}, id: "base" }
+  const head = createHead(baseStyle)
+
+  executeStyleFrame(
+    buildWikidotStyleFrameHtml({
+      themes: ["https://example.com/theme.css"]
+    }),
+    head
+  )
+
+  assert.equal(head.children[0], baseStyle)
+  assert.equal(head.children[1].href, "https://example.com/theme.css")
 })
 
 test("keeps non-placeholder styleFrame inline CSS safe", () => {

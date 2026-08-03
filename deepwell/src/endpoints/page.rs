@@ -20,11 +20,9 @@
 
 use super::prelude::*;
 use crate::models::file::Model as FileModel;
-use crate::models::page::{self, Entity as Page, Model as PageModel};
-use crate::models::page_category::{self, Entity as PageCategory};
-use crate::models::page_revision;
-use crate::services::TextService;
+use crate::models::page::Model as PageModel;
 use crate::services::file::{GetFileOutput, GetPageFiles};
+use crate::services::forum_thread::ForumThreadService;
 use crate::services::page::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
     GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
@@ -32,25 +30,252 @@ use crate::services::page::{
     PageEditPermissionOutput, RestorePage, RestorePageOutput, RollbackPage,
     SetPageLayout,
 };
-use crate::services::page_query::{
-    AuthorSelector, CategoriesSelector, DateSelector, FoundPageFields,
-    IncludedCategories, OrderBySelector, OrderProperty, PageParentSelector, PageQuery,
-    PageQueryService, PageTypeSelector, PaginationSelector, RangeSelector, TagCondition,
-};
+use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::render::{WikidotListPagesFeedInput, WikidotListPagesFeedOutput};
+use crate::services::{MutationAuthorization, TextService};
 use crate::types::{
-    Action, AliasType, Bytes, FileOrder, PageDetails, PageId, Permission, Reference,
-    RerenderDepth, Resource,
+    Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
+    Resource,
 };
 use crate::utils::get_category_name;
 use futures::future::try_join_all;
-use sea_orm::{
-    ColumnTrait, EntityTrait, JoinType, QueryFilter, QuerySelect, RelationTrait,
-};
+use regex::Regex;
 use std::borrow::Cow;
-use std::collections::BTreeSet;
-use time::OffsetDateTime;
+use std::collections::BTreeMap;
+use std::sync::LazyLock;
+use wikidot_normalize::normalize;
+
+static WIKIDOT_LIST_PAGES_SET_PAIR_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?s)<span class="set (?P<name_class>[^"]+)"><span class="name">(?P<name>.*?)</span>\s*</span>\s*<span class="set (?P<value_class>[^"]+)"><span class="value">(?P<value>.*?)</span>\s*</span>"#,
+    )
+    .expect("Wikidot ListPages set-pair expression is valid")
+});
+
+#[derive(Deserialize)]
+struct WikidotListPagesModuleInput {
+    site_id: i64,
+    module_body: String,
+    parameters: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotListPagesModuleOutput {
+    pub body: String,
+}
+
+#[derive(Deserialize)]
+struct WikidotPagePreviewInput {
+    site_id: i64,
+    title: String,
+    wikitext: String,
+}
+
+#[derive(Deserialize)]
+struct WikidotPageDiscussionInput {
+    site_id: i64,
+    page_id: i64,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotPageDiscussionOutput {
+    pub thread_id: i64,
+    pub thread_unix_title: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotPagePreviewOutput {
+    pub body: String,
+    pub styles: Vec<String>,
+}
+
+pub async fn wikidot_page_preview(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotPagePreviewOutput> {
+    let input: WikidotPagePreviewInput = parse!(params, Page);
+    let output = RenderService::render_wikidot_page_preview(
+        ctx,
+        input.site_id,
+        &input.title,
+        input.wikitext,
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            format!(
+                "failed to render Wikidot page preview in site ID {}",
+                input.site_id,
+            ),
+            ErrorType::Page,
+        )
+    })?;
+
+    Ok(WikidotPagePreviewOutput {
+        body: output.html_output.body,
+        styles: output.html_output.styles,
+    })
+}
+
+pub async fn wikidot_page_discussion_create(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<WikidotPageDiscussionOutput>> {
+    let input: WikidotPageDiscussionInput = parse!(params, Page);
+    let Some(page) =
+        PageService::get_direct_optional_for_update(ctx, input.page_id, false)
+            .await
+            .or_raise(|| Error::new("failed to load discussion page", ErrorType::Page))?
+    else {
+        return Ok(None);
+    };
+    if page.site_id != input.site_id {
+        return Ok(None);
+    }
+
+    let can_view = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id: input.site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to check page discussion view permission",
+            ErrorType::Permission,
+        )
+    })?;
+    if !can_view {
+        return Ok(None);
+    }
+
+    let revision = PageRevisionService::get_latest(ctx, page.site_id, page.page_id)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to load page discussion title",
+                ErrorType::PageRevision,
+            )
+        })?;
+    let thread = ForumThreadService::get_or_create_page_discussion(
+        ctx,
+        &page,
+        crate::constants::ANONYMOUS_USER_ID,
+        &revision.title,
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to create Wikidot page discussion",
+            ErrorType::ForumThread,
+        )
+    })?;
+
+    let mut thread_unix_title = thread.title;
+    normalize(&mut thread_unix_title);
+    Ok(Some(WikidotPageDiscussionOutput {
+        thread_id: thread.forum_thread_id,
+        thread_unix_title,
+    }))
+}
+
+pub async fn wikidot_list_pages_module(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotListPagesModuleOutput> {
+    let input: WikidotListPagesModuleInput = parse!(params, Page);
+    let output = RenderService::render_wikidot_list_pages_module(
+        ctx,
+        input.site_id,
+        input.module_body,
+        &input.parameters,
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            format!(
+                "failed to render Wikidot ListPages module in site ID {}",
+                input.site_id,
+            ),
+            ErrorType::Page,
+        )
+    })?;
+
+    Ok(WikidotListPagesModuleOutput {
+        body: normalize_wikidot_list_pages_set_spacing(
+            &normalize_wikidot_list_pages_set_pairs(&output.html_output.body),
+        ),
+    })
+}
+
+pub async fn wikidot_list_pages_feed(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotListPagesFeedOutput> {
+    let input: WikidotListPagesFeedInput = parse!(params, Page);
+    RenderService::render_wikidot_list_pages_feed(ctx, input)
+        .await
+        .or_raise(|| {
+            Error::new("failed to render Wikidot ListPages feed", ErrorType::Page)
+        })
+}
+
+fn normalize_wikidot_list_pages_set_spacing(body: &str) -> String {
+    body.replace(
+        r#"</span><span class="value">"#,
+        r#"</span> <span class="value">"#,
+    )
+    .replace(
+        r#"</span><span class="set "#,
+        r#"</span> <span class="set "#,
+    )
+}
+
+/// FTML renders adjacent inline spans as sibling nodes in this module shape.
+/// wikidot.py's ListPages parser instead treats the name and value spans as one
+/// `set` record, so restore that documented connector-only wire shape here.
+fn normalize_wikidot_list_pages_set_pairs(body: &str) -> String {
+    WIKIDOT_LIST_PAGES_SET_PAIR_REGEX
+        .replace_all(body, |captures: &regex::Captures<'_>| {
+            let name_class = captures
+                .name("name_class")
+                .expect("set-pair name class capture exists")
+                .as_str();
+            let value_class = captures
+                .name("value_class")
+                .expect("set-pair value class capture exists")
+                .as_str();
+            if name_class != value_class {
+                return captures
+                    .get(0)
+                    .expect("set-pair full capture exists")
+                    .as_str()
+                    .to_owned();
+            }
+            format!(
+                r#"<span class="set {name_class}"><span class="name">{}</span><span class="value">{}</span></span>"#,
+                captures
+                    .name("name")
+                    .expect("set-pair name capture exists")
+                    .as_str(),
+                captures
+                    .name("value")
+                    .expect("set-pair value capture exists")
+                    .as_str(),
+            )
+        })
+        .into_owned()
+}
 
 pub async fn page_create(
     ctx: &ServiceContext<'_>,
@@ -84,8 +309,6 @@ pub async fn page_get(
         details,
     } = parse!(params, Page);
 
-    info!("Getting page {reference:?} in site ID {site_id}");
-
     let make_error = || Error::new("failed to get page", ErrorType::Page);
 
     let page = PageService::get_optional(ctx, site_id, reference)
@@ -110,8 +333,6 @@ pub async fn page_get_direct(
         details,
         allow_deleted,
     } = parse!(params, Page);
-
-    info!("Getting page ID {page_id} in site ID {site_id}");
 
     let make_error = || {
         Error::new(
@@ -149,7 +370,6 @@ pub async fn page_get_deleted(
         )
     };
 
-    info!("Getting deleted page {slug} in site ID {site_id}");
     let get_deleted_page = PageService::get_deleted_by_slug(ctx, site_id, &slug)
         .await
         .or_raise(make_error)?
@@ -175,8 +395,6 @@ pub async fn page_get_score(
         page: reference,
     } = parse!(params, Page);
 
-    info!("Getting score for page {reference:?} in site ID {site_id}");
-
     let make_error = || Error::new("failed to get page score", ErrorType::Page);
 
     let page_id = PageService::get_id(ctx, site_id, reference)
@@ -199,8 +417,6 @@ pub async fn page_get_files(
         site_id,
         deleted,
     } = parse!(params, Page);
-
-    info!("Getting files for page ID {page_id} in site ID {site_id}");
 
     let make_error = || Error::new("failed to get files for page", ErrorType::Page);
 
@@ -234,436 +450,18 @@ pub async fn page_tags_select(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<Vec<String>> {
-    const MAX_FILTER_VALUES: usize = 100;
-
-    #[derive(Deserialize, Debug)]
-    struct Input<'a> {
-        site: Reference<'a>,
-        categories: Option<Vec<String>>,
-        pages: Option<Vec<String>>,
-    }
-
-    let Input {
-        site,
-        categories,
-        pages,
-    } = parse!(params, Page);
-
-    if categories
-        .as_ref()
-        .is_some_and(|values| values.len() > MAX_FILTER_VALUES)
-        || pages
-            .as_ref()
-            .is_some_and(|values| values.len() > MAX_FILTER_VALUES)
-    {
-        return Err(Error::new(
-            format!("page tag filters may contain at most {MAX_FILTER_VALUES} values"),
-            ErrorType::Request,
-        )
-        .into());
-    }
-
-    let make_error = || Error::new("failed to select page tags", ErrorType::Page);
-    let site_id = SiteService::get_id(ctx, site).await.or_raise(make_error)?;
-    info!("Selecting page tags in site ID {site_id}");
-
-    if matches!(categories, Some(ref categories) if categories.is_empty())
-        || matches!(pages, Some(ref pages) if pages.is_empty())
-    {
-        return Ok(Vec::new());
-    }
-
-    let category_ids = match categories {
-        None => None,
-        Some(categories) => {
-            let selected_categories = categories.into_iter().collect::<BTreeSet<_>>();
-            let category_ids = PageCategory::find()
-                .filter(page_category::Column::SiteId.eq(site_id))
-                .filter(page_category::Column::Slug.is_in(selected_categories))
-                .select_only()
-                .column(page_category::Column::CategoryId)
-                .into_tuple::<i64>()
-                .all(ctx.transaction())
-                .await
-                .or_raise(make_error)?
-                .into_iter()
-                .collect::<Vec<_>>();
-
-            if category_ids.is_empty() {
-                return Ok(Vec::new());
-            }
-
-            Some(category_ids)
-        }
-    };
-
-    let txn = ctx.transaction();
-    let mut page_query = Page::find()
-        .filter(page::Column::SiteId.eq(site_id))
-        .filter(page::Column::DeletedAt.is_null());
-
-    if let Some(category_ids) = category_ids {
-        page_query = page_query.filter(page::Column::PageCategoryId.is_in(category_ids));
-    }
-    if let Some(pages) = pages {
-        page_query = page_query.filter(page::Column::Slug.is_in(pages));
-    }
-
-    let tags = page_query
-        .join(JoinType::Join, page::Relation::PageRevision.def())
-        .select_only()
-        .column(page_revision::Column::Tags)
-        .into_tuple::<Vec<String>>()
-        .all(txn)
+    PageQueryService::select_tags(ctx, parse!(params, Page))
         .await
-        .or_raise(make_error)?
-        .into_iter()
-        .flatten()
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .collect();
-
-    Ok(tags)
+        .or_raise(|| Error::new("failed to select page tags", ErrorType::Page))
 }
 
 pub async fn page_select(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<Vec<String>> {
-    const MAX_FILTER_VALUES: usize = 100;
-
-    #[derive(Deserialize, Debug)]
-    struct Input<'a> {
-        site: Reference<'a>,
-        pagetype: Option<String>,
-        categories: Option<Vec<String>>,
-        tags_any: Option<Vec<String>>,
-        tags_all: Option<Vec<String>>,
-        tags_none: Option<Vec<String>>,
-        parent: Option<String>,
-        created_by: Option<String>,
-        rating: Option<String>,
-        order: Option<String>,
-    }
-
-    let Input {
-        site,
-        pagetype,
-        categories,
-        tags_any,
-        tags_all,
-        tags_none,
-        parent,
-        created_by,
-        rating,
-        order,
-    } = parse!(params, Page);
-
-    for (name, values) in [
-        ("categories", categories.as_ref()),
-        ("tags_any", tags_any.as_ref()),
-        ("tags_all", tags_all.as_ref()),
-        ("tags_none", tags_none.as_ref()),
-    ] {
-        if values.is_some_and(|values| values.len() > MAX_FILTER_VALUES) {
-            return Err(Error::new(
-                format!("page selection filter {name} may contain at most {MAX_FILTER_VALUES} values"),
-                ErrorType::Request,
-            )
-            .into());
-        }
-    }
-
-    if matches!(categories, Some(ref values) if values.is_empty())
-        || matches!(tags_any, Some(ref values) if values.is_empty())
-    {
-        return Ok(Vec::new());
-    }
-    let tags_all = tags_all.filter(|values| !values.is_empty());
-    let tags_none = tags_none.filter(|values| !values.is_empty());
-
-    let make_error = || Error::new("failed to select pages", ErrorType::Page);
-    let site_id = SiteService::get_id(ctx, site).await.or_raise(make_error)?;
-    info!("Selecting XML-RPC page list in site ID {site_id}");
-
-    let normalize_optional = |value: Option<String>| {
-        value.and_then(|value| {
-            let value = value.trim();
-            (!value.is_empty()).then(|| value.to_owned())
-        })
-    };
-    let parent = normalize_optional(parent);
-    let created_by = normalize_optional(created_by);
-    let rating = normalize_optional(rating);
-
-    let page_type = parse_page_select_type(pagetype.as_deref())?;
-    let order = parse_page_select_order(order.as_deref())?;
-    let rating_filter = match rating {
-        Some(rating) => Some(parse_page_select_rating(&rating)?),
-        None => None,
-    };
-
-    let created_by = match created_by {
-        None => None,
-        Some(created_by) => {
-            let user_id = resolve_page_select_created_by(ctx, &created_by).await?;
-            match user_id {
-                Some(user_id) => Some(user_id),
-                None => return Ok(Vec::new()),
-            }
-        }
-    };
-    let created_by_ids = created_by.into_iter().collect::<Vec<_>>();
-
-    let categories = categories
-        .unwrap_or_default()
-        .into_iter()
-        .map(Cow::Owned)
-        .collect::<Vec<_>>();
-    let tags_any = tags_any
-        .unwrap_or_default()
-        .into_iter()
-        .map(Cow::Owned)
-        .collect::<Vec<_>>();
-    let tags_all = tags_all
-        .unwrap_or_default()
-        .into_iter()
-        .map(Cow::Owned)
-        .collect::<Vec<_>>();
-    let tags_none = tags_none
-        .unwrap_or_default()
-        .into_iter()
-        .map(Cow::Owned)
-        .collect::<Vec<_>>();
-
-    let parent_reference;
-    let parent_references;
-    let page_parent = match parent.as_deref() {
-        None => PageParentSelector::All,
-        Some("-") => PageParentSelector::NoParent,
-        Some(parent) => {
-            parent_reference = Reference::Slug(Cow::Borrowed(parent));
-            parent_references = [parent_reference];
-            PageParentSelector::HasParents(&parent_references)
-        }
-    };
-
-    let found = PageQueryService::find(
-        ctx,
-        PageQuery {
-            current_page_id: 0,
-            current_site_id: site_id,
-            queried_site_id: Some(site_id),
-            page_type,
-            categories: CategoriesSelector {
-                included_categories: if categories.is_empty() {
-                    IncludedCategories::All
-                } else {
-                    IncludedCategories::List(&categories)
-                },
-                excluded_categories: &[],
-            },
-            tags: TagCondition {
-                any_present: &tags_any,
-                all_present: &tags_all,
-                none_present: &tags_none,
-            },
-            page_parent,
-            contains_outgoing_links: &[],
-            creation_date: DateSelector::FromPresent {
-                start: OffsetDateTime::UNIX_EPOCH,
-            },
-            update_date: DateSelector::FromPresent {
-                start: OffsetDateTime::UNIX_EPOCH,
-            },
-            author: if created_by_ids.is_empty() {
-                AuthorSelector::All
-            } else {
-                AuthorSelector::Any {
-                    user_ids: &created_by_ids,
-                    wikidot_snapshot_names: &[],
-                }
-            },
-            score: &[],
-            votes: &[],
-            offset: 0,
-            range: RangeSelector::Current,
-            name: None,
-            slug: None,
-            slugs: &[],
-            data_form_fields: &[],
-            order: Some(order),
-            candidate_limit: None,
-            pagination: PaginationSelector::default(),
-            variables: &[],
-            fields: FoundPageFields {
-                slug: true,
-                score: rating_filter.is_some(),
-                ..FoundPageFields::default()
-            },
-        },
-    )
-    .await
-    .or_raise(make_error)?;
-
-    let pages = found
-        .pages
-        .into_iter()
-        .filter(|page| {
-            rating_filter
-                .as_ref()
-                .is_none_or(|filter| filter.matches(page.score.unwrap_or(0.0)))
-        })
-        .filter_map(|page| page.slug)
-        .collect();
-
-    Ok(pages)
-}
-
-async fn resolve_page_select_created_by(
-    ctx: &ServiceContext<'_>,
-    created_by: &str,
-) -> Result<Option<i64>> {
-    if let Ok(user_id) = created_by.parse() {
-        return Ok(Some(user_id));
-    }
-
-    let make_error = || Error::new("failed to resolve page creator", ErrorType::Page);
-    Ok(AliasService::get_optional(ctx, AliasType::User, created_by)
+    PageQueryService::select_pages(ctx, parse!(params, Page))
         .await
-        .or_raise(make_error)?
-        .map(|alias| alias.target_id))
-}
-
-#[derive(Debug, Copy, Clone)]
-enum PageSelectComparison {
-    GreaterThan,
-    GreaterOrEqual,
-    LessThan,
-    LessOrEqual,
-    Equal,
-    NotEqual,
-}
-
-#[derive(Debug, Copy, Clone)]
-struct PageSelectRatingFilter {
-    comparison: PageSelectComparison,
-    value: f32,
-}
-
-impl PageSelectRatingFilter {
-    fn matches(self, rating: f32) -> bool {
-        match self.comparison {
-            PageSelectComparison::GreaterThan => rating > self.value,
-            PageSelectComparison::GreaterOrEqual => rating >= self.value,
-            PageSelectComparison::LessThan => rating < self.value,
-            PageSelectComparison::LessOrEqual => rating <= self.value,
-            PageSelectComparison::Equal => (rating - self.value).abs() < f32::EPSILON,
-            PageSelectComparison::NotEqual => (rating - self.value).abs() >= f32::EPSILON,
-        }
-    }
-}
-
-fn parse_page_select_type(value: Option<&str>) -> Result<PageTypeSelector> {
-    match value.unwrap_or("*").trim().to_ascii_lowercase().as_str() {
-        "" | "*" | "all" => Ok(PageTypeSelector::All),
-        "normal" | "page" | "pages" => Ok(PageTypeSelector::Normal),
-        "hidden" => Ok(PageTypeSelector::Hidden),
-        other => Err(Error::new(
-            format!("unsupported pages.select pagetype: {other}"),
-            ErrorType::Page,
-        )
-        .into()),
-    }
-}
-
-fn parse_page_select_rating(value: &str) -> Result<PageSelectRatingFilter> {
-    let value = value.trim();
-    let (comparison, number) = if let Some(number) = value.strip_prefix(">=") {
-        (PageSelectComparison::GreaterOrEqual, number)
-    } else if let Some(number) = value.strip_prefix("<=") {
-        (PageSelectComparison::LessOrEqual, number)
-    } else if let Some(number) = value.strip_prefix("!=") {
-        (PageSelectComparison::NotEqual, number)
-    } else if let Some(number) = value.strip_prefix("==") {
-        (PageSelectComparison::Equal, number)
-    } else if let Some(number) = value.strip_prefix('>') {
-        (PageSelectComparison::GreaterThan, number)
-    } else if let Some(number) = value.strip_prefix('<') {
-        (PageSelectComparison::LessThan, number)
-    } else if let Some(number) = value.strip_prefix('=') {
-        (PageSelectComparison::Equal, number)
-    } else {
-        (PageSelectComparison::Equal, value)
-    };
-
-    let value = number.trim().parse::<f32>().map_err(|_| {
-        Error::new(
-            format!("invalid pages.select rating filter: {value}"),
-            ErrorType::Page,
-        )
-    })?;
-    if !value.is_finite() {
-        return Err(Error::new(
-            format!("invalid pages.select rating filter: {value}"),
-            ErrorType::Page,
-        )
-        .into());
-    }
-
-    Ok(PageSelectRatingFilter { comparison, value })
-}
-
-fn parse_page_select_order(value: Option<&str>) -> Result<OrderBySelector> {
-    let value = match value.map(str::trim) {
-        None | Some("") => "created_at desc",
-        Some(value) => value,
-    };
-
-    let parts = value.split_whitespace().collect::<Vec<_>>();
-    let (field, direction) = match parts.as_slice() {
-        [field] => (*field, "asc"),
-        [field, direction] => (*field, *direction),
-        _ => {
-            return Err(Error::new(
-                format!("invalid pages.select order expression: {value}"),
-                ErrorType::Page,
-            )
-            .into());
-        }
-    };
-
-    let property = match field.to_ascii_lowercase().as_str() {
-        "created_at" | "created" => OrderProperty::CreatedAt,
-        "updated_at" | "updated" => OrderProperty::UpdatedAt,
-        "fullname" | "full_name" | "slug" | "name" => OrderProperty::FullSlug,
-        "title" => OrderProperty::Title,
-        "rating" | "score" => OrderProperty::Score,
-        other => {
-            return Err(Error::new(
-                format!("unsupported pages.select order field: {other}"),
-                ErrorType::Page,
-            )
-            .into());
-        }
-    };
-
-    let ascending = match direction.to_ascii_lowercase().as_str() {
-        "asc" | "ascending" => true,
-        "desc" | "descending" => false,
-        other => {
-            return Err(Error::new(
-                format!("unsupported pages.select order direction: {other}"),
-                ErrorType::Page,
-            )
-            .into());
-        }
-    };
-
-    Ok(OrderBySelector {
-        property,
-        ascending,
-    })
+        .or_raise(|| Error::new("failed to select pages", ErrorType::Page))
 }
 
 pub async fn page_edit(
@@ -690,19 +488,11 @@ pub async fn page_edit_permission(
     ctx: &ServiceContext<'_>,
     _params: Params<'static>,
 ) -> Result<PageEditPermissionOutput> {
-    let can_edit = PageService::check_user_permission(
-        ctx,
-        // TODO: Permission context is no longer used, just left here to not break other functions.
-        // Remove this when it's removed from the function signature.
-        &CheckPermissionContext {
-            user_id: None,
-            site_id: -1,
-            page_reference: None,
-        },
-        Action::Edit,
-    )
-    .await
-    .or_raise(|| Error::new("failed to check page edit permission", ErrorType::Page))?;
+    let can_edit = PageService::check_user_permission(ctx, Action::Edit)
+        .await
+        .or_raise(|| {
+            Error::new("failed to check page edit permission", ErrorType::Page)
+        })?;
 
     Ok(PageEditPermissionOutput { can_edit })
 }
@@ -770,6 +560,18 @@ pub async fn page_rerender(
     params: Params<'static>,
 ) -> Result<()> {
     let input: PageId = parse!(params, Page);
+    let actor_user_id =
+        MutationAuthorization::require_authenticated(ctx, "rerender a page")?;
+    ensure_page_edit_permission(
+        ctx,
+        input.site_id,
+        Reference::Id(input.page_id),
+        actor_user_id,
+    )
+    .await
+    .or_raise(|| {
+        Error::new("failed to check page rerender permission", ErrorType::Page)
+    })?;
     info!(
         "Re-rendering page ID {} in site ID {}",
         input.page_id, input.site_id,
@@ -906,7 +708,7 @@ pub async fn page_set_layout(
         .or_raise(|| Error::new("failed to set layout for page", ErrorType::Page))
 }
 
-fn require_authenticated_mutation_actor(
+pub(super) fn require_authenticated_mutation_actor(
     ctx: &ServiceContext<'_>,
     attribution_user_id: i64,
 ) -> Result<i64> {
@@ -961,7 +763,7 @@ async fn ensure_page_create_permission(
     .await
 }
 
-async fn ensure_page_edit_permission<'a>(
+pub(super) async fn ensure_page_edit_permission<'a>(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     page_reference: Reference<'a>,
@@ -1114,18 +916,15 @@ async fn build_page_output(
 ) -> Result<Option<GetPageOutput>> {
     let make_error = || Error::new("failed to build page output", ErrorType::Page);
 
-    // Get page revision
     let revision = PageRevisionService::get_latest(ctx, page.site_id, page.page_id)
         .await
         .or_raise(make_error)?;
 
-    // Get category slug from ID
     let category =
         CategoryService::get(ctx, page.site_id, Reference::from(page.page_category_id))
             .await
             .or_raise(make_error)?;
 
-    // Get text data, if requested
     let (wikitext, compiled_body_html, compiled_body_styles) = join!(
         TextService::get_conditional(ctx, details.wikitext, &revision.wikitext_hash),
         TextService::get_conditional(
@@ -1153,14 +952,12 @@ async fn build_page_output(
         None
     };
 
-    // Calculate score and determine layout
     let (rating, layout) = join!(
         ScoreService::score(ctx, page.page_id),
         SettingsService::get_layout(ctx, page.site_id, Some(page.page_id)),
     );
     let (rating, layout) = raise_multiple!(rating, layout; make_error);
 
-    // Build result struct
     Ok(Some(GetPageOutput {
         page_id: page.page_id,
         page_created_at: page.created_at,
@@ -1203,17 +1000,14 @@ async fn build_page_deleted_output(
         )
     };
 
-    // Get page revision
     let revision = PageRevisionService::get_latest(ctx, page.site_id, page.page_id)
         .await
         .or_raise(make_error)?;
 
-    // Calculate score and determine layout
     let rating = ScoreService::score(ctx, page.page_id)
         .await
         .or_raise(make_error)?;
 
-    // Build result struct
     Ok(Some(GetDeletedPageOutput {
         page_id: page.page_id,
         page_created_at: page.created_at,
@@ -1242,13 +1036,11 @@ async fn build_page_file_output(
         )
     };
 
-    // Get file revision
     let revision =
         FileRevisionService::get_latest(ctx, file.site_id, file.page_id, file.file_id)
             .await
             .or_raise(make_error)?;
 
-    // Build result struct
     Ok(Some(GetFileOutput {
         file_id: file.file_id,
         file_created_at: file.created_at,

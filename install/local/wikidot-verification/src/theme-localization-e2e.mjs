@@ -441,19 +441,28 @@ async function acceptedSourcePreflight(translationRoot, tier) {
 
   let source = "";
   let stat = null;
+  let sourceRead = false;
   try {
     stat = await fs.lstat(sourcePath);
-    source = await fs.readFile(sourcePath, "utf8");
   } catch (error) {
     checks.push({id: "accepted_source_readable", status: "fail", detail: error.code ?? error.message});
   }
 
   if (stat) {
-    checks.push({id: "accepted_source_regular_file", status: stat.isFile() && !stat.isSymbolicLink() ? "pass" : "fail"});
+    const regularFile = stat.isFile() && !stat.isSymbolicLink();
+    checks.push({id: "accepted_source_regular_file", status: regularFile ? "pass" : "fail"});
+    if (regularFile) {
+      try {
+        source = await fs.readFile(sourcePath, "utf8");
+        sourceRead = true;
+      } catch (error) {
+        checks.push({id: "accepted_source_readable", status: "fail", detail: error.code ?? error.message});
+      }
+    }
   }
 
   const shape = inventoryThemeSource(source);
-  if (stat) {
+  if (sourceRead) {
     checks.push({id: "accepted_source_nonempty", status: source.trim() ? "pass" : "fail"});
     checks.push({id: "accepted_source_contains_japanese", status: /[\u3040-\u30ff\u3400-\u9fff]/u.test(source) ? "pass" : "fail"});
     for (const [field, minimum] of Object.entries(tier.minimum_shape)) {

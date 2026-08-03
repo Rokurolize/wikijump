@@ -18,13 +18,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
+use super::structs::{AuthorizedObject, CreateAuthorizationToken};
 use crate::constants::ADMIN_USER_ID;
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::authorization_token::{
     self, Entity as AuthorizationToken, Model as AuthorizationTokenModel,
 };
+use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
 use crate::types::ArrayLength;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, Set};
 use std::net::IpAddr;
 use uuid::Uuid;
 use uuid::fmt::Hyphenated;
@@ -204,21 +207,14 @@ fn first_char(string: &str) -> char {
 
 #[test]
 fn generate_token() {
-    use regex::Regex;
-    use std::sync::LazyLock;
-
-    static REGEX: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(
-            r"^[A-Z]-[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$",
-        )
-        .unwrap()
-    });
-
     fn test(object_type: AuthorizedObject) {
         let token = AuthorizationTokenService::generate(object_type);
         assert_eq!(token.len(), AUTHORIZATION_TOKEN_LENGTH);
         assert_eq!(first_char(&token), object_type.code());
-        assert!(REGEX.is_match(&token));
+        let regex = regex!(
+            r"^[A-Z]-[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$"
+        );
+        assert!(regex.is_match(&token));
     }
 
     test(AuthorizedObject::Site);

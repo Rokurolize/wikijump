@@ -9,7 +9,8 @@ import {targetRoundTripSourceSha256} from "./theme-source-roundtrip.mjs";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const SECRET_KEY = /password|cookie|credential|session|token/iu;
-const HELPER_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../scripts/wikidot-theme-page-helper.py");
+const HELPER_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../scripts/wikidot_theme_page_helper.py");
+export const WIKIDOT_HELPER_PYTHON = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../.venv/bin/python");
 const REFERENCE_PREREQUISITE_TITLES = new Map([
   ["component:image-block-base", "Image Block Base"],
   ["component:image-block", "Image Block"],
@@ -27,7 +28,7 @@ function validateResource(resource, {allowLegacy = false} = {}) {
     throw new Error("Wikidot adapter accepts only validated theme execution pages");
   }
   const url = new URL(resource.url);
-  if (url.protocol !== "http:" || url.hostname !== `${ALLOWED_SITE_SLUG}.wikidot.com` || url.port || url.pathname !== `/${resource.slug}` || url.search || url.hash || url.username || url.password) {
+  if (url.protocol !== "https:" || url.hostname !== `${ALLOWED_SITE_SLUG}.wikidot.com` || url.port || url.pathname !== `/${resource.slug}` || url.search || url.hash || url.username || url.password) {
     throw new Error("Wikidot adapter resource URL is outside the hard allowlist");
   }
   if (prerequisite && (resource.title !== REFERENCE_PREREQUISITE_TITLES.get(resource.slug) || resource.resource_id !== `prerequisite:${resource.slug}:wikidot`)) {
@@ -55,13 +56,12 @@ function minimalEnvironment(source) {
     LANG: source.LANG ?? "C.UTF-8",
     PATH: source.PATH ?? "/usr/bin:/bin",
     WIKIDOT_PASSWORD: password,
-    WIKIDOT_PY_ROOT: source.WIKIDOT_PY_ROOT ?? "/home/roku/src/Rokurolize/wikidot.py/src",
     WIKIDOT_USERNAME: username,
   };
 }
 
 export class WikidotJsonlHelperClient {
-  constructor({command = "python3", commandArgs = [HELPER_PATH], env = process.env, timeoutMs = DEFAULT_TIMEOUT_MS, spawnImpl = spawn} = {}) {
+  constructor({command = WIKIDOT_HELPER_PYTHON, commandArgs = [HELPER_PATH], env = process.env, timeoutMs = DEFAULT_TIMEOUT_MS, spawnImpl = spawn} = {}) {
     if (typeof command !== "string" || !command || !Array.isArray(commandArgs) || commandArgs.some((arg) => typeof arg !== "string")) throw new Error("Wikidot helper command is invalid");
     if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new Error("Wikidot helper timeout must be a positive integer");
     const childEnvironment = minimalEnvironment(env);

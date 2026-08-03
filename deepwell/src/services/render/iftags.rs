@@ -5,7 +5,7 @@
 //! another condition. Render preparation has several passes, so nested tokens
 //! are registered temporarily to keep later passes from evaluating them.
 
-use super::compat_text_fragments::CompatTextFragments;
+use super::compat::text_fragments::CompatTextFragments;
 use super::literal_regions::LiteralRegionIndex;
 use regex::Regex;
 use std::borrow::Cow;
@@ -75,13 +75,21 @@ fn resolve_outermost_wikidot_iftags_with_mode(
     preserved: &mut CompatTextFragments,
     unmatched_mode: UnmatchedBoundaryMode,
 ) {
-    let literal_regions = LiteralRegionIndex::new_wikidot_syntax(wikitext);
+    let literal_regions = LiteralRegionIndex::new_wikidot_conditional_syntax(wikitext);
     let mut stack = Vec::<OpenGate>::new();
     let mut replacements = Vec::<Replacement>::new();
 
     for captures in IFTAGS_TOKEN_REGEX.captures_iter(wikitext) {
         let token = captures.get(0).expect("iftags token");
-        if literal_regions.contains(token.start()) {
+        let literal = literal_regions.containing_range(token.start());
+        let closes_inactive_root = captures.name("close").is_some()
+            && stack
+                .first()
+                .is_some_and(|outer| !wikidot_tag_conditions_match(&outer.spec, tags))
+            && literal.is_some_and(|range| {
+                inactive_gate_closes_inside_literal(wikitext, range, token.end())
+            });
+        if literal.is_some() && !closes_inactive_root {
             continue;
         }
 
@@ -115,7 +123,7 @@ fn resolve_outermost_wikidot_iftags_with_mode(
             if unmatched_mode == UnmatchedBoundaryMode::Preserve {
                 replacements.push(Replacement {
                     range: token.start()..token.end(),
-                    text: preserved.push(&escape_html(token.as_str())),
+                    text: preserved.push_escaped_html_text(token.as_str()),
                 });
             }
             continue;
@@ -159,17 +167,6 @@ fn resolve_outermost_wikidot_iftags_with_mode(
                 range: root.start..recovery_closer.end,
                 text,
             });
-            stack.retain(|unclosed| unclosed.start >= recovery_closer.end);
-        } else {
-            stack.insert(0, root);
-        }
-
-        for unclosed in stack {
-            replacements.push(Replacement {
-                range: unclosed.start..unclosed.end,
-                text: preserved
-                    .push(&escape_html(&wikitext[unclosed.start..unclosed.end])),
-            });
         }
     }
 
@@ -189,6 +186,33 @@ fn resolve_outermost_wikidot_iftags_with_mode(
     *wikitext = output;
 }
 
+fn inactive_gate_closes_inside_literal(
+    source: &str,
+    literal: &Range<usize>,
+    closer_end: usize,
+) -> bool {
+    let literal_source = source[literal.clone()].trim_start_matches([' ', '\t']);
+    let head = literal_source.to_ascii_lowercase();
+    if head.starts_with("[[raw") {
+        return true;
+    }
+    if head.starts_with("[!--") {
+        return true;
+    }
+    for (open, close) in [
+        ("[[code", "[[/code]]"),
+        ("[[html", "[[/html]]"),
+        ("[[module", "[[/module]]"),
+    ] {
+        if head.starts_with(open) {
+            return !source[closer_end..literal.end]
+                .to_ascii_lowercase()
+                .contains(close);
+        }
+    }
+    false
+}
+
 fn preserve_nested_tokens(
     source: &str,
     body: Range<usize>,
@@ -200,26 +224,11 @@ fn preserve_nested_tokens(
     for token in tokens {
         debug_assert!(body.start <= token.start && token.end <= body.end);
         output.push_str(&source[cursor..token.start]);
-        output.push_str(&preserved.push(&escape_html(&source[token.clone()])));
+        output.push_str(&preserved.push_escaped_html_text(&source[token.clone()]));
         cursor = token.end;
     }
     output.push_str(&source[cursor..body.end]);
     output
-}
-
-fn escape_html(value: &str) -> String {
-    let mut escaped = String::with_capacity(value.len());
-    for character in value.chars() {
-        match character {
-            '&' => escaped.push_str("&amp;"),
-            '<' => escaped.push_str("&lt;"),
-            '>' => escaped.push_str("&gt;"),
-            '"' => escaped.push_str("&quot;"),
-            '\'' => escaped.push_str("&#39;"),
-            _ => escaped.push(character),
-        }
-    }
-    escaped
 }
 
 pub(super) fn wikidot_tag_conditions_match(spec: &str, tags: &[Cow<'_, str>]) -> bool {
@@ -464,6 +473,23 @@ mod tests {
     }
 
     #[test]
+    fn final_pass_leaves_unclosed_openers_for_ftml_literal_recovery() {
+        let mut source = concat!(
+            "[[iftags +test]]\n",
+            "[[div_ class=\"authorlink-wrapper\"]]\n",
+            "Calibold",
+        )
+        .to_owned();
+        let original = source.clone();
+        let tags = [Cow::Borrowed("test")];
+        let mut preserved = CompatTextFragments::new(&source);
+
+        resolve_outermost_wikidot_iftags(&mut source, &tags, &mut preserved);
+
+        assert_eq!(source, original);
+    }
+
+    #[test]
     fn literal_region_tokens_do_not_change_pairing() {
         let source = concat!(
             "[[code]]\n[[iftags +alpha]]literal[[/iftags]]\n[[/code]]\n",
@@ -475,6 +501,251 @@ mod tests {
                 "[[code]]\n[[iftags +alpha]]literal[[/iftags]]\n[[/code]]\n",
                 "active\n",
             ),
+        );
+    }
+
+    #[test]
+    fn unmatched_inline_raw_does_not_hide_later_inactive_closer() {
+        let source = concat!(
+            "before\n",
+            "[[iftags +component]]\n",
+            "documentation\n",
+            "* Escaping with @@\n",
+            "[[/iftags]]\n",
+            "after\n",
+        );
+        assert_eq!(resolve(source, &[], 1), "before\n\nafter\n");
+    }
+
+    #[test]
+    fn unmatched_inline_raw_does_not_hide_later_active_closer() {
+        let source = concat!(
+            "[[iftags +component]]\n",
+            "documentation\n",
+            "* Escaping with @@\n",
+            "[[/iftags]]\n",
+        );
+        assert_eq!(
+            resolve(source, &["component"], 1),
+            "\ndocumentation\n* Escaping with @@\n\n",
+        );
+    }
+
+    #[test]
+    fn unmatched_inline_raw_does_not_hide_same_line_inactive_closer() {
+        let source =
+            "before [[iftags +component]]documentation @@ prose [[/iftags]] after";
+        assert_eq!(resolve(source, &[], 1), "before  after");
+    }
+
+    #[test]
+    fn unmatched_inline_raw_does_not_hide_same_line_active_closer() {
+        let source = "[[iftags +component]]documentation @@ prose [[/iftags]]";
+        assert_eq!(
+            resolve(source, &["component"], 1),
+            "documentation @@ prose ",
+        );
+    }
+
+    #[test]
+    fn balanced_inline_raw_closer_does_not_close_active_gate() {
+        let source = concat!(
+            "[[iftags +component]]\n",
+            "@@[[/iftags]]@@\n",
+            "selected\n",
+            "[[/iftags]]\n",
+        );
+        assert_eq!(
+            resolve(source, &["component"], 1),
+            "\n@@[[/iftags]]@@\nselected\n\n",
+        );
+    }
+
+    #[test]
+    fn block_literal_closer_does_not_close_active_gate() {
+        let source = concat!(
+            "[[iftags +component]]\n",
+            "[[code]]\n[[/iftags]]\n[[/code]]\n",
+            "selected\n",
+            "[[/iftags]]\n",
+        );
+        assert_eq!(
+            resolve(source, &["component"], 1),
+            "\n[[code]]\n[[/iftags]]\n[[/code]]\nselected\n\n",
+        );
+    }
+
+    #[test]
+    fn inactive_gate_closes_before_unclosed_literal_blocks() {
+        for (source, expected) in [
+            (
+                concat!(
+                    "[[iftags +missing]]\n",
+                    "[[code @=\"bad\"]]\n",
+                    "[[/iftags]]\n",
+                    "[[html]]\n",
+                    "<b>malformed head</b>\n",
+                    "[[/html]]",
+                ),
+                "\n[[html]]\n<b>malformed head</b>\n[[/html]]",
+            ),
+            (
+                "[[iftags +missing]]\n[[raw]]\n[[/iftags]]\nunclosed raw",
+                "\nunclosed raw",
+            ),
+            (
+                concat!(
+                    "[[iftags +missing]]\n",
+                    "[[module Rate]]\n",
+                    "[[html]]\n",
+                    "<b>guarded</b>\n",
+                    "[[/html]]\n",
+                    "[[/iftags]]\n",
+                    "visible",
+                ),
+                "\nvisible",
+            ),
+            (
+                concat!(
+                    "[[iftags +missing]]\n",
+                    "[[module CSS]]\n",
+                    "[[/iftags]]\n",
+                    ".unclosed { color: red; }",
+                ),
+                "\n.unclosed { color: red; }",
+            ),
+            (
+                concat!(
+                    "[[iftags +missing]]\n",
+                    "[[module ListPages]]\n",
+                    "[[/iftags]]\n",
+                    "unclosed module",
+                ),
+                "\nunclosed module",
+            ),
+        ] {
+            assert_eq!(resolve(source, &[], 1), expected);
+        }
+    }
+
+    #[test]
+    fn inactive_gate_keeps_balanced_module_bodies_opaque() {
+        for module in ["ListPages", "CSS"] {
+            let source = format!(
+                "[[iftags +missing]]\n[[module {module}]]\n[[/iftags]] raw-module\n[[/module]]\n[[html]]\n<b>guarded</b>\n[[/html]]\n[[/iftags]]\nvisible",
+            );
+            assert_eq!(resolve(&source, &[], 1), "\nvisible", "{module}");
+        }
+    }
+
+    #[test]
+    fn inactive_gate_closes_at_comment_and_raw_cross_boundaries() {
+        let comment = concat!(
+            "[[iftags +missing]]\n",
+            "[!-- [[/iftags]] raw-comment --]\n",
+            "[[html]]\n",
+            "<b>guarded</b>\n",
+            "[[/html]]\n",
+            "[[/iftags]]\n",
+            "visible",
+        );
+        assert_eq!(
+            resolve(comment, &[], 1),
+            concat!(
+                " raw-comment --]\n",
+                "[[html]]\n",
+                "<b>guarded</b>\n",
+                "[[/html]]\n",
+                "[[/iftags]]\n",
+                "visible",
+            ),
+        );
+
+        let raw = concat!(
+            "[[iftags +missing]]\n",
+            "[[raw]]\n",
+            "[[/iftags]]\n",
+            "[[html]]raw-raw[[/html]]\n",
+            "[[/raw]]\n",
+            "[[html]]\n",
+            "<b>guarded</b>\n",
+            "[[/html]]\n",
+            "[[/iftags]]\n",
+            "visible",
+        );
+        assert_eq!(
+            resolve(raw, &[], 1),
+            concat!(
+                "\n[[html]]raw-raw[[/html]]\n",
+                "[[/raw]]\n",
+                "[[html]]\n",
+                "<b>guarded</b>\n",
+                "[[/html]]\n",
+                "[[/iftags]]\n",
+                "visible",
+            ),
+        );
+    }
+
+    #[test]
+    fn inactive_partially_nested_gate_leaves_following_html() {
+        let source = concat!(
+            "[[iftags +missing]]\n",
+            "[[iftags +missing]]\n",
+            "inner unclosed\n",
+            "[[/iftags]]\n",
+            "[[html]]\n",
+            "<b>unclosed nested</b>\n",
+            "[[/html]]",
+        );
+        assert_eq!(
+            resolve(source, &[], 1),
+            "\n[[html]]\n<b>unclosed nested</b>\n[[/html]]",
+        );
+    }
+
+    #[test]
+    fn special_inline_raw_run_does_not_hide_real_closer() {
+        let source = "[[iftags +component]]@@@@@@[[/iftags]]@@";
+        assert_eq!(resolve(source, &[], 1), "@@");
+        assert_eq!(resolve(source, &["component"], 1), "@@@@@@@@");
+    }
+
+    #[test]
+    fn pinned_url_adjacent_raw_delimiter_keeps_iftags_literal() {
+        let source = "[[iftags +component]]https://e.test/a@@b[[/iftags]]@@tail";
+        // FTML exposes the URL-adjacent `@@` as an inline-raw opener. The
+        // conditional closer is consequently inside that literal region and
+        // the whole malformed gate is preserved for the later parser pass.
+        assert_eq!(resolve(source, &[], 1), source);
+        assert_eq!(resolve(source, &["component"], 1), source);
+    }
+
+    #[test]
+    fn raw_delimiter_in_tag_head_does_not_hide_real_closer() {
+        let source = "[[iftags +x]][[div data=\"@@\"]]body[[/iftags]]@@tail";
+        assert_eq!(resolve(source, &[], 1), "@@tail");
+        assert_eq!(resolve(source, &["x"], 1), "[[div data=\"@@\"]]body@@tail",);
+    }
+
+    #[test]
+    fn inactive_gate_closes_inside_comment_while_active_gate_preserves_it() {
+        let source = "[[iftags +x]][!-- https://e.test/a--] [[/iftags]] --]";
+        assert_eq!(resolve(source, &[], 1), " --]");
+        assert_eq!(resolve(source, &["x"], 1), source);
+    }
+
+    #[test]
+    fn malformed_block_closer_does_not_expose_conditional_closer() {
+        let source = concat!(
+            "[[iftags +x]][[code]]\n",
+            "[[/code]]]\n[[/iftags]]\n",
+            "[[/code]]\n[[/iftags]]",
+        );
+        assert_eq!(resolve(source, &[], 1), "");
+        assert_eq!(
+            resolve(source, &["x"], 1),
+            "[[code]]\n[[/code]]]\n[[/iftags]]\n[[/code]]\n",
         );
     }
 

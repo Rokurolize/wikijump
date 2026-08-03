@@ -1,0 +1,75 @@
+{
+  "actor": "anonymous",
+  "cases": [
+    {
+      "case_id": "anonymous-omitted-mode",
+      "request": {
+        "mode": null
+      },
+      "response": {
+        "json": {
+          "CURRENT_TIMESTAMP": 1785296149,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-anon-1785296147-omitted",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-anon-1785296147-omitted"
+        },
+        "ok_response": true
+      }
+    },
+    {
+      "case_id": "anonymous-edit",
+      "request": {
+        "mode": "edit"
+      },
+      "response": {
+        "json": {
+          "CURRENT_TIMESTAMP": 1785296149,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-anon-1785296147-edit",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-anon-1785296147-edit"
+        },
+        "ok_response": true
+      }
+    },
+    {
+      "case_id": "anonymous-save-and-go",
+      "request": {
+        "mode": "save-and-go"
+      },
+      "response": {
+        "error": {
+          "exception_type": "ForbiddenException",
+          "message": "Your account has no permission to perform this action: moduleName: Empty",
+          "status_code": null
+        },
+        "ok_response": false
+      }
+    },
+    {
+      "case_id": "anonymous-save-and-refresh",
+      "request": {
+        "mode": "save-and-refresh"
+      },
+      "response": {
+        "error": {
+          "exception_type": "ForbiddenException",
+          "message": "Your account has no permission to perform this action: moduleName: Empty",
+          "status_code": null
+        },
+        "ok_response": false
+      }
+    }
+  ],
+  "credential_material": "none; anonymous Wikidot request",
+  "feature_id": "module-newpage",
+  "oracle_route": "anonymous wikidot.py Site.amc_request against misc/NewPageHelperAction; no pages were created for ok edit-routing cases because they are non-mutating",
+  "run_id": "np-anon-1785296147",
+  "schema": "wikidot.live.newpage.anonymous-action.v1",
+  "site": "sandbox-for-codex"
+}

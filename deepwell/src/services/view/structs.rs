@@ -19,13 +19,17 @@
  */
 
 use super::options::PageOptions;
-use super::prelude::*;
 use crate::models::page::Model as PageModel;
+use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::page_revision::Model as PageRevisionModel;
 use crate::models::session::Model as SessionModel;
 use crate::models::site::Model as SiteModel;
-use crate::models::user::Model as UserModel;
+use crate::models::user::Model as WikijumpUserModel;
+use crate::services::DataFormEditor;
 use crate::services::relation::PageAttribution;
+use crate::services::settings::{PageDiscussionSettings, PageRatingSettings};
+use crate::services::user::User;
+use crate::types::Reference;
 use time::OffsetDateTime;
 
 // NOTE: Any changes to the output structures here, including the variant names,
@@ -82,6 +86,12 @@ pub struct GetArticleViewCacheMetadataOutput {
     pub anonymous_permission_cache_fence: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PageRedirectKind {
+    WikidotModule,
+}
+
 /// Yield information for a page view, depending on the status of the page.
 /// For instance, if a page is missing, there is no revision data but we do
 /// still need to display the "this page doesn't exist" content.
@@ -100,7 +110,15 @@ pub enum GetPageViewOutput {
         wikidot_snapshot: Option<WikidotPageSnapshotView>,
         wikidot_breadcrumbs: Vec<WikidotPageBreadcrumbView>,
         attributions: Vec<PageAttribution>,
+        #[serde(default)]
+        page_rating: PageRatingSettings,
+        #[serde(default)]
+        page_discussion: PageDiscussionSettings,
+        #[serde(default)]
+        data_form: Option<DataFormEditor>,
         redirect_page: Option<String>,
+        #[serde(default)]
+        redirect_kind: Option<PageRedirectKind>,
         wikitext: String,
         compiled_body_html: String,
         compiled_body_styles: Vec<String>,
@@ -111,7 +129,17 @@ pub enum GetPageViewOutput {
     Missing {
         options: PageOptions,
         redirect_page: Option<String>,
+        #[serde(default)]
+        redirect_kind: Option<PageRedirectKind>,
         wikitext: String,
+        #[serde(default)]
+        new_page_wikitext: Option<String>,
+        #[serde(default)]
+        page_templates: Vec<PageTemplateSummary>,
+        #[serde(default)]
+        selected_template_page_id: Option<i64>,
+        #[serde(default)]
+        data_form: Option<DataFormEditor>,
         compiled_body_html: String,
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,
@@ -121,6 +149,8 @@ pub enum GetPageViewOutput {
     Permissions {
         options: PageOptions,
         redirect_page: Option<String>,
+        #[serde(default)]
+        redirect_kind: Option<PageRedirectKind>,
         compiled_body_html: String,
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,
@@ -147,6 +177,37 @@ pub struct WikidotPageBreadcrumbView {
     pub title: String,
 }
 
+#[cfg(test)]
+mod page_view_output_tests {
+    use super::*;
+
+    #[test]
+    fn cached_page_view_without_redirect_kind_remains_deserializable() {
+        let cached = serde_json::json!({
+            "type": "missing",
+            "data": {
+                "options": PageOptions::default(),
+                "redirect_page": null,
+                "wikitext": "",
+                "compiled_body_html": "",
+                "compiled_body_styles": [],
+                "compiled_top_bar_html": null,
+                "compiled_side_bar_html": null
+            }
+        });
+
+        let output: GetPageViewOutput = serde_json::from_value(cached)
+            .expect("legacy cached page view should deserialize");
+        assert!(matches!(
+            output,
+            GetPageViewOutput::Missing {
+                redirect_kind: None,
+                ..
+            }
+        ));
+    }
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct GetUserView<'a> {
     pub site_id: i64,
@@ -159,8 +220,7 @@ pub struct GetUserView<'a> {
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "snake_case", tag = "type", content = "data")]
 pub enum GetUserViewOutput {
-    UserFound { user: UserModel },
-
+    UserFound { user: User },
     UserMissing,
 }
 
@@ -171,13 +231,26 @@ pub struct GetAdminView {
     pub locales: Vec<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PageTemplateSummary {
+    pub page_id: i64,
+    pub slug: String,
+    pub title: String,
+    pub wikitext: String,
+}
+
 // See also framerail src/lib/server/load/admin.ts and src/routes/[x+2d]/user/+error.svelte
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "snake_case", tag = "type", content = "data")]
 pub enum GetAdminViewOutput {
-    SiteFound,
+    SiteFound {
+        categories: Vec<PageCategoryModel>,
+        page_templates: Vec<PageTemplateSummary>,
+    },
 
-    AdminPermissions { html: String },
+    AdminPermissions {
+        html: String,
+    },
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -186,13 +259,23 @@ pub struct Viewer {
     pub site_file_domain: String,
     pub license_name: String,
     pub license_url: &'static str,
+    pub license_kind: ViewerLicenseKind,
+    pub license_html: Option<String>,
     pub user_session: Option<UserSession>,
+}
+
+#[derive(Serialize, Debug, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ViewerLicenseKind {
+    Standard,
+    Other,
+    Copyright,
 }
 
 #[derive(Serialize, Debug, Clone)]
 pub struct UserSession {
     pub session: SessionModel,
-    pub user: UserModel,
+    pub user: WikijumpUserModel,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]

@@ -82,7 +82,11 @@ async fn create_page(
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert!(output.parser_errors.is_empty(), "unexpected parser errors");
+    assert!(
+        output.parser_errors.is_empty(),
+        "unexpected parser errors: {:?}",
+        output.parser_errors,
+    );
 
     PageTable::find_by_id(output.page_id)
         .one(runner.context().transaction())
@@ -202,7 +206,7 @@ async fn explicit_site_resolution_preserves_alias_and_missing_semantics() {
         present,
         HashMap::from([
             ((target.page_id, ConnectionType::IncludeMessy), 4),
-            ((target.page_id, ConnectionType::Link), 2),
+            ((target.page_id, ConnectionType::Link), 1),
         ]),
     );
 
@@ -225,6 +229,10 @@ async fn explicit_site_resolution_preserves_alias_and_missing_semantics() {
         HashMap::from([
             (
                 (site_id, missing_page_slug, ConnectionType::IncludeMessy),
+                1,
+            ),
+            (
+                (site_id, format!("test:{target_slug}"), ConnectionType::Link,),
                 1,
             ),
             (

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state"
-  import { getPageLayoutContext } from "$lib/page-layout-context"
-  import { errorPopupState } from "$lib/stores.svelte"
+  import { getPageLayoutContext } from "$lib/layout/page-layout-context"
+  import { errorPopupState } from "$lib/layout/stores.svelte"
   import { publicErrorExtraMessage } from "$lib/popup/public-error-data.js"
   import { Layout } from "$lib/types"
 
@@ -47,7 +47,7 @@
   ></div>
   <div
     id="odialog-container"
-    style:--basalt-compat="block"
+    style:display="block"
     class="odialog-container"
     onclick={containerExitPrompt}
     onkeydown={escKeydown}
@@ -112,7 +112,7 @@
 <style global lang="scss">
   #odialog-container.odialog-container {
     position: fixed;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
   }

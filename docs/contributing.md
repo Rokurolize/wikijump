@@ -2,7 +2,7 @@
 
 This document assumes you have read [Development.md](development.md).
 
-Wikijump has a fairly extensive scope and has lots of areas for people to contribute. Whether it's a small typofix or work on a potential new feature, there's always room for community contributions. If appropriate, a team member can make a [JIRA](https://scuttle.atlassian.net/browse/WJ) issue for it.
+Wikijump has a broad Wikidot compatibility surface and many areas for people to contribute. Contributions should close an observed compatibility gap, improve live-oracle evidence or regression coverage, correct a defect, or improve security and maintainability without changing evidenced behavior. Independent product features and compatibility-breaking UX, route, or DOM redesigns are outside this fork's compatibility work. If appropriate, a team member can make a [Jira](https://scuttle.atlassian.net/browse/WJ) issue for the work.
 
 It is important that you join the Wikijump Discord so you can discuss and coordinate with the Wikijump team.  You can get an invitation by asking in [#site11](https://scp-wiki.wikidot.com/chat-guide).
 

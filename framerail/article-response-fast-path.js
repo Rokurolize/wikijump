@@ -1,12 +1,15 @@
 import {
-  buildAnonymousArticleResponseCacheFences,
   buildAnonymousArticleResponseCacheMetadata,
   buildAnonymousArticleResponseTokenKey,
-  createLocalArticleResponseHotCache,
   readAnonymousArticleResponseCacheEntry,
-  readAnonymousArticleResponseCacheFences,
   readAnonymousArticleResponseToken
-} from "./src/lib/server/article-response-cache.js"
+} from "./src/lib/server/cache/article-response/index.js"
+import {
+  buildAnonymousArticleResponseCacheFences,
+  readAnonymousArticleResponseCacheFences
+} from "./src/lib/server/cache/article-response/fences.js"
+import { createLocalArticleResponseHotCache } from "./src/lib/server/cache/article-response/hot.js"
+import { hasSessionCookie } from "./src/lib/server/cache/article-response/shared.js"
 import { applyStaticSecurityHeadersToNodeResponse } from "./src/lib/server/security-headers.js"
 import { parseAcceptLangHeader, withFallbackLocale } from "./src/lib/locales.js"
 import { promisify } from "node:util"
@@ -15,7 +18,6 @@ import zlib from "node:zlib"
 const FALLBACK_LOCALE = "en"
 const SITE_ID_HEADER = "x-wikijump-site-id"
 const SITE_SLUG_HEADER = "x-wikijump-site-slug"
-const SESSION_COOKIE = "wikijump_token"
 const MIN_COMPRESSED_REPLAY_BODY_BYTES = 2048
 const brotliCompress = promisify(zlib.brotliCompress)
 const gzipCompress = promisify(zlib.gzip)
@@ -26,17 +28,6 @@ const STATIC_APP_ROUTE_SLUGS = new Set([
   "forum",
   "xml-rpc-api.php"
 ])
-const hasSessionCookie = (cookieHeader) => {
-  if (!cookieHeader) return false
-
-  return cookieHeader
-    .split(";")
-    .map((cookie) => cookie.trim())
-    .some(
-      (cookie) => cookie === SESSION_COOKIE || cookie.startsWith(`${SESSION_COOKIE}=`)
-    )
-}
-
 const singleHeaderValue = (headers, name) => {
   const value = headers[name]
   if (typeof value === "string") return value
@@ -117,11 +108,12 @@ export const getArticleResponseFastPathRequest = (request) => {
   if (route === undefined) return null
 
   const siteSlug = singleHeaderValue(request.headers, SITE_SLUG_HEADER)
+  const requestHost = singleHeaderValue(request.headers, "host")?.toLowerCase()
   const siteId = Number.parseInt(
     singleHeaderValue(request.headers, SITE_ID_HEADER) ?? "",
     10
   )
-  if (!siteSlug || !Number.isInteger(siteId) || siteId <= 0) return null
+  if (!siteSlug || !requestHost || !Number.isInteger(siteId) || siteId <= 0) return null
 
   const fetchHeaders = toFetchHeaders(request.headers)
   const requestLocales = parseAcceptLangHeader({ headers: fetchHeaders })
@@ -132,6 +124,7 @@ export const getArticleResponseFastPathRequest = (request) => {
     pathname: url.pathname,
     siteId,
     siteSlug,
+    requestHost,
     requestLocales,
     backendLocales,
     method: request.method
@@ -362,6 +355,7 @@ export const readArticleResponseFastPathEntryFromStores = async ({
     const tokenMetadata = buildAnonymousArticleResponseCacheFences({
       siteId: candidate.siteId,
       siteSlug: candidate.siteSlug,
+      requestHost: candidate.requestHost,
       route: candidate.route,
       requestLocales: candidate.requestLocales,
       backendLocales: candidate.backendLocales,
@@ -399,6 +393,7 @@ export const readArticleResponseFastPathEntryFromStores = async ({
     const metadata = buildAnonymousArticleResponseCacheMetadata({
       siteId: candidate.siteId,
       siteSlug: candidate.siteSlug,
+      requestHost: candidate.requestHost,
       requestLocales: candidate.requestLocales,
       backendLocales: candidate.backendLocales,
       deepwellArticlePageCacheKey,
@@ -426,7 +421,7 @@ export const readArticleResponseFastPathEntryFromStores = async ({
       cachedEntry,
       candidate.pathname
     )
-    localHotCache?.set(tokenKey, cachedEntry, { replay })
+    localHotCache?.store(tokenKey, cachedEntry, { replay })
     return replay
   } catch {
     return null

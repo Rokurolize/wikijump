@@ -1,0 +1,64 @@
+{
+  "schema": "wikijump.wikidot_live_probe.v1",
+  "case_id": "simpletodo-sendinvitations-live-preview-matrix",
+  "captured_at": "2026-07-29T01:59:53.457714+00:00",
+  "site": "sandbox-for-codex",
+  "module_route": "edit/PagePreviewModule",
+  "mutated": false,
+  "cases": [
+    {
+      "viewer": "anonymous",
+      "case_id": "simpletodo-missing-id",
+      "source": "[[module SimpleToDo]]",
+      "source_sha256": "3a888dec4ae50e8373146dca3b87e284fed7dd4ffd8a5802cd4f42129809d96a",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">The SimpleTodo module must have an id.</div>",
+      "body_sha256": "3b233411c457e27278ede2eb15063d71223e13596849d3165aa9127314e02e20"
+    },
+    {
+      "viewer": "anonymous",
+      "case_id": "simpletodo-empty-id",
+      "source": "[[module SimpleToDo id=\"\"]]",
+      "source_sha256": "6fad96e6262d2e942284c355141fb32dc4f37310fa19b1f4cc69523921066dea",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">The SimpleTodo module must have an id.</div>",
+      "body_sha256": "3b233411c457e27278ede2eb15063d71223e13596849d3165aa9127314e02e20"
+    },
+    {
+      "viewer": "anonymous",
+      "case_id": "simpletodo-id-initial",
+      "source": "[[module SimpleToDo id=\"codex-live-probe\"]]",
+      "source_sha256": "036c18dd48e367dbbd20b1e96012c87e02cbc37affa4c0dcfba4827afde7e74f",
+      "status": "ok",
+      "body": "\n\n<script type=\"text/javascript\" src=\"http://www.wikidot.com/common--javascript/yahooui/animation-min.js\"></script>\n<div class=\"simpletodo-box\" id=\"simpletodo_0\"><div class=\"title\">Here is a place for your title</div><table class=\"simpletodo-format-table\"><tr><td><div class=\"simpletodo-sub-box\" id=\"simpletodo_sub_0\"><div class=\"task\"><span class=\"checkbox\"><input type=\"checkbox\" class=\"checkbox\"/></span><span><span class=\"text\">Click me to edit !</span></span><span class=\"follow-link\"><a href=\"javascript:;\" class=\"icon1\"><span>Follow link</span></a></span><span class=\"options\"></span></div><div class=\"task\"><span class=\"checkbox\"><input type=\"checkbox\" class=\"checkbox\"/></span><span><span class=\"text\">Drag me !</span></span><span class=\"follow-link\"><a href=\"javascript:;\" class=\"icon1\">Follow Link</a></span><span class=\"options\"></span></div></div></td></tr></table><div class=\"bottom-options\"></div><div class=\"label\">codex-live-probe</div></div>\n<div id=\"simpletodo-data\">\n<span id=\"simpletodo-data-title\">Here is a place for your title</span>\n<span id=\"simpletodo-data-itemtext\">Click me to edit !</span>\n<span id=\"simpletodo-data-edit-permission\">false</span>\n</div>\n",
+      "body_sha256": "333501ffdf1fa4241c0d2b27b248119b2282e9321f827285f948aa69ad7b1a8e"
+    },
+    {
+      "viewer": "anonymous",
+      "case_id": "sendinvitations-disabled",
+      "source": "[[module SendInvitations]]",
+      "source_sha256": "5a53287c8e6e486c933d702af9ca91c67a7131bcbb272d774f3c96bf9ca5e34a",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">Inviting users has been disabled due to severe abuse. Admins can still send email invitations via <a href=\"/_admin\">site admin dashboard</a>.</div>",
+      "body_sha256": "c4f7ff6ba08a92500947b552091dbe0796d0e05b90b2c523ecd71bca044452d7"
+    },
+    {
+      "viewer": "account-a",
+      "case_id": "simpletodo-id-initial",
+      "source": "[[module SimpleToDo id=\"codex-live-probe\"]]",
+      "source_sha256": "036c18dd48e367dbbd20b1e96012c87e02cbc37affa4c0dcfba4827afde7e74f",
+      "status": "ok",
+      "body": "\n\n<script type=\"text/javascript\" src=\"http://www.wikidot.com/common--javascript/yahooui/animation-min.js\"></script>\n<div class=\"simpletodo-box\" id=\"simpletodo_0\"><div class=\"title\">Here is a place for your title</div><table class=\"simpletodo-format-table\"><tr><td><div class=\"simpletodo-sub-box\" id=\"simpletodo_sub_0\"><div class=\"task\"><span class=\"checkbox\"><input type=\"checkbox\" class=\"checkbox\"/></span><span><span class=\"text\">Click me to edit !</span></span><span class=\"follow-link\"><a href=\"javascript:;\" class=\"icon1\"><span>Follow link</span></a></span><span class=\"options\"></span></div><div class=\"task\"><span class=\"checkbox\"><input type=\"checkbox\" class=\"checkbox\"/></span><span><span class=\"text\">Drag me !</span></span><span class=\"follow-link\"><a href=\"javascript:;\" class=\"icon1\">Follow Link</a></span><span class=\"options\"></span></div></div></td></tr></table><div class=\"bottom-options\"></div><div class=\"label\">codex-live-probe</div></div>\n<div id=\"simpletodo-data\">\n<span id=\"simpletodo-data-title\">Here is a place for your title</span>\n<span id=\"simpletodo-data-itemtext\">Click me to edit !</span>\n<span id=\"simpletodo-data-edit-permission\">false</span>\n</div>\n",
+      "body_sha256": "333501ffdf1fa4241c0d2b27b248119b2282e9321f827285f948aa69ad7b1a8e"
+    },
+    {
+      "viewer": "account-a",
+      "case_id": "sendinvitations-disabled",
+      "source": "[[module SendInvitations]]",
+      "source_sha256": "5a53287c8e6e486c933d702af9ca91c67a7131bcbb272d774f3c96bf9ca5e34a",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">Inviting users has been disabled due to severe abuse. Admins can still send email invitations via <a href=\"/_admin\">site admin dashboard</a>.</div>",
+      "body_sha256": "c4f7ff6ba08a92500947b552091dbe0796d0e05b90b2c523ecd71bca044452d7"
+    }
+  ]
+}

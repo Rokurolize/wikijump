@@ -55,8 +55,25 @@ impl RenderDependencyClasses {
     }
 }
 
-const MODULE_QUERY_NAMES: &[&str] = &["listpages", "countpages", "backlinks", "tagcloud"];
-const MODULE_VIEWER_NAMES: &[&str] = &["rate", "members", "newpage", "clone"];
+const MODULE_QUERY_NAMES: &[&str] = &[
+    "listpages",
+    "countpages",
+    "backlinks",
+    "tagcloud",
+    "ratedpages",
+    "childpages",
+    "nextpage",
+    "previouspage",
+    "orphanedpages",
+    "wantedpages",
+];
+const MODULE_VIEWER_NAMES: &[&str] = &[
+    "rate",
+    "members",
+    "newpage",
+    "clone",
+    "membershipbypassword",
+];
 const MODULE_STATIC_NAMES: &[&str] = &["css"];
 
 static INCLUDE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -112,6 +129,11 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
         };
 
         let name = name.to_ascii_lowercase();
+        if name == "pages" {
+            classes.insert(RenderDependencyClass::QueryDependent);
+            classes.insert(RenderDependencyClass::RequestDependent);
+            continue;
+        }
         if MODULE_QUERY_NAMES.contains(&name.as_str()) {
             classes.insert(RenderDependencyClass::QueryDependent);
             continue;
@@ -199,6 +221,13 @@ mod tests {
         for source in [
             "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module CountPages category=\"news\"]][[/module]]",
+            "[[module RatedPages category=\"news\" limit=\"10\"]]",
+            "[[module Pages]]",
+            "[[module ChildPages]]",
+            "[[module NextPage by=\"title\"]]%%linked_title%%[[/module]]",
+            "[[module PreviousPage]]%%linked_title%%[[/module]]",
+            "[[module OrphanedPages]]",
+            "[[module WantedPages]]",
         ] {
             let classes = classify_render_dependencies(source);
 
@@ -221,6 +250,15 @@ mod tests {
         let classes = classify_render_dependencies(
             "[[module CountPages category=\"news\" offset=\"@URL|0\"]][[/module]]",
         );
+
+        assert!(classes.contains(RenderDependencyClass::QueryDependent));
+        assert!(classes.contains(RenderDependencyClass::RequestDependent));
+        assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+    }
+
+    #[test]
+    fn pages_is_query_and_request_dependent() {
+        let classes = classify_render_dependencies("[[module Pages]]");
 
         assert!(classes.contains(RenderDependencyClass::QueryDependent));
         assert!(classes.contains(RenderDependencyClass::RequestDependent));
@@ -259,6 +297,7 @@ mod tests {
             "[[module Members]]",
             "[[module NewPage]]",
             "[[module Clone]]",
+            "[[module MembershipByPassword]]",
         ] {
             let classes = classify_render_dependencies(source);
 

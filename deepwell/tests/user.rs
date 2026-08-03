@@ -24,10 +24,13 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::prelude::*;
+use deepwell::models::wikidot_user::{Entity as WikidotUser, Model as WikidotUserModel};
 use deepwell::models::{known_user, wikidot_user};
 use deepwell::services::RequestContext;
-use sea_orm::{ActiveModelTrait, Set};
+use deepwell::services::import::ImportUserOutput;
+use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 use serde_json::json;
+use time::macros::{date, datetime};
 use time::{Date, Month, OffsetDateTime};
 
 #[tokio::test]
@@ -53,6 +56,7 @@ async fn user_import_reclaims_existing_wikidot_user() {
         is_deleted: Set(false),
         name: Set(Some("Imported User".to_owned())),
         slug: Set(Some("imported-user".to_owned())),
+        avatar_s3_hash: Set(None),
         real_name: Set(None),
         gender: Set(None),
         birthday: Set(None),
@@ -86,8 +90,12 @@ async fn user_import_reclaims_existing_wikidot_user() {
 
     let output = run_endpoint!(runner, user_get, json!({ "user": "imported-user" }))
         .expect("imported Wikidot user should be fetchable as a Wikijump user");
-    assert_eq!(output.user.user_id, user_id);
-    assert_eq!(output.user.slug, "imported-user");
+    let imported_user = output
+        .user
+        .unwrap_wikijump()
+        .expect("imported Wikidot user should now be a Wikijump user");
+    assert_eq!(imported_user.user_id, user_id);
+    assert_eq!(imported_user.slug, "imported-user");
 }
 
 #[tokio::test]
@@ -114,7 +122,11 @@ async fn user_import_requires_admin_request_context() {
 
 #[tokio::test]
 async fn user_create_rejects_existing_override_user_id() {
-    let runner = TestRunner::setup().await;
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
     let user_id = 700_002_i64;
 
     known_user::ActiveModel {
@@ -141,10 +153,9 @@ async fn user_create_rejects_existing_override_user_id() {
 
     assert_contains_error!(error, ErrorType::BadRequest);
 }
-
 #[tokio::test]
 async fn basic_update() {
-    let runner = TestRunner::setup().await;
+    let mut runner = TestRunner::setup().await;
 
     const USER_NAME: &str = "Jane Doe";
     const USER_SLUG: &str = "jane-doe";
@@ -171,32 +182,41 @@ async fn basic_update() {
     );
     let user_id = user.user_id;
     assert_eq!(user.slug, USER_SLUG);
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        ..Default::default()
+    });
 
     // Get via slug
 
     let output = run_endpoint!(runner, user_get, json!({ "user": USER_SLUG }))
         .expect("User does not exist after creation");
 
-    assert_eq!(output.user.user_id, user_id);
-    assert_eq!(output.user.name, USER_NAME);
-    assert_eq!(output.user.slug, USER_SLUG);
-    assert!(output.user.updated_at.is_none());
-    assert!(output.user.deleted_at.is_none());
-    assert_eq!(output.user.name_changes_left, 2); // set in Config::integration_testing()
-    assert!(output.user.last_renamed_at.is_none());
-    assert!(!output.user.password.is_empty());
-    assert_eq!(output.user.email, "jane@private.me");
-    assert!(output.user.email_verified_at.is_none());
-    assert!(output.user.email_validation_info.is_some());
-    assert!(output.user.email_validation_at.is_some());
-    assert_eq!(output.user.locales.len(), 1);
-    assert_eq!(&output.user.locales[0], "en_GB");
-    assert!(output.user.real_name.is_none());
-    assert!(output.user.gender.is_none());
-    assert!(output.user.birthday.is_none());
-    assert!(output.user.location.is_none());
-    assert!(output.user.biography.is_none());
-    assert!(output.user.user_page.is_none());
+    let user = output
+        .user
+        .unwrap_wikijump()
+        .expect("Returned user was not of type Wikijump");
+
+    assert_eq!(user.user_id, user_id);
+    assert_eq!(user.name, USER_NAME);
+    assert_eq!(user.slug, USER_SLUG);
+    assert!(user.updated_at.is_none());
+    assert!(user.deleted_at.is_none());
+    assert_eq!(user.name_changes_left, 2); // set in Config::integration_testing()
+    assert!(user.last_renamed_at.is_none());
+    assert!(!user.password.is_empty());
+    assert_eq!(user.email, "jane@private.me");
+    assert!(user.email_verified_at.is_none());
+    assert!(user.email_validation_info.is_some());
+    assert!(user.email_validation_at.is_some());
+    assert_eq!(user.locales.len(), 1);
+    assert_eq!(&user.locales[0], "en_GB");
+    assert!(user.real_name.is_none());
+    assert!(user.gender.is_none());
+    assert!(user.birthday.is_none());
+    assert!(user.location.is_none());
+    assert!(user.biography.is_none());
+    assert!(user.user_page.is_none());
     assert!(output.aliases.is_empty());
 
     // Update bio fields
@@ -217,11 +237,17 @@ async fn basic_update() {
 
     // Get and check
 
+    let last_user = user;
     let output = run_endpoint!(runner, user_get, json!({ "user": user_id }))
         .expect("User does not exist");
 
+    let user = output
+        .user
+        .unwrap_wikijump()
+        .expect("Returned user not of type Wikijump");
+
     let birthday = Date::from_calendar_date(1986, Month::February, 1).unwrap();
-    assert_eq!(user, output.user); // ensures that the model returned by user_edit is latest
+    assert_eq!(user, last_user); // ensures that the model returned by user_edit is latest
     assert_str_eq!(user.real_name, Some("Jane H. Doe"));
     assert_str_eq!(user.gender, Some("she/they"));
     assert_eq!(user.birthday, Some(birthday));
@@ -277,7 +303,11 @@ async fn basic_update() {
 
 #[tokio::test]
 async fn user_create_only_verified_email_blocks_conflict() {
-    let runner = TestRunner::setup().await;
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
 
     let first = run_endpoint!(
         runner,
@@ -391,7 +421,11 @@ async fn user_create_only_verified_email_blocks_conflict() {
 
 #[tokio::test]
 async fn changing_email_clears_verified_ownership() {
-    let runner = TestRunner::setup().await;
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
 
     let user = run_endpoint!(
         runner,
@@ -451,6 +485,290 @@ async fn changing_email_clears_verified_ownership() {
         }),
     );
     assert!(changed.email_verified_at.is_none());
+}
+
+#[tokio::test]
+async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
+    let mut runner = TestRunner::setup().await;
+
+    let target = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Mutation Target User",
+            "email": "mutation-target@example.invalid",
+            "locales": ["en"],
+            "password": "hunter2",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let other = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Other Mutation User",
+            "email": "other-mutation-user@example.invalid",
+            "locales": ["en"],
+            "password": "hunter2",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": target.user_id,
+            "biography": "unauthenticated edit",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(other.user_id),
+        ..Default::default()
+    });
+    let error = run_endpoint_err!(runner, user_delete, json!({"user": target.user_id}),);
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(target.user_id),
+        ..Default::default()
+    });
+    let updated = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": target.user_id,
+            "biography": "self-service edit",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_str_eq!(updated.biography, Some("self-service edit"));
+
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": target.user_id,
+            "email_verified": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let error = run_endpoint_err!(
+        runner,
+        user_add_name_change,
+        json!({"user": target.user_id}),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let name_changes = run_endpoint!(
+        runner,
+        user_add_name_change,
+        json!({"user": target.user_id}),
+    );
+    assert_eq!(name_changes, runner.config().maximum_name_changes);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(target.user_id),
+        ..Default::default()
+    });
+    let deleted = run_endpoint!(runner, user_delete, json!({"user": target.user_id}),);
+    assert_eq!(deleted.user_id, target.user_id);
+    assert!(deleted.deleted_at.is_some());
+}
+
+#[tokio::test]
+async fn public_user_creation_rejects_privileged_fields() {
+    let runner = TestRunner::setup().await;
+
+    for privileged_fields in [
+        json!({"bypass_filter": true}),
+        json!({"bypass_email_verification": true}),
+        json!({"override_user_id": 700_100_i64}),
+        json!({"user_type": "system"}),
+    ] {
+        let mut input = json!({
+            "user_type": "regular",
+            "name": "Privileged Public User",
+            "email": "privileged-public-user@example.invalid",
+            "locales": ["en"],
+            "password": "hunter2",
+            "ip_address": common::IP_ADDRESS,
+        });
+        input
+            .as_object_mut()
+            .expect("fixture input should be an object")
+            .extend(
+                privileged_fields
+                    .as_object()
+                    .expect("fixture fields should be an object")
+                    .clone(),
+            );
+
+        let error = run_endpoint_err!(runner, user_create, input);
+        assert_contains_error!(error, ErrorType::PermissionDenied);
+    }
+}
+
+#[tokio::test]
+async fn wikidot_user() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    const USER_ID: i32 = 12345;
+    const USER_NAME: &str = "Old Guy";
+    const USER_SLUG: &str = "old-guy";
+
+    // Set up Wikidot user record
+
+    let ImportUserOutput { user_id } = run_endpoint!(
+        runner,
+        import_wikidot_user,
+        json!({
+            "user_id": USER_ID,
+            "created_at": "2009-05-01T16:32:20+00:00",
+            "fetched_at": "2026-02-02T10:00:00+00:00",
+            "user_type": "extant",
+            "name": USER_NAME,
+            "slug": USER_SLUG,
+            "avatar_uploaded_blob_id": null,
+            "real_name": "Bob Smith",
+            "gender": "male",
+            "birthday": null,
+            "location": null,
+            "biography": "Just some old guy who made an account on Wikidot",
+            "website": null,
+            "karma": 2,
+            "is_pro": false,
+            "importing_user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(user_id, USER_ID, "Outputted user ID does not match input");
+
+    // Check user data (Wikidot)
+
+    fn check_wikidot_user(user: &WikidotUserModel) {
+        assert_eq!(user.user_id, USER_ID);
+        assert_eq!(user.created_at, datetime!(2009-05-01 16:32:20 UTC));
+        assert_eq!(user.fetched_at, datetime!(2026-02-02 10:00:00 UTC));
+        assert_str_eq!(user.name, Some(USER_NAME));
+        assert_str_eq!(user.slug, Some(USER_SLUG));
+        assert!(user.avatar_s3_hash.is_none());
+        assert_str_eq!(user.real_name, Some("Bob Smith"));
+        assert_str_eq!(user.gender, Some("male"));
+        assert!(user.birthday.is_none());
+        assert!(user.location.is_none());
+        assert_str_eq!(
+            user.biography,
+            Some("Just some old guy who made an account on Wikidot"),
+        );
+        assert!(user.website.is_none());
+        assert_eq!(user.karma, 2);
+        assert!(!user.is_pro);
+    }
+
+    let output = run_endpoint!(runner, user_get, json!({ "user": USER_ID }))
+        .expect("No user exists after Wikidot user creation");
+
+    let user = output
+        .user
+        .unwrap_wikidot()
+        .expect("Returned user was not of type Wikidot");
+
+    check_wikidot_user(&user);
+
+    // Activate user (Wikidot -> Wikijump)
+
+    let wikijump_user = run_endpoint!(
+        runner,
+        user_activate_from_wikidot,
+        json!({
+            "user_id": USER_ID,
+            "user_type": "regular",
+            "email": "bob@wikijump",
+            "locales": ["en-AU", "en"],
+            "password": "hunter2",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Check user data (Wikijump)
+
+    let output = run_endpoint!(runner, user_get, json!({ "user": USER_SLUG }))
+        .expect("User does not exist");
+
+    let user = output
+        .user
+        .unwrap_wikijump()
+        .expect("Returned user not of type Wikijump");
+
+    assert_eq!(
+        user, wikijump_user,
+        "Wikijump user data doesn't match returned",
+    );
+    assert_eq!(user.created_at, datetime!(2009-05-01 16:32:20 UTC));
+    assert_eq!(user.name, USER_NAME);
+    assert_eq!(user.slug, USER_SLUG);
+    assert_eq!(user.email, "bob@wikijump");
+    assert_eq!(user.locales, ["en-AU", "en"]);
+    assert_str_eq!(user.real_name, Some("Bob Smith"));
+    assert_str_eq!(user.gender, Some("male"));
+    assert!(user.birthday.is_none());
+    assert!(user.location.is_none());
+
+    // Update Wikijump user data
+
+    run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": USER_ID,
+            "real_name": "Robert A. Smith",
+            "birthday": "1955-03-03",
+            "location": "Australia",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Check user data (Wikijump)
+
+    let output = run_endpoint!(runner, user_get, json!({ "user": USER_SLUG }))
+        .expect("User does not exist");
+
+    let user = output
+        .user
+        .unwrap_wikijump()
+        .expect("Returned user not of type Wikijump");
+
+    assert_str_eq!(user.real_name, Some("Robert A. Smith"));
+    assert_str_eq!(user.location, Some("Australia"));
+    assert_eq!(user.birthday, Some(date!(1955 - 03 - 03)));
+
+    // Check Wikidot user data hasn't changed
+    // We need to manually query since it gets shadowed in UserService::get().
+
+    let txn = runner.context().transaction();
+    let user: WikidotUserModel = WikidotUser::find_by_id(USER_ID)
+        .one(txn)
+        .await
+        .expect("Unable to fetch wikidot_user row")
+        .expect("No wikidot_user row found");
+
+    check_wikidot_user(&user);
 }
 
 // TODO test renames / rename tokens

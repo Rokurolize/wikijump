@@ -24,61 +24,48 @@
 //! Framerail (the API consumer). No guarantees are made as to backwards compatibility.
 //!
 //! This module should only contain definitions for the web server and its routes, and
-//! not any of the implementations themselves. Those should be in the `methods` module.
+//! not any of the implementations themselves. Those belong in the `endpoints` module.
 
 use crate::config::{Config, Secrets};
 use crate::endpoints::all::*;
 use crate::error::prelude::*;
 use crate::locales::Localizations;
 use crate::middleware::{RequestContextHeaders, RequestContextLayer};
+use crate::runtime::ServerStateInner;
 use crate::services::blob::MimeAnalyzer;
 use crate::services::job::JobWorker;
 use crate::services::{RequestContext, ServiceContext, SessionService};
-use crate::utils::debug_pointer;
 use crate::{database, info, redis as redis_db};
 use jsonrpsee::server::{RpcModule, Server, ServerHandle};
-use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
 use reqwest::Client as ReqwestClient;
-use rsmq_async::Rsmq;
 use s3::bucket::Bucket;
-use sea_orm::{DatabaseConnection, TransactionTrait};
-use std::fmt::{self, Debug};
+use sea_orm::TransactionTrait;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
 const BUCKET_REQUEST_TIMEOUT: Duration = Duration::from_millis(500);
 
-pub type ServerState = Arc<ServerStateInner>;
+pub use crate::runtime::ServerState;
 
-pub struct ServerStateInner {
-    pub config: Config,
-    pub database: DatabaseConnection,
-    pub redis: RedisMultiplexedConnection,
-    pub rsmq: Rsmq,
-    pub localizations: Localizations,
-    pub mime_analyzer: MimeAnalyzer,
-    pub s3_files_bucket: Box<Bucket>,
-    pub s3_tblocks_bucket: Box<Bucket>,
-    pub mailcheck_api_client: ReqwestClient,
+pub async fn build_server_state(config: Config, secrets: Secrets) -> Result<ServerState> {
+    build_server_state_inner(config, secrets, true).await
 }
 
-impl Debug for ServerStateInner {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("ServerStateInner")
-            .field("config", &self.config)
-            .field("database", &self.database)
-            .field("redis", &self.redis)
-            .field("rsmq", &debug_pointer(&self.rsmq))
-            .field("localizations", &self.localizations)
-            .field("mime_analyzer", &self.mime_analyzer)
-            .field("s3_files_bucket", &self.s3_files_bucket)
-            .field("s3_tblocks_bucket", &self.s3_tblocks_bucket)
-            .field("mailcheck_api_client", &self.mailcheck_api_client)
-            .finish()
-    }
+/// Build state for a bounded runtime action that must not consume background jobs.
+///
+/// Runtime actions such as render replay use the production services and databases,
+/// but are read-only diagnostics. Starting the normal queue workers here would make
+/// their behavior depend on unrelated jobs and could mutate the corpus while a replay
+/// is collecting evidence.
+pub async fn build_server_state_without_workers(
+    config: Config,
+    secrets: Secrets,
+) -> Result<ServerState> {
+    build_server_state_inner(config, secrets, false).await
 }
 
-pub async fn build_server_state(
+async fn build_server_state_inner(
     config: Config,
     Secrets {
         database_url,
@@ -90,6 +77,7 @@ pub async fn build_server_state(
         s3_credentials,
         mailcheck_api_key,
     }: Secrets,
+    start_workers: bool,
 ) -> Result<ServerState> {
     let make_error =
         || Error::new("failed to build server state", ErrorType::ServerSetup);
@@ -176,24 +164,38 @@ pub async fn build_server_state(
     });
 
     // Start workers listening to the job queue (requires ServerState)
-    JobWorker::spawn_all(&state);
+    if start_workers {
+        JobWorker::spawn_all(&state);
+    }
 
     // Return server state
     Ok(state)
 }
 
 pub async fn build_server(app_state: ServerState) -> Result<ServerHandle> {
-    let make_error = || Error::new("failed to build server", ErrorType::ServerSetup);
     let socket_address = app_state.config.address;
+    let (_, handle) = build_server_at(app_state, socket_address).await?;
+    Ok(handle)
+}
+
+/// Start the production RPC stack at an explicit address and return the bound address.
+///
+/// Passing port zero lets integration tests exercise registration, middleware, transaction handling, and RPC error conversion without reserving a fixed host port.
+pub async fn build_server_at(
+    app_state: ServerState,
+    socket_address: SocketAddr,
+) -> Result<(SocketAddr, ServerHandle)> {
+    let make_error = || Error::new("failed to build server", ErrorType::ServerSetup);
     let server = Server::builder()
         .set_http_middleware(tower::ServiceBuilder::new().layer(RequestContextLayer))
         .build(socket_address)
         .await
         .or_raise(make_error)?;
+    let local_address = server.local_addr().or_raise(make_error)?;
 
     let module = build_module(app_state).await.or_raise(make_error)?;
     let handle = server.start(module);
-    Ok(handle)
+    Ok((local_address, handle))
 }
 
 async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> {
@@ -358,6 +360,11 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("site_update", site_update);
     register!("site_domain", site_get_domain);
 
+    // Site bans
+    register!("site_ban_set", site_ban_set);
+    register!("site_ban_get", site_ban_get);
+    register!("site_ban_remove", site_ban_remove);
+
     // Site custom domain
     register!("custom_domain_create", site_custom_domain_create);
     register!("custom_domain_remove", site_custom_domain_remove);
@@ -372,6 +379,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("category_get", category_get);
     register!("category_get_all", category_get_all);
     register!("category_get_all_active", category_get_all_active);
+    register!("category_update", category_update);
 
     // Page
     register!("page_create", page_create);
@@ -382,6 +390,13 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("page_get_files", page_get_files);
     register!("page_tags_select", page_tags_select);
     register!("page_select", page_select);
+    register!("wikidot_list_pages_feed", wikidot_list_pages_feed);
+    register!("wikidot_list_pages_module", wikidot_list_pages_module);
+    register!(
+        "wikidot_page_discussion_create",
+        wikidot_page_discussion_create
+    );
+    register!("wikidot_page_preview", wikidot_page_preview);
     register!("page_edit", page_edit);
     register!("page_edit_permission", page_edit_permission);
     register!("page_delete", page_delete);
@@ -465,7 +480,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
 
     // User
     register!("user_create", user_create);
-    register!("user_import", user_import);
+    register!("user_activate_from_wikidot", user_activate_from_wikidot);
     register!("user_get", user_get);
     register!("user_edit", user_edit);
     register!("user_delete", user_delete);
@@ -494,6 +509,11 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("vote_action", vote_action);
     register!("vote_list", vote_list_get);
     register!("vote_list_count", vote_list_count);
+
+    // Wikidot data import
+    register!("import_wikidot_user", import_wikidot_user);
+    register!("import_wikidot_site", import_wikidot_site);
+    register!("import_wikidot_page", import_wikidot_page);
 
     // Return
     Ok(module)

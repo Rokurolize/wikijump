@@ -1,0 +1,118 @@
+{
+  "schema": "wikijump.wikidot_live_probe.v1",
+  "case_id": "listdrafts-module-live-preview-matrix",
+  "captured_at": "2026-07-29T00:57:43.944133+00:00",
+  "site": "sandbox-for-codex",
+  "module_route": "edit/PagePreviewModule",
+  "mutated": false,
+  "notes": [
+    "The sandbox already contained one not-existing-page draft from a prior run-owned NewPage probe, so all-drafts and notexists cases include one list item while exists cases show the empty wrapper.",
+    "Anonymous and account-A output was identical for the observed cases."
+  ],
+  "cases": [
+    {
+      "case_id": "anonymous-exists-empty-wrapper",
+      "viewer": "anonymous",
+      "source": "[[module ListDrafts pageType=\"exists\"]]",
+      "source_sha256": "f2733fca7ba0f8672e112acdbd2d50415fd8648156fceef5d721a4ad5e29319c",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n            </div>\n   ",
+      "body_sha256": "b625c86083de5d12b06478e41ea88a475b2fc1056ac974f11cc3ee8928684a6d"
+    },
+    {
+      "case_id": "anonymous-omitted-all-drafts",
+      "viewer": "anonymous",
+      "source": "[[module ListDrafts]]",
+      "source_sha256": "394abe3bad7c65120b6da13ad3361eede5f9fd5482d86c3811a69929c7c6c32c",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n                    <div class=\"list-drafts-item\">\n                <p>\n                    <a href=\"/run-owned:np-submit-20260728233036-browser-default-178528186\">run-owned:np-submit-20260728233036-browser-default-1785281864</a>\n                </p>\n            </div>\n            </div>\n   ",
+      "body_sha256": "c942a8be661ae2ff9eb40a1530b23a2bfc38b365047c5e9141c91316c71e70b8"
+    },
+    {
+      "case_id": "anonymous-notexists-drafts",
+      "viewer": "anonymous",
+      "source": "[[module ListDrafts pageType=\"notexists\"]]",
+      "source_sha256": "def46819b4f9c880133534ad3a83e85ceedca7a7ff1d585951e7208e1caa33ff",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n                    <div class=\"list-drafts-item\">\n                <p>\n                    <a href=\"/run-owned:np-submit-20260728233036-browser-default-178528186\">run-owned:np-submit-20260728233036-browser-default-1785281864</a>\n                </p>\n            </div>\n            </div>\n   ",
+      "body_sha256": "c942a8be661ae2ff9eb40a1530b23a2bfc38b365047c5e9141c91316c71e70b8"
+    },
+    {
+      "case_id": "anonymous-invalid-pagetype-all-drafts",
+      "viewer": "anonymous",
+      "source": "[[module ListDrafts pageType=\"other\"]]",
+      "source_sha256": "f75b37a8ea034e1f7385586dfe1abded81a79da6d9375391018c7779ecff9227",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n                    <div class=\"list-drafts-item\">\n                <p>\n                    <a href=\"/run-owned:np-submit-20260728233036-browser-default-178528186\">run-owned:np-submit-20260728233036-browser-default-1785281864</a>\n                </p>\n            </div>\n            </div>\n   ",
+      "body_sha256": "c942a8be661ae2ff9eb40a1530b23a2bfc38b365047c5e9141c91316c71e70b8"
+    },
+    {
+      "case_id": "anonymous-empty-pagetype-all-drafts",
+      "viewer": "anonymous",
+      "source": "[[module ListDrafts pageType=\"\"]]",
+      "source_sha256": "6ff21be9da391fe844aa5c87c8bed4ae335e92bbdd0078674d5dd03a2ed81c09",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n                    <div class=\"list-drafts-item\">\n                <p>\n                    <a href=\"/run-owned:np-submit-20260728233036-browser-default-178528186\">run-owned:np-submit-20260728233036-browser-default-1785281864</a>\n                </p>\n            </div>\n            </div>\n   ",
+      "body_sha256": "c942a8be661ae2ff9eb40a1530b23a2bfc38b365047c5e9141c91316c71e70b8"
+    },
+    {
+      "case_id": "anonymous-single-quoted-pagetype-all-drafts",
+      "viewer": "anonymous",
+      "source": "[[module ListDrafts pageType='exists']]",
+      "source_sha256": "2b7b8b5824d8317a99ef3da91cdc4a26861cccc608d235c154f96e56657f6603",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n                    <div class=\"list-drafts-item\">\n                <p>\n                    <a href=\"/run-owned:np-submit-20260728233036-browser-default-178528186\">run-owned:np-submit-20260728233036-browser-default-1785281864</a>\n                </p>\n            </div>\n            </div>\n   ",
+      "body_sha256": "c942a8be661ae2ff9eb40a1530b23a2bfc38b365047c5e9141c91316c71e70b8"
+    },
+    {
+      "case_id": "anonymous-bare-pagetype-all-drafts",
+      "viewer": "anonymous",
+      "source": "[[module ListDrafts pageType=exists]]",
+      "source_sha256": "e281a4fa903d31f2abf27e567563674c969226969944de58bcc7f03fd8430aec",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n                    <div class=\"list-drafts-item\">\n                <p>\n                    <a href=\"/run-owned:np-submit-20260728233036-browser-default-178528186\">run-owned:np-submit-20260728233036-browser-default-1785281864</a>\n                </p>\n            </div>\n            </div>\n   ",
+      "body_sha256": "c942a8be661ae2ff9eb40a1530b23a2bfc38b365047c5e9141c91316c71e70b8"
+    },
+    {
+      "case_id": "anonymous-uppercase-name-exists-empty-wrapper",
+      "viewer": "anonymous",
+      "source": "[[module LISTDRAFTS pageType=\"exists\"]]",
+      "source_sha256": "52759c6a47c3a8e426463d20b39c8a135ed3750e4983fff254777771cbb8d10a",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n            </div>\n   ",
+      "body_sha256": "b625c86083de5d12b06478e41ea88a475b2fc1056ac974f11cc3ee8928684a6d"
+    },
+    {
+      "case_id": "anonymous-uppercase-arg-all-drafts",
+      "viewer": "anonymous",
+      "source": "[[module ListDrafts PAGETYPE=\"exists\"]]",
+      "source_sha256": "cb2d7297304b7663bd7f9bb48fcc6766a872c52adf965eb9e0aaa157212eed59",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n                    <div class=\"list-drafts-item\">\n                <p>\n                    <a href=\"/run-owned:np-submit-20260728233036-browser-default-178528186\">run-owned:np-submit-20260728233036-browser-default-1785281864</a>\n                </p>\n            </div>\n            </div>\n   ",
+      "body_sha256": "c942a8be661ae2ff9eb40a1530b23a2bfc38b365047c5e9141c91316c71e70b8"
+    },
+    {
+      "case_id": "anonymous-with-closing-body-literal",
+      "viewer": "anonymous",
+      "source": "[[module ListDrafts pageType=\"exists\"]]\n[[/module]]",
+      "source_sha256": "1dfdb0db6f954e40ca0bcde9b61af06c172c408b3b2344e665f66b8a6e9b6a59",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n            </div>\n   \n<p>[[/module]]</p>\n",
+      "body_sha256": "aef17a2ef03ccaeb5ae4494e646d38eac143b3a781fa9c7ac97075012efa8910"
+    },
+    {
+      "case_id": "account-a-exists-empty-wrapper",
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "title": null
+      },
+      "source": "[[module ListDrafts pageType=\"exists\"]]",
+      "source_sha256": "f2733fca7ba0f8672e112acdbd2d50415fd8648156fceef5d721a4ad5e29319c",
+      "status": "ok",
+      "body": "\n\n    <div class=\"list-drafts-box\">\n            </div>\n   ",
+      "body_sha256": "b625c86083de5d12b06478e41ea88a475b2fc1056ac974f11cc3ee8928684a6d"
+    }
+  ]
+}

@@ -20,17 +20,31 @@
 
 #![allow(dead_code)] // TEMP
 
-use super::prelude::*;
+use super::structs::{
+    CreateFirstForumPostRevision, CreateFirstForumPostRevisionOutput,
+    CreateForumPostRevision, CreateForumPostRevisionBody, CreateForumPostRevisionOutput,
+    GetForumPostRevision, GetForumPostRevisionRange, UpdateForumPostRevision,
+};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::forum_post::Model as ForumPostModel;
 use crate::models::forum_post_revision::{
     self, Entity as ForumPostRevision, Model as ForumPostRevisionModel,
 };
+use crate::services::ServiceContext;
 use crate::services::render::RenderOutput;
 use crate::services::score::ScoreValue;
 use crate::services::{RenderService, SiteService, TextService};
 use crate::types::FetchDirection;
+use crate::types::{Maybe, Reference};
+use crate::utils::locale_for_ftml;
+use crate::utils::now;
 use ftml::data::PageInfo;
 use ftml::settings::{WikitextMode, WikitextSettings};
+use paste::paste;
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, QuerySelect, Set,
+};
 use sea_query::Order;
 use std::borrow::Cow;
 
@@ -474,7 +488,7 @@ impl ForumPostRevisionService {
             alt_title: None,
             score: ScoreValue::Integer(0),
             tags: vec![],
-            language: Cow::Owned(site.locale),
+            language: Cow::Owned(locale_for_ftml(&site.locale).to_owned()),
         };
 
         let render = RenderService::render(ctx, wikitext, &page_info, &settings)

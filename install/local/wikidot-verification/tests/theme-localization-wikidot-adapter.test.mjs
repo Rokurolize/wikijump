@@ -8,11 +8,11 @@ import test from "node:test";
 import {fileURLToPath} from "node:url";
 
 import {ThemeExecutionLedger, cleanupThemeExecution} from "../src/theme-localization-execution.mjs";
-import {WikidotJsonlHelperClient, WikidotThemePageAdapter} from "../src/theme-localization-wikidot-adapter.mjs";
+import {WIKIDOT_HELPER_PYTHON, WikidotJsonlHelperClient, WikidotThemePageAdapter} from "../src/theme-localization-wikidot-adapter.mjs";
 import {targetRoundTripSourceSha256} from "../src/theme-source-roundtrip.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const HELPER_PATH = path.resolve(HERE, "../scripts/wikidot-theme-page-helper.py");
+const HELPER_PATH = path.resolve(HERE, "../scripts/wikidot_theme_page_helper.py");
 const SITE = "scpaiueouiuiuiui";
 
 function sha256(value) {
@@ -22,13 +22,13 @@ function sha256(value) {
 function fixtureResource() {
   const source = "日本語 theme source\n";
   const slug = "codex-l10n:20260713-adapter-yossistyle";
-  return {source, resource: {resource_id: "yossistyle:wikidot", tier_id: "yossistyle", target: "wikidot", slug, url: `http://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}};
+  return {source, resource: {resource_id: "yossistyle:wikidot", tier_id: "yossistyle", target: "wikidot", slug, url: `https://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}};
 }
 
 function prerequisiteResource() {
   const source = "[[include component:image-block-base]]";
   const slug = "component:image-block";
-  return {source, resource: {resource_id: `prerequisite:${slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", slug, url: `http://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Image Block", tags: ["codex-source-parity-redo", "component"]}};
+  return {source, resource: {resource_id: `prerequisite:${slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", slug, url: `https://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Image Block", tags: ["codex-source-parity-redo", "component"]}};
 }
 
 class FakeHelper {
@@ -71,10 +71,11 @@ test("private-site adapter uses the execution interface without ListPages lookup
   assert.equal(await adapter.inspect(resource), null);
   assert.deepEqual(helper.calls.map(({action}) => action), ["inspect", "inspect", "create", "inspect", "remove", "inspect", "inspect"]);
   assert.deepEqual(helper.calls.find(({action}) => action === "create").fields.tags, ["テーマ"]);
-  await assert.rejects(adapter.inspect({...resource, url: `http://scp-wiki.wikidot.com/${resource.slug}`}), /hard allowlist/);
+  await assert.rejects(adapter.inspect({...resource, url: `https://scp-wiki.wikidot.com/${resource.slug}`}), /hard allowlist/);
+  await assert.rejects(adapter.inspect({...resource, url: `http://${SITE}.wikidot.com/${resource.slug}`}), /hard allowlist/);
   await assert.rejects(adapter.inspect({...resource, slug: "theme:yossistyle"}), /validated/);
   const legacySlug = "theme:codex-l10n-20260713-adapter-yossistyle";
-  const legacy = {...resource, slug: legacySlug, url: `http://${SITE}.wikidot.com/${legacySlug}`};
+  const legacy = {...resource, slug: legacySlug, url: `https://${SITE}.wikidot.com/${legacySlug}`};
   assert.equal(await adapter.inspect(legacy), null);
   await assert.rejects(adapter.create(legacy, {source}), /validated/);
 });
@@ -90,7 +91,7 @@ test("private-site adapter exposes exact read-only reference prerequisites", asy
   await assert.rejects(adapter.inspect({...resource, title: "changed"}), /read-only contract/);
 });
 
-test("durable create intent can clean a page after a post-save error", async () => {
+test("durable create intent retains a page after a post-save error without a recorded identity", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "theme-wikidot-intent-"));
   const helper = new FakeHelper({failAfterCreate: true});
   const adapter = new WikidotThemePageAdapter({helperClient: helper});
@@ -100,9 +101,11 @@ test("durable create intent can clean a page after a post-save error", async () 
   await ledger.intent(resource, expected);
   await assert.rejects(adapter.create(resource, {source}), /post-save/);
   assert.notEqual(await adapter.inspect(resource), null);
-  await cleanupThemeExecution({ledger, adapters: {wikidot: adapter}});
-  assert.equal(helper.pages.size, 0);
-  assert.equal((await ThemeExecutionLedger.load(ledger.filePath)).completed, true);
+  await assert.rejects(cleanupThemeExecution({ledger, adapters: {wikidot: adapter}}), /cleanup left residual resources/);
+  assert.equal(helper.pages.size, 1);
+  const recovered = await ThemeExecutionLedger.load(ledger.filePath);
+  assert.equal(recovered.completed, false);
+  assert.equal(recovered.states.get(resource.resource_id).phase, "residual");
 });
 
 test("cleanup refuses content or identity changed after creation", async () => {
@@ -127,7 +130,15 @@ test("Python helper contains only direct authenticated page primitives", async (
   assert.doesNotMatch(source, /ListPagesModule/);
   assert.doesNotMatch(source, /site\.page\.get/);
   assert.doesNotMatch(source, /site\.amc_request/);
+  assert.doesNotMatch(source, /WIKIDOT_PY_ROOT|sys\.path\.insert/);
   assert.doesNotMatch(source, /str\(exc\)|repr\(exc\)/);
+});
+
+test("production helper uses the component-owned virtual environment", () => {
+  const client = new WikidotJsonlHelperClient({env: helperEnvironment()});
+  assert.equal(client.command, path.resolve(HERE, "../.venv/bin/python"));
+  assert.equal(client.command, WIKIDOT_HELPER_PYTHON);
+  assert.equal("WIKIDOT_PY_ROOT" in client.env, false);
 });
 
 test("create-only backend rejects an existing PageEditModule revision", () => {
@@ -138,10 +149,10 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 backend = object.__new__(module.WikidotBackend)
 backend.inspect = lambda slug, kind="theme_page": None
-backend._amc = lambda body: {"status": "ok", "lock_id": "lock", "lock_secret": "secret", "page_revision_id": 99}
+backend._request_ajax_module_connector = lambda body: {"status": "ok", "lock_id": "lock", "lock_secret": "secret", "page_revision_id": 99}
 source = "fixture source"
 try:
-    backend.create("codex-l10n:20260713-adapter-yossistyle", "fixture", source, module.sha256(source), ["テーマ"])
+    backend.create("codex-l10n:20260713-adapter-yossistyle", title="fixture", source=source, expected_source_sha256=module.sha256(source), tags=["テーマ"])
 except module.PublicError as error:
     print(error.code)
 `;
@@ -167,15 +178,17 @@ def amc(body):
     events.append(body.get("event", body.get("moduleName")))
     if body.get("moduleName") == "edit/PageEditModule": return {"status": "ok", "lock_id": "lock", "lock_secret": "secret"}
     return {"status": "ok"}
-backend._amc = amc
+backend._request_ajax_module_connector = amc
 backend.page_tags = lambda slug, kind="theme_page": ["テーマ"]
-print(backend.create("codex-l10n:20260713-adapter-yossistyle", "fixture", source, module.sha256(source), ["テーマ"])["identity"])
+created = backend.create("codex-l10n:20260713-adapter-yossistyle", title="fixture", source=source, expected_source_sha256=module.sha256(source), tags=["テーマ"])
+print(created["identity"])
+print(",".join(created["tags"]))
 print(",".join(events))
 `;
   const result = spawnSync("python3", ["-c", program, HELPER_PATH], {encoding: "utf8"});
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
-  assert.equal(result.stdout.trim(), "7\nedit/PageEditModule,savePage,saveTags");
+  assert.equal(result.stdout.trim(), "7\nテーマ\nedit/PageEditModule,savePage,saveTags");
 });
 
 test("Wikidot round-trip hash removes only one observed terminal LF", () => {
@@ -271,6 +284,31 @@ module.serve(sys.stdin, sys.stdout, Backend())
   assert.equal((await client.request("inspect", {slug})).page.identity, 2);
   await assert.rejects(client.request("inspect", {slug, session_token: "forbidden"}), /forbidden secret field/);
   await client.close();
+});
+
+test("Python helper closes its backend when response delivery fails", () => {
+  const program = String.raw`
+import importlib.util, io, sys
+spec = importlib.util.spec_from_file_location("theme_helper", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+class Backend:
+    closed = False
+    def close(self): self.closed = True
+class BrokenOutput:
+    def write(self, value): raise OSError("closed pipe")
+    def flush(self): pass
+backend = Backend()
+try:
+    module.serve(io.StringIO('{"id":1,"action":"ping"}\n'), BrokenOutput(), backend)
+except OSError:
+    pass
+print(backend.closed)
+`;
+  const result = spawnSync("python3", ["-c", program, HELPER_PATH], {encoding: "utf8"});
+  assert.equal(result.status, 0);
+  assert.equal(result.stderr, "");
+  assert.equal(result.stdout.trim(), "True");
 });
 
 test("helper errors and process exits never expose credentials", async () => {

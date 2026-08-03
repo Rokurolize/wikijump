@@ -18,12 +18,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// TODO replace ParentService with a new relation type
+//! Page parenting is a specialized relation backed by `page_parent`.
+//!
+//! It remains separate from generic user and site relations because it enforces
+//! page-specific same-site and cycle invariants.
 
-use super::prelude::*;
+use super::structs::{ParentDescription, ParentalRelationshipType, RemoveParentOutput};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::Model as PageModel;
 use crate::models::page_parent::{self, Entity as PageParent, Model as PageParentModel};
-use crate::services::PageService;
+use crate::services::{OutdateService, PageService, ServiceContext};
+use crate::types::{Reference, RerenderDepth};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, DeleteResult, EntityTrait, QueryFilter,
+    QuerySelect, Set,
+};
 
 #[derive(Debug)]
 pub struct ParentService;
@@ -102,8 +111,15 @@ impl ParentService {
                     ..Default::default()
                 };
 
-                let parent = model.insert(txn).await.or_raise(make_error)?;
-                Ok(Some(parent))
+                let relationship = model.insert(txn).await.or_raise(make_error)?;
+                OutdateService::outdate(
+                    ctx,
+                    parent_page.page_id,
+                    RerenderDepth::default(),
+                )
+                .await
+                .or_raise(make_error)?;
+                Ok(Some(relationship))
             }
 
             // Parent relationship already exists
@@ -148,7 +164,7 @@ impl ParentService {
             )
         };
 
-        let DeleteResult { rows_affected } =
+        let DeleteResult { rows_affected, .. } =
             PageParent::delete_by_id((parent_page.page_id, child_page.page_id))
                 .exec(txn)
                 .await
@@ -160,6 +176,11 @@ impl ParentService {
         );
 
         let was_deleted = rows_affected == 1;
+        if was_deleted {
+            OutdateService::outdate(ctx, parent_page.page_id, RerenderDepth::default())
+                .await
+                .or_raise(make_error)?;
+        }
         Ok(RemoveParentOutput { was_deleted })
     }
 
@@ -203,21 +224,7 @@ impl ParentService {
         Ok(model)
     }
 
-    #[inline]
-    #[allow(dead_code)] // TODO
-    pub async fn get(
-        ctx: &ServiceContext<'_>,
-        description: ParentDescription<'_>,
-    ) -> Result<PageParentModel> {
-        find_or_error!(
-            Self::get_optional(ctx, description),
-            "page parent",
-            PageParent,
-        )
-    }
-
     /// Gets all relationships of the given type.
-    // NOTE: This will need renaming when we migrate this to a relation.
     pub async fn get_relationships(
         ctx: &ServiceContext<'_>,
         site_id: i64,
@@ -252,31 +259,6 @@ impl ParentService {
             .or_raise(make_error)?;
 
         Ok(models)
-    }
-
-    /// Gets all children of the given page.
-    #[allow(dead_code)] // TEMP
-    pub async fn get_children(
-        ctx: &ServiceContext<'_>,
-        site_id: i64,
-        reference: Reference<'_>,
-    ) -> Result<Vec<PageParentModel>> {
-        Self::get_relationships(
-            ctx,
-            site_id,
-            reference.borrow(),
-            ParentalRelationshipType::Child,
-        )
-        .await
-        .or_raise(|| {
-            Error::new(
-                format!(
-                    "failed to get children of page {:?} in site ID {}",
-                    reference, site_id,
-                ),
-                ErrorType::PageParent,
-            )
-        })
     }
 
     /// Gets all parents of the given page.
@@ -323,6 +305,15 @@ impl ParentService {
             )
         };
 
+        let former_parent_ids = PageParent::find()
+            .select_only()
+            .column(page_parent::Column::ParentPageId)
+            .filter(page_parent::Column::ChildPageId.eq(page_id))
+            .into_tuple()
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+
         let rows_deleted = PageParent::delete_many()
             .filter(
                 Condition::any()
@@ -333,6 +324,12 @@ impl ParentService {
             .await
             .or_raise(make_error)?
             .rows_affected;
+
+        for parent_id in former_parent_ids {
+            OutdateService::outdate(ctx, parent_id, RerenderDepth::default())
+                .await
+                .or_raise(make_error)?;
+        }
 
         Ok(rows_deleted)
     }
