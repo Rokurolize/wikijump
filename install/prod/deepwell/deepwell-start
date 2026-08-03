@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+
+# Standing images run migrations explicitly before starting the already-built
+# server.  The activation controller never compiles application code.
+/usr/local/bin/sqlx migrate run --source /opt/deepwell/migrations
+exec /usr/local/bin/deepwell /etc/deepwell.toml
