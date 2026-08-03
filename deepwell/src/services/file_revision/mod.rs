@@ -26,5 +26,6 @@ pub use self::structs::{
     CountFileRevisions, CreateFileRevision, CreateFileRevisionBody,
     CreateFileRevisionOutput, CreateFirstFileRevision, CreateFirstFileRevisionOutput,
     CreateResurrectionFileRevision, CreateTombstoneFileRevision, FileBlob,
-    FileRevisionCountOutput, GetFileRevision, GetFileRevisionRange, UpdateFileRevision,
+    FileRevisionCountOutput, FileRevisionModelFiltered, GetFileRevision,
+    GetFileRevisionRange, UpdateFileRevision,
 };

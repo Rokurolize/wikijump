@@ -22,6 +22,7 @@ use crate::hash::BlobHash;
 use crate::services::page_revision::PageRevisionCountOutput;
 use crate::types::Maybe;
 use crate::types::{FetchDirection, FileRevisionType};
+use time::OffsetDateTime;
 
 #[derive(Debug, Clone)]
 pub struct CreateFileRevision {
@@ -133,6 +134,28 @@ pub struct GetFileRevisionRange {
     pub revision_number: i32,
     pub revision_direction: FetchDirection,
     pub limit: u64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct FileRevisionModelFiltered {
+    pub revision_id: i64,
+    pub revision_type: FileRevisionType,
+
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+
+    pub revision_number: i32,
+    pub file_id: i64,
+    pub page_id: i64,
+    pub site_id: i64,
+    pub user_id: i64,
+    pub name: Option<String>,
+    pub s3_hash: Option<Vec<u8>>,
+    pub mime: Option<String>,
+    pub size: Option<i64>,
+    pub changes: Vec<String>,
+    pub comments: Option<String>,
+    pub hidden: Vec<String>,
 }
 
 pub type FileRevisionCountOutput = PageRevisionCountOutput;
