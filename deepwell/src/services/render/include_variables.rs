@@ -36,8 +36,13 @@ use ftml::data::PageInfo;
 use ftml::includes::IncludeRef;
 use ftml::{self};
 use std::borrow::Cow;
+use std::collections::HashSet;
 
 pub(super) fn apply_include_variables(content: &mut String, include: &IncludeRef<'_>) {
+    // Preserve one unresolved self-reference when its value intentionally
+    // carries a prefix or suffix; otherwise each bounded pass repeats it.
+    let mut self_referential_names = HashSet::new();
+
     for _ in 0..MAX_INCLUDE_EXPANSION_DEPTH {
         let mut expanded = String::with_capacity(content.len());
         let mut previous_end = 0;
@@ -47,6 +52,10 @@ pub(super) fn apply_include_variables(content: &mut String, include: &IncludeRef
         for capture in INCLUDE_VARIABLE_REGEX.captures_iter(content) {
             let mtch = capture.get(0).unwrap();
             let name = &capture["name"];
+
+            if self_referential_names.contains(name) {
+                continue;
+            }
 
             if let Some(value) = include
                 .variables()
@@ -58,6 +67,9 @@ pub(super) fn apply_include_variables(content: &mut String, include: &IncludeRef
                 expanded.push_str(&value);
                 previous_end = mtch.end();
                 matched = true;
+                if value.contains(mtch.as_str()) {
+                    self_referential_names.insert(name.to_owned());
+                }
                 changed |= value != mtch.as_str();
             }
         }
