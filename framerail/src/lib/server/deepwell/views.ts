@@ -4,6 +4,7 @@ import type {
   Nullable,
   Optional,
   PageAttribution,
+  PageCategoryModel,
   PageModel,
   PageOptions,
   PageRevisionModel,
@@ -17,6 +18,8 @@ export interface Viewer {
   site_file_domain: string
   license_name: string
   license_url: string
+  license_kind: "standard" | "other" | "copyright"
+  license_html: Nullable<string>
   user_session: Nullable<UserSession>
 }
 
@@ -56,6 +59,8 @@ export interface PreloadData {
   site_file_domain: Viewer["site_file_domain"]
   license_name: Viewer["license_name"]
   license_url: Viewer["license_url"]
+  license_kind: Viewer["license_kind"]
+  license_html: Viewer["license_html"]
   user_session: Nullable<ClientUserSession>
   locales: string[]
 }
@@ -70,8 +75,10 @@ export interface PageRoute {
 interface PageViewDataBase {
   options: PageOptions
   redirect_page: Nullable<string>
+  redirect_kind?: Nullable<"wikidot_module">
   wikitext: string
   compiled_body_html: string
+  compiled_body_styles: string[]
   compiled_top_bar_html: Optional<string>
   compiled_side_bar_html: Optional<string>
 }
@@ -84,11 +91,56 @@ interface PageViewFound {
     wikidot_snapshot: Nullable<WikidotPageSnapshotView>
     wikidot_breadcrumbs: WikidotPageBreadcrumbView[]
     attributions: PageAttribution[]
+    page_rating: PageRatingSettings
+    page_discussion: PageDiscussionSettings
+    data_form: Nullable<DataFormEditor>
   }
+}
+
+export interface PageRatingSettings {
+  enabled: boolean
+  permission: "registered" | "members"
+  visibility: "visible" | "anonymous"
+  rating_type: "plus" | "plus_minus" | "stars"
+}
+export interface PageDiscussionSettings {
+  enabled: boolean
+}
+export interface DataFormValueDefinition {
+  value: string
+  label: string
+}
+export interface DataFormFieldDefinition {
+  name: string
+  label: string
+  hint: string
+  field_type: Nullable<string>
+  values: DataFormValueDefinition[]
+  default_value: Nullable<string>
+  width: number
+  height: number
+  match_pattern: Nullable<string>
+  match_error: Nullable<string>
+  before: string
+  after: string
+  join: boolean
+}
+export interface DataFormDefinition {
+  fields: DataFormFieldDefinition[]
+  default_layout: boolean
+}
+export interface DataFormEditor {
+  definition: DataFormDefinition
+  values: Record<string, string>
 }
 interface PageViewMissing {
   type: "missing"
-  data: PageViewDataBase
+  data: PageViewDataBase & {
+    new_page_wikitext: Nullable<string>
+    page_templates: PageTemplateSummary[]
+    selected_template_page_id: Nullable<number>
+    data_form: Nullable<DataFormEditor>
+  }
 }
 interface PageViewPermissions {
   type: "permissions"
@@ -156,7 +208,17 @@ export async function articleViewCacheMetadata(
 /* ----- Admin View ----- */
 interface AdminViewSiteFound {
   type: "site_found"
-  data: undefined
+  data: {
+    categories: PageCategoryModel[]
+    page_templates: PageTemplateSummary[]
+  }
+}
+
+export interface PageTemplateSummary {
+  page_id: number
+  slug: string
+  title: string
+  wikitext: string
 }
 interface AdminViewAdminPermissions {
   type: "admin_permissions"

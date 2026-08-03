@@ -21,6 +21,19 @@ pub struct Model {
     pub top_bar_page: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub side_bar_page: Option<String>,
+    pub template_page_id: Option<i64>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub license: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub license_other: Option<String>,
+    pub rating_enabled: Option<bool>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub rating_permission: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub rating_visibility: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub rating_type: Option<String>,
+    pub per_page_discussion: Option<bool>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

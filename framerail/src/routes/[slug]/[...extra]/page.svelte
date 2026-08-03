@@ -1,22 +1,27 @@
 <script lang="ts">
   import { page } from "$app/state"
   import { goto } from "$app/navigation"
-  import { getPageLayoutContext } from "$lib/page-layout-context"
-  import { errorPopupState } from "$lib/stores.svelte"
+  import { getPageLayoutContext } from "$lib/layout/page-layout-context"
+  import { errorPopupState } from "$lib/layout/stores.svelte"
   import { Layout, PagePane } from "$lib/types"
-  import {
-    EditorPane,
-    FilePane,
-    HistoryPane,
-    LayoutPane,
-    MovePane,
-    ParentPane,
-    VotePane,
-    DeletePane
-  } from "."
   import { resolve } from "$app/paths"
-  import { buildWikidotPageTagsHtml } from "$lib/wikidot-page-tags"
-  import { isWikidotFragmentPage } from "$lib/wikidot-page-actions"
+  import { buildWikidotPageTagsHtml } from "$lib/wikidot/wikidot-page-tags"
+  import {
+    buildGeneratedPageStylesHead,
+    getPageFontPreloadHrefs
+  } from "$lib/generated-page-styles"
+  import {
+    buildWikidotDiscussButtonHtml,
+    isWikidotFragmentPage
+  } from "$lib/wikidot/wikidot-page-actions"
+  import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
+  import { resolveWikidotHashMagicPagePane } from "$lib/wikidot/wikidot-hash-magic"
+  import { onMount } from "svelte"
+
+  import CurrentPageActions from "./CurrentPageActions.svelte"
+  import CurrentPageMetadata from "./CurrentPageMetadata.svelte"
+  import PageHead from "./PageHead.svelte"
+  import PagePaneContent from "./PagePaneContent.svelte"
 
   import type { PageProps } from "./$types"
   import type { Optional } from "$lib/types"
@@ -32,8 +37,10 @@
   let showRevision = $state<boolean>(false)
   let revision = $state<Optional<PageRevisionModelFiltered>>(undefined)
   let pagePaneState = $state<PagePane>(PagePane.None)
+  let EditorPane = $state<typeof import("./EditorPane.svelte").default>()
   let wikidotPageActions = $derived(data.wikidot_page_actions)
   let wikidotPageWatch = $derived(data.wikidot_page_watch)
+  let dataFormEditing = $derived(!!data.options?.edit && !!data.data_form)
   let isDirectWikidotFragmentPage = $derived(
     pageLayoutContext.current === Layout.WIKIDOT &&
       !data.options?.debug &&
@@ -42,6 +49,25 @@
       isWikidotFragmentPage(data.page_revision?.tags)
   )
   const breadcrumbSeparator = " » "
+  let compiledBodyStyles = $derived(
+    data.options?.debug || data.options?.no_render
+      ? []
+      : showRevision
+        ? (revision?.compiled_body_styles ?? [])
+        : (data.compiled_body_styles ?? [])
+  )
+  let compiledBodyStylesHead = $derived(buildGeneratedPageStylesHead(compiledBodyStyles))
+  let renderedBodyHtml = $derived(
+    showRevision ? revision?.compiled_body_html : data.compiled_body_html
+  )
+  let pageFontPreloadHrefs = $derived(
+    pageLayoutContext.current === Layout.WIKIDOT
+      ? []
+      : getPageFontPreloadHrefs(data.site.locale, renderedBodyHtml, [
+          data.page_revision?.title,
+          ...compiledBodyStyles
+        ])
+  )
 
   async function navigateEdit() {
     // Check edit permission first
@@ -98,28 +124,59 @@
     revision = rev
   }
 
+  async function ensureEditorPane() {
+    EditorPane ??= (await import("./EditorPane.svelte")).default
+  }
+
+  function activatePagePane(pane: PagePane) {
+    showSource = false
+    pagePaneState = pane
+  }
+
+  onMount(() => {
+    if (pageLayoutContext.current !== Layout.WIKIDOT || data.options?.edit) return
+
+    switch (resolveWikidotHashMagicPagePane(window.location.href)) {
+      case "history":
+        activatePagePane(PagePane.History)
+        break
+      case "files":
+        activatePagePane(PagePane.File)
+        break
+    }
+  })
+
   $effect(() => {
+    if (data.options?.edit) {
+      void ensureEditorPane()
+    }
+
     if (data.options?.history) {
       pagePaneState = PagePane.History
     }
   })
 </script>
 
-<svelte:head>
-  <title>{data.page_revision?.title} | {data.site.name}</title>
-</svelte:head>
+<PageHead
+  {compiledBodyStylesHead}
+  fontPreloadHrefs={pageFontPreloadHrefs}
+  siteName={data.site.name}
+  title={data.page_revision?.title}
+/>
 
 {#if pageLayoutContext.current === Layout.WIKIDOT}
   {#if data.options?.debug}
-    <h2>UNTRANSLATED:Debug Response</h2>
+    <h2 class:hidden={dataFormEditing}>UNTRANSLATED:Debug Response</h2>
   {:else if showRevision}
-    <div id="page-title">{revision?.title}</div>
+    <div id="page-title" class:hidden={dataFormEditing}>{revision?.title}</div>
   {:else}
-    <div id="page-title">{data.page_revision?.title}</div>
+    <div id="page-title" class:hidden={dataFormEditing}>
+      {data.page_revision?.title}
+    </div>
   {/if}
 
   {#if !data.options?.debug && !showRevision && data.wikidot_breadcrumbs?.length}
-    <div id="breadcrumbs">
+    <div id="breadcrumbs" class:hidden={dataFormEditing}>
       {#each data.wikidot_breadcrumbs as breadcrumb, index (breadcrumb.slug)}
         {#if index > 0}
           <span class="breadcrumb-separator">{breadcrumbSeparator}</span>
@@ -129,7 +186,7 @@
     </div>
   {/if}
 
-  <div id="page-content">
+  <div id="page-content" class:hidden={dataFormEditing} use:wikidotTabviews>
     {#if data.options?.debug}
       <textarea class="debug">{JSON.stringify(page, null, 2)}</textarea>
     {:else if data.options?.no_render}
@@ -138,35 +195,24 @@
     {:else if showRevision}
       {@html revision?.compiled_body_html}
     {:else}
-      {#if isDirectWikidotFragmentPage}
-        <div class="warning-top-box">
-          <h1><span>NOTICE:</span></h1>
-          <p>This is a <em>fragment</em> page.</p>
-          <p>
-            It is an <em>internal page</em> used by the SCP Wiki, and is
-            <em>not</em> meant to be read directly, but included by another. This page should
-            be parented, see above.
-          </p>
-        </div>
-      {/if}
       {@html data.compiled_body_html}
     {/if}
   </div>
 
   {#if showRevision}
     {#if revision?.tags?.length}
-      <div class="page-tags">
+      <div class="page-tags" class:hidden={dataFormEditing}>
         <span>{@html buildWikidotPageTagsHtml(revision.tags)}</span>
       </div>
     {/if}
   {:else if data.page_revision?.tags?.length}
-    <div class="page-tags">
+    <div class="page-tags" class:hidden={dataFormEditing}>
       <span>{@html buildWikidotPageTagsHtml(data.page_revision.tags)}</span>
     </div>
   {/if}
 
   {#if data.options?.edit}
-    <div id="page-options-container">
+    <div id="page-options-container" class:hidden={dataFormEditing}>
       <div id="page-info">
         {#if data.wikidot_page_info}
           {data.wikidot_page_info}
@@ -177,7 +223,11 @@
       </div>
     </div>
     <div id="action-area">
-      <EditorPane {...props} />
+      {#if EditorPane}
+        <EditorPane {...props} />
+      {:else}
+        <p class="pane-loading" aria-live="polite">Loading…</p>
+      {/if}
     </div>
   {:else}
     <div id="page-options-container">
@@ -219,10 +269,7 @@
             id="pagerate-button"
             class="btn btn-default"
             href="javascript:;"
-            onclick={() => {
-              showSource = false
-              pagePaneState = PagePane.Vote
-            }}
+            onclick={() => activatePagePane(PagePane.Vote)}
             type="button"
           >
             {#if wikidotPageActions?.ratingText}
@@ -239,15 +286,7 @@
             {wikidotPageActions.tags}
           </a>
           {#if wikidotPageActions.showDiscuss}
-            <!-- svelte-ignore a11y_invalid_attribute -->
-            <a
-              id="discuss-button"
-              class="btn btn-default"
-              href="javascript:;"
-              type="button"
-            >
-              {wikidotPageActions.discuss}
-            </a>
+            {@html buildWikidotDiscussButtonHtml(wikidotPageActions.discuss)}
           {/if}
         {/if}
         <!-- svelte-ignore a11y_invalid_attribute -->
@@ -255,10 +294,7 @@
           id="history-button"
           class="btn btn-default"
           href="javascript:;"
-          onclick={() => {
-            showSource = false
-            pagePaneState = PagePane.History
-          }}
+          onclick={() => activatePagePane(PagePane.History)}
           type="button"
         >
           {wikidotPageActions?.history ?? data.internationalization?.history}
@@ -268,10 +304,7 @@
           id="files-button"
           class="btn btn-default"
           href="javascript:;"
-          onclick={() => {
-            showSource = false
-            pagePaneState = PagePane.File
-          }}
+          onclick={() => activatePagePane(PagePane.File)}
           type="button"
         >
           {wikidotPageActions?.files ?? data.internationalization?.files}
@@ -323,10 +356,7 @@
           id="layout-button"
           class="btn btn-default"
           href="javascript:;"
-          onclick={() => {
-            showSource = false
-            pagePaneState = PagePane.Layout
-          }}
+          onclick={() => activatePagePane(PagePane.Layout)}
           type="button"
         >
           {data.internationalization?.layout}
@@ -336,10 +366,7 @@
           id="parent-page-button"
           class="btn btn-default"
           href="javascript:;"
-          onclick={() => {
-            showSource = false
-            pagePaneState = PagePane.Parent
-          }}
+          onclick={() => activatePagePane(PagePane.Parent)}
           type="button"
         >
           {data.internationalization?.parents}
@@ -349,10 +376,7 @@
           id="rename-move-button"
           class="btn btn-default"
           href="javascript:;"
-          onclick={() => {
-            showSource = false
-            pagePaneState = PagePane.Move
-          }}
+          onclick={() => activatePagePane(PagePane.Move)}
           type="button"
         >
           {data.internationalization?.move}
@@ -362,10 +386,7 @@
           id="delete-button"
           class="btn btn-default"
           href="javascript:;"
-          onclick={() => {
-            showSource = false
-            pagePaneState = PagePane.Delete
-          }}
+          onclick={() => activatePagePane(PagePane.Delete)}
           type="button"
         >
           {data.internationalization?.delete}
@@ -389,26 +410,14 @@
         </a>
       {/if}
 
-      {#if showSource}
-        <h1 class="page-source-header">
-          {data.internationalization?.["wiki-page-source"]}
-        </h1>
-        <div class="page-source">{data.wikitext ?? ""}</div>
-      {:else if pagePaneState === PagePane.Move}
-        <MovePane bind:pagePaneState {...props} />
-      {:else if pagePaneState === PagePane.Layout}
-        <LayoutPane bind:pagePaneState {...props} />
-      {:else if pagePaneState === PagePane.Parent}
-        <ParentPane bind:pagePaneState {...props} />
-      {:else if pagePaneState === PagePane.Vote}
-        <VotePane {...props} />
-      {:else if pagePaneState === PagePane.File}
-        <FilePane {...props} />
-      {:else if pagePaneState === PagePane.History}
-        <HistoryPane {setRevision} {setShowRevision} {...props} />
-      {:else if pagePaneState === PagePane.Delete}
-        <DeletePane bind:pagePaneState {...props} />
-      {/if}
+      <PagePaneContent
+        {props}
+        {setRevision}
+        {setShowRevision}
+        {showSource}
+        wikidot
+        bind:pagePaneState
+      />
     </div>
   {/if}
 {:else}
@@ -435,175 +444,28 @@
     {/if}
   </div>
 
-  <div class="page-tags-container">
-    {data.internationalization?.tags}
-    <hr />
-    <ul class="page-tags">
-      {#if showRevision}
-        {#each revision?.tags as tag (tag)}
-          <li class="tag">{tag}</li>
-        {/each}
-      {:else}
-        {#each data.page_revision?.tags as tag (tag)}
-          <li class="tag">{tag}</li>
-        {/each}
-      {/if}
-    </ul>
-  </div>
-
-  <div class="page-meta-info-container">
-    <div class="page-meta-info info-revision">
-      {data.internationalization?.["wiki-page-revision"]}
-    </div>
-    <div class="page-meta-info info-last-edit">
-      {data.internationalization?.["wiki-page-last-edit"]}
-    </div>
-  </div>
+  <CurrentPageMetadata {data} {revision} {showRevision} />
 
   {#if data.options?.edit}
-    <EditorPane {...props} />
+    {#if EditorPane}
+      <EditorPane {...props} />
+    {:else}
+      <p class="pane-loading" aria-live="polite">Loading…</p>
+    {/if}
   {:else}
-    <div class="action-row editor-actions">
-      <button
-        class="action-button editor-button button-move clickable"
-        onclick={() => (pagePaneState = PagePane.Move)}
-        type="button"
-      >
-        {data.internationalization?.move}
-      </button>
-      <button
-        class="action-button editor-button button-layout clickable"
-        onclick={() => (pagePaneState = PagePane.Layout)}
-        type="button"
-      >
-        {data.internationalization?.layout}
-      </button>
-      <button
-        class="action-button editor-button button-parents clickable"
-        onclick={() => (pagePaneState = PagePane.Parent)}
-        type="button"
-      >
-        {data.internationalization?.parents}
-      </button>
-      <button
-        class="action-button editor-button button-delete clickable"
-        onclick={() => (pagePaneState = PagePane.Delete)}
-        type="button"
-      >
-        {data.internationalization?.delete}
-      </button>
-      <button
-        class="action-button editor-button button-edit clickable"
-        onclick={navigateEdit}
-        type="button"
-      >
-        {data.internationalization?.edit}
-      </button>
-    </div>
-    <div class="action-row other-actions">
-      <button
-        class="action-button button-source clickable"
-        onclick={() => (showSource = true)}
-        type="button"
-      >
-        {data.internationalization?.["wiki-page-view-source"]}
-      </button>
-      <button
-        class="action-button button-history clickable"
-        onclick={() => (pagePaneState = PagePane.History)}
-        type="button"
-      >
-        {data.internationalization?.history}
-      </button>
-      <button
-        class="action-button button-vote clickable"
-        onclick={() => (pagePaneState = PagePane.Vote)}
-        type="button"
-      >
-        {data.internationalization?.vote}
-      </button>
-      <button
-        class="action-button button-files clickable"
-        onclick={() => (pagePaneState = PagePane.File)}
-        type="button"
-      >
-        {data.internationalization?.files}
-      </button>
-    </div>
+    <CurrentPageActions {activatePagePane} {data} {navigateEdit} bind:showSource />
   {/if}
 
-  {#if showSource}
-    <h2 class="page-source-header">
-      {data.internationalization?.["wiki-page-source"]}
-    </h2>
-    <textarea class="page-source" readonly={true}>{data.wikitext ?? ""}</textarea>
-  {/if}
-
-  {#if pagePaneState === PagePane.Move}
-    <MovePane bind:pagePaneState {...props} />
-  {:else if pagePaneState === PagePane.Layout}
-    <LayoutPane bind:pagePaneState {...props} />
-  {:else if pagePaneState === PagePane.Parent}
-    <ParentPane bind:pagePaneState {...props} />
-  {:else if pagePaneState === PagePane.Vote}
-    <VotePane {...props} />
-  {:else if pagePaneState === PagePane.File}
-    <FilePane {...props} />
-  {:else if pagePaneState === PagePane.History}
-    <HistoryPane {setRevision} {setShowRevision} {...props} />
-  {:else if pagePaneState === PagePane.Delete}
-    <DeletePane bind:pagePaneState {...props} />
-  {/if}
+  <PagePaneContent
+    {props}
+    {setRevision}
+    {setShowRevision}
+    {showSource}
+    wikidot={false}
+    bind:pagePaneState
+  />
 {/if}
 
 <style global lang="scss">
-  .debug {
-    width: 100%;
-    height: 60vh;
-  }
-
-  .page-content,
-  .page-tags-container,
-  .page-meta-info-container,
-  .editor-actions,
-  .other-actions {
-    padding: 0 0 2em;
-  }
-
-  .page-tags {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 0;
-    margin: 0;
-    list-style: none;
-  }
-
-  .page-meta-info-container {
-    text-align: right;
-  }
-
-  textarea.page-source {
-    width: 100%;
-    height: 60vh;
-  }
-
-  div.page-source {
-    width: calc(100% - 4em - 2px);
-    height: fit-content;
-    padding: 1em 2em;
-    white-space: pre-wrap;
-  }
-
-  .action-row {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    align-items: stretch;
-    justify-content: flex-end;
-    width: 100%;
-  }
+  @use "./page";
 </style>

@@ -4,21 +4,22 @@
   import ErrorPopup from "$lib/popup/error.svelte"
 
   import { page } from "$app/state"
-  import { setContext } from "svelte"
-  import { pageLayoutState, errorPopupState } from "$lib/stores.svelte"
+  import { onMount, setContext } from "svelte"
+  import { pageLayoutState, errorPopupState } from "$lib/layout/stores.svelte"
   import { Layout } from "$lib/types"
   import {
     WIKIDOT_POWERED_BY,
     buildWikidotFooterLinks,
     buildWikidotLicenseHtml,
     buildWikidotLoginLabels,
-    isImportedWikidotView
-  } from "$lib/wikidot-footer"
+    isImportedWikidotView,
+    shouldUseWikidotLicenseHtml
+  } from "$lib/wikidot/wikidot-footer"
   import {
     PAGE_LAYOUT_CONTEXT_KEY,
     type PageLayoutContext
-  } from "$lib/page-layout-context"
-  import { resolveShellLayout } from "$lib/wikidot-shell"
+  } from "$lib/layout/page-layout-context"
+  import { resolveShellLayout } from "$lib/layout/wikidot-shell"
   import {
     resolveCanonicalViewData,
     resolveCanonicalViewMetadata
@@ -29,7 +30,18 @@
     resolveWikidotSiteTagline,
     resolveWikidotSiteTitle,
     shouldUseSandboxWikidotChrome
-  } from "$lib/wikidot-chrome"
+  } from "$lib/wikidot/wikidot-chrome"
+  import {
+    buildWikidotInlineStyleFrameHead,
+    extractWikidotStyleFrameDeclarations
+  } from "$lib/wikidot/wikidot-styleframe"
+  import {
+    IOS_ICON_DECLARATIONS,
+    IOS_ICON_ROUTE_PREFIX,
+    faviconDeclaration,
+    hasIosIcons
+  } from "$lib/site-icons"
+  import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
 
   let { children } = $props()
 
@@ -38,6 +50,14 @@
       state: false,
       message: null,
       data: null
+    }
+  }
+
+  function clearWikidotSearchPrompt(event: FocusEvent) {
+    const input = event.currentTarget as HTMLInputElement
+    if (input.classList.contains("empty")) {
+      input.classList.remove("empty")
+      input.value = ""
     }
   }
 
@@ -60,20 +80,50 @@
     buildWikidotLicenseHtml({
       licenseName: canonicalView.licenseName,
       licenseUrl: canonicalView.licenseUrl,
+      licenseKind: canonicalView.licenseKind,
+      licenseHtml: canonicalView.licenseHtml,
       locale: wikidotLocale,
       sourceSite: canonicalView.sourceSite
     })
   )
   const isImportedWikidotLayout = $derived(isImportedWikidotView(viewData))
+  const useWikidotLicenseHtml = $derived(
+    shouldUseWikidotLicenseHtml(isImportedWikidotLayout, canonicalView.licenseKind)
+  )
   const useSandboxWikidotChrome = $derived(shouldUseSandboxWikidotChrome(viewData))
   const wikidotSiteTitle = $derived(resolveWikidotSiteTitle(viewData))
+  const siteFavicon = $derived(faviconDeclaration(viewData?.site ?? null))
+  const siteHasIosIcons = $derived(hasIosIcons(viewData?.site ?? null))
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
+  const styleFrameDeclarations = $derived(
+    extractWikidotStyleFrameDeclarations(
+      [
+        viewData?.compiled_top_bar_html,
+        viewData?.compiled_side_bar_html,
+        viewData?.compiled_body_html
+      ],
+      page.url.origin
+    )
+  )
   const pageLayoutContext = $state<PageLayoutContext>({
     current: resolveCurrentLayout()
   })
 
   setContext(PAGE_LAYOUT_CONTEXT_KEY, pageLayoutContext)
+
+  onMount(() => {
+    let disposed = false
+    let stop: (() => void) | undefined
+    installWikidotNewPageHelper(window)
+    void import("$lib/wikidot/wikidot-code-highlighting").then((module) => {
+      if (!disposed) stop = module.observeWikidotCodeBlocks(document)
+    })
+    return () => {
+      disposed = true
+      stop?.()
+    }
+  })
 
   // Keep existing child components synchronized after hydration while the
   // top-level shell decision is available during SSR through request-local context.
@@ -89,19 +139,37 @@
 
 <svelte:head>
   <title>{viewData?.site?.name}</title>
+  {#if siteFavicon}
+    <link href={siteFavicon.href} rel="shortcut icon" />
+    <link href={siteFavicon.href} rel="icon" type={siteFavicon.type} />
+  {:else}
+    <link href="data:," rel="icon" />
+  {/if}
+  {#if siteHasIosIcons}
+    {#each IOS_ICON_DECLARATIONS as iosIcon (iosIcon.filename)}
+      <link
+        href={`${IOS_ICON_ROUTE_PREFIX}${iosIcon.filename}`}
+        rel="apple-touch-icon"
+        sizes={iosIcon.sizes ?? undefined}
+      />
+    {/each}
+  {/if}
   {#if currentLayout === Layout.WIKIDOT}
-    <link
-      href="https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/css/pagerate/PageRateWidgetModule.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css"
-      rel="stylesheet"
-    />
+    <link href="/wikidot/styles/wikidot-base-165bc434fd1d.css" rel="stylesheet" />
+    <link href="/wikidot/styles/pagerate-db0bffe086ed.css" rel="stylesheet" />
+    <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
+    {#each styleFrameDeclarations as declaration, index (`${declaration.priority}:${declaration.kind}:${declaration.order}:${index}`)}
+      {#if declaration.kind === "theme"}
+        <link
+          data-wikidot-style-preloaded
+          data-wikidot-style-priority={declaration.priority}
+          href={declaration.href}
+          rel="stylesheet"
+        />
+      {:else}
+        {@html buildWikidotInlineStyleFrameHead(declaration)}
+      {/if}
+    {/each}
   {/if}
 </svelte:head>
 
@@ -139,6 +207,19 @@
           <span>{wikidotSiteTagline}</span>
         </h2>
       {/if}
+      <div id="search-top-box">
+        <form id="search-top-box-form" action="dummy">
+          <input
+            id="search-top-box-input"
+            name="query"
+            class="text empty"
+            onfocus={clearWikidotSearchPrompt}
+            size="15"
+            type="text"
+            value="Search this site"
+          /><input name="search" class="button" type="submit" value="Search" />
+        </form>
+      </div>
       {#if useSandboxWikidotChrome && wikidotSessionUserName}
         <div class="login-status">
           <div class="btn-group logged-in">
@@ -219,7 +300,7 @@
       {/if}
     {/snippet}
     {#snippet license()}
-      {#if isImportedWikidotLayout}
+      {#if useWikidotLicenseHtml}
         {@html wikidotLicenseHtml}
       {:else}
         {@html viewData?.internationalization?.["footer-license-unless"] ?? ""}

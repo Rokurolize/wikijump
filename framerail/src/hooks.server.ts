@@ -9,19 +9,24 @@ import {
   readAnonymousArticleResponseToken,
   writeAnonymousArticleResponseToken,
   writeAnonymousArticleResponseCache
-} from "$lib/server/article-response-cache"
+} from "$lib/server/cache/article-response/index.js"
+import { getArticleResponseCacheStores } from "$lib/server/cache/article-response/runtime.js"
 import {
-  articleResponseCacheStore,
-  articleResponseTokenStore
-} from "$lib/server/article-response-cache-stores"
+  handleCachedRequest,
+  readCachedResponseWithFallback
+} from "$lib/server/cache/request-orchestration"
 import { articleViewCacheMetadata } from "$lib/server/deepwell/views"
 import {
   getPreloadBackendLocales,
   getPreloadRequestLocales
 } from "$lib/server/load/preload"
-import { storeRequestContext } from "$lib/server/load/request-ctx"
+import { storeRequestContext } from "$lib/server/request-context"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { applyStaticSecurityHeaders } from "$lib/server/security-headers"
+import {
+  injectWikidotRequestInfo,
+  requestHostFromRequest
+} from "$lib/server/wikidot-request-info"
 import type { Handle, RequestEvent } from "@sveltejs/kit"
 
 const SITE_CONTEXT_EXEMPT_PATHS = new Set(["/xml-rpc-api.php"])
@@ -41,6 +46,7 @@ function canUseAnonymousArticleResponseCache(
     method: event.request.method,
     routeId: event.route.id,
     url: event.url,
+    requestUrl: new URL(event.request.url),
     siteId,
     siteSlug,
     route: getArticleRoute(event),
@@ -51,7 +57,9 @@ function canUseAnonymousArticleResponseCache(
 async function readAnonymousArticleResponseCacheForEvent(
   event: RequestEvent,
   siteId: number,
-  siteSlug: string
+  siteSlug: string,
+  responseStore: ReturnType<typeof getArticleResponseCacheStores>["responseStore"],
+  tokenStore: ReturnType<typeof getArticleResponseCacheStores>["tokenStore"]
 ) {
   const route = getArticleRoute(event)
   const requestLocales = getPreloadRequestLocales(event.request)
@@ -59,16 +67,19 @@ async function readAnonymousArticleResponseCacheForEvent(
   const gate = canUseAnonymousArticleResponseCache(event, siteId, siteSlug)
 
   if (!gate.cacheable) return null
+  const requestHost = requestHostFromRequest(event.request)
 
-  if (articleResponseTokenStore) {
-    try {
+  return readCachedResponseWithFallback({
+    readPrimary: async () => {
+      if (!tokenStore) return null
       const fences = await readAnonymousArticleResponseCacheFences({
-        store: articleResponseTokenStore,
+        store: tokenStore,
         siteId
       })
       const tokenMetadata = buildAnonymousArticleResponseCacheFences({
         siteId,
         siteSlug,
+        requestHost,
         route,
         requestLocales,
         backendLocales,
@@ -76,12 +87,13 @@ async function readAnonymousArticleResponseCacheForEvent(
         permissionFence: fences?.permissionFence
       })
       const deepwellArticlePageCacheKey = await readAnonymousArticleResponseToken({
-        store: articleResponseTokenStore,
+        store: tokenStore,
         tokenMetadata
       })
       const metadata = buildAnonymousArticleResponseCacheMetadata({
         siteId,
         siteSlug,
+        requestHost,
         requestLocales,
         backendLocales,
         deepwellArticlePageCacheKey,
@@ -90,42 +102,44 @@ async function readAnonymousArticleResponseCacheForEvent(
       })
 
       const cachedResponse = await readAnonymousArticleResponseCache({
-        store: articleResponseCacheStore,
+        store: responseStore,
         metadata
       })
-      if (cachedResponse) return cachedResponse
-    } catch {
-      // Fall through to Deepwell metadata.
+      return cachedResponse
+    },
+    readFallback: async () => {
+      const cacheMetadata = await articleViewCacheMetadata(siteId, backendLocales, route)
+      const metadata = buildAnonymousArticleResponseCacheMetadata({
+        siteId,
+        siteSlug,
+        requestHost,
+        requestLocales,
+        backendLocales,
+        deepwellArticlePageCacheKey: cacheMetadata.article_page_cache_key,
+        publicContentFence: cacheMetadata.public_content_cache_fence,
+        permissionFence: cacheMetadata.anonymous_permission_cache_fence
+      })
+      if (!metadata) return null
+
+      return readAnonymousArticleResponseCache({
+        store: responseStore,
+        metadata
+      })
     }
-  }
-
-  try {
-    const cacheMetadata = await articleViewCacheMetadata(siteId, backendLocales, route)
-    const metadata = buildAnonymousArticleResponseCacheMetadata({
-      siteId,
-      siteSlug,
-      requestLocales,
-      backendLocales,
-      deepwellArticlePageCacheKey: cacheMetadata.article_page_cache_key,
-      publicContentFence: cacheMetadata.public_content_cache_fence,
-      permissionFence: cacheMetadata.anonymous_permission_cache_fence
-    })
-    if (!metadata) return null
-
-    return readAnonymousArticleResponseCache({
-      store: articleResponseCacheStore,
-      metadata
-    })
-  } catch {
-    return null
-  }
+  })
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
   const { request, cookies, locals, params } = event
+  const { responseStore, tokenStore } = getArticleResponseCacheStores()
+  const resolveWithWikidotRequestInfo = async () =>
+    resolve(event, {
+      transformPageChunk: ({ html }) =>
+        injectWikidotRequestInfo(html, locals.wikidotRequestInfo, locals.siteLocale)
+    })
 
   if (SITE_CONTEXT_EXEMPT_PATHS.has(event.url.pathname)) {
-    const response = await resolve(event)
+    const response = await resolveWithWikidotRequestInfo()
     applyStaticSecurityHeaders(response, event.url.pathname)
     return response
   }
@@ -137,46 +151,45 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   storeRequestContext(locals, sessionToken, siteId, page_slug)
 
-  const cachedResponse = await readAnonymousArticleResponseCacheForEvent(
-    event,
-    siteId,
-    siteSlug
-  )
-  if (cachedResponse) {
-    applyStaticSecurityHeaders(cachedResponse, event.url.pathname)
-    return cachedResponse
-  }
-
-  // Continue processing the request
-  const response = await resolve(event)
-
-  applyStaticSecurityHeaders(response, event.url.pathname)
-
-  const writeGate = canUseAnonymousArticleResponseCache(event, siteId, siteSlug)
-  if (writeGate.cacheable) {
-    const wroteResponse = await writeAnonymousArticleResponseCache({
-      store: articleResponseCacheStore,
-      metadata: locals.anonymousArticleResponseCacheMetadata,
-      response
-    })
-    if (wroteResponse && articleResponseTokenStore) {
-      const metadata = locals.anonymousArticleResponseCacheMetadata
-      const tokenMetadata = buildAnonymousArticleResponseCacheFences({
-        siteId: metadata?.siteId,
-        siteSlug: metadata?.siteSlug,
-        route: getArticleRoute(event),
-        requestLocales: metadata?.requestLocales,
-        backendLocales: metadata?.backendLocales,
-        publicContentFence: metadata?.publicContentFence,
-        permissionFence: metadata?.permissionFence
-      })
-      await writeAnonymousArticleResponseToken({
-        store: articleResponseTokenStore,
-        tokenMetadata,
-        deepwellArticlePageCacheKey: metadata?.deepwellArticlePageCacheKey
-      })
+  return handleCachedRequest({
+    readCachedResponse: () =>
+      readAnonymousArticleResponseCacheForEvent(
+        event,
+        siteId,
+        siteSlug,
+        responseStore,
+        tokenStore
+      ),
+    resolveResponse: resolveWithWikidotRequestInfo,
+    applySecurityHeaders: (response) =>
+      applyStaticSecurityHeaders(response, event.url.pathname, siteSlug),
+    writeResolvedResponse: async (response) => {
+      const writeGate = canUseAnonymousArticleResponseCache(event, siteId, siteSlug)
+      if (writeGate.cacheable) {
+        const wroteResponse = await writeAnonymousArticleResponseCache({
+          store: responseStore,
+          metadata: locals.anonymousArticleResponseCacheMetadata,
+          response
+        })
+        if (wroteResponse && tokenStore) {
+          const metadata = locals.anonymousArticleResponseCacheMetadata
+          const tokenMetadata = buildAnonymousArticleResponseCacheFences({
+            siteId: metadata?.siteId,
+            siteSlug: metadata?.siteSlug,
+            requestHost: metadata?.requestHost,
+            route: getArticleRoute(event),
+            requestLocales: metadata?.requestLocales,
+            backendLocales: metadata?.backendLocales,
+            publicContentFence: metadata?.publicContentFence,
+            permissionFence: metadata?.permissionFence
+          })
+          await writeAnonymousArticleResponseToken({
+            store: tokenStore,
+            tokenMetadata,
+            deepwellArticlePageCacheKey: metadata?.deepwellArticlePageCacheKey
+          })
+        }
+      }
     }
-  }
-
-  return response
+  })
 }

@@ -1,15 +1,15 @@
 ## DOM Compatibility
 
-Backwards compatibility with Wikidot is an important goal of the Wikijump project. In order to allow imported data from Wikidot to be usable in Wikijump, the project implements a transition mechanism called "layout" for each site or page to choose its HTML structure, either conforming to Wikidot (legacy) layout or to the new Wikijump layout.
+DOM compatibility is a required part of this fork's Wikidot-emulator contract, not an optional migration aid. For every browser surface exposed by live Wikidot, the Wikidot layout and browser-facing routes must preserve the observable tree structure, element order, IDs, classes, attributes, CSS cascade, interactions, navigation states, intermediate visible states, and settled layout. Controlled live Wikidot observations are canonical when documentation or local output disagrees.
 
-However, there are some places where we have determined it would be better not to maintain DOM compatibility. Here is a brief list of them.
+No UI category is exempt from compatibility in advance. Login and logout, user settings, site administration, user profiles, page editing, and page options are all required observation surfaces and must be reproduced from evidence rather than assigned replacement markup merely because themes or customization are limited there.
 
-UI where themes and customization are not available:
-  * Login / logout page
-  * User settings page
-  * Admin panel
-  * User profile page
+The existence of another internal layout or a transition mechanism does not relax the `Layout::Wikidot` contract and must not change imported-content behavior. Unverified compatibility behavior must remain unspecified until controlled evidence is collected; implementations must not invent replacement markup or silently redesign the interface. Security-sensitive trust boundaries continue to fail closed.
 
-UI where existing themes should be adapted to:
-  * Page editor
-  * Page options
+The `wj-` prefix is Wikijump's own naming and is not part of that contract. Wikidot names its DOM `collapsible-block`, `footnotes-footer`, `footnoteref`, `toc0`, `yui-navset`; the fork renamed much of it to `wj-collapsible`, `wj-footnote-list` and so on. No `wj-` class, tag, id, or `data-wj-` attribute may reach the browser for imported content. Such an identifier is both a tree difference and an unstyled element, because the Wikidot stylesheet the page loads contains no `.wj-` rules at all.
+
+Two mechanisms keep it out. FTML branches on `Layout::Wikidot` and emits the native name, which is where a syntax-level difference belongs, and the restorers under `deepwell/src/services/render/compat/` rewrite what still survives into Wikidot's markup. Prefer the first: a new construct should be corrected in the syntax renderer rather than by another post-render rewrite. Wikijump-only blocks with no Wikidot counterpart, such as `[[hidden]]` and `[[invisible]]`, are a third case and correctly remain literal under the Wikidot layout instead of rendering into any markup.
+
+`pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site <slug>` renders a battery of constructs through the local runtime and fails on any such identifier. It needs a running local stack and creates no page. Run it when adding or changing a rendered construct; a hand-written negative assertion per construct only guards the constructs somebody remembered.
+
+Intentional differences are limited to explicit security boundaries such as escaping, sanitization, content security policy, credential handling, and access control. Each such difference must be narrowly documented, justified, and covered by regression evidence; it is not a general license to modernize Wikidot behavior.

@@ -153,7 +153,8 @@ function normalizeSourceKey({ sourceUrl, slug, status, sheetRole, sheetName, she
     if (normalizedPathname) {
       return `${parsed.hostname.toLowerCase()}/${normalizedPathname.toLowerCase()}`;
     }
-  } catch {
+  } catch (error) {
+    void error;
     // Fall through to provenance key when the URL has no stable normalized identity.
   }
 
@@ -285,7 +286,8 @@ function dedupeRows(rows) {
   for (const row of rows) {
     const existing = byKey.get(row.source_key);
     if (!existing) {
-      const { source_key: _sourceKey, ...publicRow } = row;
+      const publicRow = {...row};
+      delete publicRow.source_key;
       byKey.set(row.source_key, publicRow);
       continue;
     }

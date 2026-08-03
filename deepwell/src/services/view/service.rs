@@ -30,34 +30,99 @@
 //! requesting domain and session token into a site and user, respectively.
 
 use super::article_cache::ArticlePageCache;
-use super::prelude::*;
+use super::module_arguments::PageModuleArguments;
+use super::module_render::render_body_for_module_arguments;
+use super::options::PageOptions;
+use super::redirect::{wikidot_redirect_location, wikidot_redirect_noredirect_body_html};
+use super::structs::{
+    GetAdminView, GetAdminViewOutput, GetArticleViewCacheMetadataOutput,
+    GetArticleViewOutput, GetPageView, GetPageViewOutput, GetPreloadView,
+    GetPreloadViewOutput, GetUserView, GetUserViewOutput, PageRedirectKind, PageRoute,
+    PageTemplateSummary, UserSession, Viewer, ViewerLicenseKind,
+    WikidotPageBreadcrumbView, WikidotPageSnapshotView,
+};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::license::WikidotLicense;
 use crate::models::page::Model as PageModel;
 use crate::models::page_revision::Model as PageRevisionModel;
-use crate::models::site::Model as SiteModel;
+use crate::services::ServiceContext;
 use crate::services::blueprint::{BlueprintPageType, GetBlueprintPageOutput};
+use crate::services::data_form::{
+    load_data_form_definitions, parse_observed_wikidot_data_form_values,
+    render_wikidot_data_form_table_with_wiki_html,
+};
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{
     GetPageAttributions, GetSiteBan, PageAttribution, RelationService,
 };
-use crate::services::render::RenderOutput;
+use crate::services::render::{RenderOutput, RenderService};
 use crate::services::settings::{NavigationPageHtml, SettingsService};
+use crate::services::user::User;
 use crate::services::view::ViewType;
 use crate::services::{
-    BlueprintPageService, CategoryService, DomainService, PageRevisionService,
-    PageService, SessionService, SiteService, TextService, UserService,
+    BlueprintPageService, CategoryService, DataFormEditor, DomainService,
+    PageRevisionService, PageService, SessionService, SiteService, TextService,
+    UserService,
 };
-use crate::types::{Action, PageId, Permission, RerenderDepth, Resource};
-use crate::utils::{parse_locales, split_category};
-use ftml::prelude::*;
+use crate::types::Reference;
+use crate::types::{Action, PageId, PageOrder, Permission, RerenderDepth, Resource};
+use crate::utils::{get_category_name, locale_for_ftml, parse_locales, split_category};
+use ftml::prelude::{PageInfo, ScoreValue};
 use ftml::render::html::HtmlOutput;
-use ref_map::*;
+use ref_map::OptionRefMap;
+use sea_orm::ConnectionTrait;
 use sea_orm::{FromQueryResult, Statement};
 use std::borrow::Cow;
-use std::mem;
+use std::collections::BTreeMap;
 use time::OffsetDateTime;
 use unic_langid::LanguageIdentifier;
 use wikidot_normalize::normalize;
+
+fn wikidot_redirect_module_allowed(
+    page: &PageModel,
+    page_revision: &PageRevisionModel,
+) -> bool {
+    // Wikidot Redirect modules are compatibility behavior for imported Wikidot
+    // pages only. Requiring both the page and the served revision to carry
+    // import provenance prevents ordinary editable wikitext from creating
+    // permanent external redirects on the local Wikijump domain.
+    page.from_wikidot && page_revision.from_wikidot
+}
+
+async fn render_wikidot_data_form_wiki_values(
+    ctx: &ServiceContext<'_>,
+    data_form: &DataFormEditor,
+    page_info: &PageInfo<'_>,
+    page_id: PageId,
+) -> Result<BTreeMap<String, String>> {
+    tokio::time::timeout(ctx.config().render_timeout, async {
+        let mut rendered = BTreeMap::new();
+        for field in &data_form.definition.fields {
+            if field.field_type.as_deref() != Some("wiki") {
+                continue;
+            }
+            let source = data_form
+                .values
+                .get(&field.name)
+                .cloned()
+                .unwrap_or_default();
+            let output = RenderService::render_wikidot_fragment_for_page(
+                ctx, source, page_info, page_id,
+            )
+            .await?;
+            rendered.insert(field.name.clone(), output.html_output.body);
+        }
+        Ok(rendered)
+    })
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to render data-form wiki values due to timeout",
+            ErrorType::RenderTimeout,
+        )
+    })?
+}
 
 #[derive(Debug)]
 pub struct ViewService;
@@ -67,7 +132,7 @@ impl ViewService {
         ctx: &ServiceContext<'_>,
         mut input: GetPageView,
     ) -> Result<GetArticleViewOutput> {
-        let preload = Self::preload(
+        let mut preload = Self::preload(
             ctx,
             GetPreloadView {
                 site_id: input.site_id,
@@ -90,6 +155,7 @@ impl ViewService {
         if !input.locales.contains(&preload.viewer.site.locale) {
             input.locales.push(preload.viewer.site.locale.clone());
         }
+        Self::apply_article_category_license(ctx, &mut preload.viewer, &input).await?;
         let cache_metadata = ArticlePageCache::metadata(ctx, &input).await?;
         if let Some(cache_key) =
             cache_metadata.as_ref().map(|metadata| &metadata.cache_key)
@@ -152,6 +218,51 @@ impl ViewService {
                 .as_ref()
                 .map(|metadata| metadata.anonymous_permission_cache_fence.clone()),
         })
+    }
+
+    async fn apply_article_category_license(
+        ctx: &ServiceContext<'_>,
+        viewer: &mut Viewer,
+        input: &GetPageView,
+    ) -> Result<()> {
+        let page_full_slug = input
+            .route
+            .as_ref()
+            .map_or(viewer.site.default_page.as_str(), |route| {
+                route.slug.as_str()
+            });
+        let (category_slug, _) = split_category(page_full_slug);
+        let category_slug = category_slug.unwrap_or("_default");
+        let category_id =
+            Self::get_category_id(ctx, viewer.site.site_id, Some(category_slug)).await?;
+        let license =
+            SettingsService::get_license(ctx, viewer.site.site_id, category_id).await?;
+        let locales = parse_locales(&input.locales)?;
+        match license {
+            WikidotLicense::Standard(license) => {
+                viewer.license_name = license.translate(ctx.localization(), &locales)?;
+                viewer.license_url = license.url();
+                viewer.license_kind = ViewerLicenseKind::Standard;
+                viewer.license_html = None;
+            }
+            WikidotLicense::Other(html) => {
+                viewer.license_name.clear();
+                viewer.license_url = "";
+                viewer.license_kind = ViewerLicenseKind::Other;
+                viewer.license_html =
+                    Some(html.replace(
+                        "%%year%%",
+                        &OffsetDateTime::now_utc().year().to_string(),
+                    ));
+            }
+            WikidotLicense::Copyright => {
+                viewer.license_name.clear();
+                viewer.license_url = "";
+                viewer.license_kind = ViewerLicenseKind::Copyright;
+                viewer.license_html = Some(String::new());
+            }
+        }
+        Ok(())
     }
 
     pub async fn article_cache_metadata(
@@ -248,10 +359,10 @@ impl ViewService {
             )
         };
 
-        let mut locales = parse_locales(&locales_str)?;
+        let locales = parse_locales(&locales_str)?;
         let viewer = Self::get_viewer(
             ctx,
-            &mut locales,
+            locales,
             site_id,
             session_token.ref_map(|s| s.as_str()),
             ViewType::Preload,
@@ -305,6 +416,7 @@ impl ViewService {
 
         let redirect_page = Self::should_redirect_page(page_full_slug);
         let options = PageOptions::parse(page_extra);
+        let module_arguments = PageModuleArguments::parse(page_extra);
 
         // Get page, revision, and text fields
         let (category_slug, page_only_slug) = split_category(page_full_slug);
@@ -319,13 +431,12 @@ impl ViewService {
             alt_title: None,
             score: ScoreValue::Integer(0), // TODO configurable default score value
             tags: vec![],
-            // NOTE: The [[date]] block is now localized through
-            // PageInfo.language, which means the value passed here
-            // should be &site.locale.
+            // NOTE: The [[date]] block is localized through PageInfo.language.
+            // Normalize Wikidot-only identifiers at the FTML boundary.
             //
             // If we ever want to change this, we need to evaluate the
             // impact on FTML first.
-            language: cow!(&site.locale),
+            language: cow!(locale_for_ftml(&site.locale)),
         };
 
         // Helper structures to designate which variant of GetPageViewOutput to return.
@@ -348,7 +459,12 @@ impl ViewService {
         struct PageReturn {
             page_status: PageStatus,
             wikitext: String,
+            new_page_wikitext: Option<String>,
+            page_templates: Vec<PageTemplateSummary>,
+            selected_template_page_id: Option<i64>,
+            data_form: Option<DataFormEditor>,
             compiled_body_html: String,
+            compiled_body_styles: Vec<String>,
             compiled_top_bar_html: Option<String>,
             compiled_side_bar_html: Option<String>,
         }
@@ -357,7 +473,12 @@ impl ViewService {
         let PageReturn {
             page_status,
             wikitext,
-            compiled_body_html,
+            new_page_wikitext,
+            page_templates,
+            selected_template_page_id,
+            data_form,
+            mut compiled_body_html,
+            compiled_body_styles,
             compiled_top_bar_html,
             compiled_side_bar_html,
         } = match PageService::get_optional(
@@ -428,11 +549,16 @@ impl ViewService {
                     let (
                         wikitext_result,
                         compiled_body_result,
+                        compiled_body_styles_result,
                         compiled_top_bar_result,
                         compiled_side_bar_result,
                     ) = join!(
                         TextService::get(ctx, &page_revision.wikitext_hash),
                         TextService::get(ctx, &page_revision.compiled_body_html_hash),
+                        TextService::get_option(
+                            ctx,
+                            &page_revision.compiled_body_styles_hash,
+                        ),
                         TextService::get_option(
                             ctx,
                             &page_revision.compiled_top_bar_html_hash,
@@ -446,9 +572,32 @@ impl ViewService {
                     let (
                         wikitext,
                         compiled_body_html,
+                        compiled_body_styles,
                         compiled_top_bar_html,
                         compiled_side_bar_html,
-                    ) = raise_multiple!(wikitext_result, compiled_body_result, compiled_top_bar_result, compiled_side_bar_result; make_error);
+                    ) = raise_multiple!(wikitext_result, compiled_body_result, compiled_body_styles_result, compiled_top_bar_result, compiled_side_bar_result; make_error);
+
+                    // The stored HTML belongs to the revision, so it answers
+                    // the page's bare URL. A request carrying module arguments
+                    // is a different question and needs its own render.
+                    let compiled_body_html = render_body_for_module_arguments(
+                        ctx,
+                        &module_arguments,
+                        &wikitext,
+                        &page,
+                        &page_revision,
+                        &site,
+                        user_session.as_ref().map(|session| session.user.user_id),
+                        compiled_body_html,
+                    )
+                    .await
+                    .or_raise(make_error)?;
+
+                    let compiled_body_styles = compiled_body_styles
+                        .map(|styles| serde_json::from_str(&styles))
+                        .transpose()
+                        .or_raise(make_error)?
+                        .unwrap_or_default();
 
                     let attributions = RelationService::get_page_attributions(
                         ctx,
@@ -472,6 +621,65 @@ impl ViewService {
                     )
                     .await
                     .or_raise(make_error)?;
+                    let data_form = {
+                        let category = CategoryService::get_optional(
+                            ctx,
+                            site_id,
+                            Reference::Id(page.page_category_id),
+                        )
+                        .await
+                        .or_raise(make_error)?;
+                        match category {
+                            Some(category)
+                                if category.template_page_id != Some(page.page_id) =>
+                            {
+                                load_data_form_definitions(
+                                    ctx,
+                                    std::slice::from_ref(&category),
+                                )
+                                .await
+                                .or_raise(make_error)?
+                                .remove(&category.category_id)
+                                .filter(|definition| {
+                                    definition.supports_observed_create_edit()
+                                })
+                                .and_then(|definition| {
+                                    parse_observed_wikidot_data_form_values(
+                                        &definition,
+                                        &wikitext,
+                                    )
+                                    .map(|values| DataFormEditor { definition, values })
+                                })
+                            }
+                            None => None,
+                            Some(_) => None,
+                        }
+                    };
+                    let compiled_body_html = if let Some(data_form) =
+                        data_form.as_ref().filter(|_| page_extra.is_empty())
+                    {
+                        let rendered_wiki_values = render_wikidot_data_form_wiki_values(
+                            ctx,
+                            data_form,
+                            &page_info,
+                            PageId {
+                                site_id: page.site_id,
+                                category_id: page.page_category_id,
+                                page_id: page.page_id,
+                            },
+                        )
+                        .await
+                        .or_raise(make_error)?;
+                        render_wikidot_data_form_table_with_wiki_html(
+                            &data_form.definition,
+                            &data_form.values,
+                            &rendered_wiki_values,
+                        )
+                    } else {
+                        compiled_body_html
+                    };
+                    let data_form =
+                        data_form.filter(|_| options.edit && user_can_edit_page);
 
                     PageReturn {
                         page_status: PageStatus::Found {
@@ -482,7 +690,12 @@ impl ViewService {
                             attributions,
                         },
                         wikitext,
+                        new_page_wikitext: None,
+                        page_templates: Vec::new(),
+                        selected_template_page_id: None,
+                        data_form,
                         compiled_body_html,
+                        compiled_body_styles,
                         compiled_top_bar_html,
                         compiled_side_bar_html,
                     }
@@ -529,6 +742,7 @@ impl ViewService {
                         html_output:
                             HtmlOutput {
                                 body: compiled_body_html,
+                                styles: compiled_body_styles,
                                 ..
                             },
                         ..
@@ -552,7 +766,12 @@ impl ViewService {
                     PageReturn {
                         page_status,
                         wikitext,
+                        new_page_wikitext: None,
+                        page_templates: Vec::new(),
+                        selected_template_page_id: None,
+                        data_form: None,
                         compiled_body_html,
+                        compiled_body_styles,
                         compiled_top_bar_html,
                         compiled_side_bar_html,
                     }
@@ -578,6 +797,7 @@ impl ViewService {
                     html_output:
                         HtmlOutput {
                             body: compiled_body_html,
+                            styles: compiled_body_styles,
                             ..
                         },
                     ..
@@ -589,11 +809,103 @@ impl ViewService {
                 } = SettingsService::get_nav_page_html(ctx, site_id, category_id)
                     .await
                     .or_raise(make_error)?;
+                let (page_templates, category_template_page_id, data_form) = if options
+                    .edit
+                {
+                    let create_category = CategoryService::get_optional(
+                        ctx,
+                        site_id,
+                        Reference::Slug(cow!(get_category_name(page_full_slug))),
+                    )
+                    .await
+                    .or_raise(make_error)?;
+                    let user_can_create_page = match user_session.as_ref() {
+                        Some(session) => PermissionService::check_user_can(
+                            ctx,
+                            &CheckPermissionContext {
+                                user_id: Some(session.user.user_id),
+                                site_id,
+                                page_reference: None,
+                            },
+                            Permission {
+                                resource_type: Resource::Page,
+                                resource_category: create_category
+                                    .as_ref()
+                                    .map(|category| Reference::Id(category.category_id)),
+                                action: Action::Create,
+                            },
+                        )
+                        .await
+                        .or_raise(make_error)?,
+                        None => false,
+                    };
+
+                    if user_can_create_page {
+                        let data_form = match create_category.as_ref() {
+                            Some(category) => load_data_form_definitions(
+                                ctx,
+                                std::slice::from_ref(category),
+                            )
+                            .await
+                            .or_raise(make_error)?
+                            .remove(&category.category_id)
+                            .filter(|definition| {
+                                definition.supports_observed_create_edit()
+                            })
+                            .map(|definition| DataFormEditor {
+                                definition,
+                                values: Default::default(),
+                            }),
+                            None => None,
+                        };
+                        (
+                            Self::get_page_templates(
+                                ctx,
+                                site_id,
+                                user_session.as_ref().map(|session| session.user.user_id),
+                            )
+                            .await
+                            .or_raise(make_error)?,
+                            create_category
+                                .and_then(|category| category.template_page_id),
+                            data_form,
+                        )
+                    } else {
+                        (Vec::new(), None, None)
+                    }
+                } else {
+                    (Vec::new(), None, None)
+                };
+                let selected_template_page_id = options
+                    .template
+                    .filter(|page_id| {
+                        page_templates
+                            .iter()
+                            .any(|template| template.page_id == *page_id)
+                    })
+                    .or_else(|| {
+                        category_template_page_id.filter(|page_id| {
+                            page_templates
+                                .iter()
+                                .any(|template| template.page_id == *page_id)
+                        })
+                    });
+                let new_page_wikitext = selected_template_page_id.and_then(|page_id| {
+                    page_templates
+                        .iter()
+                        .find(|template| template.page_id == page_id)
+                        .map(|template| template.wikitext.clone())
+                });
 
                 PageReturn {
                     page_status: PageStatus::Missing,
                     wikitext,
+                    new_page_wikitext,
+                    page_templates,
+                    selected_template_page_id,
+                    data_form,
                     compiled_body_html,
+                    compiled_body_styles,
                     compiled_top_bar_html,
                     compiled_side_bar_html,
                 }
@@ -602,6 +914,40 @@ impl ViewService {
 
         // TODO Check if user-agent and IP match?
 
+        if options.no_redirect
+            && let PageStatus::Found {
+                page,
+                page_revision,
+                ..
+            } = &page_status
+            && wikidot_redirect_module_allowed(page, page_revision)
+        {
+            compiled_body_html = wikidot_redirect_noredirect_body_html(
+                &wikitext,
+                page_full_slug,
+                compiled_body_html,
+            );
+        }
+
+        let (redirect_page, redirect_kind) = if let Some(redirect_page) = redirect_page {
+            (Some(redirect_page), None)
+        } else if let PageStatus::Found {
+            page,
+            page_revision,
+            ..
+        } = &page_status
+            && wikidot_redirect_module_allowed(page, page_revision)
+        {
+            let redirect_page =
+                wikidot_redirect_location(&wikitext, page_full_slug, options.no_redirect);
+            let redirect_kind = redirect_page
+                .as_ref()
+                .map(|_| PageRedirectKind::WikidotModule);
+            (redirect_page, redirect_kind)
+        } else {
+            (None, None)
+        };
+
         let output = match page_status {
             PageStatus::Found {
                 page,
@@ -609,31 +955,60 @@ impl ViewService {
                 wikidot_snapshot,
                 wikidot_breadcrumbs,
                 attributions,
-            } => GetPageViewOutput::Found {
-                options,
-                page,
-                page_revision,
-                wikidot_snapshot,
-                wikidot_breadcrumbs,
-                attributions,
-                redirect_page,
-                wikitext,
-                compiled_body_html,
-                compiled_top_bar_html,
-                compiled_side_bar_html,
-            },
+            } => {
+                let page_rating = SettingsService::get_page_rating_settings(
+                    ctx,
+                    page.site_id,
+                    page.page_category_id,
+                )
+                .await
+                .or_raise(make_error)?;
+                let page_discussion = SettingsService::get_page_discussion_settings(
+                    ctx,
+                    page.site_id,
+                    page.page_category_id,
+                )
+                .await
+                .or_raise(make_error)?;
+                GetPageViewOutput::Found {
+                    options,
+                    page,
+                    page_revision,
+                    wikidot_snapshot,
+                    wikidot_breadcrumbs,
+                    attributions,
+                    page_rating,
+                    page_discussion,
+                    data_form,
+                    redirect_page,
+                    redirect_kind,
+                    wikitext,
+                    compiled_body_html,
+                    compiled_body_styles,
+                    compiled_top_bar_html,
+                    compiled_side_bar_html,
+                }
+            }
             PageStatus::Missing => GetPageViewOutput::Missing {
                 options,
                 redirect_page,
+                redirect_kind,
                 wikitext,
+                new_page_wikitext,
+                page_templates,
+                selected_template_page_id,
+                data_form,
                 compiled_body_html,
+                compiled_body_styles,
                 compiled_top_bar_html,
                 compiled_side_bar_html,
             },
             PageStatus::Private => GetPageViewOutput::Permissions {
                 options,
                 redirect_page,
+                redirect_kind,
                 compiled_body_html,
+                compiled_body_styles,
                 compiled_top_bar_html,
                 compiled_side_bar_html,
                 banned: false,
@@ -641,7 +1016,9 @@ impl ViewService {
             PageStatus::Banned => GetPageViewOutput::Permissions {
                 options,
                 redirect_page,
+                redirect_kind,
                 compiled_body_html,
+                compiled_body_styles,
                 compiled_top_bar_html,
                 compiled_side_bar_html,
                 banned: true,
@@ -840,13 +1217,14 @@ ORDER BY breadcrumb_chain.depth ASC
         // TODO Check if user-agent and IP match?
 
         // Get data to return for this user.
+        // Supports either type, since we're getting a user view.
         let user = match user_ref {
             Some(ref user_ref) => UserService::get_optional(ctx, user_ref.borrow())
                 .await
                 .or_raise(make_error)?,
 
             // For users visiting their own user info page
-            None => user_session.map(|session| session.user),
+            None => user_session.map(|session| User::Wikijump(session.user)),
         };
 
         let output = match user {
@@ -855,6 +1233,62 @@ ORDER BY breadcrumb_chain.depth ASC
         };
 
         Ok(output)
+    }
+
+    async fn get_page_templates(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        user_id: Option<i64>,
+    ) -> Result<Vec<PageTemplateSummary>> {
+        let Some(template_category) =
+            CategoryService::get_optional(ctx, site_id, Reference::from("template"))
+                .await?
+        else {
+            return Ok(Vec::new());
+        };
+
+        let mut pages = PageService::get_all(
+            ctx,
+            site_id,
+            Some(Reference::from("template")),
+            Some(false),
+            PageOrder::default(),
+        )
+        .await?;
+        pages.sort_by(|left, right| left.slug.cmp(&right.slug));
+
+        let mut templates = Vec::with_capacity(pages.len());
+        for page in pages {
+            let user_can_view_template = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id,
+                    site_id,
+                    page_reference: Some(Reference::Id(page.page_id)),
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: Some(Reference::Id(template_category.category_id)),
+                    action: Action::View,
+                },
+            )
+            .await?;
+            if !user_can_view_template {
+                continue;
+            }
+
+            let revision =
+                PageRevisionService::get_latest(ctx, site_id, page.page_id).await?;
+            let wikitext = TextService::get(ctx, &revision.wikitext_hash).await?;
+            templates.push(PageTemplateSummary {
+                page_id: page.page_id,
+                slug: page.slug,
+                title: revision.title,
+                wikitext,
+            });
+        }
+
+        Ok(templates)
     }
 
     pub async fn admin(
@@ -897,7 +1331,7 @@ ORDER BY breadcrumb_chain.depth ASC
             site: cow!(site.slug),
             score: ScoreValue::Integer(0),
             tags: vec![],
-            language: cow!(site.locale),
+            language: Cow::Owned(locale_for_ftml(&site.locale).to_owned()),
         };
 
         let GetBlueprintPageOutput {
@@ -953,7 +1387,16 @@ ORDER BY breadcrumb_chain.depth ASC
         // Determine whether to return the actual admin panel content
         let output = if user_can_access_admin {
             debug!("User has admin access, return data");
-            GetAdminViewOutput::SiteFound
+            let categories = CategoryService::get_all(ctx, site_id)
+                .await
+                .or_raise(make_error)?;
+            let page_templates = Self::get_page_templates(ctx, site_id, user_id)
+                .await
+                .or_raise(make_error)?;
+            GetAdminViewOutput::SiteFound {
+                categories,
+                page_templates,
+            }
         } else {
             warn!("User doesn't have admin access, returning permission page");
 
@@ -980,7 +1423,7 @@ ORDER BY breadcrumb_chain.depth ASC
     /// operations, such as slug normalization or redirect site aliases.
     pub async fn get_viewer(
         ctx: &ServiceContext<'_>,
-        locales: &mut Vec<LanguageIdentifier>,
+        mut locales: Vec<LanguageIdentifier>,
         site_id: i64,
         session_token: Option<&str>,
         view_type: ViewType,
@@ -996,13 +1439,14 @@ ORDER BY breadcrumb_chain.depth ASC
         };
 
         // Get user data from session token (if present)
+        // Sessions can only be for real users, so we assert
         let user_session = match session_token {
             Some("") | None => None,
             Some(token) => {
                 let session =
                     SessionService::get(ctx, token).await.or_raise(make_error)?;
 
-                let user = UserService::get(ctx, Reference::Id(session.user_id))
+                let user = UserService::get_real(ctx, Reference::Id(session.user_id))
                     .await
                     .or_raise(make_error)?;
 
@@ -1014,19 +1458,10 @@ ORDER BY breadcrumb_chain.depth ASC
                     // For instance, if the browser is requesting [X, Y], but the user
                     // prefers [A, B], we want to end up with [A, B, X, Y].
                     //
-                    // But the most efficient method to use here is append().
-                    // So we append all the requested locales to the end of the user
-                    // locales we just got, then swap the contents.
-                    //
-                    // The end goal is that 'locales' ends up with the new locales at
-                    // the start before the previous items, and 'user_locales' ends up
-                    // drained since it was inserted into the preserved 'locales' vector.
-
                     let mut user_locales =
                         parse_locales(&user.locales).or_raise(make_error)?;
-                    user_locales.append(locales);
-                    mem::swap(locales, &mut user_locales);
-                    debug_assert!(user_locales.is_empty());
+                    user_locales.append(&mut locales);
+                    locales = user_locales;
                 }
 
                 Some(UserSession { session, user })
@@ -1048,7 +1483,7 @@ ORDER BY breadcrumb_chain.depth ASC
             .or_raise(make_error)?;
 
         let site_file_domain = DomainService::get_files(config, &site.slug);
-        let license_name = site.license.translate(ctx.localization(), locales)?;
+        let license_name = site.license.translate(ctx.localization(), &locales)?;
         let license_url = site.license.url();
 
         // Return
@@ -1057,6 +1492,8 @@ ORDER BY breadcrumb_chain.depth ASC
             site_file_domain,
             license_name,
             license_url,
+            license_kind: ViewerLicenseKind::Standard,
+            license_html: None,
             user_session,
         })
     }
@@ -1068,13 +1505,14 @@ ORDER BY breadcrumb_chain.depth ASC
         let make_error = || Error::new("failed to get user session", ErrorType::Session);
 
         // Get user data from session token (if present)
+        // Sessions can only be for real users, so we assert
         let user_session = match session_token {
             Some("") | None => None,
             Some(token) => {
                 let session =
                     SessionService::get(ctx, token).await.or_raise(make_error)?;
 
-                let user = UserService::get(ctx, Reference::Id(session.user_id))
+                let user = UserService::get_real(ctx, Reference::Id(session.user_id))
                     .await
                     .or_raise(make_error)?;
 
@@ -1127,5 +1565,75 @@ ORDER BY breadcrumb_chain.depth ASC
             }
             None => Ok(None),
         }
+    }
+}
+
+#[cfg(test)]
+mod wikidot_redirect_module_allowed_tests {
+    use super::*;
+    use crate::types::PageRevisionType;
+
+    fn page(from_wikidot: bool) -> PageModel {
+        PageModel {
+            page_id: 1,
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            updated_at: None,
+            deleted_at: None,
+            from_wikidot,
+            site_id: 1,
+            latest_revision_id: Some(1),
+            page_category_id: 1,
+            slug: "source".to_owned(),
+            discussion_thread_id: None,
+            layout: None,
+        }
+    }
+
+    fn revision(from_wikidot: bool) -> PageRevisionModel {
+        PageRevisionModel {
+            revision_id: 1,
+            revision_type: PageRevisionType::Regular,
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            updated_at: None,
+            revision_number: 1,
+            page_id: 1,
+            site_id: 1,
+            user_id: 1,
+            from_wikidot,
+            changes: vec![],
+            wikitext_hash: vec![],
+            compiled_body_html_hash: vec![],
+            compiled_body_styles_hash: None,
+            compiled_top_bar_html_hash: None,
+            compiled_side_bar_html_hash: None,
+            compiled_at: OffsetDateTime::UNIX_EPOCH,
+            compiled_generator: "test".to_owned(),
+            comments: String::new(),
+            hidden: vec![],
+            title: "Source".to_owned(),
+            alt_title: None,
+            slug: "source".to_owned(),
+            tags: vec![],
+        }
+    }
+
+    #[test]
+    fn allows_only_imported_page_and_imported_revision() {
+        assert!(wikidot_redirect_module_allowed(
+            &page(true),
+            &revision(true)
+        ));
+        assert!(!wikidot_redirect_module_allowed(
+            &page(false),
+            &revision(true)
+        ));
+        assert!(!wikidot_redirect_module_allowed(
+            &page(true),
+            &revision(false)
+        ));
+        assert!(!wikidot_redirect_module_allowed(
+            &page(false),
+            &revision(false)
+        ));
     }
 }

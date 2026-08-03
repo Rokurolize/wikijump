@@ -1,0 +1,189 @@
+{
+  "schema": "wikidot.live.data-form.properties-hints-regex.v1",
+  "observed_at": "2026-07-29",
+  "site": "sandbox-for-codex",
+  "actor": "authenticated account A through isolated Codex-owned Chrome profiles",
+  "credential_material": "none; credentials and session material stayed in the local environment and isolated browser profiles",
+  "run_owned_pages": [
+    {
+      "run_id": "1785324931",
+      "template": "df-properties-1785324931:_template",
+      "target": "df-properties-1785324931:target",
+      "cleanup_verified": true
+    },
+    {
+      "run_id": "1785325107",
+      "template": "df-properties-1785325107:_template",
+      "target": "df-properties-1785325107:target",
+      "cleanup_verified": true
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "field-property-layout-and-scalar-boundaries",
+      "route": "/df-properties-1785325107:target/edit/true",
+      "authored_cases": [
+        "first field with join: true",
+        "join values false, \"false\", true, \"true\", yes, 0, \"0\", no, empty, 1, \"1\", and TRUE",
+        "omitted, empty, false, quoted-false, numeric-zero, and quoted-zero labels",
+        "before and after values using omitted, empty, false, quoted-false, zero, quoted-zero, true, quoted-true, markup-looking text, angle brackets, hashes, and deliberate surrounding spaces",
+        "before and after on one-line text, textarea, one-to-four-option select, and five-option select"
+      ],
+      "observed": {
+        "first_join_group_label": "First joined",
+        "first_join_started_own_group": true,
+        "joined_omitted_and_empty_labels_emitted_inline_text": false,
+        "joined_nonempty_label_inline_text": "Joined label",
+        "join_false_started_group": true,
+        "join_quoted_false_joined_previous_group": true,
+        "join_true_joined_previous_group": true,
+        "join_quoted_true_joined_previous_group": true,
+        "join_yes_joined_previous_group": true,
+        "join_zero_started_group": true,
+        "join_quoted_zero_started_group": true,
+        "join_no_joined_previous_group": true,
+        "join_empty_started_group": true,
+        "join_one_joined_previous_group": true,
+        "join_quoted_one_joined_previous_group": true,
+        "join_TRUE_joined_previous_group": true,
+        "unquoted_false_label": "",
+        "quoted_false_label": "false",
+        "unquoted_zero_label": "0",
+        "quoted_zero_label": "0",
+        "unquoted_false_before": "",
+        "quoted_false_before": "false",
+        "unquoted_zero_before": "0",
+        "quoted_zero_before": "0",
+        "unquoted_true_after": "",
+        "quoted_true_after": "true",
+        "markup_was_interpreted": false,
+        "angle_brackets_were_html_escaped": true
+      },
+      "exact_dom_fragments": [
+        "<span class=\"form-value field-input_affixes\">+(1) <input type=\"text\" size=\"40\" name=\"field-input_affixes\" value=\"\" placeholder=\"\" class=\"form-control form-text\"> mph<span class=\"form-message text-danger\"></span></span>",
+        "<span class=\"form-value field-area_affixes\">pre #  <textarea cols=\"40\" rows=\"2\" name=\"field-area_affixes\" placeholder=\"\" class=\"form-control form-text\"></textarea>  post<span class=\"form-message text-danger\"></span></span>",
+        "<span class=\"form-value field-radio_affixes\">PRE <label class=\"radio-inline\"><input name=\"field-radio_affixes\" type=\"radio\" class=\"form-select\" value=\"a\">Alpha</label><label class=\"radio-inline\"><input name=\"field-radio_affixes\" type=\"radio\" class=\"form-select\" value=\"b\">Beta</label> POST<span class=\"form-message text-danger\"></span></span>",
+        "<span class=\"form-value field-dropdown_affixes\">PRE <select name=\"field-dropdown_affixes\" class=\"form-control form-select\"><option value=\"a\">Alpha</option><option value=\"b\">Beta</option><option value=\"c\">Gamma</option><option value=\"d\">Delta</option><option value=\"e\">Epsilon</option></select> POST<span class=\"form-message text-danger\"></span></span>",
+        "<label class=\"col-sm-2 control-label\">**Label** &lt;tag&gt;</label>",
+        "<span class=\"form-value field-markup_affixes\">**Before** &lt;b&gt; <input type=\"text\" size=\"40\" name=\"field-markup_affixes\" value=\"\" placeholder=\"\" class=\"form-control form-text\"> //After// &lt;i&gt;<span class=\"form-message text-danger\"></span></span>"
+      ]
+    },
+    {
+      "case_id": "field-property-save-render-edit-round-trip",
+      "route": "/df-properties-1785325107:target/edit/true",
+      "saved_source": "base: 'base value'\njoined: 'joined value'\nunjoined_omitted: 'omitted value'\nunjoined_empty: 'empty label value'\ninput_affixes: '123'\narea_affixes: \"line 1\\nline 2\"\nradio_affixes: b\ndropdown_affixes: d\nmarkup_affixes: '<unsafe> **wiki**'",
+      "rendered_table_html": "<table class=\"form-table\">\n<tbody><tr class=\"form-row\">\n<td class=\"form-labels\"><span class=\"form-label\">Base label</span></td>\n<td class=\"form-values\"><span>base value</span> <span class=\"form-label\">Joined label</span><span>PRE joined value POST</span></td>\n</tr>\n<tr class=\"form-row\">\n<td class=\"form-labels\"></td>\n<td class=\"form-values\"><span>omitted value</span></td>\n</tr>\n<tr class=\"form-row\">\n<td class=\"form-labels\"></td>\n<td class=\"form-values\"><span>empty label value</span></td>\n</tr>\n<tr class=\"form-row\">\n<td class=\"form-labels\"><span class=\"form-label\">Input affixes</span></td>\n<td class=\"form-values\"><span>+(1) 123 mph</span></td>\n</tr>\n<tr class=\"form-row\">\n<td class=\"form-labels\"><span class=\"form-label\">Area affixes</span></td>\n<td class=\"form-values\"><span>pre # <span style=\"white-space: pre-wrap;\">line 1</span><br>\n<span style=\"white-space: pre-wrap;\">line 2</span> post</span></td>\n</tr>\n<tr class=\"form-row\">\n<td class=\"form-labels\"><span class=\"form-label\">Radio affixes</span></td>\n<td class=\"form-values\"><span>PRE Beta POST</span></td>\n</tr>\n<tr class=\"form-row\">\n<td class=\"form-labels\"><span class=\"form-label\">Dropdown affixes</span></td>\n<td class=\"form-values\"><span>PRE Delta POST</span></td>\n</tr>\n<tr class=\"form-row\">\n<td class=\"form-labels\"><span class=\"form-label\"><span style=\"white-space: pre-wrap;\">**Label** &lt;tag&gt;</span></span></td>\n<td class=\"form-values\"><span><span style=\"white-space: pre-wrap;\">**Before** &lt;b&gt;</span> <span style=\"white-space: pre-wrap;\">&lt;unsafe&gt; **wiki**</span> <span style=\"white-space: pre-wrap;\">//After// &lt;i&gt;</span></span></td>\n</tr>\n</tbody></table>",
+      "observed": {
+        "joined_field_shared_previous_editor_group": true,
+        "joined_field_shared_previous_display_row": true,
+        "joined_label_rendered_as_inline_form_label": true,
+        "omitted_and_empty_unjoined_labels_rendered_empty_label_cells": true,
+        "before_and_after_affected_storage": false,
+        "before_and_after_rendered_around_display_value": true,
+        "select_display_used_option_label": true,
+        "multiline_display_inserted_br_between_escaped_pre_wrap_spans": true,
+        "markup_was_interpreted": false,
+        "all_values_restored_on_edit": true
+      }
+    },
+    {
+      "case_id": "text-and-select-hint-boundaries",
+      "route": "/df-properties-1785325107:target/edit/true",
+      "placeholders": {
+        "plain hint": "plain hint",
+        "unquoted escaped hash": "enter a color like \\#468259",
+        "unquoted raw hash": "enter a color like",
+        "quoted hash": "enter a color like #468259",
+        "wiki-looking quoted text": "**bold** //italic// [[span class=",
+        "HTML-looking quoted text": "<b>tag</b> & amp",
+        "empty": "",
+        "quoted empty": "",
+        "quoted surrounding spaces": "  padded  ",
+        "textarea": "textarea hint",
+        "radio select": null,
+        "dropdown select": null
+      },
+      "observed": {
+        "hint_was_interpreted_as_wiki": false,
+        "hint_was_interpreted_as_html": false,
+        "select_hint_generated_visible_or_placeholder_content": false
+      }
+    },
+    {
+      "case_id": "text-match-default-error-empty-and-delimiter-rules",
+      "route": "/df-properties-1785324931:target/edit/true",
+      "submitted_values": {
+        "no_error": "bad",
+        "error_without_match": "anything",
+        "empty_match": "anything",
+        "empty_error": "bad",
+        "modifier_i": "OK",
+        "modifier_m": "x\nok\ny",
+        "no_delimiters": "ok",
+        "escaped_slash": "a/b",
+        "character_class": "ABC-1"
+      },
+      "validation_messages": {
+        "no_error": "Please enter valid 'No error'",
+        "error_without_match": "",
+        "empty_match": "",
+        "empty_error": "Please enter valid 'Empty error'",
+        "modifier_i": "",
+        "modifier_m": "",
+        "no_delimiters": "Bare mismatch",
+        "escaped_slash": "",
+        "character_class": ""
+      },
+      "observed": {
+        "match_error_without_match_had_effect": false,
+        "empty_match_had_effect": false,
+        "empty_match_error_used_generated_fallback": true,
+        "modifier_i_accepted": true,
+        "modifier_m_accepted": true,
+        "undelimited_pattern_accepted": false,
+        "escaped_delimiter_accepted": true
+      }
+    },
+    {
+      "case_id": "text-match-modifier-and-empty-value-boundaries",
+      "route": "/df-properties-1785325107:target/edit/true",
+      "submitted_values": {
+        "modifier_s": "a\nb",
+        "modifier_x": "ab",
+        "modifier_u": "é",
+        "modifier_g": "ok",
+        "modifier_y": "ok",
+        "invalid_flag": "ok",
+        "duplicate_flag": "ok",
+        "empty_value": "",
+        "empty_accepting": ""
+      },
+      "validation_messages": {
+        "modifier_s": "",
+        "modifier_x": "",
+        "modifier_u": "",
+        "modifier_g": "G mismatch",
+        "modifier_y": "Y mismatch",
+        "invalid_flag": "Z mismatch",
+        "duplicate_flag": "",
+        "empty_value": "Empty value mismatch",
+        "empty_accepting": ""
+      },
+      "observed": {
+        "modifier_s_accepted": true,
+        "modifier_x_accepted": true,
+        "modifier_u_accepted": true,
+        "modifier_g_accepted": false,
+        "modifier_y_accepted": false,
+        "unknown_modifier_accepted": false,
+        "duplicate_modifier_i_accepted": true,
+        "empty_values_were_validated": true
+      }
+    }
+  ],
+  "routes": [
+    "Authenticated wikidot.py high-level run-owned template creation, sequential exact-source mutation, target source readback, exact page deletion, and absence verification",
+    "Authenticated isolated Chrome DevTools Protocol profiles for generated create/edit route loading, exact DOM extraction, client-side validation, save navigation, rendered table extraction, and edit restoration",
+    "Both isolated Codex-owned Chrome profiles were stopped and removed after cleanup"
+  ]
+}

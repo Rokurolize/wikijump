@@ -1,11 +1,24 @@
 #!/usr/bin/env node
 
-import {createRequire} from "node:module";
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import {fileURLToPath} from "node:url";
 import {startCaptureEgressProxy} from "../src/capture-egress-proxy.mjs";
+import {
+  DEFAULT_REQUEST_INTERVAL_MS,
+  acquireBrowserCaptureLock,
+  createPersistentBrowserRequestGate,
+  localBrowserCaptureOrigins,
+} from "../src/browser-request-gate.mjs";
+import {
+  browserContextOptions,
+  defaultBrowserRoot,
+  loadPlaywright,
+  openBrowser,
+  resolveStorageStates,
+} from "../src/browser-session.mjs";
 import {
   buildEvidenceRecord,
   readJson,
@@ -17,12 +30,11 @@ import {
   writeEvidenceArtifacts,
 } from "../src/browser-render-evidence.mjs";
 
-const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 900_000;
 const DEFAULT_SETTLE_MS = 1_000;
 const POST_NAVIGATION_STATE_TIMEOUT_MS = 2_000;
 const VISIBLE_TEXT_SCOPES = new Set(["all-frames", "main-frame"]);
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
-const SCRIPT_DIR = path.dirname(SCRIPT_PATH);
 
 function nextArg(argv, index, flag) {
   const value = argv[index + 1];
@@ -44,7 +56,7 @@ function parseArgs(argv) {
     visibleTextScope: "all-frames",
   };
 
-  for (let index = 2; index < argv.length; index += 1) {
+  for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--inventory") {
       args.inventory = path.resolve(nextArg(argv, index, arg));
@@ -122,7 +134,7 @@ function parseArgs(argv) {
     } else if (arg === "--json") {
       args.jsonOnly = true;
     } else if (arg === "--help") {
-      printHelpAndExit();
+      return {help: true};
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -133,161 +145,28 @@ function parseArgs(argv) {
   return args;
 }
 
-function printHelpAndExit() {
-  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 30000] [--settle-ms 1000] [--visible-text-scope all-frames|main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
+function printHelp() {
+  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 900000] [--settle-ms 1000] [--visible-text-scope all-frames|main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
 
 Writes validator-compatible browser rendering evidence JSON plus DOM/screenshot artifacts for selected corpus inventory rows. The output directory should live under one of the render validator evidence roots, for example:
 
   $OUT/validation/browser-rendering/en-0001
 `);
-  process.exit(0);
 }
 
-export function defaultBrowserRoot() {
-  return path.resolve(SCRIPT_DIR, "../../../..", "framerail");
-}
-
-function requirePlaywright(browserRoot) {
-  const root = browserRoot ?? defaultBrowserRoot();
-  const requireFromRoot = createRequire(path.join(root, "package.json"));
-  try {
-    return requireFromRoot("playwright");
-  } catch (error) {
-    try {
-      return requireFromRoot("@playwright/test");
-    } catch (fallbackError) {
-      throw new Error(`could not load playwright or @playwright/test from ${root}; pass --browser-root pointing at a package with Playwright installed (${error.message}; ${fallbackError.message})`);
-    }
+export function browserCaptureFailure(captureError, cleanupError) {
+  if (captureError !== null && cleanupError !== null) {
+    return new AggregateError([captureError, cleanupError], "browser capture and cleanup both failed");
   }
+  return captureError ?? cleanupError;
 }
 
-export function resolveStorageStates({storageState = null, sourceStorageState = null, localStorageState = null}) {
-  return {
-    sourceStorageState: sourceStorageState ?? storageState ?? null,
-    localStorageState: localStorageState ?? storageState ?? null,
-  };
-}
-
-export function browserContextOptions({ignoreHttpsErrors, storageState = null, proxyServer = null}) {
-  return {
-    ignoreHTTPSErrors: ignoreHttpsErrors,
-    ...(storageState ? {storageState} : {}),
-    ...(proxyServer ? {proxy: {server: proxyServer, bypass: "<-loopback>"}} : {}),
-  };
-}
-
-async function newContextPair({browser, ignoreHttpsErrors, sourceStorageState, localStorageState, sourceProxyServer, localProxyServer}) {
-  let sourceContext = null;
-  let localContext = null;
-  try {
-    sourceContext = await browser.newContext(
-      browserContextOptions({
-        ignoreHttpsErrors,
-        storageState: sourceStorageState,
-        proxyServer: sourceProxyServer,
-      }),
-    );
-    localContext = await browser.newContext(
-      browserContextOptions({
-        ignoreHttpsErrors,
-        storageState: localStorageState,
-        proxyServer: localProxyServer,
-      }),
-    );
-    return {sourceContext, localContext};
-  } catch (error) {
-    if (localContext && localContext !== sourceContext) {
-      await localContext.close().catch(() => {});
-    }
-    if (sourceContext) {
-      await sourceContext.close().catch(() => {});
-    }
-    throw error;
-  }
-}
-
-async function closeContextPair({sourceContext, localContext}) {
-  if (localContext && localContext !== sourceContext) {
-    await localContext.close().catch(() => {});
-  }
-  if (sourceContext) {
-    await sourceContext.close().catch(() => {});
-  }
-}
-
-function browserSession({browser, sourceContext, localContext, ignoreHttpsErrors, sourceStorageState, localStorageState, sourceProxyServer, localProxyServer}) {
-  return {
-    browser,
-    context: sourceContext,
-    sourceContext,
-    localContext,
-    async newContextPair() {
-      return await newContextPair({
-        browser,
-        ignoreHttpsErrors,
-        sourceStorageState,
-        localStorageState,
-        sourceProxyServer,
-        localProxyServer,
-      });
-    },
-    async close() {
-      await closeContextPair({sourceContext, localContext});
-      await browser.close().catch(() => {});
-    },
-  };
-}
-
-export async function openBrowser({
-  chromium,
-  cdpEndpoint,
-  browserExecutable,
-  ignoreHttpsErrors,
-  storageState = null,
-  sourceStorageState = null,
-  localStorageState = null,
-  createInitialContexts = true,
-  sourceProxyServer = null,
-  localProxyServer = null,
-}) {
-  const resolvedStates = resolveStorageStates({storageState, sourceStorageState, localStorageState});
-  let browser = null;
-  if (cdpEndpoint) {
-    if (sourceProxyServer || localProxyServer) throw new Error("CDP capture cannot enforce the owned egress proxy");
-    browser = await chromium.connectOverCDP(cdpEndpoint);
-  } else {
-    browser = await chromium.launch({
-      executablePath: browserExecutable,
-    });
-  }
-
-  try {
-    const contexts = createInitialContexts
-      ? await newContextPair({
-          browser,
-          ignoreHttpsErrors,
-          sourceStorageState: resolvedStates.sourceStorageState,
-          localStorageState: resolvedStates.localStorageState,
-          sourceProxyServer,
-          localProxyServer,
-        })
-      : {sourceContext: null, localContext: null};
-    return browserSession({
-      browser,
-      ...contexts,
-      ignoreHttpsErrors,
-      sourceStorageState: resolvedStates.sourceStorageState,
-      localStorageState: resolvedStates.localStorageState,
-      sourceProxyServer,
-      localProxyServer,
-    });
-  } catch (error) {
-    if (browser) {
-      await browser.close().catch(() => {});
-    }
-    throw error;
-  }
-}
+export {
+  browserContextOptions,
+  defaultBrowserRoot,
+  openBrowser,
+  resolveStorageStates,
+};
 
 async function collectVisibleText(page, visibleTextScope = "all-frames") {
   const frames =
@@ -302,7 +181,8 @@ async function collectVisibleText(page, visibleTextScope = "all-frames") {
       if (!(await shouldCaptureFrameVisibleText(page, frame))) continue;
       const text = await frame.evaluate(() => document.body?.innerText ?? "");
       if (text) texts.push(text);
-    } catch {
+    } catch (error) {
+      void error;
       // Detached or inaccessible frames should not abort page-level capture.
     }
   }
@@ -372,7 +252,8 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
     let frame = null;
     try {
       frame = request.frame();
-    } catch {
+    } catch (error) {
+      void error;
       // Some request kinds do not have a frame; keep their HTTP failure evidence.
     }
     const isMainFrameNavigation = request.isNavigationRequest() && frame === page.mainFrame();
@@ -416,7 +297,8 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
 
   if (screenshotPath && html) {
     try {
-      await page.screenshot({path: screenshotPath, fullPage: true});
+      const remainingMs = Math.max(1, timeoutMs - (Date.now() - startedAt));
+      await page.screenshot({path: screenshotPath, fullPage: true, timeout: remainingMs});
       writtenScreenshotPath = screenshotPath;
     } catch (error) {
       if (!navigationError) navigationError = error;
@@ -460,8 +342,22 @@ async function captureOptionalPage(context, url, missingMessage, options) {
   }
 }
 
+async function writeExclusiveJson(filePath, value) {
+  const handle = await fs.open(filePath, "wx", 0o600);
+  try {
+    await handle.writeFile(`${JSON.stringify(value, null, 2)}\n`, "utf8");
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+}
+
 async function run() {
-  const args = parseArgs(process.argv);
+  const args = parseArgs(process.argv.slice(2));
+  if (args.help) {
+    printHelp();
+    return 0;
+  }
   if (args.shardManifest && !args.shardId) {
     throw new Error("--shard-id is required when --shard-manifest is provided");
   }
@@ -479,26 +375,56 @@ async function run() {
     throw new Error("no inventory rows selected; check --fixture-id, --shard-id, and --limit inputs");
   }
 
-  await fs.mkdir(args.outputDir, {recursive: true});
+  await fs.mkdir(args.outputDir, {recursive: true, mode: 0o700});
+  await fs.chmod(args.outputDir, 0o700);
   if (args.cdpEndpoint) {
     throw new Error("--cdp-endpoint is disabled because capture egress cannot be pinned");
   }
-  const localOrigins = selectedRows.flatMap((row) => {
+  const localOrigins = [...new Set(selectedRows.flatMap((row) => {
     const value = rowLocalUrl(row, args.localUrlField);
     if (!value) return [];
     try {
-      return [new URL(value).origin];
-    } catch {
-      throw new Error(`invalid local capture URL for ${row.fixture_id}`);
+      return localBrowserCaptureOrigins(value);
+    } catch (error) {
+      throw new Error(`invalid local capture URL for ${row.fixture_id}: ${error.message}`);
     }
-  });
-  const sourceEgressProxy = await startCaptureEgressProxy();
-  const localEgressProxy = await startCaptureEgressProxy({
-    allowedLocalOrigins: localOrigins,
-  });
-  const {chromium} = requirePlaywright(args.browserRoot);
-  let browserSession;
+  }))].sort();
+  const {chromium} = loadPlaywright(args.browserRoot);
+  const runId = crypto.randomUUID();
+  const captureLock = await acquireBrowserCaptureLock({runId});
+  const requestGateConfigPath = path.join(args.outputDir, "request-gate-config.json");
+  let sourceEgressProxy = null;
+  let localEgressProxy = null;
+  let browserSession = null;
+  let requestGate = null;
+  let requestGateReady = false;
+  let gateStateConfirmed = false;
+  let captureError = null;
+  let captureExitCode;
+  let cleanupError = null;
   try {
+    requestGate = await createPersistentBrowserRequestGate({
+      statePath: captureLock.statePath,
+      intervalMs: DEFAULT_REQUEST_INTERVAL_MS,
+    });
+    requestGateReady = true;
+    await writeExclusiveJson(requestGateConfigPath, {
+      schema: "wikijump_full_parity.browser_request_gate_config.v1",
+      status: "sealed_before_browser_request",
+      run_id: runId,
+      lock: {path: captureLock.path, owner: captureLock.owner},
+      state_path: captureLock.statePath,
+      interval_ms: DEFAULT_REQUEST_INTERVAL_MS,
+      source_context_exempt_origins: [],
+      local_context_exempt_origins: [...new Set(localOrigins)].sort(),
+      public_request_policy: "every HTTP(S) request except an exact local-context origin is admitted by the shared gate",
+      service_workers: "block",
+      web_sockets: "blocked_without_network_connection",
+    });
+    sourceEgressProxy = await startCaptureEgressProxy();
+    localEgressProxy = await startCaptureEgressProxy({
+      allowedLocalOrigins: localOrigins,
+    });
     browserSession = await openBrowser({
       chromium,
       browserExecutable: args.browserExecutable,
@@ -506,24 +432,24 @@ async function run() {
       storageState: args.storageState,
       sourceStorageState: args.sourceStorageState,
       localStorageState: args.localStorageState,
-      createInitialContexts: false,
+      createInitialContexts: true,
       sourceProxyServer: sourceEgressProxy.url,
       localProxyServer: localEgressProxy.url,
+      requestGate,
+      localOrigins,
     });
-  } catch (error) {
-    await Promise.all([sourceEgressProxy.close(), localEgressProxy.close()]);
-    throw error;
-  }
-  const resolvedStorageStates = resolveStorageStates({
-    storageState: args.storageState,
-    sourceStorageState: args.sourceStorageState,
-    localStorageState: args.localStorageState,
-  });
-  const records = [];
-
-  try {
+    const runContexts = {
+      sourceContext: browserSession.sourceContext,
+      localContext: browserSession.localContext,
+    };
+    if (!runContexts.sourceContext || !runContexts.localContext) throw new Error("browser run contexts were not initialized");
+    const resolvedStorageStates = resolveStorageStates({
+      storageState: args.storageState,
+      sourceStorageState: args.sourceStorageState,
+      localStorageState: args.localStorageState,
+    });
+    const records = [];
     for (const row of selectedRows) {
-      const rowContexts = await browserSession.newContextPair();
       const sourceUrl = rowSourceUrl(row);
       const localUrl = rowLocalUrl(row, args.localUrlField);
       const rowDir = path.join(args.outputDir, safePathSegment(row.fixture_id));
@@ -535,48 +461,39 @@ async function run() {
         local: {},
         screenshot: args.screenshot,
       });
-      try {
-        const source = await captureOptionalPage(rowContexts.sourceContext, sourceUrl, "missing source URL", {
-          timeoutMs: args.timeoutMs,
-          waitUntil: args.waitUntil,
-          settleMs: args.settleMs,
-          visibleTextScope: args.visibleTextScope,
-          screenshotPath: artifacts.sourceScreenshot,
-        });
-        const local = await captureOptionalPage(rowContexts.localContext, localUrl, "missing local URL", {
-          timeoutMs: args.timeoutMs,
-          waitUntil: args.waitUntil,
-          settleMs: args.settleMs,
-          visibleTextScope: args.visibleTextScope,
-          screenshotPath: artifacts.localScreenshot,
-        });
+      const source = await captureOptionalPage(runContexts.sourceContext, sourceUrl, "missing source URL", {
+        timeoutMs: args.timeoutMs,
+        waitUntil: args.waitUntil,
+        settleMs: args.settleMs,
+        visibleTextScope: args.visibleTextScope,
+        screenshotPath: artifacts.sourceScreenshot,
+      });
+      const local = await captureOptionalPage(runContexts.localContext, localUrl, "missing local URL", {
+        timeoutMs: args.timeoutMs,
+        waitUntil: args.waitUntil,
+        settleMs: args.settleMs,
+        visibleTextScope: args.visibleTextScope,
+        screenshotPath: artifacts.localScreenshot,
+      });
 
-        await fs.writeFile(artifacts.sourceArtifact, source.html ?? "", "utf8");
-        await fs.writeFile(artifacts.localArtifact, local.html ?? "", "utf8");
-        const record = buildEvidenceRecord({
-          row,
-          source,
-          local,
-          sourceArtifact: artifacts.sourceArtifact,
-          localArtifact: artifacts.localArtifact,
-          sourceScreenshot: source.screenshotPath,
-          localScreenshot: local.screenshotPath,
-          localUrlField: args.localUrlField,
-        });
-        if (args.actorLabel) record.capture_actor = args.actorLabel;
-        record.source_storage_state = Boolean(resolvedStorageStates.sourceStorageState);
-        record.local_storage_state = Boolean(resolvedStorageStates.localStorageState);
-        records.push(record);
-      } finally {
-        await closeContextPair(rowContexts);
-      }
+      await fs.writeFile(artifacts.sourceArtifact, source.html ?? "", "utf8");
+      await fs.writeFile(artifacts.localArtifact, local.html ?? "", "utf8");
+      const record = buildEvidenceRecord({
+        row,
+        source,
+        local,
+        sourceArtifact: artifacts.sourceArtifact,
+        localArtifact: artifacts.localArtifact,
+        sourceScreenshot: source.screenshotPath,
+        localScreenshot: local.screenshotPath,
+        localUrlField: args.localUrlField,
+      });
+      if (args.actorLabel) record.capture_actor = args.actorLabel;
+      record.source_storage_state = Boolean(resolvedStorageStates.sourceStorageState);
+      record.local_storage_state = Boolean(resolvedStorageStates.localStorageState);
+      records.push(record);
     }
-  } finally {
-    await browserSession.close();
-    await Promise.all([sourceEgressProxy.close(), localEgressProxy.close()]);
-  }
-
-  const result = {
+    const result = {
     schema: "wikijump_full_parity.browser_rendering_evidence.v1",
     inventory: args.inventory,
     shard_manifest: args.shardManifest ?? null,
@@ -596,18 +513,63 @@ async function run() {
       storage_state: Boolean(args.storageState),
       source_storage_state: Boolean(resolvedStorageStates.sourceStorageState),
       local_storage_state: Boolean(resolvedStorageStates.localStorageState),
+      request_gate_config: requestGateConfigPath,
+      request_gate: requestGate.snapshot(),
+      browser_context_scope: "run",
+      source_response_cache: browserSession.sourceResponseCache?.snapshot() ?? null,
     },
-  };
-  const resultPath = path.join(args.outputDir, "records.json");
-  await fs.writeFile(resultPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
-  if (!args.jsonOnly) {
-    console.log(`wrote ${records.length} browser rendering records to ${resultPath}`);
-  } else {
-    console.log(JSON.stringify({result_path: resultPath, selected_count: selectedRows.length}));
-  }
+    };
+    const resultPath = path.join(args.outputDir, "records.json");
+    await writeExclusiveJson(resultPath, result);
+    await requestGate.flush();
+    await captureLock.confirmState();
+    gateStateConfirmed = true;
+    if (!args.jsonOnly) {
+      console.log(`wrote ${records.length} browser rendering records to ${resultPath}`);
+    } else {
+      console.log(JSON.stringify({result_path: resultPath, selected_count: selectedRows.length}));
+    }
 
-  const captureErrors = records.flatMap((record) => record.capture_errors ?? []);
-  return captureErrors.length === 0 ? 0 : 1;
+    const captureErrors = records.flatMap((record) => record.capture_errors ?? []);
+    captureExitCode = captureErrors.length === 0 ? 0 : 1;
+  } catch (error) {
+    captureError = error;
+  } finally {
+    cleanupError = requestGateReady ? null : new Error("browser request gate was not initialized; retaining the capture lock for operator review");
+    try {
+      await browserSession?.close();
+    } catch (error) {
+      cleanupError ??= error;
+    }
+    try {
+      await Promise.all([sourceEgressProxy?.close(), localEgressProxy?.close()]);
+    } catch (error) {
+      cleanupError ??= error;
+    }
+    try {
+      await requestGate?.flush();
+    } catch (error) {
+      cleanupError ??= error;
+    }
+    if (requestGateReady && !gateStateConfirmed && !requestGate?.snapshot().enforcement_failed) {
+      try {
+        await captureLock.confirmState();
+        gateStateConfirmed = true;
+      } catch (error) {
+        cleanupError ??= error;
+      }
+    }
+    if (gateStateConfirmed) {
+      try {
+        await captureLock.release();
+      } catch (error) {
+        cleanupError ??= error;
+      }
+    }
+  }
+  const failure = browserCaptureFailure(captureError, cleanupError);
+  if (failure !== null) throw failure;
+  return captureExitCode;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === SCRIPT_PATH) {

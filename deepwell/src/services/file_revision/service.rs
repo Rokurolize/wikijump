@@ -18,17 +18,26 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
-use crate::hash::{BlobHash, blob_hash_to_hex, slice_to_blob_hash};
+use super::structs::{
+    CountFileRevisions, CreateFileRevision, CreateFileRevisionOutput,
+    CreateFirstFileRevision, CreateFirstFileRevisionOutput,
+    CreateResurrectionFileRevision, CreateTombstoneFileRevision, GetFileRevision,
+    GetFileRevisionRange, UpdateFileRevision,
+};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::file_revision::{
     self, Entity as FileRevision, Model as FileRevisionModel,
 };
-use crate::models::{file, page, site};
-use crate::services::blob::{EMPTY_BLOB_HASH, EMPTY_BLOB_MIME, FinalizeBlobUploadOutput};
-use crate::services::{BlobService, OutdateService, PageService};
-use crate::types::{Bytes, FetchDirection, RerenderDepth};
-use sea_orm::FromQueryResult;
-use sea_orm::prelude::*;
+use crate::services::ServiceContext;
+use crate::services::blob::EMPTY_BLOB_HASH;
+use crate::services::{OutdateService, PageService};
+use crate::types::{FetchDirection, RerenderDepth};
+use crate::types::{FileRevisionType, Maybe, Reference};
+use paste::paste;
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, QuerySelect, Set,
+};
 use std::num::NonZeroI32;
 use std::sync::LazyLock;
 
@@ -630,14 +639,17 @@ impl FileRevisionService {
     /// See `RevisionService::count()`.
     pub async fn count(
         ctx: &ServiceContext<'_>,
-        page_id: i64,
-        file_id: i64,
+        CountFileRevisions {
+            site_id,
+            page_id,
+            file_id,
+        }: CountFileRevisions,
     ) -> Result<NonZeroI32> {
         let make_error = || {
             Error::new(
                 format!(
-                    "failed to get file revision count on file ID {} in page ID {}",
-                    file_id, page_id,
+                    "failed to get file revision count on file ID {} in page ID {} on site ID {}",
+                    file_id, page_id, site_id,
                 ),
                 ErrorType::FileRevision,
             )
@@ -647,6 +659,7 @@ impl FileRevisionService {
         let row_count = FileRevision::find()
             .filter(
                 Condition::all()
+                    .add(file_revision::Column::SiteId.eq(site_id))
                     .add(file_revision::Column::PageId.eq(page_id))
                     .add(file_revision::Column::FileId.eq(file_id)),
             )
@@ -666,8 +679,8 @@ impl FileRevisionService {
             Some(count) => Ok(count),
             None => bail!(Error::new(
                 format!(
-                    "cannot get file revision count for file ID {} in page ID {}",
-                    file_id, page_id
+                    "cannot get file revision count for file ID {} in page ID {} on site ID {}",
+                    file_id, page_id, site_id,
                 ),
                 ErrorType::FileNotFound
             )),
@@ -680,6 +693,8 @@ impl FileRevisionService {
     pub async fn get_range(
         ctx: &ServiceContext<'_>,
         GetFileRevisionRange {
+            site_id,
+            page_id,
             file_id,
             revision_number,
             revision_direction,
@@ -689,10 +704,12 @@ impl FileRevisionService {
         let make_error = || {
             Error::new(
                 format!(
-                    "failed to get {} file revisions from number {} in file ID {} (max {})",
+                    "failed to get {} file revisions from number {} for file ID {} on page ID {} in site ID {} (max {})",
                     revision_direction.name(),
                     revision_number,
                     file_id,
+                    page_id,
+                    site_id,
                     limit,
                 ),
                 ErrorType::FileRevision,
@@ -720,6 +737,8 @@ impl FileRevisionService {
         let txn = ctx.transaction();
         let mut query = FileRevision::find().filter(
             Condition::all()
+                .add(file_revision::Column::SiteId.eq(site_id))
+                .add(file_revision::Column::PageId.eq(page_id))
                 .add(file_revision::Column::FileId.eq(file_id))
                 .add(revision_condition),
         );

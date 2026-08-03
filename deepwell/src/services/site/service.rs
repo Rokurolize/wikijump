@@ -18,10 +18,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
+use super::structs::{CreateSite, CreateSiteOutput, SiteForumSettings, UpdateSiteBody};
 use crate::constants::SYSTEM_USER_ID;
-use crate::error::prelude::*;
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::site::{self, Entity as Site, Model as SiteModel};
+use crate::services::ServiceContext;
 use crate::services::alias::CreateAlias;
 use crate::services::audit::{AuditEvent, AuditService, SiteFields};
 use crate::services::domain::{DEFAULT_SITE_SLUG, DomainService};
@@ -29,11 +30,13 @@ use crate::services::relation::CreateSiteUser;
 use crate::services::user::{CreateUser, UpdateUserBody};
 use crate::services::{AliasService, RelationService, UserService};
 use crate::types::{AliasType, UserType};
+use crate::types::{Maybe, Reference};
+use crate::utils::now;
 use crate::utils::validate_locale;
 use ftml::layout::Layout;
-use ref_map::*;
+use paste::paste;
 use sea_orm::NotSet;
-use std::borrow::Cow;
+use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use std::net::IpAddr;
 use std::str::FromStr;
 use wikidot_normalize::normalize;
@@ -43,8 +46,6 @@ pub struct SiteService;
 
 const RESERVED_PLATFORM_HOSTNAME_SLUGS: &[&str] = &["acme", "dns", "ech"];
 
-#[allow(dead_code)] // TODO
-const DEFAULT_FORUM_MAX_NEST_LEVEL: i16 = 10;
 #[allow(dead_code)] // TODO
 const DEFAULT_FORUM_PER_PAGE_DISCUSSION: bool = false;
 
@@ -182,6 +183,17 @@ impl SiteService {
             .await
             .or_raise(|| Error::new("failed to update site data", ErrorType::Site))?;
 
+        if let Maybe::Set(max_nest_level) = input.forum_max_nest_level
+            && !(0..=10).contains(&max_nest_level)
+        {
+            bail!(Error::new(
+                format!(
+                    "forum max_nest_level must be between 0 and 10, got {max_nest_level}"
+                ),
+                ErrorType::BadRequest,
+            ));
+        }
+
         let mut model = site::ActiveModel {
             site_id: Set(site.site_id),
             ..Default::default()
@@ -233,6 +245,12 @@ impl SiteService {
             add_changed_field!(top_bar_page);
             add_changed_field!(side_bar_page);
             add_changed_field!(ref preferred_domain);
+
+            if let Maybe::Set(value) = input.forum_max_nest_level {
+                previous_fields.forum_max_nest_level =
+                    Maybe::Set(site.forum_max_nest_level);
+                changed_fields.forum_max_nest_level = Maybe::Set(value);
+            }
 
             if let Maybe::Set(layout) = input.layout {
                 let old_layout = site.layout.as_ref().map(|value| {
@@ -360,6 +378,22 @@ impl SiteService {
             model.license = Set(license);
         }
 
+        if let Maybe::Set(forum_max_nest_level) = input.forum_max_nest_level {
+            model.forum_max_nest_level = Set(forum_max_nest_level);
+        }
+
+        if let Maybe::Set(favicon_source) = input.favicon_source {
+            model.favicon_source = Set(favicon_source);
+        }
+
+        if let Maybe::Set(ios_icon_source) = input.ios_icon_source {
+            model.ios_icon_source = Set(ios_icon_source);
+        }
+
+        if let Maybe::Set(windows_tile_source) = input.windows_tile_source {
+            model.windows_tile_source = Set(windows_tile_source);
+        }
+
         ctx.defer_public_content_cache_invalidate_site(site.site_id)
             .or_raise(make_error)?;
 
@@ -467,7 +501,7 @@ impl SiteService {
                 // We don't verify here because the site row hasn't been
                 // updated yet, so we instead run AliasService::verify()
                 // ourselves at the end of site updating (see above).
-                AliasService::create2(
+                AliasService::create_for_pending_target_rename(
                     ctx,
                     CreateAlias {
                         slug: str!(old_slug),
@@ -477,7 +511,6 @@ impl SiteService {
                         bypass_filter: true, // sites don't have filters
                         ip_address,
                     },
-                    false,
                 )
                 .await
                 .or_raise(make_error)?;
@@ -570,22 +603,21 @@ impl SiteService {
     }
 
     /// Gets site-wide forum settings.
-    ///
-    /// At present this is sourced from service defaults; the site row itself
-    /// does not yet carry dedicated forum configuration columns.
-    #[allow(dead_code)] // TODO
     pub async fn get_forum_settings(
         ctx: &ServiceContext<'_>,
         reference: Reference<'_>,
     ) -> Result<SiteForumSettings> {
-        let SiteModel { site_id, .. } =
-            Self::get(ctx, reference).await.or_raise(|| {
-                Error::new("failed to get site forum settings", ErrorType::Forum)
-            })?;
+        let SiteModel {
+            site_id,
+            forum_max_nest_level,
+            ..
+        } = Self::get(ctx, reference).await.or_raise(|| {
+            Error::new("failed to get site forum settings", ErrorType::Forum)
+        })?;
 
-        debug!("Using default forum settings for site ID {site_id}");
+        debug!("Using stored forum settings for site ID {site_id}");
         Ok(SiteForumSettings {
-            max_nest_level: DEFAULT_FORUM_MAX_NEST_LEVEL,
+            max_nest_level: forum_max_nest_level,
             per_page_discussion: DEFAULT_FORUM_PER_PAGE_DISCUSSION,
         })
     }

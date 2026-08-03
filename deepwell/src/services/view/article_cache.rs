@@ -19,15 +19,23 @@
  */
 
 use super::options::PageOptions;
-use super::prelude::*;
+use super::structs::{GetPageView, GetPageViewOutput};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::services::BlueprintPageService;
+use crate::services::ServiceContext;
+use crate::services::blueprint::compose_template;
 use crate::services::permission::PermissionCache;
 use crate::services::public_cache::PublicContentCache;
-use crate::services::render::{RenderDependencyClass, classify_render_dependencies};
+use crate::services::render::{
+    RenderDependencyClass, classify_render_dependencies, wikitext_requires_runtime_render,
+};
+use crate::utils::split_category;
 use redis::AsyncCommands;
 use sea_orm::{DatabaseBackend, FromQueryResult, Statement, Value};
+use sha2::{Digest, Sha256};
 use time::OffsetDateTime;
 
-const ARTICLE_VIEW_PAGE_CACHE_PREFIX: &str = "deepwell:article-view:page:v1";
+const ARTICLE_VIEW_PAGE_CACHE_PREFIX: &str = "deepwell:article-view:page:v2";
 
 pub(super) struct ArticlePageCache;
 
@@ -57,10 +65,12 @@ impl ArticlePageCache {
         #[derive(Debug, FromQueryResult)]
         struct ArticlePageCacheKeyRow {
             page_id: i64,
+            page_slug: String,
             page_updated_at: Option<OffsetDateTime>,
             latest_revision_id: Option<i64>,
             from_wikidot: bool,
             compiled_body_html_hash: Option<Vec<u8>>,
+            compiled_body_styles_hash: Option<Vec<u8>>,
             compiled_top_bar_html_hash: Option<Vec<u8>>,
             compiled_side_bar_html_hash: Option<Vec<u8>>,
             source_contents: Option<String>,
@@ -73,10 +83,12 @@ impl ArticlePageCache {
                 "
                 SELECT
                     page.page_id,
+                    page.slug AS page_slug,
                     page.updated_at AS page_updated_at,
                     page.latest_revision_id,
                     page.from_wikidot,
                     revision.compiled_body_html_hash,
+                    revision.compiled_body_styles_hash,
                     revision.compiled_top_bar_html_hash,
                     revision.compiled_side_bar_html_hash,
                     source_text.contents AS source_contents
@@ -116,6 +128,14 @@ impl ArticlePageCache {
             return Ok(None);
         }
 
+        let (category, page) = split_category(&row.page_slug);
+        let template_source =
+            BlueprintPageService::get_page_template(ctx, input.site_id, category, page)
+                .await?;
+        let template_source_hash = template_source
+            .as_deref()
+            .map(|source| Sha256::digest(source.as_bytes()).to_vec());
+
         let page_updated_at = row
             .page_updated_at
             .map(|value| value.unix_timestamp_nanos())
@@ -130,13 +150,16 @@ impl ArticlePageCache {
 
         Ok(format_article_page_cache_key_if_source_eligible(
             row.source_contents.as_deref(),
+            template_source.as_deref(),
             ArticlePageCacheKeyParts {
                 site_id: input.site_id,
                 page_id: row.page_id,
                 latest_revision_id,
                 page_updated_at,
                 permission_fence: &permission_fence,
+                template_source_hash: template_source_hash.as_deref(),
                 compiled_body_html_hash: row.compiled_body_html_hash.as_deref(),
+                compiled_body_styles_hash: row.compiled_body_styles_hash.as_deref(),
                 compiled_top_bar_html_hash: row.compiled_top_bar_html_hash.as_deref(),
                 compiled_side_bar_html_hash: row.compiled_side_bar_html_hash.as_deref(),
                 route_slug,
@@ -209,7 +232,9 @@ struct ArticlePageCacheKeyParts<'a> {
     latest_revision_id: i64,
     page_updated_at: i128,
     permission_fence: &'a str,
+    template_source_hash: Option<&'a [u8]>,
     compiled_body_html_hash: Option<&'a [u8]>,
+    compiled_body_styles_hash: Option<&'a [u8]>,
     compiled_top_bar_html_hash: Option<&'a [u8]>,
     compiled_side_bar_html_hash: Option<&'a [u8]>,
     route_slug: &'a str,
@@ -219,17 +244,21 @@ struct ArticlePageCacheKeyParts<'a> {
 
 fn format_article_page_cache_key(parts: ArticlePageCacheKeyParts<'_>) -> String {
     let body_hash = optional_hash_hex(parts.compiled_body_html_hash);
+    let styles_hash = optional_hash_hex(parts.compiled_body_styles_hash);
     let top_bar_hash = optional_hash_hex(parts.compiled_top_bar_html_hash);
     let side_bar_hash = optional_hash_hex(parts.compiled_side_bar_html_hash);
+    let template_hash = optional_hash_hex(parts.template_source_hash);
 
     format!(
-        "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:site={}:page={}:rev={}:updated={}:permission={}:body={}:top={}:side={}:slug={}:extra={}:locales={}",
+        "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:site={}:page={}:rev={}:updated={}:permission={}:template={}:body={}:styles={}:top={}:side={}:slug={}:extra={}:locales={}",
         parts.site_id,
         parts.page_id,
         parts.latest_revision_id,
         parts.page_updated_at,
         parts.permission_fence,
+        template_hash,
         body_hash,
+        styles_hash,
         top_bar_hash,
         side_bar_hash,
         hex::encode(parts.route_slug),
@@ -240,10 +269,14 @@ fn format_article_page_cache_key(parts: ArticlePageCacheKeyParts<'_>) -> String 
 
 fn format_article_page_cache_key_if_source_eligible(
     source_contents: Option<&str>,
+    template_source: Option<&str>,
     parts: ArticlePageCacheKeyParts<'_>,
 ) -> Option<String> {
     let source_contents = source_contents?;
-    if !anonymous_article_cache_source_eligible(source_contents) {
+    let composed_source =
+        template_source.map(|template| compose_template(template, source_contents));
+    let effective_source = composed_source.as_deref().unwrap_or(source_contents);
+    if !anonymous_article_cache_source_eligible(effective_source) {
         return None;
     }
 
@@ -251,6 +284,9 @@ fn format_article_page_cache_key_if_source_eligible(
 }
 
 pub(super) fn anonymous_article_cache_source_eligible(source: &str) -> bool {
+    if wikitext_requires_runtime_render(source) {
+        return false;
+    }
     let classes = classify_render_dependencies(source);
     !classes.contains(RenderDependencyClass::ViewerDependent)
         && !classes.contains(RenderDependencyClass::RequestDependent)
@@ -275,7 +311,9 @@ mod tests {
             latest_revision_id: 13,
             page_updated_at: 17,
             permission_fence: "site=19,user=23",
+            template_source_hash: Some(&[0x89, 0xab]),
             compiled_body_html_hash: Some(&[0x01, 0x23]),
+            compiled_body_styles_hash: Some(&[0x34]),
             compiled_top_bar_html_hash: Some(&[0x45]),
             compiled_side_bar_html_hash: Some(&[0x67]),
             route_slug: "start",
@@ -285,8 +323,32 @@ mod tests {
 
         assert_eq!(
             key,
-            "deepwell:article-view:page:v1:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:body=0123:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
+            "deepwell:article-view:page:v2:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:template=89ab:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
         );
+    }
+
+    #[test]
+    fn article_page_cache_key_changes_with_assigned_template_source() {
+        let key = |template_source_hash| {
+            format_article_page_cache_key(ArticlePageCacheKeyParts {
+                site_id: 7,
+                page_id: 11,
+                latest_revision_id: 13,
+                page_updated_at: 17,
+                permission_fence: "site=19,user=23",
+                template_source_hash,
+                compiled_body_html_hash: Some(&[0x01, 0x23]),
+                compiled_body_styles_hash: Some(&[0x34]),
+                compiled_top_bar_html_hash: Some(&[0x45]),
+                compiled_side_bar_html_hash: Some(&[0x67]),
+                route_slug: "category:article",
+                page_extra: "",
+                locales: "en",
+            })
+        };
+
+        assert_ne!(key(Some(&[0x01])), key(Some(&[0x02])));
+        assert_ne!(key(Some(&[0x01])), key(None));
     }
 
     #[test]
@@ -294,20 +356,22 @@ mod tests {
         for source in [
             "Plain imported page text.\n\n[[div]]Static[[/div]]",
             "[[include component:license-box]]",
-            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module CountPages category=\"news\"]][[/module]]",
             "[[*user example]]",
             "[[[empty-label|]]]",
         ] {
             let key = format_article_page_cache_key_if_source_eligible(
                 Some(source),
+                None,
                 ArticlePageCacheKeyParts {
                     site_id: 7,
                     page_id: 11,
                     latest_revision_id: 13,
                     page_updated_at: 17,
                     permission_fence: "site=19,user=23",
+                    template_source_hash: None,
                     compiled_body_html_hash: Some(&[0x01, 0x23]),
+                    compiled_body_styles_hash: Some(&[0x34]),
                     compiled_top_bar_html_hash: Some(&[0x45]),
                     compiled_side_bar_html_hash: Some(&[0x67]),
                     route_slug: "start",
@@ -319,7 +383,7 @@ mod tests {
             assert_eq!(
                 key.as_deref(),
                 Some(
-                    "deepwell:article-view:page:v1:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:body=0123:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
+                    "deepwell:article-view:page:v2:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:template=:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
                 ),
                 "{source}",
             );
@@ -334,7 +398,9 @@ mod tests {
             latest_revision_id: 13,
             page_updated_at: 17,
             permission_fence: "site=19,user=23",
+            template_source_hash: None,
             compiled_body_html_hash: None,
+            compiled_body_styles_hash: None,
             compiled_top_bar_html_hash: None,
             compiled_side_bar_html_hash: None,
             route_slug: "start",
@@ -343,16 +409,19 @@ mod tests {
         };
 
         assert_eq!(
-            format_article_page_cache_key_if_source_eligible(None, parts),
+            format_article_page_cache_key_if_source_eligible(None, None, parts),
             None
         );
 
         for source in [
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
+            "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
             "[[module Rate]]",
             "[[module UnknownWidget]]",
             "[[module]]",
+            "[[module ChildPages]]",
         ] {
             let parts = ArticlePageCacheKeyParts {
                 site_id: 7,
@@ -360,7 +429,9 @@ mod tests {
                 latest_revision_id: 13,
                 page_updated_at: 17,
                 permission_fence: "site=19,user=23",
+                template_source_hash: None,
                 compiled_body_html_hash: None,
+                compiled_body_styles_hash: None,
                 compiled_top_bar_html_hash: None,
                 compiled_side_bar_html_hash: None,
                 route_slug: "start",
@@ -369,7 +440,11 @@ mod tests {
             };
 
             assert_eq!(
-                format_article_page_cache_key_if_source_eligible(Some(source), parts),
+                format_article_page_cache_key_if_source_eligible(
+                    Some(source),
+                    None,
+                    parts,
+                ),
                 None,
                 "{source}",
             );
@@ -377,11 +452,66 @@ mod tests {
     }
 
     #[test]
+    fn article_page_cache_key_source_gate_classifies_page_and_template_sources() {
+        let parts = || ArticlePageCacheKeyParts {
+            site_id: 7,
+            page_id: 11,
+            latest_revision_id: 13,
+            page_updated_at: 17,
+            permission_fence: "site=19,user=23",
+            template_source_hash: None,
+            compiled_body_html_hash: None,
+            compiled_body_styles_hash: None,
+            compiled_top_bar_html_hash: None,
+            compiled_side_bar_html_hash: None,
+            route_slug: "category:article",
+            page_extra: "",
+            locales: "en",
+        };
+        let request_dependent_list_pages =
+            "[[module ListPages offset=\"@URL|1\"]]%%title_linked%%[[/module]]";
+        let split_request_dependent_template =
+            "[[module ListPages offset=\"@U%%content%%\"]]%%title_linked%%[[/module]]";
+
+        assert!(
+            format_article_page_cache_key_if_source_eligible(
+                Some("cache-safe page source"),
+                Some("cache-safe template\n%%content%%"),
+                parts(),
+            )
+            .is_some(),
+        );
+        assert_eq!(
+            format_article_page_cache_key_if_source_eligible(
+                Some(request_dependent_list_pages),
+                None,
+                parts(),
+            ),
+            None,
+        );
+        assert_eq!(
+            format_article_page_cache_key_if_source_eligible(
+                Some("cache-safe page source"),
+                Some(request_dependent_list_pages),
+                parts(),
+            ),
+            None,
+        );
+        assert_eq!(
+            format_article_page_cache_key_if_source_eligible(
+                Some("RL|1"),
+                Some(split_request_dependent_template),
+                parts(),
+            ),
+            None,
+        );
+    }
+
+    #[test]
     fn article_page_cache_eligibility_allows_anonymous_safe_sources() {
         for source in [
             "Plain imported page text.\n\n[[div]]Static[[/div]]",
             "[[include component:license-box]]",
-            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module CountPages category=\"news\"]][[/module]]",
             "[[*user example]]",
         ] {
@@ -393,6 +523,8 @@ mod tests {
     fn article_page_cache_eligibility_denies_unsafe_or_unverified_sources() {
         for source in [
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
+            "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
             "[[module Rate]]",
             "[[module Members]]",
@@ -400,6 +532,8 @@ mod tests {
             "[[module Clone]]",
             "[[module UnknownWidget]]",
             "[[module]]",
+            "[[module ChildPages]]",
+            "[[module NextPage by=\"title\"]]%%linked_title%%[[/module]]",
         ] {
             assert!(!anonymous_article_cache_source_eligible(source));
         }

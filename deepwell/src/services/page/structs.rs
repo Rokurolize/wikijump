@@ -18,10 +18,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
 use crate::services::page_revision::CreatePageRevisionOutput;
 use crate::services::score::ScoreValue;
-use crate::types::{PageDetails, PageId, PageRevisionType};
+use crate::types::{Maybe, Reference};
+use crate::types::{PageDetails, PageRevisionType};
 use ftml::layout::Layout;
 use ftml::parsing::ParseError;
 use std::net::IpAddr;
@@ -115,6 +115,7 @@ pub struct GetPageOutput {
     pub revision_user_id: i64,
     pub wikitext: Option<String>,
     pub compiled_body_html: Option<String>,
+    pub compiled_body_styles: Option<Vec<String>>,
 
     #[serde(with = "time::serde::rfc3339")]
     pub compiled_at: OffsetDateTime,
@@ -345,14 +346,6 @@ mod tests {
         assert_eq!(output.revision_number, 5);
         assert!(output.parser_errors.is_empty());
     }
-}
-
-#[derive(Deserialize, Debug, Clone)]
-#[allow(dead_code)]
-pub struct PageEditPermission<'a> {
-    pub site_id: i64,
-    pub page: Reference<'a>,
-    pub user_id: Option<i64>,
 }
 
 #[derive(Serialize, Debug, Clone)]

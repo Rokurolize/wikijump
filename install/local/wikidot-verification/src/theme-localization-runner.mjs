@@ -1,18 +1,21 @@
 import crypto from "node:crypto";
 import {createRequire} from "node:module";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
-import {openBrowser} from "../scripts/capture-browser-rendering.mjs";
+import {openBrowser} from "./browser-session.mjs";
 import {captureThemeTierBrowserEvidence, prepareThemeArtifactDirectory} from "./theme-browser-capture.mjs";
 import {DeepwellThemePageAdapter} from "./theme-localization-deepwell-adapter.mjs";
+import {ALLOWED_SITE_SLUG, readCurrentSiteDependencySource} from "./theme-localization-e2e.mjs";
 import {executeThemeRunOwnedPages, recoverThemeExecution, themeExecutionFingerprint, validateRecoverableThemeExecutionPlan, validateThemeExecutionPlan} from "./theme-localization-execution.mjs";
 import {WikidotThemePageAdapter} from "./theme-localization-wikidot-adapter.mjs";
 
 export const THEME_RUN_RESULT_SCHEMA = "wikijump_local_lab.theme_run_result.v1";
 export const GUARDED_THEME_WIKIJUMP_RPC_URL = "http://127.0.0.1:12747/jsonrpc";
 const DEFAULT_BROWSER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..", "framerail");
+const DEFAULT_EXECUTION_LOCK = path.join(os.tmpdir(), `wikijump-theme-localization-${ALLOWED_SITE_SLUG}.lock`);
 
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
@@ -72,7 +75,7 @@ export function validateGuardedThemeRpcUrl(value) {
   return value;
 }
 
-export async function createLiveThemeDependencies({env = process.env, browserRoot, browserExecutable, cdpEndpoint, wikidotStorageState, wikijumpStorageState, ignoreHttpsErrors = false, needsBrowser = true, openBrowserImpl = openBrowser} = {}) {
+export async function createLiveThemeDependencies({env = process.env, browserRoot, browserExecutable, cdpEndpoint, wikidotStorageState, wikijumpStorageState, ignoreHttpsErrors = false, needsBrowser = true, openBrowserImpl = openBrowser, captureTierImpl = captureThemeTierBrowserEvidence} = {}) {
   if (cdpEndpoint && browserExecutable) throw new Error("CDP endpoint cannot be combined with a browser executable");
   const validatedCdpEndpoint = cdpEndpoint ? validateThemeCdpEndpoint(cdpEndpoint) : null;
   const rpcUrl = validateGuardedThemeRpcUrl(env.WIKIJUMP_THEME_RPC_URL);
@@ -89,7 +92,12 @@ export async function createLiveThemeDependencies({env = process.env, browserRoo
     const chromium = needsBrowser ? loadChromium(browserRoot) : null;
     if (needsBrowser) browserSession = await openBrowserImpl({chromium, cdpEndpoint: validatedCdpEndpoint, browserExecutable, ignoreHttpsErrors, createInitialContexts: false});
     return {
-      adapters: {wikidot, wikijump}, secrets, storageStates, browserExecutable, cdpEndpoint: validatedCdpEndpoint, ignoreHttpsErrors, chromium, browserSession,
+      adapters: {wikidot, wikijump},
+      secrets,
+      async captureTier({tier, outputDir, source}) {
+        if (!needsBrowser || browserSession === null) throw new Error("theme browser capture is unavailable during recovery");
+        return await captureTierImpl({tier, outputDir, source, chromium, browserExecutable, cdpEndpoint: validatedCdpEndpoint, browserSession, ignoreHttpsErrors, storageStates});
+      },
       async close() { await Promise.allSettled([browserSession?.close(), wikijump.close(), wikidot.close()]); },
     };
   } catch (error) {
@@ -121,6 +129,65 @@ function validateExecutablePlan(plan, {recovery = false} = {}) {
 async function syncParent(filePath) {
   const handle = await fs.open(path.dirname(filePath), "r");
   try { await handle.sync(); } finally { await handle.close(); }
+}
+
+function processIsAlive(pid) {
+  if (!Number.isSafeInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === "EPERM";
+  }
+}
+
+export async function acquireThemeExecutionLock({lockPath = DEFAULT_EXECUTION_LOCK, runId, fingerprint} = {}) {
+  const absolute = path.resolve(lockPath);
+  const parent = path.dirname(absolute);
+  await fs.mkdir(parent, {recursive: true});
+  const ownerPath = path.join(absolute, "owner.json");
+  const create = async () => {
+    await fs.mkdir(absolute, {mode: 0o700});
+    const owner = {schema: "wikijump_local_lab.theme_execution_lock.v1", pid: process.pid, run_id: runId, fingerprint};
+    const handle = await fs.open(ownerPath, "wx", 0o600);
+    try {
+      await handle.writeFile(`${JSON.stringify(owner)}\n`, "utf8");
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    await syncParent(ownerPath);
+  };
+  try {
+    await create();
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+    const stat = await fs.lstat(absolute);
+    const ownerStat = await fs.lstat(ownerPath);
+    if (!stat.isDirectory() || stat.isSymbolicLink() || !ownerStat.isFile() || ownerStat.isSymbolicLink() || (ownerStat.mode & 0o077) !== 0) throw new Error("theme execution lock is malformed");
+    let owner;
+    try {
+      owner = JSON.parse(await fs.readFile(ownerPath, "utf8"));
+    } catch {
+      throw new Error("theme execution lock owner is malformed");
+    }
+    if (owner?.schema !== "wikijump_local_lab.theme_execution_lock.v1" || !Number.isSafeInteger(owner.pid) || typeof owner.run_id !== "string" || typeof owner.fingerprint !== "string") throw new Error("theme execution lock owner is malformed");
+    if (processIsAlive(owner.pid)) throw new Error(`theme execution site lock is held by run ${owner.run_id}`);
+    await fs.unlink(ownerPath);
+    await fs.rmdir(absolute);
+    await create();
+  }
+  let released = false;
+  return {
+    path: absolute,
+    async release() {
+      if (released) return;
+      released = true;
+      await fs.unlink(ownerPath);
+      await fs.rmdir(absolute);
+      await syncParent(absolute);
+    },
+  };
 }
 
 export async function writeExecutableThemePlan(filePath, plan) {
@@ -155,8 +222,16 @@ function captureSummary(captures) {
   return captures.map((capture) => ({tier_id: capture.tier_id, status: capture.status, targets: capture.targets.map((target) => ({id: target.id, status: target.verdict.status, failed_viewports: target.verdict.failed_viewports}))}));
 }
 
-export async function runGuardedThemeAction({mode, plan, ledgerPath, resultPath, artifactDir, signalSource = process, dependencyFactory = createLiveThemeDependencies, dependencyOptions = {}, captureTierImpl = captureThemeTierBrowserEvidence}) {
-  if (!new Set(["execute", "recover"]).has(mode)) throw new Error("theme action must be execute or recover");
+export async function executeGuardedThemeAction(options) {
+  if (!options?.artifactDir) throw new Error("execute artifact path is required");
+  return await runGuardedThemeAction({...options, mode: "execute"});
+}
+
+export async function recoverGuardedThemeAction(options) {
+  return await runGuardedThemeAction({...options, mode: "recover"});
+}
+
+async function runGuardedThemeAction({mode, plan, ledgerPath, resultPath, artifactDir = null, executionLockPath, signalSource = process, dependencyFactory = createLiveThemeDependencies, dependencyOptions = {}, captureTierImpl = captureThemeTierBrowserEvidence}) {
   validateExecutablePlan(plan, {recovery: mode === "recover"});
   if (!ledgerPath || !resultPath || (mode === "execute" && !artifactDir)) throw new Error("ledger, result, and execute artifact paths are required");
   if (mode === "execute") artifactDir = await prepareThemeArtifactDirectory(artifactDir);
@@ -164,21 +239,25 @@ export async function runGuardedThemeAction({mode, plan, ledgerPath, resultPath,
   const bridge = installSignalBridge(signalSource);
   const captures = [];
   let dependencies = null;
+  let executionLock = null;
   let operation = null;
   let failure = null;
   try {
-    dependencies = await dependencyFactory({...dependencyOptions, needsBrowser: mode === "execute"});
+    executionLock = await acquireThemeExecutionLock({lockPath: executionLockPath, runId: plan.run.id, fingerprint: themeExecutionFingerprint(plan, {allowLegacy: mode === "recover"})});
+    dependencies = await dependencyFactory({...dependencyOptions, needsBrowser: mode === "execute", captureTierImpl});
     if (mode === "recover") {
       operation = await recoverThemeExecution({ledgerPath, plan, adapters: dependencies.adapters});
       if (bridge.signal.aborted) throw bridge.signal.reason;
     } else {
       operation = await executeThemeRunOwnedPages({
         plan, ledgerPath, adapters: dependencies.adapters, signal: bridge.signal,
-        materialize: async (resource) => ({source: await readAcceptedSource(resource)}),
+        materialize: async (resource) => ({source: resource.kind === "component_dependency" ? await readCurrentSiteDependencySource(resource) : await readAcceptedSource(resource)}),
         capture: async (tier, resources) => {
-          const source = await readAcceptedSource(resources[0]);
-          if (sha256(source) !== resources[0].source_sha256) throw new Error(`accepted source changed before capture: ${tier.id}`);
-          const capture = await captureTierImpl({tier, outputDir: artifactDir, source, chromium: dependencies.chromium, browserExecutable: dependencies.browserExecutable, cdpEndpoint: dependencies.cdpEndpoint, browserSession: dependencies.browserSession, ignoreHttpsErrors: dependencies.ignoreHttpsErrors, storageStates: dependencies.storageStates});
+          const themeResource = resources.find((resource) => resource.kind === "theme_page");
+          if (!themeResource) throw new Error(`theme page resource is missing before capture: ${tier.id}`);
+          const source = await readAcceptedSource(themeResource);
+          if (sha256(source) !== themeResource.source_sha256) throw new Error(`accepted source changed before capture: ${tier.id}`);
+          const capture = await dependencies.captureTier({tier, outputDir: artifactDir, source});
           captures.push(capture);
           if (capture.status !== "pass") throw new Error(`strict browser verdict failed: ${tier.id}`);
         },
@@ -189,6 +268,7 @@ export async function runGuardedThemeAction({mode, plan, ledgerPath, resultPath,
   } finally {
     bridge.close();
     try { await dependencies?.close?.(); } catch (error) { failure ??= error; }
+    try { await executionLock?.release(); } catch (error) { failure ??= error; }
   }
   const secrets = dependencies?.secrets ?? [];
   const aggregate = {schema: THEME_RUN_RESULT_SCHEMA, status: failure ? "fail" : "pass", mode, run_id: plan.run.id, plan_fingerprint: themeExecutionFingerprint(plan, {allowLegacy: mode === "recover"}), ledger_path: path.resolve(ledgerPath), signal: bridge.received(), captures: captureSummary(captures), operation, error: failure ? redact(failure.message ?? failure, secrets) : null};

@@ -11,9 +11,24 @@ exclude = [".gitignore"]
 version = "0.1.0"
 authors = ["Emmie Maeda <emmie.maeda@gmail.com>"]
 edition = "2024"
+rust-version = "1.95.0"
 
 [dependencies]
-fluent-bundle = "0.15"
 fluent-syntax = "0.11"
 str-macro = "1"
 unic-langid = { version = "0.9", features = ["macros"] }
+
+# Keep ordinary development and test artifacts bounded. Full debug information
+# is opt-in through `cargo --profile debugging` below.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.debugging]
+inherits = "dev"
+debug = true
+
+[profile.debugging.package."*"]
+debug = true

@@ -4,6 +4,8 @@ This document freezes the working responsibility boundary between the FTML libra
 
 This is a contract document, not a migration plan. Nothing here changes runtime behavior. Migration happens in later staged PRs, each gated on evidence.
 
+The BND findings are defined in that evidence root, which is not in this repository. A reader here can verify the code paths named below but not the findings themselves, so treat a BND reference as a label for a known surface rather than as an argument. Where this document names a function or module, verify the path before relying on it: the `compat/` extraction moved several of them after this document was written.
+
 ## FTML-owned responsibilities
 
 - Tokenization, parsing, and AST representation for Wikidot/FTML syntax, including malformed-but-real Wikidot shapes that appear in corpus evidence.
@@ -44,7 +46,7 @@ The following remain in Wikijump even though they touch syntax-shaped text. The 
 
 - ListPages/CountPages query execution, selector semantics, pagination, permission filtering, and runtime variable substitution against page rows.
 - Include source fetching, cross-site resolution, recursion/total limits, and missing-include policy.
-- Local file URL localization/materialization, asset mirror routing, and external CSS dependency suppression.
+- Local file URL localization/materialization, asset mirror routing, and external CSS dependency admission through Framerail's CSP allowlist.
 - All permission filtering during render, user display resolution, and actor state.
 - Module runtime output and unsupported-module placeholder policy (a Local Lab D6 user decision, not an FTML question).
 - Iframe allow-listing and interwiki URL rewriting (network/site policy); only the `[[embed]]` syntax parsing half is migration-eligible.
@@ -69,7 +71,7 @@ These surfaces are frozen: they may receive correctness fixes, but they must not
 
 ## Marker protocol and pin-bump canary requirement
 
-FTML main has begun consuming canonical Wikidot source markers at parse time (ftml PR #178, section markers), while this repository carries HTML-side restorers for overlapping marker classes (`restore_residual_wikidot_*` in `deepwell/src/services/render/service.rs`). The two mechanisms must not silently double-handle or orphan each other.
+FTML main has begun consuming canonical Wikidot source markers at parse time (ftml PR #178, section markers), while this repository carries HTML-side restorers for overlapping marker classes (`restore_residual_wikidot_*` in `deepwell/src/services/render/compat/wikidot_residual_markers.rs`). The two mechanisms must not silently double-handle or orphan each other.
 
 Rules:
 

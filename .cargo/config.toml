@@ -1,0 +1,4 @@
+[build]
+# Keep the independent Rust packages in this repository on one canonical cache.
+# Candidate builds override this with CARGO_TARGET_DIR and never write here.
+target-dir = "target"

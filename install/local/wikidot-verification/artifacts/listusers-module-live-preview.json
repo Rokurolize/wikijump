@@ -1,0 +1,171 @@
+{
+  "schema": "wikijump.wikidot_live_probe.v1",
+  "case_id": "listusers-module-live-preview-matrix",
+  "captured_at": "2026-07-29T00:32:22.205098+00:00",
+  "site": "sandbox-for-codex",
+  "module_route": "edit/PagePreviewModule",
+  "mutated": false,
+  "cases": [
+    {
+      "viewer": "anonymous",
+      "case_id": "users-dot-variables",
+      "source": "[[module ListUsers users=\".\"]]\nLU number=%%number%% title=%%title%% name=%%name%%\n[[/module]]",
+      "source_sha256": "722a1b99186d9838ee4c6e4a0efd1d05e0439bc11eea1b6c4105049999ede2f9",
+      "status": "ok",
+      "body": "\n\n\n",
+      "body_sha256": "6a3cf5192354f71615ac51034b3e97c20eda99643fcaf5bbe6d41ad59bd12167"
+    },
+    {
+      "viewer": "anonymous",
+      "case_id": "users-dot-wiki-body",
+      "source": "[[module ListUsers users=\".\"]]\n**%%title%%** (//%%name%%//) #%%number%%\n[[/module]]",
+      "source_sha256": "08b586991f89096b65af1968d2008d8cd8e7a896bd72509d318319db127e71ab",
+      "status": "ok",
+      "body": "\n\n\n",
+      "body_sha256": "6a3cf5192354f71615ac51034b3e97c20eda99643fcaf5bbe6d41ad59bd12167"
+    },
+    {
+      "viewer": "anonymous",
+      "case_id": "users-dot-empty-body",
+      "source": "[[module ListUsers users=\".\"]][[/module]]",
+      "source_sha256": "9eaff1f8d3eff7781ec3d95728e4f6960ff80279604521da5357abc8b930c22e",
+      "status": "ok",
+      "body": "\n\n\n",
+      "body_sha256": "6a3cf5192354f71615ac51034b3e97c20eda99643fcaf5bbe6d41ad59bd12167"
+    },
+    {
+      "viewer": "anonymous",
+      "case_id": "users-omitted",
+      "source": "[[module ListUsers]]\nOMIT %%title%%\n[[/module]]",
+      "source_sha256": "49a306c2407de6819fad9088614b93c34d7f4c90a56de61fc2ef07186c3a1bf4",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">Currently only users=\".\" is implemented.</div>",
+      "body_sha256": "3b99f4403796ab4d95146ab3354014ad28b941e549e2dbe29a1c936ea5b7bee7"
+    },
+    {
+      "viewer": "anonymous",
+      "case_id": "users-empty",
+      "source": "[[module ListUsers users=\"\"]]\nEMPTY %%title%%\n[[/module]]",
+      "source_sha256": "7390536879962fa773392d3cc925b915cd943e91737e4aec041e0762170508c4",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">Currently only users=\".\" is implemented.</div>",
+      "body_sha256": "3b99f4403796ab4d95146ab3354014ad28b941e549e2dbe29a1c936ea5b7bee7"
+    },
+    {
+      "viewer": "anonymous",
+      "case_id": "users-other",
+      "source": "[[module ListUsers users=\"scpaiueouiuiuiui\"]]\nOTHER %%title%%\n[[/module]]",
+      "source_sha256": "0383e8074fe07a18c624ca7d9fbeabfb9b902f8ea6c9665b16bbf99e39dbc548",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">Currently only users=\".\" is implemented.</div>",
+      "body_sha256": "3b99f4403796ab4d95146ab3354014ad28b941e549e2dbe29a1c936ea5b7bee7"
+    },
+    {
+      "viewer": "anonymous",
+      "case_id": "users-dot-unknown-variable",
+      "source": "[[module ListUsers users=\".\"]]\nKNOWN %%title%% UNKNOWN %%missing%%\n[[/module]]",
+      "source_sha256": "4e36c970b0f72383ccabc276c6b286cde0acc6d7b1e4635f4c0cf7c56a70fe6d",
+      "status": "ok",
+      "body": "\n\n\n",
+      "body_sha256": "6a3cf5192354f71615ac51034b3e97c20eda99643fcaf5bbe6d41ad59bd12167"
+    },
+    {
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "name": "scpaiueouiuiuiui"
+      },
+      "case_id": "users-dot-variables",
+      "source": "[[module ListUsers users=\".\"]]\nLU number=%%number%% title=%%title%% name=%%name%%\n[[/module]]",
+      "source_sha256": "722a1b99186d9838ee4c6e4a0efd1d05e0439bc11eea1b6c4105049999ede2f9",
+      "status": "ok",
+      "body": "\n\n\n\n<p>LU number=8955132 title=scpaiueouiuiuiui name=scpaiueouiuiuiui</p>\n\n",
+      "body_sha256": "99d0ba1bb64f2a3bff41c36ab7baaff185a623ae1d7acf63c0ccbddaff5ee473"
+    },
+    {
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "name": "scpaiueouiuiuiui"
+      },
+      "case_id": "users-dot-wiki-body",
+      "source": "[[module ListUsers users=\".\"]]\n**%%title%%** (//%%name%%//) #%%number%%\n[[/module]]",
+      "source_sha256": "08b586991f89096b65af1968d2008d8cd8e7a896bd72509d318319db127e71ab",
+      "status": "ok",
+      "body": "\n\n\n\n<p><strong>scpaiueouiuiuiui</strong> (<em>scpaiueouiuiuiui</em>) #8955132</p>\n\n",
+      "body_sha256": "8ce19a608e42f59b358c984b0ed836144c867391c6173cc00570805efde078bb"
+    },
+    {
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "name": "scpaiueouiuiuiui"
+      },
+      "case_id": "users-dot-empty-body",
+      "source": "[[module ListUsers users=\".\"]][[/module]]",
+      "source_sha256": "9eaff1f8d3eff7781ec3d95728e4f6960ff80279604521da5357abc8b930c22e",
+      "status": "ok",
+      "body": "\n\n\n\n\n",
+      "body_sha256": "7c370d9536d7d0d6a0f7cd7f9826692acd93e4fb05ba46f7b630b879740343d3"
+    },
+    {
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "name": "scpaiueouiuiuiui"
+      },
+      "case_id": "users-omitted",
+      "source": "[[module ListUsers]]\nOMIT %%title%%\n[[/module]]",
+      "source_sha256": "49a306c2407de6819fad9088614b93c34d7f4c90a56de61fc2ef07186c3a1bf4",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">Currently only users=\".\" is implemented.</div>",
+      "body_sha256": "3b99f4403796ab4d95146ab3354014ad28b941e549e2dbe29a1c936ea5b7bee7"
+    },
+    {
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "name": "scpaiueouiuiuiui"
+      },
+      "case_id": "users-empty",
+      "source": "[[module ListUsers users=\"\"]]\nEMPTY %%title%%\n[[/module]]",
+      "source_sha256": "7390536879962fa773392d3cc925b915cd943e91737e4aec041e0762170508c4",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">Currently only users=\".\" is implemented.</div>",
+      "body_sha256": "3b99f4403796ab4d95146ab3354014ad28b941e549e2dbe29a1c936ea5b7bee7"
+    },
+    {
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "name": "scpaiueouiuiuiui"
+      },
+      "case_id": "users-other",
+      "source": "[[module ListUsers users=\"scpaiueouiuiuiui\"]]\nOTHER %%title%%\n[[/module]]",
+      "source_sha256": "0383e8074fe07a18c624ca7d9fbeabfb9b902f8ea6c9665b16bbf99e39dbc548",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">Currently only users=\".\" is implemented.</div>",
+      "body_sha256": "3b99f4403796ab4d95146ab3354014ad28b941e549e2dbe29a1c936ea5b7bee7"
+    },
+    {
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "name": "scpaiueouiuiuiui"
+      },
+      "case_id": "users-dot-unknown-variable",
+      "source": "[[module ListUsers users=\".\"]]\nKNOWN %%title%% UNKNOWN %%missing%%\n[[/module]]",
+      "source_sha256": "4e36c970b0f72383ccabc276c6b286cde0acc6d7b1e4635f4c0cf7c56a70fe6d",
+      "status": "ok",
+      "body": "\n\n\n\n<p>KNOWN scpaiueouiuiuiui UNKNOWN %%missing%%</p>\n\n",
+      "body_sha256": "8c47df7b5e7505b0e3fe202ae422cc08db60d8de760a911a324e52b959c6937d"
+    }
+  ]
+}

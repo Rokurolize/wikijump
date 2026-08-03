@@ -1,0 +1,55 @@
+name: Browser CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - ready_for_review
+      - converted_to_draft
+      - labeled
+      - unlabeled
+      - closed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number) || format('{0}-run-{1}', github.workflow, github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  framerail_browser:
+    name: Framerail browser tests
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && contains(github.event.pull_request.labels.*.name, 'full-ci') && github.event.action != 'closed' && github.event.action != 'converted_to_draft' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled' && github.event.action != 'edited') || (github.event.action == 'labeled' && github.event.label.name == 'full-ci') || (github.event.action == 'edited' && github.event.changes.base != null))) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.10.0
+
+      - name: Setup node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: framerail/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm --dir framerail install --frozen-lockfile
+
+      - name: Install browser
+        run: pnpm --dir framerail exec playwright install --with-deps chromium
+
+      - name: Test
+        run: pnpm --dir framerail test

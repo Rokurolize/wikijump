@@ -18,10 +18,39 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::types::Reference;
+use crate::services::settings::{
+    PageRatingPermission, PageRatingType, PageRatingVisibility,
+};
+use crate::types::{Maybe, Reference};
+use std::net::IpAddr;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct GetCategory<'a> {
     pub site: Reference<'a>,
     pub category: Reference<'a>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct UpdateCategory<'a> {
+    pub site: Reference<'a>,
+    pub category: Reference<'a>,
+    pub user_id: i64,
+    #[serde(flatten)]
+    pub body: UpdateCategoryBody,
+    pub ip_address: IpAddr,
+}
+
+#[derive(Deserialize, Debug, Clone, Default)]
+#[serde(default)]
+pub struct UpdateCategoryBody {
+    pub top_bar_page: Maybe<Option<String>>,
+    pub side_bar_page: Maybe<Option<String>>,
+    pub template_page_id: Maybe<Option<i64>>,
+    pub license: Maybe<Option<String>>,
+    pub license_other: Maybe<Option<String>>,
+    pub rating_enabled: Maybe<Option<bool>>,
+    pub rating_permission: Maybe<Option<PageRatingPermission>>,
+    pub rating_visibility: Maybe<Option<PageRatingVisibility>>,
+    pub rating_type: Maybe<Option<PageRatingType>>,
+    pub per_page_discussion: Maybe<Option<bool>>,
 }

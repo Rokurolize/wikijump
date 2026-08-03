@@ -1,7 +1,7 @@
 # Deviation: Wikidot compatibility inline marker scan
 
 - Shim: `next_wikidot_compat_inline_marker` in
-  `deepwell/src/services/render/wikidot_inline_markers.rs`, called by the
+  `deepwell/src/services/render/compat/wikidot_inline_markers.rs`, called by the
   compatibility fallback in `deepwell/src/services/render/service.rs`.
 - Reason it lives in Wikijump: this change hardens the already-frozen BND-01
   fallback surface without adding syntax capability. Keeping the bounded scan

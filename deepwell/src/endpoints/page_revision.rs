@@ -20,13 +20,13 @@
 
 use super::prelude::*;
 use crate::models::page_revision::Model as PageRevisionModel;
-use crate::services::TextService;
 use crate::services::page::GetPageReference;
 use crate::services::page_revision::{
-    GetPageRevision, GetPageRevisionDetails, GetPageRevisionRangeDetails,
+    CountPageRevisions, GetPageRevisionDetails, GetPageRevisionRangeDetails,
     PageRevisionCountOutput, PageRevisionModelFiltered, UpdatePageRevisionDetails,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::{MutationAuthorization, TextService};
 use crate::types::{Action, PageDetails, Permission, Reference, Resource};
 
 pub async fn page_revision_count(
@@ -38,8 +38,6 @@ pub async fn page_revision_count(
         page: reference,
     } = parse!(params, PageRevision);
 
-    info!("Getting latest revision for page {reference:?} in site ID {site_id}");
-
     let make_error =
         || Error::new("failed to get page revision count", ErrorType::PageRevision);
 
@@ -47,9 +45,10 @@ pub async fn page_revision_count(
         .await
         .or_raise(make_error)?;
 
-    let revision_count = PageRevisionService::count(ctx, site_id, page_id)
-        .await
-        .or_raise(make_error)?;
+    let revision_count =
+        PageRevisionService::count(ctx, CountPageRevisions { site_id, page_id })
+            .await
+            .or_raise(make_error)?;
 
     Ok(PageRevisionCountOutput {
         revision_count,
@@ -62,32 +61,18 @@ pub async fn page_revision_get(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<Option<PageRevisionModelFiltered>> {
-    let GetPageRevisionDetails {
-        input:
-            GetPageRevision {
-                site_id,
-                page_id,
-                revision_number,
-            },
-        details,
-    } = parse!(params, PageRevision);
-
-    info!(
-        "Getting revision {} for page ID {} in site ID {}",
-        revision_number, page_id, site_id,
-    );
+    let GetPageRevisionDetails { input, details } = parse!(params, PageRevision);
 
     let make_error =
         || Error::new("failed to get a page revision", ErrorType::PageRevision);
 
-    ensure_page_view_permission(ctx, site_id, Reference::Id(page_id))
+    ensure_page_view_permission(ctx, input.site_id, Reference::Id(input.page_id))
         .await
         .or_raise(make_error)?;
 
-    let revision =
-        PageRevisionService::get_optional(ctx, site_id, page_id, revision_number)
-            .await
-            .or_raise(make_error)?;
+    let revision = PageRevisionService::get_optional(ctx, input)
+        .await
+        .or_raise(make_error)?;
 
     match revision {
         None => Ok(None),
@@ -106,6 +91,23 @@ pub async fn page_revision_edit(
     params: Params<'static>,
 ) -> Result<PageRevisionModelFiltered> {
     let UpdatePageRevisionDetails { input, details } = parse!(params, PageRevision);
+    MutationAuthorization::require_matching_actor(
+        ctx,
+        input.user_id,
+        "edit page revision visibility",
+    )?;
+    MutationAuthorization::require_permission(
+        ctx,
+        input.site_id,
+        Some(Reference::Id(input.page_id)),
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: None,
+            action: Action::Edit,
+        },
+        "edit page revision visibility",
+    )
+    .await?;
 
     info!(
         "Editing revision ID {} for page ID {} in site ID {}",
@@ -116,10 +118,10 @@ pub async fn page_revision_edit(
         || Error::new("failed to edit a page revision", ErrorType::PageRevision);
 
     let revision_id = input.revision_id;
-    let (_, revision) = join!(
-        PageRevisionService::update(ctx, input),
-        PageRevisionService::get_direct(ctx, revision_id),
-    );
+    PageRevisionService::update(ctx, input)
+        .await
+        .or_raise(make_error)?;
+    let revision = PageRevisionService::get_direct(ctx, revision_id).await;
     let revision = raise_multiple!(revision; make_error);
 
     filter_and_populate_revision(ctx, revision, details)
@@ -216,6 +218,7 @@ async fn filter_and_populate_revision(
         changes,
         wikitext_hash,
         compiled_body_html_hash,
+        compiled_body_styles_hash,
         compiled_top_bar_html_hash,
         compiled_side_bar_html_hash,
         compiled_at,
@@ -257,12 +260,23 @@ async fn filter_and_populate_revision(
     }
 
     // Get text data, if requested
-    let (wikitext, compiled_body_html, compiled_top_bar_html, compiled_side_bar_html) = join!(
+    let (
+        wikitext,
+        compiled_body_html,
+        compiled_body_styles,
+        compiled_top_bar_html,
+        compiled_side_bar_html,
+    ) = join!(
         TextService::get_conditional(ctx, details.wikitext, &wikitext_hash),
         TextService::get_conditional(
             ctx,
             details.compiled_html,
             &compiled_body_html_hash,
+        ),
+        TextService::get_conditional_option(
+            ctx,
+            details.compiled_html,
+            &compiled_body_styles_hash,
         ),
         TextService::get_conditional_option(
             ctx,
@@ -278,6 +292,18 @@ async fn filter_and_populate_revision(
 
     let wikitext = wikitext.or_raise(make_error)?;
     let compiled_body_html = compiled_body_html.or_raise(make_error)?;
+    let compiled_body_styles = compiled_body_styles.or_raise(make_error)?;
+    let compiled_body_styles = if details.compiled_html {
+        Some(
+            compiled_body_styles
+                .map(|styles| serde_json::from_str(&styles))
+                .transpose()
+                .or_raise(make_error)?
+                .unwrap_or_default(),
+        )
+    } else {
+        None
+    };
     let compiled_top_bar_html = compiled_top_bar_html.or_raise(make_error)?;
     let compiled_side_bar_html = compiled_side_bar_html.or_raise(make_error)?;
 
@@ -294,6 +320,7 @@ async fn filter_and_populate_revision(
         changes,
         wikitext,
         compiled_body_html,
+        compiled_body_styles,
         compiled_top_bar_html,
         compiled_side_bar_html,
         compiled_at,

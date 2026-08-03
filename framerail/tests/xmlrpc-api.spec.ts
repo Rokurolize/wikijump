@@ -10,6 +10,18 @@ import {
 
 test.describe.configure({ mode: "serial" })
 
+const fixtureUrl = `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}`
+
+const requiredEnvironmentValue = (name: string): string => {
+  const value = process.env[name]
+  if (!value) throw new Error(`Missing required test environment variable: ${name}`)
+  return value
+}
+
+const wikidotAppName = requiredEnvironmentValue("WIKIDOT_APP_NAME")
+const wikidotApiKey = requiredEnvironmentValue("WIKIDOT_API_KEY")
+const xmlRpcWritePassword = requiredEnvironmentValue("XML_RPC_WRITE_PASSWORD")
+
 const xmlRpcListMethodsRequest = `<?xml version="1.0"?>
 <methodCall>
   <methodName>system.listMethods</methodName>
@@ -586,7 +598,7 @@ function xmlRpcMulticallWithChildCount(count: number): string {
 </methodCall>`
 }
 
-const basicAuth = `Basic ${Buffer.from("test-app:test-key").toString("base64")}`
+const basicAuth = `Basic ${Buffer.from(`${wikidotAppName}:${wikidotApiKey}`).toString("base64")}`
 const legacyBasicAuth = `Basic ${Buffer.from("legacy-app:legacy-key").toString("base64")}`
 
 const xmlRpcHeaders = {
@@ -800,14 +812,17 @@ test("XML-RPC endpoint selects local tags", async ({ request }) => {
   expect(tagsBody).toContain("<string>_cc</string>")
   expect(tagsBody).toContain("<string>tale</string>")
 
-  const deepwellRequest = await request.get(
-    "http://127.0.0.1:42747/last-page-tags-request"
-  )
+  const deepwellRequest = await request.get(`${fixtureUrl}/last-page-tags-request`)
   expect(deepwellRequest.status()).toBe(200)
   expect(await deepwellRequest.json()).toEqual({
-    categories: ["_default"],
-    pages: ["the-great-hippo"],
-    site: "scp-wiki"
+    headers: {
+      sessionToken: "fixture-session-token"
+    },
+    params: {
+      categories: ["_default"],
+      pages: ["the-great-hippo"],
+      site: "scp-wiki"
+    }
   })
 })
 
@@ -827,9 +842,7 @@ test("XML-RPC endpoint selects pages with documented filters and ordering", asyn
   expect(body.indexOf("scp-173")).toBeLessThan(body.indexOf("scp-anthology-2024"))
   expect(body.indexOf("scp-anthology-2024")).toBeLessThan(body.indexOf("scp-8566"))
 
-  const deepwellRequest = await request.get(
-    "http://127.0.0.1:42747/last-page-select-request"
-  )
+  const deepwellRequest = await request.get(`${fixtureUrl}/last-page-select-request`)
   expect(deepwellRequest.status()).toBe(200)
   expect(await deepwellRequest.json()).toEqual({
     categories: ["_default"],
@@ -967,9 +980,7 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
     "Argument site invalid: site does not exist"
   )
 
-  const deepwellRequests = await request.get(
-    "http://127.0.0.1:42747/last-page-read-requests"
-  )
+  const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
   expect(deepwellRequests.status()).toBe(200)
   expect(await deepwellRequests.json()).toEqual({
     forumPostPageSummary: [
@@ -1109,9 +1120,7 @@ test("XML-RPC endpoint enforces page view ACLs for page reads", async ({ request
   expect(oneBody).toContain("XML-RPC user is not allowed to view this page")
   expect(oneBody).not.toContain("Private page body marker")
 
-  const deepwellRequests = await request.get(
-    "http://127.0.0.1:42747/last-page-read-requests"
-  )
+  const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
   expect(deepwellRequests.status()).toBe(200)
   const readRequests = await deepwellRequests.json()
   expect(
@@ -1130,6 +1139,29 @@ test("XML-RPC endpoint enforces page view ACLs for page reads", async ({ request
       (entry: { page: string }) => entry.page === "private-page"
     )
   ).toBe(false)
+})
+
+test("XML-RPC page HTML omits generated CSS that browser views place in head", async ({
+  request
+}) => {
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest("theme:yossistyle"),
+    headers: xmlRpcHeaders
+  })
+  expect(response.status()).toBe(200)
+
+  const body = await response.text()
+  expect(body).toContain("XML-RPC theme body marker.")
+  const htmlMember = /<name>html<\/name><value><string>(.*?)<\/string><\/value>/s.exec(
+    body
+  )?.[1]
+  expect(htmlMember).toBeDefined()
+  expect(htmlMember).toContain("XML-RPC theme body marker.")
+  expect(htmlMember).not.toContain("#header h2 span")
+  expect(htmlMember).not.toContain("&lt;style")
+
+  const reset = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(reset.status()).toBe(200)
 })
 
 test("XML-RPC endpoint returns page comment summaries and forum posts", async ({
@@ -1244,6 +1276,9 @@ test("XML-RPC endpoint returns page comment summaries and forum posts", async ({
 test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename", async ({
   request
 }) => {
+  const resetWriteRequests = await request.get(`${fixtureUrl}/last-page-write-requests`)
+  expect(resetWriteRequests.status()).toBe(200)
+
   const slug = `fixture-xmlrpc-save-${randomUUID()}`
   const renamedSlug = `${slug}-renamed`
 
@@ -1331,9 +1366,7 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
   )
   expect(renameBody).toContain("<value><string>xmlrpc-save-renamed</string></value>")
 
-  const writeRequests = await request.get(
-    "http://127.0.0.1:42747/last-page-write-requests"
-  )
+  const writeRequests = await request.get(`${fixtureUrl}/last-page-write-requests`)
   expect(writeRequests.status()).toBe(200)
   const writeLog = await writeRequests.json()
   expect(writeLog.login).toHaveLength(3)
@@ -1474,7 +1507,7 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   )
   expect(updatedOneBody).not.toContain(initialContent)
 
-  const fileLogResponse = await request.get("http://127.0.0.1:42747/last-file-requests")
+  const fileLogResponse = await request.get(`${fixtureUrl}/last-file-requests`)
   expect(fileLogResponse.status()).toBe(200)
   const fileLog = await fileLogResponse.json()
   expect(fileLog.blobUpload).toHaveLength(2)
@@ -1565,9 +1598,7 @@ test("XML-RPC endpoint accepts tags.select category filters at the cap", async (
 test("XML-RPC endpoint returns the authenticated XML-RPC principal", async ({
   request
 }) => {
-  const resetWriteRequests = await request.get(
-    "http://127.0.0.1:42747/last-page-write-requests"
-  )
+  const resetWriteRequests = await request.get(`${fixtureUrl}/last-page-write-requests`)
   expect(resetWriteRequests.status()).toBe(200)
 
   for (const data of [
@@ -1589,13 +1620,13 @@ test("XML-RPC endpoint returns the authenticated XML-RPC principal", async ({
     expect(body).toContain("<name>name</name><value><string>rokurokubi</string></value>")
     expect(body).toContain("<name>title</name><value><string>Rokurokubi</string></value>")
     expect(body).toContain("<name>id</name><value><int>123</int></value>")
-    expect(body).not.toContain("test-key")
-    expect(body).not.toContain("wikijumpadmin1")
+    expect(body).not.toContain(wikidotApiKey)
+    expect(body).not.toContain(xmlRpcWritePassword)
     expect(body).not.toContain("fixture-session-token")
   }
 
   const writeRequests = await request
-    .get("http://127.0.0.1:42747/last-page-write-requests")
+    .get(`${fixtureUrl}/last-page-write-requests`)
     .then((response) => response.json())
   expect(writeRequests.login).toHaveLength(0)
   expect(writeRequests.sessionGet).toHaveLength(0)
@@ -1629,7 +1660,7 @@ test("XML-RPC endpoint accepts Basic auth scheme case-insensitively", async ({
   const response = await request.post("/xml-rpc-api.php", {
     data: xmlRpcListMethodsRequest,
     headers: {
-      authorization: `basic ${Buffer.from("test-app:test-key").toString("base64")}`,
+      authorization: basicAuth.replace(/^Basic/u, "basic"),
       "content-type": "text/xml"
     }
   })
@@ -1660,7 +1691,7 @@ test("XML-RPC endpoint returns XML-RPC faults for unauthenticated requests", asy
   expect(body).toContain("<methodResponse>")
   expect(body).toContain("<fault>")
   expect(body).toContain("<name>faultCode</name><value><int>401</int></value>")
-  expect(body).not.toContain("test-key")
+  expect(body).not.toContain(wikidotApiKey)
 })
 
 test("XML-RPC endpoint returns XML-RPC faults for invalid Basic auth headers", async ({

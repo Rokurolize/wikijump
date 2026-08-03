@@ -9,15 +9,27 @@ set -e
 # This will recompile and restart the deepwell daemon on any source changes
 # The commandline being run for the daemon is "deepwell /etc/deepwell.toml".
 
-RUN_COMMAND="run --locked -- /etc/deepwell.toml"
-if [ "${DEEPWELL_BUILD_PROFILE:-debug}" = "release" ]; then
-    RUN_COMMAND="run --locked --release -- /etc/deepwell.toml"
-fi
+case "${DEEPWELL_BUILD_PROFILE:-debug}" in
+    debug)
+        RUN_COMMAND="run --locked -- /etc/deepwell.toml"
+        ;;
+    debugging)
+        RUN_COMMAND="run --locked --profile debugging -- /etc/deepwell.toml"
+        ;;
+    release)
+        RUN_COMMAND="run --locked --release -- /etc/deepwell.toml"
+        ;;
+    *)
+        echo "Unsupported DEEPWELL_BUILD_PROFILE: ${DEEPWELL_BUILD_PROFILE}" >&2
+        exit 64
+        ;;
+esac
 
 exec /usr/bin/env RUST_BACKTRACE=1 \
     /usr/local/cargo/bin/cargo watch \
         --why \
         -w /src/deepwell \
+        -w /src/.cargo/config.toml \
         -w /opt/locales \
         -w /etc/deepwell.toml \
         -x "$RUN_COMMAND"

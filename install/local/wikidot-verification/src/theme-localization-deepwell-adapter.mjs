@@ -4,9 +4,29 @@ import {ALLOWED_SITE_SLUG, isCurrentRunOwnedSlug, isRecoverableRunOwnedSlug} fro
 
 const DEFAULT_RPC_TIMEOUT_MS = 30_000;
 const IP_ADDRESS = "127.0.0.1";
+const MAX_REPORTED_PARSER_ERRORS = 12;
+const MAX_PARSER_ERROR_FIELD_LENGTH = 80;
+const MATERIALIZED_COMPONENT_TITLES = new Map([
+  ["component:image-block-base", "Image Block Base"],
+  ["component:image-block", "Image Block"],
+]);
 
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+function parserErrorSummary(errors) {
+  const diagnostic = errors.slice(0, MAX_REPORTED_PARSER_ERRORS).map((error) => {
+    const output = {};
+    for (const field of ["token", "rule", "kind"]) {
+      if (["string", "number", "boolean"].includes(typeof error?.[field])) {
+        output[field] = String(error[field]).slice(0, MAX_PARSER_ERROR_FIELD_LENGTH);
+      }
+    }
+    if (Array.isArray(error?.span) && error.span.length === 2 && error.span.every(Number.isSafeInteger)) output.span = error.span;
+    return output;
+  });
+  return JSON.stringify({reported: diagnostic.length, omitted: Math.max(0, errors.length - diagnostic.length), errors: diagnostic});
 }
 
 export function validateLocalDeepwellRpcUrl(value) {
@@ -18,15 +38,20 @@ export function validateLocalDeepwellRpcUrl(value) {
 }
 
 function validateResource(resource, {allowLegacy = false} = {}) {
-  const validSlug = allowLegacy ? isRecoverableRunOwnedSlug(resource?.slug) : isCurrentRunOwnedSlug(resource?.slug);
+  const kind = resource?.kind ?? "theme_page";
+  const dependency = kind === "component_dependency" && MATERIALIZED_COMPONENT_TITLES.has(resource?.slug);
+  const validSlug = dependency || (allowLegacy ? isRecoverableRunOwnedSlug(resource?.slug) : isCurrentRunOwnedSlug(resource?.slug));
   if (resource?.target !== "wikijump" || !validSlug) {
-    throw new Error("Deepwell adapter accepts only run-owned Wikijump theme pages");
+    throw new Error("Deepwell adapter accepts only validated Wikijump theme execution pages");
   }
   const url = new URL(resource.url);
   if (url.protocol !== "https:" || url.hostname !== `${ALLOWED_SITE_SLUG}.wikijump.localhost` || !new Set(["", "18443"]).has(url.port) || url.pathname !== `/${resource.slug}` || url.search || url.hash) {
     throw new Error("Deepwell adapter resource URL is outside the hard allowlist");
   }
-  const expectedTags = resource.slug.endsWith("-yossistyle") ? ["テーマ"] : [];
+  if (dependency && (resource.title !== MATERIALIZED_COMPONENT_TITLES.get(resource.slug) || resource.resource_id !== `dependency:${resource.slug}:wikijump` || !/^[0-9a-f]{32}$/u.test(resource.ownership_token))) {
+    throw new Error("Deepwell adapter dependency resource is outside the materialized contract");
+  }
+  const expectedTags = dependency ? [`codex-l10n-owner-${resource.ownership_token}`, "component"] : resource.slug.endsWith("-yossistyle") ? ["テーマ"] : resource.slug.endsWith("-ashes-to-ashes") || resource.slug.endsWith("-basalt") ? ["theme"] : [];
   if (!allowLegacy && JSON.stringify(resource.tags ?? []) !== JSON.stringify(expectedTags)) throw new Error("Deepwell adapter resource tags are outside the run-owned contract");
 }
 
@@ -69,10 +94,10 @@ export class DeepwellJsonRpcClient {
 }
 
 export class DeepwellThemePageAdapter {
-  constructor({rpcClient, rpcUrl, timeoutMs, adminEmail, adminPassword, actorUserId = -1, siteSlug = ALLOWED_SITE_SLUG} = {}) {
+  constructor({rpcClient, rpcUrl, timeoutMs, adminEmail, adminPassword, actorUserId = null, siteSlug = ALLOWED_SITE_SLUG} = {}) {
     if (siteSlug !== ALLOWED_SITE_SLUG) throw new Error("Deepwell adapter site is outside the hard allowlist");
     if (typeof adminEmail !== "string" || !adminEmail || typeof adminPassword !== "string" || !adminPassword) throw new Error("Deepwell adapter credentials are required");
-    if (!Number.isSafeInteger(actorUserId)) throw new Error("Deepwell adapter actor user id must be an integer");
+    if (actorUserId !== null && !Number.isSafeInteger(actorUserId)) throw new Error("Deepwell adapter actor user id must be an integer");
     this.rpc = rpcClient ?? new DeepwellJsonRpcClient({rpcUrl, timeoutMs});
     this.siteSlug = siteSlug;
     this.adminEmail = adminEmail;
@@ -89,8 +114,12 @@ export class DeepwellThemePageAdapter {
     const login = await this.rpc.call("login", {name_or_email: this.adminEmail, password: this.adminPassword, ip_address: IP_ADDRESS, user_agent: "wikijump-theme-localization-e2e/0.1"});
     if (login?.needs_mfa !== false) throw new Error("Deepwell adapter does not accept an incomplete MFA login");
     if (typeof login?.session_token !== "string" || !login.session_token) throw new Error("Deepwell login did not return a session token");
+    const session = await this.rpc.call("session_get", [login.session_token]);
+    if (!Number.isSafeInteger(session?.user_id)) throw new Error("Deepwell session lookup did not return an integer user id");
+    if (this.actorUserId !== null && this.actorUserId !== session.user_id) throw new Error("Deepwell adapter actor user id does not match authenticated session user");
     this.siteId = site.site_id;
     this.sessionToken = login.session_token;
+    this.actorUserId = session.user_id;
     this.adminPassword = null;
     return this;
   }
@@ -126,7 +155,7 @@ export class DeepwellThemePageAdapter {
       ip_address: IP_ADDRESS,
       tags: resource.tags ?? [],
     }, this.context(resource));
-    if (result?.parser_errors?.length) throw new Error(`Deepwell page_create reported ${result.parser_errors.length} parser errors`);
+    if (result?.parser_errors?.length) throw new Error(`Deepwell page_create reported ${result.parser_errors.length} parser errors: ${parserErrorSummary(result.parser_errors)}`);
     const actual = await this.inspect(resource);
     if (actual === null || actual.source_sha256 !== resource.source_sha256 || actual.title !== resource.title || JSON.stringify(actual.tags) !== JSON.stringify(resource.tags ?? [])) throw new Error("Deepwell page did not round-trip after create");
     return actual.identity;
@@ -136,12 +165,12 @@ export class DeepwellThemePageAdapter {
     validateResource(resource, {allowLegacy: true});
     const actual = await this.inspect(resource);
     if (actual === null) return;
-    if (actual.source_sha256 !== expected?.source_sha256 || actual.title !== expected?.title || (identity !== undefined && actual.identity !== identity)) {
+    if (actual.source_sha256 !== expected?.source_sha256 || actual.title !== expected?.title || JSON.stringify(actual.tags) !== JSON.stringify(expected?.tags) || (identity !== undefined && actual.identity !== identity)) {
       throw new Error("Deepwell delete refused a page whose identity or content changed");
     }
     await this.rpc.call("page_delete", {
       site_id: this.siteId,
-      page: resource.slug,
+      page: actual.identity,
       last_revision_id: actual.revision_id,
       revision_comments: "run-owned theme localization E2E cleanup",
       user_id: this.actorUserId,

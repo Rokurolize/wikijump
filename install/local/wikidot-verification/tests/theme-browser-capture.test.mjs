@@ -12,6 +12,7 @@ import {
   collectComputedStyles,
   collectThemePerformanceAttribution,
   evaluateStrictThemeVerdict,
+  installLocalFilePortRoute,
   lcpObservationDeadlineMs,
   validateThemeCaptureTarget,
   writeThemeViewportArtifacts,
@@ -74,6 +75,27 @@ test("capture target validation only accepts the exact run-owned sandbox URL", (
   assert.throws(() => validateThemeCaptureTarget({tier, target: {id: "wikijump", url: `https://scp-wiki.wikijump.localhost/${tier.run_owned_slug}`}}), /hard allowlist/);
   assert.throws(() => validateThemeCaptureTarget({tier, target: {...tier.targets[0], url: `${tier.targets[0].url}?capture=1`}}), /does not identify/);
   assert.throws(() => validateThemeCaptureTarget({tier, target: {...tier.targets[0], url: "http://scpaiueouiuiuiui.wikidot.com/theme:other"}}), /does not identify/);
+});
+
+test("local file routing preserves the candidate canary port without widening hosts", async () => {
+  let pattern;
+  let handler;
+  const context = {async route(value, callback) { pattern = value; handler = callback; }};
+  const target = {id: "wikijump", url: "https://scpaiueouiuiuiui.wikijump.localhost:18443/codex-l10n:test-yossistyle"};
+  assert.equal(await installLocalFilePortRoute(context, target), true);
+  assert.equal(pattern, "https://*.wjfiles.localhost/**");
+
+  let fetchOptions;
+  let fulfillment;
+  const response = {status: 200};
+  await handler({request() { return {url() { return "https://scp-wiki.wjfiles.localhost/local--files/theme:ashes-to-ashes/fire.webp"; }}; }, async fetch(options) { fetchOptions = options; return response; }, async fulfill(options) { fulfillment = options; }});
+  assert.equal(fetchOptions.url, "https://scp-wiki.wjfiles.localhost:18443/local--files/theme:ashes-to-ashes/fire.webp");
+  assert.deepEqual(fulfillment, {response});
+
+  let continuation = "unset";
+  await handler({request() { return {url() { return "https://example.com/local--files/theme/fire.webp"; }}; }, async continue(options) { continuation = options; }});
+  assert.equal(continuation, undefined);
+  assert.equal(await installLocalFilePortRoute(context, {id: "wikidot", url: "http://scpaiueouiuiuiui.wikidot.com/page"}), false);
 });
 
 test("strict verdict applies every performance, browser, syntax, and interaction gate", () => {
@@ -220,12 +242,17 @@ test("tier orchestration opens one cold context per target and viewport and is f
   const closedContexts = [];
   let closedSession = false;
   const openCalls = [];
+  const proxyCalls = [];
   const result = await captureThemeTierBrowserEvidence({
     tier,
     outputDir,
     source: "日本語のテーマ本文",
     chromium: {fixture: true},
     storageStates: {wikidot: "/tmp/wikidot-state.json"},
+    async startEgressProxyImpl(options) {
+      proxyCalls.push(options);
+      return {url: "http://127.0.0.1:27777", async close() {}};
+    },
     async openBrowserImpl(options) {
       openCalls.push(options);
       return {
@@ -233,7 +260,7 @@ test("tier orchestration opens one cold context per target and viewport and is f
           async newContext(contextOption) {
             const id = contextOptions.length;
             contextOptions.push(contextOption);
-            return {id, async close() { closedContexts.push(id); }};
+            return {id, async route() {}, async close() { closedContexts.push(id); }};
           },
         },
         async close() { closedSession = true; },
@@ -247,8 +274,10 @@ test("tier orchestration opens one cold context per target and viewport and is f
 
   assert.equal(openCalls.length, 1);
   assert.equal(openCalls[0].createInitialContexts, false);
+  assert.deepEqual(proxyCalls, [{allowedLocalOrigins: ["http://scpaiueouiuiuiui.wikidot.com", "https://scpaiueouiuiuiui.wikijump.localhost:18443"]}]);
   assert.equal(contextOptions.length, 4);
   assert.deepEqual(contextOptions.map((options) => options.viewport), [{width: 1440, height: 1000}, {width: 390, height: 844}, {width: 1440, height: 1000}, {width: 390, height: 844}]);
+  assert.deepEqual(contextOptions.map((options) => options.proxy), Array.from({length: 4}, () => ({server: "http://127.0.0.1:27777", bypass: "<-loopback>"})));
   assert.equal(contextOptions[0].storageState, "/tmp/wikidot-state.json");
   assert.equal("storageState" in contextOptions[2], false);
   assert.deepEqual(closedContexts, [0, 1, 2, 3]);
@@ -267,7 +296,7 @@ test("a supplied run-owned browser session is not reopened or closed by tier cap
   let contexts = 0;
   let closes = 0;
   const browserSession = {
-    browser: {async newContext() { contexts += 1; return {async close() {}}; }},
+    browser: {async newContext() { contexts += 1; return {async route() {}, async close() {}}; }},
     async close() { closes += 1; },
   };
   await captureThemeTierBrowserEvidence({

@@ -4,15 +4,31 @@
   import { resolve } from "$app/paths"
   import { goto, invalidateAll } from "$app/navigation"
   import { Layout } from "$lib/types"
-  import { errorPopupState } from "$lib/stores.svelte"
-  import { getPageLayoutContext } from "$lib/page-layout-context"
+  import { errorPopupState } from "$lib/layout/stores.svelte"
+  import { getPageLayoutContext } from "$lib/layout/page-layout-context"
   import { superForm } from "sveltekit-superforms"
   import { untrack } from "svelte"
 
-  import type { PageData } from "./$types"
-  import type { PageDeletedGet } from "$lib/server/deepwell/page"
+  import DataFormEditor from "./[slug]/[...extra]/DataFormEditor.svelte"
 
-  let errorData: PageData | null = $derived(page.error as unknown as PageData)
+  import type { DataFormEditor as DataFormEditorView } from "$lib/server/deepwell/views"
+  import type { PageDeletedGet } from "$lib/server/deepwell/page"
+  import type { PageTemplateSummary } from "$lib/server/deepwell/views"
+  import type { buildPageErrorForms } from "$lib/server/load/page/page-forms"
+
+  type PageErrorData = NonNullable<typeof page.error> & {
+    view: "missing" | "permissions"
+    forms: Awaited<ReturnType<typeof buildPageErrorForms>>
+    page_templates?: PageTemplateSummary[]
+    selected_template_page_id?: number | null
+    data_form?: DataFormEditorView | null
+    site: {
+      site_id: number
+      default_page: string
+    }
+  }
+
+  let errorData: PageErrorData = $derived(page.error as PageErrorData)
 
   const pageLayoutContext = getPageLayoutContext()
 
@@ -54,6 +70,46 @@
       }
     }
   )
+
+  let activeTemplatePageId = $state<number | null>(
+    untrack(() => errorData.selected_template_page_id ?? null)
+  )
+  let selectedTemplatePageId = $state<number | null>(
+    untrack(() => errorData.selected_template_page_id ?? null)
+  )
+  let activeTemplateSource = $state<string>(untrack(() => $editForm.wikitext))
+  const missingPageSlug = $derived(
+    page.params.slug ?? page.error?.site.default_page ?? ""
+  )
+  const missingPageName = $derived(
+    missingPageSlug.includes(":")
+      ? missingPageSlug.slice(missingPageSlug.indexOf(":") + 1)
+      : missingPageSlug
+  )
+  const missingPageTitle = $derived(
+    missingPageName.charAt(0).toUpperCase() + missingPageName.slice(1)
+  )
+
+  function handlePageTemplateChange() {
+    if (
+      $editForm.wikitext !== activeTemplateSource &&
+      // Wikidot uses the browser's native confirmation before replacing edited source.
+      // eslint-disable-next-line no-alert
+      !globalThis.confirm(
+        "It seems you have already changed the page.\nChanging the initial template now will reset the edited page.\nDo you want to change the initial content?"
+      )
+    ) {
+      selectedTemplatePageId = activeTemplatePageId
+      return
+    }
+
+    const template = errorData.page_templates?.find(
+      (candidate) => candidate.page_id === selectedTemplatePageId
+    )
+    activeTemplatePageId = selectedTemplatePageId
+    activeTemplateSource = template?.wikitext ?? ""
+    $editForm.wikitext = activeTemplateSource
+  }
 
   async function getDeleted() {
     const res = await fetch(`?/deletedGet`, {
@@ -107,94 +163,147 @@
   )
 </script>
 
-<h1>UNTRANSLATED:Svelte Error</h1>
+{#if errorData.view !== "missing"}
+  <h1>UNTRANSLATED:Svelte Error</h1>
 
-<p><textarea class="debug">{JSON.stringify(page, null, 2)}</textarea></p>
+  <p><textarea class="debug">{JSON.stringify(page, null, 2)}</textarea></p>
+{/if}
 
 {#if errorData.view === "missing"}
-  UNTRANSLATED:Page not found
-
   {#if errorData.options?.edit}
-    {#if pageLayoutContext.current === Layout.WIKIDOT}
-      <h1 class="page-create-header">
-        {errorData.internationalization?.["wiki-page-create"]}
-      </h1>
+    {#if errorData.data_form}
+      <div id="action-area">
+        {#key `create:${missingPageSlug}`}
+          <DataFormEditor
+            creating={true}
+            definition={errorData.data_form.definition}
+            editForm={errorData.forms.pageEditForm}
+            initialParent={errorData.options.parent ?? ""}
+            initialSource=""
+            initialTags={errorData.options.tags ?? ""}
+            initialTitle={missingPageTitle}
+            initialValues={errorData.data_form.values}
+            siteId={errorData.site.site_id}
+            slug={missingPageSlug}
+          />
+        {/key}
+      </div>
     {:else}
-      <h2 class="page-create-header">
-        {errorData.internationalization?.["wiki-page-create"]}
-      </h2>
-    {/if}
-
-    <form id="editor" class="editor" action="?/edit" method="POST" use:editEnhance>
-      <input
-        name="title"
-        class="editor-title"
-        placeholder={errorData.internationalization?.title}
-        type="text"
-        bind:value={$editForm.title}
-      />
-      <input
-        name="altTitle"
-        class="editor-alt-title"
-        placeholder={errorData.internationalization?.["alt-title"]}
-        type="text"
-        bind:value={$editForm.altTitle}
-      />
-      <textarea name="wikitext" class="editor-wikitext" bind:value={$editForm.wikitext}
-      ></textarea>
-      <input
-        name="tags"
-        class="editor-tags"
-        placeholder={errorData.internationalization?.tags}
-        type="text"
-        bind:value={$editForm.tags}
-      />
-      <select name="layout" class="editor-layout" bind:value={$editForm.layout}>
-        <option value={null}>
-          {errorData.internationalization?.["wiki-page-layout.default"]}
-        </option>
-        {#each Object.values(Layout) as layoutOption (layoutOption.toString())}
-          <option value={layoutOption}>
-            {errorData.internationalization?.[`wiki-page-layout.${layoutOption}`]}
-          </option>
-        {/each}
-      </select>
-      <textarea
-        name="comments"
-        class="editor-comments"
-        placeholder={errorData.internationalization?.["wiki-page-revision-comments"]}
-        bind:value={$editForm.comments}></textarea>
       {#if pageLayoutContext.current === Layout.WIKIDOT}
-        <div class="buttons">
-          <input
-            class="btn btn-danger"
-            onclick={cancelCreate}
-            type="button"
-            value={errorData.internationalization?.cancel}
-          />
-          <input
-            class="btn btn-primary"
-            type="submit"
-            value={errorData.internationalization?.save}
-          />
-        </div>
+        <h1 class="page-create-header">
+          {errorData.internationalization?.["wiki-page-create"]}
+        </h1>
       {:else}
-        <div class="action-row editor-actions">
-          <button
-            class="action-button editor-button button-cancel clickable"
-            onclick={cancelCreate}
-            type="button"
-          >
-            {errorData.internationalization?.cancel}
-          </button>
-          <button class="action-button editor-button button-save clickable" type="submit">
-            {errorData.internationalization?.save}
-          </button>
-        </div>
+        <h2 class="page-create-header">
+          {errorData.internationalization?.["wiki-page-create"]}
+        </h2>
       {/if}
-    </form>
+
+      <form id="editor" class="editor" action="?/edit" method="POST" use:editEnhance>
+        {#if errorData.page_templates?.length}
+          <div class="page-template-selector">
+            <label for="page-templates">Initial template:</label>
+            <select
+              id="page-templates"
+              onchange={handlePageTemplateChange}
+              bind:value={selectedTemplatePageId}
+            >
+              <option value={null}>no template</option>
+              {#each errorData.page_templates as template (template.page_id)}
+                <option value={template.page_id}>{template.title}</option>
+              {/each}
+            </select>
+          </div>
+        {/if}
+        <input
+          name="title"
+          class="editor-title"
+          placeholder={errorData.internationalization?.title}
+          type="text"
+          bind:value={$editForm.title}
+        />
+        <input
+          name="altTitle"
+          class="editor-alt-title"
+          placeholder={errorData.internationalization?.["alt-title"]}
+          type="text"
+          bind:value={$editForm.altTitle}
+        />
+        <textarea name="wikitext" class="editor-wikitext" bind:value={$editForm.wikitext}
+        ></textarea>
+        <input
+          name="tags"
+          class="editor-tags"
+          placeholder={errorData.internationalization?.tags}
+          type="text"
+          bind:value={$editForm.tags}
+        />
+        <select name="layout" class="editor-layout" bind:value={$editForm.layout}>
+          <option value={null}>
+            {errorData.internationalization?.["wiki-page-layout.default"]}
+          </option>
+          {#each Object.values(Layout) as layoutOption (layoutOption.toString())}
+            <option value={layoutOption}>
+              {errorData.internationalization?.[`wiki-page-layout.${layoutOption}`]}
+            </option>
+          {/each}
+        </select>
+        <textarea
+          name="comments"
+          class="editor-comments"
+          placeholder={errorData.internationalization?.["wiki-page-revision-comments"]}
+          bind:value={$editForm.comments}></textarea>
+        {#if pageLayoutContext.current === Layout.WIKIDOT}
+          <div class="buttons">
+            <input
+              class="btn btn-danger"
+              onclick={cancelCreate}
+              type="button"
+              value={errorData.internationalization?.cancel}
+            />
+            <input
+              class="btn btn-primary"
+              type="submit"
+              value={errorData.internationalization?.save}
+            />
+          </div>
+        {:else}
+          <div class="action-row editor-actions">
+            <button
+              class="action-button editor-button button-cancel clickable"
+              onclick={cancelCreate}
+              type="button"
+            >
+              {errorData.internationalization?.cancel}
+            </button>
+            <button
+              class="action-button editor-button button-save clickable"
+              type="submit"
+            >
+              {errorData.internationalization?.save}
+            </button>
+          </div>
+        {/if}
+      </form>
+    {/if}
   {:else}
     <div id="page-content">
+      <p id="404-message">
+        The page <em>{missingPageSlug}</em> you want to access does not exist.
+      </p>
+      <ul id="create-it-now-link">
+        <li>
+          <a
+            href={resolve(`/${missingPageSlug}/edit/true`, {})}
+            onclick={(event) => {
+              event.preventDefault()
+              goto(resolve(`/${missingPageSlug}/edit/true`, {}), {
+                noScroll: true
+              })
+            }}>Create page</a
+          >
+        </li>
+      </ul>
       {@html errorData.compiled_body_html}
     </div>
 
