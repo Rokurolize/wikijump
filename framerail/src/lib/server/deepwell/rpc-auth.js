@@ -1,4 +1,4 @@
-export function deepwellRpcAuthorization(env = process.env) {
+export const deepwellRpcAuthorization = (env = process.env) => {
   const token = env.DEEPWELL_RPC_TOKEN
   if (!/^[0-9a-f]{64}$/u.test(token ?? "")) {
     throw new Error(
