@@ -165,6 +165,7 @@ export function composeDocument({
   config,
   migrations,
   locales,
+  seeder,
   deepwellPort,
   framerailPort,
   credentials,
@@ -234,10 +235,11 @@ ${labelLines}
     # launching Deepwell. This controller replaces that entrypoint with the
     # candidate binary, so preserve that ordering explicitly. PostgreSQL can
     # become network-healthy while its first-run init scripts are still active.
-    command: ["/bin/sh", "-ec", "until /usr/local/cargo/bin/sqlx migrate run --source /opt/marker/migrations; do sleep 1; done; exec /opt/marker/deepwell /opt/marker/config.toml"]
+    command: ["/bin/sh", "-ec", "until /usr/local/bin/sqlx migrate run --source /opt/marker/migrations; do sleep 1; done; exec /opt/marker/deepwell /opt/marker/config.toml"]
     environment:
       DATABASE_URL: ${JSON.stringify(databaseUrl.href)}
       REDIS_URL: redis://cache
+      DEEPWELL_RPC_TOKEN: ${JSON.stringify(credentials.rpcToken)}
       S3_FILES_BUCKET: deepwell-files
       S3_TEXT_BLOCKS_BUCKET: deepwell-text-blocks
       S3_REGION_NAME: local
@@ -264,6 +266,10 @@ ${labelLines}
         source: ${JSON.stringify(locales)}
         target: /opt/locales
         read_only: true
+      - type: bind
+        source: ${JSON.stringify(seeder)}
+        target: /seeder
+        read_only: true
     labels:
 ${labelLines}
       com.rokurolize.wikijump.role: deepwell
@@ -284,6 +290,7 @@ ${labelLines}
     pull_policy: never
     environment:
       DEEPWELL_HOST: deepwell
+      DEEPWELL_RPC_TOKEN: ${JSON.stringify(credentials.rpcToken)}
       FRAMERAIL_MODE: built
       FRAMERAIL_ENV: local
       REDIS_URL: redis://cache
@@ -390,16 +397,29 @@ export function selectFtmlPinRewrite(headFtml, baselineFtml, candidateFtml) {
   );
 }
 
-async function seedFixtures({ rpcUrl, fixtures, expectedFtml, administrator }) {
-  const site = await rpc(rpcUrl, "site_get", { site: fixtures.site_slug });
+async function seedFixtures({
+  rpcUrl,
+  rpcToken,
+  fixtures,
+  expectedFtml,
+  administrator,
+}) {
+  const authenticatedRpc = (method, params = {}, headers = {}) =>
+    rpc(
+      rpcUrl,
+      method,
+      params,
+      { authorization: `Bearer ${rpcToken}`, ...headers },
+    );
+  const site = await authenticatedRpc("site_get", { site: fixtures.site_slug });
   assert.ok(site?.site_id, `seeded ${fixtures.site_slug} site is missing`);
-  const login = await rpc(rpcUrl, "login", {
+  const login = await authenticatedRpc("login", {
     name_or_email: administrator.email,
     password: administrator.password,
     ip_address: "127.0.0.1",
     user_agent: OWNER,
   });
-  const admin = await rpc(rpcUrl, "user_get", { user: "administrator" });
+  const admin = await authenticatedRpc("user_get", { user: "administrator" });
   assert.ok(admin?.user_id, "seeded administrator user is missing");
   const context = {
     "X-Deepwell-Session-Token": login.session_token,
@@ -407,14 +427,13 @@ async function seedFixtures({ rpcUrl, fixtures, expectedFtml, administrator }) {
   };
   const results = [];
   for (const fixture of fixtures.fixtures) {
-    let page = await rpc(rpcUrl, "page_get", {
+    let page = await authenticatedRpc("page_get", {
       site_id: site.site_id,
       page: fixture.slug,
       details: { wikitext: true, compiled: true },
     });
     if (!page) {
-      await rpc(
-        rpcUrl,
+      await authenticatedRpc(
         "page_create",
         {
           site_id: site.site_id,
@@ -429,15 +448,14 @@ async function seedFixtures({ rpcUrl, fixtures, expectedFtml, administrator }) {
         },
         pageMutationContext(context, fixture.slug),
       );
-      page = await rpc(rpcUrl, "page_get", {
+      page = await authenticatedRpc("page_get", {
         site_id: site.site_id,
         page: fixture.slug,
         details: { wikitext: true, compiled: true },
       });
     }
     assert.ok(page, `fixture ${fixture.fixture_id} was not created`);
-    await rpc(
-      rpcUrl,
+    await authenticatedRpc(
       "page_rerender",
       {
         site_id: site.site_id,
@@ -446,7 +464,7 @@ async function seedFixtures({ rpcUrl, fixtures, expectedFtml, administrator }) {
       },
       pageMutationContext(context, fixture.slug),
     );
-    page = await rpc(rpcUrl, "page_get", {
+    page = await authenticatedRpc("page_get", {
       site_id: site.site_id,
       page: fixture.slug,
       details: { wikitext: true, compiled: true },
@@ -614,6 +632,7 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
     databasePassword: crypto.randomBytes(32).toString("hex"),
     filesAccessKey: `marker${crypto.randomBytes(12).toString("hex")}`,
     filesSecretKey: crypto.randomBytes(32).toString("hex"),
+    rpcToken: crypto.randomBytes(32).toString("hex"),
   });
   let project = null;
   let composePath = null;
@@ -728,7 +747,8 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
     );
     await fs.writeFile(
       config,
-      localConfig.replace('pid-file = "/run/deepwell.pid"', 'pid-file = ""'),
+      localConfig
+        .replace('pid-file = "/run/deepwell.pid"', 'pid-file = ""'),
       { mode: 0o644 },
     );
     const runStage = async (stage, worktree, manifest, ports) => {
@@ -746,6 +766,7 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
           config,
           migrations: path.join(worktree, "deepwell", "migrations"),
           locales: path.join(worktree, "locales"),
+          seeder: path.join(worktree, "deepwell", "seeder"),
           deepwellPort: ports.deepwell,
           framerailPort: ports.framerail,
           credentials,
@@ -786,6 +807,7 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
         const administrator = await readSeedAdministrator(worktree);
         seeded = await seedFixtures({
           rpcUrl: `http://127.0.0.1:${ports.deepwell}/jsonrpc`,
+          rpcToken: credentials.rpcToken,
           fixtures,
           expectedFtml: stageFtml,
           administrator,

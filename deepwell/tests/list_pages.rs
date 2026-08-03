@@ -6314,6 +6314,31 @@ async fn listpages_respects_corpus_literal_context_ownership() {
         "inline monospace must own the module-shaped text:\n{monospace}",
     );
 
+    let preview_html_block = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "HTML-owned ListPages",
+        concat!(
+            "[[html]]\n",
+            "[[module ListPages category=\"_default\" limit=\"2\"]]\n",
+            "%%name%%\n",
+            "[[/module]]\n",
+            "[[/html]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an HTML-owned ListPages example should render as preview text")
+    .html_output
+    .body;
+    assert!(
+        preview_html_block.contains("[[html]]")
+            && preview_html_block.contains("[[module ListPages")
+            && !preview_html_block.contains("list-pages-box")
+            && !preview_html_block.contains("TODO: module ListPages"),
+        "page preview keeps HTML blocks literal, including nested ListPages syntax:\n{preview_html_block}",
+    );
+
     for comment in [
         concat!(
             "[!--\n",
