@@ -52,3 +52,17 @@
 - When a gate reports counts, pin and record the exact identity of both its reference inputs and its denominator file, then keep them fixed for the life of the campaign. A gate whose inputs move cannot be compared across runs or audited afterwards.
 - Do not force or admin merge and do not push to `scpwiki/*`.
 - A merge is not a deployment. Refresh the standing runtime after browser-visible changes and verify the served URL before reporting the defect fixed. `docs/deployment/runtime-drift-policy.md` defines which revision the standing runtime must serve and how to attribute an observation to it.
+
+## Agent skills
+
+### Issue tracker
+
+Issues for this repo live in GitHub Issues for `Rokurolize/wikijump`, operated with `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the canonical labels `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use the single-context layout with root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
