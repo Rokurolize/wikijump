@@ -22,6 +22,7 @@ class RefreshStandingTest(unittest.TestCase):
         compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")
         self.assertIn("DEEPWELL_BUILD_PROFILE: release", compose)
         self.assertIn("WWS_BUILD_PROFILE: release", compose)
+        self.assertIn("DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}", compose)
 
     def test_standing_runtime_labels_include_lifecycle_provenance(self) -> None:
         compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")

@@ -20,6 +20,7 @@ import fs from 'node:fs';
 import {runCliIfMain} from '../src/cli-entry.mjs';
 
 import { aggregateOracleVerdict, compareOracleEntry } from '../src/oracle-fixtures.mjs';
+import { deepwellRpcAuthorization } from '../src/deepwell-rpc-auth.mjs';
 
 const DEFAULT_API_URL = 'http://127.0.0.1:2747/jsonrpc';
 
@@ -62,7 +63,7 @@ export function parseArgs(argv) {
 
 let rpcId = 0;
 async function rpc(args, method, params, sessionToken = null) {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = { Authorization: deepwellRpcAuthorization(), 'Content-Type': 'application/json' };
   if (sessionToken) headers['X-Deepwell-Session-Token'] = sessionToken;
   const response = await fetch(args.apiUrl, {
     method: 'POST',

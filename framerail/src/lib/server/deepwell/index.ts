@@ -4,6 +4,7 @@ import type { Nullable } from "$lib/types"
 import type { JSONRPCRequest } from "json-rpc-2.0"
 import type { RequestContext } from "../request-context"
 import { stripPrivateDeepwellErrorData } from "./public-error.js"
+import { deepwellRpcAuthorization } from "./rpc-auth.js"
 
 export const DEEPWELL_HOST = process.env.DEEPWELL_HOST || "localhost"
 export const DEEPWELL_PORT = process.env.DEEPWELL_PORT || 2747
@@ -15,7 +16,10 @@ async function sendJsonRpcRequest(
   request: JSONRPCRequest,
   reqContext: RequestContext = {}
 ): Promise<void> {
-  const headers: Record<string, string> = { "content-type": "application/json" }
+  const headers: Record<string, string> = {
+    authorization: deepwellRpcAuthorization(),
+    "content-type": "application/json"
+  }
 
   // Populate request context in the headers
   if (reqContext?.sessionToken) {
@@ -30,10 +34,14 @@ async function sendJsonRpcRequest(
 
   const response = await fetch(DEEPWELL_URL, {
     method: "POST",
+    redirect: "error",
     headers: headers,
     body: JSON.stringify(request)
   })
 
+  if (!response.ok) {
+    throw new Error(`DEEPWELL RPC transport returned HTTP ${response.status}`)
+  }
   const data = stripPrivateDeepwellErrorData(await response.json())
   client.receive(data)
 }

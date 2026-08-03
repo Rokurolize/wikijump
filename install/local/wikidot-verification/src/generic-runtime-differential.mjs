@@ -8,6 +8,7 @@ import {
 import {validateRuntimeIdentity} from './saved-page-runtime-differential.mjs';
 import {validateRuntimeStateFixtureInput} from './runtime-state-fixture.mjs';
 import {extractMarkedFragments} from '../scripts/verify-ftml-live-pages.mjs';
+import {deepwellRpcAuthorization} from './deepwell-rpc-auth.mjs';
 
 export const REPORT_SCHEMA = 'wikijump_syntax_differential.generic_runtime_verdict.v1';
 export const CAPTURE_SCHEMA = 'wikijump_syntax_differential.wikidot_saved_page_capture.v1';
@@ -916,6 +917,7 @@ export class DeepwellRpcAdapter {
     siteSlug,
     administratorEmail,
     administratorPassword,
+    rpcToken,
     fetchImpl = fetch,
     textBlockFetchImpl = fetch,
   }) {
@@ -951,6 +953,7 @@ export class DeepwellRpcAdapter {
     this.siteSlug = siteSlug;
     this.administratorEmail = administratorEmail;
     this.administratorPassword = administratorPassword;
+    this.rpcAuthorization = deepwellRpcAuthorization(rpcToken);
     this.fetchImpl = fetchImpl;
     this.textBlockFetchImpl = textBlockFetchImpl;
     this.nextId = 1;
@@ -961,7 +964,7 @@ export class DeepwellRpcAdapter {
   async rpc(method, params = {}, headers = {}) {
     const response = await this.fetchImpl(this.rpcUrl, {
       method: 'POST',
-      headers: {'content-type': 'application/json', ...headers},
+      headers: {'content-type': 'application/json', ...headers, authorization: this.rpcAuthorization},
       body: JSON.stringify({jsonrpc: '2.0', id: this.nextId++, method, params}),
       signal: AbortSignal.timeout(300_000),
     });

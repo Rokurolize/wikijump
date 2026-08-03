@@ -13,6 +13,7 @@ import {
 import {
   publishListPagesJsonNoReplace,
 } from "./listpages-evidence-publication.mjs";
+import {deepwellRpcAuthorization} from "./deepwell-rpc-auth.mjs";
 
 export const LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA =
   "wikijump_listpages_compat.preview_differential.v1";
@@ -251,8 +252,11 @@ async function loadRuntimeAuthority({
 }
 
 export class DeepwellJsonRpcClient {
+  #authorization;
+
   constructor({
     rpcUrl,
+    rpcToken,
     fetchImpl = globalThis.fetch,
     timeoutMs = DEFAULT_LISTPAGES_RPC_TIMEOUT_MS,
   }) {
@@ -260,6 +264,7 @@ export class DeepwellJsonRpcClient {
     this.rpcUrl = rpcUrl;
     this.fetchImpl = fetchImpl;
     this.timeoutMs = timeoutMs;
+    this.#authorization = deepwellRpcAuthorization(rpcToken);
     this.nextId = 1;
   }
 
@@ -272,7 +277,7 @@ export class DeepwellJsonRpcClient {
       response = await this.fetchImpl(this.rpcUrl, {
         method: "POST",
         redirect: "error",
-        headers: { "content-type": "application/json" },
+        headers: { authorization: this.#authorization, "content-type": "application/json" },
         body: JSON.stringify({ jsonrpc: "2.0", id: requestId, method, params }),
         signal: controller.signal,
       });

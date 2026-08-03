@@ -84,6 +84,7 @@ services:
       S3_CUSTOM_ENDPOINT: http://files:9000
       S3_ACCESS_KEY_ID: minio
       S3_SECRET_ACCESS_KEY: defaultpassword
+      DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}
       DEEPWELL_BUILD_PROFILE: release
     ports:
       - "127.0.0.1:12747:2747"
@@ -122,6 +123,7 @@ services:
     restart: unless-stopped
     environment:
       DEEPWELL_HOST: deepwell
+      DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}
       FRAMERAIL_MODE: built
       FRAMERAIL_ENV: local
       FRAMERAIL_CSRF_CHECK_ORIGIN: "true"
@@ -149,6 +151,7 @@ services:
     environment:
       ADDRESS: "[::]:3466"
       DEEPWELL_URL: http://deepwell:2747
+      DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}
       REDIS_URL: redis://cache
       S3_FILES_BUCKET: deepwell-files
       S3_TEXT_BLOCKS_BUCKET: deepwell-text-blocks
@@ -182,6 +185,8 @@ services:
     image: ${STANDING_CADDY_IMAGE:?STANDING_CADDY_IMAGE is required}
     pull_policy: never
     restart: unless-stopped
+    environment:
+      DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}
     ports:
       - "127.0.0.1:80:80"
       - "127.0.0.1:443:443"

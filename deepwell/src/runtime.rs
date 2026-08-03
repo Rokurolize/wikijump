@@ -2,6 +2,7 @@
 
 use crate::config::Config;
 use crate::locales::Localizations;
+use crate::middleware::RpcTokenDigest;
 use crate::services::blob::MimeAnalyzer;
 use crate::utils::debug_pointer;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
@@ -16,6 +17,7 @@ pub type ServerState = Arc<ServerStateInner>;
 
 pub struct ServerStateInner {
     pub config: Config,
+    pub(crate) rpc_token_digest: RpcTokenDigest,
     pub database: DatabaseConnection,
     pub redis: RedisMultiplexedConnection,
     pub rsmq: Rsmq,
@@ -30,6 +32,7 @@ impl Debug for ServerStateInner {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ServerStateInner")
             .field("config", &self.config)
+            .field("rpc_token_digest", &self.rpc_token_digest)
             .field("database", &self.database)
             .field("redis", &self.redis)
             .field("rsmq", &debug_pointer(&self.rsmq))

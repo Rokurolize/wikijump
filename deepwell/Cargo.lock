@@ -1181,6 +1181,7 @@ dependencies = [
  "str-macro",
  "strum",
  "strum_macros",
+ "subtle",
  "time",
  "tiny-keccak",
  "tokio",

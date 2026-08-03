@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import {findRawSyntaxLeaks} from "../src/render-health.mjs";
+import {deepwellRpcAuthorization} from "../src/deepwell-rpc-auth.mjs";
 
 const ADMIN_USER_ID = -1;
 const IP_ADDRESS = "127.0.0.1";
@@ -126,7 +127,7 @@ class DeepwellClient {
   }
 
   async call(method, params = {}, context = {}) {
-    const headers = { "content-type": "application/json" };
+    const headers = {authorization: deepwellRpcAuthorization(), "content-type": "application/json"};
     if (context.sessionToken) headers["X-Deepwell-Session-Token"] = context.sessionToken;
     if (context.siteId) headers["X-Deepwell-Site-Id"] = String(context.siteId);
     if (context.page) headers["X-Deepwell-Page"] = String(context.page);
@@ -137,6 +138,7 @@ class DeepwellClient {
     try {
       response = await fetch(this.rpcUrl, {
         method: "POST",
+        redirect: "error",
         headers,
         body: JSON.stringify({
           jsonrpc: "2.0",

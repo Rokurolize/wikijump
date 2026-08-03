@@ -58,8 +58,9 @@ services:
       context: ../..
       dockerfile: install/local/deepwell/Dockerfile
     ports:
-      - "2747:2747"
+      - "127.0.0.1:2747:2747"
     environment:
+      - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
       - "DATABASE_URL=postgres://wikijump:wikijump@database/wikijump"
       - "REDIS_URL=redis://cache"
       - "S3_FILES_BUCKET=deepwell-files"
@@ -102,6 +103,7 @@ services:
       - "3393:3393"
     environment:
       - "DEEPWELL_HOST=deepwell"
+      - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
       - "FRAMERAIL_MODE=${FRAMERAIL_MODE:-dev}"
       - "REDIS_URL=redis://cache"
       - "PNPM_HOME=/pnpm"
@@ -130,6 +132,7 @@ services:
     environment:
       - "ADDRESS=[::]:3466"
       - "DEEPWELL_URL=http://deepwell:2747"
+      - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
       - "REDIS_URL=redis://cache"
       - "S3_FILES_BUCKET=deepwell-files"
       - "S3_TEXT_BLOCKS_BUCKET=deepwell-text-blocks"
@@ -174,6 +177,8 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
+    environment:
+      - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wikijump-health-check"]

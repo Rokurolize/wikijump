@@ -11,9 +11,10 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const scriptPath = path.resolve(__dirname, "../scripts/preview-source.mjs");
+const RPC_TOKEN = "0".repeat(64);
 
 async function runPreview(args) {
-  return execFileAsync(process.execPath, [scriptPath, ...args]);
+  return execFileAsync(process.execPath, [scriptPath, ...args], {env: {...process.env, DEEPWELL_RPC_TOKEN: RPC_TOKEN}});
 }
 
 async function assertPreviewFails(args, messagePattern) {

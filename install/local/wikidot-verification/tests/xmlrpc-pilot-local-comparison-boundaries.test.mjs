@@ -196,6 +196,7 @@ test("local page reads reject stale JSON-RPC envelopes and bound a body that sta
         { headers: { "content-type": "application/json" }, status: 200 },
       ),
     rpcUrl: "http://127.0.0.1:2747/jsonrpc",
+    rpcToken: "0".repeat(64),
   });
   await assert.rejects(
     wrongEnvelope.siteId(),
@@ -217,6 +218,7 @@ test("local page reads reject stale JSON-RPC envelopes and bound a body that sta
       });
     },
     rpcUrl: "http://127.0.0.1:2747/jsonrpc",
+    rpcToken: "0".repeat(64),
     timeoutMs: 10,
   });
   await assert.rejects(stalled.siteId(), (error) => error.code === "timeout");

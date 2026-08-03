@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import {deepwellRpcAuthorization} from "./deepwell-rpc-auth.mjs";
 
 import {ALLOWED_SITE_SLUG, isCurrentRunOwnedSlug, isRecoverableRunOwnedSlug} from "./theme-localization-e2e.mjs";
 
@@ -56,17 +57,20 @@ function validateResource(resource, {allowLegacy = false} = {}) {
 }
 
 export class DeepwellJsonRpcClient {
-  constructor({rpcUrl = "http://127.0.0.1:2747/jsonrpc", timeoutMs = DEFAULT_RPC_TIMEOUT_MS, fetchImpl = globalThis.fetch} = {}) {
+  #authorization;
+
+  constructor({rpcUrl = "http://127.0.0.1:2747/jsonrpc", rpcToken, timeoutMs = DEFAULT_RPC_TIMEOUT_MS, fetchImpl = globalThis.fetch} = {}) {
     if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new Error("Deepwell RPC timeout must be a positive integer");
     if (typeof fetchImpl !== "function") throw new Error("Deepwell RPC fetch implementation is required");
     this.rpcUrl = validateLocalDeepwellRpcUrl(rpcUrl);
     this.timeoutMs = timeoutMs;
     this.fetchImpl = fetchImpl;
+    this.#authorization = deepwellRpcAuthorization(rpcToken);
     this.nextId = 1;
   }
 
   async call(method, params = {}, context = {}) {
-    const headers = {"content-type": "application/json"};
+    const headers = {authorization: this.#authorization, "content-type": "application/json"};
     if (context.sessionToken) headers["X-Deepwell-Session-Token"] = context.sessionToken;
     if (context.siteId) headers["X-Deepwell-Site-Id"] = String(context.siteId);
     if (context.page) headers["X-Deepwell-Page"] = context.page;
@@ -74,7 +78,7 @@ export class DeepwellJsonRpcClient {
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
     let response;
     try {
-      response = await this.fetchImpl(this.rpcUrl, {method: "POST", headers, body: JSON.stringify({jsonrpc: "2.0", id: this.nextId++, method, params}), signal: controller.signal});
+      response = await this.fetchImpl(this.rpcUrl, {method: "POST", redirect: "error", headers, body: JSON.stringify({jsonrpc: "2.0", id: this.nextId++, method, params}), signal: controller.signal});
     } catch (error) {
       if (error.name === "AbortError") throw new Error(`Deepwell RPC ${method} timed out after ${this.timeoutMs}ms`);
       throw new Error(`Deepwell RPC ${method} transport failed: ${error.message}`);
@@ -94,11 +98,11 @@ export class DeepwellJsonRpcClient {
 }
 
 export class DeepwellThemePageAdapter {
-  constructor({rpcClient, rpcUrl, timeoutMs, adminEmail, adminPassword, actorUserId = null, siteSlug = ALLOWED_SITE_SLUG} = {}) {
+  constructor({rpcClient, rpcUrl, rpcToken, timeoutMs, adminEmail, adminPassword, actorUserId = null, siteSlug = ALLOWED_SITE_SLUG} = {}) {
     if (siteSlug !== ALLOWED_SITE_SLUG) throw new Error("Deepwell adapter site is outside the hard allowlist");
     if (typeof adminEmail !== "string" || !adminEmail || typeof adminPassword !== "string" || !adminPassword) throw new Error("Deepwell adapter credentials are required");
     if (actorUserId !== null && !Number.isSafeInteger(actorUserId)) throw new Error("Deepwell adapter actor user id must be an integer");
-    this.rpc = rpcClient ?? new DeepwellJsonRpcClient({rpcUrl, timeoutMs});
+    this.rpc = rpcClient ?? new DeepwellJsonRpcClient({rpcUrl, rpcToken, timeoutMs});
     this.siteSlug = siteSlug;
     this.adminEmail = adminEmail;
     this.adminPassword = adminPassword;

@@ -26,6 +26,10 @@ use tower::{Layer, Service};
 use crate::error::StdResult;
 use crate::types::Reference;
 
+mod rpc_auth;
+
+pub use self::rpc_auth::{RpcAuthLayer, RpcTokenDigest};
+
 #[derive(Debug, Clone)]
 pub struct RequestContextHeaders {
     pub session_token: Option<String>,

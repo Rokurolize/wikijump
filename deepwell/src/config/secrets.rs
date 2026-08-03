@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::middleware::RpcTokenDigest;
 use dotenvy::dotenv;
 use ref_map::*;
 use s3::creds::Credentials;
@@ -27,6 +28,11 @@ use std::{env, process};
 
 #[derive(Debug, Clone)]
 pub struct Secrets {
+    /// Digest of the service token required by the JSON-RPC HTTP boundary.
+    ///
+    /// Loaded from `DEEPWELL_RPC_TOKEN`; the plaintext token is not retained.
+    pub rpc_token_digest: RpcTokenDigest,
+
     /// The URL of the PostgreSQL database to connect to.
     ///
     /// Set using environment variable `DATABASE_URL`.
@@ -100,6 +106,14 @@ impl Secrets {
 
         let database_url = get_env!("DATABASE_URL");
         let redis_url = get_env!("REDIS_URL");
+        let rpc_token_digest =
+            match RpcTokenDigest::parse(&get_env!("DEEPWELL_RPC_TOKEN")) {
+                Ok(digest) => digest,
+                Err(error) => {
+                    eprintln!("{error}");
+                    process::exit(1);
+                }
+            };
 
         let s3_files_bucket = get_env!("S3_FILES_BUCKET");
         let s3_tblocks_bucket = get_env!("S3_TEXT_BLOCKS_BUCKET");
@@ -175,6 +189,7 @@ impl Secrets {
 
         // Build and return
         Secrets {
+            rpc_token_digest,
             database_url,
             redis_url,
             s3_files_bucket,

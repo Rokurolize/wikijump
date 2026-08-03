@@ -68,6 +68,7 @@ In order to add the rest of the infrastructure, we need to add a git repository 
   5. Set "Sync Variables" back to false.
 11. Add secrets.
 It is not good practice to add secrets to code, and triply so if the repository is public. As such, `install/dev/komodo/variables.toml` is missing values for those marked "secret" (see the file for more information). Some of these are secret values that need to be generated, and some come from your infrastructure. Fill in the values as appropriate.
+Generate `DEEPWELL_RPC_TOKEN` with `openssl rand -hex 32`. Rotation is a coordinated restart: update the one Komodo secret, then recreate Deepwell, Framerail, WWS, and Caddy together so no caller retains the previous token.
 12. Go to the `wikijump-dev` stack and **pull images**. If everything is configured properly so far, it should be able to retrieve the images and be in a state to deploy it. Keep the temporary port 9120 rule restricted to the trusted administrator source throughout bootstrap.
 13. Now, deploy the `wikijump-dev` stack. This will first build the local images (the two databases) and attempt to start the containers per the topology in `docker-compose.yaml`.
 On the first deploy, it may take some time to populate the database. You may need to restart services dependent on `deepwell` (i.e. `caddy`, `framerail`, `wws`) if they are reporting as unhealthy.

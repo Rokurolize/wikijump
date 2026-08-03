@@ -278,6 +278,11 @@ def main() -> int:
     environment = read_environment(runtime_home / ".env")
     if environment.get("STANDING_PROJECT_NAME") != "wikijump-standing":
         raise ValueError("runtime home is not the wikijump-standing project")
+    rpc_token = environment.get("DEEPWELL_RPC_TOKEN", "")
+    if not re.fullmatch(r"[0-9a-f]{64}", rpc_token):
+        raise ValueError(
+            "standing runtime environment must contain DEEPWELL_RPC_TOKEN as 64 lowercase hexadecimal characters"
+        )
     network_name = environment.get("STANDING_NETWORK_NAME")
     if not network_name:
         raise ValueError("runtime environment does not name its standing network")

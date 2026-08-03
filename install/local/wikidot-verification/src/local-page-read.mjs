@@ -1,5 +1,6 @@
 import { validateLocalDeepwellRpcUrl } from "./theme-localization-deepwell-adapter.mjs";
 import { assertTimestamp } from "./reference-acquisition-inventory-source.mjs";
+import {deepwellRpcAuthorization} from './deepwell-rpc-auth.mjs';
 
 const MAX_LOCAL_RPC_RESPONSE_BYTES = 32 * 1024 * 1024;
 const RFC3339_RE =
@@ -136,9 +137,11 @@ export class LocalPageReadClient {
   #nextId = 1;
   #rpcUrl;
   #timeoutMs;
+  #authorization;
 
   constructor({
     rpcUrl,
+    rpcToken,
     timeoutMs = 30_000,
     fetchImpl = globalThis.fetch,
   } = {}) {
@@ -157,6 +160,7 @@ export class LocalPageReadClient {
     this.#fetch = fetchImpl;
     this.#rpcUrl = validateLocalDeepwellRpcUrl(rpcUrl);
     this.#timeoutMs = timeoutMs;
+    this.#authorization = deepwellRpcAuthorization(rpcToken);
   }
 
   async #call(method, params) {
@@ -169,7 +173,7 @@ export class LocalPageReadClient {
         response = await this.#fetch(this.#rpcUrl, {
           body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
           credentials: "omit",
-          headers: { "content-type": "application/json" },
+          headers: { authorization: this.#authorization, "content-type": "application/json" },
           method: "POST",
           redirect: "error",
           signal: controller.signal,

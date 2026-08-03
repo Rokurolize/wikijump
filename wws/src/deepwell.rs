@@ -18,11 +18,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::config::RpcToken;
 use crate::error::{Result, TextBlockErrorReason};
+use axum::http::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::rpc_params;
 use serde::Deserialize;
+use std::fmt;
 use std::num::NonZeroU16;
 use std::time::Duration;
 
@@ -46,16 +49,28 @@ macro_rules! rpc_object {
     }};
 }
 
-#[derive(Debug)]
 pub struct Deepwell {
     client: HttpClient,
 }
 
+impl fmt::Debug for Deepwell {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Deepwell").finish_non_exhaustive()
+    }
+}
+
 impl Deepwell {
-    pub fn connect(deepwell_url: &str) -> Result<Self> {
+    pub fn connect(deepwell_url: &str, rpc_token: &RpcToken) -> Result<Self> {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", rpc_token.expose()))
+                .expect("validated hexadecimal RPC token is a valid header value"),
+        );
         let client = HttpClient::builder()
             .max_request_size(JSONRPC_MAX_REQUEST)
             .request_timeout(JSONRPC_TIMEOUT)
+            .set_headers(headers)
             .build(deepwell_url)?;
 
         Ok(Deepwell { client })
@@ -355,7 +370,7 @@ mod tests {
     use axum::Router;
     use axum::body::Bytes;
     use axum::extract::State;
-    use axum::http::header;
+    use axum::http::{HeaderMap, header};
     use axum::response::{IntoResponse, Response};
     use axum::routing::post;
     use serde_json::{Value, json};
@@ -364,7 +379,15 @@ mod tests {
 
     type Requests = Arc<Mutex<Vec<Value>>>;
 
-    async fn rpc_handler(State(requests): State<Requests>, body: Bytes) -> Response {
+    async fn rpc_handler(
+        State(requests): State<Requests>,
+        headers: HeaderMap,
+        body: Bytes,
+    ) -> Response {
+        assert_eq!(
+            headers.get(AUTHORIZATION).unwrap(),
+            "Bearer 0000000000000000000000000000000000000000000000000000000000000000"
+        );
         let request: Value = serde_json::from_slice(&body).unwrap();
         let method = request["method"].as_str().unwrap();
         let id = request["id"].clone();
@@ -439,13 +462,17 @@ mod tests {
 
     #[test]
     fn invalid_deepwell_url_is_rejected() {
-        assert!(Deepwell::connect("not a url").is_err());
+        let token = RpcToken::parse("0".repeat(64)).unwrap();
+        assert!(Deepwell::connect("not a url", &token).is_err());
+        let deepwell = Deepwell::connect("http://127.0.0.1:2747", &token).unwrap();
+        assert_eq!(format!("{deepwell:?}"), "Deepwell { .. }");
     }
 
     #[tokio::test]
     async fn deepwell_getters_send_expected_json_rpc_requests() {
         let (url, requests) = spawn_rpc_server().await;
-        let deepwell = Deepwell::connect(&url).unwrap();
+        let deepwell =
+            Deepwell::connect(&url, &RpcToken::parse("0".repeat(64)).unwrap()).unwrap();
 
         deepwell.ping().await.unwrap();
         assert_eq!(
@@ -525,7 +552,8 @@ mod tests {
     #[tokio::test]
     async fn deepwell_basic_error_methods_send_locales_and_context() {
         let (url, requests) = spawn_rpc_server().await;
-        let deepwell = Deepwell::connect(&url).unwrap();
+        let deepwell =
+            Deepwell::connect(&url, &RpcToken::parse("0".repeat(64)).unwrap()).unwrap();
         let locales = vec!["ja".to_string(), "en".to_string()];
 
         assert_eq!(

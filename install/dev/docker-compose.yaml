@@ -41,6 +41,7 @@ services:
     expose:
       - "2747"
     environment:
+      - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
       - "DATABASE_URL=postgres://wikijump:${POSTGRES_PASSWORD}@database/wikijump"
       - "REDIS_URL=redis://:${VALKEY_PASSWORD}@cache"
       - "S3_FILES_BUCKET=${S3_FILES_BUCKET}"
@@ -65,6 +66,7 @@ services:
       - "3393"
     environment:
       - "DEEPWELL_HOST=deepwell"
+      - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wikijump-health-check"]
@@ -79,6 +81,7 @@ services:
     environment:
       - "ADDRESS=[::]:3466"
       - "DEEPWELL_URL=http://deepwell:2747"
+      - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
       - "REDIS_URL=redis://:${VALKEY_PASSWORD}@cache"
       - "S3_FILES_BUCKET=${S3_FILES_BUCKET}"
       - "S3_TEXT_BLOCKS_BUCKET=${S3_TEXT_BLOCKS_BUCKET}"
@@ -102,6 +105,7 @@ services:
       - "443:443/udp"
     environment:
       - "DIGITALOCEAN_API_TOKEN=${DIGITALOCEAN_API_TOKEN}"
+      - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wikijump-health-check"]
