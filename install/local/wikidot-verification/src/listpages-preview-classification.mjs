@@ -1492,6 +1492,95 @@ function normalizeRelativeTemporalNode(node) {
   };
 }
 
+function relativeTemporalBodyUsesOnlyDynamicFields(body) {
+  const withoutDynamicFields = body
+    .replace(
+      /%%(?:created_at|updated_at|created_by|fullname|title|title_linked|linked_title|rating|votes|children|name|link)(?:\|[^%]*)?%%/giu,
+      "",
+    )
+    .replace(/%%content\{[0-9]+\}%%/giu, "")
+    .replace(/[\s>*|()[\]{}"=:/%?&;,_+\-]/gu, "");
+  return !/[\p{L}\p{N}]/u.test(withoutDynamicFields);
+}
+
+function normalizeRelativeTemporalTableNode(node, inRow = false, inPager = false) {
+  if (node?.type === "text") {
+    return inRow || inPager
+      ? { ...node, value: "__RELATIVE_DYNAMIC_TEXT__" }
+      : { ...node };
+  }
+  if (node?.type !== "element") return { ...node };
+  const row = inRow || node.name === "tr";
+  const pager = inPager || nodeHasClass(node, "pager");
+  return {
+    ...node,
+    attrs: (node.attrs ?? []).map((attribute) => ({
+      ...attribute,
+      value: row && attribute.name === "href" &&
+          /^\/(?!ajax-module-connector\.php\/)/iu.test(attribute.value)
+        ? "__RELATIVE_DYNAMIC_HREF__"
+        : pager && attribute.name === "href"
+          ? "__RELATIVE_PAGER_HREF__"
+          : nodeHasClass(node, "odate") && attribute.name === "class"
+            ? attribute.value.replace(/\btime_[0-9]+\b/gu, "time__RELATIVE__")
+            : attribute.value,
+    })),
+    children: (node.children ?? []).map((child) =>
+      normalizeRelativeTemporalTableNode(child, row, pager)
+    ),
+  };
+}
+
+function relativeTemporalTableFixtureProof({
+  invocation,
+  liveWrapper,
+  localWrapper,
+  bound,
+}) {
+  if (!relativeTemporalBodyUsesOnlyDynamicFields(invocation.body)) {
+    return null;
+  }
+  const table = (wrapper) => {
+    const matches = descendantElements(
+      wrapper,
+      (node) => node.name === "table" && nodeHasClass(node, "wiki-content-table"),
+    );
+    return matches.length === 1 ? matches[0] : null;
+  };
+  const liveTable = table(liveWrapper);
+  const localTable = table(localWrapper);
+  if (liveTable === null || localTable === null) return null;
+  const rows = (tableNode) => descendantElements(
+    tableNode,
+    (node) => node.name === "tr",
+  );
+  const liveRows = rows(liveTable);
+  const localRows = rows(localTable);
+  if (
+    liveRows.length === 0 ||
+    localRows.length === 0 ||
+    liveRows.length > bound ||
+    localRows.length > bound ||
+    liveRows.some((row) => descendantElements(row, (node) =>
+      node.name === "a" && /^\/(?!ajax-module-connector\.php\/)/iu.test(
+        nodeAttribute(node, "href") ?? "",
+      )
+    ).length === 0) ||
+    localRows.some((row) => descendantElements(row, (node) =>
+      node.name === "a" && /^\/(?!ajax-module-connector\.php\/)/iu.test(
+        nodeAttribute(node, "href") ?? "",
+      )
+    ).length === 0)
+  ) {
+    return null;
+  }
+  const liveNormalized = normalizeRelativeTemporalTableNode(liveWrapper);
+  const localNormalized = normalizeRelativeTemporalTableNode(localWrapper);
+  return JSON.stringify(liveNormalized) === JSON.stringify(localNormalized)
+    ? { mode: "table-row-set" }
+    : null;
+}
+
 function relativeTemporalFixtureProof({
   invocation,
   liveNodes,
@@ -1524,7 +1613,16 @@ function relativeTemporalFixtureProof({
     .filter(Boolean)
     .map(Number)
     .at(0) ?? 0;
-  if (bound === 0 || liveItems.length === 0 || liveItems.length > bound) return null;
+  if (bound === 0 || liveItems.length > bound || localItems.length > bound) return null;
+  if (liveItems.length === 0 && localItems.length === 0) {
+    const tableProof = relativeTemporalTableFixtureProof({
+      invocation,
+      liveWrapper,
+      localWrapper,
+      bound,
+    });
+    return tableProof === null ? null : { selector, ...tableProof };
+  }
   if (localItems.length === 0) {
     const localChildren = (localWrapper.children ?? []).filter((node) =>
       !(node.type === "text" && node.value.trim() === "")
@@ -1866,7 +1964,7 @@ function classifyMismatch(row, reference) {
   });
   if (
     relativeTemporalFixture !== null &&
-    /%%(?:created_at|updated_at|name|title|link|fullname|content\{[0-9]+\})(?:\|[^\r\n]*)?%%/iu
+    /%%(?:created_at|updated_at|created_by|name|title|title_linked|linked_title|link|fullname|rating|votes|children|content\{[0-9]+\})(?:\|[^\r\n]*)?%%/iu
       .test(invocation.body) &&
     !localUnsupportedDiagnostic
   ) {
