@@ -37,7 +37,11 @@ RUN cargo build --release
 # Final image
 #
 
-FROM debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818
+# Match the pinned Rust builder's Debian 13/trixie libc family.  Deepwell is
+# intentionally shipped dynamically linked because libmagic is a runtime
+# dependency; keeping both stages on the same pinned distribution avoids a
+# hidden builder-to-runtime libc mismatch.
+FROM debian:trixie-slim@sha256:020c0d20b9880058cbe785a9db107156c3c75c2ac944a6aa7ab59f2add76a7bd
 
 ENV LOCALIZATION_PATH="/opt/locales"
 
