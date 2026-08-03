@@ -1664,7 +1664,7 @@
         },
         {
           "path": "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json",
-          "scope": "Pinned authoritative exact replay and corpus reconciliation: 23,964 invocations, 18,996 unique replay keys, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. Novel and literal lanes are recorded as diagnostic only."
+          "scope": "Pinned authoritative exact replay on Wikijump ea806c06f01f8ebe58f4c21a4ccb03d5215ba10c with FTML 6d1550f283f93ec3f4257ffda238a8f9003eed19: 23,964 invocations, 18,996 unique replay keys, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. Novel and literal lanes are recorded as diagnostic only."
         },
         {
           "path": "docs/development/local-docker-development-receipt.json",
