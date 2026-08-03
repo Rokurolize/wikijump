@@ -7356,6 +7356,30 @@ fn large_component_page_under_byte_cap_stays_parse_eligible() {
 }
 
 #[test]
+fn pinned_ftml_tight_quote_cap_keeps_deepwell_parse_eligible() {
+    const DEPTH: usize = 20_000;
+    const TIGHT_LINES: usize = 100;
+    let mut source = format!("{} quoted header\n", ">".repeat(DEPTH));
+    source.push_str(&">x\n".repeat(TIGHT_LINES));
+    source.push_str("tail\n");
+    let input_len = source.len();
+
+    assert!(input_len < MAX_FTML_COMPAT_PARSE_BYTES);
+    ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
+
+    let capped_empty_quote_line = format!("{}\n", ">".repeat(30));
+    assert_eq!(
+        source.matches(&capped_empty_quote_line).count(),
+        TIGHT_LINES
+    );
+    assert!(source.len() <= input_len + TIGHT_LINES * 30);
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
+        &source,
+        &fallback_test_page_info("quote-depth-poc", "Quote Depth PoC")
+    ));
+}
+
+#[test]
 fn expanded_dense_style_resource_still_uses_compatibility_fallback() {
     let mut source = String::new();
     for index in 0..180 {
