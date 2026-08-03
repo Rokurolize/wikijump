@@ -20,6 +20,7 @@
 
 use super::prelude::*;
 use crate::models::site::Model as SiteModel;
+use crate::services::MutationAuthorization;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::site::{
     CreateSite, CreateSiteOutput, GetSite, GetSiteOutput, UpdateSite,
@@ -31,6 +32,7 @@ pub async fn site_create(
     params: Params<'static>,
 ) -> Result<CreateSiteOutput> {
     let input: CreateSite = parse!(params, Site);
+    MutationAuthorization::require_authenticated(ctx, "create a site")?;
 
     SiteService::create(ctx, input)
         .await
@@ -42,8 +44,6 @@ pub async fn site_get(
     params: Params<'static>,
 ) -> Result<Option<GetSiteOutput>> {
     let GetSite { site } = parse!(params, Site);
-    info!("Getting site {site:?}");
-
     let make_error = || Error::new("failed to get site", ErrorType::Site);
 
     let site = SiteService::get_optional(ctx, site)
@@ -79,8 +79,6 @@ pub async fn site_update(
         ip_address,
     } = parse!(params, Site);
 
-    info!("Updating site {site:?}");
-
     let actor_user_id = ctx.request().user_id().or_raise(|| {
         Error::new(
             "user does not have permission to edit this site",
@@ -98,6 +96,8 @@ pub async fn site_update(
             .into());
         }
     };
+
+    info!("Updating site ID {site_id} as user ID {actor_user_id}");
 
     let can_edit = PermissionService::check_user_can(
         ctx,

@@ -319,13 +319,15 @@ fn conditional_index_matches_ftml_special_inline_raw_runs() {
 }
 
 #[test]
-fn conditional_index_does_not_pair_url_owned_raw_delimiters() {
+fn conditional_index_honors_pinned_url_adjacent_raw_delimiters() {
     let source = "https://e.test/a@@b[[/iftags]]@@tail";
     let index = LiteralRegionIndex::new_wikidot_conditional_syntax(source);
 
-    assert!(!index.contains(source.find("@@").unwrap()));
-    assert!(!index.contains(source.find("[[/iftags]]").unwrap()));
-    assert!(!index.contains(source.rfind("@@").unwrap()));
+    // FTML exposes `@@` before and after a URL as real inline-raw markers;
+    // the conditional body between them therefore remains literal.
+    assert!(index.contains(source.find("@@").unwrap()));
+    assert!(index.contains(source.find("[[/iftags]]").unwrap()));
+    assert!(index.contains(source.rfind("@@").unwrap()));
 }
 
 #[test]

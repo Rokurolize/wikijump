@@ -25,8 +25,8 @@ use self::model::{
 };
 pub(crate) use self::settings::RenderReplaySettings;
 use self::supervisor::run_isolated_worker;
-use crate::api::ServerState;
-use crate::error::prelude::*;
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::runtime::ServerState;
 use crate::services::render::CorpusReplayExpandedWikitext;
 use futures::{StreamExt, stream};
 use serde::{Serialize, de::DeserializeOwned};
@@ -654,6 +654,8 @@ mod tests {
             uuid::Uuid::new_v4(),
         ));
         std::fs::create_dir(&parent).unwrap();
+        std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o700))
+            .unwrap();
         let requested = parent.join("artifacts");
         let root = prepare_root_artifact_dir(&requested).unwrap();
         assert_eq!(

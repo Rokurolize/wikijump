@@ -30,33 +30,51 @@
 //! requesting domain and session token into a site and user, respectively.
 
 use super::article_cache::ArticlePageCache;
-use super::prelude::*;
-use super::redirect::wikidot_redirect_location;
+use super::module_arguments::PageModuleArguments;
+use super::module_render::render_body_for_module_arguments;
+use super::options::PageOptions;
+use super::redirect::{wikidot_redirect_location, wikidot_redirect_noredirect_body_html};
+use super::structs::{
+    GetAdminView, GetAdminViewOutput, GetArticleViewCacheMetadataOutput,
+    GetArticleViewOutput, GetPageView, GetPageViewOutput, GetPreloadView,
+    GetPreloadViewOutput, GetUserView, GetUserViewOutput, PageRedirectKind, PageRoute,
+    PageTemplateSummary, UserSession, Viewer, ViewerLicenseKind,
+    WikidotPageBreadcrumbView, WikidotPageSnapshotView,
+};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::license::WikidotLicense;
 use crate::models::page::Model as PageModel;
 use crate::models::page_revision::Model as PageRevisionModel;
-use crate::models::site::Model as SiteModel;
+use crate::services::ServiceContext;
 use crate::services::blueprint::{BlueprintPageType, GetBlueprintPageOutput};
+use crate::services::data_form::{
+    load_data_form_definitions, parse_observed_wikidot_data_form_values,
+    render_wikidot_data_form_table_with_wiki_html,
+};
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{
     GetPageAttributions, GetSiteBan, PageAttribution, RelationService,
 };
-use crate::services::render::RenderOutput;
+use crate::services::render::{RenderOutput, RenderService};
 use crate::services::settings::{NavigationPageHtml, SettingsService};
+use crate::services::user::User;
 use crate::services::view::ViewType;
 use crate::services::{
-    BlueprintPageService, CategoryService, DomainService, PageRevisionService,
-    PageService, SessionService, SiteService, TextService, UserService,
+    BlueprintPageService, CategoryService, DataFormEditor, DomainService,
+    PageRevisionService, PageService, SessionService, SiteService, TextService,
+    UserService,
 };
+use crate::types::Reference;
 use crate::types::{Action, PageId, PageOrder, Permission, RerenderDepth, Resource};
 use crate::utils::{get_category_name, locale_for_ftml, parse_locales, split_category};
-use ftml::prelude::*;
+use ftml::prelude::{PageInfo, ScoreValue};
 use ftml::render::html::HtmlOutput;
-use ref_map::*;
+use ref_map::OptionRefMap;
+use sea_orm::ConnectionTrait;
 use sea_orm::{FromQueryResult, Statement};
 use std::borrow::Cow;
-use std::mem;
+use std::collections::BTreeMap;
 use time::OffsetDateTime;
 use unic_langid::LanguageIdentifier;
 use wikidot_normalize::normalize;
@@ -70,6 +88,40 @@ fn wikidot_redirect_module_allowed(
     // import provenance prevents ordinary editable wikitext from creating
     // permanent external redirects on the local Wikijump domain.
     page.from_wikidot && page_revision.from_wikidot
+}
+
+async fn render_wikidot_data_form_wiki_values(
+    ctx: &ServiceContext<'_>,
+    data_form: &DataFormEditor,
+    page_info: &PageInfo<'_>,
+    page_id: PageId,
+) -> Result<BTreeMap<String, String>> {
+    tokio::time::timeout(ctx.config().render_timeout, async {
+        let mut rendered = BTreeMap::new();
+        for field in &data_form.definition.fields {
+            if field.field_type.as_deref() != Some("wiki") {
+                continue;
+            }
+            let source = data_form
+                .values
+                .get(&field.name)
+                .cloned()
+                .unwrap_or_default();
+            let output = RenderService::render_wikidot_fragment_for_page(
+                ctx, source, page_info, page_id,
+            )
+            .await?;
+            rendered.insert(field.name.clone(), output.html_output.body);
+        }
+        Ok(rendered)
+    })
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to render data-form wiki values due to timeout",
+            ErrorType::RenderTimeout,
+        )
+    })?
 }
 
 #[derive(Debug)]
@@ -307,10 +359,10 @@ impl ViewService {
             )
         };
 
-        let mut locales = parse_locales(&locales_str)?;
+        let locales = parse_locales(&locales_str)?;
         let viewer = Self::get_viewer(
             ctx,
-            &mut locales,
+            locales,
             site_id,
             session_token.ref_map(|s| s.as_str()),
             ViewType::Preload,
@@ -364,6 +416,7 @@ impl ViewService {
 
         let redirect_page = Self::should_redirect_page(page_full_slug);
         let options = PageOptions::parse(page_extra);
+        let module_arguments = PageModuleArguments::parse(page_extra);
 
         // Get page, revision, and text fields
         let (category_slug, page_only_slug) = split_category(page_full_slug);
@@ -409,6 +462,7 @@ impl ViewService {
             new_page_wikitext: Option<String>,
             page_templates: Vec<PageTemplateSummary>,
             selected_template_page_id: Option<i64>,
+            data_form: Option<DataFormEditor>,
             compiled_body_html: String,
             compiled_body_styles: Vec<String>,
             compiled_top_bar_html: Option<String>,
@@ -422,7 +476,8 @@ impl ViewService {
             new_page_wikitext,
             page_templates,
             selected_template_page_id,
-            compiled_body_html,
+            data_form,
+            mut compiled_body_html,
             compiled_body_styles,
             compiled_top_bar_html,
             compiled_side_bar_html,
@@ -521,6 +576,23 @@ impl ViewService {
                         compiled_top_bar_html,
                         compiled_side_bar_html,
                     ) = raise_multiple!(wikitext_result, compiled_body_result, compiled_body_styles_result, compiled_top_bar_result, compiled_side_bar_result; make_error);
+
+                    // The stored HTML belongs to the revision, so it answers
+                    // the page's bare URL. A request carrying module arguments
+                    // is a different question and needs its own render.
+                    let compiled_body_html = render_body_for_module_arguments(
+                        ctx,
+                        &module_arguments,
+                        &wikitext,
+                        &page,
+                        &page_revision,
+                        &site,
+                        user_session.as_ref().map(|session| session.user.user_id),
+                        compiled_body_html,
+                    )
+                    .await
+                    .or_raise(make_error)?;
+
                     let compiled_body_styles = compiled_body_styles
                         .map(|styles| serde_json::from_str(&styles))
                         .transpose()
@@ -549,6 +621,65 @@ impl ViewService {
                     )
                     .await
                     .or_raise(make_error)?;
+                    let data_form = {
+                        let category = CategoryService::get_optional(
+                            ctx,
+                            site_id,
+                            Reference::Id(page.page_category_id),
+                        )
+                        .await
+                        .or_raise(make_error)?;
+                        match category {
+                            Some(category)
+                                if category.template_page_id != Some(page.page_id) =>
+                            {
+                                load_data_form_definitions(
+                                    ctx,
+                                    std::slice::from_ref(&category),
+                                )
+                                .await
+                                .or_raise(make_error)?
+                                .remove(&category.category_id)
+                                .filter(|definition| {
+                                    definition.supports_observed_create_edit()
+                                })
+                                .and_then(|definition| {
+                                    parse_observed_wikidot_data_form_values(
+                                        &definition,
+                                        &wikitext,
+                                    )
+                                    .map(|values| DataFormEditor { definition, values })
+                                })
+                            }
+                            None => None,
+                            Some(_) => None,
+                        }
+                    };
+                    let compiled_body_html = if let Some(data_form) =
+                        data_form.as_ref().filter(|_| page_extra.is_empty())
+                    {
+                        let rendered_wiki_values = render_wikidot_data_form_wiki_values(
+                            ctx,
+                            data_form,
+                            &page_info,
+                            PageId {
+                                site_id: page.site_id,
+                                category_id: page.page_category_id,
+                                page_id: page.page_id,
+                            },
+                        )
+                        .await
+                        .or_raise(make_error)?;
+                        render_wikidot_data_form_table_with_wiki_html(
+                            &data_form.definition,
+                            &data_form.values,
+                            &rendered_wiki_values,
+                        )
+                    } else {
+                        compiled_body_html
+                    };
+                    let data_form =
+                        data_form.filter(|_| options.edit && user_can_edit_page);
 
                     PageReturn {
                         page_status: PageStatus::Found {
@@ -562,6 +693,7 @@ impl ViewService {
                         new_page_wikitext: None,
                         page_templates: Vec::new(),
                         selected_template_page_id: None,
+                        data_form,
                         compiled_body_html,
                         compiled_body_styles,
                         compiled_top_bar_html,
@@ -637,6 +769,7 @@ impl ViewService {
                         new_page_wikitext: None,
                         page_templates: Vec::new(),
                         selected_template_page_id: None,
+                        data_form: None,
                         compiled_body_html,
                         compiled_body_styles,
                         compiled_top_bar_html,
@@ -676,7 +809,9 @@ impl ViewService {
                 } = SettingsService::get_nav_page_html(ctx, site_id, category_id)
                     .await
                     .or_raise(make_error)?;
-                let (page_templates, category_template_page_id) = if options.edit {
+                let (page_templates, category_template_page_id, data_form) = if options
+                    .edit
+                {
                     let create_category = CategoryService::get_optional(
                         ctx,
                         site_id,
@@ -706,6 +841,23 @@ impl ViewService {
                     };
 
                     if user_can_create_page {
+                        let data_form = match create_category.as_ref() {
+                            Some(category) => load_data_form_definitions(
+                                ctx,
+                                std::slice::from_ref(category),
+                            )
+                            .await
+                            .or_raise(make_error)?
+                            .remove(&category.category_id)
+                            .filter(|definition| {
+                                definition.supports_observed_create_edit()
+                            })
+                            .map(|definition| DataFormEditor {
+                                definition,
+                                values: Default::default(),
+                            }),
+                            None => None,
+                        };
                         (
                             Self::get_page_templates(
                                 ctx,
@@ -716,12 +868,13 @@ impl ViewService {
                             .or_raise(make_error)?,
                             create_category
                                 .and_then(|category| category.template_page_id),
+                            data_form,
                         )
                     } else {
-                        (Vec::new(), None)
+                        (Vec::new(), None, None)
                     }
                 } else {
-                    (Vec::new(), None)
+                    (Vec::new(), None, None)
                 };
                 let selected_template_page_id = options
                     .template
@@ -750,6 +903,7 @@ impl ViewService {
                     new_page_wikitext,
                     page_templates,
                     selected_template_page_id,
+                    data_form,
                     compiled_body_html,
                     compiled_body_styles,
                     compiled_top_bar_html,
@@ -759,6 +913,21 @@ impl ViewService {
         };
 
         // TODO Check if user-agent and IP match?
+
+        if options.no_redirect
+            && let PageStatus::Found {
+                page,
+                page_revision,
+                ..
+            } = &page_status
+            && wikidot_redirect_module_allowed(page, page_revision)
+        {
+            compiled_body_html = wikidot_redirect_noredirect_body_html(
+                &wikitext,
+                page_full_slug,
+                compiled_body_html,
+            );
+        }
 
         let (redirect_page, redirect_kind) = if let Some(redirect_page) = redirect_page {
             (Some(redirect_page), None)
@@ -786,21 +955,40 @@ impl ViewService {
                 wikidot_snapshot,
                 wikidot_breadcrumbs,
                 attributions,
-            } => GetPageViewOutput::Found {
-                options,
-                page,
-                page_revision,
-                wikidot_snapshot,
-                wikidot_breadcrumbs,
-                attributions,
-                redirect_page,
-                redirect_kind,
-                wikitext,
-                compiled_body_html,
-                compiled_body_styles,
-                compiled_top_bar_html,
-                compiled_side_bar_html,
-            },
+            } => {
+                let page_rating = SettingsService::get_page_rating_settings(
+                    ctx,
+                    page.site_id,
+                    page.page_category_id,
+                )
+                .await
+                .or_raise(make_error)?;
+                let page_discussion = SettingsService::get_page_discussion_settings(
+                    ctx,
+                    page.site_id,
+                    page.page_category_id,
+                )
+                .await
+                .or_raise(make_error)?;
+                GetPageViewOutput::Found {
+                    options,
+                    page,
+                    page_revision,
+                    wikidot_snapshot,
+                    wikidot_breadcrumbs,
+                    attributions,
+                    page_rating,
+                    page_discussion,
+                    data_form,
+                    redirect_page,
+                    redirect_kind,
+                    wikitext,
+                    compiled_body_html,
+                    compiled_body_styles,
+                    compiled_top_bar_html,
+                    compiled_side_bar_html,
+                }
+            }
             PageStatus::Missing => GetPageViewOutput::Missing {
                 options,
                 redirect_page,
@@ -809,6 +997,7 @@ impl ViewService {
                 new_page_wikitext,
                 page_templates,
                 selected_template_page_id,
+                data_form,
                 compiled_body_html,
                 compiled_body_styles,
                 compiled_top_bar_html,
@@ -1028,13 +1217,14 @@ ORDER BY breadcrumb_chain.depth ASC
         // TODO Check if user-agent and IP match?
 
         // Get data to return for this user.
+        // Supports either type, since we're getting a user view.
         let user = match user_ref {
             Some(ref user_ref) => UserService::get_optional(ctx, user_ref.borrow())
                 .await
                 .or_raise(make_error)?,
 
             // For users visiting their own user info page
-            None => user_session.map(|session| session.user),
+            None => user_session.map(|session| User::Wikijump(session.user)),
         };
 
         let output = match user {
@@ -1233,7 +1423,7 @@ ORDER BY breadcrumb_chain.depth ASC
     /// operations, such as slug normalization or redirect site aliases.
     pub async fn get_viewer(
         ctx: &ServiceContext<'_>,
-        locales: &mut Vec<LanguageIdentifier>,
+        mut locales: Vec<LanguageIdentifier>,
         site_id: i64,
         session_token: Option<&str>,
         view_type: ViewType,
@@ -1249,13 +1439,14 @@ ORDER BY breadcrumb_chain.depth ASC
         };
 
         // Get user data from session token (if present)
+        // Sessions can only be for real users, so we assert
         let user_session = match session_token {
             Some("") | None => None,
             Some(token) => {
                 let session =
                     SessionService::get(ctx, token).await.or_raise(make_error)?;
 
-                let user = UserService::get(ctx, Reference::Id(session.user_id))
+                let user = UserService::get_real(ctx, Reference::Id(session.user_id))
                     .await
                     .or_raise(make_error)?;
 
@@ -1267,19 +1458,10 @@ ORDER BY breadcrumb_chain.depth ASC
                     // For instance, if the browser is requesting [X, Y], but the user
                     // prefers [A, B], we want to end up with [A, B, X, Y].
                     //
-                    // But the most efficient method to use here is append().
-                    // So we append all the requested locales to the end of the user
-                    // locales we just got, then swap the contents.
-                    //
-                    // The end goal is that 'locales' ends up with the new locales at
-                    // the start before the previous items, and 'user_locales' ends up
-                    // drained since it was inserted into the preserved 'locales' vector.
-
                     let mut user_locales =
                         parse_locales(&user.locales).or_raise(make_error)?;
-                    user_locales.append(locales);
-                    mem::swap(locales, &mut user_locales);
-                    debug_assert!(user_locales.is_empty());
+                    user_locales.append(&mut locales);
+                    locales = user_locales;
                 }
 
                 Some(UserSession { session, user })
@@ -1301,7 +1483,7 @@ ORDER BY breadcrumb_chain.depth ASC
             .or_raise(make_error)?;
 
         let site_file_domain = DomainService::get_files(config, &site.slug);
-        let license_name = site.license.translate(ctx.localization(), locales)?;
+        let license_name = site.license.translate(ctx.localization(), &locales)?;
         let license_url = site.license.url();
 
         // Return
@@ -1323,13 +1505,14 @@ ORDER BY breadcrumb_chain.depth ASC
         let make_error = || Error::new("failed to get user session", ErrorType::Session);
 
         // Get user data from session token (if present)
+        // Sessions can only be for real users, so we assert
         let user_session = match session_token {
             Some("") | None => None,
             Some(token) => {
                 let session =
                     SessionService::get(ctx, token).await.or_raise(make_error)?;
 
-                let user = UserService::get(ctx, Reference::Id(session.user_id))
+                let user = UserService::get_real(ctx, Reference::Id(session.user_id))
                     .await
                     .or_raise(make_error)?;
 

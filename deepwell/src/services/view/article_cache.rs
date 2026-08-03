@@ -19,15 +19,20 @@
  */
 
 use super::options::PageOptions;
-use super::prelude::*;
+use super::structs::{GetPageView, GetPageViewOutput};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::BlueprintPageService;
+use crate::services::ServiceContext;
 use crate::services::blueprint::compose_template;
 use crate::services::permission::PermissionCache;
 use crate::services::public_cache::PublicContentCache;
-use crate::services::render::{RenderDependencyClass, classify_render_dependencies};
+use crate::services::render::{
+    RenderDependencyClass, classify_render_dependencies, wikitext_requires_runtime_render,
+};
 use crate::utils::split_category;
 use redis::AsyncCommands;
 use sea_orm::{DatabaseBackend, FromQueryResult, Statement, Value};
+use sha2::{Digest, Sha256};
 use time::OffsetDateTime;
 
 const ARTICLE_VIEW_PAGE_CACHE_PREFIX: &str = "deepwell:article-view:page:v2";
@@ -127,6 +132,9 @@ impl ArticlePageCache {
         let template_source =
             BlueprintPageService::get_page_template(ctx, input.site_id, category, page)
                 .await?;
+        let template_source_hash = template_source
+            .as_deref()
+            .map(|source| Sha256::digest(source.as_bytes()).to_vec());
 
         let page_updated_at = row
             .page_updated_at
@@ -149,6 +157,7 @@ impl ArticlePageCache {
                 latest_revision_id,
                 page_updated_at,
                 permission_fence: &permission_fence,
+                template_source_hash: template_source_hash.as_deref(),
                 compiled_body_html_hash: row.compiled_body_html_hash.as_deref(),
                 compiled_body_styles_hash: row.compiled_body_styles_hash.as_deref(),
                 compiled_top_bar_html_hash: row.compiled_top_bar_html_hash.as_deref(),
@@ -223,6 +232,7 @@ struct ArticlePageCacheKeyParts<'a> {
     latest_revision_id: i64,
     page_updated_at: i128,
     permission_fence: &'a str,
+    template_source_hash: Option<&'a [u8]>,
     compiled_body_html_hash: Option<&'a [u8]>,
     compiled_body_styles_hash: Option<&'a [u8]>,
     compiled_top_bar_html_hash: Option<&'a [u8]>,
@@ -237,14 +247,16 @@ fn format_article_page_cache_key(parts: ArticlePageCacheKeyParts<'_>) -> String 
     let styles_hash = optional_hash_hex(parts.compiled_body_styles_hash);
     let top_bar_hash = optional_hash_hex(parts.compiled_top_bar_html_hash);
     let side_bar_hash = optional_hash_hex(parts.compiled_side_bar_html_hash);
+    let template_hash = optional_hash_hex(parts.template_source_hash);
 
     format!(
-        "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:site={}:page={}:rev={}:updated={}:permission={}:body={}:styles={}:top={}:side={}:slug={}:extra={}:locales={}",
+        "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:site={}:page={}:rev={}:updated={}:permission={}:template={}:body={}:styles={}:top={}:side={}:slug={}:extra={}:locales={}",
         parts.site_id,
         parts.page_id,
         parts.latest_revision_id,
         parts.page_updated_at,
         parts.permission_fence,
+        template_hash,
         body_hash,
         styles_hash,
         top_bar_hash,
@@ -272,6 +284,9 @@ fn format_article_page_cache_key_if_source_eligible(
 }
 
 pub(super) fn anonymous_article_cache_source_eligible(source: &str) -> bool {
+    if wikitext_requires_runtime_render(source) {
+        return false;
+    }
     let classes = classify_render_dependencies(source);
     !classes.contains(RenderDependencyClass::ViewerDependent)
         && !classes.contains(RenderDependencyClass::RequestDependent)
@@ -296,6 +311,7 @@ mod tests {
             latest_revision_id: 13,
             page_updated_at: 17,
             permission_fence: "site=19,user=23",
+            template_source_hash: Some(&[0x89, 0xab]),
             compiled_body_html_hash: Some(&[0x01, 0x23]),
             compiled_body_styles_hash: Some(&[0x34]),
             compiled_top_bar_html_hash: Some(&[0x45]),
@@ -307,8 +323,32 @@ mod tests {
 
         assert_eq!(
             key,
-            "deepwell:article-view:page:v2:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
+            "deepwell:article-view:page:v2:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:template=89ab:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
         );
+    }
+
+    #[test]
+    fn article_page_cache_key_changes_with_assigned_template_source() {
+        let key = |template_source_hash| {
+            format_article_page_cache_key(ArticlePageCacheKeyParts {
+                site_id: 7,
+                page_id: 11,
+                latest_revision_id: 13,
+                page_updated_at: 17,
+                permission_fence: "site=19,user=23",
+                template_source_hash,
+                compiled_body_html_hash: Some(&[0x01, 0x23]),
+                compiled_body_styles_hash: Some(&[0x34]),
+                compiled_top_bar_html_hash: Some(&[0x45]),
+                compiled_side_bar_html_hash: Some(&[0x67]),
+                route_slug: "category:article",
+                page_extra: "",
+                locales: "en",
+            })
+        };
+
+        assert_ne!(key(Some(&[0x01])), key(Some(&[0x02])));
+        assert_ne!(key(Some(&[0x01])), key(None));
     }
 
     #[test]
@@ -316,7 +356,6 @@ mod tests {
         for source in [
             "Plain imported page text.\n\n[[div]]Static[[/div]]",
             "[[include component:license-box]]",
-            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module CountPages category=\"news\"]][[/module]]",
             "[[*user example]]",
             "[[[empty-label|]]]",
@@ -330,6 +369,7 @@ mod tests {
                     latest_revision_id: 13,
                     page_updated_at: 17,
                     permission_fence: "site=19,user=23",
+                    template_source_hash: None,
                     compiled_body_html_hash: Some(&[0x01, 0x23]),
                     compiled_body_styles_hash: Some(&[0x34]),
                     compiled_top_bar_html_hash: Some(&[0x45]),
@@ -343,7 +383,7 @@ mod tests {
             assert_eq!(
                 key.as_deref(),
                 Some(
-                    "deepwell:article-view:page:v2:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
+                    "deepwell:article-view:page:v2:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:template=:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
                 ),
                 "{source}",
             );
@@ -358,6 +398,7 @@ mod tests {
             latest_revision_id: 13,
             page_updated_at: 17,
             permission_fence: "site=19,user=23",
+            template_source_hash: None,
             compiled_body_html_hash: None,
             compiled_body_styles_hash: None,
             compiled_top_bar_html_hash: None,
@@ -374,10 +415,13 @@ mod tests {
 
         for source in [
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
+            "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
             "[[module Rate]]",
             "[[module UnknownWidget]]",
             "[[module]]",
+            "[[module ChildPages]]",
         ] {
             let parts = ArticlePageCacheKeyParts {
                 site_id: 7,
@@ -385,6 +429,7 @@ mod tests {
                 latest_revision_id: 13,
                 page_updated_at: 17,
                 permission_fence: "site=19,user=23",
+                template_source_hash: None,
                 compiled_body_html_hash: None,
                 compiled_body_styles_hash: None,
                 compiled_top_bar_html_hash: None,
@@ -414,6 +459,7 @@ mod tests {
             latest_revision_id: 13,
             page_updated_at: 17,
             permission_fence: "site=19,user=23",
+            template_source_hash: None,
             compiled_body_html_hash: None,
             compiled_body_styles_hash: None,
             compiled_top_bar_html_hash: None,
@@ -466,7 +512,6 @@ mod tests {
         for source in [
             "Plain imported page text.\n\n[[div]]Static[[/div]]",
             "[[include component:license-box]]",
-            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module CountPages category=\"news\"]][[/module]]",
             "[[*user example]]",
         ] {
@@ -478,6 +523,8 @@ mod tests {
     fn article_page_cache_eligibility_denies_unsafe_or_unverified_sources() {
         for source in [
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
+            "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
             "[[module Rate]]",
             "[[module Members]]",
@@ -485,6 +532,8 @@ mod tests {
             "[[module Clone]]",
             "[[module UnknownWidget]]",
             "[[module]]",
+            "[[module ChildPages]]",
+            "[[module NextPage by=\"title\"]]%%linked_title%%[[/module]]",
         ] {
             assert!(!anonymous_article_cache_source_eligible(source));
         }

@@ -19,14 +19,17 @@
  */
 
 use super::options::PageOptions;
-use super::prelude::*;
 use crate::models::page::Model as PageModel;
 use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::page_revision::Model as PageRevisionModel;
 use crate::models::session::Model as SessionModel;
 use crate::models::site::Model as SiteModel;
-use crate::models::user::Model as UserModel;
+use crate::models::user::Model as WikijumpUserModel;
+use crate::services::DataFormEditor;
 use crate::services::relation::PageAttribution;
+use crate::services::settings::{PageDiscussionSettings, PageRatingSettings};
+use crate::services::user::User;
+use crate::types::Reference;
 use time::OffsetDateTime;
 
 // NOTE: Any changes to the output structures here, including the variant names,
@@ -107,6 +110,12 @@ pub enum GetPageViewOutput {
         wikidot_snapshot: Option<WikidotPageSnapshotView>,
         wikidot_breadcrumbs: Vec<WikidotPageBreadcrumbView>,
         attributions: Vec<PageAttribution>,
+        #[serde(default)]
+        page_rating: PageRatingSettings,
+        #[serde(default)]
+        page_discussion: PageDiscussionSettings,
+        #[serde(default)]
+        data_form: Option<DataFormEditor>,
         redirect_page: Option<String>,
         #[serde(default)]
         redirect_kind: Option<PageRedirectKind>,
@@ -129,6 +138,8 @@ pub enum GetPageViewOutput {
         page_templates: Vec<PageTemplateSummary>,
         #[serde(default)]
         selected_template_page_id: Option<i64>,
+        #[serde(default)]
+        data_form: Option<DataFormEditor>,
         compiled_body_html: String,
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,
@@ -209,8 +220,7 @@ pub struct GetUserView<'a> {
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "snake_case", tag = "type", content = "data")]
 pub enum GetUserViewOutput {
-    UserFound { user: UserModel },
-
+    UserFound { user: User },
     UserMissing,
 }
 
@@ -265,7 +275,7 @@ pub enum ViewerLicenseKind {
 #[derive(Serialize, Debug, Clone)]
 pub struct UserSession {
     pub session: SessionModel,
-    pub user: UserModel,
+    pub user: WikijumpUserModel,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]

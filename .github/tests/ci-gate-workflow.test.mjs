@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
@@ -20,6 +20,7 @@ test("one central workflow owns required checks without reacting to labels", () 
   for (const action of ["opened", "synchronize", "reopened", "edited", "ready_for_review", "converted_to_draft"]) {
     assert.ok(hasYamlLine(trigger, `- ${action}`), action)
   }
+  assert.match(trigger, /^\s*merge_group:\s*$/m)
   assert.doesNotMatch(trigger, /^      - (?:labeled|unlabeled)$/m)
   assert.doesNotMatch(source, /landing|full-ci/)
   assert.match(source, /^permissions:\n  contents: read$/m)
@@ -38,7 +39,25 @@ test("base edits rerun central CI while metadata edits stay isolated", () => {
   assert.match(concurrency, /format\('ci-pr-\{0\}', github\.event\.pull_request\.number\)/)
   assert.match(concurrency, /format\('ci-run-\{0\}', github\.run_id\)/)
   assert.match(concurrency, /cancel-in-progress:/)
-  assert.match(gate, /format\('CI \/ metadata no-op \(\{0\}\)', github\.run_id\)/)
+  assert.match(gate, /^    name: CI \/ gate$/m)
+  assert.doesNotMatch(gate, /CI \/ draft gate/)
+})
+
+test("metadata edits publish the required gate context without running component checks", () => {
+  const source = workflow("ci-gate.yaml")
+  const gate = source.slice(source.indexOf("  gate:\n"))
+
+  assert.match(
+    gate,
+    /^    name: CI \/ gate$/m,
+  )
+  assert.match(gate, /^    if: \$\{\{ always\(\) \}\}$/m)
+  assert.match(gate, /name: Metadata edit no-op/)
+  assert.match(gate, /echo "This pull request metadata change does not affect CI\."/)
+  assert.match(
+    gate,
+    /if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.action != 'edited' \|\| github\.event\.changes\.base != null \}\}/,
+  )
 })
 
 test("PR classification uses three-dot history while push classification uses two endpoints", () => {
@@ -78,10 +97,10 @@ test("classifier and gate changes fail closed", () => {
   for (const group of GROUPS) assert.equal(manual[group], true, group)
 })
 
-test("Full CI changes select each optional component and workflow policy", () => {
+test("Browser CI changes select Framerail and workflow policy", () => {
   const selected = classifyChanges([".github/workflows/full-ci.yaml"])
-  for (const group of ["deepwell", "wws", "framerail", "workflow"]) assert.equal(selected[group], true, group)
-  assert.equal(selected.locales, false)
+  for (const group of ["framerail", "workflow"]) assert.equal(selected[group], true, group)
+  for (const group of ["deepwell", "wws", "locales"]) assert.equal(selected[group], false, group)
 })
 
 test("documentation is cheap and unknown paths fail closed", () => {
@@ -94,36 +113,25 @@ test("documentation is cheap and unknown paths fail closed", () => {
   }
 })
 
-test("Deepwell draft and candidate paths are exclusive and parallel after classification", () => {
+test("Deepwell validation stays fast and service-free", () => {
   const source = workflow("ci-gate.yaml")
-  const draft = source.slice(source.indexOf("  deepwell_draft:\n"), source.indexOf("  deepwell_candidate:\n"))
-  const candidate = source.slice(source.indexOf("  deepwell_candidate:\n"), source.indexOf("  wws:\n"))
+  const deepwell = source.slice(source.indexOf("  deepwell:\n"), source.indexOf("  wws:\n"))
   const gate = source.slice(source.indexOf("  gate:\n"))
 
-  assert.match(draft, /needs\.classify\.outputs\.draft == 'true'/)
-  assert.match(candidate, /needs\.classify\.outputs\.candidate == 'true'/)
-  assert.doesNotMatch(candidate, /needs:\s*\n\s+- classify|needs: deepwell_draft/)
-  assert.doesNotMatch(draft, /services:|DATABASE_URL|Start MinIO|sqlx/)
-  assert.match(draft, /-deepwell-draft-/)
-  assert.match(candidate, /-deepwell-candidate-/)
-
+  assert.match(deepwell, /needs\.classify\.outputs\.deepwell == 'true'/)
+  assert.doesNotMatch(deepwell, /services:|DATABASE_URL|Start MinIO|sqlx|clippy|cargo test|target/)
+  assert.match(deepwell, /timeout-minutes: 2/)
   for (const command of [
     "cargo machete deepwell",
-    "cargo fmt --all -- --check",
-    "cargo clippy --locked --tests --no-deps",
-    "cargo test --locked --lib --no-default-features",
-    "Start MinIO",
-    "sqlx migrate run",
-    "cargo test --locked --all-features"
-  ]) assert.ok(candidate.includes(command), command)
-
-  for (const job of ["deepwell_draft", "deepwell_candidate"]) assert.ok(hasYamlLine(gate, `- ${job}`), job)
-  assert.match(gate, /needs\.classify\.outputs\.draft == 'true' && 'CI \/ draft gate' \|\| 'CI \/ gate'/)
-  assert.doesNotMatch(source, /^  deepwell_(?:fast|integration):$/m)
-  assert.doesNotMatch(source, /tarpaulin|coverage\/cobertura/)
+    "cargo fmt --manifest-path deepwell/Cargo.toml --all -- --check"
+  ]) assert.ok(deepwell.includes(command), command)
+  assert.ok(hasYamlLine(gate, "- deepwell"))
+  assert.match(gate, /^    name: CI \/ gate$/m)
+  assert.doesNotMatch(gate, /CI \/ draft gate/)
+  assert.doesNotMatch(source, /deepwell_(?:draft|candidate)|tarpaulin|coverage\/cobertura/)
 })
 
-test("one Full CI workflow owns coverage and browser validation", () => {
+test("optional Browser CI contains only browser validation", () => {
   for (const old of ["deepwell.yaml", "wws.yaml", "framerail.yaml"]) {
     assert.equal(existsSync(path.join(root, ".github/workflows", old)), false, old)
   }
@@ -134,26 +142,20 @@ test("one Full CI workflow owns coverage and browser validation", () => {
   for (const action of ["opened", "synchronize", "reopened", "edited", "ready_for_review", "converted_to_draft", "labeled", "unlabeled", "closed"]) {
     assert.ok(hasYamlLine(trigger, `- ${action}`), action)
   }
-  for (const job of ["deepwell_coverage", "export_deepwell_coverage", "wws_coverage", "export_wws_coverage", "framerail_browser"]) {
-    assert.ok(hasYamlLine(source, `${job}:`), job)
-  }
-  assert.equal((source.match(/contains\(github\.event\.pull_request\.labels\.\*\.name, 'full-ci'\)/g) ?? []).length, 3)
-  assert.match(concurrency, /format\('full-ci-pr-\{0\}', github\.event\.pull_request\.number\)/)
-  assert.match(concurrency, /format\('full-ci-run-\{0\}', github\.run_id\)/)
-  assert.match(concurrency, /github\.event\.action == 'unlabeled'\) && github\.event\.label\.name == 'full-ci'/)
-  assert.match(concurrency, /github\.event\.action == 'edited' && github\.event\.changes\.base != null/)
+  assert.ok(hasYamlLine(source, "framerail_browser:"))
+  assert.doesNotMatch(source, /codecov|tarpaulin|coverage|id-token:/i)
+  assert.equal((source.match(/contains\(github\.event\.pull_request\.labels\.\*\.name, 'full-ci'\)/g) ?? []).length, 1)
+  assert.match(concurrency, /github\.workflow/)
   assert.match(concurrency, /cancel-in-progress:/)
   for (const condition of [
     "github.event.pull_request.draft == false",
     "github.event.action != 'closed'",
     "github.event.action != 'converted_to_draft'",
     "github.event.action == 'labeled' && github.event.label.name == 'full-ci'"
-  ]) assert.equal(source.split(condition).length - 1, 3, condition)
-  assert.ok(source.split("github.event.action == 'edited' && github.event.changes.base != null").length - 1 >= 3)
-  const deepwellCoverage = source.slice(source.indexOf("  deepwell_coverage:\n"), source.indexOf("  export_deepwell_coverage:\n"))
-  assert.match(deepwellCoverage, /cargo \+nightly tarpaulin.*-- --test-threads 1/)
+  ]) assert.equal(source.split(condition).length - 1, 1, condition)
+  assert.ok(source.split("github.event.action == 'edited' && github.event.changes.base != null").length - 1 >= 1)
   assert.match(source, /pnpm --dir framerail test/)
-  assert.match(source, /!startsWith\(github\.ref, 'refs\/tags\/'\)/)
+  assert.match(source, /timeout-minutes: 5/)
 })
 
 test("Full CI cancellation and execution policy handles label lifecycle cheaply", () => {
@@ -188,31 +190,20 @@ test("Full CI cancellation and execution policy handles label lifecycle cheaply"
   assert.equal(run({ action: "closed", hasFullCi: true }), false)
 })
 
-test("OIDC is isolated from jobs that execute pull request code", () => {
-  const source = workflow("full-ci.yaml")
-  for (const [coverage, exporter, next] of [
-    ["deepwell_coverage", "export_deepwell_coverage", "wws_coverage"],
-    ["wws_coverage", "export_wws_coverage", "framerail_browser"]
-  ]) {
-    const coverageSource = source.slice(source.indexOf(`  ${coverage}:\n`), source.indexOf(`  ${exporter}:\n`))
-    const exporterStart = source.indexOf(`  ${exporter}:\n`)
-    const exporterSource = source.slice(exporterStart, source.indexOf(`  ${next}:\n`, exporterStart))
-    assert.doesNotMatch(coverageSource, /id-token:/)
-    assert.match(exporterSource, /github\.event_name != 'pull_request'/)
-    assert.match(exporterSource, /^\s*id-token: write$/m)
-    assert.doesNotMatch(exporterSource, /actions\/checkout|\brun:/)
-  }
-})
-
 test("Framerail unit and browser suites remain separate", () => {
   const pkg = JSON.parse(read("framerail/package.json"))
   const gate = workflow("ci-gate.yaml")
   const full = workflow("full-ci.yaml")
   const playwright = read("framerail/playwright.config.ts")
 
-  assert.match(pkg.scripts["test:unit"], /^node --test(?: tests\/[\w-]+\.test\.(?:js|ts))+$/)
+  // The unit suite may name files or glob them, but it must reach only `*.test.*`;
+  // Playwright's specs are `*.spec.*` and belong to the browser suite alone.
+  assert.match(pkg.scripts["test:unit"], /^node --test(?: tests\/(?:\*|[\w-]+)\.test\.(?:js|ts))+$/)
   assert.doesNotMatch(pkg.scripts["test:unit"], /\.spec\.(?:js|ts)/)
-  assert.equal(pkg.scripts.test, "playwright test")
+  // `test` is the browser suite, run through a script because Playwright needs run-time ports.
+  // It must not chain the unit suite: ci-gate runs that already, and full-ci would repeat it.
+  assert.equal(pkg.scripts.test, "node tests/playwright-runner.js")
+  assert.doesNotMatch(pkg.scripts.test, /test:unit/)
   for (const command of ["build", "test:unit", "lint"]) assert.ok(gate.includes(`pnpm --dir framerail ${command}`), command)
   assert.match(full, /pnpm --dir framerail test/)
   assert.doesNotMatch(playwright, /\.test\.(?:js|ts)/)
@@ -237,5 +228,28 @@ test("actions in touched workflows are immutable pins with version comments", ()
       assert.match(version, /^v\d+(?:\.\d+)*$/, `${name}: ${version}`)
     }
     assert.equal(uses.length, (source.match(/^\s*uses:/gm) ?? []).length, name)
+  }
+})
+
+test("external actions in every workflow are immutable pins", () => {
+  const workflowRoot = path.join(root, ".github/workflows")
+  for (const name of readdirSync(workflowRoot).filter((entry) => entry.endsWith(".yml") || entry.endsWith(".yaml"))) {
+    const source = read(`.github/workflows/${name}`)
+    for (const [, action] of source.matchAll(/^\s*uses:\s*([^\s#]+)(?:\s+#\s*\S+)?$/gm)) {
+      if (action.startsWith("./")) continue
+      assert.match(action, /^[^@]+@[0-9a-f]{40}$/, `${name}: ${action}`)
+    }
+  }
+})
+
+test("caching ~/.cargo/bin also caches cargo's install registry", () => {
+  const source = workflow("ci-gate.yaml")
+  const blocks = source.split(/^\s*- name: /m).filter((block) => block.includes("~/.cargo/bin"))
+  assert.ok(blocks.length > 0)
+  for (const block of blocks) {
+    // Without .crates.toml/.crates2.json cargo has no record of having installed
+    // the cached binary, so `cargo install` aborts on the unexpected file.
+    assert.match(block, /~\/\.cargo\/\.crates\.toml/)
+    assert.match(block, /~\/\.cargo\/\.crates2\.json/)
   }
 })

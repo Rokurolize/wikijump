@@ -1,0 +1,55 @@
+{
+  "schema": "wikijump.wikidot_live_probe.v1",
+  "case_id": "loginstatus-module-live-preview-matrix",
+  "captured_at": "2026-07-29T01:05:01.524006+00:00",
+  "site": "sandbox-for-codex",
+  "module_route": "edit/PagePreviewModule",
+  "mutated": false,
+  "notes": [
+    "LoginStatus is documented in doc:layout-reference as a custom-layout module, independent from normal page-source modules.",
+    "PagePreviewModule shows that page source treats LoginStatus as an unavailable module for both anonymous and authenticated viewers."
+  ],
+  "cases": [
+    {
+      "case_id": "anonymous-basic-no-such-module",
+      "viewer": "anonymous",
+      "source": "[[module LoginStatus]]",
+      "source_sha256": "4ae4baf0de43e753c1b11731dc05bb89f1c94beb95a6d4e1526d19726438e32c",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>LoginStatus</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "991c6d6cf7835bf551ed54e477e04a9f500e4b594429303f6bd5faed0cdaeb6f"
+    },
+    {
+      "case_id": "anonymous-uppercase-name-preserved",
+      "viewer": "anonymous",
+      "source": "[[module LOGINSTATUS]]",
+      "source_sha256": "d7c5325cbc82e817a35afa66f758ddf1130e044eee9714d1affb17fb4f842d01",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>LOGINSTATUS</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "bcdfa08659e5554f842e76ed4db4b5d535115a1fff35df8840a6da2b92c12ba7"
+    },
+    {
+      "case_id": "anonymous-with-closing-body-literal",
+      "viewer": "anonymous",
+      "source": "[[module LoginStatus]]\n[[/module]]",
+      "source_sha256": "11bdbc619f8c140a6651cadaa26b6e6fabc718ee653992d3ee328c372c983555",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>LoginStatus</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n<p>[[/module]]</p>\n",
+      "body_sha256": "b40006dff1426fd92a9bac2387346f84684e83f9cd9b33b4be604e4bb499ab12"
+    },
+    {
+      "case_id": "account-a-basic-no-such-module",
+      "viewer": "account-a",
+      "account": {
+        "id": 8955132,
+        "slug": "scpaiueouiuiuiui",
+        "title": null
+      },
+      "source": "[[module LoginStatus]]",
+      "source_sha256": "4ae4baf0de43e753c1b11731dc05bb89f1c94beb95a6d4e1526d19726438e32c",
+      "status": "ok",
+      "body": "\n\n<div class=\"error-block\">[[module <em>LoginStatus</em>]] No such module, please <a href=\"http://www.wikidot.com/doc:modules\" target=\"_blank\">check available modules</a> and fix this page.</div>\n",
+      "body_sha256": "991c6d6cf7835bf551ed54e477e04a9f500e4b594429303f6bd5faed0cdaeb6f"
+    }
+  ]
+}

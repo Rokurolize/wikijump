@@ -18,12 +18,65 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::impls::*;
-use super::prelude::*;
+use super::impls::{MeanScorer, SumScorer};
+use super::scorer::Scorer;
+use super::structs::{ScoreType, VoteMap, VoteType, VoteValue};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::models::page_vote::{self, Entity as PageVote};
+use crate::services::ServiceContext;
+use crate::services::settings::PageRatingType;
+use crate::services::{PageService, SettingsService};
+use ftml::data::ScoreValue;
 use sea_orm::Statement;
+use sea_orm::{
+    ColumnTrait, Condition, ConnectionTrait, DatabaseTransaction, EntityTrait,
+    FromQueryResult, QueryFilter, QuerySelect,
+};
 
 #[derive(Debug)]
 pub struct ScoreService;
+
+#[derive(Debug)]
+enum ConfiguredScorer {
+    Sum(SumScorer),
+    Mean(MeanScorer),
+}
+
+impl ConfiguredScorer {
+    fn vote_store_key(&self) -> &'static str {
+        match self {
+            Self::Sum(_) => "points",
+            Self::Mean(_) => "stars",
+        }
+    }
+}
+
+impl Scorer for ConfiguredScorer {
+    fn score_type(&self) -> ScoreType {
+        match self {
+            Self::Sum(scorer) => scorer.score_type(),
+            Self::Mean(scorer) => scorer.score_type(),
+        }
+    }
+
+    fn accepts_vote_type(&self, vote_type: VoteType) -> bool {
+        match self {
+            Self::Sum(scorer) => scorer.accepts_vote_type(vote_type),
+            Self::Mean(scorer) => scorer.accepts_vote_type(vote_type),
+        }
+    }
+
+    async fn score(
+        &self,
+        txn: &DatabaseTransaction,
+        condition: Condition,
+    ) -> Result<ScoreValue> {
+        match self {
+            Self::Sum(scorer) => scorer.score(txn, condition).await,
+            Self::Mean(scorer) => scorer.score(txn, condition).await,
+        }
+    }
+}
 
 impl ScoreService {
     pub async fn scores_bulk(
@@ -64,6 +117,7 @@ impl ScoreService {
                      FROM input \
                      LEFT JOIN wikidot_page_snapshot snapshot ON snapshot.page_id = input.page_id \
                      LEFT JOIN page_vote vote ON vote.page_id = input.page_id \
+                       AND vote.rating_system = 'points' \
                        AND vote.deleted_at IS NULL \
                        AND vote.disabled_at IS NULL \
                        AND (snapshot.imported_rating IS NULL OR vote.from_wikidot = false) \
@@ -79,6 +133,7 @@ impl ScoreService {
                      SELECT input.page_id, NULL::BIGINT AS imported_rating, COALESCE(SUM(vote.value), 0) AS local_score \
                      FROM input \
                      LEFT JOIN page_vote vote ON vote.page_id = input.page_id \
+                       AND vote.rating_system = 'points' \
                        AND vote.deleted_at IS NULL \
                        AND vote.disabled_at IS NULL \
                      GROUP BY input.page_id, input.ordinal \
@@ -135,11 +190,19 @@ impl ScoreService {
             )
         };
 
-        let imported_rating = Self::imported_rating(ctx, page_id)
-            .await
-            .or_raise(make_error)?;
-        let condition = Self::build_condition(page_id, imported_rating.is_some());
         let scorer = Self::get_scorer(ctx, page_id).await.or_raise(make_error)?;
+        let imported_rating = if scorer.score_type() == ScoreType::Mean {
+            None
+        } else {
+            Self::imported_rating(ctx, page_id)
+                .await
+                .or_raise(make_error)?
+        };
+        let condition = Self::build_condition(
+            page_id,
+            imported_rating.is_some(),
+            scorer.vote_store_key(),
+        );
         let local_score = scorer.score(txn, condition).await.or_raise(make_error)?;
 
         match imported_rating {
@@ -152,13 +215,23 @@ impl ScoreService {
 
     /// Gets the correct `Scorer` implementation for this page.
     ///
-    /// Site-level score settings are not implemented yet, so use Wikidot's
-    /// ordinary signed-vote sum as the deterministic default.
-    pub async fn get_scorer(
-        _ctx: &ServiceContext<'_>,
-        _page_id: i64,
-    ) -> Result<impl Scorer> {
-        Ok(SumScorer)
+    async fn get_scorer(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+    ) -> Result<ConfiguredScorer> {
+        let page = PageService::get_direct(ctx, page_id, true).await?;
+        let settings = SettingsService::get_page_rating_settings(
+            ctx,
+            page.site_id,
+            page.page_category_id,
+        )
+        .await?;
+        Ok(match settings.rating_type {
+            PageRatingType::Stars => ConfiguredScorer::Mean(MeanScorer),
+            PageRatingType::Plus | PageRatingType::PlusMinus => {
+                ConfiguredScorer::Sum(SumScorer)
+            }
+        })
     }
 
     /// Helper method for retrieving a `VoteMap` for a page.
@@ -282,9 +355,14 @@ impl ScoreService {
         }
     }
 
-    fn build_condition(page_id: i64, local_votes_only: bool) -> Condition {
+    fn build_condition(
+        page_id: i64,
+        local_votes_only: bool,
+        rating_system: &str,
+    ) -> Condition {
         let mut condition = Condition::all()
             .add(page_vote::Column::PageId.eq(page_id))
+            .add(page_vote::Column::RatingSystem.eq(rating_system))
             .add(page_vote::Column::DeletedAt.is_null())
             .add(page_vote::Column::DisabledAt.is_null());
 

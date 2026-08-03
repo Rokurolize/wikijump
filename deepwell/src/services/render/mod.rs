@@ -18,49 +18,56 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#[allow(unused_imports)]
-mod prelude {
-    pub use super::super::prelude::*;
-    pub use super::structs::*;
-    pub use ftml::data::PageInfo;
-    pub use ftml::parsing::ParseError;
-    pub use ftml::render::Render;
-    pub use ftml::render::html::{HtmlOutput, HtmlRender};
-    pub use ftml::settings::WikitextSettings;
-    pub use ftml::{self};
-}
-
-mod compat_fallback_code;
-mod compat_html_fragments;
-mod compat_text_fragments;
+mod backlinks;
+mod categories;
+mod child_pages;
+mod compat;
+mod corpus;
 mod diagnostics;
-mod footnote_dom;
+mod ftml_page_existence;
+mod ftml_user_info;
 mod generator;
 mod html_text;
 mod iftags;
 mod include_attachment_owners;
 mod include_comment_branches;
+mod include_missing;
 mod include_variable_iftags;
-mod issued_markers;
+mod include_variables;
+mod link_modules;
 #[allow(dead_code)]
 mod list_pages;
-mod list_pages_content_sections;
-mod list_pages_scanner;
-mod list_pages_template;
 mod literal_regions;
 mod metacomponent;
+mod module_arguments;
 mod native_list_context;
+mod new_page_module;
+mod next_previous_page;
+mod page_preview;
+mod page_tree;
+mod pages;
+mod pages_by_tag;
 mod percent_encoding;
+mod rate_module;
 mod render_dependency;
+mod render_options;
 mod replay;
+mod runtime;
+mod runtime_modules;
+mod runtime_page_queries;
 mod service;
 mod structs;
-mod wikidot_inline_markers;
+mod url_arguments;
+mod wikidot_hosts;
 
+pub(crate) use self::corpus::{
+    CorpusRenderFinalizerService, CorpusRenderInventoryService, RenderFinalizerSettings,
+    RenderInventorySettings,
+};
 pub(crate) use self::diagnostics::{
-    CORPUS_RENDER_BUDGET_US, CORPUS_RENDER_DIMENSIONS, CorpusRenderDimension,
-    CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, CorpusRenderTraceSnapshot,
-    StageGuard, is_corpus_render_timing,
+    CORPUS_RENDER_BUDGET_US, CORPUS_RENDER_DIMENSIONS, CorpusRenderScope,
+    CorpusRenderStage, CorpusRenderTrace, CorpusRenderTraceSnapshot, StageGuard,
+    is_corpus_render_timing,
 };
 pub(crate) use self::literal_regions::LiteralRegionIndex;
 pub use self::render_dependency::{
@@ -72,6 +79,12 @@ pub(crate) use self::replay::{
 pub use self::service::RenderService;
 pub(crate) use self::service::{
     CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,
-    CorpusReplayPreparedWikitext, CorpusReplayStageTimings, CorpusReplaySyntaxFeatures,
 };
-pub use self::structs::*;
+pub use self::structs::{
+    RenderOutput, RenderPageOutput, WikidotListPagesFeedInput, WikidotListPagesFeedItem,
+    WikidotListPagesFeedOutput,
+};
+pub use self::url_arguments::{
+    UrlArgumentPair, UrlArguments, wikitext_reads_url_arguments,
+    wikitext_requires_runtime_render,
+};

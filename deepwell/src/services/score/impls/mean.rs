@@ -18,7 +18,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
+use super::super::scorer::Scorer;
+use super::super::structs::{ScoreType, VoteType};
+use super::make_error;
+use crate::error::prelude::{Result, ResultExt};
+use crate::models::page_vote::{self, Entity as PageVote};
+use ftml::data::ScoreValue;
+use sea_orm::{
+    ColumnTrait, Condition, DatabaseTransaction, EntityTrait, FromQueryResult,
+    QueryFilter, QuerySelect,
+};
 
 #[derive(Debug)]
 pub struct MeanScorer;
@@ -42,8 +51,8 @@ impl Scorer for MeanScorer {
     ) -> Result<ScoreValue> {
         #[derive(FromQueryResult, Debug)]
         struct MeanRow {
-            sum: u64,
-            count: u64,
+            sum: Option<i64>,
+            count: i64,
         }
 
         // Query for sum of all votes.
@@ -59,6 +68,7 @@ impl Scorer for MeanScorer {
         // GROUP BY value;
 
         let MeanRow { sum, count } = PageVote::find()
+            .select_only()
             .column_as(page_vote::Column::Value.sum(), "sum")
             .column_as(page_vote::Column::Value.count(), "count")
             .filter(condition)
@@ -68,9 +78,10 @@ impl Scorer for MeanScorer {
             .or_raise(|| make_error("mean"))?
             .expect("No results in aggregate query");
 
-        let sum = sum as f64;
-        let count = count as f64;
-        Ok(ScoreValue::Float(sum / count))
+        if count == 0 {
+            return Ok(ScoreValue::Float(0.0));
+        }
+        Ok(ScoreValue::Float(sum.unwrap_or(0) as f64 / count as f64))
     }
 }
 

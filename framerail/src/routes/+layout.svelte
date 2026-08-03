@@ -5,7 +5,7 @@
 
   import { page } from "$app/state"
   import { onMount, setContext } from "svelte"
-  import { pageLayoutState, errorPopupState } from "$lib/stores.svelte"
+  import { pageLayoutState, errorPopupState } from "$lib/layout/stores.svelte"
   import { Layout } from "$lib/types"
   import {
     WIKIDOT_POWERED_BY,
@@ -14,12 +14,12 @@
     buildWikidotLoginLabels,
     isImportedWikidotView,
     shouldUseWikidotLicenseHtml
-  } from "$lib/wikidot-footer"
+  } from "$lib/wikidot/wikidot-footer"
   import {
     PAGE_LAYOUT_CONTEXT_KEY,
     type PageLayoutContext
-  } from "$lib/page-layout-context"
-  import { resolveShellLayout } from "$lib/wikidot-shell"
+  } from "$lib/layout/page-layout-context"
+  import { resolveShellLayout } from "$lib/layout/wikidot-shell"
   import {
     resolveCanonicalViewData,
     resolveCanonicalViewMetadata
@@ -30,8 +30,18 @@
     resolveWikidotSiteTagline,
     resolveWikidotSiteTitle,
     shouldUseSandboxWikidotChrome
-  } from "$lib/wikidot-chrome"
-  import { extractWikidotStyleFrameStylesheets } from "$lib/wikidot-styleframe"
+  } from "$lib/wikidot/wikidot-chrome"
+  import {
+    buildWikidotInlineStyleFrameHead,
+    extractWikidotStyleFrameDeclarations
+  } from "$lib/wikidot/wikidot-styleframe"
+  import {
+    IOS_ICON_DECLARATIONS,
+    IOS_ICON_ROUTE_PREFIX,
+    faviconDeclaration,
+    hasIosIcons
+  } from "$lib/site-icons"
+  import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
 
   let { children } = $props()
 
@@ -82,11 +92,17 @@
   )
   const useSandboxWikidotChrome = $derived(shouldUseSandboxWikidotChrome(viewData))
   const wikidotSiteTitle = $derived(resolveWikidotSiteTitle(viewData))
+  const siteFavicon = $derived(faviconDeclaration(viewData?.site ?? null))
+  const siteHasIosIcons = $derived(hasIosIcons(viewData?.site ?? null))
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
-  const shellStyleFrameStylesheets = $derived(
-    extractWikidotStyleFrameStylesheets(
-      [viewData?.compiled_top_bar_html, viewData?.compiled_side_bar_html],
+  const styleFrameDeclarations = $derived(
+    extractWikidotStyleFrameDeclarations(
+      [
+        viewData?.compiled_top_bar_html,
+        viewData?.compiled_side_bar_html,
+        viewData?.compiled_body_html
+      ],
       page.url.origin
     )
   )
@@ -99,7 +115,8 @@
   onMount(() => {
     let disposed = false
     let stop: (() => void) | undefined
-    void import("$lib/wikidot-code-highlighting").then((module) => {
+    installWikidotNewPageHelper(window)
+    void import("$lib/wikidot/wikidot-code-highlighting").then((module) => {
       if (!disposed) stop = module.observeWikidotCodeBlocks(document)
     })
     return () => {
@@ -122,17 +139,36 @@
 
 <svelte:head>
   <title>{viewData?.site?.name}</title>
+  {#if siteFavicon}
+    <link href={siteFavicon.href} rel="shortcut icon" />
+    <link href={siteFavicon.href} rel="icon" type={siteFavicon.type} />
+  {:else}
+    <link href="data:," rel="icon" />
+  {/if}
+  {#if siteHasIosIcons}
+    {#each IOS_ICON_DECLARATIONS as iosIcon (iosIcon.filename)}
+      <link
+        href={`${IOS_ICON_ROUTE_PREFIX}${iosIcon.filename}`}
+        rel="apple-touch-icon"
+        sizes={iosIcon.sizes ?? undefined}
+      />
+    {/each}
+  {/if}
   {#if currentLayout === Layout.WIKIDOT}
     <link href="/wikidot/styles/wikidot-base-165bc434fd1d.css" rel="stylesheet" />
     <link href="/wikidot/styles/pagerate-db0bffe086ed.css" rel="stylesheet" />
     <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
-    {#each shellStyleFrameStylesheets as stylesheet, index (`${stylesheet.priority}:${stylesheet.href}:${index}`)}
-      <link
-        data-wikidot-style-preloaded
-        data-wikidot-style-priority={stylesheet.priority}
-        href={stylesheet.href}
-        rel="stylesheet"
-      />
+    {#each styleFrameDeclarations as declaration, index (`${declaration.priority}:${declaration.kind}:${declaration.order}:${index}`)}
+      {#if declaration.kind === "theme"}
+        <link
+          data-wikidot-style-preloaded
+          data-wikidot-style-priority={declaration.priority}
+          href={declaration.href}
+          rel="stylesheet"
+        />
+      {:else}
+        {@html buildWikidotInlineStyleFrameHead(declaration)}
+      {/if}
     {/each}
   {/if}
 </svelte:head>

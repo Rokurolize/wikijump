@@ -2,7 +2,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { codePointCompare, sha256Hex, stableStringify } from './canonical-json.mjs';
 import { isWikidotResourceHost } from './resource-manifest.mjs';
+
+export { sha256Hex, stableStringify } from './canonical-json.mjs';
 
 const REQUIRED_META_KEYS = [
   'children',
@@ -34,25 +37,6 @@ const ATTACHMENT_MANIFEST_FILENAME = 'files.json';
 const ATTACHMENT_STATE_MANIFEST_FILENAME = '_state.json';
 const ATTACHMENT_FILES_DIRECTORY = 'files';
 const SHA256_RE = /^[0-9a-f]{64}$/iu;
-
-export function sha256Hex(bufferOrString) {
-  return crypto.createHash('sha256').update(bufferOrString).digest('hex');
-}
-
-function codePointCompare(left, right) {
-  return left < right ? -1 : left > right ? 1 : 0;
-}
-
-export function stableStringify(value) {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
-  }
-  const entries = Object.entries(value).sort(([left], [right]) => codePointCompare(left, right));
-  return `{${entries.map(([key, entryValue]) => `${JSON.stringify(key)}:${stableStringify(entryValue)}`).join(',')}}`;
-}
 
 function readUtf8File(filePath) {
   const buffer = fs.readFileSync(filePath);
@@ -126,6 +110,9 @@ function validateMeta(meta, rowPath) {
   assertNonNegativeInteger(meta.comments, 'comments', rowPath);
   assertInteger(meta.rating, 'rating', rowPath);
   assertNonNegativeInteger(meta.revisions, 'revisions', rowPath);
+  if (Object.hasOwn(meta, 'size') && meta.size !== null) {
+    assertNonNegativeInteger(meta.size, 'size', rowPath);
+  }
 
   if (!Array.isArray(meta.tags) || meta.tags.some((tag) => typeof tag !== 'string')) {
     throw new Error(`${rowPath}: meta.tags must be an array of strings`);
@@ -227,6 +214,9 @@ function normalizeSourceBundleMeta(meta, rowPath) {
     comments: coerceNonNegativeInteger(meta.comments ?? meta.comments_count ?? 0, 'comments_count', rowPath),
     rating: Object.hasOwn(meta, 'rating') ? coerceInteger(meta.rating, 'rating', rowPath) : 0,
     revisions: coerceNonNegativeInteger(meta.revisions ?? meta.revisions_count ?? 0, 'revisions_count', rowPath),
+    size: Object.hasOwn(meta, 'size')
+      ? coerceNonNegativeInteger(meta.size, 'size', rowPath)
+      : null,
     tags: meta.tags,
     source_bytes: Object.hasOwn(meta, 'source_bytes') ? coerceNonNegativeInteger(meta.source_bytes, 'source_bytes', rowPath) : null,
     source_sha256: meta.source_sha256 ?? null,
@@ -439,7 +429,7 @@ function attachmentEntriesFromStateManifest(statePath) {
   });
 }
 
-function readAttachmentManifest({ pageDir, manifestRoot, rowPath }) {
+function readAttachmentManifest({ pageDir, manifestRoot }) {
   let manifestPath = path.join(pageDir, ATTACHMENT_MANIFEST_FILENAME);
   let manifest;
   if (fs.existsSync(manifestPath)) {
@@ -589,6 +579,7 @@ function rowFromRecord({
     comments: meta.comments,
     rating: meta.rating,
     revisions: meta.revisions,
+    wikidot_size: meta.size ?? null,
     tags: [...meta.tags].sort(codePointCompare),
     source_sha256: sha256Hex(sourceFile.buffer),
     meta_sha256: sha256Hex(metaFile.buffer),
@@ -678,7 +669,6 @@ export function buildCorpusImportManifest({ corpusRoot = null, sourceBundleRoot 
     const attachments = readAttachmentManifest({
       pageDir,
       manifestRoot: corpusRoot,
-      rowPath: pageDir,
     });
 
     rows.push(rowFromRecord({
@@ -773,7 +763,6 @@ export function buildSourceBundleImportManifest({ sourceBundleRoot, sourceSite =
     const attachments = readAttachmentManifest({
       pageDir,
       manifestRoot: sourceBundleRoot,
-      rowPath: pageDir,
     });
 
     rows.push(rowFromRecord({

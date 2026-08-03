@@ -1,0 +1,3658 @@
+{
+  "schema": "wikijump.wikidot_implementation_ledger.v2",
+  "updated_at": "2026-07-30",
+  "catalog_sha256": "5af7164f21add6d7c178acf81dbeee9d65bb468f6ac16bcef8a2c21a16d40124",
+  "campaign": {
+    "name": "Parallel Wikidot compatibility campaign",
+    "requested_scope": [
+      "module-listpages"
+    ],
+    "note": "All catalog entries remain represented as required by IMPLEMENTATION_PROMPT.md. Campaign-scoped features must classify P1-P8 before a terminal implementation claim; unrelated catalog entries remain pending rather than being falsely marked complete."
+  },
+  "features": {
+    "api-categories-select": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-categories-select.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-deleted-methods": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-deleted-methods.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-files-get-meta": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-files-get-meta.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-files-get-one": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-files-get-one.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-files-save-one": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-files-save-one.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-files-select": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-files-select.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-overview": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-overview.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-pages-get-meta": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-pages-get-meta.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-pages-get-one": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-pages-get-one.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-pages-save-one": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-pages-save-one.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-pages-select": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-pages-select.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-posts-get": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-posts-get.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-posts-select": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-posts-select.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-tags-select": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-tags-select.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "api-users-get-me": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/api/api-users-get-me.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-checkbox-field": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Live generated checkbox create/edit control DOM, exact stored-source readback, default display, and direct/ListPages variables",
+        "Deepwell public missing/found page view and ListPages query/render contracts",
+        "Framerail public generated data-form create/edit browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "checkbox_and_wiki_fields_follow_live_control_and_storage_contracts; checkbox_defaults_and_wiki_dimensions_cover_live_boundaries",
+          "scope": "definition and storage regressions verify exact-one checkbox defaults, quoted binary records, common field properties, wiki dimensions, and fail-closed scalar boundaries"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_checkbox_and_wiki_contract",
+          "scope": "public missing, create, saved, and edit page views verify checkbox controls, defaults, canonical storage restoration, and default-table output"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "scope": "public saved-page ListPages rendering verifies checkbox form_data and form_raw both expose the stored digit"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js; framerail/tests/data-form-create-flow.spec.ts",
+          "name": "checkbox/wiki source serialization and public create/edit browser flow",
+          "scope": "unit and browser regressions verify exact checked DOM, default state, quoted storage, mutation payloads, and edit restoration"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/page_query/structs.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/view/service.rs",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-checkbox-field.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-creating-new-page": {
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Deepwell category-template data-form definition loading and default saved-page table rendering",
+        "Deepwell public missing/found page view contracts for create and edit",
+        "Framerail public missing-page Create page and existing-page Edit flows",
+        "Existing Framerail page create/edit mutation boundary"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "empty_and_unselected_selects_round_trip_as_null",
+          "scope": "parser and canonical storage regression verifies that missing and empty value lists remain compatible fields and that unselected select values parse and serialize only as the plain null scalar"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_category_data_form_definition_in_template_order",
+          "scope": "public missing, create, saved, edit, and default table rendering behavior for text and select fields, including template self-exclusion, edit-permission metadata gating, complete stored-source validation, and non-bare route fallback"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_text_and_select_control_contract",
+          "scope": "public missing and found page views verify live text/select definitions, the complete observed dimension fallback matrix, retained empty selects with null storage, reserved-looking labels, canonical saved-value restoration, non-canonical scalar rejection, and fail-closed text-only select properties"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js",
+          "name": "data-form source serialization unit tests",
+          "scope": "template-order defaults, cardinality-sensitive select initialization, backend-provided saved values, prototype-sensitive field names, and exact live text/select scalar serialization"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form create and edit browser flow",
+          "scope": "HTTP 404 missing-page DOM, client Create page transition, stale-content suppression, Enter-key suppression, public controls, select defaults, restored values, exact create/edit source payloads, non-empty NewPage tags failure without mutation, and valid parentPage assignment after create"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form text and select controls match live validation and storage",
+          "scope": "public browser flow verifies input, textarea, radio, and dropdown DOM; custom regex validation; invalid-value preservation; and exact live scalar storage"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "pathological data-form match patterns fail closed without blocking the editor",
+          "scope": "public browser flow verifies adversarial match evaluation cannot block the editor or cause a page-create mutation"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_checkbox_and_wiki_contract",
+          "scope": "public missing, create, saved, and edit page views verify the observed checkbox/wiki definition, restoration, and default-display contract"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js; framerail/tests/data-form-create-flow.spec.ts",
+          "name": "checkbox/wiki source serialization and public create/edit browser flow",
+          "scope": "unit and public browser regressions verify generated controls, defaults, exact source payloads, and edit restoration"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/category/service.rs",
+        "deepwell/src/services/view/structs.rs",
+        "deepwell/src/services/view/service.rs",
+        "deepwell/src/services/render/list_pages/data_forms.rs",
+        "docs/ftml-boundary-deviations/data-form-category-template.md",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/lib/server/deepwell/page.ts",
+        "framerail/src/lib/server/load/page/page-edit-actions.ts",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+        "framerail/src/routes/+error.svelte",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
+        "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-creating-new-page.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-create-edit-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-newpage-metadata-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Live create, edit, validation, storage, and rendering behavior for data-form field types other than text, select, checkbox, and wiki remains to be observed and implemented.",
+        "Custom data-form layouts after the ==== separator and their display-variable substitutions remain to be implemented.",
+        "The observed text/select/checkbox/wiki validation and escaping contract is implemented and covered; validation and escaping for the remaining field types still require live probes before implementation.",
+        "Valid parentPage creation and non-empty tags rejection are observed, implemented, and covered through the public browser and Deepwell mutation seams. Missing-parent, empty-tags, malformed-route, and permission variants remain unobserved.",
+        "Template edit, reassignment, deletion, and restoration must be proven to invalidate every anonymous imported-page cache entry that depends on the category template.",
+        "The live Do not notify watchers control and its mutation semantics remain omitted until the page-watcher backend exists and the data-form request contract is observed.",
+        "FTML does not yet expose a structured data-form definition, stored-record validator, or Wikidot-layout table primitive; the temporary Wikijump-side codec is constrained by the committed boundary-deviation note."
+      ]
+    },
+    "data-forms-css-styling": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-css-styling.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-dataforms-and-listpages": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Read-only live Vineyard data-form page/template oracle plus run-owned sandbox raw-source limitation probe",
+        "Deepwell public saved-page page_get compiled HTML interface",
+        "Deepwell public PageQuery/ListPages render interface for data-form field selection, ordering, and variables"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_data_form_variables_match_live_wikidot",
+          "scope": "public saved-page rendering verifies form_data, form_raw, form_label, form_hint, select display labels, empty fields, and missing fields on data-form pages"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_missing_data_form_variables_stay_literal_without_blocking_rows",
+          "scope": "public saved-page rendering verifies ordinary non-data-form pages keep missing form variables literal while ListPages rows still execute"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_template_selectors_can_use_current_page_data_form_values",
+          "scope": "public saved-page rendering verifies current-page form_raw variables inside a data-form template ListPages head resolve before _field selectors and data-form field ordering renders display labels"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "scope": "public saved-page rendering verifies checkbox digits and wiki-parsed form_data/form_raw output, including canonical multiline stored-source decoding"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/list_pages/data_forms.rs",
+        "deepwell/src/services/render/list_pages/rendering.rs",
+        "deepwell/src/services/render/list_pages/substitution.rs",
+        "deepwell/src/services/page_query"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-dataforms-and-listpages.md",
+        "specifications/module/module-listpages.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json",
+        "install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-date-field": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-date-field.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-deleting-form": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-deleting-form.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-displaying": {
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live generated default data-form table plus direct and ListPages template-variable rendering",
+        "Deepwell public saved-page page_get compiled HTML and ListPages render contracts"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_checkbox_and_wiki_contract",
+          "scope": "public saved-page default display verifies checkbox digits, page-context wiki rendering, literal affixes, join behavior, and the exact Wikidot table structure"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "scope": "public ListPages rendering verifies checkbox and wiki display variables"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/view/service.rs",
+        "deepwell/src/services/render/list_pages/data_forms.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-displaying.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Observed checkbox and wiki default-table and template-variable behavior is implemented and covered. Custom layouts, including the adversarial direct raw-wiki adjacent-block composition, and the remaining field types still require implementation or live coverage."
+      ]
+    },
+    "data-forms-field-properties": {
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live generated data-form create/edit control DOM and exact stored-source readback",
+        "Deepwell public missing/found page view data-form contract",
+        "Framerail public generated data-form create/edit browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_text_and_select_control_contract",
+          "scope": "public missing/found page views verify implicit text type, the observed width and height boundary matrix, defaults, hints, match metadata, join and affix metadata, retained empty select fields, reserved-looking labels, canonical null and non-null stored-value restoration, rejection of noncanonical records, and fail-closed unsupported shapes"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "parses_and_renders_live_field_property_contract; applies_live_scalar_truthiness_comments_and_empty_match_rules; unknown_or_ambiguous_definition_shapes_fail_closed_for_create_edit; stored_values_must_match_the_complete_observed_record_shape",
+          "scope": "definition, rendering, and storage boundary tests cover label omission, join grouping, literal before and after affixes, legacy scalar truthiness, hash comments, empty validation properties, joined default-table rows, escaped and multiline display, and fail-closed malformed or noncanonical shapes"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage; pathological data-form match patterns fail closed without blocking the editor; invalid data-form match patterns use a host-owned diagnostic",
+          "scope": "public browser flows verify joined control groups, omitted labels, literal affixes, exact live field label/id DOM, width, height, hints, generated and custom match-error DOM, extended and duplicate regex modifiers, preserved invalid values, one overall worker budget, safety diagnostics, unselected-select null storage, defaults, exact saved source, and edit restoration"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs; deepwell/tests/page_template_assignment.rs; framerail/tests/data-form-create-flow.spec.ts",
+          "name": "checkbox/wiki common properties and public rendering flow",
+          "scope": "unit, public Deepwell, and browser regressions verify checkbox/wiki label, join, literal before/after affixes, dimensions, defaults, ignored checkbox hint, wiki placeholder, and text-only validation boundaries"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-field-properties.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Label, join, before, and after are observed, implemented, and covered for text, select, checkbox, and wiki fields. The other pending field types still require live coverage."
+      ]
+    },
+    "data-forms-file-field": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-file-field.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-hidden-field": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-hidden-field.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-hints": {
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live generated text-field placeholder DOM",
+        "Deepwell public missing-page data-form contract",
+        "Framerail public generated data-form create browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_text_and_select_control_contract",
+          "scope": "public missing-page view preserves text and ignored-select hint metadata, including the documented escaped-hash value"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "parses_and_renders_live_field_property_contract; applies_live_scalar_truthiness_comments_and_empty_match_rules",
+          "scope": "parser regressions cover exact quoted spacing, raw-hash comments, retained escaped hashes, empty hints, and select hint acceptance"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage",
+          "scope": "public browser flows verify exact text input and textarea placeholders, including retained backslashes and surrounding spaces, while select hints produce no placeholder"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs; deepwell/tests/page_template_assignment.rs; framerail/tests/data-form-create-flow.spec.ts",
+          "name": "checkbox/wiki hint parsing and public control rendering",
+          "scope": "unit, public Deepwell, and browser regressions verify exact wiki placeholders and the absence of visible checkbox hints"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-hints.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Text, select, checkbox, and wiki hint behavior is observed, implemented, and covered. Heading/CSS composition and remaining field types still require coverage."
+      ]
+    },
+    "data-forms-howto": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-howto.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-images": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-images.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-links": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-links.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-output-style": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-output-style.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-overview": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-overview.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-pagepath": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-pagepath.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-pagepath-field": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-pagepath-field.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-password-field": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-password-field.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-select-field": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Live generated create/edit radio and select DOM, default selection, saved source, and default table display",
+        "Deepwell public missing/found page view and ListPages field-query/render seams",
+        "Framerail public generated data-form create/edit browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "empty_and_unselected_selects_round_trip_as_null",
+          "scope": "parser and canonical storage regression verifies that missing and empty value lists remain compatible fields and that unselected select values parse and serialize only as the plain null scalar"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_text_and_select_control_contract",
+          "scope": "public missing/found page views verify zero-, one-, and five-value select definitions, defaults, ignored hint plus before and after metadata, retention and null restoration of empty selects, reserved-looking labels, canonical quoted numeric scalar restoration, text-only-property rejection, and default-table display"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js",
+          "name": "a five-option select without a default starts at its first option; empty and unselected select values serialize as Wikidot null scalars; data-form source uses Wikidot text and select scalar encoding",
+          "scope": "public state and serialization helpers verify five-option implicit selection plus null, plain word, and quoted numeric select storage"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage; empty and unselected select fields save and restore as Wikidot null",
+          "scope": "public browser flows verify ignored select hints, literal affixes, joined grouping, absent zero-option controls, unselected and selected radios, dropdown DOM, defaults, exact null/plain/quoted saved source, and restored values on edit"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_data_form_variables_match_live_wikidot; listpages_template_selectors_can_use_current_page_data_form_values",
+          "scope": "public saved-page and ListPages seams verify select display labels, raw values, field selection, ordering, and template-variable rendering"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/render/list_pages/data_forms.rs",
+        "deepwell/src/services/render/list_pages/rendering.rs",
+        "deepwell/src/services/render/list_pages/substitution.rs",
+        "deepwell/src/services/page_query",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-select-field.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-empty-select-storage-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-selecting-and-sorting": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Read-only live Vineyard data-form page/template oracle plus run-owned sandbox raw-source limitation probe",
+        "Deepwell public saved-page page_get compiled HTML interface",
+        "Deepwell public PageQuery/ListPages render interface for data-form field selection, ordering, and variables"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_template_selectors_can_use_current_page_data_form_values",
+          "scope": "public saved-page rendering verifies current-page form_raw variables inside a data-form template ListPages head resolve before AND-combined _field selectors and order=\"_field desc\" sorts by stored field values while rendering form_data labels"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "page_query_data_form_field_ordering_uses_static_form_values",
+          "scope": "public PageQuery service verifies string and integer data-form field ordering over source-backed form values"
+        },
+        {
+          "path": "deepwell/src/services/render/service/tests.rs",
+          "name": "parses_static_data_form_selectors",
+          "scope": "ListPages argument parser coverage for _field selectors, negated selectors, case-preserved field names, and fail-closed dynamic @URL selectors"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/page_query/service.rs",
+        "deepwell/src/services/page_query/structs.rs",
+        "deepwell/src/services/render/list_pages/rendering.rs",
+        "deepwell/src/services/render/list_pages/substitution.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-selecting-and-sorting.md",
+        "specifications/module/module-listpages.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-static-field": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-static-field.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-tags": {
+      "status": "pending",
+      "confirmed_public_seams": [
+        "Framerail generated data-form create flow for NewPage-provided tags"
+      ],
+      "tests": [
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form create rejects NewPage tags without creating a page",
+          "scope": "observed generic processing-error dialog and absence of a Deepwell page-create mutation for a non-empty tags route parameter"
+        }
+      ],
+      "implementation_files": [
+        "framerail/src/routes/+error.svelte",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-tags.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-newpage-metadata-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "NewPage-provided non-empty tags are now proven to make data-form creation fail closed, but the documented limitation on deriving tags from form field values and its workaround remain unimplemented."
+      ]
+    },
+    "data-forms-text-field": {
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live generated create/edit input and textarea DOM, regex validation, exact saved source, and default table display",
+        "Deepwell public missing/found page view and ListPages field-query/render seams",
+        "Framerail public generated data-form create/edit browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_text_and_select_control_contract",
+          "scope": "public missing/found page views verify implicit text type, the complete observed width/height fallback matrix, defaults, retained hint escaping, match plus join and affix metadata, canonical single- and multiline scalar restoration, rejection of unsafe unquoted storage, and literal default-table display"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "parses_and_renders_live_field_property_contract; applies_live_scalar_truthiness_comments_and_empty_match_rules",
+          "scope": "parser and renderer regressions cover match without error, empty match and error, literal text properties, joined rows, escaped markup, and multiline display"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js",
+          "name": "data-form source uses Wikidot text and select scalar encoding",
+          "scope": "public serializer verifies safe plain text, doubled apostrophes, preserved spaces and punctuation, and double-quoted multiline escaping"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage",
+          "scope": "public browser flows verify input and textarea DOM, labels, grouping, affixes, defaults, hints, generated and custom regex validation markup, i/x and duplicate modifiers, value preservation, exact saved source, and restored single-/multiline values on edit"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "pathological data-form match patterns fail closed without blocking the editor",
+          "scope": "public browser flow verifies multiple adversarial regex evaluations share one deadline in an isolated worker, preserve the editor, render host-owned safety diagnostics, and create no page"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "invalid data-form match patterns use a host-owned diagnostic",
+          "scope": "public browser flow distinguishes an invalid validation pattern from an ordinary mismatch and never presents the site's match-error as though validation completed"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "a new data-form submission cancels stale validation and saves its own snapshot",
+          "scope": "public browser flow verifies a repeated submit cancels the older worker and request generation, then validates and stores one immutable title-and-field snapshot"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_data_form_variables_match_live_wikidot; listpages_template_selectors_can_use_current_page_data_form_values",
+          "scope": "public saved-page and ListPages seams verify literal text display, raw and hinted variables, field selection, ordering, and template-variable rendering"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/render/list_pages/data_forms.rs",
+        "deepwell/src/services/render/list_pages/rendering.rs",
+        "deepwell/src/services/render/list_pages/substitution.rs",
+        "deepwell/src/services/page_query",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-text-field.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-text-select-controls-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-properties-hints-regex-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Generic validation messages, empty properties and values, delimiters, escaped slashes, duplicate i, and i/m/s/x/u versus g/y/z modifier behavior are now live-observed and implemented. PCRE-only constructs and remaining modifiers such as A, D, J, S, U, and X still require live minimization; constructs that JavaScript cannot safely evaluate continue to fail closed in the terminable browser worker."
+      ]
+    },
+    "data-forms-url-field": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-url-field.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "data-forms-wiki-field": {
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live generated wiki create/edit control DOM, exact stored-source readback, parsed default display, and direct/ListPages variables",
+        "Deepwell public missing/found page view and ListPages query/render contracts",
+        "Framerail public generated data-form create/edit browser flow"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "checkbox_and_wiki_fields_follow_live_control_and_storage_contracts; checkbox_defaults_and_wiki_dimensions_cover_live_boundaries",
+          "scope": "definition and storage regressions verify wiki control defaults, dimension fallbacks, common properties, text-only validation exclusion, and canonical scalar handling"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_checkbox_and_wiki_contract",
+          "scope": "public missing, create, saved, and edit page views verify page-context wiki parsing, literal affixes, exact default-table DOM, and edit restoration"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "scope": "public saved-page ListPages rendering verifies parsed wiki form_data/form_raw output and canonical multiline stored-source decoding"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form.test.js; framerail/tests/data-form-create-flow.spec.ts",
+          "name": "checkbox/wiki source serialization and public create/edit browser flow",
+          "scope": "unit and browser regressions verify form-wiki DOM, dimensions, placeholders, exact scalar encoding, mutation payloads, ignored text-only validation, and edit restoration"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/page_query/structs.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/view/service.rs",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-wiki-field.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The observed wiki control, dimension fallbacks, default and hint properties, text-only validation boundary, storage, parsed default display, literal affixes, edit restoration, and ListPages variables are implemented and covered. Exact adversarial raw-wiki adjacent-block composition remains coupled to the unimplemented custom data-form layout surface."
+      ]
+    },
+    "data-forms-youtube": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-youtube.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "layout-custom": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes establish the boundary between normal page source and custom-layout modules.",
+        "Deepwell wikidot_page_preview preserves page-source unavailable-module behavior for custom-layout-only modules and empty page-source rendering for Ad."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::loginstatus_page_source_matches_live_unavailable_module",
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module",
+        "deepwell/tests/page.rs::ad_module_page_source_matches_live_empty_output"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/layout/layout-custom.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/loginstatus-module-live-preview.json",
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Wikijump currently has no custom-layout module renderer or public custom-layout rendering seam. Normal page-source boundaries are verified and covered; actual custom-layout rendering for LoginStatus, NaviBar, FooterBar, PageOptionsBottom, AdModule* placements, and layout placeholders remains blocked until custom layout support exists."
+      ]
+    },
+    "layout-forum": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/layout/layout-forum.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "layout-page": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/layout/layout-page.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-ad": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for Ad in normal page source with omitted attributes, label, unrelated attributes, uppercase module spelling, and closing marker.",
+        "Deepwell wikidot_page_preview renders Ad as empty output in normal page source."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::ad_module_page_source_matches_live_empty_output"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-ad.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Normal page-source Ad behavior is implemented as live empty output. The documented custom-layout Pro ad rendering remains blocked because Wikijump has no custom-layout module renderer."
+      ]
+    },
+    "module-admoduleabovecontent": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for AdModuleAboveContent in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-admoduleabovecontent.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented AdModuleAboveContent behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
+    },
+    "module-admoduleabovesidebar": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for AdModuleAboveSidebar in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-admoduleabovesidebar.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented AdModuleAboveSidebar behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
+    },
+    "module-admodulebelowcontent": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for AdModuleBelowContent in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-admodulebelowcontent.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented AdModuleBelowContent behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
+    },
+    "module-admodulebelowfooter": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for AdModuleBelowFooter in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-admodulebelowfooter.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented AdModuleBelowFooter behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
+    },
+    "module-admodulebelowsidebar": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for AdModuleBelowSidebar in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-admodulebelowsidebar.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented AdModuleBelowSidebar behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
+    },
+    "module-adsenseunit": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule anonymous and authenticated account-A probes for AdSenseUnit with label and omitted label.",
+        "Deepwell wikidot_page_preview renders deprecated AdSenseUnit as empty output."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::adsenseunit_module_matches_live_deprecated_empty_output"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-adsenseunit.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/adsenseunit-module-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-anonymousnotificationsunsubscribe": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-anonymousnotificationsunsubscribe.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "No-token AnonymousNotificationsUnsubscribe rendering is implemented and covered. Tokenized unsubscribe URL/state behavior remains blocked until live token generation, notification subscription state, and side-effect semantics are modeled from a safe live fixture."
+      ]
+    },
+    "module-backlinks": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, link graph, permissions, and page-view interface",
+        "RenderService Backlinks module rendering for empty and non-empty link graph output"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::backlinks_module_renders_current_page_incoming_links",
+        "deepwell/tests/page.rs::backlinks_module_ignores_arguments_like_live_wikidot",
+        "deepwell/src/services/render/backlinks.rs::tests::backlinks_name_must_end_before_arguments",
+        "deepwell/src/services/render/backlinks.rs::tests::empty_backlinks_box_matches_live_wikidot"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/backlinks.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/tests/page.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-backlinks.md"
+      ],
+      "live_oracle_evidence": [
+        "live-observations.json::navigation-list-modules-live-dom-and-argument-quirks",
+        "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-categories": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, category service, and page-view interface",
+        "RenderService Categories module rendering for hidden-category filtering and generated toggler DOM"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden",
+        "deepwell/src/services/render/categories.rs::tests::categories_name_must_end_before_arguments",
+        "deepwell/src/services/render/categories.rs::tests::include_hidden_matches_live_exact_quoted_argument",
+        "deepwell/src/services/render/categories.rs::tests::default_category_is_visible_even_when_hidden_categories_are_not",
+        "deepwell/src/services/render/categories.rs::tests::category_order_ignores_hyphens_like_wikidot",
+        "deepwell/src/services/render/categories.rs::tests::category_dom_matches_wikidot_and_escapes_the_slug",
+        "deepwell/src/services/render/categories.rs::tests::include_hidden_categories_emit_live_options_marker"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/categories.rs",
+        "deepwell/src/services/render/page_tree.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/tests/page.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-categories.md"
+      ],
+      "live_oracle_evidence": [
+        "live-observations.json::navigation-list-modules-live-dom-and-argument-quirks",
+        "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-childpages": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell saved-page rendering through page_get compiled body",
+        "Deepwell page-view runtime rendering through page_view",
+        "Render dependency and article-cache source classification"
+      ],
+      "tests": [
+        "cargo test --manifest-path deepwell/Cargo.toml --lib child_pages -- --nocapture",
+        "cargo test --manifest-path deepwell/Cargo.toml --lib url_arguments -- --nocapture",
+        "cargo test --manifest-path deepwell/Cargo.toml --lib render_dependency -- --nocapture",
+        "cargo test --manifest-path deepwell/Cargo.toml --lib article_page_cache -- --nocapture",
+        "DATABASE_URL=... cargo test --manifest-path deepwell/Cargo.toml --test page childpages_module_renders_live_child_list_and_empty_state -- --nocapture"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/child_pages.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/mod.rs",
+        "deepwell/src/services/render/diagnostics.rs",
+        "deepwell/src/services/render/render_dependency.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/src/services/view/article_cache.rs",
+        "deepwell/tests/page.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-childpages.md"
+      ],
+      "live_oracle_evidence": [
+        "docs/wikidot-specifications/live-observations.json",
+        "install/local/wikidot-verification/artifacts/childpages-module-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-clone": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-clone.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-comments": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-comments.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-countpages": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Run-owned saved-page live Wikidot oracle on sandbox-for-codex",
+        "Deepwell public saved-page page_get render interface"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "scope": "countpages_substitutes_total_for_tagged_pages, countpages_category_filter_counts_matching_pages, countpages_with_limit_defaults_to_current_category, countpages_without_selectors_uses_current_category_and_normal_page_defaults, countpages_static_tag_filter_without_limit_substitutes_total, countpages_unprefixed_tags_use_or_semantics, countpages_artwork_hub_url_fallback_ignores_display_options, and countpages_rating_filters_apply_scores cover ordinary CountPages selection, category/tag defaults, limits, %%total%%, %%count%%, body wiki syntax, @URL fallback behavior, and rating filters through the public saved-page render seam"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "scope": "countpages_inside_listpages_body_matches_live_empty_item_behavior and inline_countpages_inside_listpages_body_matches_live_legacy_split_behavior cover the documented CountPages-inside-ListPages limitation through the public saved-page render seam"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "scope": "countpages_inside_code_block_remains_literal, countpages_dynamic_selectors_remain_literal, countpages_current_page_filters_remain_literal, countpages_current_page_category_filters_remain_literal, and related fail-closed tests cover malformed, unsupported, current-page-dependent, and pre-parser-owned CountPages shapes without widening queries"
+        },
+        {
+          "path": "deepwell/src/services/render/service/tests.rs",
+          "scope": "count_pages_should_remain_literal unit coverage preserves fail-closed all-category broad behavior while allowing omitted selectors to execute"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/list_pages/rendering.rs",
+        "deepwell/src/services/render/list_pages/scanner.rs",
+        "deepwell/src/services/render/list_pages/substitution.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-countpages.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/countpages-inside-listpages-live.json",
+        "install/local/wikidot-verification/artifacts/countpages-default-selector-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-createaccount": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-createaccount.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-css": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Run-owned saved-page live Wikidot oracle with anonymous page fetch",
+        "Deepwell public saved-page page_view and page_get compiled-style interfaces"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "page_view_separates_generated_css_modules_from_compiled_body_html",
+          "scope": "public saved-page rendering verifies CSS module head extraction, visible show code blocks, disable suppression, exact argument syntax, duplicate precedence, and compiled style persistence"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/compat/preparation.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-css.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/css-module-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-currencyconvert": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-currencyconvert.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-dashboard": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-dashboard.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-deleteaccount": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-deleteaccount.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-featuredsite": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-featuredsite.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-feed": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-feed.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-files": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-files.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-flickrgallery": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-flickrgallery.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-footerbar": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for FooterBar in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-footerbar.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented FooterBar behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
+    },
+    "module-forumcategory": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-forumcategory.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-forumnewthread": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-forumnewthread.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-forumstart": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-forumstart.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-forumthread": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-forumthread.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-frontforum": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-frontforum.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-frontspecialmini": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-frontspecialmini.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-join": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-join.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-listdrafts": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule anonymous and authenticated account-A probes for ListDrafts pageType filtering, empty wrapper output, ignored malformed pageType forms, case-insensitive module name, and literal closing marker behavior.",
+        "Deepwell wikidot_page_preview renders the no-draft ListDrafts wrapper and does not leak the raw module.",
+        "Deepwell page_view renders the no-draft ListDrafts wrapper from saved page source."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::listdrafts_module_matches_live_empty_draft_state",
+        "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-listdrafts.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/listdrafts-module-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Deepwell currently has no persisted page-draft model corresponding to Wikidot page edit drafts. The implemented compatibility surface recognizes ListDrafts and renders the live empty wrapper for no-draft state, but non-empty draft enumeration and pageType exists/notexists filtering remain blocked until page draft state exists or imported Wikidot draft provenance is made available."
+      ]
+    },
+    "module-listpages": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Anonymous PagePreviewModule and run-owned saved-page live Wikidot oracle",
+        "Deepwell public saved-page, preview, and AJAX ListPages render/query interfaces",
+        "Framerail public HTTP ListPages feed and page routes",
+        "Served-page Playwright browser navigation boundary",
+        "FTML public parser/layout interface for syntax-owned discrepancies only"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/list_pages.rs",
+          "scope": "public ListPages and CountPages endpoint/render integration tests"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "scope": "public saved-page, preview, URL, pagination, query, permission, CountPages-in-body limitation, and rendering integration tests"
+        },
+        {
+          "path": "framerail/tests/list-pages-feed.test.ts",
+          "scope": "public feed-route parsing and RSS response behavior"
+        },
+        {
+          "path": "framerail/tests/list-pages-navigation.spec.ts",
+          "scope": "public served-page direct load, reload, pager, and browser history behavior"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests",
+          "scope": "corpus inventory, generated matrix, live differential, regression accounting, RSS, and navigation verifier tests"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-late-evidence-manifest.test.mjs",
+          "scope": "frozen late-campaign provenance regression verifies 32 causal families, 1,142 live cases, exact file hashes, and issue ownership"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-unquoted-comparison-discriminators-evidence.test.mjs",
+          "scope": "live-evidence regression distinguishes inert unquoted comparison-shaped head tokens from executable quoted legacy comparisons"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-preview-classification.test.mjs",
+          "scope": "exact-source and literal-context replay classification remains occurrence-aware and cannot relabel executable differences as nonexecution parity"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "scope": "public saved-page regression verifies checkbox and wiki data-form variables, canonical multiline source decoding, and wiki parsing in ListPages rows"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_imported_creator_identity_uses_structured_corpus_provenance; listpages_imported_editor_identity_uses_structured_corpus_provenance; listpages_imported_commenter_identity_uses_structured_corpus_provenance; wikidot_listpages_feed_uses_imported_creator_identity_provenance",
+          "scope": "public saved-page and feed regressions verify imported creator, last-editor, and last-comment identity tuples drive text, unix-name, numeric-ID, linked-user, comment-date, and RSS author output without substituting the local importer account"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_template_body_over_the_render_budget_remains_literal; listpages_aggregate_generated_output_budget_preserves_overflowing_module; listpages_following_paragraph_boundary_counts_toward_generated_output_budget; listpages_module_count_over_the_render_budget_remains_literal; listpages_module_source_over_the_render_budget_remains_literal; listpages_current_page_content_shares_the_module_work_budget",
+          "scope": "public render regressions verify shared root-and-nested module, source, template, generated-output, paragraph-repair, and content-work boundaries preserve complete authored modules without partial output"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "random_countpages_capped_sample_does_not_reveal_private_matches",
+          "scope": "public anonymous render regression verifies a capped random CountPages sample cannot distinguish private-only matches from no matches through permission-dependent literal fallback"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-runtime-budget-envelope.test.mjs",
+          "scope": "reusable corpus-envelope regression verifies threshold measurements and provenance are recomputed deterministically from invocation records"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_template_parser_functions_run_after_row_variable_substitution",
+          "scope": "public saved-page regression for the corpus-derived #ifexpr/#expr row-template behavior"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-corpus-replay-reconciliation.test.mjs",
+          "scope": "exact-source replay accounting maps every corpus provenance to a live/local classification and fails closed on missing or actionable sources"
+        },
+        {
+          "path": "deepwell/tests/list_pages.rs",
+          "name": "random_listpages_reuses_the_same_idle_cached_order_for_one_invocation; wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",
+          "scope": "public integration regressions verify invocation-stable random ordering and Ajax pager request state"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-random-idle-cache-evidence.test.mjs",
+          "scope": "live-evidence verifier for the sliding idle lifetime, invocation body identity, expiry, and independent pager-page randomization"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/listpages-p8-temporal-boundary-evidence.test.mjs",
+          "scope": "live-evidence verifier for mixed same-size outcomes, complete success markers, 504 failure atomicity, and local safety-invariant classification"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/page_query",
+        "deepwell/src/services/render/list_pages",
+        "deepwell/src/services/render/runtime_page_queries.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/src/services/view/module_arguments.rs",
+        "deepwell/src/services/view/module_render.rs",
+        "framerail/src/lib/server/list-pages-feed.ts",
+        "framerail/src/routes/feed",
+        "install/local/wikidot-verification",
+        "deepwell/src/services/render/list_pages/data_forms.rs"
+      ],
+      "documentation_evidence": [
+        "docs/wikidot-specifications/specifications/module/module-listpages.md",
+        "docs/wikidot-specifications/live-observations.json",
+        "install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json",
+        "install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",
+        "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures-navigation-rerun.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-generated-preview-reconciliation.json",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-feed-endpoint-live.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-rss-live-preview.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-rss-selector-live-preview.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-hash-magic-reconciliation.json",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json",
+        "install/local/wikidot-verification/artifacts/countpages-inside-listpages-live.json",
+        "install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json",
+        "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
+        "install/local/wikidot-verification/artifacts/listpages-corpus-parser-functions-live.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
+        "install/local/wikidot-verification/artifacts/listpages-unquoted-comparison-discriminators-live.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-offset-extreme-boundary-live.jsonl",
+        "install/local/wikidot-verification/artifacts/listpages-current-tag-selectors-live-20260730.json",
+        "install/local/wikidot-verification/artifacts/listpages-random-idle-cache-live-20260730.json",
+        "install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json"
+      ],
+      "delivery_evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-standing.json",
+          "sha256": "89ea01e43dff747791eb13c7b388d432c1b0aa3ebff9575e0c1c5802c08f0c9f",
+          "scope": "The refreshed scp-3435 corpus row preserves all lifecycle identity tuples; the standing runtime resolves every corresponding ListPages variable and emits linked RSS creator markup."
+        },
+        {
+          "repository": "Rokurolize/wikijump",
+          "pull_request": 957,
+          "merge_sha": "8cd52e44f6581f4c7bcbd26ad5007e623026e370"
+        },
+        {
+          "repository": "Rokurolize/scp-wiki-translation",
+          "pull_request": 208,
+          "merge_sha": "d380ef3a8440089510333d53eedb2cdeac0e5551"
+        },
+        {
+          "repository": "Rokurolize/scp-wiki-translation",
+          "pull_request": 209,
+          "merge_sha": "cb101c737c6a7fc98acd43dc6184ed2c98ba85fc"
+        },
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json",
+          "scope": "Pinned authoritative exact replay on Wikijump b7b196392ddd610d1fab91b03e54a41c4dad335d with FTML 6d1550f283f93ec3f4257ffda238a8f9003eed19: 23,964 invocations, 18,996 unique replay keys, classified 23,964, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. Novel (119) and literal (335) lanes are recorded as diagnostic only; the final standing runtime is 2b762e153dc9c2e59c5e1de5c5099184fad8c131 with identity-bound HTTPS and browser evidence."
+        },
+        {
+          "path": "install/standing/compose.yaml; install/standing/tests/test_refresh.py",
+          "scope": "Merged PR #1087 binds prepared-exact-merged-head lifecycle provenance to every standing service and keeps the browser identity gate fail-closed. Final standing activation from the merged head used no-build prepared images and left persistent volumes untouched."
+        },
+        {
+          "path": "docs/development/local-docker-development-receipt.json",
+          "scope": "Exact pinned Docker local-development images, compact Cargo profile/cache policy, and measured cold/warm/hot/restart/recreation evidence."
+        }
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-listusers": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule anonymous and authenticated account-A probes for ListUsers users=\".\", omitted users, empty users, non-dot users, empty body, wiki syntax body, and unknown variables.",
+        "Deepwell wikidot_page_preview renders ListUsers from caller viewer identity rather than stored page state.",
+        "Deepwell page_view runtime rendering evaluates ListUsers against the active viewer session and keeps anonymous page views empty."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::listusers_module_matches_live_preview_and_runtime_viewer",
+        "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/render_options.rs",
+        "deepwell/src/services/render/page_preview.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/view/module_render.rs",
+        "deepwell/src/services/view/service.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-listusers.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/listusers-module-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-loginstatus": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule anonymous and authenticated account-A probes for LoginStatus in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior for anonymous and authenticated viewer contexts."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::loginstatus_page_source_matches_live_unavailable_module"
+      ],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-loginstatus.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/loginstatus-module-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented LoginStatus UI belongs to Wikidot custom-layout modules, not normal page-source modules. Wikijump currently has no custom-layout module renderer or public custom-layout rendering seam for LoginStatus; implementation is blocked until custom layout support exists. Page-source behavior is verified and covered."
+      ]
+    },
+    "module-mailform": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-mailform.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-managesite": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-managesite.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-members": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-members.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-membershipapply": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-membershipapply.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-membershipbypassword": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous and member page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::membership_by_password_module_matches_live_anonymous_and_member_output",
+        "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_viewer_module_is_viewer_dependent",
+        "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/render_dependency.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-membershipbypassword.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/membershipbypassword-role-preview-probe.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Anonymous and confirmed-member MembershipByPassword rendering is implemented and covered. Registered non-member password-entry behavior, password validation, join side effects, site access-policy interactions, and error states remain blocked until a safe live non-member/password-enabled fixture is available and local membership-password state is modeled."
+      ]
+    },
+    "module-membershipemailinvitation": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-membershipemailinvitation.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Missing-token MembershipEmailInvitation rendering is implemented and covered. Valid invitation-token resolution, acceptance side effects, expiration/used/canceled distinctions, and membership mutations remain blocked until safe live invitation fixtures and local invitation state exist."
+      ]
+    },
+    "module-miniactivethreads": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-miniactivethreads.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-minirecentposts": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-minirecentposts.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-minirecentthreads": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-minirecentthreads.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-navibar": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for NaviBar in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-navibar.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented NaviBar behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
+    },
+    "module-newpage": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Saved-page and preview rendering through Deepwell's public Wikidot page render pipeline",
+        "Existing-template lookup through runtime page/category/revision state",
+        "Framerail browser submit behavior through the Wikidot-compatible NewPage helper runtime",
+        "Ajax Module Connector NewPage helper action envelope through the public /ajax-module-connector.php route",
+        "Autosave page creation through the existing Deepwell page_create and parent_update mutation APIs"
+      ],
+      "tests": [
+        "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_placeholder",
+        "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_documented_hidden_fields",
+        "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_uses_live_argument_quirks",
+        "deepwell/src/services/render/service/tests.rs::protects_wikidot_new_page_module_html_before_parsing",
+        "deepwell/src/services/render/new_page_module.rs::tests::renders_existing_template_selector_options",
+        "deepwell/src/services/render/new_page_module.rs::tests::extracts_comma_separated_template_names",
+        "deepwell/tests/page.rs::newpage_module_resolves_existing_templates_in_rendered_pages",
+        "framerail/tests/ajax-module-connector.test.js::dispatches NewPage helper default action with Wikidot edit-routing fields",
+        "framerail/tests/ajax-module-connector.test.js::dispatches NewPage template and category action fields like Wikidot",
+        "framerail/tests/ajax-module-connector.test.js::rejects NewPage helper requests when the target already exists",
+        "framerail/tests/ajax-module-connector.test.js::rejects NewPage helper requests without a page name like Wikidot",
+        "framerail/tests/ajax-module-connector.test.js::allows NewPage edit routing without page creation permission",
+        "framerail/tests/ajax-module-connector.test.js::rejects NewPage autosave without page creation permission",
+        "framerail/tests/ajax-module-connector.test.js::ignores malformed NewPage format strings but enforces valid patterns",
+        "framerail/tests/ajax-module-connector.test.js::NewPage template autosave creates an empty page and ignores parent",
+        "framerail/tests/ajax-module-connector.test.js::rejects NewPage template autosave when tags are submitted",
+        "framerail/tests/ajax-module-connector.test.js::dispatches NewPage autosave modes through the injected create callback",
+        "framerail/tests/new-page-helper.spec.ts::NewPage default submit posts Wikidot helper action and navigates to edit URL",
+        "framerail/tests/new-page-helper.spec.ts::NewPage anonymous default submit still navigates to edit URL",
+        "framerail/tests/new-page-helper.spec.ts::NewPage template submit includes template, tags, and parent in edit URL",
+        "framerail/tests/new-page-helper.spec.ts::NewPage save-and-go creates an empty page and navigates to it"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/new_page_module.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/compat/preparation.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/wikidot/wikidot-new-page-helper.js",
+        "framerail/src/routes/+layout.svelte",
+        "framerail/src/routes/ajax-module-connector.php/+server.ts",
+        "framerail/src/lib/server/deepwell/page.ts"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-newpage.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/newpage-module-live-rendering.json",
+        "install/local/wikidot-verification/artifacts/newpage-module-live-submit-action.json",
+        "install/local/wikidot-verification/artifacts/newpage-module-live-followup-action.json",
+        "install/local/wikidot-verification/artifacts/newpage-module-live-anonymous-action.json",
+        "install/local/wikidot-verification/artifacts/newpage-module-live-final-evidence.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-newsite": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-newsite.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-nextpreviouspage": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell saved-page rendering through page_get compiled body",
+        "Deepwell page-view runtime rendering through page_view",
+        "Render dependency and article-cache source classification"
+      ],
+      "tests": [
+        "cargo test --manifest-path deepwell/Cargo.toml --lib next_previous_page -- --nocapture",
+        "DATABASE_URL=... cargo test --manifest-path deepwell/Cargo.toml --test page nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates -- --nocapture"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/next_previous_page.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/mod.rs",
+        "deepwell/src/services/render/diagnostics.rs",
+        "deepwell/src/services/render/render_dependency.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/tests/page.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-nextpreviouspage.md"
+      ],
+      "live_oracle_evidence": [
+        "docs/wikidot-specifications/live-observations.json",
+        "install/local/wikidot-verification/artifacts/nextpreviouspage-module-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-orphanedpages": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, link graph, permissions, and page-view interface",
+        "Render dependency and runtime-render source classification for site-level link graph modules"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::orphanedpages_module_lists_pages_without_incoming_internal_links",
+        "deepwell/src/services/render/link_modules.rs::tests::orphaned_pages_box_matches_live_wikidot_rows",
+        "deepwell/src/services/render/url_arguments.rs::tests::link_listing_modules_require_runtime_rendering",
+        "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_query_module_is_query_dependent"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/link_modules.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/mod.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/src/services/render/render_dependency.rs",
+        "deepwell/tests/page.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-orphanedpages.md"
+      ],
+      "live_oracle_evidence": [
+        "live-observations.json::link-modules-live-orphaned-and-wanted-pages",
+        "install/local/wikidot-verification/artifacts/orphanedpages-module-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-pagecalendar": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, permissions, and page-view interface",
+        "RenderService::render_page with UrlArguments for direct URL-path argument behavior through the real parser, renderer, test database, and permission checks",
+        "deepwell/src/services/render/url_arguments.rs runtime-render and URL-argument dependency detection for PageCalendar page views"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::pagecalendar_module_renders_live_category_links_and_counts",
+        "deepwell/tests/page.rs::pagecalendar_module_matches_live_tag_url_and_current_category_quirks",
+        "deepwell/src/services/render/url_arguments.rs::tests::a_page_calendar_module_reads_url_arguments_and_requires_runtime_rendering"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/module_arguments.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/src/services/render/diagnostics.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-pagecalendar.md"
+      ],
+      "live_oracle_evidence": [
+        "live-observations.json::pagecalendar-live-dom-url-and-tag-filter-quirks",
+        "install/local/wikidot-verification/artifacts/pagecalendar-module-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-pageoptionsbottom": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Live Wikidot edit/PagePreviewModule probes for PageOptionsBottom in normal page source.",
+        "Deepwell wikidot_page_preview preserves live page-source unavailable-module behavior."
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+      ],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-pageoptionsbottom.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/layout-modules-page-source-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The documented PageOptionsBottom behavior belongs to Wikidot custom-layout context. Wikijump has no custom-layout module renderer; page-source unavailable-module behavior is verified and covered."
+      ]
+    },
+    "module-pages": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Run-owned saved-page live Wikidot oracle on sandbox-for-codex",
+        "Deepwell public saved-page page_get render interface",
+        "Deepwell public page_view route for /p/<page> pagination"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "scope": "pages_module_renders_the_site_index_and_clamps_pagination covers bare Pages index rendering, runtime refresh, pagination, permission filtering, and limit rendering; pages_module_renders_documented_arguments_and_live_fallbacks covers category, details, preview ignored behavior, order, limit including limit=0, empty categories, and ignored unknown arguments"
+        },
+        {
+          "path": "deepwell/src/services/render/pages.rs",
+          "scope": "render_pages_module unit coverage preserves captured list-pages-box row and pager markup, escaping, clamping, and large-pager target order"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/pages.rs",
+        "deepwell/src/services/render/list_pages/mod.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-pages.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/pages-module-arguments-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-pagesbytag": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Run-owned saved-page live Wikidot oracle on sandbox-for-codex",
+        "Deepwell public saved-page page_get render interface",
+        "Deepwell public render_page interface with URL arguments"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "scope": "pages_by_tag_module_renders_tagged_pages_ordered_by_title, pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms, pages_by_tag_module_reads_the_url_tag_argument, and pages_by_tag_module_filters_module_and_url_categories cover documented tag, category, URL tag/category, empty, ordering, and fail-closed argument behavior through public page/render seams"
+        },
+        {
+          "path": "deepwell/src/services/render/pages_by_tag.rs",
+          "scope": "parser and renderer unit coverage preserves evidenced argument parsing, category heading/link markup, escaping, and legacy no-category DOM"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/pages.rs",
+        "deepwell/src/services/render/pages_by_tag.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/src/services/view/module_arguments.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-pagesbytag.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/pages-by-tag-category-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-pagetree": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, page-parent table, and page-view interface",
+        "RenderService PageTree module rendering for parent hierarchy traversal, explicit roots, showRoot, depth, and attribute parsing"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
+        "deepwell/src/services/render/page_tree.rs::tests::arguments_match_live_case_sensitive_semantics",
+        "deepwell/src/services/render/page_tree.rs::tests::live_dom_depth_and_cycle_boundaries_are_preserved",
+        "deepwell/src/services/render/page_tree.rs::tests::url_and_cross_site_root_forms_fail_closed"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/page_tree.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/tests/page.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-pagetree.md"
+      ],
+      "live_oracle_evidence": [
+        "live-observations.json::navigation-list-modules-live-dom-and-argument-quirks",
+        "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-petitionadmin": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-petitionadmin.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-rate": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Run-owned saved-page live Wikidot oracle with anonymous saved HTML and logged-in browser DOM captures for star widget behavior",
+        "Run-owned saved-page live Wikidot oracle with anonymous saved HTML for plus/minus paired-body behavior",
+        "Deepwell public saved-page page_get compiled HTML interface after page_rerender",
+        "Deepwell renderer compatibility fallback for paired plus/minus Rate body consumption"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
+          "scope": "public saved-page rendering verifies five-star Rate wrapper DOM, current rating, vote count, percent variable, literal rating_decimal discrepancy, body consumption, and absence of plus/minus widget markup"
+        },
+        {
+          "path": "deepwell/src/services/render/service/tests.rs",
+          "name": "rate_module_plusminus_body_is_consumed_like_live_wikidot",
+          "scope": "renderer compatibility fallback verifies paired Rate bodies are consumed in plus/minus mode without leaking body text or the module closer"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "page_render_emits_wikidot_rate_widget_structure",
+          "scope": "public saved-page rendering verifies the existing Wikidot plus/minus Rate widget structure through Deepwell's page read interface"
+        },
+        {
+          "path": "deepwell/src/services/render/service/tests.rs",
+          "name": "wikidot_compatibility_fallback_centers_read_only_rate_module",
+          "scope": "renderer fallback verifies centered read-only Rate output in Wikidot compatibility mode"
+        },
+        {
+          "path": "deepwell/src/services/render/service/tests.rs",
+          "name": "renders_wikidot_read_only_rate_module_with_downvote",
+          "scope": "renderer verifies read-only plus/minus labels, score, and downvote control"
+        },
+        {
+          "path": "deepwell/src/services/render/service/tests.rs",
+          "name": "renders_wikidot_plus_only_rate_module_without_downvote",
+          "scope": "renderer verifies plus-only Rate output"
+        },
+        {
+          "path": "deepwell/src/services/render/service/tests.rs",
+          "name": "renders_japanese_wikidot_read_only_rate_module_labels",
+          "scope": "renderer verifies Japanese Wikidot-compatible Rate labels"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/service/tests.rs",
+        "deepwell/tests/page.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-rate.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/rate-module-live-stars-and-body.json",
+        "docs/wikidot-specifications/live-observations.json::rate-module-live-stars-and-body-semantics"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-ratedpages": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Run-owned saved-page live Wikidot oracle with anonymous page fetch and wikidot.py-controlled page votes/comments",
+        "Deepwell public saved-page page_get compiled HTML interface"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/rated_pages.rs",
+          "name": "ratedpages_renders_live_top_rated_box_and_rating_filters",
+          "scope": "public saved-page rendering verifies RatedPages DOM, title links, rating-desc default, rating-asc/rate-asc ordering, date-created-desc/date-created-asc ordering, inclusive minRating/maxRating filters, limit, comment-count label, comments truthiness, and raw-module removal"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/render_dependency.rs",
+        "deepwell/src/services/render/diagnostics.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-ratedpages.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/ratedpages-live-basic.json",
+        "install/local/wikidot-verification/artifacts/ratedpages-live-comments.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-recentposts": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-recentposts.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-recentthreads": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-recentthreads.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-redirect": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell imported page-view route for saved Wikidot pages with and without noredirect",
+        "Framerail HTTP redirect handling for Wikidot Redirect module responses",
+        "Deepwell Redirect module scanner and fail-closed destination resolver"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::imported_redirect_noredirect_renders_live_error_block",
+        "deepwell/src/services/view/redirect.rs::tests::resolves_all_forty_provenance_backed_redirect_destinations",
+        "deepwell/src/services/view/redirect.rs::tests::preserves_destination_query_and_fragment",
+        "deepwell/src/services/view/redirect.rs::tests::invalid_or_unsupported_destinations_remain_literal",
+        "deepwell/src/services/view/redirect.rs::tests::ordinary_and_ambiguous_pages_do_not_redirect",
+        "deepwell/src/services/view/redirect.rs::tests::literal_regions_do_not_create_redirects",
+        "deepwell/src/services/view/redirect.rs::tests::self_redirects_fail_closed",
+        "deepwell/src/services/view/redirect.rs::tests::noredirect_option_preserves_the_page_instead_of_redirecting",
+        "deepwell/src/services/view/redirect.rs::tests::noredirect_view_replaces_preserved_module_with_wikidot_notice",
+        "deepwell/src/services/view/redirect.rs::tests::noredirect_notice_escapes_destination_text",
+        "deepwell/src/services/view/service.rs::wikidot_redirect_module_allowed_tests::allows_only_imported_page_and_imported_revision",
+        "framerail/tests/page-redirect.test.ts"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/view/redirect.rs",
+        "deepwell/src/services/view/service.rs",
+        "deepwell/src/services/view/options.rs",
+        "framerail/src/lib/server/page-redirect.ts"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-redirect.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/redirect-module-noredirect-live.json",
+        "deepwell/tests/fixtures/wikidot_redirects.json",
+        "docs/ftml-boundary-deviations/wikidot-redirect-location.md"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-search": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-search.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-searchall": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-searchall.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-searchusers": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics",
+        "deepwell/src/services/render/service/tests.rs::registry_module_expansion_does_not_match_name_prefixes"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-searchusers.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-sendinvitations": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Anonymous and authenticated PagePreviewModule rendering through Deepwell's public Wikidot page preview pipeline"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-sendinvitations.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/simpletodo-sendinvitations-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-simpletodo": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Anonymous and authenticated PagePreviewModule rendering through Deepwell's public Wikidot page preview pipeline"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-simpletodo.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/simpletodo-sendinvitations-live-preview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Initial SimpleToDo rendering and missing-id errors are implemented for observed PagePreviewModule cases. Full completion is blocked on a stateful SimpleToDo data model and live action-surface evidence for task creation, editing, checkbox state, ordering, link changes, saved-page edit permissions, and browser runtime behavior."
+      ]
+    },
+    "module-sitechanges": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-sitechanges.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-sitegrid": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-sitegrid.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-sitestagcloud": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-sitestagcloud.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-tagcloud": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, permissions, and page-view interface"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
+        "deepwell/tests/page.rs::tagcloud_module_renders_live_sitewide_skip_3d_and_color_error"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/list_pages/mod.rs",
+        "deepwell/src/services/render/list_pages/presentation.rs",
+        "deepwell/src/services/render/service/tests.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-tagcloud.md"
+      ],
+      "live_oracle_evidence": [
+        "live-observations.json::tagcloud-live-dom-url-style-and-legacy-3d",
+        "install/local/wikidot-verification/artifacts/tagcloud-module-live.json",
+        "install/local/wikidot-verification/artifacts/tagcloud-module-edge-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-themepreviewer": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-themepreviewer.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-userinfo": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-userinfo.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "No-target UserInfo rendering is implemented and covered. Target-user lookup, URL/user-id resolution, rendered user profile fields, permissions, and popup/action behavior remain blocked pending live evidence and a compatible user-info rendering model."
+      ]
+    },
+    "module-wantedpages": {
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, link graph, permissions, and page-view interface",
+        "Render dependency and runtime-render source classification for site-level link graph modules"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::wantedpages_module_groups_missing_internal_links_by_target",
+        "deepwell/src/services/render/link_modules.rs::tests::wanted_pages_box_matches_live_wikidot_table",
+        "deepwell/src/services/render/url_arguments.rs::tests::link_listing_modules_require_runtime_rendering",
+        "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_query_module_is_query_dependent"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/link_modules.rs",
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/mod.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/src/services/render/render_dependency.rs",
+        "deepwell/tests/page.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-wantedpages.md"
+      ],
+      "live_oracle_evidence": [
+        "live-observations.json::link-modules-live-orphaned-and-wanted-pages",
+        "install/local/wikidot-verification/artifacts/wantedpages-module-live.json"
+      ],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-watchers": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/module/module-watchers.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "module-whoinvited": {
+      "status": "blocked",
+      "confirmed_public_seams": [
+        "Deepwell wikidot_page_preview public API for page-source rendering",
+        "Deepwell page_view public API for saved anonymous page rendering"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-whoinvited.md"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Initial WhoInvited lookup form rendering is implemented and covered. The autocomplete/user lookup action, invitation-chain result rendering, and membership invitation provenance queries remain blocked pending live action-surface evidence and local invitation provenance data."
+      ]
+    },
+    "account-lifecycle": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/account-lifecycle.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "advertising": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/advertising.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "avatars": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/avatars.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "browser-support": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/browser-support.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "collaborative-editing": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/collaborative-editing.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "community-site-directory": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/community-site-directory.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "content-licensing": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/content-licensing.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "custom-domains": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/custom-domains.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "educational-site-status": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/educational-site-status.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "expressions": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/expressions.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "favicons": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/favicons.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "forum-signatures": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/forum-signatures.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "gravatar": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/gravatar.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "hosted-wiki-platform": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/hosted-wiki-platform.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "karma": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/karma.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "managed-hosting": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/managed-hosting.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "meta-tags": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/meta-tags.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "outgoing-pingbacks": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/outgoing-pingbacks.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "page-editing-history": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/page-editing-history.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "page-templates": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/page-templates.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "private-messages": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/private-messages.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "private-sites": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/private-sites.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "roles-and-permissions": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/roles-and-permissions.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "search-language": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/search-language.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "secure-login": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/secure-login.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "service-resilience": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/service-resilience.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "site-backups": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/site-backups.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "site-cloning": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/site-cloning.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "site-https": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/site-https.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "site-lifecycle-limits": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/site-lifecycle-limits.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "site-membership": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/site-membership.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "site-navigation": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/site-navigation.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "site-storage": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/site-storage.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "site-themes": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/site-themes.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "subscription-plan-matrix": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/subscription-plan-matrix.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "subscriptions-plans": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/subscriptions-plans.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-engine": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/syntax-engine.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "thumbnails": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/thumbnails.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "unlimited-pages": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/unlimited-pages.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "user-roles": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/user-roles.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "watching-notifications": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/watching-notifications.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "web-statistics": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/platform/web-statistics.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "content-pages": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/content-pages.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "forum-categories": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/forum-categories.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "forum-category-groups": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/forum-category-groups.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "forum-posts": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/forum-posts.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "forum-threads": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/forum-threads.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "forums-overview": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/forums-overview.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "page-categories": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/page-categories.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "page-forum-integration": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/page-forum-integration.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "page-inclusions": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/page-inclusions.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "page-links": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/page-links.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "page-parent-relations": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/page-parent-relations.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "page-tags": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/page-tags.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "site-identity": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/site-structure/site-identity.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-attachment": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-attachment.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-bibliography": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-bibliography.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-block-formatting-elements": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-block-formatting-elements.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-block-quotes": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-block-quotes.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-buttons": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-buttons.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-code-blocks": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-code-blocks.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-collapsible-blocks": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-collapsible-blocks.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-comments": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-comments.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-date": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-date.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-definition-lists": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-definition-lists.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-embedding": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-embedding.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-embedding-code": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-embedding-code.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-foldable-list": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-foldable-list.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-footnotes": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-footnotes.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-headings": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-headings.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-horizontal-rules": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-horizontal-rules.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-html-blocks": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-html-blocks.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-iftags": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-iftags.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-images": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-images.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-include": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-include.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-inline-formatting": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-inline-formatting.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-layout": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-layout.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-links": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-links.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-lists": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-lists.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-literal-text": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-literal-text.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-math": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-math.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-notes": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-notes.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-paragraphs-and-newline": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-paragraphs-and-newline.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-social-bookmarking": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-social-bookmarking.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-table-of-contents": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-table-of-contents.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-tables": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-tables.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-tag-buttons": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-tag-buttons.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-text-size": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-text-size.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-typography": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-typography.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-universal-escaping": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-universal-escaping.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    },
+    "syntax-users": {
+      "status": "pending",
+      "confirmed_public_seams": [],
+      "tests": [],
+      "implementation_files": [],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-users.md"
+      ],
+      "live_oracle_evidence": [],
+      "unresolved_ambiguities_or_blockers": []
+    }
+  },
+  "property_axes": {
+    "P1": "invocation grammar and scalar interpretation",
+    "P2": "parser stage, nesting, and composition",
+    "P3": "lifecycle, persistence, import, and round trips",
+    "P4": "actors, permissions, visibility, and privacy",
+    "P5": "selection, ordering, counting, and pagination",
+    "P6": "HTTP, API, URL, Ajax, feed, and navigation contracts",
+    "P7": "DOM, CSS, resources, interaction, and geometry",
+    "P8": "temporal behavior, failure atomicity, limits, and resource bounds"
+  },
+  "feature_property_matrix": {
+    "module-listpages": {
+      "P1": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-invalid-numeric-fallbacks",
+          "live:listpages-duplicate-and-alias-precedence",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-generated-preview-reconciliation.json",
+          "test:deepwell/tests/page.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
+          "test:deepwell/tests/page.rs#listpages_categories_alias_selects_only_default_category_rows"
+        ],
+        "observation_gaps": []
+      },
+      "P2": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-generated-text-typography-boundary",
+          "live:listpages-title-variable-parser-context",
+          "live:listpages-legacy-and-body-edge-behavior",
+          "live:countpages-inside-listpages-body",
+          "test:deepwell/tests/page.rs#ajax_listpages_recursively_renders_balanced_nested_modules",
+          "test:deepwell/tests/page.rs#listpages_generated_pager_keeps_ascii_dots_after_authored_typography",
+          "test:deepwell/tests/page.rs#countpages_inside_listpages_body_matches_live_empty_item_behavior"
+        ],
+        "observation_gaps": []
+      },
+      "P3": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-imported-lifecycle-identity-provenance",
+          "live:data-form-checkbox-control-storage-and-variable-contract",
+          "live:data-form-wiki-control-rendering-and-variable-contract",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
+          "test:deepwell/tests/page.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance",
+          "test:deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot"
+        ],
+        "observation_gaps": []
+      },
+      "P4": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-rating-comment-and-data-form-variables",
+          "live:listpages-imported-lifecycle-identity-provenance",
+          "test:deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches",
+          "test:deepwell/tests/page.rs#listpages_imported_commenter_identity_uses_structured_corpus_provenance",
+          "test:deepwell/tests/list_pages_random.rs#random_listpages_rechecks_actor_visibility_and_deleted_candidates"
+        ],
+        "observation_gaps": []
+      },
+      "P5": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-invalid-numeric-fallbacks",
+          "live:listpages-pagination-path-semantics",
+          "live:dataforms-listpages-selection-sorting-live",
+          "test:deepwell/tests/page.rs#listpages_limit_two_caps_ordered_results",
+          "test:deepwell/tests/page.rs#page_query_data_form_field_ordering_uses_static_form_values",
+          "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history",
+          "live:listpages-random-idle-cache-live-20260730",
+          "test:deepwell/tests/list_pages.rs#random_listpages_reuses_the_same_idle_cached_order_for_one_invocation",
+          "test:deepwell/tests/list_pages_random.rs#random_listpages_cache_refreshes_expires_and_separates_body_and_page",
+          "test:install/local/wikidot-verification/tests/listpages-random-idle-cache-evidence.test.mjs#ListPages random live evidence preserves the sliding idle-cache proof"
+        ],
+        "observation_gaps": []
+      },
+      "P6": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-pagination-path-semantics",
+          "live:listpages-rss-link-and-rssonly",
+          "live:listpages-live-feed-endpoint",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
+          "test:deepwell/tests/page.rs#listpages_rss_link_and_rss_only_match_live_wikidot_markup",
+          "test:framerail/tests/list-pages-feed.test.ts#renders RSS metadata, items, escaped descriptions, and safe CDATA",
+          "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history",
+          "live:listpages-random-idle-cache-live-20260730",
+          "test:deepwell/tests/list_pages.rs#wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",
+          "test:deepwell/tests/list_pages_random.rs#wikidot_ajax_random_listpages_rejects_invalid_pager_values",
+          "test:install/local/wikidot-verification/tests/listpages-random-idle-cache-evidence.test.mjs#ListPages random live evidence binds body, idle expiry, and pager state"
+        ],
+        "observation_gaps": []
+      },
+      "P7": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-template-variable-rendering",
+          "live:listpages-rss-link-and-rssonly",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
+          "test:deepwell/tests/page.rs#listpages_combined_and_separate_templates_match_live_container_dom",
+          "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history"
+        ],
+        "observation_gaps": []
+      },
+      "P8": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-p8-temporal-boundary-live-20260730",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",
+          "test:install/local/wikidot-verification/tests/listpages-p8-temporal-boundary-evidence.test.mjs#ListPages P8 evidence proves a temporal boundary rather than a fixed byte cap",
+          "test:install/local/wikidot-verification/tests/listpages-runtime-budget-envelope.test.mjs#derives reproducible ListPages runtime envelopes from invocation records",
+          "test:deepwell/tests/page.rs#listpages_template_body_over_the_render_budget_remains_literal",
+          "test:deepwell/tests/page.rs#listpages_aggregate_generated_output_budget_preserves_overflowing_module",
+          "test:deepwell/tests/page.rs#listpages_module_count_over_the_render_budget_remains_literal",
+          "test:deepwell/tests/page.rs#listpages_module_source_over_the_render_budget_remains_literal"
+        ],
+        "observation_gaps": []
+      }
+    }
+  }
+}

@@ -9,6 +9,7 @@ ftml/test
 
 # Vendored files and artifacts
 *.log
+target
 ftml/target
 ftml/pkg
 deepwell/target
@@ -16,6 +17,8 @@ wws/target
 **/__pycache__
 **/dist
 **/node_modules
+framerail/.svelte-kit
+framerail/build
 
 # Editor files
 .idea

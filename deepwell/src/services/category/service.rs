@@ -18,16 +18,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
+use super::structs::UpdateCategoryBody;
+use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::license::validate_wikidot_license_override;
 use crate::models::page;
 use crate::models::page_category::{
     self, Entity as PageCategory, Model as PageCategoryModel,
 };
 use crate::services::OutdateService;
+use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService, PageCategoryFields};
 use crate::types::RerenderDepth;
+use crate::types::{Maybe, Reference};
 use crate::utils::get_category_name;
+use crate::utils::now;
+use paste::paste;
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter,
+    QueryOrder, Set,
+};
 use sea_query::{Expr, ExprTrait, Func, Query};
 use std::net::IpAddr;
 
@@ -196,9 +205,16 @@ impl CategoryService {
                         ErrorType::PageCategory,
                     )
                 })?;
-            if get_category_name(&template.slug) != "template" {
+            let wikidot_live_template_slug = if category.slug == "_default" {
+                "_template".to_owned()
+            } else {
+                format!("{}:_template", category.slug)
+            };
+            if get_category_name(&template.slug) != "template"
+                && template.slug != wikidot_live_template_slug
+            {
                 return Err(Error::new(
-                    "page template must reference a page in the template category",
+                    "page template must reference a page in the template category or the category's Wikidot _template page",
                     ErrorType::PageCategory,
                 )
                 .into());
@@ -252,6 +268,26 @@ impl CategoryService {
                 Maybe::Set(_) => Maybe::Set(category.license_other.as_deref()),
                 Maybe::Unset => Maybe::Unset,
             },
+            rating_enabled: match &input.rating_enabled {
+                Maybe::Set(_) => Maybe::Set(category.rating_enabled),
+                Maybe::Unset => Maybe::Unset,
+            },
+            rating_permission: match &input.rating_permission {
+                Maybe::Set(_) => Maybe::Set(category.rating_permission.as_deref()),
+                Maybe::Unset => Maybe::Unset,
+            },
+            rating_visibility: match &input.rating_visibility {
+                Maybe::Set(_) => Maybe::Set(category.rating_visibility.as_deref()),
+                Maybe::Unset => Maybe::Unset,
+            },
+            rating_type: match &input.rating_type {
+                Maybe::Set(_) => Maybe::Set(category.rating_type.as_deref()),
+                Maybe::Unset => Maybe::Unset,
+            },
+            per_page_discussion: match &input.per_page_discussion {
+                Maybe::Set(_) => Maybe::Set(category.per_page_discussion),
+                Maybe::Unset => Maybe::Unset,
+            },
         };
         let changed_fields = PageCategoryFields {
             top_bar_page: match &input.top_bar_page {
@@ -271,6 +307,20 @@ impl CategoryService {
                 .map_or(Maybe::Unset, |(_, license_other)| {
                     Maybe::Set(license_other.as_deref())
                 }),
+            rating_enabled: input.rating_enabled.clone(),
+            rating_permission: match &input.rating_permission {
+                Maybe::Set(value) => Maybe::Set(value.map(|value| value.as_storage())),
+                Maybe::Unset => Maybe::Unset,
+            },
+            rating_visibility: match &input.rating_visibility {
+                Maybe::Set(value) => Maybe::Set(value.map(|value| value.as_storage())),
+                Maybe::Unset => Maybe::Unset,
+            },
+            rating_type: match &input.rating_type {
+                Maybe::Set(value) => Maybe::Set(value.map(|value| value.as_storage())),
+                Maybe::Unset => Maybe::Unset,
+            },
+            per_page_discussion: input.per_page_discussion.clone(),
         };
 
         AuditService::log(
@@ -301,6 +351,23 @@ impl CategoryService {
         if let Some((license, license_other)) = normalized_license {
             model.license = Set(license);
             model.license_other = Set(license_other);
+        }
+        if let Maybe::Set(rating_enabled) = input.rating_enabled {
+            model.rating_enabled = Set(rating_enabled);
+        }
+        if let Maybe::Set(rating_permission) = input.rating_permission {
+            model.rating_permission =
+                Set(rating_permission.map(|value| str!(value.as_storage())));
+        }
+        if let Maybe::Set(rating_visibility) = input.rating_visibility {
+            model.rating_visibility =
+                Set(rating_visibility.map(|value| str!(value.as_storage())));
+        }
+        if let Maybe::Set(rating_type) = input.rating_type {
+            model.rating_type = Set(rating_type.map(|value| str!(value.as_storage())));
+        }
+        if let Maybe::Set(per_page_discussion) = input.per_page_discussion {
+            model.per_page_discussion = Set(per_page_discussion);
         }
         model.updated_at = Set(Some(now()));
 
@@ -352,13 +419,13 @@ impl CategoryService {
                     Query::select()
                         .column(page::Column::PageCategoryId)
                         .from(page::Entity)
-                        .and_where(Expr::col(page::Column::SiteId).eq(site_id))
+                        .and_where(Expr::column(page::Column::SiteId).eq(site_id))
                         .group_by_columns([
                             page::Column::PageCategoryId,
                             page::Column::DeletedAt,
                         ])
                         .and_having(
-                            Func::coalesce([Expr::col(page::Column::DeletedAt).into()])
+                            Func::coalesce([Expr::column(page::Column::DeletedAt)])
                                 .is_null(),
                         )
                         .to_owned(),

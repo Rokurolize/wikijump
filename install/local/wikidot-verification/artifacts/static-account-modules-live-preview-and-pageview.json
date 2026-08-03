@@ -1,0 +1,145 @@
+{
+  "captured_at": "2026-07-29T02:25:47.932031+00:00",
+  "case_id": "static-account-modules-live-preview-and-pageview-matrix",
+  "cases": [
+    {
+      "body": "\n\n<div class=\"error-block\">Invalid indentification token.</div>",
+      "body_sha256": "03a6f490da87d45f06ba84eabbbe387254a80ae0a16cca3a4538df5d11950ac9",
+      "case_id": "anonymous-anonymousnotificationsunsubscribe-invalid-token",
+      "source": "[[module AnonymousNotificationsUnsubscribe]]",
+      "source_sha256": "54d5e20df248f477dd93b10f52600563354f61772fd7ca194a6dd30fb3d5765f",
+      "status": "ok",
+      "viewer": "anonymous"
+    },
+    {
+      "body": "\n\n<div class=\"error-block\">No user specified.</div>",
+      "body_sha256": "d88c9df832c3734130a1efc806442a8e15b143c59a16a0c6f4ffd9687a3ca45e",
+      "case_id": "anonymous-userinfo-no-user",
+      "source": "[[module UserInfo]]",
+      "source_sha256": "231a264e2d178dae60f4faab3dd72ac3bd926785d1b8ec063a4fead072c7a9d6",
+      "status": "ok",
+      "viewer": "anonymous"
+    },
+    {
+      "body": "\n\n<div class=\"error-block\">User search has been (temporarily) disabled. Sorry!</div>",
+      "body_sha256": "1b1723c703bcc4e4e2c56cf3f2afc948f5372ef303b968214b6770eeee442a1e",
+      "case_id": "anonymous-searchusers-disabled",
+      "source": "[[module SearchUsers]]",
+      "source_sha256": "b89b7c0184908f027253eccdd2d8c4a3e2dd833f1b278017f28318950640835b",
+      "status": "ok",
+      "viewer": "anonymous"
+    },
+    {
+      "body": "\n\n<div id=\"membership-email-invitation-box\">\n\t\n\t\t\t<p>\n\t\t\tSorry, the invitation could not be found. It might have been canceled by the sender, aleady\n\t\t\tused by someone (you?) or the URL link that you were supposed to copy\n\t\t\tfrom the invitation email might be corrupted somehow.\n\t\t</p>\t\n\t</div>",
+      "body_sha256": "a3d7d5635793159d619517080ff24e6a54cd683e90b1ddcba635ce277b6e5683",
+      "case_id": "anonymous-membershipemailinvitation-no-token",
+      "source": "[[module MembershipEmailInvitation]]",
+      "source_sha256": "a5a6e75590cf2c071bbe990d3f556b03465f99595eef3324a273430ad6e13c19",
+      "status": "ok",
+      "viewer": "anonymous"
+    },
+    {
+      "body": "\n\n<form action=\"dummy\" id=\"who-invited-form\" onsubmit=\"WIKIDOT.modules.WhoInvitedModule.listeners.lookUp(event)\">\n\t<table class=\"form\">\n\t\t<tr>\n\t\t\t<td>\n\t\t\t\tWho invited this guy?\t\t\t</td>\n\t\t\t<td>\n\t\t\t\t<div class=\"autocomplete-container\" style=\"width: 20em; padding-top: 3px;\">\n\t\t\t\t\t\t<input type=\"text\" id=\"user-lookup\" size=\"30\" class=\"autocomplete-input text\"/>\n\t\t\t\t\t\t<div id=\"user-lookup-list\" class=\"autocomplete-list\"></div>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"sub\">\n\t\t\t\t\tType name of the user\t\t\t\t</div>\n\t\t\t</td>\n\t\t</tr>\n\t</table>\n\t<div class=\"buttons\">\n\t\t<input type=\"submit\" value=\"look up\"/>\n\t</div>\n</form>\n\n<div id=\"who-invited-results-box\">\n\n</div>",
+      "body_sha256": "33d4a5a434732b2226ca7d9496696fb8ff90ca9e0ea6e83ea25b8090dbe1158f",
+      "case_id": "anonymous-whoinvited-form",
+      "source": "[[module WhoInvited]]",
+      "source_sha256": "ba4be7253669c52ecb5252fbf8d98b2f4d68b3473060138a0113b339a154b84e",
+      "status": "ok",
+      "viewer": "anonymous"
+    },
+    {
+      "body": "\n\n<div class=\"error-block\">Invalid indentification token.</div>",
+      "body_sha256": "03a6f490da87d45f06ba84eabbbe387254a80ae0a16cca3a4538df5d11950ac9",
+      "case_id": "account-a-anonymousnotificationsunsubscribe-invalid-token",
+      "source": "[[module AnonymousNotificationsUnsubscribe]]",
+      "source_sha256": "54d5e20df248f477dd93b10f52600563354f61772fd7ca194a6dd30fb3d5765f",
+      "status": "ok",
+      "viewer": "account-a"
+    },
+    {
+      "body": "\n\n<div class=\"error-block\">No user specified.</div>",
+      "body_sha256": "d88c9df832c3734130a1efc806442a8e15b143c59a16a0c6f4ffd9687a3ca45e",
+      "case_id": "account-a-userinfo-no-user",
+      "source": "[[module UserInfo]]",
+      "source_sha256": "231a264e2d178dae60f4faab3dd72ac3bd926785d1b8ec063a4fead072c7a9d6",
+      "status": "ok",
+      "viewer": "account-a"
+    },
+    {
+      "body": "\n\n<div class=\"error-block\">User search has been (temporarily) disabled. Sorry!</div>",
+      "body_sha256": "1b1723c703bcc4e4e2c56cf3f2afc948f5372ef303b968214b6770eeee442a1e",
+      "case_id": "account-a-searchusers-disabled",
+      "source": "[[module SearchUsers]]",
+      "source_sha256": "b89b7c0184908f027253eccdd2d8c4a3e2dd833f1b278017f28318950640835b",
+      "status": "ok",
+      "viewer": "account-a"
+    },
+    {
+      "body": "\n\n<div id=\"membership-email-invitation-box\">\n\t\n\t\t\t<p>\n\t\t\tSorry, the invitation could not be found. It might have been canceled by the sender, aleady\n\t\t\tused by someone (you?) or the URL link that you were supposed to copy\n\t\t\tfrom the invitation email might be corrupted somehow.\n\t\t</p>\t\n\t</div>",
+      "body_sha256": "a3d7d5635793159d619517080ff24e6a54cd683e90b1ddcba635ce277b6e5683",
+      "case_id": "account-a-membershipemailinvitation-no-token",
+      "source": "[[module MembershipEmailInvitation]]",
+      "source_sha256": "a5a6e75590cf2c071bbe990d3f556b03465f99595eef3324a273430ad6e13c19",
+      "status": "ok",
+      "viewer": "account-a"
+    },
+    {
+      "body": "\n\n<form action=\"dummy\" id=\"who-invited-form\" onsubmit=\"WIKIDOT.modules.WhoInvitedModule.listeners.lookUp(event)\">\n\t<table class=\"form\">\n\t\t<tr>\n\t\t\t<td>\n\t\t\t\tWho invited this guy?\t\t\t</td>\n\t\t\t<td>\n\t\t\t\t<div class=\"autocomplete-container\" style=\"width: 20em; padding-top: 3px;\">\n\t\t\t\t\t\t<input type=\"text\" id=\"user-lookup\" size=\"30\" class=\"autocomplete-input text\"/>\n\t\t\t\t\t\t<div id=\"user-lookup-list\" class=\"autocomplete-list\"></div>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"sub\">\n\t\t\t\t\tType name of the user\t\t\t\t</div>\n\t\t\t</td>\n\t\t</tr>\n\t</table>\n\t<div class=\"buttons\">\n\t\t<input type=\"submit\" value=\"look up\"/>\n\t</div>\n</form>\n\n<div id=\"who-invited-results-box\">\n\n</div>",
+      "body_sha256": "33d4a5a434732b2226ca7d9496696fb8ff90ca9e0ea6e83ea25b8090dbe1158f",
+      "case_id": "account-a-whoinvited-form",
+      "source": "[[module WhoInvited]]",
+      "source_sha256": "ba4be7253669c52ecb5252fbf8d98b2f4d68b3473060138a0113b339a154b84e",
+      "status": "ok",
+      "viewer": "account-a"
+    },
+    {
+      "case_id": "anonymous-pageview-anonymousnotificationsunsubscribe-invalid-token",
+      "segment": "ANONUN_START</p>\n<div class=\"error-block\">Invalid indentification token.</div>\n<p>ANONUN_END",
+      "segment_sha256": "6be36ac11f5b689e193e93c9713bab44db5fe15bee07ddb9bc465c58280bdbae",
+      "source_page_deleted": true,
+      "source_page_slug": "codex-module-pageview-1785291820",
+      "viewer": "anonymous"
+    },
+    {
+      "case_id": "anonymous-pageview-userinfo-no-user",
+      "segment": "USERINFO_START</p>\n<div class=\"error-block\">No user specified.</div>\n<p>USERINFO_END",
+      "segment_sha256": "a4bfae695ef90900ac4d25255d199c2bd00b58f5d69ec4ecfdda4d39c1409a52",
+      "source_page_deleted": true,
+      "source_page_slug": "codex-module-pageview-1785291820",
+      "viewer": "anonymous"
+    },
+    {
+      "case_id": "anonymous-pageview-searchusers-disabled",
+      "segment": "SEARCHUSERS_START</p>\n<div class=\"error-block\">User search has been (temporarily) disabled. Sorry!</div>\n<p>SEARCHUSERS_END",
+      "segment_sha256": "f9be0a6bc0193e56393e0d9e514b510669ea87b37236de550b5f287e7fcfc5fe",
+      "source_page_deleted": true,
+      "source_page_slug": "codex-module-pageview-1785291820",
+      "viewer": "anonymous"
+    },
+    {
+      "case_id": "anonymous-pageview-membershipemailinvitation-no-token",
+      "segment": "MBE_START</p>\n<div id=\"membership-email-invitation-box\">\n\t\n\t\t\t<p>\n\t\t\tSorry, the invitation could not be found. It might have been canceled by the sender, aleady\n\t\t\tused by someone (you?) or the URL link that you were supposed to copy\n\t\t\tfrom the invitation email might be corrupted somehow.\n\t\t</p>\t\n\t</div>\n<p>MBE_END",
+      "segment_sha256": "779753b2a080f900f939aa46894bfd6c3abe85198aba98d06f2cbbe1cc3c5de6",
+      "source_page_deleted": true,
+      "source_page_slug": "codex-module-pageview-1785291820",
+      "viewer": "anonymous"
+    },
+    {
+      "case_id": "anonymous-pageview-whoinvited-form",
+      "segment": "WHO_START</p>\n<form action=\"dummy\" id=\"who-invited-form\" onsubmit=\"WIKIDOT.modules.WhoInvitedModule.listeners.lookUp(event)\">\n\t<table class=\"form\">\n\t\t<tr>\n\t\t\t<td>\n\t\t\t\tWho invited this guy?\t\t\t</td>\n\t\t\t<td>\n\t\t\t\t<div class=\"autocomplete-container\" style=\"width: 20em; padding-top: 3px;\">\n\t\t\t\t\t\t<input type=\"text\" id=\"user-lookup\" size=\"30\" class=\"autocomplete-input text\"/>\n\t\t\t\t\t\t<div id=\"user-lookup-list\" class=\"autocomplete-list\"></div>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"sub\">\n\t\t\t\t\tType name of the user\t\t\t\t</div>\n\t\t\t</td>\n\t\t</tr>\n\t</table>\n\t<div class=\"buttons\">\n\t\t<input type=\"submit\" value=\"look up\"/>\n\t</div>\n</form>\n\n<div id=\"who-invited-results-box\">\n\n</div>\n<p>WHO_END",
+      "segment_sha256": "4f56d888e2c819db4d0e25c14a508e763755921af153a6b60fbc6b1e7bf5078d",
+      "source_page_deleted": true,
+      "source_page_slug": "codex-module-pageview-1785291820",
+      "viewer": "anonymous"
+    }
+  ],
+  "module_route": "edit/PagePreviewModule",
+  "mutated": true,
+  "notes": [
+    "Preview cases are non-mutating edit/PagePreviewModule probes captured anonymously and with account A.",
+    "Saved-page cases are marker-bounded anonymous page-content segments from a run-owned holder page that was deleted after capture.",
+    "Only the no-token/no-user/static-form surfaces are covered here; tokenized invitation, user-info lookup, invitation lookup actions, and broader account state remain outside this slice."
+  ],
+  "schema": "wikijump.wikidot_live_probe.v1",
+  "site": "sandbox-for-codex"
+}

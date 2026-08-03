@@ -1,0 +1,3477 @@
+{
+  "schema_version": 1,
+  "generated_date": "2026-07-28",
+  "language": "English",
+  "corpus_root": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages",
+  "page_count": 1806,
+  "listed_page_count": 246,
+  "excluded_data_record_count": 1560,
+  "unclassified_count": 0,
+  "classification_counts": {
+    "documentation": 142,
+    "index-or-non-feature-content": 1,
+    "navigation-composition": 8,
+    "policy-not-feature": 3,
+    "product-or-presentation-page": 14,
+    "redirect-or-alias": 54,
+    "runtime-system-page": 24,
+    "structured-data-record": 1560
+  },
+  "source_pages_with_features": 241,
+  "source_pages_without_features": 1565,
+  "excluded_data_groups": [
+    {
+      "classification": "structured-data-record",
+      "classification_reason": "A user-submitted Community Site data-form record; excluded from compatibility evidence and individual repository documentation.",
+      "path_prefix": "community-sites:",
+      "page_count": 1560,
+      "source_bytes": 747730,
+      "source_inventory_sha256": "96a8eab9add27ebeb23591c774c97a0bbab971a564264c5d501c0db81f0dedf4"
+    }
+  ],
+  "pages": [
+    {
+      "fullname": "_4040",
+      "title": "",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/_4040/source.wikidot.txt",
+      "source_sha256": "0dd25523a9e49aabc8449bd6c27fa96538eb45eb8a7e308ad4187c3e291f29ff",
+      "source_bytes": 505,
+      "source_lines": 20,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-css"
+      ]
+    },
+    {
+      "fullname": "_maintenance",
+      "title": "",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/_maintenance/source.wikidot.txt",
+      "source_sha256": "f823a0e1b33b203c78fa4a2465f53c31518944a9d220523117558d6029982c9d",
+      "source_bytes": 526,
+      "source_lines": 20,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-css"
+      ]
+    },
+    {
+      "fullname": "about",
+      "title": "",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/about/source.wikidot.txt",
+      "source_sha256": "4d40a2b80c4e72022717e340f245d7ed30a6d454f3845a982905c3bce74f3e26",
+      "source_bytes": 3805,
+      "source_lines": 35,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": []
+    },
+    {
+      "fullname": "account",
+      "title": "",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/account/source.wikidot.txt",
+      "source_sha256": "eb2e96916b249c5e8b1da2f2301175af59381199ff8fedb06c7c161fed19c5aa",
+      "source_bytes": 192,
+      "source_lines": 14,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-css",
+        "module-dashboard"
+      ]
+    },
+    {
+      "fullname": "action:deleteaccount",
+      "title": "Delete Account",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/action:deleteaccount/source.wikidot.txt",
+      "source_sha256": "90cdc650e5a0f2e1b835e5978cd4bb853aa1f20019adfea8efca1206a180af7d",
+      "source_bytes": 24,
+      "source_lines": 1,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-deleteaccount"
+      ]
+    },
+    {
+      "fullname": "admin:manage",
+      "title": "Manage this site",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/admin:manage/source.wikidot.txt",
+      "source_sha256": "c8d609af18f4ebceac7d22f017c19565e049d9c91e34a1333289b50afde8a701",
+      "source_bytes": 81,
+      "source_lines": 3,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-managesite"
+      ]
+    },
+    {
+      "fullname": "admin:themes",
+      "title": "Customize your theme",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/admin:themes/source.wikidot.txt",
+      "source_sha256": "1ee0195ff10899dad84f07b3c482a015f42637fff94b9b28f8599319abfc27d5",
+      "source_bytes": 67,
+      "source_lines": 3,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "site-themes"
+      ]
+    },
+    {
+      "fullname": "ads",
+      "title": "Ads",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/ads/source.wikidot.txt",
+      "source_sha256": "ad69cecb38421f5d35a2acc5ea245a4efbb41ad8f4e3fc73c42d435adf0069af",
+      "source_bytes": 66,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "ads-tos",
+      "title": "Advertising Agreement and Terms of Service",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/ads-tos/source.wikidot.txt",
+      "source_sha256": "7418ee3117f25fe8c9458be16c95fe01a388e93c8a6ff58ad672a81cd3be76d3",
+      "source_bytes": 7368,
+      "source_lines": 65,
+      "classification": "policy-not-feature",
+      "classification_reason": "A legal or commercial policy page. It was inspected but does not define a discrete software feature contract.",
+      "feature_ids": []
+    },
+    {
+      "fullname": "advertise",
+      "title": "Advertise",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/advertise/source.wikidot.txt",
+      "source_sha256": "e7b186487ef86ffc6bf19e1762a7f5eebc704ea8a8ac8c8b21fe1d0113b396a3",
+      "source_bytes": 619,
+      "source_lines": 21,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "advertising"
+      ]
+    },
+    {
+      "fullname": "changelog",
+      "title": "Changelog",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/changelog/source.wikidot.txt",
+      "source_sha256": "2972ef2513b5597251790edcaf780cb5daa3e0e24f544cd958be498f213c94b3",
+      "source_bytes": 594,
+      "source_lines": 14,
+      "classification": "index-or-non-feature-content",
+      "classification_reason": "An index, empty placeholder, changelog, or testimonial page without a distinct feature contract.",
+      "feature_ids": [
+        "module-frontforum"
+      ]
+    },
+    {
+      "fullname": "community-sites",
+      "title": "Community Sites",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/community-sites/source.wikidot.txt",
+      "source_sha256": "63c3b5e0ca4982adb42003fb2b274bf1c663c3b0b916550284ed867c4abf5f35",
+      "source_bytes": 804,
+      "source_lines": 24,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "community-site-directory"
+      ]
+    },
+    {
+      "fullname": "doc",
+      "title": "Doc",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc/source.wikidot.txt",
+      "source_sha256": "ba3773b905b3df3f26c05407850e37485f55da299c2183dfd1a38a8a9df4591f",
+      "source_bytes": 43,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:checkbox-field",
+      "title": "The 'checkbox' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:checkbox-field/source.wikidot.txt",
+      "source_sha256": "80246a710718a8a0c14a97dc164390e84fc7a6f58c251c18150b68afac5ed5be",
+      "source_bytes": 392,
+      "source_lines": 18,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-checkbox-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:creating-new-page",
+      "title": "Creating a new page",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:creating-new-page/source.wikidot.txt",
+      "source_sha256": "1a5ae5d76bd97bf7148b42bc365c8f72be5f2f24e475a09e60f8a3896042da07",
+      "source_bytes": 1073,
+      "source_lines": 21,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-creating-new-page",
+        "module-newpage"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:css-styling",
+      "title": "CSS Styling",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:css-styling/source.wikidot.txt",
+      "source_sha256": "6d5bbab7ed8e48bb11d571db3adc725ebd6da5986d6ca174ad240c72d0d69deb",
+      "source_bytes": 1115,
+      "source_lines": 28,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-css-styling"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:dataforms-and-listpages",
+      "title": "Using the data in ListPages modules",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:dataforms-and-listpages/source.wikidot.txt",
+      "source_sha256": "2b6da73c430f0723d90bd259c8ac295a26ece7c7f016f8d4e4f865cd0553f3de",
+      "source_bytes": 458,
+      "source_lines": 9,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-dataforms-and-listpages",
+        "module-listpages"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:date-field",
+      "title": "The 'date' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:date-field/source.wikidot.txt",
+      "source_sha256": "e43635adb502c5c706eaedbe23e96e01977c4f4cf7a9c1995fc762867300e88c",
+      "source_bytes": 13461,
+      "source_lines": 138,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-date-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:deleting-form",
+      "title": "Deleting a form",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:deleting-form/source.wikidot.txt",
+      "source_sha256": "5264625bb5c9da198f346f7df0683d1ae021ee5ea1420fa587475adc790ed532",
+      "source_bytes": 214,
+      "source_lines": 1,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-deleting-form"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:displaying",
+      "title": "Displaying the results",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:displaying/source.wikidot.txt",
+      "source_sha256": "db7915562535addf06624a5e60c7c63a026b309c0a3e023fdc19bfbe12924b06",
+      "source_bytes": 2256,
+      "source_lines": 60,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-displaying"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:field-properties",
+      "title": "Field Properties",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:field-properties/source.wikidot.txt",
+      "source_sha256": "75252a4bfd48db780f701ae8c8407929c748cf96983893b3cb116e6e764d90c3",
+      "source_bytes": 1490,
+      "source_lines": 67,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-field-properties"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:file-field",
+      "title": "The 'file' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:file-field/source.wikidot.txt",
+      "source_sha256": "642006add71989a17c436937be1f28bfea0f75afa08b5fc777ab7446552d73bf",
+      "source_bytes": 829,
+      "source_lines": 21,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-file-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:hidden-field",
+      "title": "The 'hidden' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:hidden-field/source.wikidot.txt",
+      "source_sha256": "d1c39d49764e2a4f8909e5cdb09f237157938b23393b6ac79cc9d8250c01fa13",
+      "source_bytes": 403,
+      "source_lines": 14,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-hidden-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:hints",
+      "title": "Hints & Tips",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:hints/source.wikidot.txt",
+      "source_sha256": "67382f94f3124d7095a5c54f079cf6596cfbd4ca5487f09e3f3f1ebcb15a169b",
+      "source_bytes": 539,
+      "source_lines": 5,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-hints"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:howto",
+      "title": "How to create a new data form",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:howto/source.wikidot.txt",
+      "source_sha256": "caadd31a8d462685423add63041872b3cd23b124d9d9c297ba9d0416a053b4fe",
+      "source_bytes": 3024,
+      "source_lines": 56,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-howto"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:images",
+      "title": "Images in Data Forms",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:images/source.wikidot.txt",
+      "source_sha256": "4a3c3b4b834da51328c23c2fafdcd85ccbedfbf3a3b679eae996f68d4188be35",
+      "source_bytes": 3677,
+      "source_lines": 75,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-images",
+        "module-css"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:links",
+      "title": "Links",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:links/source.wikidot.txt",
+      "source_sha256": "3c27819475424ca44a7e16ad1462c18eafdce45430ff17fbff3f39e2d17588b7",
+      "source_bytes": 753,
+      "source_lines": 19,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-links"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:output-style",
+      "title": "Styling the output of a field",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:output-style/source.wikidot.txt",
+      "source_sha256": "fe5136aee4a388dbe6e4e3884c1d2fbb0c0d8f6a6c2a6d6430bbdeed4a697d44",
+      "source_bytes": 712,
+      "source_lines": 31,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-output-style",
+        "module-css"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:pagepath",
+      "title": "The Pagepath concept",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:pagepath/source.wikidot.txt",
+      "source_sha256": "307d78e3a2f70a801d5b1a47ce95b3744e343e37fe5b2e467375fd63ba4f29c8",
+      "source_bytes": 2409,
+      "source_lines": 55,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-pagepath",
+        "module-backlinks"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:pagepath-field",
+      "title": "The 'pagepath' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:pagepath-field/source.wikidot.txt",
+      "source_sha256": "c593f84de2fbc3e64107145e667c0ecb2dfa8b963ff3d3774db2faf433d9d27e",
+      "source_bytes": 869,
+      "source_lines": 14,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-pagepath-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:password-field",
+      "title": "The 'password' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:password-field/source.wikidot.txt",
+      "source_sha256": "a1f90005e77dbab4aa1c8d513348a8980980eb7fddaf61013feffb922c1ec7cf",
+      "source_bytes": 269,
+      "source_lines": 11,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-password-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:reference",
+      "title": "Reference",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:reference/source.wikidot.txt",
+      "source_sha256": "65398daea9d8032f5af154267cb52b066f8d777fa854f456c3d93316ecb6cb9f",
+      "source_bytes": 1090,
+      "source_lines": 17,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-overview"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:select-field",
+      "title": "The 'select' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:select-field/source.wikidot.txt",
+      "source_sha256": "d6afefccc3fb8c76e975406910395b46d07138bc6dde085383560b06a240c6f9",
+      "source_bytes": 1409,
+      "source_lines": 54,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-select-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:selecting-and-sorting",
+      "title": "Selecting & Sorting by Data Form fields",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:selecting-and-sorting/source.wikidot.txt",
+      "source_sha256": "ef98d33782843de39360b20c1c124f48d16ae044b91229f8a4c49c3d24aac1b3",
+      "source_bytes": 3431,
+      "source_lines": 92,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-selecting-and-sorting",
+        "module-listpages"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:start",
+      "title": "Data Forms",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:start/source.wikidot.txt",
+      "source_sha256": "90776aa10aa716f4c5dd0888143431d9b3a2c7fda14bc3ac189b084049cf4db6",
+      "source_bytes": 2307,
+      "source_lines": 41,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-overview",
+        "module-css"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:static-field",
+      "title": "The 'static' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:static-field/source.wikidot.txt",
+      "source_sha256": "6714a78ec92b4718453dd0308f93438d7fb17bfabafe4cb7e968157be767605b",
+      "source_bytes": 4662,
+      "source_lines": 73,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-static-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:tags",
+      "title": "Tags",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:tags/source.wikidot.txt",
+      "source_sha256": "ebe65510abc2c4d451674ea28d2f398d4916bd169e1067197fafbf8f9c4e7b46",
+      "source_bytes": 307,
+      "source_lines": 3,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-tags"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:text-field",
+      "title": "The 'text' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:text-field/source.wikidot.txt",
+      "source_sha256": "dea1716a94d6095efb82253efe22ea28169fb3c18d664765dd82e1baf2a630ac",
+      "source_bytes": 1281,
+      "source_lines": 33,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-text-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:thanks",
+      "title": "Thanks",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:thanks/source.wikidot.txt",
+      "source_sha256": "7ab8ed273e7e165f354399eddf77166601d68852aa7c0616ad33d1376ec37f16",
+      "source_bytes": 286,
+      "source_lines": 4,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-overview"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:url-field",
+      "title": "The 'url' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:url-field/source.wikidot.txt",
+      "source_sha256": "9cf37f0da2d28aabe879e5e619907ebcc8ebaa7f0837ac3049089c7ad3379653",
+      "source_bytes": 708,
+      "source_lines": 21,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-url-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:wiki-field",
+      "title": "The 'wiki' field type",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:wiki-field/source.wikidot.txt",
+      "source_sha256": "0f799742cbdae02eac942b09544ff311b4ef770f077c62ff85f23459fbe18ab8",
+      "source_bytes": 337,
+      "source_lines": 15,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-wiki-field"
+      ]
+    },
+    {
+      "fullname": "doc-data-forms:youtube",
+      "title": "YouTube and other external content",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-data-forms:youtube/source.wikidot.txt",
+      "source_sha256": "6679a47e05bc4842285ac2582bf85d420451574889bc9ed8e654e713c6815a6f",
+      "source_bytes": 734,
+      "source_lines": 32,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "data-forms-youtube"
+      ]
+    },
+    {
+      "fullname": "doc-include:listpages-module-prev",
+      "title": "Listpages Module Prev",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-include:listpages-module-prev/source.wikidot.txt",
+      "source_sha256": "4bf93e034e0c771ccfde586a80bbf6eb12332c90d42b697196fad004fefcbd7a",
+      "source_bytes": 12728,
+      "source_lines": 243,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-listpages"
+      ]
+    },
+    {
+      "fullname": "doc-include:note-template-in-modules",
+      "title": "Note Template In Modules",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-include:note-template-in-modules/source.wikidot.txt",
+      "source_sha256": "9bc49111232c35a1f5dcb2757737a7a23caeb0766a7073f622fbe4cacf4d6097",
+      "source_bytes": 319,
+      "source_lines": 5,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-listpages"
+      ]
+    },
+    {
+      "fullname": "doc-include:page-selection",
+      "title": "Page Selection",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-include:page-selection/source.wikidot.txt",
+      "source_sha256": "7e3a1f4412b05893a9c2c907b95aaa47fb2d9900a9f7c9ff4933a31e15121fc5",
+      "source_bytes": 4903,
+      "source_lines": 122,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-countpages",
+        "module-listpages"
+      ]
+    },
+    {
+      "fullname": "doc-modules:adsenseunit-module",
+      "title": "AdSenseUnit Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:adsenseunit-module/source.wikidot.txt",
+      "source_sha256": "4c0d3e76ed8798a40099c1bb0f13f3aa982a8666ca4dcbe2055b5c08ebd1453c",
+      "source_bytes": 1217,
+      "source_lines": 32,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-adsenseunit"
+      ]
+    },
+    {
+      "fullname": "doc-modules:backlinks-module",
+      "title": "Backlinks Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:backlinks-module/source.wikidot.txt",
+      "source_sha256": "f83ea064c1e512cf54858ef684ba4f882817c3279a4d5a7fda4f0648bbb02f3b",
+      "source_bytes": 1235,
+      "source_lines": 44,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-backlinks"
+      ]
+    },
+    {
+      "fullname": "doc-modules:categories-module",
+      "title": "Categories Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:categories-module/source.wikidot.txt",
+      "source_sha256": "f40fab9fd57f2b7ffd941984a90c4a4328c4b38be539b34b12b08dbb1b8c28df",
+      "source_bytes": 546,
+      "source_lines": 19,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-categories"
+      ]
+    },
+    {
+      "fullname": "doc-modules:childpages-module",
+      "title": "ChildPages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:childpages-module/source.wikidot.txt",
+      "source_sha256": "dfb8962f842f60c17793a5e4521cc39e22a78fb70723a649f7b77f81a4282256",
+      "source_bytes": 321,
+      "source_lines": 15,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-childpages"
+      ]
+    },
+    {
+      "fullname": "doc-modules:clone-module",
+      "title": "Clone Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:clone-module/source.wikidot.txt",
+      "source_sha256": "fe1add5f9cb58cc0254127fbf41c74b62661040d989e604b86326116ba50cc22",
+      "source_bytes": 1340,
+      "source_lines": 30,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-clone"
+      ]
+    },
+    {
+      "fullname": "doc-modules:comments-module",
+      "title": "Comments Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:comments-module/source.wikidot.txt",
+      "source_sha256": "3da747507b8de1d6fd17df24bd6429e506cdc632bf26b96d2ecfb74d2e4a1db2",
+      "source_bytes": 1191,
+      "source_lines": 33,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-comments"
+      ]
+    },
+    {
+      "fullname": "doc-modules:countpages-module",
+      "title": "CountPages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:countpages-module/source.wikidot.txt",
+      "source_sha256": "251e9373b8fc9e41c6f39baabeba8e9949d2dc6eb4b10b238efecabb8d9f1795",
+      "source_bytes": 650,
+      "source_lines": 19,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-countpages"
+      ]
+    },
+    {
+      "fullname": "doc-modules:css-module",
+      "title": "CSS Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:css-module/source.wikidot.txt",
+      "source_sha256": "49d91080173204ee0dc2861f68975f4d9b61a1e35968bec86976634a3fb61b2d",
+      "source_bytes": 971,
+      "source_lines": 36,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-css"
+      ]
+    },
+    {
+      "fullname": "doc-modules:featuredsite-module",
+      "title": "FeaturedSite Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:featuredsite-module/source.wikidot.txt",
+      "source_sha256": "1b229e7c2c0528285beaab3820dca0bab36f229f67895f78e2e2c5561180c619",
+      "source_bytes": 355,
+      "source_lines": 19,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-featuredsite"
+      ]
+    },
+    {
+      "fullname": "doc-modules:feed-module",
+      "title": "Feed Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:feed-module/source.wikidot.txt",
+      "source_sha256": "d01594a9ee5d0a8ef38d81bdb1d452a91c885ba5f4dc908192e2751d1b89324f",
+      "source_bytes": 5671,
+      "source_lines": 146,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-feed"
+      ]
+    },
+    {
+      "fullname": "doc-modules:files-module",
+      "title": "Files Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:files-module/source.wikidot.txt",
+      "source_sha256": "60f675cdb2f88977eb91a8384da3694b1ed752ab6b0cf48b2a578f88f547004e",
+      "source_bytes": 168,
+      "source_lines": 15,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-files"
+      ]
+    },
+    {
+      "fullname": "doc-modules:flickrgallery-module",
+      "title": "FlickrGallery Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:flickrgallery-module/source.wikidot.txt",
+      "source_sha256": "2b55a822ff4cdccd2cbf647e60164c81dfa9077e2dd8e67b867124ea5e896f0f",
+      "source_bytes": 2076,
+      "source_lines": 43,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-flickrgallery"
+      ]
+    },
+    {
+      "fullname": "doc-modules:frontforum-module",
+      "title": "FrontForum Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:frontforum-module/source.wikidot.txt",
+      "source_sha256": "3d413c5f0a4175a8e1af14fef948da9f4437a725593d7d563c12278b2c26ca55",
+      "source_bytes": 3458,
+      "source_lines": 77,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-frontforum"
+      ]
+    },
+    {
+      "fullname": "doc-modules:join-module",
+      "title": "Join Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:join-module/source.wikidot.txt",
+      "source_sha256": "b0052f9fcc02c51858cfbb9b6644041f65cde47603e3281c5383f8490e878760",
+      "source_bytes": 2195,
+      "source_lines": 49,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-join"
+      ]
+    },
+    {
+      "fullname": "doc-modules:listdrafts-module",
+      "title": "ListDrafts Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:listdrafts-module/source.wikidot.txt",
+      "source_sha256": "e0020322623cbc39360e13bb88aa52c64fa079c513b3ec5c5f47c4b7fe723430",
+      "source_bytes": 394,
+      "source_lines": 9,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-listdrafts"
+      ]
+    },
+    {
+      "fullname": "doc-modules:listpages-module",
+      "title": "ListPages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:listpages-module/source.wikidot.txt",
+      "source_sha256": "d5c5aac7290c3b8108378d93ad32e444e682f58c3f21eedb4871a2a66a224e02",
+      "source_bytes": 18008,
+      "source_lines": 403,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-listpages"
+      ]
+    },
+    {
+      "fullname": "doc-modules:listusers-module",
+      "title": "ListUsers Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:listusers-module/source.wikidot.txt",
+      "source_sha256": "ee11b0e4eece4cedde096bbd6f573bf2589e28feb73544e5a63688943b86f9b0",
+      "source_bytes": 973,
+      "source_lines": 35,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-listusers"
+      ]
+    },
+    {
+      "fullname": "doc-modules:mailform-module",
+      "title": "MailForm Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:mailform-module/source.wikidot.txt",
+      "source_sha256": "090c9e5eb7b89b658fc9097ae5c6f0ba740000337a9206ca4fc451e6c75b4f03",
+      "source_bytes": 4826,
+      "source_lines": 136,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-mailform"
+      ]
+    },
+    {
+      "fullname": "doc-modules:managesite-module",
+      "title": "ManageSite Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:managesite-module/source.wikidot.txt",
+      "source_sha256": "dcc3bcbe1ad729b3bdbc87a2d79f28e81b424f9cbd5f28d2ab4aaffdad29c3f7",
+      "source_bytes": 497,
+      "source_lines": 17,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-managesite"
+      ]
+    },
+    {
+      "fullname": "doc-modules:members-module",
+      "title": "Members Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:members-module/source.wikidot.txt",
+      "source_sha256": "2bc653e3565a950d4685fb5810707412d6113c8045f071f70a2874cffcaa0973",
+      "source_bytes": 825,
+      "source_lines": 31,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-members"
+      ]
+    },
+    {
+      "fullname": "doc-modules:membershipapply-module",
+      "title": "MembershipApply Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:membershipapply-module/source.wikidot.txt",
+      "source_sha256": "3d7e96fbc0c082e15250333619068b46e9e4a649f090850e6a3b4551d26494b9",
+      "source_bytes": 526,
+      "source_lines": 17,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-membershipapply"
+      ]
+    },
+    {
+      "fullname": "doc-modules:membershipbypassword-module",
+      "title": "MembershipByPassword Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:membershipbypassword-module/source.wikidot.txt",
+      "source_sha256": "45fd9123e359b8ca58fd4cc9054e949bcee8dc9ab7cd9f6a9e6c863ab9a86d23",
+      "source_bytes": 499,
+      "source_lines": 17,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-membershipbypassword"
+      ]
+    },
+    {
+      "fullname": "doc-modules:miniactivethreads-module",
+      "title": "MiniActiveThreads Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:miniactivethreads-module/source.wikidot.txt",
+      "source_sha256": "a08b1a310f8f41ca838b2b95ae3f65c6879429248ea804543fe0e35b011a6777",
+      "source_bytes": 504,
+      "source_lines": 19,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-miniactivethreads"
+      ]
+    },
+    {
+      "fullname": "doc-modules:minirecentposts-module",
+      "title": "MiniRecentPosts Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:minirecentposts-module/source.wikidot.txt",
+      "source_sha256": "118693d5e939c2fff478fea3acf34ca212ade1f8ddd8e9ff157bd6a23ad78daa",
+      "source_bytes": 500,
+      "source_lines": 18,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-minirecentposts"
+      ]
+    },
+    {
+      "fullname": "doc-modules:minirecentthreads-module",
+      "title": "MiniRecentThreads Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:minirecentthreads-module/source.wikidot.txt",
+      "source_sha256": "7915a0a578e57cdfa96482f7a9f7805fa573f22e212f43c18187767d40b63b2f",
+      "source_bytes": 504,
+      "source_lines": 18,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-minirecentthreads"
+      ]
+    },
+    {
+      "fullname": "doc-modules:newpage-module",
+      "title": "NewPage Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:newpage-module/source.wikidot.txt",
+      "source_sha256": "33cd8e98e4ba9a73150c91eda9458cb87b4360d59b4b54db22afde887e5d3537",
+      "source_bytes": 3531,
+      "source_lines": 73,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-newpage"
+      ]
+    },
+    {
+      "fullname": "doc-modules:nextpreviouspage-module",
+      "title": "NextPreviousPage Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:nextpreviouspage-module/source.wikidot.txt",
+      "source_sha256": "6aa07837cc3b0a57ad4c35fcc4903b936c828f2e5b738078244a0010f65fc8ef",
+      "source_bytes": 2364,
+      "source_lines": 81,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-nextpreviouspage"
+      ]
+    },
+    {
+      "fullname": "doc-modules:orphanedpages-module",
+      "title": "OrphanedPages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:orphanedpages-module/source.wikidot.txt",
+      "source_sha256": "309a49a5464f3cb606d56a7def9037395034bd8a2a1fe6d92a704dd2a453a670",
+      "source_bytes": 533,
+      "source_lines": 8,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-orphanedpages"
+      ]
+    },
+    {
+      "fullname": "doc-modules:pagecalendar-module",
+      "title": "PageCalendar Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:pagecalendar-module/source.wikidot.txt",
+      "source_sha256": "7a10b6fc5c70acbc335e20f400e980affe8df73ea95ac668bc145af7d17356bd",
+      "source_bytes": 2291,
+      "source_lines": 41,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-listpages",
+        "module-pagecalendar"
+      ]
+    },
+    {
+      "fullname": "doc-modules:pages-module",
+      "title": "Pages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:pages-module/source.wikidot.txt",
+      "source_sha256": "4f68151642720d9ab4165dc2c5b38c040a0dd71c6f0bc26490ad9b071b82ed46",
+      "source_bytes": 1400,
+      "source_lines": 43,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-pages"
+      ]
+    },
+    {
+      "fullname": "doc-modules:pagesbytag-module",
+      "title": "PagesByTag Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:pagesbytag-module/source.wikidot.txt",
+      "source_sha256": "994c0fec79ddd073ac82e5a85dd0dae91c4c532fb7bce57a18acb8485a3f6bad",
+      "source_bytes": 2983,
+      "source_lines": 69,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-listpages",
+        "module-pagesbytag"
+      ]
+    },
+    {
+      "fullname": "doc-modules:pagetree-module",
+      "title": "PageTree Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:pagetree-module/source.wikidot.txt",
+      "source_sha256": "4933ecb99575fa43ea00d880fddca42d2621e3c145eed71a5f884e22cd693c4d",
+      "source_bytes": 1043,
+      "source_lines": 22,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-pagetree"
+      ]
+    },
+    {
+      "fullname": "doc-modules:petitionadmin-module",
+      "title": "PetitionAdmin Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:petitionadmin-module/source.wikidot.txt",
+      "source_sha256": "39d06571629be6648c9b905744dacec92c458f22baec55363bc08b387c5e02bd",
+      "source_bytes": 698,
+      "source_lines": 16,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-petitionadmin"
+      ]
+    },
+    {
+      "fullname": "doc-modules:rate-module",
+      "title": "Rate Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:rate-module/source.wikidot.txt",
+      "source_sha256": "de1cfd1840b15431b1c8c69f65bbcfd7ee4e084981e2a2ee710e5f1d59815f4c",
+      "source_bytes": 881,
+      "source_lines": 42,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-rate"
+      ]
+    },
+    {
+      "fullname": "doc-modules:ratedpages-module",
+      "title": "RatedPages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:ratedpages-module/source.wikidot.txt",
+      "source_sha256": "5a8fdb32861838d117ee6226b305cc86166ecea30312e79cc8d980693b847159",
+      "source_bytes": 1379,
+      "source_lines": 38,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-ratedpages"
+      ]
+    },
+    {
+      "fullname": "doc-modules:recentposts-module",
+      "title": "RecentPosts Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:recentposts-module/source.wikidot.txt",
+      "source_sha256": "7ec4b7fa3b078c4fb153e196dcb2b615aeafdcc63bf3958a547eb96b81de8200",
+      "source_bytes": 141,
+      "source_lines": 13,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-recentposts"
+      ]
+    },
+    {
+      "fullname": "doc-modules:redirect-module",
+      "title": "Redirect Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:redirect-module/source.wikidot.txt",
+      "source_sha256": "dd5226c1195c1cc557d0e48071950d1e7808fb28181d93219a1e480fba3c9773",
+      "source_bytes": 1921,
+      "source_lines": 34,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc-modules:search-module",
+      "title": "Search Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:search-module/source.wikidot.txt",
+      "source_sha256": "1ddf6bb65b95619fb88db64e3547227bebd17d8871b48b434228e1f708b45831",
+      "source_bytes": 1679,
+      "source_lines": 47,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-search"
+      ]
+    },
+    {
+      "fullname": "doc-modules:searchall-module",
+      "title": "SearchAll Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:searchall-module/source.wikidot.txt",
+      "source_sha256": "09cf4af605644948e4b52a8ea7cf64b0933d6616390d8c731bed59334148bf7e",
+      "source_bytes": 636,
+      "source_lines": 23,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-searchall"
+      ]
+    },
+    {
+      "fullname": "doc-modules:searchusers-module",
+      "title": "SearchUsers Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:searchusers-module/source.wikidot.txt",
+      "source_sha256": "188cc7c3dd48164ce61f4d3e953da69d50c03dab2697abf419e68d96bccfddad",
+      "source_bytes": 579,
+      "source_lines": 23,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-searchusers"
+      ]
+    },
+    {
+      "fullname": "doc-modules:sendinvitations-module",
+      "title": "SendInvitations Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:sendinvitations-module/source.wikidot.txt",
+      "source_sha256": "1422a79549200a9f71f33d41590b7cb8a4c333b1bcb3ac54ec73babed4f34978",
+      "source_bytes": 404,
+      "source_lines": 17,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-sendinvitations"
+      ]
+    },
+    {
+      "fullname": "doc-modules:sitechanges-module",
+      "title": "SiteChanges Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:sitechanges-module/source.wikidot.txt",
+      "source_sha256": "39e9752d03f6fb4f8e42e7ea32b7b09a2fc57a02c544319f39d023bea3aeb512",
+      "source_bytes": 517,
+      "source_lines": 24,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-sitechanges"
+      ]
+    },
+    {
+      "fullname": "doc-modules:sitegrid-module",
+      "title": "SiteGrid Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:sitegrid-module/source.wikidot.txt",
+      "source_sha256": "632c9413ee2919c3fb22df2bdcd27c336e229ae0d9d7c896c4675e66841e4212",
+      "source_bytes": 1808,
+      "source_lines": 104,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-sitegrid"
+      ]
+    },
+    {
+      "fullname": "doc-modules:start",
+      "title": "Modules",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:start/source.wikidot.txt",
+      "source_sha256": "f26e54f1da68dff55d4aaecf523f6987cbc0dcd67707f8c0f29789677ffb96cb",
+      "source_bytes": 6409,
+      "source_lines": 131,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-css"
+      ]
+    },
+    {
+      "fullname": "doc-modules:tagcloud-module",
+      "title": "TagCloud Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:tagcloud-module/source.wikidot.txt",
+      "source_sha256": "dc709f8de09fe3cf9ad75d975b0224b8c7ff186fa0e639a392fc8769773f9cee",
+      "source_bytes": 2948,
+      "source_lines": 42,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-tagcloud"
+      ]
+    },
+    {
+      "fullname": "doc-modules:themepreviewer-module",
+      "title": "ThemePreviewer Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:themepreviewer-module/source.wikidot.txt",
+      "source_sha256": "7f652f40c0b29ecb19a7786747d11fa98dc5024fb3b6de53e97e7da29af14057",
+      "source_bytes": 540,
+      "source_lines": 23,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-themepreviewer"
+      ]
+    },
+    {
+      "fullname": "doc-modules:wantedpages-module",
+      "title": "WantedPages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:wantedpages-module/source.wikidot.txt",
+      "source_sha256": "506e564b16e0b9f124099a4a032819614dd64d8de5c720dbd06849faed25870c",
+      "source_bytes": 215,
+      "source_lines": 8,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-wantedpages"
+      ]
+    },
+    {
+      "fullname": "doc-modules:watchers-module",
+      "title": "Watchers Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:watchers-module/source.wikidot.txt",
+      "source_sha256": "fdaa56cf10e58d87b6ce9c167dc2fe40528cfed3a9773033578926c0eec1ca95",
+      "source_bytes": 563,
+      "source_lines": 20,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-watchers"
+      ]
+    },
+    {
+      "fullname": "doc-modules:whoinvited-module",
+      "title": "WhoInvited Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:whoinvited-module/source.wikidot.txt",
+      "source_sha256": "b3ee37c7cbb80be5a0218398b7aa848a39375645e975cbb384d8c5d40d1589da",
+      "source_bytes": 483,
+      "source_lines": 22,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-whoinvited"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:_template",
+      "title": "_template",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:_template/source.wikidot.txt",
+      "source_sha256": "871c2b91529a49237e78f82e544c51a6662cc2dc4e6fe56f48541f859693e8dd",
+      "source_bytes": 1588,
+      "source_lines": 54,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-css",
+        "page-templates"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:attachment",
+      "title": "Attached files",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:attachment/source.wikidot.txt",
+      "source_sha256": "10974f61f5188c87fd6400abc96090478a23656aee2b1cefe246f1daa5b0e0c8",
+      "source_bytes": 648,
+      "source_lines": 6,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-attachment"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:bibliography",
+      "title": "Bibliography",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:bibliography/source.wikidot.txt",
+      "source_sha256": "84b95fe522a365119b1fc9562eca51d40cc4bf736abcaa9157bbfe66730e011c",
+      "source_bytes": 1409,
+      "source_lines": 21,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-bibliography"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:block-formatting-elements",
+      "title": "Block Formatting Elements",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:block-formatting-elements/source.wikidot.txt",
+      "source_sha256": "745a8a49e4eb72d030167f0dcb7a90fda0f30e342f8dd606cd36696bb850d65d",
+      "source_bytes": 4333,
+      "source_lines": 107,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-block-formatting-elements"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:block-quotes",
+      "title": "Block Quotes",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:block-quotes/source.wikidot.txt",
+      "source_sha256": "9b53db6028afb8c260afc1878ccc0943dc56ff8a47b57d87d3077b0dfdf22589",
+      "source_bytes": 991,
+      "source_lines": 31,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-block-quotes"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:buttons",
+      "title": "Standalone buttons for page options",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:buttons/source.wikidot.txt",
+      "source_sha256": "f6f7c04da59ec4a7136cdbf9a1a8551543a9a8f338653c0683c69886b76f820f",
+      "source_bytes": 1615,
+      "source_lines": 24,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-buttons"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:code-blocks",
+      "title": "Code Blocks",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:code-blocks/source.wikidot.txt",
+      "source_sha256": "476292f230ba76a2ffc0fe7d4a81bb18ec172ab5f573454a7d0e7f830f064602",
+      "source_bytes": 1786,
+      "source_lines": 55,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-code-blocks"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:collapsible-blocks",
+      "title": "Collapsible Blocks",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:collapsible-blocks/source.wikidot.txt",
+      "source_sha256": "94f1a86886c955c3bffddd47a2d3f97068c3214bd6e80dd166508f0fea22a5df",
+      "source_bytes": 1122,
+      "source_lines": 17,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-collapsible-blocks"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:comments",
+      "title": "Comments",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:comments/source.wikidot.txt",
+      "source_sha256": "327ca55f808e5fa28a84f44279f7c31ad4c05ebd5e699cdbe20c7950fd980852",
+      "source_bytes": 207,
+      "source_lines": 7,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-comments"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:date",
+      "title": "Date",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:date/source.wikidot.txt",
+      "source_sha256": "de5d94f336378e4cf3ed0ff7adcfa1b5ef329118b3e5e25eb293e3ac2a0d1c21",
+      "source_bytes": 2758,
+      "source_lines": 50,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-date"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:definition-lists",
+      "title": "Definition Lists",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:definition-lists/source.wikidot.txt",
+      "source_sha256": "43ba8ffbe68eba94ef66c6f29230cc30821fc0899ec1733d81cac85c282ad1df",
+      "source_bytes": 541,
+      "source_lines": 21,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-definition-lists"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:embedding",
+      "title": "Embedding media",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:embedding/source.wikidot.txt",
+      "source_sha256": "4ae0d8ecb4fbddbda7b59c2cf97c9737c89697e4d6832c12d809be27cac9c232",
+      "source_bytes": 1593,
+      "source_lines": 39,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-embedding"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:embedding-code",
+      "title": "Embedding code from other sites",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:embedding-code/source.wikidot.txt",
+      "source_sha256": "bd017698ec8bfcd48c09d1f336422444f65376ce69d9785173e5ce6c3b050171",
+      "source_bytes": 1459,
+      "source_lines": 23,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-embedding-code"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:foldable-list",
+      "title": "Foldable List",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:foldable-list/source.wikidot.txt",
+      "source_sha256": "e16ef1db3742957f3733d9b00bf626d22d697f349a00048e0a3834f350976a76",
+      "source_bytes": 961,
+      "source_lines": 27,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-foldable-list"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:footnotes",
+      "title": "Footnotes",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:footnotes/source.wikidot.txt",
+      "source_sha256": "ad0eaf24c936ff09371f4e9895074c091776551223ac1ac90b6f481a0363f0f8",
+      "source_bytes": 703,
+      "source_lines": 14,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-footnotes"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:headings",
+      "title": "Headings",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:headings/source.wikidot.txt",
+      "source_sha256": "39275ab5243831a1cc36dba1fa0588988e3fca57acad34813966c51fde2187ea",
+      "source_bytes": 246,
+      "source_lines": 10,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-headings"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:horizontal-rules",
+      "title": "Horizontal Rules",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:horizontal-rules/source.wikidot.txt",
+      "source_sha256": "6ae487b3104aad2d2a78e3174d8376a45a0ecefe150767ffaf8ab76bd610874b",
+      "source_bytes": 67,
+      "source_lines": 1,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-horizontal-rules"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:html-blocks",
+      "title": "Html Blocks",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:html-blocks/source.wikidot.txt",
+      "source_sha256": "7281ba038537ed0827daac9ef8edb1ec286df527fee6ea43e51c3c54be28fa09",
+      "source_bytes": 1359,
+      "source_lines": 32,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-html-blocks"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:iftags",
+      "title": "Iftags",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:iftags/source.wikidot.txt",
+      "source_sha256": "94a65c2ac891be332f870ed6b3f96ed0b60a05c18f6622e32a9427fd6cb7febb",
+      "source_bytes": 1257,
+      "source_lines": 27,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-iftags"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:images",
+      "title": "Images",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:images/source.wikidot.txt",
+      "source_sha256": "c98c5de90fda596730c0e25a023b3cd0b1f764f5e37df33e279bf63d9deb61cb",
+      "source_bytes": 6349,
+      "source_lines": 94,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-images"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:include",
+      "title": "Include",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:include/source.wikidot.txt",
+      "source_sha256": "0e58410affcb9cac566c11fc1121bb6ea2f140a00e8d667521034f9ab549e8fa",
+      "source_bytes": 1554,
+      "source_lines": 36,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-include"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:inline-formatting",
+      "title": "Inline Formatting",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:inline-formatting/source.wikidot.txt",
+      "source_sha256": "5df2e8b6488be9c5bdd5d2df6ff9bc36fa59541fbd89f9893489ff4f5dfbcc30",
+      "source_bytes": 2028,
+      "source_lines": 33,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-inline-formatting"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:layout",
+      "title": "Layout elements",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:layout/source.wikidot.txt",
+      "source_sha256": "a8416fe878455fc7771d0ef5a1070a8496202ce5f2fbd3ee466e7c13a3360440",
+      "source_bytes": 1116,
+      "source_lines": 42,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-layout"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:links",
+      "title": "Links",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:links/source.wikidot.txt",
+      "source_sha256": "22e8b6bbda038987f62d212a21966bfc09c93ed02b1c0ebb6d288eacd3380646",
+      "source_bytes": 6982,
+      "source_lines": 94,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-links"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:lists",
+      "title": "Lists",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:lists/source.wikidot.txt",
+      "source_sha256": "bc4689e649adaeda621d552ad4c2cef405bf5b4fa19843df24ce5dfd657fd29a",
+      "source_bytes": 2968,
+      "source_lines": 105,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-lists"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:literal-text",
+      "title": "Literal Text",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:literal-text/source.wikidot.txt",
+      "source_sha256": "a80b7dc990c1dc8f7de6ed4a0fc310a7a30911a3dcc05f87581e68de232b14f2",
+      "source_bytes": 259,
+      "source_lines": 13,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-literal-text"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:math",
+      "title": "Math",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:math/source.wikidot.txt",
+      "source_sha256": "86f162af9817a3373e83c97193b30ebe8c1b05b72294e4a4074b87723a9555d0",
+      "source_bytes": 2248,
+      "source_lines": 55,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-math"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:notes",
+      "title": "Notes",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:notes/source.wikidot.txt",
+      "source_sha256": "b3db26c6255d18309f837ac653aa112549e688962f52ed111436e5a4eea2786c",
+      "source_bytes": 187,
+      "source_lines": 6,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-notes"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:paragraphs-and-newline",
+      "title": "Paragraphs and newlines",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:paragraphs-and-newline/source.wikidot.txt",
+      "source_sha256": "d499bebc90ea5b2ca96da61f74105b5ee6bac527ddde22d6798a615c4dc590f2",
+      "source_bytes": 1400,
+      "source_lines": 55,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-paragraphs-and-newline"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:social-bookmarking",
+      "title": "Social Bookmarking",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:social-bookmarking/source.wikidot.txt",
+      "source_sha256": "c2dd86bda79accc9ddbe4b8403cc1e896346ee8dedb4b1203494ae21659a4343",
+      "source_bytes": 813,
+      "source_lines": 19,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-social-bookmarking"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:start",
+      "title": "Wiki Syntax",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:start/source.wikidot.txt",
+      "source_sha256": "80587bbfa3f1180473c6d12e39217ad1b709633b022e6f5eb7d0da89b3db8427",
+      "source_bytes": 1006,
+      "source_lines": 11,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-engine"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:table-of-contents",
+      "title": "Table Of Contents",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:table-of-contents/source.wikidot.txt",
+      "source_sha256": "f79e8bca655717918d00aba2ec625caa3951ce8f968ba21479b350af8b9ef328",
+      "source_bytes": 650,
+      "source_lines": 24,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-table-of-contents"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:tables",
+      "title": "Tables",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:tables/source.wikidot.txt",
+      "source_sha256": "22c1b340e4c8cb677af077add3ca9530af33c0d9f4c1ee182d6860dfaff6b21f",
+      "source_bytes": 3718,
+      "source_lines": 139,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-tables"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:tag-buttons",
+      "title": "Button for tag update",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:tag-buttons/source.wikidot.txt",
+      "source_sha256": "4c669a62b9cb6cb5a3858e620b41aae50b881092d3aefd0ba86aad8793db6116",
+      "source_bytes": 1532,
+      "source_lines": 23,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-tag-buttons"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:text-size",
+      "title": "Text Size",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:text-size/source.wikidot.txt",
+      "source_sha256": "0aa6731250d9fe47c83de2998576ca40292af256975c2b41a4792178bfa9329a",
+      "source_bytes": 2509,
+      "source_lines": 25,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-text-size"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:typography",
+      "title": "Typography",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:typography/source.wikidot.txt",
+      "source_sha256": "b11324875781eec51d817767ce0e7bb6a01d64f0f6d869e1b4a66b6a66353393",
+      "source_bytes": 467,
+      "source_lines": 12,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-typography"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:universal-escaping",
+      "title": "Universal Escaping",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:universal-escaping/source.wikidot.txt",
+      "source_sha256": "2d31ae3bd9420e5e79cb0983840fe242db1fe304836d33b461de01f174ad16b5",
+      "source_bytes": 886,
+      "source_lines": 31,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-listpages",
+        "syntax-universal-escaping"
+      ]
+    },
+    {
+      "fullname": "doc-wiki-syntax:users",
+      "title": "Users",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-wiki-syntax:users/source.wikidot.txt",
+      "source_sha256": "1170d8628c4fabf4c28e0d866f36f93aa43c4afe5e643b84987d4bf21e438a5b",
+      "source_bytes": 332,
+      "source_lines": 5,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-users"
+      ]
+    },
+    {
+      "fullname": "doc:adsenseunit-module",
+      "title": "Adsenseunit Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:adsenseunit-module/source.wikidot.txt",
+      "source_sha256": "bd860c6250c66e4c5771d2a2debb05b6bc171b9db89e762df5a76b076962d006",
+      "source_bytes": 64,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-adsenseunit",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:advertising",
+      "title": "Advertising",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:advertising/source.wikidot.txt",
+      "source_sha256": "d75b36abb25683426ef5e9a734bd8aa7573f1722ac1c818d56ceb6268a8e0f39",
+      "source_bytes": 1088,
+      "source_lines": 13,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "advertising"
+      ]
+    },
+    {
+      "fullname": "doc:api",
+      "title": "Wikidot API",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:api/source.wikidot.txt",
+      "source_sha256": "3dcc770266cc7120e22a047a46208a9a718fac05ce17cac54d1b0127c50a17b8",
+      "source_bytes": 10451,
+      "source_lines": 248,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "api-categories-select",
+        "api-deleted-methods",
+        "api-files-get-meta",
+        "api-files-get-one",
+        "api-files-save-one",
+        "api-files-select",
+        "api-overview",
+        "api-pages-get-meta",
+        "api-pages-get-one",
+        "api-pages-save-one",
+        "api-pages-select",
+        "api-posts-get",
+        "api-posts-select",
+        "api-tags-select",
+        "api-users-get-me"
+      ]
+    },
+    {
+      "fullname": "doc:backlinks-module",
+      "title": "Backlinks Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:backlinks-module/source.wikidot.txt",
+      "source_sha256": "9c157fa5a9b24754e011a3268c0dbbda5eef45c9d533ffc1260c49a3e1ce70a9",
+      "source_bytes": 62,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-backlinks",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:categories-module",
+      "title": "Categories Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:categories-module/source.wikidot.txt",
+      "source_sha256": "9059dd7b7de094047c1b3d180a5100f5c09fd6cd0a2d168d8e66bdfe11cc46f3",
+      "source_bytes": 63,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-categories",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:childpages-module",
+      "title": "Childpages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:childpages-module/source.wikidot.txt",
+      "source_sha256": "af5ce9537ab95152fe608dafe9335a8da95492bd821b32a72ad79f0acaa9ea3f",
+      "source_bytes": 63,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-childpages",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:clone-module",
+      "title": "Clone Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:clone-module/source.wikidot.txt",
+      "source_sha256": "bb00d76b8ce3f2f49323bc4afba40b28a4b50ab28a3da9689a0c183028404c80",
+      "source_bytes": 58,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-clone",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:comments-module",
+      "title": "Comments Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:comments-module/source.wikidot.txt",
+      "source_sha256": "a8fd37659ce521630790a4137f72af4bef051dbd05185b37eb376e4ae13ce222",
+      "source_bytes": 61,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-comments",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:countpages-module",
+      "title": "Countpages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:countpages-module/source.wikidot.txt",
+      "source_sha256": "e5418d05607ee071d925b618b2728cfdd632fd489d96eef4287826bf662febab",
+      "source_bytes": 63,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-countpages",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:css-module",
+      "title": "Css Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:css-module/source.wikidot.txt",
+      "source_sha256": "22547805bc8797bf18bc61f186718f2b8853c21c3b397a9b6cf77ed0186a0c77",
+      "source_bytes": 56,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-css",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:data-forms",
+      "title": "Data Forms",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:data-forms/source.wikidot.txt",
+      "source_sha256": "8e845b21ae43ae3683dd14764d31a2df10014e4d77bb99f51883464770e7a3fc",
+      "source_bytes": 54,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "data-forms-overview",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:embedding",
+      "title": "Embedding",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:embedding/source.wikidot.txt",
+      "source_sha256": "5c404ef01f56fa48c89f03d65ae87d69c58b3f02430aafb67e3a8aa4eb9ed03f",
+      "source_bytes": 12540,
+      "source_lines": 131,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-embedding",
+        "syntax-embedding-code"
+      ]
+    },
+    {
+      "fullname": "doc:expressions",
+      "title": "Expressions",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:expressions/source.wikidot.txt",
+      "source_sha256": "bf06ffefbae5f3e20966eb631cdbb295a712ef5c76a364f01eca77f7e77dd64e",
+      "source_bytes": 1196,
+      "source_lines": 36,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "expressions"
+      ]
+    },
+    {
+      "fullname": "doc:featuredsite-module",
+      "title": "Featuredsite Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:featuredsite-module/source.wikidot.txt",
+      "source_sha256": "615b4120409f2e598a2f7a36a152c52816df43b817bcb1b52b858c7b786dd8c7",
+      "source_bytes": 65,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-featuredsite",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:feed-module",
+      "title": "Feed Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:feed-module/source.wikidot.txt",
+      "source_sha256": "4c29b449932ab064513790245a6c2b2d834f671b8bf658f93201fca13dae747e",
+      "source_bytes": 57,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-feed",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:files-module",
+      "title": "Files Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:files-module/source.wikidot.txt",
+      "source_sha256": "b378f4ed087fbb418aec363b6f3296104b7ea9cfbe67ae2a3c141bd5146b218e",
+      "source_bytes": 58,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-files",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:flickrgallery-module",
+      "title": "Flickrgallery Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:flickrgallery-module/source.wikidot.txt",
+      "source_sha256": "c666457c7872f5fae3ab2ad13618c8895645924965dfca9a6cc87cae57cddf47",
+      "source_bytes": 66,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-flickrgallery",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:frontforum-module",
+      "title": "Frontforum Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:frontforum-module/source.wikidot.txt",
+      "source_sha256": "82661b1109755559a7d6b30daf56e7f754d780e0deee3d78c741edf242af3ae1",
+      "source_bytes": 63,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-frontforum",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:join-module",
+      "title": "Join Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:join-module/source.wikidot.txt",
+      "source_sha256": "8aae921757d012b3c3aa7efaaa4e22593b4e446bfb4c6c2cedaf8131df2c741e",
+      "source_bytes": 57,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-join",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:karma",
+      "title": "Karma",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:karma/source.wikidot.txt",
+      "source_sha256": "b00adea177500787c6e65a8424e0bc7ae4f0dbc22d0649d314576e675de271cb",
+      "source_bytes": 3933,
+      "source_lines": 62,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "karma"
+      ]
+    },
+    {
+      "fullname": "doc:layout-reference",
+      "title": "Layout Reference",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:layout-reference/source.wikidot.txt",
+      "source_sha256": "bdb2ffc85a5b5e200b2df4a63c32fe5a86a2699a5c8ce58678103af949ab93ba",
+      "source_bytes": 4646,
+      "source_lines": 145,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "layout-custom",
+        "layout-forum",
+        "layout-page",
+        "module-ad",
+        "module-admoduleabovecontent",
+        "module-admoduleabovesidebar",
+        "module-admodulebelowcontent",
+        "module-admodulebelowfooter",
+        "module-admodulebelowsidebar",
+        "module-footerbar",
+        "module-loginstatus",
+        "module-navibar",
+        "module-pageoptionsbottom"
+      ]
+    },
+    {
+      "fullname": "doc:listdrafts-module",
+      "title": "Listdrafts Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:listdrafts-module/source.wikidot.txt",
+      "source_sha256": "efbee260eb2fc648d471b689625de5c75bccee127fff2ad01207b0c8543050ce",
+      "source_bytes": 63,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-listdrafts",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:listpages-module",
+      "title": "Listpages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:listpages-module/source.wikidot.txt",
+      "source_sha256": "35178c8cf1ea698d9a92c1b7a0f893ec5b604f20100167782214d038448a6b81",
+      "source_bytes": 62,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-listpages",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:listusers-module",
+      "title": "Listusers Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:listusers-module/source.wikidot.txt",
+      "source_sha256": "f05f5d0391784f455fb51b636f611d93d1878b2cc23a8ab09791d152cf501c0a",
+      "source_bytes": 62,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-listusers",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:mailform-module",
+      "title": "Mailform Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:mailform-module/source.wikidot.txt",
+      "source_sha256": "f50439d9c4a72d6380b5dd1c15089e0119a5d610d6513069df444a97b924100b",
+      "source_bytes": 61,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-mailform",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:managesite-module",
+      "title": "Managesite Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:managesite-module/source.wikidot.txt",
+      "source_sha256": "d838ad84e83a31078583b3c879f2a0863f369af7cbdadb11db6101cc455be1bb",
+      "source_bytes": 63,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-managesite",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:members-module",
+      "title": "Members Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:members-module/source.wikidot.txt",
+      "source_sha256": "4876020bf9d0048573eba80e0574f5e6dbaa31380e8066cdceadc93942478a09",
+      "source_bytes": 60,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-members",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:membershipapply-module",
+      "title": "Membershipapply Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:membershipapply-module/source.wikidot.txt",
+      "source_sha256": "e6c15576875ce5474c696c89c4dd09751452501ca95d2a7af4ad3efcdeb92767",
+      "source_bytes": 68,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-membershipapply",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:membershipbypassword-module",
+      "title": "Membershipbypassword Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:membershipbypassword-module/source.wikidot.txt",
+      "source_sha256": "e57c65acf36d5a238af420f673090f77a6c0af3e66ae4141d9a9f59f44693c84",
+      "source_bytes": 73,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-membershipbypassword",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:miniactivethreads-module",
+      "title": "Miniactivethreads Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:miniactivethreads-module/source.wikidot.txt",
+      "source_sha256": "9c735fb3385882a3e91b0cabaa4d0148e233eddc0dfc7589fbeb27de7f2b3646",
+      "source_bytes": 70,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-miniactivethreads",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:minirecentposts-module",
+      "title": "Minirecentposts Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:minirecentposts-module/source.wikidot.txt",
+      "source_sha256": "83543bc7dfa8ea95c736d230edb98982a356e53e11974901296e5e8fa01b1f39",
+      "source_bytes": 68,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-minirecentposts",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:minirecentthreads-module",
+      "title": "Minirecentthreads Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:minirecentthreads-module/source.wikidot.txt",
+      "source_sha256": "4258a1d9063b705541f1c7ea19454e35eac320fbeaa54bf0e8139b5f1163975e",
+      "source_bytes": 70,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-minirecentthreads",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:modules",
+      "title": "Modules",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:modules/source.wikidot.txt",
+      "source_sha256": "39222ac69fcba80842f3d145cd74c985d92902cdd970b6c986bb04d9dbbaaafe",
+      "source_bytes": 51,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:newpage-module",
+      "title": "Newpage Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:newpage-module/source.wikidot.txt",
+      "source_sha256": "188d5623ae44f10804b4334c84866bb1ac5d3593ad70532e5eb27d1a7ffc3503",
+      "source_bytes": 60,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-newpage",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:nextpreviouspage-module",
+      "title": "Nextpreviouspage Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:nextpreviouspage-module/source.wikidot.txt",
+      "source_sha256": "0c5243d22a2578231772469dd181e8a59631cd367e128c13be2ca93e63e682b9",
+      "source_bytes": 69,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-nextpreviouspage",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:orphanedpages-module",
+      "title": "Orphanedpages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:orphanedpages-module/source.wikidot.txt",
+      "source_sha256": "734a3eda0f9f2445f45d8a7c9a2547f79a58922bbc8b5da0ba20ae9d199280ff",
+      "source_bytes": 66,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-orphanedpages",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:pagecalendar-module",
+      "title": "Pagecalendar Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:pagecalendar-module/source.wikidot.txt",
+      "source_sha256": "02fb9ed4128842adf74e5c8b07c89809ea57a40d2adc2bbdb05ed6a6477c70a4",
+      "source_bytes": 65,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-pagecalendar",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:pages-module",
+      "title": "Pages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:pages-module/source.wikidot.txt",
+      "source_sha256": "0bd507046d4a5d4ccc519e4cb566a305362870f6418352628ff607e62394e847",
+      "source_bytes": 58,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-pages",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:pagesbytag-module",
+      "title": "Pagesbytag Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:pagesbytag-module/source.wikidot.txt",
+      "source_sha256": "ff1b9f0c949761e56e50c6c7c2f2c75409a0522828c1564efb7c3c11aabf5654",
+      "source_bytes": 63,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-pagesbytag",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:pagetree-module",
+      "title": "Pagetree Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:pagetree-module/source.wikidot.txt",
+      "source_sha256": "1fcc556050757dfa0873df3236b416053db85c0493dde1c8a9b2dc75b69b7c3f",
+      "source_bytes": 61,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-pagetree",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:petitionadmin-module",
+      "title": "Petitionadmin Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:petitionadmin-module/source.wikidot.txt",
+      "source_sha256": "e2b28be73d61299a3d8ae835464925bfb091867f939f22453950127139b76920",
+      "source_bytes": 66,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-petitionadmin",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:quick-reference",
+      "title": "Quick Reference",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:quick-reference/source.wikidot.txt",
+      "source_sha256": "df8b7f52d5d9b9770a91747d5b6f5dc28c9d133cb9f989f94380395cd0407234",
+      "source_bytes": 4926,
+      "source_lines": 68,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-attachment",
+        "syntax-bibliography",
+        "syntax-block-formatting-elements",
+        "syntax-block-quotes",
+        "syntax-buttons",
+        "syntax-code-blocks",
+        "syntax-collapsible-blocks",
+        "syntax-comments",
+        "syntax-date",
+        "syntax-definition-lists",
+        "syntax-embedding",
+        "syntax-embedding-code",
+        "syntax-foldable-list",
+        "syntax-footnotes",
+        "syntax-headings",
+        "syntax-horizontal-rules",
+        "syntax-html-blocks",
+        "syntax-iftags",
+        "syntax-images",
+        "syntax-include",
+        "syntax-inline-formatting",
+        "syntax-layout",
+        "syntax-links",
+        "syntax-lists",
+        "syntax-literal-text",
+        "syntax-math",
+        "syntax-notes",
+        "syntax-paragraphs-and-newline",
+        "syntax-social-bookmarking",
+        "syntax-table-of-contents",
+        "syntax-tables",
+        "syntax-tag-buttons",
+        "syntax-text-size",
+        "syntax-typography",
+        "syntax-universal-escaping",
+        "syntax-users"
+      ]
+    },
+    {
+      "fullname": "doc:quick-reference-mini",
+      "title": "Quick Reference Mini",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:quick-reference-mini/source.wikidot.txt",
+      "source_sha256": "986ed26b20c72ee1ababe937a6a90cd45170261caefeb7e164a676cd283fab3f",
+      "source_bytes": 2310,
+      "source_lines": 26,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "syntax-attachment",
+        "syntax-bibliography",
+        "syntax-block-formatting-elements",
+        "syntax-block-quotes",
+        "syntax-buttons",
+        "syntax-code-blocks",
+        "syntax-collapsible-blocks",
+        "syntax-comments",
+        "syntax-date",
+        "syntax-definition-lists",
+        "syntax-embedding",
+        "syntax-embedding-code",
+        "syntax-foldable-list",
+        "syntax-footnotes",
+        "syntax-headings",
+        "syntax-horizontal-rules",
+        "syntax-html-blocks",
+        "syntax-iftags",
+        "syntax-images",
+        "syntax-include",
+        "syntax-inline-formatting",
+        "syntax-layout",
+        "syntax-links",
+        "syntax-lists",
+        "syntax-literal-text",
+        "syntax-math",
+        "syntax-notes",
+        "syntax-paragraphs-and-newline",
+        "syntax-social-bookmarking",
+        "syntax-table-of-contents",
+        "syntax-tables",
+        "syntax-tag-buttons",
+        "syntax-text-size",
+        "syntax-typography",
+        "syntax-universal-escaping",
+        "syntax-users"
+      ]
+    },
+    {
+      "fullname": "doc:rate-module",
+      "title": "Rate Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:rate-module/source.wikidot.txt",
+      "source_sha256": "8c2e553024e100103b5e3b70a13ab553fcbdc0f1f71832e639a7bd1ee2ffd582",
+      "source_bytes": 57,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-rate",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:ratedpages-module",
+      "title": "Ratedpages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:ratedpages-module/source.wikidot.txt",
+      "source_sha256": "7bc3a8180547469463f0bb087d24054cd5206848e0560002f134a9b56ba9e7b4",
+      "source_bytes": 63,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-ratedpages",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:recentposts-module",
+      "title": "Recentposts Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:recentposts-module/source.wikidot.txt",
+      "source_sha256": "4b35846fa325cecf147a98ffce3950f9e85175e21a063e3eaa471fb01e16f7fc",
+      "source_bytes": 64,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-recentposts",
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:redirect-module",
+      "title": "Redirect Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:redirect-module/source.wikidot.txt",
+      "source_sha256": "c4fcbe8d959c2abdd252fc2e85f617d6d491919389c9f68ae4b6dda350e0572c",
+      "source_bytes": 61,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect"
+      ]
+    },
+    {
+      "fullname": "doc:search-module",
+      "title": "Search Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:search-module/source.wikidot.txt",
+      "source_sha256": "1861c735268f3869d0794c706992b0d0ce1a99f77d6f95895d25b0694f8f7d5c",
+      "source_bytes": 59,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-search"
+      ]
+    },
+    {
+      "fullname": "doc:searchall-module",
+      "title": "Searchall Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:searchall-module/source.wikidot.txt",
+      "source_sha256": "6ad592f8453fb40a641822be92e62b620c2c031a7af68bf57ac73e3eff1db5be",
+      "source_bytes": 62,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-searchall"
+      ]
+    },
+    {
+      "fullname": "doc:searching",
+      "title": "Searching",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:searching/source.wikidot.txt",
+      "source_sha256": "54ad518d21b23d14b16b2cae9e97f1439f440487a25e1e2d6b331eecbc94ddb5",
+      "source_bytes": 1924,
+      "source_lines": 32,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "search-language"
+      ]
+    },
+    {
+      "fullname": "doc:searchusers-module",
+      "title": "Searchusers Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:searchusers-module/source.wikidot.txt",
+      "source_sha256": "92382e8ca239819f446a478c432b6a5adedb7ad6d74fd80c2d65486e94f10b83",
+      "source_bytes": 64,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-searchusers"
+      ]
+    },
+    {
+      "fullname": "doc:sendinvitations-module",
+      "title": "Sendinvitations Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:sendinvitations-module/source.wikidot.txt",
+      "source_sha256": "3265a28e92f8a20179cf81dfe0d7011244ee69413688d727b31946831e82d1e2",
+      "source_bytes": 68,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-sendinvitations"
+      ]
+    },
+    {
+      "fullname": "doc:simpletodo-module",
+      "title": "Simpletodo Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:simpletodo-module/source.wikidot.txt",
+      "source_sha256": "05b6d46e5cbd05f748f32ec9426628f33ea1d8fd3bdc21459b3b92f7833994e3",
+      "source_bytes": 1483,
+      "source_lines": 40,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-simpletodo"
+      ]
+    },
+    {
+      "fullname": "doc:site-structure",
+      "title": "Site Structure",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:site-structure/source.wikidot.txt",
+      "source_sha256": "20e91b5e74e135e07d4559a7057d2a43ce36b0e3db98fd3c8b20c10a5468b33f",
+      "source_bytes": 6377,
+      "source_lines": 127,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "content-pages",
+        "forum-categories",
+        "forum-category-groups",
+        "forum-posts",
+        "forum-threads",
+        "forums-overview",
+        "page-categories",
+        "page-forum-integration",
+        "page-inclusions",
+        "page-links",
+        "page-parent-relations",
+        "page-tags",
+        "site-identity"
+      ]
+    },
+    {
+      "fullname": "doc:sitechanges-module",
+      "title": "Sitechanges Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:sitechanges-module/source.wikidot.txt",
+      "source_sha256": "822261af3b4e2d7b5e97cfa06c0feb1fff1d7999e24ff2570b4c49f905b9f56c",
+      "source_bytes": 64,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-sitechanges"
+      ]
+    },
+    {
+      "fullname": "doc:sitegrid-module",
+      "title": "Sitegrid Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:sitegrid-module/source.wikidot.txt",
+      "source_sha256": "a3c9ea94fc21b6e1c7c916a9b0cb629728d83bfd3c665bed3a14b375a9efcc2e",
+      "source_bytes": 61,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-sitegrid"
+      ]
+    },
+    {
+      "fullname": "doc:start",
+      "title": "Documentation",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:start/source.wikidot.txt",
+      "source_sha256": "bd9a16ba7a0ada32e0919e414e30c0ca02bc0008d0065c67499b9636bf05a593",
+      "source_bytes": 813,
+      "source_lines": 19,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "hosted-wiki-platform"
+      ]
+    },
+    {
+      "fullname": "doc:tagcloud-module",
+      "title": "Tagcloud Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:tagcloud-module/source.wikidot.txt",
+      "source_sha256": "c6d1974595a6ea7b7899bce5a8147f4d188e37d7dfd965e6b166787de819a7e1",
+      "source_bytes": 61,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-tagcloud"
+      ]
+    },
+    {
+      "fullname": "doc:templates",
+      "title": "Templates",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:templates/source.wikidot.txt",
+      "source_sha256": "77c6642b57f1dd056b2ce8b62b40dbe5c1a33e717123646955f4de9dcd1d7fb0",
+      "source_bytes": 10242,
+      "source_lines": 239,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "module-comments",
+        "page-templates"
+      ]
+    },
+    {
+      "fullname": "doc:themepreviewer-module",
+      "title": "Themepreviewer Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:themepreviewer-module/source.wikidot.txt",
+      "source_sha256": "8901b6fd3992e110b645899f90aac23e44f84e247bf50e98fa5abd673d463327",
+      "source_bytes": 67,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-themepreviewer"
+      ]
+    },
+    {
+      "fullname": "doc:thumbnails",
+      "title": "Thumbnails",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:thumbnails/source.wikidot.txt",
+      "source_sha256": "4673c5df579648bef01a104fd68da19852e02d722ecb585a2753385c2471582c",
+      "source_bytes": 894,
+      "source_lines": 28,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "thumbnails"
+      ]
+    },
+    {
+      "fullname": "doc:users",
+      "title": "Managing users",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:users/source.wikidot.txt",
+      "source_sha256": "8458b5548c382222fdf224e38b49de070b024f2ce35c6d031b687455582f5686",
+      "source_bytes": 1886,
+      "source_lines": 42,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "user-roles"
+      ]
+    },
+    {
+      "fullname": "doc:video",
+      "title": "Video tutorials",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:video/source.wikidot.txt",
+      "source_sha256": "71ff38ef2ad83bb61c13ab0ea18a3ff4c8295939d6affbbd2d2949edffdfab85",
+      "source_bytes": 5605,
+      "source_lines": 103,
+      "classification": "documentation",
+      "classification_reason": "A canonical documentation page, shared documentation fragment, reference page, or documentation index.",
+      "feature_ids": [
+        "hosted-wiki-platform",
+        "module-css",
+        "module-listpages",
+        "page-categories",
+        "syntax-tables"
+      ]
+    },
+    {
+      "fullname": "doc:wantedpages-module",
+      "title": "Wantedpages Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:wantedpages-module/source.wikidot.txt",
+      "source_sha256": "4648d79aee908e32bae556cd2d7a99dde5a60bccf9d464fec155b0fda14563fa",
+      "source_bytes": 64,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-wantedpages"
+      ]
+    },
+    {
+      "fullname": "doc:watchers-module",
+      "title": "Watchers Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:watchers-module/source.wikidot.txt",
+      "source_sha256": "8241d3972ba1d9dc438fe6a8e1ce34763cedee9ca1a655b876ed5d740f74d818",
+      "source_bytes": 61,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-watchers"
+      ]
+    },
+    {
+      "fullname": "doc:whoinvited-module",
+      "title": "Whoinvited Module",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:whoinvited-module/source.wikidot.txt",
+      "source_sha256": "c88a6d64999c1d9a93f02a8687d2050f2f2826de2598a8fdf6813e9bb3bb4d4a",
+      "source_bytes": 63,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "module-whoinvited"
+      ]
+    },
+    {
+      "fullname": "doc:wiki-syntax",
+      "title": "Wiki Syntax",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:wiki-syntax/source.wikidot.txt",
+      "source_sha256": "fdf2efe3185d8b06d5196b19252f949f2ba670831fcd019336bbec7f8d6401f7",
+      "source_bytes": 55,
+      "source_lines": 1,
+      "classification": "redirect-or-alias",
+      "classification_reason": "A compatibility alias or redirect to a canonical documentation or runtime page.",
+      "feature_ids": [
+        "module-redirect",
+        "syntax-engine"
+      ]
+    },
+    {
+      "fullname": "education",
+      "title": "Wikidot in Education",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/education/source.wikidot.txt",
+      "source_sha256": "637d504390cbc201bb079163ba6b9135a23f06efc781b03b5ebcd67b55c4ffe1",
+      "source_bytes": 3875,
+      "source_lines": 66,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "collaborative-editing",
+        "educational-site-status",
+        "forums-overview",
+        "module-feed",
+        "private-sites",
+        "site-themes",
+        "syntax-bibliography",
+        "syntax-footnotes",
+        "syntax-math"
+      ]
+    },
+    {
+      "fullname": "faq:community-sites",
+      "title": "Community Sites",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/faq:community-sites/source.wikidot.txt",
+      "source_sha256": "66dcac7ef057faaa1fc886f6824f6217d15ec0d61d4292edc2c712f8546f979a",
+      "source_bytes": 3591,
+      "source_lines": 65,
+      "classification": "documentation",
+      "classification_reason": "A feature FAQ that records user-visible behavior or limits.",
+      "feature_ids": [
+        "community-site-directory"
+      ]
+    },
+    {
+      "fullname": "faq:editing-pages",
+      "title": "Editing Pages FAQ",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/faq:editing-pages/source.wikidot.txt",
+      "source_sha256": "384456459f2247f06ae0a8f2ea44a31b92b2ab39cf2b903582a86298aecd76ff",
+      "source_bytes": 3300,
+      "source_lines": 46,
+      "classification": "documentation",
+      "classification_reason": "A feature FAQ that records user-visible behavior or limits.",
+      "feature_ids": [
+        "page-editing-history"
+      ]
+    },
+    {
+      "fullname": "faq:private-sites",
+      "title": "Private Sites FAQ",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/faq:private-sites/source.wikidot.txt",
+      "source_sha256": "48e9bfc04ee4d718611ae0947fa26b406ae5e3799a9e0a28effa9d41a3189954",
+      "source_bytes": 3454,
+      "source_lines": 49,
+      "classification": "documentation",
+      "classification_reason": "A feature FAQ that records user-visible behavior or limits.",
+      "feature_ids": [
+        "private-sites"
+      ]
+    },
+    {
+      "fullname": "faq:site-features",
+      "title": "Site Features and managing sites FAQ",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/faq:site-features/source.wikidot.txt",
+      "source_sha256": "ba839b11f0ee2c44ac47afc53264a78701ede052312309cfa8687f8368be4e1c",
+      "source_bytes": 2278,
+      "source_lines": 39,
+      "classification": "documentation",
+      "classification_reason": "A feature FAQ that records user-visible behavior or limits.",
+      "feature_ids": [
+        "site-lifecycle-limits"
+      ]
+    },
+    {
+      "fullname": "faq:technical",
+      "title": "Technical FAQ",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/faq:technical/source.wikidot.txt",
+      "source_sha256": "1a6cf585c7d13b443d9160fcde05e454b2bd50ab797b5bfd25d1f815ee3e45b1",
+      "source_bytes": 786,
+      "source_lines": 24,
+      "classification": "documentation",
+      "classification_reason": "A feature FAQ that records user-visible behavior or limits.",
+      "feature_ids": [
+        "browser-support"
+      ]
+    },
+    {
+      "fullname": "faq:upgrades",
+      "title": "Upgrades and Plans FAQ",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/faq:upgrades/source.wikidot.txt",
+      "source_sha256": "91765a8ea2d1249a05cac88922ebb9fbe0db77790081984005b342bcf78a3f53",
+      "source_bytes": 10536,
+      "source_lines": 172,
+      "classification": "documentation",
+      "classification_reason": "A feature FAQ that records user-visible behavior or limits.",
+      "feature_ids": [
+        "subscriptions-plans"
+      ]
+    },
+    {
+      "fullname": "faq:user-accounts",
+      "title": "User Accounts FAQ",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/faq:user-accounts/source.wikidot.txt",
+      "source_sha256": "1719c7220c310476a458d07df8048ed92c83d2c61994fb11758327a4e9939c66",
+      "source_bytes": 1301,
+      "source_lines": 20,
+      "classification": "documentation",
+      "classification_reason": "A feature FAQ that records user-visible behavior or limits.",
+      "feature_ids": [
+        "account-lifecycle"
+      ]
+    },
+    {
+      "fullname": "faq:watching",
+      "title": "Watching FAQ",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/faq:watching/source.wikidot.txt",
+      "source_sha256": "6127534809cd584b7783bbbfdf87b6af452216cfee11175b064d024fb18707df",
+      "source_bytes": 2702,
+      "source_lines": 46,
+      "classification": "documentation",
+      "classification_reason": "A feature FAQ that records user-visible behavior or limits.",
+      "feature_ids": [
+        "watching-notifications"
+      ]
+    },
+    {
+      "fullname": "features",
+      "title": "Awesome Features",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/features/source.wikidot.txt",
+      "source_sha256": "2f543ffe5d97f77da4936b7ab95ac66493b1acedd2bea01d5b956735b1b9501c",
+      "source_bytes": 9181,
+      "source_lines": 178,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "advertising",
+        "avatars",
+        "content-licensing",
+        "custom-domains",
+        "favicons",
+        "forum-signatures",
+        "forums-overview",
+        "gravatar",
+        "hosted-wiki-platform",
+        "karma",
+        "managed-hosting",
+        "meta-tags",
+        "outgoing-pingbacks",
+        "page-categories",
+        "page-tags",
+        "private-messages",
+        "roles-and-permissions",
+        "secure-login",
+        "service-resilience",
+        "site-backups",
+        "site-cloning",
+        "site-https",
+        "site-membership",
+        "site-navigation",
+        "site-storage",
+        "site-themes",
+        "syntax-engine",
+        "unlimited-pages",
+        "web-statistics"
+      ]
+    },
+    {
+      "fullname": "files",
+      "title": "Files",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/files/source.wikidot.txt",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_bytes": 0,
+      "source_lines": 0,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-files",
+        "syntax-attachment"
+      ]
+    },
+    {
+      "fullname": "forum:category",
+      "title": "Forum Category",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/forum:category/source.wikidot.txt",
+      "source_sha256": "d1814483a1a9597cf8caac8828ab7d2961154405b74bd6bb8b6400cb789358d4",
+      "source_bytes": 103,
+      "source_lines": 3,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-forumcategory"
+      ]
+    },
+    {
+      "fullname": "forum:new-thread",
+      "title": "New Forum Thread",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/forum:new-thread/source.wikidot.txt",
+      "source_sha256": "19cbbe222f1aefb65190d45ff65c1fb78b1b0c6c1131a58b4837074a4dfab24c",
+      "source_bytes": 104,
+      "source_lines": 3,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-forumnewthread"
+      ]
+    },
+    {
+      "fullname": "forum:recent-posts",
+      "title": "Recent Forum Posts",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/forum:recent-posts/source.wikidot.txt",
+      "source_sha256": "4de8af83f0e184c9524bc633b9897b2f1e9fd8aee445c95e26c665ccf848846b",
+      "source_bytes": 101,
+      "source_lines": 3,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-recentposts"
+      ]
+    },
+    {
+      "fullname": "forum:recent-threads",
+      "title": "Recent Threads",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/forum:recent-threads/source.wikidot.txt",
+      "source_sha256": "ac77dacd1475f66d1351388556ba81823e22837efc95c5867cb7e2ff368722bf",
+      "source_bytes": 103,
+      "source_lines": 3,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-recentthreads"
+      ]
+    },
+    {
+      "fullname": "forum:start",
+      "title": "Forum Categories",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/forum:start/source.wikidot.txt",
+      "source_sha256": "7cf4d47bb8ce21af3ac86a9396a99e70588d8118717612b1e38a594681cff9f0",
+      "source_bytes": 99,
+      "source_lines": 2,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-forumstart"
+      ]
+    },
+    {
+      "fullname": "forum:thread",
+      "title": "Forum Thread",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/forum:thread/source.wikidot.txt",
+      "source_sha256": "ba4849548772e5afcb099718d64d0b6427799827ef9fd6761dc01007b0034445",
+      "source_bytes": 101,
+      "source_lines": 3,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-forumthread"
+      ]
+    },
+    {
+      "fullname": "inc:account-bottom",
+      "title": "Account Bottom",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/inc:account-bottom/source.wikidot.txt",
+      "source_sha256": "fc0d957540936cb740969175aae70b7f8ff690d7f3e4b4b381ed63c722af3640",
+      "source_bytes": 550,
+      "source_lines": 14,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "module-createaccount"
+      ]
+    },
+    {
+      "fullname": "inc:awesome-features",
+      "title": "Awesome Features",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/inc:awesome-features/source.wikidot.txt",
+      "source_sha256": "fbf1e000ff4d3e309559744a7d34951bfc3584a1095760458ff6258b4402de16",
+      "source_bytes": 3044,
+      "source_lines": 87,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "collaborative-editing",
+        "hosted-wiki-platform",
+        "managed-hosting",
+        "service-resilience",
+        "subscriptions-plans"
+      ]
+    },
+    {
+      "fullname": "inc:how-it-works",
+      "title": "How It Works",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/inc:how-it-works/source.wikidot.txt",
+      "source_sha256": "68148929b1b452ece34cb5fc104adaa6dd5a0a637e65a85559d25e3f582e1c28",
+      "source_bytes": 1238,
+      "source_lines": 33,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "account-lifecycle",
+        "hosted-wiki-platform",
+        "site-membership"
+      ]
+    },
+    {
+      "fullname": "inc:what-is-wikidot",
+      "title": "What Is Wikidot",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/inc:what-is-wikidot/source.wikidot.txt",
+      "source_sha256": "974584bd77f7a3cd1271181a28b6598aa1bb277fc6417988f1b7330fe8f0d5bf",
+      "source_bytes": 485,
+      "source_lines": 18,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "collaborative-editing",
+        "module-frontspecialmini"
+      ]
+    },
+    {
+      "fullname": "invitation",
+      "title": "Member invitation",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/invitation/source.wikidot.txt",
+      "source_sha256": "a5a6e75590cf2c071bbe990d3f556b03465f99595eef3324a273430ad6e13c19",
+      "source_bytes": 36,
+      "source_lines": 1,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-membershipemailinvitation"
+      ]
+    },
+    {
+      "fullname": "legal:privacy-policy",
+      "title": "Privacy Policy",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/legal:privacy-policy/source.wikidot.txt",
+      "source_sha256": "2d5c8bd0b3ccc8b4fec45f9595df40767f7dd486f955f756d78bd0653c19df33",
+      "source_bytes": 9331,
+      "source_lines": 117,
+      "classification": "policy-not-feature",
+      "classification_reason": "A legal or commercial policy page. It was inspected but does not define a discrete software feature contract.",
+      "feature_ids": []
+    },
+    {
+      "fullname": "legal:terms-of-service",
+      "title": "Terms Of Service",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/legal:terms-of-service/source.wikidot.txt",
+      "source_sha256": "a308fe88a88e4cb36364ba878e1f87b1d267a77fa10489b28e6f604bb6ddc3a6",
+      "source_bytes": 14752,
+      "source_lines": 156,
+      "classification": "policy-not-feature",
+      "classification_reason": "A legal or commercial policy page. It was inspected but does not define a discrete software feature contract.",
+      "feature_ids": []
+    },
+    {
+      "fullname": "more:explore-features",
+      "title": "",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/more:explore-features/source.wikidot.txt",
+      "source_sha256": "d34a152471de3acd0380409eb28b3d21a42ddf18b83a5748af34c897ab03a708",
+      "source_bytes": 15996,
+      "source_lines": 179,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "advertising",
+        "avatars",
+        "content-licensing",
+        "custom-domains",
+        "favicons",
+        "forum-signatures",
+        "forums-overview",
+        "gravatar",
+        "hosted-wiki-platform",
+        "karma",
+        "managed-hosting",
+        "meta-tags",
+        "outgoing-pingbacks",
+        "page-categories",
+        "page-tags",
+        "private-messages",
+        "roles-and-permissions",
+        "secure-login",
+        "service-resilience",
+        "site-backups",
+        "site-cloning",
+        "site-https",
+        "site-membership",
+        "site-navigation",
+        "site-storage",
+        "site-themes",
+        "syntax-engine",
+        "unlimited-pages",
+        "web-statistics"
+      ]
+    },
+    {
+      "fullname": "more:testimonials",
+      "title": "",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/more:testimonials/source.wikidot.txt",
+      "source_sha256": "58583b252557586d7994fe01b7f65ba211a297abd31b5d9e67d82fd5fa9f8db5",
+      "source_bytes": 51147,
+      "source_lines": 559,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": []
+    },
+    {
+      "fullname": "nav:doc",
+      "title": "Doc",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/nav:doc/source.wikidot.txt",
+      "source_sha256": "7827bd6ea77fc0338937577829fe24445022beae32d143fd6fe6ae6a66873771",
+      "source_bytes": 791,
+      "source_lines": 28,
+      "classification": "navigation-composition",
+      "classification_reason": "A site navigation source page used as evidence for page composition and navigation features.",
+      "feature_ids": [
+        "site-navigation"
+      ]
+    },
+    {
+      "fullname": "nav:doc-data-forms",
+      "title": "Doc Data Forms",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/nav:doc-data-forms/source.wikidot.txt",
+      "source_sha256": "72d5f54b9ce862823a2b15553007891401dca1fad8a56a805b06a1ae424afa0f",
+      "source_bytes": 1919,
+      "source_lines": 42,
+      "classification": "navigation-composition",
+      "classification_reason": "A site navigation source page used as evidence for page composition and navigation features.",
+      "feature_ids": [
+        "site-navigation"
+      ]
+    },
+    {
+      "fullname": "nav:doc-modules",
+      "title": "Doc Modules",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/nav:doc-modules/source.wikidot.txt",
+      "source_sha256": "affeaeffb74077b58312c0b131cecc19683a901c234c1765fb7a2ce5e268272a",
+      "source_bytes": 2751,
+      "source_lines": 79,
+      "classification": "navigation-composition",
+      "classification_reason": "A site navigation source page used as evidence for page composition and navigation features.",
+      "feature_ids": [
+        "site-navigation"
+      ]
+    },
+    {
+      "fullname": "nav:doc-wiki-syntax",
+      "title": "Doc",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/nav:doc-wiki-syntax/source.wikidot.txt",
+      "source_sha256": "1d165362cbaa1d0b999ca9a2b156ff3939effc51377a75f707e0cc7a6ffb281d",
+      "source_bytes": 3031,
+      "source_lines": 62,
+      "classification": "navigation-composition",
+      "classification_reason": "A site navigation source page used as evidence for page composition and navigation features.",
+      "feature_ids": [
+        "site-navigation"
+      ]
+    },
+    {
+      "fullname": "nav:side",
+      "title": "Sidebar menu",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/nav:side/source.wikidot.txt",
+      "source_sha256": "bef657de2ecbd77670964744557f49d43a70406a9f015b26390a5556caa5ac5f",
+      "source_bytes": 88,
+      "source_lines": 3,
+      "classification": "navigation-composition",
+      "classification_reason": "A site navigation source page used as evidence for page composition and navigation features.",
+      "feature_ids": [
+        "site-navigation"
+      ]
+    },
+    {
+      "fullname": "nav:top",
+      "title": "Top menu",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/nav:top/source.wikidot.txt",
+      "source_sha256": "4017a46ec43cdc9c16ea2f33a79c0a1feb60c37be26c7aa6751c6f0350001516",
+      "source_bytes": 296,
+      "source_lines": 6,
+      "classification": "navigation-composition",
+      "classification_reason": "A site navigation source page used as evidence for page composition and navigation features.",
+      "feature_ids": [
+        "site-navigation"
+      ]
+    },
+    {
+      "fullname": "nav:topdoc",
+      "title": "Topdoc",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/nav:topdoc/source.wikidot.txt",
+      "source_sha256": "d1e1a8e1d8c1ab5b088801f098d051514ae517882147abfe74528e9fae4a0c2b",
+      "source_bytes": 1939,
+      "source_lines": 40,
+      "classification": "navigation-composition",
+      "classification_reason": "A site navigation source page used as evidence for page composition and navigation features.",
+      "feature_ids": [
+        "site-navigation"
+      ]
+    },
+    {
+      "fullname": "nav:wikidot",
+      "title": "Wikidot",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/nav:wikidot/source.wikidot.txt",
+      "source_sha256": "72b745eeacf87b2ff0e4292dceef027dd73acc4b48bfcaa2505f92e657a22a7b",
+      "source_bytes": 1346,
+      "source_lines": 34,
+      "classification": "navigation-composition",
+      "classification_reason": "A site navigation source page used as evidence for page composition and navigation features.",
+      "feature_ids": [
+        "module-feed",
+        "module-pagecalendar",
+        "module-tagcloud"
+      ]
+    },
+    {
+      "fullname": "new-site",
+      "title": "New Site",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/new-site/source.wikidot.txt",
+      "source_sha256": "c459571362256b5146ffaa00cfb56246428bd7eb697ebc2551cd537724b09fe6",
+      "source_bytes": 18,
+      "source_lines": 1,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-newsite"
+      ]
+    },
+    {
+      "fullname": "plans",
+      "title": "Subscription plans",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/plans/source.wikidot.txt",
+      "source_sha256": "ae76ced159baf8ac10913fcef88ef4beab8b8b3bc600f55556ee90e4b4991b9c",
+      "source_bytes": 8503,
+      "source_lines": 206,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "module-css",
+        "module-currencyconvert",
+        "subscription-plan-matrix"
+      ]
+    },
+    {
+      "fullname": "search",
+      "title": "",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/search/source.wikidot.txt",
+      "source_sha256": "2e5a80d3acf1be40c74f07cafded14b96cc28158535a8aeaf2789db31ff54abb",
+      "source_bytes": 374,
+      "source_lines": 23,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-css",
+        "module-search",
+        "module-searchall",
+        "module-sitestagcloud"
+      ]
+    },
+    {
+      "fullname": "search:all",
+      "title": "All",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/search:all/source.wikidot.txt",
+      "source_sha256": "bf18c48fe807b280835e66c72eb65f156b97f2d6703356d625b8690bd842c127",
+      "source_bytes": 20,
+      "source_lines": 1,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-searchall"
+      ]
+    },
+    {
+      "fullname": "search:site",
+      "title": "Search This Site",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/search:site/source.wikidot.txt",
+      "source_sha256": "90c4f9b0eb1e8ea9e4b0d3853c0b31f98b6decc29f3b5840af0f5d8ebb7f9c07",
+      "source_bytes": 116,
+      "source_lines": 3,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-search"
+      ]
+    },
+    {
+      "fullname": "search:users",
+      "title": "Users",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/search:users/source.wikidot.txt",
+      "source_sha256": "b89b7c0184908f027253eccdd2d8c4a3e2dd833f1b278017f28318950640835b",
+      "source_bytes": 22,
+      "source_lines": 1,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-searchusers"
+      ]
+    },
+    {
+      "fullname": "start",
+      "title": "Blank template",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/start/source.wikidot.txt",
+      "source_sha256": "fb2c2e7e581494dce74020b9b52fc7abc3234aa9552381f73a203e220838f311",
+      "source_bytes": 381,
+      "source_lines": 11,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "module-listpages"
+      ]
+    },
+    {
+      "fullname": "start:start",
+      "title": "",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/start:start/source.wikidot.txt",
+      "source_sha256": "c2bd405eb87e556a2c309071ac6b5ede8a7b0cff12b8c0bf92a2a10a8f1ab81d",
+      "source_bytes": 468,
+      "source_lines": 15,
+      "classification": "product-or-presentation-page",
+      "classification_reason": "A product, presentation, or composition page used as supporting evidence where it states a feature.",
+      "feature_ids": [
+        "module-createaccount"
+      ]
+    },
+    {
+      "fullname": "system:join",
+      "title": "Join this site",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/system:join/source.wikidot.txt",
+      "source_sha256": "ae8a47046a76d0ed21641e256dfbb87a39ca72fb2bb773ecc2503d971081eb01",
+      "source_bytes": 15,
+      "source_lines": 1,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-join"
+      ]
+    },
+    {
+      "fullname": "system:list-all-pages",
+      "title": "List All Pages",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/system:list-all-pages/source.wikidot.txt",
+      "source_sha256": "7a0a74ba987190159533658499792cbd46ab184da7f553543055b96d9f9aebf1",
+      "source_bytes": 31,
+      "source_lines": 1,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-pages"
+      ]
+    },
+    {
+      "fullname": "system:recent-changes",
+      "title": "Recent Changes",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/system:recent-changes/source.wikidot.txt",
+      "source_sha256": "76a6cbe74628e459f1dadd8dc120a5868b14967d323f37b353b4f731af337a34",
+      "source_bytes": 22,
+      "source_lines": 1,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-sitechanges"
+      ]
+    },
+    {
+      "fullname": "un",
+      "title": "Unsubscribe from email notifications",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/un/source.wikidot.txt",
+      "source_sha256": "54d5e20df248f477dd93b10f52600563354f61772fd7ca194a6dd30fb3d5765f",
+      "source_bytes": 44,
+      "source_lines": 1,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-anonymousnotificationsunsubscribe"
+      ]
+    },
+    {
+      "fullname": "user:info",
+      "title": "User Information",
+      "source_path": "~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/user:info/source.wikidot.txt",
+      "source_sha256": "231a264e2d178dae60f4faab3dd72ac3bd926785d1b8ec063a4fead072c7a9d6",
+      "source_bytes": 19,
+      "source_lines": 1,
+      "classification": "runtime-system-page",
+      "classification_reason": "A system route or generated page that invokes or composes a documented runtime feature.",
+      "feature_ids": [
+        "module-userinfo"
+      ]
+    }
+  ]
+}

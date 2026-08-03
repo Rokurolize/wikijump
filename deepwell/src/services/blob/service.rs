@@ -18,38 +18,37 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
-use crate::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
-use crate::hash::slice_to_blob_hash;
-use crate::models::blob_blacklist::{
-    self, Entity as BlobBlacklist, Model as BlobBlacklistModel,
+use super::structs::{
+    BlobMetadata, FinalizeBlobUploadOutput, HardDelete, HardDeleteOutput,
+    StartBlobUpload, StartBlobUploadOutput,
 };
+use crate::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
+use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
+use crate::hash::slice_to_blob_hash;
+use crate::hash::{BlobHash, blob_hash_to_hex, sha512_hash};
+use crate::models::blob_blacklist::{self, Entity as BlobBlacklist};
 use crate::models::blob_pending::{
     self, Entity as BlobPending, Model as BlobPendingModel,
 };
-use crate::models::file::{self, Entity as File, Model as FileModel};
-use crate::models::file_revision::{
-    self, Entity as FileRevision, Model as FileRevisionModel,
-};
-use crate::models::page::{self, Entity as Page, Model as PageModel};
-use crate::models::site::{self, Entity as Site, Model as SiteModel};
-use crate::models::user::{self, Entity as User, Model as UserModel};
+use crate::models::file_revision::{self, Entity as FileRevision};
+use crate::models::user::{self, Entity as User};
+use crate::services::ServiceContext;
 use crate::services::file::{DeleteFile, FileService};
 use crate::utils::assert_is_csprng;
+use crate::utils::{ConvertToI64, ConvertToU64, ConvertToUsize, now};
 use bytes::Bytes;
 use cuid2::cuid;
-use futures::TryStreamExt;
+use paste::paste;
 use rand::distr::{Alphanumeric, SampleString};
 use s3::request::request_trait::ResponseData;
 use s3::serde_types::HeadObjectResult;
-use sea_orm::prelude::*;
+use sea_orm::prelude::Value;
 use sea_orm::{
-    DatabaseBackend, FromQueryResult, Statement, StreamTrait, TransactionTrait,
-    UpdateResult,
+    ActiveModelTrait, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, QuerySelect,
+    Set,
 };
-use sea_query::value::ArrayType;
+use sea_orm::{DatabaseBackend, FromQueryResult, Statement, TransactionTrait};
 use std::collections::{HashMap, HashSet};
-use std::convert::Infallible;
 use std::hash::Hash;
 use std::str;
 use std::sync::Arc;
@@ -876,11 +875,11 @@ impl BlobService {
             }
         };
 
-        if let Some(user_id) = deleter_user_id {
+        if deleter_user_id.is_some() {
             // Delete and blacklist the hash, nobody should be uploading new versions
             // Only do so if we are actually mutating.
             let (result1, result2) = join!(
-                BlobService::add_blacklist(ctx, s3_hash, user_id),
+                BlobService::add_blacklist(ctx, s3_hash),
                 BlobService::hard_delete(ctx, &s3_hash),
             );
             raise_multiple!(result1, result2; make_error);
@@ -971,22 +970,21 @@ impl BlobService {
         Ok(())
     }
 
-    pub async fn add_blacklist(
-        ctx: &ServiceContext<'_>,
-        hash: BlobHash,
-        created_by: i64,
-    ) -> Result<()> {
+    pub async fn add_blacklist(ctx: &ServiceContext<'_>, hash: BlobHash) -> Result<()> {
+        let created_by = Self::require_platform_staff(ctx, "add a blob blacklist entry")?;
         info!("Adding hash {} to blacklist", blob_hash_to_hex(&hash));
 
-        // This should never happen because the callers already
-        // should be calling hash_not_empty()
+        let make_error =
+            || Error::new("failed to add blob to blacklist", ErrorType::Blob);
+        Self::check_hash_not_empty(hash).or_raise(make_error)?;
+        Self::check_hash_in_use(ctx, hash)
+            .await
+            .or_raise(make_error)?;
+
         debug_assert_ne!(
             hash, EMPTY_BLOB_HASH,
             "Empty blob hash passed to add_blacklist()",
         );
-
-        let make_error =
-            || Error::new("failed to add blob to blacklist", ErrorType::Blob);
 
         if Self::on_blacklist(ctx, hash).await.or_raise(make_error)? {
             debug!("Already blacklisted, skipping");
@@ -1007,6 +1005,7 @@ impl BlobService {
         ctx: &ServiceContext<'_>,
         hash: BlobHash,
     ) -> Result<()> {
+        Self::require_platform_staff(ctx, "remove a blob blacklist entry")?;
         info!("Removing hash {} to blacklist", blob_hash_to_hex(&hash));
 
         let txn = ctx.transaction();
@@ -1146,14 +1145,14 @@ impl BlobService {
     ///
     /// This utility conditionally retrieves the
     /// text given by the specified hash only
-    /// if the flag `should_fetch` is true.
+    /// if the flag `requested` is true.
     /// Otherwise, it does no action, returning `None`.
-    pub async fn get_maybe(
+    pub async fn fetch_if_requested(
         ctx: &ServiceContext<'_>,
-        should_fetch: bool,
+        requested: bool,
         hash: &[u8],
     ) -> Result<Option<Vec<u8>>> {
-        if should_fetch {
+        if requested {
             let data = Self::get(ctx, hash).await.or_raise(|| {
                 Error::new("failed to conditionally get blob data", ErrorType::Blob)
             })?;
@@ -1224,7 +1223,13 @@ impl BlobService {
 #[must_use]
 fn s3_error(response: &ResponseData, action: &str) -> Error {
     let error_message = match str::from_utf8(response.bytes()) {
-        Ok("") => "(no content)",
+        Ok("") => match response.status_code() {
+            // handling for specific error codes
+            // (for when S3 doesn't provide messages)
+            // add as needed
+            507 => "insufficient storage",
+            _ => "(no content)",
+        },
         Ok(m) => m,
         Err(_) => "(invalid UTF-8)",
     };

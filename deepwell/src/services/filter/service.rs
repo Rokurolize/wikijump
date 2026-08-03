@@ -18,10 +18,19 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
+use super::matcher::{FilterMatcher, FilterSummary};
+use super::structs::{CreateFilter, FilterClass, FilterType, UpdateFilter};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::filter::{self, Entity as Filter, Model as FilterModel};
+use crate::services::ServiceContext;
+use crate::types::Maybe;
+use crate::utils::now;
 use crate::utils::trim_start_matches_in_place;
+use paste::paste;
 use regex::{Regex, RegexSet};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, ExprTrait, QueryFilter, Set,
+};
 
 #[derive(Debug)]
 pub struct FilterService;
@@ -62,18 +71,15 @@ impl FilterService {
             )
         };
 
-        // Ensure there aren't conflicts
         Self::check_conflicts(ctx, site_id, &regex, "create")
             .await
             .or_raise(make_error)?;
 
-        // Add case-insensitivity flag to regex if specified
         if !case_sensitive {
             regex = str!(regex.trim_start_matches("(?i)"));
             regex.insert_str(0, "(?i)");
         }
 
-        // Ensure the regular expression is valid
         let _ = Regex::new(&regex).or_raise(|| {
             Error::new(
                 format!("failed to create filter with regex pattern '{}'", regex),
@@ -132,19 +138,14 @@ impl FilterService {
             ..Default::default()
         };
 
-        // Handle case-sensitivity logic
         if let Maybe::Set(case_sensitive) = case_sensitive {
             match regex {
-                // If the regex is being changed, add case-insensitivity flag if case-insensitive.
                 Maybe::Set(ref mut regex) if !case_sensitive => {
                     regex.insert_str(0, "(?i)")
                 }
 
-                // If the regex is being changed but is case-sensitive, do not touch it.
                 Maybe::Set(_) => {}
 
-                // If the regex is not being changed, remove (and conditionally readd) the
-                // case-insensitivity flag from the database's regex.
                 Maybe::Unset => {
                     let mut model_regex = str!(model.get(filter::Column::Regex).as_ref());
                     trim_start_matches_in_place(&mut model_regex, "(?i)");
@@ -158,7 +159,6 @@ impl FilterService {
             }
         };
 
-        // Set fields
         if let Maybe::Set(affects) = affects_user {
             model.affects_user = Set(affects);
         }
@@ -187,7 +187,6 @@ impl FilterService {
             model.description = Set(description);
         }
 
-        // Perform update
         let filter = model.update(txn).await.or_raise(make_error)?;
         Ok(filter)
     }
@@ -204,7 +203,6 @@ impl FilterService {
             )
         };
 
-        // Ensure filter exists
         let filter = Self::get(ctx, filter_id).await.or_raise(make_error)?;
 
         if filter.deleted_at.is_some() {
@@ -215,7 +213,6 @@ impl FilterService {
             ));
         }
 
-        // Delete the filter
         let model = filter::ActiveModel {
             filter_id: Set(filter_id),
             deleted_at: Set(Some(now())),
@@ -254,12 +251,10 @@ impl FilterService {
             ));
         }
 
-        // Ensure it doesn't conflict with a since-added filter
         Self::check_conflicts(ctx, filter.site_id, &filter.regex, "restore")
             .await
             .or_raise(make_error)?;
 
-        // Un-delete the filter
         let model = filter::ActiveModel {
             filter_id: Set(filter_id),
             deleted_at: Set(None),
@@ -278,8 +273,6 @@ impl FilterService {
         ctx: &ServiceContext<'_>,
         filter_id: i64,
     ) -> Result<Option<FilterModel>> {
-        info!("Getting filter with ID {filter_id}");
-
         let make_error = || {
             Error::new(
                 format!("failed to get filter ID {}", filter_id),
@@ -316,8 +309,6 @@ impl FilterService {
         deleted: Option<bool>,
     ) -> Result<Vec<FilterModel>> {
         let txn = ctx.transaction();
-
-        info!("Getting all {} filters", filter_class.name());
 
         let make_error = || {
             let mut message = format!("failed to get all {} ", filter_class.name());
@@ -381,11 +372,6 @@ impl FilterService {
         filter_class: FilterClass,
         filter_type: FilterType,
     ) -> Result<FilterMatcher> {
-        info!(
-            "Compiling regex set for {} filters for {filter_type:?}",
-            filter_class.name(),
-        );
-
         let make_error = || Error::new("failed to get filter matcher", ErrorType::Filter);
 
         let filters = Self::get_all(ctx, filter_class, Some(filter_type), Some(false))

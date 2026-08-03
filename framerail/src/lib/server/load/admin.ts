@@ -1,15 +1,24 @@
 import defaults from "$lib/defaults"
-import { licenseUpdateValue } from "$lib/admin-license.js"
-import { navigationUpdateValues } from "$lib/admin-navigation.js"
+import { discussionUpdateValue } from "$lib/admin-forum.js"
+import { licenseUpdateValue } from "$lib/admin/admin-license.js"
+import { navigationUpdateValues } from "$lib/admin/admin-navigation.js"
 
-import { authGetSession } from "$lib/server/auth/getSession"
+import { authGetSession } from "$lib/server/auth/get-session"
 import {
   categoryLicenseUpdate,
   categoryNavigationUpdate,
+  categoryDiscussionUpdate,
+  categoryRatingUpdate,
   categoryTemplateUpdate,
+  siteForumNestingUpdate,
+  siteIconsUpdate,
   siteUpdate
 } from "$lib/server/deepwell/admin"
 import { translate } from "$lib/server/deepwell/translate"
+import {
+  failForActionError,
+  PageActionContextMismatchError
+} from "$lib/server/load/action-error"
 import { adminView, type PreloadDataAsync } from "$lib/server/deepwell/views"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { Layout } from "$lib/types"
@@ -19,10 +28,14 @@ import { valibot } from "sveltekit-superforms/adapters"
 import {
   boolean,
   literal,
+  integer,
+  maxValue,
+  minValue,
   nullable,
   number,
   object,
   optional,
+  pipe,
   string,
   maxLength,
   enum as vEnum
@@ -95,24 +108,167 @@ export async function loadAdminPage(
   const navigationForm = await superValidate(request, valibot(navigationSchema))
   const licenseForm = await superValidate(request, valibot(licenseSchema))
   const templateForm = await superValidate(request, valibot(templateSchema))
+  const ratingForm = await superValidate(request, valibot(ratingSchema))
+  const siteIconsForm = await superValidate(request, valibot(siteIconsSchema))
+  const forumNestingForm = await superValidate(request, valibot(forumNestingSchema))
+  const discussionForm = await superValidate(request, valibot(discussionSchema))
 
   const viewData = {
     view: response.type,
-    html: response.data?.html,
+    html: response.type === "admin_permissions" ? response.data.html : undefined,
     internationalization,
     adminForm,
     navigationForm,
     licenseForm,
     templateForm,
+    ratingForm,
+    siteIconsForm,
+    forumNestingForm,
+    discussionForm,
     categories: response.type === "site_found" ? response.data.categories : [],
     pageTemplates: response.type === "site_found" ? response.data.page_templates : []
   }
 
+  const pageData = { ...parentData, ...viewData }
+
   if (errorStatus !== null) {
-    error(errorStatus, viewData)
+    error(errorStatus, pageData)
   }
 
-  return viewData
+  return pageData
+}
+
+export async function siteIconsAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(siteIconsSchema))
+  if (!form.valid) return fail(400, { form })
+
+  const sessionToken = cookies.get("wikijump_token")
+  const session = await authGetSession(sessionToken)
+  if (!sessionToken || !session) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to edit this site's icons"
+    })
+  }
+
+  try {
+    const res = await siteIconsUpdate(
+      form.data.siteId,
+      session.user_id,
+      getClientAddress(),
+      {
+        faviconSource: emptyToNull(form.data.faviconSource),
+        iosIconSource: emptyToNull(form.data.iosIconSource),
+        windowsTileSource: emptyToNull(form.data.windowsTileSource)
+      },
+      { sessionToken, siteId: form.data.siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    const details = error as {
+      message?: string
+      code?: string
+      data?: Record<string, unknown>
+    }
+    return fail(500, {
+      form,
+      message: details.message,
+      code: details.code,
+      data: details.data
+    })
+  }
+}
+
+function emptyToNull(value: string): string | null {
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
+export async function forumNestingAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(forumNestingSchema))
+  if (!form.valid) return fail(400, { form })
+
+  const sessionToken = cookies.get("wikijump_token")
+  const session = await authGetSession(sessionToken)
+  if (!sessionToken || !session) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to edit this site's forum settings"
+    })
+  }
+
+  try {
+    const res = await siteForumNestingUpdate(
+      form.data.siteId,
+      session.user_id,
+      getClientAddress(),
+      form.data.maxNestLevel,
+      { sessionToken, siteId: form.data.siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    const details = error as {
+      message?: string
+      code?: string
+      data?: Record<string, unknown>
+    }
+    return fail(500, {
+      form,
+      message: details.message,
+      code: details.code,
+      data: details.data
+    })
+  }
+}
+
+export async function discussionAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(discussionSchema))
+  if (!form.valid) return fail(400, { form })
+
+  const sessionToken = cookies.get("wikijump_token")
+  const session = await authGetSession(sessionToken)
+  if (!sessionToken || !session) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to edit this site's discussion settings"
+    })
+  }
+
+  try {
+    const res = await categoryDiscussionUpdate(
+      form.data.siteId,
+      form.data.categoryId,
+      session.user_id,
+      getClientAddress(),
+      discussionUpdateValue(form.data),
+      { sessionToken, siteId: form.data.siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    const details = error as {
+      message?: string
+      code?: string
+      data?: Record<string, unknown>
+    }
+    return fail(500, {
+      form,
+      message: details.message,
+      code: details.code,
+      data: details.data
+    })
+  }
 }
 
 export async function templateAction({
@@ -124,8 +280,7 @@ export async function templateAction({
   if (!form.valid) return fail(400, { form })
 
   const sessionToken = cookies.get("wikijump_token")
-  const session = await authGetSession(sessionToken)
-  if (!sessionToken || !session) {
+  if (!sessionToken) {
     return fail(401, {
       form,
       message: "user does not have permission to edit this site's page templates"
@@ -134,12 +289,87 @@ export async function templateAction({
 
   const { siteId, categoryId, templatePageId } = form.data
   try {
+    const trustedSiteId = loadTrustedAdminSiteId(request, siteId)
+    const session = await authGetSession(sessionToken)
     const res = await categoryTemplateUpdate(
+      {
+        siteId: trustedSiteId,
+        categoryId,
+        userId: session.user_id,
+        userIpAddr: getClientAddress(),
+        templatePageId
+      },
+      { sessionToken, siteId: trustedSiteId }
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export async function licenseAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(licenseSchema))
+  if (!form.valid) return fail(400, { form })
+
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to edit this site's license"
+    })
+  }
+
+  const { siteId, categoryId } = form.data
+  const { license, licenseOther } = licenseUpdateValue(form.data)
+  try {
+    const trustedSiteId = loadTrustedAdminSiteId(request, siteId)
+    const session = await authGetSession(sessionToken)
+    const res = await categoryLicenseUpdate(
+      {
+        siteId: trustedSiteId,
+        categoryId,
+        userId: session.user_id,
+        userIpAddr: getClientAddress(),
+        license,
+        licenseOther
+      },
+      { sessionToken, siteId: trustedSiteId }
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export async function ratingAction({ request, getClientAddress, cookies }: RequestEvent) {
+  const form = await superValidate(request, valibot(ratingSchema))
+  if (!form.valid) return fail(400, { form })
+
+  const sessionToken = cookies.get("wikijump_token")
+  const session = await authGetSession(sessionToken)
+  if (!sessionToken || !session) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to edit this site's rating settings"
+    })
+  }
+
+  const { siteId, categoryId, inherit, enabled, permission, visibility, ratingType } =
+    form.data
+  try {
+    const res = await categoryRatingUpdate(
       siteId,
       categoryId,
       session.user_id,
       getClientAddress(),
-      templatePageId,
+      inherit ? null : enabled,
+      inherit ? null : permission,
+      inherit ? null : visibility,
+      inherit ? null : ratingType,
       { sessionToken, siteId }
     )
     return { form, res }
@@ -158,46 +388,6 @@ export async function templateAction({
   }
 }
 
-export async function licenseAction({
-  request,
-  getClientAddress,
-  cookies
-}: RequestEvent) {
-  const form = await superValidate(request, valibot(licenseSchema))
-  if (!form.valid) return fail(400, { form })
-
-  const sessionToken = cookies.get("wikijump_token")
-  const session = await authGetSession(sessionToken)
-  if (!sessionToken || !session) {
-    return fail(401, {
-      form,
-      message: "user does not have permission to edit this site's license"
-    })
-  }
-
-  const { siteId, categoryId } = form.data
-  const { license, licenseOther } = licenseUpdateValue(form.data)
-  try {
-    const res = await categoryLicenseUpdate(
-      siteId,
-      categoryId,
-      session.user_id,
-      getClientAddress(),
-      license,
-      licenseOther,
-      { sessionToken, siteId }
-    )
-    return { form, res }
-  } catch (error) {
-    return fail(500, {
-      form,
-      message: error?.message,
-      code: error?.code,
-      data: error?.data
-    })
-  }
-}
-
 export async function navigationAction({
   request,
   getClientAddress,
@@ -207,8 +397,7 @@ export async function navigationAction({
   if (!form.valid) return fail(400, { form })
 
   const sessionToken = cookies.get("wikijump_token")
-  const session = await authGetSession(sessionToken)
-  if (!sessionToken || !session) {
+  if (!sessionToken) {
     return fail(401, {
       form,
       message: "user does not have permission to edit this site's navigation"
@@ -218,23 +407,22 @@ export async function navigationAction({
   const { siteId, categoryId } = form.data
   const { topBarPage, sideBarPage } = navigationUpdateValues(form.data)
   try {
+    const trustedSiteId = loadTrustedAdminSiteId(request, siteId)
+    const session = await authGetSession(sessionToken)
     const res = await categoryNavigationUpdate(
-      siteId,
-      categoryId,
-      session.user_id,
-      getClientAddress(),
-      topBarPage,
-      sideBarPage,
-      { sessionToken, siteId }
+      {
+        siteId: trustedSiteId,
+        categoryId,
+        userId: session.user_id,
+        userIpAddr: getClientAddress(),
+        topBarPage,
+        sideBarPage
+      },
+      { sessionToken, siteId: trustedSiteId }
     )
     return { form, res }
   } catch (error) {
-    return fail(500, {
-      form,
-      message: error?.message,
-      code: error?.code,
-      data: error?.data
-    })
+    return failForActionError(error, { form })
   }
 }
 
@@ -247,32 +435,35 @@ export async function adminAction({ request, getClientAddress, cookies }: Reques
 
   const sessionToken = cookies.get("wikijump_token")
   const ipAddress = getClientAddress()
-  const session = await authGetSession(sessionToken)
 
   try {
     if (form.data.action === "edit") {
-      if (!sessionToken || !session) {
+      if (!sessionToken) {
         return fail(401, {
           form,
           message: "user does not have permission to edit this site"
         })
       }
+      const session = await authGetSession(sessionToken)
 
       const { name, slug, tagline, description, defaultPage, locale, layout, siteId } =
         form.data
+      const trustedSiteId = loadTrustedAdminSiteId(request, siteId)
 
       const res = await siteUpdate(
-        siteId,
-        session?.user_id,
-        ipAddress,
-        name,
-        slug,
-        tagline,
-        description,
-        defaultPage,
-        locale,
-        layout,
-        { sessionToken, siteId }
+        {
+          siteId: trustedSiteId,
+          userId: session.user_id,
+          userIpAddr: ipAddress,
+          name,
+          slug,
+          tagline,
+          description,
+          defaultPage,
+          locale,
+          layout
+        },
+        { sessionToken, siteId: trustedSiteId }
       )
 
       return { form, res }
@@ -280,13 +471,16 @@ export async function adminAction({ request, getClientAddress, cookies }: Reques
 
     return { form, res: null }
   } catch (error) {
-    return fail(500, {
-      form,
-      message: error?.message,
-      code: error?.code,
-      data: error?.data
-    })
+    return failForActionError(error, { form })
   }
+}
+
+function loadTrustedAdminSiteId(request: Request, submittedSiteId: number): number {
+  const { siteId } = loadSiteInfo(request.headers)
+  if (submittedSiteId !== siteId) {
+    throw new PageActionContextMismatchError("Permission denied.")
+  }
+  return siteId
 }
 
 const adminSchema = object({
@@ -314,11 +508,41 @@ const licenseSchema = object({
   categoryId: number(),
   inherit: boolean(),
   license: string(),
-  licenseOther: maxLength(string(), 300)
+  licenseOther: pipe(string(), maxLength(300))
 })
 
 const templateSchema = object({
   siteId: number(),
   categoryId: number(),
   templatePageId: nullable(number())
+})
+
+const ratingSchema = object({
+  siteId: number(),
+  categoryId: number(),
+  inherit: boolean(),
+  enabled: boolean(),
+  permission: vEnum({ REGISTERED: "registered", MEMBERS: "members" }),
+  visibility: vEnum({ VISIBLE: "visible", ANONYMOUS: "anonymous" }),
+  ratingType: vEnum({ PLUS: "plus", PLUS_MINUS: "plus_minus", STARS: "stars" })
+})
+
+// Wikidot accepts a local upload or an existing URL per icon slot. This slice
+// records the source; an empty field clears the slot.
+const siteIconsSchema = object({
+  siteId: number(),
+  faviconSource: optional(string(), ""),
+  iosIconSource: optional(string(), ""),
+  windowsTileSource: optional(string(), "")
+})
+
+const forumNestingSchema = object({
+  siteId: number(),
+  maxNestLevel: pipe(number(), integer(), minValue(0), maxValue(10))
+})
+
+const discussionSchema = object({
+  siteId: number(),
+  categoryId: number(),
+  state: vEnum({ DEFAULT: "default", ENABLE: "enable", DISABLE: "disable" })
 })

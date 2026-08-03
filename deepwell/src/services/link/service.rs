@@ -18,17 +18,30 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
-use super::resolver::resolve_connection_counts;
+use super::resolver::{
+    PageExistenceSnapshot, resolve_connection_counts, resolve_page_existence,
+};
+use super::structs::{
+    GetConnectionsFromOutput, GetLinksExternalFromOutput, GetLinksExternalToOutput,
+    GetLinksFromOutput, GetLinksToMissingOutput, GetLinksToOutput, ToExternalLink,
+};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page;
 use crate::models::page_connection::{self, Entity as PageConnection};
 use crate::models::page_connection_missing::{self, Entity as PageConnectionMissing};
 use crate::models::page_link::{self, Entity as PageLink, Model as PageLinkModel};
 use crate::services::PageService;
+use crate::services::ServiceContext;
 use crate::types::ConnectionType;
+use crate::types::Reference;
+use crate::utils::now;
 use ftml::data::Backlinks;
 use sea_orm::NotSet;
 use sea_orm::sea_query::OnConflict;
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, JoinType, PaginatorTrait,
+    QueryFilter, QueryOrder, QuerySelect, RelationTrait, Set,
+};
 use std::collections::HashMap;
 
 /// Forms an optional `Condition` from a list of connection types.
@@ -49,6 +62,15 @@ macro_rules! make_contype_condition {
 pub struct LinkService;
 
 impl LinkService {
+    pub(crate) async fn resolve_page_existence(
+        ctx: &ServiceContext<'_>,
+        source_site_id: i64,
+        source_site_slug: &str,
+        page_refs: &[ftml::data::PageRef],
+    ) -> Result<PageExistenceSnapshot> {
+        resolve_page_existence(ctx, source_site_id, source_site_slug, page_refs).await
+    }
+
     pub async fn get_from(
         ctx: &ServiceContext<'_>,
         page_id: i64,

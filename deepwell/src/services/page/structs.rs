@@ -18,10 +18,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
 use crate::services::page_revision::CreatePageRevisionOutput;
 use crate::services::score::ScoreValue;
-use crate::types::{PageDetails, PageId, PageRevisionType};
+use crate::types::{Maybe, Reference};
+use crate::types::{PageDetails, PageRevisionType};
 use ftml::layout::Layout;
 use ftml::parsing::ParseError;
 use std::net::IpAddr;
@@ -346,14 +346,6 @@ mod tests {
         assert_eq!(output.revision_number, 5);
         assert!(output.parser_errors.is_empty());
     }
-}
-
-#[derive(Deserialize, Debug, Clone)]
-#[allow(dead_code)]
-pub struct PageEditPermission<'a> {
-    pub site_id: i64,
-    pub page: Reference<'a>,
-    pub user_id: Option<i64>,
 }
 
 #[derive(Serialize, Debug, Clone)]

@@ -1,0 +1,1443 @@
+# ListPages Module
+
+- Feature ID: `module-listpages`
+- Category: `module`
+- Documentation status: `documented`
+- Specification source: frozen local Wikidot documentation corpus
+- Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
+
+## Purpose
+
+Implement the `ListPages` module interface, attributes, defaults, selection or side-effect behavior, templates, output, and documented limitations.
+
+## Implementation contract
+
+- The module dispatcher MUST recognize every documented module name and compatibility alias.
+- The evaluator MUST implement documented attributes, aliases, defaults, limits, selection rules, permissions, side effects, and URL behavior.
+- The renderer MUST implement documented templates, variables, wrappers, generated links, empty states, and interactive behavior.
+
+Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
+
+If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Invalid and extreme numeric arguments use compatibility fallbacks
+
+- Observation ID: `listpages-invalid-numeric-fallbacks`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-27`
+- Analysis: The documentation calls limit, perPage, and offset numeric but does not define rejected forms. Controlled saved-page captures show that Wikidot does not partially parse signed or fractional values. It falls back to the argument default, while retaining a separate legacy behavior for offsets beyond the local query window.
+
+Normative behavior:
+
+- A negative or fractional limit is rejected and behaves as an omitted limit.
+- A zero, negative, or fractional perPage is rejected and falls back to 20.
+- A negative or fractional offset is rejected and falls back to zero.
+- An oversized positive offset renders no rows on the initial pagination page. On a later pagination page, live Wikidot applies the oversized offset modulo perPage before applying the pagination-page displacement; for offset 999999999 and the default perPage 20, page 2 begins at absolute index 20.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json` (SHA-256 `8864c8c37d8e9cb12eca1c1a76fe413b9e14a328368e6087a9a71a478ca20499`), cases: `lp-live-numeric-page-1`, `lp-live-numeric-page-2`
+
+### Pagination is driven by ordered path pairs
+
+- Observation ID: `listpages-pagination-path-semantics`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-27`
+- Analysis: The documentation explains argument/value path pairs but does not specify the generated p argument, invalid values, duplicate pairs, clamping, or preservation rules. Controlled direct navigation captures expose the route algorithm and pager DOM.
+
+Normative behavior:
+
+- Unprefixed pagination uses the path pair /p/<page>; a module with urlAttrPrefix="x" uses /x_p/<page>.
+- A positive page number selects that page and is clamped to the final available page when it is too large.
+- Page zero selects page 1 and its numeric pair is replaced by generated pager links.
+- A negative, fractional, textual, or missing page value selects page 1; the malformed path is preserved and generated pager links append a new valid /p/<page> pair.
+- When repeated valid page pairs occur, the last positive value selects the page, while generated pager links replace the first numeric pair in place and preserve later pairs.
+- Non-page path pairs retain their original order around the replaced or appended page pair.
+- Generated pager links do not retain the incoming query string.
+- The pager is a div.pager containing span.pager-no, span.current, span.target anchors, optional span.dots, and previous/next anchors with Wikidot's visible labels.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json` (SHA-256 `8864c8c37d8e9cb12eca1c1a76fe413b9e14a328368e6087a9a71a478ca20499`), cases: `lp-live-pagination-page-1`, `lp-live-pagination-page-2`, `lp-live-pagination-page-3`, `lp-live-pagination-final`, `lp-live-pagination-beyond`, `lp-live-pagination-zero`, `lp-live-pagination-negative`, `lp-live-pagination-text`, `lp-live-pagination-missing`, `lp-live-pagination-query`, `lp-live-pagination-repeated`, `lp-live-prefixed-a-page-2`, `lp-live-prefixed-b-page-2`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures-navigation-rerun.jsonl` (SHA-256 `87367ac2919a2c9cc2f93ef09933124a528d20653025e29b5a6090c22b0911c0`), cases: `lp-live-navigation-p-before-tag`, `lp-live-navigation-category-before-p`, `lp-live-navigation-prefixed-limits`
+
+### Typography is context-sensitive across authored and generated text
+
+- Observation ID: `listpages-generated-text-typography-boundary`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-30`
+- Analysis: The typography documentation says that three periods become an ellipsis, but it does not define longer dot runs, literal-region exclusions, or the evaluation boundary between authored wikitext and module-generated output. Anonymous PagePreviewModule captures show that authored prose consumes each complete group of three periods from a contiguous run and leaves a one- or two-period remainder, while code and escaped-text regions remain literal. Existing ListPages captures show that the module's generated pagination elision remains three ASCII periods. Stored-title experiments additionally show that generated values enter different parser stages depending on the template variable. Therefore a global post-render typography rewrite is observably incorrect, but it is also incorrect to classify every runtime-generated value as post-typography.
+
+Normative behavior:
+
+- In ordinary authored prose, a contiguous run of periods is consumed from left to right in complete groups of three. Each complete group becomes one horizontal ellipsis, and a trailing remainder of one or two periods remains literal.
+- The spaced authored form . . . becomes one horizontal ellipsis. A fourth spaced period remains a separate literal period.
+- Code-block content and escaped-text content do not receive the ellipsis substitution.
+- ListPages-generated pagination uses span.dots whose text is exactly three ASCII periods (...), not U+2026.
+- Typography is not a global final-HTML operation. Authored prose and the plain ListPages title variable receive typography, while generated pager text and ordinary linked-title labels do not.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-render-boundary-live-preview.jsonl` (SHA-256 `5dcf8d942abb732bade096428fe47e83e9043ccbf257b6a22a94647bc65f043f`), cases: `typography-dot-runs`, `typography-dot-boundaries`, `typography-dot-literals`, `typography-dot-spaced-edges`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-generated-live-preview.jsonl` (SHA-256 `7da22f7f2650c16903616c13569b2aaee7c7b7205a41d5e06beab0f5e83464e0`), cases: `lpgen-0001-category-selector-empty`
+- `install/local/wikidot-verification/artifacts/listpages-title-variable-live-pages.jsonl` (SHA-256 `7f7cdcc6da9914be07881430c17b56e966e410ec2c53068682591536c395e80f`), cases: `listpages-title-dots`, `listpages-title-typography`
+
+### Plain and linked title variables enter different parser contexts
+
+- Observation ID: `listpages-title-variable-parser-context`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The ListPages documentation identifies title, title_linked, parent_title, and parent_title_linked but does not specify their parser stages or sanitization. Controlled saved-page experiments assigned structural syntax, inline syntax, typography, raw HTML, entities, links, malformed constructs, and escaped regions to stored page and parent titles. Live Wikidot first strips every square bracket from the stored title. It then reparses each plain title variable as inline wikitext, but ordinarily inserts each linked label only after the inline and typography passes that affect authored source. The escaped-text construct has a distinct legacy ordering quirk: a closed @@ region is expanded before the generated triple-link is recognized, so the link source remains visibly literal. This behavior is canonical even though the resulting output is surprising.
+
+Normative behavior:
+
+- Before substituting title or title_linked (and the linked_title alias), Wikidot removes every U+005B LEFT SQUARE BRACKET and U+005D RIGHT SQUARE BRACKET from the stored title. Bracket-based modules, parser functions, and links therefore cannot become active through a title.
+- The plain title variable is parsed as inline wikitext after bracket removal. Inline bold, italic, underline, strike, color, superscript, subscript, code, escaped-text, automatic external-link, and typography behavior can therefore appear in its output. Block-only markers remain ordinary inline text.
+- Raw HTML and ampersands from a title remain text, not active HTML. Entity spellings are treated as literal title bytes and consequently appear escaped again in serialized HTML.
+- In the ordinary case, title_linked produces a page link whose label is the bracket-stripped title before inline parsing and typography. Formatting markers, period runs, quotation markers, angle markers, and ordinary spacing remain literal in the linked label, while HTML-sensitive bytes remain safely escaped.
+- A closed @@escaped-text@@ region is the legacy exception. It is rendered before the generated triple-page-link is recognized, the link is not created, and the visible output retains the literal wrapper [[[fullname | ...]]] while inline constructs inside that wrapper render normally. An unclosed @@ sequence does not trigger this exception.
+- parent_title and parent_title_linked apply the same sanitization and parser-context rules to the selected page's parent title. The literal wrapper in the escaped-region exception uses the parent fullname.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-title-variable-live-pages.jsonl` (SHA-256 `7f7cdcc6da9914be07881430c17b56e966e410ec2c53068682591536c395e80f`), cases: `listpages-title-plain`, `listpages-title-html`, `listpages-title-div`, `listpages-title-module`, `listpages-title-parser-function`, `listpages-title-links`, `listpages-title-dots`, `listpages-title-mixed`, `listpages-title-formatting`, `listpages-title-inline-combined`, `listpages-title-block-markers`, `listpages-title-typography`, `listpages-title-brackets`, `listpages-title-entities`, `listpages-title-color`, `listpages-title-superscript`, `listpages-title-subscript`, `listpages-title-code`, `listpages-title-escaped`, `listpages-title-color-and-formatting`, `listpages-title-unclosed-color`, `listpages-title-unclosed-superscript`, `listpages-title-escaped-brackets`, `listpages-title-unclosed-escaped`, `listpages-parent-title-context`
+- `install/local/wikidot-verification/artifacts/wikidot-inline-escape-line-scope-live-preview.jsonl` (SHA-256 `b7d9f2b896bd4f7f8fcc7e353f84f1b0ca4ff77e508df184bc9bc9aeae3dcb5d`), cases: `inline-escape-unclosed-same-line`, `inline-escape-unclosed-then-next-line`, `inline-escape-cross-line-close`
+
+### Duplicate attributes and aliases have legacy precedence
+
+- Observation ID: `listpages-duplicate-and-alias-precedence`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-27`
+- Analysis: The documentation identifies aliases but does not define duplicate-key or alias-conflict precedence. Anonymous PagePreviewModule captures show stable, non-uniform legacy precedence that cannot be replaced by a generic attribute-map rule.
+
+Normative behavior:
+
+- For repeated occurrences of the same attribute name, the last occurrence wins.
+- The modern category attribute wins over the categories alias regardless of source order.
+- The deprecated tag attribute wins over the tags attribute regardless of source order.
+- The modern rss attribute wins over rssTitle regardless of source order.
+- Duplicate rssOnly, limit, rssLimit, tags, category, and order attributes use the last value when the spelling is identical.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-campaign-rss-alias-conflict-live-preview.jsonl` (SHA-256 `843ed317e7ece3ebc69d5e943932a571c5c15d0f7216addbd9e8507b4b7379de`), cases: `lprss3-0001-category-then-categories`, `lprss3-0002-categories-then-category`, `lprss3-0003-tags-then-tag`, `lprss3-0004-tag-then-tags`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-rss-path-combination-live-preview.jsonl` (SHA-256 `c85ac5b3b1562ce8216b06f3b5fd2dac9618d65c423ead7adcf5cf42d1c02c55`), cases: `lprss4-0004-rss-then-rss-title`, `lprss4-0005-rss-title-then-rss`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-rss-selector-live-preview.jsonl` (SHA-256 `de9e21199394c060d64edfb1c6c3581ba7506d947799aeaa31fddf58eb603498`), cases: `lprss2-0060-duplicate-limit`, `lprss2-0061-duplicate-rss-limit`, `lprss2-0067-duplicate-category`, `lprss2-0068-duplicate-tags`, `lprss2-0069-duplicate-order`
+
+### RSS link generation and rssOnly truth handling
+
+- Observation ID: `listpages-rss-link-and-rssonly`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-27`
+- Analysis: The documentation describes RSS arguments but omits empty and invalid values, exact markup, and path encoding. Anonymous preview captures provide the public renderer contract.
+
+Normative behavior:
+
+- A non-empty rss or rssTitle produces a div.feedinfo containing the Wikidot 14x14 RSS icon and an RSS feed anchor; an empty title produces no feed link.
+- rssOnly suppresses ListPages rows only for the case-insensitive true values yes and true. Values no, false, empty, or unrecognized do not suppress rows.
+- rssOnly without a non-empty feed title neither suppresses rows nor creates a feed link.
+- Feed path components use form-style encoding: spaces become plus signs and reserved bytes are percent encoded.
+- rssLimit takes precedence over the lower-of-limit-and-perPage default used to construct the feed path.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-campaign-rss-live-preview.jsonl` (SHA-256 `4674b00c5c9e587baf6b5b97bcf20c58b7b474da95f416ca62948a5ee3067ec1`), cases: `lprss-0001-title`, `lprss-0002-title-alias`, `lprss-0003-empty-title`, `lprss-0006-only-yes`, `lprss-0007-only-true`, `lprss-0008-only-no`, `lprss-0009-only-false`, `lprss-0010-only-empty`, `lprss-0011-only-invalid`, `lprss-0012-only-without-title`, `lprss-0016-limit-one`
+
+### The live feed endpoint has a narrower contract than ListPages
+
+- Observation ID: `listpages-live-feed-endpoint`
+- Classification: `documentation-discrepancy`
+- Observed at: `2026-07-27`
+- Analysis: The documentation says the exported RSS feed uses the ListPages selection and limit. Direct anonymous requests to the exact feed links generated by live ListPages show a narrower and partly defective production endpoint. The endpoint's observed output, not the broader documentation claim, is canonical for compatibility.
+
+Normative behavior:
+
+- The direct /feed/pages/... endpoint returns at most 20 newest visible items by default.
+- The endpoint accepts title t, description d, and home h metadata; repeated metadata path pairs use the last value.
+- In controlled live captures, limit, offset, and order path pairs do not affect the selected items, even though ListPages generates those pairs.
+- Unknown path arguments are ignored.
+- An invalid range, rating, or pagetype value produces an HTTP 200 generic feed error document rather than an HTTP error status.
+- A request ending at /feed/pages without a trailing argument path returns 404; malformed percent encoding returns 400.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-campaign-feed-endpoint-live.jsonl` (SHA-256 `37e6a52c88f48bc7eadfeacb7218ce270e615f0916e4a8810bfed2f01bb0afa9`), cases: `lpfeed-0001-baseline`, `lpfeed-0002-metadata`, `lpfeed-0003-limit-ignored`, `lpfeed-0004-offset-ignored`, `lpfeed-0005-order-ignored`, `lpfeed-0006-duplicate-metadata-last-wins`, `lpfeed-0008-invalid-range`, `lpfeed-0009-invalid-rating`, `lpfeed-0010-invalid-pagetype-alias`, `lpfeed-0013-unknown-argument-ignored`, `lpfeed-0014-missing-trailing-path`, `lpfeed-0015-malformed-percent-escape`
+
+### Template variables preserve legacy identity and missing-data behavior
+
+- Observation ID: `listpages-template-variable-rendering`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-28`
+- Analysis: The documentation lists current and deprecated template variables but does not define several empty, missing-data, alias, and server-versus-client rendering details. A controlled saved target with a parent, two authored revisions, visible and hidden tags, and multi-paragraph content establishes the public output of every documented variable family on an ordinary non-data-form page.
+
+Normative behavior:
+
+- name and the deprecated page_name render the page name without its category; fullname, page_unix_name, and full_page_name render the category-qualified page name.
+- created_by_id, updated_by_id, created_by_unix, and updated_by_unix render the corresponding Wikidot user identity values when present. Linked lifecycle user variables render Wikidot user-profile markup, while the plain variables render text.
+- parent_name, parent_category, parent_fullname, parent_title, and parent_title_linked render the selected page's single parent metadata; parent_title_linked links to the parent fullname.
+- site_title, site_name, and site_domain render the current site display title, Wikidot unix name, and active Wikidot domain respectively.
+- summary and first_paragraph render the first paragraph. preview renders a plain-text preview, and preview(n) truncates the preview with an ellipsis.
+- text, long, and body are deprecated aliases of content; description and short are deprecated aliases of summary; author_edited and user_edited are deprecated linked-user aliases of updated_by.
+- For an ordinary selected page with no comments, comments renders 0, while commented_by, commented_by_linked, commented_by_unix, commented_by_id, and commented_at render empty strings.
+- total_or_limit renders the lower of the unbounded matching total and the authored limit, or the unbounded total when no limit was authored.
+- A form_data, form_raw, form_label, or form_hint variable for a missing field on an ordinary non-data-form page remains literal. rating_percent likewise remains literal on the controlled plus/minus rating site.
+- Date variables render a span.odate whose class carries the encoded requested format. The saved server HTML contains fallback date text; Wikidot's client runtime applies the requested display format.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-campaign-template-variables-live-classification.json` (SHA-256 `7994dfcf7e8f3cae568e44c53fda16ff9acb8d4b47f59494a110633cd4d8f67d`), cases: `lp-live-template-variables`
+
+### Ratings, last comments, and data-form variables depend on runtime metadata
+
+- Observation ID: `listpages-rating-comment-and-data-form-variables`
+- Classification: `documentation-discrepancy`
+- Observed at: `2026-07-28`
+- Analysis: The documentation lists rating, comment, and data-form variables but omits their exact rating-mode markup, treats form values too uniformly, and does not define missing fields on an actual data-form page. Controlled run-owned pages, two independent voters, a last comment, a temporarily enabled five-star category, and a data-form template establish the runtime contract. The five-star category was restored to its prior disabled configuration and every run-owned page was removed after capture.
+
+Normative behavior:
+
+- rating_votes renders the number of votes for both plus/minus and five-star rating categories; it is not limited to five-star ratings.
+- On a plus/minus category, rating renders the numeric net score and rating_percent remains literal.
+- On a five-star category, rating renders a span.page-rate-list-pages-start whose data-rating attribute and text are the arithmetic mean, including a fractional mean and the zero-vote value 0.
+- On a five-star category, rating_percent renders the arithmetic mean divided by five and multiplied by 100, without a percent-sign suffix; the observed values include 0, 80, and 90.
+- For a page with comments, comments renders the count; commented_by renders the last commenter's display name; commented_by_unix renders the account unix name; commented_by_id renders the numeric Wikidot user ID; commented_by_linked renders printuser avatar/profile markup; and commented_at renders the standard odate span.
+- On a data-form page, form_raw renders the stored scalar. form_data renders the display label for a select value and the stored scalar for an ordinary text value.
+- form_label renders the field label. form_hint renders a supported field hint, an empty string when the field type does not expose its authored hint, and an empty string when no hint is authored.
+- An empty field on a data-form page still resolves form_data, form_raw, form_label, and form_hint: the value variables are empty while label and supported hint metadata remain available.
+- A missing field on an actual data-form page resolves every form variable to an empty string. This differs from an ordinary non-data-form page, where a missing form variable remains literal.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json` (SHA-256 `df42b383b81eeac1c00c25fe54a59dcf2015ed622baea0752e9481d8bfe7708c`), cases: `lp-live-plus-minus-rating-and-last-comment`, `lp-live-five-star-rating`, `lp-live-five-star-fractional-rating`, `lp-live-five-star-zero-rating`, `lp-live-data-form-values-labels-and-hints`
+
+### Imported lifecycle identities require the structured tuple exposed by live Wikidot
+
+- Observation ID: `listpages-imported-lifecycle-identity-provenance`
+- Classification: `documentation-discrepancy`
+- Observed at: `2026-07-29`
+- Analysis: The frozen ListPages documentation defines lifecycle identity variables but does not describe acquisition provenance. The pre-fix SCP corpus adapter flattened live Wikidot user objects to display-name strings, creating an apparent blocker for imported created_by, updated_by, and commented_by identity variables. An anonymous read through the repository-pinned wikidot.py ListPages interface proves that live Wikidot supplies the numeric user ID, display name, and unix name for every populated lifecycle user. The producer now preserves those tuples, and a refreshed scp-3435 record verifies the complete producer-to-standing-runtime path. The missing identity was therefore a corpus-adapter loss, not a limitation of the live oracle.
+
+Normative behavior:
+
+- For each populated created-by, updated-by, or last-comment user, live Wikidot exposes a structured identity tuple containing numeric Wikidot user ID, display name, and unix name.
+- A refreshed corpus metadata record must preserve these tuples additively as created_by_id and created_by_unix, updated_by_id and updated_by_unix, and commented_by_id and commented_by_unix while retaining the existing display-name fields.
+- When structured imported provenance is present, ListPages *_by, *_by_unix, *_by_id, and *_by_linked variables render the same text, unix name, numeric ID, and printuser profile markup as live Wikidot. The local importer account must never substitute for the Wikidot lifecycle user.
+- ListPages RSS item authorship uses the selected page creator, including for imported pages, and renders feed-specific printuser markup. The feed markup contains the profile links, avatar and user-karma URLs, and a cache-busting avatar timestamp, but omits the browser-only userInfo onclick handler.
+- Legacy snapshots without a required identity component remain provenance-incomplete. Identity-bearing output for those snapshots must fail closed or stay literal rather than inventing an ID, unix name, or linked profile from a display-name normalization.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json` (SHA-256 `eb7e379417eaf1d4e9fedaa72ee0ea6bc9abc87291a01e2c5a3ac57682923fcd`), cases: `scp-3435-lifecycle-identities`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-template-variables-live-classification.json` (SHA-256 `7994dfcf7e8f3cae568e44c53fda16ff9acb8d4b47f59494a110633cd4d8f67d`), cases: `lp-live-template-variables`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-rating-comment-data-form-live.json` (SHA-256 `df42b383b81eeac1c00c25fe54a59dcf2015ed622baea0752e9481d8bfe7708c`), cases: `lp-live-plus-minus-rating-and-last-comment`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-feed-endpoint-live.jsonl` (SHA-256 `37e6a52c88f48bc7eadfeacb7218ce270e615f0916e4a8810bfed2f01bb0afa9`), cases: `lpfeed-0001-baseline`
+
+### Data-form ListPages selection and ordering use stored field properties
+
+- Observation ID: `dataforms-listpages-selection-sorting-live`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-29`
+- Analysis: The data-form documentation states that ListPages can select and order by data-form fields, but the public examples also exercise an undocumented template composition path: a data-form category template can place current-page %%form_raw{field}%% variables inside a ListPages module head, and live Wikidot resolves those variables before evaluating _field selectors. A read-only capture of the live Vineyard demo confirms the ordinary data-form behavior. A run-owned sandbox probe also showed that raw source writes through the normal page-create path do not populate live Wikidot's data-form query/index state, so that route is recorded as an API/source-write limitation rather than the ordinary data-form UI oracle.
+
+Normative behavior:
+
+- ListPages arguments inside a data-form category template can use current-page %%form_raw{field}%% variables.
+- Live Wikidot resolves current-page data-form variables in the ListPages module head before applying _field selectors.
+- Multiple _field selectors combine with AND semantics.
+- order="_field desc" sorts by the stored data-form field property while %%form_data{field}%% in the row template displays the field label/display value.
+- Source-created sandbox pages with raw data-form-looking source did not participate in live Wikidot data-form selector or ordering indexes; this is an observed source-write limitation, not the ordinary data-form page behavior.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/dataforms-listpages-selection-sorting-live.json` (SHA-256 `70ffe68197540fe292f8343e98d64fe76fbadf73533a3537b12b4a7ea185fd6f`), cases: `vineyard-current-page-form-variables-drive-data-form-selectors`, `vineyard-data-form-order-desc-uses-stored-field-properties`
+
+### Legacy selectors and pre-parsed module bodies retain production quirks
+
+- Observation ID: `listpages-legacy-and-body-edge-behavior`
+- Classification: `documentation-discrepancy`
+- Observed at: `2026-07-28`
+- Analysis: The legacy documentation describes skipCurrent, reverse, link_to, tagTarget, the default template, and the prohibition on code/html body tags, but it does not define invalid booleans, the accepted true alias for reverse, the current-page link sentinel, or the actual pre-parser failure shape. Controlled saved-page graphs show both clarifications and direct contradictions. Live production behavior is canonical.
+
+Normative behavior:
+
+- skipCurrent excludes the current holder page only for the case-insensitive true values yes and true. Values no, false, or unrecognized do not exclude it.
+- reverse reverses the already ordered rows for the case-insensitive true values yes and true. Values no, false, empty, or unrecognized preserve the ordered rows and do not make the module fail closed.
+- link_to="." selects pages whose outgoing links target the current holder page.
+- When tags="=" is the only tag selector, Wikidot implicitly excludes the current holder page after selecting pages that share any visible tag.
+- The deprecated tagTarget argument does not make %%tags%% clickable in the controlled live renderer; the argument is an observed no-op despite the legacy documentation claim.
+- summary and its deprecated description alias render content section 1 when the selected page contains a ==== section separator.
+- prependLine and appendLine are ignored when separate is true.
+- A ListPages opening with no closing module uses Wikidot's default template: a linked-title heading, a linked author and created date line, and the summary, inside list-pages-box and list-pages-item containers.
+- When a purported ListPages body contains a code or html block, Wikidot's earlier syntax pass removes or owns that block before ListPages evaluates. The ListPages opening consequently uses the default template, and residual authored body or closing-module text may render after the generated list. It does not simply leave the whole module literal or produce no output.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-campaign-edge-live-classification.json` (SHA-256 `722c4ef3862e517d64098f508ace5831522db06805686c3d4eb82be228869f28`), cases: `lp-live-edge-behaviors`, `lp-live-default-template`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-edge-reverse-live-classification.json` (SHA-256 `f84fe9ae8c59cd109dacdfc9f48721db4f84b7b1d7a15ffe53e9a4f51396db74`), cases: `lp-live-edge-behaviors`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-edge-link-to-live-classification.json` (SHA-256 `71be02bc784bfe7af7ed68828df6c6991b745bf076b5e528a7431f748e219536`), cases: `lp-live-edge-behaviors`
+
+### CountPages inside ListPages follows legacy parser failure shapes
+
+- Observation ID: `countpages-inside-listpages-body`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-28`
+- Analysis: The CountPages documentation states that CountPages cannot be used inside a ListPages module but does not define the rendered failure shape. Controlled run-owned sandbox pages show that live Wikidot does not execute the nested CountPages module and does not simply preserve the whole outer ListPages source literally. A standalone CountPages opening line inside the ListPages body produces an outer ListPages wrapper with one empty list-pages-item for the matching row. A same-line CountPages open/body/close follows a separate legacy split shape: the outer ListPages renders with its default empty-body template, the text before the inline CountPages line remains downstream page source, the inline CountPages body is suppressed, and the text after the inline CountPages line is wrapped in an additional list-pages-box.
+
+Normative behavior:
+
+- A standalone CountPages module opening inside a ListPages body does not execute CountPages.
+- For the minimized standalone-opening case, live Wikidot emits the outer ListPages wrapper and one empty list-pages-item for each matching row.
+- The rendered output for the minimized case contains none of the authored CountPages body text, %%total%%, %%count%%, or raw CountPages module source.
+- An ordinary ListPages body with the same selector and no nested CountPages renders normally, proving that the empty-item behavior is caused by the nested CountPages opening.
+- For the minimized same-line open/body/close case, live Wikidot renders the outer ListPages with its default template, preserves preceding body text after the generated ListPages output, suppresses the inline CountPages module text and variables, and wraps following body text in a second list-pages-box.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/countpages-inside-listpages-live.json` (SHA-256 `6296353f385fef33e74b3696d9affca8dbfa3816457141ab2f6b283e2f9346b0`), cases: `standalone-countpages-opening-inside-listpages-body`, `inline-countpages-inside-listpages-body`, `ordinary-listpages-body-control`
+
+### Checkbox fields use exact-one defaults, quoted binary storage, and ordinary data-form variables
+
+- Observation ID: `data-form-checkbox-control-storage-and-variable-contract`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-29`
+- Analysis: The frozen checkbox documentation says only that the field stores 0 or 1 and that default supplies the initial value. It does not define scalar comparison, DOM, quoting, field-property behavior, display, edit restoration, or ListPages variables. The live corpus also contains community-sites:_template checkboxes with after text and no label. Run-owned generated create/edit flows establish that a checkbox is checked only when its parsed default is numeric one, submission always emits quoted binary strings, ordinary properties are honored, and both form_data and form_raw expose the stored digit.
+
+Normative behavior:
+
+- A checkbox renders input.form-checkbox with type=checkbox, name=field-<field-name>, and no authored value attribute; its DOM value is therefore the browser default on.
+- An omitted default is unchecked. Observed numeric 1, quoted "1", 01, and 1.0 defaults are checked. Observed 0, false, true, quoted "0", quoted "false", quoted "true", empty, -1, 2, yes, no, null, quoted "null", and quoted " 1 " defaults are unchecked.
+- Saving a checked checkbox stores the exact single-quoted scalar '1'; saving an unchecked checkbox stores the exact single-quoted scalar '0'.
+- The generated default table displays 1 or 0 as ordinary text. Both form_data and form_raw render that same stored digit in a direct category template and in a ListPages row.
+- Checkbox label, join, before, and after follow the observed common field-property grouping contract. Affixes remain literal and do not change storage.
+- A checkbox hint produces no placeholder or other visible hint content.
+- Create and edit restore the checked state from the stored quoted binary scalar.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json` (SHA-256 `8d806e502db320a3cfb1889368530c3c4f46921b3fb958cca2c660a63a835fe0`), cases: `checkbox-control-default-storage-display-and-restoration`, `direct-and-listpages-wiki-checkbox-variables`
+
+### Wiki fields use wiki controls, parsed values, literal affixes, and live template variables
+
+- Observation ID: `data-form-wiki-control-rendering-and-variable-contract`
+- Classification: `documentation-correction`
+- Observed at: `2026-07-29`
+- Analysis: The frozen wiki-field page says it works like text and lists only width and height. Live behavior differs materially from a text field's defaults, supports undocumented default and hint properties, ignores text-only match properties, and distinguishes a wiki-parsed field value from literal affixes. The frozen template-variable references also contradict each other about form_raw and recommend it specially for wiki fields. Live direct templates and ListPages render the observed wiki value through both form_data and form_raw.
+
+Normative behavior:
+
+- A wiki field uses class form-control form-wiki. With omitted dimensions it renders a textarea with cols=40 and rows=2.
+- Observed numeric width values clamp to a minimum of 20; width 21 renders 21. Empty and non-numeric widths fall back to 40.
+- Omitted, empty, and non-numeric heights render a two-row textarea. Numeric heights below 2 render a one-line input; height 2 or greater renders a textarea with that row count.
+- The undocumented default property supplies the initial wiki value. The undocumented hint property supplies the exact input or textarea placeholder, including retaining a backslash before a hash.
+- Wiki field storage uses the observed text scalar encoding: safe single-line syntax may remain plain, unsafe single-line values use doubled-apostrophe single quotes, and multiline values use double quotes with escaped newlines.
+- Text-only match and match-error properties have no effect on a wiki field; an observed value that failed the authored pattern still saved.
+- In the generated editor, before and after remain literal text around the control, with exactly one separator space after a non-empty before value and before a non-empty after value; source-formatting whitespace does not add another separator. In the default table, each non-empty affix and the wiki value occupy separate paragraphs inside div.form-value.field-<name>; only the stored wiki value is parsed as Wikidot syntax, while affix markup remains literal pre-wrapped text.
+- Wiki label and join follow the observed common field-property contract in both the editor and default table.
+- Both form_data and form_raw render the observed wiki syntax in a direct category template and a ListPages row. Marker-separated variables produced equivalent bold and internal-link HTML.
+- Placing a raw wiki variable inside one of several immediately adjacent div blocks exposes a legacy composition boundary: the raw block's opening syntax can remain literal and alter parsing of following blocks. Preserve this adversarial input; do not normalize it into the ordinary marker-separated result.
+- Create and edit restore the exact stored wiki source.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json` (SHA-256 `8d806e502db320a3cfb1889368530c3c4f46921b3fb958cca2c660a63a835fe0`), cases: `wiki-control-dimension-default-hint-and-storage-boundaries`, `wiki-rendering-field-properties-and-text-only-validation-boundary`, `direct-and-listpages-wiki-checkbox-variables`, `raw-wiki-variable-adjacent-block-composition`
+
+### ListPages evaluates expression parser functions after row-variable substitution
+
+- Observation ID: `listpages-template-parser-functions-after-row-substitution`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen ListPages documentation inventories template variables and warns that code and html blocks are consumed by an earlier parser pass, but it does not define expression parser functions inside a row template. The corpus contains at least 477 ListPages invocations with #ifexpr and a ListPages variable, including the preserved ai-translation:scp-6090 invocation at line 4380. Anonymous PagePreviewModule probes show that Wikidot first substitutes the selected row's rating_votes and rating variables and then evaluates #ifexpr and #expr. An empty result still emits an empty list-pages-box and never exposes an unsupported-module diagnostic.
+
+Normative behavior:
+
+- In a newline-delimited ListPages body, %%rating_votes%% and %%rating%% are substituted for each selected row before #ifexpr and #expr evaluate.
+- For a zero-vote, zero-rating row, [[#ifexpr %%rating_votes%% == 0 | ZERO_VOTES | HAS_VOTES]] [[#expr %%rating_votes%% + %%rating%%]] renders the visible text ZERO_VOTES 0.
+- When the selector returns no rows, the same template renders an empty div.list-pages-box with no list-pages-item and no parser-function or unsupported-module text.
+- The documented code/html pre-parser quirk does not authorize treating supported #ifexpr or #expr row templates as an unresolved ListPages module.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-corpus-parser-functions-live.jsonl` (SHA-256 `8ebf4be57eca7ca29b057efe84c325b621cd50ab3dcf439faf4c9c92965e5545`), cases: `listpages-parser-functions-empty-result`, `listpages-parser-functions-one-row`
+
+### ListPages line arguments and explicit sections have distinct separation behavior
+
+- Observation ID: `listpages-zero-row-prepend-append`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation says that prependLine and appendLine are prepended or appended to the processed list when separate is false, but it does not say whether the processed list must contain a row. It also describes head/body/foot as replacements without defining their separate=true or empty-result behavior. Exact corpus replay exposed sandbox previews whose selectors returned no rows while authored prependLine table headers still rendered. Minimized anonymous PagePreviewModule probes then isolated both line arguments and all documented section subsets with zero and one selected row under both separation modes. Live Wikidot renders line arguments and once-only sections independently of row count when separate is false. Under separate=true, it suppresses head and foot while retaining body as the per-row template.
+
+Normative behavior:
+
+- With separate=false, a non-empty prependLine renders inside the ListPages wrapper before any rows even when the selector returns zero rows.
+- With separate=false, a non-empty appendLine renders inside the ListPages wrapper after any rows even when the selector returns zero rows.
+- When both are present and the selector returns zero rows, prependLine renders before appendLine.
+- With separate=true, both line arguments are ignored, including when the selector returns zero rows.
+- A head or foot becomes a once-only section only when the same template contains a complete body section.
+- With separate=false, recognized head and foot sections render before and after the repeated body and still render when the selector returns zero rows.
+- With separate=true, recognized head and foot sections are suppressed while the body section remains the per-row template; a zero-row result emits an empty wrapper.
+- A head-only or foot-only construct remains literal per-row body text when rows exist and emits an empty wrapper when no rows exist.
+- A body-only construct supplies the per-row body under either separation mode and emits an empty wrapper for no rows.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-zero-row-lines-live.jsonl` (SHA-256 `ab340fcce2531448e16e4efd4502b62047646d2be2ae6598723ccca2a48bad88`), cases: `listpages-zero-row-prepend`, `listpages-zero-row-append`, `listpages-zero-row-prepend-append`, `listpages-zero-row-separate`
+- `install/local/wikidot-verification/artifacts/listpages-zero-row-sections-live.jsonl` (SHA-256 `206d8873e8467cc3c10805edcdb747485757ae756590c5b9000e2c08d3d5e390`), cases: `listpages-zero-row-head-body-foot`, `listpages-zero-row-head-body`, `listpages-zero-row-body-foot`, `listpages-zero-row-head-only`, `listpages-zero-row-foot-only`, `listpages-zero-row-body-only`
+- `install/local/wikidot-verification/artifacts/listpages-one-row-sections-live.jsonl` (SHA-256 `514e166ac0ed218f39e1bafc2a4bf19739bdf7f15e7704b88e70eaecac7497d0`), cases: `listpages-one-row-head-body-foot`, `listpages-one-row-head-body`, `listpages-one-row-body-foot`, `listpages-one-row-head-only`, `listpages-one-row-foot-only`, `listpages-one-row-body-only`
+- `install/local/wikidot-verification/artifacts/listpages-sections-separate-live.jsonl` (SHA-256 `c5ab2fe5fc4e5de423204a83a7b41d74e19d966f397f8b297fa8f926627bb490`), cases: `listpages-zero-row-sections-separate-no`, `listpages-one-row-sections-separate-no`, `listpages-one-row-head-only-separate-no`, `listpages-one-row-body-only-separate-no`, `listpages-one-row-sections-separate-yes`, `listpages-zero-row-head-only-separate-no`
+- `install/local/wikidot-verification/artifacts/listpages-sections-partial-live.jsonl` (SHA-256 `325701f1ed5fdf4700891cb4088a1179a4c9001c9e534aa74e035d4e2c819486`), cases: `listpages-one-row-head-body-separate-no`, `listpages-one-row-body-foot-separate-no`, `listpages-zero-row-head-body-separate-no`, `listpages-zero-row-body-foot-separate-no`, `listpages-one-row-foot-only-separate-no`, `listpages-zero-row-foot-only-separate-no`
+
+### ListPages page-preview errors resolve URL range fallbacks and have argument-specific precedence
+
+- Observation ID: `listpages-page-preview-error-order-and-url-range`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation lists accepted range values and URL-driven selectors but does not define invalid-value output, URL fallback validation in an unsaved preview, or error precedence when a static parent is missing. Exact corpus replay exposed both unresolved range fallbacks and modules combining named parents with range selectors. Anonymous PagePreviewModule probes show that Wikidot resolves @URL fallbacks before validating range. Missing-parent lookup precedes range validation, while invalid pagetype, rating, and votes values precede missing-parent lookup.
+
+Normative behavior:
+
+- An unsaved preview has no current page identity, so before, after, others, and other emit an Invalid range argument error.
+- With no matching URL path argument, range=@URL|others resolves to its fallback and emits the same invalid-range error in an unsaved preview.
+- A nonexistent static parent takes precedence over static, fallback-resolved, or otherwise invalid range values.
+- Invalid pagetype, rating, and votes values take precedence over a nonexistent static parent.
+- The exact live error texts are Invalid range argument., Parent page NAME does not exist, Invalid pagetype attribute., Invalid rating argument., and Invalid votes argument.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-error-precedence-live.jsonl` (SHA-256 `7d43081d3f236bba26da12eb0cde05a197f7dcc31cb6d4b60e572cb4645ed9ff`), cases: `listpages-error-range-others-unsaved`, `listpages-error-range-url-fallback-others-unsaved`, `listpages-error-parent-before-range`, `listpages-error-parent-before-url-range-fallback`, `listpages-error-parent-before-invalid-range`, `listpages-error-parent-before-invalid-pagetype`, `listpages-error-parent-before-invalid-rating`, `listpages-error-parent-before-invalid-votes`
+
+### Literal owners suppress ListPages recognition before module parsing
+
+- Observation ID: `listpages-literal-context-ownership`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation uses code blocks for examples but does not comprehensively define the surrounding syntax that suppresses ListPages recognition. Context-preserving replay of all 684 literal corpus occurrences shows that inline monospace and complete Wikidot comment regions own module-shaped text before ListPages parsing. Isolating such text as an executable module changes its meaning and is not a valid replay of the source page.
+
+Normative behavior:
+
+- {{[[Module Listpages]]}} renders one inline monospace element with the visible literal text [[Module Listpages]] and performs no ListPages query.
+- While a comment is open, any contiguous run of at least two hyphens immediately followed by ] closes it; this includes the corpus ---] spelling and controlled ----] and -----] cases.
+- Extended comment-closing recognition is contextual: outside a comment, ---] and ----] retain ordinary dash processing and a visible right bracket.
+- A literal-owned ListPages token emits no list-pages-box, default template, unsupported-module diagnostic, or query result.
+- Typography projection must not invalidate a comment delimiter that owns ListPages-shaped text.
+- Corpus differential cases for literal occurrences must replay their exact owner context rather than execute the extracted module token in isolation.
+
+Evidence:
+
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/live-literal-context-references.jsonl` (SHA-256 `b2d741a0658ca16452280c79857e7d020b951d67ef307377984b7797adebca3f`), cases: `jp:sandbox3guide:L367:B13485:literal-context`, `en:requite-fahrenheit-file:L87:B3216:literal-context`, `fr:page-d-autrice-de-cyrielle-centori:L508:B27158:literal-context`
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/comment-extra-hyphen-live.jsonl` (SHA-256 `c023c22de802a994798c55ec88c23e38960ca997fb16b01c5de7c1943d870990`), cases: `comment-close-three-hyphens`, `comment-extra-opener-and-three-hyphen-close`, `comment-close-four-hyphens`, `comment-close-five-hyphens`, `unmatched-comment-close-three-hyphens`, `unmatched-comment-close-four-hyphens`
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/comment-closer-dash-boundary-live.jsonl` (SHA-256 `90c2422f74616f65061d1cda2fa5e2fe8f0029e263c9ea0f65f068d022474368`), cases: `comment-closer-dashes-midline-2`, `comment-closer-dashes-midline-3`, `comment-closer-dashes-midline-4`, `comment-closer-dashes-midline-5`, `comment-closer-dashes-midline-6`, `comment-closer-dashes-midline-7`, `comment-closer-dashes-midline-8`, `comment-closer-dashes-line-start-2`, `comment-closer-dashes-line-start-3`, `comment-closer-dashes-line-start-4`, `comment-closer-dashes-line-start-5`, `comment-closer-dashes-line-start-6`, `comment-closer-dashes-line-start-7`, `comment-closer-dashes-line-start-8`
+
+### ListPages separation and wrapper arguments are disabled only by no or false
+
+- Observation ID: `listpages-separate-wrapper-false-only-booleans`
+- Classification: `documentation-discrepancy`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation limits separate and wrapper to yes/no or true/false. Exact corpus replay exposed executable modules using separate="1", separate="on", and an unrecognized typo. Minimized anonymous PagePreviewModule probes with both empty and one-row result sets show that these two enabled-by-default arguments are disabled only by case-insensitive no or false. This differs from the true-only coercion used by skipCurrent, reverse, and rssOnly.
+
+Normative behavior:
+
+- An omitted or empty separate value enables per-row list-pages-item containers.
+- Case-insensitive no and false disable separate row containers.
+- Every other observed separate value, including yes, true, 1, 0, on, off, random, and trude, enables separate row containers.
+- An omitted or empty wrapper value emits the list-pages-box container.
+- Case-insensitive no and false suppress the outer wrapper.
+- Every other observed wrapper value, including yes, 1, 0, on, off, and random, emits the outer wrapper.
+- The same coercion applies to zero-row and non-empty results.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-boolean-values-live.jsonl` (SHA-256 `4f81e6e390c38cab067382ed80ae29417e7a4e81be3fcac64311b3c70129b9b9`), cases: `listpages-separate-omitted`, `listpages-separate-empty`, `listpages-separate-yes`, `listpages-separate-true`, `listpages-separate-one`, `listpages-separate-on`, `listpages-separate-no`, `listpages-separate-false`, `listpages-separate-zero`, `listpages-separate-off`, `listpages-separate-random`, `listpages-separate-trude`, `listpages-wrapper-omitted`, `listpages-wrapper-empty`, `listpages-wrapper-yes`, `listpages-wrapper-one`, `listpages-wrapper-on`, `listpages-wrapper-no`, `listpages-wrapper-false`, `listpages-wrapper-zero`, `listpages-wrapper-off`, `listpages-wrapper-random`
+- `install/local/wikidot-verification/artifacts/listpages-separate-values-with-row-live.jsonl` (SHA-256 `a4f2bba89dbb8542acf8bbb8e2accb729a1371f414899e5d804ac1a7eb52dd4a`), cases: `listpages-separate-row-omitted`, `listpages-separate-row-empty`, `listpages-separate-row-yes`, `listpages-separate-row-true`, `listpages-separate-row-one`, `listpages-separate-row-on`, `listpages-separate-row-no`, `listpages-separate-row-false`, `listpages-separate-row-zero`, `listpages-separate-row-off`, `listpages-separate-row-random`, `listpages-separate-row-trude`
+
+### Unknown non-data-form ListPages arguments are ignored
+
+- Observation ID: `listpages-unknown-arguments-ignored`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation enumerates ListPages arguments but does not define unrecognized assignments. Corpus replay contains real modules with misspelled names and attributes apparently swallowed from surrounding constructs. A controlled one-row PagePreviewModule matrix shows that every observed unknown non-underscore argument is a byte-identical no-op. Underscore-prefixed arguments retain their distinct data-form selector meaning.
+
+Normative behavior:
+
+- A syntactically valid key=value assignment whose key is not a recognized ListPages argument and does not begin with underscore is ignored.
+- Recognized arguments in the same invocation continue to control selection, ordering, limits, wrappers, and templates.
+- The observed ignored names include seperated, der, sort, hide, show, by, details, width, create_by, creat_by, name-, imit, v, limite, author, custom, and unknown.
+- An underscore-prefixed name remains a data-form selector and is not covered by the unknown-argument no-op rule.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-unknown-arguments-live.jsonl` (SHA-256 `ac16a2bdb86a764463c3be79699e471fd1fae54552343c3bc2617f193663dd52`), cases: `listpages-unknown-baseline`, `listpages-unknown-seperated`, `listpages-unknown-der`, `listpages-unknown-sort`, `listpages-unknown-hide`, `listpages-unknown-show`, `listpages-unknown-by`, `listpages-unknown-details`, `listpages-unknown-width`, `listpages-unknown-create-by`, `listpages-unknown-creat-by`, `listpages-unknown-name-dash`, `listpages-unknown-imit`, `listpages-unknown-v`, `listpages-unknown-limite`, `listpages-unknown-author`
+- `/home/roku/wjlab/evidence/syntax-differential-20260726/listpages-custom-unknown-live-probe-20260726.json` (SHA-256 `347ec521e0555cd99a3c1e74918729e386c4e2b064a327df9f6b4bdd25f61c0a`), cases: `custom-candidate`, `unknown-candidate`
+
+### ListPages module heads accept line breaks, surplus right brackets, and inert tokens
+
+- Observation ID: `listpages-module-head-legacy-boundaries`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation presents ListPages openings on one physical line and does not define token-boundary recovery. Exact corpus replay exposed large, independently authored classes using multiline heads, physical newlines inside quoted selector values, a third right bracket after the apparent module opener, bare words, empty assignments, a pipe after the module name, and escaped-text markers before the close. A minimized anonymous PagePreviewModule matrix shows that these forms do not suppress ListPages execution. In particular, two through six consecutive right brackets after an otherwise complete head produce byte-identical output: surplus right brackets are consumed at this boundary rather than becoming body text or invalidating the opener.
+
+Normative behavior:
+
+- Horizontal whitespace, LF, CRLF, and CR can separate ListPages arguments. A physical line break is also accepted immediately after the ListPages subname and before the closing delimiter.
+- A physical line break inside a double-quoted argument remains in the argument scanner. The tested order value with a trailing newline behaves as order=name, and line breaks in the tested tags value separate tag tokens.
+- After a complete ListPages head, each observed run of two, three, four, five, or six consecutive right brackets closes the opener and produces identical module output. Surplus right brackets in that run are not visible body text.
+- An unrecognized bare token, an empty assignment such as prependLine=, a pipe after the ListPages subname, and @@ immediately before the closing delimiter are inert in the tested head. Recognized arguments in the same head still apply.
+- A physical newline does not itself close an unterminated quoted value. If a later quote completes the value, the intervening text, including apparent module syntax, participates in the outer head and nesting parse; the outer module can execute while the apparent inner module does not render independently.
+- If no later quote completes the value before the module close, live Wikidot still executes the ListPages opening with the default template rather than leaving the malformed source literal.
+- These are ListPages module-head recovery rules and do not redefine right-bracket precedence for links, arbitrary block tags, or module closing tags.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-head-boundary-live.jsonl` (SHA-256 `5bfb8a6a689e5ca153312df68e84035a0695898ebc51771e38d9c18ffa3d3895`), cases: `listpages-head-boundary-baseline`, `listpages-head-boundary-three-right-brackets`, `listpages-head-boundary-four-right-brackets`, `listpages-head-boundary-five-right-brackets`, `listpages-head-boundary-six-right-brackets`, `listpages-head-boundary-newline-between-arguments`, `listpages-head-boundary-crlf-between-arguments`, `listpages-head-boundary-newline-inside-order`, `listpages-head-boundary-newline-inside-tags`, `listpages-head-boundary-newline-inside-prepend-line`, `listpages-head-boundary-leading-trailing-newlines`, `listpages-head-boundary-newline-after-subname`, `listpages-head-boundary-bare-size-token`, `listpages-head-boundary-empty-prepend-assignment`, `listpages-head-boundary-pipe-after-subname`, `listpages-head-boundary-at-markers-before-close`
+- `/mnt/oracle-store/wjlab/listpages-corpus-replay-20260730/live-references.jsonl` (SHA-256 `3c6081b73556f41677ac38a3b4f7d03e2bf026344eeb758c15df15f9d51b25c6`), cases: `cn:cerpeo:L202:B4129`, `cn:chicago-factory:L7:B61`, `en:chicago-factory:L11:B132`, `en:workbench:hexick:L3:B59`
+- `install/local/wikidot-verification/artifacts/listpages-unterminated-multiline-head-live.jsonl` (SHA-256 `cd189045c1b8a1dfc0ff20fe40ee6379ed5e2a07ee33f68501a1c2a9fdcd6317`), cases: `listpages-unterminated-multiline-baseline`, `listpages-unterminated-multiline-before-later-module`, `listpages-unterminated-multiline-after-valid-module`, `listpages-unterminated-multiline-own-close`
+
+### Random ListPages uses a sliding idle cache keyed by the complete invocation and pager page
+
+- Observation ID: `listpages-random-idle-cache-live-20260730`
+- Classification: `documentation-clarification`
+- Observed at: `2026-07-30`
+- Analysis: Anonymous Ajax Module Connector probes preserve one random selection while the same complete invocation is reused with gaps below one minute, renew that idle lifetime on each hit, choose a new selection after an untouched seventy-second interval, and give different module bodies and pager pages independent identities.
+
+Normative behavior:
+
+- A random ListPages invocation remains byte-stable while successive cache hits arrive less than approximately sixty seconds apart.
+- Each hit renews the approximately sixty-second idle lifetime rather than retaining a fixed creation-time deadline.
+- The module body and Ajax p pager page participate in cache identity.
+- Pager pages randomize independently and can overlap; they are not slices of one duplicate-free cached permutation.
+- Candidate membership and actor visibility are evaluated for each request rather than cached as final HTML.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-random-idle-cache-live-20260730.json` (SHA-256 `0fa2335eb6c8caecba4767c4f09841a4bce3bffc17cac08fd286ca47a1099b8d`), cases: none
+
+### ListPages large responses encounter a temporal gateway boundary with atomic failure
+
+- Observation ID: `listpages-p8-temporal-boundary-live-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: Controlled anonymous ListPages probes near the large-response boundary do not support a fixed byte, row, or module threshold. Comparable sources can complete or terminate as an atomic HTTP 504 near twenty-eight seconds. Wikijump deterministic expansion limits are therefore a local safety invariant, not a claimed replica of a live fixed constant.
+
+Normative behavior:
+
+- A successful large ListPages request returns its complete success markers and output.
+- A boundary failure is an atomic HTTP 504 response without partial ListPages output or success markers.
+- The observed boundary is time and gateway dependent near twenty-eight seconds, not a fixed byte, row, or module count.
+- Wikijump deterministic expansion budgets remain explicit local safety invariants and must preserve atomic failure.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json` (SHA-256 `f324d01d811cd4790be10e856c2027c496e978b9efa5dcecf4418a5cc5db5d4d`), cases: none
+
+### HTML blocks remain literal in page preview and execute only after save
+
+- Observation ID: `listpages-preview-and-saved-html-context-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: Anonymous and role-differential PagePreviewModule captures keep complete and malformed HTML-block-shaped source literal, while a provenance-matched public saved page executes the same complete construct in an html-block iframe. This is a page lifecycle and runtime-authority distinction rather than a different HTML-block grammar.
+
+Normative behavior:
+
+- PagePreview keeps HTML-block-shaped authored or ListPages-generated source literal and escaped; it does not create an iframe, frame request, or intermediate executable preview state.
+- The rule is actor-independent for the anonymous, administrator, ordinary-member, and non-member roles observed on the controlled sandbox.
+- Saved-page rendering retains the executable html-block-iframe behavior for a complete HTML block.
+- Preview and saved-page behavior must be selected by an explicit render context rather than by rewriting settled HTML.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+
+### ListPages keys, quoting, operators, and duplicate state use per-argument source grammar
+
+- Observation ID: `listpages-per-argument-source-grammar-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: The frozen documentation enumerates arguments but does not define a single global normalization grammar. A 30-family PagePreview matrix shows that activation depends on the exact argument family: some keys are case-insensitive while camel-case keys, legacy aliases, comparison operators, quotes, empty values, and duplicate occurrences each have narrower semantics. Unsupported tokens remain inert without aborting the surrounding executable module.
+
+Normative behavior:
+
+- Argument recognition is per key; a global lowercase, alias, quote, or operator normalization changes observable behavior.
+- Comparison-shaped values execute only through the evidenced quoted comparison grammar. Unquoted comparison-shaped tokens and comparison operators on non-comparison arguments are inert.
+- Unsupported score and collapsed date aliases remain inert rather than broadening rating or date selection.
+- Repeated valid arguments follow their evidenced last-occurrence or fallback state, while inert spellings do not overwrite canonical state.
+- Malformed or unsupported head tokens fail locally: later valid assignments and the surrounding ListPages module continue to execute when the live boundary supports recovery.
+- Parent, pagetype, range, rating, votes, creator, tag, name, numeric, boolean, line, RSS, and URL-selected values retain their independently observed validation and error precedence.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+
+### ListPages sections and generated linked values preserve positional and insertion phases
+
+- Observation ID: `listpages-template-section-and-linked-phase-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: Synchronized PagePreview matrices separate three template responsibilities. Section recognition is positional, case-insensitive, and literal-owner-aware. Unknown variable-shaped tokens recover locally. Generated linked values are inserted as structured link fragments only after the surrounding authored syntax has been decided, so their markup cannot retroactively complete a link, image, attribute, parser function, or block.
+
+Normative behavior:
+
+- Head, body, and foot recognition follows authored source order and local recovery; markers hidden by comments, raw, monospace, code, or escaped contexts do not become active sections.
+- Duplicate, crossing, unclosed, close-only, empty, and out-of-order section shapes recover locally according to their observed position instead of globally canonicalizing or preserving the complete module.
+- An unknown ListPages variable remains literal per token while known variables before, after, or adjacent to it continue to substitute.
+- Linked title and tag variables insert sealed generated anchors into the already-determined authored parse. They do not grant surrounding delimiters a second parse as a link, image, parser function, block, or attribute.
+- Generated link labels and targets retain Wikijump-owned page and tag identity while FTML owns syntax recovery, escaping, and final Wikidot DOM.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+
+### ListPages once-only blocks, generated headings, and preview pagers retain runtime boundaries
+
+- Observation ID: `listpages-generated-block-and-heading-boundaries-20260730`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-30`
+- Analysis: PagePreview matrices with synchronized zero-row and one-row selectors show that ListPages-generated blocks are not one undifferentiated authored source stream. Zero-row prepend and append values are independent blocks, generated headings remain visible without joining page heading identity, and the preview pager has a route-specific Ajax lifecycle and exact sibling DOM.
+
+Normative behavior:
+
+- With zero selected rows and separation disabled, non-empty prependLine and appendLine values parse as independent blocks; one-or-more-row composition retains its separate observed behavior.
+- A heading generated by a row, once-only line, or explicit section has the normal heading element and inline contents but no tocN id, does not consume authored heading numbering, and does not enter the outer page table of contents.
+- Authored headings before and after ListPages retain their own numbering independently of generated headings.
+- PagePreview pager links use the evidenced Ajax href and replacement lifecycle, and the unwrapped separate-row pager is not preceded by an implementation-generated line break.
+- Visible-text equality is insufficient for these cases because paragraph, table, heading, TOC, link, and intermediate browser-state boundaries are observable.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+
+
+
+## Suggested public TDD seams
+
+These seams are recommendations. The implementation agent must present and confirm the actual seam map before writing tests.
+
+- Saved-page or preview rendering through Deepwell's public page-view interface
+- Framerail HTTP/browser boundary when the module is interactive or URL-driven
+
+## Feature-specific implementation notes
+
+- Module names and attribute names are compatibility-sensitive and must not be modernized.
+- Examples are acceptance-test inputs, not permission to infer behavior beyond the documented case.
+- Wikijump runtime invariant (not a claim about live Wikidot): one root-and-nested render admits at most 512 ListPages modules, 2 MiB of aggregate matched module source, 256 KiB per template body, and 16 MiB of actual generated wikitext. A nested expansion pass additionally evaluates at most 64 modules before using the existing controlled unsupported-module diagnostic.
+- Generated wrapper and item markup, sections, substituted rows, feed and pager markup, and post-wrapper paragraph repair consume one shared counter before append. Rows are atomic; a rejected module remains literal or uses an already evidenced controlled fallback, is never partially emitted, and must not broaden its query.
+- Content-backed modules, including current-page-only modules, share a three-module and 100-row work budget before revision loading or nested include expansion.
+- Random ListPages and CountPages examine at most 5,000 raw rows and filter the sample through anonymous view permissions. At the cap, ListPages returns the visible sample and CountPages returns its visible sampled count rather than a permission-dependent literal fallback; the sampled count is intentionally not exact.
+- Regenerate `install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json` after a corpus refresh. Its deterministic check covers all 23,893 preserved invocation records and currently measures maxima of 273 modules per page, 112,646 aggregate matched-source bytes, 173,697 aggregate template-body bytes, 133,680 bytes for one template, and 13,964,000 estimated first-page authored-template bytes.
+
+## Source inventory
+
+- `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-include:listpages-module-prev/source.wikidot.txt:1` through line 243 (legacy)
+- `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-include:note-template-in-modules/source.wikidot.txt:1` through line 5 (included)
+- `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-include:page-selection/source.wikidot.txt:1` through line 122 (included)
+- `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:listpages-module/source.wikidot.txt:1` through line 403 (canonical)
+
+## Documentation-derived behavioral evidence
+
+### doc-include:listpages-module-prev (legacy)
+
+Source: `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-include:listpages-module-prev/source.wikidot.txt:1` through line 243  
+SHA-256 of complete source file: `4bf93e034e0c771ccfde586a80bbf6eb12332c90d42b697196fad004fefcbd7a`
+
+```wikidot
+L0001 The ListPages module allows one to select pages based on various criteria and list them in a custom way.  ListPages is a very general-purpose module for listing pages in a way similar to the [http://www.wikidot.com/doc:frontforum-module FrontForum module]. The module allows custom content formatting, ordering, pagination, support for tags and RSS feed generation.
+L0002 
+L0003 As shown in the examples it can be used to create blogs, news systems etc. but also quick lists of recently edited or created pages. Thanks to the very flexible tag support one can even use it for content classification and online catalogs.
+L0004 
+L0005 A [http://blog.wikidot.com/design:4 new syntax for ListPages] is in beta-testing.
+L0006 
+L0007 ++ Attributes
+L0008 
+L0009 ||~ attribute ||~ required ||~ allowed values ||~ default ||~ description ||
+L0010 || category || no || comma- or space-separated names || current category || names of the categories that pages would be fetched from, use {{category="*"}} to fetch pages from all categories; by default pages from the current category are selected (i.e. the category that the page containing the module belongs to); also aliased as {{categories}} ||
+L0011 || tags || no || comma- or space-separated tag names with {{+}} and {{-}} modifiers, _
+L0012 or {{@URL}} || none || lists tags that are used as a criteria to select pages, the "+" before the tag makes it required, "-" means "without a tag" and tags without modifiers translate to "pages that have any of those tags"; _
+L0013 a special tag "=" adds all the tags that are present in the current page ||
+L0014 || tagTarget || no || name of a landing page for clickable tags || none || if this parameter is set to a name of a wiki page, all tags (generated with %%tags%% will be clickable and will lead to this page ||
+L0015 || date || no || {{year}} or {{year}}.{{month}} _
+L0016 (numbers) _
+L0017 or {{last //n// //unit//}} where //n// - number (1 if skipped), //unit// - day(s), week(s), month(s) _
+L0018 or {{@URL}} || none || adds a date criteria to selection, valid values are e.g. 2007 (to select only pages created in 2007), 2008.05 (to select only pages from May 2008) ||
+L0019 || parent || no || //category:pagename// || none || restricts results to children of specified page. ||
+L0020 || range || no || {{before, after, others}} || none || "before" means pages up to but not including current (in order), "after" means pages after current page (in order), "others" means pages except current page. ||
+L0021 || skipCurrent || no || {{true, false, yes, no}} or {{@URL}}|| {{no}} || skips the current page from the list ||
+L0022 || perPage || no || number or {{@URL}} || 20 || number of items (pages) to display on one screen (when paginating) ||
+L0023 || limit || no || number or {{@URL}} || none || limits the total number of selected pages ||
+L0024 || order || no || {{dateCreatedDesc}} _
+L0025 {{dateCreatedAsc}} _
+L0026 {{dateEditedDesc}} _
+L0027 {{dateEditedAsc}} _
+L0028 {{titleDesc}} _
+L0029 {{titleAsc}} _
+L0030 {{ratingDesc}} _
+L0031 {{ratingAsc}} _
+L0032 {{pageLengthAsc}} _
+L0033 {{pageLengthDesc}} _
+L0034 {{random}} _
+L0035 or {{@URL}} || {{dateCreatedDesc}} || selects ordering of the pages, the default one is: newest pages first; {{random}} gives you pages in random order, but the result is cached for 60s ||
+L0036 || separate || no || {{true}}, {{false}}, {{yes}}, {{no}} || {{true}} || if {{true}} page items are placed in individual containers, but if {{false}} -- they are rendered without any breaks or splits, which allows to create e.g. simple lists containing titles of recently edited pages (see below) ||
+L0037 || prependLine || no || wiki-formatted string || || if {{separate="false"}}, this line of wiki text will be prepended to the processed list of pages; one can use it e.g. to generate table headers ||
+L0038 || appendLine || no || wiki-formatted string || || if {{separate="false"}}, this line of wiki text will be appended to the processed list of pages ||
+L0039 || urlAttrPrefix || no || any alphanumeric || none || prefix for the parameters passed via the URL; handy when more ListPages modules are on the page ||
+L0040 || rss || no || any text || none || title for the RSS feed; if not given, the corresponding RSS feed will not be linked; also aliased as rssTitle for compatibility ||
+L0041 || rssHome || no || any URL || the main wiki page || feed source page -- you can use it with %%linked_channel_title%% variable in [[[doc:Feed module]]] ||
+L0042 || rssDescription || no || any text || description of the site || feed description ||
+L0043 
+L0044 +++ @URL
+L0045 
+L0046 Some of the attributes accept a special {{@URL}} value which tells the module to read the value of the parameter from the URL. This is an advanced use but is handy in many situations.
+L0047 
+L0048 Parameters and their values in URL are delimited by slashes (/). So if there is a ListPages module on a page "blog" at a given wiki and you want to read date from the URL, you need to put
+L0049 
+L0050 [[code]]
+L0051 [[module ListPages date="@URL"]]
+L0052 [[/code]]
+L0053 
+L0054 and the module will read the {{date}} parameter from the properly-constructed URL, e.g.
+L0055 [[code]]
+L0056 http://www.wikidot.com/blog/date/2008.07
+L0057 [[/code]]
+L0058 
+L0059 Several parameters can be combined in the URL like this:
+L0060 
+L0061 [[code]]
+L0062 http://www.wikidot.com/blog/date/2008.07/order/ratingDesc/limit/3
+L0063 [[/code]]
+L0064 
+L0065 The URLs need to be created manually at this point.
+L0066 
+L0067 +++ More than one module in the page
+L0068 
+L0069 Since some of the parameters can be passed in the URL of the request there might be conflict when more than one ListPages module is present in the page. One most likely conflict can occur when both modules use pagination -- clicking "next" on one of them would also affect the other.
+L0070 
+L0071 To prevent such conflicts the {{urlAttrPrefix}} parameter can be used. It simply prepends a text (unique for each of the modules) to the parameter names in the URL. So the .../date/2008.7 would become .../prefix_date/2008.07. If you can set unique prefixes for each of the ListPages instances you would avoid any conflicts.
+L0072 
+L0073 A very simple example follows:
+L0074 
+L0075 [[code]]
+L0076 [[module ListPages perPage="5" limit="15" urlAttrPrefix="prefix1"]]
+L0077 %%title%%
+L0078 [[/module]]
+L0079 [[module ListPages perPage="5" limit="15" urlAttrPrefix="prefix2"]]
+L0080 %%title%%
+L0081 [[/module]]
+L0082 [[/code]]
+L0083 
+L0084 [[table]]
+L0085 [[row]]
+L0086 [[column]]
+L0087 [[div style="padding-right: 5em"]]
+L0088 [[module ListPages perPage="5" limit="15" urlAttrPrefix="prefix1"]]
+L0089 %%title%%
+L0090 [[/module]]
+L0091 [[/div]]
+L0092 [[/column]]
+L0093 [[column]]
+L0094 [[module ListPages perPage="5" limit="15" urlAttrPrefix="prefix2"]]
+L0095 %%title%%
+L0096 [[/module]]
+L0097 [[/column]]
+L0098 [[/row]]
+L0099 [[/table]]
+L0100 
+L0101 ++ Item format
+L0102 
+L0103 A custom format for displaying news items can be chosen.  To specify a custom format one should use module invocation:
+L0104 
+L0105 [[code]]
+L0106 [[module ListPages category="blog"]]
+L0107 <custom format>
+L0108 [[/module]]
+L0109 [[/code]]
+L0110 
+L0111 where the inner {{<custom format>}} element is any block of text following the wiki-syntax, where special variables can be used:
+L0112 
+L0113 ||~ variable ||~ aliases ||~ description||
+L0114 || {{%%title%%}} || || title of the page ||
+L0115 || {{%%linked_title%%}} || {{%%title_linked%%}} || title of the page linked to the page itself||
+L0116 || {{%%page_unix_name%%}} || {{%%full_page_name%%}} || //unix name// of the page -- the one that is displayed in the URL of a page ||
+L0117 || {{%%page_name%%}} || || name of the page without the category ||
+L0118 || {{%%category%%}} || || name of the category of the page ||
+L0119 || {{%%link%%}} || || URL pointing to the page ||
+L0120 || {{%%author%%}} || || prints author that created page ||
+L0121 || {{%%author_edited%%}} || %%user_edited%% || prints author that recently edited the page ||
+L0122 || {{%%date%%}} || || prints the date the page was created ||
+L0123 || {{%%date|//format//%%}} || || prints date with a custom format. Most tokens from php's [http://php.net/manual/en/function.strftime.php strftime] are accepted. You may find [http://community.wikidot.com/howto:frontforum-date-variable the howto] contributed by community useful. ||
+L0124 || {{%%date_edited%%}} || || prints the date the page was recently edited ||
+L0125 || {{%%date_edited|//format//%%}} || || same as above, with custom formatting ||
+L0126 || {{%%description%%}} || {{%%short%%}}, {{%%summary%%}} || short summary of page, equivalent to %%content{1}%% if there is a separator ({{====}}) within the page, otherwise a short version will be automatically generated (e.g. by using the first paragraph) ||
+L0127 || {{%%first_paragraph%%}} || || displays the first paragraph of a page. ||
+L0128 || {{%%content{n}%%}} || || selects and displays the n-th content segment if the content is split using the {{====}} separator ||
+L0129 || {{%%content%%}} || {{%%text%%}}, {{%%long%%}}, {{%%body%%}} || full content of the page ||
+L0130 || {{%%preview%%}} || || first 200 characters of the post ||
+L0131 || {{%%preview(n)%%}} || || first //n// characters of the post (//n// -- any positive integer number) ||
+L0132 || {{%%tags%%}} || || displays space-separated list of tags for a given page ||
+L0133 || {{%%rating%%}} || || displays a number -- rating of the page ||
+L0134 || {{%%comments%%}} || || displays number of comments to the page ||
+L0135 
+L0136 The default format is:
+L0137 [[code]]
+L0138 + %%linked_title%%
+L0139 
+L0140 by %%author%% %%date|%O ago (%e %b %Y, %H:%M %Z)%%
+L0141 
+L0142 %%short%%
+L0143 [[/code]]
+L0144 
+L0145 If {{separate}} is set to {{true}} (default), each page item is embedded in the HTML {{<div class="list-pages-item">...</div>}} element.
+L0146 
+L0147 ++ Examples
+L0148 
+L0149 +++ Blog-like front page
+L0150 
+L0151 To make a front page for a blog structure, i.e. make a list of pages from the category {{blog}} ordered by "most recent first" and show only a short version of their content (i.e. first paragraph or first section if the {{====}} separator is used) one can do it with the code:
+L0152 
+L0153 [[code]]
+L0154 [[module ListPages category="blog" rss="My Blog Posts"]]
+L0155 [[/code]]
+L0156 
+L0157 The default format might be just enough for it, but one can easily create a custom format using the formatting tags above:
+L0158 
+L0159 [[code]]
+L0160 [[module ListPages category="blog" rss="My Blog Posts" tags="technology news +apple -funny"]]
+L0161 +++ %%linked_title%%
+L0162 
+L0163 by %%author%% %%date%%
+L0164 
+L0165 %%content%%
+L0166 
+L0167 tags: %%tags%%
+L0168 [[/module]]
+L0169 [[/code]]
+L0170 
+L0171 In both examples we are pointing to an RSS feed with recent pages from the blog: category and we are setting a title for this blog feed.
+L0172 
+L0173 The tag string (i.e. tags="technology news +apple -funny") means:
+L0174 * select pages that have any of tags //technology// or //news//
+L0175 * AND pages must have the "apple" tag
+L0176 * AND pages must not have the "funny" tag applied
+L0177 
+L0178 There is also a **special tag: {{=}}** (equal sign). It adds all the tags that are present in the current page, without +/-. So if a current page has tags: blog wikidot, the tags="=" is equivalent to tags="blog wikidot".
+L0179 
+L0180 It can be used to create a list of similar pages. You can combine the {{=}} tag with other tags. If {{=}} is the only listed tag (i.e. explicitly {{tags="="}}) it implies {{skipCurrent="yes"}} so that you can use simply:
+L0181 
+L0182 [[code]]
+L0183 + Similar pages
+L0184 
+L0185 [[module ListPages tags="="]]
+L0186 [[/code]]
+L0187 
+L0188 +++ Short list of recently edited pages
+L0189 
+L0190 [[code]]
+L0191 [[module ListPages  category="*" limit="10" separate="false" order="dateEditedDesc"]]
+L0192 * %%linked_title%% _
+L0193 %%date_edited|%O ago%%
+L0194 [[/module]]
+L0195 [[/code]]
+L0196 
+L0197 This piece of code selects pages from all categories, number of pages is limited to 10, it switches off the //separate// so that the list can be smoothly processed (if {{separate="true"}}, each page item would create a separate, one-element list), we choose not to create an RSS feed for the selection and the pages are ordered by the date of last edit (most recent first).
+L0198 
+L0199 The custom format should look familiar, and here is the result:
+L0200 
+L0201 [[module ListPages  category="*" limit="10" separate="false" order="dateEditedDesc"]]
+L0202 * %%linked_title%% _
+L0203 %%date_edited|%O ago%%
+L0204 [[/module]]
+L0205 
+L0206 Advanced processing is possible thanks to the {{prependLine}} and {{appendLine}} parameters. When combined with {{separate="false"}}, they allow creating a custom wiki-formatted block from the page elements. Look at an example:
+L0207 
+L0208 [[code]]
+L0209 [[module ListPages separate="false" prependLine="||~ Page||~ Date created||~ Created by ||" limit="5"]]
+L0210 || %%linked_title%% || %%date%% || %%author%% ||
+L0211 [[/module]]
+L0212 [[/code]]
+L0213 
+L0214 [[module ListPages separate="false" prependLine="||~ Page||~ Date created||~ Created by ||" limit="5"]]
+L0215 || %%linked_title%% || %%date%% || %%author%% ||
+L0216 [[/module]]
+L0217 
+L0218 +++ Random page(s)
+L0219 
+L0220 Using order="random" one can easily pull a random page from a wiki, e.g.
+L0221 
+L0222 ++++ Random pages
+L0223 [[code]]
+L0224 [[module ListPages  category="doc" limit="5" separate="false" order="random"]]
+L0225 * %%linked_title%%
+L0226 [[/module]]
+L0227 [[/code]]
+L0228 
+L0229 [[module ListPages  category="doc" limit="5" separate="false" order="random"]]
+L0230 * %%linked_title%%
+L0231 [[/module]]
+L0232 
+L0233 ++++ Single random page
+L0234 [[code]]
+L0235 [[module ListPages  category="doc" limit="1" order="random"]]
+L0236 %%linked_title%%
+L0237 [[/module]
+L0238 [[/code]]
+L0239 [[module ListPages  category="doc" limit="1" order="random"]]
+L0240 %%linked_title%%
+L0241 [[/module]]
+L0242 
+L0243 Result of random listing is cached for 1 minute, so if you are reloading a page every few seconds the random choice will not change. After a minute however a new result is picked up.
+```
+
+### doc-include:note-template-in-modules (included)
+
+Source: `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-include:note-template-in-modules/source.wikidot.txt:1` through line 5  
+SHA-256 of complete source file: `9bc49111232c35a1f5dcb2757737a7a23caeb0766a7073f622fbe4cacf4d6097`
+
+```wikidot
+L0001 [!--
+L0002 This note applies to modules that have some body (template). The template cannot contain any tags that are parsed before module rule in wiki syntax. Includes ListPages and ListUsers at least.
+L0003 --]
+L0004 
+L0005 Module body cannot contain @@[[code]]@@ or @@[[html]]@@. In case it contains those tags, module will not work at all.
+```
+
+### doc-include:page-selection (included)
+
+Source: `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-include:page-selection/source.wikidot.txt:1` through line 122  
+SHA-256 of complete source file: `7e3a1f4412b05893a9c2c907b95aaa47fb2d9900a9f7c9ff4933a31e15121fc5`
+
+```wikidot
+L0001 [!--
+L0002 
+L0003 Applies to all modules selecting pages, at least ListPages and CountPages.
+L0004 
+L0005 --]
+L0006 
+L0007 Specify one or more of these selectors to refine the set of pages you select.  Each selector adds additional constraints:
+L0008 
+L0009 ||~ Argument    ||~ Meaning ||
+L0010 || pagetype     || Select by type of page ||
+L0011 || category     || Select by category ||
+L0012 || tags         || Select by tags ||
+L0013 || parent       || Select by parent page ||
+L0014 || link_to      || Select by outgoing links ||
+L0015 || created_at   || Select by date of creation ||
+L0016 || updated_at   || Select by date of update ||
+L0017 || created_by   || Select by original author ||
+L0018 || rating       || Select by rating ||
+L0019 || votes       || Select by number of votes ||
+L0020 || offset       || Start list after an offset of pages ||
+L0021 || range        || Select a range of pages ||
+L0022 || name     ||  Select by page name ||
+L0023 || fullname || Select by fullname ||
+L0024 || _<data-form-field-name>	|| Select by a field's value in a data form ||
+L0025 
+L0026 Page type selector:
+L0027 
+L0028 * "normal" means pages without underscore in name (default)
+L0029 * "hidden" means pages starting with underscore
+L0030 * "*" means all pages, with or without underscores
+L0031 
+L0032 Category selector:
+L0033 
+L0034 * "." means current category (default)
+L0035 * "*" means all categories
+L0036 * else, a list of space/comma delimited categories
+L0037 * categories are by default additive (category OR category OR category)
+L0038 * "-category" means exclude pages in this category (AND NOT)
+L0039 * "%%category%%" means the same category as the current page ( if used on a _template page)
+L0040 
+L0041 Tags selector:
+L0042 
+L0043 * "-" means pages with no tags, visible or invisible
+L0044 * "=" means pages with any of the same visible tags as this page
+L0045 * "==" means pages with the exact same visible tags as this page
+L0046 * else, a list of space/comma delimited tags
+L0047 * tags are by default additive (tag OR tag OR tag)
+L0048 * "-tag" means pages without the tag (AND NOT)
+L0049 * "+tag" means pages with the tag (AND)
+L0050 
+L0051 Parent page selector:
+L0052 
+L0053 * "-" means pages with no parent page
+L0054 * "=" means siblings of current page (same parent)
+L0055 * "-=" means with different parent than current page
+L0056 * "." means children of current page (parent is this page)
+L0057 * else specifies a single full page name
+L0058 
+L0059 Outgoing links selector:
+L0060 * enter a single full name of an existing page to select pages that link to that page
+L0061 * while "." means pages that link to current page
+L0062 
+L0063 Creation date selector:
+L0064 
+L0065 * "=" means created on same day as current page
+L0066 * "yyyy" means specified year
+L0067 * "yyyy.mm" means specified year and month
+L0068 * optionally prefixed by ">", "<", "=", "<=", ">=", "<>" (default is "=")
+L0069 * dates are not site-local but currently all UTC (GMT)
+L0070 * "last n unit" or "older than n unit" where 'n' is a count (defaults to 1) and unit is "hours", "day", "week", or "month"
+L0071 
+L0072 Update date selector:
+L0073 
+L0074 * dates are not site-local but currently all UTC (GMT)
+L0075 * "last n unit" or "older than n unit" where 'n' is a count (defaults to 1) and unit is "hours", "day", "week", or "month"
+L0076 
+L0077 Author selector:
+L0078 
+L0079 * "=" means by created by author of current page
+L0080 * "-=" means by not created by author of current page
+L0081 * else, a single user name
+L0082 
+L0083 Rating selector:
+L0084 
+L0085 * "n" means pages with rating equal to n
+L0086 * "=" means pages with same rating as current page
+L0087 * optionally prefixed by ">", "<", "=", "<=", ">=", "<>" (default is "=")
+L0088 
+L0089 **Caution:** When listing pages from many categories, where some categories have rating type set to + or +/- and others to "stars" (in Site Manager), selecting and ordering by rating may not funtion properly. The solution is to list and order pages from categories having the same rating mode.
+L0090 
+L0091 Votes selector:
+L0092 
+L0093 * "n" means pages with votes equal to n
+L0094 * "=" means pages with same number of votes as current page
+L0095 * optionally prefixed by ">", "<", "=", "<=", ">=", "<>" (default is "=")
+L0096 
+L0097 Offset selector:
+L0098 
+L0099 * "n" means do not show the first n pages (default is 0)
+L0100 
+L0101 Range selector:
+L0102 
+L0103 * "." means current page
+L0104 * "before" means pages up to but not including current (in order after sorting)
+L0105 * "after" means pages after current page (in order after sorting)
+L0106 * "others" means pages except current page
+L0107 
+L0108 Name selector:
+L0109 
+L0110 * enter a single name (means the name part without the category!) of an existing page to select exact this page of a given category - or pages of different categories if also selected.  You can use a dataform field of the current page
+L0111 *  "=" means pages that have exact the same name as the  current page ( makes sence only with other selected categories)
+L0112 *  "s%" means all pages starting with given character "s"  or 
+L0113 *  "s*" means all pages starting with given character "s"
+L0114 
+L0115 Fullname selector:
+L0116 
+L0117 * enter a single fullname  of an existing page to select exact this one page  (you can use a dataform  field of the current page)
+L0118 
+L0119 Data Form selector:
+L0120 * Select by a field's value in a data form
+L0121 * Syntax: {{_data-form-field-name="data-form-field-value"}}
+L0122 * Example: {{_gender="m"}} - select all pages that have 'm' set as the 'gender' field's value in the Data Form
+```
+
+### doc-modules:listpages-module (canonical)
+
+Source: `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc-modules:listpages-module/source.wikidot.txt:1` through line 403  
+SHA-256 of complete source file: `d5c5aac7290c3b8108378d93ad32e444e682f58c3f21eedb4871a2a66a224e02`
+
+```wikidot
+L0001 [[f>toc]]
+L0002 
+L0003 The ListPages module is a general-purpose and widely-used tool that selects and display pages within a site.
+L0004 
+L0005 To use ListPages, you decide some or all of:
+L0006 
+L0007 * what pages to select (from the site, from categories, by parent, by tags, by date, etc.)
+L0008 * how to order the pages (ascending, descending)
+L0009 * how to break the output into blocks (pagination)
+L0010 * how to display the results as Wikidot text (templating in module body)
+L0011 * how to export the results as an RSS feed
+L0012 
+L0013 The general syntax for ListPages is:
+L0014 
+L0015 [[code]]
+L0016 [[module ListPages arguments...]]
+L0017 module body
+L0018 [[/module]]
+L0019 [[/code]]
+L0020 
+L0021 By default, ListPages will show all visible pages in the current category, from newest to oldest.
+L0022 
+L0023 [[include doc-include:note-template-in-modules]]
+L0024 
+L0025 ++ Example
+L0026 
+L0027 This example lists the pages in the current category, along with details of who created the page, and when:
+L0028 
+L0029 [[code]]
+L0030 [[module ListPages separate="no" limit="5"]]
+L0031 %%title_linked%% - [[user %%created_by%%]] - %%created_at%%
+L0032 [[/module]]
+L0033 [[/code]]
+L0034 
+L0035 In action:
+L0036 
+L0037 [[module ListPages separate="no" limit="5"]]
+L0038 %%title_linked%% - [[user %%created_by%%]] - %%created_at%%
+L0039 [[/module]]
+L0040 
+L0041 ++ Naming conventions
+L0042 
+L0043 Older argument names are {{inMixedCase}}.  Newer argument names are {{in_lower_case}}, and this style will be used more systematically in Wikidot.  Dates are always {{//something//_at}} and user names are always {{//someone//_by}}.  Linked fields are always {{//somefield//_linked}}.
+L0044 
+L0045 ++ Selecting pages
+L0046 [[include doc-include:page-selection]]
+L0047 
+L0048 ++ Ordering pages
+L0049 
+L0050 To order the pages, use:
+L0051 
+L0052 ||~ Argument    ||~ Meaning ||
+L0053 || order        || Specify order criteria ||
+L0054 
+L0055 Order criteria:
+L0056 
+L0057 * "//property//" means "ascending by this property"
+L0058 * optionally followed by " desc" meaning "descending"
+L0059 * optionally followed by " desc desc" meaning "ascending", which makes "desc" safe to add after any sort order
+L0060 * default is "created_at desc"
+L0061 
+L0062 ||~ Property    ||~ Meaning ||
+L0063 || name         || Order by page name ||
+L0064 || fullname     || Order by category and page name ||
+L0065 || title        || Order by page title ||
+L0066 || created_by   || Order by author screen name ||
+L0067 || created_at   || Order by date created ||
+L0068 || updated_at   || Order by date updated ||
+L0069 || size         || Order by number of characters in page ||
+L0070 || rating       || Order by rating ||
+L0071 || votes       || Order by number of votes ||
+L0072 || revisions    || Order by number of revisions ||
+L0073 || comments     || Order by number of comments ||
+L0074 || random       || Order randomly, cached for 60 seconds ||
+L0075 || _data-form-field-name || Order by a field in a data form ||
+L0076 
+L0077 For example to order by rating in descending order:
+L0078 
+L0079 [[code]]
+L0080 order="rating desc"
+L0081 [[/code]]
+L0082 
+L0083 Caution: When listing pages from many categories, where some categories have rating type set to + or +/- and others to "stars" (in Site Manager), selecting and ordering by rating may not funtion properly. The solution is to list and order pages from categories having the same rating mode.
+L0084 
+L0085 This example shows how to order pages using a data form field. Note that you must prefix the data form field name with an underscore. This lists all pages from the //dictionary// category and sorts them by the data form's //mainword// field (a wiki field type in this example). The body of the module then lists the contents of the //mainword// field and creates a link to the page.
+L0086 [[code]]
+L0087 [!--
+L0088 Note: Use %%form_raw{fieldname}%% for wiki field types,
+L0089          %%form_data{fieldname}%% for other field types
+L0090 --]
+L0091 [[module ListPages category="dictionary" order="_mainword"]]
+L0092 %%form_raw{mainword}%%@<&nbsp;>@@<&nbsp;>@([/%%fullname%% see dictionary entry])
+L0093 [[/module]]
+L0094 [[/code]]
+L0095 
+L0096 Note that "//property// asc" is not allowed and unknown order criteria give you the default order, which is "created_at desc".
+L0097 
+L0098 **Type casting** for [[[doc:data-forms|]]] fields:
+L0099 Default order method is sort by text. You can enforce numerical sorting.
+L0100 
+L0101 [[code]]
+L0102 [[module ListPages category="band" order="_albums::integer desc"]]
+L0103 ...
+L0104 [[/module]]
+L0105 [[/code]]
+L0106 
+L0107 ++ Pagination
+L0108 
+L0109 To control how many items (wiki pages) will be shown in total, and how these are paginated (confusingly, also into 'pages'), use any of:
+L0110 
+L0111 ||~ Argument    ||~ Meaning ||
+L0112 || limit        || Limit total items ||
+L0113 || perPage      || Limit per pagination ||
+L0114 || reverse      || Show pages in reversed order ||
+L0115 
+L0116 Total limit:
+L0117 
+L0118 * "number" - means limit the total number of selected pages.
+L0119 * by default all pages matching criteria are listed
+L0120 
+L0121 Pagination limit:
+L0122 
+L0123 * "number" - means limit the number of page items shown on per pagination.
+L0124 * default is 20, maximum is 250.
+L0125 
+L0126 Reversed display:
+L0127 
+L0128 * "yes" - means show wiki pages from last to first on given page.
+L0129 
+L0130 ++ Module body
+L0131 
+L0132 The body of the module allows you to specify how page properties and content is formatted.  To control this formatting, you can use these module arguments:
+L0133 
+L0134 ||~ Argument    ||~ Meaning ||
+L0135 || separate     || Separation specifier ||
+L0136 || wrapper     || Wrapper specifier ||
+L0137 || prependLine  || Header specifier ||
+L0138 || appendLine   || Footer specifier ||
+L0139 
+L0140 Separation specifier:
+L0141 
+L0142 * "yes" means place each page item into a separate container (divs).
+L0143 * "no" means put all items into one container, so they can become a single list, for example.
+L0144 * default is "yes".
+L0145 
+L0146 With {{separate}} set to true, each of the page is compiled (converted from wiki source to HTML) separately. While it is false, wiki compiler is invoked only once on a combined source from all selected pages.
+L0147 
+L0148 As a result, some page-specific variables and constructs such as {{iftags}} can generate different results. {{iftags}}, with {{separate="yes"}}, will be aware of tags of individual pages, while with {{separate="no"}} it will read tags of the main page that holds the ListPages module.
+L0149 Also @@[[image :first ...]]@@ will only work with {{separate="yes"}}.
+L0150 
+L0151 Wrapper specifier:
+L0152 
+L0153 * "yes" means place all items into container (div).
+L0154 * "no" means do not place all items into container (div).
+L0155 * default is "yes".
+L0156 
+L0157 Header specifier:
+L0158 
+L0159 * "text" means output this text at the start of the list of pages, //only// if the separation specifier is false.
+L0160 
+L0161 Footer specifier:
+L0162 
+L0163 * "text" means output this text at the end of the list of pages, //only// if the separation specifier is false.
+L0164 
+L0165 +++ Sections head/body/foot
+L0166 Additionally you can use **[[head]]**, **[[body]]**, **[[foot]]** sections, which simply replaces prependLine and appendLine. It allows you to create more complex header and footer for ListPages. This is particularly usable with complex table and list creation.
+L0167 
+L0168 Example of sections usage
+L0169 [[code]]
+L0170 [[module ListPages category="carousel" wrapper="no" separate="no" _active="yes"]]
+L0171   [[head]]
+L0172     [[ul id="u-myList" class="..."]]
+L0173   [[/head]]
+L0174 
+L0175   [[body]]
+L0176     [[li class="list-item"]]%%title_linked%% by (%%created_by%%)[[/li]]
+L0177   [[/body]]
+L0178 
+L0179   [[foot]]
+L0180     [[/ul]]
+L0181   [[/foot]]
+L0182 [[/module]]
+L0183 [[/code]]
+L0184 (also works for custom domains)
+L0185 
+L0186 The template consists of wiki text mixed with variables specified as {{%%variable-name%%}}.  You can use these page properties:
+L0187 
+L0188 ||~ Property ||~ Meaning ||
+L0189 ||~ Page lifecycle ||~ ||
+L0190 || %%created_at%% || Date page was created ||
+L0191 || %%created_by%% || User who created page ||
+L0192 || %%created_by_unix%% || "Unixified" name of user who created page -- to be used for constructing URLs ||
+L0193 || %%created_by_id%% || "ID" number of user who created page -- to be used for constructing URLs ||
+L0194 || %%created_by_linked%% || Icon and link to user who created page ||
+L0195 || %%updated_at%% || Date page was updated (edited, tagged, parented) ||
+L0196 || %%updated_by%% || User who updated page ||
+L0197 || %%updated_by_unix%% || "Unixified" name of user who updated page -- to be used for constructing URLs ||
+L0198 || %%updated_by_id%% || "ID" number of user who updated page -- to be used for constructing URLs ||
+L0199 || %%updated_by_linked%% || Icon and link to user who updated page ||
+L0200 || %%commented_at%% || Date of last comment ||
+L0201 || %%commented_by%% || User who made last comment ||
+L0202 || %%commented_by_unix%% || "Unixified" name of user who made last comment -- to be used for constructing URLs ||
+L0203 || %%commented_by_id%% || "ID" number of user who made last comment -- to be used for constructing URLs ||
+L0204 || %%commented_by_linked%% || Icon and link to user who made last comment ||
+L0205 ||~ Page structure ||~ ||
+L0206 || %%name%% || Page name without category ||
+L0207 || %%category%% || Page category if any ||
+L0208 || %%fullname%% || Page name with category if any ||
+L0209 || %%title%% || Page title ||
+L0210 || %%title_linked%% || Link to page showing title as text (works also for custom domain)||
+L0211 || %%parent_name%% || Parent page name without category ||
+L0212 || %%parent_category%% || Parent page category if any ||
+L0213 || %%parent_fullname%% || Parent page name with category if any ||
+L0214 || %%parent_title%% || Parent page title ||
+L0215 || %%parent_title_linked%% || Link to Parent page showing title as text ||
+L0216 || %%link%% || URL pointing to page (not working for custom domains!)||
+L0217 || %%content%% || Page content ||
+L0218 || %%content{n}%% || Numbered content section ||
+L0219 || %%preview%% || First 200 characters of the page ||
+L0220 || %%preview(n)%% || First //n// characters of the page ||
+L0221 || %%summary%% || Summary of content ||
+L0222 || %%first_paragraph%% || The first paragraph of the page ||
+L0223 || %%tags%% || Page visible tags (not starting with underscore) ||
+L0224 || %%tags_linked%% || Page visible tags linked to system:page-tags/tag/{tag} ||
+L0225 || %%tags_linked|link_prefix%% || Page visible tags linked to link_prefix{tag} ||
+L0226 || %%_tags%% || Page hidden tags (starting with underscore) ||
+L0227 || %%_tags_linked%% || Page hidden tags linked to system:page-tags/tag/{tag} ||
+L0228 || %%_tags_linked|link_prefix%% || Page hidden tags linked to link_prefix{tag} ||
+L0229 || %%form_data{name}%% || Field value from page [/doc:data-forms data form] if any ||
+L0230 || %%form_raw{name}%% || For select fields, the internal value saved in the page form data, if any ||
+L0231 || %%form_label{name}%% || The label of the field as defined in the [/doc:data-forms data form] if any ||
+L0232 || %%form_hint{name}%% || The hint of the field as defined in the [/doc:data-forms data form] if any ||
+L0233 ||~ Page reporting ||~ ||
+L0234 || %%children%% || Number of child pages ||
+L0235 || %%comments%% || Number of comments on page ||
+L0236 || %%size%% || Number of characters in page ||
+L0237 || %%rating%% || Page rating value (number or stars depending on Rating settings in Site Manager ||
+L0238 || %%rating_votes%% || Number of votes ||
+L0239 || %%rating_percent%% || Percent value of 5-star rating only ||
+L0240 || %%revisions%% || Number of revisions to page ||
+L0241 || %%index%% || Page index in ListPages output + offset (1 to %%total%%) ||
+L0242 || %%total%% || Total number of pages ignoring limit (may be higher than %%limit%%) || 
+L0243 || %%limit%% || Limit passed to ListPages (empty if not passed) ||
+L0244 || %%total_or_limit%% || Total number of pages in ListPages output (highest %%index%%). _
+L0245 If limit is passed to the module, %%total_or_limit%% is %%total%% or %%limit%% whichever is smaller ||
+L0246 ||~ Current context ||~ ||
+L0247 || %%site_title%% || Title of current site ||
+L0248 || %%site_name%% || Wikidot Unix name for site ||
+L0249 || %%site_domain%% || Active domain name of current site ||
+L0250 
+L0251 Date formatting:
+L0252 
+L0253 * All _at fields are dates and allow a custom format via the {{|//format//}} specifier.
+L0254 
+L0255 Most tokens from PHP's [http://php.net/manual/en/function.strftime.php strftime] are accepted. You may find [http://community.wikidot.com/howto:frontforum-date-variable the howto] contributed by community useful.
+L0256 
+L0257 [[note]]
+L0258 Editor's note: this section needs expanding with the most useful formatting options.
+L0259 [[/note]]
+L0260 
+L0261 Tag linking:
+L0262 
+L0263 * If no link_prefix is specified, tags link to system:page-tags/tag/name-of-tag
+L0264 * If link_prefix is specified, tags link to ##blue|link_prefix##name-of-tag (colors irrelevant)
+L0265 * if link_prefix is empty but the pipe is present, %%tags_linked|%% generates links to pages with names corresponding to tags
+L0266 * Examples
+L0267 
+L0268 ||~ if syntax is: ||~ "shiny" tag will link to: ||
+L0269 || %%tags_linked%% || /system:page-tags/tag/shiny ||
+L0270 || %%tags_linked|system:page-tags/tag/%% || /system:page-tags/tag/shiny ||
+L0271 || %%tags_linked|interesting-list/category/%% || /interesting-list/category/shiny ||
+L0272 || %%tags_linked|player:%% || /player:shiny ||
+L0273 || %%tags_linked|very_%% || /very_shiny ||
+L0274 || %%tags_linked|@@http://myothersite.wikidot.com/@@see-also/tag/%% || @@http://myothersite.wikidot.com@@/see-also/tag/shiny ||
+L0275 || %%tags_linked|%% || /shiny ||
+L0276 
+L0277 ++ Advanced Use
+L0278 
+L0279 This section describes additional functionality that will be useful for advanced users.
+L0280 
+L0281 +++ RSS feeds
+L0282 
+L0283 You can export any ListPages result as an RSS feed.  Use these arguments to control the RSS feed generation:
+L0284 
+L0285 ||~ Argument    ||~ Meaning ||
+L0286 || rss          || feed title ||
+L0287 || rssDescription || feed description ||
+L0288 || rssHome      || feed homepage ||
+L0289 || rssLimit      || feed limit ||
+L0290 || rssOnly      || only show feed link ||
+L0291 
+L0292 Feed title:
+L0293 
+L0294 * "text" means use this text for the RSS feed title.
+L0295 * Default is to not generate any RSS feed.
+L0296 
+L0297 Feed description:
+L0298 
+L0299 * "text" means use this text for the RSS feed description.
+L0300 
+L0301 Feed homepage:
+L0302 
+L0303 * "//pagename//" means tell RSS clients this is the home page for the feed.
+L0304 * Default is {{@@http://your-site.wikidot.com@@}}
+L0305 * Setting value to "blog:_start" actually means {{@@http://your-site.wikidot.com/blog:_start@@}}
+L0306 
+L0307 Feed limit:
+L0308 
+L0309 * sets limit for RSS feed, and can be different to the ListPages limit
+L0310 * Default RSS limit inherits lower value from limit and perPage arguments
+L0311 
+L0312 Feed only:
+L0313 
+L0314 * "true" or "yes" displays the RSS feed link without showing ListPages results
+L0315 
+L0316 **Important**: RSS feed ignores "{{created_at}}" selector.
+L0317 
+L0318 +++ Passing arguments via URL
+L0319 
+L0320 ListPages lets you create variations of a single list using specially constructed links, consisting of the page URL (link) followed by arguments and values.  These are mainly useful to invoke new selectors, and change the ordering or display.
+L0321 
+L0322 You can pass any arguments in the URL by specifying {{argument="@URL|default-value"}} as the argument value and then appending "/{{name}}/{{value}}" to the URL used to invoke the page.  If the URL does not contain a value for the argument, the default is used.  Arguments that do not have @URL in their value cannot be set via the URL.  The default value is optional: if you use only {{argument="@URL"}} and do not provide a value on the URL, then the argument behaves as if it was not set.
+L0323 
+L0324 The two main ways of using arguments-by-URL are (a) to create links to a page explicitly, on another page and (b) to generate links within the ListPages itself, so it will reshow itself with different configurations.  Here is a simple example:
+L0325 
+L0326 [[code]]
+L0327 [[module ListPages category="@URL|design"]]
+L0328 %%name%% in category %%category%%
+L0329 [[/module]]
+L0330 [[/code]]
+L0331 
+L0332 Another example shows how to select blog entries by created_at date:
+L0333 
+L0334 [[code]]
+L0335 [[module ListPages category="blog" created_at="@URL"]]
+L0336 [[/code]]
+L0337 
+L0338 and the module will read the {{created_at}} argument from the properly-constructed URL, e.g.
+L0339 [[code]]
+L0340 http://www.wikidot.com/blog/created_at/2008.07
+L0341 [[/code]]
+L0342 
+L0343 You can specify multiple arguments like this:
+L0344 
+L0345 [[code]]
+L0346 http://www.wikidot.com/blog/created_at/2008.07/order/rating desc/limit/3
+L0347 [[/code]]
+L0348 
+L0349 To pass tags with (+/-) "+" need to be encoded with "%2b"
+L0350 {{+apple,-banana}}
+L0351 [[code]]
+L0352 http://www.wikidot.com/blog/tags/%2bapple,-banana
+L0353 [[/code]]
+L0354 
+L0355 You can create the URLs manually or within ListPages itself.  Some modules also generate compatible URLs.
+L0356 
+L0357 [[note]]
+L0358 Editor's note: list of modules that produce compatible URLs should be documented here.
+L0359 [[/note]]
+L0360 
+L0361 +++ More than one module in the page
+L0362 
+L0363 Since some of the arguments can be passed in the URL of the request there might be conflict when more than one ListPages module is present in the page. One most likely conflict can occur when both modules use pagination -- clicking "next" on one of them would also affect the other.
+L0364 
+L0365 To prevent such conflicts use the {{urlAttrPrefix}} argument. This prepends a text (unique for each of the modules) to the argument names in the URL. So the .../created_at/2008.7 would become .../prefix_created_at/2008.07. If you can set unique prefixes for each of the ListPages instances you would avoid any conflicts.
+L0366 
+L0367 ++ Deprecated functionality
+L0368 
+L0369 These arguments and variables can still be used but are disrecommended.  You should when possible use the modern replacements.  At some future date, deprecated functionality may be removed.
+L0370 
+L0371 ||~ Instead of this               ||~ Use this ||
+L0372 || skipCurrent="yes"            || range="others" ||
+L0373 || categories=                     || category= ||
+L0374 || tag=                                || tags= ||
+L0375 || tagTarget="pagename"     || %%tags_linked|/pagename/tag/%% ||
+L0376 || date=                              || created_at= ||
+L0377 || order="dateCreatedAsc"   || order="created_at" ||
+L0378 || order="dateCreatedDesc"  || order="created_at desc" ||
+L0379 || order="dateEditedAsc"    || order="updated_at" ||
+L0380 || order="dateEditedDesc"   || order="updated_at desc" ||
+L0381 || order="titleAsc"         || order="title" ||
+L0382 || order="titleDesc"        || order="title desc" ||
+L0383 || order="ratingAsc"        || order="rating" ||
+L0384 || order="ratingDesc"       || order="rating desc" ||
+L0385 || order="pageLengthAsc"    || order="size" ||
+L0386 || order="pageLengthDesc"   || order="size desc" ||
+L0387 || rssTitle=                || rss= ||
+L0388 || %%linked_title%%         || %%title_linked%% ||
+L0389 || %%page_unix_name%%       || %%fullname%% ||
+L0390 || %%full_page_name%%       || %%fullname%% ||
+L0391 || %%page_name%%            || %%name%% ||
+L0392 || %%author%%               || %%created_by%% ||
+L0393 || %%author_edited%%        || %%updated_by%% ||
+L0394 || %%user_edited            || %%updated_by%% ||
+L0395 || %%date%%                 || %%created_at%% ||
+L0396 || %%date_edited%%          || %%updated_at%% ||
+L0397 || %%description%%          || %%summary%% ||
+L0398 || %%short%%                || %%summary%% ||
+L0399 || %%text%%                 || %%content%% ||
+L0400 || %%long%%                 || %%content%% ||
+L0401 || %%body%%                 || %%content%% ||
+L0402 
+L0403 ListPages supports a 'default format', where you do not specify any module body and no {{[[/module]]}}.  This functionality is deprecated and you should avoid using it.
+```

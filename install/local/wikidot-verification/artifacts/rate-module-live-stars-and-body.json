@@ -1,0 +1,101 @@
+{
+  "schema": "wikijump_rate_module_live_probe.v1",
+  "feature_id": "module-rate",
+  "observed_at": "2026-07-29T06:56:51+09:00",
+  "site": {
+    "unix_name": "sandbox-for-codex",
+    "origin": "http://sandbox-for-codex.wikidot.com"
+  },
+  "authority": "live Wikidot run-owned sandbox pages; account A created and deleted the probe pages; no credentials or cookies are stored here",
+  "source": "[[module Rate]]\nAverage Rating %%rating%% from %%rating_votes%% votes percent=%%rating_percent%% decimal=%%rating_decimal%%\n[[/module]]",
+  "cases": [
+    {
+      "case_id": "rate-star-body-zero-and-after-vote",
+      "description": "Five-star Rate module with a paired body, captured anonymously before voting and after account A cast a 4-star vote."
+    },
+    {
+      "case_id": "rate-plusminus-body-consumed",
+      "description": "Plus/minus Rate module with a paired body, captured anonymously in an existing plus/minus category."
+    }
+  ],
+  "star_mode_case": {
+    "page": "codex-rate-star-1785275602:holder",
+    "page_id": 1469067323,
+    "category": "codex-rate-star-1785275602",
+    "category_id": 46167560,
+    "setting_before": {
+      "enabled": "disabled",
+      "who": "all-registered-users",
+      "visibility": "anonymous",
+      "type": "plus-only",
+      "encoded": "draP"
+    },
+    "setting_during_capture": {
+      "enabled": "enabled",
+      "who": "all-registered-users",
+      "visibility": "visible",
+      "type": "five-star",
+      "encoded": "ervS"
+    },
+    "setting_after_restore": {
+      "enabled": "disabled",
+      "who": "all-registered-users",
+      "visibility": "anonymous",
+      "type": "plus-only",
+      "encoded": "draP"
+    },
+    "anonymous_saved_html_before_vote": {
+      "url": "http://sandbox-for-codex.wikidot.com/codex-rate-star-1785275602:holder",
+      "page_content_html": "<div id=\"page-content\">\n\n<div class=\"page-rate-widget\"><div class=\"page-rate-widget-start\" data-rating=\"0\"></div><div class=\"page-rate-widget-start-text\">Average Rating <span class=\"page-rate-widget-start-text-rating\">0</span> from <span class=\"page-rate-widget-start-text-rating-votes\">0</span> votes percent=<span class=\"page-rate-widget-start-text-rating-percent\">0</span> decimal=%%rating_decimal%%</div></div></div>"
+    },
+    "anonymous_saved_html_after_one_star_vote": {
+      "url": "http://sandbox-for-codex.wikidot.com/codex-rate-star-1785275602:holder",
+      "content_html_sha256": "757bda1499b531d76e09ef2b595de9dac51f58e5133dce1a2d1b4b8d2dd805a9",
+      "content_text": "Average Rating 4 from 1 votes percent= 80 decimal=%%rating_decimal%%",
+      "page_content_html": "<div id=\"page-content\">\n\n<div class=\"page-rate-widget\"><div class=\"page-rate-widget-start\" data-rating=\"4\"></div><div class=\"page-rate-widget-start-text\">Average Rating <span class=\"page-rate-widget-start-text-rating\">4</span> from <span class=\"page-rate-widget-start-text-rating-votes\">1</span> votes percent=<span class=\"page-rate-widget-start-text-rating-percent\">80</span> decimal=%%rating_decimal%%</div></div></div>"
+    },
+    "browser_dom_after_one_star_vote": {
+      "url": "http://sandbox-for-codex.wikidot.com/codex-rate-star-1785275602:holder",
+      "page_content_inner_text": "    \nAverage Rating 4 from 1 votes percent=80 decimal=%%rating_decimal%%",
+      "page_content_inner_html": "\n\n<div class=\"page-rate-widget\"><div class=\"page-rate-widget-start\" data-rating=\"4\" style=\"cursor: pointer; width: 100px;\"><img src=\"/common--images/jquery-raty/star-on.png\" alt=\"1\" title=\"Poor\">&nbsp;<img src=\"/common--images/jquery-raty/star-on.png\" alt=\"2\" title=\"Fair\">&nbsp;<img src=\"/common--images/jquery-raty/star-on.png\" alt=\"3\" title=\"Good\">&nbsp;<img src=\"/common--images/jquery-raty/star-on.png\" alt=\"4\" title=\"Very Good\">&nbsp;<img src=\"/common--images/jquery-raty/star-off.png\" alt=\"5\" title=\"Excellent\"><input type=\"hidden\" name=\"score\" value=\"4\"></div><div class=\"page-rate-widget-start-text\">Average Rating <span class=\"page-rate-widget-start-text-rating\">4</span> from <span class=\"page-rate-widget-start-text-rating-votes\">1</span> votes percent=<span class=\"page-rate-widget-start-text-rating-percent\">80</span> decimal=%%rating_decimal%%</div></div>",
+      "data_rating": "4",
+      "rating_text": "4",
+      "rating_votes_text": "1",
+      "rating_percent_text": "80",
+      "plus_minus_widget_present": false
+    }
+  },
+  "plus_minus_body_case": {
+    "page": "codex-rating-load-20260715:rate-body-1785275878",
+    "page_id": 1469067326,
+    "category": "codex-rating-load-20260715",
+    "category_configuration": {
+      "enabled": "enabled",
+      "who": "site-members",
+      "visibility": "visible",
+      "type": "plus-minus",
+      "encoded": "emvM"
+    },
+    "anonymous_saved_html": {
+      "content_text": "rating:  0 + – x",
+      "page_content_html": "<div id=\"page-content\">\n\n<div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div></div>",
+      "body_text_present": false,
+      "module_closer_present": false
+    }
+  },
+  "cleanup": {
+    "star_category_restored": true,
+    "star_probe_page_deleted": true,
+    "plus_minus_probe_page_deleted": true,
+    "cdp_profile_removed": true
+  },
+  "observations": [
+    "In plus/minus mode, a paired [[module Rate]]...[[/module]] consumes the body and closing marker and renders only the standard page-rate-widget-box.",
+    "In five-star mode, a paired Rate module renders div.page-rate-widget containing div.page-rate-widget-start with data-rating equal to the current average score.",
+    "In five-star mode, non-empty module body text is rendered in div.page-rate-widget-start-text.",
+    "Five-star %%rating%% renders span.page-rate-widget-start-text-rating.",
+    "Five-star %%rating_votes%% renders span.page-rate-widget-start-text-rating-votes.",
+    "Five-star %%rating_percent%% renders span.page-rate-widget-start-text-rating-percent with rating * 20 and no percent sign.",
+    "Despite the frozen documentation, %%rating_decimal%% remains literal in the tested live five-star Rate module body, both at zero votes and after a four-star vote."
+  ]
+}

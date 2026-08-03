@@ -18,7 +18,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
+use super::structs::{CreateMessageDraft, DraftRecipients, UpdateMessageDraft};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::message::{self, Entity as Message, Model as MessageModel};
 use crate::models::message_draft::{
     self, Entity as MessageDraft, Model as MessageDraftModel,
@@ -27,15 +28,20 @@ use crate::models::message_recipient::{self, Entity as MessageRecipient};
 use crate::models::message_record::{
     self, Entity as MessageRecord, Model as MessageRecordModel,
 };
+use crate::services::ServiceContext;
 use crate::services::render::{RenderOutput, RenderService};
 use crate::services::{RelationService, TextService, UserService};
+use crate::types::{Maybe, Reference};
 use crate::types::{MessageRecipientType, UserType};
+use crate::utils::now;
 use crate::utils::validate_locale;
 use cuid2::cuid;
 use ftml::data::{PageInfo, ScoreValue};
 use ftml::layout::Layout;
 use ftml::settings::{WikitextMode, WikitextSettings};
+use paste::paste;
 use sea_orm::DatabaseTransaction;
+use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 
 #[derive(Debug)]
 pub struct MessageService;
@@ -404,7 +410,8 @@ impl MessageService {
             .or_raise(make_error)?;
 
             // If recipient is a site user, then forward to corresponding site staff.
-            let user = UserService::get(ctx, Reference::Id(recipient_user_id))
+            // It is only possible to send messages to Wikijump users.
+            let user = UserService::get_real(ctx, Reference::Id(recipient_user_id))
                 .await
                 .or_raise(make_error)?;
 

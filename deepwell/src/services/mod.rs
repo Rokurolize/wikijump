@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#![allow(unused_imports)]
+#![warn(clippy::wildcard_imports)]
 
 //! The "services" module, providing low-level logical operations.
 //!
@@ -27,30 +27,12 @@
 //! This may be CRUD, or small operations which should be composed
 //! into larger ones.
 //!
-//! As such, **all methods here are _not_ contained in transactions,**
-//! the expectation is that the caller will use transactions when needed.
-//! For methods which make multiple calls, they will assert that they
-//! are currently in a transaction, if you are not then they will raise
-//! an error.
+//! Services normally use the transaction supplied by their caller. A service may create
+//! an independent transaction only when its persistence boundary explicitly requires it,
+//! as blob finalization does to preserve pending-upload state after an outer failure.
 //!
 //! These methods are called as component operations either by other
-//! services or by route implementations found in the `methods` module.
-
-mod prelude {
-    pub use super::context::{RequestContext, ServiceContext};
-    pub use crate::config::Config;
-    pub use crate::error::prelude::*;
-    pub use crate::types::{Maybe, Reference};
-    pub use crate::utils::{
-        ConvertToI16, ConvertToI32, ConvertToI64, ConvertToU64, ConvertToUsize, now,
-    };
-    pub use paste::paste;
-    pub use sea_orm::{
-        ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DeleteResult,
-        EntityTrait, IntoActiveModel, JoinType, ModelTrait, PaginatorTrait, QueryFilter,
-        QueryOrder, QuerySelect, RelationTrait, Set,
-    };
-}
+//! services or by route implementations found in the `endpoints` module.
 
 #[macro_use]
 mod macros;
@@ -66,11 +48,7 @@ pub mod blob;
 pub mod blueprint;
 pub mod caddy;
 pub mod category;
-pub mod corpus_render_finalizer;
-pub mod corpus_render_inventory;
-mod corpus_render_inventory_query;
-#[cfg(test)]
-mod corpus_render_inventory_tests;
+pub mod data_form;
 pub mod domain;
 pub mod email;
 pub mod file;
@@ -86,6 +64,7 @@ pub mod link;
 pub mod message;
 pub mod message_report;
 pub mod mfa;
+mod mutation_authorization;
 pub mod outdate;
 pub mod page;
 pub mod page_lock;
@@ -109,6 +88,7 @@ pub mod view;
 pub mod vote;
 
 pub use self::alias::AliasService;
+pub use self::audit::AuditService;
 pub use self::authentication::AuthenticationService;
 pub use self::authorization_token::AuthorizationTokenService;
 pub use self::basic_error::BasicErrorService;
@@ -117,7 +97,11 @@ pub use self::blueprint::BlueprintPageService;
 pub use self::caddy::CaddyService;
 pub use self::category::CategoryService;
 pub use self::context::{RequestContext, ServiceContext};
+pub use self::data_form::{
+    DataFormDefinition, DataFormEditor, DataFormFieldDefinition, DataFormValueDefinition,
+};
 pub use self::domain::DomainService;
+pub use self::email::EmailService;
 pub use self::file::FileService;
 pub use self::file_revision::FileRevisionService;
 pub use self::filter::FilterService;
@@ -125,11 +109,14 @@ pub use self::forum::ForumService;
 pub use self::forum_post::ForumPostService;
 pub use self::forum_post_revision::ForumPostRevisionService;
 pub use self::forum_thread::ForumThreadService;
+pub use self::import::ImportService;
 pub use self::job::JobService;
 pub use self::link::LinkService;
+pub(crate) use self::link::PageExistenceSnapshot;
 pub use self::message::MessageService;
 pub use self::message_report::MessageReportService;
 pub use self::mfa::MfaService;
+pub use self::mutation_authorization::MutationAuthorization;
 pub use self::outdate::OutdateService;
 pub use self::page::PageService;
 pub use self::page_lock::PageLockService;
@@ -137,9 +124,11 @@ pub use self::page_query::PageQueryService;
 pub use self::page_revision::PageRevisionService;
 pub use self::parent::ParentService;
 pub use self::password::PasswordService;
+pub use self::permission::PermissionService;
 pub use self::public_cache::PublicContentCache;
 pub use self::relation::RelationService;
 pub use self::render::RenderService;
+pub use self::role::RoleService;
 pub use self::score::ScoreService;
 pub use self::session::SessionService;
 pub use self::settings::SettingsService;

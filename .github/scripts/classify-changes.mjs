@@ -3,6 +3,13 @@ import { pathToFileURL } from "node:url"
 
 export const GROUPS = ["deepwell", "wws", "framerail", "locales", "workflow"]
 
+/// Files outside `.github/` that `.github/tests/ci-gate-workflow.test.mjs`
+/// makes assertions about. Keep in step with the `read(...)` calls there.
+const WORKFLOW_POLICY_SUBJECTS = new Set([
+  "framerail/package.json",
+  "framerail/playwright.config.ts",
+])
+
 const selectAll = (selected) => {
   for (const group of GROUPS) selected[group] = true
 }
@@ -39,13 +46,14 @@ export function classifyChanges(paths, all = false) {
       selected.workflow = true
       matched = true
     }
-    if (file === ".github/codecov.yml") {
-      selected.deepwell = true
-      selected.wws = true
+    // The workflow policy tests assert about these files, so a change to one
+    // has to run them. Without this the guard reads files whose changes cannot
+    // trigger it, and a violation lands on develop and surfaces on some later
+    // unrelated PR instead.
+    if (WORKFLOW_POLICY_SUBJECTS.has(file)) {
+      selected.workflow = true
     }
     if (file === ".github/workflows/full-ci.yaml") {
-      selected.deepwell = true
-      selected.wws = true
       selected.framerail = true
     }
 

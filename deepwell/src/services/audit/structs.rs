@@ -18,10 +18,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::license::License;
 use crate::services::authorization_token::AuthorizedObject;
 use crate::services::filter::FilterSummary;
+use crate::types::Maybe;
 use crate::types::{PageLockType, Permission};
 use ftml::layout::Layout;
 use sea_orm::prelude::TimeDateTimeWithTimeZone;
@@ -37,6 +38,9 @@ use time::Date;
 #[derive(Debug, Clone)]
 pub enum AuditEvent<'a> {
     UserCreate {
+        user_id: i64,
+    },
+    UserActivateWikidot {
         user_id: i64,
     },
     UserUpdate {
@@ -63,6 +67,19 @@ pub enum AuditEvent<'a> {
         user_id: i64,
         previous_fields: PageCategoryFields<'a>,
         changed_fields: PageCategoryFields<'a>,
+    },
+    SiteBanCreate {
+        site_id: i64,
+        user_id: i64,
+        banning_user_id: i64,
+        banned_until: Option<Date>,
+        reason: &'a str,
+    },
+    SiteBanRemove {
+        site_id: i64,
+        user_id: i64,
+        unbanning_user_id: i64,
+        reason: &'a str,
     },
     PageCreate {
         user_id: i64,
@@ -179,6 +196,21 @@ pub enum AuditEvent<'a> {
         token_id: i32,
         object_type: AuthorizedObject,
     },
+    ImportUser {
+        user_id: i32,
+        user_slug: Option<&'a str>,
+        user_name: Option<&'a str>,
+    },
+    ImportSite {
+        site_id: i64,
+        site_slug: &'a str,
+        site_name: &'a str,
+    },
+    ImportPage {
+        site_id: i64,
+        page_id: i64,
+        page_slug: &'a str,
+    },
 }
 
 impl<'a> AuditEvent<'a> {
@@ -193,6 +225,18 @@ impl<'a> AuditEvent<'a> {
         let raw_event = match *self {
             AuditEvent::UserCreate { user_id } => RawAuditEvent {
                 event_type: "user.create",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: None,
+                page_id: None,
+                extra_id_1: None,
+                extra_id_2: None,
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::UserActivateWikidot { user_id } => RawAuditEvent {
+                event_type: "user.activate-wikidot",
                 ip_address,
                 user_id: Some(user_id),
                 site_id: None,
@@ -301,6 +345,41 @@ impl<'a> AuditEvent<'a> {
                     extra_number: None,
                 }
             }
+            AuditEvent::SiteBanCreate {
+                site_id,
+                user_id,
+                banning_user_id,
+                banned_until,
+                reason,
+            } => RawAuditEvent {
+                event_type: "site_ban.create",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: None,
+                extra_id_1: Some(banning_user_id),
+                extra_id_2: None,
+                extra_string_1: Some(Cow::Borrowed(reason)),
+                extra_string_2: banned_until.map(|date| Cow::Owned(date.to_string())),
+                extra_number: None,
+            },
+            AuditEvent::SiteBanRemove {
+                site_id,
+                user_id,
+                unbanning_user_id,
+                reason,
+            } => RawAuditEvent {
+                event_type: "site_ban.remove",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: None,
+                extra_id_1: Some(unbanning_user_id),
+                extra_id_2: None,
+                extra_string_1: Some(Cow::Borrowed(reason)),
+                extra_string_2: None,
+                extra_number: None,
+            },
             AuditEvent::PageCreate {
                 user_id,
                 site_id,
@@ -668,6 +747,54 @@ impl<'a> AuditEvent<'a> {
                 extra_string_2: None,
                 extra_number: None,
             },
+            AuditEvent::ImportUser {
+                user_id,
+                user_slug,
+                user_name,
+            } => RawAuditEvent {
+                event_type: "import.user",
+                ip_address,
+                user_id: Some(i64::from(user_id)),
+                site_id: None,
+                page_id: None,
+                extra_id_1: None,
+                extra_id_2: None,
+                extra_string_1: user_slug.map(|s| Cow::Owned(str!(s))),
+                extra_string_2: user_name.map(|s| Cow::Owned(str!(s))),
+                extra_number: None,
+            },
+            AuditEvent::ImportSite {
+                site_id,
+                site_slug,
+                site_name,
+            } => RawAuditEvent {
+                event_type: "import.site",
+                ip_address,
+                user_id: None,
+                site_id: Some(site_id),
+                page_id: None,
+                extra_id_1: None,
+                extra_id_2: None,
+                extra_string_1: Some(Cow::Owned(str!(site_slug))),
+                extra_string_2: Some(Cow::Owned(str!(site_name))),
+                extra_number: None,
+            },
+            AuditEvent::ImportPage {
+                site_id,
+                page_id,
+                page_slug,
+            } => RawAuditEvent {
+                event_type: "import.page",
+                ip_address,
+                user_id: None,
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: None,
+                extra_id_2: None,
+                extra_string_1: Some(Cow::Owned(str!(page_slug))),
+                extra_string_2: None,
+                extra_number: None,
+            },
         };
 
         Ok(raw_event)
@@ -760,6 +887,8 @@ pub struct SiteFields<'a> {
     pub preferred_domain: Maybe<Option<&'a str>>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub layout: Maybe<Option<Layout>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub forum_max_nest_level: Maybe<i16>,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -775,6 +904,16 @@ pub struct PageCategoryFields<'a> {
     pub license: Maybe<Option<&'a str>>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub license_other: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub rating_enabled: Maybe<Option<bool>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub rating_permission: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub rating_visibility: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub rating_type: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub per_page_discussion: Maybe<Option<bool>>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -908,6 +1047,7 @@ mod tests {
                 template_page_id: Maybe::Set(Some(24)),
                 license: Maybe::Set(Some("cc-by-3.0")),
                 license_other: Maybe::Set(None),
+                ..Default::default()
             },
         });
         assert_event_type(&raw, "page_category.update");

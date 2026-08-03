@@ -18,12 +18,19 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::prelude::*;
+use super::structs::{
+    ForumStructureSettings, NavigationPage, NavigationPageHtml, NavigationPageSlugs,
+    NavigationPageWikitext, PageDiscussionSettings, PageRatingPermission,
+    PageRatingSettings, PageRatingType, PageRatingVisibility,
+};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::license::WikidotLicense;
+use crate::services::ServiceContext;
 use crate::services::forum::GetForumCategory;
 use crate::services::{
     CategoryService, ForumService, PageRevisionService, PageService, SiteService,
 };
+use crate::types::Reference;
 use crate::types::parse_layout;
 use ftml::layout::Layout;
 use std::borrow::Cow;
@@ -32,6 +39,120 @@ use std::borrow::Cow;
 pub struct SettingsService;
 
 impl SettingsService {
+    pub async fn get_page_discussion_settings(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        category_id: i64,
+    ) -> Result<PageDiscussionSettings> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to get page discussion settings for site ID {site_id}, category ID {category_id}"
+                ),
+                ErrorType::SiteSettings,
+            )
+        };
+        let category = CategoryService::get(ctx, site_id, Reference::Id(category_id))
+            .await
+            .or_raise(make_error)?;
+        let default_category = if category.slug == "_default" {
+            None
+        } else {
+            CategoryService::get_optional(
+                ctx,
+                site_id,
+                Reference::Slug(Cow::Borrowed("_default")),
+            )
+            .await
+            .or_raise(make_error)?
+        };
+
+        Ok(PageDiscussionSettings {
+            enabled: category
+                .per_page_discussion
+                .or_else(|| {
+                    default_category
+                        .as_ref()
+                        .and_then(|value| value.per_page_discussion)
+                })
+                .unwrap_or(false),
+        })
+    }
+
+    pub async fn get_page_rating_settings(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        category_id: i64,
+    ) -> Result<PageRatingSettings> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to get page rating settings for site ID {site_id}, category ID {category_id}"
+                ),
+                ErrorType::SiteSettings,
+            )
+        };
+        let category = CategoryService::get(ctx, site_id, Reference::Id(category_id))
+            .await
+            .or_raise(make_error)?;
+        let default_category = if category.slug == "_default" {
+            None
+        } else {
+            CategoryService::get_optional(
+                ctx,
+                site_id,
+                Reference::Slug(Cow::Borrowed("_default")),
+            )
+            .await
+            .or_raise(make_error)?
+        };
+        let fallback = PageRatingSettings::default();
+        let permission = category
+            .rating_permission
+            .as_deref()
+            .or_else(|| {
+                default_category
+                    .as_ref()
+                    .and_then(|value| value.rating_permission.as_deref())
+            })
+            .and_then(PageRatingPermission::from_storage)
+            .unwrap_or(fallback.permission);
+        let visibility = category
+            .rating_visibility
+            .as_deref()
+            .or_else(|| {
+                default_category
+                    .as_ref()
+                    .and_then(|value| value.rating_visibility.as_deref())
+            })
+            .and_then(PageRatingVisibility::from_storage)
+            .unwrap_or(fallback.visibility);
+        let rating_type = category
+            .rating_type
+            .as_deref()
+            .or_else(|| {
+                default_category
+                    .as_ref()
+                    .and_then(|value| value.rating_type.as_deref())
+            })
+            .and_then(PageRatingType::from_storage)
+            .unwrap_or(fallback.rating_type);
+
+        Ok(PageRatingSettings {
+            enabled: category
+                .rating_enabled
+                .or_else(|| {
+                    default_category
+                        .as_ref()
+                        .and_then(|value| value.rating_enabled)
+                })
+                .unwrap_or(fallback.enabled),
+            permission,
+            visibility,
+            rating_type,
+        })
+    }
+
     /// Get the effective license for a page category.
     ///
     /// A category override wins when present. Otherwise the `_default`
@@ -121,6 +242,7 @@ impl SettingsService {
             )
         };
 
+        let mut page_from_wikidot = false;
         if let Some(page_id) = page_id {
             debug!("Getting layout for site ID {site_id} page ID {page_id}");
             let page = PageService::get_direct(ctx, page_id, true)
@@ -131,6 +253,8 @@ impl SettingsService {
                 debug!("Found page-level layout override: {layout}");
                 return parse_layout(&layout).or_raise(make_error);
             }
+
+            page_from_wikidot = page.from_wikidot;
 
             let category_id = page.page_category_id;
             debug!("Getting layout for page category ID {category_id}");
@@ -154,8 +278,15 @@ impl SettingsService {
             return parse_layout(&layout).or_raise(make_error);
         }
 
-        debug!("Using platform-level layout");
-        Ok(ctx.config().default_page_layout)
+        if page_from_wikidot {
+            debug!("Using Wikidot layout for imported page provenance");
+        } else {
+            debug!("Using platform-level layout");
+        }
+        Ok(default_page_layout_for_provenance(
+            page_from_wikidot,
+            ctx.config().default_page_layout,
+        ))
     }
 
     /// Get the navigation pages for this page category.
@@ -364,7 +495,6 @@ impl SettingsService {
     /// Gets forum settings, combining site defaults and category overrides.
     ///
     /// Category settings (if specified) override site-level defaults.
-    #[allow(dead_code)] // TODO
     pub async fn get_forum_settings(
         ctx: &ServiceContext<'_>,
         site_id: i64,
@@ -418,7 +548,6 @@ impl SettingsService {
         })
     }
 
-    #[allow(dead_code)] // TODO
     #[inline]
     pub async fn get_forum_max_nest_level(
         ctx: &ServiceContext<'_>,
@@ -428,15 +557,36 @@ impl SettingsService {
         let settings = Self::get_forum_settings(ctx, site_id, forum_category_id).await?;
         Ok(settings.max_nest_level)
     }
+}
 
-    #[allow(dead_code)] // TODO
-    #[inline]
-    pub async fn get_forum_per_page_discussion(
-        ctx: &ServiceContext<'_>,
-        site_id: i64,
-        forum_category_id: Option<i64>,
-    ) -> Result<bool> {
-        let settings = Self::get_forum_settings(ctx, site_id, forum_category_id).await?;
-        Ok(settings.per_page_discussion)
+fn default_page_layout_for_provenance(
+    from_wikidot: bool,
+    platform_default: Layout,
+) -> Layout {
+    if from_wikidot {
+        Layout::Wikidot
+    } else {
+        platform_default
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn imported_page_provenance_selects_wikidot_layout_over_platform_default() {
+        assert_eq!(
+            default_page_layout_for_provenance(true, Layout::Wikijump),
+            Layout::Wikidot,
+        );
+    }
+
+    #[test]
+    fn local_page_provenance_keeps_platform_default() {
+        assert_eq!(
+            default_page_layout_for_provenance(false, Layout::Wikijump),
+            Layout::Wikijump,
+        );
     }
 }

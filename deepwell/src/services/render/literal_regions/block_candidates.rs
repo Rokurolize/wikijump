@@ -22,10 +22,8 @@ mod generic_heads;
 mod head_index;
 mod quote_lines;
 
-#[cfg(test)]
-pub(super) use self::generic_heads::collect_generic_head_candidates;
 pub(super) use self::generic_heads::{
-    HeadCandidateStreams, RuntimeModuleHeadCandidate, collect_head_candidate_streams,
+    RuntimeModuleHeadCandidate, collect_head_candidate_streams,
     collect_head_candidate_streams_with_context,
 };
 pub(super) use self::head_index::HeadContext;
@@ -97,7 +95,6 @@ struct BlockOpener {
     family: BlockFamily,
     identity: DelimiterIdentity,
     content_start: usize,
-    line_index: usize,
     quote_depth: usize,
     boundary: usize,
     exact_head: bool,
@@ -168,7 +165,7 @@ pub(super) fn collect_block_candidates_with_heads(
         }
     }
 
-    pair_candidates(&lines, heads, openers, closes)
+    pair_candidates(openers, closes)
 }
 
 fn collect_oversized_fail_closed(source: &str) -> Vec<BlockCandidate> {
@@ -230,9 +227,26 @@ fn parse_block_opener(
     let line = lines[line_index];
 
     let (content_start, exact_head) = match family {
-        BlockFamily::Code | BlockFamily::Html => match heads.map_head_end[name_end] {
+        BlockFamily::Code => {
+            let close = heads.next_wikidot_right_block[name_end];
+            if close != NO_OFFSET {
+                let close = expanded_offset(close);
+                // The compatibility scanner recognizes whitespace-prefixed
+                // candidates so they can remain fail-closed protection, but
+                // the pinned FTML parser owns only a tight `[[code` opener.
+                let exact = skip_horizontal_whitespace(bytes, start + 2) == start + 2;
+                (close + 2, exact)
+            } else {
+                (name_end, false)
+            }
+        }
+        BlockFamily::Html => match heads.map_head_end[name_end] {
             NO_OFFSET => (name_end, false),
-            end => (expanded_offset(end), true),
+            end => {
+                let content_start = expanded_offset(end);
+                let exact = source[name_end..content_start - 2].trim().is_empty();
+                (content_start, exact)
+            }
         },
         BlockFamily::Raw => match bytes.get(name_end) {
             Some(_) if expanded_offset(heads.whitespace_end[name_end]) > name_end => {
@@ -281,7 +295,6 @@ fn parse_block_opener(
             start,
         },
         content_start,
-        line_index,
         quote_depth: line.native_quote_depth,
         boundary,
         exact_head,
@@ -343,8 +356,6 @@ fn block_family(name: &[u8]) -> Option<BlockFamily> {
 }
 
 fn pair_candidates(
-    lines: &[PhysicalLine],
-    heads: &HeadContext,
     openers: Vec<BlockOpener>,
     closes: Vec<BlockClose>,
 ) -> Vec<BlockCandidate> {
@@ -390,9 +401,7 @@ fn pair_candidates(
                 && opener.exact_head
                 && opener.parser_reachable
                 && opener.family != BlockFamily::Embed
-                && (opener.quote_depth == 0 || opener.family.parser_accepts_quote())
-                && (opener.family != BlockFamily::Math
-                    || math_body_is_nonempty(opener, close.unwrap(), lines, heads));
+                && (opener.quote_depth == 0 || opener.family.parser_accepts_quote());
             BlockCandidate {
                 range: opener.identity.start
                     ..close.map_or(opener.boundary, |close| close.end),
@@ -432,27 +441,6 @@ fn opener_indices_by_content_start(openers: &[BlockOpener]) -> Vec<u32> {
         std::mem::swap(&mut from, &mut to);
     }
     from
-}
-
-fn math_body_is_nonempty(
-    opener: BlockOpener,
-    close: BlockClose,
-    lines: &[PhysicalLine],
-    heads: &HeadContext,
-) -> bool {
-    if opener.quote_depth == 0 {
-        return expanded_offset(heads.whitespace_end[opener.content_start])
-            < close.identity.start;
-    }
-
-    let opening_line = lines[opener.line_index];
-    if expanded_offset(heads.whitespace_end[opener.content_start])
-        < opening_line.body_end.min(close.identity.start)
-    {
-        return true;
-    }
-    opening_line.next_same_depth_content < close.identity.start
-        || opening_line.next_deeper_start < close.identity.start
 }
 
 fn skip_horizontal_whitespace(bytes: &[u8], mut cursor: usize) -> usize {
@@ -496,7 +484,9 @@ mod tests {
             language: Cow::Borrowed("default"),
         };
         let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
-        let tokenization = ftml::tokenize(source);
+        let mut source = source.to_owned();
+        ftml::preprocess_for_layout(&mut source, settings.layout);
+        let tokenization = ftml::tokenize(&source);
         let (tree, _) = ftml::parse(&tokenization, &page_info, &settings).into();
         tree.to_owned()
     }
@@ -524,7 +514,7 @@ mod tests {
                 candidates[index],
             );
         }
-        for index in [2, 3, 6, 7] {
+        for index in [2, 3, 6] {
             assert_eq!(
                 candidates[index].provenance,
                 BaseCandidateProvenance::FailClosedProtection,
@@ -532,6 +522,12 @@ mod tests {
                 candidates[index],
             );
         }
+        assert_eq!(
+            candidates[7].provenance,
+            BaseCandidateProvenance::ClosedOwner,
+            "candidate 7: {:?}",
+            candidates[7],
+        );
         assert!(
             candidates
                 .iter()
@@ -579,50 +575,62 @@ mod tests {
 
     #[test]
     fn pinned_map_head_oddities_determine_exact_provenance() {
-        let sources = [
+        let accepted = [
             "[[code garbage]]x[[/code]]",
             "[[code a=\"x\" trailing]]x[[/code]]",
             "[[code {$k}=\"v\"]]x[[/code]]",
             "[[code a\u{a0}=\"x\"]]x[[/code]]",
         ];
-        for (source, exact) in sources.into_iter().zip([true, true, true, false]) {
+        for source in accepted {
             let candidates = candidates(source);
             assert_eq!(candidates.len(), 1, "{source:?}");
             assert_eq!(
-                candidates[0].provenance == BaseCandidateProvenance::ClosedOwner,
-                exact,
+                candidates[0].provenance,
+                BaseCandidateProvenance::ClosedOwner,
                 "{source:?}: {:?}",
                 candidates[0],
             );
-            assert_eq!(
-                !pinned_tree(source).code_blocks.is_empty(),
-                exact,
-                "{source:?}"
-            );
+            assert!(!pinned_tree(source).code_blocks.is_empty(), "{source:?}");
         }
 
-        let html = "[[html garbage]]x[[/html]]";
-        assert_eq!(
-            candidates(html)[0].provenance,
-            BaseCandidateProvenance::ClosedOwner,
-        );
-        assert!(!pinned_tree(html).html_blocks.is_empty());
-    }
-
-    #[test]
-    fn empty_math_is_protection_only_like_the_pinned_parser() {
-        for source in ["[[math]][[/math]]", "> [[math]]\n> \u{a0}\n> [[/math]]"] {
+        for source in [
+            "[[ code]]x[[/code]]",
+            "[[\tcode]]x[[/code]]",
+            "[[ code\ntype=\"rust\"]]x[[/code]]",
+        ] {
             let candidates = candidates(source);
             assert_eq!(candidates.len(), 1, "{source:?}");
             assert_eq!(
                 candidates[0].provenance,
                 BaseCandidateProvenance::FailClosedProtection,
+                "{source:?}: {:?}",
+                candidates[0],
+            );
+            assert!(pinned_tree(source).code_blocks.is_empty(), "{source:?}");
+        }
+
+        let html = "[[html garbage]]x[[/html]]";
+        assert_eq!(
+            candidates(html)[0].provenance,
+            BaseCandidateProvenance::FailClosedProtection,
+        );
+        assert!(pinned_tree(html).html_blocks.is_empty());
+    }
+
+    #[test]
+    fn empty_math_is_owned_by_the_pinned_parser() {
+        for source in ["[[math]][[/math]]", "> [[math]]\n> \u{a0}\n> [[/math]]"] {
+            let candidates = candidates(source);
+            assert_eq!(candidates.len(), 1, "{source:?}");
+            assert_eq!(
+                candidates[0].provenance,
+                BaseCandidateProvenance::ClosedOwner,
                 "{source:?}",
             );
             assert!(candidates[0].terminator.is_some(), "{source:?}");
         }
         assert!(
-            !pinned_tree("[[math]][[/math]]")
+            pinned_tree("[[math]][[/math]]")
                 .elements
                 .iter()
                 .any(|element| matches!(element, Element::Math { .. }))

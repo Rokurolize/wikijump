@@ -2,6 +2,7 @@ name: ${STANDING_PROJECT_NAME:?STANDING_PROJECT_NAME is required}
 
 x-runtime-labels: &runtime-labels
   com.rokurolize.wikijump.owner: standing-runtime-promotion
+  com.rokurolize.wikijump.lifecycle: prepared-exact-merged-head
   com.rokurolize.wikijump.sha: ${STANDING_WIKIJUMP_SHA:?STANDING_WIKIJUMP_SHA is required}
   com.rokurolize.wikijump.ftml_sha: ${STANDING_FTML_SHA:?STANDING_FTML_SHA is required}
   com.rokurolize.wikijump.profile: production-build
@@ -83,7 +84,7 @@ services:
       S3_CUSTOM_ENDPOINT: http://files:9000
       S3_ACCESS_KEY_ID: minio
       S3_SECRET_ACCESS_KEY: defaultpassword
-      DEEPWELL_BUILD_PROFILE: production-build
+      DEEPWELL_BUILD_PROFILE: release
     ports:
       - "127.0.0.1:12747:2747"
     volumes:
@@ -156,6 +157,7 @@ services:
       S3_CUSTOM_ENDPOINT: http://files:9000
       S3_ACCESS_KEY_ID: minio
       S3_SECRET_ACCESS_KEY: defaultpassword
+      WWS_BUILD_PROFILE: release
     ports:
       - "127.0.0.1:13466:3466"
     labels:

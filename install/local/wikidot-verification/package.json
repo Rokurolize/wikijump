@@ -2,12 +2,38 @@
   "name": "wikidot-verification",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "24.18.0",
+    "pnpm": "11.10.0"
+  },
+  "packageManager": "pnpm@11.10.0",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "completion": "node scripts/run-completion-controller.mjs",
-    "reference-inventory": "node scripts/build-reference-acquisition-inventory.mjs"
+    "syntax-dispositions": "node scripts/check-syntax-differential-dispositions.mjs",
+    "corpus-pinned-literals": "node scripts/check-corpus-pinned-literals.mjs",
+    "wikijump-identifier-leaks": "node scripts/check-wikijump-identifier-leaks.mjs",
+    "reference-inventory": "node scripts/build-reference-acquisition-inventory.mjs",
+    "listpages-campaign-inventory": "node scripts/build-listpages-campaign-inventory.mjs",
+    "listpages-runtime-budget-envelope": "node scripts/build-listpages-runtime-budget-envelope.mjs",
+    "listpages-campaign-matrix": "node scripts/build-listpages-campaign-matrix.mjs",
+    "listpages-preview-cases": "node scripts/export-listpages-preview-cases.mjs",
+    "listpages-preview-differential": "node scripts/run-listpages-preview-differential.mjs",
+    "listpages-preview-classification": "node scripts/classify-listpages-preview-differential.mjs",
+    "listpages-corpus-replay-reconciliation": "node scripts/reconcile-listpages-corpus-replay.mjs",
+    "listpages-live-fixture-plan": "node scripts/build-listpages-live-fixture-plan.mjs",
+    "listpages-live-fixture-classification": "node scripts/classify-listpages-live-fixtures.mjs",
+    "listpages-feed-endpoint": "node scripts/capture-listpages-feed-endpoint.mjs",
+    "runtime-differential": "node scripts/run-generic-runtime-differential.mjs",
+    "runtime-differential-stack": "node scripts/run-generic-runtime-differential-stack.mjs"
   },
   "dependencies": {
+    "parse5": "^8.0.1",
     "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^16.0.0"
   }
 }

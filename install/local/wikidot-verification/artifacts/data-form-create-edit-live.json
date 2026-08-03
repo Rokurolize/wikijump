@@ -1,0 +1,116 @@
+{
+  "schema": "wikidot.live.data-form.create-edit.v1",
+  "observed_at": "2026-07-29",
+  "site": "sandbox-for-codex",
+  "actor": "anonymous direct page view followed by authenticated account A create and edit actions",
+  "credential_material": "none; credentials and session material stayed in the local environment and isolated browser profile",
+  "run_owned_pages": {
+    "template": "df-create-1785300709:_template",
+    "target": "df-create-1785300709:example",
+    "cleanup_verified": true
+  },
+  "template_source": "[[form]]\nfields:\n  name:\n    label: Name\n    type: text\n  choice:\n    label: Choice\n    type: select\n    values:\n      a: Alpha\n      b: Beta\n    default: b\n[[/form]]",
+  "captures": [
+    {
+      "case_id": "anonymous-direct-missing-page",
+      "request": "GET /df-create-1785300709:example",
+      "http_status": 404,
+      "page_content_html": "<div id=\"page-content\">\n<p id=\"404-message\">\nThe page <em>df-create-1785300709:example</em> you want to access does not exist.</p>\n<ul id=\"create-it-now-link\">\n  <li><a href=\"javascript:;\" onclick=\"WIKIDOT.page.listeners.editClick(event)\">Create page</a></li>\n</ul>\n</div>",
+      "analysis": "Direct navigation does not automatically open the data-form editor. It uses the ordinary missing-page view and create-page listener."
+    },
+    {
+      "case_id": "authenticated-direct-missing-page",
+      "request": "GET /df-create-1785300709:example",
+      "http_status": 404,
+      "result": "The authenticated initial view has the same missing-page content and Create page link as the anonymous view."
+    },
+    {
+      "case_id": "authenticated-create-form",
+      "action": "Click the missing-page Create page link",
+      "heading": "Create Df-create-1785300709",
+      "form": {
+        "id": "edit-page-form",
+        "class": "form-horizontal data-form",
+        "onkeypress": "return OZONE.utils.disableEnterKey(event)",
+        "hidden_fields": {
+          "page_id": "",
+          "form-use": "true",
+          "form-fields": "name,choice",
+          "form-file-still-uploading": "0"
+        },
+        "title": {
+          "id": "edit-page-title",
+          "name": "title",
+          "value": "Example"
+        },
+        "name_field": {
+          "name": "field-name",
+          "type": "text",
+          "size": "40",
+          "class": "form-control form-text",
+          "value": ""
+        },
+        "choice_field": [
+          {
+            "name": "field-choice",
+            "type": "radio",
+            "class": "form-select",
+            "value": "a",
+            "label": "Alpha",
+            "checked": false
+          },
+          {
+            "name": "field-choice",
+            "type": "radio",
+            "class": "form-select",
+            "value": "b",
+            "label": "Beta",
+            "checked": true
+          }
+        ],
+        "cancel": {
+          "id": "edit-cancel-button",
+          "class": "btn btn-danger",
+          "onclick": "WIKIDOT.modules.PageEditModule.listeners.cancel(event)"
+        },
+        "save": {
+          "id": "edit-save-button",
+          "class": "btn btn-primary",
+          "onclick": "WIKIDOT.modules.PageEditModule.listeners.save(event)"
+        }
+      },
+      "visibility": "The page content, page title, page info, watch options, and action-area-top are hidden while the action area is displayed."
+    },
+    {
+      "case_id": "authenticated-save",
+      "submitted": {
+        "title": "Example",
+        "field-name": "Probe Name",
+        "field-choice": "a"
+      },
+      "saved_page": {
+        "title": "Example",
+        "source": "name: 'Probe Name'\nchoice: a",
+        "tags": [],
+        "revision_count": 1
+      },
+      "rendered_page_content_html": "<div id=\"page-content\">\n\n<table class=\"form-table\">\n<tbody><tr class=\"form-row\">\n<td class=\"form-labels\"><span class=\"form-label\">Name</span></td>\n<td class=\"form-values\"><span>Probe Name</span></td>\n</tr>\n<tr class=\"form-row\">\n<td class=\"form-labels\"><span class=\"form-label\">Choice</span></td>\n<td class=\"form-values\"><span>Alpha</span></td>\n</tr>\n</tbody></table>\n</div>"
+    },
+    {
+      "case_id": "authenticated-edit-form",
+      "action": "Click Edit on the saved page",
+      "heading": "Edit Df-create-1785300709",
+      "page_id": "1469068522",
+      "title": "Example",
+      "field-name": "Probe Name",
+      "field-choice-checked": "a",
+      "visibility": "The settled page content has display:none while the data-form action area has display:block."
+    }
+  ],
+  "routes": [
+    "Plain unauthenticated GET for the missing-page DOM",
+    "Isolated Chrome DevTools Protocol profile for authenticated create, save, rendered DOM, and edit-state evidence",
+    "Authenticated wikidot.py readback for exact saved source, title, tags, page id, and revision count",
+    "Authenticated wikidot.py deletion and readback verification for both run-owned pages"
+  ]
+}

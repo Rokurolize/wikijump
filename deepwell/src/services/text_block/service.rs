@@ -34,13 +34,16 @@
 //! done by wws by directly accessing S3 itself, so
 //! nothing here is needed.
 
-use super::prelude::*;
-use crate::models::text_block::{
-    self, Entity as TextBlockTable, Model as TextBlockModel,
-};
+use super::structs::{TextBlock, TextBlockIndex};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt, StdResult};
+use crate::models::text_block::{self, Entity as TextBlockTable};
+use crate::services::ServiceContext;
 use crate::types::TextBlockType;
+use crate::utils::ConvertToI16;
 use futures::{StreamExt, stream::FuturesUnordered};
-use sea_orm::ActiveEnum;
+use sea_orm::{
+    ColumnTrait, Condition, DeleteResult, EntityTrait, QueryFilter, QuerySelect, Set,
+};
 use std::collections::HashSet;
 
 /// Keep each SeaORM insert well below PostgreSQL's 65,535 bind-parameter limit.
@@ -213,7 +216,7 @@ impl TextBlockService {
         // This doesn't require us to know which need to be kept
         // because we're just INSERTing over all of it.
 
-        let DeleteResult { rows_affected } = TextBlockTable::delete_many()
+        let DeleteResult { rows_affected, .. } = TextBlockTable::delete_many()
             .filter(
                 Condition::all()
                     .add(text_block::Column::BlockType.eq(block_type))

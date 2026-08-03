@@ -1,0 +1,287 @@
+{
+  "actor": "sandbox-account-a",
+  "captured_at": "2026-07-29T03:12:09.290903+00:00",
+  "cases": [
+    {
+      "case_id": "newpage-template-autosave-save-go",
+      "created_page": false,
+      "created_parent_fullname": null,
+      "created_source": null,
+      "created_source_sha256": null,
+      "created_tags": null,
+      "request": {
+        "mode": "save-and-go",
+        "parent": "run-owned:np-followup-1785294668-parent",
+        "tags": "tag-one tag-two",
+        "template_page_fullname": "template:np-followup-1785294668-template-a",
+        "template_page_id": 1469068213
+      },
+      "response": {
+        "error": {
+          "exception_type": "WikidotStatusCodeException",
+          "message": "AMC is respond error status: \"not_ok\"",
+          "status_code": "not_ok"
+        },
+        "ok_response": false
+      },
+      "template_saved_source": "Template line 1\n[[div class=\"from-template\"]]Template body[[/div]]",
+      "template_saved_source_sha256": "8ad40c9a7da991876c7db496414d3ff76e1ab59f1731bda41b5439568bb755e0",
+      "template_seed_source": "Template line 1\n[[div class=\"from-template\"]]Template body[[/div]]"
+    },
+    {
+      "case_id": "newpage-hidden-autosave-save-go",
+      "created_page": true,
+      "created_source": "",
+      "created_source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "request": {
+        "mode": "save-and-go",
+        "pageName_prefix": "run-owned:_"
+      },
+      "response": {
+        "json": {
+          "CURRENT_TIMESTAMP": 1785294683,
+          "callbackIndex": null,
+          "goToUrl": "run-owned:_np-followup-1785294668-hidden-save-go",
+          "status": "ok"
+        },
+        "ok_response": true
+      }
+    },
+    {
+      "case_id": "newpage-existing-target-omitted-mode",
+      "page_still_exists": true,
+      "request": {
+        "mode": null,
+        "target_preexisted": true
+      },
+      "response": {
+        "error": {
+          "exception_type": "WikidotStatusCodeException",
+          "message": "AMC is respond error status: \"page_exists\"",
+          "status_code": "page_exists"
+        },
+        "ok_response": false
+      },
+      "source_after": "existing source",
+      "source_after_sha256": "c21ee3bb54602fff038a7d5050370159cab786bbd2473424fd7e28a85073703b"
+    },
+    {
+      "case_id": "newpage-existing-target-edit",
+      "page_still_exists": true,
+      "request": {
+        "mode": "edit",
+        "target_preexisted": true
+      },
+      "response": {
+        "error": {
+          "exception_type": "WikidotStatusCodeException",
+          "message": "AMC is respond error status: \"page_exists\"",
+          "status_code": "page_exists"
+        },
+        "ok_response": false
+      },
+      "source_after": "existing source",
+      "source_after_sha256": "c21ee3bb54602fff038a7d5050370159cab786bbd2473424fd7e28a85073703b"
+    },
+    {
+      "case_id": "newpage-existing-target-save-and-go",
+      "page_still_exists": true,
+      "request": {
+        "mode": "save-and-go",
+        "target_preexisted": true
+      },
+      "response": {
+        "error": {
+          "exception_type": "WikidotStatusCodeException",
+          "message": "AMC is respond error status: \"page_exists\"",
+          "status_code": "page_exists"
+        },
+        "ok_response": false
+      },
+      "source_after": "existing source",
+      "source_after_sha256": "c21ee3bb54602fff038a7d5050370159cab786bbd2473424fd7e28a85073703b"
+    },
+    {
+      "case_id": "newpage-existing-target-save-and-refresh",
+      "page_still_exists": true,
+      "request": {
+        "mode": "save-and-refresh",
+        "target_preexisted": true
+      },
+      "response": {
+        "error": {
+          "exception_type": "WikidotStatusCodeException",
+          "message": "AMC is respond error status: \"page_exists\"",
+          "status_code": "page_exists"
+        },
+        "ok_response": false
+      },
+      "source_after": "existing source",
+      "source_after_sha256": "c21ee3bb54602fff038a7d5050370159cab786bbd2473424fd7e28a85073703b"
+    },
+    {
+      "case_id": "newpage-format-empty-delimiters",
+      "created_page": false,
+      "note": "default/edit helper response is non-mutating; page existence was not probed for non-ok cases",
+      "request": {
+        "format": "//"
+      },
+      "response": {
+        "json": {
+          "CURRENT_TIMESTAMP": 1785294700,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-followup-1785294668-format-empty-delimiters",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-followup-1785294668-format-empty-delimiters"
+        },
+        "ok_response": true
+      }
+    },
+    {
+      "case_id": "newpage-format-missing-trailing-delimiter",
+      "created_page": false,
+      "note": "default/edit helper response is non-mutating; page existence was not probed for non-ok cases",
+      "request": {
+        "format": "/^[a-z]+$"
+      },
+      "response": {
+        "json": {
+          "CURRENT_TIMESTAMP": 1785294705,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-followup-1785294668-format-missing-trailing-delimiter",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-followup-1785294668-format-missing-trailing-del"
+        },
+        "ok_response": true
+      }
+    },
+    {
+      "case_id": "newpage-format-invalid-pcre",
+      "created_page": false,
+      "note": "default/edit helper response is non-mutating; page existence was not probed for non-ok cases",
+      "request": {
+        "format": "/[/"
+      },
+      "response": {
+        "json": {
+          "CURRENT_TIMESTAMP": 1785294709,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-followup-1785294668-format-invalid-pcre",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-followup-1785294668-format-invalid-pcre"
+        },
+        "ok_response": true
+      }
+    },
+    {
+      "case_id": "newpage-format-unknown-flag",
+      "created_page": false,
+      "note": "default/edit helper response is non-mutating; page existence was not probed for non-ok cases",
+      "request": {
+        "format": "/^run-owned:/z"
+      },
+      "response": {
+        "json": {
+          "CURRENT_TIMESTAMP": 1785294713,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-followup-1785294668-format-unknown-flag",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-followup-1785294668-format-unknown-flag"
+        },
+        "ok_response": true
+      }
+    },
+    {
+      "case_id": "newpage-format-undelimited",
+      "created_page": false,
+      "note": "default/edit helper response is non-mutating; page existence was not probed for non-ok cases",
+      "request": {
+        "format": "^[a-z]+$"
+      },
+      "response": {
+        "json": {
+          "CURRENT_TIMESTAMP": 1785294718,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-followup-1785294668-format-undelimited",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-followup-1785294668-format-undelimited"
+        },
+        "ok_response": true
+      }
+    },
+    {
+      "case_id": "newpage-format-case-insensitive-pass",
+      "created_page": false,
+      "note": "default/edit helper response is non-mutating; page existence was not probed for non-ok cases",
+      "request": {
+        "format": "/^RUN-OWNED:/i"
+      },
+      "response": {
+        "json": {
+          "CURRENT_TIMESTAMP": 1785294722,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-followup-1785294668-format-case-insensitive-pass",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-followup-1785294668-format-case-insensitive-pas"
+        },
+        "ok_response": true
+      }
+    },
+    {
+      "case_id": "newpage-format-multiline-flag-pass",
+      "created_page": false,
+      "note": "default/edit helper response is non-mutating; page existence was not probed for non-ok cases",
+      "request": {
+        "format": "/^run-owned:/m"
+      },
+      "response": {
+        "json": {
+          "CURRENT_TIMESTAMP": 1785294726,
+          "callbackIndex": null,
+          "pageTitle": "run-owned:np-followup-1785294668-format-multiline-flag-pass",
+          "parentPage": "",
+          "status": "ok",
+          "tags": "",
+          "unixName": "run-owned:np-followup-1785294668-format-multiline-flag-pass"
+        },
+        "ok_response": true
+      }
+    }
+  ],
+  "cleanup": [
+    {
+      "deleted": true,
+      "fullname": "run-owned:np-followup-1785294668-existing"
+    },
+    {
+      "deleted": true,
+      "fullname": "run-owned:_np-followup-1785294668-hidden-save-go"
+    },
+    {
+      "deleted": true,
+      "fullname": "run-owned:np-followup-1785294668-parent"
+    },
+    {
+      "deleted": true,
+      "fullname": "template:np-followup-1785294668-template-a"
+    }
+  ],
+  "credential_material": "not included; account loaded from local sandbox credential store",
+  "feature_id": "module-newpage",
+  "oracle_route": "wikidot.py Site.amc_request against misc/NewPageHelperAction; non-ok responses recorded from WikidotStatusCodeException.status_code because the client validates non-ok AMC envelopes",
+  "run_id": "np-followup-1785294668",
+  "schema": "wikidot.live.newpage.followup.v1",
+  "site": "sandbox-for-codex"
+}

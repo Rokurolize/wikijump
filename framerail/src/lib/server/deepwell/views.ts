@@ -91,7 +91,47 @@ interface PageViewFound {
     wikidot_snapshot: Nullable<WikidotPageSnapshotView>
     wikidot_breadcrumbs: WikidotPageBreadcrumbView[]
     attributions: PageAttribution[]
+    page_rating: PageRatingSettings
+    page_discussion: PageDiscussionSettings
+    data_form: Nullable<DataFormEditor>
   }
+}
+
+export interface PageRatingSettings {
+  enabled: boolean
+  permission: "registered" | "members"
+  visibility: "visible" | "anonymous"
+  rating_type: "plus" | "plus_minus" | "stars"
+}
+export interface PageDiscussionSettings {
+  enabled: boolean
+}
+export interface DataFormValueDefinition {
+  value: string
+  label: string
+}
+export interface DataFormFieldDefinition {
+  name: string
+  label: string
+  hint: string
+  field_type: Nullable<string>
+  values: DataFormValueDefinition[]
+  default_value: Nullable<string>
+  width: number
+  height: number
+  match_pattern: Nullable<string>
+  match_error: Nullable<string>
+  before: string
+  after: string
+  join: boolean
+}
+export interface DataFormDefinition {
+  fields: DataFormFieldDefinition[]
+  default_layout: boolean
+}
+export interface DataFormEditor {
+  definition: DataFormDefinition
+  values: Record<string, string>
 }
 interface PageViewMissing {
   type: "missing"
@@ -99,6 +139,7 @@ interface PageViewMissing {
     new_page_wikitext: Nullable<string>
     page_templates: PageTemplateSummary[]
     selected_template_page_id: Nullable<number>
+    data_form: Nullable<DataFormEditor>
   }
 }
 interface PageViewPermissions {

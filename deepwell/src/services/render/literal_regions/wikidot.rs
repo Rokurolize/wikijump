@@ -111,6 +111,7 @@ struct WikidotLiteralPolicy {
     runtime_extended: bool,
     fail_closed_inline: bool,
     own_generic_tag_heads: bool,
+    own_module_bodies: bool,
 }
 
 #[cfg(test)]
@@ -121,12 +122,14 @@ const LIST_PAGES_LITERAL_POLICY: WikidotLiteralPolicy = WikidotLiteralPolicy {
     // itself. Masking those prefixes here would hide malformed module heads
     // before the scanner can apply its fail-closed policy.
     own_generic_tag_heads: false,
+    own_module_bodies: false,
 };
 
 const CONDITIONAL_LITERAL_POLICY: WikidotLiteralPolicy = WikidotLiteralPolicy {
     runtime_extended: false,
     fail_closed_inline: false,
     own_generic_tag_heads: false,
+    own_module_bodies: true,
 };
 
 pub(super) fn collect_wikidot_conditional_literal_ranges(
@@ -213,6 +216,7 @@ fn collect_wikidot_literal_ranges(
                         cursor,
                         body_end,
                         policy.runtime_extended,
+                        policy.own_module_bodies,
                         &mut text_tokens,
                     ) {
                         let close_start = if opener_end < body_end {
@@ -387,6 +391,7 @@ fn wikidot_literal_block(
     start: usize,
     line_end: usize,
     runtime_extended: bool,
+    own_module_bodies: bool,
     text_tokens: &mut TextTokenCursor,
 ) -> Option<(&'static str, usize)> {
     let mut lookahead_tokens = text_tokens.clone();
@@ -404,8 +409,10 @@ fn wikidot_literal_block(
         *text_tokens = lookahead_tokens;
         return Some(("[[/raw]]", content_start));
     }
+    let is_module = own_module_bodies && name.eq_ignore_ascii_case("module");
     let (opener_end, head_end) = if name.eq_ignore_ascii_case("code")
         || name.eq_ignore_ascii_case("html")
+        || is_module
         || (runtime_extended && name.eq_ignore_ascii_case("math"))
     {
         let end =
@@ -419,6 +426,8 @@ fn wikidot_literal_block(
         "[[/code]]"
     } else if name.eq_ignore_ascii_case("html") {
         "[[/html]]"
+    } else if is_module {
+        "[[/module]]"
     } else if runtime_extended && name.eq_ignore_ascii_case("math") {
         "[[/math]]"
     } else if runtime_extended
@@ -486,40 +495,67 @@ mod tests {
     }
 
     #[test]
-    fn url_and_email_owned_raw_openers_do_not_steal_following_blocks() {
-        for (source, opener) in [
-            ("foo@bar.example@@x [[code]] @@ LP [[/code]]", "@@"),
-            ("https://e.test/a@@b [[code]] @@ LP [[/code]]", "@@"),
-            ("foo@bar.example@<x [[code]] >@ LP [[/code]]", "@<"),
-            ("https://e.test/a@<b [[code]] >@ LP [[/code]]", "@<"),
+    fn pinned_url_email_delimiters_follow_ftml_token_boundaries() {
+        for (source, opener, opener_owned, lp_owned) in [
+            (
+                "foo@bar.example@@x [[code]] @@ LP [[/code]]",
+                "@@",
+                true,
+                false,
+            ),
+            (
+                "https://e.test/a@@b [[code]] @@ LP [[/code]]",
+                "@@",
+                true,
+                false,
+            ),
+            (
+                "foo@bar.example@<x [[code]] >@ LP [[/code]]",
+                "@<",
+                true,
+                false,
+            ),
+            (
+                "https://e.test/a@<b [[code]] >@ LP [[/code]]",
+                "@<",
+                false,
+                true,
+            ),
         ] {
             let ranges = literal_ranges(source);
 
-            assert!(
-                !is_owned(&ranges, source.find(opener).unwrap()),
+            assert_eq!(
+                is_owned(&ranges, source.find(opener).unwrap()),
+                opener_owned,
+                "{source:?}",
+            );
+            assert_eq!(
+                is_owned(&ranges, source.find("LP").unwrap()),
+                lp_owned,
                 "{source:?}"
             );
-            assert!(is_owned(&ranges, source.find("LP").unwrap()), "{source:?}");
         }
     }
 
     #[test]
-    fn url_and_email_owned_delimiters_do_not_close_inline_literals() {
+    fn pinned_url_email_delimiters_preserve_inline_literal_boundaries() {
         for owner in ["foo@bar.example", "https://e.test/a"] {
-            for source in [
-                format!("@@{owner}@@x hidden @@ live"),
-                format!("[[$ {owner}$]]x hidden $]] live"),
-                format!("[!--{owner}--]x hidden --] live"),
+            for (source, hidden, live) in [
+                (format!("@@{owner}@@x hidden @@ live"), false, true),
+                (format!("[[$ {owner}$]]x hidden $]] live"), true, false),
+                (format!("[!--{owner}--]x hidden --] live"), true, false),
             ] {
                 let ranges = literal_ranges(&source);
 
-                assert!(
+                assert_eq!(
                     is_owned(&ranges, source.find("hidden").unwrap()),
-                    "{source:?}",
+                    hidden,
+                    "{source:?}"
                 );
-                assert!(
-                    !is_owned(&ranges, source.find("live").unwrap()),
-                    "{source:?}",
+                assert_eq!(
+                    is_owned(&ranges, source.find("live").unwrap()),
+                    live,
+                    "{source:?}"
                 );
             }
         }

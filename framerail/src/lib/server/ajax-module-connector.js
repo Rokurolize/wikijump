@@ -1,6 +1,6 @@
 const AJAX_MODULE_CONNECTOR_HEADERS = {
   "cache-control": "no-store",
-  "content-type": "application/json; charset=utf-8"
+  "content-type": "text/plain; charset=UTF-8"
 }
 const MAX_AJAX_MODULE_CONNECTOR_BODY_BYTES = 131_072
 const CONTROL_FIELDS = new Set([
@@ -10,13 +10,66 @@ const CONTROL_FIELDS = new Set([
   "callbackIndex",
   "eventSource"
 ])
+const NEWPAGE_ACTION = "misc/NewPageHelperAction"
+const NEWPAGE_EVENT = "createNewPage"
+const PAGE_DISCUSSION_ACTION = "ForumAction"
+const PAGE_DISCUSSION_EVENT = "createPageDiscussionThread"
+const NEWPAGE_AUTOSAVE_MODES = new Set(["save-and-refresh", "save-and-go"])
+const NEWPAGE_NO_NAME_MESSAGE = "You should provide a page name"
+const NEWPAGE_INCORRECT_NAME_MESSAGE =
+  "The page name is not correct: please fix it and try again"
+const NEWPAGE_NO_PERMISSION_MESSAGE =
+  'Sorry, you can not create a new page in this category. Only members of this site, site administrators and perhaps selected moderators are allowed to do it. <a href="#action:login">Sign in as Wikidot user</a>'
+const NEWPAGE_GENERIC_ERROR_MESSAGE = "An error occurred while processing the request."
+const MAX_WIKIDOT_PAGE_UNIX_NAME_LENGTH = 60
 
+/**
+ * @typedef {{
+ *   slug: string
+ *   title: string
+ *   wikitext: string
+ *   tags: string[]
+ *   parentPage: string
+ * }} NewPageCreateInput
+ *
+ *
+ * @typedef {{
+ *   siteId: number
+ *   moduleBody: string
+ *   parameters: Record<string, string>
+ * }} ListPagesRenderInput
+ *
+ *
+ * @typedef {{
+ *   siteId: number
+ *   renderListPages: (
+ *     input: ListPagesRenderInput
+ *   ) => Promise<{ body: string }>
+ *   createNewPage?: (input: NewPageCreateInput) => Promise<void>
+ *   canCreateNewPage?: boolean | (() => boolean | Promise<boolean>)
+ *   pageExists?: (slug: string) => boolean | Promise<boolean>
+ *   createPageDiscussion?: (input: {
+ *     siteId: number
+ *     pageId: number
+ *   }) => Promise<{ thread_id: number; thread_unix_title: string } | null>
+ * }} AjaxModuleConnectorOptions
+ */
+
+/**
+ * @param {Record<string, unknown>} body
+ * @param {number} [status]
+ * @param {HeadersInit} [extraHeaders]
+ */
 const jsonResponse = (body, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { ...AJAX_MODULE_CONNECTOR_HEADERS, ...extraHeaders }
   })
 
+/**
+ * @param {Request} request
+ * @returns {Promise<Map<string, string>>}
+ */
 const readUrlEncodedForm = async (request) => {
   const contentType = request.headers.get("content-type")?.split(";", 1)[0].trim()
   if (contentType !== "application/x-www-form-urlencoded") {
@@ -39,6 +92,7 @@ const readUrlEncodedForm = async (request) => {
     return new Map()
   }
 
+  /** @type {Uint8Array[]} */
   const chunks = []
   let byteLength = 0
   try {
@@ -73,9 +127,184 @@ const readUrlEncodedForm = async (request) => {
   return values
 }
 
+/**
+ * @param {Map<string, string>} fields
+ * @param {string} name
+ */
+const fieldValue = (fields, name) => fields.get(name) ?? ""
+
+/** @param {string} tags */
+const splitNewPageTags = (tags) => tags.split(/\s+/u).filter((tag) => tag.length > 0)
+
+/** @param {string} value */
+const escapeHtml = (value) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+
+/** @param {{ pageName: string; categoryName: string }} input */
+const toWikidotUnixName = ({ pageName, categoryName }) => {
+  const normalizedCategory = categoryName === "_default" ? "" : categoryName
+  const prefixed =
+    normalizedCategory.length > 0 ? `${normalizedCategory}:${pageName}` : pageName
+  return prefixed.slice(0, MAX_WIKIDOT_PAGE_UNIX_NAME_LENGTH)
+}
+
+/**
+ * @param {string} format
+ * @returns {RegExp | null}
+ */
+const parseDelimitedRegex = (format) => {
+  if (!format.startsWith("/")) return null
+
+  const delimiter = format.lastIndexOf("/")
+  if (delimiter <= 0) return null
+
+  const pattern = format.slice(1, delimiter)
+  const rawFlags = format.slice(delimiter + 1)
+  let flags = ""
+  if (rawFlags.includes("i")) flags += "i"
+  if (rawFlags.includes("m")) flags += "m"
+  try {
+    return new RegExp(pattern, flags)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * @param {string} pageName
+ * @param {string} format
+ */
+const matchesNewPageFormat = (pageName, format) => {
+  if (format.length === 0) return true
+
+  const regex = parseDelimitedRegex(format)
+  if (!regex) return true
+  return regex.test(pageName)
+}
+
+/** @param {AjaxModuleConnectorOptions["canCreateNewPage"]} canCreateNewPage */
+const resolveCanCreateNewPage = async (canCreateNewPage) => {
+  if (typeof canCreateNewPage === "function") return Boolean(await canCreateNewPage())
+  return Boolean(canCreateNewPage)
+}
+
+/**
+ * @param {Map<string, string>} fields
+ * @param {Pick<
+ *   AjaxModuleConnectorOptions,
+ *   "createNewPage" | "canCreateNewPage" | "pageExists"
+ * >} options
+ */
+const handleNewPageHelperRequest = async (
+  fields,
+  { createNewPage, canCreateNewPage, pageExists }
+) => {
+  const pageName = fieldValue(fields, "pageName")
+  if (pageName.length === 0) {
+    return jsonResponse({
+      status: "no_name",
+      message: NEWPAGE_NO_NAME_MESSAGE
+    })
+  }
+
+  const unixName = toWikidotUnixName({
+    pageName,
+    categoryName: fieldValue(fields, "categoryName")
+  })
+  if (pageExists && (await pageExists(unixName))) {
+    const escapedUnixName = escapeHtml(unixName)
+    return jsonResponse({
+      status: "page_exists",
+      message: `The page <em>${escapedUnixName}</em> already exists. <a href="/${escapedUnixName}">Jump to it</a> if you wish.`
+    })
+  }
+
+  if (!matchesNewPageFormat(pageName, fieldValue(fields, "format"))) {
+    return jsonResponse({
+      status: "incorrect_name",
+      message: NEWPAGE_INCORRECT_NAME_MESSAGE
+    })
+  }
+
+  const pageTitle = pageName
+  const tags = fieldValue(fields, "tags")
+  const parentPage = fieldValue(fields, "parent")
+  const templateId = fieldValue(fields, "template")
+  const mode = fieldValue(fields, "mode")
+
+  if (NEWPAGE_AUTOSAVE_MODES.has(mode)) {
+    if (!(await resolveCanCreateNewPage(canCreateNewPage))) {
+      return jsonResponse({
+        status: "no_permission",
+        message: NEWPAGE_NO_PERMISSION_MESSAGE
+      })
+    }
+    if (templateId.length > 0 && tags.length > 0) {
+      return jsonResponse({
+        status: "not_ok",
+        message: NEWPAGE_GENERIC_ERROR_MESSAGE
+      })
+    }
+    if (!createNewPage) {
+      return jsonResponse({
+        status: "not_ok",
+        message: "NewPage autosave is unavailable"
+      })
+    }
+
+    await createNewPage({
+      slug: unixName,
+      title: pageTitle,
+      wikitext: "",
+      tags: templateId.length > 0 ? [] : splitNewPageTags(tags),
+      parentPage: templateId.length > 0 ? "" : parentPage
+    })
+
+    return jsonResponse({
+      status: "ok",
+      goToUrl: mode === "save-and-refresh" ? "." : fieldValue(fields, "goTo") || unixName
+    })
+  }
+
+  /**
+   * @type {{
+   *   status: string
+   *   unixName: string
+   *   pageTitle: string
+   *   tags: string
+   *   parentPage: string
+   *   templateId?: string
+   * }}
+   */
+  const response = {
+    status: "ok",
+    unixName,
+    pageTitle,
+    tags,
+    parentPage
+  }
+  if (templateId.length > 0) response.templateId = templateId
+  return jsonResponse(response)
+}
+
+/**
+ * @param {Request} request
+ * @param {AjaxModuleConnectorOptions} options
+ */
 export const handleAjaxModuleConnectorRequest = async (
   request,
-  { siteId, renderListPages }
+  {
+    siteId,
+    renderListPages,
+    createNewPage,
+    canCreateNewPage = true,
+    pageExists,
+    createPageDiscussion
+  }
 ) => {
   if (request.method !== "POST") {
     return jsonResponse(
@@ -85,6 +314,7 @@ export const handleAjaxModuleConnectorRequest = async (
     )
   }
 
+  /** @type {Map<string, string>} */
   let fields
   try {
     fields = await readUrlEncodedForm(request)
@@ -100,6 +330,75 @@ export const handleAjaxModuleConnectorRequest = async (
       },
       status
     )
+  }
+
+  if (fields.get("action") === NEWPAGE_ACTION && fields.get("event") === NEWPAGE_EVENT) {
+    try {
+      return await handleNewPageHelperRequest(fields, {
+        createNewPage,
+        canCreateNewPage,
+        pageExists
+      })
+    } catch (error) {
+      console.error("AJAX NewPage helper action failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        message: "Unable to create NewPage target"
+      })
+    }
+  }
+
+  if (
+    fields.get("action") === PAGE_DISCUSSION_ACTION &&
+    fields.get("event") === PAGE_DISCUSSION_EVENT
+  ) {
+    const callbackIndex = fields.has("callbackIndex")
+      ? fieldValue(fields, "callbackIndex")
+      : null
+    const responseMetadata = () => ({
+      callbackIndex,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+    })
+    const rawPageId = fieldValue(fields, "page_id")
+    if (!/^\d+$/u.test(rawPageId) || !createPageDiscussion) {
+      return jsonResponse({
+        status: "no_page",
+        message: "The page does not exist",
+        ...responseMetadata()
+      })
+    }
+    const pageId = Number.parseInt(rawPageId, 10)
+    if (!Number.isSafeInteger(pageId) || pageId <= 0) {
+      return jsonResponse({
+        status: "no_page",
+        message: "The page does not exist",
+        ...responseMetadata()
+      })
+    }
+
+    try {
+      const discussion = await createPageDiscussion({ siteId, pageId })
+      if (!discussion) {
+        return jsonResponse({
+          status: "no_page",
+          message: "The page does not exist",
+          ...responseMetadata()
+        })
+      }
+      return jsonResponse({
+        status: "ok",
+        thread_id: discussion.thread_id,
+        thread_unix_title: discussion.thread_unix_title,
+        ...responseMetadata()
+      })
+    } catch (error) {
+      console.error("AJAX page discussion action failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        message: "Unable to create page discussion",
+        ...responseMetadata()
+      })
+    }
   }
 
   const moduleName = fields.get("moduleName")
@@ -118,6 +417,7 @@ export const handleAjaxModuleConnectorRequest = async (
     })
   }
 
+  /** @type {Record<string, string>} */
   const parameters = {}
   for (const [key, value] of fields) {
     if (!CONTROL_FIELDS.has(key)) parameters[key] = value
