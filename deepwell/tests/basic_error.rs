@@ -52,10 +52,17 @@ async fn basic_error_endpoints_generate_localized_html() {
         json!({
             "locales": ["en"],
             "site_id": site.site_id,
-            "page_slug": "missing-page",
+            "page_slug": "\"><mark data-poc=\"inert\">slug-marker</mark>",
         }),
     );
-    assert!(page_slug.body.contains("missing-page"));
+    assert!(!page_slug.body.contains("slug-marker"));
+    assert!(page_slug.body.contains("<h1>This page does not exist</h1>"));
+    assert!(
+        page_slug
+            .body
+            .contains("The requested page does not exist.")
+    );
+    assert!(page_slug.body.contains("site's main page"));
 
     let page_fetch = run_endpoint!(
         runner,

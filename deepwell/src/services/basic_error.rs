@@ -159,7 +159,6 @@ impl BasicErrorService {
 
         let domain = DomainService::preferred_domain(config, &site);
         args.set("domain", fluent_str!(domain));
-        args.set("page_slug", fluent_str!(page_slug));
 
         let title = ctx
             .localization()
