@@ -8820,6 +8820,49 @@ fn normalizes_generic_wikidot_multiline_include_arguments() {
 }
 
 #[test]
+fn multiline_include_variables_preserve_a_self_referential_class_prefix() {
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut include = concat!(
+        "[[include :scp-wiki:component:earthworm\n",
+        "| previous-url = scp-8380\n",
+        "| previous-title = Aquaphobia\n",
+        "| next-url = scp-8894\n",
+        "| next-title = Basophobia\n",
+        "| hub-url = scp-anthology-2024\n",
+        "| hub-title = Anthology 2024\n",
+        "| class = earthworm--anth24 {$class}\n",
+        "]]\n",
+    )
+    .to_owned();
+    RenderService::normalize_wikidot_multiline_includes(&mut include);
+
+    let mut includes = Vec::new();
+    ftml::include(
+        &include,
+        &settings,
+        CollectingIncluder {
+            includes: &mut includes,
+        },
+        include_error,
+    )
+    .expect("multiline include should parse");
+
+    assert_eq!(includes.len(), 1);
+    assert_eq!(
+        includes[0].page_ref(),
+        &PageRef::page_and_site("scp-wiki", "component:earthworm"),
+    );
+    assert_eq!(
+        includes[0].variables().get("class").map(Cow::as_ref),
+        Some("earthworm--anth24 {$class}"),
+    );
+
+    let mut source = r#"class="{$class}""#.to_owned();
+    super::apply_include_variables(&mut source, &includes[0]);
+    assert_eq!(source, r#"class="earthworm--anth24 {$class}""#);
+}
+
+#[test]
 fn leaves_malformed_multiline_include_boundaries_untouched() {
     let mut include = concat!(
         "[[include component:generic\n",
@@ -8976,6 +9019,22 @@ fn include_variable_rebuild_preserves_unresolved_and_self_references_with_defaul
     super::apply_include_variables(&mut source, &include);
 
     assert_eq!(source, "%%created_by%%|{$missing}|no|{$self}|value");
+}
+
+#[test]
+fn include_variable_rebuild_does_not_repeat_a_self_referential_prefix() {
+    let include = IncludeRef::new(
+        PageRef::page_only("component:earthworm"),
+        VariableMap::from([(
+            Cow::Borrowed("class"),
+            Cow::Borrowed("earthworm--anth24 {$class}"),
+        )]),
+    );
+    let mut source = r#"class="{$class}""#.to_owned();
+
+    super::apply_include_variables(&mut source, &include);
+
+    assert_eq!(source, r#"class="earthworm--anth24 {$class}""#);
 }
 
 #[test]
