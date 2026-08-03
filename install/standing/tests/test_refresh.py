@@ -17,6 +17,11 @@ SPEC.loader.exec_module(REFRESH)
 
 
 class RefreshStandingTest(unittest.TestCase):
+    def test_standing_runtime_uses_supported_release_profiles(self) -> None:
+        compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")
+        self.assertIn("DEEPWELL_BUILD_PROFILE: release", compose)
+        self.assertIn("WWS_BUILD_PROFILE: release", compose)
+
     def test_compose_restart_is_fixed_to_app_services_without_volume_flags(
         self,
     ) -> None:
