@@ -2,6 +2,7 @@ name: ${STANDING_PROJECT_NAME:?STANDING_PROJECT_NAME is required}
 
 x-runtime-labels: &runtime-labels
   com.rokurolize.wikijump.owner: standing-runtime-promotion
+  com.rokurolize.wikijump.lifecycle: prepared-exact-merged-head
   com.rokurolize.wikijump.sha: ${STANDING_WIKIJUMP_SHA:?STANDING_WIKIJUMP_SHA is required}
   com.rokurolize.wikijump.ftml_sha: ${STANDING_FTML_SHA:?STANDING_FTML_SHA is required}
   com.rokurolize.wikijump.profile: production-build
