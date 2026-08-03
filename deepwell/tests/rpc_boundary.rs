@@ -39,7 +39,9 @@ async fn rpc_request(method: &str, params: Value) -> Value {
 
     let response = reqwest::Client::new()
         .post(format!("http://{address}"))
-        .bearer_auth(env::var("DEEPWELL_RPC_TOKEN").expect("test RPC token must be configured"))
+        .bearer_auth(
+            env::var("DEEPWELL_RPC_TOKEN").expect("test RPC token must be configured"),
+        )
         .header("X-Deepwell-Site-Id", "42")
         .header("X-Deepwell-Page", "category:page")
         .json(&json!({
