@@ -168,6 +168,7 @@ export async function reconcileListPagesCorpusReplay({
   let authoritativeRuntimeObservationSha256 = null;
   const authoritativeReferenceReplayKeys = new Set();
   for (const selectedPath of selectedClassificationPaths) {
+    let classificationInputCanReuse = !authoritative;
     const classificationText = await fs.readFile(selectedPath, "utf8");
     const classification = JSON.parse(classificationText);
     if (
@@ -271,6 +272,16 @@ export async function reconcileListPagesCorpusReplay({
           "authoritative preview classification differs from canonical recomputation",
         );
       }
+      const verdictAuthority = verdict.inputs.authority;
+      const canReuseBoundClassification =
+        authority.runtime_identity_sha256 ===
+          verdict.inputs.runtime_identity_sha256 &&
+        authority.runtime_proof_sha256 === verdict.inputs.runtime_proof_sha256 &&
+        authority.runtime_observation_stable_sha256 ===
+          verdictAuthority.runtime_observation_stable_sha256 &&
+        /^[0-9a-f]{64}$/u.test(
+          authority.runtime_observation_stable_sha256 ?? "",
+        );
       for (const [kind, pathField, hashField] of [
         [
           "runtime identity",
@@ -303,6 +314,7 @@ export async function reconcileListPagesCorpusReplay({
           "authoritative classification shards use different runtime identities",
         );
       }
+      classificationInputCanReuse = canReuseBoundClassification;
     }
     const classificationInput = {
       path: selectedPath,
@@ -320,7 +332,7 @@ export async function reconcileListPagesCorpusReplay({
     if (!Array.isArray(effectiveCases)) {
       throw new Error("preview classification cases must be an array");
     }
-    if (authoritative) {
+    if (authoritative && !classificationInputCanReuse) {
       const verdictPath = classification.inputs.verdict_path;
       const verdict = JSON.parse(await fs.readFile(verdictPath, "utf8"));
       const replayedVerdict = await replayPreview({
@@ -348,11 +360,22 @@ export async function reconcileListPagesCorpusReplay({
         });
       effectiveCases = replayedClassification.cases;
       classificationInput.authoritative_replay = {
+        mode: "replayed-verdict",
         verdict_sha256: sha256(JSON.stringify(replayedVerdict)),
         case_count: effectiveCases.length,
         runtime_observation_stable_sha256:
           replayedVerdict.inputs.authority
             .runtime_observation_stable_sha256,
+      };
+      authoritativeRuntimeObservationSha256 =
+        replayedVerdict.inputs.authority.runtime_observation_stable_sha256;
+    } else if (authoritative) {
+      classificationInput.authoritative_replay = {
+        mode: "bound-classification",
+        verdict_sha256: classification.inputs.verdict_sha256,
+        case_count: effectiveCases.length,
+        runtime_observation_stable_sha256:
+          classification.inputs.authority.runtime_observation_stable_sha256,
       };
     }
     for (const row of effectiveCases) {

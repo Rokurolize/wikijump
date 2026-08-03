@@ -128,6 +128,15 @@ WITH
 SELECT record FROM snapshot ORDER BY record;
 `;
 
+export function assertListPagesCandidateLaunchEnvironment(environment = process.env) {
+  for (const key of Object.keys(environment)) {
+    if (FORBIDDEN_RUNTIME_ENVIRONMENT.has(key) || key.startsWith("GIT_")) {
+      throw new Error(`candidate launch environment contains forbidden ${key}`);
+    }
+  }
+  return environment;
+}
+
 export const LISTPAGES_RUNTIME_OBSERVATION_SCHEMA =
   "wikijump_listpages_compat.runtime_observation.v1";
 
@@ -206,11 +215,7 @@ export function listPagesRuntimeEnvironmentAuthority(environ) {
     }
     values.set(key, entry.slice(separator + 1));
   }
-  for (const key of values.keys()) {
-    if (FORBIDDEN_RUNTIME_ENVIRONMENT.has(key) || key.startsWith("GIT_")) {
-      throw new Error(`running candidate environment contains forbidden ${key}`);
-    }
-  }
+  assertListPagesCandidateLaunchEnvironment(Object.fromEntries(values));
   const authority = Object.fromEntries(
     REQUIRED_RUNTIME_ENVIRONMENT.map((key) => {
       const value = values.get(key);
