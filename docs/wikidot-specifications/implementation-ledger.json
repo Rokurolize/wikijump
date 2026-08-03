@@ -1584,6 +1584,10 @@
           "scope": "exact-source replay accounting maps every corpus provenance to a live/local classification and fails closed on missing or actionable sources"
         },
         {
+          "path": "install/local/wikidot-verification/tests/listpages-acceptance-surface.test.mjs",
+          "scope": "acceptance receipts attest unchanged render, dependency, and fixture surfaces while requiring a fresh authoritative replay for any changed surface"
+        },
+        {
           "path": "deepwell/tests/list_pages.rs",
           "name": "random_listpages_reuses_the_same_idle_cached_order_for_one_invocation; wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",
           "scope": "public integration regressions verify invocation-stable random ordering and Ajax pager request state"
@@ -1664,7 +1668,7 @@
         },
         {
           "path": "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json",
-          "scope": "Pinned authoritative exact replay on Wikijump fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0 with FTML 6d1550f283f93ec3f4257ffda238a8f9003eed19: 23,964 invocations, 18,996 unique replay keys, classified 23,964, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. Novel (119) and literal (335) lanes are recorded as diagnostic only; the final standing runtime is fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0 with identity-bound HTTPS and browser evidence."
+          "scope": "Pinned authoritative exact replay on Wikijump 3abf3f50a4cd75759abc6a6ba64ff801568f04f9 with FTML 6d1550f283f93ec3f4257ffda238a8f9003eed19: 23,964 invocations, 18,996 unique replay keys, classified 23,964, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. Novel (119) and literal (335) lanes are recorded as diagnostic only. The receipt seals render-source paths, FTML and Cargo.lock identities, and the synchronized fixture plane; subsequent verifier-only changes may attest the prior receipt, while any render or dependency-surface change requires a fresh authoritative replay."
         },
         {
           "path": "install/standing/compose.yaml; install/standing/tests/test_refresh.py",
