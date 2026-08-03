@@ -18,6 +18,32 @@ use crate::services::render::literal_regions::token_boundaries::{
 };
 use std::ops::Range;
 
+const WHOLE_HEAD_SCAN_WORK_LIMIT_MULTIPLIER: usize = 8;
+#[cfg(test)]
+const MAX_WHOLE_HEAD_SCAN_WORK_MULTIPLIER: usize =
+    WHOLE_HEAD_SCAN_WORK_LIMIT_MULTIPLIER + 1;
+
+const WHOLE_VALUE_BLOCK_NAMES: &[&str] = &[
+    "anchortarget",
+    "bibcite",
+    "char",
+    "character",
+    "equation",
+    "eqref",
+    "eref",
+    "ifcategory",
+    "iftags",
+    "lines",
+    "math",
+    "newlines",
+    "rb",
+    "ruby2",
+    "size",
+    "tab",
+    "target",
+    "user",
+];
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::services::render::literal_regions) enum RuntimeModuleHeadCandidate {
     Exact(Range<usize>),
@@ -29,6 +55,21 @@ pub(in crate::services::render::literal_regions) struct HeadCandidateStreams {
         Vec<RuntimeModuleHeadCandidate>,
     pub(in crate::services::render::literal_regions) runtime_modules:
         Vec<RuntimeModuleHeadCandidate>,
+    /// Candidate streams are cleared when this is true so no caller can use a
+    /// partial literal-ownership graph after budget exhaustion.
+    pub(in crate::services::render::literal_regions) work_limit_exceeded: bool,
+    pub(in crate::services::render::literal_regions) whole_head_scan_work: usize,
+}
+
+impl HeadCandidateStreams {
+    fn oversized_or_exhausted(whole_head_scan_work: usize) -> Self {
+        Self {
+            generic: Vec::new(),
+            runtime_modules: Vec::new(),
+            work_limit_exceeded: true,
+            whole_head_scan_work,
+        }
+    }
 }
 
 /// Enumerate complete heads consumed by pinned FTML block rules.
@@ -58,10 +99,7 @@ pub(in crate::services::render::literal_regions) fn collect_head_candidate_strea
     source: &str,
 ) -> HeadCandidateStreams {
     if source.len() >= u32::MAX as usize {
-        return HeadCandidateStreams {
-            generic: Vec::new(),
-            runtime_modules: Vec::new(),
-        };
+        return HeadCandidateStreams::oversized_or_exhausted(0);
     }
     let text_tokens = TextTokenIndex::new(source);
     let heads = HeadContext::new_with_text_tokens(source, &text_tokens);
@@ -86,6 +124,10 @@ pub(in crate::services::render::literal_regions) fn collect_head_candidate_strea
     let mut text_tokens = text_tokens.cursor();
     let mut generic = Vec::new();
     let mut runtime_modules = Vec::new();
+    let whole_head_scan_work_limit = source
+        .len()
+        .saturating_mul(WHOLE_HEAD_SCAN_WORK_LIMIT_MULTIPLIER);
+    let mut whole_head_scan_work = 0usize;
     let mut cursor = 0usize;
     while let Some(relative) = source[cursor..].find("[[") {
         let candidate = cursor + relative;
@@ -156,7 +198,16 @@ pub(in crate::services::render::literal_regions) fn collect_head_candidate_strea
         let end = if is_name_map_block(name) {
             name_map_end(bytes, name, name_end, heads)
         } else if is_whole_value_block(name) {
-            whole_value_end(bytes, name_end, &mut text_tokens)
+            let (end, examined) = whole_value_end(bytes, name_end, &mut text_tokens);
+            whole_head_scan_work = whole_head_scan_work.saturating_add(examined);
+            // A scan examines at most one source length before exhaustion is
+            // observed, so cumulative whole-value work remains bounded by 9n.
+            if whole_head_scan_work > whole_head_scan_work_limit {
+                return HeadCandidateStreams::oversized_or_exhausted(
+                    whole_head_scan_work,
+                );
+            }
+            end
         } else if is_no_head_block(name) {
             no_head_end(bytes, name_end)
         } else if is_map_block(name) {
@@ -179,6 +230,8 @@ pub(in crate::services::render::literal_regions) fn collect_head_candidate_strea
     HeadCandidateStreams {
         generic,
         runtime_modules,
+        work_limit_exceeded: false,
+        whole_head_scan_work,
     }
 }
 
@@ -241,12 +294,19 @@ fn whole_value_end(
     bytes: &[u8],
     name_end: usize,
     text_tokens: &mut TextTokenCursor,
-) -> Option<usize> {
-    match scan_wikidot_whole_head_value(bytes, name_end, bytes.len(), text_tokens) {
+) -> (Option<usize>, usize) {
+    let scan = scan_wikidot_whole_head_value(bytes, name_end, bytes.len(), text_tokens);
+    let examined_end = match scan {
+        WikidotWholeHeadScan::Complete { end, .. } => end,
+        WikidotWholeHeadScan::Malformed { resume, .. } => resume,
+        WikidotWholeHeadScan::Unclosed { .. } => bytes.len(),
+    };
+    let end = match scan {
         WikidotWholeHeadScan::Complete { end, .. } => Some(end),
         WikidotWholeHeadScan::Malformed { .. }
         | WikidotWholeHeadScan::Unclosed { .. } => None,
-    }
+    };
+    (end, examined_end.saturating_sub(name_end))
 }
 
 fn no_head_end(bytes: &[u8], mut cursor: usize) -> Option<usize> {
@@ -306,29 +366,7 @@ fn is_name_map_block(name: &[u8]) -> bool {
 }
 
 fn is_whole_value_block(name: &[u8]) -> bool {
-    matches_name(
-        name,
-        &[
-            "anchortarget",
-            "bibcite",
-            "char",
-            "character",
-            "equation",
-            "eqref",
-            "eref",
-            "ifcategory",
-            "iftags",
-            "lines",
-            "math",
-            "newlines",
-            "rb",
-            "ruby2",
-            "size",
-            "tab",
-            "target",
-            "user",
-        ],
-    )
+    matches_name(name, WHOLE_VALUE_BLOCK_NAMES)
 }
 
 fn is_no_head_block(name: &[u8]) -> bool {
@@ -413,7 +451,8 @@ fn matches_name(name: &[u8], accepted: &[&str]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        RuntimeModuleHeadCandidate, collect_generic_head_candidates,
+        MAX_WHOLE_HEAD_SCAN_WORK_MULTIPLIER, RuntimeModuleHeadCandidate,
+        WHOLE_VALUE_BLOCK_NAMES, collect_generic_head_candidates,
         collect_head_candidate_streams, documented_list_pages_placeholder_end,
     };
 
@@ -467,6 +506,52 @@ mod tests {
             assert!(
                 collect_generic_head_candidates(source).is_empty(),
                 "{source:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn repeated_unclosed_whole_heads_exhaust_a_linear_work_budget() {
+        const HEADS: usize = 4_096;
+        for name in WHOLE_VALUE_BLOCK_NAMES {
+            let heads = format!("[[{name} listpages ").repeat(HEADS);
+            let source = format!("[[module ListPages]]{heads}");
+            let streams = collect_head_candidate_streams(&source);
+
+            assert!(streams.work_limit_exceeded, "{name}");
+            assert!(streams.generic.is_empty(), "{name}");
+            assert!(streams.runtime_modules.is_empty(), "{name}");
+            assert!(
+                streams.whole_head_scan_work
+                    > source.len() * super::WHOLE_HEAD_SCAN_WORK_LIMIT_MULTIPLIER,
+                "{name}: work limit was not exercised",
+            );
+            assert!(
+                streams.whole_head_scan_work
+                    <= source.len() * MAX_WHOLE_HEAD_SCAN_WORK_MULTIPLIER,
+                "{name}: {} work for {} source bytes",
+                streams.whole_head_scan_work,
+                source.len(),
+            );
+        }
+    }
+
+    #[test]
+    fn dense_terminated_whole_heads_preserve_candidate_collection() {
+        const HEADS: usize = 512;
+        for name in WHOLE_VALUE_BLOCK_NAMES {
+            let heads = format!("[[{name} value]]\n").repeat(HEADS);
+            let source = format!("[[module ListPages]]\n{heads}");
+            let streams = collect_head_candidate_streams(&source);
+
+            assert!(!streams.work_limit_exceeded, "{name}");
+            assert_eq!(streams.generic.len(), HEADS, "{name}");
+            assert_eq!(streams.runtime_modules.len(), 1, "{name}");
+            assert!(
+                streams.whole_head_scan_work <= source.len(),
+                "{name}: {} work for {} source bytes",
+                streams.whole_head_scan_work,
+                source.len(),
             );
         }
     }

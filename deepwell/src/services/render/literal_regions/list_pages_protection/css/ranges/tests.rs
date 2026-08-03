@@ -112,11 +112,14 @@ fn wikidot_unclosed_css_yields_across_a_css_comment_and_malformed_head() {
         );
         assert!(
             {
-                let index = LiteralRegionIndex::new_list_pages_scanner_syntax(source);
+                let index = LiteralRegionIndex::new_list_pages_scanner_syntax(source)
+                    .expect("fixture should stay within the scanner work budget");
                 !index.contains(source.find("[[module ListPages").unwrap())
             },
             "{live_sha256}: {source:?}: {:?}",
-            LiteralRegionIndex::new_list_pages_scanner_syntax(source).ranges,
+            LiteralRegionIndex::new_list_pages_scanner_syntax(source)
+                .expect("fixture should stay within the scanner work budget")
+                .ranges,
         );
     }
 }
@@ -214,7 +217,9 @@ fn wikidot_unclosed_css_stops_before_list_pages_after_a_root_tab_close() {
         vec![0..source.len()],
     );
     assert!(
-        LiteralRegionIndex::new_list_pages_scanner_syntax(source).contains(list_pages)
+        LiteralRegionIndex::new_list_pages_scanner_syntax(source)
+            .expect("fixture should stay within the scanner work budget")
+            .contains(list_pages)
     );
 }
 

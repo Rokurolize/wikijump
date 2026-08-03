@@ -313,7 +313,11 @@ pub(in crate::services::render) fn list_pages_template_has_block_section(
     .into_iter()
     .flatten()
     .any(|section| {
-        let literal_regions = LiteralRegionIndex::new_list_pages_scanner_syntax(section);
+        let Ok(literal_regions) =
+            LiteralRegionIndex::new_list_pages_scanner_syntax(section)
+        else {
+            return false;
+        };
         let mut search = 0;
         while let Some(relative) = section[search..].find("[[") {
             let start = search + relative;

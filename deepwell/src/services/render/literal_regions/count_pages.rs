@@ -26,7 +26,14 @@ pub(super) fn collect_count_pages_literal_ranges(source: &str) -> Vec<Range<usiz
         merge_sorted_ranges(block_ranges, raw_ranges),
         comment_ranges,
     );
-    let list_pages_ranges = collect_count_pages_inherited_ranges(source);
+    let Ok(list_pages_ranges) = collect_count_pages_inherited_ranges(source) else {
+        // Treat the complete source as literal when shared parser ownership
+        // cannot be established within its source-proportional work budget.
+        return (!source.is_empty())
+            .then_some(0..source.len())
+            .into_iter()
+            .collect();
+    };
     let generic_tag_head_ranges = collect_generic_tag_head_ranges(source);
     let parser_ranges =
         select_list_pages_precedence(list_pages_ranges, generic_tag_head_ranges);
@@ -291,5 +298,19 @@ mod tests {
         let source = "[[div data=\"[[module CountPages tags='+hidden']]\"]]body[[/div]]";
         let module = source.find("[[module CountPages").unwrap();
         assert!(LiteralRegionIndex::new_count_pages_syntax(source).contains(module));
+    }
+
+    #[test]
+    fn count_pages_fails_closed_when_whole_head_work_is_exhausted() {
+        const HEADS: usize = 4_096;
+        let source = format!(
+            "[[module CountPages tags=\"+live\"]]L[[/module]]{}",
+            "[[target listpages ".repeat(HEADS),
+        );
+
+        let index = LiteralRegionIndex::new_count_pages_syntax(&source);
+
+        assert!(index.contains(0));
+        assert!(index.contains(source.len() - 1));
     }
 }

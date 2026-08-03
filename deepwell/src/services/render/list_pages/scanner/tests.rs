@@ -1990,7 +1990,8 @@ fn documented_placeholder_head_reaches_the_direct_scanner() {
     let source = "[[module ListPages 属性...]]\n模块主体\n[[/module]]";
     let lowercase = source.to_ascii_lowercase();
     let ListPagesScannerLiteralIndexes { direct, .. } =
-        LiteralRegionIndex::new_list_pages_scanner_indexes(source, None);
+        LiteralRegionIndex::new_list_pages_scanner_indexes(source, None)
+            .expect("fixture should stay within the scanner work budget");
     assert!(
         direct.containing_range(0).is_none(),
         "the exact runtime head must not be claimed by a literal owner",
@@ -2016,7 +2017,8 @@ fn documented_placeholder_head_reaches_the_direct_scanner() {
     let ListPagesScannerLiteralIndexes {
         projected: projected_literals,
         ..
-    } = LiteralRegionIndex::new_list_pages_scanner_indexes(source, Some(&projection));
+    } = LiteralRegionIndex::new_list_pages_scanner_indexes(source, Some(&projection))
+        .expect("fixture should stay within the scanner work budget");
     let projected_literals =
         projected_literals.expect("a source projection has a projected literal index");
     let (projected_events, _, _, projected_ambiguous) = collect_module_events(

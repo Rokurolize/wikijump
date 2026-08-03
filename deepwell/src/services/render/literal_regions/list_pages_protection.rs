@@ -33,18 +33,22 @@ pub(in crate::services::render) fn project_list_pages_typography_in_place(
     project_typography_in_place(source)
 }
 
-pub(super) fn collect_list_pages_literal_ranges(source: &str) -> Vec<Range<usize>> {
+pub(super) fn collect_list_pages_literal_ranges(
+    source: &str,
+) -> Result<Vec<Range<usize>>, usize> {
     collect_literal_ranges(source, true)
 }
 
-pub(super) fn collect_count_pages_inherited_ranges(source: &str) -> Vec<Range<usize>> {
+pub(super) fn collect_count_pages_inherited_ranges(
+    source: &str,
+) -> Result<Vec<Range<usize>>, usize> {
     collect_literal_ranges(source, false)
 }
 
 fn collect_literal_ranges(
     source: &str,
     include_base_candidates: bool,
-) -> Vec<Range<usize>> {
+) -> Result<Vec<Range<usize>>, usize> {
     if let Some(normalized) = ListPagesSourceProjection::new(source) {
         let downstream_css_ranges = collect_downstream_css_module_ranges(source);
         let normalized_ranges = collect_projected_literal_ranges(
@@ -52,8 +56,8 @@ fn collect_literal_ranges(
             false,
             include_base_candidates,
         );
-        let projected_ranges = normalized.map_ranges(normalized_ranges, source.len());
-        merge_sorted_ranges(downstream_css_ranges, projected_ranges)
+        let projected_ranges = normalized.map_ranges(normalized_ranges?, source.len());
+        Ok(merge_sorted_ranges(downstream_css_ranges, projected_ranges))
     } else {
         collect_projected_literal_ranges(source, true, include_base_candidates)
     }
@@ -61,7 +65,7 @@ fn collect_literal_ranges(
 
 pub(super) fn collect_already_projected_list_pages_literal_ranges(
     source: &str,
-) -> Vec<Range<usize>> {
+) -> Result<Vec<Range<usize>>, usize> {
     collect_projected_literal_ranges(source, false, true)
 }
 
@@ -107,7 +111,7 @@ fn collect_projected_literal_ranges(
     source: &str,
     include_downstream_css: bool,
     include_base_candidates: bool,
-) -> Vec<Range<usize>> {
+) -> Result<Vec<Range<usize>>, usize> {
     let (original_quote_ranges, compat_quote_ranges) =
         collect_list_pages_quote_ranges(source);
     collect_candidate_graph_ranges(

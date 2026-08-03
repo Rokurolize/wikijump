@@ -191,3 +191,18 @@ fn deferred_nested_head_rollbacks_exhaust_a_linear_work_budget() {
         );
     }
 }
+
+#[test]
+fn whole_head_literal_index_budget_preserves_the_authored_source() {
+    const HEADS: usize = 4_096;
+    const LIVE: &str = "[[module ListPages name=\"live\"]]kept[[/module]]";
+    let source = format!("{LIVE}{}", "[[target listpages ".repeat(HEADS));
+
+    let (modules, work, literal_range_advances) =
+        find_list_pages_module_matches_with_cursor_work(&source);
+
+    assert!(modules.is_empty());
+    assert_eq!(literal_range_advances, 0);
+    assert!(work > source.len());
+    assert!(work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER);
+}
