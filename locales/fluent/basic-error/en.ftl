@@ -23,9 +23,7 @@ basic-error-site-custom = <h1>No { -service-name } site exists with this address
     .title = No such site - { -service-name }
 
 basic-error-page-slug = <h1>This page does not exist</h1>
-    <p>
-      The page <a href="https://{ $domain }/{ $page_slug }"><code>{ $domain }/{ $page_slug }</code></a> does not exist.
-    </p>
+    <p>The requested page does not exist.</p>
 
     <p>
       Return to the <a href="https://{ $domain }/">site's main page</a>.
