@@ -543,6 +543,7 @@ test("Deepwell adapter renders an unsaved preview without page mutation", async 
   };
   const adapter = new DeepwellRpcAdapter({
     rpcUrl: "http://127.0.0.1:2741/jsonrpc",
+    rpcToken: "0".repeat(64),
     textBlockBaseUrl: "http://127.0.0.1:9000/deepwell-text-blocks/",
     siteSlug: "sandbox-for-codex",
     administratorEmail: "admin@example.test",
@@ -887,6 +888,7 @@ test("Deepwell adapter removes a created page when inspection fails", async () =
   };
   const adapter = new DeepwellRpcAdapter({
     rpcUrl: "http://127.0.0.1:2741/jsonrpc",
+    rpcToken: "0".repeat(64),
     textBlockBaseUrl: "http://127.0.0.1:9000/deepwell-text-blocks/",
     siteSlug: "sandbox-for-codex",
     administratorEmail: "admin@example.test",
@@ -966,6 +968,7 @@ test("Deepwell adapter records stored HTML payload identity before verified clea
   };
   const adapter = new DeepwellRpcAdapter({
     rpcUrl: "http://127.0.0.1:2741/jsonrpc",
+    rpcToken: "0".repeat(64),
     textBlockBaseUrl: "http://127.0.0.1:9000/deepwell-text-blocks/",
     siteSlug: "sandbox-for-codex",
     administratorEmail: "admin@example.test",
@@ -1055,6 +1058,7 @@ test("Deepwell adapter cleans a page created before a transport failure", async 
   };
   const adapter = new DeepwellRpcAdapter({
     rpcUrl: "http://127.0.0.1:2741/jsonrpc",
+    rpcToken: "0".repeat(64),
     textBlockBaseUrl: "http://127.0.0.1:9000/deepwell-text-blocks/",
     siteSlug: "sandbox-for-codex",
     administratorEmail: "admin@example.test",
@@ -1293,6 +1297,7 @@ test("Deepwell adapter applies state fixture pages and records disposable receip
   };
   const adapter = new DeepwellRpcAdapter({
     rpcUrl: "http://127.0.0.1:2741/jsonrpc",
+    rpcToken: "0".repeat(64),
     textBlockBaseUrl: "http://127.0.0.1:9000/deepwell-text-blocks/",
     siteSlug: "sandbox-for-codex",
     administratorEmail: "admin@example.test",

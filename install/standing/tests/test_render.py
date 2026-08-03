@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -13,6 +14,7 @@ FTML_SHA = "f" * 40
 
 
 class RenderStandingConfigTest(unittest.TestCase):
+    ENV = {**os.environ, "DEEPWELL_RPC_TOKEN": "0" * 64}
     def make_source(self, root: Path) -> tuple[Path, str]:
         source = root / "source"
         (source / "install/prod/deepwell").mkdir(parents=True)
@@ -47,7 +49,7 @@ class RenderStandingConfigTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_dir:
             source, sha = self.make_source(Path(temporary_dir))
             output = Path(temporary_dir) / "host/standing"
-            result = subprocess.run(self.command(source, output, sha), check=True, text=True, capture_output=True)
+            result = subprocess.run(self.command(source, output, sha), check=True, text=True, capture_output=True, env=self.ENV)
             rendered = json.loads(result.stdout)
             identity = json.loads((output / "identity.json").read_text(encoding="utf-8"))
             self.assertEqual(rendered["output_dir"], str(output))
@@ -70,7 +72,7 @@ class RenderStandingConfigTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_dir:
             source, sha = self.make_source(Path(temporary_dir))
             output = Path(temporary_dir) / "host/standing"
-            subprocess.run(self.command(source, output, sha), check=True, text=True, capture_output=True)
+            subprocess.run(self.command(source, output, sha), check=True, text=True, capture_output=True, env=self.ENV)
             compose = (output / "compose.yaml").read_text(encoding="utf-8")
             environment = (output / ".env").read_text(encoding="utf-8")
             self.assertIn("target: /etc/deepwell.toml", compose)
@@ -82,7 +84,7 @@ class RenderStandingConfigTest(unittest.TestCase):
             source, sha = self.make_source(Path(temporary_dir))
             (source / "dirty.txt").write_text("not committed\n", encoding="utf-8")
             output = Path(temporary_dir) / "host/standing"
-            result = subprocess.run(self.command(source, output, sha), text=True, capture_output=True)
+            result = subprocess.run(self.command(source, output, sha), text=True, capture_output=True, env=self.ENV)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("source checkout must be clean", result.stderr)
             self.assertFalse(output.exists())
@@ -96,7 +98,7 @@ class RenderStandingConfigTest(unittest.TestCase):
             subprocess.run(("git", "commit", "-m", "change domain"), cwd=source, check=True, stdout=subprocess.DEVNULL)
             sha = subprocess.check_output(("git", "rev-parse", "HEAD"), cwd=source, text=True).strip()
             output = Path(temporary_dir) / "host/standing"
-            result = subprocess.run(self.command(source, output, sha), text=True, capture_output=True)
+            result = subprocess.run(self.command(source, output, sha), text=True, capture_output=True, env=self.ENV)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("must contain exactly one expected domain block", result.stderr)
             self.assertFalse(output.exists())

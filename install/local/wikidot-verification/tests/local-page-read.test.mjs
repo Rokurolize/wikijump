@@ -20,11 +20,14 @@ test("local page reader compares timestamp precision and validates returned page
   assert.equal(sameTimestamp("2026-01-01T00:00:00Z", "2026-01-01T00:00:01Z"), false);
 
   const requests = [];
+  const headers = [];
   const client = new LocalPageReadClient({
     rpcUrl: "http://127.0.0.1:2747/jsonrpc",
+    rpcToken: "0".repeat(64),
     fetchImpl: async (_url, options) => {
       const request = JSON.parse(options.body);
       requests.push(request);
+      headers.push(options.headers);
       if (request.method === "site_get") return response({site_id: 7}, request.id);
       return response({
         compiled_body_html: "<p>ok</p>",
@@ -40,11 +43,16 @@ test("local page reader compares timestamp precision and validates returned page
   assert.equal(await client.siteId(), 7);
   assert.equal((await client.pageGet(7, "alpha")).wikitext, "source");
   assert.deepEqual(requests.map(({method}) => method), ["site_get", "page_get"]);
+  assert.deepEqual(headers.map(({authorization}) => authorization), [
+    `Bearer ${"0".repeat(64)}`,
+    `Bearer ${"0".repeat(64)}`,
+  ]);
 });
 
 test("local page reader rejects mismatched RPC envelopes", async () => {
   const client = new LocalPageReadClient({
     rpcUrl: "http://127.0.0.1:2747/jsonrpc",
+    rpcToken: "0".repeat(64),
     fetchImpl: async () => response({site_id: 7}, 99),
   });
   await assert.rejects(() => client.siteId(), (error) => error instanceof LocalPageReadError && error.code === "rpc_envelope");

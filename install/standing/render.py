@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -36,6 +37,15 @@ def required_text(value: str, name: str) -> str:
     if not value or "\n" in value or "\r" in value:
         raise ValueError(f"{name} must be a non-empty single-line value")
     return value
+
+
+def required_rpc_token() -> str:
+    token = os.environ.get("DEEPWELL_RPC_TOKEN", "")
+    if not re.fullmatch(r"[0-9a-f]{64}", token):
+        raise ValueError(
+            "DEEPWELL_RPC_TOKEN must be supplied in the environment as 64 lowercase hexadecimal characters"
+        )
+    return token
 
 
 def source_state(source_root: Path, wikijump_sha: str, ftml_sha: str) -> dict[str, str]:
@@ -104,6 +114,7 @@ def main() -> int:
     project_name = required_text(args.project_name, "project_name")
     network_name = required_text(args.network_name or f"{project_name}_default", "network_name")
     images = {argument: required_text(getattr(args, argument), argument) for argument in IMAGE_ARGUMENTS}
+    rpc_token = required_rpc_token()
     template = Path(__file__).with_name("compose.yaml")
     output_dir.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f".{output_dir.name}.render-", dir=output_dir.parent) as temporary_dir:
@@ -123,6 +134,7 @@ def main() -> int:
             "STANDING_WIKIJUMP_SHA": identity["wikijump_sha"],
             "STANDING_FTML_SHA": identity["ftml_sha"],
             "STANDING_LOCALES_SOURCE": str((source_root / "locales").resolve()),
+            "DEEPWELL_RPC_TOKEN": rpc_token,
             **{f"STANDING_{argument.upper()}": value for argument, value in images.items()},
         }
         write_environment(staging / ".env", environment)
