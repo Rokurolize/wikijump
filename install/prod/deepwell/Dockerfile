@@ -6,7 +6,13 @@ FROM rust:1.95.0@sha256:f49565f188ee00bc2a18dd418183f2c5f23ef7d6e691890517ed341a
 
 # Install system dependencies
 RUN apt update
-RUN apt install -y build-essential libmagic-dev pkg-config
+RUN apt install -y build-essential libmagic-dev pkg-config musl-tools
+
+# The runtime image is Debian Bookworm (glibc 2.36), while the pinned Rust
+# builder image currently carries a newer glibc.  Build the migration helper
+# statically so the immutable runtime image does not inherit that builder
+# libc requirement.
+RUN rustup target add x86_64-unknown-linux-musl
 
 # Copy source
 RUN mkdir /src
@@ -15,7 +21,7 @@ WORKDIR /src/deepwell
 
 # Keep migration execution in the immutable standing image.  The runtime
 # wrapper runs this binary before the prebuilt Deepwell server starts.
-RUN cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features rustls,postgres
+RUN cargo install sqlx-cli --version 0.9.0 --locked --target x86_64-unknown-linux-musl --no-default-features --features rustls,postgres
 
 # Cache rust dependencies for the application build only.
 RUN mkdir .cargo && cargo vendor > .cargo/config.toml
@@ -34,7 +40,7 @@ ENV LOCALIZATION_PATH="/opt/locales"
 RUN apt update
 RUN apt install -y curl libmagic1 libmagic-mgc
 COPY --from=rust /src/deepwell/target/release/deepwell /usr/local/bin/deepwell
-COPY --from=rust /usr/local/cargo/bin/sqlx /usr/local/bin/sqlx
+COPY --from=rust /src/deepwell/target/x86_64-unknown-linux-musl/release/sqlx /usr/local/bin/sqlx
 COPY ./deepwell/migrations /opt/deepwell/migrations
 COPY ./install/prod/deepwell/deepwell-start /usr/local/bin/wikijump-deepwell-start
 COPY ./install/prod/deepwell/health-check.sh /bin/wikijump-health-check
