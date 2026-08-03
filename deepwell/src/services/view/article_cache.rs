@@ -356,7 +356,6 @@ mod tests {
         for source in [
             "Plain imported page text.\n\n[[div]]Static[[/div]]",
             "[[include component:license-box]]",
-            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module CountPages category=\"news\"]][[/module]]",
             "[[*user example]]",
             "[[[empty-label|]]]",
@@ -416,6 +415,7 @@ mod tests {
 
         for source in [
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
             "[[module Rate]]",
@@ -512,7 +512,6 @@ mod tests {
         for source in [
             "Plain imported page text.\n\n[[div]]Static[[/div]]",
             "[[include component:license-box]]",
-            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module CountPages category=\"news\"]][[/module]]",
             "[[*user example]]",
         ] {
@@ -524,6 +523,7 @@ mod tests {
     fn article_page_cache_eligibility_denies_unsafe_or_unverified_sources() {
         for source in [
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
             "[[module Rate]]",

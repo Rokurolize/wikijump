@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import hashlib
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -31,12 +32,21 @@ class RefreshStandingTest(unittest.TestCase):
             "up",
             "--detach",
             "--no-deps",
+            "--no-build",
             *REFRESH.SERVICES,
             override_file=Path("/src/refresh.compose.yaml"),
         )
         self.assertEqual(
-            command[-6:],
-            ["up", "--detach", "--no-deps", "deepwell", "framerail", "wws"],
+            command[-7:],
+            [
+                "up",
+                "--detach",
+                "--no-deps",
+                "--no-build",
+                "deepwell",
+                "framerail",
+                "wws",
+            ],
         )
         self.assertNotIn("down", command)
         self.assertNotIn("-v", command)
@@ -47,33 +57,81 @@ class RefreshStandingTest(unittest.TestCase):
         for forbidden in ("-v", "--volumes", "--remove-volumes"):
             with self.subTest(forbidden=forbidden):
                 result = subprocess.run(
-                    (sys.executable, str(SCRIPT), forbidden),
+                    (sys.executable, str(SCRIPT), "--prepared-receipt", "/tmp/absent", forbidden),
                     text=True,
                     capture_output=True,
                 )
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("unrecognized arguments", result.stderr)
 
-    def test_builds_only_reviewed_local_dockerfiles(self) -> None:
-        source_root = Path("/src/wikijump")
-        identity = {"wikijump_sha": "a" * 40, "ftml_sha": "b" * 40}
-        for service in REFRESH.SERVICES:
-            with self.subTest(service=service):
-                command = REFRESH.build_command(
-                    source_root,
-                    service,
-                    f"local/{service}:latest",
-                    identity,
-                    "2026-08-22T00:00:00+00:00",
-                )
-                self.assertIn(
-                    str(source_root / "install" / "local" / service / "Dockerfile"),
-                    command,
-                )
-                self.assertEqual(command[-1], str(source_root))
-                self.assertEqual(
-                    "FRAMERAIL_ENV=local" in command, service == "framerail"
-                )
+    def test_activation_has_no_build_path_and_uses_prepared_references(self) -> None:
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertNotIn("docker\", \"build", source)
+        self.assertIn("--prepared-receipt", source)
+        self.assertIn("--no-build", source)
+        prepare = (SCRIPT.parent / "prepare.py").read_text(encoding="utf-8")
+        self.assertIn('"install" / "prod" / service / "Dockerfile"', prepare)
+
+    def test_local_development_still_uses_watch_mode(self) -> None:
+        deepwell_start = (SCRIPT.parents[1] / "local/deepwell/deepwell-start").read_text(
+            encoding="utf-8"
+        )
+        wws_start = (SCRIPT.parents[1] / "local/wws/wws-start").read_text(encoding="utf-8")
+        framerail_start = (SCRIPT.parents[1] / "local/framerail/framerail-start").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("cargo watch", deepwell_start)
+        self.assertIn("cargo watch", wws_start)
+        self.assertIn("pnpm dev", framerail_start)
+
+    def test_standing_deepwell_migrations_are_explicit_in_the_image(self) -> None:
+        dockerfile = (SCRIPT.parents[1] / "prod/deepwell/Dockerfile").read_text(
+            encoding="utf-8"
+        )
+        start = (SCRIPT.parents[1] / "prod/deepwell/deepwell-start").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("cargo install sqlx-cli --version 0.9.0 --locked", dockerfile)
+        self.assertIn("COPY ./deepwell/migrations /opt/deepwell/migrations", dockerfile)
+        self.assertIn("sqlx migrate run --source /opt/deepwell/migrations", start)
+        self.assertIn("exec /usr/local/bin/deepwell", start)
+
+    def test_prepared_receipt_rejects_mutable_or_wrong_image_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            for service in REFRESH.SERVICES:
+                path = root / "install/prod" / service / "Dockerfile"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(service, encoding="utf-8")
+            identity = {
+                "wikijump_sha": "a" * 40,
+                "wikijump_tree": "b" * 40,
+                "ftml_sha": "c" * 40,
+                "dependency_lock_sha256": "d" * 64,
+            }
+            receipt = {
+                "schema_version": 1,
+                "kind": "standing-image-preparation",
+                "status": "pass",
+                **identity,
+                "dockerfiles": {
+                    service: hashlib.sha256(service.encode()).hexdigest()
+                    for service in REFRESH.SERVICES
+                },
+                "images": {
+                    service: {
+                        "reference": REFRESH.image_reference(identity["wikijump_sha"], service)
+                        + (":latest" if service == "deepwell" else ""),
+                        "id": "sha256:" + "e" * 64,
+                        "profile": "release" if service != "framerail" else "built",
+                    }
+                    for service in REFRESH.SERVICES
+                },
+            }
+            path = root / "prepared.json"
+            path.write_text(json.dumps(receipt), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "exact SHA-derived reference"):
+                REFRESH.load_prepared_receipt(path, root, identity)
 
     def test_environment_rewrite_is_atomic_and_preserves_unrelated_values(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:

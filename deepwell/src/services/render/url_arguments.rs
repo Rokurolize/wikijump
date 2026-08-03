@@ -27,7 +27,8 @@
 use super::child_pages::CHILD_PAGES_MODULE_REGEX;
 use super::link_modules::{ORPHANED_PAGES_MODULE_REGEX, WANTED_PAGES_MODULE_REGEX};
 use super::list_pages::{
-    parse_list_pages_arguments, scanner::find_list_pages_module_matches,
+    parse_list_pages_arguments,
+    scanner::{find_list_pages_module_matches, list_pages_runtime_head_can_execute},
 };
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
 use super::pages::PAGES_MODULE_REGEX;
@@ -174,6 +175,7 @@ pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
 /// even the bare request.
 pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
     wikitext_has_bare_pages_module(wikitext)
+        || wikitext_has_executable_list_pages_module(wikitext)
         || CHILD_PAGES_MODULE_REGEX.is_match(wikitext)
         || NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(wikitext)
         || PAGE_CALENDAR_MODULE_REGEX.is_match(wikitext)
@@ -183,6 +185,14 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
         || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)
         || wikitext_has_random_list_pages_module(wikitext)
+}
+
+fn wikitext_has_executable_list_pages_module(wikitext: &str) -> bool {
+    find_list_pages_module_matches(wikitext)
+        .iter()
+        .any(|module| {
+            !module.preserve_original && list_pages_runtime_head_can_execute(module.head)
+        })
 }
 
 fn wikitext_has_random_list_pages_module(wikitext: &str) -> bool {
@@ -229,7 +239,7 @@ mod tests {
         assert!(wikitext_reads_url_arguments(
             r#"[[module PreviousPage tags="@URL"]]%%linked_title%%[[/module]]"#
         ));
-        assert!(!wikitext_requires_runtime_render(
+        assert!(wikitext_requires_runtime_render(
             "[[module ListPages category=\"news\"]]%%title%%[[/module]]"
         ));
         assert!(wikitext_requires_runtime_render(
@@ -238,7 +248,7 @@ mod tests {
         assert!(wikitext_requires_runtime_render(
             r#"[[MoDuLe listpages ORDER='RANDOM' limit='5']]%%title%%[[/module]]"#
         ));
-        assert!(!wikitext_requires_runtime_render(
+        assert!(wikitext_requires_runtime_render(
             r#"[[module ListPages category="random"]]random body text[[/module]]"#
         ));
         assert!(!wikitext_requires_runtime_render(
@@ -252,6 +262,13 @@ mod tests {
         ));
         assert!(wikitext_requires_runtime_render(
             r#"[[module MembershipByPassword]]"#
+        ));
+    }
+
+    #[test]
+    fn literal_list_pages_text_does_not_require_runtime_rendering() {
+        assert!(!wikitext_requires_runtime_render(
+            r#"[[code]][[module ListPages category=\"news\"]]%%title%%[[/module]][[/code]]"#,
         ));
     }
 
