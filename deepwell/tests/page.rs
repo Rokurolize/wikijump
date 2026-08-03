@@ -19014,6 +19014,107 @@ async fn tagcloud_module_renders_live_sitewide_skip_3d_and_color_error() {
     );
 }
 
+#[tokio::test]
+async fn tagcloud_module_filters_anonymous_hidden_category_pages_before_loading_tags() {
+    const PRIVATE_CATEGORY: &str = "fixture-tagcloud-security-private";
+    const PRIVATE_SLUG: &str = "fixture-tagcloud-security-private:source";
+    const PUBLIC_SLUG: &str = "fixture-tagcloud-security-public-source";
+    const HOLDER_SLUG: &str = "fixture-tagcloud-security-holder";
+    const PRIVATE_ONLY_TAG: &str = "fixture-tagcloud-security-private-only";
+    const PUBLIC_ONLY_TAG: &str = "fixture-tagcloud-security-public-only";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    let private_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_SLUG,
+        "TagCloud security private source",
+        "private source",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_SLUG, PRIVATE_CATEGORY)
+        .await;
+    set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        PRIVATE_SLUG,
+        private_revision,
+        &[PRIVATE_ONLY_TAG],
+    )
+    .await;
+
+    let public_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_SLUG,
+        "TagCloud security public source",
+        "public source",
+    )
+    .await;
+    set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        PUBLIC_SLUG,
+        public_revision,
+        &[PUBLIC_ONLY_TAG],
+    )
+    .await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER_SLUG,
+        "TagCloud security holder",
+        concat!(
+            "SITEWIDE_START\n",
+            "[[module TagCloud]]\n",
+            "SITEWIDE_END\n",
+            "PRIVATE_START\n",
+            "[[module TagCloud category=\"fixture-tagcloud-security-private\"]]\n",
+            "PRIVATE_END\n",
+        ),
+    )
+    .await;
+
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("TagCloud security permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(HOLDER_SLUG))),
+    });
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": HOLDER_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("anonymous TagCloud security holder should be readable");
+    let html = page
+        .compiled_body_html
+        .expect("anonymous TagCloud security holder should include compiled HTML");
+
+    assert!(
+        html.contains(PUBLIC_ONLY_TAG),
+        "anonymous TagCloud should retain tags from a public page:\n{html}",
+    );
+    assert!(
+        !html.contains(PRIVATE_ONLY_TAG),
+        "anonymous TagCloud must not load or count tags from a hidden category:\n{html}",
+    );
+}
+
 /// Live capture (sandbox-for-codex, 2026-07-29): `PageCalendar` emits a
 /// `page-calendar-box`, groups viewable pages by creation year and month,
 /// applies category selectors, and generates date-path links to the current

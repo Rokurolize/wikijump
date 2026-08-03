@@ -264,9 +264,14 @@ struct TagCloudArguments {
 }
 
 #[derive(Debug, FromQueryResult)]
-struct TagCloudPageTags {
+struct TagCloudPage {
     page_id: i64,
     page_category_id: i64,
+    latest_revision_id: Option<i64>,
+}
+
+#[derive(Debug, FromQueryResult)]
+struct TagCloudRevisionTags {
     tags: Vec<String>,
 }
 
@@ -2436,9 +2441,8 @@ impl RenderService {
         let statement = Statement::from_sql_and_values(
             txn.get_database_backend(),
             format!(
-                "SELECT p.page_id, p.page_category_id, pr.tags \
+                "SELECT p.page_id, p.page_category_id, p.latest_revision_id \
                  FROM page p \
-                 JOIN page_revision pr ON pr.revision_id = p.latest_revision_id \
                  JOIN page_category pc ON pc.category_id = p.page_category_id \
                  WHERE p.site_id = $1 \
                    AND p.deleted_at IS NULL \
@@ -2446,12 +2450,12 @@ impl RenderService {
             ),
             values,
         );
-        let pages = TagCloudPageTags::find_by_statement(statement)
+        let pages = TagCloudPage::find_by_statement(statement)
             .all(txn)
             .await
             .or_raise(make_error)?;
-        let mut counts = BTreeMap::<String, usize>::new();
         let mut category_permissions = HashMap::new();
+        let mut visible_revision_ids = Vec::with_capacity(pages.len());
         for page in pages {
             let can_view = if let Some(can_view) =
                 category_permissions.get(&page.page_category_id)
@@ -2480,12 +2484,45 @@ impl RenderService {
                 continue;
             }
 
+            if let Some(revision_id) = page.latest_revision_id {
+                visible_revision_ids.push(revision_id);
+            }
+        }
+
+        if visible_revision_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let revision_values = visible_revision_ids
+            .iter()
+            .copied()
+            .map(Value::from)
+            .collect::<Vec<_>>();
+        let revision_placeholders = (1..=revision_values.len())
+            .map(|index| format!("${index}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let revision_statement = Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            format!(
+                "SELECT pr.tags \
+                 FROM page_revision pr \
+                 WHERE pr.revision_id IN ({revision_placeholders})",
+            ),
+            revision_values,
+        );
+        let revisions = TagCloudRevisionTags::find_by_statement(revision_statement)
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        let mut counts = BTreeMap::<String, usize>::new();
+        for revision in revisions {
             if let Some(branch_tag) = current_branch_tag
-                && !page.tags.iter().any(|tag| tag == branch_tag)
+                && !revision.tags.iter().any(|tag| tag == branch_tag)
             {
                 continue;
             }
-            for tag in page.tags {
+            for tag in revision.tags {
                 if tag.trim().is_empty() {
                     continue;
                 }
