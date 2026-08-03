@@ -241,7 +241,8 @@ fn prepare_test_nested_include_conditionals(
         &include,
         &page_info,
         &mut compat_text,
-    );
+    )
+    .expect("test include source should remain within the byte budget");
     let mut preserved = CompatTextFragments::new(&source);
     RenderService::prepare_wikidot_conditionals_before_include_expansion(
         &mut source,
@@ -281,7 +282,8 @@ fn resolve_test_included_variable_iftags(
         &mut source,
         &include,
         &page_info,
-    );
+    )
+    .expect("test include variables should remain within the byte budget");
     resolve_test_wikidot_iftags(&mut source, &page_info);
     source
 }
@@ -7881,7 +7883,8 @@ async fn include_source_cache_loads_each_canonical_page_once() {
         first_ref,
         VariableMap::from([(Cow::Borrowed("label"), Cow::Borrowed("first"))]),
     );
-    super::apply_include_variables(&mut first, &first_include);
+    super::apply_include_variables(&mut first, &first_include)
+        .expect("first cached source should remain within the byte budget");
 
     let mut second = cache
         .get_or_try_insert_with(1, second_ref.page(), || {
@@ -7895,7 +7898,8 @@ async fn include_source_cache_loads_each_canonical_page_once() {
         second_ref,
         VariableMap::from([(Cow::Borrowed("label"), Cow::Borrowed("second"))]),
     );
-    super::apply_include_variables(&mut second, &second_include);
+    super::apply_include_variables(&mut second, &second_include)
+        .expect("second cached source should remain within the byte budget");
 
     assert_eq!(load_count, 1);
     assert_eq!(first, "CACHE-first-END");
@@ -8882,7 +8886,8 @@ fn multiline_include_variables_preserve_a_self_referential_class_prefix() {
     );
 
     let mut source = r#"class="{$class}""#.to_owned();
-    super::apply_include_variables(&mut source, &includes[0]);
+    super::apply_include_variables(&mut source, &includes[0])
+        .expect("self-referential class should remain within the byte budget");
     assert_eq!(source, r#"class="earthworm--anth24 {$class}""#);
 }
 
@@ -8918,7 +8923,8 @@ fn resolves_nested_wikidot_include_variables() {
         r#"[[div_ class="badges badge-{$name} {$name} a{${$name}} b{$type}"]]"#
             .to_owned();
 
-    super::apply_include_variables(&mut source, &include);
+    super::apply_include_variables(&mut source, &include)
+        .expect("nested variables should remain within the byte budget");
 
     assert!(source.contains(r#"class="badges badge-action action atrue bfalse""#));
     assert!(!source.contains("{$action}"));
@@ -8946,7 +8952,8 @@ fn nested_include_argument_self_reference_uses_later_fallback() {
         "]]",
     )
     .to_owned();
-    super::apply_include_variables(&mut source, &outer);
+    super::apply_include_variables(&mut source, &outer)
+        .expect("nested include arguments should remain within the byte budget");
 
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut includes = Vec::new();
@@ -9024,7 +9031,8 @@ fn include_variable_rebuild_handles_adjacent_growth_shrink_and_same_length() {
     );
     let mut source = "before{$grow}{$shrink}{$same}after".to_owned();
 
-    super::apply_include_variables(&mut source, &include);
+    super::apply_include_variables(&mut source, &include)
+        .expect("adjacent variables should remain within the byte budget");
 
     assert_eq!(source, "beforeexpandedsame123after");
 }
@@ -9040,7 +9048,8 @@ fn include_variable_rebuild_preserves_unresolved_and_self_references_with_defaul
     );
     let mut source = "{$author}|{$missing}|{$shadow}|{$self}|{$trimmed}".to_owned();
 
-    super::apply_include_variables(&mut source, &include);
+    super::apply_include_variables(&mut source, &include)
+        .expect("unresolved and self-referential variables should remain bounded");
 
     assert_eq!(source, "%%created_by%%|{$missing}|no|{$self}|value");
 }
@@ -9056,7 +9065,8 @@ fn include_variable_rebuild_does_not_repeat_a_self_referential_prefix() {
     );
     let mut source = r#"class="{$class}""#.to_owned();
 
-    super::apply_include_variables(&mut source, &include);
+    super::apply_include_variables(&mut source, &include)
+        .expect("self-referential prefix should remain bounded");
 
     assert_eq!(source, r#"class="earthworm--anth24 {$class}""#);
 }
@@ -9074,7 +9084,8 @@ fn include_variable_rebuild_stops_at_the_existing_depth_limit() {
     let include = IncludeRef::new(PageRef::page_only("component:test"), variables);
     let mut source = "{$v0}".to_owned();
 
-    super::apply_include_variables(&mut source, &include);
+    super::apply_include_variables(&mut source, &include)
+        .expect("the existing variable pass limit should remain bounded");
 
     assert_eq!(
         source,
@@ -9153,7 +9164,8 @@ fn include_variable_rebuild_matches_reverse_replacement_output() {
         let mut actual = source.to_owned();
 
         apply_reverse_replacement_reference(&mut expected, &include);
-        super::apply_include_variables(&mut actual, &include);
+        super::apply_include_variables(&mut actual, &include)
+            .expect("reference cases should remain within the byte budget");
 
         assert_eq!(actual, expected, "source: {source}");
     }
@@ -9293,7 +9305,8 @@ fn include_source_preparation_preserves_unbounded_malformed_comment_branch() {
         &include,
         &page_info,
         &mut compat_text,
-    );
+    )
+    .expect("malformed branch source should remain within the byte budget");
 
     assert_ne!(source, original);
     assert!(!source.contains("[!-- {$inc-section-end"), "{source}");
@@ -9321,7 +9334,8 @@ fn malformed_include_comment_branch_cannot_claim_sibling_boundary() {
         &include,
         &page_info,
         &mut compat_text,
-    );
+    )
+    .expect("malformed branch source should remain within the byte budget");
     let start = prepare_test_nested_include_conditionals(
         concat!(
             "[[iftags -component-backend]]\n",

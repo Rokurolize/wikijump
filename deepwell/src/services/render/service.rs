@@ -3593,7 +3593,7 @@ impl RenderService {
                     &include,
                     expansion_context.page_info,
                     compat_text,
-                );
+                )?;
                 qualify_included_relative_image_attachments(
                     &mut source.wikitext,
                     &source.site_slug,

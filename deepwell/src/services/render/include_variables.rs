@@ -32,19 +32,60 @@ use super::service::{
     INCLUDE_VARIABLE_CLOSE_SENTINEL, INCLUDE_VARIABLE_OPEN_SENTINEL,
     INCLUDE_VARIABLE_REGEX, MAX_INCLUDE_EXPANSION_DEPTH,
 };
+use crate::error::prelude::{Error, ErrorType, ExnError, Result};
 use ftml::data::PageInfo;
 use ftml::includes::IncludeRef;
 use ftml::{self};
 use std::borrow::Cow;
 use std::collections::HashSet;
 
-pub(super) fn apply_include_variables(content: &mut String, include: &IncludeRef<'_>) {
+/// Maximum output accepted from one include-variable substitution pass.
+///
+/// The projection is checked before the replacement buffer is allocated. This
+/// is deliberately owned by Wikijump because the values come from runtime
+/// include arguments, while FTML only identifies the variable syntax.
+pub(super) const MAX_INCLUDE_VARIABLE_EXPANDED_BYTES: usize = 768_000;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PassProjection {
+    output_bytes: usize,
+    changed: bool,
+}
+
+pub(super) fn apply_include_variables(
+    content: &mut String,
+    include: &IncludeRef<'_>,
+) -> Result<()> {
+    apply_include_variables_with_limits(
+        content,
+        include,
+        MAX_INCLUDE_EXPANSION_DEPTH,
+        MAX_INCLUDE_VARIABLE_EXPANDED_BYTES,
+    )
+}
+
+fn apply_include_variables_with_limits(
+    content: &mut String,
+    include: &IncludeRef<'_>,
+    maximum_passes: usize,
+    maximum_output_bytes: usize,
+) -> Result<()> {
     // Preserve one unresolved self-reference when its value intentionally
     // carries a prefix or suffix; otherwise each bounded pass repeats it.
     let mut self_referential_names = HashSet::new();
 
-    for _ in 0..MAX_INCLUDE_EXPANSION_DEPTH {
-        let mut expanded = String::with_capacity(content.len());
+    for _ in 0..maximum_passes {
+        let Some(projection) = project_include_variable_pass(
+            content,
+            include,
+            &self_referential_names,
+            maximum_output_bytes,
+        )?
+        else {
+            break;
+        };
+
+        let mut expanded = String::with_capacity(projection.output_bytes);
         let mut previous_end = 0;
         let mut matched = false;
         let mut changed = false;
@@ -57,12 +98,7 @@ pub(super) fn apply_include_variables(content: &mut String, include: &IncludeRef
                 continue;
             }
 
-            if let Some(value) = include
-                .variables()
-                .get(name)
-                .map(|value| Cow::Borrowed(trim_include_variable_value(value)))
-                .or_else(|| default_include_variable_value(name).map(Cow::Owned))
-            {
+            if let Some(value) = include_variable_value(include, name) {
                 expanded.push_str(&content[previous_end..mtch.start()]);
                 expanded.push_str(&value);
                 previous_end = mtch.end();
@@ -80,19 +116,114 @@ pub(super) fn apply_include_variables(content: &mut String, include: &IncludeRef
 
         expanded.push_str(&content[previous_end..]);
         *content = expanded;
+        debug_assert_eq!(content.len(), projection.output_bytes);
         if !changed {
             break;
         }
     }
+
+    Ok(())
+}
+
+fn project_include_variable_pass(
+    content: &str,
+    include: &IncludeRef<'_>,
+    self_referential_names: &HashSet<String>,
+    maximum_output_bytes: usize,
+) -> Result<Option<PassProjection>> {
+    // The projection mirrors the real pass, including its self-reference
+    // guard, but never allocates the projected output string. Keep the set
+    // local so the real pass can discover the same references while copying.
+    let mut projected_self_referential_names = self_referential_names.clone();
+    let mut output_bytes = 0;
+    let mut previous_end = 0;
+    let mut matched = false;
+    let mut changed = false;
+
+    for capture in INCLUDE_VARIABLE_REGEX.captures_iter(content) {
+        let mtch = capture.get(0).expect("full include variable match");
+        let name = &capture["name"];
+        if projected_self_referential_names.contains(name) {
+            continue;
+        }
+
+        let Some(value) = include_variable_value(include, name) else {
+            continue;
+        };
+
+        output_bytes = checked_projected_add(
+            output_bytes,
+            mtch.start() - previous_end,
+            maximum_output_bytes,
+        )?;
+        output_bytes =
+            checked_projected_add(output_bytes, value.len(), maximum_output_bytes)?;
+        previous_end = mtch.end();
+        matched = true;
+        if value.contains(mtch.as_str()) {
+            projected_self_referential_names.insert(name.to_owned());
+        }
+        changed |= value != mtch.as_str();
+    }
+
+    if !matched {
+        return Ok(None);
+    }
+
+    output_bytes = checked_projected_add(
+        output_bytes,
+        content.len() - previous_end,
+        maximum_output_bytes,
+    )?;
+    Ok(Some(PassProjection {
+        output_bytes,
+        changed,
+    }))
+}
+
+fn checked_projected_add(
+    current: usize,
+    additional: usize,
+    maximum_output_bytes: usize,
+) -> Result<usize> {
+    let Some(projected) = current.checked_add(additional) else {
+        return Err(include_variable_expansion_limit_error(maximum_output_bytes));
+    };
+    if projected > maximum_output_bytes {
+        return Err(include_variable_expansion_limit_error(maximum_output_bytes));
+    }
+    Ok(projected)
+}
+
+fn include_variable_expansion_limit_error(maximum_output_bytes: usize) -> ExnError {
+    Error::new(
+        format!(
+            "include variable expansion exceeded maximum output size of {maximum_output_bytes} bytes"
+        ),
+        ErrorType::Render,
+    )
+    .into()
+}
+
+fn include_variable_value<'a>(
+    include: &'a IncludeRef<'_>,
+    name: &str,
+) -> Option<Cow<'a, str>> {
+    include
+        .variables()
+        .get(name)
+        .map(|value| Cow::Borrowed(trim_include_variable_value(value)))
+        .or_else(|| default_include_variable_value(name).map(Cow::Owned))
 }
 
 pub(super) fn apply_include_variables_before_resolving_iftags(
     content: &mut String,
     include: &IncludeRef<'_>,
     page_info: &PageInfo<'_>,
-) {
-    apply_include_variables(content, include);
+) -> Result<()> {
+    apply_include_variables(content, include)?;
     resolve_include_variable_iftags(content, include.variables(), page_info);
+    Ok(())
 }
 
 pub(super) fn prepare_include_source_variables_and_comment_branches(
@@ -100,13 +231,14 @@ pub(super) fn prepare_include_source_variables_and_comment_branches(
     include: &IncludeRef<'_>,
     page_info: &PageInfo<'_>,
     compat_text: &mut CompatTextFragments,
-) {
-    apply_include_variables_before_resolving_iftags(content, include, page_info);
+) -> Result<()> {
+    apply_include_variables_before_resolving_iftags(content, include, page_info)?;
     // A comment branch is local to the included source once its callsite
     // variables are bound. Remove inactive branches before recursively
     // preparing that source so their conditional and include delimiters
     // cannot pair with delimiters from sibling expansions.
     remove_unresolved_include_comment_branches_source_local(content, compat_text);
+    Ok(())
 }
 
 pub(super) fn trim_include_variable_value(value: &str) -> &str {
@@ -150,4 +282,64 @@ pub(super) fn unprotect_include_variables(content: &mut String) {
     *content = content
         .replace(INCLUDE_VARIABLE_OPEN_SENTINEL, "{$")
         .replace(INCLUDE_VARIABLE_CLOSE_SENTINEL, "}");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ftml::data::PageRef;
+    use ftml::tree::VariableMap;
+
+    fn include(variables: &[(&'static str, &'static str)]) -> IncludeRef<'static> {
+        IncludeRef::new(
+            PageRef::page_only("component:test"),
+            variables
+                .iter()
+                .map(|&(name, value)| (Cow::Borrowed(name), Cow::Borrowed(value)))
+                .collect::<VariableMap<'static>>(),
+        )
+    }
+
+    #[test]
+    fn rejects_recursive_growth_before_allocating_the_over_budget_pass() {
+        let include = include(&[("x", "{$y}{$y}{$y}{$y}"), ("y", "{$x}{$x}{$x}{$x}")]);
+        let mut content = "{$x}".to_owned();
+
+        let error = apply_include_variables_with_limits(&mut content, &include, 8, 1_024)
+            .expect_err("the fifth recursive pass must exceed the byte budget");
+
+        assert_eq!(content.len(), 1_024);
+        assert!(format!("{error:?}").contains("maximum output size of 1024 bytes"));
+    }
+
+    #[test]
+    fn permits_output_exactly_at_the_byte_budget() {
+        let include = include(&[("x", "{$y}{$y}{$y}{$y}"), ("y", "{$x}{$x}{$x}{$x}")]);
+        let mut content = "{$x}".to_owned();
+
+        apply_include_variables_with_limits(&mut content, &include, 4, 1_024)
+            .expect("an output exactly at the budget must remain valid");
+
+        assert_eq!(content.len(), 1_024);
+    }
+
+    #[test]
+    fn rejects_projection_arithmetic_overflow() {
+        let error = checked_projected_add(usize::MAX, 1, usize::MAX)
+            .expect_err("projection overflow must fail closed");
+
+        assert!(format!("{error:?}").contains("maximum output size"));
+    }
+
+    #[test]
+    fn preserves_legitimate_recursive_resolution() {
+        let include =
+            include(&[("outer", "before {$inner} after"), ("inner", "resolved")]);
+        let mut content = "{$outer}".to_owned();
+
+        apply_include_variables_with_limits(&mut content, &include, 8, 64)
+            .expect("small recursive substitution must remain valid");
+
+        assert_eq!(content, "before resolved after");
+    }
 }
