@@ -1995,6 +1995,58 @@ test("preview classifier isolates synchronized relative-time query state", async
         "investigate-query-or-renderer",
       ],
     },
+    {
+      id: "relative-table-window-row-set",
+      source: [
+        '[[module ListPages category="*" rating=">-2" tags="-scp" order="size desc desc" separate="false" date="last 30 day" perPage="16"]]',
+        "|| %%title_linked%% || (+%%rating%%) || %%children%% ||",
+        "[[/module]]",
+      ].join("\n"),
+      live: [
+        '<div class="list-pages-box"><table class="wiki-content-table">',
+        '<tr><td><a href="/old-window-page">Old window page</a></td><td>(+0)</td><td>0</td></tr>',
+        '<tr><td><a href="/stable-page">Stable page</a></td><td>(+0)</td><td>0</td></tr>',
+        '</table><div class="pager"><span class="pager-no">page 1 of 7</span><span class="current">1</span><span class="target"><a href="/ajax-module-connector.php/p/2">2</a></span></div></div>',
+      ].join(""),
+      local: [
+        '<div class="list-pages-box"><table class="wiki-content-table">',
+        '<tr><td><a href="/stable-page">Stable page</a></td><td>(+0)</td><td>0</td></tr>',
+        '<tr><td><a href="/next-window-page">Next window page</a></td><td>(+0)</td><td>0</td></tr>',
+        '</table><div class="pager"><span class="pager-no">page 1 of 7</span><span class="current">1</span><span class="target"><a href="/ajax-module-connector.php/p/2">2</a></span></div></div>',
+      ].join(""),
+      expected: [
+        "synchronized-relative-time-query-state",
+        "none",
+      ],
+    },
+    {
+      id: "relative-table-static-body-change",
+      source: [
+        '[[module ListPages category="*" date="last 30 day" perPage="16"]]',
+        "|| STATIC ||",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><table class="wiki-content-table"><tr><td>LIVE</td></tr></table></div>',
+      local: '<div class="list-pages-box"><table class="wiki-content-table"><tr><td>LOCAL</td></tr></table></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "relative-table-shape-change",
+      source: [
+        '[[module ListPages category="*" date="last 30 day" perPage="16"]]',
+        "|| %%title%% ||",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><table class="wiki-content-table"><tr><td><a href="/one">One</a></td></tr></table></div>',
+      local: '<div class="list-pages-box"><table class="wiki-content-table"><tr><td><a href="/one">One</a></td><td>unexpected</td></tr></table></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
   ];
   await fs.writeFile(
     referencesPath,
