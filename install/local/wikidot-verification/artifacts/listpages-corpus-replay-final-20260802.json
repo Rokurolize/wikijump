@@ -1,8 +1,13 @@
 {
   "schema": "wikijump_listpages_compat.final_corpus_replay_receipt.v1",
   "status": "pass",
-  "wikijump_revision": "ea806c06f01f8ebe58f4c21a4ccb03d5215ba10c",
+  "wikijump_revision": "b7b196392ddd610d1fab91b03e54a41c4dad335d",
   "ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
+  "acceptance_candidate_revision": "b7b196392ddd610d1fab91b03e54a41c4dad335d",
+  "final_standing_revision": "2b762e153dc9c2e59c5e1de5c5099184fad8c131",
+  "final_standing_tree": "db7eba2ee3d261129906fd09fdf5cb74b4ffa68d",
+  "final_standing_ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
+  "final_standing_dependency_lock_sha256": "2ef9805743280b942d14d5438c1566b8578dc0f0cfb9209cd4690e0785d7645c",
   "authority": {
     "mode": "authoritative",
     "references_sha256": "591a02b209dd156c25e7eab0e12a8a123eac5daf0d1fd99b8b5629ea3cb39792",
@@ -10,21 +15,21 @@
     "scope_sha256": "d1d9aca68fa8377a6381a96e132c2db94b4f81ceca92c5ca52568f6b7e2aabe1",
     "reference_count": 18996,
     "invocation_count": 23964,
-    "runtime_identity_sha256": "8d33c74f163b59c8822f9c2ac5371931347e68cb79c9c73d293109f79feffa4e",
-    "runtime_proof_sha256": "00929e320534736d338b93ebf0daaf46a7fba78155f7a7d266dc22aaebfeda5b",
-    "runtime_observation_stable_sha256": "fbc5fbe6f157aa0693c137517bc27de7fb6e83903408636a468d0f52d859e0cd"
+    "runtime_identity_sha256": "e90c7ace5fac6b5ae80aca8d67c87411bd53dd1cc5528c3b7400c02ef5ce1620",
+    "runtime_proof_sha256": "40fa7602e62d8b991770d8f01ee2f520032ef3bf9fd810248103c1f7a8a8e842",
+    "runtime_observation_stable_sha256": "7228ca174b316acaef00a369b793ef7dc58fd2b0bb2599019cb7fc8a50f374f8"
   },
   "exact_lane": {
-    "verdict_sha256": "1df7075fb03a9264f4c97dd5b2ee194bc788d2d4dc5baa1743c4aa29cfa3a17c",
-    "classification_sha256": "d38e107e5d74b1ff1db4f968f182db0042568fc1908adc3b38485aa7909cd795",
-    "matches": 18767,
-    "mismatches": 229,
+    "verdict_sha256": "8a2bb78ebe88e145e408e7505f342e6603395443010e1d50b6158fdc9f671489",
+    "classification_sha256": "6c30f599fdb4188c04a81f0308134a5001202a962f2eac08dce74ee761b41523",
+    "matches": 18769,
+    "mismatches": 227,
     "local_errors": 0,
     "classified_cases": 18996,
     "actionable_unique_source_count": 0
   },
   "authoritative_reconciliation": {
-    "receipt_sha256": "a698396e7937070d1f492be3dda349586fe3edd86e35459982d35f02bf91e702",
+    "receipt_sha256": "0ddb0704a753b90bd41308f657c15432c734a196d9c5d027995281269f703f7c",
     "invocation_count": 23964,
     "unique_source_count": 18996,
     "exact_source_duplicate_count": 4968,
@@ -39,15 +44,19 @@
   "diagnostic_lanes": {
     "novel": {
       "reference_count": 119,
-      "verdict_sha256": "ed164f5af7d131fb4689ec54862b3f364e053f34ff9a1be98edcd4d6781898be",
-      "classification_sha256": "4f8cd4db616a0ec9d7be317d64dc2e9b6192abcb19773d18acc525e83da5b42c",
+      "verdict_sha256": "ce89b06aa76ec1c7bfcaf43cef593b742c656bfcd95a75eccfd2c42571831233",
+      "classification_sha256": "0501b9e9baf8c0e6bcea83d4e09162695b23ec892e1b4e92135e550d02bed94c",
+      "matches": 115,
+      "mismatches": 4,
       "dispositions": {"none": 119},
       "acceptance_eligible": false
     },
     "literal": {
       "reference_count": 335,
-      "verdict_sha256": "2d55d8614db6b20769b047d8a617f1a44ecf8e2f7638e2404c3922f9d5e4b4be",
-      "classification_sha256": "0c6c4c2d636e96c71f43dedf2812308fa52ed0bf0cdc01c93a53282667508232",
+      "verdict_sha256": "46ff23776d0c66d381252e603281f5e4e6d69b0d11b7552f76ee3dfce00be60a",
+      "classification_sha256": "e71e4ff25f8cfb0188ca242fcdd727e82fe82595483989c19a808067c50a6524",
+      "matches": 312,
+      "mismatches": 23,
       "dispositions": {"none": 335},
       "acceptance_eligible": false
     }
@@ -64,5 +73,27 @@
     "fresh_novel_intersection_pinned": 47,
     "symmetric_difference": 691,
     "acceptance_scope_revised": false
+  },
+  "standing_verification": {
+    "refresh_receipt_sha256": "d8bb0c5435a164e8371e77d89f06522c2cdc4a80165732c73fe6013d4d3cdacf",
+    "prepared_receipt_sha256": "fdba620cef1a47dd783f659e16d7e82acddea076f10ba14574f92eef871b36f3",
+    "render_receipt_sha256": "21ce2c1d89f9c907abdabb949a99ceca3c8ffb1602a95c7e215957ace2b309df",
+    "runtime_differential_identity_sha256": "3d13acea5f4e8d1f1327bd377c567046128803b3bccc7aa52e112c0a167b04e9",
+    "served_verification_sha256": "4cbb9ed5a8f273360caa24c66bef4f8f7cbc69ccb449112c466679163c234c79",
+    "browser_integrity_sha256": "6cd7c3553430e3e58f5faf6bfc1e4df917b384e71a17301727a5a4cb3f1d6613",
+    "runtime_identity": {
+      "wikijump_revision": "2b762e153dc9c2e59c5e1de5c5099184fad8c131",
+      "wikijump_tree": "db7eba2ee3d261129906fd09fdf5cb74b4ffa68d",
+      "ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
+      "deepwell_image": "sha256:39f4f4145658f3dfeb6561620f85848924388cafd37e7d69ba5ff9c7f06734cb",
+      "framerail_image": "sha256:3560f99ef068bfb76caa6895428dc7cf7c7b4e4967c9801f495521a83462f1b",
+      "wws_image": "sha256:c4dbf00c78d8c135da5bec7d75422dec7bf8cd4f8fb70cd94d30d4eb321cfd58",
+      "caddy_image": "sha256:afccd452d7136a926fa99a1dc5892ba8605e9441300083af2144fc8e74a27a3c"
+    },
+    "assertions": [
+      "identity-bound browser integrity: 3 pages passed, 0 anomalies",
+      "served RPC: representative selector, malformed head, literal code, missing parent, URL selector prefix, and anonymous private filter passed",
+      "served HTTPS: four routes returned HTTP 200 with no TODO: module ListPages leakage"
+    ]
   }
 }

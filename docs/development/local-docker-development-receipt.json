@@ -1,7 +1,8 @@
 {
   "schema": "wikijump.local_docker_development_receipt.v1",
   "status": "pass",
-  "wikijump_revision": "ea806c06f01f8ebe58f4c21a4ccb03d5215ba10c",
+  "wikijump_revision": "2b762e153dc9c2e59c5e1de5c5099184fad8c131",
+  "wikijump_tree": "db7eba2ee3d261129906fd09fdf5cb74b4ffa68d",
   "ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
   "toolchain": {
     "rust_toolchain": "1.95.0",
@@ -98,5 +99,31 @@
     "cache_recreation": "docker compose down (without --volumes), up, post-recreate cargo check",
     "source_mount_policy": "source and manifests bind-mounted; target, registry, git, pnpm, node_modules named volumes",
     "candidate_target_policy": "candidate/rollback builders use revision-specific external CARGO_TARGET_DIR"
+  },
+  "standing_runtime": {
+    "status": "pass",
+    "source_revision": "2b762e153dc9c2e59c5e1de5c5099184fad8c131",
+    "source_tree": "db7eba2ee3d261129906fd09fdf5cb74b4ffa68d",
+    "ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
+    "deepwell_lock_sha256": "2ef9805743280b942d14d5438c1566b8578dc0f0cfb9209cd4690e0785d7645c",
+    "prepared_receipt_sha256": "fdba620cef1a47dd783f659e16d7e82acddea076f10ba14574f92eef871b36f3",
+    "refresh_receipt_sha256": "d8bb0c5435a164e8371e77d89f06522c2cdc4a80165732c73fe6013d4d3cdacf",
+    "runtime_differential_identity_sha256": "3d13acea5f4e8d1f1327bd377c567046128803b3bccc7aa52e112c0a167b04e9",
+    "images": {
+      "deepwell": "sha256:39f4f4145658f3dfeb6561620f85848924388cafd37e7d69ba5ff9c7f06734cb",
+      "framerail": "sha256:3560f99ef068bfb76caa6895428dc7cf7c7b4e4967c9801f495521a83462f1b",
+      "wws": "sha256:c4dbf00c78d8c135da5bec7d75422dec7bf8cd4f8fb70cd94d30d4eb321cfd58",
+      "caddy": "sha256:afccd452d7136a926fa99a1dc5892ba8605e9441300083af2144fc8e74a27a3c"
+    },
+    "activation": {
+      "prepared_seconds": 1.8212,
+      "compose_to_healthy_seconds": 33.8255,
+      "health_seconds": 10.7163,
+      "used_no_build": true,
+      "persistent_volumes_untouched": true
+    },
+    "served_verification_sha256": "4cbb9ed5a8f273360caa24c66bef4f8f7cbc69ccb449112c466679163c234c79",
+    "browser_integrity_sha256": "6cd7c3553430e3e58f5faf6bfc1e4df917b384e71a17301727a5a4cb3f1d6613",
+    "browser_summary": {"pages_total": 3, "pages_passed": 3, "pages_failed": 0, "anomalies_total": 0, "runtime_identity_bound": true}
   }
 }
