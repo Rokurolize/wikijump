@@ -647,6 +647,7 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     `${JSON.stringify(classification)}\n`,
   );
 
+  let replayCalls = 0;
   const reconciliation = await reconcileListPagesCorpusReplay({
     invocationsPath,
     classificationPaths: [classificationPath],
@@ -654,10 +655,18 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     campaignScopePath,
     validateCampaignScope,
     observeRuntime,
-    replayPreview: async () => verdict,
+    replayPreview: async () => {
+      replayCalls += 1;
+      return verdict;
+    },
   });
   assert.equal(reconciliation.inputs.authority.completion_eligible, true);
   assert.equal(reconciliation.summary.exit_code, 0);
+  assert.equal(replayCalls, 0);
+  assert.equal(
+    reconciliation.inputs.classifications[0].authoritative_replay.mode,
+    "bound-classification",
+  );
 
   const actualMismatch = structuredClone(verdict);
   const actualLocalHtml = "<p>TODO: module ListPages</p>";
@@ -674,6 +683,16 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     counts: { mismatch: 1 },
     exit_code: 1,
   };
+  const fallbackClassification = JSON.parse(
+    await fs.readFile(classificationPath, "utf8"),
+  );
+  fallbackClassification.inputs.authority.runtime_observation_stable_sha256 =
+    "0".repeat(64);
+  await fs.writeFile(
+    classificationPath,
+    `${JSON.stringify(fallbackClassification)}\n`,
+  );
+  replayCalls = 0;
   const replayedMismatch = await reconcileListPagesCorpusReplay({
     invocationsPath,
     classificationPaths: [classificationPath],
@@ -681,10 +700,18 @@ test("authoritative reconciliation revalidates the transitive runtime chain", as
     campaignScopePath,
     validateCampaignScope,
     observeRuntime,
-    replayPreview: async () => actualMismatch,
+    replayPreview: async () => {
+      replayCalls += 1;
+      return actualMismatch;
+    },
   });
   assert.equal(replayedMismatch.summary.actionable_unique_source_count, 1);
   assert.equal(replayedMismatch.summary.exit_code, 1);
+  assert.equal(replayCalls, 1);
+  assert.equal(
+    replayedMismatch.inputs.classifications[0].authoritative_replay.mode,
+    "replayed-verdict",
+  );
 
   await fs.writeFile(runtimeProofPath, '{"proof":"changed"}\n');
   await assert.rejects(

@@ -1,11 +1,11 @@
 {
   "schema": "wikijump_listpages_compat.final_corpus_replay_receipt.v1",
   "status": "pass",
-  "wikijump_revision": "fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0",
+  "wikijump_revision": "3abf3f50a4cd75759abc6a6ba64ff801568f04f9",
   "ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
-  "acceptance_candidate_revision": "fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0",
-  "final_standing_revision": "fb1e3eab2cabe6335b8d1f3dc64bc3bcc6ca34b0",
-  "final_standing_tree": "8debc40672235f1a5003e8248eba3bf9b43eeb27",
+  "acceptance_candidate_revision": "3abf3f50a4cd75759abc6a6ba64ff801568f04f9",
+  "final_standing_revision": "3abf3f50a4cd75759abc6a6ba64ff801568f04f9",
+  "final_standing_tree": "8832a62f652f28171d860352d0179845803af926",
   "final_standing_ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
   "final_standing_dependency_lock_sha256": "b4d2a0d89d1faf2587c05427831ebde40a16a6fdbd321dc0162a2e28a80d7303",
   "authority": {
@@ -15,13 +15,50 @@
     "scope_sha256": "d1d9aca68fa8377a6381a96e132c2db94b4f81ceca92c5ca52568f6b7e2aabe1",
     "reference_count": 18996,
     "invocation_count": 23964,
-    "runtime_identity_sha256": "5d7dd056af586253c3987964760deb1d58aa9316f8e1360f0e2e9b97e39041ea",
-    "runtime_proof_sha256": "38d2cd066382f5651eaf7a73257560038737f4422d2a3d193e481e1e3c6d69a1",
-    "runtime_observation_stable_sha256": "cb1aff235e2b834d00786f22f82881f4da880ea9d9a6412269ffa82d81189ea9"
+    "runtime_identity_sha256": "b47d7001c25c469cf210275a3411eb59ef2f96941fa984275742d173290db907",
+    "runtime_proof_sha256": "43690c674b0a7c1644d3776cbe0fe60798a4adbd2e6939eb4f51e7c63d2c8cd0",
+    "runtime_observation_stable_sha256": "666ebe65f4a1e37fb309abeee007ccb18eca7d43393d9a36d0c11178baffbbcb"
+  },
+  "acceptance_dependency_surface": {
+    "render_source_paths": [
+      "deepwell/src/services/page_query/",
+      "deepwell/src/services/render/",
+      "deepwell/src/services/view/module_arguments.rs",
+      "deepwell/src/services/view/module_render.rs"
+    ],
+    "ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",
+    "dependency_lock_sha256": "b4d2a0d89d1faf2587c05427831ebde40a16a6fdbd321dc0162a2e28a80d7303",
+    "fixture_plane": {
+      "runtime_identity_sha256": "b47d7001c25c469cf210275a3411eb59ef2f96941fa984275742d173290db907",
+      "runtime_proof_sha256": "43690c674b0a7c1644d3776cbe0fe60798a4adbd2e6939eb4f51e7c63d2c8cd0",
+      "runtime_observation_stable_sha256": "666ebe65f4a1e37fb309abeee007ccb18eca7d43393d9a36d0c11178baffbbcb",
+      "service_image_sha256": {
+        "deepwell": "6d9389d44dc0b7346a5ca944b57136976503f9c4eaf837f3747b2eaa1b1264f4",
+        "cache": "545d0aea28defe9a6a0d6d23164cb189e3fd8da59cfd72d815dd6a7b15a95c56",
+        "database": "4df2a39fb7d8386199572447237f2492cf6ce67cb977dcdffd6e434c7b6c6147",
+        "files": "cfe25580a14403765f3c79da97978fc3dce60190558e8bbc8fcae033f98b96d6"
+      },
+      "service_host_port": {
+        "database": 16432,
+        "cache": 16379,
+        "files": 19002
+      }
+    }
+  },
+  "acceptance_attestation": {
+    "path": "install/local/wikidot-verification/artifacts/listpages-corpus-replay-attestation-20260804.json",
+    "sha256": "cd73e85f5da4895a9f6f70f2da495c80a74b0abe6fd04971dfc0720981992e62",
+    "mode": "untouched-render-surface",
+    "base_revision": "3abf3f50a4cd75759abc6a6ba64ff801568f04f9",
+    "head_revision": "ba09fd3d9588d9932e58146ab825228d27173df9",
+    "prior_receipt_sha256": "980c514598b5cb8807d7b6c45862bc31f7d550bda50cd88e8d4cd6b07b5a88f1",
+    "changed_path_count": 11,
+    "render_paths_touched": [],
+    "replay_required_when_render_surface_changes": true
   },
   "exact_lane": {
-    "verdict_sha256": "21601c1059ab1716c1b8cfcb30e4a46eeb2e890915ef89e719ebe2212a15edf5",
-    "classification_sha256": "1282c446764cfd0f0e15990db2b42e8936ba7e3b38672f571e561ae254fe92e0",
+    "verdict_sha256": "de3f81429f6c775ab194f2661e74bb650b49a921d9accc8d773b3c4fab922c31",
+    "classification_sha256": "f467cddae5633c770fc8f49137d715570b3355a81ae11edca111e248c8ff40cb",
     "matches": 18767,
     "mismatches": 229,
     "local_errors": 0,
@@ -29,7 +66,7 @@
     "actionable_unique_source_count": 0
   },
   "authoritative_reconciliation": {
-    "receipt_sha256": "6b6249a8658b2683aa40ab5f0305b250f479f5244a2fd186a3fed0a12a62e61e",
+    "receipt_sha256": "b0fe19708774de224f033cbfd054fa01571657be69493a419d1f9f8888c18ac2",
     "invocation_count": 23964,
     "unique_source_count": 18996,
     "exact_source_duplicate_count": 4968,

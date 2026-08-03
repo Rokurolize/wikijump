@@ -15,6 +15,9 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 import { runCliIfMain } from "../src/cli-entry.mjs";
+import {
+  assertListPagesCandidateLaunchEnvironment,
+} from "../src/listpages-runtime-authority.mjs";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const SCRIPT_DIR = path.dirname(SCRIPT_PATH);
@@ -573,6 +576,7 @@ export async function main(argv, { stdout = process.stdout } = {}) {
 }
 
 export async function runCanary(args, { stdout = process.stdout } = {}) {
+  assertListPagesCandidateLaunchEnvironment();
   const fixtures = JSON.parse(await fs.readFile(FIXTURES_PATH, "utf8"));
   assert.deepEqual(
     [...new Set(fixtures.fixtures.map((fixture) => fixture.surface))].sort(),

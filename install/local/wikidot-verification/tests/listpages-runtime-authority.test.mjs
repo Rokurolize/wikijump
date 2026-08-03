@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 import {
   LISTPAGES_RUNTIME_OBSERVATION_SCHEMA,
+  assertListPagesCandidateLaunchEnvironment,
   listPagesRuntimeEnvironmentSha256,
   observeListPagesRuntimeAuthority,
 } from "../src/listpages-runtime-authority.mjs";
@@ -226,6 +227,18 @@ test("runtime authority observes the exact process, source, build, listener, and
     observation.stable.services.database.container_id,
     CONTAINERS.database,
   );
+});
+
+test("candidate launch rejects inherited loader, Git, and tool-runtime environment", () => {
+  assert.doesNotThrow(() =>
+    assertListPagesCandidateLaunchEnvironment({ PATH: "/usr/bin", LANG: "C" })
+  );
+  for (const key of ["LD_LIBRARY_PATH", "LD_PRELOAD", "GIT_DIR", "NODE_OPTIONS"]) {
+    assert.throws(
+      () => assertListPagesCandidateLaunchEnvironment({ PATH: "/usr/bin", [key]: "poison" }),
+      new RegExp(`candidate launch environment contains forbidden ${key}`),
+    );
+  }
 });
 
 for (const [mutation, message] of [
