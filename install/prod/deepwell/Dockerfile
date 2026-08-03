@@ -21,7 +21,11 @@ WORKDIR /src/deepwell
 
 # Keep migration execution in the immutable standing image.  The runtime
 # wrapper runs this binary before the prebuilt Deepwell server starts.
-RUN cargo install sqlx-cli --version 0.9.0 --locked --target x86_64-unknown-linux-musl --no-default-features --features rustls,postgres
+RUN cargo install sqlx-cli --version 0.9.0 --locked \
+    --target x86_64-unknown-linux-musl \
+    --target-dir /src/deepwell/target \
+    --root /tmp/sqlx-root \
+    --no-default-features --features rustls,postgres
 
 # Cache rust dependencies for the application build only.
 RUN mkdir .cargo && cargo vendor > .cargo/config.toml
@@ -40,7 +44,7 @@ ENV LOCALIZATION_PATH="/opt/locales"
 RUN apt update
 RUN apt install -y curl libmagic1 libmagic-mgc
 COPY --from=rust /src/deepwell/target/release/deepwell /usr/local/bin/deepwell
-COPY --from=rust /src/deepwell/target/x86_64-unknown-linux-musl/release/sqlx /usr/local/bin/sqlx
+COPY --from=rust /tmp/sqlx-root/bin/sqlx /usr/local/bin/sqlx
 COPY ./deepwell/migrations /opt/deepwell/migrations
 COPY ./install/prod/deepwell/deepwell-start /usr/local/bin/wikijump-deepwell-start
 COPY ./install/prod/deepwell/health-check.sh /bin/wikijump-health-check
