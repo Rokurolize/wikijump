@@ -1122,6 +1122,24 @@ mod tests {
         stress_registry.restore_unresolved(&mut malformed_stress);
         assert!(malformed_stress.ends_with("no_pipe=origin.png]]"));
 
+        let mut unclosed_external_links = format!(
+            "[[include broken | value={}\n[[include child no_pipe={{$asset}}]]",
+            "[a".repeat(10_000),
+        );
+        let mut unclosed_registry = AttachmentProvenanceRegistry::default();
+        protect_forwarded_attachment_variables(
+            &mut unclosed_external_links,
+            &variables,
+            &owners,
+            &mut unclosed_registry,
+        );
+        assert_eq!(unclosed_registry.entries.len(), 1);
+        unclosed_registry.restore_unresolved(&mut unclosed_external_links);
+        assert!(
+            unclosed_external_links.ends_with("no_pipe=origin.png]]"),
+            "{unclosed_external_links}"
+        );
+
         let mut comment_space = concat!(
             "[[include\n[!-- opening gap --]\nchild ",
             "[!-- page gap [x] | still comment --] name [!-- key gap --] = ",
