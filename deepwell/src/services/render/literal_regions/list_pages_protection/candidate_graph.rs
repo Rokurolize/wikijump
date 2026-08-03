@@ -65,7 +65,7 @@ pub(super) fn collect_candidate_graph_ranges(
     compat_quote_ranges: &[Range<usize>],
     include_downstream_css: bool,
     include_base_candidates: bool,
-) -> Vec<Range<usize>> {
+) -> Result<Vec<Range<usize>>, usize> {
     let mut arena = EmitSetArena::default();
     let text_tokens = TextTokenIndex::new(source);
     let heads = (source.len() < u32::MAX as usize)
@@ -124,6 +124,11 @@ pub(super) fn collect_candidate_graph_ranges(
         || collect_head_candidate_streams(source),
         |heads| collect_head_candidate_streams_with_context(source, heads, &text_tokens),
     );
+    if head_candidates.work_limit_exceeded {
+        // Do not select a partial ownership graph. The only safe result after
+        // exhausting whole-head proof work is to preserve the authored source.
+        return Err(head_candidates.whole_head_scan_work);
+    }
     let generic_heads = adapt_runtime_module_heads(head_candidates.generic);
     let runtime_head_ranges = head_candidates
         .runtime_modules
@@ -284,7 +289,10 @@ pub(super) fn collect_candidate_graph_ranges(
         .collect();
     let selected_with_css =
         super::super::merge_sorted_ranges(selected.ranges, persistent_css);
-    super::super::merge_sorted_ranges(selected_with_css, downstream)
+    Ok(super::super::merge_sorted_ranges(
+        selected_with_css,
+        downstream,
+    ))
 }
 
 fn adapt_runtime_module_heads(

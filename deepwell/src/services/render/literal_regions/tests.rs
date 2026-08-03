@@ -130,7 +130,8 @@ fn shared_list_pages_scanner_indexes_match_independent_builds() {
     ] {
         let projection = ListPagesSourceProjection::new(source)
             .expect("fixture should require a source projection");
-        let expected_direct = LiteralRegionIndex::new_list_pages_scanner_syntax(source);
+        let expected_direct = LiteralRegionIndex::new_list_pages_scanner_syntax(source)
+            .expect("fixture should stay within the scanner work budget");
         let expected_projected =
             LiteralRegionIndex::new_already_projected_list_pages_syntax(
                 projection.source(),
@@ -140,7 +141,8 @@ fn shared_list_pages_scanner_indexes_match_independent_builds() {
         let expected_anchors = LiteralRegionIndex::new_list_pages_anchor_syntax(source);
 
         let indexes =
-            LiteralRegionIndex::new_list_pages_scanner_indexes(source, Some(&projection));
+            LiteralRegionIndex::new_list_pages_scanner_indexes(source, Some(&projection))
+                .expect("fixture should stay within the scanner work budget");
 
         assert_eq!(indexes.direct.ranges, expected_direct.ranges);
         assert_eq!(

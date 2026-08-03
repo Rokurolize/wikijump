@@ -171,7 +171,10 @@ fn find_module_close_ascii_case_insensitive(source: &str) -> Option<usize> {
 /// an executable, line-oriented `#if`/`#ifexpr` opener whose false branch is
 /// the evidenced `[!-- ]]` token and whose opener is outside a literal region.
 fn generated_gate_module_close(source: &str, body_start: usize) -> Option<usize> {
-    let literal_regions = LiteralRegionIndex::new_list_pages_scanner_syntax(source);
+    let Ok(literal_regions) = LiteralRegionIndex::new_list_pages_scanner_syntax(source)
+    else {
+        return None;
+    };
     let mut saw_gate = false;
     let mut inactive_branch_ranges = Vec::new();
     let mut line_start = body_start;
@@ -2254,7 +2257,17 @@ fn find_list_pages_module_matches_with_cursor_work_context(
         projected: projected_literal_regions,
         original_css: original_css_regions,
         original_anchors: original_anchor_regions,
-    } = LiteralRegionIndex::new_list_pages_scanner_indexes(source, projection.as_ref());
+    } = match LiteralRegionIndex::new_list_pages_scanner_indexes(
+        source,
+        projection.as_ref(),
+    ) {
+        Ok(indexes) => indexes,
+        Err(whole_head_scan_work) => {
+            // Preserve authored source when literal ownership cannot be
+            // established within the source-proportional work budget.
+            return (Vec::new(), whole_head_scan_work, 0);
+        }
+    };
     let direct_scanner =
         ModuleEventScanner::new(source, &lowercase, &direct_literal_regions);
     let (

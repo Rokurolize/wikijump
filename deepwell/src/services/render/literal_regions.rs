@@ -124,37 +124,42 @@ impl LiteralRegionIndex {
     #[cfg(test)]
     pub(super) fn new_list_pages_syntax(source: &str) -> Self {
         let mut index = Self {
-            ranges: collect_list_pages_literal_ranges(source),
+            ranges: collect_list_pages_literal_ranges(source).unwrap_or_else(|_| {
+                (!source.is_empty())
+                    .then_some(0..source.len())
+                    .into_iter()
+                    .collect()
+            }),
         };
         index.merge_sorted_ranges(collect_list_pages_runtime_recovery_ranges(source));
         index.merge_sorted_ranges(collect_wikidot_anchor_ranges(source));
         index
     }
 
-    pub(super) fn new_list_pages_scanner_syntax(source: &str) -> Self {
+    pub(super) fn new_list_pages_scanner_syntax(source: &str) -> Result<Self, usize> {
         let mut index = Self {
-            ranges: collect_list_pages_literal_ranges(source),
+            ranges: collect_list_pages_literal_ranges(source)?,
         };
         index.merge_sorted_ranges(collect_wikidot_anchor_ranges(source));
-        index
+        Ok(index)
     }
 
     pub(super) fn new_list_pages_scanner_indexes(
         source: &str,
         projection: Option<&ListPagesSourceProjection>,
-    ) -> ListPagesScannerLiteralIndexes {
+    ) -> Result<ListPagesScannerLiteralIndexes, usize> {
         let Some(projection) = projection else {
-            return ListPagesScannerLiteralIndexes {
-                direct: Self::new_list_pages_scanner_syntax(source),
+            return Ok(ListPagesScannerLiteralIndexes {
+                direct: Self::new_list_pages_scanner_syntax(source)?,
                 projected: None,
                 original_css: None,
                 original_anchors: None,
-            };
+            });
         };
 
         // The direct and projected structural scanners use the same projected candidate graph. Build it once, then map a clone back to original offsets for the direct scanner instead of rebuilding the graph and source projection independently.
         let projected_ranges =
-            collect_already_projected_list_pages_literal_ranges(projection.source());
+            collect_already_projected_list_pages_literal_ranges(projection.source())?;
         let original_css_ranges = collect_list_pages_downstream_css_ranges(source);
         let original_anchor_ranges = collect_wikidot_anchor_ranges(source);
         let projected_anchor_ranges = collect_wikidot_anchor_ranges(projection.source());
@@ -170,7 +175,7 @@ impl LiteralRegionIndex {
         };
         projected.merge_sorted_ranges(projected_anchor_ranges);
 
-        ListPagesScannerLiteralIndexes {
+        Ok(ListPagesScannerLiteralIndexes {
             direct,
             projected: Some(projected),
             original_css: Some(Self {
@@ -179,13 +184,19 @@ impl LiteralRegionIndex {
             original_anchors: Some(Self {
                 ranges: original_anchor_ranges,
             }),
-        }
+        })
     }
 
     #[cfg(test)]
     pub(super) fn new_already_projected_list_pages_syntax(source: &str) -> Self {
         let mut index = Self {
-            ranges: collect_already_projected_list_pages_literal_ranges(source),
+            ranges: collect_already_projected_list_pages_literal_ranges(source)
+                .unwrap_or_else(|_| {
+                    (!source.is_empty())
+                        .then_some(0..source.len())
+                        .into_iter()
+                        .collect()
+                }),
         };
         index.merge_sorted_ranges(collect_wikidot_anchor_ranges(source));
         index
