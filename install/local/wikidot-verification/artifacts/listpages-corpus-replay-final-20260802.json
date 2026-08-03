@@ -45,6 +45,17 @@
       }
     }
   },
+  "acceptance_attestation": {
+    "path": "install/local/wikidot-verification/artifacts/listpages-corpus-replay-attestation-20260804.json",
+    "sha256": "cd73e85f5da4895a9f6f70f2da495c80a74b0abe6fd04971dfc0720981992e62",
+    "mode": "untouched-render-surface",
+    "base_revision": "3abf3f50a4cd75759abc6a6ba64ff801568f04f9",
+    "head_revision": "ba09fd3d9588d9932e58146ab825228d27173df9",
+    "prior_receipt_sha256": "980c514598b5cb8807d7b6c45862bc31f7d550bda50cd88e8d4cd6b07b5a88f1",
+    "changed_path_count": 11,
+    "render_paths_touched": [],
+    "replay_required_when_render_surface_changes": true
+  },
   "exact_lane": {
     "verdict_sha256": "de3f81429f6c775ab194f2661e74bb650b49a921d9accc8d773b3c4fab922c31",
     "classification_sha256": "f467cddae5633c770fc8f49137d715570b3355a81ae11edca111e248c8ff40cb",
