@@ -61,7 +61,12 @@
     wikitext: boolean
   ) {
     const rev = revisionMap.get(revisionNumber)
-    if (compiledHtml && rev?.compiled_body_html) {
+    // Try to see if the cached revision already has the wanted data
+    if (
+      compiledHtml &&
+      rev?.compiled_body_html &&
+      rev.compiled_body_styles !== undefined
+    ) {
       setRevision(rev)
       revision = rev
     } else if (wikitext && rev?.wikitext) {
@@ -97,6 +102,7 @@
           setRevision(result.data.res)
         } else if (compiledHtml) {
           rev.compiled_body_html = result.data.res.compiled_body_html
+          rev.compiled_body_styles = result.data.res.compiled_body_styles
           setRevision(rev)
           revision = rev
         } else if (wikitext) {
