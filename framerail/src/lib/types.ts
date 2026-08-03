@@ -149,12 +149,12 @@ export interface FileRevisionModel {
   page_id: number
   site_id: number
   user_id: number
-  name: string
-  s3_hash: number[]
-  mime: string
-  size: number
+  name: Nullable<string>
+  s3_hash: Nullable<number[]>
+  mime: Nullable<string>
+  size: Nullable<number>
   changes: string[]
-  comments: string
+  comments: Nullable<string>
   hidden: string[]
 }
 
