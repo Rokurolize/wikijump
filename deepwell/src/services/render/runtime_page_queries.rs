@@ -41,6 +41,11 @@ pub(in crate::services::render) struct ViewableCountPagesRows {
 pub(in crate::services::render) enum CountPagesRawScanCompletion {
     Complete,
     Capped,
+    /// A random-order query sampled the complete render window. The sampled
+    /// viewable count is an intentionally inexact, privacy-preserving fallback:
+    /// switching to literal output based on permission filtering would expose
+    /// the existence or proportion of hidden matches.
+    RandomSampleCapped,
 }
 
 #[derive(Debug)]
@@ -52,6 +57,7 @@ pub(in crate::services::render) struct ViewableListPagesRows {
 
 pub(in crate::services::render) async fn find_viewable_list_pages_rows(
     ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
     query: PageQuery<'_>,
     target_count: usize,
     permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
@@ -59,6 +65,7 @@ pub(in crate::services::render) async fn find_viewable_list_pages_rows(
 ) -> Result<ViewableListPagesRows> {
     let found = find_viewable_render_page_rows(
         ctx,
+        viewer_user_id,
         query,
         target_count,
         permission_cache,
@@ -75,12 +82,14 @@ pub(in crate::services::render) async fn find_viewable_list_pages_rows(
 
 pub(in crate::services::render) async fn find_viewable_count_pages_rows(
     ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
     query: PageQuery<'_>,
     target_count: usize,
     permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
 ) -> Result<ViewableCountPagesRows> {
     find_viewable_render_page_rows(
         ctx,
+        viewer_user_id,
         query,
         target_count,
         permission_cache,
@@ -92,6 +101,7 @@ pub(in crate::services::render) async fn find_viewable_count_pages_rows(
 
 async fn find_viewable_render_page_rows(
     ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
     query: PageQuery<'_>,
     target_count: usize,
     permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
@@ -99,23 +109,28 @@ async fn find_viewable_render_page_rows(
     retain_score_filter_session: bool,
 ) -> Result<ViewableCountPagesRows> {
     let mut score_filter_session = PageQueryScoreFilterSession::default();
-    if target_count > 0 && render_page_query_uses_single_scan(query.order) {
+    if target_count > 0 && render_page_query_uses_single_scan(query.order.clone()) {
         let mut query = query;
         query.offset = 0;
         query.pagination.limit = Some(random_page_query_scan_limit(target_count));
-        let mut found = PageQueryService::find_with_metadata_cached(
+        let mut found = Box::pin(PageQueryService::find_with_metadata_cached(
             ctx,
             query,
             score_filter_cache.as_deref_mut(),
             retain_score_filter_session.then_some(&mut score_filter_session),
-        )
+        ))
         .await?;
         if found.metadata.cap_exceeded {
             found.metadata.cap_exceeded = false;
         }
         let raw_count = found.pages.pages.len();
-        let mut pages =
-            filter_viewable_rows(ctx, found.pages.pages, permission_cache).await?;
+        let mut pages = filter_viewable_rows(
+            ctx,
+            viewer_user_id,
+            found.pages.pages,
+            permission_cache,
+        )
+        .await?;
         let view_permission_filtering_applied = pages.len() != raw_count;
         pages.truncate(target_count);
         return Ok(ViewableCountPagesRows {
@@ -139,12 +154,12 @@ async fn find_viewable_render_page_rows(
             render_page_query_batch_limit(target_count, pages.len(), raw_offset);
         query.pagination.limit = Some(batch_limit);
 
-        let found = PageQueryService::find_with_metadata_cached(
+        let found = Box::pin(PageQueryService::find_with_metadata_cached(
             ctx,
             query,
             score_filter_cache.as_deref_mut(),
             retain_score_filter_session.then_some(&mut score_filter_session),
-        )
+        ))
         .await?;
         let cap_exceeded = found.metadata.cap_exceeded;
         merge_render_page_query_metadata(&mut metadata, found.metadata);
@@ -160,8 +175,13 @@ async fn find_viewable_render_page_rows(
         if raw_count == 0 {
             break;
         }
-        let viewable =
-            filter_viewable_rows(ctx, found.pages.pages, permission_cache).await?;
+        let viewable = filter_viewable_rows(
+            ctx,
+            viewer_user_id,
+            found.pages.pages,
+            permission_cache,
+        )
+        .await?;
         view_permission_filtering_applied |= viewable.len() != raw_count;
         pages.extend(viewable);
         if raw_count < batch_limit as usize {
@@ -183,32 +203,30 @@ async fn find_viewable_render_page_rows(
 
 async fn filter_viewable_rows(
     ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
     pages: Vec<FoundPageRow>,
-    category_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
+    _category_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
 ) -> Result<Vec<FoundPageRow>> {
     let mut viewable = Vec::with_capacity(pages.len());
     for page in pages {
-        let permission_key = (page.site_id, page.page_category_id);
-        let can_view = if let Some(can_view) = category_permissions.get(&permission_key) {
-            *can_view
-        } else {
-            let can_view = PermissionService::check_user_can(
-                ctx,
-                &CheckPermissionContext {
-                    user_id: None,
-                    site_id: page.site_id,
-                    page_reference: Some(Reference::Id(page.page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: page.page_category_id.map(Reference::Id),
-                    action: Action::View,
-                },
-            )
-            .await?;
-            category_permissions.insert(permission_key, can_view);
-            can_view
-        };
+        // A page reference can grant page-specific virtual roles such as
+        // PageAuthor, so its decision must not be reused for another page in
+        // the same category. PermissionService still applies its own safe
+        // caching rules for checks that do not depend on page-scoped roles.
+        let can_view = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: viewer_user_id,
+                site_id: page.site_id,
+                page_reference: Some(Reference::Id(page.page_id)),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: page.page_category_id.map(Reference::Id),
+                action: Action::View,
+            },
+        )
+        .await?;
         if can_view {
             viewable.push(page);
         }
@@ -221,7 +239,7 @@ pub(in crate::services::render) fn count_pages_raw_scan_completion(
     raw_count: usize,
 ) -> CountPagesRawScanCompletion {
     if raw_count >= MAX_LISTPAGES_RENDER_SCAN_ROWS as usize {
-        CountPagesRawScanCompletion::Capped
+        CountPagesRawScanCompletion::RandomSampleCapped
     } else {
         CountPagesRawScanCompletion::Complete
     }
@@ -242,7 +260,12 @@ pub(in crate::services::render) fn render_page_query_batch_limit(
 pub(in crate::services::render) fn render_page_query_uses_single_scan(
     order: Option<OrderBySelector>,
 ) -> bool {
-    order.is_some_and(|order| order.property == OrderProperty::Random)
+    order.is_some_and(|order| {
+        matches!(
+            order.property,
+            OrderProperty::Random | OrderProperty::SeededRandom(_)
+        )
+    })
 }
 
 pub(in crate::services::render) fn random_page_query_scan_limit(

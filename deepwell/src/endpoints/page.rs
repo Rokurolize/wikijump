@@ -22,6 +22,7 @@ use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::page::Model as PageModel;
 use crate::services::file::{GetFileOutput, GetPageFiles};
+use crate::services::forum_thread::ForumThreadService;
 use crate::services::page::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
     GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
@@ -32,6 +33,7 @@ use crate::services::page::{
 use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::render::{WikidotListPagesFeedInput, WikidotListPagesFeedOutput};
 use crate::services::{MutationAuthorization, TextService};
 use crate::types::{
     Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
@@ -43,10 +45,11 @@ use regex::Regex;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
+use wikidot_normalize::normalize;
 
 static WIKIDOT_LIST_PAGES_SET_PAIR_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?s)<span class="set (?P<name_class>[^"]+)"><span class="name">(?P<name>.*?)</span></span><span class="set (?P<value_class>[^"]+)"><span class="value">(?P<value>.*?)</span></span>"#,
+        r#"(?s)<span class="set (?P<name_class>[^"]+)"><span class="name">(?P<name>.*?)</span>\s*</span>\s*<span class="set (?P<value_class>[^"]+)"><span class="value">(?P<value>.*?)</span>\s*</span>"#,
     )
     .expect("Wikidot ListPages set-pair expression is valid")
 });
@@ -68,6 +71,18 @@ struct WikidotPagePreviewInput {
     site_id: i64,
     title: String,
     wikitext: String,
+}
+
+#[derive(Deserialize)]
+struct WikidotPageDiscussionInput {
+    site_id: i64,
+    page_id: i64,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotPageDiscussionOutput {
+    pub thread_id: i64,
+    pub thread_unix_title: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -104,6 +119,76 @@ pub async fn wikidot_page_preview(
     })
 }
 
+pub async fn wikidot_page_discussion_create(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<WikidotPageDiscussionOutput>> {
+    let input: WikidotPageDiscussionInput = parse!(params, Page);
+    let Some(page) =
+        PageService::get_direct_optional_for_update(ctx, input.page_id, false)
+            .await
+            .or_raise(|| Error::new("failed to load discussion page", ErrorType::Page))?
+    else {
+        return Ok(None);
+    };
+    if page.site_id != input.site_id {
+        return Ok(None);
+    }
+
+    let can_view = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id: input.site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to check page discussion view permission",
+            ErrorType::Permission,
+        )
+    })?;
+    if !can_view {
+        return Ok(None);
+    }
+
+    let revision = PageRevisionService::get_latest(ctx, page.site_id, page.page_id)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to load page discussion title",
+                ErrorType::PageRevision,
+            )
+        })?;
+    let thread = ForumThreadService::get_or_create_page_discussion(
+        ctx,
+        &page,
+        crate::constants::ANONYMOUS_USER_ID,
+        &revision.title,
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to create Wikidot page discussion",
+            ErrorType::ForumThread,
+        )
+    })?;
+
+    let mut thread_unix_title = thread.title;
+    normalize(&mut thread_unix_title);
+    Ok(Some(WikidotPageDiscussionOutput {
+        thread_id: thread.forum_thread_id,
+        thread_unix_title,
+    }))
+}
+
 pub async fn wikidot_list_pages_module(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -131,6 +216,18 @@ pub async fn wikidot_list_pages_module(
             &normalize_wikidot_list_pages_set_pairs(&output.html_output.body),
         ),
     })
+}
+
+pub async fn wikidot_list_pages_feed(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotListPagesFeedOutput> {
+    let input: WikidotListPagesFeedInput = parse!(params, Page);
+    RenderService::render_wikidot_list_pages_feed(ctx, input)
+        .await
+        .or_raise(|| {
+            Error::new("failed to render Wikidot ListPages feed", ErrorType::Page)
+        })
 }
 
 fn normalize_wikidot_list_pages_set_spacing(body: &str) -> String {

@@ -281,6 +281,57 @@ export const pages = {
     compiled_body_html:
       '<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=4&amp;css=.styleframe-d%7Bcolor%3Ablack%7D"></iframe>',
     compiled_body_styles: [".generated-style-d { color: black; }"]
+  },
+  "listpages-navigation": {
+    page_id: 3000400,
+    revision_id: 9000400,
+    page_created_at: "2026-07-28T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-28T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "ListPages Navigation",
+    slug: "listpages-navigation",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: '[[module ListPages perPage="1"]]%%title%%[[/module]]',
+    compiled_body_html: "<p>ListPages navigation fixture.</p>"
+  },
+  "newpage-helper": {
+    page_id: 3000410,
+    revision_id: 9000410,
+    page_created_at: "2026-07-29T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-29T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "NewPage Helper",
+    slug: "newpage-helper",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext:
+      '[[module NewPage button="Default create"]]\n[[module NewPage mode="save-and-go" tags="alpha beta" parent="main" button="Autosave"]]\n[[module NewPage template="template:fixture-newpage-template-a" tags="alpha beta" parent="main" button="Template"]]',
+    compiled_body_html:
+      '<div id="default-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Default create" style="margin: 1px;"/></form></div><div id="autosave-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Autosave" style="margin: 1px;"/><input type="hidden" name="mode" value="save-and-go"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div><div id="template-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Template" style="margin: 1px;"/><input type="hidden" name="template" value="1469068384"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div>'
+  },
+  "data-form-edit-flow:example": {
+    page_id: 3000420,
+    revision_id: 9000420,
+    page_created_at: "2026-07-29T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-29T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Example",
+    slug: "data-form-edit-flow:example",
+    tags: [],
+    rating: 0,
+    wikitext: "name: 'Probe Name'\nchoice: a",
+    compiled_body_html:
+      '<table class="form-table"><tbody><tr class="form-row"><td class="form-labels"><span class="form-label">Name</span></td><td class="form-values"><span>Probe Name</span></td></tr><tr class="form-row"><td class="form-labels"><span class="form-label">Choice</span></td><td class="form-values"><span>Alpha</span></td></tr></tbody></table>'
   }
 }
 

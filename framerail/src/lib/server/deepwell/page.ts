@@ -49,9 +49,11 @@ export async function pageDelete(
 
 /* ----- Page Edit ----- */
 export interface CreatePageRevisionOutput {
+  page_id?: number
   revision_id: number
   revision_number: number
   parser_errors: Nullable<ParseError[]>
+  slug?: string
 }
 export interface PageEditInput {
   siteId: number
@@ -85,15 +87,15 @@ export async function pageEdit(
     tags,
     layout
   } = input
+  const pageReference = pageId ? { page: pageId, last_revision_id: lastRevisionId } : {}
   return client.request(
     pageId ? "page_edit" : "page_create",
     {
       site_id: siteId,
-      page: pageId ?? slug,
       slug,
+      ...pageReference,
       user_id: userId,
       ip_address: userIpAddr,
-      last_revision_id: lastRevisionId,
       revision_comments: revisionComments,
       wikitext,
       title,
@@ -108,10 +110,49 @@ export async function pageEdit(
   )
 }
 
+export async function pageGet(
+  siteId: number,
+  page: number | string,
+  requestContext: RequestContext = {}
+): Promise<Nullable<unknown>> {
+  return client.request(
+    "page_get",
+    {
+      site_id: siteId,
+      page,
+      details: {
+        compiled_html: false,
+        wikitext: false
+      }
+    },
+    requestContext
+  )
+}
+
 export async function pageEditPermission(
   requestContext: RequestContext = {}
 ): Promise<{ can_edit: boolean }> {
   return client.request("page_edit_permission", {}, requestContext)
+}
+
+export interface WikidotPageDiscussionOutput {
+  thread_id: number
+  thread_unix_title: string
+}
+
+export async function wikidotPageDiscussionCreate(
+  siteId: number,
+  pageId: number,
+  requestContext: RequestContext = {}
+): Promise<Nullable<WikidotPageDiscussionOutput>> {
+  return client.request(
+    "wikidot_page_discussion_create",
+    {
+      site_id: siteId,
+      page_id: pageId
+    },
+    requestContext
+  )
 }
 
 /* ----- Page History ----- */
@@ -362,7 +403,7 @@ interface PageParentUpdate {
 }
 export async function pageParentUpdate(
   siteId: number,
-  pageId: number,
+  pageId: number | string,
   userId: number,
   add: Optional<string[]>,
   remove: Optional<string[]>,

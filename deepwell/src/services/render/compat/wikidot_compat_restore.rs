@@ -32,7 +32,9 @@ use super::super::service::{
     decode_wikidot_email_html_entities, escape_list_pages_html_attr,
     escape_list_pages_html_text, rendered_wikidot_mailform_attribute,
 };
-use super::footnote_dom::restore_wikidot_footnote_list_dom;
+use super::footnote_dom::{
+    enclose_list_pages_footnote_footer, restore_wikidot_footnote_list_dom,
+};
 use crate::config::Config;
 use crate::models::site::Model as SiteModel;
 
@@ -99,11 +101,13 @@ impl RenderService {
         if html.contains("{$") {
             html = Self::restore_wikidot_ta_badge_default_compatibility(&html);
         }
-        if html.contains("...") {
-            html = Self::restore_wikidot_text_ellipsis_compatibility(&html);
-        }
         if html.contains("wj-footnote") {
             html = Self::restore_wikidot_footnote_dom_compatibility(&html);
+        }
+        if html.contains(r#"<div class="list-pages-box">"#)
+            && html.contains(r#"<div class="footnotes-footer">"#)
+        {
+            html = enclose_list_pages_footnote_footer(&html);
         }
         if html.contains("<u>") || html.contains("</u>") {
             html = Self::remove_wikijump_underline_wrappers(&html);
@@ -139,16 +143,8 @@ impl RenderService {
         html: &str,
     ) -> String {
         let html = WIKIJUMP_CODE_BLOCK_PANEL_REGEX.replace_all(html, "");
-        let html = WIKIJUMP_CODE_BLOCK_OPEN_REGEX.replace_all(
-            &html,
-            |captures: &regex::Captures<'_>| match captures.name("language") {
-                Some(language) => format!(
-                    r#"<div class="code" data-wj-language="{}">"#,
-                    language.as_str(),
-                ),
-                None => r#"<div class="code">"#.to_owned(),
-            },
-        );
+        let html =
+            WIKIJUMP_CODE_BLOCK_OPEN_REGEX.replace_all(&html, r#"<div class="code">"#);
         html.replace("</wj-code>", "</div>")
     }
 
@@ -318,40 +314,6 @@ impl RenderService {
             .replace("{$item-rt-link}", "empty")
             .replace("{$item-rc-link}", "empty")
             .replace("{$item-rb-link}", "empty")
-    }
-
-    pub(in crate::services::render) fn restore_wikidot_text_ellipsis_compatibility(
-        html: &str,
-    ) -> String {
-        let mut output = String::with_capacity(html.len());
-        let mut cursor = 0usize;
-        let mut literal_depth = 0usize;
-
-        while let Some(tag_start_offset) = html[cursor..].find('<') {
-            let tag_start = cursor + tag_start_offset;
-            Self::push_wikidot_text_ellipsis_segment(
-                &mut output,
-                &html[cursor..tag_start],
-                literal_depth,
-            );
-
-            let Some(tag_end_offset) = html[tag_start..].find('>') else {
-                output.push_str(&html[tag_start..]);
-                return output;
-            };
-            let tag_end = tag_start + tag_end_offset + 1;
-            let tag = &html[tag_start..tag_end];
-            Self::update_wikidot_ellipsis_literal_depth(tag, &mut literal_depth);
-            output.push_str(tag);
-            cursor = tag_end;
-        }
-
-        Self::push_wikidot_text_ellipsis_segment(
-            &mut output,
-            &html[cursor..],
-            literal_depth,
-        );
-        output
     }
 
     pub(in crate::services::render) fn restore_wikidot_code_block_compatibility(

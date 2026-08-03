@@ -6,27 +6,38 @@ There are two operational tiers. Routine application refreshes use Tier 1. Tier 
 
 ## Tier 1: routine merged-head refresh
 
-Tier 1 is the expected default after a change merges to `develop`. It rebuilds and replaces only Deepwell, Framerail, and WWS. It does not stop Caddy, database, files, or cache; it does not run `down`; and its command-line parser has no volume-removal or Compose passthrough option.
+Tier 1 is the expected default after a change merges to `develop`. It activates already-prepared immutable application images and replaces only Deepwell, Framerail, and WWS. Image preparation is a separate leased operation; activation never compiles Rust or bundles JavaScript. It does not stop Caddy, database, files, or cache; it does not run `down`; and its command-line parser has no volume-removal or Compose passthrough option.
 
 A Tier 1 refresh is required before anyone asserts that a browser-visible, chrome, layout, or DOM defect is fixed or still present in the standing runtime. A browser claim against an older standing SHA is not evidence about current code.
 
-Start from a clean checkout whose `HEAD` equals the fetched `origin/develop` head. Run the controller under the host resource lease because its three Docker builds are shared-host heavy work:
+Start from a clean checkout whose `HEAD` equals the fetched `origin/develop` head. Prepare the three exact application images under the host resource lease:
 
 ```sh
 git fetch origin develop
 /home/roku/.local/bin/roku-resource-lease run exclusive -- \
-  python install/standing/refresh.py \
+  python install/standing/prepare.py \
     --source-root "$PWD" \
-    --runtime-home /home/roku/wjlab/runtime/wikijump-standing
+    --output /home/roku/wjlab/runtime/wikijump-standing/prepared-<wikijump-sha>.json
 ```
 
-The controller performs one fixed sequence:
+Then activate that receipt without a build:
+
+```sh
+python install/standing/refresh.py \
+  --source-root "$PWD" \
+  --runtime-home /home/roku/wjlab/runtime/wikijump-standing \
+  --prepared-receipt /home/roku/wjlab/runtime/wikijump-standing/prepared-<wikijump-sha>.json
+```
+
+Preparation records the cold image-build duration and exact image IDs. Activation performs one fixed sequence:
 
 1. Verify the source checkout is clean and exactly matches `origin/develop`, then read the exact Wikijump tree and FTML pin.
-2. Build Deepwell, Framerail, and WWS from `install/local/<service>/Dockerfile`; Framerail receives `--build-arg FRAMERAIL_ENV=local`.
-3. Atomically update the three `STANDING_*_IMAGE` values, `STANDING_WIKIJUMP_SHA`, `STANDING_FTML_SHA`, `STANDING_LOCALES_SOURCE`, and the refresh resource expiry in the runtime `.env`. The locales bind points at the same clean source root used for the image builds.
-4. Run `docker compose --project-name wikijump-standing up --detach --no-deps deepwell framerail wws` with the checked-in refresh label overlay. The overlay adds owner and expiry labels to the three recreated containers and has no volume declarations.
-5. Wait for all three services to become healthy, fetch `http://scp-wiki.wikijump.localhost/scp-9506`, require the expected document markers, and overwrite `runtime-differential-identity.json` and `refresh-receipt.json` with the exact source, FTML pin, dependency lock, Deepwell image, effective Compose configuration, health, canary, and resource-disposition record.
+2. Verify the prepared receipt's exact source, FTML pin, lock hash, production Dockerfile hashes, SHA-derived image references, image IDs, profiles, and labels. Verify each local image ID again immediately before activation.
+3. Atomically update the three `STANDING_*_IMAGE` values, `STANDING_WIKIJUMP_SHA`, `STANDING_FTML_SHA`, `STANDING_LOCALES_SOURCE`, and the prepared resource expiry in the runtime `.env`. The locales bind points at the same clean source root used for the image preparation.
+4. Run `docker compose --project-name wikijump-standing up --detach --no-deps --no-build deepwell framerail wws` with the checked-in refresh label overlay. The overlay adds owner and expiry labels to the three recreated containers and has no volume declarations.
+5. Wait for all three services to become healthy, fetch `http://scp-wiki.wikijump.localhost/scp-9506`, require the expected document markers, and overwrite `runtime-differential-identity.json` and `refresh-receipt.json` with the preparation receipt, exact source, FTML pin, dependency lock, application image IDs, effective Compose configuration, phase timings, health, canary, and resource-disposition record.
+
+The standing image tier is deliberately separate from `install/local`: local images retain bind mounts and watch-mode startup for source iteration, while prepared standing images start already-built artifacts. Deepwell's prepared image contains the pinned `sqlx-cli` and migrations and runs `sqlx migrate run` before the binary; migration handling is therefore explicit rather than silently lost when the local startup script is removed.
 
 The script refuses unknown arguments, including `-v`, `--volumes`, and `--remove-volumes`. There is no argument that is forwarded to Docker or Docker Compose.
 

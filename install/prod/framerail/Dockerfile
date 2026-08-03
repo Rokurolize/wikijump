@@ -2,7 +2,7 @@
 # Framerail build
 #
 
-FROM node:20-alpine
+FROM node:24.18.0-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd
 
 # SvelteKit materializes CSP and CSRF options while `pnpm build` runs; standing may pass `local` for CSP only.
 ARG FRAMERAIL_ENV=prod
@@ -12,7 +12,7 @@ ENV FRAMERAIL_CSRF_CHECK_ORIGIN=${FRAMERAIL_CSRF_CHECK_ORIGIN}
 
 # Install dependencies
 RUN apk add --no-cache curl && \
-    npm install -g pnpm
+    npm install --global pnpm@11.10.0
 
 # Copy sources
 RUN mkdir /app
@@ -22,7 +22,7 @@ COPY assets ./src/assets
 
 # Install app
 RUN \
-    pnpm install && \
+    pnpm install --frozen-lockfile && \
     pnpm build && \
     pnpm prune --prod && \
     rm -rf src/ tests/

@@ -20,6 +20,7 @@
 
 mod backlinks;
 mod categories;
+mod child_pages;
 mod compat;
 mod corpus;
 mod diagnostics;
@@ -33,16 +34,21 @@ mod include_comment_branches;
 mod include_missing;
 mod include_variable_iftags;
 mod include_variables;
+mod link_modules;
 #[allow(dead_code)]
 mod list_pages;
 mod literal_regions;
 mod metacomponent;
+mod module_arguments;
 mod native_list_context;
+mod new_page_module;
+mod next_previous_page;
 mod page_preview;
 mod page_tree;
 mod pages;
 mod pages_by_tag;
 mod percent_encoding;
+mod rate_module;
 mod render_dependency;
 mod render_options;
 mod replay;
@@ -74,7 +80,11 @@ pub use self::service::RenderService;
 pub(crate) use self::service::{
     CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,
 };
-pub use self::structs::{RenderOutput, RenderPageOutput};
+pub use self::structs::{
+    RenderOutput, RenderPageOutput, WikidotListPagesFeedInput, WikidotListPagesFeedItem,
+    WikidotListPagesFeedOutput,
+};
 pub use self::url_arguments::{
-    UrlArguments, wikitext_reads_url_arguments, wikitext_requires_runtime_render,
+    UrlArgumentPair, UrlArguments, wikitext_reads_url_arguments,
+    wikitext_requires_runtime_render,
 };

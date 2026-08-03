@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Build and restart only the standing application services from merged develop."""
+"""Activate already-prepared standing application images without compiling."""
 
 from __future__ import annotations
 
 import argparse
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 import hashlib
 import json
 import os
@@ -51,7 +51,13 @@ def repository_identity(source_root: Path) -> dict[str, str]:
     matches = set(FTML_SOURCE.findall(lock_contents))
     if len(matches) != 1:
         raise ValueError("deepwell/Cargo.lock must contain exactly one FTML revision")
-    return {"wikijump_sha": head, "wikijump_tree": tree, "ftml_sha": matches.pop()}
+    lockfile = source_root / "deepwell" / "Cargo.lock"
+    return {
+        "wikijump_sha": head,
+        "wikijump_tree": tree,
+        "ftml_sha": matches.pop(),
+        "dependency_lock_sha256": file_sha256(lockfile),
+    }
 
 
 def read_environment(path: Path) -> dict[str, str]:
@@ -79,33 +85,6 @@ def write_environment(path: Path, values: dict[str, str]) -> None:
         temporary_path = Path(temporary.name)
     os.chmod(temporary_path, 0o600)
     os.replace(temporary_path, path)
-
-
-def image_tag(wikijump_sha: str, service: str) -> str:
-    return f"local/wikijump-standing-{wikijump_sha[:9]}-{service}:latest"
-
-
-def build_command(
-    source_root: Path, service: str, tag: str, identity: dict[str, str], expiry: str
-) -> list[str]:
-    args = [
-        "docker",
-        "build",
-        "--file",
-        str(source_root / "install" / "local" / service / "Dockerfile"),
-        "--label",
-        "com.rokurolize.wikijump.owner=standing-runtime",
-        "--label",
-        f"com.rokurolize.wikijump.expiry={expiry}",
-        "--label",
-        f"com.rokurolize.wikijump.sha={identity['wikijump_sha']}",
-        "--label",
-        f"com.rokurolize.wikijump.ftml_sha={identity['ftml_sha']}",
-    ]
-    if service == "framerail":
-        args.extend(("--build-arg", "FRAMERAIL_ENV=local"))
-    args.extend(("--tag", tag, str(source_root)))
-    return args
 
 
 def compose_command(
@@ -169,18 +148,59 @@ def wait_for_health(
     )
 
 
-def image_identity(tag: str, cwd: Path) -> dict[str, object]:
-    raw = command("docker", "image", "inspect", tag, "--format", "{{json .}}", cwd=cwd)
+def image_identity(reference: str, cwd: Path) -> dict[str, object]:
+    raw = command(
+        "docker", "image", "inspect", reference, "--format", "{{json .}}", cwd=cwd
+    )
     image = json.loads(raw)
     return {
-        "tag": tag,
+        "reference": reference,
         "id": image["Id"],
         "repo_digests": sorted(image.get("RepoDigests") or []),
+        "labels": image.get("Config", {}).get("Labels") or {},
     }
 
 
 def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def image_reference(wikijump_sha: str, service: str) -> str:
+    return f"local/wikijump-standing-{wikijump_sha[:12]}-{service}"
+
+
+def load_prepared_receipt(
+    path: Path, source_root: Path, identity: dict[str, str]
+) -> tuple[dict[str, object], str]:
+    receipt = json.loads(path.read_text(encoding="utf-8"))
+    if receipt.get("schema_version") != 1 or receipt.get("kind") != "standing-image-preparation":
+        raise ValueError("prepared receipt is not a standing image preparation receipt")
+    if receipt.get("status") != "pass":
+        raise ValueError("prepared receipt is not successful")
+    for key in ("wikijump_sha", "wikijump_tree", "ftml_sha", "dependency_lock_sha256"):
+        if receipt.get(key) != identity[key]:
+            raise ValueError(f"prepared receipt {key} does not match the source checkout")
+    images = receipt.get("images")
+    if not isinstance(images, dict) or set(images) != set(SERVICES):
+        raise ValueError("prepared receipt must contain exactly the three application images")
+    profiles = {"deepwell": "release", "framerail": "built", "wws": "release"}
+    dockerfiles = receipt.get("dockerfiles")
+    for service in SERVICES:
+        image = images.get(service)
+        if not isinstance(image, dict):
+            raise ValueError(f"prepared receipt image {service} is invalid")
+        reference = image.get("reference")
+        image_id = image.get("id")
+        if reference != image_reference(identity["wikijump_sha"], service):
+            raise ValueError(f"prepared image {service} is not an exact SHA-derived reference")
+        if not isinstance(image_id, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
+            raise ValueError(f"prepared image {service} is not bound to an image digest")
+        if image.get("profile") != profiles[service]:
+            raise ValueError(f"prepared image {service} profile is not {profiles[service]}")
+        dockerfile = source_root / "install" / "prod" / service / "Dockerfile"
+        if not isinstance(dockerfiles, dict) or dockerfiles.get(service) != file_sha256(dockerfile):
+            raise ValueError(f"prepared image {service} Dockerfile identity is stale")
+    return receipt, file_sha256(path)
 
 
 def runtime_differential_identity(
@@ -226,6 +246,7 @@ def parse_args() -> argparse.Namespace:
         "--source-root", type=Path, default=Path(__file__).resolve().parents[2]
     )
     parser.add_argument("--runtime-home", type=Path, default=DEFAULT_RUNTIME_HOME)
+    parser.add_argument("--prepared-receipt", type=Path, required=True)
     parser.add_argument("--receipt", type=Path)
     parser.add_argument("--health-timeout-seconds", type=int, default=1800)
     return parser.parse_args()
@@ -248,8 +269,12 @@ def main() -> int:
             raise ValueError(f"required standing runtime file is missing: {required}")
 
     started_at = datetime.now(UTC)
-    expiry = (started_at + timedelta(days=30)).isoformat()
+    activation_started = time.monotonic()
     identity = repository_identity(source_root)
+    prepared_receipt_path = args.prepared_receipt.resolve()
+    prepared_receipt, prepared_receipt_sha256 = load_prepared_receipt(
+        prepared_receipt_path, source_root, identity
+    )
     environment = read_environment(runtime_home / ".env")
     if environment.get("STANDING_PROJECT_NAME") != "wikijump-standing":
         raise ValueError("runtime home is not the wikijump-standing project")
@@ -258,23 +283,33 @@ def main() -> int:
         raise ValueError("runtime environment does not name its standing network")
     command("docker", "network", "inspect", "--", network_name, cwd=runtime_home)
 
-    tags = {
-        service: image_tag(identity["wikijump_sha"], service) for service in SERVICES
+    prepared_images = prepared_receipt["images"]
+    if not isinstance(prepared_images, dict):
+        raise ValueError("prepared receipt images are invalid")
+    images = {
+        service: image_identity(prepared_images[service]["reference"], runtime_home)
+        for service in SERVICES
     }
     for service in SERVICES:
-        command(
-            *build_command(source_root, service, tags[service], identity, expiry),
-            cwd=source_root,
-            capture=False,
-        )
-    if repository_identity(source_root) != identity:
-        raise RuntimeError("source identity changed during the image builds")
+        expected = prepared_images[service]["id"]
+        if images[service]["id"] != expected:
+            raise RuntimeError(
+                f"prepared image {service} changed: expected {expected}, got {images[service]['id']}"
+            )
+        labels = images[service].get("labels")
+        if not isinstance(labels, dict) or labels.get("com.rokurolize.wikijump.sha") != identity["wikijump_sha"]:
+            raise RuntimeError(f"prepared image {service} is not labelled for this source")
+
+    expiry = str(prepared_receipt.get("resource_disposition", {}).get("expiry", ""))
+    if not expiry:
+        raise ValueError("prepared receipt has no resource expiry")
+    activation_verified = time.monotonic()
 
     environment.update(
         {
-            "STANDING_DEEPWELL_IMAGE": tags["deepwell"],
-            "STANDING_FRAMERAIL_IMAGE": tags["framerail"],
-            "STANDING_WWS_IMAGE": tags["wws"],
+            "STANDING_DEEPWELL_IMAGE": prepared_images["deepwell"]["reference"],
+            "STANDING_FRAMERAIL_IMAGE": prepared_images["framerail"]["reference"],
+            "STANDING_WWS_IMAGE": prepared_images["wws"]["reference"],
             "STANDING_WIKIJUMP_SHA": identity["wikijump_sha"],
             "STANDING_FTML_SHA": identity["ftml_sha"],
             "STANDING_LOCALES_SOURCE": str(source_root / "locales"),
@@ -282,19 +317,24 @@ def main() -> int:
         }
     )
     write_environment(runtime_home / ".env", environment)
+    compose_started = time.monotonic()
     command(
         *compose_command(
             runtime_home,
             "up",
             "--detach",
             "--no-deps",
+            "--no-build",
             *SERVICES,
             override_file=override_file,
         ),
         cwd=runtime_home,
         capture=False,
     )
+    health_started = time.monotonic()
     health = wait_for_health(runtime_home, override_file, args.health_timeout_seconds)
+    health_completed = time.monotonic()
+    canary_started = time.monotonic()
     body = command(
         "curl",
         "--silent",
@@ -309,10 +349,7 @@ def main() -> int:
     )
     if "scp-9506" not in body.lower() or "page-content" not in body:
         raise RuntimeError("standing scp-9506 canary returned an unexpected document")
-
-    images = {
-        service: image_identity(tag, runtime_home) for service, tag in tags.items()
-    }
+    canary_completed = time.monotonic()
     effective_config = command(
         *compose_command(
             runtime_home,
@@ -331,8 +368,19 @@ def main() -> int:
         "status": "pass",
         "started_at": started_at.isoformat(),
         "completed_at": datetime.now(UTC).isoformat(),
+        "activation_duration_seconds": time.monotonic() - activation_started,
+        "image_verification_duration_seconds": activation_verified - activation_started,
+        "compose_activation_duration_seconds": health_started - compose_started,
+        "health_duration_seconds": health_completed - health_started,
+        "canary_duration_seconds": canary_completed - canary_started,
         **identity,
         "runtime_home": str(runtime_home),
+        "prepared_receipt": {
+            "path": str(prepared_receipt_path),
+            "sha256": prepared_receipt_sha256,
+            "completed_at": prepared_receipt.get("completed_at"),
+            "duration_seconds": prepared_receipt.get("duration_seconds"),
+        },
         "project_name": "wikijump-standing",
         "network_name": network_name,
         "images": images,

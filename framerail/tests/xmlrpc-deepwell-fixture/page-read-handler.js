@@ -1,4 +1,5 @@
 import { handlePageDetailRpc } from "./page-detail-handler.js"
+import { handlePageLookupRpc } from "./page-lookup-handler.js"
 import { handlePageQueryRpc } from "./page-query-handler.js"
 
 /**
@@ -8,5 +9,7 @@ import { handlePageQueryRpc } from "./page-query-handler.js"
  * }} input
  */
 export const handlePageReadRpc = (input) => {
-  return handlePageDetailRpc(input) ?? handlePageQueryRpc(input)
+  return (
+    handlePageDetailRpc(input) ?? handlePageLookupRpc(input) ?? handlePageQueryRpc(input)
+  )
 }

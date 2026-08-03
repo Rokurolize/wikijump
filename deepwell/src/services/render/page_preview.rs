@@ -47,7 +47,9 @@ impl RenderService {
             tags: Vec::new(),
             language: Cow::Owned(locale_for_ftml(&site.locale).to_owned()),
         };
-        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut settings =
+            WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        settings.enable_html_blocks = false;
         let RenderInnerOutput {
             html_output,
             errors,
@@ -59,6 +61,7 @@ impl RenderService {
             &settings,
             RenderInnerOptions {
                 render_context: RenderContext::page_preview(site_id),
+                viewer_user_id: ctx.request().user_id().ok(),
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 trace: None,
                 persist_compiled_text: false,

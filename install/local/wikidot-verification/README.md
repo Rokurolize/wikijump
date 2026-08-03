@@ -41,7 +41,7 @@ The policy accepts only `intentional-security-boundary`, `wikijump-runtime-bound
 
 Recorded batch-safe cases default to the measured 8,000-character target and 9,000-character hard limit. The 2026-07-26 matrix needed 68 batch requests plus 130 isolated interaction retries at this size. A 20,000-character run needed 33 successful or retry requests plus 173 isolated retries, while a 50,000-character run needed 18 successful or retry requests plus 186 isolated retries; the smaller default therefore minimized total Wikidot requests. Wikidot also returned empty previews for content-dependent 20,000-character and 50,000-character shards, and for every measured 84,528-character and roughly 150,000-character shard. Run `build-failed-preview-retries.mjs` and recapture only failed shards at the default retry size. `compare-wikidot-live-pages.mjs` accepts repeated `--captures` arguments, replaces failed parent shards with successful retries, and fails if any case remains unresolved. Cases whose batched rendering differs from their isolated FTML rendering must then move to the isolated lane; source length alone is not proof that cases are context-independent.
 
-Includes, page-existence checks, permissions, and runtime modules use the saved-page runtime lane because PagePreview does not execute them. `capture_wikidot_existing_pages.py` reads an existing Wikidot page anonymously and freezes its page ID, latest revision ID and number, public source wikitext and hash, selected rendered subtree, actor state, resolved site and domain, capture time, and pinned acquisition dependencies. Keeping the source bytes makes later corpus-drift diagnosis and exact-input replay possible without another Wikidot request. It accepts only the read-only `scp-wiki`, `scp-jp`, and `sandbox-for-codex` sites and mutates none of them.
+Includes, page-existence checks, permissions, and most runtime modules use the saved-page runtime lane because PagePreview does not execute them. ListPages is an exception: live PagePreview executes site-scoped queries with default-category context but no saved current-page identity. `capture_wikidot_existing_pages.py` reads an existing Wikidot page anonymously and freezes its page ID, latest revision ID and number, public source wikitext and hash, selected rendered subtree, actor state, resolved site and domain, capture time, and pinned acquisition dependencies. Keeping the source bytes makes later corpus-drift diagnosis and exact-input replay possible without another Wikidot request. It accepts only the read-only `scp-wiki`, `scp-jp`, and `sandbox-for-codex` sites and mutates none of them.
 
 ```sh
 install/local/wikidot-verification/.venv/bin/python \
@@ -93,6 +93,37 @@ node install/local/wikidot-verification/scripts/apply-corpus-import-manifest.mjs
 ```
 
 After import, run the saved-page rerender command above for the same case IDs and exact runtime identity, then run the HTTPS differential.
+
+## Wikijump identifier leaks
+
+Imported content must carry Wikidot's own DOM names. The Wikidot stylesheet the page loads has no `.wj-` rules, so a leaked `wj-` class is an unstyled element as well as a tree difference.
+
+```sh
+pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- \
+  --site scp-wiki --rpc-url http://127.0.0.1:2747/jsonrpc
+```
+
+The check renders a battery of constructs through the local Deepwell runtime by anonymous page preview and fails if any `wj-` class, tag, id, or `data-wj-` attribute appears. The battery covers the constructs FTML renders differently under `Layout::Wikidot` (footnotes, bibliography, collapsible, code, tabview, math, table of contents, user, date, image, video, audio, tables, every link variant, alignment, lists, monospace, raw), the Wikijump-only blocks that must stay literal rather than render (`[[hidden]]`, `[[invisible]]`), and ListPages and CountPages row bodies. A construct that fails to render counts as a failure, since a render error hides whatever it would have emitted.
+
+It requires a running local stack and creates no page. The `--rpc-url` must be loopback: pointing the battery at a remote host would send wikitext off the machine and describe someone else's runtime.
+
+## Corpus-pinned compatibility rules
+
+A compatibility rule earns its place by implementing what Wikidot does, not by recognizing a page the corpus happens to contain. A predicate that compares against a byte-exact fragment of a captured page reproduces that one page and diverges again as soon as a word or a line moves.
+
+```sh
+pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- \
+  --corpus /absolute/evidence/path/fresh-exact-live-references.jsonl \
+  --corpus /absolute/evidence/path/fresh-literal-live-references.jsonl
+```
+
+The check is factual rather than stylistic. It extracts every string literal that sits where source text is matched against it, then reports the literals that occur verbatim in no more than eight captured pages. Measured against the 19,612-source campaign corpus, rules pinned to page content occur in one to eight captured pages while genuine module syntax occurs in 321 (`[[collapsible show="`), 658 (`[!--`), 7,803 (`created_at`) and 19,421 (`[[/module]]`); the threshold sits in that fortyfold gap. Pass every lane, because a literal absent from one lane can still be pinned in another. Rust `#[cfg(test)]` modules are skipped, since regression tests are supposed to hold corpus source.
+
+Matches of sixteen characters or more are findings; shorter ones are notices. Short markup vocabulary such as `<br>`, `&quot;`, `[[html]]` and `~~~~` is also rare in a ListPages corpus without having been lifted from any page, and on the current render tree every rare literal at or above that length was genuine page content while every shorter one was vocabulary. Notices still deserve a look, since `属性...` and `@@*@@ ` are short and genuinely pinned; they simply cannot carry a gate on their own. The command reports without failing by default. Pass `--strict` to exit non-zero on findings.
+
+Findings name the exact pages a literal came from. Resolve one by implementing the rule those pages demonstrate, proven by live observation including negative controls, or by leaving the case actionable and recording it as unimplemented. `fixtures/corpus-pinned-literals/allowlist.json` accepts a literal only when the pinned form is genuinely the whole of Wikidot's behavior, and requires at least two live observations per entry.
+
+The check reads string literals only. A rule can overfit through an exact conjunction of ordinary syntax tokens without any corpus-derived literal, so a clean report is not proof that a rule generalizes.
 
 ## Generic marker runtime differential
 

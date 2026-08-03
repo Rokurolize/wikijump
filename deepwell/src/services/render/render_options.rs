@@ -26,7 +26,16 @@
 //! which Wikidot URL path arguments the request carried.
 
 use super::diagnostics::{CorpusRenderScope, CorpusRenderTrace};
+use super::list_pages::ListPagesPagerRoute;
 use super::url_arguments::UrlArguments;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum RenderLifecycle {
+    Standalone,
+    SavedPage,
+    AjaxModule,
+    PagePreview,
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct RenderContext {
@@ -34,11 +43,13 @@ pub(super) struct RenderContext {
     pub(super) current_category_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
     pub(super) text_block_page_id: Option<i64>,
+    pub(super) lifecycle: RenderLifecycle,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub(super) struct RenderInnerOptions<'a> {
     pub(super) render_context: RenderContext,
+    pub(super) viewer_user_id: Option<i64>,
     pub(super) max_include_expansions: usize,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) persist_compiled_text: bool,
@@ -53,6 +64,7 @@ pub(super) struct RenderInnerOptions<'a> {
 #[derive(Clone, Copy, Debug)]
 pub(super) struct RenderPageOptions<'a> {
     pub(super) max_include_expansions: usize,
+    pub(super) viewer_user_id: Option<i64>,
 
     /// The Wikidot URL path arguments this request carried.
     pub(super) url: UrlArguments<'a>,
@@ -65,9 +77,12 @@ pub(super) struct RenderExpansionOptions<'a> {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_category_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
+    pub(super) viewer_user_id: Option<i64>,
     pub(super) max_include_expansions: usize,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) url: UrlArguments<'a>,
+    pub(super) list_pages_pager_route: ListPagesPagerRoute,
+    pub(super) page_preview: bool,
 }
 
 impl RenderContext {
@@ -77,6 +92,7 @@ impl RenderContext {
             current_category_id: None,
             current_page_id: None,
             text_block_page_id: None,
+            lifecycle: RenderLifecycle::Standalone,
         }
     }
 
@@ -86,6 +102,7 @@ impl RenderContext {
             current_category_id: Some(category_id),
             current_page_id: Some(page_id),
             text_block_page_id: Some(page_id),
+            lifecycle: RenderLifecycle::SavedPage,
         }
     }
 
@@ -95,6 +112,7 @@ impl RenderContext {
             current_category_id: Some(category_id),
             current_page_id: Some(current_page_id),
             text_block_page_id: None,
+            lifecycle: RenderLifecycle::SavedPage,
         }
     }
 
@@ -104,6 +122,7 @@ impl RenderContext {
             current_category_id: None,
             current_page_id: Some(0),
             text_block_page_id: None,
+            lifecycle: RenderLifecycle::AjaxModule,
         }
     }
 
@@ -113,6 +132,18 @@ impl RenderContext {
             current_category_id: None,
             current_page_id: None,
             text_block_page_id: None,
+            lifecycle: RenderLifecycle::PagePreview,
+        }
+    }
+
+    pub(super) fn list_pages_pager_route(self) -> ListPagesPagerRoute {
+        match self.lifecycle {
+            RenderLifecycle::Standalone | RenderLifecycle::SavedPage => {
+                ListPagesPagerRoute::SavedPage
+            }
+            RenderLifecycle::AjaxModule | RenderLifecycle::PagePreview => {
+                ListPagesPagerRoute::AjaxModuleConnector
+            }
         }
     }
 }
@@ -130,7 +161,12 @@ mod tests {
                 current_category_id: None,
                 current_page_id: None,
                 text_block_page_id: None,
+                lifecycle: RenderLifecycle::PagePreview,
             },
+        );
+        assert_eq!(
+            RenderContext::page_preview(7).list_pages_pager_route(),
+            ListPagesPagerRoute::AjaxModuleConnector,
         );
     }
 }

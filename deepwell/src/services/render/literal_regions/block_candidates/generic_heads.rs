@@ -112,11 +112,21 @@ pub(in crate::services::render::literal_regions) fn collect_head_candidate_strea
                 || name.eq_ignore_ascii_case(b"module654"))
             && let Some(subname_start) = skip_name_delimiter(bytes, name_end)
         {
-            let (subname, _) = wikidot_trimmed_name(bytes, subname_start);
+            let (subname, subname_end) = wikidot_trimmed_name(bytes, subname_start);
             if subname.is_some_and(|subname| {
                 subname.eq_ignore_ascii_case(b"ListPages")
                     || subname.eq_ignore_ascii_case(b"CountPages")
             }) {
+                if name.eq_ignore_ascii_case(b"module")
+                    && subname
+                        .is_some_and(|subname| subname.eq_ignore_ascii_case(b"ListPages"))
+                    && let Some(end) =
+                        documented_list_pages_placeholder_end(bytes, subname_end)
+                {
+                    runtime_modules
+                        .push(RuntimeModuleHeadCandidate::Exact(candidate..end));
+                    continue;
+                }
                 let mut target_tokens = text_tokens.clone();
                 match scan_wikidot_tag(
                     bytes,
@@ -170,6 +180,27 @@ pub(in crate::services::render::literal_regions) fn collect_head_candidate_strea
         generic,
         runtime_modules,
     }
+}
+
+fn documented_list_pages_placeholder_end(
+    bytes: &[u8],
+    subname_end: usize,
+) -> Option<usize> {
+    let start = skip_horizontal(bytes, subname_end);
+    if start == subname_end {
+        return None;
+    }
+    for placeholder in ["属性..."] {
+        let mut end = start + placeholder.len();
+        if bytes.get(start..end) != Some(placeholder.as_bytes()) {
+            continue;
+        }
+        end = skip_horizontal(bytes, end);
+        if bytes.get(end..end + 2) == Some(&b"]]"[..]) {
+            return Some(end + 2);
+        }
+    }
+    None
 }
 
 fn physical_line_resume(bytes: &[u8], start: usize) -> usize {
@@ -381,7 +412,10 @@ fn matches_name(name: &[u8], accepted: &[&str]) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::collect_generic_head_candidates;
+    use super::{
+        RuntimeModuleHeadCandidate, collect_generic_head_candidates,
+        collect_head_candidate_streams, documented_list_pages_placeholder_end,
+    };
 
     #[test]
     fn complete_known_heads_own_only_their_head() {
@@ -397,6 +431,29 @@ mod tests {
         for name in ["ListPages", "CountPages"] {
             let source = format!("[[module {name} name=\"live\"]]");
             assert!(collect_generic_head_candidates(&source).is_empty());
+        }
+    }
+
+    #[test]
+    fn exact_documented_list_pages_placeholder_is_a_runtime_head() {
+        let source = "[[module ListPages 属性...]]";
+        assert_eq!(
+            collect_head_candidate_streams(source).runtime_modules,
+            vec![RuntimeModuleHeadCandidate::Exact(0..source.len())],
+        );
+        for unsupported in [
+            "[[module ListPages 属性..]]",
+            "[[module ListPages 任意...]]",
+            "[[module ListPages 属性... 额外]]",
+        ] {
+            assert!(
+                documented_list_pages_placeholder_end(
+                    unsupported.as_bytes(),
+                    "[[module ListPages".len(),
+                )
+                .is_none(),
+                "{unsupported:?}",
+            );
         }
     }
 

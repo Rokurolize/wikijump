@@ -1,17 +1,27 @@
 //! Render-local analysis for a ListPages body template.
 
 use crate::services::page_query::FoundPageFields;
+use crate::services::render::literal_regions::LiteralRegionIndex;
 use regex::Regex;
 use std::collections::BTreeSet;
 use std::sync::LazyLock;
 
+use super::budget::MAX_LISTPAGES_TEMPLATE_BODY_BYTES;
+
 pub(in crate::services::render) static LISTPAGES_VARIABLE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| {
         Regex::new(
-        r"%%(?P<name>[A-Za-z0-9_]+)(?:\{(?P<argument>[A-Za-z0-9_-]+)\})?(?:\|(?P<format>.*?))?%%",
+        r"%%(?P<name>[A-Za-z0-9_]+)(?:\{(?P<argument>[A-Za-z0-9_-]+)\})?(?:\((?P<length>[0-9]+)\))?(?:\|(?P<format>.*?))?%%",
     )
     .unwrap()
     });
+
+static LISTPAGES_SECTION_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i:\[\[(?P<close>/)?(?P<name>head|body|foot)\]\])")
+        .expect("the ListPages section marker regex is valid")
+});
+
+const DEFAULT_LISTPAGES_TEMPLATE: &str = "+ %%title_linked%%\n\nby %%created_by_linked%% %%created_at|%O ago (%e %b %Y, %H:%M)%%\n\n%%summary%%";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::services::render) enum ListPagesOutputShape {
@@ -31,13 +41,17 @@ enum ListPagesVariable {
     CreatedBy,
     CreatedByLinked,
     CreatedByUnix,
+    CreatedById,
     CreatedAt,
     UpdatedBy,
+    UpdatedByUnix,
+    UpdatedById,
     UpdatedAt,
     CommentedBy,
     CommentedAt,
     Rating,
     RatingVotes,
+    RatingPercent,
     Comments,
     Tags,
     TagsLinked,
@@ -46,24 +60,34 @@ enum ListPagesVariable {
     Category,
     Size,
     SiteDomain,
+    SiteTitle,
+    SiteName,
     ParentFullname,
+    ParentName,
+    ParentCategory,
+    ParentTitle,
+    ParentTitleLinked,
     Revisions,
     Children,
-    EmptyCompatField,
     FormData,
     Content,
+    Preview,
+    Summary,
     Index,
     Total,
     Limit,
+    TotalOrLimit,
 }
 
 impl ListPagesVariable {
-    fn parse(name: &str, has_argument: bool) -> Option<Self> {
+    fn parse(name: &str) -> Option<Self> {
         match name.to_ascii_lowercase().as_str() {
             "title_linked" | "linked_title" => Some(Self::TitleLinked),
             "title" => Some(Self::Title),
-            "name" | "slug" | "page_unix_name" => Some(Self::Slug),
-            "fullname" | "full_slug" => Some(Self::FullSlug),
+            "name" | "slug" | "page_name" => Some(Self::Slug),
+            "fullname" | "full_slug" | "page_unix_name" | "full_page_name" => {
+                Some(Self::FullSlug)
+            }
             "link" => Some(Self::Link),
             "created_by" | "createdby" => Some(Self::CreatedBy),
             "created_by_linked" | "createdbylinked" | "author" => {
@@ -73,18 +97,23 @@ impl ListPagesVariable {
             // this table were each observed live; an unobserved variant stays
             // literal rather than being guessed from a naming pattern.
             "created_by_unix" => Some(Self::CreatedByUnix),
+            "created_by_id" => Some(Self::CreatedById),
             "created_at" | "createdat" | "date" => Some(Self::CreatedAt),
-            "updated_by" | "updatedby" | "updated_by_linked" | "updatedbylinked" => {
-                Some(Self::UpdatedBy)
-            }
+            "updated_by" | "updatedby" | "updated_by_linked" | "updatedbylinked"
+            | "author_edited" | "user_edited" => Some(Self::UpdatedBy),
+            "updated_by_unix" => Some(Self::UpdatedByUnix),
+            "updated_by_id" => Some(Self::UpdatedById),
             "updated_at" | "updatedat" | "date_edited" => Some(Self::UpdatedAt),
             "commented_by"
             | "commentedby"
             | "commented_by_linked"
-            | "commentedbylinked" => Some(Self::CommentedBy),
+            | "commentedbylinked"
+            | "commented_by_unix"
+            | "commented_by_id" => Some(Self::CommentedBy),
             "commented_at" | "commentedat" => Some(Self::CommentedAt),
             "rating" => Some(Self::Rating),
             "rating_votes" | "ratingvotes" => Some(Self::RatingVotes),
+            "rating_percent" => Some(Self::RatingPercent),
             "comments" => Some(Self::Comments),
             "tags" => Some(Self::Tags),
             "tags_linked" | "tagslinked" => Some(Self::TagsLinked),
@@ -93,30 +122,83 @@ impl ListPagesVariable {
             "category" => Some(Self::Category),
             "size" => Some(Self::Size),
             "site_domain" => Some(Self::SiteDomain),
+            "site_title" => Some(Self::SiteTitle),
+            "site_name" => Some(Self::SiteName),
             "parent_fullname" => Some(Self::ParentFullname),
+            "parent_name" => Some(Self::ParentName),
+            "parent_category" => Some(Self::ParentCategory),
+            "parent_title" => Some(Self::ParentTitle),
+            "parent_title_linked" => Some(Self::ParentTitleLinked),
             "revisions" => Some(Self::Revisions),
             "children" => Some(Self::Children),
-            "rating_percent" => Some(Self::EmptyCompatField),
-            "form_data" | "form_raw" if has_argument => Some(Self::FormData),
-            "content" => Some(Self::Content),
+            "form_data" | "form_raw" | "form_label" | "form_hint" => Some(Self::FormData),
+            "content" | "text" | "long" | "body" => Some(Self::Content),
+            "preview" => Some(Self::Preview),
+            "summary" | "first_paragraph" | "description" | "short" => {
+                Some(Self::Summary)
+            }
             "index" => Some(Self::Index),
             "total" => Some(Self::Total),
             "limit" => Some(Self::Limit),
+            "total_or_limit" => Some(Self::TotalOrLimit),
             _ => None,
+        }
+    }
+
+    fn supports_suffix(
+        self,
+        argument: Option<&str>,
+        length: Option<&str>,
+        format: Option<&str>,
+    ) -> bool {
+        match self {
+            Self::FormData => argument.is_some() && length.is_none() && format.is_none(),
+            Self::Content => {
+                argument.is_none_or(|value| {
+                    !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit())
+                }) && length.is_none()
+                    && format.is_none()
+            }
+            Self::Preview => {
+                argument.is_none()
+                    && length.is_none_or(|value| {
+                        !value.is_empty()
+                            && value.bytes().all(|byte| byte.is_ascii_digit())
+                    })
+                    && format.is_none()
+            }
+            Self::CreatedAt
+            | Self::UpdatedAt
+            | Self::CommentedAt
+            | Self::TagsLinked
+            | Self::HiddenTagsLinked => argument.is_none() && length.is_none(),
+            _ => argument.is_none() && length.is_none() && format.is_none(),
         }
     }
 }
 
+pub(in crate::services::render) fn list_pages_variable_capture_is_valid(
+    captures: &regex::Captures<'_>,
+) -> bool {
+    ListPagesVariable::parse(&captures["name"]).is_some_and(|variable| {
+        variable.supports_suffix(
+            captures.name("argument").map(|matched| matched.as_str()),
+            captures.name("length").map(|matched| matched.as_str()),
+            captures.name("format").map(|matched| matched.as_str()),
+        )
+    })
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-struct ListPagesVariables(u32);
+struct ListPagesVariables(u64);
 
 impl ListPagesVariables {
     fn insert(&mut self, variable: ListPagesVariable) {
-        self.0 |= 1 << variable as u8;
+        self.0 |= 1_u64 << variable as u8;
     }
 
     fn contains(self, variable: ListPagesVariable) -> bool {
-        self.0 & (1 << variable as u8) != 0
+        self.0 & (1_u64 << variable as u8) != 0
     }
 
     fn intersects(self, variables: &[ListPagesVariable]) -> bool {
@@ -130,6 +212,7 @@ impl ListPagesVariables {
 #[derive(Debug)]
 pub(in crate::services::render) struct ListPagesTemplatePlan {
     body: String,
+    default_template: bool,
     sections: ListPagesSections,
     variables: ListPagesVariables,
     fields: FoundPageFields,
@@ -151,63 +234,160 @@ struct ListPagesSections {
     foot: Option<String>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ListPagesSectionKind {
+    Head,
+    Body,
+    Foot,
+}
+
+impl ListPagesSectionKind {
+    fn parse(name: &str) -> Self {
+        match name.to_ascii_lowercase().as_str() {
+            "head" => Self::Head,
+            "body" => Self::Body,
+            "foot" => Self::Foot,
+            _ => unreachable!("the section marker regex limits section names"),
+        }
+    }
+
+    fn index(self) -> usize {
+        match self {
+            Self::Head => 0,
+            Self::Body => 1,
+            Self::Foot => 2,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ListPagesSectionMarker {
+    kind: ListPagesSectionKind,
+    start: usize,
+    end: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ListPagesSectionPair {
+    kind: ListPagesSectionKind,
+    open_start: usize,
+    content_start: usize,
+    content_end: usize,
+    close_end: usize,
+}
+
 /// Splits a template into its once-emitted sections and its per-row body.
 ///
-/// Returns `None` for a shape whose live output is uncaptured: a repeated
-/// marker, a marker that never closes, or a `[[head]]`/`[[foot]]` without the
-/// `[[body]]` that would separate them from the row template.
+/// A complete body pair activates section mode. A head is once-emitted only
+/// when it is the immediately preceding balanced section, and a foot is
+/// once-emitted only when it is the immediately following balanced section.
+/// Other source is local recovery and does not get reordered around the body.
 fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String)> {
-    let mut sections = ListPagesSections::default();
-    let mut row_body = None;
+    let literal_regions = LiteralRegionIndex::new(body);
+    let mut stacks: [Vec<ListPagesSectionMarker>; 3] =
+        std::array::from_fn(|_| Vec::new());
+    let mut pairs = Vec::new();
 
-    for (name, slot) in [("head", 0), ("body", 1), ("foot", 2)] {
-        let open = format!("[[{name}]]");
-        let close = format!("[[/{name}]]");
-        let mut matches = body.match_indices(&open);
-        let Some((open_start, _)) = matches.next() else {
+    for captures in LISTPAGES_SECTION_MARKER_REGEX.captures_iter(body) {
+        let matched = captures
+            .get(0)
+            .expect("the section marker regex has a whole match");
+        if literal_regions.contains(matched.start()) {
             continue;
-        };
-        if matches.next().is_some() {
-            return None;
         }
-        if body.matches(&close).count() != 1 {
-            return None;
+        let kind = ListPagesSectionKind::parse(&captures["name"]);
+        if captures.name("close").is_none() {
+            stacks[kind.index()].push(ListPagesSectionMarker {
+                kind,
+                start: matched.start(),
+                end: matched.end(),
+            });
+            continue;
         }
-        let content_start = open_start + open.len();
-        let close_start = body[content_start..].find(&close)? + content_start;
-        let content = body[content_start..close_start].to_owned();
-        match slot {
-            0 => sections.head = Some(content),
-            1 => row_body = Some(content),
-            _ => sections.foot = Some(content),
+
+        if let Some(open) = stacks[kind.index()].pop() {
+            debug_assert_eq!(open.kind, kind);
+            pairs.push(ListPagesSectionPair {
+                kind,
+                open_start: open.start,
+                content_start: open.end,
+                content_end: matched.start(),
+                close_end: matched.end(),
+            });
         }
     }
 
-    match row_body {
-        Some(row_body) => Some((sections, row_body)),
-        // A head or foot with no body has no evidenced row template to pair it
-        // with, so the module is left alone rather than guessed at.
-        None if sections == ListPagesSections::default() => {
-            Some((sections, body.to_owned()))
+    let body_pairs = pairs
+        .iter()
+        .filter(|pair| pair.kind == ListPagesSectionKind::Body)
+        .collect::<Vec<_>>();
+    let [body_pair] = body_pairs.as_slice() else {
+        if body_pairs.is_empty() {
+            // Without a body pair, Wikidot treats all section-shaped source as
+            // ordinary per-row template text.
+            return Some((ListPagesSections::default(), body.to_owned()));
         }
-        None => None,
-    }
+
+        // Repeated and nested body pairs have row-count-dependent recovery.
+        // Preserve the existing fail-closed behavior until that stateful
+        // grammar is modeled explicitly.
+        return None;
+    };
+
+    let head = pairs
+        .iter()
+        .filter(|pair| {
+            pair.kind == ListPagesSectionKind::Head
+                && pair.close_end <= body_pair.open_start
+                && body[pair.close_end..body_pair.open_start].trim().is_empty()
+        })
+        .max_by_key(|pair| pair.close_end)
+        .map(|pair| body[pair.content_start..pair.content_end].trim().to_owned());
+    let foot = pairs
+        .iter()
+        .filter(|pair| {
+            pair.kind == ListPagesSectionKind::Foot
+                && pair.open_start >= body_pair.close_end
+                && body[body_pair.close_end..pair.open_start].trim().is_empty()
+        })
+        .min_by_key(|pair| pair.open_start)
+        .map(|pair| body[pair.content_start..pair.content_end].trim().to_owned());
+
+    Some((
+        ListPagesSections { head, foot },
+        body[body_pair.content_start..body_pair.content_end]
+            .trim()
+            .to_owned(),
+    ))
 }
 
 impl ListPagesTemplatePlan {
     pub(in crate::services::render) fn compile(body: &str) -> Option<Self> {
+        if body.len() > MAX_LISTPAGES_TEMPLATE_BODY_BYTES {
+            return None;
+        }
         let (sections, body) = split_list_pages_sections(body)?;
-        let body = body.as_str();
+        let default_template = body.trim().is_empty();
+        let body = match body.trim() {
+            "" => DEFAULT_LISTPAGES_TEMPLATE,
+            body => body,
+        };
         let mut variables = ListPagesVariables::default();
         let mut content_sections = BTreeSet::new();
         let mut variable_count = 0;
         let mut rating_only = true;
 
         for captures in LISTPAGES_VARIABLE_REGEX.captures_iter(body) {
-            let variable = ListPagesVariable::parse(
-                &captures["name"],
-                captures.name("argument").is_some(),
-            )?;
+            let Some(variable) = ListPagesVariable::parse(&captures["name"]) else {
+                continue;
+            };
+            if !variable.supports_suffix(
+                captures.name("argument").map(|matched| matched.as_str()),
+                captures.name("length").map(|matched| matched.as_str()),
+                captures.name("format").map(|matched| matched.as_str()),
+            ) {
+                continue;
+            }
             variable_count += 1;
             rating_only &= variable == ListPagesVariable::Rating;
             variables.insert(variable);
@@ -220,18 +400,9 @@ impl ListPagesTemplatePlan {
             }
         }
 
-        // A row variable in a once-emitted section has no row to read from, and
-        // Wikidot's output for that shape is uncaptured.
-        if [sections.head.as_deref(), sections.foot.as_deref()]
-            .into_iter()
-            .flatten()
-            .any(|section| LISTPAGES_VARIABLE_REGEX.is_match(section))
-        {
-            return None;
-        }
-
         Some(Self {
             body: body.to_owned(),
+            default_template,
             sections,
             variables,
             fields: found_page_fields(variables),
@@ -245,6 +416,10 @@ impl ListPagesTemplatePlan {
 
     pub(in crate::services::render) fn body(&self) -> &str {
         &self.body
+    }
+
+    pub(in crate::services::render) fn is_default_template(&self) -> bool {
+        self.default_template
     }
 
     /// The section emitted once before the rows, if the template declares one.
@@ -270,11 +445,17 @@ impl ListPagesTemplatePlan {
         self.output_shape
     }
 
+    pub(in crate::services::render) fn uses_title(&self) -> bool {
+        self.variables
+            .intersects(&[ListPagesVariable::Title, ListPagesVariable::TitleLinked])
+    }
+
     pub(in crate::services::render) fn uses_created_by(&self) -> bool {
         self.variables.intersects(&[
             ListPagesVariable::CreatedBy,
             ListPagesVariable::CreatedByLinked,
             ListPagesVariable::CreatedByUnix,
+            ListPagesVariable::CreatedById,
         ])
     }
 
@@ -287,7 +468,11 @@ impl ListPagesTemplatePlan {
     }
 
     pub(in crate::services::render) fn uses_updated_by(&self) -> bool {
-        self.variables.contains(ListPagesVariable::UpdatedBy)
+        self.variables.intersects(&[
+            ListPagesVariable::UpdatedBy,
+            ListPagesVariable::UpdatedByUnix,
+            ListPagesVariable::UpdatedById,
+        ])
     }
 
     pub(in crate::services::render) fn uses_updated_at(&self) -> bool {
@@ -310,8 +495,28 @@ impl ListPagesTemplatePlan {
         self.variables.contains(ListPagesVariable::RatingVotes)
     }
 
+    pub(in crate::services::render) fn uses_rating(&self) -> bool {
+        self.variables.contains(ListPagesVariable::Rating)
+    }
+
+    pub(in crate::services::render) fn uses_rating_percent(&self) -> bool {
+        self.variables.contains(ListPagesVariable::RatingPercent)
+    }
+
     pub(in crate::services::render) fn uses_content(&self) -> bool {
-        self.variables.contains(ListPagesVariable::Content)
+        self.variables.intersects(&[
+            ListPagesVariable::Content,
+            ListPagesVariable::Preview,
+            ListPagesVariable::Summary,
+        ])
+    }
+
+    pub(in crate::services::render) fn uses_first_paragraph(&self) -> bool {
+        self.variables.contains(ListPagesVariable::Summary)
+    }
+
+    pub(in crate::services::render) fn uses_preview(&self) -> bool {
+        self.variables.contains(ListPagesVariable::Preview)
     }
 
     pub(in crate::services::render) fn uses_size(&self) -> bool {
@@ -322,8 +527,18 @@ impl ListPagesTemplatePlan {
         self.variables.contains(ListPagesVariable::SiteDomain)
     }
 
-    pub(in crate::services::render) fn uses_parent_fullname(&self) -> bool {
-        self.variables.contains(ListPagesVariable::ParentFullname)
+    pub(in crate::services::render) fn uses_site_title(&self) -> bool {
+        self.variables.contains(ListPagesVariable::SiteTitle)
+    }
+
+    pub(in crate::services::render) fn uses_parent_metadata(&self) -> bool {
+        self.variables.intersects(&[
+            ListPagesVariable::ParentFullname,
+            ListPagesVariable::ParentName,
+            ListPagesVariable::ParentCategory,
+            ListPagesVariable::ParentTitle,
+            ListPagesVariable::ParentTitleLinked,
+        ])
     }
 
     pub(in crate::services::render) fn uses_total(&self) -> bool {
@@ -348,6 +563,15 @@ impl ListPagesTemplatePlan {
         self.variables.contains(ListPagesVariable::FormData)
     }
 
+    pub(in crate::services::render) fn mentions_data_form(&self) -> bool {
+        LISTPAGES_VARIABLE_REGEX
+            .captures_iter(&self.body)
+            .any(|captures| {
+                ListPagesVariable::parse(&captures["name"])
+                    == Some(ListPagesVariable::FormData)
+            })
+    }
+
     pub(in crate::services::render) fn uses_only_rating(&self) -> bool {
         self.rating_only
     }
@@ -363,6 +587,7 @@ fn found_page_fields(variables: ListPagesVariables) -> FoundPageFields {
         ListPagesVariable::CreatedBy,
         ListPagesVariable::CreatedByLinked,
         ListPagesVariable::CreatedByUnix,
+        ListPagesVariable::CreatedById,
     ]);
     let rating_votes = variables.contains(ListPagesVariable::RatingVotes);
     FoundPageFields {
@@ -377,9 +602,15 @@ fn found_page_fields(variables: ListPagesVariables) -> FoundPageFields {
             ListPagesVariable::HiddenTagsLinked,
             ListPagesVariable::RawTags,
         ]),
-        updated_by: variables.contains(ListPagesVariable::UpdatedBy),
+        updated_by: variables.intersects(&[
+            ListPagesVariable::UpdatedBy,
+            ListPagesVariable::UpdatedByUnix,
+            ListPagesVariable::UpdatedById,
+        ]),
         updated_at: variables.contains(ListPagesVariable::UpdatedAt),
-        score: variables.contains(ListPagesVariable::Rating) || rating_votes,
+        score: variables.contains(ListPagesVariable::Rating)
+            || variables.contains(ListPagesVariable::RatingPercent)
+            || rating_votes,
         ..Default::default()
     }
 }
@@ -431,7 +662,7 @@ mod tests {
         assert!(plan.uses_content());
         assert!(plan.uses_size());
         assert!(plan.uses_site_domain());
-        assert!(plan.uses_parent_fullname());
+        assert!(plan.uses_parent_metadata());
         assert!(plan.uses_revisions());
         assert!(plan.uses_children());
         assert_eq!(plan.content_sections(), &BTreeSet::from([None]));
@@ -455,11 +686,19 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unknown_and_argumentless_form_variables() {
-        assert!(ListPagesTemplatePlan::compile("%%unsupported%%").is_none());
-        assert!(ListPagesTemplatePlan::compile("%%createdbyunix%%").is_none());
-        assert!(ListPagesTemplatePlan::compile("%%form_data%%").is_none());
-        assert!(ListPagesTemplatePlan::compile("%%form_raw%%").is_none());
+    fn preserves_unknown_names_without_hiding_known_variable_dependencies() {
+        let plan = ListPagesTemplatePlan::compile(
+            "%%unsupported%%|%%created_at%%|%%createdbyunix%%",
+        )
+        .expect("unknown variable names should remain local to their tokens");
+
+        assert_eq!(
+            plan.body(),
+            "%%unsupported%%|%%created_at%%|%%createdbyunix%%",
+        );
+        assert!(plan.uses_created_at());
+        assert!(ListPagesTemplatePlan::compile("%%form_data%%").is_some());
+        assert!(ListPagesTemplatePlan::compile("%%form_raw%%").is_some());
     }
 
     #[test]
@@ -476,14 +715,16 @@ mod tests {
     }
 
     #[test]
-    fn accepts_every_supported_alias_and_variable_suffix() {
+    fn accepts_every_supported_bare_alias_and_family_specific_suffix() {
         for name in [
             "title_linked",
             "linked_title",
             "title",
             "name",
             "slug",
+            "page_name",
             "page_unix_name",
+            "full_page_name",
             "fullname",
             "full_slug",
             "link",
@@ -492,6 +733,7 @@ mod tests {
             "created_by_linked",
             "createdbylinked",
             "created_by_unix",
+            "created_by_id",
             "author",
             "created_at",
             "createdat",
@@ -500,6 +742,10 @@ mod tests {
             "updatedby",
             "updated_by_linked",
             "updatedbylinked",
+            "author_edited",
+            "user_edited",
+            "updated_by_unix",
+            "updated_by_id",
             "updated_at",
             "updatedat",
             "date_edited",
@@ -507,6 +753,8 @@ mod tests {
             "commentedby",
             "commented_by_linked",
             "commentedbylinked",
+            "commented_by_unix",
+            "commented_by_id",
             "commented_at",
             "commentedat",
             "rating",
@@ -520,26 +768,54 @@ mod tests {
             "tagslinked",
             "_tags",
             "site_domain",
+            "site_title",
+            "site_name",
             "parent_fullname",
+            "parent_name",
+            "parent_category",
+            "parent_title",
+            "parent_title_linked",
             "size",
             "children",
             "rating_percent",
             "revisions",
             "content",
+            "text",
+            "long",
+            "body",
+            "preview",
+            "summary",
+            "first_paragraph",
+            "description",
+            "short",
             "index",
             "total",
             "limit",
+            "total_or_limit",
         ] {
-            let body = format!("%%{name}|format suffix%%");
+            let body = format!("%%{name}%%");
             assert!(
                 ListPagesTemplatePlan::compile(&body).is_some(),
                 "unsupported alias: {name}",
             );
         }
-        for name in ["form_data", "form_raw"] {
+        for name in ["form_data", "form_raw", "form_label", "form_hint"] {
             assert!(
                 ListPagesTemplatePlan::compile(&format!("%%{name}{{field-name}}%%"))
                     .is_some(),
+            );
+        }
+        for body in [
+            "%%content{2}%%",
+            "%%preview(17)%%",
+            "%%created_at|%Y%%",
+            "%%updated_at|%Y|agohover%%",
+            "%%commented_at|%%",
+            "%%tags_linked|#%%",
+        ] {
+            assert!(
+                ListPagesTemplatePlan::compile(body).is_some(),
+                "unsupported family-specific suffix: {body}",
             );
         }
     }
@@ -618,38 +894,160 @@ mod section_tests {
     }
 
     #[test]
-    fn head_or_foot_without_a_body_has_no_row_template() {
-        assert!(ListPagesTemplatePlan::compile("[[head]]H[[/head]]%%name%%").is_none());
-        assert!(ListPagesTemplatePlan::compile("[[foot]]F[[/foot]]%%name%%").is_none());
+    fn trims_module_and_section_boundary_whitespace_before_rows_are_combined() {
+        let plan = ListPagesTemplatePlan::compile(
+            "\n  [[head]]\n  H\n  [[/head]]\n  [[body]]\n  B=%%name%%\n  [[/body]]\n  [[foot]]\n  F\n  [[/foot]]\n",
+        )
+        .expect("boundary whitespace should not split combined ListPages output");
+
+        assert_eq!(plan.head_section(), Some("H"));
+        assert_eq!(plan.body(), "B=%%name%%");
+        assert_eq!(plan.foot_section(), Some("F"));
     }
 
     #[test]
-    fn repeated_or_unclosed_markers_do_not_compile() {
+    fn head_or_foot_without_a_body_remains_literal_row_template_text() {
+        for body in ["[[head]]H[[/head]]%%name%%", "[[foot]]F[[/foot]]%%name%%"] {
+            let plan = ListPagesTemplatePlan::compile(body)
+                .expect("a standalone head or foot remains ordinary row text");
+            assert_eq!(plan.head_section(), None);
+            assert_eq!(plan.foot_section(), None);
+            assert_eq!(plan.body(), body);
+        }
+    }
+
+    #[test]
+    fn section_recognition_is_ordered_around_the_body_pair() {
+        for (source, expected_head, expected_body, expected_foot) in [
+            (
+                "[[head]]H[[/head]][[body]]B[[/body]][[foot]]F[[/foot]]",
+                Some("H"),
+                "B",
+                Some("F"),
+            ),
+            (
+                "[[head]]H[[/head]][[foot]]F[[/foot]][[body]]B[[/body]]",
+                None,
+                "B",
+                None,
+            ),
+            (
+                "[[body]]B[[/body]][[head]]H[[/head]][[foot]]F[[/foot]]",
+                None,
+                "B",
+                None,
+            ),
+            (
+                "[[body]]B[[/body]][[foot]]F[[/foot]][[head]]H[[/head]]",
+                None,
+                "B",
+                Some("F"),
+            ),
+            (
+                "[[foot]]F[[/foot]][[head]]H[[/head]][[body]]B[[/body]]",
+                Some("H"),
+                "B",
+                None,
+            ),
+            (
+                "[[foot]]F[[/foot]][[body]]B[[/body]][[head]]H[[/head]]",
+                None,
+                "B",
+                None,
+            ),
+            (
+                "PRE[[head]]H[[/head]]MID[[body]]B[[/body]]MID[[foot]]F[[/foot]]POST",
+                None,
+                "B",
+                None,
+            ),
+        ] {
+            let plan = ListPagesTemplatePlan::compile(source)
+                .expect("a complete body pair should remain executable");
+            assert_eq!(plan.head_section(), expected_head, "{source}");
+            assert_eq!(plan.body(), expected_body, "{source}");
+            assert_eq!(plan.foot_section(), expected_foot, "{source}");
+        }
+    }
+
+    #[test]
+    fn section_markers_are_case_insensitive_and_literal_aware() {
+        let mixed = ListPagesTemplatePlan::compile(
+            "[[Head]]H[[/hEAd]][[bODy]]B[[/Body]][[FOot]]F[[/fooT]]",
+        )
+        .expect("mixed-case section markers should compile");
+        assert_eq!(mixed.head_section(), Some("H"));
+        assert_eq!(mixed.body(), "B");
+        assert_eq!(mixed.foot_section(), Some("F"));
+
+        for protected_head in [
+            "[!-- [[head]]H[[/head]] --]",
+            "@@[[head]]H[[/head]]@@",
+            "{{[[head]]H[[/head]]}}",
+            "@<[[head]]>@H@<[[/head]]>@",
+        ] {
+            let source =
+                format!("{protected_head}\n[[body]]B[[/body]]\n[[foot]]F[[/foot]]",);
+            let plan = ListPagesTemplatePlan::compile(&source)
+                .expect("literal-owned section markers should not block the real body");
+            assert_eq!(plan.head_section(), None, "{source}");
+            assert_eq!(plan.body(), "B", "{source}");
+            assert_eq!(plan.foot_section(), Some("F"), "{source}");
+        }
+    }
+
+    #[test]
+    fn an_explicit_empty_body_uses_the_default_row_template() {
+        let plan = ListPagesTemplatePlan::compile(
+            "[[head]]H[[/head]][[body]][[/body]][[foot]]F[[/foot]]",
+        )
+        .expect("an empty body section should compile");
+
+        assert_eq!(plan.head_section(), Some("H"));
+        assert_eq!(
+            plan.body(),
+            concat!(
+                "+ %%title_linked%%\n\n",
+                "by %%created_by_linked%% ",
+                "%%created_at|%O ago (%e %b %Y, %H:%M)%%\n\n",
+                "%%summary%%",
+            ),
+        );
+        assert_eq!(plan.foot_section(), Some("F"));
+    }
+
+    #[test]
+    fn row_variables_in_once_emitted_sections_remain_literal() {
+        let plan = ListPagesTemplatePlan::compile(
+            "[[head]]H=%%title%%[[/head]][[body]]B=%%name%%[[/body]][[foot]]F=%%title%%[[/foot]]",
+        )
+        .expect("once-emitted row variables should not reject the body plan");
+
+        assert_eq!(plan.head_section(), Some("H=%%title%%"));
+        assert_eq!(plan.body(), "B=%%name%%");
+        assert_eq!(plan.foot_section(), Some("F=%%title%%"));
+    }
+
+    #[test]
+    fn repeated_body_pairs_fail_closed_but_unclosed_markers_recover_locally() {
         assert!(
             ListPagesTemplatePlan::compile("[[body]]A[[/body]][[body]]B[[/body]]")
                 .is_none(),
-            "a repeated marker has no evidenced precedence",
+            "repeated body recovery depends on the selected row count",
         );
-        assert!(
-            ListPagesTemplatePlan::compile("[[body]]A").is_none(),
-            "an unclosed marker has no evidenced extent",
-        );
-        assert!(
-            ListPagesTemplatePlan::compile(
-                "[[head]]H[[/head]][[body]]A[[/body]][[foot]]F"
-            )
-            .is_none(),
-        );
-    }
+        let unclosed_body = "[[body]]A";
+        let plan = ListPagesTemplatePlan::compile(unclosed_body)
+            .expect("an unclosed body marker remains ordinary row source");
+        assert_eq!(plan.head_section(), None);
+        assert_eq!(plan.body(), unclosed_body);
+        assert_eq!(plan.foot_section(), None);
 
-    #[test]
-    fn a_row_variable_in_a_once_emitted_section_does_not_compile() {
-        assert!(
-            ListPagesTemplatePlan::compile(
-                "[[head]]%%title%%[[/head]][[body]]%%name%%[[/body]]"
-            )
-            .is_none(),
-            "a head emitted once has no row to read a page variable from",
-        );
+        let plan = ListPagesTemplatePlan::compile(
+            "[[head]]H[[/head]][[body]]A[[/body]][[foot]]F",
+        )
+        .expect("an unclosed foot recovers after a valid head/body pair");
+        assert_eq!(plan.head_section(), Some("H"));
+        assert_eq!(plan.body(), "A");
+        assert_eq!(plan.foot_section(), None);
     }
 }

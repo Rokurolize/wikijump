@@ -21,4 +21,5 @@ pub(super) use ranges::{
     collect_downstream_css_module_ranges,
     collect_downstream_css_module_ranges_with_heads, collect_projected_css_module_ranges,
     collect_projected_css_module_ranges_with_heads,
+    collect_wikidot_unclosed_css_yield_openers,
 };

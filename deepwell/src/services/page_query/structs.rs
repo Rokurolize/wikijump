@@ -41,7 +41,7 @@ pub enum PageTypeSelector {
 pub type CategoryList<'a> = &'a [Cow<'a, str>];
 pub type TagList<'a> = &'a [Cow<'a, str>];
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IncludedCategories<'a> {
     All,
     List(CategoryList<'a>),
@@ -205,8 +205,10 @@ pub fn parse_static_wikidot_data_form_values(wikitext: &str) -> BTreeMap<String,
         }
 
         started = true;
-        let value = unquote_static_wikidot_data_form_value(value.trim());
-        values.insert(field.to_owned(), value.to_owned());
+        let value = value.trim();
+        let value = crate::services::data_form::parse_wikidot_stored_text_scalar(value)
+            .unwrap_or_else(|| unquote_static_wikidot_data_form_value(value).to_owned());
+        values.insert(field.to_owned(), value);
     }
 
     values
@@ -237,7 +239,7 @@ fn unquote_static_wikidot_data_form_value(value: &str) -> &str {
     value
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum OrderProperty {
     PageSlug,
     FullSlug,
@@ -252,10 +254,14 @@ pub enum OrderProperty {
     Revisions,
     Comments,
     Random,
-    DataFormFieldName,
+    SeededRandom(Cow<'static, str>),
+    DataFormFieldName {
+        field: Cow<'static, str>,
+        numeric: bool,
+    },
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderBySelector {
     pub property: OrderProperty,
     pub ascending: bool,
@@ -548,6 +554,19 @@ mod tests {
         assert_eq!(values.get("field-one").map(String::as_str), Some("alpha"));
         assert_eq!(values.get("field-two").map(String::as_str), Some("beta"));
         assert!(!values.contains_key("field-three"));
+    }
+
+    #[test]
+    fn data_form_parser_decodes_saved_multiline_wiki_scalars() {
+        let values = parse_static_wikidot_data_form_values(
+            "enabled: '1'\ndetails: \"**Bold**\\n[[[start|Home]]]\"",
+        );
+
+        assert_eq!(values.get("enabled").map(String::as_str), Some("1"));
+        assert_eq!(
+            values.get("details").map(String::as_str),
+            Some("**Bold**\n[[[start|Home]]]"),
+        );
     }
 
     #[test]

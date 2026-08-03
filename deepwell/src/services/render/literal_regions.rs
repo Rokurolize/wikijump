@@ -31,6 +31,7 @@ pub(in crate::services::render) use self::downstream_protectors::{
     collect_downstream_protector_ranges,
 };
 pub(in crate::services::render) use self::list_pages_protection::ListPagesSourceProjection;
+pub(in crate::services::render) use self::list_pages_protection::collect_list_pages_css_yield_openers;
 #[cfg(test)]
 use self::list_pages_protection::collect_list_pages_runtime_recovery_ranges;
 pub(super) use self::list_pages_protection::project_list_pages_typography_in_place;

@@ -227,12 +227,24 @@ fn parse_block_opener(
     let line = lines[line_index];
 
     let (content_start, exact_head) = match family {
-        BlockFamily::Code | BlockFamily::Html => match heads.map_head_end[name_end] {
+        BlockFamily::Code => {
+            let close = heads.next_wikidot_right_block[name_end];
+            if close != NO_OFFSET {
+                let close = expanded_offset(close);
+                // The compatibility scanner recognizes whitespace-prefixed
+                // candidates so they can remain fail-closed protection, but
+                // the pinned FTML parser owns only a tight `[[code` opener.
+                let exact = skip_horizontal_whitespace(bytes, start + 2) == start + 2;
+                (close + 2, exact)
+            } else {
+                (name_end, false)
+            }
+        }
+        BlockFamily::Html => match heads.map_head_end[name_end] {
             NO_OFFSET => (name_end, false),
             end => {
                 let content_start = expanded_offset(end);
-                let exact = family != BlockFamily::Html
-                    || source[name_end..content_start - 2].trim().is_empty();
+                let exact = source[name_end..content_start - 2].trim().is_empty();
                 (content_start, exact)
             }
         },
@@ -502,7 +514,7 @@ mod tests {
                 candidates[index],
             );
         }
-        for index in [2, 3, 6, 7] {
+        for index in [2, 3, 6] {
             assert_eq!(
                 candidates[index].provenance,
                 BaseCandidateProvenance::FailClosedProtection,
@@ -510,6 +522,12 @@ mod tests {
                 candidates[index],
             );
         }
+        assert_eq!(
+            candidates[7].provenance,
+            BaseCandidateProvenance::ClosedOwner,
+            "candidate 7: {:?}",
+            candidates[7],
+        );
         assert!(
             candidates
                 .iter()
@@ -557,26 +575,38 @@ mod tests {
 
     #[test]
     fn pinned_map_head_oddities_determine_exact_provenance() {
-        let sources = [
+        let accepted = [
             "[[code garbage]]x[[/code]]",
             "[[code a=\"x\" trailing]]x[[/code]]",
             "[[code {$k}=\"v\"]]x[[/code]]",
             "[[code a\u{a0}=\"x\"]]x[[/code]]",
         ];
-        for (source, exact) in sources.into_iter().zip([true, true, true, false]) {
+        for source in accepted {
             let candidates = candidates(source);
             assert_eq!(candidates.len(), 1, "{source:?}");
             assert_eq!(
-                candidates[0].provenance == BaseCandidateProvenance::ClosedOwner,
-                exact,
+                candidates[0].provenance,
+                BaseCandidateProvenance::ClosedOwner,
                 "{source:?}: {:?}",
                 candidates[0],
             );
+            assert!(!pinned_tree(source).code_blocks.is_empty(), "{source:?}");
+        }
+
+        for source in [
+            "[[ code]]x[[/code]]",
+            "[[\tcode]]x[[/code]]",
+            "[[ code\ntype=\"rust\"]]x[[/code]]",
+        ] {
+            let candidates = candidates(source);
+            assert_eq!(candidates.len(), 1, "{source:?}");
             assert_eq!(
-                !pinned_tree(source).code_blocks.is_empty(),
-                exact,
-                "{source:?}"
+                candidates[0].provenance,
+                BaseCandidateProvenance::FailClosedProtection,
+                "{source:?}: {:?}",
+                candidates[0],
             );
+            assert!(pinned_tree(source).code_blocks.is_empty(), "{source:?}");
         }
 
         let html = "[[html garbage]]x[[/html]]";

@@ -1,0 +1,74 @@
+{
+  "schema": "wikidot.live.data-form.newpage-metadata.v1",
+  "observed_at": "2026-07-29",
+  "site": "sandbox-for-codex",
+  "actor": "authenticated account A through an isolated Codex-owned Chrome profile",
+  "credential_material": "none; credentials and session material stayed in the local environment and isolated browser profile",
+  "run_owned_pages": {
+    "template": "df-meta-1785307117:_template",
+    "parent": "df-meta-1785307117:parent",
+    "attempted_combined_target": "df-meta-1785307117:target",
+    "attempted_tags_target": "df-meta-1785307117:target-tags",
+    "parent_target": "df-meta-1785307117:target-parent",
+    "cleanup_verified": true,
+    "remaining": []
+  },
+  "template_source": "[[form]]\nfields:\n  name:\n    label: Name\n    type: text\n  choice:\n    label: Choice\n    type: select\n    values:\n      a: Alpha\n      b: Beta\n    default: b\n[[/form]]",
+  "cases": [
+    {
+      "case_id": "data-form-create-tags-and-parent",
+      "route": "/df-meta-1785307117:target/edit/true/title/Target/tags/rock%20live/parentPage/df-meta-1785307117%3Aparent",
+      "editor": {
+        "heading": "Create Df-meta-1785307117",
+        "form_id": "edit-page-form",
+        "form_class": "form-horizontal data-form",
+        "title": "Target",
+        "visible_tags_control": false,
+        "visible_parent_control": false
+      },
+      "submitted_fields": {
+        "field-name": "Metadata Value",
+        "field-choice": "a"
+      },
+      "result": {
+        "dialog": "Error\nPlease note:\n\nAn error occurred while processing the request.\n\nclose message",
+        "page_created": false
+      }
+    },
+    {
+      "case_id": "data-form-create-tags-only",
+      "route": "/df-meta-1785307117:target-tags/edit/true/title/Target%20Tags/tags/rock%20live",
+      "submitted_fields": {
+        "field-name": "Tags Value",
+        "field-choice": "a"
+      },
+      "result": {
+        "dialog": "Error\nPlease note:\n\nAn error occurred while processing the request.\n\nclose message",
+        "page_created": false
+      },
+      "analysis": "The tags-only minimization reproduces the combined-route failure, so a non-empty tags route parameter is sufficient."
+    },
+    {
+      "case_id": "data-form-create-parent-only",
+      "route": "/df-meta-1785307117:target-parent/edit/true/title/Target%20Parent/parentPage/df-meta-1785307117%3Aparent",
+      "submitted_fields": {
+        "field-name": "Parent Value",
+        "field-choice": "a"
+      },
+      "result": {
+        "page_created": true,
+        "final_route": "/df-meta-1785307117:target-parent",
+        "rendered_text": "Name\tParent Value\nChoice\tAlpha",
+        "saved_source": "name: 'Parent Value'\nchoice: a",
+        "saved_tags": [],
+        "saved_parent": "df-meta-1785307117:parent"
+      }
+    }
+  ],
+  "routes": [
+    "Authenticated isolated Chrome DevTools Protocol profile for direct edit-route loading, editor DOM, field submission, error dialog, successful navigation, and rendered output",
+    "Authenticated wikidot.py readback for exact existence, source, tags, and parent metadata",
+    "Authenticated wikidot.py deletion and absence verification for every run-owned page",
+    "The isolated Codex-owned Chrome profile was stopped and removed after cleanup"
+  ]
+}

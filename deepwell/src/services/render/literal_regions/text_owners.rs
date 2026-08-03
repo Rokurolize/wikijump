@@ -155,6 +155,26 @@ pub(super) fn collect_text_owner_candidates_with_text_tokens(
     merge_candidate_streams(links, colors)
 }
 
+pub(super) fn collect_monospace_owner_ranges_with_text_tokens(
+    source: &str,
+    text_tokens: &TextTokenIndex,
+) -> Vec<Range<usize>> {
+    let index = TokenIndex::new_with_text_tokens(source, text_tokens);
+    let scope_candidates =
+        index.collect_scope_candidates(source, vec![None; index.events.len()]);
+    index
+        .events
+        .iter()
+        .enumerate()
+        .filter(|(_, event)| matches!(event.marker, Some(ScopeMarker::LeftMonospace)))
+        .filter_map(|(event, _)| {
+            scope_candidates[event]
+                .as_ref()
+                .map(|candidate| candidate.range.clone())
+        })
+        .collect()
+}
+
 fn merge_candidate_streams(
     links: Vec<ParserOwnerCandidate>,
     colors: Vec<ParserOwnerCandidate>,

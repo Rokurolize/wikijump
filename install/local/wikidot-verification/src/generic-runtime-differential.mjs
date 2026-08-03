@@ -378,7 +378,13 @@ function tabviewProjection(dom) {
     }
   };
   collectRoots(projected);
-  return {roots, tabviewCount: ids.size, transport, invalidTransport};
+  return {
+    nodes: projected,
+    roots,
+    tabviewCount: ids.size,
+    transport,
+    invalidTransport,
+  };
 }
 
 function tabviewTransportStatus(wikidot, wikijump) {
@@ -402,6 +408,36 @@ function tabviewTransportStatus(wikidot, wikijump) {
     return 'match';
   }
   return 'mismatch';
+}
+
+export function compareTabviewSafetyPreservation(wikidotDom, wikijumpDom) {
+  const wikidot = tabviewProjection(wikidotDom);
+  const wikijump = tabviewProjection(wikijumpDom);
+  const transport = tabviewTransportStatus(wikidot, wikijump);
+  const completeStaticDom =
+    wikidot.tabviewCount > 0 &&
+    wikidot.tabviewCount === wikijump.tabviewCount &&
+    wikidot.roots.length > 0 &&
+    wikidot.roots.length === wikijump.roots.length &&
+    JSON.stringify(wikidot.nodes) === JSON.stringify(wikijump.nodes);
+  return {
+    status:
+      completeStaticDom && transport === 'expected-platform-substitution'
+        ? 'safety-preservation'
+        : 'mismatch',
+    complete_static_dom: completeStaticDom,
+    transport,
+    wikidot: {
+      invalid_transport: wikidot.invalidTransport,
+      tabview_count: wikidot.tabviewCount,
+      transport: wikidot.transport,
+    },
+    wikijump: {
+      invalid_transport: wikijump.invalidTransport,
+      tabview_count: wikijump.tabviewCount,
+      transport: wikijump.transport,
+    },
+  };
 }
 
 function containsElement(nodes, name) {

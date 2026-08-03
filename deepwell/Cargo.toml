@@ -33,7 +33,7 @@ femme = "2"
 filemagic = "0.13"
 fluent = "0.17"
 fluent-syntax = "0"
-ftml = { git = "https://github.com/Rokurolize/ftml", rev = "8f2a62af203fa3567f524329a54a1e15adef7f07" }
+ftml = { git = "https://github.com/Rokurolize/ftml", rev = "6d1550f283f93ec3f4257ffda238a8f9003eed19" }
 futures = { version = "0.3", features = ["async-await"], default-features = false }
 hex = { version = "0.4", features = ["serde"] }
 hostname = "0.4"
@@ -56,6 +56,7 @@ sea-orm = { version = "2", features = ["sqlx-postgres", "runtime-tokio-rustls", 
 sea-query = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha1 = "0.11"
 sha2 = "0.11"
 static_assertions = "1.1"
 str-macro = "1"
@@ -97,3 +98,18 @@ ignored = ["rust-s3"]  # renamed to s3
 
 [profile.release]
 lto = true
+
+# Keep ordinary development and test artifacts bounded. Full debug information
+# is opt-in through `cargo --profile debugging` below.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.debugging]
+inherits = "dev"
+debug = true
+
+[profile.debugging.package."*"]
+debug = true

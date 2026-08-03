@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -10,6 +11,7 @@ import {
   parseArgs,
   readSeedAdministrator,
   replaceFtmlPin,
+  selectFtmlPinRewrite,
 } from "../scripts/run-ftml-marker-contract-canary.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -20,7 +22,100 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "b3e2cca4bbc80693eb4e1085a3acb8619b3b524b";
+const candidateFtml = "6d1550f283f93ec3f4257ffda238a8f9003eed19";
+const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
+
+test("committed receipt binds the exact manifest, lock, and five-surface contract", () => {
+  const manifest = readFileSync(
+    path.join(repositoryRoot, "deepwell/Cargo.toml"),
+    "utf8",
+  );
+  const lock = readFileSync(
+    path.join(repositoryRoot, "deepwell/Cargo.lock"),
+    "utf8",
+  );
+  const receipt = JSON.parse(
+    readFileSync(
+      path.join(
+        repositoryRoot,
+        "install/local/wikidot-verification/artifacts",
+        "ftml-block-argument-pin-canary-20260803-6d1550f2.json",
+      ),
+      "utf8",
+    ),
+  );
+
+  assert.equal(
+    manifest.match(
+      new RegExp(
+        `ftml = \\{ git = "https://github\\.com/Rokurolize/ftml", rev = "${candidateFtml}" \\}`,
+        "gu",
+      ),
+    )?.length,
+    1,
+  );
+  assert.equal(
+    lock.match(
+      new RegExp(
+        `source = "git\\+https://github\\.com/Rokurolize/ftml\\?rev=${candidateFtml}#${candidateFtml}"`,
+        "gu",
+      ),
+    )?.length,
+    1,
+  );
+  assert.equal(receipt.status, "pass");
+  assert.equal(receipt.baseline_ftml_sha, "4413efe44429c9612b27439bad7071702e15d541");
+  assert.equal(receipt.candidate_ftml_sha, candidateFtml);
+  assert.deepEqual(receipt.required_surfaces, requiredSurfaces);
+  assert.deepEqual(receipt.comparison, {
+    schema: "wikijump_local_lab.render_compare.v1",
+    pairs_total: requiredSurfaces.length,
+    matches: requiredSurfaces.length,
+    accepted_differences: 0,
+    regressions: 0,
+    verdict_sha256:
+      "59e05ac91c2e864939a3431ab783583da1ea7b23dc0a55d457f4b296b2ae1ca1",
+  });
+  assert.deepEqual(receipt.resource_disposition, {
+    policy: "delete-on-close",
+    disposable_containers_remaining: 0,
+  });
+});
+
+test("the prior marker canary receipt remains immutable", () => {
+  const receipt = JSON.parse(
+    readFileSync(
+      path.join(
+        repositoryRoot,
+        "install/local/wikidot-verification/artifacts",
+        "ftml-block-argument-pin-canary-20260801.json",
+      ),
+      "utf8",
+    ),
+  );
+  assert.equal(receipt.run_id, "ftml-marker-a8fcd3dc-2a7ca167");
+  assert.equal(
+    receipt.wikijump_base_sha,
+    "4ec938ea409e68de0eea5d459d5fd03c4b01046c",
+  );
+  assert.equal(
+    receipt.baseline_ftml_sha,
+    "3a5d874f485eb6ac64638bb5aa189beffbcff410",
+  );
+  assert.equal(
+    receipt.candidate_ftml_sha,
+    "a8fcd3dce089aefd6a9a3619116d4777c9ebd7cc",
+  );
+  assert.deepEqual(receipt.comparison, {
+    schema: "wikijump_local_lab.render_compare.v1",
+    pairs_total: 5,
+    matches: 5,
+    accepted_differences: 0,
+    regressions: 0,
+    verdict_sha256:
+      "6463d478a6a1b087240deb1b1ac0d54f6f87608372c3f4f0c5e9510400217f83",
+  });
+});
 
 test("marker canary authenticates page mutations in the exact page context", () => {
   const context = pageMutationContext(
@@ -48,7 +143,37 @@ test("marker canary changes the manifest and lock to the same FTML revision", ()
   );
   assert.throws(
     () => replaceFtmlPin(manifest, "3".repeat(40), candidateFtml),
-    /baseline FTML pin exactly once/u,
+    /source FTML pin exactly once/u,
+  );
+});
+
+test("marker canary preserves whichever side already equals exact HEAD", () => {
+  const baselineFtml = "1".repeat(40);
+  const candidateFtml = "2".repeat(40);
+
+  assert.deepEqual(
+    selectFtmlPinRewrite(baselineFtml, baselineFtml, candidateFtml),
+    {
+      stage: "candidate",
+      sourceFtml: baselineFtml,
+      targetFtml: candidateFtml,
+    },
+  );
+  assert.deepEqual(
+    selectFtmlPinRewrite(candidateFtml, baselineFtml, candidateFtml),
+    {
+      stage: "baseline",
+      sourceFtml: candidateFtml,
+      targetFtml: baselineFtml,
+    },
+  );
+  assert.throws(
+    () => selectFtmlPinRewrite("3".repeat(40), baselineFtml, candidateFtml),
+    /matches neither baseline/u,
+  );
+  assert.throws(
+    () => selectFtmlPinRewrite(baselineFtml, baselineFtml, baselineFtml),
+    /must be distinct/u,
   );
 });
 
@@ -104,7 +229,7 @@ test("marker canary dry run requires the exact five marker surfaces", () => {
     [
       script,
       "--candidate-ftml",
-      "b3e2cca4bbc80693eb4e1085a3acb8619b3b524b",
+      candidateFtml,
       "--output-dir",
       "/tmp/ftml-marker-contract-test",
       "--dry-run",
@@ -113,13 +238,7 @@ test("marker canary dry run requires the exact five marker surfaces", () => {
   );
   assert.equal(result.status, 0, result.stderr);
   const plan = JSON.parse(result.stdout);
-  assert.deepEqual(plan.required_surfaces, [
-    "heading",
-    "separator",
-    "div",
-    "span",
-    "alignment",
-  ]);
+  assert.deepEqual(plan.required_surfaces, requiredSurfaces);
   assert.deepEqual(
     plan.fixtures.map((fixture) => fixture.surface).sort(),
     [...plan.required_surfaces].sort(),

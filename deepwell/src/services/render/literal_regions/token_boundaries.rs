@@ -180,14 +180,24 @@ fn scan_email(bytes: &[u8], start: usize, identifier_end: usize) -> EmailScan {
         _ => {}
     }
 
-    // Keep these stops in lockstep with FTML 4fc7df28's context-free email
+    // Keep these stops in lockstep with the pinned FTML context-free email
     // scanner. Punctuation outside this set remains owned by the email token.
     let mut at = identifier_end;
     while at < bytes.len()
         && !is_discarded_control(bytes[at])
         && !matches!(
             bytes[at],
-            b' ' | b'\t' | b'@' | b'[' | b']' | b'{' | b'}' | b'<' | b'>' | b'\n' | b'\r'
+            b' ' | b'\t'
+                | b'%'
+                | b'@'
+                | b'['
+                | b']'
+                | b'{'
+                | b'}'
+                | b'<'
+                | b'>'
+                | b'\n'
+                | b'\r'
         )
     {
         at += 1;
@@ -227,7 +237,7 @@ fn scan_email(bytes: &[u8], start: usize, identifier_end: usize) -> EmailScan {
         && !is_discarded_control(bytes[end])
         && !matches!(
             bytes[end],
-            b' ' | b'\t' | b'[' | b']' | b'{' | b'}' | b'<' | b'>' | b'\n' | b'\r'
+            b' ' | b'\t' | b'@' | b'[' | b']' | b'{' | b'}' | b'<' | b'>' | b'\n' | b'\r'
         )
     {
         end += 1;
@@ -255,6 +265,7 @@ fn scan_url(bytes: &[u8], start: usize) -> Option<usize> {
         && !is_discarded_control(bytes[end])
         && !matches!(bytes[end], b'\n' | b'\r' | b' ' | b'"' | b'|' | b'[' | b']')
         && !bytes[end..].starts_with(b">@")
+        && !bytes[end..].starts_with(b"@@")
     {
         end += 1;
     }
@@ -1023,26 +1034,20 @@ mod tests {
             "https://e.test/a@<b",
         );
         let cursor = TextTokenCursor::new(source);
-        let expected = [
-            "foo@bar.example@@x",
-            "foo@bar.example$",
-            "foo@bar.example--",
-            "foo@bar.example@",
-            "https://e.test/a@@b",
-            "https://e.test/a$",
-            "https://e.test/a--",
-            "https://e.test/a@<b",
-        ];
-        let mut search_start = 0;
-        let ranges = expected
-            .iter()
-            .map(|token| {
-                let start = search_start + source[search_start..].find(token).unwrap();
-                let range = start..start + token.len();
-                search_start = range.end;
-                range
-            })
-            .collect::<Vec<_>>();
+        // FTML 4.0.0 (the pinned dependency) exposes reserved `@@` and `@<`
+        // markers instead of allowing a URL/email scan to consume them.
+        let ranges = [
+            0..15,
+            19..35,
+            38..55,
+            57..72,
+            76..92,
+            96..113,
+            116..134,
+            136..155,
+        ]
+        .into_iter()
+        .collect::<Vec<_>>();
 
         assert_eq!(cursor.ranges.as_ref(), ranges.as_slice());
     }

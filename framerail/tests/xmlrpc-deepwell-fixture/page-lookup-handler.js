@@ -33,6 +33,22 @@ export const handlePageLookupRpc = ({ rpcRequest }) => {
     pageReadRequests.pageGetDirect.push(rpcRequest.params)
     result = toPageResult(pageById(rpcRequest.params.page_id), rpcRequest.params.details)
   } else if (
+    rpcRequest.method === "page_revision_range" &&
+    hasExactKeys(rpcRequest.params, [
+      "limit",
+      "page_id",
+      "revision_direction",
+      "revision_number",
+      "site_id"
+    ]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    pageById(rpcRequest.params.page_id) &&
+    rpcRequest.params.revision_direction === "before" &&
+    typeof rpcRequest.params.revision_number === "number" &&
+    typeof rpcRequest.params.limit === "number"
+  ) {
+    result = []
+  } else if (
     rpcRequest.method === "page_revision_get" &&
     hasExactKeys(rpcRequest.params, [
       "details",

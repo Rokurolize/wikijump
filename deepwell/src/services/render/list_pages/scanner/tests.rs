@@ -1,5 +1,5 @@
 use super::*;
-use crate::services::render::service::list_pages_runtime_regex_recognizes_entire_head;
+use crate::services::render::module_arguments::module_arguments_are_complete;
 
 #[path = "tests/stress.rs"]
 mod stress;
@@ -21,6 +21,8 @@ fn runtime_head_recognizer_matches_the_execution_regex() {
         ("name=\"secret@site.example\" wrapper=no\"", true),
         ("name = \"secret\"wrapper=\"no\"", true),
         ("name = \"secret\\\" wrapper=no\"", true),
+        (r#"order="name"" limit="1""#, true),
+        (r#"tags="+scp rating="<0" separate="no""#, true),
         ("name=\u{00a0}bare", true),
         ("name=\"x\" \u{000b}", true),
         ("name=\"x\" @", false),
@@ -33,11 +35,25 @@ fn runtime_head_recognizer_matches_the_execution_regex() {
             "{head:?}",
         );
         assert_eq!(
-            list_pages_runtime_regex_recognizes_entire_head(head),
+            module_arguments_are_complete(head),
             expected,
             "execution regex: {head:?}",
         );
     }
+}
+
+#[test]
+fn crossing_url_quote_rejects_trailing_unsupported_head_bytes() {
+    let malformed = r#"offset="@URL|1 "created_by="Fireknight" unsupported"#;
+
+    assert!(
+        !list_pages_url_quote_crossing_head_can_execute(malformed),
+        "a recovered created_by quote must end at the head boundary: {malformed:?}",
+    );
+    assert!(
+        !list_pages_runtime_head_can_execute(malformed),
+        "unsupported bytes after the recovered quote must fail closed: {malformed:?}",
+    );
 }
 
 #[test]
@@ -50,6 +66,264 @@ fn runtime_head_validation_accepts_static_wildcard_selectors() {
         );
         assert!(list_pages_runtime_head_is_safe(head), "{head:?}");
     }
+}
+
+#[test]
+fn corpus_complete_heads_that_execute_live_remain_runtime_executable() {
+    for head in [
+        r#"name="*" category="-nav -system -forum -admin" tags="-管理 -" order="created_at desc desc" limit="1" offset="@URL|0""#,
+        r#"limit="1" created_by="@URL" tags="-hub,-návod,-české,-autor""#,
+        r#"category="_default" order="name desc desc" wrapper="no" separate="no" perPage="250""#,
+        "separate=\"no\" tags=\"@URL\" created_at=\"@URL\" updated_at=\"@URL\" created_by=\"@URL\" rating=\"@URL\" offset=\"@URL|0\" perPage=\"1\"\u{3000}limit=\"1\" order=\"@URL|created_at desc\" category=\"*\"",
+        r#"order="random" perPage="250" limit="250""#,
+    ] {
+        assert!(
+            list_pages_runtime_head_can_execute(head),
+            "fresh anonymous Wikidot preview executed {head:?}",
+        );
+    }
+}
+
+#[test]
+fn scanner_keeps_the_body_after_an_executable_head_with_trailing_note_text() {
+    // Exact-source replay provenance: en:scp-7992:L59:B1630. Live Wikidot
+    // executes the supported selectors before the prose `NOTE:` tail and
+    // starts the row template immediately after this complete opener.
+    let source = concat!(
+        "[[module ListPages limit=\"1\" category=\"*\" ",
+        "order=\"updated_at desc\" NOTE: module end is at bottom of page. ",
+        "Also, if you try and import a component from another wiki inside ",
+        "the module, then everything inside the module will disappear.]]\n",
+        "ALPHA\n",
+        "@@@@\n",
+        "@@@@\n",
+        "BRAVO\n",
+        "[[=]]\n",
+        "[[div class=\"addendum\"]]\n",
+        "CHARLIE\n",
+        "[[/div]]\n",
+        "[[/=]]\n",
+        "[[/module]]",
+    );
+
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 1);
+    assert_eq!(
+        modules[0].head,
+        concat!(
+            "limit=\"1\" category=\"*\" order=\"updated_at desc\" ",
+            "NOTE: module end is at bottom of page. Also, if you try and ",
+            "import a component from another wiki inside the module, then ",
+            "everything inside the module will disappear.",
+        ),
+    );
+    assert!(modules[0].body.starts_with("\nALPHA\n"), "{modules:#?}");
+    assert!(modules[0].body.contains("BRAVO"), "{modules:#?}");
+}
+
+#[test]
+fn scanner_keeps_generated_comment_gate_rows_inside_the_module() {
+    let source = concat!(
+        "[[module ListPages name=\"gate\"]]\n",
+        "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+        "LOW\n",
+        "[!-- --]\n",
+        "[[#ifexpr %%created_by_id%% > 6000000 |  | [!-- ]]\n",
+        "HIGH\n",
+        "[!-- --]\n",
+        "[[/module]]\n",
+        "[[module ListPages name=\"later\"]]LATER[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 2, "later modules must remain visible");
+    assert!(modules[0].body.contains("[[#ifexpr %%created_by_id%%"));
+    assert!(!modules[0].body.contains("[[/module]]"));
+
+    let literal = concat!(
+        "[[code]]\n",
+        "[[module ListPages name=\"literal\"]]\n",
+        "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+        "LOW\n",
+        "[!-- --]\n",
+        "[[/module]]\n",
+        "[[/code]]",
+    );
+    assert!(
+        find_list_pages_module_matches(literal).is_empty(),
+        "generated-looking gates in code remain literal",
+    );
+
+    let decoy = concat!(
+        "[[module ListPages name=\"gate-decoy\"]]\n",
+        "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+        "LOW [[/module]]\n",
+        "[!-- --]\n",
+        "REAL\n",
+        "[[/module]]\n",
+        "[[module ListPages name=\"later\"]]LATER[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(decoy);
+    assert_eq!(
+        modules.len(),
+        2,
+        "the inactive-branch closer is not structural"
+    );
+    assert!(modules[0].body.contains("LOW [[/module]]"));
+    assert!(modules[0].body.contains("REAL"));
+}
+
+#[test]
+fn scanner_ignores_inert_prose_after_supported_list_pages_arguments() {
+    // Anonymous PagePreview boundary matrix:
+    // listpages-head-recovery-{prose-ascii,prose-unicode,prose-nested-block,
+    // prose-crossing-quote}. The assignments and custom row execute while
+    // arbitrary trailing prose remains inert.
+    for head in [
+        r#"limit="1" category="*" order="name" NOTE: arbitrary words can move freely."#,
+        r#"limit="1" category="*" order="name" NOTA: conteúdo muda livremente."#,
+        r#"limit="1" category="*" order="name" NOTE: arbitrary [[span]] words."#,
+        r#"limit="1" category="*" order="name" NOTE: arbitrary "quoted words"."#,
+    ] {
+        let source = format!("[[module ListPages {head}]]\nALPHA\nBRAVO\n[[/module]]");
+        let modules = find_list_pages_module_matches(&source);
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+        assert_eq!(modules[0].head, head, "{source:?}: {modules:#?}");
+        assert_eq!(
+            modules[0].body, "\nALPHA\nBRAVO\n",
+            "{source:?}: {modules:#?}",
+        );
+        assert!(
+            list_pages_runtime_head_can_execute(modules[0].head),
+            "{modules:#?}",
+        );
+    }
+}
+
+#[test]
+fn scanner_recovers_final_unclosed_quotes_as_default_template_modules() {
+    // Anonymous PagePreview boundary matrix:
+    // listpages-head-recovery-final-unclosed-{unknown-a,unknown-b,known,
+    // spaced,single-bracket,spaced-brackets}. Wikidot consumes the authored
+    // body but renders its default row template.
+    for malformed_tail in [
+        r#"mystery="alpha]]"#,
+        r#"alternate="bravo-42]]"#,
+        r#"fullname="main:about]]"#,
+        r#"mystery="alpha   ]]"#,
+        r#"mystery="alpha]"#,
+        r#"mystery="alpha] ]"#,
+    ] {
+        let source = format!(
+            concat!(
+                "[[module ListPages category=\"*\" limit=\"1\" order=\"name\" ",
+                "{}\n",
+                "AUTHORED-CUSTOM-ROW\n",
+                "[[/module]]\n",
+                "[[module ListPages category=\"*\" fullname=\"second\"]]\n",
+                "SECOND\n",
+                "[[/module]]",
+            ),
+            malformed_tail,
+        );
+
+        let modules = find_list_pages_module_matches(&source);
+        assert_eq!(modules.len(), 2, "{source:?}: {modules:#?}");
+        assert_eq!(
+            modules[0].body, "",
+            "the malformed opener uses Wikidot's default template: {modules:#?}",
+        );
+        assert!(
+            modules[0].original.contains("AUTHORED-CUSTOM-ROW")
+                && modules[0].original.ends_with("[[/module]]"),
+            "the malformed opener still owns its authored close: {modules:#?}",
+        );
+        assert_eq!(modules[1].head, "category=\"*\" fullname=\"second\"");
+        assert_eq!(modules[1].body, "\nSECOND\n");
+    }
+}
+
+#[test]
+fn scanner_executes_the_live_factory_head_with_a_crossing_rating_quote() {
+    // Exact-source PagePreview provenance: zh-tr:factory-hub:L242:B6951.
+    // The first module's `rating="<-0"` assignment crosses the still-open
+    // `tags` quote. Live nevertheless closes the opener at the line-final
+    // `]]`, executes it, and independently executes the later valid module.
+    let source = concat!(
+        "[[module ListPages order=\"created_at Asc\" limit=\"100\" ",
+        "tags=\"-已歸檔 -管理 -作者頁面 -沙盒 scp -tale -en-goi2014 +工廠 ",
+        "+scp rating=\"<-0\" separate=\"no\" perPage=\"100\"]]\n",
+        "FIRST\n",
+        "[[/module]]\n",
+        "[[module ListPages order=\"created_at Asc\" limit=\"100\" ",
+        "tags=\"+故事 +工廠\" separate=\"no\" perPage=\"100\"]]\n",
+        "SECOND\n",
+        "[[/module]]",
+    );
+
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert_eq!(
+        modules[0].head,
+        concat!(
+            "order=\"created_at Asc\" limit=\"100\" ",
+            "tags=\"-已歸檔 -管理 -作者頁面 -沙盒 scp -tale -en-goi2014 +工廠 ",
+            "+scp rating=\"<-0\" separate=\"no\" perPage=\"100\"",
+        ),
+    );
+    assert_eq!(modules[0].body, "\nFIRST\n");
+    assert!(!modules[0].runtime_safe, "{modules:#?}");
+    assert_eq!(modules[1].body, "\nSECOND\n");
+}
+
+#[test]
+fn scanner_accepts_an_inline_comment_between_legacy_arguments() {
+    let source = concat!(
+        "[[module ListPages rating=\">60\" order=\"rating desc\" category=\"*\" ",
+        "separate=\"false\" limit=\"200\" perPage=\"35\" date=\"@URL|2023\"",
+        "[!-- UPDATE THIS TO CURRENT YEAR --] ",
+        "prependLine=\"||~ Title ||~ Rating ||\"]]\n",
+        "ROW\n[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(modules[0].body, "\nROW\n");
+    assert!(list_pages_runtime_head_can_execute(modules[0].head));
+}
+
+#[test]
+fn unclosed_listpages_head_consumes_immediate_raw_closer() {
+    let source = concat!(
+        "[[module ListPages separate=\"no\" limit=\"250\" perPage=\"250\" ",
+        "tags=\"group-of-interest-form, beyond +_entropy-, -scp, -story,\" ",
+        "order=\"title\"\n\n",
+        "[[/module]]\nAFTER_MALFORMED\n",
+        "[[module ListPages name=\"listpages-head-boundary-target\"]]",
+        "SECOND|%%fullname%%[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert!(modules[0].consume_empty_tail, "{modules:#?}");
+    assert_eq!(modules[0].body, "");
+    assert!(modules[0].original.ends_with("[[/module]]"));
+    assert_eq!(modules[1].body, "SECOND|%%fullname%%");
+}
+
+#[test]
+fn corpus_unicode_tag_head_remains_runtime_executable() {
+    let head = r#"separate="1" tags="+阿尔兹海默症 -中心" order="random"  perPage="50""#;
+    assert_eq!(
+        validate_module_head(head, true),
+        ModuleHeadValidation::RuntimeSafe,
+    );
+    assert!(runtime_regex_recognizes_entire_head(head));
+    assert!(list_pages_runtime_head_can_execute(head));
+
+    let source = format!(
+        "[[module ListPages {head}]]\n* %%title_linked%% - %%created_by_linked%%\n[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1);
+    assert!(modules[0].runtime_safe);
 }
 
 #[test]
@@ -84,13 +358,14 @@ fn list_pages_scanner_requires_module_and_subname_delimiters() {
         "[[module ListPagesExtra name=\"suffix\"]]ignored[[/module]]\n",
         "[[module ListPages.other name=\"suffix\"]]ignored[[/module]]\n",
         "[[module654 ListPages name=\"legacy\"]]ignored[[/module654]]\n",
-        "[[module\tLISTPAGES name=\"live\"]]kept[[/module]]",
+        "[[module\tLISTPAGES\tname=\"live\"]]kept[[/module]]",
     );
     let modules = find_list_pages_module_matches(source);
 
     assert_eq!(modules.len(), 1);
     assert_eq!(modules[0].head, "name=\"live\"");
     assert_eq!(modules[0].body, "kept");
+    assert!(modules[0].runtime_safe);
 
     let missing_subname = concat!(
         "[[module ListPages name=\"outer\"]]A",
@@ -443,6 +718,30 @@ fn unresolved_parser_functions_always_fail_closed() {
 }
 
 #[test]
+fn inline_ifexpr_does_not_suppress_listpages_modules() {
+    let source = concat!(
+        "[[module ListPages category=\"*\"]]\n",
+        "[[#ifexpr %%rating_votes%% == 0 | ZERO_VOTES | HAS_VOTES]]\n",
+        "[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1);
+    assert_eq!(
+        modules[0].body,
+        "\n[[#ifexpr %%rating_votes%% == 0 | ZERO_VOTES | HAS_VOTES]]\n",
+    );
+
+    let source = concat!(
+        "[[#ifexpr 1 == 1 | yes | no]] ",
+        "[[module ListPages name=\"live\"]]Y[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+    assert_eq!(modules.len(), 1);
+    assert_eq!(modules[0].head, "name=\"live\"");
+}
+
+#[test]
 fn owned_unresolved_and_whole_head_markers_do_not_suppress_live_modules() {
     for source in [
         concat!(
@@ -569,16 +868,55 @@ fn list_pages_scanner_ignores_right_block_tokens_inside_single_quoted_arguments(
 }
 
 #[test]
-fn list_pages_scanner_rejects_right_link_runs_as_module_head_terminators() {
+fn list_pages_scanner_keeps_crossing_url_quote_heads_visible() {
     let source = concat!(
-        "[[module ListPages name=\"malformed\"]]]ignored[[/module]]\n",
-        "[[module ListPages name=\"live\"]]kept[[/module]]",
+        r#"[[module ListPages category="fragment" parent="." limit="1" order="name" offset="@URL|1 "created_by="Fireknight"]]"#,
+        "\n%%content%%\n[[/module]]",
     );
+    assert!(list_pages_url_quote_crossing_head_can_execute(
+        r#" category="fragment" parent="." limit="1" order="name" offset="@URL|1 "created_by="Fireknight""#,
+    ));
     let modules = find_list_pages_module_matches(source);
 
     assert_eq!(modules.len(), 1);
-    assert_eq!(modules[0].head, "name=\"live\"");
-    assert_eq!(modules[0].body, "kept");
+    assert_eq!(modules[0].body, "\n%%content%%\n");
+    assert!(
+        modules[0]
+            .head
+            .contains(r#"offset="@URL|1 "created_by="Fireknight"#)
+    );
+
+    assert!(!list_pages_url_quote_crossing_head_can_execute(
+        r#" category="fragment" parent="." limit="1" order="name" offset="@URL|1 "created_by="Fireknight" unsupported"#,
+    ));
+}
+
+#[test]
+fn list_pages_scanner_consumes_surplus_right_brackets_at_module_head_boundary() {
+    for right_brackets in ["]]]", "]]]]", "]]]]]", "]]]]]]"] {
+        let source =
+            format!("[[module ListPages name=\"live\"{right_brackets}kept[[/module]]",);
+        let modules = find_list_pages_module_matches(&source);
+
+        assert_eq!(modules.len(), 1, "{right_brackets}");
+        assert_eq!(modules[0].head, "name=\"live\"", "{right_brackets}");
+        assert_eq!(modules[0].body, "kept", "{right_brackets}");
+    }
+}
+
+#[test]
+fn list_pages_scanner_accepts_physical_newlines_in_complete_heads() {
+    for source in [
+        "[[module ListPages\nname=\"live\"\norder=\"name\"\n]]kept[[/module]]",
+        "[[module ListPages name=\"live\" order=\"name\n\"]]kept[[/module]]",
+        "[[module ListPages name=\"live\nname\" limit=\"1\"]]kept[[/module]]",
+    ] {
+        let modules = find_list_pages_module_matches(source);
+
+        assert_eq!(modules.len(), 1, "{source:?}");
+        assert_eq!(modules[0].body, "kept", "{source:?}");
+        assert!(modules[0].runtime_safe, "{source:?}");
+    }
 }
 
 #[test]
@@ -596,17 +934,26 @@ fn list_pages_scanner_rejects_right_link_runs_as_module_close_terminators() {
 }
 
 #[test]
-fn list_pages_scanner_fails_closed_when_a_quoted_head_reaches_a_physical_line_end() {
+fn list_pages_scanner_keeps_a_multiline_quote_open_until_a_later_quote() {
     for (label, line_end) in [("LF", "\n"), ("CRLF", "\r\n"), ("CR", "\r")] {
         let source = format!(
             "[[module ListPages name=\"first\"]]A[[/module]]{line_end}\
              [[module ListPages name=\"unterminated{line_end}\
              [[module ListPages name=\"second\"]]B[[/module]]",
         );
+        let modules = find_list_pages_module_matches(&source);
+
+        assert_eq!(modules.len(), 2, "{label}");
+        assert_eq!(modules[0].head, "name=\"first\"", "{label}");
+        assert_eq!(modules[0].body, "A", "{label}");
         assert!(
-            find_list_pages_module_matches(&source).is_empty(),
-            "{label}"
+            modules[1]
+                .head
+                .contains("[[module ListPages name=\"second\""),
+            "{label}: {:?}",
+            modules[1].head,
         );
+        assert_eq!(modules[1].body, "B", "{label}");
     }
 }
 
@@ -619,10 +966,8 @@ fn list_pages_scanner_fails_closed_when_a_single_quoted_head_reaches_a_physical_
              [[module ListPages name='unterminated{line_end}\
              [[module ListPages name='second']]B[[/module]]",
         );
-        assert!(
-            find_list_pages_module_matches(&source).is_empty(),
-            "{label}"
-        );
+        let modules = find_list_pages_module_matches(&source);
+        assert!(modules.is_empty(), "{label}: {modules:#?}");
     }
 }
 
@@ -710,10 +1055,6 @@ fn list_pages_scanner_ignores_modules_inside_pinned_literal_forms() {
             "empty embed block",
             "[[embed]]\n[[module ListPages name=\"fake\"]]body[[/module]]\n[[/embed]]",
         ),
-        (
-            "CSS module",
-            "[[module CSS]]\n[[module ListPages name=\"fake\"]]body\n[[/module]]",
-        ),
     ];
 
     for (label, literal) in cases {
@@ -725,6 +1066,24 @@ fn list_pages_scanner_ignores_modules_inside_pinned_literal_forms() {
         assert_eq!(modules[0].head, "name=\"live\"", "{label}");
         assert_eq!(modules[0].body, "kept", "{label}");
     }
+
+    let wikidot_unclosed_css = concat!(
+        "[[module CSS]]\n",
+        "[[module ListPages name=\"recovered\"]]body\n",
+        "[[/module]]\n",
+        "[[module ListPages name=\"live\"]]kept[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(wikidot_unclosed_css);
+
+    // Anonymous Wikidot PagePreview executes both root ListPages modules for
+    // this boundary family. The matching two-module evidence has raw HTML
+    // SHA-256
+    // 48a80a2dd6ca8c27d1813e82ed7e0f9a1700214d34095cb81fdefda88344365f.
+    assert_eq!(modules.len(), 2);
+    assert_eq!(modules[0].head, "name=\"recovered\"");
+    assert_eq!(modules[0].body, "body\n");
+    assert_eq!(modules[1].head, "name=\"live\"");
+    assert_eq!(modules[1].body, "kept");
 
     for (label, opener) in [
         ("unclosed inline raw", "@@"),
@@ -1089,10 +1448,8 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
         "[[module ListPages 1=bare]]x[[/module]]",
         "[[module ListPages [!--=bare]]x[[/module]]",
     ] {
-        assert!(
-            find_list_pages_module_matches(malformed).is_empty(),
-            "{malformed:?}",
-        );
+        let modules = find_list_pages_module_matches(malformed);
+        assert!(modules.is_empty(), "{malformed:?}: {modules:#?}",);
     }
 
     for compatible in [
@@ -1136,7 +1493,8 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
         "[[module Foo]]][[module ListPages name='hidden']]X[[/module]] ]]",
         "[[module ListPages name=\"live\"]]Y[[/module]]",
     );
-    assert!(find_list_pages_module_matches(positional_subname).is_empty());
+    let modules = find_list_pages_module_matches(positional_subname);
+    assert!(modules.is_empty(), "{modules:#?}");
 
     let definite_invalid_marker = concat!(
         "[[module ListPages name=\"complete\"]]A[[/module]]",
@@ -1181,11 +1539,37 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
     );
     assert!(find_list_pages_module_matches(invalid_list_pages_head).is_empty());
 
-    for runtime_ambiguous_head in [
-        concat!(
-            "[[module ListPages name=\"x\ny\"]]",
-            "[[module ListPages name=secret]]H[[/module]][[/module]]",
+    for (complete_multiline_head, expected_head, expected_body) in [
+        (
+            concat!(
+                "[[module ListPages name=\"x\ny\"]]",
+                "[[module ListPages name=secret]]H[[/module]][[/module]]",
+            ),
+            "name=\"x\ny\"",
+            "[[module ListPages name=secret]]H[[/module]]",
         ),
+        (
+            concat!(
+                "[[module ListPages name=\"outer\"]]A",
+                "[[module ListPages name=\"x\ny\"]]B[[/module]]C[[/module]]",
+            ),
+            "name=\"outer\"",
+            "A[[module ListPages name=\"x\ny\"]]B[[/module]]C",
+        ),
+    ] {
+        let modules = find_list_pages_module_matches(complete_multiline_head);
+        assert_eq!(modules.len(), 1, "{complete_multiline_head:?}");
+        assert_eq!(
+            modules[0].head, expected_head,
+            "{complete_multiline_head:?}",
+        );
+        assert_eq!(
+            modules[0].body, expected_body,
+            "{complete_multiline_head:?}",
+        );
+    }
+
+    for runtime_ambiguous_head in [
         concat!(
             "[[module ListPages name=foo[[x]]",
             "[[module ListPages name=secret]]H[[/module]][[/module]]",
@@ -1193,10 +1577,6 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
         concat!(
             "[[module ListPages name=\"outer\"]]A",
             "[[module ListPages name=foo[[[[bar]]B[[/module]]C[[/module]]",
-        ),
-        concat!(
-            "[[module ListPages name=\"outer\"]]A",
-            "[[module ListPages name=\"x\ny\"]]B[[/module]]C[[/module]]",
         ),
         concat!(
             "[[module ListPages name=\"outer\"]]A",
@@ -1213,9 +1593,10 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
             "[[/module]]C[[/module]]",
         ),
     ] {
+        let modules = find_list_pages_module_matches(runtime_ambiguous_head);
         assert!(
-            find_list_pages_module_matches(runtime_ambiguous_head).is_empty(),
-            "{runtime_ambiguous_head:?}",
+            modules.is_empty(),
+            "{runtime_ambiguous_head:?}: {modules:#?}",
         );
     }
 
@@ -1356,14 +1737,544 @@ fn list_pages_scanner_keeps_completed_matches_before_an_unclosed_body() {
         "[[module ListPages name=\"unclosed\"]]B",
     );
     let modules = find_list_pages_module_matches(source);
-    assert_eq!(modules.len(), 1);
+    assert_eq!(modules.len(), 2);
     assert_eq!(modules[0].head, "name=\"complete\"");
+    assert_eq!(modules[1].head, "name=\"unclosed\"");
+    assert_eq!(modules[1].body, "");
+    assert_eq!(
+        modules[1].original,
+        "[[module ListPages name=\"unclosed\"]]"
+    );
 
     let unclosed_outer = concat!(
         "[[module ListPages name=\"unclosed\"]]A",
         "[[module ListPages name=\"nested\"]]B[[/module]]",
     );
-    assert!(find_list_pages_module_matches(unclosed_outer).is_empty());
+    let modules = find_list_pages_module_matches(unclosed_outer);
+    assert_eq!(modules.len(), 1);
+    assert_eq!(modules[0].head, "name=\"unclosed\"");
+    assert_eq!(modules[0].body, "");
+
+    for bare in [
+        "[[module ListPages]]@@example@@",
+        "[[module ListPages]]>@\n@<example>@",
+        "[[module ListPages]]documentation",
+    ] {
+        assert!(find_list_pages_module_matches(bare).is_empty(), "{bare:?}");
+    }
+}
+
+#[test]
+fn corpus_inline_raw_documentation_tail_cannot_supply_a_module_close() {
+    // Exact-source family: the multilingual ListPages tutorials wrap syntax
+    // names in paired @@ spans after an otherwise complete argumentless
+    // opener, then put the apparent module close after another @@ marker.
+    // Live Wikidot leaves that opener literal and continues rendering the
+    // document. A later ordinary module must remain independently visible.
+    let source = concat!(
+        "[[module ListPages]]@@. @@[[html]]@@ prose\n",
+        "more @@[[html]]@@ prose\n",
+        "@@[[/module]]\n",
+        "[[module ListPages name=\"later\"]]ROW[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert!(modules[0].preserve_original, "{modules:#?}");
+    assert_eq!(modules[0].original, "[[module ListPages]]");
+    assert_eq!(modules[1].head, "name=\"later\"");
+    assert_eq!(modules[1].body, "ROW");
+    assert!(!modules[1].preserve_original, "{modules:#?}");
+
+    for source in [
+        "[[module ListPages]]}}documentation",
+        "[[module ListPages]]@@}}documentation",
+    ] {
+        let modules = find_list_pages_module_matches(source);
+        assert_eq!(modules.len(), 1, "{modules:#?}");
+        assert!(modules[0].preserve_original, "{modules:#?}");
+        assert_eq!(modules[0].original, "[[module ListPages]]");
+    }
+
+    let repeated_examples = concat!(
+        "[[Module Listpages]]}}first {{[[Module Listpages]]}} second\n",
+        "@@[[module ListPages name=\"later\"]]@@\n",
+        "@@ROW@@\n",
+        "@@[[/module]]@@",
+    );
+    let modules = find_list_pages_module_matches(repeated_examples);
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert!(modules[0].preserve_original, "{modules:#?}");
+    assert!(modules[1].preserve_original, "{modules:#?}");
+    assert_eq!(modules[0].original, "[[Module Listpages]]");
+    assert_eq!(modules[1].original, "[[Module Listpages]]");
+
+    // A single ordinary inline-raw body remains a complete module. The
+    // campaign evidence only rejects the multi-span documentation tail.
+    let ordinary = "[[module ListPages name=\"ordinary\"]]@@literal@@[[/module]]";
+    let modules = find_list_pages_module_matches(ordinary);
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(modules[0].head, "name=\"ordinary\"");
+    assert_eq!(modules[0].body, "@@literal@@");
+
+    for executable in [
+        "[[module ListPages]]@@ONE@@ + @@TWO@@[[/module]]",
+        concat!(
+            "[[module ListPages limit=\"4\"]]@@\n",
+            "@@%%title_linked%%@@\n",
+            "@@[[/module]]",
+        ),
+    ] {
+        let modules = find_list_pages_module_matches(executable);
+        assert_eq!(modules.len(), 1, "{modules:#?}");
+        assert!(!modules[0].preserve_original, "{modules:#?}");
+    }
+
+    let formatted_author_template = concat!(
+        "[[module ListPages created_by=\"@@**your name**@@\" ",
+        "limit=\"4\" wrapper=\"no\" separate=\"yes\"]]@@\n",
+        "@@**%%title_linked%%** [+%%rating%%]@@\n",
+        "@@{{**Created:**%%created_at%%}}@@\n",
+        "@@[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(formatted_author_template);
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(
+        modules[0].end,
+        formatted_author_template.len(),
+        "{modules:#?}"
+    );
+    assert_eq!(modules[0].original, formatted_author_template);
+    assert!(!modules[0].preserve_original, "{modules:#?}");
+
+    let preprocessed_content_module = concat!(
+        "[[module ListPages created_by=\"@URL\" limit=\"1\"]]@@\n",
+        "@@[[%%content{0}%%module css]]@@\n",
+        "@@.row { display: block; }@@\n",
+        "@@[[%%content{0}%%/module]]@@\n",
+        "@@[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(preprocessed_content_module);
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(modules[0].end, modules[0].body_start, "{modules:#?}");
+    assert_eq!(
+        modules[0].original,
+        r#"[[module ListPages created_by="@URL" limit="1"]]"#,
+    );
+}
+
+#[test]
+fn corpus_unclosed_listpages_body_owns_legacy_quoted_continuation() {
+    let source = concat!(
+        "[[module ListPages offset=\"@URL|0\" range=\".\"]]@@\n",
+        "> @@%%content{2}%%@@\n",
+        "> @@[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1);
+    assert_eq!(modules[0].head, "offset=\"@URL|0\" range=\".\"");
+    assert_eq!(modules[0].body, "@@\n> @@%%content{2}%%@@\n> @@[[/module]]",);
+    assert_eq!(modules[0].original, source);
+    assert_eq!(modules[0].end, source.len());
+}
+
+#[test]
+fn corpus_complete_argumentless_listpages_openers_execute_at_eof() {
+    for source in ["[[module ListPages]]", "[[Module Listpages]]"] {
+        let modules = find_list_pages_module_matches(source);
+
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+        assert_eq!(modules[0].head, "");
+        assert_eq!(modules[0].body, "");
+        assert_eq!(modules[0].original, source);
+        assert_eq!(modules[0].end, source.len());
+    }
+}
+
+#[test]
+fn corpus_complete_runtime_unsafe_listpages_openers_execute_at_eof() {
+    for source in [
+        concat!(
+            "[[module ListPages created_by=\"morhadow\" tags=\"es\" ",
+            "order=\"rating\" limit=\"5\" separate=\"no\"@@]]",
+        ),
+        concat!(
+            "[[module ListPages created_by=\"여기다 이름을 적으시오\" separate=\"no\" ",
+            "limit=\"250\" perPage=\"250\"tags=\"농담, -이야기, -번역\" order=\"title\"]]",
+        ),
+    ] {
+        let modules = find_list_pages_module_matches(source);
+
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+        assert_eq!(modules[0].body, "");
+        assert_eq!(modules[0].original, source);
+        assert_eq!(modules[0].end, source.len());
+    }
+}
+
+#[test]
+fn corpus_single_bracket_head_with_a_dangling_quote_uses_the_default_template() {
+    let source = concat!(
+        "[[module ListPages tags=\"+hiscon2017\" perPage=\"100\" order=\"评分：]\n",
+        "* **%%title_linked%%**\n",
+        "[[/module]]\n",
+        "TAIL",
+    );
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(
+        modules[0].head,
+        "tags=\"+hiscon2017\" perPage=\"100\" order=\"评分：",
+    );
+    assert_eq!(
+        modules[0].body, "",
+        "the final unclosed quote consumes the authored row and selects Wikidot's default template",
+    );
+    assert!(
+        modules[0].consume_empty_tail,
+        "a recovered default-template head must own its authored closing module",
+    );
+    assert_eq!(
+        modules[0].original,
+        concat!(
+            "[[module ListPages tags=\"+hiscon2017\" perPage=\"100\" order=\"评分：]\n",
+            "* **%%title_linked%%**\n",
+            "[[/module]]",
+        ),
+    );
+}
+
+#[test]
+fn corpus_legacy_list_pages_heads_remain_structurally_visible() {
+    for source in [
+        concat!(
+            "[[module ListPages created_by=\"creambox\" order=\"random\"tags=\"+原创 +scp\" separate=\"no\"]]\n",
+            "%%title_linked%%\n[[/module]]",
+        ),
+        concat!(
+            "[[module ListPages created_at<\"2018.12.26\" updated_at>=\"2021.2.16\" ",
+            "rating>=\"-7\" votes!=\"0\"]]\n",
+            "%%title_linked%%\n[[/module]]",
+        ),
+        concat!(
+            "[[module ListPages separate=\"no\" tags=\"+cn3000 -竞赛\" perPage=\"100\" order=\"random\" ]]]\n",
+            "%%title_linked%%\n[[/module]]",
+        ),
+        concat!(
+            "[[module ListPages order=\"title\" tags=\"+_herman-fuller -scp\" separate=\"no\" ",
+            "order=\"title asc perPage=\"250]]\n%%title_linked%%\n[[/module]]",
+        ),
+        concat!(
+            "[[module ListPages range=\"@URL|.\" rating=\">15\" tags=\"+scp\" ",
+            "order=\"rating desc\" separate=\"false\" date=\"@URL\"]]\n",
+            "%%title_linked%%\n[[/module]]",
+        ),
+        concat!(
+            "[[module ListPages tags=\"{$tag}\" created_by=\"{$user}\" order=\"rating desc\" ",
+            "limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n",
+            "%%content{0}%%\n[[/module]]",
+        ),
+        "[[module ListPages 属性...]]\n模块主体\n[[/module]]",
+        "[[module ListPages 任意属性...]]\n模块主体\n[[/module]]",
+        "[[module ListPages ???]]\n模块主体\n[[/module]]",
+    ] {
+        let modules = find_list_pages_module_matches(source);
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+    }
+}
+
+#[test]
+fn documented_placeholder_head_reaches_the_direct_scanner() {
+    let source = "[[module ListPages 属性...]]\n模块主体\n[[/module]]";
+    let lowercase = source.to_ascii_lowercase();
+    let ListPagesScannerLiteralIndexes { direct, .. } =
+        LiteralRegionIndex::new_list_pages_scanner_indexes(source, None);
+    assert!(
+        direct.containing_range(0).is_none(),
+        "the exact runtime head must not be claimed by a literal owner",
+    );
+    let (events, _, _, ambiguous) =
+        collect_module_events(ModuleEventScanner::new(source, &lowercase, &direct));
+    assert!(!ambiguous);
+    assert!(
+        matches!(
+            events.first(),
+            Some(ModuleEvent::Open {
+                direct_candidate: true,
+                ..
+            }),
+        ),
+        "the exact runtime head must reach the structural event stream",
+    );
+
+    let projection = ListPagesSourceProjection::new(source)
+        .expect("the ASCII ellipsis has a pinned typography projection");
+    let projected = projection.source();
+    let projected_lowercase = projected.to_ascii_lowercase();
+    let ListPagesScannerLiteralIndexes {
+        projected: projected_literals,
+        ..
+    } = LiteralRegionIndex::new_list_pages_scanner_indexes(source, Some(&projection));
+    let projected_literals =
+        projected_literals.expect("a source projection has a projected literal index");
+    let (projected_events, _, _, projected_ambiguous) = collect_module_events(
+        ModuleEventScanner::new(projected, &projected_lowercase, &projected_literals),
+    );
+    assert!(!projected_ambiguous);
+    assert!(
+        matches!(
+            projected_events.first(),
+            Some(ModuleEvent::Open {
+                direct_candidate: true,
+                ..
+            }),
+        ),
+        "{projected:?}: {projected_events:#?}"
+    );
+}
+
+#[test]
+fn corpus_at_marker_footnote_tail_executes_as_default_list_pages() {
+    let source = "[[module Listpages @@以降という認識で良い。 [[/footnote]]";
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(modules[0].start, 0);
+    assert_eq!(modules[0].body_start, source.len());
+    assert_eq!(modules[0].end, source.len());
+    assert_eq!(modules[0].head, "");
+    assert_eq!(modules[0].body, "");
+    assert_eq!(modules[0].original, source);
+}
+
+#[test]
+fn at_marker_footnote_tail_does_not_hide_a_later_valid_module() {
+    let malformed = "[[module Listpages @@以降という認識で良い。 [[/footnote]]";
+    let valid = concat!(
+        "[[module ListPages name=\"later-valid\"]]\n",
+        "%%fullname%%\n",
+        "[[/module]]",
+    );
+    let source = format!("{malformed}\n{valid}");
+    let modules = find_list_pages_module_matches(&source);
+
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert_eq!(modules[0].start, 0);
+    assert_eq!(modules[0].body_start, malformed.len());
+    assert_eq!(modules[0].end, malformed.len());
+    assert_eq!(modules[0].head, "");
+    assert_eq!(modules[0].body, "");
+    assert_eq!(modules[0].original, malformed);
+    assert_eq!(modules[1].start, malformed.len() + 1);
+    assert_eq!(modules[1].head, r#"name="later-valid""#);
+    assert_eq!(modules[1].body, "\n%%fullname%%\n");
+    assert_eq!(modules[1].original, valid);
+}
+
+#[test]
+fn corpus_unclosed_at_marker_body_owns_the_first_collapsible_opening() {
+    // Anonymous PagePreviewModule evidence captured 2026-08-01 shows that
+    // Wikidot executes this unclosed ListPages opener with its default
+    // template, consumes the raw-marker documentation prefix through the
+    // first complete collapsible opening, then resumes at its body.
+    let consumed = concat!(
+        "[[module ListPages fullname=\"@@##red|missing-page##@@\" ",
+        "separate=\"yes\" limit=\"250\"]]@@\n",
+        "documentation\n",
+        "> @@[[module ListPages fullname=\"@@##red|example##@@\"]]@@\n",
+        "[[collapsible show=\"+ Syntax\" hide=\"- Syntax\"]]",
+    );
+    let later = concat!(
+        "\nVISIBLE\n[[/collapsible]]\n",
+        "[[module ListPages name=\"later-valid\"]]ROW[[/module]]",
+    );
+    let source = format!("{consumed}{later}");
+    let modules = find_list_pages_module_matches(&source);
+
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert_eq!(modules[0].start, 0);
+    assert_eq!(
+        modules[0].head,
+        r#"fullname="@@##red|missing-page##@@" separate="yes" limit="250""#,
+    );
+    assert_eq!(modules[0].body, "");
+    assert_eq!(modules[0].end, consumed.len());
+    assert_eq!(modules[0].original, consumed);
+    assert!(!modules[0].preserve_original);
+    assert_eq!(
+        modules[1].start,
+        consumed.len() + "\nVISIBLE\n[[/collapsible]]\n".len()
+    );
+    assert_eq!(modules[1].head, r#"name="later-valid""#);
+    assert_eq!(modules[1].body, "ROW");
+
+    for unsupported in [
+        concat!(
+            "[[module ListPages name=\"missing\"]]@@\n",
+            "documentation without a collapsible\n@@",
+        ),
+        concat!(
+            "[[module ListPages name=\"missing\"]]@@\n",
+            "documentation\n",
+            "[[collapsible show=\"unterminated\" hide=\"- Syntax\"]\n",
+            "VISIBLE",
+        ),
+        concat!(
+            "[[module ListPages name=\"missing\"]]@@\n",
+            "documentation\n",
+            "[[collapsible show=\"+ Syntax\"]]\n",
+            "VISIBLE",
+        ),
+    ] {
+        let modules = find_list_pages_module_matches(unsupported);
+        assert_eq!(modules.len(), 1, "{unsupported:?}: {modules:#?}");
+        assert!(
+            modules[0].preserve_original,
+            "{unsupported:?}: {modules:#?}"
+        );
+        assert!(
+            modules[0].preserve_as_module654,
+            "{unsupported:?}: {modules:#?}"
+        );
+        assert_eq!(modules[0].end, modules[0].body_start);
+    }
+}
+
+#[test]
+fn corpus_raw_footnote_head_owns_prose_through_the_first_collapsible_opening() {
+    // Exact-source boundary from
+    // jp:advanced-formatting-and-you:L341:B11200. The malformed ListPages
+    // head closes on the raw footnote closer. Live consumes the prose and
+    // first collapsible opening, then resumes at the collapsible body.
+    let consumed = concat!(
+        "[[module Listpages @@以降という認識で良い。 [[/footnote]]",
+        "には、表示させたいものを指定します。\n\n",
+        "ListPagesモジュールが沢山あるとページの表示速度が著しく低下します。\n\n",
+        "ListPagesモジュールで選択可能な条件の1例を次に示します。\n",
+        "[[collapsible show=\"選択可能な条件\" hide=\"Hide\"]]",
+    );
+    let suffix = concat!(
+        "\n[[div class=\"first\"]]VISIBLE-BODY[[/div]]\n",
+        "[[/collapsible]]\n",
+        "[[module ListPages name=\"later-valid\"]]ROW[[/module]]",
+    );
+    let source = format!("{consumed}{suffix}");
+    let modules = find_list_pages_module_matches(&source);
+
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert_eq!(modules[0].body, "");
+    assert_eq!(modules[0].end, consumed.len(), "{modules:#?}");
+    assert!(modules[0].consume_empty_tail);
+    assert!(!modules[0].preserve_original);
+    assert_eq!(modules[1].head, r#"name="later-valid""#);
+    assert_eq!(modules[1].body, "ROW");
+}
+
+#[test]
+fn unclosed_at_marker_preservation_does_not_hide_a_later_valid_module() {
+    // When no evidenced boundary follows, Wikidot leaves the opener visible
+    // as legacy module654 text. A later module after the closed raw span
+    // remains independently executable.
+    let preserved = "[[module ListPages name=\"missing\"]]";
+    let raw_tail = "@@\nDOC\n@@\n";
+    let later = "[[module ListPages name=\"later-valid\"]]ROW[[/module]]";
+    let source = format!("{preserved}{raw_tail}{later}");
+    let modules = find_list_pages_module_matches(&source);
+
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert_eq!(modules[0].original, preserved);
+    assert!(modules[0].preserve_original);
+    assert!(modules[0].preserve_as_module654);
+    assert_eq!(modules[1].start, preserved.len() + raw_tail.len());
+    assert_eq!(modules[1].head, r#"name="later-valid""#);
+    assert_eq!(modules[1].body, "ROW");
+}
+
+#[test]
+fn corpus_trailing_at_marker_head_keeps_its_evidenced_raw_row_tail_executable() {
+    // Exact-source case es:listpages-magic-and-you:L177:B6617. Live executes
+    // the default ListPages query, and the malformed raw row/close tail
+    // contributes no downstream output.
+    let source = concat!(
+        "[[module ListPages created_by=\"morhadow\" tags=\"es\" ",
+        "order=\"rating\" limit=\"5\" separate=\"no\"@@]]@@\n",
+        "@@*@@ %%title_linked%% (+%%rating%%)\n",
+        "@@[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert_eq!(
+        modules[0].head,
+        concat!(
+            "created_by=\"morhadow\" tags=\"es\" ",
+            "order=\"rating\" limit=\"5\" separate=\"no\"@@",
+        ),
+    );
+    assert_eq!(modules[0].body, "");
+    assert_eq!(modules[0].end, source.len());
+    assert!(!modules[0].preserve_original);
+    assert!(!modules[0].preserve_as_module654);
+    assert!(modules[0].consume_empty_tail);
+}
+
+#[test]
+fn unquoted_comparison_discriminators_remain_structurally_executable() {
+    for token in [
+        "rating>100000",
+        "score>100000",
+        "votes>100000",
+        "created_at>2100",
+        "createdat>2100",
+        "date>2100",
+        "name!=definitely-missing",
+        "parent>=component:image-block",
+        "limit>=1",
+        "offset!=1",
+    ] {
+        let head = format!(r#"fullname="scp-002" {token}"#);
+        assert!(
+            list_pages_runtime_head_can_execute(&head),
+            "the evidenced inert comparison token must not invalidate {head:?}",
+        );
+        let source =
+            format!("[[module ListPages {head}]]\nROW=%%fullname%%\n[[/module]]");
+        let modules = find_list_pages_module_matches(&source);
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+    }
+}
+
+#[test]
+fn live_inert_list_pages_head_tokens_remain_structurally_visible() {
+    for head in [
+        r#"| name="target" limit="1" order="name""#,
+        r#"size name="target" limit="1" order="name""#,
+        r#"name="target" limit="1" order="name" prependLine="#,
+        r#"name="target" limit="1" order="name" appendLine="#,
+        r#"name="target" appendLine= appendLine="POST""#,
+        r#"name="target" appendLine="POST" appendLine="#,
+        r#"name="target" prependLine= prependLine="PRE""#,
+        r#"name="target" limit="1" order="name"@@"#,
+        r#"| only-inert-tokens"#,
+    ] {
+        let source = format!("[[module ListPages {head}]]ROW|%%fullname%%[[/module]]");
+        let modules = find_list_pages_module_matches(&source);
+        assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+        assert_eq!(modules[0].head, head);
+    }
+
+    for head in [
+        r#"size prependLine="#,
+        r#"name="target" [[module ListUsers]]"#,
+    ] {
+        let source = format!("[[module ListPages {head}]]ROW|%%fullname%%[[/module]]");
+        assert!(
+            find_list_pages_module_matches(&source).is_empty(),
+            "unsupported malformed head must fail closed: {source:?}",
+        );
+    }
 }
 
 #[test]
@@ -1433,5 +2344,34 @@ fn linear_list_pages_scanner_ignores_literal_module_tokens() {
         let modules = find_list_pages_module_matches(&source);
         assert_eq!(modules.len(), 1, "literal token changed nesting: {body}");
         assert_eq!(modules[0].body, body);
+    }
+}
+
+#[test]
+fn corpus_monospace_and_comment_owners_hide_listpages_candidates() {
+    for source in [
+        "{{[[Module Listpages]]}}",
+        concat!(
+            "[!--\n",
+            "[[module ListPages rating=\">100\" order=\"rating desc\" ",
+            "separate=\"false\" limit=\"1000\" perPage=\"1000\"]]\n",
+            "%%title_linked%%:: rating: %%rating%%\n",
+            "[[/module]]\n\n",
+            "---]",
+        ),
+        concat!(
+            "[!----\n",
+            "temporary hidden region\n",
+            "[[module ListPages order=\"updated_at\" category=\"*\" ",
+            "perPage=\"200\" separate=\"false\"]]\n",
+            "%%title_linked%%\n",
+            "[[/module]]\n",
+            "---]",
+        ),
+    ] {
+        assert!(
+            find_list_pages_module_matches(source).is_empty(),
+            "literal owner leaked a ListPages candidate:\n{source}",
+        );
     }
 }

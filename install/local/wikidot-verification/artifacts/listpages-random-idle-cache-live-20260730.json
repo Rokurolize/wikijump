@@ -1,0 +1,209 @@
+{
+  "schema": "wikijump.wikidot_live_observation.v1",
+  "observation_id": "listpages-random-idle-cache-live-20260730",
+  "captured_at": "2026-07-29T19:19:05Z",
+  "features": [
+    "module-listpages"
+  ],
+  "property_cluster": "P5 random selection, invocation-key identity, idle expiration, and pagination",
+  "provenance": {
+    "site": "www",
+    "site_id": 1,
+    "authenticated": false,
+    "mutated": false,
+    "transport": "anonymous Wikidot Ajax Module Connector through wikidot.py",
+    "module_name": "list/ListPagesModule",
+    "documentation_url": "http://www.wikidot.com/doc-include:listpages-module-prev",
+    "frozen_documentation_source": "scp-wiki-translation/corpus/www/pages/doc-include:listpages-module-prev/source.wikidot.txt",
+    "documentation_claim": "The result is cached for 1 minute; repeated reloads within that interval retain it and a later reload picks a new result."
+  },
+  "base_request": {
+    "category": "doc",
+    "order": "random",
+    "limit": 5,
+    "perPage": 5,
+    "module_body": "%%fullname%%\\n"
+  },
+  "same_key_sliding_idle_window": {
+    "html_sha256": "76e5de52464d6762624e040c999f9c6463b5dd8d04357eb312e52920279eb553",
+    "rows": [
+      "doc:orphanedpages-module",
+      "doc:files-module",
+      "doc:tagcloud-module",
+      "doc:start",
+      "doc:watchers-module"
+    ],
+    "observed_unix_seconds": [
+      1785352135,
+      1785352149,
+      1785352153,
+      1785352156,
+      1785352167,
+      1785352186,
+      1785352201,
+      1785352220,
+      1785352235,
+      1785352251,
+      1785352266,
+      1785352285,
+      1785352300
+    ],
+    "span_seconds": 165,
+    "maximum_inter_observation_gap_seconds": 19,
+    "normative_behavior": "A cache hit renews the approximately 60-second idle lifetime; the same complete invocation remained byte-identical for 165 seconds while every gap stayed below 60 seconds."
+  },
+  "module_body_is_part_of_key": {
+    "observed_unix_seconds": 1785352222,
+    "requests": [
+      {
+        "body_suffix": "[lane5-a]",
+        "rows": [
+          "doc:ratedpages-module",
+          "doc:feed-module",
+          "doc:nextpreviouspage-module",
+          "doc:thumbnails",
+          "doc:countpages-module"
+        ]
+      },
+      {
+        "body_suffix": "[lane5-b]",
+        "rows": [
+          "doc:rate-module",
+          "doc:pagecalendar-module",
+          "doc:ratedpages-module",
+          "doc:themepreviewer-module",
+          "doc:orphanedpages-module"
+        ]
+      },
+      {
+        "body_suffix": "[lane5-c]",
+        "rows": [
+          "doc:sitegrid",
+          "doc:searching",
+          "doc:site-structure",
+          "doc:wiki-syntax",
+          "doc:modules"
+        ]
+      }
+    ],
+    "normative_behavior": "Otherwise identical selector arguments with different module bodies receive independent random selections."
+  },
+  "idle_expiration": {
+    "before_unix_seconds": 1785352222,
+    "after_unix_seconds": 1785352292,
+    "idle_seconds": 70,
+    "keys": [
+      {
+        "body_suffix": "[lane5-a]",
+        "before": [
+          "doc:ratedpages-module",
+          "doc:feed-module",
+          "doc:nextpreviouspage-module",
+          "doc:thumbnails",
+          "doc:countpages-module"
+        ],
+        "after": [
+          "doc:join-module",
+          "doc:wantedpages-module",
+          "doc:redirect-module",
+          "doc:backlinks-module",
+          "doc:searchusers-module"
+        ]
+      },
+      {
+        "body_suffix": "[lane5-b]",
+        "before": [
+          "doc:rate-module",
+          "doc:pagecalendar-module",
+          "doc:ratedpages-module",
+          "doc:themepreviewer-module",
+          "doc:orphanedpages-module"
+        ],
+        "after": [
+          "doc:themepreviewer-module",
+          "doc:minirecentthreads-module",
+          "doc:clone-module",
+          "doc:searchusers-module",
+          "doc:childpages-module"
+        ]
+      },
+      {
+        "body_suffix": "[lane5-c]",
+        "before": [
+          "doc:sitegrid",
+          "doc:searching",
+          "doc:site-structure",
+          "doc:wiki-syntax",
+          "doc:modules"
+        ],
+        "after": [
+          "doc:miniactivethreads-module",
+          "doc:expressions",
+          "doc:newpage-module",
+          "doc:recentposts-module",
+          "doc:members-module"
+        ]
+      }
+    ],
+    "normative_behavior": "Each untouched key selected a new order after 70 seconds, consistent with the documented one-minute cache as an idle/sliding TTL rather than a fixed creation-time TTL."
+  },
+  "pagination": {
+    "observed_unix_seconds": 1785352745,
+    "request": {
+      "category": "doc",
+      "order": "random",
+      "limit": 20,
+      "perPage": 10,
+      "page_parameter": "p"
+    },
+    "trials": [
+      {
+        "trial": 0,
+        "overlap": [
+          "doc:pagesbytag-module"
+        ],
+        "concat_unique": 19
+      },
+      {
+        "trial": 1,
+        "overlap": [
+          "doc:searchall-module",
+          "doc:sendinvitations-module"
+        ],
+        "concat_unique": 18
+      },
+      {
+        "trial": 2,
+        "overlap": [
+          "doc:listpages-module"
+        ],
+        "concat_unique": 19
+      },
+      {
+        "trial": 3,
+        "overlap": [
+          "doc:data-forms"
+        ],
+        "concat_unique": 19
+      },
+      {
+        "trial": 4,
+        "overlap": [
+          "doc:flickrgallery-module",
+          "doc:pagetree-module",
+          "doc:thumbnails"
+        ],
+        "concat_unique": 17
+      },
+      {
+        "trial": 5,
+        "overlap": [
+          "doc:mailform-module"
+        ],
+        "concat_unique": 19
+      }
+    ],
+    "normative_behavior": "The AMC p parameter selects the rendered page and is part of the random cache identity. Pages 1 and 2 are independently randomized and can overlap; Wikidot does not expose one duplicate-free cached permutation across pager pages."
+  },
+  "verdict": "passed"
+}

@@ -2,7 +2,7 @@
 
 ## Shim
 
-`scan_compat_code_blocks` in `deepwell/src/services/render/compat_fallback_code.rs` is the temporary BND-01 hand parser for complete line-oriented Wikidot `[[code]]` blocks reached by the oversized compatibility fallback. It preserves source order, body text, and the `type` and `name` metadata required to materialize hosted `/local--code/` resources.
+`scan_compat_code_blocks` in `deepwell/src/services/render/compat/fallback_code.rs` is the temporary BND-01 hand parser for complete line-oriented Wikidot `[[code]]` blocks reached by the oversized compatibility fallback. It preserves source order, body text, and the `type` and `name` metadata required to materialize hosted `/local--code/` resources.
 
 ## Reason it lives in Wikijump
 
@@ -18,7 +18,7 @@ The scanner accepts only complete, non-nested line-oriented blocks with quoted a
 
 ## Evidence and tests
 
-The focused tests in `deepwell/src/services/render/compat_fallback_code.rs` cover multiple blocks, mixed HTML and code source ordering, uppercase attributes, marker text inside a body, whitespace after a closer, malformed and unbalanced markers, nested openers, duplicate and invalid metadata, overlong names, and the exact block-count boundary. Existing compatibility-renderer tests cover emitted HTML, literal preservation of an unclosed block, collapsible composition, and preservation of hosted code metadata. The focused scanner suite passed with five tests on 2026-07-15.
+The focused tests in `deepwell/src/services/render/compat/fallback_code.rs` cover multiple blocks, mixed HTML and code source ordering, uppercase attributes, marker text inside a body, whitespace after a closer, malformed and unbalanced markers, nested openers, duplicate and invalid metadata, overlong names, and the exact block-count boundary. Existing compatibility-renderer tests cover emitted HTML, literal preservation of an unclosed block, collapsible composition, and preservation of hosted code metadata. The focused scanner suite passed with five tests on 2026-07-15.
 
 ## FTML backlog decision
 

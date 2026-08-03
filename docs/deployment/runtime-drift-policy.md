@@ -8,6 +8,8 @@ Port 443 is owned by exactly one standing Compose stack. That stack is built onl
 
 Before a standing runtime is accepted, record the merged Wikijump SHA and tree, FTML SHA, image digests for the gateway and every application upstream, profile and feature set where applicable, and the artifact key for any compiled Deepwell binary. The recorded gateway-to-upstream chain is the identity of the service, not the image tag alone.
 
+Standing image preparation and activation are separate operations. `install/standing/prepare.py` builds immutable SHA-derived application image references from `install/prod` and writes a preparation receipt with the source, FTML, lockfile, Dockerfile, profile, feature, and image-ID identities. `install/standing/refresh.py` accepts that receipt, verifies the local image IDs, and activates with `docker compose up --no-build`; it never compiles Rust or bundles Framerail during activation. Local development remains the `install/local` watch-mode tier.
+
 The standing stack must remain available as a deliverable. Its normal canaries cover HTTP responses for representative pages and assets, WIKIREQUEST metadata, AJAX ListPages, DOM rendering, and an unmodified `wikidot.py` site and page lookup. A failed canary is a runtime incident and is repaired before unrelated candidate work proceeds.
 
 ## Candidate runtimes

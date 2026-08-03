@@ -1,3 +1,6 @@
 # .sh files need to have UNIX line endings
 # Even on Windows, otherwise this will break Docker builds
 *.sh eol=lf
+
+# Preserve byte-for-byte anonymous Wikidot captures, including original whitespace.
+install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/** -whitespace

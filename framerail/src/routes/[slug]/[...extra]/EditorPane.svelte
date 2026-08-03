@@ -7,6 +7,8 @@
   import { superForm } from "sveltekit-superforms"
   import { untrack } from "svelte"
 
+  import DataFormEditor from "./DataFormEditor.svelte"
+
   import type { PageProps } from "./$types"
 
   let { data, params }: PageProps = $props()
@@ -63,76 +65,96 @@
   $form.comments = untrack(() => data.page_revision?.comments ?? "")
 </script>
 
-{#if pageLayoutContext.current === Layout.WIKIDOT}
-  <h1 class="page-edit-header">
-    {data.internationalization?.["wiki-page-edit"]}
-  </h1>
+{#if data.data_form}
+  {#key `edit:${params.slug}:${data.page_revision?.revision_id ?? 0}`}
+    <DataFormEditor
+      creating={false}
+      definition={data.data_form.definition}
+      editForm={data.forms.pageEditForm}
+      initialAltTitle={data.page_revision?.alt_title ?? ""}
+      initialComments={data.page_revision?.comments ?? ""}
+      initialSource={data.wikitext}
+      initialTags={data.page_revision?.tags?.join(" ") ?? ""}
+      initialTitle={data.page_revision?.title ?? ""}
+      initialValues={data.data_form.values}
+      lastRevisionId={data.page_revision?.revision_id}
+      pageId={data.page?.page_id}
+      siteId={data.site.site_id}
+      slug={params.slug}
+    />
+  {/key}
 {:else}
-  <h2 class="page-edit-header">
-    {data.internationalization?.["wiki-page-edit"]}
-  </h2>
-{/if}
-
-<form id="editor" class="editor" action="?/edit" method="POST" use:enhance>
-  <input
-    name="title"
-    class="editor-title"
-    placeholder={data.internationalization?.title}
-    type="text"
-    bind:value={$form.title}
-  />
-  <input
-    name="altTitle"
-    class="editor-alt-title"
-    placeholder={data.internationalization?.["alt-title"]}
-    type="text"
-    bind:value={$form.altTitle}
-  />
-  <textarea name="wikitext" class="editor-wikitext" bind:value={$form.wikitext}
-  ></textarea>
-  <input
-    name="tags"
-    class="editor-tags"
-    placeholder={data.internationalization?.tags}
-    type="text"
-    bind:value={$form.tags}
-  />
-  <textarea
-    name="comments"
-    class="editor-comments"
-    placeholder={data.internationalization?.["wiki-page-revision-comments"]}
-    bind:value={$form.comments}></textarea>
   {#if pageLayoutContext.current === Layout.WIKIDOT}
-    <div class="buttons alignleft">
-      <input
-        name="cancel"
-        class="btn btn-danger"
-        onclick={cancelEdit}
-        type="button"
-        value={data.internationalization?.cancel}
-      />
-      <input
-        name="save"
-        class="btn btn-primary"
-        type="submit"
-        value={data.internationalization?.save}
-      />
-    </div>
+    <h1 class="page-edit-header">
+      {data.internationalization?.["wiki-page-edit"]}
+    </h1>
   {:else}
-    <div class="action-row editor-actions">
-      <button
-        class="action-button editor-button button-cancel clickable"
-        onclick={cancelEdit}
-        type="button"
-      >
-        {data.internationalization?.cancel}
-      </button>
-      <button class="action-button editor-button button-save clickable" type="submit">
-        {data.internationalization?.save}
-      </button>
-    </div>
+    <h2 class="page-edit-header">
+      {data.internationalization?.["wiki-page-edit"]}
+    </h2>
   {/if}
-</form>
+
+  <form id="editor" class="editor" action="?/edit" method="POST" use:enhance>
+    <input
+      name="title"
+      class="editor-title"
+      placeholder={data.internationalization?.title}
+      type="text"
+      bind:value={$form.title}
+    />
+    <input
+      name="altTitle"
+      class="editor-alt-title"
+      placeholder={data.internationalization?.["alt-title"]}
+      type="text"
+      bind:value={$form.altTitle}
+    />
+    <textarea name="wikitext" class="editor-wikitext" bind:value={$form.wikitext}
+    ></textarea>
+    <input
+      name="tags"
+      class="editor-tags"
+      placeholder={data.internationalization?.tags}
+      type="text"
+      bind:value={$form.tags}
+    />
+    <textarea
+      name="comments"
+      class="editor-comments"
+      placeholder={data.internationalization?.["wiki-page-revision-comments"]}
+      bind:value={$form.comments}></textarea>
+    {#if pageLayoutContext.current === Layout.WIKIDOT}
+      <div class="buttons alignleft">
+        <input
+          name="cancel"
+          class="btn btn-danger"
+          onclick={cancelEdit}
+          type="button"
+          value={data.internationalization?.cancel}
+        />
+        <input
+          name="save"
+          class="btn btn-primary"
+          type="submit"
+          value={data.internationalization?.save}
+        />
+      </div>
+    {:else}
+      <div class="action-row editor-actions">
+        <button
+          class="action-button editor-button button-cancel clickable"
+          onclick={cancelEdit}
+          type="button"
+        >
+          {data.internationalization?.cancel}
+        </button>
+        <button class="action-button editor-button button-save clickable" type="submit">
+          {data.internationalization?.save}
+        </button>
+      </div>
+    {/if}
+  </form>
+{/if}
 
 <style lang="scss">
   .editor-actions {

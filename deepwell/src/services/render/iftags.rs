@@ -712,13 +712,13 @@ mod tests {
     }
 
     #[test]
-    fn url_owned_raw_delimiter_does_not_hide_real_closer() {
+    fn pinned_url_adjacent_raw_delimiter_keeps_iftags_literal() {
         let source = "[[iftags +component]]https://e.test/a@@b[[/iftags]]@@tail";
-        assert_eq!(resolve(source, &[], 1), "@@tail");
-        assert_eq!(
-            resolve(source, &["component"], 1),
-            "https://e.test/a@@b@@tail",
-        );
+        // FTML exposes the URL-adjacent `@@` as an inline-raw opener. The
+        // conditional closer is consequently inside that literal region and
+        // the whole malformed gate is preserved for the later parser pass.
+        assert_eq!(resolve(source, &[], 1), source);
+        assert_eq!(resolve(source, &["component"], 1), source);
     }
 
     #[test]

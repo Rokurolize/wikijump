@@ -15,7 +15,9 @@ mod css;
 mod typography_projection;
 
 use self::candidate_graph::collect_candidate_graph_ranges;
-use self::css::collect_downstream_css_module_ranges;
+use self::css::{
+    collect_downstream_css_module_ranges, collect_wikidot_unclosed_css_yield_openers,
+};
 use self::typography_projection::project_typography_in_place;
 #[cfg(test)]
 use super::block_candidates::{
@@ -93,6 +95,12 @@ pub(super) fn collect_list_pages_downstream_css_ranges(
     source: &str,
 ) -> Vec<Range<usize>> {
     collect_downstream_css_module_ranges(source)
+}
+
+pub(in crate::services::render) fn collect_list_pages_css_yield_openers(
+    source: &str,
+) -> Vec<Range<usize>> {
+    collect_wikidot_unclosed_css_yield_openers(source)
 }
 
 fn collect_projected_literal_ranges(
@@ -207,7 +215,15 @@ impl ListPagesSourceProjection {
             changed = true;
         }
 
-        changed |= project_typography_in_place(&mut normalized);
+        let typography_changed = project_typography_in_place(&mut normalized);
+        if typography_changed {
+            restore_documented_list_pages_placeholder_ellipsis(
+                source,
+                &mut normalized,
+                &original_offsets,
+            );
+        }
+        changed |= typography_changed;
 
         changed.then(|| Self {
             source: String::from_utf8(normalized)
@@ -287,6 +303,34 @@ impl ListPagesSourceProjection {
             .filter(|range| range.start < range.end)
             .map(|range| self.map_literal_range(range, original_len))
             .collect()
+    }
+}
+
+fn restore_documented_list_pages_placeholder_ellipsis(
+    original: &str,
+    projected: &mut [u8],
+    original_offsets: &[usize],
+) {
+    const PROJECTED: &[u8] = "[[module ListPages 属性???]]".as_bytes();
+    const PREFIX: &[u8] = "[[module ListPages 属性".as_bytes();
+
+    let mut cursor = 0usize;
+    while let Some(relative) = projected[cursor..]
+        .windows(PROJECTED.len())
+        .position(|window| window == PROJECTED)
+    {
+        let start = cursor + relative;
+        let dots = start + PREFIX.len()..start + PREFIX.len() + 3;
+        let exact_original = dots.clone().all(|index| {
+            original_offsets
+                .get(index)
+                .and_then(|offset| original.as_bytes().get(*offset))
+                == Some(&b'.')
+        });
+        if exact_original {
+            projected[dots].fill(b'.');
+        }
+        cursor = start + PROJECTED.len();
     }
 }
 
@@ -385,6 +429,19 @@ fn collect_list_pages_quote_ranges(
 #[cfg(test)]
 mod tests {
     use super::super::LiteralRegionIndex;
+    use super::ListPagesSourceProjection;
+
+    #[test]
+    fn documented_placeholder_keeps_its_evidenced_head_through_projection() {
+        let source = "before... [[module ListPages 属性...]] after...";
+        let projection =
+            ListPagesSourceProjection::new(source).expect("ellipses project");
+
+        assert_eq!(
+            projection.source(),
+            "before??? [[module ListPages 属性...]] after???",
+        );
+    }
 
     #[test]
     fn unclosed_inline_literals_are_opaque_only_to_the_line_boundary() {
@@ -418,17 +475,20 @@ mod tests {
 
     #[test]
     fn inline_closers_embedded_in_other_tokens_do_not_end_literals() {
-        for source in [
+        for (source, expected_owned) in [
             "@@before https://example.test/a@@b [[module ListPages name=\"hidden\"]] @@",
             "[!-- https://example.test/a--]b [[module ListPages name=\"hidden\"]] --]",
             "[[$ https://example.test/a$]]b [[module ListPages name=\"hidden\"]] $]]",
             "@<before >>@ [[module ListPages name=\"hidden\"]] >@",
             "@<before ~~~>@ [[module ListPages name=\"hidden\"]] >@",
-            "[!-- ---] [[module ListPages name=\"hidden\"]] --]",
-        ] {
+        ]
+        .into_iter()
+        .zip([false, true, true, true, true])
+        {
             let index = LiteralRegionIndex::new_list_pages_syntax(source);
-            assert!(
+            assert_eq!(
                 index.contains(source.find("[[module ListPages").unwrap()),
+                expected_owned,
                 "{source:?}",
             );
         }
@@ -586,6 +646,53 @@ mod tests {
         let index = LiteralRegionIndex::new_list_pages_syntax(source);
         assert!(!index.contains(source.find("[[module ListPages").unwrap()));
         assert!(!index.contains(source.find("[[/module]]").unwrap()));
+    }
+
+    #[test]
+    fn multiline_code_head_prevents_cross_block_color_ownership() {
+        for code_open in ["[[code\n", "[[ code\n", "[[\tcode\n"] {
+            let source = format!(
+                concat!(
+                    "{}",
+                    "type=\"rust\"]]\n",
+                    "##red|inside\n",
+                    "[[/code]]\n",
+                    "outside##\n",
+                    "[[module ListPages name=\"live\"]]C[[/module]]",
+                ),
+                code_open,
+            );
+            let index = LiteralRegionIndex::new_list_pages_syntax(&source);
+
+            assert!(
+                index.contains(source.find("inside").unwrap()),
+                "{code_open:?}"
+            );
+            assert!(
+                !index.contains(source.find("outside##").unwrap()),
+                "{code_open:?}",
+            );
+            assert!(
+                !index.contains(source.find("[[module ListPages").unwrap()),
+                "{code_open:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn extended_comment_closer_releases_following_listpages_module() {
+        for closer in ["---]", "----]", "-----]"] {
+            let source = format!(
+                "[!-- hidden {closer}\n[[module ListPages name=\"live\"]]C[[/module]]",
+            );
+            let index = LiteralRegionIndex::new_list_pages_syntax(&source);
+
+            assert!(index.contains(source.find("hidden").unwrap()), "{closer}");
+            assert!(
+                !index.contains(source.find("[[module ListPages").unwrap()),
+                "{closer}",
+            );
+        }
     }
 
     #[test]

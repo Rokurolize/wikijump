@@ -15,6 +15,8 @@
     isWikidotFragmentPage
   } from "$lib/wikidot/wikidot-page-actions"
   import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
+  import { resolveWikidotHashMagicPagePane } from "$lib/wikidot/wikidot-hash-magic"
+  import { onMount } from "svelte"
 
   import CurrentPageActions from "./CurrentPageActions.svelte"
   import CurrentPageMetadata from "./CurrentPageMetadata.svelte"
@@ -38,6 +40,7 @@
   let EditorPane = $state<typeof import("./EditorPane.svelte").default>()
   let wikidotPageActions = $derived(data.wikidot_page_actions)
   let wikidotPageWatch = $derived(data.wikidot_page_watch)
+  let dataFormEditing = $derived(!!data.options?.edit && !!data.data_form)
   let isDirectWikidotFragmentPage = $derived(
     pageLayoutContext.current === Layout.WIKIDOT &&
       !data.options?.debug &&
@@ -130,6 +133,19 @@
     pagePaneState = pane
   }
 
+  onMount(() => {
+    if (pageLayoutContext.current !== Layout.WIKIDOT || data.options?.edit) return
+
+    switch (resolveWikidotHashMagicPagePane(window.location.href)) {
+      case "history":
+        activatePagePane(PagePane.History)
+        break
+      case "files":
+        activatePagePane(PagePane.File)
+        break
+    }
+  })
+
   $effect(() => {
     if (data.options?.edit) {
       void ensureEditorPane()
@@ -150,15 +166,17 @@
 
 {#if pageLayoutContext.current === Layout.WIKIDOT}
   {#if data.options?.debug}
-    <h2>UNTRANSLATED:Debug Response</h2>
+    <h2 class:hidden={dataFormEditing}>UNTRANSLATED:Debug Response</h2>
   {:else if showRevision}
-    <div id="page-title">{revision?.title}</div>
+    <div id="page-title" class:hidden={dataFormEditing}>{revision?.title}</div>
   {:else}
-    <div id="page-title">{data.page_revision?.title}</div>
+    <div id="page-title" class:hidden={dataFormEditing}>
+      {data.page_revision?.title}
+    </div>
   {/if}
 
   {#if !data.options?.debug && !showRevision && data.wikidot_breadcrumbs?.length}
-    <div id="breadcrumbs">
+    <div id="breadcrumbs" class:hidden={dataFormEditing}>
       {#each data.wikidot_breadcrumbs as breadcrumb, index (breadcrumb.slug)}
         {#if index > 0}
           <span class="breadcrumb-separator">{breadcrumbSeparator}</span>
@@ -168,7 +186,7 @@
     </div>
   {/if}
 
-  <div id="page-content" use:wikidotTabviews>
+  <div id="page-content" class:hidden={dataFormEditing} use:wikidotTabviews>
     {#if data.options?.debug}
       <textarea class="debug">{JSON.stringify(page, null, 2)}</textarea>
     {:else if data.options?.no_render}
@@ -183,18 +201,18 @@
 
   {#if showRevision}
     {#if revision?.tags?.length}
-      <div class="page-tags">
+      <div class="page-tags" class:hidden={dataFormEditing}>
         <span>{@html buildWikidotPageTagsHtml(revision.tags)}</span>
       </div>
     {/if}
   {:else if data.page_revision?.tags?.length}
-    <div class="page-tags">
+    <div class="page-tags" class:hidden={dataFormEditing}>
       <span>{@html buildWikidotPageTagsHtml(data.page_revision.tags)}</span>
     </div>
   {/if}
 
   {#if data.options?.edit}
-    <div id="page-options-container">
+    <div id="page-options-container" class:hidden={dataFormEditing}>
       <div id="page-info">
         {#if data.wikidot_page_info}
           {data.wikidot_page_info}

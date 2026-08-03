@@ -55,8 +55,25 @@ impl RenderDependencyClasses {
     }
 }
 
-const MODULE_QUERY_NAMES: &[&str] = &["listpages", "countpages", "backlinks", "tagcloud"];
-const MODULE_VIEWER_NAMES: &[&str] = &["rate", "members", "newpage", "clone"];
+const MODULE_QUERY_NAMES: &[&str] = &[
+    "listpages",
+    "countpages",
+    "backlinks",
+    "tagcloud",
+    "ratedpages",
+    "childpages",
+    "nextpage",
+    "previouspage",
+    "orphanedpages",
+    "wantedpages",
+];
+const MODULE_VIEWER_NAMES: &[&str] = &[
+    "rate",
+    "members",
+    "newpage",
+    "clone",
+    "membershipbypassword",
+];
 const MODULE_STATIC_NAMES: &[&str] = &["css"];
 
 static INCLUDE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -204,7 +221,13 @@ mod tests {
         for source in [
             "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module CountPages category=\"news\"]][[/module]]",
+            "[[module RatedPages category=\"news\" limit=\"10\"]]",
             "[[module Pages]]",
+            "[[module ChildPages]]",
+            "[[module NextPage by=\"title\"]]%%linked_title%%[[/module]]",
+            "[[module PreviousPage]]%%linked_title%%[[/module]]",
+            "[[module OrphanedPages]]",
+            "[[module WantedPages]]",
         ] {
             let classes = classify_render_dependencies(source);
 
@@ -274,6 +297,7 @@ mod tests {
             "[[module Members]]",
             "[[module NewPage]]",
             "[[module Clone]]",
+            "[[module MembershipByPassword]]",
         ] {
             let classes = classify_render_dependencies(source);
 

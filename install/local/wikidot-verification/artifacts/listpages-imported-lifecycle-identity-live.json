@@ -1,0 +1,43 @@
+{
+  "schema": "wikijump_listpages_compat.imported_lifecycle_identity.v1",
+  "case_id": "scp-3435-lifecycle-identities",
+  "observed_at": "2026-07-29",
+  "classification": "corpus-provenance-discrepancy",
+  "site": "scp-wiki",
+  "page": "scp-3435",
+  "acquisition": {
+    "actor": "anonymous",
+    "interface": "wikidot.py Page metadata populated by the live ListPages response",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_revision": "2434bf77744488cb2095327c9e0e4450add78df3",
+    "timestamp_semantics": "The pinned wikidot.py parser returns naive datetime values whose source Unix timestamps are UTC."
+  },
+  "lifecycle": {
+    "created_at": "2017-06-08T17:31:28",
+    "created_by": {
+      "id": 2727655,
+      "kind": "User",
+      "name": "Weryllium",
+      "unix_name": "weryllium"
+    },
+    "updated_at": "2025-03-06T21:01:02",
+    "updated_by": {
+      "id": 5299606,
+      "kind": "User",
+      "name": "psychicprogrammer",
+      "unix_name": "psychicprogrammer"
+    },
+    "commented_at": "2026-06-02T17:19:14",
+    "commented_by": {
+      "id": 10291005,
+      "kind": "User",
+      "name": "Vulpes Ignis",
+      "unix_name": "vulpes-ignis"
+    }
+  },
+  "analysis": [
+    "Live Wikidot exposes a structured identity tuple for each populated lifecycle user: numeric Wikidot user ID, display name, and unix name.",
+    "At initial capture, the frozen SCP corpus metadata retained only the display-name string for created_by, updated_by, and commented_by. The loss occurred in the corpus adapter, which stringified the user object even though the local wikidot.py object retained all three identity fields.",
+    "The producer now preserves the additive structured identity fields, and the refreshed scp-3435 corpus record carries all three live tuples. Wikijump consumes those fields without substituting the local importer account."
+  ]
+}
