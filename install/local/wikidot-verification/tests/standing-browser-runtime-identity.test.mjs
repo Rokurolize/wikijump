@@ -150,19 +150,62 @@ test("effective runtime identity ignores Compose's derived hash and lifecycle la
   assert.equal(effectiveRuntimeServicesSha256([inspect]), before);
 });
 
-test("effective runtime identity canonicalizes Docker's set-like array order", () => {
-  const { inspect } = preparedFixture();
-  inspect.Config.Env = ["SECOND=2", "FIRST=1"];
-  inspect.HostConfig.Binds = ["volume-b:/b:rw", "volume-a:/a:ro"];
-  inspect.Mounts = [
-    { Type: "volume", Name: "volume-b", Source: "/b", Destination: "/b" },
-    { Type: "volume", Name: "volume-a", Source: "/a", Destination: "/a" },
+test("effective runtime identity preserves order-sensitive Docker arrays", () => {
+  const cases = [
+    [
+      "environment",
+      (inspect) => {
+        inspect.Config.Env = ["SECOND=2", "FIRST=1"];
+        return () => inspect.Config.Env.reverse();
+      },
+    ],
+    [
+      "binds",
+      (inspect) => {
+        inspect.HostConfig.Binds = ["volume-b:/b:rw", "volume-a:/a:ro"];
+        return () => inspect.HostConfig.Binds.reverse();
+      },
+    ],
+    [
+      "host mounts",
+      (inspect) => {
+        inspect.HostConfig.Mounts = [
+          { Type: "volume", Name: "volume-b", Source: "/b", Destination: "/b" },
+          { Type: "volume", Name: "volume-a", Source: "/a", Destination: "/a" },
+        ];
+        return () => inspect.HostConfig.Mounts.reverse();
+      },
+    ],
+    [
+      "inspect mounts",
+      (inspect) => {
+        inspect.Mounts = [
+          { Type: "volume", Name: "volume-b", Source: "/b", Destination: "/b" },
+          { Type: "volume", Name: "volume-a", Source: "/a", Destination: "/a" },
+        ];
+        return () => inspect.Mounts.reverse();
+      },
+    ],
+    [
+      "DNS",
+      (inspect) => {
+        inspect.HostConfig.Dns = ["192.0.2.2", "192.0.2.1"];
+        return () => inspect.HostConfig.Dns.reverse();
+      },
+    ],
   ];
-  const before = effectiveRuntimeServicesSha256([inspect]);
-  inspect.Config.Env.reverse();
-  inspect.HostConfig.Binds.reverse();
-  inspect.Mounts.reverse();
-  assert.equal(effectiveRuntimeServicesSha256([inspect]), before);
+
+  for (const [name, prepare] of cases) {
+    const { inspect } = preparedFixture();
+    const reverse = prepare(inspect);
+    const before = effectiveRuntimeServicesSha256([inspect]);
+    reverse();
+    assert.notEqual(
+      effectiveRuntimeServicesSha256([inspect]),
+      before,
+      `${name} order must remain part of the runtime identity`,
+    );
+  }
 });
 
 test("effective runtime identity binds omitted host isolation and resource controls", () => {

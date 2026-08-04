@@ -191,6 +191,11 @@ function sortedRuntimeArray(value) {
     );
 }
 
+function orderedRuntimeArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map(safeRuntimeValue);
+}
+
 function selectedRuntimeLabels(labels) {
   const selected = Object.fromEntries(
     Object.entries(labels).filter(
@@ -232,7 +237,7 @@ function effectiveServiceConfiguration(inspect, role) {
       ),
       entrypoint: safeRuntimeValue(config.Entrypoint ?? null),
       cmd: safeRuntimeValue(config.Cmd ?? null),
-      env: sortedRuntimeArray(config.Env),
+      env: orderedRuntimeArray(config.Env),
       working_dir: safeRuntimeValue(config.WorkingDir ?? null),
       user: safeRuntimeValue(config.User ?? null),
       hostname: safeRuntimeValue(config.Hostname ?? null),
@@ -243,8 +248,8 @@ function effectiveServiceConfiguration(inspect, role) {
       ),
     },
     host_config: safeRuntimeValue({
-      binds: sortedRuntimeArray(hostConfig.Binds),
-      mounts: sortedRuntimeArray(hostConfig.Mounts),
+      binds: orderedRuntimeArray(hostConfig.Binds),
+      mounts: orderedRuntimeArray(hostConfig.Mounts),
       network_mode: hostConfig.NetworkMode ?? null,
       cgroup: hostConfig.Cgroup ?? null,
       cgroup_parent: hostConfig.CgroupParent ?? null,
@@ -266,10 +271,10 @@ function effectiveServiceConfiguration(inspect, role) {
       device_requests: safeRuntimeValue(hostConfig.DeviceRequests ?? []),
       privileged: hostConfig.Privileged ?? false,
       security_opt: sortedRuntimeArray(hostConfig.SecurityOpt),
-      extra_hosts: sortedRuntimeArray(hostConfig.ExtraHosts),
-      dns: sortedRuntimeArray(hostConfig.Dns),
-      dns_options: sortedRuntimeArray(hostConfig.DnsOptions),
-      dns_search: sortedRuntimeArray(hostConfig.DnsSearch),
+      extra_hosts: orderedRuntimeArray(hostConfig.ExtraHosts),
+      dns: orderedRuntimeArray(hostConfig.Dns),
+      dns_options: orderedRuntimeArray(hostConfig.DnsOptions),
+      dns_search: orderedRuntimeArray(hostConfig.DnsSearch),
       sysctls: safeRuntimeValue(hostConfig.Sysctls ?? {}),
       ulimits: safeRuntimeValue(hostConfig.Ulimits ?? []),
       shm_size: hostConfig.ShmSize ?? 0,
@@ -303,7 +308,7 @@ function effectiveServiceConfiguration(inspect, role) {
       readonly_paths: safeRuntimeValue(hostConfig.ReadonlyPaths ?? []),
     }),
     mounts: safeRuntimeValue(
-      sortedRuntimeArray(
+      orderedRuntimeArray(
         (Array.isArray(inspect?.Mounts) ? inspect.Mounts : []).map((mount) => ({
           type: mount?.Type ?? null,
           name: mount?.Name ?? null,

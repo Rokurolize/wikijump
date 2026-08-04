@@ -62,6 +62,21 @@ test("the shell wrapper leaves imported page themes in control of typography", a
   )
 })
 
+test("modern typography is scoped away from the imported Wikidot shell", async () => {
+  const [baseTypography, sigmaShell] = await Promise.all([
+    fs.readFile(new URL("../src/lib/css/base/_typography.scss", import.meta.url), "utf8"),
+    fs.readFile(
+      new URL("../src/lib/sigma-esque/sigma-esque.svelte", import.meta.url),
+      "utf8"
+    )
+  ])
+
+  assert.match(baseTypography, /\.sigma-esque-container\s*\{/u)
+  assert.doesNotMatch(baseTypography, /(?:^|[,{])\s*(?:html|body)\s*\{/mu)
+  assert.match(sigmaShell, /body:has\(\.sigma-esque-container\)\s*\{/u)
+  assert.doesNotMatch(sigmaShell, /^\s*body\s*\{/mu)
+})
+
 test("the modern top bar styles cannot match imported Wikidot navigation", async () => {
   const layout = await fs.readFile(
     new URL("../src/lib/sigma-esque/sigma-esque.svelte", import.meta.url),

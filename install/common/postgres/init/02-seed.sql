@@ -1,8 +1,5 @@
 SET default_transaction_read_only = off;
 
-CREATE ROLE wikijump_ro
-    WITH INHERIT NOSUPERUSER NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS PASSWORD 'wikijump_ro';
-
 \connect wikijump
 
 SET statement_timeout = 0;
@@ -20,10 +17,5 @@ SET row_security = off;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
 GRANT ALL ON SCHEMA public TO wikijump;
-
-REVOKE ALL ON SCHEMA public FROM wikijump_ro;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO wikijump_ro;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-    GRANT SELECT ON TABLES TO wikijump_ro;
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
