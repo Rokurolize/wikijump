@@ -1926,6 +1926,62 @@ test("preview classifier isolates synchronized relative-time query state", async
       ],
     },
     {
+      id: "relative-last-month-date-only-row",
+      source: [
+        '[[module ListPages limit="1" date="@URL|last month"]]',
+        "%%created_at|%Y-%m%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_1 format_live">1 Jul 2026</span></p></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_2 format_live">22 Jul 2026</span></p></div></div>',
+      expected: [
+        "synchronized-relative-time-query-state",
+        "none",
+      ],
+    },
+    {
+      id: "relative-last-month-created-at-row",
+      source: [
+        '[[module ListPages limit="2" created_at="last month"]]',
+        "%%created_at%% %%title%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_3 format_live">3 Jul 2026</span> One</p></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_4 format_live">4 Jul 2026</span> One</p></div></div>',
+      expected: [
+        "synchronized-relative-time-query-state",
+        "none",
+      ],
+    },
+    {
+      id: "relative-last-month-static-body-change",
+      source: [
+        '[[module ListPages limit="1" date="last month"]]',
+        "STATIC BODY",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p>LIVE</p></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p>LOCAL</p></div></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
+      id: "relative-last-month-arbitrary-row-change",
+      source: [
+        '[[module ListPages limit="1" date="last month"]]',
+        "%%title%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_5 format_live">5 Jul 2026</span> LIVE</p></div></div>',
+      local: '<div class="list-pages-box"><div class="list-pages-item"><p><span class="odate time_6 format_live">6 Jul 2026</span> LOCAL</p></div></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
       id: "relative-arbitrary-row-change",
       source: [
         '[[module ListPages limit="1" updated_at="last 3 day"]]',
