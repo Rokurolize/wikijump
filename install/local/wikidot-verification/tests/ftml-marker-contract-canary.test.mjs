@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -9,6 +11,7 @@ import {
   composeDocument,
   pageMutationContext,
   parseArgs,
+  prepareRunOwnedSeeder,
   readSeedAdministrator,
   replaceFtmlPin,
   selectFtmlPinRewrite,
@@ -213,7 +216,7 @@ test("marker canary module parses sliced argv and injects run-owned credentials"
 
   const administrator = await readSeedAdministrator(repositoryRoot);
   assert.equal(administrator.email, "admin@wikijump");
-  assert.equal(administrator.password.length > 0, true);
+  assert.equal(administrator.password, null);
 
   const compose = composeDocument({
     project: "marker-test",
@@ -252,6 +255,26 @@ test("marker canary module parses sliced argv and injects run-owned credentials"
     2,
   );
   assert.match(compose, /target: \/seeder/u);
+});
+
+test("marker canary gives each disposable stack a run-owned administrator password", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-marker-seeder-"));
+  try {
+    const seeder = await prepareRunOwnedSeeder(
+      repositoryRoot,
+      path.join(root, "seeder"),
+      "run-owned-admin-secret",
+    );
+    assert.deepEqual(seeder, {
+      email: "admin@wikijump",
+      password: "run-owned-admin-secret",
+    });
+    const users = JSON.parse(await fs.readFile(path.join(root, "seeder", "users.json"), "utf8"));
+    assert.equal(users.find((user) => user.slug === "administrator").password, "run-owned-admin-secret");
+    assert.equal((await readSeedAdministrator(repositoryRoot)).password, null);
+  } finally {
+    await fs.rm(root, {recursive: true, force: true});
+  }
 });
 
 test("marker canary dry run requires the exact five marker surfaces", () => {
