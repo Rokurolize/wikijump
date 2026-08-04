@@ -32,21 +32,40 @@
 
 use super::structs::{CreateSession, RenewSession};
 use crate::config::Config;
-use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::models::session::{self, Entity as Session, Model as SessionModel};
 use crate::models::user::{Entity as User, Model as UserModel};
 use crate::services::ServiceContext;
 use crate::utils::assert_is_csprng;
 use crate::utils::now;
 use rand::distr::{Alphanumeric, SampleString};
+use sea_orm::sea_query::Expr;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, DeleteResult, EntityTrait, QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, Condition, DeleteResult, EntityTrait, ExprTrait,
+    QueryFilter, QuerySelect, Set,
 };
 
 #[derive(Debug)]
 pub struct SessionService;
 
 impl SessionService {
+    pub const MAX_MFA_FAILED_ATTEMPTS: i32 = 5;
+
+    fn mfa_attempt_session_query(session_token: &str) -> sea_orm::Select<Session> {
+        Session::find()
+            .filter(
+                Condition::all()
+                    .add(session::Column::SessionToken.eq(session_token))
+                    .add(session::Column::ExpiresAt.gt(now()))
+                    .add(session::Column::Restricted.eq(true))
+                    .add(
+                        session::Column::MfaFailedAttempts
+                            .lt(Self::MAX_MFA_FAILED_ATTEMPTS),
+                    ),
+            )
+            .lock_exclusive()
+    }
+
     /// Creates a new session with the given parameters.
     ///
     /// # Returns
@@ -90,6 +109,7 @@ impl SessionService {
             ip_address: Set(str!(ip_address)), // TODO inet type?
             user_agent: Set(user_agent),
             restricted: Set(restricted),
+            mfa_failed_attempts: Set(0),
         };
 
         let SessionModel { session_token, .. } =
@@ -145,20 +165,104 @@ impl SessionService {
         restricted: bool,
     ) -> Result<Option<SessionModel>> {
         let txn = ctx.transaction();
-        let session = Session::find()
+        let mut condition = Condition::all()
+            .add(session::Column::SessionToken.eq(session_token))
+            .add(session::Column::ExpiresAt.gt(now()))
+            .add(session::Column::Restricted.eq(restricted));
+        if restricted {
+            condition = condition.add(
+                session::Column::MfaFailedAttempts.lt(Self::MAX_MFA_FAILED_ATTEMPTS),
+            );
+        }
+
+        let session =
+            Session::find()
+                .filter(condition)
+                .one(txn)
+                .await
+                .or_raise(|| {
+                    Error::new("failed to look up session by token", ErrorType::Session)
+                })?;
+
+        Ok(session)
+    }
+
+    /// Locks an active restricted session for one MFA verification attempt.
+    ///
+    /// The row lock is held by the request transaction through verification and
+    /// either renewal or failure accounting, serializing attempts across all
+    /// processes that share the database. Missing, expired, and exhausted
+    /// sessions are returned as an expected authentication rejection.
+    pub async fn get_user_for_mfa_attempt(
+        ctx: &ServiceContext<'_>,
+        session_token: &str,
+    ) -> Result<Option<UserModel>> {
+        info!("Locking restricted session for MFA verification");
+
+        let make_error = || {
+            Error::new(
+                "failed to lock restricted session for MFA verification",
+                ErrorType::Session,
+            )
+        };
+        let session = Self::mfa_attempt_session_query(session_token)
+            .one(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+        let Some(session) = session else {
+            return Ok(None);
+        };
+
+        let user = User::find_by_id(session.user_id)
+            .one(ctx.transaction())
+            .await
+            .or_raise(make_error)?
+            .ok_or_raise(|| {
+                Error::new(
+                    "restricted session refers to a user that does not exist",
+                    ErrorType::UserNotFound,
+                )
+            })?;
+
+        Ok(Some(user))
+    }
+
+    /// Consumes one failed MFA attempt on the row locked by
+    /// `get_user_for_mfa_attempt`.
+    pub async fn record_failed_mfa_attempt(
+        ctx: &ServiceContext<'_>,
+        session_token: &str,
+    ) -> Result<()> {
+        let make_error = || {
+            Error::new(
+                "failed to record restricted-session MFA rejection",
+                ErrorType::Session,
+            )
+        };
+        let result = Session::update_many()
+            .col_expr(
+                session::Column::MfaFailedAttempts,
+                Expr::col(session::Column::MfaFailedAttempts).add(1),
+            )
             .filter(
                 Condition::all()
                     .add(session::Column::SessionToken.eq(session_token))
                     .add(session::Column::ExpiresAt.gt(now()))
-                    .add(session::Column::Restricted.eq(restricted)),
+                    .add(session::Column::Restricted.eq(true))
+                    .add(
+                        session::Column::MfaFailedAttempts
+                            .lt(Self::MAX_MFA_FAILED_ATTEMPTS),
+                    ),
             )
-            .one(txn)
+            .exec(ctx.transaction())
             .await
-            .or_raise(|| {
-                Error::new("failed to look up session by token", ErrorType::Session)
-            })?;
+            .or_raise(make_error)?;
 
-        Ok(session)
+        if result.rows_affected != 1 {
+            bail!(make_error());
+        }
+
+        Ok(())
     }
 
     /// Gets the associated `UserModel` from an active session.
@@ -471,5 +575,22 @@ impl SessionService {
 
         debug!("{rows_affected} expired sessions were pruned");
         Ok(rows_affected)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sea_orm::{DbBackend, QueryTrait};
+
+    #[test]
+    fn mfa_attempt_lookup_is_bounded_and_row_locked() {
+        let statement = SessionService::mfa_attempt_session_query("restricted-token")
+            .build(DbBackend::Postgres)
+            .to_string();
+
+        assert!(statement.contains("mfa_failed_attempts"));
+        assert!(statement.contains("< 5"));
+        assert!(statement.ends_with("FOR UPDATE"));
     }
 }
