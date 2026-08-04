@@ -187,6 +187,21 @@ async fn unrestricted_sessions_still_get_and_renew_normally() {
 }
 
 #[tokio::test]
+async fn soft_deleted_users_cannot_authenticate_by_retained_name_or_slug() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let (name, user_id) = create_auth_test_user(&runner, n, false).await;
+    let deleted = UserService::delete(runner.context(), Reference::Id(user_id))
+        .await
+        .expect("auth test user should be deleted");
+
+    for identifier in [name.as_str(), deleted.slug.as_str()] {
+        let error = run_endpoint_err!(runner, auth_login, login_params(identifier));
+        assert_contains_error!(error, ErrorType::InvalidAuthentication);
+    }
+}
+
+#[tokio::test]
 async fn session_other_listing_and_invalidation_keep_current_session() {
     let runner = TestRunner::setup().await;
     let n = next_n();
