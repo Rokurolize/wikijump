@@ -22,8 +22,28 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "6d1550f283f93ec3f4257ffda238a8f9003eed19";
+const candidateFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
+const sanitizedEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(
+    ([key]) =>
+      !key.startsWith("GIT_") &&
+      ![
+        "DOCKER_CONTEXT",
+        "DOCKER_HOST",
+        "GIT_CONFIG",
+        "GIT_CONFIG_COUNT",
+        "GIT_DIR",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_WORK_TREE",
+        "LD_LIBRARY_PATH",
+        "LD_PRELOAD",
+        "NODE_OPTIONS",
+        "PYTHONHOME",
+        "PYTHONPATH",
+      ].includes(key),
+  ),
+);
 
 test("committed receipt binds the exact manifest, lock, and five-surface contract", () => {
   const manifest = readFileSync(
@@ -39,7 +59,7 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
       path.join(
         repositoryRoot,
         "install/local/wikidot-verification/artifacts",
-        "ftml-block-argument-pin-canary-20260803-6d1550f2.json",
+        "ftml-block-argument-pin-canary-20260804-3f02c5af.json",
       ),
       "utf8",
     ),
@@ -64,7 +84,10 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
     1,
   );
   assert.equal(receipt.status, "pass");
-  assert.equal(receipt.baseline_ftml_sha, "4413efe44429c9612b27439bad7071702e15d541");
+  assert.equal(
+    receipt.baseline_ftml_sha,
+    "6d1550f283f93ec3f4257ffda238a8f9003eed19",
+  );
   assert.equal(receipt.candidate_ftml_sha, candidateFtml);
   assert.deepEqual(receipt.required_surfaces, requiredSurfaces);
   assert.deepEqual(receipt.comparison, {
@@ -74,7 +97,7 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
     accepted_differences: 0,
     regressions: 0,
     verdict_sha256:
-      "59e05ac91c2e864939a3431ab783583da1ea7b23dc0a55d457f4b296b2ae1ca1",
+      "abbe667fbbb227ef75b2e428d32202771eaa4f0b9eff2f918e1209c4940a0b0b",
   });
   assert.deepEqual(receipt.resource_disposition, {
     policy: "delete-on-close",
@@ -206,12 +229,14 @@ test("marker canary module parses sliced argv and injects run-owned credentials"
     config: "/private/config.toml",
     migrations: "/private/migrations",
     locales: "/private/locales",
+    seeder: "/private/seeder",
     deepwellPort: 42747,
     framerailPort: 43393,
     credentials: {
       databasePassword: "database-secret",
       filesAccessKey: "marker-access-key",
       filesSecretKey: "files-secret",
+      rpcToken: "rpc-secret",
     },
   });
   assert.match(compose, /POSTGRES_PASSWORD: "database-secret"/u);
@@ -221,6 +246,12 @@ test("marker canary module parses sliced argv and injects run-owned credentials"
   );
   assert.match(compose, /MINIO_ROOT_PASSWORD: "files-secret"/u);
   assert.doesNotMatch(compose, /defaultpassword/u);
+  assert.match(compose, /\/usr\/local\/bin\/sqlx migrate run/u);
+  assert.equal(
+    compose.match(/DEEPWELL_RPC_TOKEN: "rpc-secret"/gu)?.length,
+    2,
+  );
+  assert.match(compose, /target: \/seeder/u);
 });
 
 test("marker canary dry run requires the exact five marker surfaces", () => {
@@ -234,7 +265,7 @@ test("marker canary dry run requires the exact five marker surfaces", () => {
       "/tmp/ftml-marker-contract-test",
       "--dry-run",
     ],
-    { encoding: "utf8" },
+    { encoding: "utf8", env: sanitizedEnvironment },
   );
   assert.equal(result.status, 0, result.stderr);
   const plan = JSON.parse(result.stdout);
@@ -258,7 +289,7 @@ test("marker canary rejects abbreviated FTML revisions", () => {
       "/tmp/ftml-marker-contract-test",
       "--dry-run",
     ],
-    { encoding: "utf8" },
+    { encoding: "utf8", env: sanitizedEnvironment },
   );
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /full lowercase SHA/u);
