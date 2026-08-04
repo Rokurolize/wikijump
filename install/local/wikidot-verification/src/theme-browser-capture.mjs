@@ -15,7 +15,7 @@ export {
 import {startCaptureEgressProxy} from "./capture-egress-proxy.mjs";
 import {collectLayoutShifts, collectTimingDiagnostics, installLayoutShiftObserver, installTimingObserver} from "./layout-diagnostics.mjs";
 import {findRawSyntaxLeaks} from "./render-health.mjs";
-import {RUN_OWNED_SLUG_PREFIX, assertRunOwnedSlug, themeComputedStyleProperties, validateTargetOrigin, validateThemeComputedStyleContract} from "./theme-localization-e2e.mjs";
+import {DEFAULT_SITE_SLUG, RUN_OWNED_SLUG_PREFIX, assertRunOwnedSlug, themeComputedStyleProperties, validateSiteSlug, validateTargetOrigin, validateThemeComputedStyleContract} from "./theme-localization-e2e.mjs";
 
 export const THEME_BROWSER_CAPTURE_SCHEMA = "wikijump_local_lab.theme_browser_capture.v1";
 export const THEME_PERFORMANCE_ATTRIBUTION_SCHEMA = "wikijump_local_lab.theme_performance_attribution.v1";
@@ -53,7 +53,8 @@ export function validateThemeCaptureTarget({tier, target}) {
   assertRunOwnedSlug(tier.run_owned_slug, tier.run_owned_slug.slice(prefix.length, -suffix.length), tier.id);
   if (!target || !["wikidot", "wikijump"].includes(target.id)) throw new Error("capture target must be wikidot or wikijump");
   const url = new URL(target.url);
-  validateTargetOrigin(url.origin, target.id);
+  const siteSlug = validateSiteSlug(target.site_slug ?? tier.site_slug ?? DEFAULT_SITE_SLUG);
+  validateTargetOrigin(url.origin, target.id, siteSlug);
   if (url.username || url.password || url.search || url.hash || decodeURIComponent(url.pathname) !== `/${tier.run_owned_slug}`) {
     throw new Error(`capture URL does not identify the run-owned ${tier.id} page`);
   }
@@ -63,7 +64,8 @@ export function validateThemeCaptureTarget({tier, target}) {
 export async function installLocalFilePortRoute(context, target) {
   if (target?.id !== "wikijump") return false;
   const targetUrl = new URL(target.url);
-  validateTargetOrigin(targetUrl.origin, target.id);
+  const siteSlug = validateSiteSlug(target.site_slug ?? DEFAULT_SITE_SLUG);
+  validateTargetOrigin(targetUrl.origin, target.id, siteSlug);
   if (!targetUrl.port) return false;
   const port = targetUrl.port;
   await context.route("https://*.wjfiles.localhost/**", async (route) => {

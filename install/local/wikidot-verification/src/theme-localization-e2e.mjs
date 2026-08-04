@@ -2,11 +2,15 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import {validateSandboxOracleRegistry} from "./sandbox-oracle.mjs";
+
 export const THEME_LOCALIZATION_E2E_SCHEMA = "wikijump_local_lab.theme_localization_e2e_plan.v2";
-export const ALLOWED_SITE_SLUG = "scpaiueouiuiuiui";
+export const DEFAULT_SITE_SLUG = "scpaiueouiuiuiui";
+export const ALLOWED_SITE_SLUGS = Object.freeze(new Set([DEFAULT_SITE_SLUG, "sandbox-for-codex"]));
 export const DEFAULT_WIKIDOT_ORIGIN = "https://scpaiueouiuiuiui.wikidot.com";
 export const DEFAULT_WIKIJUMP_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 export const RUN_OWNED_SLUG_PREFIX = "codex-l10n:";
+export const ORACLE_RUN_OWNED_SLUG_PREFIX = "codex-oracle:";
 export const LEGACY_RUN_OWNED_SLUG_PREFIX = "theme:codex-l10n-";
 export const WIKIDOT_PAGE_SLUG_MAX_LENGTH = 60;
 
@@ -338,27 +342,42 @@ export function validateRunId(runId) {
 }
 
 export function validateSiteSlug(siteSlug) {
-  if (siteSlug !== ALLOWED_SITE_SLUG) {
-    throw new Error(`site is not allowlisted: expected ${ALLOWED_SITE_SLUG}`);
+  if (typeof siteSlug !== "string" || !ALLOWED_SITE_SLUGS.has(siteSlug)) {
+    throw new Error(`site is not allowlisted: ${String(siteSlug)}`);
   }
   return siteSlug;
 }
 
-export function validateTargetOrigin(value, target) {
+export function validateTargetOrigin(value, target, siteSlug = DEFAULT_SITE_SLUG) {
   if (target !== "wikidot" && target !== "wikijump") throw new Error(`unknown target: ${target}`);
+  const validatedSite = validateSiteSlug(siteSlug);
   let url;
   try {
     url = new URL(value);
   } catch {
     throw new Error(`${target} origin is not a valid URL`);
   }
+  const wikidotProtocol = validatedSite === "sandbox-for-codex" ? "http:" : "https:";
   const expected = target === "wikidot"
-    ? {protocol: "https:", hostname: `${ALLOWED_SITE_SLUG}.wikidot.com`, ports: new Set([""])}
-    : {protocol: "https:", hostname: `${ALLOWED_SITE_SLUG}.wikijump.localhost`, ports: new Set(["", "18443"])};
+    ? {protocol: wikidotProtocol, hostname: `${validatedSite}.wikidot.com`, ports: new Set([""])}
+    : {protocol: "https:", hostname: `${validatedSite}.wikijump.localhost`, ports: new Set(["", "18443"])};
   if (url.protocol !== expected.protocol || url.hostname !== expected.hostname || !expected.ports.has(url.port) || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
     throw new Error(`${target} origin is outside the hard allowlist`);
   }
   return url.origin;
+}
+
+export function oracleRunOwnedSlug(runId, fixtureId, registry) {
+  const validatedRunId = validateRunId(runId);
+  const checkedRegistry = validateSandboxOracleRegistry(registry);
+  if (!checkedRegistry.fixtures.some((fixture) => fixture.fixture_id === fixtureId)) {
+    throw new Error(`oracle fixture is not in the registry: ${String(fixtureId)}`);
+  }
+  const slug = `${ORACLE_RUN_OWNED_SLUG_PREFIX}${validatedRunId}-${fixtureId}`;
+  if (slug.length > WIKIDOT_PAGE_SLUG_MAX_LENGTH || !/^codex-oracle:[A-Za-z0-9][A-Za-z0-9._:-]*$/u.test(slug)) {
+    throw new Error(`oracle fixture slug is not valid: ${slug}`);
+  }
+  return slug;
 }
 
 export function runOwnedSlug(runId, tierId) {
@@ -600,7 +619,7 @@ export async function buildThemeLocalizationE2EPlan({
   translationRoot,
   runId,
   mode = "dry-run",
-  siteSlug = ALLOWED_SITE_SLUG,
+  siteSlug = DEFAULT_SITE_SLUG,
   wikidotOrigin = DEFAULT_WIKIDOT_ORIGIN,
   wikijumpOrigin = DEFAULT_WIKIJUMP_ORIGIN,
   tiers = ["all"],
@@ -609,8 +628,8 @@ export async function buildThemeLocalizationE2EPlan({
   if (!new Set(["dry-run", "execute"]).has(mode)) throw new Error("theme plan mode must be dry-run or execute");
   const validatedRunId = validateRunId(runId);
   const validatedSite = validateSiteSlug(siteSlug);
-  const validatedWikidotOrigin = validateTargetOrigin(wikidotOrigin, "wikidot");
-  const validatedWikijumpOrigin = validateTargetOrigin(wikijumpOrigin, "wikijump");
+  const validatedWikidotOrigin = validateTargetOrigin(wikidotOrigin, "wikidot", validatedSite);
+  const validatedWikijumpOrigin = validateTargetOrigin(wikijumpOrigin, "wikijump", validatedSite);
   const selectedTiers = selectThemeTiers(tiers);
   const resolvedTranslationRoot = path.resolve(translationRoot);
   const plans = [];
@@ -620,8 +639,8 @@ export async function buildThemeLocalizationE2EPlan({
     const slug = runOwnedSlug(validatedRunId, tier.id);
     const preflight = await acceptedSourcePreflight(resolvedTranslationRoot, tier);
     const targetDefinitions = [
-      {id: "wikidot", role: "reference", origin: validatedWikidotOrigin},
-      {id: "wikijump", role: "candidate", origin: validatedWikijumpOrigin},
+      {id: "wikidot", role: "reference", origin: validatedWikidotOrigin, site_slug: validatedSite},
+      {id: "wikijump", role: "candidate", origin: validatedWikijumpOrigin, site_slug: validatedSite},
     ];
     const targets = targetDefinitions.map((target) => {
       const resourceId = `${tier.id}:${target.id}`;
@@ -692,7 +711,7 @@ export async function buildThemeLocalizationE2EPlan({
     resources.push({resource_id: dependency.candidate.resource_id, kind: dependency.candidate.kind, target: "wikijump", slug: dependency.slug});
   }
   for (const tier of plans) {
-    for (const target of tier.targets) resources.push({resource_id: target.resource_id, kind: "theme_page", target: target.id, slug: tier.run_owned_slug});
+    for (const target of tier.targets) resources.push({resource_id: target.resource_id, kind: "theme_page", target: target.id, site_slug: validatedSite, slug: tier.run_owned_slug});
   }
 
   const failedTiers = plans.filter((tier) => tier.preflight.status === "fail").map((tier) => tier.id);
@@ -703,9 +722,9 @@ export async function buildThemeLocalizationE2EPlan({
     safety: {
       page_mutations_performed: 0,
       hard_allowlist: {
-        site_slug: ALLOWED_SITE_SLUG,
-        wikidot_hostname: `${ALLOWED_SITE_SLUG}.wikidot.com`,
-        wikijump_hostname: `${ALLOWED_SITE_SLUG}.wikijump.localhost`,
+        site_slug: validatedSite,
+        wikidot_hostname: `${validatedSite}.wikidot.com`,
+        wikijump_hostname: `${validatedSite}.wikijump.localhost`,
       },
       mirror_sites_are_forbidden: true,
       execute_supported: mode === "execute",

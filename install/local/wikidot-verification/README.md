@@ -197,6 +197,15 @@ install/local/wikidot-verification/scripts/setup-python-env.sh
 
 The helper never imports from a mutable host checkout. Credentials remain environment-only inputs to the helper process.
 
+Theme-localization execution is site-scoped by the audited two-member allowlist
+(`scpaiueouiuiuiui` and `sandbox-for-codex`), mirrored in JavaScript and the
+Python helper and checked at every origin boundary. The default site remains
+`scpaiueouiuiuiui`; selecting the sandbox requires explicit
+`--site sandbox-for-codex --wikidot-origin http://sandbox-for-codex.wikidot.com`
+and `--wikijump-origin https://sandbox-for-codex.wikijump.localhost`. The
+allowlist widening is a separate draft change held for owner sign-off before
+any live sandbox mutation.
+
 ## Completion controller
 
 `scripts/run-completion-controller.mjs` is the resumable one-command entry point for a complete branch run. It executes an explicit JSON plan without a shell, records every command through the command ledger, hashes declared inputs and outputs, checks declared verdicts, and writes compact state and summary files.
