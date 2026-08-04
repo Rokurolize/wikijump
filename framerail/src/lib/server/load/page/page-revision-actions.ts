@@ -113,24 +113,16 @@ const pageRollbackSchema = object({
 })
 
 export async function pageDeletedGetAction(event: RequestEvent) {
-  const { request } = event
   try {
-    const requestData = await readActionJson(request, pageDeletedGetSchema)
-    const { siteId, slug } = requestData
     const context = await resolvePageActionRequestContext(event, {
-      submittedSiteId: siteId
+      session: "required"
     })
-    const res = await pageDeletedGet(siteId, slug, context.requestContext)
+    const res = await pageDeletedGet(context.requestContext)
     return { res }
   } catch (error) {
     return failForActionError(error)
   }
 }
-
-const pageDeletedGetSchema = object({
-  siteId: number(),
-  slug: string()
-})
 
 export async function pageRestoreAction(event: RequestEvent) {
   const { request, getClientAddress } = event

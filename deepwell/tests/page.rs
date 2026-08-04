@@ -13681,6 +13681,122 @@ async fn page_move_requires_destination_create_permission() {
 }
 
 #[tokio::test]
+async fn page_get_deleted_requires_an_authenticated_request_context() {
+    let runner = TestRunner::setup().await;
+    let error = run_endpoint_err!(
+        runner,
+        page_get_deleted,
+        json!({
+            "site_id": 6000005,
+            "slug": "missing-deleted-page",
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn page_get_deleted_filters_pages_by_edit_permission() {
+    const PRIVATE_CATEGORY: &str = "fixture-page-deleted-metadata-private";
+    const PAGE_SLUG: &str = "fixture-page-deleted-metadata-private:target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        ADMIN_USER_ID,
+        &[Action::View, Action::Create, Action::Edit],
+        "deleted-metadata-admin",
+    )
+    .await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Deleted page metadata authorization source.",
+            "title": "Deleted Page Metadata Authorization Source",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create deleted page metadata authorization source",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_listpages_test_category_slug(&runner, site_id, PAGE_SLUG, PRIVATE_CATEGORY).await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "delete deleted page metadata authorization source",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("deleted page permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(SAMPLE_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let deleted_pages = run_endpoint!(
+        runner,
+        page_get_deleted,
+        json!({
+            "site_id": site_id,
+            "slug": PAGE_SLUG,
+        }),
+    );
+    assert!(
+        deleted_pages.is_empty(),
+        "deleted page metadata must not be returned without edit permission"
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let authorized_deleted_pages = run_endpoint!(
+        runner,
+        page_get_deleted,
+        json!({
+            "site_id": site_id,
+            "slug": PAGE_SLUG,
+        }),
+    );
+    assert_eq!(authorized_deleted_pages.len(), 1);
+}
+
+#[tokio::test]
 async fn page_restore_default_slug_requires_destination_create_permission() {
     let mut runner = TestRunner::setup().await;
     const SITE_SLUG: &str = "scp-wiki";
