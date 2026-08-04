@@ -19,6 +19,7 @@ import {
   aggregateSandboxOracleVerdict,
   compareSandboxOracleFixture,
   validateSandboxOracleRegistry,
+  validateSandboxOracleCapture,
 } from "../src/sandbox-oracle.mjs";
 import {
   DEFAULT_THRESHOLDS,
@@ -154,6 +155,19 @@ async function ensureEmptyDirectory(outputDir) {
   if (entries.length > 0) throw new Error(`oracle output directory must be empty: ${outputDir}`);
 }
 
+async function writeCaptureProgress(outputDir, captures, contracts) {
+  await fs.writeFile(
+    path.join(outputDir, "capture-progress.json"),
+    `${JSON.stringify({
+      schema: "wikijump_local_lab.sandbox_oracle_capture_progress.v1",
+      captured_fixture_ids: captures.map(({fixture_id}) => fixture_id),
+      captures,
+      contracts,
+    }, null, 2)}\n`,
+    {flag: "w", mode: 0o600},
+  );
+}
+
 async function loadPolicy(filePath) {
   const value = validateLiveCompletionPolicy(await readJson(filePath, "live completion policy"));
   return {value, sha256: await sha256File(filePath), filePath};
@@ -239,9 +253,9 @@ async function main(argv) {
         localPage = await withTimeout(wikijump.create(localResource, {source: source.source}), `local create ${fixture.fixture_id}`);
         const contract = browserContract();
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-live"}));
-        const liveCapture = await withTimeout(captureBrowserParityObservation({context: browser.context, page: liveBrowserPage, url: liveResource.url, label: "live", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs}), `live capture ${fixture.fixture_id}`, 900_000);
+        const liveCapture = validateSandboxOracleCapture(await withTimeout(captureBrowserParityObservation({context: browser.context, page: liveBrowserPage, url: liveResource.url, label: "live", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs}), `live capture ${fixture.fixture_id}`, 900_000), `live capture ${fixture.fixture_id}`);
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-local"}));
-        const localCapture = await withTimeout(captureBrowserParityObservation({context: browser.context, page: localBrowserPage, url: localResource.url, label: "local", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs}), `local capture ${fixture.fixture_id}`, 900_000);
+        const localCapture = validateSandboxOracleCapture(await withTimeout(captureBrowserParityObservation({context: browser.context, page: localBrowserPage, url: localResource.url, label: "local", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs}), `local capture ${fixture.fixture_id}`, 900_000), `local capture ${fixture.fixture_id}`);
         captures.push({fixture_id: fixture.fixture_id, live: liveCapture, local: localCapture, resources: {live: liveResource, local: localResource}});
         contracts.push({fixture_id: fixture.fixture_id, contract});
         cleanup.push({fixture_id: fixture.fixture_id, live: {resource: liveResource, expected: {title: source.title, source_sha256: liveResource.source_sha256, tags: liveResource.tags}, identity: livePage}, local: {resource: localResource, expected: {title: source.title, source_sha256: localResource.source_sha256, tags: localResource.tags}, identity: localPage}});
@@ -256,6 +270,7 @@ async function main(argv) {
           livePage = null;
         }
       }
+      await writeCaptureProgress(args.outputDir, captures, contracts);
     }
   } finally {
     await Promise.resolve(browser?.close?.()).catch(() => undefined);

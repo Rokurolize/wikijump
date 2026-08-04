@@ -5,6 +5,7 @@ import {
   aggregateSandboxOracleVerdict,
   compareSandboxOracleFixture,
   SANDBOX_ORACLE_REGISTRY_SCHEMA,
+  validateSandboxOracleCapture,
   validateSandboxOracleRegistry,
 } from "../src/sandbox-oracle.mjs";
 
@@ -54,12 +55,37 @@ function capture(overrides = {}) {
         presence_probes: [],
         custom_properties: {},
       },
+      screenshot: {sha256: HASH, full_page: false},
     },
     document: { presence_probes: [], custom_properties: {} },
+    settled_viewport_screenshot: {sha256: HASH, full_page: false},
     screenshot: { sha256: HASH, full_page: true },
     ...overrides,
   };
 }
+
+test("capture validation fails closed on an incomplete browser observation", () => {
+  assert.throws(
+    () =>
+      validateSandboxOracleCapture(
+        capture({
+          capture_error: {name: "TimeoutError", message: "page.goto"},
+        }),
+        "fixture live capture",
+      ),
+    /fixture live capture failed/u,
+  );
+  assert.throws(
+    () =>
+      validateSandboxOracleCapture(
+        capture({screenshot: null}),
+        "fixture local capture",
+      ),
+    /fixture local capture is missing screenshot/u,
+  );
+  const complete = capture();
+  assert.equal(validateSandboxOracleCapture(complete, "complete capture"), complete);
+});
 
 function liveFixture() {
   return {

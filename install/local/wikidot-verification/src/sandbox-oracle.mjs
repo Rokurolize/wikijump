@@ -245,6 +245,51 @@ export function validateSandboxOracleRegistry(value) {
   });
 }
 
+/**
+ * A browser capture is evidence, not merely an object that the comparator can
+ * partially inspect.  Refuse to carry a navigation or observation failure
+ * into a frozen fixture set: otherwise the capture loop can continue and
+ * produce a receipt whose missing screenshots look like a valid fixture.
+ */
+export function validateSandboxOracleCapture(value, name = "capture") {
+  const capture = requirePlainObject(value, name);
+  if (capture.capture_error !== undefined) {
+    throw new Error(
+      `${name} failed: ${JSON.stringify(capture.capture_error)}`,
+    );
+  }
+  if (
+    !Number.isInteger(capture.navigation_status) ||
+    capture.navigation_status < 200 ||
+    capture.navigation_status >= 400
+  ) {
+    throw new Error(
+      `${name} has no successful navigation status: ${String(capture.navigation_status)}`,
+    );
+  }
+  if (!isPlainObject(capture.dom_signature)) {
+    throw new Error(`${name} is missing dom_signature`);
+  }
+  if (!isPlainObject(capture.page_chrome_skeleton)) {
+    throw new Error(`${name} is missing page_chrome_skeleton`);
+  }
+  const screenshots = [
+    ["first_paint.screenshot", capture.first_paint?.screenshot],
+    ["settled_viewport_screenshot", capture.settled_viewport_screenshot],
+    ["screenshot", capture.screenshot],
+  ];
+  for (const [label, screenshot] of screenshots) {
+    if (
+      !isPlainObject(screenshot) ||
+      typeof screenshot.sha256 !== "string" ||
+      !/^[0-9a-f]{64}$/u.test(screenshot.sha256)
+    ) {
+      throw new Error(`${name} is missing ${label}`);
+    }
+  }
+  return capture;
+}
+
 function layer(status, findings = [], detail = null) {
   return {
     status,
