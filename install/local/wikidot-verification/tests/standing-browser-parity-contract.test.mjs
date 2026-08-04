@@ -4,6 +4,7 @@ import test from "node:test";
 import { canaryForUrl } from "../src/standing-browser-canaries.mjs";
 import {
   DEFAULT_THRESHOLDS,
+  compareAttributeSignatures,
   compareCaptures,
   evaluateFirstPaintCustomProperties,
   validateLiveCompletionPolicy,
@@ -159,6 +160,65 @@ test("settled page geometry is not reused as DOMContentLoaded geometry", () => {
   assert.deepEqual(
     result.domcontentloaded_immediate_geometry.map(({ selector }) => selector),
     ["#header"],
+  );
+});
+
+test("page-chrome skeleton deletion is a blocking parity regression", () => {
+  const contract = {
+    geometry_selectors: ["#main-content"],
+    first_paint_geometry_selectors: [],
+    presence_probes: [],
+    first_paint_custom_properties: {},
+    page_chrome_skeleton: {
+      links: [
+        { parent: "body", child: "#skrollr-body" },
+        { parent: "#skrollr-body", child: "#container-wrap-wrap" },
+        { parent: "#container-wrap-wrap", child: "#container-wrap" },
+        { parent: "#container-wrap", child: "#container" },
+        { parent: "#container", child: "#header" },
+        { parent: "#header", child: "#top-bar" },
+      ],
+    },
+  };
+  const live = capture({
+    page_chrome_skeleton: {
+      links: contract.page_chrome_skeleton.links.map((link) => ({
+        ...link,
+        parent_count: 1,
+        child_count: 1,
+        direct_child_count: 1,
+      })),
+    },
+  });
+  const local = capture({
+    page_chrome_skeleton: {
+      links: contract.page_chrome_skeleton.links.map((link, index) => ({
+        ...link,
+        parent_count: 1,
+        child_count: index === 0 ? 0 : 1,
+        direct_child_count: index === 0 ? 0 : 1,
+      })),
+    },
+  });
+  const result = compareCaptures(local, live, DEFAULT_THRESHOLDS, [], contract);
+  assert.equal(result.status, "fail");
+  assert.ok(
+    result.anomalies.some(
+      (anomaly) => anomaly.code === "page_chrome_skeleton_divergence",
+    ),
+  );
+});
+
+test("volatile attribute normalization is a finding rather than a silent pass", () => {
+  const result = compareAttributeSignatures(
+    [{ tag: "form", name: "data-page-id", value: "123" }],
+    [{ tag: "form", name: "data-page-id", value: "456" }],
+  );
+  assert.equal(result.status, "fail");
+  assert.ok(
+    result.anomalies.some(
+      (anomaly) => anomaly.code === "normalization_hides_difference",
+    ),
   );
 });
 

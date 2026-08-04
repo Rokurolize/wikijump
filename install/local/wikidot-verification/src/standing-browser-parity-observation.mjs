@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { STANDING_BROWSER_CAPTURE_SCHEMA } from "./standing-browser-parity-contract.mjs";
+import { domSignature } from "./oracle-fixtures.mjs";
 import {
   applyCssBoxFallback,
   capturePseudoLayouts,
@@ -50,11 +51,17 @@ export async function captureDocumentObservation(
   const customPropertyNames = Object.keys(
     contract?.first_paint_custom_properties ?? {},
   ).sort();
+  // Synthetic callers may intentionally use a smaller contract.  The
+  // standing canary contract carries PAGE_CHROME_SKELETON explicitly; do not
+  // silently add it to every ad-hoc observation and turn an unrelated
+  // contract into a page-chrome assertion.
+  const skeleton = contract?.page_chrome_skeleton ?? null;
   const documentPhase = await page.evaluate(
     ({
       geometrySelectors: selectors,
       presenceProbes: probes,
       customPropertyNames: properties,
+      skeletonContract,
       phase: capturedPhase,
     }) => {
       const rounded = (value) => Math.round(Number(value) * 100) / 100;
@@ -153,6 +160,36 @@ export async function captureDocumentObservation(
       });
       const root = document.querySelector("#page-content");
       const images = [...document.images].filter(rendered);
+      const pageChromeSkeleton = {
+        schema: skeletonContract?.schema ?? null,
+        links: (skeletonContract?.links ?? []).map((link) => {
+          const parentNodes =
+            link.parent === "body"
+              ? document.body
+                ? [document.body]
+                : []
+              : [...document.querySelectorAll(link.parent)];
+          const childNodes = [...document.querySelectorAll(link.child)];
+          const directChildCount = parentNodes.reduce(
+            (count, parent) =>
+              count +
+              [...(parent.children ?? [])].filter((child) =>
+                child.matches(link.child),
+              ).length,
+            0,
+          );
+          return {
+            parent: link.parent,
+            child: link.child,
+            parent_count: parentNodes.length,
+            child_count: childNodes.length,
+            direct_child_count: directChildCount,
+          };
+        }),
+      };
+      const pageContentElements = root
+        ? [...root.querySelectorAll("*")]
+        : [];
       return {
         phase: capturedPhase,
         captured_at_epoch_ms: Date.now(),
@@ -171,7 +208,7 @@ export async function captureDocumentObservation(
           ]),
         ),
         dom_signatures: root
-          ? [...root.querySelectorAll("*")]
+          ? pageContentElements
               .filter(rendered)
               .map(
                 (element) =>
@@ -182,8 +219,21 @@ export async function captureDocumentObservation(
                     .map((name) => `.${name}`)
                     .join("")}`,
               )
-              .sort()
+            .sort()
           : [],
+        page_content_html: root?.innerHTML ?? null,
+        attribute_signatures: pageContentElements
+          .filter(rendered)
+          .flatMap((element) =>
+            [...(element.attributes ?? [])].map((attribute) => ({
+              tag: element.localName,
+              name: attribute.name,
+              value: attribute.value,
+            })),
+          )
+          .sort((left, right) =>
+            JSON.stringify(left).localeCompare(JSON.stringify(right)),
+          ),
         rendered_images: images.length,
         broken_images: images
           .filter((image) => !image.complete || image.naturalWidth <= 0)
@@ -192,15 +242,23 @@ export async function captureDocumentObservation(
             natural_width: image.naturalWidth,
             natural_height: image.naturalHeight,
           })),
+        page_chrome_skeleton: pageChromeSkeleton,
       };
     },
     {
       geometrySelectors,
       presenceProbes,
       customPropertyNames,
+      skeletonContract: skeleton,
       phase,
     },
   );
+  if (typeof documentPhase.page_content_html === "string") {
+    documentPhase.dom_signature = domSignature(documentPhase.page_content_html);
+  } else {
+    documentPhase.dom_signature = null;
+  }
+  delete documentPhase.page_content_html;
   const pseudoLayouts = await capturePseudoLayouts(
     page,
     presenceProbes,
@@ -389,6 +447,9 @@ export async function captureBrowserParityObservation({
       },
       document,
       geometry: document.geometry,
+      page_chrome_skeleton: document.page_chrome_skeleton,
+      dom_signature: document.dom_signature,
+      attribute_signatures: document.attribute_signatures,
       dom_signatures: document.dom_signatures,
       rendered_images: document.rendered_images,
       broken_images: document.broken_images,
@@ -404,6 +465,9 @@ export async function captureBrowserParityObservation({
       presence_probes: [],
       custom_properties: {},
       dom_signatures: [],
+      page_chrome_skeleton: null,
+      dom_signature: null,
+      attribute_signatures: [],
       rendered_images: 0,
       broken_images: [],
     };
@@ -430,6 +494,9 @@ export async function captureBrowserParityObservation({
       document: partial,
       geometry: partial.geometry,
       dom_signatures: partial.dom_signatures,
+      page_chrome_skeleton: partial.page_chrome_skeleton,
+      dom_signature: partial.dom_signature,
+      attribute_signatures: partial.attribute_signatures,
       rendered_images: partial.rendered_images,
       broken_images: partial.broken_images,
       settled_viewport_screenshot: await capturedScreenshot(

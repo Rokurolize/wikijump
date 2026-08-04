@@ -35,6 +35,13 @@ export const DEFAULT_CHANNELS = {
   whitespace_collapse: false,
 };
 
+export const DEFAULT_ATTRIBUTE_CHANNELS = Object.freeze({
+  ...DEFAULT_CHANNELS,
+  page_id: true,
+  csrf_token: true,
+  random_module_id: true,
+});
+
 const HOSTNAME_MAP = [
   [/scp-wiki\.wikidot\.com/g, '{{site-host}}'],
   [/scp-wiki\.wikijump\.localhost/g, '{{site-host}}'],
@@ -76,6 +83,74 @@ export function normalizeText(text, channels = DEFAULT_CHANNELS) {
     result = result.split(/\s+/).join(' ').trim();
   }
   return { text: result, applied };
+}
+
+export function normalizeAttributeObservation(
+  observation,
+  channels = DEFAULT_ATTRIBUTE_CHANNELS,
+) {
+  const tag = String(observation?.tag ?? "").toLowerCase();
+  const name = String(observation?.name ?? "").toLowerCase();
+  let value = String(observation?.value ?? "");
+  const applied = [];
+  const apply = (channel, replacement) => {
+    if (channels[channel]) {
+      value = replacement;
+      applied.push(channel);
+    }
+  };
+  if (channels.hostname_map) {
+    const normalized = normalizeText(value, {
+      ...DEFAULT_CHANNELS,
+      hostname_map: true,
+      request_id: false,
+      semantic_timestamp: false,
+      cache_buster: false,
+      env_id: false,
+      whitespace_collapse: false,
+    });
+    if (normalized.text !== value) applied.push("hostname_map");
+    value = normalized.text;
+  }
+  if (channels.cache_buster && /(?:^|[?&])v=/u.test(value)) {
+    const normalized = value.replace(/([?&])v=[\w.-]+/gu, "$1");
+    if (normalized !== value) applied.push("cache_buster");
+    value = normalized;
+  }
+  if (channels.csrf_token && /csrf|xsrf|authenticity/u.test(name)) {
+    apply("csrf_token", "{{csrf-token}}");
+  } else if (
+    channels.request_id &&
+    /(?:request|trace|session)[-_]?id|nonce/u.test(name)
+  ) {
+    apply("request_id", "{{request-id}}");
+  } else if (channels.page_id && /(?:^|[-_])page[-_]?id$/u.test(name)) {
+    apply("page_id", "{{page-id}}");
+  } else if (
+    channels.random_module_id &&
+    (/(?:^|[-_])module[-_]?id$/u.test(name) ||
+      /(?:^|[-_])module[-_][0-9a-f]{8,}$/iu.test(value))
+  ) {
+    apply("random_module_id", "{{module-id}}");
+  } else if (channels.semantic_timestamp && /time|date|timestamp/u.test(name)) {
+    apply("semantic_timestamp", "{{timestamp}}");
+  } else if (channels.env_id && /^[0-9a-f]{12,64}$/iu.test(value)) {
+    apply("env_id", "{{hex-id}}");
+  }
+  return { tag, name, value, applied };
+}
+
+export function normalizeAttributeSignatures(
+  signatures,
+  channels = DEFAULT_ATTRIBUTE_CHANNELS,
+) {
+  const normalized = (signatures ?? [])
+    .map((observation) => normalizeAttributeObservation(observation, channels))
+    .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  return {
+    signatures: normalized,
+    applied: [...new Set(normalized.flatMap((observation) => observation.applied))].sort(),
+  };
 }
 
 export function hasRawMarker(text) {

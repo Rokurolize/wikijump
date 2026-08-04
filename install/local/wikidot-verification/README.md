@@ -2,6 +2,34 @@
 
 The scripts in this directory import frozen Wikidot corpus data, inspect a local runtime, capture browser evidence, and reduce large runs into machine-readable verdicts. Expected behavior must come from the frozen corpus, reviewed compatibility policy, or sealed real-Wikidot evidence. Local Wikijump output is diagnostic evidence, not an oracle.
 
+## Driftless sandbox oracle
+
+`fixtures/sandbox-oracle-fixture-registry.json` is the checked-in registry for
+authored sandbox pages. Its validator enforces the two assertion classes:
+`match-live` compares a local browser capture with one frozen Wikidot capture;
+`match-frozen-preserved` compares delayed constructs with their declared
+preserved local shape and never treats live execution as the expected local
+output. ListPages, CountPages, unknown modules, and conditional blocks are
+required to use the latter class. The registry schema is
+`schemas/sandbox-oracle-fixture-registry-v1.schema.json`.
+
+Compare sealed local and frozen captures without mutating Wikidot:
+
+```sh
+pnpm --dir install/local/wikidot-verification sandbox-oracle -- \
+  --registry install/local/wikidot-verification/fixtures/sandbox-oracle-fixture-registry.json \
+  --local /absolute/evidence/path/local-captures.json \
+  --frozen /absolute/evidence/path/frozen-captures.json \
+  --output /absolute/evidence/path/sandbox-oracle-verdict.json \
+  --run-id sandbox-oracle-20260805
+```
+
+The comparison runs exact DOM signature, structure and geometry, computed
+style, presence and pseudo-layout, then records screenshot SHA-256 receipts
+without a pixel diff. Volatile attribute normalization is declared in the
+verdict; when it makes a raw difference disappear the result is the blocking
+`normalization_hides_difference` finding, never a pass.
+
 ## Syntax differential runner
 
 The syntax differential runner answers context-free “what does this wikitext render as?” questions by freezing anonymous live Wikidot previews once, then streaming the same syntax cases through one long-lived FTML process. The checked-in starter matrix is `fixtures/syntax-differential/preview-cases.jsonl`.
