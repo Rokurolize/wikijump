@@ -165,6 +165,41 @@ test("effective runtime identity canonicalizes Docker's set-like array order", (
   assert.equal(effectiveRuntimeServicesSha256([inspect]), before);
 });
 
+test("effective runtime identity binds omitted host isolation and resource controls", () => {
+  const cases = [
+    ["PID namespace", (inspect) => (inspect.HostConfig.PidMode = "host")],
+    ["IPC namespace", (inspect) => (inspect.HostConfig.IpcMode = "host")],
+    [
+      "device access",
+      (inspect) =>
+        (inspect.HostConfig.Devices = [
+          { PathOnHost: "/dev/null", PathInContainer: "/dev/example", CgroupPermissions: "r" },
+        ]),
+    ],
+    ["supplementary groups", (inspect) => (inspect.HostConfig.GroupAdd = ["audio"])],
+    ["sysctls", (inspect) => (inspect.HostConfig.Sysctls = { "net.ipv4.ip_forward": "1" })],
+    [
+      "ulimits",
+      (inspect) =>
+        (inspect.HostConfig.Ulimits = [
+          { Name: "nofile", Soft: 1024, Hard: 2048 },
+        ]),
+    ],
+    ["process limit", (inspect) => (inspect.HostConfig.PidsLimit = 64)],
+  ];
+
+  for (const [name, mutate] of cases) {
+    const { inspect } = preparedFixture();
+    const before = effectiveRuntimeServicesSha256([inspect]);
+    mutate(inspect);
+    assert.notEqual(
+      effectiveRuntimeServicesSha256([inspect]),
+      before,
+      `${name} must remain part of the runtime identity`,
+    );
+  }
+});
+
 test("runtime observation fails closed for a mutable endpoint, changed image, missing identity label, or changed effective configuration", async () => {
   const { candidate, inspect } = preparedFixture();
   const publicBinding = structuredClone(inspect);
