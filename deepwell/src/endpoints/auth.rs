@@ -22,7 +22,7 @@ use super::prelude::*;
 use crate::models::session::Model as SessionModel;
 use crate::services::authentication::{
     AuthenticateUserOutput, AuthenticationService, LoginUser, LoginUserMfa,
-    LoginUserOutput, MultiFactorAuthenticateUser,
+    LoginUserOutput, MultiFactorAuthenticateOutput, MultiFactorAuthenticateUser,
 };
 use crate::services::authorization_token::AuthorizationTokenService;
 use crate::services::mfa::{
@@ -212,7 +212,7 @@ pub async fn auth_mfa_verify(
 
     info!("Verifying user's MFA for login");
 
-    let user = AuthenticationService::auth_mfa(
+    let authentication = AuthenticationService::auth_mfa(
         ctx,
         MultiFactorAuthenticateUser {
             session_token: &session_token,
@@ -221,6 +221,13 @@ pub async fn auth_mfa_verify(
     )
     .await
     .or_raise(make_error)?;
+    let user = match authentication {
+        MultiFactorAuthenticateOutput::Authenticated(user) => user,
+        MultiFactorAuthenticateOutput::Rejected => {
+            ctx.commit_expected_authentication_rejection();
+            bail!(make_error());
+        }
+    };
 
     SessionService::renew_restricted(
         ctx,
