@@ -13681,6 +13681,122 @@ async fn page_move_requires_destination_create_permission() {
 }
 
 #[tokio::test]
+async fn page_get_deleted_requires_an_authenticated_request_context() {
+    let runner = TestRunner::setup().await;
+    let error = run_endpoint_err!(
+        runner,
+        page_get_deleted,
+        json!({
+            "site_id": 6000005,
+            "slug": "missing-deleted-page",
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn page_get_deleted_filters_pages_by_edit_permission() {
+    const PRIVATE_CATEGORY: &str = "fixture-page-deleted-metadata-private";
+    const PAGE_SLUG: &str = "fixture-page-deleted-metadata-private:target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        ADMIN_USER_ID,
+        &[Action::View, Action::Create, Action::Edit],
+        "deleted-metadata-admin",
+    )
+    .await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Deleted page metadata authorization source.",
+            "title": "Deleted Page Metadata Authorization Source",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create deleted page metadata authorization source",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_listpages_test_category_slug(&runner, site_id, PAGE_SLUG, PRIVATE_CATEGORY).await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "delete deleted page metadata authorization source",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("deleted page permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(SAMPLE_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let deleted_pages = run_endpoint!(
+        runner,
+        page_get_deleted,
+        json!({
+            "site_id": site_id,
+            "slug": PAGE_SLUG,
+        }),
+    );
+    assert!(
+        deleted_pages.is_empty(),
+        "deleted page metadata must not be returned without edit permission"
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let authorized_deleted_pages = run_endpoint!(
+        runner,
+        page_get_deleted,
+        json!({
+            "site_id": site_id,
+            "slug": PAGE_SLUG,
+        }),
+    );
+    assert_eq!(authorized_deleted_pages.len(), 1);
+}
+
+#[tokio::test]
 async fn page_restore_default_slug_requires_destination_create_permission() {
     let mut runner = TestRunner::setup().await;
     const SITE_SLUG: &str = "scp-wiki";
@@ -16629,6 +16745,88 @@ async fn page_tags_select_requires_an_authenticated_request_context() {
 }
 
 #[tokio::test]
+async fn page_select_requires_an_authenticated_request_context() {
+    let runner = TestRunner::setup().await;
+    let error = run_endpoint_err!(
+        runner,
+        page_select,
+        json!({
+            "site": "scp-wiki",
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn page_select_filters_pages_by_authenticated_view_permission() {
+    const VISIBLE_CATEGORY: &str = "xmlrpc-page-select-visible";
+    const PRIVATE_CATEGORY: &str = "xmlrpc-page-select-private";
+    const VISIBLE_SLUG: &str = "xmlrpc-page-select-visible:source";
+    const PRIVATE_SLUG: &str = "xmlrpc-page-select-private:source";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        VISIBLE_CATEGORY,
+        SAMPLE_USER_ID,
+        &[Action::View],
+        "page-select-viewer",
+    )
+    .await;
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        ADMIN_USER_ID,
+        &[Action::View],
+        "page-select-admin",
+    )
+    .await;
+
+    for (slug, category) in [
+        (VISIBLE_SLUG, VISIBLE_CATEGORY),
+        (PRIVATE_SLUG, PRIVATE_CATEGORY),
+    ] {
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            "XML-RPC Page Select Permission Source",
+            "XML-RPC page select permission source.",
+        )
+        .await;
+        set_listpages_test_category_slug(&runner, site_id, slug, category).await;
+    }
+
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("page selection permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(SAMPLE_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let selected = run_endpoint!(
+        runner,
+        page_select,
+        json!({
+            "site": "scp-wiki",
+            "categories": [VISIBLE_CATEGORY, PRIVATE_CATEGORY],
+            "order": "slug asc",
+        }),
+    );
+
+    assert_eq!(selected, [VISIBLE_SLUG.to_owned()]);
+}
+
+#[tokio::test]
 async fn page_select_filters_pages_with_page_query_semantics() {
     const TAG: &str = "xmlrpc-page-select-target";
 
@@ -16758,7 +16956,15 @@ async fn page_select_treats_blank_optional_filters_as_absent() {
 
 #[tokio::test]
 async fn page_select_rejects_non_finite_rating_filters() {
-    let runner = TestRunner::setup().await;
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site.site.site_id),
+        page_reference: None,
+    });
 
     for rating in ["NaN", "inf", "-infinity"] {
         let error = run_endpoint_err!(
@@ -20544,6 +20750,15 @@ async fn page_query_score_order_returns_results() {
     let pages = PageQueryService::find(runner.context(), base_query.clone())
         .await
         .expect("score ordering should not fail");
+
+    let error = PageQueryService::find_with_hard_candidate_limit(
+        runner.context(),
+        base_query.clone(),
+        2,
+    )
+    .await
+    .expect_err("a hard candidate cap must fail closed before score aggregation");
+    assert_contains_error!(error, ErrorType::PageQuery);
 
     let ordered = pages
         .pages

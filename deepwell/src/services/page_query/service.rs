@@ -233,11 +233,44 @@ impl PageQueryService {
         Self::find_with_metadata_cached(ctx, query, None, None).await
     }
 
+    pub async fn find_with_hard_candidate_limit(
+        ctx: &ServiceContext<'_>,
+        query: PageQuery<'_>,
+        candidate_limit: u64,
+    ) -> Result<FoundPages> {
+        Ok(Self::find_with_metadata_cached_and_hard_candidate_limit(
+            ctx,
+            query,
+            None,
+            None,
+            Some(candidate_limit),
+        )
+        .await?
+        .pages)
+    }
+
     pub(crate) async fn find_with_metadata_cached(
         ctx: &ServiceContext<'_>,
         query: PageQuery<'_>,
         score_filter_cache: Option<&mut PageQueryScoreFilterCache>,
         score_filter_session: Option<&mut PageQueryScoreFilterSession>,
+    ) -> Result<PageQueryResultEnvelope> {
+        Self::find_with_metadata_cached_and_hard_candidate_limit(
+            ctx,
+            query,
+            score_filter_cache,
+            score_filter_session,
+            None,
+        )
+        .await
+    }
+
+    async fn find_with_metadata_cached_and_hard_candidate_limit(
+        ctx: &ServiceContext<'_>,
+        query: PageQuery<'_>,
+        score_filter_cache: Option<&mut PageQueryScoreFilterCache>,
+        score_filter_session: Option<&mut PageQueryScoreFilterSession>,
+        hard_candidate_limit: Option<u64>,
     ) -> Result<PageQueryResultEnvelope> {
         let queried_site_id = query.queried_site_id.unwrap_or(query.current_site_id);
         let PageQuery {
@@ -920,7 +953,9 @@ impl PageQueryService {
 
         let filtering_deferred_to_rust = !data_form_fields.is_empty();
         let ordering_deferred_to_rust = score_order || data_form_order;
-        let defer_offset_limit = ordering_deferred_to_rust || filtering_deferred_to_rust;
+        let defer_offset_limit = ordering_deferred_to_rust
+            || filtering_deferred_to_rust
+            || hard_candidate_limit.is_some();
         let sql_limit_offset_applied =
             !defer_offset_limit && (offset > 0 || pagination.limit.is_some());
         if !defer_offset_limit {
@@ -930,6 +965,8 @@ impl PageQueryService {
             if let Some(limit) = pagination.limit {
                 query = query.limit(limit);
             }
+        } else if let Some(candidate_limit) = hard_candidate_limit {
+            query = query.limit(candidate_limit.saturating_add(1));
         } else if let Some(candidate_limit) = candidate_limit {
             query = query.limit(candidate_limit);
         }
@@ -948,6 +985,15 @@ impl PageQueryService {
 
         // Execute it!
         let mut pages = query.all(txn).await.or_raise(make_error)?;
+        if let Some(candidate_limit) = hard_candidate_limit
+            && pages.len() > usize::try_from(candidate_limit).unwrap_or(usize::MAX)
+        {
+            return Err(Error::new(
+                format!("page query candidate limit of {candidate_limit} pages exceeded"),
+                ErrorType::PageQuery,
+            )
+            .into());
+        }
         let candidate_count = Some(pages.len());
         // Both deferred paths resolve in Rust over the fetched candidate set, so
         // a scan that filled its bound may be missing rows that belong in the

@@ -95,7 +95,10 @@ export async function selectTags(call: XmlRpcCall, requestIp: string): Promise<s
   )
 }
 
-export async function selectPages(call: XmlRpcCall): Promise<string[]> {
+export async function selectPages(
+  call: XmlRpcCall,
+  requestIp: string
+): Promise<string[]> {
   const params = getStructParam(call, 0, "params")
   const site = getRequiredStructString(params, "site")
   const deepwellParams: DeepwellStringParams & {
@@ -136,8 +139,12 @@ export async function selectPages(call: XmlRpcCall): Promise<string[]> {
     validatePageSelectOrder
   )
 
+  const principal = await getXmlRpcWritePrincipal(requestIp)
+
   return expectDeepwellStringArray(
-    await requestDeepwell("page_select", deepwellParams),
+    await requestDeepwell("page_select", deepwellParams, {
+      sessionToken: principal.sessionToken
+    }),
     "page_select"
   )
 }

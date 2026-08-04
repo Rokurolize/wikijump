@@ -446,10 +446,14 @@ export interface PageDeletedGet {
   rating: number
 }
 export async function pageDeletedGet(
-  siteId: number,
-  slug: string,
   requestContext: RequestContext
 ): Promise<PageDeletedGet[]> {
+  const siteId = requestContext?.siteId
+  const slug = requestContext?.page
+  if (siteId === undefined || typeof slug !== "string") {
+    throw new Error("Deleted page lookup requires trusted site and page context")
+  }
+
   return client.request(
     "page_get_deleted",
     {
