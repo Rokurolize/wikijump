@@ -7,7 +7,7 @@ import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
 import {main as runCiStatusCli, parseArgs as parseCiStatusArgs, usage as ciStatusUsage} from "../scripts/ci-status.mjs";
-import {collectCiStatus, redactText} from "../src/ci-status.mjs";
+import {collectCiStatus, isCachePathTrusted, redactText} from "../src/ci-status.mjs";
 
 const PACKAGE_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const CLI_SCRIPT = fileURLToPath(new URL("../scripts/ci-status.mjs", import.meta.url));
@@ -78,9 +78,9 @@ test("miss fetches once, writes an artifact, and computes passing required check
 
 test("hit serves fresh cache without calling fetchers", async (t) => {
   const statusPath = await tempStatus(t);
-  await collectCiStatus({statusPath, nowMs: 1000, fetchers: makeFetchers().fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  await collectCiStatus({statusPath, nowMs: 1000, fetchers: makeFetchers().fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
   const second = makeFetchers();
-  const artifact = await collectCiStatus({statusPath, nowMs: 1500, fetchers: second.fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  const artifact = await collectCiStatus({statusPath, nowMs: 1500, fetchers: second.fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
 
   assert.equal(artifact.cacheStatus, "hit");
   assert.equal(artifact.cacheReason, "fresh");
@@ -91,9 +91,9 @@ test("hit serves fresh cache without calling fetchers", async (t) => {
 test("pending artifacts use the short ttl and become stale before completed ttl", async (t) => {
   const statusPath = await tempStatus(t);
   const pending = makeFetchers({rollup: [rollup("build", "IN_PROGRESS", null)], protection: {strict: true, contexts: ["build"]}});
-  await collectCiStatus({statusPath, nowMs: 1000, ttlMs: 100, completedTtlMs: 1000, fetchers: pending.fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  await collectCiStatus({statusPath, nowMs: 1000, ttlMs: 100, completedTtlMs: 1000, fetchers: pending.fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
   const second = makeFetchers();
-  const artifact = await collectCiStatus({statusPath, nowMs: 1200, ttlMs: 100, completedTtlMs: 1000, fetchers: second.fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  const artifact = await collectCiStatus({statusPath, nowMs: 1200, ttlMs: 100, completedTtlMs: 1000, fetchers: second.fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
 
   assert.equal(artifact.cacheStatus, "stale");
   assert.equal(artifact.cacheReason, "ttl-expired");
@@ -102,9 +102,9 @@ test("pending artifacts use the short ttl and become stale before completed ttl"
 
 test("completed artifacts use the longer completed ttl", async (t) => {
   const statusPath = await tempStatus(t);
-  await collectCiStatus({statusPath, nowMs: 1000, ttlMs: 100, completedTtlMs: 1000, fetchers: makeFetchers().fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  await collectCiStatus({statusPath, nowMs: 1000, ttlMs: 100, completedTtlMs: 1000, fetchers: makeFetchers().fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
   const second = makeFetchers();
-  const artifact = await collectCiStatus({statusPath, nowMs: 1200, ttlMs: 100, completedTtlMs: 1000, fetchers: second.fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  const artifact = await collectCiStatus({statusPath, nowMs: 1200, ttlMs: 100, completedTtlMs: 1000, fetchers: second.fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
 
   assert.equal(artifact.cacheStatus, "hit");
   assert.deepEqual(second.calls, {view: 0, branch: 0, checkRuns: 0, protection: 0});
@@ -120,6 +120,39 @@ test("local head sha changes stale a pr cache", async (t) => {
   assert.equal(artifact.cacheReason, "head-sha-changed");
   assert.equal(second.calls.view, 1);
   assert.equal(artifact.subject.headSha, SHA_Y);
+});
+
+test("cache reads require local head provenance for PR and SHA subjects", async (t) => {
+  const prPath = await tempStatus(t);
+  await collectCiStatus({statusPath: prPath, nowMs: 1000, fetchers: makeFetchers({headSha: SHA_X}).fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
+  const prFetch = makeFetchers();
+  const prArtifact = await collectCiStatus({statusPath: prPath, nowMs: 1100, fetchers: prFetch.fetchers, localGit: noLocalGit(), subject: {kind: "pr", prNumber: 331}});
+  assert.equal(prArtifact.cacheStatus, "miss");
+  assert.equal(prArtifact.cacheReason, "head-sha-unavailable");
+  assert.equal(prFetch.calls.view, 1);
+
+  const shaPath = await tempStatus(t);
+  await collectCiStatus({statusPath: shaPath, nowMs: 1000, fetchers: makeFetchers().fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "sha", sha: SHA_X}});
+  const shaFetch = makeFetchers();
+  const shaArtifact = await collectCiStatus({statusPath: shaPath, nowMs: 1100, fetchers: shaFetch.fetchers, localGit: noLocalGit(), subject: {kind: "sha", sha: SHA_X}});
+  assert.equal(shaArtifact.cacheStatus, "miss");
+  assert.equal(shaArtifact.cacheReason, "head-sha-unavailable");
+  assert.equal(shaFetch.calls.checkRuns, 1);
+});
+
+test("future-dated cache artifacts are stale", async (t) => {
+  const statusPath = await tempStatus(t);
+  await collectCiStatus({statusPath, nowMs: 2000, fetchers: makeFetchers({headSha: SHA_X}).fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
+  const second = makeFetchers();
+  const artifact = await collectCiStatus({statusPath, nowMs: 1000, fetchers: second.fetchers, localGit: noLocalGit(SHA_X), subject: {kind: "pr", prNumber: 331}});
+
+  assert.equal(artifact.cacheStatus, "stale");
+  assert.equal(artifact.cacheReason, "future-fetched-at");
+  assert.equal(second.calls.view, 1);
+});
+
+test("tracked files cannot be used as CI status cache paths", () => {
+  assert.equal(isCachePathTrusted(path.join(PACKAGE_ROOT, "src", "ci-status.mjs")), false);
 });
 
 test("refresh bypasses a fresh cache", async (t) => {
