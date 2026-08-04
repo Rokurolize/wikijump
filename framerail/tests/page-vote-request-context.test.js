@@ -38,6 +38,19 @@ test("vote mutation actions forward the trusted route request context", async ()
   }
 })
 
+test("page score actions use only trusted route context", async () => {
+  const source = await readFile(pageActionsSourceUrl, "utf8")
+  const start = source.indexOf("export async function pageScoreAction(")
+  const end = source.indexOf("\nconst pageIdActionSchema", start)
+  assert.notEqual(start, -1)
+  assert.notEqual(end, -1)
+  const body = source.slice(start, end)
+
+  assert.match(body, /resolvePageActionRequestContext\(event\)/u)
+  assert.match(body, /pageScore\(context\.requestContext\)/u)
+  assert.doesNotMatch(body, /readActionJson|pageIdActionSchema|siteId|pageId|slug/u)
+})
+
 test("vote mutation RPCs derive actor and site from request context", async () => {
   const source = await readFile(pageRpcSourceUrl, "utf8")
   const cases = [
@@ -52,6 +65,20 @@ test("vote mutation RPCs derive actor and site from request context", async () =
     assert.match(body, /client\.request\([\s\S]*requestContext\s*\)/u)
     assert.doesNotMatch(body, /userId|user_id/u)
   }
+})
+
+test("page score RPCs derive the target from request context", async () => {
+  const source = await readFile(pageRpcSourceUrl, "utf8")
+  const start = source.indexOf("export async function pageScore(")
+  assert.notEqual(start, -1)
+  const body = source.slice(start)
+
+  assert.match(body, /requestContext: RequestContext/u)
+  assert.match(body, /requestContext\?\.siteId/u)
+  assert.match(body, /requestContext\?\.page/u)
+  assert.match(body, /"page_get_score"/u)
+  assert.match(body, /client\.request\([\s\S]*requestContext\s*\)/u)
+  assert.doesNotMatch(body, /siteId: number|pageId: Optional<number>|slug: string/u)
 })
 
 test("vote mutation panes send only the selected page", async () => {
@@ -71,4 +98,16 @@ test("vote mutation panes send only the selected page", async () => {
     assert.doesNotMatch(body, /siteId/u)
     assert.match(body, /pageId: data\.page\?\.page_id/u)
   }
+})
+
+test("page score pane sends no client-selected target", async () => {
+  const source = await readFile(votePaneSourceUrl, "utf8")
+  const start = source.indexOf("async function fetchVoteRating")
+  const end = source.indexOf("\n  function starAsset", start)
+  assert.notEqual(start, -1)
+  assert.notEqual(end, -1)
+  const body = source.slice(start, end)
+
+  assert.match(body, /method: "POST"/u)
+  assert.doesNotMatch(body, /siteId|pageId|body:/u)
 })

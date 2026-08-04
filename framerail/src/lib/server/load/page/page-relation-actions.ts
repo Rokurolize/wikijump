@@ -118,16 +118,9 @@ export async function pageVoteRemoveAction(event: RequestEvent) {
 }
 
 export async function pageScoreAction(event: RequestEvent) {
-  const { request, params } = event
-  const { slug } = params
-
   try {
-    const requestData = await readActionJson(request, pageIdActionSchema)
-    const { siteId, pageId } = requestData
-    const context = await resolvePageActionRequestContext(event, {
-      submittedSiteId: siteId
-    })
-    const res = await pageScore(siteId, pageId, slug, context.requestContext)
+    const context = await resolvePageActionRequestContext(event)
+    const res = await pageScore(context.requestContext)
     return { res }
   } catch (error) {
     return failForActionError(error)

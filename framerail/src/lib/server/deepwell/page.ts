@@ -497,17 +497,18 @@ export interface PageScore {
   page_id: number
   score: number
 }
-export async function pageScore(
-  siteId: number,
-  pageId: Optional<number>,
-  slug: string,
-  requestContext: RequestContext
-): Promise<PageScore> {
+export async function pageScore(requestContext: RequestContext): Promise<PageScore> {
+  const siteId = requestContext?.siteId
+  const page = requestContext?.page
+  if (siteId === undefined || page === undefined) {
+    throw new Error("Page score lookup requires trusted site and page context")
+  }
+
   return client.request(
     "page_get_score",
     {
       site_id: siteId,
-      page: pageId ?? slug
+      page
     },
     requestContext
   )
