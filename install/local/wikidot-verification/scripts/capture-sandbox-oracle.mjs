@@ -203,6 +203,89 @@ async function withTimeout(operation, label, timeoutMs = 90_000) {
   }
 }
 
+function captureFailure({url, error}) {
+  return {
+    input_url: url,
+    final_url: null,
+    navigation_status: 0,
+    failures: [],
+    capture_error: {
+      name: error?.name ?? "Error",
+      message: error?.message ?? String(error),
+    },
+    first_paint: null,
+    document: {
+      geometry: {},
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {status: "capture_error"},
+    },
+    geometry: {},
+    page_chrome_skeleton: {schema: PAGE_CHROME_SKELETON.schema, links: []},
+    dom_signature: null,
+    dom_signatures: [],
+    attribute_signatures: [],
+    rendered_images: 0,
+    broken_images: [],
+  };
+}
+
+async function captureFixtureObservation({
+  context,
+  page,
+  url,
+  label,
+  index,
+  outputDir,
+  contract,
+  viewport,
+  timeoutMs,
+  settleMs,
+  fixtureId,
+}) {
+  let raw;
+  try {
+    raw = await withTimeout(
+      captureBrowserParityObservation({
+        context,
+        page,
+        url,
+        label,
+        index,
+        outputDir,
+        contract,
+        viewport,
+        timeoutMs,
+        settleMs,
+      }),
+      `${label} capture ${fixtureId}`,
+      900_000,
+    );
+  } catch (error) {
+    return {
+      capture: captureFailure({url, error}),
+      validation_error: {name: error?.name ?? "Error", message: error?.message ?? String(error)},
+    };
+  }
+  try {
+    return {
+      capture: validateSandboxOracleCapture(raw, `${label} capture ${fixtureId}`),
+      validation_error: null,
+    };
+  } catch (error) {
+    return {
+      capture: {
+        ...raw,
+        capture_validation_error: {
+          name: error?.name ?? "Error",
+          message: error?.message ?? String(error),
+        },
+      },
+      validation_error: {name: error?.name ?? "Error", message: error?.message ?? String(error)},
+    };
+  }
+}
+
 async function main(argv) {
   const args = parseArgs(argv);
   await ensureEmptyDirectory(args.outputDir);
@@ -241,6 +324,9 @@ async function main(argv) {
       let localPage = null;
       let liveAttempted = false;
       let localAttempted = false;
+      let liveCapture = null;
+      let localCapture = null;
+      let contract = null;
       try {
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "inspect"}));
         if (await withTimeout(wikidot.inspect(liveResource), `live inspect ${fixture.fixture_id}`) !== null) throw new Error(`live oracle page already exists: ${liveResource.slug}`);
@@ -251,11 +337,16 @@ async function main(argv) {
         localAttempted = true;
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "create-local"}));
         localPage = await withTimeout(wikijump.create(localResource, {source: source.source}), `local create ${fixture.fixture_id}`);
-        const contract = browserContract();
+        contract = browserContract();
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-live"}));
-        const liveCapture = validateSandboxOracleCapture(await withTimeout(captureBrowserParityObservation({context: browser.context, page: liveBrowserPage, url: liveResource.url, label: "live", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs}), `live capture ${fixture.fixture_id}`, 900_000), `live capture ${fixture.fixture_id}`);
+        const liveResult = await captureFixtureObservation({context: browser.context, page: liveBrowserPage, url: liveResource.url, label: "live", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs, fixtureId: fixture.fixture_id});
+        liveCapture = liveResult.capture;
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-local"}));
-        const localCapture = validateSandboxOracleCapture(await withTimeout(captureBrowserParityObservation({context: browser.context, page: localBrowserPage, url: localResource.url, label: "local", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs}), `local capture ${fixture.fixture_id}`, 900_000), `local capture ${fixture.fixture_id}`);
+        const localResult = await captureFixtureObservation({context: browser.context, page: localBrowserPage, url: localResource.url, label: "local", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs, fixtureId: fixture.fixture_id});
+        localCapture = localResult.capture;
+        if (liveResult.validation_error || localResult.validation_error) {
+          console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-validation-failed", live: liveResult.validation_error, local: localResult.validation_error}));
+        }
         captures.push({fixture_id: fixture.fixture_id, live: liveCapture, local: localCapture, resources: {live: liveResource, local: localResource}});
         contracts.push({fixture_id: fixture.fixture_id, contract});
         cleanup.push({fixture_id: fixture.fixture_id, live: {resource: liveResource, expected: {title: source.title, source_sha256: liveResource.source_sha256, tags: liveResource.tags}, identity: livePage}, local: {resource: localResource, expected: {title: source.title, source_sha256: localResource.source_sha256, tags: localResource.tags}, identity: localPage}});
@@ -269,6 +360,15 @@ async function main(argv) {
           await withTimeout(cleanupCreatedPage(wikidot, liveResource, livePage), `live cleanup ${fixture.fixture_id}`);
           livePage = null;
         }
+      }
+      if (liveCapture === null || localCapture === null) {
+        const error = new Error("fixture capture did not produce both observations");
+        liveCapture ??= captureFailure({url: liveResource.url, error});
+        localCapture ??= captureFailure({url: localResource.url, error});
+        contract ??= browserContract();
+        captures.push({fixture_id: fixture.fixture_id, live: liveCapture, local: localCapture, resources: {live: liveResource, local: localResource}});
+        contracts.push({fixture_id: fixture.fixture_id, contract});
+        console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-recorded-failure"}));
       }
       await writeCaptureProgress(args.outputDir, captures, contracts);
     }
