@@ -393,7 +393,7 @@ async fn create_user(ctx: &ServiceContext<'_>, fixture_n: u64, label: &str) -> i
             name: format!("Perm Test {fixture_n} {label}"),
             email: format!("perm-{fixture_n}-{label}@email.com"),
             locales: vec![str!("en")],
-            password: String::from("password"),
+            password: String::from("password-fixture"),
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,

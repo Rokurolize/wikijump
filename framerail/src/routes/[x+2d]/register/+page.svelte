@@ -89,6 +89,11 @@
         type="password"
         bind:value={$form.password}
       />
+      {#if $errors.password}
+        <p class="error">
+          {data.internationalization?.["error-form.password-too-short"]}
+        </p>
+      {/if}
     </div>
 
     <label for="confirm-password">

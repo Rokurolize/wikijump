@@ -27,7 +27,26 @@ use tokio::time;
 #[derive(Debug)]
 pub struct PasswordService;
 
+/// Minimum Unicode code-point count for a regular account password.
+pub const ACCOUNT_PASSWORD_MIN_CODE_POINTS: usize = 15;
+
 impl PasswordService {
+    /// Validates and hashes a password used by a regular user account.
+    pub fn new_account_hash(password: &str) -> Result<String> {
+        let length = password.chars().count();
+        if length < ACCOUNT_PASSWORD_MIN_CODE_POINTS {
+            bail!(Error::new(
+                "account password is too short",
+                ErrorType::UserPasswordTooShort {
+                    length,
+                    minimum: ACCOUNT_PASSWORD_MIN_CODE_POINTS,
+                },
+            ));
+        }
+
+        Self::new_hash(password)
+    }
+
     /// Produces a new password hash from the input string.
     ///
     /// Generates a salt securely and performs Argon-2 hashing
@@ -136,6 +155,30 @@ mod tests {
         PasswordService::verify_internal(&password, &hash).unwrap();
         assert!(PasswordService::verify_internal(&wrong_password, &hash).is_err());
         assert!(PasswordService::verify_internal(&password, "not phc").is_err());
+    }
+
+    #[test]
+    fn account_password_hash_requires_fifteen_unicode_code_points() {
+        for (password, expected_length) in
+            [("", 0), (" ", 1), ("a", 1), ("fourteen-chars", 14)]
+        {
+            let error = PasswordService::new_account_hash(password).unwrap_err();
+            assert!(matches!(
+                error.error_type,
+                ErrorType::UserPasswordTooShort { length, minimum }
+                    if length == expected_length && minimum == ACCOUNT_PASSWORD_MIN_CODE_POINTS,
+            ));
+        }
+
+        let password = "ééééééééééééééé";
+        let hash = PasswordService::new_account_hash(password).unwrap();
+        PasswordService::verify_internal(password, &hash).unwrap();
+    }
+
+    #[test]
+    fn generic_hash_still_supports_legacy_short_secrets() {
+        let hash = PasswordService::new_hash("a").unwrap();
+        PasswordService::verify_internal("a", &hash).unwrap();
     }
 
     #[tokio::test]

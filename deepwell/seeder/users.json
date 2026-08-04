@@ -111,7 +111,7 @@
         "name": "Guest",
         "slug": "guest",
         "email": "guest@wikijump",
-        "password": "guestuser1",
+        "password": "guestuser123456",
         "locales": ["en"],
         "real_name": "Guest",
         "gender": null,

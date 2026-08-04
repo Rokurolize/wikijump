@@ -43,7 +43,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use str_macro::str;
 
 static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
-const PASSWORD: &str = "password";
+const PASSWORD: &str = "password-fixture";
 const RECOVERY_CODE: &str = "mfa-recovery-code";
 const TEST_MFA_SECRET: &str = "ABCDEFGHIJKLMNOP";
 

@@ -1,4 +1,8 @@
 import defaults from "$lib/defaults"
+import {
+  ACCOUNT_PASSWORD_TOO_SHORT,
+  accountPasswordMeetsMinimum
+} from "$lib/account-password-policy.js"
 
 import { translate } from "$lib/server/deepwell/translate"
 import { userCreate } from "$lib/server/deepwell/user"
@@ -13,6 +17,7 @@ import { superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
 import {
   array,
+  check,
   email,
   forward,
   minLength,
@@ -56,7 +61,8 @@ export async function loadRegisterPage(request: Request, preloadData: PreloadDat
     "create-account": {},
 
     // errors
-    "error-form.password-mismatch": {}
+    "error-form.password-mismatch": {},
+    "error-form.password-too-short": {}
   }
 
   const internationalization = await translate(locales, translateKeys)
@@ -108,7 +114,10 @@ const registerSchema = pipe(
   object({
     username: pipe(string(), minLength(1)),
     email: pipe(string(), email(), minLength(1)),
-    password: pipe(string(), minLength(1)),
+    password: pipe(
+      string(),
+      check(accountPasswordMeetsMinimum, ACCOUNT_PASSWORD_TOO_SHORT)
+    ),
     confirmPassword: pipe(string(), minLength(1)),
     locale: pipe(optional(array(string()), ["en"]), minLength(1))
   }),
