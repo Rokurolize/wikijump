@@ -13,7 +13,7 @@
 mod arena;
 mod selector;
 
-pub(super) use self::arena::{EmitRangeIndex, EmitSetArena};
+pub(super) use self::arena::{EmitRangeIndex, EmitSetArena, EmitSetResult};
 pub(super) use self::selector::{
     DelimiterIdentity as ParserDelimiterIdentity, ExactEffect, ParserCandidate,
     ParserDomain, select_two_phase_candidates,

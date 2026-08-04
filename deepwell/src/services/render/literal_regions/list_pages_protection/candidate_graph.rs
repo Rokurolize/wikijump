@@ -29,9 +29,9 @@ use crate::services::render::literal_regions::block_candidates::{
 };
 use crate::services::render::literal_regions::downstream_protectors::collect_downstream_protector_ranges_with_runtime_heads;
 use crate::services::render::literal_regions::parser_candidates::{
-    EmitRangeIndex, EmitSetArena, ExactEffect, ParserCandidate, ParserDelimiterIdentity,
-    ParserDomain, ParserOwnerCandidate, ParserOwnerCertainty, ParserOwnerKind,
-    select_two_phase_candidates,
+    EmitRangeIndex, EmitSetArena, EmitSetResult, ExactEffect, ParserCandidate,
+    ParserDelimiterIdentity, ParserDomain, ParserOwnerCandidate, ParserOwnerCertainty,
+    ParserOwnerKind, select_two_phase_candidates,
 };
 use crate::services::render::literal_regions::text_owners::{
     collect_monospace_owner_ranges_with_text_tokens,
@@ -67,6 +67,7 @@ pub(super) fn collect_candidate_graph_ranges(
     include_base_candidates: bool,
 ) -> Result<Vec<Range<usize>>, usize> {
     let mut arena = EmitSetArena::default();
+    let source_len = source.len();
     let text_tokens = TextTokenIndex::new(source);
     let heads = (source.len() < u32::MAX as usize)
         .then(|| HeadContext::new_with_text_tokens(source, &text_tokens));
@@ -79,7 +80,8 @@ pub(super) fn collect_candidate_graph_ranges(
                 &text_tokens,
             ),
             PRECEDENCE_BASE,
-        )
+            source_len,
+        )?
     } else {
         Vec::new()
     };
@@ -89,19 +91,22 @@ pub(super) fn collect_candidate_graph_ranges(
             || collect_block_candidates(source),
             |heads| collect_block_candidates_with_heads(source, heads),
         ),
-    );
+        source_len,
+    )?;
     let (text_links, colors) = partition_text_candidates(
         collect_text_owner_candidates_with_text_tokens(source, &text_tokens),
     );
-    let links = adapt_text_candidates(&mut arena, text_links);
+    let links = adapt_text_candidates(&mut arena, text_links, source_len)?;
     let monospace = adapt_exact_ranges(
         &mut arena,
         collect_monospace_owner_ranges_with_text_tokens(source, &text_tokens),
         ParserDomain::Ftml,
         PRECEDENCE_MONOSPACE,
         DELIMITER_NAMESPACE_MONOSPACE,
-    );
-    let color_descriptors = adapt_color_descriptor_candidates(&mut arena, colors.clone());
+        source_len,
+    )?;
+    let color_descriptors =
+        adapt_color_descriptor_candidates(&mut arena, colors.clone(), source_len)?;
     let pinned_css_ranges = heads.as_ref().map_or_else(
         || collect_pinned_css_module_candidates(source),
         |heads| collect_pinned_css_module_candidates_with_heads(source, heads),
@@ -112,14 +117,16 @@ pub(super) fn collect_candidate_graph_ranges(
         ParserDomain::Ftml,
         PRECEDENCE_PINNED_CSS,
         DELIMITER_NAMESPACE_CSS,
-    );
+        source_len,
+    )?;
     let pinned_anchors = adapt_exact_ranges(
         &mut arena,
         collect_pinned_anchor_candidates_with_text_tokens(source, &text_tokens),
         ParserDomain::Ftml,
         PRECEDENCE_PINNED_ANCHOR,
         DELIMITER_NAMESPACE_ANCHOR,
-    );
+        source_len,
+    )?;
     let head_candidates = heads.as_ref().map_or_else(
         || collect_head_candidate_streams(source),
         |heads| collect_head_candidate_streams_with_context(source, heads, &text_tokens),
@@ -171,21 +178,24 @@ pub(super) fn collect_candidate_graph_ranges(
         ParserDomain::CompatPreFtml,
         PRECEDENCE_COMPAT_CSS,
         DELIMITER_NAMESPACE_CSS,
-    );
+        source_len,
+    )?;
     let quotes = adapt_exact_ranges(
         &mut arena,
         original_quote_ranges.to_vec(),
         ParserDomain::Ftml,
         PRECEDENCE_QUOTE,
         DELIMITER_NAMESPACE_BASE + 90,
-    );
+        source_len,
+    )?;
     let compat_quotes = adapt_exact_ranges(
         &mut arena,
         compat_quote_ranges,
         ParserDomain::CompatPreFtml,
         PRECEDENCE_QUOTE,
         DELIMITER_NAMESPACE_BASE + 91,
-    );
+        source_len,
+    )?;
     let original_child_ranges = select_two_phase_candidates(
         &arena,
         &[
@@ -203,9 +213,10 @@ pub(super) fn collect_candidate_graph_ranges(
         &[],
     )
     .ranges;
-    let original_child_index = EmitRangeIndex::new(&mut arena, original_child_ranges);
+    let original_child_index =
+        arena_result(EmitRangeIndex::new(&mut arena, original_child_ranges), source_len)?;
     let original_colors =
-        adapt_color_candidates(&mut arena, &original_child_index, colors.clone());
+        adapt_color_candidates(&mut arena, &original_child_index, colors.clone(), source_len)?;
     let original_stage_selection = select_two_phase_candidates(
         &arena,
         &[
@@ -239,8 +250,8 @@ pub(super) fn collect_candidate_graph_ranges(
         &[compat_css.clone(), compat_quotes.clone()],
     )
     .ranges;
-    let child_index = EmitRangeIndex::new(&mut arena, child_ranges);
-    let colors = adapt_color_candidates(&mut arena, &child_index, colors);
+    let child_index = arena_result(EmitRangeIndex::new(&mut arena, child_ranges), source_len)?;
+    let colors = adapt_color_candidates(&mut arena, &child_index, colors, source_len)?;
 
     let selected = select_two_phase_candidates(
         &arena,
@@ -329,12 +340,13 @@ fn adapt_runtime_module_heads(
 fn adapt_color_descriptor_candidates(
     arena: &mut EmitSetArena,
     candidates: Vec<ParserOwnerCandidate>,
-) -> Vec<ParserCandidate> {
+    source_len: usize,
+) -> CandidateGraphResult<Vec<ParserCandidate>> {
     candidates
         .into_iter()
         .map(|candidate| {
-            let (leaf, _) = arena.leaf(candidate.range.clone());
-            ParserCandidate::exact(
+            let (leaf, _) = arena_result(arena.leaf(candidate.range.clone()), source_len)?;
+            Ok(ParserCandidate::exact(
                 PRECEDENCE_COLOR,
                 Some(ParserDelimiterIdentity {
                     namespace: DELIMITER_NAMESPACE_COLOR,
@@ -347,7 +359,7 @@ fn adapt_color_descriptor_candidates(
                     own_emit: Some(leaf),
                     child_emit: EmitSetArena::EMPTY,
                 },
-            )
+            ))
         })
         .collect()
 }
@@ -371,7 +383,8 @@ fn adapt_base_candidates(
     arena: &mut EmitSetArena,
     candidates: Vec<BaseCandidate>,
     precedence: u16,
-) -> Vec<ParserCandidate> {
+    source_len: usize,
+) -> CandidateGraphResult<Vec<ParserCandidate>> {
     candidates
         .into_iter()
         .map(|candidate| {
@@ -382,6 +395,7 @@ fn adapt_base_candidates(
                 candidate.opener,
                 candidate.terminator,
                 precedence,
+                source_len,
             )
         })
         .collect()
@@ -390,7 +404,8 @@ fn adapt_base_candidates(
 fn adapt_block_candidates(
     arena: &mut EmitSetArena,
     candidates: Vec<BlockCandidate>,
-) -> Vec<ParserCandidate> {
+    source_len: usize,
+) -> CandidateGraphResult<Vec<ParserCandidate>> {
     candidates
         .into_iter()
         .map(|candidate| {
@@ -401,6 +416,7 @@ fn adapt_block_candidates(
                 candidate.opener,
                 candidate.terminator,
                 PRECEDENCE_BLOCK,
+                source_len,
             )
         })
         .collect()
@@ -413,9 +429,10 @@ fn adapt_delimited_candidate(
     opener: DelimiterIdentity,
     terminator: Option<DelimiterIdentity>,
     precedence: u16,
-) -> ParserCandidate {
-    let (leaf, emit) = arena.leaf(range.clone());
-    match provenance {
+    source_len: usize,
+) -> CandidateGraphResult<ParserCandidate> {
+    let (leaf, emit) = arena_result(arena.leaf(range.clone()), source_len)?;
+    Ok(match provenance {
         BaseCandidateProvenance::ClosedOwner => ParserCandidate::exact(
             precedence,
             Some(adapt_delimiter(opener)),
@@ -430,17 +447,18 @@ fn adapt_delimited_candidate(
         BaseCandidateProvenance::FailClosedProtection => {
             ParserCandidate::policy(range.start, precedence, emit)
         }
-    }
+    })
 }
 
 fn adapt_text_candidates(
     arena: &mut EmitSetArena,
     candidates: Vec<ParserOwnerCandidate>,
-) -> Vec<ParserCandidate> {
+    source_len: usize,
+) -> CandidateGraphResult<Vec<ParserCandidate>> {
     candidates
         .into_iter()
         .map(|candidate| {
-            let (leaf, emit) = arena.leaf(candidate.range.clone());
+            let (leaf, emit) = arena_result(arena.leaf(candidate.range.clone()), source_len)?;
             let (precedence, namespace) = match candidate.kind {
                 ParserOwnerKind::TextLink => {
                     (PRECEDENCE_TEXT_LINK, DELIMITER_NAMESPACE_TEXT_LINK)
@@ -449,7 +467,7 @@ fn adapt_text_candidates(
                 #[cfg(test)]
                 _ => (PRECEDENCE_BASE, DELIMITER_NAMESPACE_BASE + 80),
             };
-            match candidate.certainty {
+            Ok(match candidate.certainty {
                 ParserOwnerCertainty::Exact => {
                     let claim_end = candidate
                         .terminator_start
@@ -474,7 +492,7 @@ fn adapt_text_candidates(
                 ParserOwnerCertainty::ProtectionOnly => {
                     ParserCandidate::policy(candidate.range.start, precedence, emit)
                 }
-            }
+            })
         })
         .collect()
 }
@@ -483,18 +501,21 @@ fn adapt_color_candidates(
     arena: &mut EmitSetArena,
     child_index: &EmitRangeIndex,
     candidates: Vec<ParserOwnerCandidate>,
-) -> Vec<ParserCandidate> {
+    source_len: usize,
+) -> CandidateGraphResult<Vec<ParserCandidate>> {
     candidates
         .into_iter()
         .map(|candidate| {
-            let (leaf, emit) = arena.leaf(candidate.range.clone());
-            match candidate.certainty {
+            let (leaf, emit) = arena_result(arena.leaf(candidate.range.clone()), source_len)?;
+            Ok(match candidate.certainty {
                 ParserOwnerCertainty::Exact => {
                     let terminator = candidate
                         .terminator_start
                         .expect("exact color candidates have a terminator");
-                    let child_emit =
-                        child_index.contained_set(arena, candidate.range.end..terminator);
+                    let child_emit = arena_result(
+                        child_index.contained_set(arena, candidate.range.end..terminator),
+                        source_len,
+                    )?;
                     ParserCandidate::exact(
                         PRECEDENCE_COLOR,
                         Some(ParserDelimiterIdentity {
@@ -516,7 +537,7 @@ fn adapt_color_candidates(
                 ParserOwnerCertainty::ProtectionOnly => {
                     ParserCandidate::policy(candidate.range.start, PRECEDENCE_COLOR, emit)
                 }
-            }
+            })
         })
         .collect()
 }
@@ -527,12 +548,13 @@ fn adapt_exact_ranges(
     domain: ParserDomain,
     precedence: u16,
     namespace: u16,
-) -> Vec<ParserCandidate> {
+    source_len: usize,
+) -> CandidateGraphResult<Vec<ParserCandidate>> {
     ranges
         .into_iter()
         .map(|range| {
-            let (leaf, _) = arena.leaf(range.clone());
-            ParserCandidate::exact(
+            let (leaf, _) = arena_result(arena.leaf(range.clone()), source_len)?;
+            Ok(ParserCandidate::exact(
                 precedence,
                 Some(ParserDelimiterIdentity {
                     namespace,
@@ -545,9 +567,15 @@ fn adapt_exact_ranges(
                     own_emit: Some(leaf),
                     child_emit: EmitSetArena::EMPTY,
                 },
-            )
+            ))
         })
         .collect()
+}
+
+type CandidateGraphResult<T> = Result<T, usize>;
+
+fn arena_result<T>(result: EmitSetResult<T>, source_len: usize) -> CandidateGraphResult<T> {
+    result.map_err(|_| source_len)
 }
 
 fn adapt_delimiter(identity: DelimiterIdentity) -> ParserDelimiterIdentity {

@@ -10,13 +10,37 @@
  * (at your option) any later version.
  */
 
+use std::collections::HashMap;
+use std::fmt;
 use std::ops::Range;
+
+const MAX_EMIT_SET_NODES: usize = 262_144;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub(in crate::services::render::literal_regions) struct LeafId(u32);
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub(in crate::services::render::literal_regions) struct EmitSetId(u32);
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::services::render) struct EmitSetBudgetExceeded {
+    max_nodes: usize,
+}
+
+impl fmt::Display for EmitSetBudgetExceeded {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "literal candidate graph exceeds its {}-node render budget",
+            self.max_nodes,
+        )
+    }
+}
+
+impl std::error::Error for EmitSetBudgetExceeded {}
+
+pub(in crate::services::render::literal_regions) type EmitSetResult<T> =
+    Result<T, EmitSetBudgetExceeded>;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum EmitSetNode {
@@ -35,6 +59,8 @@ pub(in crate::services::render::literal_regions) struct EmitSetArena {
     leaves: Vec<Range<usize>>,
     leaf_nodes: Vec<EmitSetId>,
     nodes: Vec<EmitSetNode>,
+    unions: HashMap<(EmitSetId, EmitSetId), EmitSetId>,
+    max_nodes: usize,
 }
 
 #[derive(Debug)]
@@ -50,6 +76,8 @@ impl Default for EmitSetArena {
             leaves: Vec::new(),
             leaf_nodes: Vec::new(),
             nodes: vec![EmitSetNode::Empty],
+            unions: HashMap::new(),
+            max_nodes: MAX_EMIT_SET_NODES,
         }
     }
 }
@@ -61,32 +89,41 @@ impl EmitSetArena {
     pub(in crate::services::render::literal_regions) fn leaf(
         &mut self,
         range: Range<usize>,
-    ) -> (LeafId, EmitSetId) {
+    ) -> EmitSetResult<(LeafId, EmitSetId)> {
         assert!(range.start < range.end, "literal emits must be nonempty");
+        let set = self.next_set_id()?;
         let leaf = LeafId(index_to_u32(self.leaves.len(), "literal leaf"));
         self.leaves.push(range);
-        let set = EmitSetId(index_to_u32(self.nodes.len(), "emit-set node"));
         self.nodes.push(EmitSetNode::Leaf(leaf));
         self.leaf_nodes.push(set);
-        (leaf, set)
+        Ok((leaf, set))
     }
 
     pub(in crate::services::render::literal_regions) fn union(
         &mut self,
         left: EmitSetId,
         right: EmitSetId,
-    ) -> EmitSetId {
+    ) -> EmitSetResult<EmitSetId> {
         self.assert_set(left);
         self.assert_set(right);
         if left == Self::EMPTY {
-            return right;
+            return Ok(right);
         }
         if right == Self::EMPTY || left == right {
-            return left;
+            return Ok(left);
         }
-        let set = EmitSetId(index_to_u32(self.nodes.len(), "emit-set node"));
-        self.nodes.push(EmitSetNode::Union(left, right));
-        set
+        let pair = if left.0 < right.0 {
+            (left, right)
+        } else {
+            (right, left)
+        };
+        if let Some(&set) = self.unions.get(&pair) {
+            return Ok(set);
+        }
+        let set = self.next_set_id()?;
+        self.nodes.push(EmitSetNode::Union(pair.0, pair.1));
+        self.unions.insert(pair, set);
+        Ok(set)
     }
 
     pub(in crate::services::render::literal_regions) fn leaf_set(
@@ -146,13 +183,36 @@ impl EmitSetArena {
             "emit-set ID must belong to this arena",
         );
     }
+
+    fn next_set_id(&self) -> EmitSetResult<EmitSetId> {
+        if self.nodes.len() >= self.max_nodes {
+            return Err(EmitSetBudgetExceeded {
+                max_nodes: self.max_nodes,
+            });
+        }
+        Ok(EmitSetId(index_to_u32(self.nodes.len(), "emit-set node")))
+    }
+
+    #[cfg(test)]
+    fn with_max_nodes(max_nodes: usize) -> Self {
+        assert!(max_nodes > 0, "the empty emit-set node needs a budget slot");
+        Self {
+            max_nodes,
+            ..Self::default()
+        }
+    }
+
+    #[cfg(test)]
+    fn node_count(&self) -> usize {
+        self.nodes.len()
+    }
 }
 
 impl EmitRangeIndex {
     pub(in crate::services::render::literal_regions) fn new(
         arena: &mut EmitSetArena,
         ranges: Vec<Range<usize>>,
-    ) -> Self {
+    ) -> EmitSetResult<Self> {
         debug_assert!(
             ranges.windows(2).all(|pair| pair[0].end <= pair[1].start),
             "indexed emits must be source ordered and disjoint",
@@ -160,24 +220,24 @@ impl EmitRangeIndex {
         let tree_base = ranges.len().max(1).next_power_of_two();
         let mut tree = vec![EmitSetArena::EMPTY; tree_base * 2];
         for (index, range) in ranges.iter().cloned().enumerate() {
-            let (_, set) = arena.leaf(range);
+            let (_, set) = arena.leaf(range)?;
             tree[tree_base + index] = set;
         }
         for index in (1..tree_base).rev() {
-            tree[index] = arena.union(tree[index * 2], tree[index * 2 + 1]);
+            tree[index] = arena.union(tree[index * 2], tree[index * 2 + 1])?;
         }
-        Self {
+        Ok(Self {
             ranges,
             tree_base,
             tree,
-        }
+        })
     }
 
     pub(in crate::services::render::literal_regions) fn contained_set(
         &self,
         arena: &mut EmitSetArena,
         container: Range<usize>,
-    ) -> EmitSetId {
+    ) -> EmitSetResult<EmitSetId> {
         let mut first = self
             .ranges
             .partition_point(|range| range.end <= container.start);
@@ -195,7 +255,7 @@ impl EmitRangeIndex {
             end -= 1;
         }
         if first >= end || self.ranges[first].end > container.end {
-            return EmitSetArena::EMPTY;
+            return Ok(EmitSetArena::EMPTY);
         }
 
         let mut left = self.tree_base + first;
@@ -204,12 +264,12 @@ impl EmitRangeIndex {
         let mut right_set = EmitSetArena::EMPTY;
         while left < right {
             if left % 2 == 1 {
-                left_set = arena.union(left_set, self.tree[left]);
+                left_set = arena.union(left_set, self.tree[left])?;
                 left += 1;
             }
             if right % 2 == 1 {
                 right -= 1;
-                right_set = arena.union(self.tree[right], right_set);
+                right_set = arena.union(self.tree[right], right_set)?;
             }
             left /= 2;
             right /= 2;
@@ -245,8 +305,8 @@ mod tests {
         let mut arena = EmitSetArena::default();
         let mut root = EmitSetArena::EMPTY;
         for index in 0..8_192 {
-            let (_, leaf) = arena.leaf(index * 2..index * 2 + 1);
-            root = arena.union(root, leaf);
+            let (_, leaf) = arena.leaf(index * 2..index * 2 + 1).unwrap();
+            root = arena.union(root, leaf).unwrap();
         }
         assert_eq!(arena.materialize([root]).len(), 8_192);
     }
@@ -254,24 +314,38 @@ mod tests {
     #[test]
     fn duplicate_and_overlapping_leaves_are_coalesced() {
         let mut arena = EmitSetArena::default();
-        let (_, first) = arena.leaf(2..8);
-        let (_, second) = arena.leaf(6..12);
-        let root = arena.union(first, second);
+        let (_, first) = arena.leaf(2..8).unwrap();
+        let (_, second) = arena.leaf(6..12).unwrap();
+        let root = arena.union(first, second).unwrap();
         assert_eq!(arena.materialize([root, first]), vec![2..12]);
     }
 
     #[test]
     fn range_index_reuses_union_nodes_for_contained_children() {
         let mut arena = EmitSetArena::default();
-        let index = EmitRangeIndex::new(&mut arena, vec![1..3, 5..7, 9..11, 13..15]);
-        let middle = index.contained_set(&mut arena, 4..12);
+        let index = EmitRangeIndex::new(&mut arena, vec![1..3, 5..7, 9..11, 13..15]).unwrap();
+        let middle = index.contained_set(&mut arena, 4..12).unwrap();
         assert_eq!(arena.materialize([middle]), vec![5..7, 9..11]);
-        let clipped = index.contained_set(&mut arena, 6..14);
+        let clipped = index.contained_set(&mut arena, 6..14).unwrap();
         assert_eq!(arena.materialize([clipped]), vec![9..11]);
 
         let mut arena = EmitSetArena::default();
-        let index = EmitRangeIndex::new(&mut arena, vec![1..10, 12..14]);
-        let after_left_overlap = index.contained_set(&mut arena, 5..15);
+        let index = EmitRangeIndex::new(&mut arena, vec![1..10, 12..14]).unwrap();
+        let after_left_overlap = index.contained_set(&mut arena, 5..15).unwrap();
         assert_eq!(arena.materialize([after_left_overlap]), vec![12..14]);
+    }
+
+    #[test]
+    fn unordered_union_pairs_are_interned() {
+        let mut arena = EmitSetArena::with_max_nodes(4);
+        let (_, first) = arena.leaf(0..1).unwrap();
+        let (_, second) = arena.leaf(2..3).unwrap();
+        let union = arena.union(first, second).unwrap();
+        let node_count = arena.node_count();
+
+        assert_eq!(arena.union(first, second).unwrap(), union);
+        assert_eq!(arena.union(second, first).unwrap(), union);
+        assert_eq!(arena.node_count(), node_count);
+        assert_eq!(arena.materialize([union]), vec![0..1, 2..3]);
     }
 }
