@@ -386,12 +386,17 @@ export async function pageFileRevision(
   siteId: number,
   pageId: Optional<number>,
   fileId: number,
-  revisionNumber: Optional<number>
+  revisionNumber: Optional<number>,
+  requestContext: RequestContext
 ): Promise<Nullable<FileRevisionModel>> {
-  return client.request("file_revision_get", {
-    site_id: siteId,
-    page_id: pageId,
-    file_id: fileId,
-    revision_number: revisionNumber ?? defaults.page.history.revisionNumber
-  })
+  return client.request(
+    "file_revision_get",
+    {
+      site_id: siteId,
+      page_id: pageId,
+      file_id: fileId,
+      revision_number: revisionNumber ?? defaults.page.history.revisionNumber
+    },
+    requestContext
+  )
 }
