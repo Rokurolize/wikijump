@@ -5,7 +5,7 @@
         "name": "Administrator",
         "slug": "administrator",
         "email": "admin@wikijump",
-        "password": "wikijumpadmin1",
+        "password": null,
         "locales": ["en"],
         "real_name": "Administrator",
         "gender": null,
