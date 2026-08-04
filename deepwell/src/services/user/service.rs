@@ -337,7 +337,11 @@ impl UserService {
         let password = match user_type {
             UserType::Regular => {
                 info!("Creating regular user '{slug}' with password");
-                PasswordService::new_hash(&password).or_raise(make_error)?
+                if password.is_empty() {
+                    str!(DISABLED_PASSWORD_HASH)
+                } else {
+                    PasswordService::new_account_hash(&password).or_raise(make_error)?
+                }
             }
             UserType::System | UserType::Site => {
                 info!("Creating site or system user '{slug}'");
@@ -907,7 +911,11 @@ impl UserService {
         }
 
         if let Maybe::Set(password) = input.password {
-            let password_hash = PasswordService::new_hash(&password)?;
+            let password_hash = match user.user_type {
+                UserType::Regular if password.is_empty() => str!(DISABLED_PASSWORD_HASH),
+                UserType::Regular => PasswordService::new_account_hash(&password)?,
+                _ => PasswordService::new_hash(&password)?,
+            };
             model.password = Set(password_hash);
         }
 

@@ -34,6 +34,103 @@ use time::macros::{date, datetime};
 use time::{Date, Month, OffsetDateTime};
 
 #[tokio::test]
+async fn regular_account_password_policy_rejects_short_create_passwords() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let error = run_endpoint_err!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Short Password User",
+            "email": "short-password@example.invalid",
+            "locales": ["en"],
+            "password": "a",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    assert_contains_error!(
+        error,
+        ErrorType::UserPasswordTooShort {
+            length: 1,
+            minimum: 15,
+        },
+    );
+
+    assert!(
+        run_endpoint!(runner, user_get, json!({ "user": "short-password-user" }))
+            .is_none()
+    );
+
+    let created = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Compliant Password User",
+            "email": "compliant-password@example.invalid",
+            "locales": ["en"],
+            "password": "fifteen-chars!!",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(created.user_id),
+        ..Default::default()
+    });
+    let before_password =
+        run_endpoint!(runner, user_get, json!({ "user": created.user_id }))
+            .unwrap()
+            .user
+            .unwrap_wikijump()
+            .unwrap()
+            .password;
+
+    let update_error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": created.user_id,
+            "password": " ",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(
+        update_error,
+        ErrorType::UserPasswordTooShort {
+            length: 1,
+            minimum: 15,
+        },
+    );
+    let unchanged_password =
+        run_endpoint!(runner, user_get, json!({ "user": created.user_id }))
+            .unwrap()
+            .user
+            .unwrap_wikijump()
+            .unwrap()
+            .password;
+    assert_eq!(unchanged_password, before_password);
+
+    let updated = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": created.user_id,
+            "password": "ééééééééééééééé",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_ne!(updated.password, before_password);
+}
+
+#[tokio::test]
 async fn user_import_reclaims_existing_wikidot_user() {
     let mut runner = TestRunner::setup().await;
     runner.set_request_context(RequestContext {
@@ -78,7 +175,7 @@ async fn user_import_reclaims_existing_wikidot_user() {
             "name": "Imported User",
             "email": "imported-user@example.invalid",
             "locales": ["en"],
-            "password": "hunter2",
+            "password": "password-fixture",
             "bypass_email_verification": true,
             "override_user_id": user_id,
             "ip_address": common::IP_ADDRESS,
@@ -110,7 +207,7 @@ async fn user_import_requires_admin_request_context() {
             "name": "Unauthorized Import User",
             "email": "unauthorized-import-user@example.invalid",
             "locales": ["en"],
-            "password": "test-password",
+            "password": "test-password-long",
             "bypass_email_verification": true,
             "override_user_id": 700_003_i64,
             "ip_address": common::IP_ADDRESS,
@@ -144,7 +241,7 @@ async fn user_create_rejects_existing_override_user_id() {
             "name": "Plain Override User",
             "email": "plain-override-user@example.invalid",
             "locales": ["en"],
-            "password": "test-password",
+            "password": "test-password-long",
             "bypass_email_verification": true,
             "override_user_id": user_id,
             "ip_address": common::IP_ADDRESS,
@@ -176,7 +273,7 @@ async fn basic_update() {
             "name": USER_NAME,
             "email": "jane@private.me",
             "locales": ["en_GB"],
-            "password": "hunter2",
+            "password": "password-fixture",
             "ip_address": common::IP_ADDRESS,
         }),
     );
@@ -294,7 +391,7 @@ async fn basic_update() {
         user_edit,
         json!({
             "user": USER_SLUG,
-            "password": "letmein",
+            "password": "changed-password-fixture",
             "ip_address": common::IP_ADDRESS,
         }),
     );
@@ -317,7 +414,7 @@ async fn user_create_only_verified_email_blocks_conflict() {
             "name": "First Unverified Email User",
             "email": "shared-unverified@example.invalid",
             "locales": ["en"],
-            "password": "hunter2",
+            "password": "password-fixture",
             "bypass_email_verification": true,
             "ip_address": common::IP_ADDRESS,
         }),
@@ -331,7 +428,7 @@ async fn user_create_only_verified_email_blocks_conflict() {
             "name": "Second Unverified Email User",
             "email": "shared-unverified@example.invalid",
             "locales": ["en"],
-            "password": "letmein",
+            "password": "changed-password-fixture",
             "bypass_email_verification": true,
             "ip_address": common::IP_ADDRESS,
         }),
@@ -343,7 +440,7 @@ async fn user_create_only_verified_email_blocks_conflict() {
         auth_login,
         json!({
             "name_or_email": "shared-unverified@example.invalid",
-            "password": "hunter2",
+            "password": "password-fixture",
             "ip_address": common::IP_ADDRESS,
             "user_agent": "verified-email-test",
         }),
@@ -369,7 +466,7 @@ async fn user_create_only_verified_email_blocks_conflict() {
             "name": "shared-unverified@example.invalid",
             "email": "name-owner@example.invalid",
             "locales": ["en"],
-            "password": "hunter2",
+            "password": "password-fixture",
             "bypass_filter": true,
             "bypass_email_verification": true,
             "ip_address": common::IP_ADDRESS,
@@ -382,7 +479,7 @@ async fn user_create_only_verified_email_blocks_conflict() {
         auth_login,
         json!({
             "name_or_email": "shared-unverified@example.invalid",
-            "password": "hunter2",
+            "password": "password-fixture",
             "ip_address": common::IP_ADDRESS,
             "user_agent": "verified-email-test",
         }),
@@ -410,7 +507,7 @@ async fn user_create_only_verified_email_blocks_conflict() {
             "name": "Blocked Verified Email User",
             "email": "shared-unverified@example.invalid",
             "locales": ["en"],
-            "password": "hunter2",
+            "password": "password-fixture",
             "bypass_email_verification": true,
             "ip_address": common::IP_ADDRESS,
         }),
@@ -435,7 +532,7 @@ async fn changing_email_clears_verified_ownership() {
             "name": "Verified Email Change User",
             "email": "verified-before-change@example.invalid",
             "locales": ["en"],
-            "password": "hunter2",
+            "password": "password-fixture",
             "bypass_email_verification": true,
             "ip_address": common::IP_ADDRESS,
         }),
@@ -499,7 +596,7 @@ async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
             "name": "Mutation Target User",
             "email": "mutation-target@example.invalid",
             "locales": ["en"],
-            "password": "hunter2",
+            "password": "password-fixture",
             "ip_address": common::IP_ADDRESS,
         }),
     );
@@ -511,7 +608,7 @@ async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
             "name": "Other Mutation User",
             "email": "other-mutation-user@example.invalid",
             "locales": ["en"],
-            "password": "hunter2",
+            "password": "password-fixture",
             "ip_address": common::IP_ADDRESS,
         }),
     );
@@ -602,7 +699,7 @@ async fn public_user_creation_rejects_privileged_fields() {
             "name": "Privileged Public User",
             "email": "privileged-public-user@example.invalid",
             "locales": ["en"],
-            "password": "hunter2",
+            "password": "password-fixture",
             "ip_address": common::IP_ADDRESS,
         });
         input
@@ -701,7 +798,7 @@ async fn wikidot_user() {
             "user_type": "regular",
             "email": "bob@wikijump",
             "locales": ["en-AU", "en"],
-            "password": "hunter2",
+            "password": "password-fixture",
             "ip_address": common::IP_ADDRESS,
         }),
     );

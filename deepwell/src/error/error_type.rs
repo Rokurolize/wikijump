@@ -189,6 +189,10 @@ pub enum ErrorType {
     InsufficientNameChanges,
     DisallowedEmail,
     InvalidEmail,
+    UserPasswordTooShort {
+        length: usize,
+        minimum: usize,
+    },
     ExpectedWikijumpUser {
         was_user: WikidotUserModel,
     },
@@ -493,6 +497,7 @@ impl ErrorType {
             ErrorType::DisallowedEmail => 4106,
             ErrorType::ExpectedWikijumpUser { .. } => 4107,
             ErrorType::ExpectedWikidotUser { .. } => 4108,
+            ErrorType::UserPasswordTooShort { .. } => 4109,
 
             // 4200 - Site
             ErrorType::SiteSlugEmpty => 4200,
@@ -751,6 +756,7 @@ impl ErrorType {
             }
             ErrorType::DisallowedEmail => "The user's email is disallowed",
             ErrorType::InvalidEmail => "The user's email is invalid",
+            ErrorType::UserPasswordTooShort { .. } => "The user's password is too short",
             ErrorType::ExpectedWikijumpUser { .. } => "Expected to be a real user",
             ErrorType::ExpectedWikidotUser { .. } => "Expected to be a Wikidot-only user",
 
@@ -905,6 +911,10 @@ impl ErrorType {
             ErrorType::FileNameTooLong { length, maximum } => json!({
                 "length": length,
                 "maximum": maximum,
+            }),
+            ErrorType::UserPasswordTooShort { length, minimum } => json!({
+                "length": length,
+                "minimum": minimum,
             }),
             ErrorType::LocaleInvalid { locale } | ErrorType::LocaleMissing { locale } => {
                 json!({ "locale": locale })
@@ -1108,6 +1118,13 @@ mod tests {
             (ErrorType::InsufficientNameChanges, 4104),
             (ErrorType::InvalidEmail, 4105),
             (ErrorType::DisallowedEmail, 4106),
+            (
+                ErrorType::UserPasswordTooShort {
+                    length: 1,
+                    minimum: 15,
+                },
+                4109,
+            ),
             (ErrorType::SiteSlugEmpty, 4200),
             (ErrorType::PageSlugEmpty, 4300),
             (ErrorType::PageNotDeleted, 4301),
@@ -1281,6 +1298,17 @@ mod tests {
             json!({
                 "length": 101,
                 "maximum": 100,
+            }),
+        );
+        assert_eq!(
+            ErrorType::UserPasswordTooShort {
+                length: 1,
+                minimum: 15,
+            }
+            .data(),
+            json!({
+                "length": 1,
+                "minimum": 15,
             }),
         );
         assert_eq!(

@@ -100,7 +100,7 @@ async fn create_test_user(runner: &TestRunner, n: u64, label: &str) -> i64 {
             name: format!("Role Test User {n} {label}"),
             email: format!("role-test-{n}-{label}@email.com"),
             locales: vec![str!("en")],
-            password: String::from("password"),
+            password: String::from("password-fixture"),
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,

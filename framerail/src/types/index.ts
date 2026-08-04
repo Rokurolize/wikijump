@@ -102,6 +102,7 @@ export interface Locales {
   "error-form": string
   "error-form.missing-fields": string
   "error-form.password-mismatch": string
+  "error-form.password-too-short": string
   "error-api": string
   "error-api.GENERIC": string
   "error-api.INTERNAL": string

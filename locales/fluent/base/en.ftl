@@ -134,6 +134,7 @@ error-404 =
 error-form =
   .missing-fields = Please fill in all the required fields.
   .password-mismatch = Passwords do not match.
+  .password-too-short = Password must contain at least 15 characters.
 
 error-api =
   .GENERIC = Something went wrong with your request.
