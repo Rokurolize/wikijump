@@ -25,7 +25,7 @@ except ImportError:
     _extract_page_source_text = None
 ALLOWED_SITE = "scpaiueouiuiuiui"
 ALLOWED_DOMAIN = f"{ALLOWED_SITE}.wikidot.com"
-ALLOWED_ORIGIN = f"https://{ALLOWED_DOMAIN}"
+ALLOWED_ORIGIN = f"http://{ALLOWED_DOMAIN}"
 CURRENT_RUN_OWNED_SLUG = re.compile(r"^codex-l10n:[a-z0-9][a-z0-9-]+-(?:yossistyle|ashes-to-ashes|basalt)$")
 LEGACY_RUN_OWNED_SLUG = re.compile(r"^theme:codex-l10n-[a-z0-9][a-z0-9-]+-(?:yossistyle|ashes-to-ashes|basalt)$")
 # Legacy names remain read/delete-only for cleanup of pages created before the current slug contract. Remove this compatibility path only after the run ledger proves no legacy page remains and the sandbox operator signs off.
