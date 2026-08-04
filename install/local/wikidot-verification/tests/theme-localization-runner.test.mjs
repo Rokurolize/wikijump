@@ -7,7 +7,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {parseArgs} from "../scripts/theme-localization-e2e.mjs";
-import {ALLOWED_SITE_SLUG, THEME_CURRENT_SITE_DEPENDENCIES, THEME_LOCALIZATION_E2E_SCHEMA, currentSiteDependencyOwnershipToken, runOwnedSlug} from "../src/theme-localization-e2e.mjs";
+import {DEFAULT_SITE_SLUG, THEME_CURRENT_SITE_DEPENDENCIES, THEME_LOCALIZATION_E2E_SCHEMA, currentSiteDependencyOwnershipToken, runOwnedSlug} from "../src/theme-localization-e2e.mjs";
 import {ThemeExecutionLedger, themeExecutionFingerprint, validateRecoverableThemeExecutionPlan, validateThemeExecutionPlan} from "../src/theme-localization-execution.mjs";
 import {executeGuardedThemeAction, GUARDED_THEME_WIKIJUMP_RPC_URL, recoverGuardedThemeAction, THEME_RUN_RESULT_SCHEMA, acquireThemeExecutionLock, createLiveThemeDependencies, resolveThemeActorUserId, validateGuardedThemeRpcUrl, validateStorageState, validateThemeCdpEndpoint, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
 import {targetRoundTripSourceSha256} from "../src/theme-source-roundtrip.mjs";
@@ -57,8 +57,8 @@ async function fixture({onCreate, tierIds = ["yossistyle"]} = {}) {
         },
       },
       targets: [
-        {id: "wikidot", resource_id: `${tierId}:wikidot`, origin: `https://${ALLOWED_SITE_SLUG}.wikidot.com`, url: `https://${ALLOWED_SITE_SLUG}.wikidot.com/${slug}`},
-        {id: "wikijump", resource_id: `${tierId}:wikijump`, origin: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443`, url: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443/${slug}`},
+        {id: "wikidot", resource_id: `${tierId}:wikidot`, origin: `http://${DEFAULT_SITE_SLUG}.wikidot.com`, url: `http://${DEFAULT_SITE_SLUG}.wikidot.com/${slug}`},
+        {id: "wikijump", resource_id: `${tierId}:wikijump`, origin: `https://${DEFAULT_SITE_SLUG}.wikijump.localhost:18443`, url: `https://${DEFAULT_SITE_SLUG}.wikijump.localhost:18443/${slug}`},
       ],
       capture: {
         viewports: [{id: "desktop", width: 100, height: 100}],
@@ -69,8 +69,8 @@ async function fixture({onCreate, tierIds = ["yossistyle"]} = {}) {
   const plan = {
     schema: THEME_LOCALIZATION_E2E_SCHEMA,
     mode: "execute",
-    run: {id: runId, site_slug: ALLOWED_SITE_SLUG, owned_slug_prefix: `codex-l10n:${runId}-`},
-    safety: {execute_supported: true, hard_allowlist: {site_slug: ALLOWED_SITE_SLUG, wikidot_hostname: `${ALLOWED_SITE_SLUG}.wikidot.com`, wikijump_hostname: `${ALLOWED_SITE_SLUG}.wikijump.localhost`}},
+    run: {id: runId, site_slug: DEFAULT_SITE_SLUG, owned_slug_prefix: `codex-l10n:${runId}-`},
+    safety: {execute_supported: true, hard_allowlist: {site_slug: DEFAULT_SITE_SLUG, wikidot_hostname: `${DEFAULT_SITE_SLUG}.wikidot.com`, wikijump_hostname: `${DEFAULT_SITE_SLUG}.wikijump.localhost`}},
     preflight: {status: "pass"},
     tiers,
   };
@@ -94,8 +94,8 @@ async function fixture({onCreate, tierIds = ["yossistyle"]} = {}) {
       accepted_source_sha256: dependency.accepted_source_sha256,
       source_transform: dependency.source_transform,
       source_sha256: dependency.materialized_source_sha256,
-      reference: {resource_id: `prerequisite:${dependency.slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", url: `https://${ALLOWED_SITE_SLUG}.wikidot.com/${dependency.slug}`, title: dependency.title, tags: [...dependency.reference_tags]},
-      candidate: {resource_id: `dependency:${dependency.slug}:wikijump`, kind: "component_dependency", target: "wikijump", url: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443/${dependency.slug}`, title: dependency.title, ownership_token: ownershipToken, tags: [`codex-l10n-owner-${ownershipToken}`, "component"]},
+      reference: {resource_id: `prerequisite:${dependency.slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", url: `http://${DEFAULT_SITE_SLUG}.wikidot.com/${dependency.slug}`, title: dependency.title, tags: [...dependency.reference_tags]},
+      candidate: {resource_id: `dependency:${dependency.slug}:wikijump`, kind: "component_dependency", target: "wikijump", url: `https://${DEFAULT_SITE_SLUG}.wikijump.localhost:18443/${dependency.slug}`, title: dependency.title, ownership_token: ownershipToken, tags: [`codex-l10n-owner-${ownershipToken}`, "component"]},
     });
   }
   const adapters = {wikidot: new MemoryAdapter("wikidot", onCreate), wikijump: new MemoryAdapter("wikijump")};

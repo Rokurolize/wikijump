@@ -4,7 +4,7 @@ import path from "node:path";
 
 import {stableStringify} from "./canonical-json.mjs";
 import {
-  ALLOWED_SITE_SLUG,
+  DEFAULT_SITE_SLUG,
   LEGACY_RUN_OWNED_SLUG_PREFIX,
   RUN_OWNED_SLUG_PREFIX,
   THEME_CURRENT_SITE_DEPENDENCIES,
@@ -14,6 +14,7 @@ import {
   assertRunOwnedSlug,
   currentSiteDependencyOwnershipToken,
   validateThemeComputedStyleContract,
+  validateSiteSlug,
   validateTargetOrigin,
 } from "./theme-localization-e2e.mjs";
 import {targetRoundTripSourceSha256} from "./theme-source-roundtrip.mjs";
@@ -44,6 +45,7 @@ function canonicalJson(value) {
 }
 
 function stableExecutionContract(plan, {allowLegacy = false} = {}) {
+  const siteSlug = validateSiteSlug(plan.run?.site_slug ?? DEFAULT_SITE_SLUG);
   const currentPrefix = `${RUN_OWNED_SLUG_PREFIX}${plan.run.id}-`;
   const legacyPrefix = `${LEGACY_RUN_OWNED_SLUG_PREFIX}${plan.run.id}-`;
   const legacy = allowLegacy && plan.run.owned_slug_prefix === legacyPrefix;
@@ -74,7 +76,9 @@ function stableExecutionContract(plan, {allowLegacy = false} = {}) {
       }
       if (target.resource_id !== `${tier.id}:${target.id}`) throw new Error(`invalid execution resource id: ${target.resource_id}`);
       const url = new URL(target.url);
-      const expectedOrigin = validateTargetOrigin(target.origin, target.id);
+      const targetSite = validateSiteSlug(target.site_slug ?? siteSlug);
+      if (targetSite !== siteSlug) throw new Error(`execution target site does not match the plan: ${target.resource_id}`);
+      const expectedOrigin = validateTargetOrigin(target.origin, target.id, targetSite);
       if (url.origin !== expectedOrigin || url.pathname !== `/${tier.run_owned_slug}` || url.search || url.hash || url.username || url.password) {
         throw new Error(`execution target URL is outside the hard allowlist: ${target.resource_id}`);
       }
@@ -83,6 +87,7 @@ function stableExecutionContract(plan, {allowLegacy = false} = {}) {
         kind: "theme_page",
         tier_id: tier.id,
         target: target.id,
+        site_slug: targetSite,
         slug: tier.run_owned_slug,
         url: target.url,
         source_path: tier.preflight.source.absolute_path,
@@ -109,7 +114,7 @@ function stableExecutionContract(plan, {allowLegacy = false} = {}) {
       resource_id: `prerequisite:${dependency.slug}:wikidot`,
       kind: "reference_prerequisite",
       target: "wikidot",
-      url: new URL(`/${dependency.slug}`, validateTargetOrigin(plan.tiers[0].targets.find((target) => target.id === "wikidot").origin, "wikidot")).href,
+      url: new URL(`/${dependency.slug}`, validateTargetOrigin(plan.tiers[0].targets.find((target) => target.id === "wikidot").origin, "wikidot", siteSlug)).href,
       title: definition.title,
       tags: [...definition.reference_tags],
     };
@@ -117,7 +122,7 @@ function stableExecutionContract(plan, {allowLegacy = false} = {}) {
       resource_id: `dependency:${dependency.slug}:wikijump`,
       kind: "component_dependency",
       target: "wikijump",
-      url: new URL(`/${dependency.slug}`, validateTargetOrigin(plan.tiers[0].targets.find((target) => target.id === "wikijump").origin, "wikijump")).href,
+      url: new URL(`/${dependency.slug}`, validateTargetOrigin(plan.tiers[0].targets.find((target) => target.id === "wikijump").origin, "wikijump", siteSlug)).href,
       title: definition.title,
       ownership_token: ownershipToken,
       tags: [`codex-l10n-owner-${ownershipToken}`, "component"],
@@ -147,9 +152,9 @@ function stableExecutionContract(plan, {allowLegacy = false} = {}) {
 function validatePlan(plan, {allowLegacy = false} = {}) {
   if (!plan || plan.schema !== THEME_LOCALIZATION_E2E_SCHEMA) throw new Error("invalid theme localization plan schema");
   if (plan.preflight?.status !== "pass") throw new Error("theme localization plan preflight did not pass");
-  if (plan.run?.site_slug !== ALLOWED_SITE_SLUG) throw new Error("theme localization plan site is outside the hard allowlist");
+  const siteSlug = validateSiteSlug(plan.run?.site_slug);
   const hardAllowlist = plan.safety?.hard_allowlist;
-  if (hardAllowlist?.site_slug !== ALLOWED_SITE_SLUG || hardAllowlist.wikidot_hostname !== `${ALLOWED_SITE_SLUG}.wikidot.com` || hardAllowlist.wikijump_hostname !== `${ALLOWED_SITE_SLUG}.wikijump.localhost`) {
+  if (hardAllowlist?.site_slug !== siteSlug || hardAllowlist.wikidot_hostname !== `${siteSlug}.wikidot.com` || hardAllowlist.wikijump_hostname !== `${siteSlug}.wikijump.localhost`) {
     throw new Error("theme localization plan hard allowlist is invalid");
   }
   const {resources} = stableExecutionContract(plan, {allowLegacy});

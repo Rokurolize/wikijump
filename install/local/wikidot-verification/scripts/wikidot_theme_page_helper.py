@@ -23,9 +23,9 @@ except ImportError:
     _BeautifulSoup = None
     _WikidotClient = None
     _extract_page_source_text = None
-ALLOWED_SITE = "scpaiueouiuiuiui"
-ALLOWED_DOMAIN = f"{ALLOWED_SITE}.wikidot.com"
-ALLOWED_ORIGIN = f"https://{ALLOWED_DOMAIN}"
+DEFAULT_SITE_SLUG = "scpaiueouiuiuiui"
+ALLOWED_SITE_SLUGS = frozenset({DEFAULT_SITE_SLUG, "sandbox-for-codex"})
+ORACLE_RUN_OWNED_SLUG = re.compile(r"^codex-oracle:[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])-[A-Za-z0-9][A-Za-z0-9._:-]*$")
 CURRENT_RUN_OWNED_SLUG = re.compile(r"^codex-l10n:[a-z0-9][a-z0-9-]+-(?:yossistyle|ashes-to-ashes|basalt)$")
 LEGACY_RUN_OWNED_SLUG = re.compile(r"^theme:codex-l10n-[a-z0-9][a-z0-9-]+-(?:yossistyle|ashes-to-ashes|basalt)$")
 # Legacy names remain read/delete-only for cleanup of pages created before the current slug contract. Remove this compatibility path only after the run ledger proves no legacy page remains and the sandbox operator signs off.
@@ -58,6 +58,20 @@ class PrimaryCleanupError(Exception):
 
 def sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+def validate_site_slug(value: object) -> str:
+    if not isinstance(value, str) or value not in ALLOWED_SITE_SLUGS:
+        raise PublicError("site_not_allowed", "site is outside the mutation allowlist")
+    return value
+
+def site_origin(site_slug: object) -> str:
+    slug = validate_site_slug(site_slug)
+    return f"http://{slug}.wikidot.com"
+
+def validate_oracle_slug(value: object) -> str:
+    if not isinstance(value, str) or len(value) > WIKIDOT_PAGE_SLUG_MAX_LENGTH or not ORACLE_RUN_OWNED_SLUG.fullmatch(value):
+        raise PublicError("resource_not_allowed", "resource is not a run-owned oracle fixture")
+    return value
 
 def wikidot_round_trip_sha256(value: str) -> str:
     # Live Wikidot removes exactly one terminal LF when saving page source.
@@ -135,13 +149,17 @@ class WikidotBackend:
         site_id = SITE_ID.search(root_html)
         site_name = SITE_UNIX_NAME.search(root_html)
         domain = SITE_DOMAIN.search(root_html)
-        if not site_id or not site_name or not domain or site_name.group(1) != ALLOWED_SITE or domain.group(1) != ALLOWED_DOMAIN:
+        site_slug = getattr(self, "site_slug", DEFAULT_SITE_SLUG)
+        expected_domain = f"{site_slug}.wikidot.com"
+        if not site_id or not site_name or not domain or site_name.group(1) != site_slug or domain.group(1) != expected_domain:
             raise PublicError(
                 "site_identity_mismatch",
                 "authenticated site identity is outside the hard allowlist",
             )
 
-    def __init__(self, *, username: str, password: str) -> None:
+    def __init__(self, *, username: str, password: str, site_slug: str = DEFAULT_SITE_SLUG) -> None:
+        self.site_slug = validate_site_slug(site_slug)
+        self.origin = site_origin(self.site_slug)
         httpx, beautiful_soup, wikidot_client, extract_source = self._dependencies()
         try:
             self.client = wikidot_client(username=username, password=password, logging_level="CRITICAL")
@@ -174,7 +192,8 @@ class WikidotBackend:
                 ) from exc
 
     def _get(self, slug: str) -> str | None:
-        url = ALLOWED_ORIGIN if not slug else f"{ALLOWED_ORIGIN}/{slug}"
+        origin = getattr(self, "origin", site_origin(DEFAULT_SITE_SLUG))
+        url = origin if not slug else f"{origin}/{slug}"
         try:
             with self.httpx.Client(follow_redirects=False, timeout=30.0, trust_env=False) as client:
                 response = client.get(url, headers=self.headers)
@@ -205,13 +224,13 @@ class WikidotBackend:
         headers = {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "User-Agent": "WikidotPy",
-            "Referer": f"{ALLOWED_ORIGIN}/",
+            "Referer": f"{self.origin}/",
             "Cookie": f"wikidot_token7={token};WIKIDOT_SESSION_ID={session_id};",
         }
         try:
             with self.httpx.Client(follow_redirects=False, timeout=30.0, trust_env=False) as client:
                 response = client.post(
-                    f"{ALLOWED_ORIGIN}/ajax-module-connector.php",
+                    f"{self.origin}/ajax-module-connector.php",
                     headers=headers,
                     data={"wikidot_token7": token, **form_fields},
                 )
@@ -401,7 +420,7 @@ def dispatch(backend: Any, request: dict[str, Any]) -> tuple[dict[str, Any], boo
     if action == "ping":
         return {
             "protocol": "wikijump.theme_wikidot_helper.v1",
-            "site": ALLOWED_SITE,
+            "site": getattr(backend, "site_slug", DEFAULT_SITE_SLUG),
         }, False
     if action == "shutdown":
         return {"closed": True}, True
@@ -484,10 +503,11 @@ def main() -> int:
     try:
         username = os.environ.pop("WIKIDOT_USERNAME", "")
         password = os.environ.pop("WIKIDOT_PASSWORD", "")
+        site_slug = validate_site_slug(os.environ.pop("WIKIDOT_SITE_SLUG", DEFAULT_SITE_SLUG))
         if not username or not password:
             raise PublicError("initialization_failed", "Wikidot helper environment is incomplete")
         try:
-            backend = WikidotBackend(username=username, password=password)
+            backend = WikidotBackend(username=username, password=password, site_slug=site_slug)
         finally:
             password = ""
         return serve(sys.stdin, sys.stdout, backend)

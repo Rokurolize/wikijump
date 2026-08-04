@@ -22,13 +22,13 @@ function sha256(value) {
 function fixtureResource() {
   const source = "日本語 theme source\n";
   const slug = "codex-l10n:20260713-adapter-yossistyle";
-  return {source, resource: {resource_id: "yossistyle:wikidot", tier_id: "yossistyle", target: "wikidot", slug, url: `https://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}};
+  return {source, resource: {resource_id: "yossistyle:wikidot", tier_id: "yossistyle", target: "wikidot", slug, url: `http://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}};
 }
 
 function prerequisiteResource() {
   const source = "[[include component:image-block-base]]";
   const slug = "component:image-block";
-  return {source, resource: {resource_id: `prerequisite:${slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", slug, url: `https://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Image Block", tags: ["codex-source-parity-redo", "component"]}};
+  return {source, resource: {resource_id: `prerequisite:${slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", slug, url: `http://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Image Block", tags: ["codex-source-parity-redo", "component"]}};
 }
 
 class FakeHelper {
@@ -72,10 +72,10 @@ test("private-site adapter uses the execution interface without ListPages lookup
   assert.deepEqual(helper.calls.map(({action}) => action), ["inspect", "inspect", "create", "inspect", "remove", "inspect", "inspect"]);
   assert.deepEqual(helper.calls.find(({action}) => action === "create").fields.tags, ["テーマ"]);
   await assert.rejects(adapter.inspect({...resource, url: `https://scp-wiki.wikidot.com/${resource.slug}`}), /hard allowlist/);
-  await assert.rejects(adapter.inspect({...resource, url: `http://${SITE}.wikidot.com/${resource.slug}`}), /hard allowlist/);
+  await assert.rejects(adapter.inspect({...resource, url: `https://${SITE}.wikidot.com/${resource.slug}`}), /hard allowlist/);
   await assert.rejects(adapter.inspect({...resource, slug: "theme:yossistyle"}), /validated/);
   const legacySlug = "theme:codex-l10n-20260713-adapter-yossistyle";
-  const legacy = {...resource, slug: legacySlug, url: `https://${SITE}.wikidot.com/${legacySlug}`};
+  const legacy = {...resource, slug: legacySlug, url: `http://${SITE}.wikidot.com/${legacySlug}`};
   assert.equal(await adapter.inspect(legacy), null);
   await assert.rejects(adapter.create(legacy, {source}), /validated/);
 });
@@ -87,7 +87,7 @@ test("private-site adapter exposes exact read-only reference prerequisites", asy
   helper.pages.set(resource.slug, {identity: 77, title: resource.title, source_sha256: resource.source_sha256, tags: resource.tags});
   assert.equal((await adapter.inspect(resource)).identity, 77);
   await assert.rejects(adapter.create(resource, {source}), /read-only/);
-  await assert.rejects(adapter.inspect({...resource, slug: "component:other", url: `http://${SITE}.wikidot.com/component:other`}), /validated/);
+  await assert.rejects(adapter.inspect({...resource, slug: "component:other", url: `https://${SITE}.wikidot.com/component:other`}), /validated/);
   await assert.rejects(adapter.inspect({...resource, title: "changed"}), /read-only contract/);
 });
 
@@ -125,7 +125,7 @@ test("Python helper contains only direct authenticated page primitives", async (
   assert.match(source, /edit\/PageEditModule/);
   assert.match(source, /"event": "deletePage"/);
   assert.match(source, /"event": "saveTags"/);
-  assert.match(source, /ALLOWED_ORIGIN}\/ajax-module-connector\.php/);
+  assert.match(source, /self\.origin}\/ajax-module-connector\.php/);
   assert.match(source, /page_revision_id/);
   assert.doesNotMatch(source, /ListPagesModule/);
   assert.doesNotMatch(source, /site\.page\.get/);
@@ -139,6 +139,13 @@ test("production helper uses the component-owned virtual environment", () => {
   assert.equal(client.command, path.resolve(HERE, "../.venv/bin/python"));
   assert.equal(client.command, WIKIDOT_HELPER_PYTHON);
   assert.equal("WIKIDOT_PY_ROOT" in client.env, false);
+});
+
+test("helper environment and handshake are scoped to the selected allowlisted site", () => {
+  const client = new WikidotJsonlHelperClient({env: helperEnvironment(), siteSlug: "sandbox-for-codex"});
+  assert.equal(client.siteSlug, "sandbox-for-codex");
+  assert.equal(client.env.WIKIDOT_SITE_SLUG, "sandbox-for-codex");
+  assert.throws(() => new WikidotJsonlHelperClient({env: helperEnvironment(), siteSlug: "scp-wiki"}), /not allowlisted/);
 });
 
 test("create-only backend rejects an existing PageEditModule revision", () => {
@@ -247,6 +254,8 @@ class Httpx:
     def __init__(self, response): self.response = response
     def Client(self, **kwargs): return Client(self.response, **kwargs)
 backend = object.__new__(module.WikidotBackend)
+backend.site_slug = module.DEFAULT_SITE_SLUG
+backend.origin = module.site_origin(module.DEFAULT_SITE_SLUG)
 backend.headers = {}
 backend.httpx = Httpx(Response(404, ""))
 print(backend._get("codex-l10n:20260713-adapter-yossistyle") is None)
@@ -270,7 +279,7 @@ spec = importlib.util.spec_from_file_location("theme_helper", sys.argv[1])
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 class Backend:
-    def __init__(self): self.count = 0
+    def __init__(self): self.count = 0; self.site_slug = "scpaiueouiuiuiui"
     def inspect(self, slug, kind="theme_page"):
         self.count += 1
         return {"identity": self.count, "title": "fixture", "source_sha256": "0" * 64, "tags": []}

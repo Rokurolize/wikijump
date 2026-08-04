@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import test from "node:test";
 
-import {ALLOWED_SITE_SLUG} from "../src/theme-localization-e2e.mjs";
+import {DEFAULT_SITE_SLUG} from "../src/theme-localization-e2e.mjs";
 import {DeepwellThemePageAdapter, validateLocalDeepwellRpcUrl} from "../src/theme-localization-deepwell-adapter.mjs";
 
 function sha256(value) {
@@ -12,14 +12,14 @@ function sha256(value) {
 function resource() {
   const source = "日本語 theme source\n";
   const slug = "codex-l10n:20260713-adapter-yossistyle";
-  return {resource: {resource_id: "yossistyle:wikijump", target: "wikijump", slug, url: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}, source};
+  return {resource: {resource_id: "yossistyle:wikijump", target: "wikijump", slug, url: `https://${DEFAULT_SITE_SLUG}.wikijump.localhost:18443/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}, source};
 }
 
 function componentResource() {
   const source = "[[include component:image-block-base]]";
   const slug = "component:image-block";
   const ownershipToken = "0123456789abcdef0123456789abcdef";
-  return {resource: {resource_id: `dependency:${slug}:wikijump`, kind: "component_dependency", target: "wikijump", slug, url: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443/${slug}`, source_sha256: sha256(source), title: "Image Block", ownership_token: ownershipToken, tags: [`codex-l10n-owner-${ownershipToken}`, "component"]}, source};
+  return {resource: {resource_id: `dependency:${slug}:wikijump`, kind: "component_dependency", target: "wikijump", slug, url: `https://${DEFAULT_SITE_SLUG}.wikijump.localhost:18443/${slug}`, source_sha256: sha256(source), title: "Image Block", ownership_token: ownershipToken, tags: [`codex-l10n-owner-${ownershipToken}`, "component"]}, source};
 }
 
 class FakeRpc {
@@ -71,7 +71,18 @@ test("connect resolves only the allowlisted site and does not retain the passwor
   assert.equal(adapter.actorUserId, 123);
   assert.deepEqual(rpc.calls.slice(0, 4).map((call) => call.method), ["ping", "site_get", "login", "session_get"]);
   assert.deepEqual(rpc.calls[3].params, ["secret-session-token"]);
-  assert.equal(rpc.calls[1].params.site, ALLOWED_SITE_SLUG);
+  assert.equal(rpc.calls[1].params.site, DEFAULT_SITE_SLUG);
+});
+
+test("Deepwell adapter derives the local origin and site lookup from the selected allowlisted slug", async () => {
+  const rpc = new FakeRpc();
+  const adapter = new DeepwellThemePageAdapter({rpcClient: rpc, adminEmail: "admin@wikijump", adminPassword: "password", siteSlug: "sandbox-for-codex"});
+  await adapter.connect();
+  assert.equal(rpc.calls[1].params.site, "sandbox-for-codex");
+  const slug = "codex-l10n:20260713-adapter-yossistyle";
+  const resource = {resource_id: "yossistyle:wikijump", target: "wikijump", site_slug: "sandbox-for-codex", slug, url: `https://sandbox-for-codex.wikijump.localhost:18443/${slug}`, source_sha256: sha256("fixture"), title: "Theme localization canary: yossistyle", tags: ["テーマ"]};
+  assert.equal(await adapter.inspect(resource), null);
+  await assert.rejects(adapter.inspect({...resource, site_slug: DEFAULT_SITE_SLUG}), /does not match/);
 });
 
 test("connect rejects an explicit actor that does not match the session user", async () => {
@@ -93,7 +104,7 @@ test("create is create-only, authenticated, and verifies the accepted source", a
   await assert.rejects(adapter.create(fixture.resource, {source: fixture.source}), /preexisting/);
   await assert.rejects(adapter.create({...fixture.resource, slug: "scp-173"}, {source: fixture.source}), /validated/);
   const legacySlug = "theme:codex-l10n-20260713-adapter-yossistyle";
-  const legacy = {...fixture.resource, slug: legacySlug, url: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443/${legacySlug}`};
+  const legacy = {...fixture.resource, slug: legacySlug, url: `https://${DEFAULT_SITE_SLUG}.wikijump.localhost:18443/${legacySlug}`};
   rpc.page = null;
   assert.equal(await adapter.inspect(legacy), null);
   await assert.rejects(adapter.create(legacy, {source: fixture.source}), /validated/);
@@ -105,7 +116,7 @@ test("materialized current-site component accepts only its exact typed resource"
   assert.equal(await adapter.create(fixture.resource, {source: fixture.source}), 100);
   assert.deepEqual(rpc.calls.find((call) => call.method === "page_create").params.tags, fixture.resource.tags);
   rpc.page = null;
-  await assert.rejects(adapter.create({...fixture.resource, slug: "component:other", url: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443/component:other`}, {source: fixture.source}), /validated/);
+  await assert.rejects(adapter.create({...fixture.resource, slug: "component:other", url: `https://${DEFAULT_SITE_SLUG}.wikijump.localhost:18443/component:other`}, {source: fixture.source}), /validated/);
   await assert.rejects(adapter.create({...fixture.resource, title: "changed"}, {source: fixture.source}), /materialized contract/);
 });
 

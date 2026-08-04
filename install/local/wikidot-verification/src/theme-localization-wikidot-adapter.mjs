@@ -4,7 +4,7 @@ import path from "node:path";
 import readline from "node:readline";
 import {fileURLToPath} from "node:url";
 
-import {ALLOWED_SITE_SLUG, isCurrentRunOwnedSlug, isRecoverableRunOwnedSlug} from "./theme-localization-e2e.mjs";
+import {DEFAULT_SITE_SLUG, isCurrentRunOwnedSlug, isRecoverableRunOwnedSlug, validateSiteSlug, validateTargetOrigin} from "./theme-localization-e2e.mjs";
 import {targetRoundTripSourceSha256} from "./theme-source-roundtrip.mjs";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -20,7 +20,10 @@ function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-function validateResource(resource, {allowLegacy = false} = {}) {
+function validateResource(resource, {allowLegacy = false, siteSlug = DEFAULT_SITE_SLUG} = {}) {
+  const adapterSite = validateSiteSlug(siteSlug);
+  const resourceSite = validateSiteSlug(resource?.site_slug ?? adapterSite);
+  if (resourceSite !== adapterSite) throw new Error("Wikidot adapter resource site does not match the adapter site");
   const kind = resource?.kind ?? "theme_page";
   const prerequisite = kind === "reference_prerequisite" && REFERENCE_PREREQUISITE_TITLES.has(resource?.slug);
   const validSlug = prerequisite || (kind === "theme_page" && (allowLegacy ? isRecoverableRunOwnedSlug(resource?.slug) : isCurrentRunOwnedSlug(resource?.slug)));
@@ -28,7 +31,7 @@ function validateResource(resource, {allowLegacy = false} = {}) {
     throw new Error("Wikidot adapter accepts only validated theme execution pages");
   }
   const url = new URL(resource.url);
-  if (url.protocol !== "https:" || url.hostname !== `${ALLOWED_SITE_SLUG}.wikidot.com` || url.port || url.pathname !== `/${resource.slug}` || url.search || url.hash || url.username || url.password) {
+  if (url.origin !== validateTargetOrigin(url.origin, "wikidot", resourceSite) || url.pathname !== `/${resource.slug}` || url.search || url.hash || url.username || url.password) {
     throw new Error("Wikidot adapter resource URL is outside the hard allowlist");
   }
   if (prerequisite && (resource.title !== REFERENCE_PREREQUISITE_TITLES.get(resource.slug) || resource.resource_id !== `prerequisite:${resource.slug}:wikidot`)) {
@@ -45,7 +48,7 @@ function containsSecretField(value) {
   return Object.entries(value).some(([key, child]) => SECRET_KEY.test(key) || containsSecretField(child));
 }
 
-function minimalEnvironment(source) {
+function minimalEnvironment(source, siteSlug) {
   const username = source.WIKIDOT_USERNAME;
   const password = source.WIKIDOT_PASSWORD;
   if (typeof username !== "string" || !username || typeof password !== "string" || !password) {
@@ -57,20 +60,23 @@ function minimalEnvironment(source) {
     PATH: source.PATH ?? "/usr/bin:/bin",
     WIKIDOT_PASSWORD: password,
     WIKIDOT_USERNAME: username,
+    WIKIDOT_SITE_SLUG: validateSiteSlug(siteSlug),
   };
 }
 
 export class WikidotJsonlHelperClient {
-  constructor({command = WIKIDOT_HELPER_PYTHON, commandArgs = [HELPER_PATH], env = process.env, timeoutMs = DEFAULT_TIMEOUT_MS, spawnImpl = spawn} = {}) {
+  constructor({command = WIKIDOT_HELPER_PYTHON, commandArgs = [HELPER_PATH], env = process.env, timeoutMs = DEFAULT_TIMEOUT_MS, spawnImpl = spawn, siteSlug = DEFAULT_SITE_SLUG} = {}) {
     if (typeof command !== "string" || !command || !Array.isArray(commandArgs) || commandArgs.some((arg) => typeof arg !== "string")) throw new Error("Wikidot helper command is invalid");
     if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new Error("Wikidot helper timeout must be a positive integer");
-    const childEnvironment = minimalEnvironment(env);
+    siteSlug = validateSiteSlug(siteSlug);
+    const childEnvironment = minimalEnvironment(env, siteSlug);
     if (commandArgs.some((arg) => arg.includes(childEnvironment.WIKIDOT_USERNAME) || arg.includes(childEnvironment.WIKIDOT_PASSWORD))) throw new Error("Wikidot credentials must not appear in helper command arguments");
     this.command = command;
     this.commandArgs = commandArgs;
     this.env = childEnvironment;
     this.timeoutMs = timeoutMs;
     this.spawnImpl = spawnImpl;
+    this.siteSlug = siteSlug;
     this.child = null;
     this.pending = new Map();
     this.nextId = 1;
@@ -101,7 +107,7 @@ export class WikidotJsonlHelperClient {
       this.terminate(error);
       throw error;
     }
-    if (ping?.protocol !== "wikijump.theme_wikidot_helper.v1" || ping.site !== ALLOWED_SITE_SLUG) {
+    if (ping?.protocol !== "wikijump.theme_wikidot_helper.v1" || ping.site !== this.siteSlug) {
       this.terminate(new Error("Wikidot helper handshake failed"));
       throw new Error("Wikidot helper handshake failed");
     }
@@ -195,8 +201,10 @@ export class WikidotJsonlHelperClient {
 }
 
 export class WikidotThemePageAdapter {
-  constructor({helperClient, helperOptions} = {}) {
-    this.helper = helperClient ?? new WikidotJsonlHelperClient(helperOptions);
+  constructor({helperClient, helperOptions, siteSlug = DEFAULT_SITE_SLUG} = {}) {
+    this.siteSlug = validateSiteSlug(siteSlug);
+    if (helperClient?.siteSlug !== undefined && helperClient.siteSlug !== this.siteSlug) throw new Error("Wikidot helper site does not match the adapter site");
+    this.helper = helperClient ?? new WikidotJsonlHelperClient({...helperOptions, siteSlug: this.siteSlug});
   }
 
   async connect() {
@@ -205,7 +213,7 @@ export class WikidotThemePageAdapter {
   }
 
   async inspect(resource) {
-    const kind = validateResource(resource, {allowLegacy: true});
+    const kind = validateResource(resource, {allowLegacy: true, siteSlug: this.siteSlug});
     const result = await this.helper.request("inspect", {slug: resource.slug, kind});
     const page = result?.page;
     if (page === null) return null;
@@ -216,7 +224,7 @@ export class WikidotThemePageAdapter {
   }
 
   async create(resource, payload) {
-    const kind = validateResource(resource);
+    const kind = validateResource(resource, {siteSlug: this.siteSlug});
     if (kind !== "theme_page") throw new Error("Wikidot reference prerequisites are read-only");
     if (typeof payload?.source !== "string" || sha256(payload.source) !== resource.source_sha256) throw new Error("Wikidot create source does not match the accepted source hash");
     if (await this.inspect(resource) !== null) throw new Error("Wikidot create-only guard found a preexisting page");
@@ -229,7 +237,7 @@ export class WikidotThemePageAdapter {
   }
 
   async remove(resource, {expected, identity} = {}) {
-    const kind = validateResource(resource, {allowLegacy: true});
+    const kind = validateResource(resource, {allowLegacy: true, siteSlug: this.siteSlug});
     const actual = await this.inspect(resource);
     if (actual === null) return;
     if (actual.source_sha256 !== expected?.source_sha256 || actual.title !== expected?.title || JSON.stringify(actual.tags) !== JSON.stringify(expected?.tags) || (identity !== undefined && actual.identity !== identity)) {

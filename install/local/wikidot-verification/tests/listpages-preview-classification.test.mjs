@@ -1750,6 +1750,18 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
       expected: ["unsynchronized-random-row-state", "none"],
     },
     {
+      id: "random-direct-size-branch-multiline-selected-row",
+      source: [
+        '[[module ListPages order="random" limit="1" wrapper="no"]]',
+        '[[#ifexpr %%size%%%34 != 0 | [!-- ]]**ONE**\nLine one[[#ifexpr %%size%%%34 != 0 | --] ]]',
+        '[[#ifexpr %%size%%%34 != 1 | [!-- ]]**TWO**\nLine two\nLine three[[#ifexpr %%size%%%34 != 1 | --] ]]',
+        "[[/module]]",
+      ].join("\n"),
+      live: "<p><strong>ONE</strong><br>\nLine one</p>",
+      local: "<p><strong>TWO</strong><br>\nLine two<br>\nLine three</p>",
+      expected: ["unsynchronized-random-row-state", "none"],
+    },
+    {
       id: "random-direct-size-branch-local-empty-remains-actionable",
       source: [
         '[[module ListPages order="random" limit="1" wrapper="no"]]',
