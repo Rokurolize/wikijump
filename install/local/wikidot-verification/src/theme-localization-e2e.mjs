@@ -4,7 +4,7 @@ import path from "node:path";
 
 export const THEME_LOCALIZATION_E2E_SCHEMA = "wikijump_local_lab.theme_localization_e2e_plan.v2";
 export const ALLOWED_SITE_SLUG = "scpaiueouiuiuiui";
-export const DEFAULT_WIKIDOT_ORIGIN = "http://scpaiueouiuiuiui.wikidot.com";
+export const DEFAULT_WIKIDOT_ORIGIN = "https://scpaiueouiuiuiui.wikidot.com";
 export const DEFAULT_WIKIJUMP_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 export const RUN_OWNED_SLUG_PREFIX = "codex-l10n:";
 export const LEGACY_RUN_OWNED_SLUG_PREFIX = "theme:codex-l10n-";
@@ -353,7 +353,7 @@ export function validateTargetOrigin(value, target) {
     throw new Error(`${target} origin is not a valid URL`);
   }
   const expected = target === "wikidot"
-    ? {protocol: "http:", hostname: `${ALLOWED_SITE_SLUG}.wikidot.com`, ports: new Set([""])}
+    ? {protocol: "https:", hostname: `${ALLOWED_SITE_SLUG}.wikidot.com`, ports: new Set([""])}
     : {protocol: "https:", hostname: `${ALLOWED_SITE_SLUG}.wikijump.localhost`, ports: new Set(["", "18443"])};
   if (url.protocol !== expected.protocol || url.hostname !== expected.hostname || !expected.ports.has(url.port) || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
     throw new Error(`${target} origin is outside the hard allowlist`);
