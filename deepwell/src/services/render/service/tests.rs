@@ -10440,16 +10440,29 @@ fn caps_deep_inline_wikidot_span_nesting_inside_preprocessed_native_list_runs() 
 #[test]
 fn leaves_many_unclosed_native_list_wikidot_spans_literal() {
     let mut item = String::from("attack ");
-    for _ in 0..10_000 {
+    for _ in 0..20_000 {
         item.push_str(r#"[[span class="safe"]]"#);
     }
     item.push_str("text");
 
+    let started = Instant::now();
     let rendered = render_native_list_inline_wikidot_spans(&item);
 
+    assert!(
+        started.elapsed() < Duration::from_secs(2),
+        "unclosed span scan exceeded its linear-work budget: {:?}",
+        started.elapsed(),
+    );
     assert!(rendered.starts_with(r#"attack [[span class="safe"]]"#));
     assert!(rendered.ends_with("text"));
     assert!(!rendered.contains("<span"));
+}
+
+#[test]
+fn leaves_an_unterminated_native_list_span_opener_literal() {
+    let rendered = render_native_list_inline_wikidot_spans("prefix [[span");
+
+    assert_eq!(rendered, "prefix [[span");
 }
 
 #[test]
