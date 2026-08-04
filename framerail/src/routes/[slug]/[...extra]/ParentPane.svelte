@@ -57,7 +57,6 @@
     const res = await fetch(`?/parentGet`, {
       method: "POST",
       body: JSON.stringify({
-        siteId: data.site.site_id,
         pageId: data.page?.page_id,
         slug: data.page?.slug
       })
