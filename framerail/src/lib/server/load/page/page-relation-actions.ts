@@ -59,11 +59,9 @@ export async function pageParentGetAction(event: RequestEvent) {
   const { request } = event
   try {
     const requestData = await readActionJson(request, pageParentGetSchema)
-    const { siteId, pageId, slug } = requestData
-    const context = await resolvePageActionRequestContext(event, {
-      submittedSiteId: siteId
-    })
-    const res = await pageParentGet(siteId, pageId, slug, context.requestContext)
+    const { pageId, slug } = requestData
+    const context = await resolvePageActionRequestContext(event)
+    const res = await pageParentGet(context.siteId, pageId, slug, context.requestContext)
     return { res }
   } catch (error) {
     return failForActionError(error)
@@ -71,7 +69,7 @@ export async function pageParentGetAction(event: RequestEvent) {
 }
 
 const pageParentGetSchema = object({
-  ...pageActionBaseSchema,
+  pageId: optional(number()),
   slug: string()
 })
 
