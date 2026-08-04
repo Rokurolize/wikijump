@@ -57,7 +57,11 @@ function capture(overrides = {}) {
       },
       screenshot: {sha256: HASH, full_page: false},
     },
-    document: { presence_probes: [], custom_properties: {} },
+    document: {
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {status: "complete"},
+    },
     settled_viewport_screenshot: {sha256: HASH, full_page: false},
     screenshot: { sha256: HASH, full_page: true },
     ...overrides,
@@ -85,6 +89,18 @@ test("capture validation fails closed on an incomplete browser observation", () 
   );
   const complete = capture();
   assert.equal(validateSandboxOracleCapture(complete, "complete capture"), complete);
+  const bounded = capture({
+    document: {
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {
+        status: "bounded_domcontentloaded",
+        load_timeout_ms: 120000,
+        pending_image_urls: ["https://cdn.example/pending.png"],
+      },
+    },
+  });
+  assert.equal(validateSandboxOracleCapture(bounded, "bounded capture"), bounded);
 });
 
 function liveFixture() {

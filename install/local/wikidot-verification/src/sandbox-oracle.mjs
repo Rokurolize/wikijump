@@ -273,6 +273,22 @@ export function validateSandboxOracleCapture(value, name = "capture") {
   if (!isPlainObject(capture.page_chrome_skeleton)) {
     throw new Error(`${name} is missing page_chrome_skeleton`);
   }
+  const completion = capture.document?.resource_completion;
+  if (
+    !isPlainObject(completion) ||
+    !new Set(["complete", "bounded_domcontentloaded"]).has(completion.status)
+  ) {
+    throw new Error(`${name} is missing a bounded resource-completion receipt`);
+  }
+  if (
+    completion.status === "bounded_domcontentloaded" &&
+    (!Number.isSafeInteger(completion.load_timeout_ms) ||
+      completion.load_timeout_ms <= 0 ||
+      !Array.isArray(completion.pending_image_urls) ||
+      completion.pending_image_urls.some((url) => typeof url !== "string"))
+  ) {
+    throw new Error(`${name} has an invalid bounded resource-completion receipt`);
+  }
   const screenshots = [
     ["first_paint.screenshot", capture.first_paint?.screenshot],
     ["settled_viewport_screenshot", capture.settled_viewport_screenshot],

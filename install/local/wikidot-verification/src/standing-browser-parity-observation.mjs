@@ -299,9 +299,35 @@ async function waitForSettledResources(page, timeoutMs) {
     if (value <= 0) throw new Error(`${label} exceeded the capture timeout`);
     return value;
   };
-  await page.waitForLoadState("load", {
-    timeout: remaining("load completion"),
-  });
+  let loadStatus = "complete";
+  try {
+    await page.waitForLoadState("load", {
+      timeout: remaining("load completion"),
+    });
+  } catch (error) {
+    if (error?.name !== "TimeoutError") throw error;
+    // Free Wikidot themes keep third-party frames and resources pending.  A
+    // browser-visible oracle still needs its bounded settled DOM and receipt;
+    // record the load boundary instead of silently returning an incomplete
+    // capture or waiting without a deadline.
+    loadStatus = "bounded_domcontentloaded";
+  }
+  if (loadStatus === "bounded_domcontentloaded") {
+    return await page.evaluate((limit) => ({
+      status: "bounded_domcontentloaded",
+      load_ready_state: document.readyState,
+      font_status: document.fonts?.status ?? "not_supported",
+      image_count: document.images.length,
+      incomplete_image_count: [...document.images].filter(
+        (image) => !image.complete,
+      ).length,
+      load_timeout_ms: limit,
+      pending_image_urls: [...document.images]
+        .filter((image) => !image.complete)
+        .map((image) => image.currentSrc || image.src)
+        .sort(),
+    }));
+  }
   return await page.evaluate(async (limit) => {
     const waitForImage = (image) => {
       if (image.complete) return Promise.resolve();
