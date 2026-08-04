@@ -21,7 +21,13 @@ const XML_RPC_HEADERS = {
 }
 const XML_RPC_INT_MIN = -2_147_483_648
 const XML_RPC_INT_MAX = 2_147_483_647
+const XML_RPC_MAX_VALUE_DEPTH = 64
+const XML_RPC_MAX_VALUE_NODES = 10_000
 const XML_WHITESPACE = "[ \\t\\r\\n]"
+
+interface XmlRpcValueBudget {
+  remainingNodes: number
+}
 
 export class XmlRpcFault extends Error {
   constructor(
@@ -78,6 +84,7 @@ export function parseXmlRpcCall(xml: string): XmlRpcCall {
   }
 
   const params: XmlRpcValue[] = []
+  const valueBudget: XmlRpcValueBudget = { remainingNodes: XML_RPC_MAX_VALUE_NODES }
   let offset = 0
   while (true) {
     const param = extractOptionalElement(paramsElement.content, "param", offset)
@@ -89,7 +96,7 @@ export function parseXmlRpcCall(xml: string): XmlRpcCall {
     const value = extractRequiredElement(param.content, "value")
     rejectSkippedXmlContent(param.content, 0, value.start, "param")
     rejectSkippedXmlContent(param.content, value.end, param.content.length, "param")
-    params.push(parseXmlRpcValue(value.content))
+    params.push(parseXmlRpcValue(value.content, valueBudget, 0))
     offset = param.end
   }
   rejectSkippedXmlContent(
@@ -102,7 +109,19 @@ export function parseXmlRpcCall(xml: string): XmlRpcCall {
   return { methodName, params }
 }
 
-function parseXmlRpcValue(valueContent: string): XmlRpcValue {
+function parseXmlRpcValue(
+  valueContent: string,
+  budget: XmlRpcValueBudget,
+  depth: number
+): XmlRpcValue {
+  if (depth >= XML_RPC_MAX_VALUE_DEPTH) {
+    throw new XmlRpcFault(-32602, "XML-RPC value nesting exceeds the maximum depth")
+  }
+  if (budget.remainingNodes === 0) {
+    throw new XmlRpcFault(-32602, "XML-RPC request exceeds the structural node budget")
+  }
+  budget.remainingNodes -= 1
+
   const text = trimXmlWhitespace(valueContent)
   if (!text.startsWith("<")) {
     return decodeXmlText(valueContent)
@@ -180,7 +199,7 @@ function parseXmlRpcValue(valueContent: string): XmlRpcValue {
         break
       }
       rejectSkippedXmlContent(dataElement.content, offset, item.start, "data")
-      values.push(parseXmlRpcValue(item.content))
+      values.push(parseXmlRpcValue(item.content, budget, depth + 1))
       offset = item.end
     }
     rejectSkippedXmlContent(
@@ -212,7 +231,7 @@ function parseXmlRpcValue(valueContent: string): XmlRpcValue {
       const value = extractRequiredElement(member.content, "value", nameElement.end)
       rejectSkippedXmlContent(member.content, nameElement.end, value.start, "member")
       rejectSkippedXmlContent(member.content, value.end, member.content.length, "member")
-      values[name] = parseXmlRpcValue(value.content)
+      values[name] = parseXmlRpcValue(value.content, budget, depth + 1)
       offset = member.end
     }
     rejectSkippedXmlContent(
