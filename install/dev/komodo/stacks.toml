@@ -14,7 +14,7 @@ destroy_before_deploy = true
 linked_repo = "wikijump-dev"
 run_directory = "install/dev"
 file_paths = ["docker-compose.yaml"]
-# Pass-through variables/secrets defined in variables.toml
+# Pass-through variables/secrets defined in Komodo's secret store
 environment = """
 POSTGRES_PASSWORD=[[POSTGRES_PASSWORD]]
 DEEPWELL_RPC_TOKEN=[[DEEPWELL_RPC_TOKEN]]
