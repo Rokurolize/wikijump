@@ -43,7 +43,7 @@ export function buildGeneratedPageStylesHead(styles: readonly string[]): string 
   return styles
     .map(
       (css, index) =>
-        `<style type="text/css" data-wikijump-generated-css="${index}">${escapeStyleRawText(css)}</style>`
+        `<style type="text/css" data-wikidot-generated-css="${index}">${escapeStyleRawText(css)}</style>`
     )
     .join("")
 }

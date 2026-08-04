@@ -7,12 +7,12 @@ const SITE_HEADERS = {
 
 const generatedCss = (page: import("@playwright/test").Page) =>
   page
-    .locator("head style[data-wikijump-generated-css]")
+    .locator("head style[data-wikidot-generated-css]")
     .evaluateAll((styles) => styles.map((style) => style.textContent))
 
 const generatedCssClones = (page: import("@playwright/test").Page) =>
   page
-    .locator("head style[data-wikijump-generated-css-clone]")
+    .locator("head style[data-wikidot-generated-css-clone]")
     .evaluateAll((styles) => styles.map((style) => style.textContent))
 
 type NavigationAnimationFrame = {
@@ -101,7 +101,7 @@ test("Wikidot page links do not present the destination before its CSS", async (
             const sideBar = document.querySelector("#side-bar");
             return {
               generatedClones: document.querySelectorAll(
-                "head style[data-wikijump-generated-css-clone]"
+                "head style[data-wikidot-generated-css-clone]"
               ).length,
               href: location.pathname,
               markedStyles: document.querySelectorAll(
@@ -183,7 +183,7 @@ test("Wikidot page links do not present the destination before its CSS", async (
     })
   }
   await expect(page).toHaveURL(/\/navigation-style-b$/u)
-  await expect(page.locator("head style[data-wikijump-generated-css]")).toHaveCount(2)
+  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)
   expect(
     await page.evaluate(
       () =>
@@ -211,15 +211,15 @@ test("Wikidot page links do not present the destination before its CSS", async (
   expect(await generatedCssClones(page)).toEqual([])
 
   await page.goto("/navigation-style-b")
-  await expect(page.locator("head style[data-wikijump-generated-css]")).toHaveCount(2)
-  await expect(page.locator("head style[data-wikijump-generated-css-clone]")).toHaveCount(
+  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)
+  await expect(page.locator("head style[data-wikidot-generated-css-clone]")).toHaveCount(
     0
   )
   expect(await generatedCss(page)).toEqual(clickedStyleB)
   expect(await generatedCssClones(page)).toEqual([])
 
   await page.goto("/navigation-style-c")
-  await expect(page.locator("head style[data-wikijump-generated-css]")).toHaveCount(2)
+  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)
   await page.evaluate(() => {
     ;(
       window as Window & {
@@ -229,7 +229,7 @@ test("Wikidot page links do not present the destination before its CSS", async (
   })
   await page.locator("#navigate-style-d").click()
   await expect(page).toHaveURL(/\/navigation-style-d$/u)
-  await expect(page.locator("head style[data-wikijump-generated-css]")).toHaveCount(1)
+  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(1)
   expect(
     await page.evaluate(
       () =>
@@ -252,8 +252,8 @@ test("Wikidot page links do not present the destination before its CSS", async (
   expect(clickedStyleD).toEqual([".generated-style-d { color: black; }"])
   expect(await generatedCssClones(page)).toEqual([])
   await page.goto("/navigation-style-d")
-  await expect(page.locator("head style[data-wikijump-generated-css]")).toHaveCount(1)
-  await expect(page.locator("head style[data-wikijump-generated-css-clone]")).toHaveCount(
+  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(1)
+  await expect(page.locator("head style[data-wikidot-generated-css-clone]")).toHaveCount(
     0
   )
   expect(await generatedCss(page)).toEqual(clickedStyleD)
