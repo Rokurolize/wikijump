@@ -340,20 +340,15 @@ impl MfaService {
                 Ok(())
             }
 
-            // We sleep ourselves, once at the end.
-            //
-            // Otherwise we have variable-time recovery code checks based on whether
-            // the recovery code was correct or not.
-            None => {
-                PasswordService::failure_sleep(ctx.config()).await;
-                bail!(Error::new(
-                    format!(
-                        "cannot verify MFA recovery code for user '{}' (ID {})",
-                        user.slug, user.user_id,
-                    ),
-                    ErrorType::InvalidAuthentication,
-                ));
-            }
+            // The endpoint wrapper applies one uniform delay after committing
+            // expected second-factor rejections.
+            None => bail!(Error::new(
+                format!(
+                    "cannot verify MFA recovery code for user '{}' (ID {})",
+                    user.slug, user.user_id,
+                ),
+                ErrorType::InvalidAuthentication,
+            )),
         }
     }
 }

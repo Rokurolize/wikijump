@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert"
+import { readFile } from "node:fs/promises"
 import test from "node:test"
 
 import {
@@ -88,5 +89,42 @@ test("file mutation actions forward getClientAddress through the Deepwell transp
       ["file_restore", CLIENT_IP],
       ["file_rollback", CLIENT_IP]
     ]
+  )
+})
+
+test("file revision reads forward the routed request context to Deepwell", async () => {
+  const pageFileSource = await readFile(
+    new URL("../src/lib/server/deepwell/page-file.ts", import.meta.url),
+    "utf8"
+  )
+  const pageFileHistory = pageFileSource.slice(
+    pageFileSource.indexOf("export async function pageFileHistory")
+  )
+  const pageFileRevision = pageFileSource.slice(
+    pageFileSource.indexOf("export async function pageFileRevision")
+  )
+
+  assert.match(pageFileHistory, /requestContext: RequestContext/u)
+  assert.match(
+    pageFileHistory,
+    /client\.request\([\s\S]*?"file_revision_range"[\s\S]*?requestContext\s*\)/u
+  )
+  assert.match(pageFileRevision, /requestContext: RequestContext/u)
+  assert.match(
+    pageFileRevision,
+    /client\.request\([\s\S]*?"file_revision_get"[\s\S]*?requestContext\s*\)/u
+  )
+
+  const pageActionsSource = await readFile(
+    new URL("../src/lib/server/load/page/page-file-actions.ts", import.meta.url),
+    "utf8"
+  )
+  const pageFileHistoryAction = pageActionsSource.slice(
+    pageActionsSource.indexOf("export async function pageFileHistoryAction")
+  )
+  assert.match(pageFileHistoryAction, /resolvePageActionRequestContext/u)
+  assert.match(
+    pageFileHistoryAction,
+    /pageFileHistory\([\s\S]*?context\.requestContext\s*\)/u
   )
 })

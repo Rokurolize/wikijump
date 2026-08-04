@@ -42,8 +42,11 @@
     --size-border-radius: 0.5em;
   }
 
-  body {
+  body:has(.sigma-esque-container) {
     margin: 0;
+  }
+
+  .sigma-esque-container {
     font-family: var(--font-sans), sans-serif;
     font-size: var(--size-body-font);
     font-weight: normal;

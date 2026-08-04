@@ -6,6 +6,7 @@ import {
   pageVoteList,
   pageVoteRemove
 } from "$lib/server/deepwell/page"
+import { pageFileList } from "$lib/server/deepwell/page-file"
 import {
   failForActionError,
   pageActionBaseSchema,
@@ -82,6 +83,7 @@ export async function pageVoteListAction(event: RequestEvent) {
     const context = await resolvePageActionRequestContext(event, {
       submittedSiteId: siteId
     })
+    await pageFileList(siteId, pageId, false, context.requestContext)
     const res = await pageVoteList(pageId, context.requestContext)
     return { res }
   } catch (error) {

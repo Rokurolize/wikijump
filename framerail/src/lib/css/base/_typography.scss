@@ -1,57 +1,55 @@
 // @use "../abstracts/functions" as *;
 
-// Default everything to sans font
-html,
-body {
+// Modern Framerail typography is owned by the Sigma shell. Imported Wikidot
+// pages keep their own element-level cascade, including body typography.
+.sigma-esque-container {
   font-family: var(--font-sans);
   font-weight: 400;
   text-rendering: optimizeLegibility;
-}
 
-// Set base font families for elements.
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 500;
+  }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-display);
-  font-weight: 500;
-}
+  code,
+  var,
+  samp,
+  tt,
+  kbd {
+    font-family: var(--font-mono);
+  }
 
-code,
-var,
-samp,
-tt,
-kbd {
-  font-family: var(--font-mono);
-}
+  // Orderly heading sizes.
 
-// Orderly heading sizes.
+  // // prettier-ignore
+  // $heading-sizes:
+  //   "h1" 2rem,
+  //   "h2" 1.5rem,
+  //   "h3" 1.25rem,
+  //   "h4" 1.15rem,
+  //   "h5" 1rem,
+  //   "h6" 0.75rem;
 
-// // prettier-ignore
-// $heading-sizes:
-//   "h1" 2rem,
-//   "h2" 1.5rem,
-//   "h3" 1.25rem,
-//   "h4" 1.15rem,
-//   "h5" 1rem,
-//   "h6" 0.75rem;
+  // @each $heading, $size in $heading-sizes {
+  //   #{$heading} {
+  //     font-size: functions.font-size($size);
+  //   }
+  // }
 
-// @each $heading, $size in $heading-sizes {
-//   #{$heading} {
-//     font-size: functions.font-size($size);
-//   }
-// }
+  // Make `<small>` relative to its header.
+  small {
+    font-size: 0.8em;
+  }
 
-// Make `<small>` relative to its header.
-small {
-  font-size: 0.8em;
-}
-
-// Makes bold text consistently bolder than surrounding text.
-b,
-strong {
-  font-weight: bolder;
+  // Makes bold text consistently bolder than surrounding text.
+  b,
+  strong {
+    font-weight: bolder;
+  }
 }

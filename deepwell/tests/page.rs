@@ -12687,6 +12687,219 @@ async fn file_get_requires_parent_page_view_permission() {
 }
 
 #[tokio::test]
+async fn file_revision_reads_require_parent_page_view_permission_and_tuple_binding() {
+    let mut runner = TestRunner::setup().await;
+    const SITE_SLUG: &str = "scp-wiki";
+    const PRIVATE_PAGE_SLUG: &str = "fixture-private-file-revision-read";
+    const PUBLIC_PAGE_SLUG: &str = "fixture-public-file-revision-read";
+    const PRIVATE_CATEGORY: &str = "fixture-file-revision-read-private-view";
+    const PRIVATE_FILE_NAME: &str = "private-revision-attachment.txt";
+    const PUBLIC_FILE_NAME: &str = "public-revision-attachment.txt";
+
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("Seeded site not found");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(PRIVATE_PAGE_SLUG))),
+    });
+    let private_page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "private file revision parent page",
+            "title": "Private File Revision Read",
+            "alt_title": null,
+            "slug": PRIVATE_PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create private file revision read fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(private_page.parser_errors.is_empty());
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    let private_file_id = create_empty_file_fixture(
+        &runner,
+        site_id,
+        private_page.page_id,
+        PRIVATE_FILE_NAME,
+    )
+    .await;
+
+    let public_page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "public file revision parent page",
+            "title": "Public File Revision Read",
+            "alt_title": null,
+            "slug": PUBLIC_PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create public file revision read fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(public_page.parser_errors.is_empty());
+    let public_file_id = create_empty_file_fixture(
+        &runner,
+        site_id,
+        public_page.page_id,
+        PUBLIC_FILE_NAME,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext::default());
+
+    let public_count = run_endpoint!(
+        runner,
+        file_revision_count,
+        json!({
+            "site_id": site_id,
+            "page_id": public_page.page_id,
+            "file": PUBLIC_FILE_NAME,
+        }),
+    );
+    assert_eq!(public_count.revision_count.get(), 1);
+
+    let public_revision = run_endpoint!(
+        runner,
+        file_revision_get,
+        json!({
+            "site_id": site_id,
+            "page_id": public_page.page_id,
+            "file_id": public_file_id,
+            "revision_number": 0,
+        }),
+    )
+    .expect("anonymous user should be allowed to view a public file revision");
+    assert_eq!(public_revision.file_id, public_file_id);
+
+    let public_revisions = run_endpoint!(
+        runner,
+        file_revision_range,
+        json!({
+            "site_id": site_id,
+            "page_id": public_page.page_id,
+            "file_id": public_file_id,
+            "revision_number": 0,
+            "revision_direction": "before",
+            "limit": 1,
+        }),
+    );
+    assert_eq!(public_revisions.len(), 1);
+    assert_eq!(public_revisions[0].file_id, public_file_id);
+
+    let mismatched_revision = run_endpoint!(
+        runner,
+        file_revision_get,
+        json!({
+            "site_id": site_id,
+            "page_id": public_page.page_id,
+            "file_id": private_file_id,
+            "revision_number": 0,
+        }),
+    );
+    assert!(mismatched_revision.is_none());
+
+    let mismatched_revisions = run_endpoint!(
+        runner,
+        file_revision_range,
+        json!({
+            "site_id": site_id,
+            "page_id": public_page.page_id,
+            "file_id": private_file_id,
+            "revision_number": 0,
+            "revision_direction": "before",
+            "limit": 1,
+        }),
+    );
+    assert!(mismatched_revisions.is_empty());
+
+    let mismatched_count_error = run_endpoint_err!(
+        runner,
+        file_revision_count,
+        json!({
+            "site_id": site_id,
+            "page_id": public_page.page_id,
+            "file": private_file_id,
+        }),
+    );
+    assert_contains_error!(mismatched_count_error, ErrorType::FileNotFound);
+
+    for error in [
+        run_endpoint_err!(
+            runner,
+            file_revision_count,
+            json!({
+                "site_id": site_id,
+                "page_id": private_page.page_id,
+                "file": PRIVATE_FILE_NAME,
+            }),
+        ),
+        run_endpoint_err!(
+            runner,
+            file_revision_get,
+            json!({
+                "site_id": site_id,
+                "page_id": private_page.page_id,
+                "file_id": private_file_id,
+                "revision_number": 0,
+            }),
+        ),
+        run_endpoint_err!(
+            runner,
+            file_revision_range,
+            json!({
+                "site_id": site_id,
+                "page_id": private_page.page_id,
+                "file_id": private_file_id,
+                "revision_number": 0,
+                "revision_direction": "before",
+                "limit": 1,
+            }),
+        ),
+    ] {
+        assert_contains_error!(error, ErrorType::PermissionDenied);
+    }
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(private_page.page_id)),
+    });
+
+    let private_revisions = run_endpoint!(
+        runner,
+        file_revision_range,
+        json!({
+            "site_id": site_id,
+            "page_id": private_page.page_id,
+            "file_id": private_file_id,
+            "revision_number": 0,
+            "revision_direction": "before",
+            "limit": 1,
+        }),
+    );
+    assert_eq!(private_revisions.len(), 1);
+    assert_eq!(private_revisions[0].file_id, private_file_id);
+}
+
+#[tokio::test]
 async fn forum_post_reads_require_parent_page_view_permission() {
     let mut runner = TestRunner::setup().await;
     const SITE_SLUG: &str = "scp-wiki";
