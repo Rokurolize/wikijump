@@ -1462,7 +1462,8 @@ function relativeTimeSelector(invocation) {
       continue;
     }
     const value = attribute.value.trim();
-    if (/^(?:last|older than)\s+[0-9]+\s+(?:day|days|hour|hours)$/iu.test(value)) {
+    if (/^(?:last|older than)\s+[0-9]+\s+(?:day|days|hour|hours)$/iu.test(value) ||
+      /^(?:@url\|)?last\s+month$/iu.test(value)) {
       return { name: attribute.name.toLowerCase(), value };
     }
   }
