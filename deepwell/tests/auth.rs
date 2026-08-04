@@ -360,6 +360,64 @@ async fn mfa_setup_reset_disable_and_totp_login_flow() {
 }
 
 #[tokio::test]
+async fn restricted_mfa_sessions_expire_after_repeated_failed_totp_attempts() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let (name, _) = create_auth_test_user(&runner, n, true).await;
+    let login = run_endpoint!(runner, auth_login, login_params(&name));
+    assert!(login.needs_mfa);
+
+    let secret_bytes = BASE32_NOPAD
+        .decode(b"ABCDEFGHIJKLMNOP")
+        .expect("test TOTP secret should be valid base32");
+    let totp = TOTP::builder()
+        .secret(secret_bytes)
+        .algorithm(TotpAlgorithm::SHA256)
+        .digits(runner.config().totp_digits)
+        .time_step(runner.config().totp_time_step)
+        .build()
+        .expect("TOTP builder should accept Deepwell configuration");
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("test clock should be after the Unix epoch")
+        .as_secs()
+        .checked_add_signed(runner.config().totp_time_skew)
+        .expect("configured TOTP time offset should produce a valid timestamp");
+    let valid_code = totp.generate_at(timestamp).to_string();
+    let wrong_code = format!(
+        "{:06}",
+        (valid_code.parse::<u32>().expect("TOTP code should be numeric") + 1)
+            % 1_000_000
+    );
+
+    for attempt in 0..5 {
+        let error = run_endpoint_err!(
+            runner,
+            auth_mfa_verify,
+            json!({
+                "session_token": login.session_token,
+                "totp_or_code": wrong_code,
+                "ip_address": common::IP_ADDRESS,
+                "user_agent": format!("deepwell-auth-test-wrong-totp-{attempt}"),
+            }),
+        );
+        assert_contains_error!(error, ErrorType::InvalidAuthentication);
+    }
+
+    let error = run_endpoint_err!(
+        runner,
+        auth_mfa_verify,
+        json!({
+            "session_token": login.session_token,
+            "totp_or_code": valid_code,
+            "ip_address": common::IP_ADDRESS,
+            "user_agent": "deepwell-auth-test-after-totp-budget",
+        }),
+    );
+    assert_contains_error!(error, ErrorType::InvalidAuthentication);
+}
+
+#[tokio::test]
 async fn authorization_token_issue_requires_admin_request_context() {
     let mut runner = TestRunner::setup().await;
 
