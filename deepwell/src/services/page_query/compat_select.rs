@@ -24,7 +24,7 @@ use super::structs::{
     IncludedCategories, OrderBySelector, OrderProperty, PageParentSelector, PageQuery,
     PageTypeSelector, PaginationSelector, RangeSelector, TagCondition,
 };
-use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::{self, Entity as PageCategory};
 use crate::models::page_revision;
@@ -38,6 +38,8 @@ use std::collections::BTreeSet;
 use time::OffsetDateTime;
 
 const MAX_FILTER_VALUES: usize = 100;
+const MAX_PAGE_SELECT_CANDIDATES: u64 = 5_000;
+const MAX_PAGE_SELECT_RESULTS: usize = 250;
 
 #[derive(Deserialize, Debug)]
 pub struct SelectPageTags<'a> {
@@ -218,6 +220,12 @@ impl PageQueryService {
         let tags_none = tags_none.filter(|values| !values.is_empty());
 
         let make_error = || Error::new("failed to select pages", ErrorType::Page);
+        let user_id = ctx.request().user_id().or_raise(|| {
+            Error::new(
+                "page selection requires an authenticated request context",
+                ErrorType::PermissionDenied,
+            )
+        })?;
         let site_id = SiteService::get_id(ctx, site).await.or_raise(make_error)?;
         let parent = normalize_optional(parent);
         let created_by = normalize_optional(created_by);
@@ -256,7 +264,7 @@ impl PageQueryService {
             }
         };
 
-        let found = Self::find(
+        let found = Self::find_with_hard_candidate_limit(
             ctx,
             PageQuery {
                 current_page_id: 0,
@@ -307,24 +315,45 @@ impl PageQueryService {
                 variables: &[],
                 fields: FoundPageFields {
                     slug: true,
+                    page_category_id: true,
                     score: rating_filter.is_some(),
                     ..FoundPageFields::default()
                 },
             },
+            MAX_PAGE_SELECT_CANDIDATES,
         )
         .await
         .or_raise(make_error)?;
 
-        Ok(found
-            .pages
-            .into_iter()
-            .filter(|page| {
-                rating_filter
-                    .as_ref()
-                    .is_none_or(|filter| filter.matches(page.score.unwrap_or(0.0)))
-            })
-            .filter_map(|page| page.slug)
-            .collect())
+        let mut visible_pages = Vec::with_capacity(found.pages.len());
+        for page in found.pages {
+            let page_category_id = page.page_category_id.ok_or_raise(make_error)?;
+            let can_view = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: Some(user_id),
+                    site_id,
+                    page_reference: Some(Reference::Id(page.page_id)),
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: Some(Reference::Id(page_category_id)),
+                    action: Action::View,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+
+            if can_view {
+                visible_pages.push((page.slug, page.score));
+            }
+        }
+
+        Ok(page_select_result_slugs(
+            visible_pages,
+            rating_filter.as_ref(),
+            MAX_PAGE_SELECT_RESULTS,
+        ))
     }
 }
 
@@ -340,6 +369,21 @@ fn owned_selector_values(values: Option<Vec<String>>) -> Vec<Cow<'static, str>> 
         .unwrap_or_default()
         .into_iter()
         .map(Cow::Owned)
+        .collect()
+}
+
+fn page_select_result_slugs(
+    pages: impl IntoIterator<Item = (Option<String>, Option<f32>)>,
+    rating_filter: Option<&PageSelectRatingFilter>,
+    result_limit: usize,
+) -> Vec<String> {
+    pages
+        .into_iter()
+        .filter(|(_, score)| {
+            rating_filter.is_none_or(|filter| filter.matches(score.unwrap_or(0.0)))
+        })
+        .filter_map(|(slug, _)| slug)
+        .take(result_limit)
         .collect()
 }
 
@@ -487,4 +531,39 @@ fn parse_page_select_order(value: Option<&str>) -> Result<OrderBySelector> {
         property,
         ascending,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{PageSelectComparison, PageSelectRatingFilter, page_select_result_slugs};
+
+    #[test]
+    fn page_select_response_limit_applies_after_rating_filter() {
+        let rating_filter = PageSelectRatingFilter {
+            comparison: PageSelectComparison::GreaterOrEqual,
+            value: 1.0,
+        };
+
+        let slugs = page_select_result_slugs(
+            [
+                (Some("below".to_owned()), Some(0.0)),
+                (Some("first".to_owned()), Some(1.0)),
+                (Some("second".to_owned()), Some(2.0)),
+            ],
+            Some(&rating_filter),
+            1,
+        );
+
+        assert_eq!(slugs, ["first"]);
+    }
+
+    #[test]
+    fn page_select_response_limit_bounds_unfiltered_rows() {
+        let pages = (0..3).map(|index| (Some(format!("page-{index}")), None));
+
+        assert_eq!(
+            page_select_result_slugs(pages, None, 2),
+            ["page-0", "page-1"]
+        );
+    }
 }

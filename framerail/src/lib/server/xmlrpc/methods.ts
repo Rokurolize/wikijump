@@ -137,7 +137,7 @@ export async function dispatchXmlRpcCall(
       return selectTags(call, options.requestIp)
     case "pages.select":
       expectParamCount(call, 1)
-      return selectPages(call)
+      return selectPages(call, options.requestIp)
     case "pages.get_meta":
       expectParamCount(call, 1)
       return getPagesMeta(call, options.requestIp)
