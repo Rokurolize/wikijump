@@ -323,7 +323,8 @@ mod tests {
     #[test]
     fn range_index_reuses_union_nodes_for_contained_children() {
         let mut arena = EmitSetArena::default();
-        let index = EmitRangeIndex::new(&mut arena, vec![1..3, 5..7, 9..11, 13..15]).unwrap();
+        let index =
+            EmitRangeIndex::new(&mut arena, vec![1..3, 5..7, 9..11, 13..15]).unwrap();
         let middle = index.contained_set(&mut arena, 4..12).unwrap();
         assert_eq!(arena.materialize([middle]), vec![5..7, 9..11]);
         let clipped = index.contained_set(&mut arena, 6..14).unwrap();
@@ -347,5 +348,47 @@ mod tests {
         assert_eq!(arena.union(second, first).unwrap(), union);
         assert_eq!(arena.node_count(), node_count);
         assert_eq!(arena.materialize([union]), vec![0..1, 2..3]);
+    }
+
+    #[test]
+    fn repeated_non_aligned_containment_queries_stop_growing_the_arena() {
+        let mut arena = EmitSetArena::default();
+        let ranges = (0..1_024).map(|index| index * 2..index * 2 + 1).collect();
+        let index = EmitRangeIndex::new(&mut arena, ranges).unwrap();
+        let baseline = arena.node_count();
+        let expected = index.contained_set(&mut arena, 2..2_046).unwrap();
+        let after_first_query = arena.node_count();
+
+        for _ in 1..4_096 {
+            assert_eq!(index.contained_set(&mut arena, 2..2_046).unwrap(), expected,);
+        }
+
+        assert!(after_first_query > baseline);
+        assert_eq!(arena.node_count(), after_first_query);
+        assert_eq!(arena.materialize([expected]).len(), 1_022);
+    }
+
+    #[test]
+    fn distinct_unions_stop_at_the_hard_node_budget() {
+        const MAX_NODES: usize = 1_024;
+        let mut arena = EmitSetArena::with_max_nodes(MAX_NODES);
+        let ranges = (0..256).map(|index| index * 2..index * 2 + 1).collect();
+        let index = EmitRangeIndex::new(&mut arena, ranges).unwrap();
+        let mut exhausted = false;
+
+        'queries: for start in 0..255 {
+            for end in start + 2..=256 {
+                if index.contained_set(&mut arena, start * 2..end * 2).is_err() {
+                    exhausted = true;
+                    break 'queries;
+                }
+            }
+        }
+
+        assert!(
+            exhausted,
+            "distinct containment unions should exhaust the test budget"
+        );
+        assert_eq!(arena.node_count(), MAX_NODES);
     }
 }

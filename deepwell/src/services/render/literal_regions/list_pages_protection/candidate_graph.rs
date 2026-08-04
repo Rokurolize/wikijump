@@ -213,10 +213,16 @@ pub(super) fn collect_candidate_graph_ranges(
         &[],
     )
     .ranges;
-    let original_child_index =
-        arena_result(EmitRangeIndex::new(&mut arena, original_child_ranges), source_len)?;
-    let original_colors =
-        adapt_color_candidates(&mut arena, &original_child_index, colors.clone(), source_len)?;
+    let original_child_index = arena_result(
+        EmitRangeIndex::new(&mut arena, original_child_ranges),
+        source_len,
+    )?;
+    let original_colors = adapt_color_candidates(
+        &mut arena,
+        &original_child_index,
+        colors.clone(),
+        source_len,
+    )?;
     let original_stage_selection = select_two_phase_candidates(
         &arena,
         &[
@@ -250,7 +256,8 @@ pub(super) fn collect_candidate_graph_ranges(
         &[compat_css.clone(), compat_quotes.clone()],
     )
     .ranges;
-    let child_index = arena_result(EmitRangeIndex::new(&mut arena, child_ranges), source_len)?;
+    let child_index =
+        arena_result(EmitRangeIndex::new(&mut arena, child_ranges), source_len)?;
     let colors = adapt_color_candidates(&mut arena, &child_index, colors, source_len)?;
 
     let selected = select_two_phase_candidates(
@@ -345,7 +352,8 @@ fn adapt_color_descriptor_candidates(
     candidates
         .into_iter()
         .map(|candidate| {
-            let (leaf, _) = arena_result(arena.leaf(candidate.range.clone()), source_len)?;
+            let (leaf, _) =
+                arena_result(arena.leaf(candidate.range.clone()), source_len)?;
             Ok(ParserCandidate::exact(
                 PRECEDENCE_COLOR,
                 Some(ParserDelimiterIdentity {
@@ -458,7 +466,8 @@ fn adapt_text_candidates(
     candidates
         .into_iter()
         .map(|candidate| {
-            let (leaf, emit) = arena_result(arena.leaf(candidate.range.clone()), source_len)?;
+            let (leaf, emit) =
+                arena_result(arena.leaf(candidate.range.clone()), source_len)?;
             let (precedence, namespace) = match candidate.kind {
                 ParserOwnerKind::TextLink => {
                     (PRECEDENCE_TEXT_LINK, DELIMITER_NAMESPACE_TEXT_LINK)
@@ -506,7 +515,8 @@ fn adapt_color_candidates(
     candidates
         .into_iter()
         .map(|candidate| {
-            let (leaf, emit) = arena_result(arena.leaf(candidate.range.clone()), source_len)?;
+            let (leaf, emit) =
+                arena_result(arena.leaf(candidate.range.clone()), source_len)?;
             Ok(match candidate.certainty {
                 ParserOwnerCertainty::Exact => {
                     let terminator = candidate
@@ -574,7 +584,10 @@ fn adapt_exact_ranges(
 
 type CandidateGraphResult<T> = Result<T, usize>;
 
-fn arena_result<T>(result: EmitSetResult<T>, source_len: usize) -> CandidateGraphResult<T> {
+fn arena_result<T>(
+    result: EmitSetResult<T>,
+    source_len: usize,
+) -> CandidateGraphResult<T> {
     result.map_err(|_| source_len)
 }
 
