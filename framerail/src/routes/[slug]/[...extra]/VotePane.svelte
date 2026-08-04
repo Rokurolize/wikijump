@@ -98,11 +98,7 @@
 
   async function fetchVoteRating() {
     const res = await fetch(`?/score`, {
-      method: "POST",
-      body: JSON.stringify({
-        siteId: data.site.site_id,
-        pageId: data.page?.page_id
-      })
+      method: "POST"
     }).then((res) => res.text())
 
     const result = deserialize<
