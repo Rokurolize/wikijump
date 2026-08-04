@@ -8,7 +8,7 @@ import {fileURLToPath} from "node:url";
 import {promisify} from "node:util";
 
 import {
-  ALLOWED_SITE_SLUG,
+  DEFAULT_SITE_SLUG,
   THEME_CAPTURE_VIEWPORTS,
   THEME_CURRENT_SITE_DEPENDENCIES,
   THEME_LOCALIZATION_TIERS,
@@ -130,7 +130,7 @@ test("plan is deterministic, mutation-free, and carries cleanup and capture cont
   assert.equal(first.preflight.status, "pass");
   assert.equal(first.safety.page_mutations_performed, 0);
   assert.equal(first.safety.execute_supported, false);
-  assert.equal(first.run.site_slug, ALLOWED_SITE_SLUG);
+  assert.equal(first.run.site_slug, DEFAULT_SITE_SLUG);
   assert.equal(first.run.owned_slug_prefix, "codex-l10n:20260713-contract-");
   assert.ok(first.tiers.every((tier) => tier.run_owned_slug.startsWith(first.run.owned_slug_prefix)));
   assert.deepEqual(first.tiers.map((tier) => tier.id), ["yossistyle", "ashes-to-ashes", "basalt"]);

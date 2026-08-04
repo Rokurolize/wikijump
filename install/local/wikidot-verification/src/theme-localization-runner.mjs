@@ -8,14 +8,19 @@ import {fileURLToPath} from "node:url";
 import {openBrowser} from "./browser-session.mjs";
 import {captureThemeTierBrowserEvidence, prepareThemeArtifactDirectory} from "./theme-browser-capture.mjs";
 import {DeepwellThemePageAdapter} from "./theme-localization-deepwell-adapter.mjs";
-import {ALLOWED_SITE_SLUG, readCurrentSiteDependencySource} from "./theme-localization-e2e.mjs";
+import {DEFAULT_SITE_SLUG, readCurrentSiteDependencySource, validateSiteSlug} from "./theme-localization-e2e.mjs";
 import {executeThemeRunOwnedPages, recoverThemeExecution, themeExecutionFingerprint, validateRecoverableThemeExecutionPlan, validateThemeExecutionPlan} from "./theme-localization-execution.mjs";
 import {WikidotThemePageAdapter} from "./theme-localization-wikidot-adapter.mjs";
 
 export const THEME_RUN_RESULT_SCHEMA = "wikijump_local_lab.theme_run_result.v1";
 export const GUARDED_THEME_WIKIJUMP_RPC_URL = "http://127.0.0.1:12747/jsonrpc";
 const DEFAULT_BROWSER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..", "framerail");
-const DEFAULT_EXECUTION_LOCK = path.join(os.tmpdir(), `wikijump-theme-localization-${ALLOWED_SITE_SLUG}.lock`);
+const DEFAULT_EXECUTION_LOCK = path.join(os.tmpdir(), `wikijump-theme-localization-${DEFAULT_SITE_SLUG}.lock`);
+
+function defaultExecutionLockPath(siteSlug) {
+  const validated = validateSiteSlug(siteSlug);
+  return path.join(os.tmpdir(), `wikijump-theme-localization-${validated}.lock`);
+}
 
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
@@ -82,7 +87,8 @@ export function validateGuardedThemeRpcUrl(value) {
   return value;
 }
 
-export async function createLiveThemeDependencies({env = process.env, browserRoot, browserExecutable, cdpEndpoint, wikidotStorageState, wikijumpStorageState, ignoreHttpsErrors = false, needsBrowser = true, openBrowserImpl = openBrowser, captureTierImpl = captureThemeTierBrowserEvidence} = {}) {
+export async function createLiveThemeDependencies({env = process.env, browserRoot, browserExecutable, cdpEndpoint, wikidotStorageState, wikijumpStorageState, ignoreHttpsErrors = false, needsBrowser = true, siteSlug = DEFAULT_SITE_SLUG, openBrowserImpl = openBrowser, captureTierImpl = captureThemeTierBrowserEvidence} = {}) {
+  siteSlug = validateSiteSlug(siteSlug);
   if (cdpEndpoint && browserExecutable) throw new Error("CDP endpoint cannot be combined with a browser executable");
   const validatedCdpEndpoint = cdpEndpoint ? validateThemeCdpEndpoint(cdpEndpoint) : null;
   const rpcUrl = validateGuardedThemeRpcUrl(env.WIKIJUMP_THEME_RPC_URL);
@@ -90,8 +96,8 @@ export async function createLiveThemeDependencies({env = process.env, browserRoo
   const secrets = [requiredEnv(env, "WIKIDOT_USERNAME"), requiredEnv(env, "WIKIDOT_PASSWORD"), requiredEnv(env, "WIKIJUMP_THEME_ADMIN_EMAIL"), requiredEnv(env, "WIKIJUMP_THEME_ADMIN_PASSWORD"), rpcToken];
   const actorUserId = resolveThemeActorUserId(env);
   const storageStates = needsBrowser ? {wikidot: await validateStorageState(wikidotStorageState), wikijump: await validateStorageState(wikijumpStorageState)} : {};
-  const wikidot = new WikidotThemePageAdapter({helperOptions: {env}});
-  const wikijump = new DeepwellThemePageAdapter({rpcUrl, rpcToken, adminEmail: env.WIKIJUMP_THEME_ADMIN_EMAIL, adminPassword: env.WIKIJUMP_THEME_ADMIN_PASSWORD, actorUserId});
+  const wikidot = new WikidotThemePageAdapter({helperOptions: {env}, siteSlug});
+  const wikijump = new DeepwellThemePageAdapter({rpcUrl, rpcToken, adminEmail: env.WIKIJUMP_THEME_ADMIN_EMAIL, adminPassword: env.WIKIJUMP_THEME_ADMIN_PASSWORD, actorUserId, siteSlug});
   let browserSession = null;
   try {
     await wikidot.connect();
@@ -250,8 +256,8 @@ async function runGuardedThemeAction({mode, plan, ledgerPath, resultPath, artifa
   let operation = null;
   let failure = null;
   try {
-    executionLock = await acquireThemeExecutionLock({lockPath: executionLockPath, runId: plan.run.id, fingerprint: themeExecutionFingerprint(plan, {allowLegacy: mode === "recover"})});
-    dependencies = await dependencyFactory({...dependencyOptions, needsBrowser: mode === "execute", captureTierImpl});
+    executionLock = await acquireThemeExecutionLock({lockPath: executionLockPath ?? (plan.run.site_slug === DEFAULT_SITE_SLUG ? DEFAULT_EXECUTION_LOCK : defaultExecutionLockPath(plan.run.site_slug)), runId: plan.run.id, fingerprint: themeExecutionFingerprint(plan, {allowLegacy: mode === "recover"})});
+    dependencies = await dependencyFactory({...dependencyOptions, needsBrowser: mode === "execute", siteSlug: plan.run.site_slug, captureTierImpl});
     if (mode === "recover") {
       operation = await recoverThemeExecution({ledgerPath, plan, adapters: dependencies.adapters});
       if (bridge.signal.aborted) throw bridge.signal.reason;

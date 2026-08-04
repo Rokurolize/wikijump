@@ -125,7 +125,7 @@ test("Python helper contains only direct authenticated page primitives", async (
   assert.match(source, /edit\/PageEditModule/);
   assert.match(source, /"event": "deletePage"/);
   assert.match(source, /"event": "saveTags"/);
-  assert.match(source, /ALLOWED_ORIGIN}\/ajax-module-connector\.php/);
+  assert.match(source, /self\.origin}\/ajax-module-connector\.php/);
   assert.match(source, /page_revision_id/);
   assert.doesNotMatch(source, /ListPagesModule/);
   assert.doesNotMatch(source, /site\.page\.get/);
@@ -139,6 +139,13 @@ test("production helper uses the component-owned virtual environment", () => {
   assert.equal(client.command, path.resolve(HERE, "../.venv/bin/python"));
   assert.equal(client.command, WIKIDOT_HELPER_PYTHON);
   assert.equal("WIKIDOT_PY_ROOT" in client.env, false);
+});
+
+test("helper environment and handshake are scoped to the selected allowlisted site", () => {
+  const client = new WikidotJsonlHelperClient({env: helperEnvironment(), siteSlug: "sandbox-for-codex"});
+  assert.equal(client.siteSlug, "sandbox-for-codex");
+  assert.equal(client.env.WIKIDOT_SITE_SLUG, "sandbox-for-codex");
+  assert.throws(() => new WikidotJsonlHelperClient({env: helperEnvironment(), siteSlug: "scp-wiki"}), /not allowlisted/);
 });
 
 test("create-only backend rejects an existing PageEditModule revision", () => {
@@ -247,6 +254,8 @@ class Httpx:
     def __init__(self, response): self.response = response
     def Client(self, **kwargs): return Client(self.response, **kwargs)
 backend = object.__new__(module.WikidotBackend)
+backend.site_slug = module.DEFAULT_SITE_SLUG
+backend.origin = module.site_origin(module.DEFAULT_SITE_SLUG)
 backend.headers = {}
 backend.httpx = Httpx(Response(404, ""))
 print(backend._get("codex-l10n:20260713-adapter-yossistyle") is None)
@@ -270,7 +279,7 @@ spec = importlib.util.spec_from_file_location("theme_helper", sys.argv[1])
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 class Backend:
-    def __init__(self): self.count = 0
+    def __init__(self): self.count = 0; self.site_slug = "scpaiueouiuiuiui"
     def inspect(self, slug, kind="theme_page"):
         self.count += 1
         return {"identity": self.count, "title": "fixture", "source_sha256": "0" * 64, "tags": []}
