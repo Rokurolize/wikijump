@@ -189,6 +189,12 @@ async function cleanupCreatedPage(adapter, resource, identity) {
   }, actual.identity);
 }
 
+function isDeepwellAuthenticationFailure(error) {
+  return /permission|authentication|unauthori[sz]ed|session/iu.test(
+    error?.message ?? String(error),
+  );
+}
+
 async function withTimeout(operation, label, timeoutMs = 90_000) {
   let timer = null;
   try {
@@ -296,7 +302,8 @@ async function main(argv) {
   if (!process.env.DEEPWELL_RPC_TOKEN) throw new Error("DEEPWELL_RPC_TOKEN is required through the environment");
 
   const wikidot = new WikidotThemePageAdapter({helperOptions: {env: process.env}, siteSlug: "sandbox-for-codex"});
-  const wikijump = new DeepwellThemePageAdapter({rpcUrl: args.rpcUrl, rpcToken: process.env.DEEPWELL_RPC_TOKEN, adminEmail: process.env.WIKIDOT_VERIFY_ADMIN_EMAIL ?? "admin@wikijump", adminPassword: process.env.WIKIDOT_VERIFY_ADMIN_PASS ?? "wikijumpadmin1", siteSlug: "sandbox-for-codex"});
+  const deepwellOptions = {rpcUrl: args.rpcUrl, rpcToken: process.env.DEEPWELL_RPC_TOKEN, adminEmail: process.env.WIKIDOT_VERIFY_ADMIN_EMAIL ?? "admin@wikijump", adminPassword: process.env.WIKIDOT_VERIFY_ADMIN_PASS ?? "wikijumpadmin1", siteSlug: "sandbox-for-codex"};
+  let wikijump = new DeepwellThemePageAdapter(deepwellOptions);
   await wikidot.connect();
   await wikijump.connect();
   const captures = [];
@@ -306,6 +313,23 @@ async function main(argv) {
   let browser = null;
   let liveBrowserPage = null;
   let localBrowserPage = null;
+  const cleanupFailures = [];
+  let cleanupSuccesses = 0;
+  const cleanupLocalPage = async (resource, identity, fixtureId) => {
+    try {
+      const result = await withTimeout(cleanupCreatedPage(wikijump, resource, identity), `local cleanup ${fixtureId}`);
+      cleanupSuccesses += 1;
+      return result;
+    } catch (error) {
+      if (!isDeepwellAuthenticationFailure(error)) throw error;
+      await Promise.resolve(wikijump.close()).catch(() => undefined);
+      wikijump = new DeepwellThemePageAdapter(deepwellOptions);
+      await wikijump.connect();
+      const result = await withTimeout(cleanupCreatedPage(wikijump, resource, identity), `local cleanup ${fixtureId} after reconnect`);
+      cleanupSuccesses += 1;
+      return result;
+    }
+  };
   try {
     controls = await createParityBrowserControls({
       args: {mode: "candidate", outputDir: args.outputDir, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs},
@@ -357,11 +381,26 @@ async function main(argv) {
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "fixture-failed", error: fixtureError}));
       } finally {
         if (localPage !== null || localAttempted) {
-          await withTimeout(cleanupCreatedPage(wikijump, localResource, localPage), `local cleanup ${fixture.fixture_id}`);
+          try {
+            await cleanupLocalPage(localResource, localPage, fixture.fixture_id);
+          } catch (error) {
+            const failure = {fixture_id: fixture.fixture_id, target: "wikijump", resource: localResource, error: {name: error?.name ?? "Error", message: error?.message ?? String(error)}};
+            cleanupFailures.push(failure);
+            fixtureError ??= failure.error;
+            console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "cleanup-failed", target: "wikijump", error: failure.error}));
+          }
           localPage = null;
         }
         if (livePage !== null || liveAttempted) {
-          await withTimeout(cleanupCreatedPage(wikidot, liveResource, livePage), `live cleanup ${fixture.fixture_id}`);
+          try {
+            await withTimeout(cleanupCreatedPage(wikidot, liveResource, livePage), `live cleanup ${fixture.fixture_id}`);
+            cleanupSuccesses += 1;
+          } catch (error) {
+            const failure = {fixture_id: fixture.fixture_id, target: "wikidot", resource: liveResource, error: {name: error?.name ?? "Error", message: error?.message ?? String(error)}};
+            cleanupFailures.push(failure);
+            fixtureError ??= failure.error;
+            console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "cleanup-failed", target: "wikidot", error: failure.error}));
+          }
           livePage = null;
         }
       }
@@ -392,9 +431,9 @@ async function main(argv) {
   await fs.writeFile(path.join(args.outputDir, "frozen-captures.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_captures.v1", captures: frozenRows}, null, 2)}\n`, {flag: "wx"});
   await fs.writeFile(path.join(args.outputDir, "contracts.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_contracts.v1", contracts: contractRows}, null, 2)}\n`, {flag: "wx"});
   await fs.writeFile(path.join(args.outputDir, "oracle-verdict.json"), `${JSON.stringify(aggregate.verdict, null, 2)}\n`, {flag: "wx"});
-  await fs.writeFile(path.join(args.outputDir, "capture-receipt.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_capture_receipt.v1", status: aggregate.exitCode === 0 ? "pass" : "fail", run_id: args.runId, registry_path: args.registry, registry_sha256: await sha256File(args.registry), sources_path: args.sources, sources_sha256: await sha256File(args.sources), live_origin: LIVE_ORIGIN, local_origin: LOCAL_ORIGIN, runtime_identity: runtimeIdentity, cleanup: {created_and_removed_pages: cleanup.length, residual_pages: []}, policy_sha256: policy.sha256}, null, 2)}\n`, {flag: "wx"});
+  await fs.writeFile(path.join(args.outputDir, "capture-receipt.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_capture_receipt.v1", status: aggregate.exitCode === 0 && cleanupFailures.length === 0 ? "pass" : "fail", run_id: args.runId, registry_path: args.registry, registry_sha256: await sha256File(args.registry), sources_path: args.sources, sources_sha256: await sha256File(args.sources), live_origin: LIVE_ORIGIN, local_origin: LOCAL_ORIGIN, runtime_identity: runtimeIdentity, cleanup: {created_and_removed_pages: cleanupSuccesses, residual_pages: cleanupFailures.map(({fixture_id, target, resource, error}) => ({fixture_id, target, resource, error})), failures: cleanupFailures}, policy_sha256: policy.sha256}, null, 2)}\n`, {flag: "wx"});
   console.log(JSON.stringify({status: aggregate.verdict.aggregate.fail === 0 ? "pass" : "fail", fixtures: aggregate.verdict.fixture_count, failed: aggregate.verdict.aggregate.fail, output_dir: args.outputDir}));
-  return aggregate.exitCode;
+  return aggregate.exitCode === 0 && cleanupFailures.length === 0 ? 0 : 1;
 }
 
 try {
