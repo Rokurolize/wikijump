@@ -4,8 +4,10 @@
   "wikijump_revision": "90a38af51989d25d2cf21e12b9b29adb8d5b8f76",
   "ftml_revision": "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115",
   "acceptance_candidate_revision": "90a38af51989d25d2cf21e12b9b29adb8d5b8f76",
-  "final_standing_revision": "90a38af51989d25d2cf21e12b9b29adb8d5b8f76",
-  "final_standing_tree": "8c6aa026284f10ec26e376232423d55f7a63c61a",
+  "final_integration_revision": "35c1666e3337b396cb427c7e812eccfee0490268",
+  "final_integration_tree": "92f78dab23ba7498d259959714846f4be63fb53c",
+  "final_standing_revision": "35c1666e3337b396cb427c7e812eccfee0490268",
+  "final_standing_tree": "92f78dab23ba7498d259959714846f4be63fb53c",
   "final_standing_ftml_revision": "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115",
   "final_standing_dependency_lock_sha256": "565e12171cdae64251182df480ac70aa8b8415ce793870a7204d1cb75ae8b21d",
   "authority": {
@@ -101,24 +103,27 @@
     "acceptance_scope_revised": false
   },
   "standing_verification": {
-    "refresh_receipt_sha256": "6621c868b8ac94bac768b3ea6bb3164a47d356bae9bf04c85e95df852b160df9",
-    "prepared_receipt_sha256": "31d38360c6dbfd6eb133d013e3adc5c1867fba117e83d0ab38b6a23f5014c8bd",
-    "render_receipt_sha256": "16c45720669ed17a7e6fe7381f2ff6d9df4e6f121958c2efd314ed674a16907e",
-    "runtime_differential_identity_sha256": "1b886a3bd77dfc34c8f52befe990c1a749c4bbba22852e1692bb015bb623b066",
-    "served_verification_sha256": "e9c91a39d65a782a671b59eebe41b62da7cb809cc9493c5f0f4f4895c65619a7",
+    "refresh_receipt_sha256": "ecf89ec0d4ee9acea24851a945b01e773ed09a8ca5e34ac677668aace267e008",
+    "prepared_receipt_sha256": "5db18846f0ea49db4b6868f4e90708e6c43ac0acbcd8fbe5415be983e8b78c04",
+    "render_receipt_sha256": "9cfa932441a48172df91437e8509da54697f99fdfc700257283a2d29d084646e",
+    "runtime_differential_identity_sha256": "28e5fd68cbb721f4eeb28a88d0ea87e51ebd88e0676513cc11d3b5717602af28",
+    "served_verification_sha256": "aea97fbda0f68d609b40a01d58fb5d2de963a3cfcedab03816532b660547e7b9",
+    "served_preview_verification_sha256": "fc44fdf229e0ce5ebc3a2bbf59e1e433b2fa1c1e26deeab42c82696c22852ff9",
+    "identifier_leak_verification_sha256": "3c5b9b6091400124b3d61db931dbbf78355223e05083ac58e88b33d580bdde27",
     "runtime_identity": {
-      "wikijump_revision": "90a38af51989d25d2cf21e12b9b29adb8d5b8f76",
-      "wikijump_tree": "8c6aa026284f10ec26e376232423d55f7a63c61a",
+      "wikijump_revision": "35c1666e3337b396cb427c7e812eccfee0490268",
+      "wikijump_tree": "92f78dab23ba7498d259959714846f4be63fb53c",
       "ftml_revision": "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115",
-      "deepwell_image": "sha256:ba718e9b844ba1ab0715f1ce0d2b9717c0567232e4bf304f97e9d42310f5d44b",
-      "framerail_image": "sha256:7367751cd405f9ba6917ba238e112725ae9799126f3ec7626c5f12fc2f3af870",
-      "wws_image": "sha256:49a7c0fa7b738978b9e4ef54ad5c4a53ac4ac6687ddd57b56f80934aef12ccf0",
+      "deepwell_image": "sha256:93e3831ccb11d74c91a367aaa086b373850e19c9e263daa18b95527e3010a942",
+      "framerail_image": "sha256:742e98359ea3df08a77fa5daa86235de56ecdc18ec0760adb4307485ec506f65",
+      "wws_image": "sha256:4c599144b06283a470effbfada27d8e645a9955db574b6c9b033eed452e743a8",
       "caddy_image": "sha256:d7a713ea0ce7d65b62866058e38a432f09cd86937bbdf2a192640c487ab8d820"
     },
     "assertions": [
-      "identity-bound browser integrity: 5 routes and 1 loading interval passed, 0 anomalies",
-      "served RPC: representative selector, malformed head, literal code, missing parent, URL selector prefix, and anonymous system-page filter passed",
-      "served HTTPS: four routes returned HTTP 200 with no TODO: module ListPages leakage; AJAX pagination returned page 2"
+      "identity-bound browser integrity: four settled routes passed, 0 anomalies",
+      "served RPC: representative selector, malformed head, literal code, unclosed opener, missing parent, URL selector prefix, and anonymous system-page filter passed",
+      "served HTTPS: four routes returned HTTP 200 with no TODO: module ListPages leakage; AJAX pagination returned page 2",
+      "served layout leak battery: 40 constructs rendered with no Wikijump identifiers"
     ]
   }
 }
