@@ -29,8 +29,10 @@ use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTa
 use deepwell::models::authorization_token::{
     Column as AuthorizationTokenColumn, Entity as AuthorizationTokenTable,
 };
+use deepwell::models::session::Entity as SessionTable;
 use deepwell::services::RequestContext;
 use deepwell::services::password::PasswordService;
+use deepwell::services::session::SessionService;
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::types::{Reference, UserType};
 use rust_otp::{Algorithm as TotpAlgorithm, TOTP};
@@ -43,6 +45,7 @@ use str_macro::str;
 static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
 const PASSWORD: &str = "password";
 const RECOVERY_CODE: &str = "mfa-recovery-code";
+const TEST_MFA_SECRET: &str = "ABCDEFGHIJKLMNOP";
 
 fn next_n() -> u64 {
     FIXTURE_COUNTER.fetch_add(1, Ordering::Relaxed)
@@ -73,7 +76,7 @@ async fn create_auth_test_user(runner: &TestRunner, n: u64, mfa: bool) -> (Strin
         UserService::set_mfa_secrets(
             runner.context(),
             user.user_id,
-            ActiveValue::Set(Some("ABCDEFGHIJKLMNOP".to_owned())),
+            ActiveValue::Set(Some(TEST_MFA_SECRET.to_owned())),
             ActiveValue::Set(Some(vec![recovery_hash])),
         )
         .await
@@ -90,6 +93,33 @@ fn login_params(name: &str) -> serde_json::Value {
         "ip_address": common::IP_ADDRESS,
         "user_agent": "deepwell-auth-test",
     })
+}
+
+fn current_totp(secret: &str, runner: &TestRunner) -> u32 {
+    let secret_bytes = BASE32_NOPAD
+        .decode(secret.as_bytes())
+        .expect("test TOTP secret should be valid base32");
+    let totp = TOTP::builder()
+        .secret(secret_bytes)
+        .algorithm(TotpAlgorithm::SHA256)
+        .digits(runner.config().totp_digits)
+        .time_step(runner.config().totp_time_step)
+        .build()
+        .expect("TOTP builder should accept Deepwell configuration");
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("test clock should be after the Unix epoch")
+        .as_secs()
+        .checked_add_signed(runner.config().totp_time_skew)
+        .expect("configured TOTP time offset should produce a valid timestamp");
+
+    totp.generate_at(timestamp)
+}
+
+fn wrong_current_totp(runner: &TestRunner) -> String {
+    let code = current_totp(TEST_MFA_SECRET, runner);
+    let modulus = 10_u32.pow(runner.config().totp_digits);
+    ((code + 1) % modulus).to_string()
 }
 
 #[tokio::test]
@@ -151,7 +181,125 @@ async fn restricted_mfa_sessions_are_not_normal_login_sessions() {
             "user_agent": "deepwell-auth-test-mfa-replay",
         }),
     );
-    assert_contains_error!(replay_error, ErrorType::InvalidSessionToken);
+    assert_contains_error!(replay_error, ErrorType::InvalidAuthentication);
+}
+
+#[tokio::test]
+async fn restricted_mfa_session_has_a_shared_five_failure_budget() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let (name, _) = create_auth_test_user(&runner, n, true).await;
+
+    let below_limit_login = run_endpoint!(runner, auth_login, login_params(&name));
+    for expected_failures in 1..SessionService::MAX_MFA_FAILED_ATTEMPTS {
+        let error = run_endpoint_err!(
+            runner,
+            auth_mfa_verify,
+            json!({
+                "session_token": below_limit_login.session_token,
+                "totp_or_code": wrong_current_totp(&runner),
+                "ip_address": common::IP_ADDRESS,
+                "user_agent": "deepwell-auth-test-mfa-wrong",
+            }),
+        );
+        assert_contains_error!(error, ErrorType::InvalidAuthentication);
+
+        let session = SessionTable::find_by_id(&below_limit_login.session_token)
+            .one(runner.context().transaction())
+            .await
+            .expect("restricted session lookup should succeed")
+            .expect("restricted session should remain below the failure limit");
+        assert_eq!(session.mfa_failed_attempts, expected_failures);
+    }
+
+    let normal_token = run_endpoint!(
+        runner,
+        auth_mfa_verify,
+        json!({
+            "session_token": below_limit_login.session_token,
+            "totp_or_code": current_totp(TEST_MFA_SECRET, &runner).to_string(),
+            "ip_address": common::IP_ADDRESS,
+            "user_agent": "deepwell-auth-test-mfa-valid-below-limit",
+        }),
+    );
+    let normal_session = run_endpoint!(runner, auth_session_get, json!([normal_token]))
+        .expect("valid TOTP below the failure limit should complete login");
+    assert!(!normal_session.restricted);
+    assert_eq!(normal_session.mfa_failed_attempts, 0);
+    assert!(
+        SessionTable::find_by_id(&below_limit_login.session_token)
+            .one(runner.context().transaction())
+            .await
+            .expect("consumed restricted session lookup should succeed")
+            .is_none(),
+        "successful MFA must consume the restricted session",
+    );
+
+    let exhausted_login = run_endpoint!(runner, auth_login, login_params(&name));
+    let recovery_error = run_endpoint_err!(
+        runner,
+        auth_mfa_verify,
+        json!({
+            "session_token": exhausted_login.session_token,
+            "totp_or_code": "not-a-valid-recovery-code",
+            "ip_address": common::IP_ADDRESS,
+            "user_agent": "deepwell-auth-test-mfa-wrong-recovery",
+        }),
+    );
+    assert_contains_error!(recovery_error, ErrorType::InvalidAuthentication);
+
+    for _ in 1..SessionService::MAX_MFA_FAILED_ATTEMPTS {
+        let error = run_endpoint_err!(
+            runner,
+            auth_mfa_verify,
+            json!({
+                "session_token": exhausted_login.session_token,
+                "totp_or_code": wrong_current_totp(&runner),
+                "ip_address": common::IP_ADDRESS,
+                "user_agent": "deepwell-auth-test-mfa-exhaust",
+            }),
+        );
+        assert_contains_error!(error, ErrorType::InvalidAuthentication);
+    }
+
+    let exhausted_session = SessionTable::find_by_id(&exhausted_login.session_token)
+        .one(runner.context().transaction())
+        .await
+        .expect("exhausted restricted session lookup should succeed")
+        .expect("exhausted restricted session should remain for expiry pruning");
+    assert!(exhausted_session.restricted);
+    assert_eq!(
+        exhausted_session.mfa_failed_attempts,
+        SessionService::MAX_MFA_FAILED_ATTEMPTS,
+    );
+
+    let locked_out_error = run_endpoint_err!(
+        runner,
+        auth_mfa_verify,
+        json!({
+            "session_token": exhausted_login.session_token,
+            "totp_or_code": current_totp(TEST_MFA_SECRET, &runner).to_string(),
+            "ip_address": common::IP_ADDRESS,
+            "user_agent": "deepwell-auth-test-mfa-after-exhaustion",
+        }),
+    );
+    assert_contains_error!(locked_out_error, ErrorType::InvalidAuthentication);
+
+    let fresh_login = run_endpoint!(runner, auth_login, login_params(&name));
+    let fresh_normal_token = run_endpoint!(
+        runner,
+        auth_mfa_verify,
+        json!({
+            "session_token": fresh_login.session_token,
+            "totp_or_code": current_totp(TEST_MFA_SECRET, &runner).to_string(),
+            "ip_address": common::IP_ADDRESS,
+            "user_agent": "deepwell-auth-test-mfa-fresh-session",
+        }),
+    );
+    assert!(
+        run_endpoint!(runner, auth_session_get, json!([fresh_normal_token])).is_some(),
+        "a fresh restricted session should have a fresh MFA attempt budget",
+    );
 }
 
 #[tokio::test]
@@ -368,7 +516,7 @@ async fn restricted_mfa_sessions_expire_after_repeated_failed_totp_attempts() {
     assert!(login.needs_mfa);
 
     let secret_bytes = BASE32_NOPAD
-        .decode(b"ABCDEFGHIJKLMNOP")
+        .decode(TEST_MFA_SECRET.as_bytes())
         .expect("test TOTP secret should be valid base32");
     let totp = TOTP::builder()
         .secret(secret_bytes)
@@ -384,11 +532,14 @@ async fn restricted_mfa_sessions_expire_after_repeated_failed_totp_attempts() {
         .checked_add_signed(runner.config().totp_time_skew)
         .expect("configured TOTP time offset should produce a valid timestamp");
     let valid_code = totp.generate_at(timestamp).to_string();
-    let wrong_code = format!(
-        "{:06}",
-        (valid_code.parse::<u32>().expect("TOTP code should be numeric") + 1)
-            % 1_000_000
-    );
+    let modulus = 10_u32.pow(runner.config().totp_digits);
+    let wrong_code = (valid_code
+        .parse::<u32>()
+        .expect("TOTP code should be numeric")
+        + 1)
+    .checked_rem(modulus)
+    .expect("TOTP modulus should be nonzero")
+    .to_string();
 
     for attempt in 0..5 {
         let error = run_endpoint_err!(
