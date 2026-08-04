@@ -257,17 +257,124 @@ struct ExpandedRenderWikitext {
     wikidot_compat_text: CompatTextFragments,
 }
 
+/// Owns the protection registries created during render preparation.
+///
+/// The registries must stay alive until every rendered body, HTML block, and
+/// code block has crossed the Wikidot restoration boundary.  Callers borrow
+/// the registries only inside [`RenderProtectionBundle::restore`]; dropping the bundle without
+/// that consuming handoff is a programming error.
+#[must_use = "restore the Wikidot protection bundle before dropping it"]
 #[derive(Debug)]
-struct OuterPreparedRenderWikitext {
-    wikitext: String,
-    included_pages: Vec<PageRef>,
-    url_offset_list_pages_content_bytes: usize,
+pub(super) struct RenderProtectionBundle {
     wikidot_css_modules: Vec<String>,
     wikidot_inline_html: Vec<ProtectedWikidotInlineHtml>,
     wikidot_color_spans: ProtectedWikidotColorSpans,
     wikidot_compat_html: CompatHtmlFragments,
     wikidot_compat_text: CompatTextFragments,
     native_list_wikipedia_links: Vec<WikidotWikipediaLink>,
+    restored: bool,
+}
+
+#[derive(Debug)]
+struct RenderProtectionParts {
+    wikidot_css_modules: Vec<String>,
+    wikidot_compat_html: CompatHtmlFragments,
+    wikidot_compat_text: CompatTextFragments,
+    native_list_wikipedia_links: Vec<WikidotWikipediaLink>,
+}
+
+impl RenderProtectionBundle {
+    fn new(
+        wikidot_css_modules: Vec<String>,
+        wikidot_inline_html: Vec<ProtectedWikidotInlineHtml>,
+        wikidot_color_spans: ProtectedWikidotColorSpans,
+        wikidot_compat_html: CompatHtmlFragments,
+        wikidot_compat_text: CompatTextFragments,
+        native_list_wikipedia_links: Vec<WikidotWikipediaLink>,
+    ) -> Self {
+        Self {
+            wikidot_css_modules,
+            wikidot_inline_html,
+            wikidot_color_spans,
+            wikidot_compat_html,
+            wikidot_compat_text,
+            native_list_wikipedia_links,
+            restored: false,
+        }
+    }
+
+    /// Run the restoration boundary and consume the guard.
+    fn restore<R>(mut self, restore: impl FnOnce(&mut Self) -> R) -> R {
+        let result = restore(&mut self);
+        self.restored = true;
+        result
+    }
+
+    /// Transfer registries to the replay transport representation.
+    ///
+    /// Replay preparation serializes these registries for a later worker, so
+    /// the worker remains responsible for the eventual HTML restoration.
+    fn into_parts(mut self) -> RenderProtectionParts {
+        self.restored = true;
+        RenderProtectionParts {
+            wikidot_css_modules: std::mem::take(&mut self.wikidot_css_modules),
+            wikidot_compat_html: std::mem::replace(
+                &mut self.wikidot_compat_html,
+                CompatHtmlFragments::new(""),
+            ),
+            wikidot_compat_text: std::mem::replace(
+                &mut self.wikidot_compat_text,
+                CompatTextFragments::new(""),
+            ),
+            native_list_wikipedia_links: std::mem::take(
+                &mut self.native_list_wikipedia_links,
+            ),
+        }
+    }
+
+    fn take_css_modules(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.wikidot_css_modules)
+    }
+
+    fn take_native_list_wikipedia_links(&mut self) -> Vec<WikidotWikipediaLink> {
+        std::mem::take(&mut self.native_list_wikipedia_links)
+    }
+
+    fn inline_html(&self) -> &[ProtectedWikidotInlineHtml] {
+        &self.wikidot_inline_html
+    }
+
+    fn color_spans(&self) -> &ProtectedWikidotColorSpans {
+        &self.wikidot_color_spans
+    }
+
+    fn compat_html(&self) -> &CompatHtmlFragments {
+        &self.wikidot_compat_html
+    }
+
+    fn compat_text(&self) -> &CompatTextFragments {
+        &self.wikidot_compat_text
+    }
+
+    fn compat_text_mut(&mut self) -> &mut CompatTextFragments {
+        &mut self.wikidot_compat_text
+    }
+}
+
+impl Drop for RenderProtectionBundle {
+    fn drop(&mut self) {
+        if !self.restored && !std::thread::panicking() {
+            panic!("render protection bundle dropped before restoration");
+        }
+    }
+}
+
+#[derive(Debug)]
+struct OuterPreparedRenderWikitext {
+    wikitext: String,
+    included_pages: Vec<PageRef>,
+    url_offset_list_pages_content_bytes: usize,
+    protection: RenderProtectionBundle,
     compatibility_fallback: bool,
     timings: CorpusReplayStageTimings,
 }
@@ -1084,6 +1191,13 @@ impl RenderService {
         );
 
         if outer.compatibility_fallback {
+            let RenderProtectionParts {
+                wikidot_css_modules,
+                wikidot_compat_html,
+                wikidot_compat_text,
+                native_list_wikipedia_links,
+                ..
+            } = outer.protection.into_parts();
             let features = corpus_replay_syntax_features(&outer.wikitext);
             return CorpusReplayPreparedWikitext {
                 wikitext: outer.wikitext,
@@ -1095,15 +1209,22 @@ impl RenderService {
                 preprocessed: false,
                 timings: outer.timings,
                 features,
-                wikidot_css_modules: outer.wikidot_css_modules,
-                wikidot_compat_html: outer.wikidot_compat_html,
-                wikidot_compat_text: outer.wikidot_compat_text,
-                native_list_wikipedia_links: outer.native_list_wikipedia_links,
+                wikidot_css_modules,
+                wikidot_compat_html,
+                wikidot_compat_text,
+                native_list_wikipedia_links,
             };
         }
 
         let inner =
             Self::prepare_inner_render_wikitext_observed(outer, &settings, &mut observer);
+        let RenderProtectionParts {
+            wikidot_css_modules,
+            wikidot_compat_html,
+            wikidot_compat_text,
+            native_list_wikipedia_links,
+            ..
+        } = inner.protection.into_parts();
         let features = corpus_replay_syntax_features(&inner.wikitext);
         CorpusReplayPreparedWikitext {
             wikitext: inner.wikitext,
@@ -1115,10 +1236,10 @@ impl RenderService {
             preprocessed: true,
             timings: inner.timings,
             features,
-            wikidot_css_modules: inner.wikidot_css_modules,
-            wikidot_compat_html: inner.wikidot_compat_html,
-            wikidot_compat_text: inner.wikidot_compat_text,
-            native_list_wikipedia_links: inner.native_list_wikipedia_links,
+            wikidot_css_modules,
+            wikidot_compat_html,
+            wikidot_compat_text,
+            native_list_wikipedia_links,
         }
     }
 
@@ -1501,12 +1622,14 @@ impl RenderService {
             included_pages: expanded.included_pages,
             url_offset_list_pages_content_bytes: expanded
                 .url_offset_list_pages_content_bytes,
-            wikidot_css_modules,
-            wikidot_inline_html,
-            wikidot_color_spans,
-            wikidot_compat_html: expanded.wikidot_compat_html,
-            wikidot_compat_text,
-            native_list_wikipedia_links,
+            protection: RenderProtectionBundle::new(
+                wikidot_css_modules,
+                wikidot_inline_html,
+                wikidot_color_spans,
+                expanded.wikidot_compat_html,
+                wikidot_compat_text,
+                native_list_wikipedia_links,
+            ),
             compatibility_fallback,
             timings,
         }
@@ -1544,12 +1667,7 @@ impl RenderService {
         InnerPreparedRenderWikitext {
             wikitext: outer.wikitext,
             included_pages: outer.included_pages,
-            wikidot_css_modules: outer.wikidot_css_modules,
-            wikidot_inline_html: outer.wikidot_inline_html,
-            wikidot_color_spans: outer.wikidot_color_spans,
-            wikidot_compat_html: outer.wikidot_compat_html,
-            wikidot_compat_text: outer.wikidot_compat_text,
-            native_list_wikipedia_links: outer.native_list_wikipedia_links,
+            protection: outer.protection,
             wikidot_compat_links,
             wikidot_wikipedia_links,
             wikidot_embed_iframes,
@@ -1734,21 +1852,10 @@ impl RenderService {
                 wikitext,
                 included_pages,
                 url_offset_list_pages_content_bytes: _,
-                wikidot_css_modules,
-                wikidot_inline_html,
-                wikidot_color_spans,
-                wikidot_compat_html,
-                wikidot_compat_text,
-                native_list_wikipedia_links,
+                protection,
                 compatibility_fallback: _,
                 timings: _,
             } = outer;
-            let mut backlinks = ftml::data::Backlinks::new();
-            backlinks.included_pages.extend(included_pages);
-            Self::record_wikidot_wikipedia_backlinks(
-                &mut backlinks,
-                &native_list_wikipedia_links,
-            );
             let fallback_link_titles = {
                 let _stage = StageGuard::new(trace, CorpusRenderStage::FallbackTitles);
                 if let (Some(site_id), Some(site)) =
@@ -1774,72 +1881,94 @@ impl RenderService {
                     .then_some(page_info.page.as_ref()),
                 Some(&fallback_link_titles),
             );
-            let mut wikidot_css_modules = wikidot_css_modules;
-            Self::localize_wikidot_generated_styles(
-                &mut wikidot_css_modules,
-                current_site.as_ref(),
-                config,
-            );
-            let fallback_html_block_texts: Vec<String> = fallback_output
-                .html_block_texts
-                .iter()
-                .map(|html| {
-                    let html = wikidot_compat_html.restore(html);
-                    let html = Self::restore_protected_wikidot_inline_html(
-                        Self::restore_protected_wikidot_color_spans(
-                            html,
-                            &wikidot_color_spans,
-                        ),
-                        &wikidot_inline_html,
-                    );
-                    let html = Self::localize_wikidot_local_file_urls(
-                        &html,
-                        current_site.as_ref(),
-                        config,
-                    );
-                    wikidot_compat_text.restore(&html)
-                })
-                .collect();
-            let fallback_code_blocks: Vec<CodeBlock<'static>> = fallback_output
-                .code_blocks
-                .iter()
-                .map(
-                    |CodeBlock {
-                         contents,
-                         language,
-                         name,
-                     }| CodeBlock {
-                        contents: Cow::Owned(wikidot_compat_text.restore(
-                            &Self::restore_wikidot_code_block_compatibility(
-                                &wikidot_compat_html.restore_plain(contents),
-                                current_site.as_ref(),
-                                config,
+            let (
+                wikidot_css_modules,
+                fallback_html_block_texts,
+                fallback_code_blocks,
+                body,
+                backlinks,
+            ) = protection.restore(|protection| {
+                let mut backlinks = ftml::data::Backlinks::new();
+                backlinks.included_pages.extend(included_pages);
+                let native_list_wikipedia_links =
+                    protection.take_native_list_wikipedia_links();
+                Self::record_wikidot_wikipedia_backlinks(
+                    &mut backlinks,
+                    &native_list_wikipedia_links,
+                );
+                let mut wikidot_css_modules = protection.take_css_modules();
+                Self::localize_wikidot_generated_styles(
+                    &mut wikidot_css_modules,
+                    current_site.as_ref(),
+                    config,
+                );
+                let fallback_html_block_texts: Vec<String> = fallback_output
+                    .html_block_texts
+                    .iter()
+                    .map(|html| {
+                        let html = protection.compat_html().restore(html);
+                        let html = Self::restore_protected_wikidot_inline_html(
+                            Self::restore_protected_wikidot_color_spans(
+                                html,
+                                protection.color_spans(),
                             ),
-                        )),
-                        language: language
-                            .as_ref()
-                            .map(|language| Cow::Owned(language.to_string())),
-                        name: name.as_ref().map(|name| Cow::Owned(name.to_string())),
-                    },
+                            protection.inline_html(),
+                        );
+                        let html = Self::localize_wikidot_local_file_urls(
+                            &html,
+                            current_site.as_ref(),
+                            config,
+                        );
+                        protection.compat_text().restore(&html)
+                    })
+                    .collect();
+                let fallback_code_blocks: Vec<CodeBlock<'static>> = fallback_output
+                    .code_blocks
+                    .iter()
+                    .map(
+                        |CodeBlock {
+                             contents,
+                             language,
+                             name,
+                         }| CodeBlock {
+                            contents: Cow::Owned(protection.compat_text().restore(
+                                &Self::restore_wikidot_code_block_compatibility(
+                                    &protection.compat_html().restore_plain(contents),
+                                    current_site.as_ref(),
+                                    config,
+                                ),
+                            )),
+                            language: language
+                                .as_ref()
+                                .map(|language| Cow::Owned(language.to_string())),
+                            name: name.as_ref().map(|name| Cow::Owned(name.to_string())),
+                        },
+                    )
+                    .collect();
+                let body = protection.compat_html().restore(&fallback_output.body);
+                let body = Self::restore_protected_wikidot_inline_html(
+                    Self::restore_protected_wikidot_color_spans(
+                        body,
+                        protection.color_spans(),
+                    ),
+                    protection.inline_html(),
+                );
+                let body = Self::localize_wikidot_local_file_urls(
+                    &body,
+                    current_site.as_ref(),
+                    config,
+                );
+                let body = protection.compat_text().restore(&body);
+                (
+                    wikidot_css_modules,
+                    fallback_html_block_texts,
+                    fallback_code_blocks,
+                    body,
+                    backlinks,
                 )
-                .collect();
+            });
             let html_output = HtmlOutput {
-                body: {
-                    let body = wikidot_compat_html.restore(&fallback_output.body);
-                    let body = Self::restore_protected_wikidot_inline_html(
-                        Self::restore_protected_wikidot_color_spans(
-                            body,
-                            &wikidot_color_spans,
-                        ),
-                        &wikidot_inline_html,
-                    );
-                    let body = Self::localize_wikidot_local_file_urls(
-                        &body,
-                        current_site.as_ref(),
-                        config,
-                    );
-                    wikidot_compat_text.restore(&body)
-                },
+                body,
                 meta: Vec::new(),
                 styles: wikidot_css_modules,
                 backlinks,
@@ -1985,127 +2114,130 @@ impl RenderService {
             let InnerPreparedRenderWikitext {
                 wikitext: _,
                 included_pages,
-                wikidot_css_modules,
-                wikidot_inline_html,
-                wikidot_color_spans,
+                protection,
                 wikidot_compat_links,
                 wikidot_wikipedia_links,
-                wikidot_compat_html,
-                mut wikidot_compat_text,
-                native_list_wikipedia_links,
                 wikidot_embed_iframes,
                 timings: _,
             } = prepared;
-            // Deepwell's Wikidot compatibility scanner identifies actual CSS module
-            // syntax before raw HTML fragments are restored. Keeping that typed
-            // provenance separate ensures authored <style> HTML stays in the body.
-            if !wikidot_css_modules.is_empty() {
-                let mut styles = wikidot_css_modules;
-                styles.append(&mut html_output.styles);
-                Self::localize_wikidot_generated_styles(
-                    &mut styles,
-                    render_current_site.as_ref(),
-                    &render_config,
-                );
-                html_output.styles = styles;
-            } else {
-                Self::localize_wikidot_generated_styles(
-                    &mut html_output.styles,
-                    render_current_site.as_ref(),
-                    &render_config,
-                );
-            }
             let (html_block_texts, code_blocks) = {
                 let _stage = StageGuard::new(trace, CorpusRenderStage::HtmlCompat);
-                html_output.body = Self::restore_protected_wikidot_embed_iframes(
-                    html_output.body,
-                    &wikidot_embed_iframes,
-                );
-                html_output.body = Self::restore_protected_wikidot_color_spans(
-                    html_output.body,
-                    &wikidot_color_spans,
-                );
-                html_output.body = Self::restore_protected_wikidot_inline_html(
-                    html_output.body,
-                    &wikidot_inline_html,
-                );
-                html_output.body = wikidot_compat_html.restore(&html_output.body);
-                if render_page_info.page.as_ref() == "_ajax-module-connector" {
-                    html_output.body = protect_ajax_module_literal_markers(
-                        html_output.body,
-                        &mut wikidot_compat_text,
-                    );
-                }
-                html_output.body = Self::restore_protected_wikidot_wikipedia_links(
-                    html_output.body,
-                    &wikidot_wikipedia_links,
-                );
-                html_output.body = Self::restore_protected_wikidot_compat_links(
-                    html_output.body,
-                    &wikidot_compat_links,
-                );
-                Self::record_protected_wikidot_wikipedia_backlinks(
-                    &mut html_output.backlinks,
-                    &wikidot_wikipedia_links,
-                );
-                Self::record_wikidot_wikipedia_backlinks(
-                    &mut html_output.backlinks,
-                    &native_list_wikipedia_links,
-                );
-                html_output.body = Self::restore_wikidot_render_compatibility(
-                    &html_output.body,
-                    render_current_site.as_ref(),
-                    &render_config,
-                );
-                html_output.body = wikidot_compat_text.restore(&html_output.body);
-                html_output.backlinks.included_pages.extend(included_pages);
-                let html_block_texts: Vec<String> = tree
-                    .html_blocks
-                    .iter()
-                    .map(|html| {
-                        let html = wikidot_compat_html.restore(html);
-                        let html = Self::localize_wikidot_local_file_urls(
-                            &html,
+                protection.restore(|protection| {
+                    // Deepwell's Wikidot compatibility scanner identifies actual CSS module
+                    // syntax before raw HTML fragments are restored. Keeping that typed
+                    // provenance separate ensures authored <style> HTML stays in the body.
+                    let mut wikidot_css_modules = protection.take_css_modules();
+                    if !wikidot_css_modules.is_empty() {
+                        wikidot_css_modules.append(&mut html_output.styles);
+                        Self::localize_wikidot_generated_styles(
+                            &mut wikidot_css_modules,
                             render_current_site.as_ref(),
                             &render_config,
                         );
-                        wikidot_compat_text.restore(&html)
-                    })
-                    .collect();
-                if render_settings.layout == Layout::Wikidot
-                    && render_settings.enable_html_blocks
-                    && !html_block_texts.is_empty()
-                {
-                    html_output.body = Self::rewrite_wikidot_html_block_iframe_urls(
-                        html_output.body,
-                        &render_page_info,
-                        &html_block_texts,
+                        html_output.styles = wikidot_css_modules;
+                    } else {
+                        Self::localize_wikidot_generated_styles(
+                            &mut html_output.styles,
+                            render_current_site.as_ref(),
+                            &render_config,
+                        );
+                    }
+                    html_output.body = Self::restore_protected_wikidot_embed_iframes(
+                        std::mem::take(&mut html_output.body),
+                        &wikidot_embed_iframes,
                     );
-                }
-                let code_blocks = tree
-                    .code_blocks
-                    .iter()
-                    .map(
-                        |CodeBlock {
-                             contents,
-                             language,
-                             name,
-                         }| CodeBlock {
-                            contents: Cow::Owned(wikidot_compat_text.restore(
-                                &Self::restore_wikidot_code_block_compatibility(
-                                    &wikidot_compat_html.restore_plain(contents),
-                                    render_current_site.as_ref(),
-                                    &render_config,
-                                ),
-                            )),
-                            language: language
-                                .as_ref()
-                                .map(|language| Cow::Owned(language.to_string())),
-                            name: name.as_ref().map(|name| Cow::Owned(name.to_string())),
-                        },
-                    )
-                    .collect();
-                (html_block_texts, code_blocks)
+                    html_output.body = Self::restore_protected_wikidot_color_spans(
+                        std::mem::take(&mut html_output.body),
+                        protection.color_spans(),
+                    );
+                    html_output.body = Self::restore_protected_wikidot_inline_html(
+                        std::mem::take(&mut html_output.body),
+                        protection.inline_html(),
+                    );
+                    html_output.body =
+                        protection.compat_html().restore(&html_output.body);
+                    if render_page_info.page.as_ref() == "_ajax-module-connector" {
+                        html_output.body = protect_ajax_module_literal_markers(
+                            std::mem::take(&mut html_output.body),
+                            protection.compat_text_mut(),
+                        );
+                    }
+                    html_output.body = Self::restore_protected_wikidot_wikipedia_links(
+                        std::mem::take(&mut html_output.body),
+                        &wikidot_wikipedia_links,
+                    );
+                    html_output.body = Self::restore_protected_wikidot_compat_links(
+                        std::mem::take(&mut html_output.body),
+                        &wikidot_compat_links,
+                    );
+                    Self::record_protected_wikidot_wikipedia_backlinks(
+                        &mut html_output.backlinks,
+                        &wikidot_wikipedia_links,
+                    );
+                    let native_list_wikipedia_links =
+                        protection.take_native_list_wikipedia_links();
+                    Self::record_wikidot_wikipedia_backlinks(
+                        &mut html_output.backlinks,
+                        &native_list_wikipedia_links,
+                    );
+                    html_output.body = Self::restore_wikidot_render_compatibility(
+                        &html_output.body,
+                        render_current_site.as_ref(),
+                        &render_config,
+                    );
+                    html_output.body =
+                        protection.compat_text().restore(&html_output.body);
+                    html_output.backlinks.included_pages.extend(included_pages);
+                    let html_block_texts: Vec<String> = tree
+                        .html_blocks
+                        .iter()
+                        .map(|html| {
+                            let html = protection.compat_html().restore(html);
+                            let html = Self::localize_wikidot_local_file_urls(
+                                &html,
+                                render_current_site.as_ref(),
+                                &render_config,
+                            );
+                            protection.compat_text().restore(&html)
+                        })
+                        .collect();
+                    if render_settings.layout == Layout::Wikidot
+                        && render_settings.enable_html_blocks
+                        && !html_block_texts.is_empty()
+                    {
+                        html_output.body = Self::rewrite_wikidot_html_block_iframe_urls(
+                            std::mem::take(&mut html_output.body),
+                            &render_page_info,
+                            &html_block_texts,
+                        );
+                    }
+                    let code_blocks = tree
+                        .code_blocks
+                        .iter()
+                        .map(
+                            |CodeBlock {
+                                 contents,
+                                 language,
+                                 name,
+                             }| CodeBlock {
+                                contents: Cow::Owned(protection.compat_text().restore(
+                                    &Self::restore_wikidot_code_block_compatibility(
+                                        &protection.compat_html().restore_plain(contents),
+                                        render_current_site.as_ref(),
+                                        &render_config,
+                                    ),
+                                )),
+                                language: language
+                                    .as_ref()
+                                    .map(|language| Cow::Owned(language.to_string())),
+                                name: name
+                                    .as_ref()
+                                    .map(|name| Cow::Owned(name.to_string())),
+                            },
+                        )
+                        .collect();
+                    (html_block_texts, code_blocks)
+                })
             };
 
             FtmlRenderOutput {

@@ -110,6 +110,26 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
 
+#[test]
+#[should_panic(expected = "render protection bundle dropped before restoration")]
+fn dropping_prepared_wikitext_without_restoration_is_rejected() {
+    let source = "plain source";
+    let page_info = fallback_test_page_info("guard", "Guard");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let prepared = RenderService::prepare_outer_render_wikitext(
+        super::ExpandedRenderWikitext {
+            wikitext: source.to_owned(),
+            included_pages: Vec::new(),
+            url_offset_list_pages_content_bytes: 0,
+            wikidot_compat_html: CompatHtmlFragments::new(source),
+            wikidot_compat_text: CompatTextFragments::new(source),
+        },
+        &page_info,
+        &settings,
+    );
+    drop(prepared);
+}
+
 fn list_pages_substitution_context<'a>(
     rendered_limit: usize,
     user_displays: &'a BTreeMap<i64, WikidotUserDisplay>,
@@ -361,7 +381,9 @@ fn render_wikidot_conditionals_with_tags(wikitext: &str, tags: &[&str]) -> Strin
     let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
     assert!(errors.is_empty(), "{wikitext:?}: {errors:#?}");
     let html = HtmlRender.render(&tree, &page_info, &settings).body;
-    inner.wikidot_compat_text.restore(&html)
+    inner
+        .protection
+        .restore(|protection| protection.compat_text().restore(&html))
 }
 
 fn render_wikidot_fallback_after_generated_compat_restore(wikitext: &str) -> String {
@@ -3999,8 +4021,11 @@ fn protects_css_before_list_pages_and_rejoins_the_outer_pipeline() {
         &settings,
     );
 
+    let css_modules = outer
+        .protection
+        .restore(|protection| protection.take_css_modules());
     assert_eq!(
-        outer.wikidot_css_modules,
+        css_modules,
         [
             ".early { content: \"&#35;&#35;\"; }",
             ".generated { content: \"&#35;&#35;\"; }",
@@ -4624,16 +4649,18 @@ fn render_list_pages_title_variables_through_outer_pipeline(
     let tokens = ftml::tokenize(&inner.wikitext);
     let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
     let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
-    let rendered = RenderService::restore_protected_wikidot_color_spans(
-        rendered,
-        &inner.wikidot_color_spans,
-    );
-    let rendered = RenderService::restore_protected_wikidot_inline_html(
-        rendered,
-        &inner.wikidot_inline_html,
-    );
-    let rendered = inner.wikidot_compat_html.restore(&rendered);
-    inner.wikidot_compat_text.restore(&rendered)
+    inner.protection.restore(|protection| {
+        let rendered = RenderService::restore_protected_wikidot_color_spans(
+            rendered,
+            protection.color_spans(),
+        );
+        let rendered = RenderService::restore_protected_wikidot_inline_html(
+            rendered,
+            protection.inline_html(),
+        );
+        let rendered = protection.compat_html().restore(&rendered);
+        protection.compat_text().restore(&rendered)
+    })
 }
 
 #[test]
@@ -10014,9 +10041,11 @@ fn render_native_list_page_for_regression(
     if require_clean_parse {
         assert!(errors.is_empty(), "{errors:#?}");
     }
-    inner
-        .wikidot_compat_html
-        .restore(&HtmlRender.render(&tree, &page_info, &settings).body)
+    inner.protection.restore(|protection| {
+        protection
+            .compat_html()
+            .restore(&HtmlRender.render(&tree, &page_info, &settings).body)
+    })
 }
 
 #[test]
@@ -11202,6 +11231,7 @@ fn render_preparation_resolves_generated_simple_if_with_link_branch() {
     let tokens = ftml::tokenize(&inner.wikitext);
     let (_, errors) = ftml::parse(&tokens, &page_info, &settings).into();
     assert!(errors.is_empty(), "{errors:#?}");
+    inner.protection.restore(|_| ());
 }
 
 #[test]
@@ -11809,6 +11839,7 @@ fn prepares_wikidot_unicode_iftags_component_with_cross_closed_collapsible() {
     let (_, errors) = ftml::parse(&tokens, &page_info, &settings).into();
 
     assert!(errors.is_empty(), "{errors:#?}\n{}", prepared.wikitext);
+    prepared.protection.restore(|_| ());
 }
 
 #[test]
@@ -12009,7 +12040,9 @@ fn repeated_render_preparation_preserves_nested_iftags_for_ftml() {
     let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
     assert!(errors.is_empty(), "{errors:#?}");
     let html = HtmlRender.render(&tree, &page_info, &settings).body;
-    let html = inner.wikidot_compat_text.restore(&html);
+    let html = inner
+        .protection
+        .restore(|protection| protection.compat_text().restore(&html));
     assert!(html.contains("[[iftags +beta]]inner[[/iftags]]"), "{html}");
     assert!(html.contains("root-after"), "{html}");
 }
@@ -12052,7 +12085,9 @@ fn malformed_iftags_remain_literal_after_ftml_recovery() {
     let tokens = ftml::tokenize(&inner.wikitext);
     let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
     let html = HtmlRender.render(&tree, &page_info, &settings).body;
-    let html = inner.wikidot_compat_text.restore(&html);
+    let html = inner
+        .protection
+        .restore(|protection| protection.compat_text().restore(&html));
     for literal in ["[[/iftags]]", "[[iftags +alpha]]", "[[iftags -alpha]]"] {
         assert!(html.contains(literal), "{literal}: {html}");
     }

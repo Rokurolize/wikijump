@@ -18,22 +18,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::compat::CompatHtmlFragments;
-use super::compat::color_and_inline_protection::{
-    ProtectedWikidotColorSpans, ProtectedWikidotInlineHtml,
-};
-use super::compat::text_fragments::CompatTextFragments;
-use super::compat::wikidot_link_protection::{
-    ProtectedWikidotWikipediaLink, WikidotWikipediaLink,
-};
+use super::compat::wikidot_link_protection::ProtectedWikidotWikipediaLink;
 use super::diagnostics::{
     CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, StageGuard,
 };
 use super::ftml_user_info::UserInfoSnapshot;
 use super::service::{
-    CorpusReplayStageTimings, ProtectedWikidotCompatLink, WIKIDOT_LABELED_LINK_REGEX,
-    WIKIDOT_QUADRUPLE_LINK_REGEX, WIKIDOT_UNLABELED_LINK_REGEX,
-    native_list_page_link_slug,
+    CorpusReplayStageTimings, ProtectedWikidotCompatLink, RenderProtectionBundle,
+    WIKIDOT_LABELED_LINK_REGEX, WIKIDOT_QUADRUPLE_LINK_REGEX,
+    WIKIDOT_UNLABELED_LINK_REGEX, native_list_page_link_slug,
 };
 use crate::services::PageExistenceSnapshot;
 use ftml::data::PageRef;
@@ -145,14 +138,9 @@ mod tests {
 pub(super) struct InnerPreparedRenderWikitext {
     pub(super) wikitext: String,
     pub(super) included_pages: Vec<PageRef>,
-    pub(super) wikidot_css_modules: Vec<String>,
-    pub(super) wikidot_inline_html: Vec<ProtectedWikidotInlineHtml>,
-    pub(super) wikidot_color_spans: ProtectedWikidotColorSpans,
+    pub(super) protection: RenderProtectionBundle,
     pub(super) wikidot_compat_links: Vec<ProtectedWikidotCompatLink>,
     pub(super) wikidot_wikipedia_links: Vec<ProtectedWikidotWikipediaLink>,
-    pub(super) wikidot_compat_html: CompatHtmlFragments,
-    pub(super) wikidot_compat_text: CompatTextFragments,
-    pub(super) native_list_wikipedia_links: Vec<WikidotWikipediaLink>,
     pub(super) wikidot_embed_iframes: Vec<String>,
     pub(super) timings: CorpusReplayStageTimings,
 }
