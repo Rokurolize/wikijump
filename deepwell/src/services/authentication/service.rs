@@ -19,10 +19,11 @@
  */
 
 use super::structs::{
-    AuthenticateUser, AuthenticateUserOutput, MultiFactorAuthenticateUser, UserAuthInfo,
+    AuthenticateUser, AuthenticateUserOutput, MultiFactorAuthenticateOutput,
+    MultiFactorAuthenticateUser, UserAuthInfo,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::models::user::{self, Entity as User, Model as UserModel};
+use crate::models::user::{self, Entity as User};
 use crate::services::ServiceContext;
 use crate::services::{MfaService, PasswordService, SessionService};
 use crate::types::UserType;
@@ -71,46 +72,51 @@ impl AuthenticationService {
     /// Verifies the TOTP code for a user, after they have logged in.
     ///
     /// # Returns
-    /// The user model for the authenticated session.
+    /// An authenticated user, or an expected credential rejection. Internal
+    /// failures remain errors so the request transaction is rolled back.
     pub async fn auth_mfa(
         ctx: &ServiceContext<'_>,
         MultiFactorAuthenticateUser {
             session_token,
             totp_or_code,
         }: MultiFactorAuthenticateUser<'_>,
-    ) -> Result<UserModel> {
-        let make_error = || {
-            Error::new(
-                "failed to authenticate MFA code",
-                ErrorType::InvalidAuthentication,
-            )
-        };
+    ) -> Result<MultiFactorAuthenticateOutput> {
+        let make_error =
+            || Error::new("failed to authenticate MFA code", ErrorType::UserMfa);
 
         // Get associated user model from the session
         //
         // Requires the session is restricted, meaning they are
         // in the middle of logging in still
-        let user = SessionService::get_user(ctx, session_token, true)
+        let user = SessionService::get_user_for_mfa_attempt(ctx, session_token)
             .await
             .or_raise(make_error)?;
+        let Some(user) = user else {
+            return Ok(MultiFactorAuthenticateOutput::Rejected);
+        };
 
         // Process input, verifying depending on type
-        match totp_or_code.parse() {
+        let verification = match totp_or_code.parse() {
             // If the value is a positive integer, treat it as a TOTP
-            Ok(totp) => MfaService::verify(ctx, &user, totp)
-                .await
-                .or_raise(make_error)?,
+            Ok(totp) => MfaService::verify(ctx, &user, totp).await,
 
             // Otherwise treat it as a recovery code string
             //
             // We don't need to validate it for length because
             // we want consistent time checks on recovery codes anyways.
-            Err(_) => MfaService::verify_recovery(ctx, &user, totp_or_code)
-                .await
-                .or_raise(make_error)?,
-        }
+            Err(_) => MfaService::verify_recovery(ctx, &user, totp_or_code).await,
+        };
 
-        Ok(user)
+        match verification {
+            Ok(()) => Ok(MultiFactorAuthenticateOutput::Authenticated(user)),
+            Err(error) if error.error_type == ErrorType::InvalidAuthentication => {
+                SessionService::record_failed_mfa_attempt(ctx, session_token)
+                    .await
+                    .or_raise(make_error)?;
+                Ok(MultiFactorAuthenticateOutput::Rejected)
+            }
+            Err(error) => Err(error.raise(make_error())),
+        }
     }
 
     /// Gets user information from the database, or return a dummy.
@@ -133,15 +139,18 @@ impl AuthenticationService {
         let txn = ctx.transaction();
         let verified_email_match = Expr::col(user::Column::Email)
             .eq(name_or_email)
-            .and(Expr::col(user::Column::UserType).eq(UserType::Regular))
-            .and(Expr::col(user::Column::EmailVerifiedAt).is_not_null())
-            .and(Expr::col(user::Column::DeletedAt).is_null());
+            .and(Expr::col(user::Column::EmailVerifiedAt).is_not_null());
         let result = User::find()
             .filter(
-                Condition::any()
-                    .add(user::Column::Name.eq(name_or_email))
-                    .add(user::Column::Slug.eq(name_or_email))
-                    .add(verified_email_match.clone()),
+                Condition::all()
+                    .add(user::Column::UserType.eq(UserType::Regular))
+                    .add(user::Column::DeletedAt.is_null())
+                    .add(
+                        Condition::any()
+                            .add(user::Column::Name.eq(name_or_email))
+                            .add(user::Column::Slug.eq(name_or_email))
+                            .add(verified_email_match.clone()),
+                    ),
             )
             // A username may syntactically equal somebody else's verified
             // email. The proven owner must win when the login input is email.
