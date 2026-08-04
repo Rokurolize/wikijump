@@ -54,6 +54,12 @@ pub struct MultiFactorAuthenticateUser<'a> {
     pub totp_or_code: &'a str,
 }
 
+#[derive(Debug, Clone)]
+pub enum MultiFactorAuthenticateOutput {
+    Authenticated(UserModel),
+    Rejected,
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct LoginUserMfa {
     pub session_token: String,

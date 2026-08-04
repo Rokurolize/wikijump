@@ -1089,7 +1089,8 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
       { site: "scp-wiki" },
       { site: "missing-site" },
       { site: "missing-site" }
-    ]
+    ],
+    voteList: []
   })
 })
 

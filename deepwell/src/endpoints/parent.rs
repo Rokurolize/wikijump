@@ -19,6 +19,7 @@
  */
 
 use super::prelude::*;
+use crate::models::page::Model as PageModel;
 use crate::models::page_parent::Model as PageParentModel;
 use crate::services::page::GetPageReference;
 use crate::services::parent::{
@@ -142,21 +143,64 @@ pub async fn parent_get_all(
         )
     };
 
-    let parents: Vec<Reference<'_>> = ParentService::get_parents(ctx, site_id, page)
+    let child = PageService::get(ctx, site_id, page)
+        .await
+        .or_raise(make_error)?;
+    if !page_is_viewable(ctx, site_id, &child)
         .await
         .or_raise(make_error)?
-        .iter()
-        .map(|p| Reference::from(p.parent_page_id))
-        .collect();
+    {
+        return Err(Error::new(
+            "user does not have permission to view this child page",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
 
-    let pages: Vec<String> = PageService::get_pages(ctx, site_id, parents.as_slice())
+    let parents: Vec<Reference<'_>> =
+        ParentService::get_parents(ctx, site_id, Reference::Id(child.page_id))
+            .await
+            .or_raise(make_error)?
+            .iter()
+            .map(|p| Reference::from(p.parent_page_id))
+            .collect();
+
+    let parent_pages = PageService::get_pages(ctx, site_id, parents.as_slice())
         .await
-        .or_raise(make_error)?
-        .into_iter()
-        .map(|p| p.slug)
-        .collect();
+        .or_raise(make_error)?;
+
+    let mut pages = Vec::with_capacity(parent_pages.len());
+    for parent in parent_pages {
+        if page_is_viewable(ctx, site_id, &parent)
+            .await
+            .or_raise(make_error)?
+        {
+            pages.push(parent.slug);
+        }
+    }
 
     Ok(pages)
+}
+
+async fn page_is_viewable(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page: &PageModel,
+) -> Result<bool> {
+    PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
 }
 
 pub async fn parent_update(

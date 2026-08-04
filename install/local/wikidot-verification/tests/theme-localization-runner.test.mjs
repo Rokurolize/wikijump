@@ -9,7 +9,7 @@ import test from "node:test";
 import {parseArgs} from "../scripts/theme-localization-e2e.mjs";
 import {ALLOWED_SITE_SLUG, THEME_CURRENT_SITE_DEPENDENCIES, THEME_LOCALIZATION_E2E_SCHEMA, currentSiteDependencyOwnershipToken, runOwnedSlug} from "../src/theme-localization-e2e.mjs";
 import {ThemeExecutionLedger, themeExecutionFingerprint, validateRecoverableThemeExecutionPlan, validateThemeExecutionPlan} from "../src/theme-localization-execution.mjs";
-import {executeGuardedThemeAction, GUARDED_THEME_WIKIJUMP_RPC_URL, recoverGuardedThemeAction, THEME_RUN_RESULT_SCHEMA, acquireThemeExecutionLock, createLiveThemeDependencies, validateGuardedThemeRpcUrl, validateStorageState, validateThemeCdpEndpoint, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
+import {executeGuardedThemeAction, GUARDED_THEME_WIKIJUMP_RPC_URL, recoverGuardedThemeAction, THEME_RUN_RESULT_SCHEMA, acquireThemeExecutionLock, createLiveThemeDependencies, resolveThemeActorUserId, validateGuardedThemeRpcUrl, validateStorageState, validateThemeCdpEndpoint, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
 import {targetRoundTripSourceSha256} from "../src/theme-source-roundtrip.mjs";
 
 const digest = (value) => crypto.createHash("sha256").update(value).digest("hex");
@@ -209,6 +209,12 @@ test("guarded runner requires the exact runtime50x Deepwell RPC binding", () => 
 test("live dependency construction cannot fall back to another Deepwell stack", async () => {
   await assert.rejects(createLiveThemeDependencies({env: {}}), /WIKIJUMP_THEME_RPC_URL must explicitly equal/);
   await assert.rejects(createLiveThemeDependencies({env: {WIKIJUMP_THEME_RPC_URL: "http://127.0.0.1:2747/jsonrpc"}}), /WIKIJUMP_THEME_RPC_URL must explicitly equal/);
+});
+
+test("live dependencies leave the actor bound to the authenticated session by default", () => {
+  assert.equal(resolveThemeActorUserId({}), null);
+  assert.equal(resolveThemeActorUserId({WIKIJUMP_THEME_ACTOR_USER_ID: "123"}), 123);
+  assert.throws(() => resolveThemeActorUserId({WIKIJUMP_THEME_ACTOR_USER_ID: "not-an-id"}), /must be an integer/);
 });
 
 test("insecure artifact root is rejected before adapters connect", async () => {
