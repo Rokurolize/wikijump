@@ -507,6 +507,6 @@ export async function captureBrowserParityObservation({
       capture_error: { name: error.name, message: error.message },
     };
   } finally {
-    await page.close().catch(() => undefined);
+    await page.close({runBeforeUnload: false, timeout: 10_000}).catch(() => undefined);
   }
 }

@@ -162,6 +162,13 @@ class WikidotThemePageHelperTests(unittest.TestCase):
         )
         self.assertEqual(created["page"]["tags"], ["codex-oracle"])
         self.assertFalse(stop)
+        self.assertEqual(
+            HELPER.validate_page_snapshot(
+                {"identity": 8, "title": "fixture", "source_sha256": source_sha256, "tags": []},
+                slug,
+            )["tags"],
+            [],
+        )
 
     def test_backend_refuses_direct_reference_prerequisite_removal(self) -> None:
         backend = object.__new__(HELPER.WikidotBackend)

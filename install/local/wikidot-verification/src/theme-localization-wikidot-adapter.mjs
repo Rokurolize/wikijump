@@ -15,6 +15,7 @@ const REFERENCE_PREREQUISITE_TITLES = new Map([
   ["component:image-block-base", "Image Block Base"],
   ["component:image-block", "Image Block"],
 ]);
+const ORACLE_RUN_OWNED_SLUG = /^codex-oracle:[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])-[A-Za-z0-9][A-Za-z0-9._:-]*$/u;
 
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
@@ -26,7 +27,7 @@ function validateResource(resource, {allowLegacy = false, siteSlug = DEFAULT_SIT
   if (resourceSite !== adapterSite) throw new Error("Wikidot adapter resource site does not match the adapter site");
   const kind = resource?.kind ?? "theme_page";
   const prerequisite = kind === "reference_prerequisite" && REFERENCE_PREREQUISITE_TITLES.has(resource?.slug);
-  const validSlug = prerequisite || (kind === "theme_page" && (allowLegacy ? isRecoverableRunOwnedSlug(resource?.slug) : isCurrentRunOwnedSlug(resource?.slug)));
+  const validSlug = prerequisite || (kind === "theme_page" && (ORACLE_RUN_OWNED_SLUG.test(resource?.slug ?? "") || (allowLegacy ? isRecoverableRunOwnedSlug(resource?.slug) : isCurrentRunOwnedSlug(resource?.slug))));
   if (resource?.target !== "wikidot" || !validSlug) {
     throw new Error("Wikidot adapter accepts only validated theme execution pages");
   }
@@ -37,7 +38,7 @@ function validateResource(resource, {allowLegacy = false, siteSlug = DEFAULT_SIT
   if (prerequisite && (resource.title !== REFERENCE_PREREQUISITE_TITLES.get(resource.slug) || resource.resource_id !== `prerequisite:${resource.slug}:wikidot`)) {
     throw new Error("Wikidot adapter prerequisite is outside the read-only contract");
   }
-  const expectedTags = prerequisite ? ["codex-source-parity-redo", "component"] : resource.slug.endsWith("-yossistyle") ? ["テーマ"] : resource.slug.endsWith("-ashes-to-ashes") || resource.slug.endsWith("-basalt") ? ["theme"] : [];
+  const expectedTags = prerequisite ? ["codex-source-parity-redo", "component"] : ORACLE_RUN_OWNED_SLUG.test(resource.slug) ? ["codex-oracle"] : resource.slug.endsWith("-yossistyle") ? ["テーマ"] : resource.slug.endsWith("-ashes-to-ashes") || resource.slug.endsWith("-basalt") ? ["theme"] : [];
   if ((!allowLegacy || prerequisite) && JSON.stringify(resource.tags ?? []) !== JSON.stringify(expectedTags)) throw new Error("Wikidot adapter resource tags are outside the run-owned contract");
   return kind;
 }

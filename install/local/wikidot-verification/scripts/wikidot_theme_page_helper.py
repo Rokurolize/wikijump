@@ -118,7 +118,15 @@ def validate_page_snapshot(value: object, slug: str) -> PageSnapshot:
         raise PublicError("invalid_request", "expected page snapshot is invalid")
     if not isinstance(source_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", source_sha256) is None:
         raise PublicError("invalid_request", "expected page snapshot is invalid")
-    return {"identity": identity, "title": title, "source_sha256": source_sha256, "tags": validate_tags(value["tags"], slug)}
+    tags = value["tags"]
+    # A create can fail after the page save but before the separate tag save.
+    # Permit exact cleanup of that untagged page while retaining the namespace,
+    # title, source, and identity fences.
+    if ORACLE_RUN_OWNED_SLUG.fullmatch(slug) and tags == []:
+        checked_tags = []
+    else:
+        checked_tags = validate_tags(tags, slug)
+    return {"identity": identity, "title": title, "source_sha256": source_sha256, "tags": checked_tags}
 
 def reject_secret_fields(value: object) -> None:
     if isinstance(value, dict):
@@ -262,7 +270,7 @@ class WikidotBackend:
                 "authenticated page GET did not contain a page id",
             )
         page_id = int(page_id_match.group(1))
-        title_element = self.soup(html, "html.parser").select_one("#page-title")
+        title_element = self.soup(html, "html.parser").select_one("#page-title, .page-title")
         if title_element is None:
             raise PublicError(
                 "page_identity_incomplete",

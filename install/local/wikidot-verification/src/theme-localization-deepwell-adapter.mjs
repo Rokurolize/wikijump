@@ -11,6 +11,7 @@ const MATERIALIZED_COMPONENT_TITLES = new Map([
   ["component:image-block-base", "Image Block Base"],
   ["component:image-block", "Image Block"],
 ]);
+const ORACLE_RUN_OWNED_SLUG = /^codex-oracle:[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])-[A-Za-z0-9][A-Za-z0-9._:-]*$/u;
 
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
@@ -44,7 +45,7 @@ function validateResource(resource, {allowLegacy = false, siteSlug = DEFAULT_SIT
   if (resourceSite !== adapterSite) throw new Error("Deepwell adapter resource site does not match the adapter site");
   const kind = resource?.kind ?? "theme_page";
   const dependency = kind === "component_dependency" && MATERIALIZED_COMPONENT_TITLES.has(resource?.slug);
-  const validSlug = dependency || (allowLegacy ? isRecoverableRunOwnedSlug(resource?.slug) : isCurrentRunOwnedSlug(resource?.slug));
+  const validSlug = dependency || (ORACLE_RUN_OWNED_SLUG.test(resource?.slug ?? "") || (allowLegacy ? isRecoverableRunOwnedSlug(resource?.slug) : isCurrentRunOwnedSlug(resource?.slug)));
   if (resource?.target !== "wikijump" || !validSlug) {
     throw new Error("Deepwell adapter accepts only validated Wikijump theme execution pages");
   }
@@ -55,7 +56,7 @@ function validateResource(resource, {allowLegacy = false, siteSlug = DEFAULT_SIT
   if (dependency && (resource.title !== MATERIALIZED_COMPONENT_TITLES.get(resource.slug) || resource.resource_id !== `dependency:${resource.slug}:wikijump` || !/^[0-9a-f]{32}$/u.test(resource.ownership_token))) {
     throw new Error("Deepwell adapter dependency resource is outside the materialized contract");
   }
-  const expectedTags = dependency ? [`codex-l10n-owner-${resource.ownership_token}`, "component"] : resource.slug.endsWith("-yossistyle") ? ["テーマ"] : resource.slug.endsWith("-ashes-to-ashes") || resource.slug.endsWith("-basalt") ? ["theme"] : [];
+  const expectedTags = dependency ? [`codex-l10n-owner-${resource.ownership_token}`, "component"] : ORACLE_RUN_OWNED_SLUG.test(resource.slug) ? ["codex-oracle"] : resource.slug.endsWith("-yossistyle") ? ["テーマ"] : resource.slug.endsWith("-ashes-to-ashes") || resource.slug.endsWith("-basalt") ? ["theme"] : [];
   if (!allowLegacy && JSON.stringify(resource.tags ?? []) !== JSON.stringify(expectedTags)) throw new Error("Deepwell adapter resource tags are outside the run-owned contract");
 }
 
