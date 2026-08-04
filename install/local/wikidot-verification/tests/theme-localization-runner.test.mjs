@@ -9,7 +9,7 @@ import test from "node:test";
 import {parseArgs} from "../scripts/theme-localization-e2e.mjs";
 import {ALLOWED_SITE_SLUG, THEME_CURRENT_SITE_DEPENDENCIES, THEME_LOCALIZATION_E2E_SCHEMA, currentSiteDependencyOwnershipToken, runOwnedSlug} from "../src/theme-localization-e2e.mjs";
 import {ThemeExecutionLedger, themeExecutionFingerprint, validateRecoverableThemeExecutionPlan, validateThemeExecutionPlan} from "../src/theme-localization-execution.mjs";
-import {executeGuardedThemeAction, GUARDED_THEME_WIKIJUMP_RPC_URL, recoverGuardedThemeAction, THEME_RUN_RESULT_SCHEMA, acquireThemeExecutionLock, createLiveThemeDependencies, validateGuardedThemeRpcUrl, validateStorageState, validateThemeCdpEndpoint, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
+import {executeGuardedThemeAction, GUARDED_THEME_WIKIJUMP_RPC_URL, recoverGuardedThemeAction, THEME_RUN_RESULT_SCHEMA, acquireThemeExecutionLock, createLiveThemeDependencies, resolveThemeActorUserId, validateGuardedThemeRpcUrl, validateStorageState, validateThemeCdpEndpoint, writeExecutableThemePlan} from "../src/theme-localization-runner.mjs";
 import {targetRoundTripSourceSha256} from "../src/theme-source-roundtrip.mjs";
 
 const digest = (value) => crypto.createHash("sha256").update(value).digest("hex");
@@ -57,7 +57,7 @@ async function fixture({onCreate, tierIds = ["yossistyle"]} = {}) {
         },
       },
       targets: [
-        {id: "wikidot", resource_id: `${tierId}:wikidot`, origin: `http://${ALLOWED_SITE_SLUG}.wikidot.com`, url: `http://${ALLOWED_SITE_SLUG}.wikidot.com/${slug}`},
+        {id: "wikidot", resource_id: `${tierId}:wikidot`, origin: `https://${ALLOWED_SITE_SLUG}.wikidot.com`, url: `https://${ALLOWED_SITE_SLUG}.wikidot.com/${slug}`},
         {id: "wikijump", resource_id: `${tierId}:wikijump`, origin: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443`, url: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443/${slug}`},
       ],
       capture: {
@@ -94,7 +94,7 @@ async function fixture({onCreate, tierIds = ["yossistyle"]} = {}) {
       accepted_source_sha256: dependency.accepted_source_sha256,
       source_transform: dependency.source_transform,
       source_sha256: dependency.materialized_source_sha256,
-      reference: {resource_id: `prerequisite:${dependency.slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", url: `http://${ALLOWED_SITE_SLUG}.wikidot.com/${dependency.slug}`, title: dependency.title, tags: [...dependency.reference_tags]},
+      reference: {resource_id: `prerequisite:${dependency.slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", url: `https://${ALLOWED_SITE_SLUG}.wikidot.com/${dependency.slug}`, title: dependency.title, tags: [...dependency.reference_tags]},
       candidate: {resource_id: `dependency:${dependency.slug}:wikijump`, kind: "component_dependency", target: "wikijump", url: `https://${ALLOWED_SITE_SLUG}.wikijump.localhost:18443/${dependency.slug}`, title: dependency.title, ownership_token: ownershipToken, tags: [`codex-l10n-owner-${ownershipToken}`, "component"]},
     });
   }
@@ -209,6 +209,12 @@ test("guarded runner requires the exact runtime50x Deepwell RPC binding", () => 
 test("live dependency construction cannot fall back to another Deepwell stack", async () => {
   await assert.rejects(createLiveThemeDependencies({env: {}}), /WIKIJUMP_THEME_RPC_URL must explicitly equal/);
   await assert.rejects(createLiveThemeDependencies({env: {WIKIJUMP_THEME_RPC_URL: "http://127.0.0.1:2747/jsonrpc"}}), /WIKIJUMP_THEME_RPC_URL must explicitly equal/);
+});
+
+test("live dependencies leave the actor bound to the authenticated session by default", () => {
+  assert.equal(resolveThemeActorUserId({}), null);
+  assert.equal(resolveThemeActorUserId({WIKIJUMP_THEME_ACTOR_USER_ID: "123"}), 123);
+  assert.throws(() => resolveThemeActorUserId({WIKIJUMP_THEME_ACTOR_USER_ID: "not-an-id"}), /must be an integer/);
 });
 
 test("insecure artifact root is rejected before adapters connect", async () => {

@@ -36,7 +36,7 @@ function fixtureTier() {
     id: "yossistyle",
     run_owned_slug: slug,
     targets: [
-      {id: "wikidot", url: `http://scpaiueouiuiuiui.wikidot.com/${slug}`},
+      {id: "wikidot", url: `https://scpaiueouiuiuiui.wikidot.com/${slug}`},
       {id: "wikijump", url: `https://scpaiueouiuiuiui.wikijump.localhost:18443/${slug}`},
     ],
     capture: {
@@ -74,7 +74,7 @@ test("capture target validation only accepts the exact run-owned sandbox URL", (
   assert.equal(validateThemeCaptureTarget({tier, target: tier.targets[0]}), tier.targets[0].url);
   assert.throws(() => validateThemeCaptureTarget({tier, target: {id: "wikijump", url: `https://scp-wiki.wikijump.localhost/${tier.run_owned_slug}`}}), /hard allowlist/);
   assert.throws(() => validateThemeCaptureTarget({tier, target: {...tier.targets[0], url: `${tier.targets[0].url}?capture=1`}}), /does not identify/);
-  assert.throws(() => validateThemeCaptureTarget({tier, target: {...tier.targets[0], url: "http://scpaiueouiuiuiui.wikidot.com/theme:other"}}), /does not identify/);
+  assert.throws(() => validateThemeCaptureTarget({tier, target: {...tier.targets[0], url: "https://scpaiueouiuiuiui.wikidot.com/theme:other"}}), /does not identify/);
 });
 
 test("local file routing preserves the candidate canary port without widening hosts", async () => {
@@ -95,7 +95,7 @@ test("local file routing preserves the candidate canary port without widening ho
   let continuation = "unset";
   await handler({request() { return {url() { return "https://example.com/local--files/theme/fire.webp"; }}; }, async continue(options) { continuation = options; }});
   assert.equal(continuation, undefined);
-  assert.equal(await installLocalFilePortRoute(context, {id: "wikidot", url: "http://scpaiueouiuiuiui.wikidot.com/page"}), false);
+  assert.equal(await installLocalFilePortRoute(context, {id: "wikidot", url: "https://scpaiueouiuiuiui.wikidot.com/page"}), false);
 });
 
 test("strict verdict applies every performance, browser, syntax, and interaction gate", () => {
@@ -274,7 +274,7 @@ test("tier orchestration opens one cold context per target and viewport and is f
 
   assert.equal(openCalls.length, 1);
   assert.equal(openCalls[0].createInitialContexts, false);
-  assert.deepEqual(proxyCalls, [{allowedLocalOrigins: ["http://scpaiueouiuiuiui.wikidot.com", "https://scpaiueouiuiuiui.wikijump.localhost:18443"]}]);
+  assert.deepEqual(proxyCalls, [{allowedLocalOrigins: ["https://scpaiueouiuiuiui.wikidot.com", "https://scpaiueouiuiuiui.wikijump.localhost:18443"]}]);
   assert.equal(contextOptions.length, 4);
   assert.deepEqual(contextOptions.map((options) => options.viewport), [{width: 1440, height: 1000}, {width: 390, height: 844}, {width: 1440, height: 1000}, {width: 390, height: 844}]);
   assert.deepEqual(contextOptions.map((options) => options.proxy), Array.from({length: 4}, () => ({server: "http://127.0.0.1:27777", bypass: "<-loopback>"})));

@@ -346,15 +346,32 @@ export async function readSeedAdministrator(repository) {
   if (
     typeof administrator?.email !== "string" ||
     administrator.email.length === 0 ||
-    typeof administrator?.password !== "string" ||
-    administrator.password.length === 0
+    administrator.password !== null
   ) {
-    throw new Error("seeded administrator credentials are unavailable");
+    throw new Error("seeded administrator must have no password");
   }
   return Object.freeze({
     email: administrator.email,
     password: administrator.password,
   });
+}
+
+export async function prepareRunOwnedSeeder(repository, destination, password) {
+  if (typeof password !== "string" || password.length === 0) {
+    throw new Error("run-owned administrator password must be a non-empty string");
+  }
+  const source = path.join(repository, "deepwell/seeder");
+  await fs.cp(source, destination, {recursive: true, errorOnExist: true});
+  const usersPath = path.join(destination, "users.json");
+  const users = JSON.parse(await fs.readFile(usersPath, "utf8"));
+  const administrator = users.find((user) => user?.slug === "administrator");
+  if (!administrator || typeof administrator.email !== "string" || administrator.password !== null) {
+    throw new Error("run-owned seeder requires a passwordless seeded administrator");
+  }
+  administrator.password = password;
+  await fs.writeFile(usersPath, `${JSON.stringify(users, null, 2)}\n`, {encoding: "utf8", mode: 0o600});
+  await fs.chmod(usersPath, 0o600);
+  return Object.freeze({email: administrator.email, password});
 }
 
 export function pageMutationContext(context, slug) {
@@ -633,6 +650,7 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
     filesAccessKey: `marker${crypto.randomBytes(12).toString("hex")}`,
     filesSecretKey: crypto.randomBytes(32).toString("hex"),
     rpcToken: crypto.randomBytes(32).toString("hex"),
+    administratorPassword: crypto.randomBytes(32).toString("hex"),
   });
   let project = null;
   let composePath = null;
@@ -754,6 +772,12 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
     const runStage = async (stage, worktree, manifest, ports) => {
       project = `${runId}-${stage}`;
       composePath = path.join(stackRoot, `${stage}.compose.yaml`);
+      const seeder = path.join(stackRoot, `${stage}-seeder`);
+      const administrator = await prepareRunOwnedSeeder(
+        worktree,
+        seeder,
+        credentials.administratorPassword,
+      );
       const binary = JSON.parse(await fs.readFile(manifest, "utf8")).build
         .binary_path_at_build;
       await fs.writeFile(
@@ -766,7 +790,7 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
           config,
           migrations: path.join(worktree, "deepwell", "migrations"),
           locales: path.join(worktree, "locales"),
-          seeder: path.join(worktree, "deepwell", "seeder"),
+          seeder,
           deepwellPort: ports.deepwell,
           framerailPort: ports.framerail,
           credentials,
@@ -804,7 +828,6 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
       let seeded;
       let records;
       try {
-        const administrator = await readSeedAdministrator(worktree);
         seeded = await seedFixtures({
           rpcUrl: `http://127.0.0.1:${ports.deepwell}/jsonrpc`,
           rpcToken: credentials.rpcToken,
