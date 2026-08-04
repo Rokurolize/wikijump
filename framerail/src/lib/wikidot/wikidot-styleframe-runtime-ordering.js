@@ -3,10 +3,10 @@ export const STYLEFRAME_ORDERING_RUNTIME_SOURCE = `  const head = targetDocument
     head.querySelectorAll('[data-wikidot-style-frame="' + marker + '"]')
   );
   const generatedCssNodes = () => Array.from(
-    head.querySelectorAll("[data-wikijump-generated-css]")
+    head.querySelectorAll("[data-wikidot-generated-css]")
   );
   const generatedCssCloneNodes = () => Array.from(
-    head.querySelectorAll("[data-wikijump-generated-css-clone]")
+    head.querySelectorAll("[data-wikidot-generated-css-clone]")
   );
   const stylePriority = (node) => {
     const value = Number.parseFloat(node.dataset.wikidotStylePriority || "");
@@ -26,7 +26,7 @@ export const STYLEFRAME_ORDERING_RUNTIME_SOURCE = `  const head = targetDocument
     return generatedNodes.map((source, index) => {
       const clone = targetDocument.createElement("style");
       clone.type = "text/css";
-      clone.dataset.wikijumpGeneratedCssClone = String(index);
+      clone.dataset.wikidotGeneratedCssClone = String(index);
       clone.textContent = source.textContent;
       head.appendChild(clone);
       return clone;

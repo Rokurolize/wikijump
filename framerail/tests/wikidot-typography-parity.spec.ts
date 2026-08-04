@@ -39,7 +39,7 @@ test("imported-page typography follows the recorded Wikidot live reference", asy
   await page.goto("/theme:yossistyle")
 
   await expect(page.locator("#page-content p")).toHaveText("XML-RPC theme body marker.")
-  await expect(page.locator("head style[data-wikijump-generated-css]")).toHaveCount(2)
+  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)
 
   const actual = await page.evaluate(() => {
     const typography = (element: Element | null) => {

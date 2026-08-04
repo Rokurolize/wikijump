@@ -187,12 +187,12 @@ const createHead = (...initialNodes) => {
           (node) => node.dataset.wikidotStyleFrame === "wikidot-style-frame"
         )
       }
-      if (selector === "[data-wikijump-generated-css]") {
-        return children.filter((node) => node.dataset.wikijumpGeneratedCss !== undefined)
+      if (selector === "[data-wikidot-generated-css]") {
+        return children.filter((node) => node.dataset.wikidotGeneratedCss !== undefined)
       }
-      if (selector === "[data-wikijump-generated-css-clone]") {
+      if (selector === "[data-wikidot-generated-css-clone]") {
         return children.filter(
-          (node) => node.dataset.wikijumpGeneratedCssClone !== undefined
+          (node) => node.dataset.wikidotGeneratedCssClone !== undefined
         )
       }
       if (selector === "link[data-wikidot-style-preloaded]") {
@@ -231,7 +231,7 @@ test("builds SCP interwiki language links from Crom translations", () => {
 test("replaces styles owned by a reused styleFrame across page navigation", () => {
   const baseStyle = { dataset: {}, id: "base" }
   const generatedPageStyle = {
-    dataset: { wikijumpGeneratedCss: "0" },
+    dataset: { wikidotGeneratedCss: "0" },
     id: "generated-page"
   }
   const head = createHead(baseStyle, generatedPageStyle)
@@ -263,9 +263,7 @@ test("replaces styles owned by a reused styleFrame across page navigation", () =
   assert.deepEqual(
     head.children.map(
       (node) =>
-        node.href ??
-        node.id ??
-        `generated-clone-${node.dataset.wikijumpGeneratedCssClone}`
+        node.href ?? node.id ?? `generated-clone-${node.dataset.wikidotGeneratedCssClone}`
     ),
     ["base", "generated-page", "https://example.com/page-b.css", "generated-clone-0"]
   )
@@ -278,9 +276,7 @@ test("replaces styles owned by a reused styleFrame across page navigation", () =
   assert.deepEqual(
     head.children.map(
       (node) =>
-        node.href ??
-        node.id ??
-        `generated-clone-${node.dataset.wikijumpGeneratedCssClone}`
+        node.href ?? node.id ?? `generated-clone-${node.dataset.wikidotGeneratedCssClone}`
     ),
     ["base", "generated-page", "https://example.com/page-b.css", "generated-clone-0"]
   )
@@ -297,9 +293,7 @@ test("replaces styles owned by a reused styleFrame across page navigation", () =
   assert.deepEqual(
     head.children.map(
       (node) =>
-        node.href ??
-        node.id ??
-        `generated-clone-${node.dataset.wikijumpGeneratedCssClone}`
+        node.href ?? node.id ?? `generated-clone-${node.dataset.wikidotGeneratedCssClone}`
     ),
     ["base", "generated-page", "https://example.com/page-a.css", "generated-clone-0"]
   )
@@ -417,7 +411,7 @@ test("adopts SSR inline styleFrame CSS without moving the parser-created node", 
     textContent: ".included { display: none; }"
   }
   const generatedPageStyle = {
-    dataset: { wikijumpGeneratedCss: "0" },
+    dataset: { wikidotGeneratedCss: "0" },
     id: "generated-page"
   }
   const head = createHead(preloaded, generatedPageStyle)
@@ -443,11 +437,11 @@ test("adopts SSR inline styleFrame CSS without moving the parser-created node", 
 test("keeps app styles before styleFrame CSS and generated CSS clones", () => {
   const baseStyle = { dataset: {}, id: "base" }
   const generatedPageStyle0 = {
-    dataset: { wikijumpGeneratedCss: "0" },
+    dataset: { wikidotGeneratedCss: "0" },
     id: "generated-page-0"
   }
   const generatedPageStyle1 = {
-    dataset: { wikijumpGeneratedCss: "1" },
+    dataset: { wikidotGeneratedCss: "1" },
     id: "generated-page-1"
   }
   const appStyle = { dataset: {}, id: "app" }
@@ -476,7 +470,7 @@ test("keeps app styles before styleFrame CSS and generated CSS clones", () => {
     head.children.map((node) =>
       node.dataset.wikidotStyleFrame
         ? `${node.dataset.wikidotStylePriority}:${node.dataset.wikidotStyleId}`
-        : (node.id ?? `generated-clone-${node.dataset.wikijumpGeneratedCssClone}`)
+        : (node.id ?? `generated-clone-${node.dataset.wikidotGeneratedCssClone}`)
     ),
     [
       "base",
