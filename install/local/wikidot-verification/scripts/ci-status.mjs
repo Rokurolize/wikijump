@@ -22,12 +22,13 @@ export function usage() {
     "  --help                Print this help.",
     "",
     "cacheStatus meanings:",
-    "  hit=fresh disk artifact with no GitHub network work; miss=no usable artifact; stale=head SHA changed or TTL expired; refresh=--refresh forced live calls.",
+    "  hit=fresh disk artifact with verified local head provenance; miss=no usable artifact or unavailable provenance; stale=head SHA changed, future-dated, or TTL-expired; refresh=--refresh forced live calls.",
     "",
     "Exit codes:",
     "  0=artifact produced/served; 1=tool failure; 2=usage error; 4=failing and --fail-on-failing.",
     "",
     "This tool is read-only; never mutates GitHub state.",
+    "Tracked Git files are rejected as cache paths; use an ignored or external path.",
     `Example default PR path: ${defaultStatusPath({kind: "pr", prNumber: 330})}`,
   ].join("\n");
 }
