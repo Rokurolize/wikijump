@@ -133,10 +133,20 @@ test("inventoryRows rejects malformed rows before browser capture starts", () =>
   );
 });
 
-test("row URL helpers skip blank preferred fields before falling back", () => {
-  assert.equal(rowSourceUrl({source_url: "", live_url: "https://live.example/page"}), "https://live.example/page");
+test("row URL helpers skip blank preferred fields before falling back and reject untrusted origins", () => {
+  assert.equal(rowSourceUrl({source_url: "", live_url: "https://scp-wiki.wikidot.com/page"}), "https://scp-wiki.wikidot.com/page");
   assert.equal(
-    rowLocalUrl({local_https_url: "", local_http_url: "http://local.example/page"}),
-    "http://local.example/page"
+    rowLocalUrl({local_https_url: "", local_http_url: "https://scp-wiki.wikijump.localhost/page"}),
+    "https://scp-wiki.wikijump.localhost/page"
   );
+  for (const value of [
+    "http://scp-wiki.wikidot.com/page",
+    "https://attacker.example/page",
+    "https://127.0.0.1/page",
+    "https://user:pass@scp-wiki.wikidot.com/page",
+    "https://scp-wiki.wikijump.localhost:444/page",
+  ]) {
+    assert.throws(() => rowSourceUrl({source_url: value}), /capture URL/);
+    assert.throws(() => rowLocalUrl({local_https_url: value}), /capture URL/);
+  }
 });
