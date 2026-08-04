@@ -235,9 +235,9 @@ async function main(argv) {
         localPage = await withTimeout(wikijump.create(localResource, {source: source.source}), `local create ${fixture.fixture_id}`);
         const contract = browserContract();
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-live"}));
-        const liveCapture = await withTimeout(captureBrowserParityObservation({context: browser.context, url: liveResource.url, label: "live", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs}), `live capture ${fixture.fixture_id}`);
+        const liveCapture = await withTimeout(captureBrowserParityObservation({context: browser.context, url: liveResource.url, label: "live", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs}), `live capture ${fixture.fixture_id}`, 900_000);
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-local"}));
-        const localCapture = await withTimeout(captureBrowserParityObservation({context: browser.context, url: localResource.url, label: "local", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs}), `local capture ${fixture.fixture_id}`);
+        const localCapture = await withTimeout(captureBrowserParityObservation({context: browser.context, url: localResource.url, label: "local", index, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs}), `local capture ${fixture.fixture_id}`, 900_000);
         captures.push({fixture_id: fixture.fixture_id, live: liveCapture, local: localCapture, resources: {live: liveResource, local: localResource}});
         contracts.push({fixture_id: fixture.fixture_id, contract});
         cleanup.push({fixture_id: fixture.fixture_id, live: {resource: liveResource, expected: {title: source.title, source_sha256: liveResource.source_sha256, tags: liveResource.tags}, identity: livePage}, local: {resource: localResource, expected: {title: source.title, source_sha256: localResource.source_sha256, tags: localResource.tags}, identity: localPage}});
