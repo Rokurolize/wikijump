@@ -293,6 +293,13 @@ function validateTextHash(hash) {
   return hash.toLowerCase();
 }
 
+function sourceEntityCacheKey(row) {
+  if (typeof row.source_entity_id !== 'string' || row.source_entity_id.length === 0) {
+    throw new Error(`source_entity_id is required for ${row.fullname}`);
+  }
+  return row.source_entity_id;
+}
+
 function textHashHex(args, contents, cacheKey = null) {
   if (cacheKey !== null && precomputedTextHashes.has(cacheKey)) {
     return precomputedTextHashes.get(cacheKey);
@@ -347,14 +354,15 @@ function precomputeDbTextHashes(args, selectedRows) {
   if (args.createMode !== 'db' || !args.textHashBatchCommand) return;
   const items = [{ id: '__shell_body__', contents: SHELL_BODY_HTML }];
   for (let index = 0; index < selectedRows.length; index += 1) {
-    const contents = sourceText(selectedRows[index]);
-    precomputedSourceTexts.set(selectedRows[index].fullname, contents);
+    const row = selectedRows[index];
+    const contents = sourceText(row);
+    precomputedSourceTexts.set(sourceEntityCacheKey(row), contents);
     items.push({ id: `page:${index}`, contents });
   }
   const hashes = batchTextHashesHex(args, items);
   shellBodyHash = hashes.get('__shell_body__');
   for (let index = 0; index < selectedRows.length; index += 1) {
-    precomputedTextHashes.set(selectedRows[index].fullname, hashes.get(`page:${index}`));
+    precomputedTextHashes.set(sourceEntityCacheKey(selectedRows[index]), hashes.get(`page:${index}`));
   }
 }
 
@@ -384,7 +392,7 @@ ON CONFLICT (hash) DO NOTHING;
 `;
     await sqlExecutor.runSql(sql);
     for (const item of batch) {
-      precreatedSourceTextHashes.add(item.fullname);
+      precreatedSourceTextHashes.add(item.sourceEntityId);
     }
     batch = [];
     batchBytes = 0;
@@ -392,13 +400,13 @@ ON CONFLICT (hash) DO NOTHING;
 
   for (const row of selectedRows) {
     const contents = sourceText(row);
-    const hash = textHashHex(args, contents, row.fullname);
+    const hash = textHashHex(args, contents, sourceEntityCacheKey(row));
     const encodedBytes = Buffer.byteLength(contents, 'utf8') * 4 / 3;
     if (batch.length > 0 && (batch.length >= SOURCE_TEXT_PRECREATE_MAX_ROWS || batchBytes + encodedBytes > SOURCE_TEXT_PRECREATE_MAX_BASE64_BYTES)) {
       await flush();
     }
     batch.push({
-      fullname: row.fullname,
+      sourceEntityId: sourceEntityCacheKey(row),
       valueSql: `(${sqlTextHash(hash)}, ${sqlTextFromBase64(contents)})`,
     });
     batchBytes += encodedBytes;
@@ -536,7 +544,7 @@ function readManifestFile(row, pathKey, shaKey) {
 }
 
 function sourceText(row) {
-  const cached = precomputedSourceTexts.get(row.fullname);
+  const cached = precomputedSourceTexts.get(sourceEntityCacheKey(row));
   if (cached !== undefined) return cached;
   return readManifestFile(row, 'source_path', 'source_sha256');
 }
@@ -556,9 +564,9 @@ const createPage = (args, row) => createCorpusImportPage(args, rpc, row, sourceT
 const categoryName = corpusImportCategoryName;
 
 async function shellCreatePage(args, sqlExecutor, row, { replaceExistingRevision = false } = {}) {
-  const sourceTextPrecreated = precreatedSourceTextHashes.has(row.fullname);
+  const sourceTextPrecreated = precreatedSourceTextHashes.has(sourceEntityCacheKey(row));
   const wikitext = sourceTextPrecreated ? '' : sourceText(row);
-  const wikitextHash = textHashHex(args, wikitext, row.fullname);
+  const wikitextHash = textHashHex(args, wikitext, sourceEntityCacheKey(row));
   const bodyHash = shellBodyHashHex(args);
   const title = fallbackTitle(row);
   const category = categoryName(row.fullname);
@@ -998,7 +1006,7 @@ function recordImportResult(results, summary, result) {
 
 export function batchShellCreatePageValues(args, rows, {
   categoryIds = precreatedCategoryIds,
-  sourceTextFullnames = precreatedSourceTextHashes,
+  sourceTextEntityIds = precreatedSourceTextHashes,
   textHash = textHashHex,
   shellHash = shellBodyHashHex,
 } = {}) {
@@ -1008,11 +1016,11 @@ export function batchShellCreatePageValues(args, rows, {
     if (categoryId === undefined) {
       throw new Error(`missing precreated category id for ${row.fullname}`);
     }
-    const sourceTextPrecreated = sourceTextFullnames.has(row.fullname);
+    const sourceTextPrecreated = sourceTextEntityIds.has(sourceEntityCacheKey(row));
     if (!sourceTextPrecreated) {
       throw new Error(`missing precreated source text for ${row.fullname}`);
     }
-    const wikitextHash = textHash(args, '', row.fullname);
+    const wikitextHash = textHash(args, '', sourceEntityCacheKey(row));
     const title = fallbackTitle(row);
     const metaText = metaJsonText(row);
     return `(

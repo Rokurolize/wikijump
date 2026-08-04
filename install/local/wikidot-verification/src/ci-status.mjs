@@ -7,6 +7,7 @@ const SCHEMA_VERSION = 1;
 const DEFAULT_TTL_MS = 30000;
 const DEFAULT_COMPLETED_TTL_MS = 300000;
 const GH_TIMEOUT_MS = 15000;
+const GITHUB_SHA_RE = /^[0-9a-f]{40}$/i;
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const GIT_ROOT = (() => {
   try {
@@ -49,6 +50,9 @@ function deepEqual(left, right) {
 }
 function subjectId(subject) {
   return subject.kind === "pr" ? {kind: "pr", prNumber: subject.prNumber} : subject.kind === "branch" ? {kind: "branch", branch: subject.branch} : {kind: "sha", sha: subject.sha};
+}
+function isGithubCommitSha(value) {
+  return typeof value === "string" && GITHUB_SHA_RE.test(value);
 }
 function normalizeSubject(subject) {
   if (subject?.kind === "pr" && Number.isInteger(subject.prNumber) && subject.prNumber > 0) return {kind: "pr", prNumber: subject.prNumber};
@@ -253,7 +257,7 @@ function createDefaultLocalGit() {
         return null;
       }
       try {
-        const head = execFileSync("git", ["rev-parse", `refs/heads/${branchName}`], {
+        const head = execFileSync("git", ["rev-parse", branchName === "HEAD" ? "HEAD" : `refs/heads/${branchName}`], {
           cwd: GIT_ROOT,
           encoding: "utf8",
           stdio: ["ignore", "pipe", "ignore"],
@@ -277,6 +281,17 @@ export function redactText(text) {
 }
 export function defaultStatusPath(subject) {
   return path.join(PACKAGE_ROOT, "artifacts", "ci-status", statusFileName(normalizeSubject(subject)));
+}
+export function isCachePathTrusted(statusPath) {
+  if (GIT_ROOT === null) return false;
+  const relativePath = path.relative(GIT_ROOT, path.resolve(statusPath));
+  if (relativePath === "" || relativePath.startsWith(`..${path.sep}`) || path.isAbsolute(relativePath)) return true;
+  try {
+    execFileSync("git", ["-C", GIT_ROOT, "ls-files", "--error-unmatch", "--", relativePath], {encoding: "utf8", stdio: ["ignore", "pipe", "ignore"]});
+    return false;
+  } catch {
+    return true;
+  }
 }
 export function buildFingerprint(config) {
   return {
@@ -303,12 +318,18 @@ export function evaluateCiCache({raw, nowMs, fingerprint, ttlMs, completedTtlMs,
     return {cacheStatus: "miss", cacheReason: "fingerprint-mismatch", artifact: null};
   }
   const ageMs = nowMs - Date.parse(artifact.fetchedAt);
-  if ((artifact.subject?.kind === "pr" || artifact.subject?.kind === "branch") && typeof localHeadSha === "string" && localHeadSha.length > 0 && artifact.subject?.headSha !== localHeadSha) {
+  if (["pr", "branch", "sha"].includes(artifact.subject?.kind) && !isGithubCommitSha(localHeadSha)) {
+    return {cacheStatus: "miss", cacheReason: "head-sha-unavailable", artifact: withCacheFields(artifact, {cacheStatus: "miss", cacheReason: "head-sha-unavailable", ageMs, expired: false, ttlMs, completedTtlMs})};
+  }
+  if (["pr", "branch", "sha"].includes(artifact.subject?.kind) && artifact.subject?.headSha !== localHeadSha) {
     return {cacheStatus: "stale", cacheReason: "head-sha-changed", artifact: withCacheFields(artifact, {cacheStatus: "stale", cacheReason: "head-sha-changed", ageMs, expired: false, ttlMs, completedTtlMs})};
   }
   const ttlForArtifact = cacheTtlFor(artifact.overall, ttlMs, completedTtlMs);
   if (!Number.isFinite(ageMs) || ageMs > ttlForArtifact) {
     return {cacheStatus: "stale", cacheReason: "ttl-expired", artifact: withCacheFields(artifact, {cacheStatus: "stale", cacheReason: "ttl-expired", ageMs, expired: true, ttlMs, completedTtlMs})};
+  }
+  if (ageMs < 0) {
+    return {cacheStatus: "stale", cacheReason: "future-fetched-at", artifact: withCacheFields(artifact, {cacheStatus: "stale", cacheReason: "future-fetched-at", ageMs, expired: true, ttlMs, completedTtlMs})};
   }
   return {cacheStatus: "hit", cacheReason: "fresh", artifact: withCacheFields(artifact, {cacheStatus: "hit", cacheReason: "fresh", ageMs, expired: false, ttlMs, completedTtlMs})};
 }
@@ -352,6 +373,9 @@ export async function collectCiStatus(options) {
   const statusPath = path.resolve(options.statusPath ?? defaultStatusPath(subject));
   const fingerprint = buildFingerprint({repo, subject});
   const localGit = options.localGit ?? createDefaultLocalGit();
+  if (!isCachePathTrusted(statusPath)) {
+    throw new Error(`CI status cache path must not be tracked by Git: ${statusPath}`);
+  }
   if (options.refresh !== true) {
     let raw = null;
     try {
@@ -362,7 +386,9 @@ export async function collectCiStatus(options) {
       }
     }
     const branchName = parseCachedBranch(raw);
-    const localHeadSha = branchName === null ? null : localGit.resolveHeadSha(branchName);
+    const localHeadSha = subject.kind === "sha"
+      ? localGit.resolveHeadSha("HEAD")
+      : branchName === null ? null : localGit.resolveHeadSha(branchName);
     const cache = evaluateCiCache({raw, nowMs, fingerprint, ttlMs, completedTtlMs, localHeadSha});
     if (cache.cacheStatus === "hit") {
       return {...cache.artifact, artifactPaths: {...cache.artifact.artifactPaths, status: statusPath}};
@@ -432,6 +458,9 @@ export async function collectCiStatus(options) {
     artifactPaths: {status: statusPath},
     rerunCommand: `cd ${shellQuote(PACKAGE_ROOT)} && node scripts/ci-status.mjs --repo ${shellQuote(repo)} --${subject.kind} ${shellQuote(subject.kind === "pr" ? subject.prNumber : subject.kind === "branch" ? subject.branch : subject.sha)} --refresh --json${options.statusPath === undefined ? "" : ` --status ${shellQuote(statusPath)}`}`,
   };
+  if (!isCachePathTrusted(statusPath)) {
+    throw new Error(`CI status cache path became tracked by Git: ${statusPath}`);
+  }
   await writeJsonAtomically(statusPath, artifact, runId);
   return artifact;
 }

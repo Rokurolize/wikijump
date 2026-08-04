@@ -147,11 +147,13 @@ class Page {
     this.contextId = contextId;
     this.handlers = new Map();
     this.currentUrl = "about:blank";
+    this.main = {evaluate: async () => "context-" + this.contextId};
   }
   on(event, handler) { this.handlers.set(event, handler); }
   async goto(url) { this.currentUrl = url; return {status: () => 200}; }
   async waitForLoadState() {}
-  frames() { return [{evaluate: async () => "context-" + this.contextId}]; }
+  mainFrame() { return this.main; }
+  frames() { return [this.main, {evaluate: async () => "child-" + this.contextId}]; }
   async content() { return "<html>context-" + this.contextId + "</html>"; }
   async screenshot({path}) { fs.writeFileSync(path, "png"); }
   url() { return this.currentUrl; }
@@ -315,6 +317,7 @@ class Page {
     this.currentUrl = "about:blank";
   }
   on(event, handler) { this.handlers.set(event, handler); }
+  mainFrame() { return this; }
   async goto(url) { this.currentUrl = url; return {status: () => 200}; }
   async waitForLoadState() {}
   async evaluate() { return "source ok"; }
@@ -344,7 +347,7 @@ exports.chromium = {
         fixture_id: "EN:partial",
         family: "EN",
         slug: "partial",
-        source_url: "https://live.example/partial",
+        source_url: "https://scp-wiki.wikidot.com/partial",
         local_https_url: "",
         required_browser: true,
       }],

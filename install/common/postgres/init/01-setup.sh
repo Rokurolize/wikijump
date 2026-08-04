@@ -50,7 +50,5 @@ host    replication     all             ::1/128                 scram-sha-256
 
 # Allow wikijump to connect from a container
 host    wikijump        wikijump        0.0.0.0/0               scram-sha-256
-host    wikijump        wikijump_ro     0.0.0.0/0               scram-sha-256
 host    wikijump        wikijump        ::/0                    scram-sha-256
-host    wikijump        wikijump_ro     ::/0                    scram-sha-256
 EOF

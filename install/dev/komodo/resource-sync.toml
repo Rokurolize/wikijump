@@ -5,7 +5,17 @@ tags = ["wikijump", "system"]
 
 [resource_sync.config]
 linked_repo = "wikijump-dev"
-resource_path = ["install/dev/komodo/"]
+resource_path = [
+    "install/dev/komodo/alerters.toml",
+    "install/dev/komodo/builder.toml",
+    "install/dev/komodo/docker-compose.yaml",
+    "install/dev/komodo/procedures.toml",
+    "install/dev/komodo/resource-sync.toml",
+    "install/dev/komodo/servers.toml",
+    "install/dev/komodo/sources.toml",
+    "install/dev/komodo/stacks.toml",
+    "install/dev/komodo/system.toml",
+]
 delete = true
 webhook_enabled = false
 include_user_groups = true

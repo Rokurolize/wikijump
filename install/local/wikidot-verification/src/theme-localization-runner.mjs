@@ -26,6 +26,13 @@ function requiredEnv(env, name) {
   return env[name];
 }
 
+export function resolveThemeActorUserId(env) {
+  if (env.WIKIJUMP_THEME_ACTOR_USER_ID === undefined) return null;
+  const actorUserId = Number(env.WIKIJUMP_THEME_ACTOR_USER_ID);
+  if (!Number.isSafeInteger(actorUserId)) throw new Error("WIKIJUMP_THEME_ACTOR_USER_ID must be an integer");
+  return actorUserId;
+}
+
 function redact(message, secrets) {
   let result = String(message);
   for (const secret of secrets.filter((value) => typeof value === "string" && value.length >= 4)) result = result.replaceAll(secret, "[REDACTED]");
@@ -81,8 +88,7 @@ export async function createLiveThemeDependencies({env = process.env, browserRoo
   const rpcUrl = validateGuardedThemeRpcUrl(env.WIKIJUMP_THEME_RPC_URL);
   const rpcToken = requiredEnv(env, "DEEPWELL_RPC_TOKEN");
   const secrets = [requiredEnv(env, "WIKIDOT_USERNAME"), requiredEnv(env, "WIKIDOT_PASSWORD"), requiredEnv(env, "WIKIJUMP_THEME_ADMIN_EMAIL"), requiredEnv(env, "WIKIJUMP_THEME_ADMIN_PASSWORD"), rpcToken];
-  const actorUserId = env.WIKIJUMP_THEME_ACTOR_USER_ID === undefined ? -1 : Number(env.WIKIJUMP_THEME_ACTOR_USER_ID);
-  if (!Number.isSafeInteger(actorUserId)) throw new Error("WIKIJUMP_THEME_ACTOR_USER_ID must be an integer");
+  const actorUserId = resolveThemeActorUserId(env);
   const storageStates = needsBrowser ? {wikidot: await validateStorageState(wikidotStorageState), wikijump: await validateStorageState(wikijumpStorageState)} : {};
   const wikidot = new WikidotThemePageAdapter({helperOptions: {env}});
   const wikijump = new DeepwellThemePageAdapter({rpcUrl, rpcToken, adminEmail: env.WIKIJUMP_THEME_ADMIN_EMAIL, adminPassword: env.WIKIJUMP_THEME_ADMIN_PASSWORD, actorUserId});

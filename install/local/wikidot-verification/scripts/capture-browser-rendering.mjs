@@ -33,7 +33,7 @@ import {
 const DEFAULT_TIMEOUT_MS = 900_000;
 const DEFAULT_SETTLE_MS = 1_000;
 const POST_NAVIGATION_STATE_TIMEOUT_MS = 2_000;
-const VISIBLE_TEXT_SCOPES = new Set(["all-frames", "main-frame"]);
+const VISIBLE_TEXT_SCOPES = new Set(["main-frame"]);
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 
 function nextArg(argv, index, flag) {
@@ -53,7 +53,7 @@ function parseArgs(argv) {
     screenshot: true,
     ignoreHttpsErrors: false,
     waitUntil: "domcontentloaded",
-    visibleTextScope: "all-frames",
+    visibleTextScope: "main-frame",
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -124,7 +124,7 @@ function parseArgs(argv) {
     } else if (arg === "--visible-text-scope") {
       args.visibleTextScope = nextArg(argv, index, arg);
       if (!VISIBLE_TEXT_SCOPES.has(args.visibleTextScope)) {
-        throw new Error("--visible-text-scope must be all-frames or main-frame");
+        throw new Error("--visible-text-scope must be main-frame");
       }
       index += 1;
     } else if (arg === "--ignore-https-errors") {
@@ -146,7 +146,7 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 900000] [--settle-ms 1000] [--visible-text-scope all-frames|main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
+  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 900000] [--settle-ms 1000] [--visible-text-scope main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
 
 Writes validator-compatible browser rendering evidence JSON plus DOM/screenshot artifacts for selected corpus inventory rows. The output directory should live under one of the render validator evidence roots, for example:
 
@@ -168,57 +168,14 @@ export {
   resolveStorageStates,
 };
 
-async function collectVisibleText(page, visibleTextScope = "all-frames") {
-  const frames =
-    visibleTextScope === "main-frame"
-      ? [typeof page.mainFrame === "function" ? page.mainFrame() : page]
-      : typeof page.frames === "function"
-        ? page.frames()
-        : [page];
-  const texts = [];
-  for (const frame of frames) {
-    try {
-      if (!(await shouldCaptureFrameVisibleText(page, frame))) continue;
-      const text = await frame.evaluate(() => document.body?.innerText ?? "");
-      if (text) texts.push(text);
-    } catch (error) {
-      void error;
-      // Detached or inaccessible frames should not abort page-level capture.
-    }
-  }
-  return texts.join("\n");
-}
-
-async function shouldCaptureFrameVisibleText(page, frame) {
-  if (typeof page.mainFrame === "function" && frame === page.mainFrame()) {
-    return true;
-  }
-  if (typeof frame.frameElement !== "function") {
-    return true;
-  }
-
-  let frameElement = null;
+async function collectVisibleText(page) {
+  const frame = typeof page.mainFrame === "function" ? page.mainFrame() : page;
   try {
-    frameElement = await frame.frameElement();
-  } catch {
-    return true;
-  }
-  if (!frameElement) {
-    return true;
-  }
-
-  try {
-    return await frameElement.evaluate((element) => {
-      if (!(element instanceof HTMLElement)) return true;
-      if (element.hidden) return false;
-      const style = window.getComputedStyle(element);
-      if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") {
-        return false;
-      }
-      return true;
-    });
-  } catch {
-    return true;
+    return await frame.evaluate(() => document.body?.innerText ?? "");
+  } catch (error) {
+    void error;
+    // Detached or inaccessible main frames should not abort page-level capture.
+    return "";
   }
 }
 
@@ -228,7 +185,10 @@ async function waitForLoadStateWithinBudget(page, state, timeoutMs, startedAt) {
   await page.waitForLoadState(state, {timeout: Math.min(POST_NAVIGATION_STATE_TIMEOUT_MS, remainingMs)}).catch(() => {});
 }
 
-export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = DEFAULT_SETTLE_MS, screenshotPath, visibleTextScope = "all-frames"}) {
+export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = DEFAULT_SETTLE_MS, screenshotPath, visibleTextScope = "main-frame"}) {
+  if (!VISIBLE_TEXT_SCOPES.has(visibleTextScope)) {
+    throw new Error("visibleTextScope must be main-frame because cross-origin frame text is not captured");
+  }
   const consoleErrors = [];
   const failedRequests = [];
   const badResponses = [];
@@ -289,7 +249,7 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
     if (settleMs > 0 && typeof page.waitForTimeout === "function") {
       await page.waitForTimeout(settleMs).catch(() => {});
     }
-    visibleText = await collectVisibleText(page, visibleTextScope);
+    visibleText = await collectVisibleText(page);
     html = await page.content();
   } catch (error) {
     if (!navigationError) navigationError = error;
@@ -381,14 +341,21 @@ async function run() {
     throw new Error("--cdp-endpoint is disabled because capture egress cannot be pinned");
   }
   const localOrigins = [...new Set(selectedRows.flatMap((row) => {
-    const value = rowLocalUrl(row, args.localUrlField);
-    if (!value) return [];
     try {
+      const value = rowLocalUrl(row, args.localUrlField);
+      if (!value) return [];
       return localBrowserCaptureOrigins(value);
     } catch (error) {
       throw new Error(`invalid local capture URL for ${row.fixture_id}: ${error.message}`);
     }
   }))].sort();
+  for (const row of selectedRows) {
+    try {
+      rowSourceUrl(row);
+    } catch (error) {
+      throw new Error(`invalid source capture URL for ${row.fixture_id}: ${error.message}`);
+    }
+  }
   const {chromium} = loadPlaywright(args.browserRoot);
   const runId = crypto.randomUUID();
   const captureLock = await acquireBrowserCaptureLock({runId});

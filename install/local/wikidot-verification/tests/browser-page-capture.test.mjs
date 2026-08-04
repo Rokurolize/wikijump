@@ -5,8 +5,8 @@ import {capturePage} from "../scripts/capture-browser-rendering.mjs";
 
 test("capturePage records page errors and failed subframe responses", async () => {
   const handlers = new Map();
-  const mainFrame = {name: "main"};
-  const childFrame = {name: "child"};
+  const mainFrame = {name: "main", async evaluate() { return "visible"; }};
+  const childFrame = {name: "child", async evaluate() { return "sensitive child frame text"; }};
   const page = {
     on(event, handler) {
       handlers.set(event, handler);
@@ -38,10 +38,7 @@ test("capturePage records page errors and failed subframe responses", async () =
     },
     async waitForLoadState() {},
     frames() {
-      return [
-        {async evaluate() { return "visible"; }},
-        {async evaluate() { return "child frame text"; }},
-      ];
+      return [mainFrame, childFrame];
     },
     async content() {
       return "<html>visible</html>";
@@ -59,7 +56,7 @@ test("capturePage records page errors and failed subframe responses", async () =
   });
 
   assert.deepEqual(result.consoleErrors, ["client render failed"]);
-  assert.equal(result.visibleText, "visible\nchild frame text");
+  assert.equal(result.visibleText, "visible");
   assert.deepEqual(result.failedRequests, [
     {
       url: "https://local.example/frame",
@@ -103,24 +100,9 @@ test("capturePage can scope visible text to the main frame", async () => {
   assert.equal(result.visibleText, "main frame text");
 });
 
-test("capturePage skips hidden child frames for all-frame visible text", async () => {
+test("capturePage does not collect visible text from child frames", async () => {
   const mainFrame = {async evaluate() { return "main frame text"; }};
-  const visibleFrame = {
-    async frameElement() {
-      return {async evaluate() { return true; }};
-    },
-    async evaluate() {
-      return "visible iframe text";
-    },
-  };
-  const hiddenFrame = {
-    async frameElement() {
-      return {async evaluate() { return false; }};
-    },
-    async evaluate() {
-      throw new Error("hidden frame text should not be read");
-    },
-  };
+  const childFrame = {async evaluate() { return "sensitive iframe text"; }};
   const page = {
     on() {},
     mainFrame() {
@@ -131,7 +113,7 @@ test("capturePage skips hidden child frames for all-frame visible text", async (
     },
     async waitForLoadState() {},
     frames() {
-      return [mainFrame, visibleFrame, hiddenFrame];
+      return [mainFrame, childFrame];
     },
     async content() {
       return "<html>main frame text</html>";
@@ -148,7 +130,7 @@ test("capturePage skips hidden child frames for all-frame visible text", async (
     screenshotPath: null,
   });
 
-  assert.equal(result.visibleText, "main frame text\nvisible iframe text");
+  assert.equal(result.visibleText, "main frame text");
 });
 
 test("capturePage records delayed main-frame navigation failures", async () => {
