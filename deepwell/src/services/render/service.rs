@@ -1763,6 +1763,10 @@ impl RenderService {
             text_block_page_id,
             lifecycle,
         } = render_context;
+        let allow_wikidot_styleframe = matches!(
+            lifecycle,
+            RenderLifecycle::SavedPage | RenderLifecycle::PagePreview
+        );
 
         if let Some((trace, CorpusRenderScope::Body)) = trace {
             trace.set_dimension(CorpusRenderDimension::SourceBytes, wikitext.len());
@@ -1807,6 +1811,7 @@ impl RenderService {
             settings,
             current_site_id,
             text_block_page_id,
+            allow_wikidot_styleframe,
             current_site,
             trace,
             persist_compiled_text,
@@ -1822,6 +1827,7 @@ impl RenderService {
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
         text_block_page_id: Option<i64>,
+        allow_wikidot_styleframe: bool,
         current_site: Option<SiteModel>,
         trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
         persist_compiled_text: bool,
@@ -1829,6 +1835,10 @@ impl RenderService {
         let config = ctx.config();
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
+        let mut expanded = expanded;
+        if !allow_wikidot_styleframe {
+            Self::neutralize_untrusted_wikidot_styleframe_embeds(&mut expanded.wikitext);
+        }
         let outer = Self::prepare_outer_render_wikitext(expanded, page_info, settings);
         if let Some((trace, scope)) = trace {
             trace.add_us(
@@ -2180,11 +2190,13 @@ impl RenderService {
                         &mut html_output.backlinks,
                         &native_list_wikipedia_links,
                     );
-                    html_output.body = Self::restore_wikidot_render_compatibility(
-                        &html_output.body,
-                        render_current_site.as_ref(),
-                        &render_config,
-                    );
+                    html_output.body =
+                        Self::restore_wikidot_render_compatibility_for_context(
+                            &html_output.body,
+                            render_current_site.as_ref(),
+                            &render_config,
+                            allow_wikidot_styleframe,
+                        );
                     html_output.body =
                         protection.compat_text().restore(&html_output.body);
                     html_output.backlinks.included_pages.extend(included_pages);
