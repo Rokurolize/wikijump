@@ -43,7 +43,7 @@ test("corpus snapshot SQL preserves first-class Wikidot page size in serial and 
 
   const batchValues = batchShellCreatePageValues({}, [row], {
     categoryIds: new Map([["_default", 701]]),
-    sourceTextFullnames: new Set(["start"]),
+    sourceTextEntityIds: new Set([row.source_entity_id]),
     textHash: () => "11".repeat(16),
     shellHash: () => "22".repeat(16),
   });
