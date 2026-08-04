@@ -13695,6 +13695,87 @@ async fn page_get_deleted_requires_an_authenticated_request_context() {
 }
 
 #[tokio::test]
+async fn page_get_score_requires_view_permission_and_site_ownership() {
+    const PRIVATE_CATEGORY: &str = "fixture-page-score-private";
+    const PAGE_SLUG: &str = "fixture-page-score-private:target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        ADMIN_USER_ID,
+        &[Action::View, Action::Create, Action::Edit],
+        "score-admin",
+    )
+    .await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Private page score authorization source.",
+            "title": "Private Page Score Authorization Source",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create private page score authorization source",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_listpages_test_category_slug(&runner, site_id, PAGE_SLUG, PRIVATE_CATEGORY).await;
+    set_stored_point_vote(&runner, page.page_id, 3).await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("page score permission cache should be invalidated");
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(PAGE_SLUG))),
+    });
+    let private_error = run_endpoint_err!(
+        runner,
+        page_get_score,
+        json!({"site_id": site_id, "page": page.page_id}),
+    );
+    assert_contains_error!(private_error, ErrorType::PermissionDenied);
+
+    let cross_site_error = run_endpoint_err!(
+        runner,
+        page_get_score,
+        json!({"site_id": site_id + 1, "page": page.page_id}),
+    );
+    assert_contains_error!(cross_site_error, ErrorType::Permission);
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(page.page_id)),
+    });
+    let score = run_endpoint!(
+        runner,
+        page_get_score,
+        json!({"site_id": site_id, "page": page.page_id}),
+    );
+    assert_eq!(score.score, QueryScoreValue::Integer(3));
+}
+
+#[tokio::test]
 async fn page_get_deleted_filters_pages_by_edit_permission() {
     const PRIVATE_CATEGORY: &str = "fixture-page-deleted-metadata-private";
     const PAGE_SLUG: &str = "fixture-page-deleted-metadata-private:target";

@@ -425,6 +425,10 @@ pub async fn page_get_score(
         .await
         .or_raise(make_error)?;
 
+    ensure_page_view_permission(ctx, site_id, page_id)
+        .await
+        .or_raise(make_error)?;
+
     let score = ScoreService::score(ctx, page_id)
         .await
         .or_raise(make_error)?;

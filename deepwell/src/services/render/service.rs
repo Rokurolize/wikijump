@@ -4706,46 +4706,53 @@ fn render_native_list_inline_wikidot_spans_at_depth(value: &str, depth: usize) -
 }
 
 fn find_matching_wikidot_span_close(value: &str) -> Option<usize> {
+    const SPAN_CLOSE: &[u8] = b"[[/span]]";
+    const SPAN_OPEN_PREFIX: &[u8] = b"[[span";
+    const SPAN_MARKER_END: &[u8] = b"]]";
+
+    let bytes = value.as_bytes();
     let mut depth = 1_usize;
-    let mut offset = 0_usize;
+    let mut offset = 0;
 
-    while offset < value.len() {
-        let next_open = value[offset..].find("[[span").map(|index| offset + index);
-        let next_close = value[offset..]
-            .find("[[/span]]")
-            .map(|index| offset + index);
-
-        match (next_open, next_close) {
-            (None, Some(close)) => {
-                depth -= 1;
-                if depth == 0 {
-                    return Some(close);
-                }
-                offset = close + "[[/span]]".len();
+    while offset < bytes.len() {
+        if bytes[offset..].starts_with(SPAN_CLOSE) {
+            if depth == 1 {
+                return Some(offset);
             }
-            (Some(open), Some(close)) if close <= open => {
-                depth -= 1;
-                if depth == 0 {
-                    return Some(close);
-                }
-                offset = close + "[[/span]]".len();
-            }
-            (Some(open), _) => {
-                let marker_end = value[open..].find("]]")?;
-                let marker_end = open + marker_end + 2;
-                if next_close.is_some_and(|close| marker_end > close) {
-                    offset = open + "[[span".len();
-                    continue;
-                }
-
-                let marker = &value[open..marker_end];
-                if wikidot_inline_span_marker_open(marker).is_some() {
-                    depth += 1;
-                }
-                offset = marker_end;
-            }
-            (None, None) => return None,
+            depth -= 1;
+            offset += SPAN_CLOSE.len();
+            continue;
         }
+
+        if bytes[offset..].starts_with(SPAN_OPEN_PREFIX) {
+            let open = offset;
+            offset += SPAN_OPEN_PREFIX.len();
+
+            loop {
+                if bytes[offset..].starts_with(SPAN_CLOSE) {
+                    // The candidate opener is malformed because a real
+                    // closer appears before its terminating marker. Leave the
+                    // cursor on that closer so the outer span can consume it.
+                    break;
+                }
+                if bytes[offset..].starts_with(SPAN_MARKER_END) {
+                    let marker_end = offset + SPAN_MARKER_END.len();
+                    let marker = &value[open..marker_end];
+                    if wikidot_inline_span_marker_open(marker).is_some() {
+                        depth += 1;
+                    }
+                    offset = marker_end;
+                    break;
+                }
+                offset += 1;
+                if offset >= bytes.len() {
+                    return None;
+                }
+            }
+            continue;
+        }
+
+        offset += 1;
     }
 
     None
