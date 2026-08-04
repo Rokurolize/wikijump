@@ -354,6 +354,7 @@ async function waitForSettledResources(page, timeoutMs) {
 
 export async function captureBrowserParityObservation({
   context,
+  page: suppliedPage = null,
   url,
   label,
   index,
@@ -363,17 +364,18 @@ export async function captureBrowserParityObservation({
   timeoutMs,
   settleMs,
 }) {
-  const page = await context.newPage();
+  const page = suppliedPage ?? (await context.newPage());
+  const ownsPage = suppliedPage === null;
   const failures = [];
-  page.on("requestfailed", (request) => {
+  const onRequestFailed = (request) => {
     failures.push({
       kind: "request_failed",
       url: request.url(),
       resource_type: request.resourceType(),
       error: request.failure()?.errorText ?? "request failed",
     });
-  });
-  page.on("response", (response) => {
+  };
+  const onResponse = (response) => {
     if (response.status() >= 400) {
       failures.push({
         kind: "http_error",
@@ -382,7 +384,9 @@ export async function captureBrowserParityObservation({
         status: response.status(),
       });
     }
-  });
+  };
+  page.on("requestfailed", onRequestFailed);
+  page.on("response", onResponse);
   const capturedAt = new Date().toISOString();
   let response = null;
   let firstDocument = null;
@@ -507,6 +511,10 @@ export async function captureBrowserParityObservation({
       capture_error: { name: error.name, message: error.message },
     };
   } finally {
-    await page.close({runBeforeUnload: false, timeout: 10_000}).catch(() => undefined);
+    page.off("requestfailed", onRequestFailed);
+    page.off("response", onResponse);
+    if (ownsPage) {
+      await page.close({runBeforeUnload: false, timeout: 10_000}).catch(() => undefined);
+    }
   }
 }
