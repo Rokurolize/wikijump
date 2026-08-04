@@ -326,7 +326,7 @@ async function waitForSettledResources(page, timeoutMs) {
         .filter((image) => !image.complete)
         .map((image) => image.currentSrc || image.src)
         .sort(),
-    }));
+    }), timeoutMs);
   }
   return await page.evaluate(async (limit) => {
     const waitForImage = (image) => {
