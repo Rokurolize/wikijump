@@ -369,19 +369,43 @@ pub async fn page_get_deleted(
             ErrorType::Page,
         )
     };
+    let user_id = ctx.request().user_id().or_raise(|| {
+        Error::new(
+            "deleted page lookup requires an authenticated request context",
+            ErrorType::PermissionDenied,
+        )
+    })?;
 
-    let get_deleted_page = PageService::get_deleted_by_slug(ctx, site_id, &slug)
+    let deleted_pages = PageService::get_deleted_by_slug(ctx, site_id, &slug)
         .await
-        .or_raise(make_error)?
-        .into_iter()
-        .map(|page| build_page_deleted_output(ctx, page));
+        .or_raise(make_error)?;
 
-    let result = try_join_all(get_deleted_page)
+    let mut result = Vec::new();
+    for page in deleted_pages {
+        let can_edit = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: Some(user_id),
+                site_id,
+                page_reference: Some(Reference::Id(page.page_id)),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(page.page_category_id)),
+                action: Action::Edit,
+            },
+        )
         .await
-        .or_raise(make_error)?
-        .into_iter()
-        .flatten()
-        .collect();
+        .or_raise(make_error)?;
+
+        if can_edit
+            && let Some(page) = build_page_deleted_output(ctx, page)
+                .await
+                .or_raise(make_error)?
+        {
+            result.push(page);
+        }
+    }
 
     Ok(result)
 }
