@@ -1,5 +1,6 @@
 {
   "schema": "wikijump_listpages_compat.acceptance_dependency_surface.v1",
+  "status": "historical-superseded",
   "mode": "untouched-render-surface",
   "base_revision": "3abf3f50a4cd75759abc6a6ba64ff801568f04f9",
   "head_revision": "ba09fd3d9588d9932e58146ab825228d27173df9",
@@ -44,6 +45,8 @@
       }
     }
   },
-  "prior_receipt_path": "/home/roku/src/Rokurolize/wikijump/install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json",
-  "current_receipt_path": "/home/roku/src/Rokurolize/wikijump/install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json"
+  "prior_receipt_path": "/home/roku/oracle-store/wjlab/listpages-campaign-replay-20260804-final154/attestation-prior-receipt-ba09.json",
+  "current_receipt_path": "/home/roku/oracle-store/wjlab/listpages-campaign-replay-20260804-final154/attestation-prior-receipt-ba09.json",
+  "superseded_by_revision": "90a38af51989d25d2cf21e12b9b29adb8d5b8f76",
+  "superseded_by_receipt": "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json"
 }
