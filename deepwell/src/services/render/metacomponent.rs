@@ -36,20 +36,32 @@ pub(super) fn select_metacomponent_documentation(
     if !source.contains(BEGIN_MARKER) {
         return;
     }
-    for (region_start, region_end) in complete_regions(source).into_iter().rev() {
-        let replacement = match context {
+    let regions = complete_regions(source);
+    if regions.is_empty() {
+        return;
+    }
+
+    let mut output = String::with_capacity(source.len());
+    let mut cursor = 0;
+    for (region_start, region_end) in regions {
+        output.push_str(&source[cursor..region_start]);
+        match context {
             MetacomponentSourceContext::RootComponent => {
-                reveal_documentation(&source[region_start..region_end])
+                if let Some(documentation) =
+                    reveal_documentation(&source[region_start..region_end])
+                {
+                    output.push_str(&documentation);
+                } else {
+                    output.push_str(&source[region_start..region_end]);
+                }
             }
             MetacomponentSourceContext::RootNonComponent
-            | MetacomponentSourceContext::Included => Some(String::new()),
-        };
-
-        let Some(replacement) = replacement else {
-            continue;
-        };
-        source.replace_range(region_start..region_end, &replacement);
+            | MetacomponentSourceContext::Included => {}
+        }
+        cursor = region_end;
     }
+    output.push_str(&source[cursor..]);
+    *source = output;
 }
 
 fn complete_regions(source: &str) -> Vec<(usize, usize)> {
@@ -97,7 +109,10 @@ fn reveal_documentation(region: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{MetacomponentSourceContext, select_metacomponent_documentation};
+    use super::{
+        BEGIN_MARKER, END_MARKER, MetacomponentSourceContext,
+        select_metacomponent_documentation,
+    };
 
     const REGION: &str = concat!(
         "[!-- Begin metacomponent context detection --]\n",
@@ -143,6 +158,32 @@ mod tests {
     }
 
     #[test]
+    fn removes_many_separated_regions_without_changing_retained_text() {
+        const REGION_COUNT: usize = 4_096;
+
+        let mut original = String::new();
+        let mut expected = String::new();
+        for index in 0..REGION_COUNT {
+            original.push_str(BEGIN_MARKER);
+            original.push('\n');
+            original.push_str(END_MARKER);
+            original.push('\n');
+            let retained = format!("retained-{index}\n");
+            original.push_str(&retained);
+            expected.push_str(&retained);
+        }
+
+        for context in [
+            MetacomponentSourceContext::RootNonComponent,
+            MetacomponentSourceContext::Included,
+        ] {
+            let mut source = original.clone();
+            select_metacomponent_documentation(&mut source, context);
+            assert_eq!(source, expected);
+        }
+    }
+
+    #[test]
     fn preserves_malformed_regions_and_continues_after_them() {
         let malformed = REGION.replace(
             "[[iftags +component]][!-[[/iftags]]- --]",
@@ -153,10 +194,12 @@ mod tests {
             &mut source,
             MetacomponentSourceContext::RootComponent,
         );
-        assert!(source.contains("missing reveal end"));
-        assert!(source.ends_with(
-            "documentation\n[[code type=\"css\"]]\n.component { display: block; }\n[[/code]]\n",
-        ));
+        assert_eq!(
+            source,
+            format!(
+                "{malformed}documentation\n[[code type=\"css\"]]\n.component {{ display: block; }}\n[[/code]]\n"
+            ),
+        );
     }
 
     #[test]

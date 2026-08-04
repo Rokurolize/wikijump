@@ -287,7 +287,7 @@ mod tests {
         domain: ParserDomain,
         terminator: Option<DelimiterIdentity>,
     ) -> ParserCandidate {
-        let (leaf, _) = arena.leaf(emit);
+        let (leaf, _) = arena.leaf(emit).unwrap();
         ParserCandidate::exact(
             0,
             Some(DelimiterIdentity {
@@ -307,7 +307,7 @@ mod tests {
     #[test]
     fn policy_emit_never_blocks_same_start_exact() {
         let mut arena = EmitSetArena::default();
-        let (_, output) = arena.leaf(0..3);
+        let (_, output) = arena.leaf(0..3).unwrap();
         let exact = exact(&mut arena, 0..8, 4..8, ParserDomain::Ftml, None);
         let selected = select_two_phase_candidates(
             &arena,
