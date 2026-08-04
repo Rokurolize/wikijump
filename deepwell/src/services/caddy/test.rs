@@ -228,6 +228,32 @@ fn single_upstream_proxies_do_not_eject_their_only_backend() {
     }
 }
 
+#[test]
+fn generated_caddyfiles_do_not_use_unsupported_push_directive() {
+    let config = build_config("wikijump.test", "wjfiles.test");
+    let (sites, _) = build_site_data();
+    let caddyfile = CaddyService::generate_with_data(
+        &config,
+        &CaddyfileOptions {
+            debug: false,
+            local: false,
+            http_port: None,
+            https_port: None,
+            wildcard_cert: None,
+            deploy_host: None,
+            framerail_host: cow!("framerail:3393"),
+            wws_host: cow!("wws:3466"),
+        },
+        &sites,
+    )
+    .expect("failed to generate Caddyfile");
+
+    assert!(
+        !caddyfile.lines().any(|line| line.trim() == "push"),
+        "generated Caddyfiles must not contain the removed HTTP/2 push directive",
+    );
+}
+
 /// Reads a `Caddyfile`, which represents the expected output of generation with certain settings.
 fn read_test_file(path: &str) -> String {
     let mut file = File::open(path).expect("Unable to open test file");
