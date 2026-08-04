@@ -30,7 +30,7 @@ use std::num::NonZeroU16;
 use std::time::Duration;
 
 const JSONRPC_MAX_REQUEST: u32 = 16 * 1024;
-const JSONRPC_TIMEOUT: Duration = Duration::from_secs(5);
+const JSONRPC_TIMEOUT: Duration = Duration::from_millis(200);
 
 /// Macro to create `ObjectParams` instances.
 /// This is the object equivalent to `rpc_params!`, which creates `ArrayParams` instances.
@@ -458,6 +458,11 @@ mod tests {
     fn text_block_type_values_match_deepwell_contract() {
         assert_eq!(TextBlockType::Code.value(), "code");
         assert_eq!(TextBlockType::Html.value(), "html");
+    }
+
+    #[test]
+    fn public_deepwell_requests_keep_a_short_timeout() {
+        assert_eq!(JSONRPC_TIMEOUT, Duration::from_millis(200));
     }
 
     #[test]
