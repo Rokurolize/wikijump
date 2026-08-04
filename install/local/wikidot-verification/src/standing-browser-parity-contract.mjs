@@ -1,5 +1,6 @@
 import {
   COMMON_GEOMETRY_SELECTORS,
+  PAGE_CHROME_SKELETON,
   STANDING_BROWSER_CANARY_SCHEMA,
   assertThemeFamilyCoverage,
   canaryForUrl,
@@ -17,6 +18,7 @@ import {
   requirePlainObject,
   sortedUniqueStrings,
 } from "./standing-browser-parity-util.mjs";
+import { normalizeAttributeSignatures } from "./render-compare.mjs";
 
 export const STANDING_BROWSER_CAPTURE_SCHEMA =
   "wikijump_local_lab.standing_browser_parity_capture.v2";
@@ -260,6 +262,119 @@ export function compareGeometry(
   return { geometry, anomalies };
 }
 
+function skeletonLinkStatus(observation, link) {
+  const observed = (observation?.links ?? []).find(
+    (candidate) =>
+      candidate.parent === link.parent && candidate.child === link.child,
+  );
+  const present =
+    observed?.parent_count === 1 &&
+    observed?.child_count === 1 &&
+    observed?.direct_child_count === 1;
+  return {
+    parent: link.parent,
+    child: link.child,
+    parent_count: observed?.parent_count ?? 0,
+    child_count: observed?.child_count ?? 0,
+    direct_child_count: observed?.direct_child_count ?? 0,
+    status: present ? "pass" : "fail",
+  };
+}
+
+export function comparePageChromeSkeleton(
+  local,
+  live,
+  contract = PAGE_CHROME_SKELETON,
+) {
+  const links = contract?.links ?? [];
+  if (links.length === 0) {
+    return { status: "pass", links: [], anomalies: [] };
+  }
+  const localLinks = links.map((link) => skeletonLinkStatus(local, link));
+  const liveLinks = links.map((link) => skeletonLinkStatus(live, link));
+  const anomalies = [];
+  for (const [index, link] of links.entries()) {
+    const localLink = localLinks[index];
+    const liveLink = liveLinks[index];
+    if (localLink.status !== "pass" || liveLink.status !== "pass") {
+      anomalies.push({
+        code: "page_chrome_skeleton_divergence",
+        detail: { link, local: localLink, live: liveLink },
+      });
+    } else if (
+      localLink.parent_count !== liveLink.parent_count ||
+      localLink.child_count !== liveLink.child_count ||
+      localLink.direct_child_count !== liveLink.direct_child_count
+    ) {
+      anomalies.push({
+        code: "page_chrome_skeleton_divergence",
+        detail: { link, local: localLink, live: liveLink },
+      });
+    }
+  }
+  return {
+    status: anomalies.length === 0 ? "pass" : "fail",
+    links: links.map((link, index) => ({
+      ...link,
+      local: localLinks[index],
+      live: liveLinks[index],
+      status:
+        localLinks[index].status === "pass" &&
+        liveLinks[index].status === "pass" &&
+        localLinks[index].parent_count === liveLinks[index].parent_count &&
+        localLinks[index].child_count === liveLinks[index].child_count &&
+        localLinks[index].direct_child_count ===
+          liveLinks[index].direct_child_count
+          ? "pass"
+          : "fail",
+    })),
+    anomalies,
+  };
+}
+
+function attributeMultiset(signatures) {
+  return (signatures ?? []).map((signature) => JSON.stringify(signature));
+}
+
+export function compareAttributeSignatures(local, live) {
+  const localRaw = attributeMultiset(local);
+  const liveRaw = attributeMultiset(live);
+  const localNormalized = normalizeAttributeSignatures(local).signatures;
+  const liveNormalized = normalizeAttributeSignatures(live).signatures;
+  const raw = multisetDistance(localRaw, liveRaw);
+  const normalized = multisetDistance(
+    attributeMultiset(localNormalized),
+    attributeMultiset(liveNormalized),
+  );
+  const anomalies = [];
+  if (raw.different_elements > 0 && normalized.different_elements === 0) {
+    anomalies.push({
+      code: "normalization_hides_difference",
+      detail: {
+        raw,
+        normalized,
+        channels: [
+          ...new Set([
+            ...normalizeAttributeSignatures(local).applied,
+            ...normalizeAttributeSignatures(live).applied,
+          ]),
+        ].sort(),
+      },
+    });
+  } else if (normalized.different_elements > 0) {
+    anomalies.push({
+      code: "attribute_divergence",
+      detail: { raw, normalized },
+    });
+  }
+  return {
+    status: anomalies.length === 0 ? "pass" : "fail",
+    raw,
+    normalized,
+    anomalies,
+  };
+}
+
 function propertyObservations(local, live, contract) {
   const localProperties = local.first_paint?.document?.custom_properties ?? {};
   const liveProperties = live.first_paint?.document?.custom_properties ?? {};
@@ -427,6 +542,14 @@ export function compareCaptures(
     anomalies.push({ code: "live_capture_error", detail: live.capture_error });
   }
   const selectors = contract?.geometry_selectors ?? requiredSelectors;
+  const pageChromeSkeleton = contract?.page_chrome_skeleton
+    ? comparePageChromeSkeleton(
+        local.page_chrome_skeleton,
+        live.page_chrome_skeleton,
+        contract.page_chrome_skeleton,
+      )
+    : { status: "pass", links: [], anomalies: [] };
+  anomalies.push(...pageChromeSkeleton.anomalies);
   const settledGeometry = compareGeometry(
     local,
     live,
@@ -434,6 +557,15 @@ export function compareCaptures(
     checkedThresholds,
   );
   anomalies.push(...settledGeometry.anomalies);
+  const attributes =
+    Array.isArray(local.attribute_signatures) &&
+    Array.isArray(live.attribute_signatures)
+      ? compareAttributeSignatures(
+          local.attribute_signatures,
+          live.attribute_signatures,
+        )
+      : { status: "pass", raw: null, normalized: null, anomalies: [] };
+  anomalies.push(...attributes.anomalies);
   const immediateGeometry = compareGeometry(
     local.first_paint?.document,
     live.first_paint?.document,
@@ -524,6 +656,8 @@ export function compareCaptures(
     classified_broken_images: classifiedBrokenImages,
     live_only_broken_images: liveOnlyBrokenImages,
     geometry: settledGeometry.geometry,
+    page_chrome_skeleton: pageChromeSkeleton,
+    attributes,
     domcontentloaded_immediate_geometry: immediateGeometry.geometry,
     image_counts: {
       local: local.rendered_images ?? 0,

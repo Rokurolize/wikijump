@@ -12,6 +12,17 @@ export const COMMON_GEOMETRY_SELECTORS = Object.freeze([
   "#side-bar",
   "#header h1 a",
 ]);
+export const PAGE_CHROME_SKELETON = Object.freeze({
+  schema: "wikijump_local_lab.page_chrome_skeleton.v1",
+  links: Object.freeze([
+    Object.freeze({ parent: "body", child: "#skrollr-body" }),
+    Object.freeze({ parent: "#skrollr-body", child: "#container-wrap-wrap" }),
+    Object.freeze({ parent: "#container-wrap-wrap", child: "#container-wrap" }),
+    Object.freeze({ parent: "#container-wrap", child: "#container" }),
+    Object.freeze({ parent: "#container", child: "#header" }),
+    Object.freeze({ parent: "#header", child: "#top-bar" }),
+  ]),
+});
 export const REQUIRED_THEME_FAMILIES = Object.freeze([
   "sigma",
   "basalt",
@@ -97,6 +108,7 @@ function canary({
       ...presenceProbes,
     ]),
     first_paint_custom_properties: Object.freeze(firstPaintCustomProperties),
+    page_chrome_skeleton: PAGE_CHROME_SKELETON,
   });
 }
 
