@@ -178,6 +178,27 @@ test("an aborted streamed response does not crash the proxy", async () => {
   }
 });
 
+test("an upstream that never responds is bounded and denied", async () => {
+  const upstream = await listen(() => {
+    // Deliberately leave the request open. The proxy must not leave a browser
+    // navigation waiting forever on this external resource.
+  });
+  const proxy = await startCaptureEgressProxy({
+    allowedLocalOrigins: [`http://fixture.test:${upstream.port}`],
+    lookup: async () => [{ address: "127.0.0.1" }],
+    requestTimeoutMs: 25,
+  });
+  try {
+    assert.deepEqual(
+      await proxyRequest(proxy.url, `http://fixture.test:${upstream.port}/hang`),
+      {status: 502, body: "capture egress denied\n"},
+    );
+  } finally {
+    await proxy.close();
+    await close(upstream.server);
+  }
+});
+
 test("CONNECT rejects a private destination unless its exact origin is allowed", async () => {
   const proxy = await startCaptureEgressProxy();
   const address = new URL(proxy.url);
@@ -242,6 +263,81 @@ test("an aborted CONNECT tunnel does not crash the proxy", async () => {
     assert.match(reply, /^HTTP\/1\.1 200/u);
   } finally {
     await proxy.close();
+    await new Promise((resolve) => upstream.close(resolve));
+  }
+});
+
+test("an idle CONNECT tunnel is closed after the request timeout", async () => {
+  const upstream = net.createServer((socket) => socket.on("error", () => {}));
+  await new Promise((resolve) => upstream.listen(0, "127.0.0.1", resolve));
+  const upstreamPort = upstream.address().port;
+  const proxy = await startCaptureEgressProxy({
+    allowedLocalOrigins: [`https://fixture.test:${upstreamPort}`],
+    lookup: async () => [{address: "127.0.0.1"}],
+    requestTimeoutMs: 25,
+  });
+  const proxyUrl = new URL(proxy.url);
+  try {
+    const socket = net.connect(Number(proxyUrl.port), proxyUrl.hostname, () =>
+      socket.write(
+        `CONNECT fixture.test:${upstreamPort} HTTP/1.1\r\nHost: fixture.test\r\n\r\n`,
+      ),
+    );
+    socket.on("error", () => {});
+    const response = await new Promise((resolve, reject) => {
+      socket.once("data", (data) => resolve(data.toString()));
+      socket.once("error", reject);
+    });
+    assert.match(response, /^HTTP\/1\.1 200/u);
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("idle tunnel remained open")), 500);
+      socket.once("close", () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  } finally {
+    await proxy.close();
+    await new Promise((resolve) => upstream.close(resolve));
+  }
+});
+
+test("closing the proxy tears down an active CONNECT tunnel", async () => {
+  const upstream = net.createServer((socket) => socket.on("error", () => {}));
+  await new Promise((resolve) => upstream.listen(0, "127.0.0.1", resolve));
+  const upstreamPort = upstream.address().port;
+  const proxy = await startCaptureEgressProxy({
+    allowedLocalOrigins: [`https://fixture.test:${upstreamPort}`],
+    lookup: async () => [{address: "127.0.0.1"}],
+    requestTimeoutMs: 60_000,
+  });
+  const proxyUrl = new URL(proxy.url);
+  const socket = net.connect(Number(proxyUrl.port), proxyUrl.hostname, () =>
+    socket.write(
+      `CONNECT fixture.test:${upstreamPort} HTTP/1.1\r\nHost: fixture.test\r\n\r\n`,
+    ),
+  );
+  socket.on("error", () => {});
+  try {
+    await new Promise((resolve, reject) => {
+      socket.once("data", (data) => {
+        try {
+          assert.match(data.toString(), /^HTTP\/1\.1 200/u);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+      socket.once("error", reject);
+    });
+    const closed = new Promise((resolve) => socket.once("close", resolve));
+    await proxy.close();
+    await Promise.race([
+      closed,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("proxy close left a tunnel open")), 500)),
+    ]);
+  } finally {
+    socket.destroy();
     await new Promise((resolve) => upstream.close(resolve));
   }
 });
