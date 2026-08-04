@@ -111,6 +111,39 @@ impl RenderService {
         iframes
     }
 
+    /// Keep the same-origin styleFrame compatibility path out of untrusted
+    /// fragment and Ajax renders. Saved pages and page previews retain the
+    /// live Wikidot behavior; those contexts are explicitly allowed by the
+    /// render lifecycle before this prepass runs.
+    pub(in crate::services::render) fn neutralize_untrusted_wikidot_styleframe_embeds(
+        wikitext: &mut String,
+    ) {
+        *wikitext = WIKIDOT_RAW_EMBED_IFRAME_REGEX
+            .replace_all(wikitext, |captures: &regex::Captures<'_>| {
+                let whole = captures.get(0).map_or("", |matched| matched.as_str());
+                let Some(iframe) =
+                    captures.name("iframe").map(|matched| matched.as_str())
+                else {
+                    return whole.to_owned();
+                };
+                if !WIKIDOT_STYLEFRAME_IFRAME_REGEX.is_match(iframe.trim()) {
+                    return whole.to_owned();
+                }
+
+                let Some(open_end) = iframe.find('>') else {
+                    return whole.to_owned();
+                };
+                let mut neutralized = String::with_capacity(
+                    iframe.len() + r#" data-wikijump-styleframe-suppressed="1""#.len(),
+                );
+                neutralized.push_str(&iframe[..open_end]);
+                neutralized.push_str(r#" data-wikijump-styleframe-suppressed="1""#);
+                neutralized.push_str(&iframe[open_end..]);
+                whole.replace(iframe, &neutralized)
+            })
+            .into_owned();
+    }
+
     fn allowed_wikidot_embed_iframe_block(block: &str) -> Option<String> {
         let captures = WIKIDOT_RAW_EMBED_IFRAME_REGEX.captures(block)?;
         let iframe = captures.name("iframe")?.as_str().trim();

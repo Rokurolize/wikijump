@@ -130,6 +130,26 @@ fn dropping_prepared_wikitext_without_restoration_is_rejected() {
     drop(prepared);
 }
 
+#[test]
+fn standalone_styleframe_embeds_are_neutralized_before_rendering() {
+    let mut source = concat!(
+        "[[embed]]\n",
+        r#"<iframe src="//interwiki.scpwiki.com/styleFrame.html?priority=1&css=.post{display:none}" style="display: none"></iframe>"#,
+        "\n[[/embed]]",
+    )
+    .to_owned();
+
+    RenderService::neutralize_untrusted_wikidot_styleframe_embeds(&mut source);
+
+    assert!(source.contains("data-wikijump-styleframe-suppressed=\"1\""));
+    assert_eq!(
+        RenderService::allowed_wikidot_embed_iframe(
+            r#"<iframe data-wikijump-styleframe-suppressed="1" src="//interwiki.scpwiki.com/styleFrame.html?priority=1&css=.post{display:none}" style="display: none"></iframe>"#,
+        ),
+        None,
+    );
+}
+
 fn list_pages_substitution_context<'a>(
     rendered_limit: usize,
     user_displays: &'a BTreeMap<i64, WikidotUserDisplay>,
@@ -3617,10 +3637,11 @@ fn missing_include_with_spaced_empty_separator_matches_live_browser_dom() {
     let tokens = ftml::tokenize(&expanded);
     let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
     let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
-    let restored = RenderService::restore_wikidot_render_compatibility(
+    let restored = RenderService::restore_wikidot_render_compatibility_for_context(
         &rendered,
         None,
         &Config::integration_testing(),
+        true,
     );
     let restored = compat_text.restore(&restored);
 
@@ -6011,10 +6032,11 @@ fn renders_and_localizes_wikidot_file_attachment_link() {
     config.files_domain_no_dot = "wjfiles.localhost".to_owned();
 
     assert_eq!(
-        RenderService::restore_wikidot_render_compatibility(
+        RenderService::restore_wikidot_render_compatibility_for_context(
             &rendered,
             Some(&site),
             &config,
+            true,
         ),
         r#"<p><a href="https://scp-wiki-en-corpus.wjfiles.localhost/local--files/scp-2276/elements.tsv">Download Catalog</a></p>"#,
     );
@@ -7684,12 +7706,29 @@ fn restores_wikidot_styleframe_embed_iframe() {
     );
 
     assert_eq!(
-        RenderService::restore_wikidot_rendered_embed_iframes(html),
+        RenderService::restore_wikidot_rendered_embed_iframes_for_context(html, true),
         concat!(
             r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1"#,
             r#"&theme=https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css"#,
             r#"&css={$css}" style="display: none"></iframe></p>"#,
         ),
+    );
+}
+
+#[test]
+fn standalone_render_does_not_activate_rendered_styleframe_embeds() {
+    let html = concat!(
+        r#"<p>[[embed]]<br/>"#,
+        r#"&lt;iframe src="//interwiki.scpwiki.com/styleFrame.html?priority=1&amp;css=.post%7Bdisplay%3Anone%7D" style="display: none"&gt;&lt;/iframe&gt;"#,
+        r#"<br/>[[/embed]]</p>"#,
+    );
+    let config = Config::integration_testing();
+
+    assert_eq!(
+        RenderService::restore_wikidot_render_compatibility_for_context(
+            html, None, &config, false,
+        ),
+        html,
     );
 }
 
@@ -7703,7 +7742,7 @@ fn restores_wikidot_interwiki_rendered_embed_iframe() {
     );
 
     assert_eq!(
-        RenderService::restore_wikidot_rendered_embed_iframes(html),
+        RenderService::restore_wikidot_rendered_embed_iframes_for_context(html, true),
         r#"<p><iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=en&community=scp&pagename=scp-9506" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe></p>"#,
     );
 }
@@ -7712,7 +7751,7 @@ fn restores_wikidot_interwiki_rendered_embed_iframe() {
 fn leaves_bare_embed_and_non_styleframe_embed_literal() {
     let bare = "<p>[[embed]]</p>";
     assert_eq!(
-        RenderService::restore_wikidot_rendered_embed_iframes(bare),
+        RenderService::restore_wikidot_rendered_embed_iframes_for_context(bare, true),
         bare
     );
 
@@ -7722,7 +7761,10 @@ fn leaves_bare_embed_and_non_styleframe_embed_literal() {
         r#"<br/>[[/embed]]</p>"#,
     );
     assert_eq!(
-        RenderService::restore_wikidot_rendered_embed_iframes(non_styleframe),
+        RenderService::restore_wikidot_rendered_embed_iframes_for_context(
+            non_styleframe,
+            true,
+        ),
         non_styleframe,
     );
 }

@@ -39,14 +39,18 @@ use crate::config::Config;
 use crate::models::site::Model as SiteModel;
 
 impl RenderService {
-    pub(in crate::services::render) fn restore_wikidot_render_compatibility(
+    pub(in crate::services::render) fn restore_wikidot_render_compatibility_for_context(
         html: &str,
         current_site: Option<&SiteModel>,
         config: &Config,
+        allow_styleframe: bool,
     ) -> String {
         let mut html = html.to_owned();
         if html.contains("[[embed]]") {
-            html = Self::restore_wikidot_rendered_embed_iframes(&html);
+            html = Self::restore_wikidot_rendered_embed_iframes_for_context(
+                &html,
+                allow_styleframe,
+            );
         }
         if html.contains("wiki-email") {
             html = Self::restore_wikidot_email_obfuscation(&html);
@@ -327,13 +331,18 @@ impl RenderService {
         Self::localize_wikidot_local_file_urls(code, current_site, config)
     }
 
-    pub(in crate::services::render) fn restore_wikidot_rendered_embed_iframes(
+    pub(in crate::services::render) fn restore_wikidot_rendered_embed_iframes_for_context(
         html: &str,
+        allow_styleframe: bool,
     ) -> String {
         WIKIDOT_EMBED_PARAGRAPH_REGEX
             .replace_all(html, |captures: &regex::Captures<'_>| {
                 let block = captures.get(1).map_or("", |m| m.as_str());
                 let decoded = Self::decode_rendered_embed_block(block);
+
+                if !allow_styleframe && decoded.contains("/styleFrame.html?") {
+                    return captures.get(0).map_or("", |m| m.as_str()).to_owned();
+                }
 
                 let Some(iframe) = Self::allowed_wikidot_embed_iframe(&decoded) else {
                     return captures.get(0).map_or("", |m| m.as_str()).to_string();
