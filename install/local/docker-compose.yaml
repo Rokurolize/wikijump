@@ -9,8 +9,6 @@ services:
       - "POSTGRES_PASSWORD=wikijump"
       - "POSTGRES_HOST_AUTH_METHOD=md5"
       - "POSTGRES_INITDB_ARGS=--locale en_US.UTF-8"
-    ports:
-      - "5432:5432"
     volumes:
       - local-postgres-data:/var/lib/postgresql/data
     restart: unless-stopped

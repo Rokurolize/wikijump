@@ -37,7 +37,8 @@ export const fixtureState = {
     pageView: [],
     pageSelect: [],
     parentRelationshipsGet: [],
-    siteGet: []
+    siteGet: [],
+    voteList: []
   },
   /** @type {Record<string, unknown[]>} */
   articleReadRequests: {
