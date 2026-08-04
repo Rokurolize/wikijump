@@ -139,6 +139,30 @@ class WikidotThemePageHelperTests(unittest.TestCase):
         with self.assertRaises(HELPER.PublicError):
             HELPER.validate_slug(legacy)
 
+    def test_oracle_fixture_slug_is_run_owned_and_uses_dedicated_tag(self) -> None:
+        slug = "codex-oracle:20260805-syntax-inline"
+        source = "fixture"
+        source_sha256 = HELPER.sha256(source)
+        self.assertEqual(HELPER.validate_slug(slug), slug)
+        self.assertEqual(HELPER.validate_tags(["codex-oracle"], slug), ["codex-oracle"])
+        with self.assertRaises(HELPER.PublicError):
+            HELPER.validate_tags(["theme"], slug)
+
+        backend = FakeBackend()
+        created, stop = HELPER.dispatch(
+            backend,
+            {
+                "action": "create",
+                "slug": slug,
+                "title": "fixture",
+                "source": source,
+                "source_sha256": source_sha256,
+                "tags": ["codex-oracle"],
+            },
+        )
+        self.assertEqual(created["page"]["tags"], ["codex-oracle"])
+        self.assertFalse(stop)
+
     def test_backend_refuses_direct_reference_prerequisite_removal(self) -> None:
         backend = object.__new__(HELPER.WikidotBackend)
         with self.assertRaisesRegex(HELPER.PublicError, "read-only"):
