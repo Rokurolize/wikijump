@@ -33,6 +33,7 @@ use rsmq_async::Rsmq;
 use s3::bucket::Bucket;
 use sea_orm::DatabaseTransaction;
 use std::collections::HashSet;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::OnceCell;
 
@@ -97,6 +98,7 @@ mod tests {
             ip_address: str!("127.0.0.1"),
             user_agent: str!("test"),
             restricted: false,
+            mfa_failed_attempts: 0,
         }
     }
 
@@ -136,6 +138,7 @@ pub struct ServiceContext<'txn> {
     request_ctx: RequestContext,
     user_permissions: OnceCell<HashSet<Permission<'static>>>,
     post_commit_actions: Mutex<Vec<PostCommitAction>>,
+    commit_authentication_rejection: AtomicBool,
 }
 
 #[derive(Debug)]
@@ -157,6 +160,7 @@ impl<'txn> ServiceContext<'txn> {
             request_ctx: RequestContext::default(),
             user_permissions: OnceCell::new(),
             post_commit_actions: Mutex::new(Vec::new()),
+            commit_authentication_rejection: AtomicBool::new(false),
         }
     }
 
@@ -221,6 +225,21 @@ impl<'txn> ServiceContext<'txn> {
     #[inline]
     pub fn transaction(&self) -> &'txn DatabaseTransaction {
         self.transaction
+    }
+
+    /// Requests that the current transaction be committed before returning an
+    /// expected authentication rejection to the caller.
+    ///
+    /// This is intentionally limited to the terminal MFA rejection path, where
+    /// committing preserves the restricted session's failed-attempt counter.
+    /// Internal failures must leave this unset so the normal rollback path is used.
+    pub(crate) fn commit_expected_authentication_rejection(&self) {
+        self.commit_authentication_rejection
+            .store(true, Ordering::Relaxed);
+    }
+
+    pub(crate) fn should_commit_authentication_rejection(&self) -> bool {
+        self.commit_authentication_rejection.load(Ordering::Relaxed)
     }
 
     pub fn defer_permission_cache_invalidate_user(

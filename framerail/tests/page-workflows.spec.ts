@@ -44,6 +44,20 @@ test("article routes carry load and mutation context through Deepwell", async ({
   expect(requestsForProbe(loadRequests.articleViewCacheMetadata)).toHaveLength(2)
 
   await expectSuccessfulAction(
+    await request.post("/page-workflow-probe?/voteGet", {
+      headers: {
+        ...AUTHENTICATED_HEADERS,
+        "content-type": "text/plain;charset=UTF-8"
+      },
+      data: JSON.stringify({
+        siteId: 6000005,
+        pageId: 3000340,
+        slug: "page-workflow-probe"
+      })
+    })
+  )
+
+  await expectSuccessfulAction(
     await request.post("/page-workflow-probe?/edit", {
       headers: AUTHENTICATED_HEADERS,
       multipart: {
@@ -107,6 +121,37 @@ test("article routes carry load and mutation context through Deepwell", async ({
   const fileRequests = await request
     .get(`${FIXTURE_URL}/last-file-requests`)
     .then((response) => response.json())
+  const pageReadRequests = await request
+    .get(`${FIXTURE_URL}/last-page-read-requests`)
+    .then((response) => response.json())
+
+  expect(fileRequests.pageGetFiles).toContainEqual(
+    expect.objectContaining({
+      headers: {
+        page: "page-workflow-probe",
+        sessionToken: "fixture-session-token",
+        siteId: "6000005"
+      },
+      params: {
+        deleted: false,
+        page_id: 3000340,
+        site_id: 6000005
+      }
+    })
+  )
+  expect(pageReadRequests.voteList).toContainEqual(
+    expect.objectContaining({
+      headers: {
+        page: "page-workflow-probe",
+        sessionToken: "fixture-session-token",
+        siteId: "6000005"
+      },
+      params: expect.objectContaining({
+        id: 3000340,
+        type: "Page"
+      })
+    })
+  )
 
   expect(pageRequests.pageEdit).toContainEqual(
     expect.objectContaining({

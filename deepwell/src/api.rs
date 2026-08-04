@@ -34,7 +34,7 @@ use crate::middleware::{RequestContextHeaders, RequestContextLayer, RpcAuthLayer
 use crate::runtime::ServerStateInner;
 use crate::services::blob::MimeAnalyzer;
 use crate::services::job::JobWorker;
-use crate::services::{RequestContext, ServiceContext, SessionService};
+use crate::services::{PasswordService, RequestContext, ServiceContext, SessionService};
 use crate::{database, info, redis as redis_db};
 use jsonrpsee::server::{RpcModule, Server, ServerConfig, ServerHandle};
 use reqwest::Client as ReqwestClient;
@@ -227,9 +227,10 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
                 // Extract raw headers inserted by the tower middleware layer.
                 let headers = extensions.get::<RequestContextHeaders>().cloned();
 
-                // Wrap each call in a transaction, committing only after the
-                // endpoint succeeds and running queued side effects only after
-                // commit has completed.
+                // Wrap each call in a transaction, normally committing only
+                // after the endpoint succeeds and running queued side effects
+                // only after commit. The MFA rejection path may explicitly
+                // commit its durable attempt counter before returning an error.
                 let db_state = Arc::clone(&state);
                 async move {
                     let txn = db_state
@@ -246,6 +247,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
                         ErrorType::Request,
                     );
 
+                    let mut commit_authentication_rejection = false;
                     let endpoint_result = async {
                         let ctx = ServiceContext::new(&state, &txn);
 
@@ -258,7 +260,10 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
 
                         // Run the endpoint's implementation, and convert from
                         // the crate's error type to an RPC error.
-                        let output = $method(&ctx, params).await.or_raise(make_error)?;
+                        let endpoint_output = $method(&ctx, params).await;
+                        commit_authentication_rejection =
+                            ctx.should_commit_authentication_rejection();
+                        let output = endpoint_output.or_raise(make_error)?;
                         let post_commit_actions = ctx
                             .drain_post_commit_actions()
                             .or_raise(make_error)?;
@@ -270,7 +275,12 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
                     let (output, post_commit_actions) = match endpoint_result {
                         Ok(result) => result,
                         Err(error) => {
-                            txn.rollback().await.or_raise(make_error)?;
+                            if commit_authentication_rejection {
+                                txn.commit().await.or_raise(make_error)?;
+                                PasswordService::failure_sleep(&state.config).await;
+                            } else {
+                                txn.rollback().await.or_raise(make_error)?;
+                            }
                             return Err(error);
                         }
                     };
