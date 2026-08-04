@@ -53,16 +53,11 @@ impl PageLockService {
             )
         };
 
-        // Fetch the page to be locked
-        let page_id = match page_ref {
-            Reference::Id(page_id) => page_id,
-            _ => {
-                PageService::get(ctx, site_id, page_ref.borrow())
-                    .await
-                    .or_raise(make_error)?
-                    .page_id
-            }
-        };
+        // Fetch the page to be locked, validating that it belongs to the site.
+        let page_id = PageService::get(ctx, site_id, page_ref.borrow())
+            .await
+            .or_raise(make_error)?
+            .page_id;
 
         // Check if any active lock exists for the page
         let existing_lock = Self::get_active_lock_for_page(ctx, page_id)
@@ -142,10 +137,11 @@ impl PageLockService {
             )
         };
 
-        // Resolve page reference to ID
-        let page_id = PageService::get_id(ctx, site_id, page_ref.borrow())
+        // Resolve page reference to ID, validating that it belongs to the site.
+        let page_id = PageService::get(ctx, site_id, page_ref.borrow())
             .await
-            .or_raise(make_error)?;
+            .or_raise(make_error)?
+            .page_id;
 
         // Fetch the active lock to be removed
         let maybe_lock = Self::get_active_lock_for_page(ctx, page_id)
@@ -199,10 +195,11 @@ impl PageLockService {
             )
         };
 
-        // Fetch the page to get its ID
-        let page_id = PageService::get_id(ctx, site_id, page_ref.borrow())
+        // Fetch the page to get its ID, validating that it belongs to the site.
+        let page_id = PageService::get(ctx, site_id, page_ref.borrow())
             .await
-            .or_raise(make_error)?;
+            .or_raise(make_error)?
+            .page_id;
 
         // Fetch all historical locks for the page, including expired and deleted ones
         let locks = PageLock::find()
