@@ -178,28 +178,35 @@ fn balanced_element_end(
     open_tag: &str,
     close_tag: &str,
 ) -> Option<usize> {
+    if open_tag.is_empty() || close_tag.is_empty() {
+        return None;
+    }
+
+    let html = html.as_bytes();
+    let open_tag = open_tag.as_bytes();
+    let close_tag = close_tag.as_bytes();
     let mut cursor = start;
     let mut depth = 0usize;
 
-    loop {
-        let next_open = html[cursor..].find(open_tag).map(|offset| cursor + offset);
-        let next_close = html[cursor..].find(close_tag).map(|offset| cursor + offset);
-        match (next_open, next_close) {
-            (Some(open), Some(close)) if open < close => {
-                depth += 1;
-                cursor = open + open_tag.len();
+    while cursor < html.len() {
+        if html[cursor..].starts_with(open_tag) {
+            depth += 1;
+            cursor += open_tag.len();
+        } else if html[cursor..].starts_with(close_tag) {
+            if depth == 0 {
+                return None;
             }
-            (Some(_), None) => return None,
-            (_, Some(close)) if depth > 0 => {
-                depth -= 1;
-                cursor = close + close_tag.len();
-                if depth == 0 {
-                    return Some(cursor);
-                }
+            depth -= 1;
+            cursor += close_tag.len();
+            if depth == 0 {
+                return Some(cursor);
             }
-            _ => return None,
+        } else {
+            cursor += 1;
         }
     }
+
+    None
 }
 
 #[cfg(test)]
@@ -284,5 +291,29 @@ mod tests {
         );
 
         assert_eq!(enclose_list_pages_footnote_footer(html), html);
+    }
+
+    #[test]
+    fn handles_a_large_unrecognized_footnote_candidate_within_a_bounded_scan() {
+        use std::time::{Duration, Instant};
+
+        const NESTED_DIVS: usize = 64_000;
+        let mut html = String::with_capacity(NESTED_DIVS * 11 + 64);
+        html.push_str(FOOTNOTE_LIST_OPEN);
+        for _ in 0..NESTED_DIVS {
+            html.push_str("<div>");
+        }
+        for _ in 0..NESTED_DIVS {
+            html.push_str("</div>");
+        }
+        html.push_str("</div>");
+
+        let started = Instant::now();
+        assert_eq!(restore_wikidot_footnote_list_dom(&html), html);
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "large unrecognized footnote candidate took {:?}",
+            started.elapsed()
+        );
     }
 }
