@@ -334,7 +334,6 @@ export async function pageVoteList(
 /* ----- Page Vote Cast ----- */
 export async function pageVoteCast(
   pageId: Optional<number>,
-  userId: number,
   value: number,
   requestContext: RequestContext
 ): Promise<Nullable<PageVoteModel>> {
@@ -342,7 +341,6 @@ export async function pageVoteCast(
     "vote_set",
     {
       page_id: pageId,
-      user_id: userId,
       value
     },
     requestContext
@@ -352,17 +350,9 @@ export async function pageVoteCast(
 /* ----- Page Vote Remove ----- */
 export async function pageVoteRemove(
   pageId: Optional<number>,
-  userId: number,
   requestContext: RequestContext
 ): Promise<PageVoteModel> {
-  return client.request(
-    "vote_remove",
-    {
-      page_id: pageId,
-      user_id: userId
-    },
-    requestContext
-  )
+  return client.request("vote_remove", { page_id: pageId }, requestContext)
 }
 
 /* ----- Page Rerender ----- */

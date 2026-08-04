@@ -51,7 +51,6 @@
     const res = await fetch(`?/voteCast`, {
       method: "POST",
       body: JSON.stringify({
-        siteId: data.site.site_id,
         pageId: data.page?.page_id,
         value
       })
@@ -77,7 +76,6 @@
     const res = await fetch(`?/voteCancel`, {
       method: "POST",
       body: JSON.stringify({
-        siteId: data.site.site_id,
         pageId: data.page?.page_id
       })
     }).then((res) => res.text())

@@ -93,17 +93,11 @@ export async function pageVoteCastAction(event: RequestEvent) {
   const { request } = event
   return executePageAction(async () => {
     const requestData = await readActionJson(request, pageVoteCastSchema)
-    const { siteId, pageId, value } = requestData
+    const { pageId, value } = requestData
     const context = await resolvePageActionRequestContext(event, {
-      submittedSiteId: siteId,
       session: "required"
     })
-    const res = await pageVoteCast(
-      pageId,
-      context.sessionUserId,
-      value,
-      context.requestContext
-    )
+    const res = await pageVoteCast(pageId, value, context.requestContext)
     return res
   }, failForActionError)
 }
@@ -111,17 +105,12 @@ export async function pageVoteCastAction(event: RequestEvent) {
 export async function pageVoteRemoveAction(event: RequestEvent) {
   const { request } = event
   try {
-    const requestData = await readActionJson(request, pageIdActionSchema)
-    const { siteId, pageId } = requestData
+    const requestData = await readActionJson(request, pageVoteRemoveSchema)
+    const { pageId } = requestData
     const context = await resolvePageActionRequestContext(event, {
-      submittedSiteId: siteId,
       session: "required"
     })
-    const res = await pageVoteRemove(
-      pageId,
-      context.sessionUserId,
-      context.requestContext
-    )
+    const res = await pageVoteRemove(pageId, context.requestContext)
     return { res }
   } catch (error) {
     return failForActionError(error)
@@ -148,6 +137,10 @@ export async function pageScoreAction(event: RequestEvent) {
 const pageIdActionSchema = object(pageActionBaseSchema)
 
 const pageVoteCastSchema = object({
-  ...pageActionBaseSchema,
+  pageId: number(),
   value: number()
+})
+
+const pageVoteRemoveSchema = object({
+  pageId: number()
 })
