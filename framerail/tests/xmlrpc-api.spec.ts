@@ -616,6 +616,29 @@ const xmlRpcHandlerRequest = (authorization: string): Request =>
     method: "POST"
   })
 
+const xmlRpcHandlerRequestWithBody = (body: string): Request =>
+  new Request("http://127.0.0.1/xml-rpc-api.php", {
+    body,
+    headers: xmlRpcHeaders,
+    method: "POST"
+  })
+
+function nestedXmlRpcValue(depth: number): string {
+  let value = "<value><string>x</string></value>"
+  for (let index = 0; index < depth; index += 1) {
+    value = `<value><array><data>${value}</data></array></value>`
+  }
+  return value
+}
+
+function xmlRpcCallWithParams(params: string): string {
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>system.listMethods</methodName>
+  <params>${params}</params>
+</methodCall>`
+}
+
 const restoreEnv = (name: string, value: string | undefined): void => {
   if (value === undefined) {
     delete process.env[name]
@@ -637,6 +660,36 @@ test("XML-RPC parser preserves shorthand string whitespace", () => {
 </methodCall>`)
 
   expect(call.params[0]).toBe(" x ")
+})
+
+test("XML-RPC parser bounds recursive value depth with an XML-RPC fault", async () => {
+  const response = await handleXmlRpcRequest(
+    xmlRpcHandlerRequestWithBody(
+      xmlRpcCallWithParams(`<param>${nestedXmlRpcValue(65)}</param>`)
+    )
+  )
+
+  expect(response.status).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(body).toContain("XML-RPC value nesting exceeds the maximum depth")
+})
+
+test("XML-RPC parser shares its node budget across parameter values", async () => {
+  const values = Array.from(
+    { length: 5_000 },
+    () => "<value><string>x</string></value>"
+  ).join("")
+  const params =
+    `<param><value><array><data>${values}</data></array></value></param>`.repeat(2)
+  const response = await handleXmlRpcRequest(
+    xmlRpcHandlerRequestWithBody(xmlRpcCallWithParams(params))
+  )
+
+  expect(response.status).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(body).toContain("XML-RPC request exceeds the structural node budget")
 })
 
 test("XML-RPC endpoint accepts Basic-authenticated system.listMethods calls", async ({
