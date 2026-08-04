@@ -1,5 +1,8 @@
 import crypto from "node:crypto";
 
+const WIKIDOT_HOST_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.wikidot\.com$/u;
+const WIKIJUMP_HOST_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.wikijump\.localhost$/u;
+
 export function isObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -93,10 +96,39 @@ function firstNonEmptyString(...values) {
   return "";
 }
 
+function validateCaptureUrl(value, kind, hostPattern) {
+  if (value === "") return value;
+
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(`${kind} capture URL must be an HTTPS URL: ${value}`);
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.port ||
+    !hostPattern.test(url.hostname)
+  ) {
+    throw new Error(`${kind} capture URL must be exactly an HTTPS allowlisted host without credentials or a non-default port: ${value}`);
+  }
+  return value;
+}
+
 export function rowSourceUrl(row) {
-  return firstNonEmptyString(row.source_url, row.live_url, row.wikidot_url);
+  return validateCaptureUrl(
+    firstNonEmptyString(row.source_url, row.live_url, row.wikidot_url),
+    "source",
+    WIKIDOT_HOST_RE,
+  );
 }
 
 export function rowLocalUrl(row, localUrlField = "local_https_url") {
-  return firstNonEmptyString(row[localUrlField], row.local_https_url, row.local_http_url, row.local_url);
+  return validateCaptureUrl(
+    firstNonEmptyString(row[localUrlField], row.local_https_url, row.local_http_url, row.local_url),
+    "local",
+    WIKIJUMP_HOST_RE,
+  );
 }
