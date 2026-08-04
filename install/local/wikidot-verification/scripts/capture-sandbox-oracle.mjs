@@ -327,6 +327,7 @@ async function main(argv) {
       let liveCapture = null;
       let localCapture = null;
       let contract = null;
+      let fixtureError = null;
       try {
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "inspect"}));
         if (await withTimeout(wikidot.inspect(liveResource), `live inspect ${fixture.fixture_id}`) !== null) throw new Error(`live oracle page already exists: ${liveResource.slug}`);
@@ -351,6 +352,9 @@ async function main(argv) {
         contracts.push({fixture_id: fixture.fixture_id, contract});
         cleanup.push({fixture_id: fixture.fixture_id, live: {resource: liveResource, expected: {title: source.title, source_sha256: liveResource.source_sha256, tags: liveResource.tags}, identity: livePage}, local: {resource: localResource, expected: {title: source.title, source_sha256: localResource.source_sha256, tags: localResource.tags}, identity: localPage}});
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, index: index + 1, total: registry.fixtures.length}));
+      } catch (error) {
+        fixtureError = {name: error?.name ?? "Error", message: error?.message ?? String(error)};
+        console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "fixture-failed", error: fixtureError}));
       } finally {
         if (localPage !== null || localAttempted) {
           await withTimeout(cleanupCreatedPage(wikijump, localResource, localPage), `local cleanup ${fixture.fixture_id}`);
@@ -362,7 +366,7 @@ async function main(argv) {
         }
       }
       if (liveCapture === null || localCapture === null) {
-        const error = new Error("fixture capture did not produce both observations");
+        const error = fixtureError === null ? new Error("fixture capture did not produce both observations") : new Error(fixtureError.message);
         liveCapture ??= captureFailure({url: liveResource.url, error});
         localCapture ??= captureFailure({url: localResource.url, error});
         contract ??= browserContract();
