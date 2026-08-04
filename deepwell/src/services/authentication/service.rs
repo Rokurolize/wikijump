@@ -133,15 +133,18 @@ impl AuthenticationService {
         let txn = ctx.transaction();
         let verified_email_match = Expr::col(user::Column::Email)
             .eq(name_or_email)
-            .and(Expr::col(user::Column::UserType).eq(UserType::Regular))
-            .and(Expr::col(user::Column::EmailVerifiedAt).is_not_null())
-            .and(Expr::col(user::Column::DeletedAt).is_null());
+            .and(Expr::col(user::Column::EmailVerifiedAt).is_not_null());
         let result = User::find()
             .filter(
-                Condition::any()
-                    .add(user::Column::Name.eq(name_or_email))
-                    .add(user::Column::Slug.eq(name_or_email))
-                    .add(verified_email_match.clone()),
+                Condition::all()
+                    .add(user::Column::UserType.eq(UserType::Regular))
+                    .add(user::Column::DeletedAt.is_null())
+                    .add(
+                        Condition::any()
+                            .add(user::Column::Name.eq(name_or_email))
+                            .add(user::Column::Slug.eq(name_or_email))
+                            .add(verified_email_match.clone()),
+                    ),
             )
             // A username may syntactically equal somebody else's verified
             // email. The proven owner must win when the login input is email.
