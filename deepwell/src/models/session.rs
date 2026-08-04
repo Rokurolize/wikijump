@@ -18,6 +18,8 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub user_agent: String,
     pub restricted: bool,
+    #[serde(skip)]
+    pub mfa_failed_attempts: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -133,7 +133,10 @@ export const pages = {
     wikitext:
       "[[module CSS]]\n#header h2 span { margin-left: 1px; }\n[[/module]]\nXML-RPC theme body marker.",
     compiled_body_html: "<p>XML-RPC theme body marker.</p>",
-    compiled_body_styles: ["#header h2 span { margin-left: 1px; }"]
+    compiled_body_styles: [
+      "body { font-family: verdana, arial, helvetica, sans-serif; font-size: 0.8em; }",
+      "#header h2 span { margin-left: 1px; }"
+    ]
   },
   "wikidot-tabview": {
     page_id: 3000320,
