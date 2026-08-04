@@ -7,7 +7,7 @@ import {validateSandboxOracleRegistry} from "./sandbox-oracle.mjs";
 export const THEME_LOCALIZATION_E2E_SCHEMA = "wikijump_local_lab.theme_localization_e2e_plan.v2";
 export const DEFAULT_SITE_SLUG = "scpaiueouiuiuiui";
 export const ALLOWED_SITE_SLUGS = Object.freeze(new Set([DEFAULT_SITE_SLUG, "sandbox-for-codex"]));
-export const DEFAULT_WIKIDOT_ORIGIN = "https://scpaiueouiuiuiui.wikidot.com";
+export const DEFAULT_WIKIDOT_ORIGIN = "http://scpaiueouiuiuiui.wikidot.com";
 export const DEFAULT_WIKIJUMP_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 export const RUN_OWNED_SLUG_PREFIX = "codex-l10n:";
 export const ORACLE_RUN_OWNED_SLUG_PREFIX = "codex-oracle:";
@@ -357,7 +357,7 @@ export function validateTargetOrigin(value, target, siteSlug = DEFAULT_SITE_SLUG
   } catch {
     throw new Error(`${target} origin is not a valid URL`);
   }
-  const wikidotProtocol = validatedSite === "sandbox-for-codex" ? "http:" : "https:";
+  const wikidotProtocol = "http:";
   const expected = target === "wikidot"
     ? {protocol: wikidotProtocol, hostname: `${validatedSite}.wikidot.com`, ports: new Set([""])}
     : {protocol: "https:", hostname: `${validatedSite}.wikijump.localhost`, ports: new Set(["", "18443"])};

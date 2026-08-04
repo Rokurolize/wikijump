@@ -66,8 +66,7 @@ def validate_site_slug(value: object) -> str:
 
 def site_origin(site_slug: object) -> str:
     slug = validate_site_slug(site_slug)
-    scheme = "http" if slug == "sandbox-for-codex" else "https"
-    return f"{scheme}://{slug}.wikidot.com"
+    return f"http://{slug}.wikidot.com"
 
 def validate_oracle_slug(value: object) -> str:
     if not isinstance(value, str) or len(value) > WIKIDOT_PAGE_SLUG_MAX_LENGTH or not ORACLE_RUN_OWNED_SLUG.fullmatch(value):

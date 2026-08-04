@@ -58,6 +58,7 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 print(json.dumps(sorted(module.ALLOWED_SITE_SLUGS)))
 print(module.site_origin("sandbox-for-codex"))
+print(module.site_origin(module.DEFAULT_SITE_SLUG))
 try: module.site_origin("scp-wiki")
 except module.PublicError as error: print(error.code)
 print(module.validate_oracle_slug("codex-oracle:20260805-allowlist-syntax:basic"))
@@ -66,9 +67,10 @@ except module.PublicError as error: print(error.code)
 `;
   const result = spawnSync("python3", ["-c", program, HELPER_PATH], {encoding: "utf8"});
   assert.equal(result.status, 0, result.stderr);
-  const [sites, origin, rejected, oracleSlug, oracleRejected] = result.stdout.trim().split("\n");
+  const [sites, oracleOrigin, defaultOrigin, rejected, oracleSlug, oracleRejected] = result.stdout.trim().split("\n");
   assert.deepEqual(JSON.parse(sites), [...ALLOWED_SITE_SLUGS].sort());
-  assert.equal(origin, "http://sandbox-for-codex.wikidot.com");
+  assert.equal(oracleOrigin, "http://sandbox-for-codex.wikidot.com");
+  assert.equal(defaultOrigin, `http://${DEFAULT_SITE_SLUG}.wikidot.com`);
   assert.equal(rejected, "site_not_allowed");
   assert.equal(oracleSlug, "codex-oracle:20260805-allowlist-syntax:basic");
   assert.equal(oracleRejected, "resource_not_allowed");
