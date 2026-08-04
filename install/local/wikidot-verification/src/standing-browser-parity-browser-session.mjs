@@ -10,6 +10,7 @@ import {
   DEFAULT_REQUEST_INTERVAL_MS,
   acquireBrowserCaptureLock,
   createPersistentBrowserRequestGate,
+  isWikidotCapturePublicOrigin,
   installBrowserRequestGate,
 } from "./browser-request-gate.mjs";
 import { startCaptureEgressProxy } from "./capture-egress-proxy.mjs";
@@ -91,7 +92,8 @@ function throttleConfig({
     local_context_exempt_origins: localOrigins,
     candidate_endpoint: candidate ?? null,
     public_request_policy:
-      "every HTTP(S) request except exact candidate-local origins is admitted by the shared persistent gate",
+      "every HTTP(S) request on the wikidot.com family except exact candidate-local origins is admitted by the shared persistent gate; other public origins are aborted before admission",
+    public_origin_policy: "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, and /v-- static assets on a CloudFront host) are gated; all other public hosts are aborted before admission",
     service_workers: "block",
     web_sockets: "blocked_without_network_connection",
     credentials: "none",
@@ -172,6 +174,9 @@ export async function createParityBrowserControls({
         if (failure) throw failure;
         return finalGateSnapshot;
       },
+      setActiveFixture(fixtureId) {
+        gate.setActiveFixture(fixtureId);
+      },
     };
   } catch (error) {
     await proxy?.close().catch(() => undefined);
@@ -216,6 +221,7 @@ export async function launchParityBrowser({
     await installBrowserRequestGate(context, {
       gate: controls.gate,
       exemptOrigins: local ? controls.localOrigins : [],
+      publicOriginPredicate: isWikidotCapturePublicOrigin,
     });
     return {
       browser,
