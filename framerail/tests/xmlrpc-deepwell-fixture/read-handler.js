@@ -2,6 +2,7 @@ import { handleArticleRpc } from "./article-handler.js"
 import { handleAuthRpc } from "./auth-handler.js"
 import { handleForumRpc } from "./forum-handler.js"
 import { handlePageReadRpc } from "./page-read-handler.js"
+import { handleVoteReadRpc } from "./vote-read-handler.js"
 
 /**
  * @param {{
@@ -15,6 +16,7 @@ export const handleReadRpc = (input) => {
     handleAuthRpc(input) ??
     handleArticleRpc(input) ??
     handlePageReadRpc(input) ??
+    handleVoteReadRpc(input) ??
     handleForumRpc(input)
   )
 }
