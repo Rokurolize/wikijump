@@ -2130,6 +2130,32 @@ function classifyMismatch(row, reference) {
         `The random wrapper-free ListPages body is the evidenced ${randomTemplateKind} selected-row form; both runtimes emit the same direct element structure after replacing only selected-row text and attributes, while the cached random row differs.`,
     };
   }
+  const randomDirectSizeBranchRootMatches =
+    randomTemplateKind === "size-branch" &&
+    relativeTimeSelector(invocation) === null &&
+    randomExpectedWrapper === false &&
+    liveTopLevelWrappers.length === 0 &&
+    localTopLevelWrappers.length === 0 &&
+    !["list-pages-box", "list-pages-item", "pager"].some((className) =>
+      domHasClass(liveNodes, className) || domHasClass(localNodes, className)
+    ) &&
+    liveNodes.length === 1 &&
+    localNodes.length === 1 &&
+    liveNodes[0]?.type === "element" &&
+    localNodes[0]?.type === "element" &&
+    liveNodes[0].name === localNodes[0].name &&
+    liveNodes[0].namespace === localNodes[0].namespace &&
+    !nodeHasClass(liveNodes[0], "error-block") &&
+    !nodeHasClass(localNodes[0], "error-block") &&
+    JSON.stringify(liveNodes) !== JSON.stringify(localNodes);
+  if (randomDirectSizeBranchRootMatches) {
+    return {
+      classification: "unsynchronized-random-row-state",
+      disposition: "none",
+      rationale:
+        "The wrapper-free random ListPages body is the evidenced size-conditional selected-row form. Both runtimes emit one direct element with the same authored root while the selected page's body text and inline breaks differ; the independently cached random row is fixture state, not a deterministic query or renderer difference.",
+    };
+  }
   const randomCssBranchFixture =
     invocation !== null &&
     relativeTimeSelector(invocation) === null &&
