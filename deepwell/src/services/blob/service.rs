@@ -391,32 +391,34 @@ impl BlobService {
         //
         // In either case, we delete the blob at the temporary upload location.
 
-        let result = Self::direct_upload(ctx, data).await.or_raise(make_error)?;
+        let s3_hash = sha512_hash(&data);
 
-        bucket.delete_object(&s3_path).await.or_raise(make_error)?;
-
-        // Check that new blob is not blacklisted
-        if Self::on_blacklist(ctx, result.s3_hash)
+        // Check that the blob is not blacklisted before writing to permanent storage.
+        if Self::on_blacklist(ctx, s3_hash)
             .await
             .or_raise(make_error)?
         {
-            let hex_hash = blob_hash_to_hex(&result.s3_hash);
+            let hex_hash = blob_hash_to_hex(&s3_hash);
             error!(
                 "Newly-uploaded blob {} is blacklisted (hash {})",
                 pending_blob_id, hex_hash,
             );
 
-            // Cancel this pending upload, what they're trying to store shouldn't be on here
+            // Remove the temporary object before cancelling its database record.
+            bucket.delete_object(&s3_path).await.or_raise(make_error)?;
             Self::cancel_upload(ctx, pending_blob_user_id, pending_blob_id)
                 .await
                 .or_raise(make_error)?;
 
-            // Finally, return error
             bail!(Error::new(
                 "cannot upload blob, contents are blacklisted",
-                ErrorType::BlobBlacklisted(result.s3_hash)
+                ErrorType::BlobBlacklisted(s3_hash)
             ));
         }
+
+        let result = Self::direct_upload(ctx, data).await.or_raise(make_error)?;
+
+        bucket.delete_object(&s3_path).await.or_raise(make_error)?;
 
         // Update pending blob with hash
         let model = blob_pending::ActiveModel {

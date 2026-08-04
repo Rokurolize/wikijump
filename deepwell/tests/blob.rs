@@ -22,14 +22,95 @@
 mod common;
 
 use self::common::TestRunner;
+use cuid2::cuid;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::prelude::*;
-use deepwell::models::blob_blacklist::Entity as BlobBlacklistTable;
-use deepwell::services::RequestContext;
-use sea_orm::EntityTrait;
+use deepwell::hash::{BlobHash, blob_hash_to_hex, sha512_hash};
+use deepwell::models::blob_blacklist::{self, Entity as BlobBlacklistTable};
+use deepwell::models::blob_pending::{self, Entity as BlobPendingTable};
+use deepwell::services::{BlobService, RequestContext};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
 use serde_json::json;
 
 const TEST_BLOB_HASH: &str = "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111";
+const SECURITY_600_DATA: &[u8] = b"issue 600 blacklisted upload fixture";
+
+async fn cleanup_blacklisted_upload(
+    runner: &TestRunner,
+    pending_blob_id: &str,
+    s3_path: &str,
+    s3_hash: BlobHash,
+) {
+    BlobPendingTable::delete_by_id(pending_blob_id)
+        .exec(&runner.state().database)
+        .await
+        .expect("pending blob fixture cleanup should succeed");
+    BlobBlacklistTable::delete_by_id(s3_hash.to_vec())
+        .exec(&runner.state().database)
+        .await
+        .expect("blob blacklist fixture cleanup should succeed");
+
+    let temporary = runner
+        .state()
+        .s3_files_bucket
+        .delete_object(s3_path)
+        .await
+        .expect("temporary blob fixture cleanup should succeed");
+    assert_eq!(temporary.status_code(), 204);
+
+    let permanent = runner
+        .state()
+        .s3_files_bucket
+        .delete_object(blob_hash_to_hex(&s3_hash))
+        .await
+        .expect("permanent blob fixture cleanup should succeed");
+    assert_eq!(permanent.status_code(), 204);
+}
+
+async fn prepare_blacklisted_upload(runner: &TestRunner) -> (String, String, BlobHash) {
+    let pending_blob_id = cuid();
+    let s3_path = format!("uploads/{pending_blob_id}");
+    let s3_hash = sha512_hash(SECURITY_600_DATA);
+
+    cleanup_blacklisted_upload(runner, &pending_blob_id, &s3_path, s3_hash).await;
+
+    let temporary = runner
+        .state()
+        .s3_files_bucket
+        .put_object(&s3_path, SECURITY_600_DATA)
+        .await
+        .expect("temporary blob fixture upload should succeed");
+    assert_eq!(temporary.status_code(), 200);
+
+    let created_at = time::OffsetDateTime::now_utc();
+    blob_pending::ActiveModel {
+        external_id: Set(pending_blob_id.clone()),
+        created_by: Set(ADMIN_USER_ID),
+        created_at: Set(created_at),
+        expires_at: Set(created_at + time::Duration::minutes(5)),
+        expected_length: Set(SECURITY_600_DATA
+            .len()
+            .try_into()
+            .expect("fixture length fits")),
+        s3_path: Set(s3_path.clone()),
+        s3_hash: Set(None),
+        presign_url: Set("not-used-in-test".to_owned()),
+    }
+    .insert(&runner.state().database)
+    .await
+    .expect("pending blob fixture insert should succeed");
+
+    blob_blacklist::ActiveModel {
+        s3_hash: Set(s3_hash.to_vec()),
+        created_at: Set(created_at),
+        created_by: Set(ADMIN_USER_ID),
+    }
+    .insert(&runner.state().database)
+    .await
+    .expect("blob blacklist fixture insert should succeed");
+
+    (pending_blob_id, s3_path, s3_hash)
+}
 
 #[tokio::test]
 async fn blob_hard_delete_requires_admin_request_context() {
@@ -152,4 +233,44 @@ async fn blob_blacklist_uses_admin_request_actor() {
         .await
         .expect("blob blacklist lookup should succeed");
     assert!(removed.is_none());
+}
+
+#[tokio::test]
+async fn blob_finish_upload_rejects_blacklisted_content_before_permanent_write() {
+    let runner = TestRunner::setup().await;
+    let (pending_blob_id, s3_path, s3_hash) = prepare_blacklisted_upload(&runner).await;
+
+    let output =
+        BlobService::finish_upload(runner.context(), ADMIN_USER_ID, &pending_blob_id)
+            .await;
+    let permanent = BlobService::get_optional(runner.context(), &s3_hash).await;
+    let pending = BlobPendingTable::find_by_id(&pending_blob_id)
+        .one(&runner.state().database)
+        .await;
+    let temporary = runner.state().s3_files_bucket.get_object(&s3_path).await;
+
+    cleanup_blacklisted_upload(&runner, &pending_blob_id, &s3_path, s3_hash).await;
+
+    let error = output.expect_err("blacklisted blob finalization should fail");
+    assert_contains_error!(
+        error,
+        ErrorType::BlobBlacklisted(found) if *found == s3_hash,
+    );
+    assert_eq!(
+        permanent.expect("permanent blob lookup should succeed"),
+        None,
+        "blacklisted bytes must not be restored to permanent storage",
+    );
+    assert_eq!(
+        pending.expect("pending blob lookup should succeed"),
+        None,
+        "blacklisted upload should remove its pending database row",
+    );
+    assert_eq!(
+        temporary
+            .expect("temporary blob lookup should succeed")
+            .status_code(),
+        404,
+        "blacklisted upload should remove its temporary object",
+    );
 }
