@@ -26,8 +26,20 @@ use crate::services::settings::{
     PageRatingPermission, PageRatingSettings, PageRatingType, PageRatingVisibility,
 };
 use crate::services::vote::{
-    CountVoteHistory, CreateVote, GetVote, GetVoteHistory, VoteAction,
+    CountVoteHistory, CreateVote, GetVote, GetVoteHistory, VoteAction, VoteValue,
 };
+use crate::types::{Action, Permission, Reference, Resource};
+
+#[derive(Deserialize)]
+struct SetVoteInput {
+    page_id: i64,
+    value: VoteValue,
+}
+
+#[derive(Deserialize)]
+struct RemoveVoteInput {
+    page_id: i64,
+}
 
 async fn page_rating_settings(
     ctx: &ServiceContext<'_>,
@@ -45,16 +57,50 @@ async fn page_rating_settings(
 
 async fn ensure_actor_can_rate(
     ctx: &ServiceContext<'_>,
-    page_id: i64,
-    submitted_user_id: i64,
+    submitted_page_id: i64,
     value: Option<i16>,
-) -> Result<PageRatingSettings> {
-    let actor_user_id = MutationAuthorization::require_matching_actor(
+) -> Result<(GetVote, PageRatingSettings)> {
+    let site_id = ctx.request().site_id().or_raise(|| {
+        Error::new(
+            "vote mutation requires a site request context",
+            ErrorType::PermissionDenied,
+        )
+    })?;
+    let page_reference = ctx.request().page_reference().or_raise(|| {
+        Error::new(
+            "vote mutation requires a page request context",
+            ErrorType::PermissionDenied,
+        )
+    })?;
+    let page = PageService::get(ctx, site_id, page_reference.clone())
+        .await
+        .or_raise(|| Error::new("failed to resolve vote target", ErrorType::PageVote))?;
+    if page.page_id != submitted_page_id {
+        return Err(Error::new(
+            "vote target does not match the route page",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+
+    let actor_user_id = MutationAuthorization::require_permission(
         ctx,
-        submitted_user_id,
-        "rate a page",
-    )?;
-    let (page, settings) = page_rating_settings(ctx, page_id).await?;
+        site_id,
+        Some(Reference::Id(page.page_id)),
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+        "vote on a page",
+    )
+    .await?;
+    let settings = SettingsService::get_page_rating_settings(
+        ctx,
+        page.site_id,
+        page.page_category_id,
+    )
+    .await?;
     if !settings.enabled {
         return Err(Error::new(
             "page rating is disabled for this category",
@@ -88,7 +134,13 @@ async fn ensure_actor_can_rate(
         )
         .into());
     }
-    Ok(settings)
+    Ok((
+        GetVote {
+            page_id: page.page_id,
+            user_id: actor_user_id,
+        },
+        settings,
+    ))
 }
 
 fn rating_value_is_valid(rating_type: PageRatingType, value: i16) -> bool {
@@ -147,38 +199,43 @@ pub async fn vote_set(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<Option<PageVoteModel>> {
-    let input: CreateVote = parse!(params, PageVote);
-    let page_id = input.page_id;
-    let user_id = input.user_id;
+    let SetVoteInput { page_id, value } = parse!(params, PageVote);
+    let (input, settings) = ensure_actor_can_rate(ctx, page_id, Some(value)).await?;
+    let GetVote { page_id, user_id } = input;
 
     info!("Casting vote cast by {} on page {}", user_id, page_id,);
 
-    let settings =
-        ensure_actor_can_rate(ctx, page_id, user_id, Some(input.value)).await?;
-    VoteService::add(ctx, input, settings.rating_type.vote_store_key())
-        .await
-        .or_raise(|| {
-            Error::new(
-                format!(
-                    "failed to set vote on page ID {} from user ID {}",
-                    page_id, user_id,
-                ),
-                ErrorType::PageVote,
-            )
-        })
+    VoteService::add(
+        ctx,
+        CreateVote {
+            page_id,
+            user_id,
+            value,
+        },
+        settings.rating_type.vote_store_key(),
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            format!(
+                "failed to set vote on page ID {} from user ID {}",
+                page_id, user_id,
+            ),
+            ErrorType::PageVote,
+        )
+    })
 }
 
 pub async fn vote_remove(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<PageVoteModel> {
-    let input: GetVote = parse!(params, PageVote);
-    let page_id = input.page_id;
-    let user_id = input.user_id;
+    let RemoveVoteInput { page_id } = parse!(params, PageVote);
+    let (input, settings) = ensure_actor_can_rate(ctx, page_id, None).await?;
+    let GetVote { page_id, user_id } = input;
 
     info!("Removing vote cast by {} on page {}", user_id, page_id,);
 
-    let settings = ensure_actor_can_rate(ctx, page_id, user_id, None).await?;
     VoteService::remove(ctx, input, settings.rating_type.vote_store_key())
         .await
         .or_raise(|| {
