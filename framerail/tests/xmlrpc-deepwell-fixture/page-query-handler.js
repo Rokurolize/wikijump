@@ -62,7 +62,8 @@ export const handlePageQueryRpc = ({ rpcRequest, request }) => {
     rpcRequest.params.categories[0] === "_default" &&
     rpcRequest.params?.created_by === "-1" &&
     rpcRequest.params?.rating === ">=0" &&
-    rpcRequest.params?.order === "created_at desc"
+    rpcRequest.params?.order === "created_at desc" &&
+    request.headers["x-deepwell-session-token"] === "fixture-session-token"
   ) {
     fixtureState.lastPageSelectParams = rpcRequest.params
     result = ["scp-173", "scp-anthology-2024", "scp-8566"]
