@@ -94,6 +94,7 @@ use crate::services::page_query::{
     static_wikidot_data_form_matches,
 };
 use crate::services::render::rate_module::render_read_only_rate_module;
+use crate::services::render::render_budget::RenderCostBudget;
 use crate::services::render::runtime::IncludeSource;
 use crate::services::render::runtime_modules::RateModuleContext;
 use crate::services::render::{UrlArgumentPair, UrlArguments};
@@ -9068,6 +9069,7 @@ fn nested_cross_site_includes_keep_the_original_lookup_site() {
         settings: &settings,
         expand_wikidot_image_blocks: true,
         max_total_includes: 100,
+        render_cost_budget: RenderCostBudget::new_default(),
     };
     let source = IncludeSource {
         site_slug: "scp-wiki".to_owned(),

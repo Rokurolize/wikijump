@@ -24,6 +24,9 @@ use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text
 use super::super::literal_regions::{
     ListPagesSourceProjection, LiteralRegionIndex, collect_list_pages_css_yield_openers,
 };
+use super::super::render_budget::{
+    MAX_SELECTED_CONTENT_RENDER_DEPTH, SharedRenderCostBudget,
+};
 use super::super::render_options::{RenderContext, RenderInnerOptions};
 use super::super::runtime::{IncludeSourceCache, RenderRuntime};
 use super::super::runtime_page_queries::{
@@ -153,6 +156,7 @@ impl RenderService {
             page_preview,
             viewer_user_id,
             mut include_budget,
+            render_cost_budget,
             url,
             pager_route,
         } = options;
@@ -686,6 +690,7 @@ impl RenderService {
                         arguments,
                         &template,
                         include_budget,
+                        &render_cost_budget,
                         prefetched_pages,
                         prefetched_displays.as_ref(),
                         &mut content_cache,
@@ -799,6 +804,7 @@ impl RenderService {
                         arguments,
                         &template,
                         include_budget,
+                        &render_cost_budget,
                         None,
                         None,
                         &mut content_cache,
@@ -890,6 +896,7 @@ impl RenderService {
             include_source_cache,
             compat_text,
             &mut include_budget,
+            &render_cost_budget,
             initial_remaining_include_expansions,
         )
         .await?;
@@ -914,6 +921,7 @@ impl RenderService {
                     page_preview,
                     viewer_user_id,
                     include_budget,
+                    render_cost_budget: render_cost_budget.clone(),
                     url,
                     pager_route,
                 },
@@ -1330,6 +1338,7 @@ impl RenderService {
         arguments: ListPagesArguments,
         template: &ListPagesTemplatePlan,
         include_budget: IncludeExpansionBudget,
+        render_cost_budget: &SharedRenderCostBudget,
         mut prefetched_pages: Option<FoundPages>,
         prefetched_displays: Option<&ListPagesBatchDisplays>,
         content_cache: &mut ListPagesContentCache,
@@ -2275,6 +2284,7 @@ impl RenderService {
                                     current_site_id,
                                     viewer_user_id,
                                     max_include_expansions,
+                                    render_cost_budget.clone(),
                                     url,
                                 )
                                 .await?,
@@ -2299,6 +2309,7 @@ impl RenderService {
                                         current_site_id,
                                         viewer_user_id,
                                         max_include_expansions,
+                                        render_cost_budget.clone(),
                                         url,
                                     )
                                     .await?,
@@ -2330,6 +2341,7 @@ impl RenderService {
                                         current_site_id,
                                         viewer_user_id,
                                         max_include_expansions,
+                                        render_cost_budget.clone(),
                                         url,
                                     )
                                     .await?,

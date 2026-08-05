@@ -412,8 +412,15 @@ pub(super) async fn render_list_pages_selected_content_source(
     current_site_id: i64,
     viewer_user_id: Option<i64>,
     max_include_expansions: usize,
+    render_cost_budget: SharedRenderCostBudget,
     url: UrlArguments<'_>,
 ) -> Result<String> {
+    render_cost_budget
+        .charge(1, "selected-content render")
+        .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
+    let _nested_render_guard = render_cost_budget
+        .enter_nested_render(MAX_SELECTED_CONTENT_RENDER_DEPTH)
+        .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
     let mut selected_content_fragments = CompatHtmlFragments::new(wikitext);
     let selected_content_site =
         if LISTPAGES_CONTENT_CONTEXT_MODULE_REGEX.is_match(wikitext) {
@@ -447,6 +454,7 @@ pub(super) async fn render_list_pages_selected_content_source(
             render_context: RenderContext::page_preview(current_site_id),
             viewer_user_id,
             max_include_expansions,
+            render_cost_budget,
             trace: None,
             persist_compiled_text: false,
             url,

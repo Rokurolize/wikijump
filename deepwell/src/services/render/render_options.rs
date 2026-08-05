@@ -27,6 +27,7 @@
 
 use super::diagnostics::{CorpusRenderScope, CorpusRenderTrace};
 use super::list_pages::ListPagesPagerRoute;
+use super::render_budget::SharedRenderCostBudget;
 use super::url_arguments::UrlArguments;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -46,11 +47,12 @@ pub(super) struct RenderContext {
     pub(super) lifecycle: RenderLifecycle,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(super) struct RenderInnerOptions<'a> {
     pub(super) render_context: RenderContext,
     pub(super) viewer_user_id: Option<i64>,
     pub(super) max_include_expansions: usize,
+    pub(super) render_cost_budget: SharedRenderCostBudget,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) persist_compiled_text: bool,
 
@@ -72,13 +74,14 @@ pub(super) struct RenderPageOptions<'a> {
     pub(super) trace: Option<&'a CorpusRenderTrace>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(super) struct RenderExpansionOptions<'a> {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_category_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
     pub(super) viewer_user_id: Option<i64>,
     pub(super) max_include_expansions: usize,
+    pub(super) render_cost_budget: SharedRenderCostBudget,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) url: UrlArguments<'a>,
     pub(super) list_pages_pager_route: ListPagesPagerRoute,

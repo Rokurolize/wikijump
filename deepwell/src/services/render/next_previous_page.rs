@@ -40,6 +40,7 @@ use super::list_pages::{
     register_generated_list_pages_html, seal_protected_list_pages_delayed_output,
 };
 use super::literal_regions::LiteralRegionIndex;
+use super::render_budget::SharedRenderCostBudget;
 use super::service::{
     IncludeExpansion, IncludeExpansionBudget, MAX_LISTPAGES_RENDER_SCAN_ROWS,
     RenderService,
@@ -131,6 +132,7 @@ impl RenderService {
         current_site_id: Option<i64>,
         current_page_id: Option<i64>,
         include_budget: &mut IncludeExpansionBudget,
+        render_cost_budget: &SharedRenderCostBudget,
         url: UrlArguments<'_>,
         compat_html: &mut CompatHtmlFragments,
         compat_text: &mut CompatTextFragments,
@@ -239,6 +241,7 @@ impl RenderService {
                 list_pages_arguments,
                 &template,
                 *include_budget,
+                render_cost_budget,
                 Some(pages),
                 prefetched_displays.as_ref(),
                 &mut content_cache,
