@@ -323,6 +323,52 @@ pub async fn page_get(
     }
 }
 
+/// Returns whether the current request may view a page reference.
+///
+/// Unlike `page_get`, this endpoint intentionally exposes no page metadata and
+/// treats a missing or hidden page as the same negative result. It is used by
+/// public helper routes that must distinguish an existing target only after
+/// applying the normal page-view permission boundary.
+pub async fn page_view_permission(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<bool> {
+    let GetPageReference {
+        site_id,
+        page: reference,
+    } = parse!(params, Page);
+
+    let Some(page) = PageService::get_optional(ctx, site_id, reference)
+        .await
+        .or_raise(|| {
+            Error::new("failed to resolve page view permission", ErrorType::Page)
+        })?
+    else {
+        return Ok(false);
+    };
+
+    PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to check page view permission",
+            ErrorType::Permission,
+        )
+    })
+}
+
 pub async fn page_get_direct(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,

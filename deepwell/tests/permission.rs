@@ -1425,6 +1425,71 @@ async fn check_permission_endpoint() {
 }
 
 #[tokio::test]
+async fn page_view_permission_endpoint_hides_missing_and_private_pages() {
+    let mut runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_b),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Slug(std::borrow::Cow::Borrowed(
+            "test-category:view-permission-page",
+        ))),
+        ..Default::default()
+    });
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": f.site_id,
+            "wikitext": "View permission endpoint fixture",
+            "title": "View permission endpoint fixture",
+            "alt_title": null,
+            "slug": "test-category:view-permission-page",
+            "layout": null,
+            "revision_comments": "view permission endpoint fixture",
+            "user_id": f.user_b,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page.page_id)),
+        ..Default::default()
+    });
+    assert!(run_endpoint!(
+        runner,
+        page_view_permission,
+        json!({"site_id": f.site_id, "page": page.page_id}),
+    ));
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_b),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page.page_id)),
+        ..Default::default()
+    });
+    assert!(!run_endpoint!(
+        runner,
+        page_view_permission,
+        json!({"site_id": f.site_id, "page": page.page_id}),
+    ));
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_c),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page.page_id)),
+        ..Default::default()
+    });
+    assert!(!run_endpoint!(
+        runner,
+        page_view_permission,
+        json!({"site_id": f.site_id, "page": "missing-view-permission-page"}),
+    ));
+}
+
+#[tokio::test]
 async fn role_update_permissions_and_get() {
     let runner = TestRunner::setup().await;
     let f = PermissionFixture::setup(&runner).await;
