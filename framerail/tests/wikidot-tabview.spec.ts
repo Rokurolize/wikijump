@@ -14,6 +14,19 @@ test("Wikidot-compatible tabviews switch panels without inline script execution"
 
   await page.goto("/wikidot-tabview")
 
+  await expect
+    .poll(() =>
+      page
+        .locator("#page-content")
+        .evaluate(
+          (element) =>
+            Array.from(element.childNodes).filter(
+              (node) => node.nodeType === Node.COMMENT_NODE
+            ).length
+        )
+    )
+    .toBe(0)
+
   const tabs = page.locator(".yui-navset > .yui-nav > li")
   const panels = page.locator(".yui-navset > .yui-content > div")
   await expect(tabs.nth(0)).toHaveClass(/selected/)

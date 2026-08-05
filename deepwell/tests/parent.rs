@@ -217,6 +217,16 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
         }),
     );
     assert!(created.is_some());
+    assert_eq!(
+        queued_job_count(&runner).await,
+        before_create,
+        "parent changes must not enqueue before post-commit processing"
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("parent rerender should queue after commit");
     assert_eq!(queued_job_count(&runner).await, before_create + 1);
 
     let duplicate = run_endpoint!(
@@ -229,6 +239,11 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
         }),
     );
     assert!(duplicate.is_none());
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("duplicate parent update should have no post-commit error");
     assert_eq!(queued_job_count(&runner).await, before_create + 1);
 
     let removed = run_endpoint!(
@@ -241,6 +256,11 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
         }),
     );
     assert!(removed.was_deleted);
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("parent rerender should queue after commit");
     assert_eq!(queued_job_count(&runner).await, before_create + 2);
 
     let absent = run_endpoint!(
@@ -253,6 +273,11 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
         }),
     );
     assert!(!absent.was_deleted);
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("absent parent removal should have no post-commit error");
     assert_eq!(queued_job_count(&runner).await, before_create + 2);
 
     let recreated = run_endpoint!(
@@ -265,6 +290,11 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
         }),
     );
     assert!(recreated.is_some());
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("parent rerender should queue after commit");
     assert_eq!(queued_job_count(&runner).await, before_create + 3);
 
     run_endpoint!(
@@ -279,7 +309,34 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("parent deletion rerender should queue after commit");
     assert_eq!(queued_job_count(&runner).await, before_create + 4);
+}
+
+#[tokio::test]
+async fn parent_update_rejects_an_unbounded_relationship_batch() {
+    let runner = TestRunner::setup().await;
+    let before = queued_job_count(&runner).await;
+    let parents = (0..65)
+        .map(|index| format!("fixture-parent-batch-{index}"))
+        .collect::<Vec<_>>();
+
+    let error = run_endpoint_err!(
+        runner,
+        parent_update,
+        json!({
+            "site_id": 1,
+            "child": "fixture-parent-batch-child",
+            "add": parents,
+            "remove": null,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::BadRequest);
+    assert_eq!(queued_job_count(&runner).await, before);
 }
 
 #[tokio::test]

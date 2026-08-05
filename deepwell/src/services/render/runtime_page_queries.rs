@@ -70,6 +70,34 @@ pub(in crate::services::render) async fn find_viewable_list_pages_rows(
         target_count,
         permission_cache,
         score_filter_cache,
+        MAX_LISTPAGES_RENDER_LIMIT,
+        true,
+    )
+    .await?;
+    Ok(ViewableListPagesRows {
+        pages: found.pages,
+        metadata: found.metadata,
+        view_permission_filtering_applied: found.view_permission_filtering_applied,
+    })
+}
+
+pub(in crate::services::render) async fn find_viewable_list_pages_rows_with_batch_floor(
+    ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
+    query: PageQuery<'_>,
+    target_count: usize,
+    permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
+    score_filter_cache: Option<&mut PageQueryScoreFilterCache>,
+    batch_floor: u64,
+) -> Result<ViewableListPagesRows> {
+    let found = find_viewable_render_page_rows(
+        ctx,
+        viewer_user_id,
+        query,
+        target_count,
+        permission_cache,
+        score_filter_cache,
+        batch_floor,
         true,
     )
     .await?;
@@ -94,11 +122,13 @@ pub(in crate::services::render) async fn find_viewable_count_pages_rows(
         target_count,
         permission_cache,
         None,
+        MAX_LISTPAGES_RENDER_LIMIT,
         false,
     )
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn find_viewable_render_page_rows(
     ctx: &ServiceContext<'_>,
     viewer_user_id: Option<i64>,
@@ -106,6 +136,7 @@ async fn find_viewable_render_page_rows(
     target_count: usize,
     permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
     mut score_filter_cache: Option<&mut PageQueryScoreFilterCache>,
+    batch_floor: u64,
     retain_score_filter_session: bool,
 ) -> Result<ViewableCountPagesRows> {
     let mut score_filter_session = PageQueryScoreFilterSession::default();
@@ -150,8 +181,16 @@ async fn find_viewable_render_page_rows(
     while pages.len() < target_count && raw_offset < MAX_LISTPAGES_RENDER_SCAN_ROWS {
         let mut query = query.clone();
         query.offset = raw_offset;
-        let batch_limit =
-            render_page_query_batch_limit(target_count, pages.len(), raw_offset);
+        let batch_limit = if batch_floor == MAX_LISTPAGES_RENDER_LIMIT {
+            render_page_query_batch_limit(target_count, pages.len(), raw_offset)
+        } else {
+            render_page_query_batch_limit_with_floor(
+                target_count,
+                pages.len(),
+                raw_offset,
+                batch_floor,
+            )
+        };
         query.pagination.limit = Some(batch_limit);
 
         let found = Box::pin(PageQueryService::find_with_metadata_cached(
@@ -250,11 +289,23 @@ pub(in crate::services::render) fn render_page_query_batch_limit(
     viewable_count: usize,
     raw_offset: u32,
 ) -> u64 {
+    render_page_query_batch_limit_with_floor(
+        target_count,
+        viewable_count,
+        raw_offset,
+        MAX_LISTPAGES_RENDER_LIMIT,
+    )
+}
+
+pub(in crate::services::render) fn render_page_query_batch_limit_with_floor(
+    target_count: usize,
+    viewable_count: usize,
+    raw_offset: u32,
+    batch_floor: u64,
+) -> u64 {
     let needed = target_count.saturating_sub(viewable_count);
     let remaining = (MAX_LISTPAGES_RENDER_SCAN_ROWS - raw_offset) as usize;
-    needed
-        .max(MAX_LISTPAGES_RENDER_LIMIT as usize)
-        .min(remaining) as u64
+    needed.max(batch_floor.max(1) as usize).min(remaining) as u64
 }
 
 pub(in crate::services::render) fn render_page_query_uses_single_scan(
@@ -294,5 +345,24 @@ pub(super) fn merge_render_page_query_metadata(
     current.exact_count_safe &= next.exact_count_safe;
     if current.unsupported_reason.is_none() {
         current.unsupported_reason = next.unsupported_reason;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::render_page_query_batch_limit_with_floor;
+
+    #[test]
+    fn bounded_modules_can_keep_query_batches_at_their_effective_limit() {
+        assert_eq!(
+            render_page_query_batch_limit_with_floor(1, 0, 0, 1),
+            1,
+            "a RatedPages limit of one must not fetch the shared 250-row floor"
+        );
+        assert_eq!(
+            render_page_query_batch_limit_with_floor(10, 0, 0, 10),
+            10,
+            "a bounded runtime module should request no more than its effective limit"
+        );
     }
 }

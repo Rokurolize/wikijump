@@ -10,6 +10,13 @@ pub(super) static NEWPAGE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+NewPage(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#).unwrap()
 });
 
+/// Bound the number of template pages resolved for one NewPage module.
+///
+/// The normal corpus uses at most two names in one module. Keeping a generous
+/// finite bound preserves ordinary authored pages without allowing an
+/// unbounded allocation or sequence of page, permission, and revision lookups.
+pub(super) const MAX_NEW_PAGE_TEMPLATES_PER_MODULE: usize = 32;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct NewPageTemplateOption {
     pub(super) page_id: i64,
@@ -37,19 +44,24 @@ struct NewPageArguments<'a> {
     go_to: Option<&'a str>,
 }
 
-pub(super) fn new_page_template_names(head: &str) -> Vec<&str> {
+pub(super) fn new_page_template_names(head: &str) -> Option<Vec<&str>> {
     let arguments = parse_new_page_arguments(head);
-    arguments
-        .template
-        .filter(|value| !value.is_empty())
-        .map(|value| {
-            value
-                .split(',')
-                .map(str::trim)
-                .filter(|value| !value.is_empty())
-                .collect()
-        })
-        .unwrap_or_default()
+    let Some(value) = arguments.template.filter(|value| !value.is_empty()) else {
+        return Some(Vec::new());
+    };
+
+    let mut names = Vec::new();
+    for name in value
+        .split(',')
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+    {
+        if names.len() >= MAX_NEW_PAGE_TEMPLATES_PER_MODULE {
+            return None;
+        }
+        names.push(name);
+    }
+    Some(names)
 }
 
 pub(super) fn render_new_page_module(
@@ -264,11 +276,22 @@ mod tests {
             new_page_template_names(
                 r#" template=" template:first , template:second " template="" "#
             ),
-            Vec::<&str>::new(),
+            Some(Vec::<&str>::new()),
         );
         assert_eq!(
             new_page_template_names(r#" template=" template:first , template:second " "#),
-            vec!["template:first", "template:second"],
+            Some(vec!["template:first", "template:second"]),
         );
+    }
+
+    #[test]
+    fn rejects_template_lists_over_the_per_module_budget() {
+        let names = (0..=super::MAX_NEW_PAGE_TEMPLATES_PER_MODULE)
+            .map(|index| format!("template:{index}"))
+            .collect::<Vec<_>>()
+            .join(",");
+        let head = format!(r#" template="{names}" "#);
+
+        assert_eq!(new_page_template_names(&head), None);
     }
 }

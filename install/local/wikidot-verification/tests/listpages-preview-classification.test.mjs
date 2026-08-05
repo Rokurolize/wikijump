@@ -1938,6 +1938,22 @@ test("preview classifier isolates synchronized relative-time query state", async
       ],
     },
     {
+      id: "relative-limit-is-larger-than-perpage",
+      source: [
+        '[[module ListPages limit="100" perPage="5" updated_at="last 3 days"]]',
+        "%%updated_at%% %%title%%",
+        "[[/module]]",
+      ].join("\n"),
+      live: `<div class="list-pages-box">${Array.from({length: 6}, (_, index) =>
+        `<div class="list-pages-item"><span class="odate time_${index + 1}">${index + 1} Jan 2026</span> Row ${index + 1}</div>`
+      ).join("")}</div>`,
+      local: '<div class="list-pages-box"></div>',
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
+    },
+    {
       id: "relative-last-month-date-only-row",
       source: [
         '[[module ListPages limit="1" date="@URL|last month"]]',
@@ -3100,6 +3116,36 @@ test("preview classifier ignores descendant wrapper classes in wrapper-free row 
   );
   await fs.writeFile(verdictPath, JSON.stringify({
     cases: [mismatchCase("wrapper-free-row", liveHtml, localHtml)],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "listpages-query-or-row-render-divergence",
+  );
+  assert.equal(result.cases[0].disposition, "investigate-query-or-renderer");
+});
+
+test("preview classifier keeps authored wrapper drift actionable", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    "[[module ListPages]]",
+    '[[div class="list-pages-box"]]SAME[[/div]]',
+    "[[/module]]",
+  ].join("\n");
+  const liveHtml = '<div class="authored-row"><div class="list-pages-box">SAME</div></div>';
+  const localHtml = '<div class="list-pages-box">SAME</div>';
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference("authored-wrapper-drift", source, liveHtml))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase("authored-wrapper-drift", liveHtml, localHtml)],
   }));
 
   const result = await classifyListPagesPreviewDifferential({

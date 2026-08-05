@@ -42,7 +42,9 @@ use ftml::settings::WikitextSettings;
 use ftml::{self};
 use regex::Regex;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement};
-use std::sync::LazyLock;
+use std::collections::HashMap;
+use std::future::Future;
+use std::sync::{Arc, LazyLock};
 
 pub(super) static PAGES_BY_TAG_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+PagesByTag(?P<head>[^\]]*)\]\]").unwrap()
@@ -53,6 +55,12 @@ pub(super) static PAGES_BY_TAG_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 /// Live Wikidot emitted no pager for the largest captured tag, so this is a
 /// render-cost guard rather than an emulated page size.
 pub(super) const MAX_PAGES_BY_TAG_ROWS: usize = 500;
+/// Bounds distinct PagesByTag database queries in one render expansion.
+///
+/// The frozen corpus reaches seven occurrences on one page; this leaves a
+/// wide margin while preventing an authored page from multiplying the fixed
+/// per-query row and permission cost without limit.
+pub(super) const MAX_PAGES_BY_TAG_MODULE_QUERIES_PER_RENDER: usize = 32;
 
 #[derive(Debug, FromQueryResult)]
 pub(super) struct PagesByTagPage {
@@ -66,6 +74,41 @@ pub(super) struct PagesByTagPage {
 pub(super) struct PagesByTagArguments {
     pub tag: Option<String>,
     pub category: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct PagesByTagCacheKey {
+    tag: String,
+    category: Option<String>,
+}
+
+#[derive(Default)]
+struct PagesByTagPagesCache {
+    pages: HashMap<PagesByTagCacheKey, Arc<Vec<PagesByTagPage>>>,
+}
+
+impl PagesByTagPagesCache {
+    async fn get_or_init<F, Fut>(
+        &mut self,
+        key: PagesByTagCacheKey,
+        load: F,
+    ) -> Result<Arc<Vec<PagesByTagPage>>>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Vec<PagesByTagPage>>>,
+    {
+        if let Some(pages) = self.pages.get(&key) {
+            return Ok(Arc::clone(pages));
+        }
+
+        let pages = Arc::new(load().await?);
+        self.pages.insert(key, Arc::clone(&pages));
+        Ok(pages)
+    }
+}
+
+fn pages_by_tag_query_budget_exceeded(query_count: usize) -> bool {
+    query_count >= MAX_PAGES_BY_TAG_MODULE_QUERIES_PER_RENDER
 }
 
 /// Extracts the evidenced `tag` and `category` arguments from a
@@ -199,6 +242,8 @@ pub(super) async fn expand_pages_by_tag_modules(
 
     let mut expanded = String::with_capacity(wikitext.len());
     let mut cursor = 0;
+    let mut pages_cache = PagesByTagPagesCache::default();
+    let mut distinct_query_count = 0;
 
     for captures in PAGES_BY_TAG_MODULE_REGEX.captures_iter(&wikitext) {
         let mtch = captures.get(0).unwrap();
@@ -240,14 +285,34 @@ pub(super) async fn expand_pages_by_tag_modules(
             )
         };
 
-        let pages =
-            load_pages_by_tag_pages(ctx, current_site_id, &tag, category.as_deref())
-                .await?;
+        let key = PagesByTagCacheKey {
+            tag: tag.clone(),
+            category: category.clone(),
+        };
+        let pages = if let Some(pages) = pages_cache.pages.get(&key) {
+            Arc::clone(pages)
+        } else {
+            if pages_by_tag_query_budget_exceeded(distinct_query_count) {
+                expanded.push_str(mtch.as_str());
+                continue;
+            }
+            distinct_query_count += 1;
+            pages_cache
+                .get_or_init(key, || {
+                    load_pages_by_tag_pages(
+                        ctx,
+                        current_site_id,
+                        &tag,
+                        category.as_deref(),
+                    )
+                })
+                .await?
+        };
         expanded.push_str(&compat_html.push_block_html(render_pages_by_tag_module(
             page_info,
             &tag,
             category.as_deref(),
-            &pages,
+            pages.as_ref(),
         )));
     }
 
@@ -343,6 +408,41 @@ pub(super) async fn load_pages_by_tag_pages(
 mod tests {
     use super::*;
     use std::borrow::Cow;
+
+    #[test]
+    fn pages_by_tag_query_budget_preserves_after_the_last_allowed_unique_query() {
+        assert!(!pages_by_tag_query_budget_exceeded(
+            MAX_PAGES_BY_TAG_MODULE_QUERIES_PER_RENDER - 1,
+        ));
+        assert!(pages_by_tag_query_budget_exceeded(
+            MAX_PAGES_BY_TAG_MODULE_QUERIES_PER_RENDER,
+        ));
+    }
+
+    #[tokio::test]
+    async fn repeated_pages_by_tag_queries_reuse_the_same_render_result() {
+        let mut cache = PagesByTagPagesCache::default();
+        let key = PagesByTagCacheKey {
+            tag: "example".to_owned(),
+            category: None,
+        };
+
+        let first = cache
+            .get_or_init(key.clone(), || async { Ok(Vec::new()) })
+            .await
+            .expect("the first PagesByTag load should succeed");
+        let second = cache
+            .get_or_init(key, || async {
+                panic!("a cached PagesByTag result must not query again");
+                #[allow(unreachable_code)]
+                Ok(Vec::new())
+            })
+            .await
+            .expect("the cached PagesByTag load should succeed");
+
+        assert!(first.is_empty());
+        assert!(second.is_empty());
+    }
 
     fn page(slug: &str, title: &str) -> PagesByTagPage {
         PagesByTagPage {

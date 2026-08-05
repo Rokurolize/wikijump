@@ -94,6 +94,7 @@ use crate::services::page_query::{
     static_wikidot_data_form_matches,
 };
 use crate::services::render::rate_module::render_read_only_rate_module;
+use crate::services::render::render_budget::RenderCostBudget;
 use crate::services::render::runtime::IncludeSource;
 use crate::services::render::runtime_modules::RateModuleContext;
 use crate::services::render::{UrlArgumentPair, UrlArguments};
@@ -1922,8 +1923,8 @@ fn unbounded_count_pages_remains_literal_when_scan_cap_is_reached() {
     );
     assert_eq!(
         count_pages_unbounded_total(CountPagesRawScanCompletion::RandomSampleCapped, 17,),
-        Some(17),
-        "random CountPages must use the sampled visible count instead of a permission-dependent literal fallback",
+        None,
+        "a capped random CountPages scan must stay literal instead of exposing a sampled hidden-page ratio",
     );
 }
 
@@ -1943,7 +1944,7 @@ fn data_form_candidate_cap_requires_original_listpages_and_countpages_modules() 
 }
 
 #[test]
-fn capped_random_scan_uses_the_privacy_preserving_sample_count() {
+fn capped_random_scan_remains_literal_for_privacy() {
     assert_eq!(
         count_pages_raw_scan_completion(MAX_LISTPAGES_RENDER_SCAN_ROWS as usize - 1,),
         CountPagesRawScanCompletion::Complete,
@@ -1955,16 +1956,15 @@ fn capped_random_scan_uses_the_privacy_preserving_sample_count() {
         raw_scan_completion,
         CountPagesRawScanCompletion::RandomSampleCapped,
     );
-    assert!(!count_pages_scan_requires_preservation(
+    assert!(count_pages_scan_requires_preservation(
         raw_scan_completion,
         99,
         100,
     ));
-    assert!(!count_pages_scan_requires_preservation(
-        raw_scan_completion,
-        100,
-        100,
-    ));
+    assert!(
+        count_pages_scan_requires_preservation(raw_scan_completion, 100, 100,),
+        "a capped random scan remains literal even when the visible sample fills the requested count"
+    );
     assert!(!count_pages_scan_requires_preservation(
         CountPagesRawScanCompletion::Complete,
         99,
@@ -1978,7 +1978,8 @@ fn list_pages_scan_target_skips_full_inventory_without_a_pager() {
     assert_eq!(list_pages_row_scan_target(100, None, None, 25, true), 126,);
     assert_eq!(
         list_pages_row_scan_target(250, None, Some(250), 0, false),
-        u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
+        250,
+        "a paginated ListPages module without an overall limit only needs its requested page",
     );
     assert_eq!(
         list_pages_row_scan_target(250, Some(1_000), Some(250), 250, false),
@@ -1988,10 +1989,7 @@ fn list_pages_scan_target_skips_full_inventory_without_a_pager() {
         list_pages_row_scan_target(1, Some(5_000), Some(1), 0, false),
         5_000,
     );
-    assert_eq!(
-        list_pages_row_scan_target(1, None, Some(1), 0, false),
-        u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
-    );
+    assert_eq!(list_pages_row_scan_target(1, None, Some(1), 0, false), 1,);
 }
 
 #[test]
@@ -2473,7 +2471,7 @@ fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences()
         protected
             .matches(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
             .count(),
-        3
+        2,
     );
     for module in [
         "[[module Members]]",
@@ -9068,6 +9066,7 @@ fn nested_cross_site_includes_keep_the_original_lookup_site() {
         settings: &settings,
         expand_wikidot_image_blocks: true,
         max_total_includes: 100,
+        render_cost_budget: RenderCostBudget::new_default(),
     };
     let source = IncludeSource {
         site_slug: "scp-wiki".to_owned(),

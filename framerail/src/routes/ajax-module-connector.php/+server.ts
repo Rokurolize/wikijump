@@ -3,7 +3,7 @@ import { authGetSession } from "$lib/server/auth/get-session"
 import { client } from "$lib/server/deepwell"
 import {
   pageEdit,
-  pageGet,
+  pageViewPermission,
   pageParentUpdate,
   wikidotPageDiscussionCreate
 } from "$lib/server/deepwell/page"
@@ -52,11 +52,11 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
   return handleAjaxModuleConnectorRequest(request, {
     siteId,
     canCreateNewPage: async () => (await resolveNewPageUserId()) !== undefined,
-    pageExists: async (slug: string) =>
-      (await pageGet(siteId, slug, {
+    pageExists: (slug: string) =>
+      pageViewPermission(siteId, slug, {
         ...requestContext,
         page: slug
-      })) !== null,
+      }),
     createNewPage: async ({
       slug,
       title,

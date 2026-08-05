@@ -23,6 +23,7 @@ use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::CompatTextFragments;
 use super::super::include_comment_branches::remove_unresolved_include_comment_branches;
 use super::super::literal_regions::{ListPagesSourceProjection, LiteralRegionIndex};
+use super::super::render_budget::SharedRenderCostBudget;
 use super::super::runtime::IncludeSourceCache;
 use super::super::service::{IncludeExpansion, IncludeExpansionBudget, RenderService};
 use super::scanner::{CountPagesCloseReachabilityIndex, ListPagesModuleMatch};
@@ -486,6 +487,7 @@ pub(in crate::services::render) async fn expand_list_pages_generated_includes(
     include_source_cache: &mut IncludeSourceCache,
     compat_text: &mut CompatTextFragments,
     include_budget: &mut IncludeExpansionBudget,
+    render_cost_budget: &SharedRenderCostBudget,
     initial_remaining_include_expansions: usize,
 ) -> Result<()> {
     let IncludeExpansion {
@@ -505,6 +507,7 @@ pub(in crate::services::render) async fn expand_list_pages_generated_includes(
             compat_text,
             expand_wikidot_image_blocks: true,
             budget: *include_budget,
+            render_cost_budget: render_cost_budget.clone(),
         },
     )
     .await?;
@@ -563,13 +566,14 @@ pub(in crate::services::render) struct ListPagesContentCache {
         BTreeMap<(i64, i64), Option<usize>>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(in crate::services::render) struct ListPagesExpansionOptions<'a> {
     pub(in crate::services::render) current_site_id: Option<i64>,
     pub(in crate::services::render) current_page_id: Option<i64>,
     pub(in crate::services::render) page_preview: bool,
     pub(in crate::services::render) viewer_user_id: Option<i64>,
     pub(in crate::services::render) include_budget: IncludeExpansionBudget,
+    pub(in crate::services::render) render_cost_budget: SharedRenderCostBudget,
 
     /// The Wikidot URL path arguments this request carried.
     pub(in crate::services::render) url: UrlArguments<'a>,

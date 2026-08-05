@@ -49,6 +49,7 @@ mod pages;
 mod pages_by_tag;
 mod percent_encoding;
 mod rate_module;
+mod render_budget;
 mod render_dependency;
 mod render_options;
 mod replay;

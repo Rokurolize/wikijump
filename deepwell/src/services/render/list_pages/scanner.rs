@@ -27,6 +27,7 @@ use super::super::literal_regions::{
     wikidot_right_bracket_token, wikidot_trimmed_name,
 };
 use super::super::module_arguments::wikidot_list_pages_arguments;
+use super::super::render_budget::SharedRenderCostBudget;
 #[path = "scanner/count_reachability.rs"]
 mod count_reachability;
 #[path = "scanner/legacy_heads.rs"]
@@ -58,6 +59,12 @@ use std::cell::Cell;
 use std::ops::Range;
 
 const SPECULATIVE_WORK_LIMIT_MULTIPLIER: usize = 8;
+const SCANNER_COST_UNIT_BYTES: usize = 1024;
+
+#[inline]
+fn scanner_budget_is_exhausted(budget: Option<&SharedRenderCostBudget>) -> bool {
+    budget.is_some_and(|budget| budget.is_exhausted())
+}
 
 pub(in crate::services::render) fn has_list_pages_module_opening_candidate(
     source: &str,
@@ -214,6 +221,8 @@ fn generated_gate_module_close(source: &str, body_start: usize) -> Option<usize>
     let suffix = &source[body_start..];
     let close_len = b"[[/module]]".len();
     let mut search = 0;
+    let mut next_range = 0usize;
+    let mut furthest_inactive_end = 0usize;
     while let Some(close) = suffix
         .as_bytes()
         .get(search..)
@@ -223,10 +232,15 @@ fn generated_gate_module_close(source: &str, body_start: usize) -> Option<usize>
     {
         let close = search + close;
         let absolute = body_start + close;
-        if !inactive_branch_ranges
-            .iter()
-            .any(|range| range.contains(&absolute))
+        while let Some(range) = inactive_branch_ranges.get(next_range)
+            && range.start <= absolute
         {
+            record_generated_gate_range_comparison();
+            furthest_inactive_end = furthest_inactive_end.max(range.end);
+            next_range += 1;
+        }
+        record_generated_gate_range_comparison();
+        if furthest_inactive_end <= absolute {
             return Some(absolute + close_len);
         }
         search = close + 1;
@@ -294,6 +308,8 @@ const MAX_PROJECTED_SCANNER_WORK_MULTIPLIER: usize = 32;
 thread_local! {
     static MODULE_HEAD_SCAN_BYTES: Cell<usize> = const { Cell::new(0) };
     static PROJECTION_OFFSET_ADVANCES: Cell<usize> = const { Cell::new(0) };
+    static GENERATED_GATE_RANGE_COMPARISONS: Cell<usize> = const { Cell::new(0) };
+    static LOWERCASE_SOURCE_BYTES: Cell<usize> = const { Cell::new(0) };
 }
 
 #[inline]
@@ -320,6 +336,31 @@ fn record_projection_offset_advances(count: usize) {
 #[cfg(test)]
 fn take_projection_offset_advances() -> usize {
     PROJECTION_OFFSET_ADVANCES.with(|total| total.replace(0))
+}
+
+#[inline]
+fn record_generated_gate_range_comparison() {
+    #[cfg(test)]
+    GENERATED_GATE_RANGE_COMPARISONS
+        .with(|total| total.set(total.get().saturating_add(1)));
+}
+
+#[cfg(test)]
+fn take_generated_gate_range_comparisons() -> usize {
+    GENERATED_GATE_RANGE_COMPARISONS.with(|total| total.replace(0))
+}
+
+#[inline]
+fn record_lowercase_source_bytes(count: usize) {
+    #[cfg(test)]
+    LOWERCASE_SOURCE_BYTES.with(|total| total.set(total.get().saturating_add(count)));
+    #[cfg(not(test))]
+    let _ = count;
+}
+
+#[cfg(test)]
+fn take_lowercase_source_bytes() -> usize {
+    LOWERCASE_SOURCE_BYTES.with(|total| total.replace(0))
 }
 
 #[derive(Debug)]
@@ -2222,31 +2263,93 @@ fn find_list_pages_module_matches_with_cursor_work_context(
     source: &str,
     allow_literal_documentation_example: bool,
 ) -> (Vec<ListPagesModuleMatch<'_>>, usize, usize) {
+    record_lowercase_source_bytes(source.len());
     let lowercase = source.to_ascii_lowercase();
+    find_list_pages_module_matches_with_cursor_work_context_lowercase(
+        source,
+        &lowercase,
+        allow_literal_documentation_example,
+        None,
+    )
+}
+
+pub(in crate::services::render) fn find_list_pages_module_matches_with_budget<'a>(
+    source: &'a str,
+    budget: &SharedRenderCostBudget,
+) -> Vec<ListPagesModuleMatch<'a>> {
+    record_lowercase_source_bytes(source.len());
+    let lowercase = source.to_ascii_lowercase();
+    find_list_pages_module_matches_with_cursor_work_context_lowercase(
+        source,
+        &lowercase,
+        false,
+        Some(budget),
+    )
+    .0
+}
+
+fn find_list_pages_module_matches_with_cursor_work_context_lowercase<'a>(
+    source: &'a str,
+    lowercase: &str,
+    allow_literal_documentation_example: bool,
+    budget: Option<&SharedRenderCostBudget>,
+) -> (Vec<ListPagesModuleMatch<'a>>, usize, usize) {
+    if let Some(budget) = budget {
+        let requested = source.len().saturating_add(SCANNER_COST_UNIT_BYTES - 1)
+            / SCANNER_COST_UNIT_BYTES;
+        if budget
+            .charge(requested.max(1) as u64, "ListPages source scanner")
+            .is_err()
+        {
+            return (Vec::new(), 0, 0);
+        }
+    }
     if !lowercase.contains("[[") {
         return (Vec::new(), 0, 0);
     }
     if !lowercase.contains("listpages") {
         return (Vec::new(), source.len(), 0);
     }
-    if let Some((module, end)) =
-        legacy_at_marker_footnote_default_list_pages(source, &lowercase)
+    let mut legacy_matches = Vec::new();
+    let mut legacy_source = source;
+    let mut legacy_lowercase = lowercase;
+    let mut legacy_offset = 0usize;
+    while let Some((mut module, end)) =
+        legacy_at_marker_footnote_default_list_pages(legacy_source, legacy_lowercase)
     {
-        if end == source.len() {
-            return (vec![module], source.len(), 0);
+        module.start += legacy_offset;
+        module.body_start += legacy_offset;
+        module.end += legacy_offset;
+        legacy_matches.push(module);
+        legacy_offset += end;
+        if end == legacy_source.len() {
+            return (legacy_matches, source.len(), 0);
         }
+        legacy_source = &legacy_source[end..];
+        legacy_lowercase = &legacy_lowercase[end..];
+    }
+    if legacy_offset != 0 {
         let (mut matches, work, literal_advances) =
-            find_list_pages_module_matches_with_cursor_work_context(
-                &source[end..],
+            find_list_pages_module_matches_with_cursor_work_context_lowercase(
+                legacy_source,
+                legacy_lowercase,
                 allow_literal_documentation_example,
+                budget,
             );
-        for module in &mut matches {
-            module.start += end;
-            module.body_start += end;
-            module.end += end;
+        if scanner_budget_is_exhausted(budget) {
+            return (Vec::new(), 0, 0);
         }
-        matches.insert(0, module);
-        return (matches, end.saturating_add(work), literal_advances);
+        for module in &mut matches {
+            module.start += legacy_offset;
+            module.body_start += legacy_offset;
+            module.end += legacy_offset;
+        }
+        legacy_matches.extend(matches);
+        return (
+            legacy_matches,
+            legacy_offset.saturating_add(work),
+            literal_advances,
+        );
     }
     let projection = ListPagesSourceProjection::new(source);
     let projected_lowercase = projection
@@ -2269,7 +2372,7 @@ fn find_list_pages_module_matches_with_cursor_work_context(
         }
     };
     let direct_scanner =
-        ModuleEventScanner::new(source, &lowercase, &direct_literal_regions);
+        ModuleEventScanner::new(source, lowercase, &direct_literal_regions);
     let (
         mut direct_events,
         mut direct_work,
@@ -2286,17 +2389,22 @@ fn find_list_pages_module_matches_with_cursor_work_context(
 
     if let Some(boundary) = preserved_at_marker_documentation_opening(
         source,
-        &lowercase,
+        lowercase,
         &direct_events,
         allow_literal_documentation_example,
     ) {
         let mut total_work = direct_work.saturating_add(direct_literal_advances);
         let mut total_literal_advances = direct_literal_advances;
         let (mut matches, prefix_work, prefix_literal_advances) =
-            find_list_pages_module_matches_with_cursor_work_context(
+            find_list_pages_module_matches_with_cursor_work_context_lowercase(
                 &source[..boundary.start],
+                &lowercase[..boundary.start],
                 false,
+                budget,
             );
+        if scanner_budget_is_exhausted(budget) {
+            return (Vec::new(), 0, 0);
+        }
         total_work = total_work.saturating_add(prefix_work);
         total_literal_advances =
             total_literal_advances.saturating_add(prefix_literal_advances);
@@ -2316,10 +2424,15 @@ fn find_list_pages_module_matches_with_cursor_work_context(
         });
 
         let (mut suffix_matches, suffix_work, suffix_literal_advances) =
-            find_list_pages_module_matches_with_cursor_work_context(
+            find_list_pages_module_matches_with_cursor_work_context_lowercase(
                 &source[boundary.resume..],
+                &lowercase[boundary.resume..],
                 true,
+                budget,
             );
+        if scanner_budget_is_exhausted(budget) {
+            return (Vec::new(), 0, 0);
+        }
         for module in &mut suffix_matches {
             module.start += boundary.resume;
             module.body_start += boundary.resume;
@@ -2339,7 +2452,7 @@ fn find_list_pages_module_matches_with_cursor_work_context(
     if !changed_quote_ranges.is_empty() {
         let recovery_literals = LiteralRegionIndex::new_wikidot_syntax(source);
         let recovery_scanner =
-            ModuleEventScanner::new(source, &lowercase, &recovery_literals);
+            ModuleEventScanner::new(source, lowercase, &recovery_literals);
         let (recovery_events, recovery_work, recovery_advances, recovery_ambiguous) =
             collect_module_events(recovery_scanner);
         if recovery_ambiguous {
@@ -2539,10 +2652,15 @@ fn find_list_pages_module_matches_with_cursor_work_context(
                 consume_empty_tail: false,
             });
             let (mut suffix_matches, suffix_work, suffix_literal_advances) =
-                find_list_pages_module_matches_with_cursor_work_context(
+                find_list_pages_module_matches_with_cursor_work_context_lowercase(
                     &source[end..],
+                    &lowercase[end..],
                     false,
+                    budget,
                 );
+            if scanner_budget_is_exhausted(budget) {
+                return (Vec::new(), 0, 0);
+            }
             for suffix_module in &mut suffix_matches {
                 suffix_module.start += end;
                 suffix_module.body_start += end;
@@ -2603,10 +2721,15 @@ fn find_list_pages_module_matches_with_cursor_work_context(
                     consume_empty_tail: true,
                 });
                 let (mut suffix_matches, suffix_work, suffix_literal_advances) =
-                    find_list_pages_module_matches_with_cursor_work_context(
+                    find_list_pages_module_matches_with_cursor_work_context_lowercase(
                         &source[end..],
+                        &lowercase[end..],
                         false,
+                        budget,
                     );
+                if scanner_budget_is_exhausted(budget) {
+                    return (Vec::new(), 0, 0);
+                }
                 for suffix_module in &mut suffix_matches {
                     suffix_module.start += end;
                     suffix_module.body_start += end;
@@ -2666,9 +2789,15 @@ fn find_list_pages_module_matches_with_cursor_work_context(
                         consume_empty_tail: false,
                     });
                     let (mut suffix_matches, suffix_work, suffix_literal_advances) =
-                        find_list_pages_module_matches_with_cursor_work_context(
-                            suffix, false,
+                        find_list_pages_module_matches_with_cursor_work_context_lowercase(
+                            suffix,
+                            &lowercase[module.body_start..],
+                            false,
+                            budget,
                         );
+                    if scanner_budget_is_exhausted(budget) {
+                        return (Vec::new(), 0, 0);
+                    }
                     for suffix_module in &mut suffix_matches {
                         suffix_module.start += module.body_start;
                         suffix_module.body_start += module.body_start;

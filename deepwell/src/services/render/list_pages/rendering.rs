@@ -24,6 +24,9 @@ use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text
 use super::super::literal_regions::{
     ListPagesSourceProjection, LiteralRegionIndex, collect_list_pages_css_yield_openers,
 };
+use super::super::render_budget::{
+    MAX_SELECTED_CONTENT_RENDER_DEPTH, SharedRenderCostBudget,
+};
 use super::super::render_options::{RenderContext, RenderInnerOptions};
 use super::super::runtime::{IncludeSourceCache, RenderRuntime};
 use super::super::runtime_page_queries::{
@@ -68,7 +71,7 @@ use super::{
     count_pages_scan_requires_preservation, count_pages_should_remain_literal,
     count_pages_unbounded_total, exact_name_list_pages_batch_key,
     expand_list_pages_generated_includes,
-    find_list_pages_module_matches_with_delayed_links,
+    find_list_pages_module_matches_with_delayed_links_budgeted,
     finish_or_defer_list_pages_delayed_output_with_modes, is_list_pages_visible_tag,
     list_pages_argument_error_with_parent_precedence,
     list_pages_body_starts_with_preparsed_block, list_pages_body_uses_first_image,
@@ -83,7 +86,7 @@ use super::{
     list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
     load_list_pages_data_form_definitions, load_list_pages_first_images,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
-    parse_list_pages_arguments_with_url, prepare_delayed_list_pages_row,
+    parse_list_pages_arguments_with_url, prepare_delayed_list_pages_row_with_budget,
     prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
     protect_ajax_module_literal_markers, push_list_pages_generated_output,
     push_list_pages_generated_output_with_cost, push_list_pages_pager,
@@ -153,6 +156,7 @@ impl RenderService {
             page_preview,
             viewer_user_id,
             mut include_budget,
+            render_cost_budget,
             url,
             pager_route,
         } = options;
@@ -212,7 +216,10 @@ impl RenderService {
                 ListPagesBlockPlan::Static(replacement)
             }
         };
-        let module_matches = find_list_pages_module_matches_with_delayed_links(&wikitext);
+        let module_matches = find_list_pages_module_matches_with_delayed_links_budgeted(
+            &wikitext,
+            &render_cost_budget,
+        );
         let css_yield_openers = collect_list_pages_css_yield_openers(&wikitext);
         let mut css_yield_opener_index = 0usize;
         let module_source_bytes = module_matches.iter().fold(0usize, |total, module| {
@@ -686,6 +693,7 @@ impl RenderService {
                         arguments,
                         &template,
                         include_budget,
+                        &render_cost_budget,
                         prefetched_pages,
                         prefetched_displays.as_ref(),
                         &mut content_cache,
@@ -799,6 +807,7 @@ impl RenderService {
                         arguments,
                         &template,
                         include_budget,
+                        &render_cost_budget,
                         None,
                         None,
                         &mut content_cache,
@@ -890,6 +899,7 @@ impl RenderService {
             include_source_cache,
             compat_text,
             &mut include_budget,
+            &render_cost_budget,
             initial_remaining_include_expansions,
         )
         .await?;
@@ -914,6 +924,7 @@ impl RenderService {
                     page_preview,
                     viewer_user_id,
                     include_budget,
+                    render_cost_budget: render_cost_budget.clone(),
                     url,
                     pager_route,
                 },
@@ -1330,6 +1341,7 @@ impl RenderService {
         arguments: ListPagesArguments,
         template: &ListPagesTemplatePlan,
         include_budget: IncludeExpansionBudget,
+        render_cost_budget: &SharedRenderCostBudget,
         mut prefetched_pages: Option<FoundPages>,
         prefetched_displays: Option<&ListPagesBatchDisplays>,
         content_cache: &mut ListPagesContentCache,
@@ -1508,6 +1520,36 @@ impl RenderService {
                 Some(Reference::Slug(Cow::Borrowed(slug)))
             })
             .collect::<Vec<_>>();
+        let link_to_references = if link_to_references.is_empty() {
+            Vec::new()
+        } else {
+            let target_pages =
+                PageService::get_pages(ctx, current_site_id, &link_to_references).await?;
+            let mut viewable_target_ids = Vec::new();
+            for target in target_pages {
+                let can_view = PermissionService::check_user_can(
+                    ctx,
+                    &CheckPermissionContext {
+                        user_id: viewer_user_id,
+                        site_id: target.site_id,
+                        page_reference: Some(Reference::Id(target.page_id)),
+                    },
+                    Permission {
+                        resource_type: Resource::Page,
+                        resource_category: Some(Reference::Id(target.page_category_id)),
+                        action: Action::View,
+                    },
+                )
+                .await?;
+                if can_view {
+                    viewable_target_ids.push(Reference::Id(target.page_id));
+                }
+            }
+            viewable_target_ids
+        };
+        let link_to_has_no_viewable_targets =
+            link_to.iter().any(|slug| slug.as_ref() != ".")
+                && link_to_references.is_empty();
         let static_parent_references = static_parent_fullname
             .as_ref()
             .map(|parent| [Reference::Slug(Cow::Borrowed(parent.as_ref()))]);
@@ -1647,7 +1689,8 @@ impl RenderService {
             || missing_current_page_for_selector
             || (same_visible_tags && current_visible_tags.is_empty())
             || current_page_only
-            || prefetched_pages.is_some();
+            || prefetched_pages.is_some()
+            || link_to_has_no_viewable_targets;
         let exact_total_from_scan =
             if template.uses_total() && !rows_are_complete_without_query {
                 let mut total_query = query.clone();
@@ -1694,6 +1737,7 @@ impl RenderService {
             || votes_equal_current_zero_votes
             || missing_current_page_for_selector
             || (same_visible_tags && current_visible_tags.is_empty())
+            || link_to_has_no_viewable_targets
         {
             FoundPages { pages: Vec::new() }
         } else if current_page_only
@@ -2031,7 +2075,14 @@ impl RenderService {
             ));
         }
         let child_counts = if wants_children {
-            load_list_pages_child_counts(ctx, &pages).await?
+            match load_list_pages_child_counts(ctx, viewer_user_id, &pages).await? {
+                Some(counts) => counts,
+                None => {
+                    return Ok(ListPagesBlockRenderResult::PreserveOriginal(
+                        "child permission scan exceeded its safety bound",
+                    ));
+                }
+            }
         } else {
             BTreeMap::new()
         };
@@ -2067,7 +2118,7 @@ impl RenderService {
             BTreeMap::new()
         };
         let relational_parent_displays = if wants_parent_metadata {
-            load_list_pages_parent_displays(ctx, &pages).await?
+            load_list_pages_parent_displays(ctx, viewer_user_id, &pages).await?
         } else {
             BTreeMap::new()
         };
@@ -2275,6 +2326,7 @@ impl RenderService {
                                     current_site_id,
                                     viewer_user_id,
                                     max_include_expansions,
+                                    render_cost_budget.clone(),
                                     url,
                                 )
                                 .await?,
@@ -2299,6 +2351,7 @@ impl RenderService {
                                         current_site_id,
                                         viewer_user_id,
                                         max_include_expansions,
+                                        render_cost_budget.clone(),
                                         url,
                                     )
                                     .await?,
@@ -2330,6 +2383,7 @@ impl RenderService {
                                         current_site_id,
                                         viewer_user_id,
                                         max_include_expansions,
+                                        render_cost_budget.clone(),
                                         url,
                                     )
                                     .await?,
@@ -2418,7 +2472,7 @@ impl RenderService {
             } else {
                 Cow::Borrowed(body)
             };
-            let prepared_row = prepare_delayed_list_pages_row(
+            let prepared_row = prepare_delayed_list_pages_row_with_budget(
                 template,
                 row_body.as_ref(),
                 page,
@@ -2429,6 +2483,7 @@ impl RenderService {
                 compat_text,
                 uses_star_rating,
                 numbered_link_titles.as_ref(),
+                Some(render_cost_budget),
             );
             if let Some(fragments) = prepared_row.html_fragments {
                 delayed_html_fragments.push(fragments);

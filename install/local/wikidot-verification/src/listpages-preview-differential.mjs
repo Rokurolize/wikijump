@@ -6,6 +6,7 @@ import {
   validateWikidotReference,
   visibleText,
 } from "./syntax-differential.mjs";
+import {localCanonicalDom, localVisibleText} from "./local-output-comparison.mjs";
 import {
   observeListPagesRuntimeAuthority,
   validateListPagesRuntimeObservation,
@@ -347,11 +348,11 @@ async function mapWithConcurrency(values, concurrency, worker) {
 export function compareListPagesPreviewHtml(reference, localHtml) {
   const liveHtml = reference.raw_html;
   const liveDom = canonicalDom(liveHtml);
-  const localDom = canonicalDom(localHtml);
+  const localDom = localCanonicalDom(localHtml);
   const domMatches = JSON.stringify(liveDom) === JSON.stringify(localDom);
   const liveVisibleText = visibleText(liveHtml);
-  const localVisibleText = visibleText(localHtml);
-  const textMatches = liveVisibleText === localVisibleText;
+  const localText = localVisibleText(localHtml);
+  const textMatches = liveVisibleText === localText;
   return {
     status: domMatches && textMatches ? "match" : "mismatch",
     checks: {
@@ -362,7 +363,7 @@ export function compareListPagesPreviewHtml(reference, localHtml) {
       visible_text: {
         status: textMatches ? "match" : "mismatch",
         live: liveVisibleText,
-        local: localVisibleText,
+        local: localText,
       },
     },
     identities: {
@@ -459,7 +460,7 @@ export async function runListPagesPreviewDifferential({
         local: {
           raw_html: preview.body,
           html_sha256: sha256(preview.body),
-          visible_text: visibleText(preview.body),
+          visible_text: localVisibleText(preview.body),
           styles: Array.isArray(preview.styles) ? preview.styles : [],
         },
         comparison: compareListPagesPreviewHtml(reference, preview.body),

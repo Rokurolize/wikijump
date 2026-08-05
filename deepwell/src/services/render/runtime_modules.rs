@@ -4,6 +4,7 @@ mod rate;
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::future::Future;
 use std::sync::LazyLock;
 
 use regex::Regex;
@@ -29,7 +30,7 @@ use super::percent_encoding::percent_encode_path_segment;
 use super::rate_module::{
     render_read_only_rate_module, render_read_only_star_rate_module,
 };
-use super::runtime_page_queries::find_viewable_list_pages_rows;
+use super::runtime_page_queries::find_viewable_list_pages_rows_with_batch_floor;
 use super::service::{
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PAGECALENDAR_MODULE_REGEX, RATE_MODULE_REGEX,
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
@@ -81,6 +82,10 @@ const USERINFO_NO_USER_HTML: &str =
     r#"<div class="error-block">No user specified.</div>"#;
 const SEARCHUSERS_DISABLED_HTML: &str = r#"<div class="error-block">User search has been (temporarily) disabled. Sorry!</div>"#;
 const THEME_PREVIEWER_PREVIEW_ERROR_HTML: &str = r#"<div class="error-block">Preview mode error: please contact Wikidot.com for a better error message</div>"#;
+/// Bound executable NewPage modules in one render. Modules beyond this bound
+/// remain authored text so a page cannot multiply template lookups without
+/// limit.
+pub(super) const MAX_NEW_PAGE_MODULES_PER_RENDER: usize = 64;
 const MEMBERSHIP_EMAIL_INVITATION_MISSING_HTML: &str = concat!(
     r#"<div id="membership-email-invitation-box">"#,
     "\n\t\n\t\t\t<p>\n\t\t\t",
@@ -179,10 +184,58 @@ static FEATUREDSITE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         .expect("FeaturedSite module expression is valid")
 });
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default)]
+struct MembershipByPasswordResultCache {
+    rendered: Option<Option<&'static str>>,
+}
+
+impl MembershipByPasswordResultCache {
+    async fn get_or_init<F, Fut>(&mut self, load: F) -> Result<Option<&'static str>>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Option<&'static str>>>,
+    {
+        if let Some(rendered) = self.rendered {
+            return Ok(rendered);
+        }
+
+        let rendered = load().await?;
+        self.rendered = Some(rendered);
+        Ok(rendered)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum PageCalendarCategorySelector {
     All,
     Names(Vec<String>),
+}
+
+type PageCalendarCounts = Option<BTreeMap<i32, BTreeMap<u8, usize>>>;
+
+#[derive(Default)]
+struct PageCalendarCountsCache {
+    counts: HashMap<PageCalendarCategorySelector, PageCalendarCounts>,
+}
+
+impl PageCalendarCountsCache {
+    async fn get_or_init<F, Fut>(
+        &mut self,
+        category: PageCalendarCategorySelector,
+        load: F,
+    ) -> Result<PageCalendarCounts>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<PageCalendarCounts>>,
+    {
+        if let Some(counts) = self.counts.get(&category) {
+            return Ok(counts.clone());
+        }
+
+        let counts = load().await?;
+        self.counts.insert(category, counts.clone());
+        Ok(counts)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -484,26 +537,28 @@ async fn resolve_new_page_templates(
     ctx: &ServiceContext<'_>,
     current_site_id: Option<i64>,
     head: &str,
-) -> Result<NewPageTemplateRendering> {
-    let names = new_page_template_names(head);
+) -> Result<Option<NewPageTemplateRendering>> {
+    let Some(names) = new_page_template_names(head) else {
+        return Ok(None);
+    };
     if names.is_empty() {
-        return Ok(NewPageTemplateRendering::None);
+        return Ok(Some(NewPageTemplateRendering::None));
     }
 
     let Some(site_id) = current_site_id else {
-        return Ok(NewPageTemplateRendering::Error(format!(
+        return Ok(Some(NewPageTemplateRendering::Error(format!(
             "Template \"{}\" can not be found.",
             names[0],
-        )));
+        ))));
     };
 
     let mut options = Vec::with_capacity(names.len());
     for name in names {
         let normalized = normalize_page_slug(name);
         if split_category(&normalized).0 != Some("template") {
-            return Ok(NewPageTemplateRendering::Error(format!(
+            return Ok(Some(NewPageTemplateRendering::Error(format!(
                 "\"{name}\" is not in the \"template:\" category.",
-            )));
+            ))));
         }
         let lookup_slug = trim_default(&normalized).to_owned();
         let Some(page) = PageService::get_optional(
@@ -513,9 +568,9 @@ async fn resolve_new_page_templates(
         )
         .await?
         else {
-            return Ok(NewPageTemplateRendering::Error(format!(
+            return Ok(Some(NewPageTemplateRendering::Error(format!(
                 "Template \"{name}\" can not be found.",
-            )));
+            ))));
         };
         let can_view = PermissionService::check_user_can(
             ctx,
@@ -532,9 +587,9 @@ async fn resolve_new_page_templates(
         )
         .await?;
         if !can_view {
-            return Ok(NewPageTemplateRendering::Error(format!(
+            return Ok(Some(NewPageTemplateRendering::Error(format!(
                 "Template \"{name}\" can not be found.",
-            )));
+            ))));
         }
         let revision =
             PageRevisionService::get_latest(ctx, site_id, page.page_id).await?;
@@ -544,13 +599,17 @@ async fn resolve_new_page_templates(
         });
     }
 
-    Ok(match options.len() {
+    Ok(Some(match options.len() {
         0 => NewPageTemplateRendering::None,
         1 => NewPageTemplateRendering::Single(
             options.into_iter().next().expect("len was checked above"),
         ),
         _ => NewPageTemplateRendering::Multiple(options),
-    })
+    }))
+}
+
+fn new_page_module_budget_exceeded(module_count: usize) -> bool {
+    module_count >= MAX_NEW_PAGE_MODULES_PER_RENDER
 }
 
 fn parse_rated_pages_arguments(head: &str) -> Option<RatedPagesArguments> {
@@ -1372,7 +1431,12 @@ impl RenderService {
         settings: &WikitextSettings,
         compat_html: &mut CompatHtmlFragments,
     ) -> String {
-        Self::expand_registry_modules_matching(wikitext, settings, compat_html, |_| true)
+        // NewPage is expanded by the runtime-backed pass above. Keeping it
+        // out of this context-free fallback is what lets that pass preserve
+        // over-budget or otherwise unsupported modules literally.
+        Self::expand_registry_modules_matching(wikitext, settings, compat_html, |name| {
+            !name.eq_ignore_ascii_case("NewPage")
+        })
     }
 
     fn expand_registry_modules_matching(
@@ -1479,6 +1543,7 @@ impl RenderService {
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
+        let mut module_count = 0;
         for captures in NEWPAGE_MODULE_REGEX.captures_iter(&wikitext) {
             let matched = captures
                 .get(0)
@@ -1486,10 +1551,17 @@ impl RenderService {
             if literal_regions.contains(matched.start()) {
                 continue;
             }
+            if new_page_module_budget_exceeded(module_count) {
+                continue;
+            }
+            module_count += 1;
             output.push_str(&wikitext[cursor..matched.start()]);
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
-            let templates =
-                resolve_new_page_templates(ctx, current_site_id, head).await?;
+            let Some(templates) =
+                resolve_new_page_templates(ctx, current_site_id, head).await?
+            else {
+                continue;
+            };
             let rendered = render_new_page_module(head, templates);
             output.push_str(&compat_html.push_html(rendered));
             cursor = matched.end();
@@ -1793,6 +1865,7 @@ impl RenderService {
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
+        let mut result_cache = MembershipByPasswordResultCache::default();
         for captures in MEMBERSHIPBYPASSWORD_MODULE_REGEX.captures_iter(&wikitext) {
             let matched = captures
                 .get(0)
@@ -1804,13 +1877,16 @@ impl RenderService {
             if !head.trim().is_empty() {
                 continue;
             }
-            let Some(rendered) = Self::render_membership_by_password_module(
-                ctx,
-                current_site_id,
-                viewer_user_id,
-            )
-            .await?
-            else {
+            let rendered = result_cache
+                .get_or_init(|| {
+                    Self::render_membership_by_password_module(
+                        ctx,
+                        current_site_id,
+                        viewer_user_id,
+                    )
+                })
+                .await?;
+            let Some(rendered) = rendered else {
                 continue;
             };
             output.push_str(&wikitext[cursor..matched.start()]);
@@ -2130,13 +2206,14 @@ impl RenderService {
             },
         };
         let mut permission_cache = BTreeMap::new();
-        let rows = find_viewable_list_pages_rows(
+        let rows = find_viewable_list_pages_rows_with_batch_floor(
             ctx,
             None,
             query,
             arguments.limit,
             &mut permission_cache,
             None,
+            arguments.limit as u64,
         )
         .await?;
         let runtime_displays = if arguments.comments {
@@ -2242,6 +2319,7 @@ impl RenderService {
             .map(Cow::as_ref);
         let mut expanded = String::with_capacity(wikitext.len());
         let mut cursor = 0;
+        let mut counts_cache = PageCalendarCountsCache::default();
 
         for captures in PAGECALENDAR_MODULE_REGEX.captures_iter(&wikitext) {
             let matched = captures
@@ -2258,15 +2336,18 @@ impl RenderService {
                 continue;
             };
             expanded.push_str(&wikitext[cursor..matched.start()]);
-            match Self::load_page_calendar_counts(
-                ctx,
-                current_site_id,
-                current_page_id,
-                current_branch_tag,
-                &arguments.categories,
-            )
-            .await?
-            {
+            let counts = counts_cache
+                .get_or_init(arguments.categories.clone(), || {
+                    Self::load_page_calendar_counts(
+                        ctx,
+                        current_site_id,
+                        current_page_id,
+                        current_branch_tag,
+                        &arguments.categories,
+                    )
+                })
+                .await?;
+            match counts {
                 Some(counts) => {
                     expanded.push_str(&compat_html.push_block_html(
                         render_page_calendar_module(&arguments, &counts),
@@ -2542,4 +2623,85 @@ fn wikidot_scope_head_is(source: &str, start: usize, expected: &str) -> bool {
         return false;
     };
     tail[..end].trim().eq_ignore_ascii_case(expected)
+}
+
+#[cfg(test)]
+mod membership_by_password_tests {
+    use std::cell::Cell;
+
+    use super::MembershipByPasswordResultCache;
+
+    #[tokio::test]
+    async fn repeated_membership_modules_reuse_the_same_render_result() {
+        let loads = Cell::new(0);
+        let mut cache = MembershipByPasswordResultCache::default();
+
+        let first = cache
+            .get_or_init(|| async {
+                loads.set(loads.get() + 1);
+                Ok(Some("member"))
+            })
+            .await
+            .expect("the first membership lookup should succeed");
+        let second = cache
+            .get_or_init(|| async {
+                panic!("a cached membership result must not query again");
+                #[allow(unreachable_code)]
+                Ok(None)
+            })
+            .await
+            .expect("the cached membership result should succeed");
+
+        assert_eq!(first, Some("member"));
+        assert_eq!(second, Some("member"));
+        assert_eq!(loads.get(), 1);
+    }
+}
+
+#[cfg(test)]
+mod page_calendar_tests {
+    use std::cell::Cell;
+
+    use super::{PageCalendarCategorySelector, PageCalendarCountsCache};
+
+    #[tokio::test]
+    async fn repeated_page_calendar_modules_reuse_the_same_counts() {
+        let loads = Cell::new(0);
+        let mut cache = PageCalendarCountsCache::default();
+        let category = PageCalendarCategorySelector::All;
+
+        let first = cache
+            .get_or_init(category.clone(), || async {
+                loads.set(loads.get() + 1);
+                Ok(Some(Default::default()))
+            })
+            .await
+            .expect("the first calendar query should succeed");
+        let second = cache
+            .get_or_init(category, || async {
+                panic!("a cached calendar result must not query again");
+                #[allow(unreachable_code)]
+                Ok(None)
+            })
+            .await
+            .expect("the cached calendar query should succeed");
+
+        assert_eq!(first, second);
+        assert_eq!(loads.get(), 1);
+    }
+}
+
+#[cfg(test)]
+mod new_page_budget_tests {
+    use super::{MAX_NEW_PAGE_MODULES_PER_RENDER, new_page_module_budget_exceeded};
+
+    #[test]
+    fn preserves_modules_after_the_per_render_budget() {
+        assert!(!new_page_module_budget_exceeded(
+            MAX_NEW_PAGE_MODULES_PER_RENDER - 1
+        ));
+        assert!(new_page_module_budget_exceeded(
+            MAX_NEW_PAGE_MODULES_PER_RENDER
+        ));
+    }
 }

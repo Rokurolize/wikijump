@@ -129,6 +129,21 @@ export async function pageGet(
   )
 }
 
+export async function pageViewPermission(
+  siteId: number,
+  page: number | string,
+  requestContext: RequestContext = {}
+): Promise<boolean> {
+  return client.request(
+    "page_view_permission",
+    {
+      site_id: siteId,
+      page
+    },
+    requestContext
+  )
+}
+
 export async function pageEditPermission(
   requestContext: RequestContext = {}
 ): Promise<{ can_edit: boolean }> {
