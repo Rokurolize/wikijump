@@ -12,6 +12,19 @@ test("Wikidot-compatible collapsibles preserve legacy interaction", async ({ pag
 
   await page.goto("/wikidot-collapsible")
 
+  await expect
+    .poll(() =>
+      page
+        .locator("#page-content")
+        .evaluate(
+          (element) =>
+            Array.from(element.childNodes).filter(
+              (node) => node.nodeType === Node.COMMENT_NODE
+            ).length
+        )
+    )
+    .toBe(0)
+
   const folded = page.locator("#folded-collapsible")
   const foldedHandle = folded.locator(":scope > .collapsible-block-folded")
   const unfolded = folded.locator(":scope > .collapsible-block-unfolded")
