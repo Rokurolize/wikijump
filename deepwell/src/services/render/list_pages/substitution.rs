@@ -64,6 +64,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Range;
 use wikidot_normalize::normalize;
 
+#[cfg(test)]
+use std::cell::Cell;
+
 use super::super::compat::CompatHtmlFragments;
 use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
@@ -98,6 +101,16 @@ use super::titles::{
     wikidot_empty_imported_title_label,
 };
 use ftml::{self};
+
+#[cfg(test)]
+thread_local! {
+    static EMPTY_PARAGRAPH_RESTORE_SCANNED_BYTES: Cell<usize> = const { Cell::new(0) };
+}
+
+#[cfg(test)]
+fn take_empty_paragraph_restore_scanned_bytes() -> usize {
+    EMPTY_PARAGRAPH_RESTORE_SCANNED_BYTES.with(|total| total.replace(0))
+}
 
 #[derive(Debug, Clone)]
 pub(in crate::services::render) struct WikidotUserDisplay {
@@ -2023,11 +2036,30 @@ fn list_pages_rendered_inline_fragment(html: &str) -> String {
         .replace("</p>\n<p>", "\n")
         .replace("</p>\r\n<p>", "\n")
         .replace("</p><p>", "\n");
-    empty_paragraphs
-        .into_iter()
-        .fold(joined, |joined, (marker, whitespace)| {
-            joined.replace(&marker, whitespace.as_str())
-        })
+    restore_empty_paragraphs(joined, &empty_paragraphs)
+}
+
+fn restore_empty_paragraphs(joined: String, replacements: &[(String, String)]) -> String {
+    if replacements.is_empty() {
+        return joined;
+    }
+    #[cfg(test)]
+    EMPTY_PARAGRAPH_RESTORE_SCANNED_BYTES
+        .with(|total| total.set(total.get().saturating_add(joined.len())));
+
+    let mut restored = String::with_capacity(joined.len());
+    let mut cursor = 0usize;
+    for (marker, whitespace) in replacements {
+        let Some(relative_start) = joined[cursor..].find(marker) else {
+            continue;
+        };
+        let marker_start = cursor + relative_start;
+        restored.push_str(&joined[cursor..marker_start]);
+        restored.push_str(whitespace);
+        cursor = marker_start + marker.len();
+    }
+    restored.push_str(&joined[cursor..]);
+    restored
 }
 
 fn protect_empty_rendered_paragraphs(value: &str) -> (String, Vec<(String, String)>) {
@@ -2921,6 +2953,26 @@ mod tests {
         let source = "<p>before</p>\n<p>after</p>";
 
         assert_eq!(list_pages_rendered_inline_fragment(source), "before\nafter");
+    }
+
+    #[test]
+    fn empty_paragraph_restoration_does_not_rescan_the_output_per_marker() {
+        let mut source = String::from("<p>before</p>\n");
+        for _ in 0..1_024 {
+            source.push_str("<p>\n</p>\n");
+        }
+        source.push_str("<p>after</p>");
+
+        let rendered = list_pages_rendered_inline_fragment(&source);
+        let scanned_bytes = super::take_empty_paragraph_restore_scanned_bytes();
+
+        assert!(rendered.contains("before"), "{rendered:?}");
+        assert!(rendered.contains("after"), "{rendered:?}");
+        assert!(
+            scanned_bytes <= source.len() * 4,
+            "empty paragraph restoration rescanned {scanned_bytes} bytes for {} source bytes",
+            source.len(),
+        );
     }
 
     #[test]
