@@ -192,14 +192,15 @@ pub(in crate::services::render) fn render_list_pages_wikidot_user(
             r#"<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">"#,
             r#"<a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
             r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
-            r#"alt="{name}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})" />"#,
-            r#"</a><a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">{name}</a>"#,
+            r#"alt="{name_attr}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})" />"#,
+            r#"</a><a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">{name_text}</a>"#,
             r#"</span>"#
         ),
         slug = escape_list_pages_html_attr(slug),
         user_id = user.user_id,
         avatar_timestamp = avatar_timestamp,
-        name = escape_list_pages_html_text(&user.name),
+        name_attr = escape_list_pages_html_attr(&user.name),
+        name_text = escape_list_pages_html_text(&user.name),
     )
 }
 
@@ -220,14 +221,15 @@ pub(in crate::services::render) fn render_list_pages_wikidot_feed_user(
             r#"<span class="printuser avatarhover">"#,
             r#"<a href="http://www.wikidot.com/user:info/{slug}" >"#,
             r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
-            r#"alt="{name}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})" />"#,
-            r#"</a><a href="http://www.wikidot.com/user:info/{slug}" >{name}</a>"#,
+            r#"alt="{name_attr}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})" />"#,
+            r#"</a><a href="http://www.wikidot.com/user:info/{slug}" >{name_text}</a>"#,
             r#"</span>"#
         ),
         slug = escape_list_pages_html_attr(slug),
         user_id = user.user_id,
         avatar_timestamp = avatar_timestamp,
-        name = escape_list_pages_html_text(&user.name),
+        name_attr = escape_list_pages_html_attr(&user.name),
+        name_text = escape_list_pages_html_text(&user.name),
     )
 }
 
@@ -374,5 +376,38 @@ pub(in crate::services::render) fn protect_list_pages_generated_html(
         html
     } else {
         compat_html.push_html(html)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        WikidotUserDisplay, render_list_pages_wikidot_feed_user,
+        render_list_pages_wikidot_user,
+    };
+
+    #[test]
+    fn imported_user_names_are_safe_in_avatar_alt_attributes() {
+        let user = WikidotUserDisplay {
+            user_id: 42,
+            name: r##"quoted" onload="alert(1)""##.to_owned(),
+            slug: Some("quoted-user".to_owned()),
+            wikidot_profile: true,
+        };
+
+        let html = render_list_pages_wikidot_user(42, Some(&user));
+        let feed_html =
+            render_list_pages_wikidot_feed_user(42, Some(&user), 1_700_000_000);
+
+        assert!(
+            html.contains(r##"alt="quoted&quot; onload=&quot;alert(1)&quot;""##),
+            "unexpected user markup: {html}"
+        );
+        assert!(!html.contains(r#"alt="quoted" onload="alert(1)""#));
+        assert!(
+            feed_html.contains(r##"alt="quoted&quot; onload=&quot;alert(1)&quot;""##),
+            "unexpected feed user markup: {feed_html}"
+        );
+        assert!(!feed_html.contains(r#"alt="quoted" onload="alert(1)""#));
     }
 }
