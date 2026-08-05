@@ -128,6 +128,7 @@ pub(in crate::services::render) async fn find_viewable_count_pages_rows(
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn find_viewable_render_page_rows(
     ctx: &ServiceContext<'_>,
     viewer_user_id: Option<i64>,
@@ -180,12 +181,16 @@ async fn find_viewable_render_page_rows(
     while pages.len() < target_count && raw_offset < MAX_LISTPAGES_RENDER_SCAN_ROWS {
         let mut query = query.clone();
         query.offset = raw_offset;
-        let batch_limit = render_page_query_batch_limit_with_floor(
-            target_count,
-            pages.len(),
-            raw_offset,
-            batch_floor,
-        );
+        let batch_limit = if batch_floor == MAX_LISTPAGES_RENDER_LIMIT {
+            render_page_query_batch_limit(target_count, pages.len(), raw_offset)
+        } else {
+            render_page_query_batch_limit_with_floor(
+                target_count,
+                pages.len(),
+                raw_offset,
+                batch_floor,
+            )
+        };
         query.pagination.limit = Some(batch_limit);
 
         let found = Box::pin(PageQueryService::find_with_metadata_cached(
