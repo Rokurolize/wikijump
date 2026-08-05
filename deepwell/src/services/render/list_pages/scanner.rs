@@ -2372,7 +2372,7 @@ fn find_list_pages_module_matches_with_cursor_work_context_lowercase<'a>(
         }
     };
     let direct_scanner =
-        ModuleEventScanner::new(source, &lowercase, &direct_literal_regions);
+        ModuleEventScanner::new(source, lowercase, &direct_literal_regions);
     let (
         mut direct_events,
         mut direct_work,
@@ -2389,7 +2389,7 @@ fn find_list_pages_module_matches_with_cursor_work_context_lowercase<'a>(
 
     if let Some(boundary) = preserved_at_marker_documentation_opening(
         source,
-        &lowercase,
+        lowercase,
         &direct_events,
         allow_literal_documentation_example,
     ) {
@@ -2452,7 +2452,7 @@ fn find_list_pages_module_matches_with_cursor_work_context_lowercase<'a>(
     if !changed_quote_ranges.is_empty() {
         let recovery_literals = LiteralRegionIndex::new_wikidot_syntax(source);
         let recovery_scanner =
-            ModuleEventScanner::new(source, &lowercase, &recovery_literals);
+            ModuleEventScanner::new(source, lowercase, &recovery_literals);
         let (recovery_events, recovery_work, recovery_advances, recovery_ambiguous) =
             collect_module_events(recovery_scanner);
         if recovery_ambiguous {
