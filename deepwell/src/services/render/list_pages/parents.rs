@@ -28,8 +28,15 @@
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::ServiceContext;
 use crate::services::page_query::FoundPageRow;
+use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::types::{Action, Permission, Reference, Resource};
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement};
 use std::collections::{BTreeMap, BTreeSet};
+
+// Permission-aware child counts are intentionally bounded. A render that would
+// require inspecting more rows preserves the authored module instead of
+// exposing a count derived from an incomplete permission scan.
+const MAX_LISTPAGES_CHILD_PERMISSION_SCAN_ROWS: usize = 50_000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(in crate::services::render) struct ListPagesParentDisplay {
@@ -46,12 +53,15 @@ pub(in crate::services::render) struct ListPagesParentDisplay {
 /// Deleted children are not counted, matching the parent lookup below.
 pub(in crate::services::render) async fn load_list_pages_child_counts(
     ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
     pages: &[FoundPageRow],
-) -> Result<BTreeMap<i64, u64>> {
+) -> Result<Option<BTreeMap<i64, u64>>> {
     #[derive(FromQueryResult, Debug)]
-    struct ChildCountRow {
+    struct ChildRow {
         parent_page_id: i64,
-        child_count: i64,
+        child_page_id: Option<i64>,
+        child_site_id: Option<i64>,
+        child_category_id: Option<i64>,
     }
 
     let page_ids = pages
@@ -59,7 +69,7 @@ pub(in crate::services::render) async fn load_list_pages_child_counts(
         .map(|page| page.page_id)
         .collect::<BTreeSet<_>>();
     if page_ids.is_empty() {
-        return Ok(BTreeMap::new());
+        return Ok(Some(BTreeMap::new()));
     }
 
     let make_error = || {
@@ -78,24 +88,67 @@ pub(in crate::services::render) async fn load_list_pages_child_counts(
         txn.get_database_backend(),
         format!(
             "WITH input(page_id) AS (VALUES {values}) \
-             SELECT input.page_id AS parent_page_id, count(child.page_id) AS child_count \
+             SELECT input.page_id AS parent_page_id, child.page_id AS child_page_id, \
+                    child.site_id AS child_site_id, \
+                    child.page_category_id AS child_category_id \
              FROM input \
              LEFT JOIN page_parent ON page_parent.parent_page_id = input.page_id \
              LEFT JOIN page child ON child.page_id = page_parent.child_page_id \
                  AND child.deleted_at IS NULL \
-             GROUP BY input.page_id",
+             ORDER BY input.page_id, child.page_id \
+             LIMIT {}",
+            MAX_LISTPAGES_CHILD_PERMISSION_SCAN_ROWS + 1,
         ),
     );
 
-    let rows = ChildCountRow::find_by_statement(statement)
+    let rows = ChildRow::find_by_statement(statement)
         .all(txn)
         .await
         .or_raise(make_error)?;
 
-    Ok(rows
-        .into_iter()
-        .map(|row| (row.parent_page_id, row.child_count.max(0) as u64))
-        .collect())
+    if rows.len() > MAX_LISTPAGES_CHILD_PERMISSION_SCAN_ROWS {
+        return Ok(None);
+    }
+
+    let mut counts = BTreeMap::<i64, u64>::new();
+    let mut permission_cache = BTreeMap::<(i64, i64), bool>::new();
+    for row in rows {
+        let (Some(child_page_id), Some(child_site_id), Some(child_category_id)) =
+            (row.child_page_id, row.child_site_id, row.child_category_id)
+        else {
+            counts.entry(row.parent_page_id).or_insert(0);
+            continue;
+        };
+        let can_view = if let Some(can_view) =
+            permission_cache.get(&(child_site_id, child_page_id))
+        {
+            *can_view
+        } else {
+            let can_view = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: viewer_user_id,
+                    site_id: child_site_id,
+                    page_reference: Some(Reference::Id(child_page_id)),
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: Some(Reference::Id(child_category_id)),
+                    action: Action::View,
+                },
+            )
+            .await?;
+            permission_cache.insert((child_site_id, child_page_id), can_view);
+            can_view
+        };
+        if can_view {
+            *counts.entry(row.parent_page_id).or_insert(0) += 1;
+        } else {
+            counts.entry(row.parent_page_id).or_insert(0);
+        }
+    }
+
+    Ok(Some(counts))
 }
 
 /// The parent full names of the given result rows, keyed by child page ID.
@@ -104,11 +157,15 @@ pub(in crate::services::render) async fn load_list_pages_child_counts(
 /// present with an empty value.
 pub(in crate::services::render) async fn load_list_pages_parent_displays(
     ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
     pages: &[FoundPageRow],
 ) -> Result<BTreeMap<i64, ListPagesParentDisplay>> {
     #[derive(FromQueryResult, Debug)]
     struct ParentRow {
         child_page_id: i64,
+        parent_page_id: i64,
+        parent_site_id: i64,
+        parent_category_id: i64,
         parent_slug: String,
         parent_title: String,
     }
@@ -137,7 +194,10 @@ pub(in crate::services::render) async fn load_list_pages_parent_displays(
         txn.get_database_backend(),
         format!(
             "WITH input(page_id) AS (VALUES {values}) \
-             SELECT page_parent.child_page_id, page.slug AS parent_slug, \
+             SELECT page_parent.child_page_id, page.page_id AS parent_page_id, \
+                    page.site_id AS parent_site_id, \
+                    page.page_category_id AS parent_category_id, \
+                    page.slug AS parent_slug, \
                     page_revision.title AS parent_title \
              FROM input \
              JOIN page_parent ON page_parent.child_page_id = input.page_id \
@@ -152,28 +212,60 @@ pub(in crate::services::render) async fn load_list_pages_parent_displays(
         .await
         .or_raise(make_error)?;
 
-    Ok(collapse_parent_rows(rows.into_iter().map(
-        |ParentRow {
-             child_page_id,
-             parent_slug,
-             parent_title,
-         }| {
-            let (category, name) = parent_slug
-                .split_once(':')
-                .map_or(("", parent_slug.as_str()), |(category, name)| {
-                    (category, name)
-                });
-            (
-                child_page_id,
-                ListPagesParentDisplay {
-                    fullname: parent_slug.clone(),
-                    name: name.to_owned(),
-                    category: category.to_owned(),
-                    title: parent_title,
+    let mut permission_cache = BTreeMap::<(i64, i64), bool>::new();
+    let mut visible_rows = Vec::new();
+    let mut denied_children = BTreeSet::new();
+    for row in rows {
+        let can_view = if let Some(can_view) =
+            permission_cache.get(&(row.parent_site_id, row.parent_page_id))
+        {
+            *can_view
+        } else {
+            let can_view = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: viewer_user_id,
+                    site_id: row.parent_site_id,
+                    page_reference: Some(Reference::Id(row.parent_page_id)),
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: Some(Reference::Id(row.parent_category_id)),
+                    action: Action::View,
                 },
             )
-        },
-    )))
+            .await?;
+            permission_cache.insert((row.parent_site_id, row.parent_page_id), can_view);
+            can_view
+        };
+        if !can_view {
+            denied_children.insert(row.child_page_id);
+            continue;
+        }
+        let ParentRow {
+            child_page_id,
+            parent_slug,
+            parent_title,
+            ..
+        } = row;
+        let (category, name) = parent_slug
+            .split_once(':')
+            .map_or(("", parent_slug.as_str()), |(category, name)| {
+                (category, name)
+            });
+        visible_rows.push((
+            child_page_id,
+            ListPagesParentDisplay {
+                fullname: parent_slug.clone(),
+                name: name.to_owned(),
+                category: category.to_owned(),
+                title: parent_title,
+            },
+        ));
+    }
+
+    visible_rows.retain(|(child_page_id, _)| !denied_children.contains(child_page_id));
+    Ok(collapse_parent_rows(visible_rows.into_iter()))
 }
 
 fn collapse_parent_rows(

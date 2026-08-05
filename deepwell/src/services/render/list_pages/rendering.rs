@@ -1520,6 +1520,36 @@ impl RenderService {
                 Some(Reference::Slug(Cow::Borrowed(slug)))
             })
             .collect::<Vec<_>>();
+        let link_to_references = if link_to_references.is_empty() {
+            Vec::new()
+        } else {
+            let target_pages =
+                PageService::get_pages(ctx, current_site_id, &link_to_references).await?;
+            let mut viewable_target_ids = Vec::new();
+            for target in target_pages {
+                let can_view = PermissionService::check_user_can(
+                    ctx,
+                    &CheckPermissionContext {
+                        user_id: viewer_user_id,
+                        site_id: target.site_id,
+                        page_reference: Some(Reference::Id(target.page_id)),
+                    },
+                    Permission {
+                        resource_type: Resource::Page,
+                        resource_category: Some(Reference::Id(target.page_category_id)),
+                        action: Action::View,
+                    },
+                )
+                .await?;
+                if can_view {
+                    viewable_target_ids.push(Reference::Id(target.page_id));
+                }
+            }
+            viewable_target_ids
+        };
+        let link_to_has_no_viewable_targets =
+            link_to.iter().any(|slug| slug.as_ref() != ".")
+                && link_to_references.is_empty();
         let static_parent_references = static_parent_fullname
             .as_ref()
             .map(|parent| [Reference::Slug(Cow::Borrowed(parent.as_ref()))]);
@@ -1659,7 +1689,8 @@ impl RenderService {
             || missing_current_page_for_selector
             || (same_visible_tags && current_visible_tags.is_empty())
             || current_page_only
-            || prefetched_pages.is_some();
+            || prefetched_pages.is_some()
+            || link_to_has_no_viewable_targets;
         let exact_total_from_scan =
             if template.uses_total() && !rows_are_complete_without_query {
                 let mut total_query = query.clone();
@@ -1706,6 +1737,7 @@ impl RenderService {
             || votes_equal_current_zero_votes
             || missing_current_page_for_selector
             || (same_visible_tags && current_visible_tags.is_empty())
+            || link_to_has_no_viewable_targets
         {
             FoundPages { pages: Vec::new() }
         } else if current_page_only
@@ -2043,7 +2075,14 @@ impl RenderService {
             ));
         }
         let child_counts = if wants_children {
-            load_list_pages_child_counts(ctx, &pages).await?
+            match load_list_pages_child_counts(ctx, viewer_user_id, &pages).await? {
+                Some(counts) => counts,
+                None => {
+                    return Ok(ListPagesBlockRenderResult::PreserveOriginal(
+                        "child permission scan exceeded its safety bound",
+                    ));
+                }
+            }
         } else {
             BTreeMap::new()
         };
@@ -2079,7 +2118,7 @@ impl RenderService {
             BTreeMap::new()
         };
         let relational_parent_displays = if wants_parent_metadata {
-            load_list_pages_parent_displays(ctx, &pages).await?
+            load_list_pages_parent_displays(ctx, viewer_user_id, &pages).await?
         } else {
             BTreeMap::new()
         };
