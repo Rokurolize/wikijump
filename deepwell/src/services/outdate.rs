@@ -34,6 +34,30 @@ use sea_orm::{
 pub struct OutdateService;
 
 impl OutdateService {
+    /// Defers a page rerender until the surrounding database transaction has
+    /// committed. This keeps queue side effects from outliving a rollback.
+    pub async fn defer(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+        depth: RerenderDepth,
+    ) -> Result<()> {
+        let make_error = || {
+            Error::new(
+                format!("failed to defer outdating page ID {}", page_id),
+                ErrorType::PageOutdater,
+            )
+        };
+
+        let Some(page) = PageService::get_direct_optional(ctx, page_id, false)
+            .await
+            .or_raise(make_error)?
+        else {
+            return Ok(());
+        };
+        ctx.defer_rerender_page(PageId::from_page_model(&page), depth)
+            .or_raise(make_error)
+    }
+
     pub async fn process_page_edit(
         ctx: &ServiceContext<'_>,
         site_id: i64,

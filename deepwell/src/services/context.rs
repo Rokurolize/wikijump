@@ -24,9 +24,10 @@ use crate::locales::Localizations;
 use crate::models::session::Model as SessionModel;
 use crate::runtime::ServerState;
 use crate::services::blob::MimeAnalyzer;
+use crate::services::job::{Job, JobService};
 use crate::services::permission::{PermissionCache, PermissionService};
 use crate::services::public_cache::PublicContentCache;
-use crate::types::{Permission, Reference};
+use crate::types::{PageId, Permission, Reference, RerenderDepth};
 use exn::ErrorExt;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
 use rsmq_async::Rsmq;
@@ -146,6 +147,7 @@ pub(crate) enum PostCommitAction {
     PermissionUser { site_id: i64, user_id: i64 },
     PermissionSite { site_id: i64 },
     PublicContentSite { site_id: i64 },
+    RerenderPage { id: PageId, depth: RerenderDepth },
 }
 
 impl<'txn> ServiceContext<'txn> {
@@ -282,6 +284,18 @@ impl<'txn> ServiceContext<'txn> {
         Ok(())
     }
 
+    pub(crate) fn defer_rerender_page(
+        &self,
+        id: PageId,
+        depth: RerenderDepth,
+    ) -> Result<()> {
+        let mut actions = self.post_commit_actions.lock().map_err(|_| {
+            Error::new("failed to queue page rerender", ErrorType::Page).raise()
+        })?;
+        actions.push(PostCommitAction::RerenderPage { id, depth });
+        Ok(())
+    }
+
     pub(crate) fn drain_post_commit_actions(&self) -> Result<Vec<PostCommitAction>> {
         let mut actions = self.post_commit_actions.lock().map_err(|_| {
             Error::new(
@@ -297,6 +311,7 @@ impl<'txn> ServiceContext<'txn> {
         state: &ServerState,
         actions: Vec<PostCommitAction>,
     ) -> Result<()> {
+        let mut rsmq = Rsmq::clone(&state.rsmq);
         for action in actions {
             match action {
                 PostCommitAction::PermissionUser { site_id, user_id } => {
@@ -308,6 +323,18 @@ impl<'txn> ServiceContext<'txn> {
                 }
                 PostCommitAction::PublicContentSite { site_id } => {
                     PublicContentCache::invalidate_site_for_state(state, site_id).await?;
+                }
+                PostCommitAction::RerenderPage { id, depth } => {
+                    JobService::queue_job_inner(
+                        &mut rsmq,
+                        &Job::RerenderPage {
+                            id,
+                            depth,
+                            r#type: crate::services::page_revision::RerenderType::Full,
+                        },
+                        None,
+                    )
+                    .await?;
                 }
             }
         }

@@ -28,7 +28,7 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::Model as PageModel;
 use crate::models::page_parent::{self, Entity as PageParent, Model as PageParentModel};
 use crate::services::{OutdateService, PageService, ServiceContext};
-use crate::types::{Reference, RerenderDepth};
+use crate::types::{PageId, Reference, RerenderDepth};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, DeleteResult, EntityTrait, QueryFilter,
     QuerySelect, Set,
@@ -112,12 +112,10 @@ impl ParentService {
                 };
 
                 let relationship = model.insert(txn).await.or_raise(make_error)?;
-                OutdateService::outdate(
-                    ctx,
-                    parent_page.page_id,
+                ctx.defer_rerender_page(
+                    PageId::from_page_model(&parent_page),
                     RerenderDepth::default(),
                 )
-                .await
                 .or_raise(make_error)?;
                 Ok(Some(relationship))
             }
@@ -177,9 +175,11 @@ impl ParentService {
 
         let was_deleted = rows_affected == 1;
         if was_deleted {
-            OutdateService::outdate(ctx, parent_page.page_id, RerenderDepth::default())
-                .await
-                .or_raise(make_error)?;
+            ctx.defer_rerender_page(
+                PageId::from_page_model(&parent_page),
+                RerenderDepth::default(),
+            )
+            .or_raise(make_error)?;
         }
         Ok(RemoveParentOutput { was_deleted })
     }
@@ -326,7 +326,7 @@ impl ParentService {
             .rows_affected;
 
         for parent_id in former_parent_ids {
-            OutdateService::outdate(ctx, parent_id, RerenderDepth::default())
+            OutdateService::defer(ctx, parent_id, RerenderDepth::default())
                 .await
                 .or_raise(make_error)?;
         }

@@ -30,6 +30,8 @@ use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::types::{Action, Permission, Reference, Resource};
 use futures::future::try_join_all;
 
+const MAX_PARENT_UPDATES_PER_REQUEST: usize = 64;
+
 pub async fn parent_relationships_get(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -208,6 +210,16 @@ pub async fn parent_update(
     params: Params<'static>,
 ) -> Result<UpdateParentsOutput> {
     let input: UpdateParents = parse!(params, PageParent);
+    if parent_update_exceeds_budget(&input) {
+        return Err(Error::new(
+            format!(
+                "parent update exceeds the {} relationship operation limit",
+                MAX_PARENT_UPDATES_PER_REQUEST,
+            ),
+            ErrorType::BadRequest,
+        )
+        .into());
+    }
     let permission_user_id = ctx.request().user_id;
 
     info!(
@@ -286,6 +298,15 @@ pub async fn parent_update(
     })
 }
 
+fn parent_update_exceeds_budget(input: &UpdateParents<'_>) -> bool {
+    input
+        .add
+        .as_ref()
+        .map_or(0, Vec::len)
+        .saturating_add(input.remove.as_ref().map_or(0, Vec::len))
+        > MAX_PARENT_UPDATES_PER_REQUEST
+}
+
 async fn ensure_child_page_edit_permission<'a>(
     ctx: &ServiceContext<'_>,
     site_id: i64,
@@ -327,5 +348,41 @@ async fn ensure_child_page_edit_permission<'a>(
             ErrorType::PermissionDenied,
         )
         .into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parent_update_exceeds_budget;
+    use crate::services::parent::UpdateParents;
+    use crate::types::Reference;
+    use std::borrow::Cow;
+
+    #[test]
+    fn parent_update_budget_covers_both_directions() {
+        let input = UpdateParents {
+            site_id: 1,
+            child: Reference::Slug(Cow::Borrowed("child")),
+            user_id: None,
+            add: Some(
+                (0..32)
+                    .map(|_| Reference::Slug(Cow::Borrowed("parent")))
+                    .collect(),
+            ),
+            remove: Some(
+                (0..32)
+                    .map(|_| Reference::Slug(Cow::Borrowed("parent")))
+                    .collect(),
+            ),
+        };
+        assert!(!parent_update_exceeds_budget(&input));
+
+        let mut over_budget = input.clone();
+        over_budget
+            .add
+            .as_mut()
+            .expect("test input has additions")
+            .push(Reference::Slug(Cow::Borrowed("parent")));
+        assert!(parent_update_exceeds_budget(&over_budget));
     }
 }
