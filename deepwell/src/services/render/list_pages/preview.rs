@@ -41,6 +41,10 @@ pub(super) fn list_pages_preview(text: &str, maximum: Option<usize>) -> String {
     format!("{prefix}...")
 }
 
+pub(super) fn list_pages_preview_length(value: &str) -> Option<usize> {
+    value.parse().ok()
+}
+
 pub(super) fn list_pages_plain_text(html: &str) -> String {
     static PREVIEW_CHROME: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(
@@ -111,4 +115,31 @@ fn decode_list_pages_html_entities(text: &str) -> String {
     }
     decoded.push_str(&text[cursor..]);
     decoded
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{list_pages_preview, list_pages_preview_length};
+
+    #[test]
+    fn preview_length_overflow_falls_back_to_default_limit() {
+        let text = "alpha beta gamma delta epsilon ".repeat(80);
+
+        assert_eq!(list_pages_preview_length("17"), Some(17));
+        assert_eq!(
+            list_pages_preview_length("999999999999999999999999999999999999"),
+            None,
+        );
+        assert_ne!(
+            list_pages_preview(&text, Some(17)),
+            list_pages_preview(&text, None)
+        );
+        assert_eq!(
+            list_pages_preview(
+                &text,
+                list_pages_preview_length("999999999999999999999999999999999999")
+            ),
+            list_pages_preview(&text, None),
+        );
+    }
 }
