@@ -15,6 +15,7 @@ import {
   publishListPagesJsonNoReplace,
 } from "./listpages-evidence-publication.mjs";
 import {deepwellRpcAuthorization} from "./deepwell-rpc-auth.mjs";
+import {validateLocalDeepwellRpcUrl} from "./theme-localization-deepwell-adapter.mjs";
 
 export const LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA =
   "wikijump_listpages_compat.preview_differential.v1";
@@ -262,7 +263,9 @@ export class DeepwellJsonRpcClient {
     timeoutMs = DEFAULT_LISTPAGES_RPC_TIMEOUT_MS,
   }) {
     validateRpcTimeout(timeoutMs);
-    this.rpcUrl = rpcUrl;
+    // Validate the destination before deriving or retaining the bearer token.
+    // A caller-controlled URL must never receive the verifier credential.
+    this.rpcUrl = validateLocalDeepwellRpcUrl(rpcUrl);
     this.fetchImpl = fetchImpl;
     this.timeoutMs = timeoutMs;
     this.#authorization = deepwellRpcAuthorization(rpcToken);

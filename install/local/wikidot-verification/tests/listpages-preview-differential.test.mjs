@@ -613,6 +613,22 @@ test("Deepwell JSON-RPC client rejects redirects and protocol substitution", asy
   assert.deepEqual(requests.map(({ redirect }) => redirect), ["error", "error"]);
 });
 
+test("Deepwell JSON-RPC client validates the URL before authorizing the token", () => {
+  for (const rpcUrl of [
+    "https://evil.example/jsonrpc",
+    "http://127.0.0.1:12747/jsonrpc?leak=1",
+  ]) {
+    assert.throws(
+      () =>
+        new DeepwellJsonRpcClient({
+          rpcUrl,
+          rpcToken: "not-a-valid-deepwell-token",
+        }),
+      /uncredentialed loopback HTTP \/jsonrpc endpoint/,
+    );
+  }
+});
+
 test("preview differential records local errors and writes a verdict", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-preview-diff-error-"));
   const referencesPath = path.join(root, "references.jsonl");
