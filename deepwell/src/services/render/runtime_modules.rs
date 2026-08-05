@@ -201,10 +201,37 @@ impl MembershipByPasswordResultCache {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum PageCalendarCategorySelector {
     All,
     Names(Vec<String>),
+}
+
+type PageCalendarCounts = Option<BTreeMap<i32, BTreeMap<u8, usize>>>;
+
+#[derive(Default)]
+struct PageCalendarCountsCache {
+    counts: HashMap<PageCalendarCategorySelector, PageCalendarCounts>,
+}
+
+impl PageCalendarCountsCache {
+    async fn get_or_init<F, Fut>(
+        &mut self,
+        category: PageCalendarCategorySelector,
+        load: F,
+    ) -> Result<PageCalendarCounts>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<PageCalendarCounts>>,
+    {
+        if let Some(counts) = self.counts.get(&category) {
+            return Ok(counts.clone());
+        }
+
+        let counts = load().await?;
+        self.counts.insert(category, counts.clone());
+        Ok(counts)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -2269,6 +2296,7 @@ impl RenderService {
             .map(Cow::as_ref);
         let mut expanded = String::with_capacity(wikitext.len());
         let mut cursor = 0;
+        let mut counts_cache = PageCalendarCountsCache::default();
 
         for captures in PAGECALENDAR_MODULE_REGEX.captures_iter(&wikitext) {
             let matched = captures
@@ -2285,15 +2313,18 @@ impl RenderService {
                 continue;
             };
             expanded.push_str(&wikitext[cursor..matched.start()]);
-            match Self::load_page_calendar_counts(
-                ctx,
-                current_site_id,
-                current_page_id,
-                current_branch_tag,
-                &arguments.categories,
-            )
-            .await?
-            {
+            let counts = counts_cache
+                .get_or_init(arguments.categories.clone(), || {
+                    Self::load_page_calendar_counts(
+                        ctx,
+                        current_site_id,
+                        current_page_id,
+                        current_branch_tag,
+                        &arguments.categories,
+                    )
+                })
+                .await?;
+            match counts {
                 Some(counts) => {
                     expanded.push_str(&compat_html.push_block_html(
                         render_page_calendar_module(&arguments, &counts),
@@ -2600,6 +2631,39 @@ mod membership_by_password_tests {
 
         assert_eq!(first, Some("member"));
         assert_eq!(second, Some("member"));
+        assert_eq!(loads.get(), 1);
+    }
+}
+
+#[cfg(test)]
+mod page_calendar_tests {
+    use std::cell::Cell;
+
+    use super::{PageCalendarCategorySelector, PageCalendarCountsCache};
+
+    #[tokio::test]
+    async fn repeated_page_calendar_modules_reuse_the_same_counts() {
+        let loads = Cell::new(0);
+        let mut cache = PageCalendarCountsCache::default();
+        let category = PageCalendarCategorySelector::All;
+
+        let first = cache
+            .get_or_init(category.clone(), || async {
+                loads.set(loads.get() + 1);
+                Ok(Some(Default::default()))
+            })
+            .await
+            .expect("the first calendar query should succeed");
+        let second = cache
+            .get_or_init(category, || async {
+                panic!("a cached calendar result must not query again");
+                #[allow(unreachable_code)]
+                Ok(None)
+            })
+            .await
+            .expect("the cached calendar query should succeed");
+
+        assert_eq!(first, second);
         assert_eq!(loads.get(), 1);
     }
 }
