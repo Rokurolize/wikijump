@@ -41,6 +41,33 @@ fn rate_module_occurrence_body(source: &str, open_end: usize) -> (usize, Option<
     }
 }
 
+fn rate_module_footnote_scope_ends(
+    source: &str,
+    literal_regions: &LiteralRegionIndex,
+) -> Vec<(usize, usize)> {
+    let mut ranges = collect_unproven_scope_ranges(source, literal_regions)
+        .into_iter()
+        .filter(|range| wikidot_scope_head_is(source, range.start, "footnote"))
+        .map(|range| (range.start, range.end))
+        .collect::<Vec<_>>();
+    ranges.sort_unstable_by_key(|(start, _)| *start);
+    let mut max_end = 0;
+    for (_, end) in &mut ranges {
+        max_end = max_end.max(*end);
+        *end = max_end;
+    }
+    ranges
+}
+
+fn rate_module_is_inside_footnote_scope(
+    ranges: &[(usize, usize)],
+    module_start: usize,
+    occurrence_end: usize,
+) -> bool {
+    let count = ranges.partition_point(|(start, _)| *start < module_start);
+    count > 0 && ranges[count - 1].1 >= occurrence_end
+}
+
 impl RenderService {
     pub(in crate::services::render) fn suppress_rate_modules_in_list_pages_content(
         wikitext: String,
@@ -52,10 +79,8 @@ impl RenderService {
 
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
-        let footnote_ranges = collect_unproven_scope_ranges(&wikitext, &literal_regions)
-            .into_iter()
-            .filter(|range| wikidot_scope_head_is(&wikitext, range.start, "footnote"))
-            .collect::<Vec<_>>();
+        let footnote_ranges =
+            rate_module_footnote_scope_ends(&wikitext, &literal_regions);
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
         for matched in RATE_MODULE_REGEX.find_iter(&wikitext) {
@@ -73,10 +98,11 @@ impl RenderService {
             }
             let (occurrence_end, _) =
                 rate_module_occurrence_body(&wikitext, matched.end());
-            if footnote_ranges
-                .iter()
-                .any(|range| range.start < matched.start() && occurrence_end <= range.end)
-            {
+            if rate_module_is_inside_footnote_scope(
+                &footnote_ranges,
+                matched.start(),
+                occurrence_end,
+            ) {
                 continue;
             }
             output.push_str(&wikitext[cursor..matched.start()]);
@@ -103,10 +129,8 @@ impl RenderService {
 
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
-        let footnote_ranges = collect_unproven_scope_ranges(&wikitext, &literal_regions)
-            .into_iter()
-            .filter(|range| wikidot_scope_head_is(&wikitext, range.start, "footnote"))
-            .collect::<Vec<_>>();
+        let footnote_ranges =
+            rate_module_footnote_scope_ends(&wikitext, &literal_regions);
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
         for matched in RATE_MODULE_REGEX.find_iter(&wikitext) {
@@ -128,10 +152,11 @@ impl RenderService {
             let (occurrence_end, body) =
                 rate_module_occurrence_body(&wikitext, matched.end());
             output.push_str(&wikitext[cursor..matched.start()]);
-            if footnote_ranges
-                .iter()
-                .any(|range| range.start < matched.start() && occurrence_end <= range.end)
-            {
+            if rate_module_is_inside_footnote_scope(
+                &footnote_ranges,
+                matched.start(),
+                occurrence_end,
+            ) {
                 output.push_str(
                     &compat_text.push_escaped_html_text(
                         &wikitext[matched.start()..occurrence_end],
@@ -162,5 +187,18 @@ impl RenderService {
         }
         output.push_str(&wikitext[cursor..]);
         output
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::rate_module_is_inside_footnote_scope;
+
+    #[test]
+    fn footnote_scope_lookup_uses_the_longest_enclosing_range() {
+        let ranges = vec![(10, 20), (12, 80), (40, 50)];
+        assert!(rate_module_is_inside_footnote_scope(&ranges, 15, 70));
+        assert!(!rate_module_is_inside_footnote_scope(&ranges, 15, 81));
+        assert!(!rate_module_is_inside_footnote_scope(&ranges, 80, 81));
     }
 }
