@@ -1238,6 +1238,16 @@ mod tests {
         assert!(!arguments.unsupported_list_pages_filter);
 
         let arguments = parse_list_pages_arguments_with_url(
+            r#"parent="Definitely-Missing-ListPages-Parent" parent="@URL""#,
+            crate::services::render::UrlArguments::default(),
+        )
+        .expect("a dropped duplicate URL parent should still parse");
+        assert_eq!(
+            arguments.static_parent_fullname, None,
+            "a dropped URL parent must clear an earlier static parent selector",
+        );
+
+        let arguments = parse_list_pages_arguments_with_url(
             r#"pagetype="@URL" created_at="@URL" updated_at="@URL" link_to="@URL" reverse="@URL""#,
             crate::services::render::UrlArguments::default(),
         )

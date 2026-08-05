@@ -1075,6 +1075,9 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     }
                     UrlSelector::Dropped => {
                         unsupported_count_pages_filter = true;
+                        page_parent = PageParentSelector::All;
+                        static_parent_fullname = None;
+                        rss_path.parent = None;
                         continue;
                     }
                 };
