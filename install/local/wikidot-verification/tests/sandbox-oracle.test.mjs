@@ -207,6 +207,75 @@ test("normalization remains a blocking finding in the sandbox gate", () => {
   );
 });
 
+test("blocked public resources prevent an otherwise matching fixture from passing silently", () => {
+  const fixture = liveFixture();
+  const result = compareSandboxOracleFixture({
+    fixture,
+    local: capture(),
+    frozen: capture({
+      input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+      final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    }),
+    blockedHosts: {
+      "cdn.example.com": 2,
+      "ads.example.net": 1,
+    },
+  });
+  assert.equal(result.status, "fail");
+  assert.deepEqual(result.measurement_boundary, {
+    blocked_hosts: {
+      "ads.example.net": 1,
+      "cdn.example.com": 2,
+    },
+    finding_added: true,
+  });
+  assert.deepEqual(
+    result.findings.find(
+      (finding) => finding.code === "normalization_hides_difference",
+    ),
+    {
+      layer: "structure-geometry",
+      code: "normalization_hides_difference",
+      detail: {
+        reason: "public-origin-resource-blocked-before-request-gate",
+        blocked_hosts: {
+          "ads.example.net": 1,
+          "cdn.example.com": 2,
+        },
+      },
+    },
+  );
+});
+
+test("blocked host counts are validated before they can affect a verdict", () => {
+  assert.throws(
+    () =>
+      compareSandboxOracleFixture({
+        fixture: liveFixture(),
+        local: capture(),
+        frozen: capture({
+          input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+          final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+        }),
+        blockedHosts: { "not a hostname": 1 },
+      }),
+    /invalid hostname/u,
+  );
+  assert.throws(
+    () =>
+      compareSandboxOracleFixture({
+        fixture: liveFixture(),
+        local: capture(),
+        frozen: capture({
+          input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+          final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+        }),
+        blockedHosts: { "cdn.example.com": 0 },
+      }),
+    /positive safe integer/u,
+  );
+});
+
 test("preserved fixtures compare against the declared local shape", () => {
   const fixture = {
     ...liveFixture(),

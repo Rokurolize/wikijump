@@ -552,15 +552,52 @@ function flattenLayerFindings(layers) {
     );
 }
 
+function normalizedBlockedHosts(value) {
+  if (value === undefined || value === null) return [];
+  if (!isPlainObject(value)) {
+    throw new Error("blockedHosts must be an object of host counts");
+  }
+  return Object.entries(value)
+    .map(([hostname, count]) => {
+      if (!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/u.test(hostname)) {
+        throw new Error(`blockedHosts contains an invalid hostname: ${hostname}`);
+      }
+      if (!Number.isSafeInteger(count) || count <= 0) {
+        throw new Error(`blockedHosts.${hostname} must be a positive safe integer`);
+      }
+      return [hostname, count];
+    })
+    .sort(([left], [right]) => left.localeCompare(right));
+}
+
+function appendBlockedResourceFinding(layers, blockedHosts) {
+  if (blockedHosts.length === 0 || flattenLayerFindings(layers).length > 0) {
+    return false;
+  }
+  const finding = {
+    code: "normalization_hides_difference",
+    detail: {
+      reason: "public-origin-resource-blocked-before-request-gate",
+      blocked_hosts: Object.fromEntries(blockedHosts),
+    },
+  };
+  const structure = layers["structure-geometry"];
+  structure.status = "fail";
+  structure.findings = [...(structure.findings ?? []), finding];
+  return true;
+}
+
 export function compareSandboxOracleFixture({
   fixture,
   local,
   frozen = null,
   thresholds = DEFAULT_THRESHOLDS,
   contract = null,
+  blockedHosts = null,
 }) {
   const checkedFixture = validateSandboxOracleFixture(fixture);
   const checkedThresholds = validateThresholds(thresholds);
+  const checkedBlockedHosts = normalizedBlockedHosts(blockedHosts);
   if (!isPlainObject(local)) {
     throw new Error(`local capture is required for ${checkedFixture.fixture_id}`);
   }
@@ -584,6 +621,10 @@ export function compareSandboxOracleFixture({
       checkedThresholds,
     );
   }
+  const blockedResourceFinding = appendBlockedResourceFinding(
+    layers,
+    checkedBlockedHosts,
+  );
   const findings = flattenLayerFindings(layers);
   return {
     fixture_id: checkedFixture.fixture_id,
@@ -595,6 +636,14 @@ export function compareSandboxOracleFixture({
       SANDBOX_ORACLE_LAYER_NAMES.map((name) => [name, layers[name]]),
     ),
     findings,
+    ...(checkedBlockedHosts.length > 0
+      ? {
+          measurement_boundary: {
+            blocked_hosts: Object.fromEntries(checkedBlockedHosts),
+            finding_added: blockedResourceFinding,
+          },
+        }
+      : {}),
     ...(layers.capture_comparison
       ? { capture_comparison: layers.capture_comparison }
       : {}),

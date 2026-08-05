@@ -477,7 +477,8 @@ async function main(argv) {
   const localRows = captures.map(({fixture_id, local}) => ({fixture_id, capture: local}));
   const frozenRows = captures.map(({fixture_id, live}) => ({fixture_id, capture: live}));
   const contractRows = contracts;
-  const results = registry.fixtures.map((fixture) => compareSandboxOracleFixture({fixture, local: localRows.find((row) => row.fixture_id === fixture.fixture_id)?.capture, frozen: frozenRows.find((row) => row.fixture_id === fixture.fixture_id)?.capture, thresholds: DEFAULT_THRESHOLDS, contract: contractRows.find((row) => row.fixture_id === fixture.fixture_id)?.contract ?? null}));
+  const blockedHostsByFixture = requestGateSnapshot?.blocked_hosts_by_fixture ?? {};
+  const results = registry.fixtures.map((fixture) => compareSandboxOracleFixture({fixture, local: localRows.find((row) => row.fixture_id === fixture.fixture_id)?.capture, frozen: frozenRows.find((row) => row.fixture_id === fixture.fixture_id)?.capture, thresholds: DEFAULT_THRESHOLDS, contract: contractRows.find((row) => row.fixture_id === fixture.fixture_id)?.contract ?? null, blockedHosts: blockedHostsByFixture[fixture.fixture_id] ?? null}));
   const aggregate = aggregateSandboxOracleVerdict({runId: args.runId, registry, results});
   const outputFlag = args.resume ? "w" : "wx";
   await fs.writeFile(path.join(args.outputDir, "local-captures.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_captures.v1", captures: localRows}, null, 2)}\n`, {flag: outputFlag});
