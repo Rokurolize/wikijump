@@ -223,6 +223,68 @@ test("volatile attribute normalization is a finding rather than a silent pass", 
   );
 });
 
+test("SCP file asset host localization is equivalent across live and local captures", () => {
+  const result = compareAttributeSignatures(
+    [{
+      tag: "img",
+      name: "src",
+      value: "https://scp-wiki.wjfiles.localhost/local--files/scp-9506/NFSI.png",
+    }],
+    [{
+      tag: "img",
+      name: "src",
+      value: "https://scp-wiki.wdfiles.com/local--files/scp-9506/NFSI.png",
+    }],
+  );
+  assert.equal(result.status, "pass");
+  assert.deepEqual(result.anomalies, []);
+  assert.equal(result.normalization_events.length, 1);
+  assert.equal(
+    result.normalization_events[0].code,
+    "environment_identity_translation",
+  );
+  assert.deepEqual(result.normalization_events[0].detail.pairs, [
+    {
+      tag: "img",
+      name: "src",
+      local: {
+        hostname: "scp-wiki.wjfiles.localhost",
+        identity: "{{site-files-host}}",
+      },
+      live: {
+        hostname: "scp-wiki.wdfiles.com",
+        identity: "{{site-files-host}}",
+      },
+    },
+  ]);
+});
+
+test("unrelated hosts do not enter the environment identity translation", () => {
+  const result = compareAttributeSignatures(
+    [{tag: "img", name: "src", value: "https://scp-wiki.wjfiles.localhost/a.png"}],
+    [{tag: "img", name: "src", value: "https://cdn.example.test/a.png"}],
+  );
+  assert.equal(result.status, "fail");
+  assert.equal(result.normalization_events.length, 0);
+  assert.equal(result.anomalies[0].code, "attribute_divergence");
+});
+
+test("volatile normalization remains a finding beside a host translation", () => {
+  const result = compareAttributeSignatures(
+    [
+      {tag: "img", name: "src", value: "https://scp-wiki.wjfiles.localhost/a.png"},
+      {tag: "div", name: "data-page-id", value: "local-page"},
+    ],
+    [
+      {tag: "img", name: "src", value: "https://scp-wiki.wdfiles.com/a.png"},
+      {tag: "div", name: "data-page-id", value: "live-page"},
+    ],
+  );
+  assert.equal(result.status, "fail");
+  assert.equal(result.normalization_events.length, 0);
+  assert.equal(result.anomalies[0].code, "normalization_hides_difference");
+});
+
 test("completion policy is sealed and names exact external failures", () => {
   const policy = validateLiveCompletionPolicy({
     schema: "wikijump.standing_browser_live_completion_policy.v1",
