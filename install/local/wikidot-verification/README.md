@@ -28,7 +28,10 @@ The comparison runs exact DOM signature, structure and geometry, computed
 style, presence and pseudo-layout, then records screenshot SHA-256 receipts
 without a pixel diff. Volatile attribute normalization is declared in the
 verdict; when it makes a raw difference disappear the result is the blocking
-`normalization_hides_difference` finding, never a pass.
+`normalization_hides_difference` finding, never a pass. The sole exception is
+an explicit `environment_identity_translation` for an exact allowlisted live
+and local host pair; that event remains in the verdict and does not authorize
+arbitrary host normalization.
 
 ## Syntax differential runner
 

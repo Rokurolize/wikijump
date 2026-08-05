@@ -18,7 +18,11 @@ import {
   requirePlainObject,
   sortedUniqueStrings,
 } from "./standing-browser-parity-util.mjs";
-import { normalizeAttributeSignatures } from "./render-compare.mjs";
+import {
+  environmentHostIdentity,
+  normalizeAttributeObservation,
+  normalizeAttributeSignatures,
+} from "./render-compare.mjs";
 
 export const STANDING_BROWSER_CAPTURE_SCHEMA =
   "wikijump_local_lab.standing_browser_parity_capture.v2";
@@ -336,6 +340,65 @@ function attributeMultiset(signatures) {
   return (signatures ?? []).map((signature) => JSON.stringify(signature));
 }
 
+function rawAttributeObservation(observation) {
+  return {
+    tag: String(observation?.tag ?? "").toLowerCase(),
+    name: String(observation?.name ?? "").toLowerCase(),
+    value: String(observation?.value ?? ""),
+  };
+}
+
+function rawObservationKey(observation) {
+  return JSON.stringify(rawAttributeObservation(observation));
+}
+
+function environmentTranslationEvent(local, live, raw, normalized) {
+  const localRows = (local ?? []).map(rawAttributeObservation).sort((left, right) => rawObservationKey(left).localeCompare(rawObservationKey(right)));
+  const liveRows = (live ?? []).map(rawAttributeObservation).sort((left, right) => rawObservationKey(left).localeCompare(rawObservationKey(right)));
+  if (localRows.length !== liveRows.length) return null;
+  const pairs = [];
+  for (const [index, localRow] of localRows.entries()) {
+    const liveRow = liveRows[index];
+    const localNormalized = normalizeAttributeObservation(localRow);
+    const liveNormalized = normalizeAttributeObservation(liveRow);
+    if (JSON.stringify(localNormalized) !== JSON.stringify(liveNormalized)) {
+      return null;
+    }
+    if (rawObservationKey(localRow) === rawObservationKey(liveRow)) continue;
+    if (
+      localRow.tag !== liveRow.tag ||
+      localRow.name !== liveRow.name ||
+      !localNormalized.applied.includes("hostname_map") ||
+      !liveNormalized.applied.includes("hostname_map")
+    ) return null;
+    const localIdentity = environmentHostIdentity(localRow.value);
+    const liveIdentity = environmentHostIdentity(liveRow.value);
+    if (
+      !localIdentity ||
+      !liveIdentity ||
+      localIdentity.identity !== liveIdentity.identity ||
+      localIdentity.hostname === liveIdentity.hostname
+    ) return null;
+    pairs.push({
+      tag: localRow.tag,
+      name: localRow.name,
+      local: localIdentity,
+      live: liveIdentity,
+    });
+  }
+  if (pairs.length === 0) return null;
+  const channels = ["hostname_map"];
+  return {
+    code: "environment_identity_translation",
+    detail: {
+      raw,
+      normalized,
+      channels,
+      pairs,
+    },
+  };
+}
+
 export function compareAttributeSignatures(local, live) {
   const localRaw = attributeMultiset(local);
   const liveRaw = attributeMultiset(live);
@@ -347,20 +410,30 @@ export function compareAttributeSignatures(local, live) {
     attributeMultiset(liveNormalized),
   );
   const anomalies = [];
+  const normalizationEvents = [];
   if (raw.different_elements > 0 && normalized.different_elements === 0) {
-    anomalies.push({
-      code: "normalization_hides_difference",
-      detail: {
-        raw,
-        normalized,
-        channels: [
-          ...new Set([
-            ...normalizeAttributeSignatures(local).applied,
-            ...normalizeAttributeSignatures(live).applied,
-          ]),
-        ].sort(),
-      },
-    });
+    const environmentTranslation = environmentTranslationEvent(
+      local,
+      live,
+      raw,
+      normalized,
+    );
+    if (environmentTranslation) normalizationEvents.push(environmentTranslation);
+    else {
+      anomalies.push({
+        code: "normalization_hides_difference",
+        detail: {
+          raw,
+          normalized,
+          channels: [
+            ...new Set([
+              ...normalizeAttributeSignatures(local).applied,
+              ...normalizeAttributeSignatures(live).applied,
+            ]),
+          ].sort(),
+        },
+      });
+    }
   } else if (normalized.different_elements > 0) {
     anomalies.push({
       code: "attribute_divergence",
@@ -372,6 +445,7 @@ export function compareAttributeSignatures(local, live) {
     raw,
     normalized,
     anomalies,
+    normalization_events: normalizationEvents,
   };
 }
 

@@ -259,8 +259,14 @@ attributes: timestamps, CSRF tokens, page IDs, session/request ids, and random
 module ids (cf wikijump #640 random ListPages side channel, #683 runtime identity
 hash cycle). Reuse render-compare.mjs normalization channels (hostname_map,
 request_id, semantic_timestamp, cache_buster, env_id) where they apply. If
-enabling a normalization is what makes a difference disappear, that is a finding
-(normalization_hides_difference), never a silent free pass.
+enabling a volatile normalization is what makes a difference disappear, that is
+a finding (`normalization_hides_difference`), never a silent free pass. The
+single environment exception is an exact, allowlisted live/local host identity
+translation for a URL attribute (for example `scp-wiki.wdfiles.com` to
+`scp-wiki.wjfiles.localhost`). The comparator records that event as
+`environment_identity_translation`; it accepts no arbitrary suffix, path, or
+non-URL substitution, and any additional normalization channel remains a
+blocking finding.
 
 ### Request-gate boundary
 

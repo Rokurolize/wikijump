@@ -2,10 +2,11 @@
 //
 // Compares a locally rendered page against its frozen live Wikidot capture
 // per specs/comparator-normalization.spec.md: every normalization channel is
-// declared and logged; a difference that disappears only after normalization
-// is a finding (`normalization_hides_visible_text_difference`), never a free
-// pass. Local output is never its own oracle — the live side always comes
-// from the frozen golden-pair evidence.
+// declared and logged. Volatile normalization that hides a difference is a
+// finding; the only accepted exception is an explicit, allowlisted environment
+// identity translation (for example a live file host to its local file host).
+// Local output is never its own oracle — the live side always comes from the
+// frozen golden-pair evidence.
 
 export const RENDER_COMPARE_SCHEMA = 'wikijump_local_lab.render_compare.v1';
 
@@ -45,11 +46,38 @@ export const DEFAULT_ATTRIBUTE_CHANNELS = Object.freeze({
 const HOSTNAME_MAP = [
   [/scp-wiki\.wikidot\.com/g, '{{site-host}}'],
   [/scp-wiki\.wikijump\.localhost/g, '{{site-host}}'],
+  [/scp-wiki\.wdfiles\.com/g, '{{site-files-host}}'],
+  [/scp-wiki\.wjfiles\.localhost/g, '{{site-files-host}}'],
   [/scp-jp\.wikidot\.com/g, '{{site-host}}'],
   [/scp-jp\.localhost/g, '{{site-host}}'],
+  [/scp-jp\.wdfiles\.com/g, '{{site-files-host}}'],
+  [/scp-jp\.wjfiles\.localhost/g, '{{site-files-host}}'],
   [/www\.wikidot\.com/g, '{{platform-host}}'],
   [/www\.wikijump\.localhost/g, '{{platform-host}}'],
 ];
+
+const ENVIRONMENT_HOST_IDENTITIES = Object.freeze({
+  'scp-wiki.wikidot.com': '{{site-host}}',
+  'scp-wiki.wikijump.localhost': '{{site-host}}',
+  'scp-wiki.wdfiles.com': '{{site-files-host}}',
+  'scp-wiki.wjfiles.localhost': '{{site-files-host}}',
+  'scp-jp.wikidot.com': '{{site-host}}',
+  'scp-jp.localhost': '{{site-host}}',
+  'scp-jp.wdfiles.com': '{{site-files-host}}',
+  'scp-jp.wjfiles.localhost': '{{site-files-host}}',
+  'www.wikidot.com': '{{platform-host}}',
+  'www.wikijump.localhost': '{{platform-host}}',
+});
+
+export function environmentHostIdentity(value) {
+  try {
+    const url = new URL(value);
+    const identity = ENVIRONMENT_HOST_IDENTITIES[url.hostname.toLowerCase()];
+    return identity ? { hostname: url.hostname.toLowerCase(), identity } : null;
+  } catch {
+    return null;
+  }
+}
 
 export function normalizeText(text, channels = DEFAULT_CHANNELS) {
   let result = text;
