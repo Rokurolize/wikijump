@@ -96,6 +96,7 @@ use super::native_list_context::NativeListSourceContext;
 use super::next_previous_page::NextPreviousPageExpansion;
 use super::pages::expand_page_index_modules;
 use super::percent_encoding::percent_encode_path_segment;
+use super::render_budget::RenderCostBudget;
 use super::render_options::{
     RenderContext, RenderExpansionOptions, RenderInnerOptions, RenderLifecycle,
     RenderPageOptions,
@@ -694,6 +695,7 @@ impl RenderService {
         settings: &WikitextSettings,
     ) -> Result<RenderOutput> {
         let wikitext_len = wikitext.len();
+        let render_cost_budget = RenderCostBudget::new_default();
         let make_error = || {
             Error::new(
                 format!(
@@ -717,6 +719,7 @@ impl RenderService {
                 render_context: RenderContext::none(),
                 viewer_user_id: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                render_cost_budget: render_cost_budget.clone(),
                 trace: None,
                 persist_compiled_text: true,
                 url: UrlArguments::default(),
@@ -760,6 +763,7 @@ impl RenderService {
                 render_context: RenderContext::page_nav(site_id, category_id, page_id),
                 viewer_user_id: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
                 persist_compiled_text: false,
                 url: UrlArguments::default(),
@@ -822,6 +826,7 @@ impl RenderService {
                 // actor on every request.
                 viewer_user_id: ctx.request().user_id,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
                 persist_compiled_text: false,
                 // AMC carries pager state as `p`; selectors remain in the
@@ -984,6 +989,7 @@ impl RenderService {
         let nav_settings = WikitextSettings::from_mode(WikitextMode::PageNav, layout);
 
         let wikitext_len = wikitext.len();
+        let render_cost_budget = RenderCostBudget::new_default();
         let make_error = || {
             Error::new(
                 format!(
@@ -1011,6 +1017,7 @@ impl RenderService {
                 render_context: RenderContext::page(site_id, category_id, page_id),
                 viewer_user_id,
                 max_include_expansions,
+                render_cost_budget: render_cost_budget.clone(),
                 trace: trace.map(|trace| (trace, CorpusRenderScope::Body)),
                 persist_compiled_text: true,
                 url,
@@ -1027,51 +1034,55 @@ impl RenderService {
             .or_raise(make_error)?;
 
         let nav_settings = &nav_settings;
-        let render_nav_page = |wikitext, scope| async move {
-            match wikitext {
-                Some(wikitext) => {
-                    // Navigation pages render in the context of the viewed page, but
-                    // must not update the viewed page's hosted text blocks.
-                    //
-                    // Also note that the page_info for nav pages is the page being displayed,
-                    // not the nav pages themselves. This means that any variables or blocks
-                    // which depend on the current page (e.g. page slug, tags), which reflect
-                    // the page being viewed.
-                    let result = Self::render_inner(
-                        ctx,
-                        wikitext,
-                        page_info,
-                        nav_settings,
-                        RenderInnerOptions {
-                            render_context: RenderContext::page_nav(
-                                site_id,
-                                category_id,
-                                page_id,
-                            ),
-                            viewer_user_id,
-                            max_include_expansions,
-                            trace: trace.map(|trace| (trace, scope)),
-                            persist_compiled_text: true,
-                            // Whether a nav bar's own modules read the viewed
-                            // page's URL arguments is not captured, so they
-                            // keep rendering as they do without one.
-                            url: UrlArguments::default(),
-                        },
-                    )
-                    .await;
+        let render_nav_page = |wikitext, scope| {
+            let render_cost_budget = render_cost_budget.clone();
+            async move {
+                match wikitext {
+                    Some(wikitext) => {
+                        // Navigation pages render in the context of the viewed page, but
+                        // must not update the viewed page's hosted text blocks.
+                        //
+                        // Also note that the page_info for nav pages is the page being displayed,
+                        // not the nav pages themselves. This means that any variables or blocks
+                        // which depend on the current page (e.g. page slug, tags), which reflect
+                        // the page being viewed.
+                        let result = Self::render_inner(
+                            ctx,
+                            wikitext,
+                            page_info,
+                            nav_settings,
+                            RenderInnerOptions {
+                                render_context: RenderContext::page_nav(
+                                    site_id,
+                                    category_id,
+                                    page_id,
+                                ),
+                                viewer_user_id,
+                                max_include_expansions,
+                                render_cost_budget: render_cost_budget.clone(),
+                                trace: trace.map(|trace| (trace, scope)),
+                                persist_compiled_text: true,
+                                // Whether a nav bar's own modules read the viewed
+                                // page's URL arguments is not captured, so they
+                                // keep rendering as they do without one.
+                                url: UrlArguments::default(),
+                            },
+                        )
+                        .await;
 
-                    match result {
-                        Ok(RenderInnerOutput {
-                            html_output,
-                            compiled_hash,
-                            ..
-                        }) => Ok(Some((compiled_hash, html_output.styles))),
-                        Err(error) => Err(error),
+                        match result {
+                            Ok(RenderInnerOutput {
+                                html_output,
+                                compiled_hash,
+                                ..
+                            }) => Ok(Some((compiled_hash, html_output.styles))),
+                            Err(error) => Err(error),
+                        }
                     }
-                }
 
-                // No nav page
-                None => Ok(None),
+                    // No nav page
+                    None => Ok(None),
+                }
             }
         };
 
@@ -1134,6 +1145,7 @@ impl RenderService {
                 current_page_id: Some(id.page_id),
                 viewer_user_id: None,
                 max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
+                render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
                 // Corpus replay renders stored wikitext, never a live request.
                 url: UrlArguments::default(),
@@ -1256,6 +1268,7 @@ impl RenderService {
             current_page_id,
             viewer_user_id,
             max_include_expansions,
+            render_cost_budget,
             trace,
             url,
             list_pages_pager_route,
@@ -1304,6 +1317,7 @@ impl RenderService {
                     compat_text: &mut wikidot_compat_text,
                     expand_wikidot_image_blocks: true,
                     budget: include_budget,
+                    render_cost_budget: render_cost_budget.clone(),
                 },
             )
             .await
@@ -1360,6 +1374,7 @@ impl RenderService {
                     page_preview,
                     viewer_user_id,
                     include_budget,
+                    render_cost_budget: render_cost_budget.clone(),
                     url,
                     pager_route: list_pages_pager_route,
                 },
@@ -1447,6 +1462,7 @@ impl RenderService {
                 current_site_id,
                 current_page_id,
                 &mut include_budget,
+                &render_cost_budget,
                 url,
                 &mut wikidot_compat_html,
                 &mut wikidot_compat_text,
@@ -1751,6 +1767,7 @@ impl RenderService {
             render_context,
             viewer_user_id,
             max_include_expansions,
+            render_cost_budget,
             trace,
             persist_compiled_text,
             url,
@@ -1797,6 +1814,7 @@ impl RenderService {
                 current_page_id,
                 viewer_user_id,
                 max_include_expansions,
+                render_cost_budget,
                 trace,
                 url,
                 list_pages_pager_route,
@@ -3533,6 +3551,7 @@ impl RenderService {
             compat_text,
             expand_wikidot_image_blocks,
             budget,
+            render_cost_budget,
         } = options;
         let Some(current_site_id) = current_site_id else {
             return Ok(IncludeExpansion {
@@ -3570,6 +3589,7 @@ impl RenderService {
                 settings,
                 expand_wikidot_image_blocks,
                 max_total_includes: budget.maximum,
+                render_cost_budget,
             },
             source_cache,
             compat_text,
@@ -3672,6 +3692,12 @@ impl RenderService {
             let mut nested_include_counts = Vec::with_capacity(includes.len());
 
             for include in &includes {
+                if let Err(error) = expansion_context
+                    .render_cost_budget
+                    .charge(1, "include expansion")
+                {
+                    return Err(Error::new(error.to_string(), ErrorType::Render).into());
+                }
                 if remaining_includes == 0 {
                     return Err(Error::new(
                         format!(
@@ -5166,6 +5192,7 @@ pub(super) struct IncludeExpansionOptions<'a> {
     pub(super) compat_text: &'a mut CompatTextFragments,
     pub(super) expand_wikidot_image_blocks: bool,
     pub(super) budget: IncludeExpansionBudget,
+    pub(super) render_cost_budget: super::render_budget::SharedRenderCostBudget,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -5198,6 +5225,7 @@ struct IncludeExpansionContext<'a> {
     settings: &'a WikitextSettings,
     expand_wikidot_image_blocks: bool,
     max_total_includes: usize,
+    render_cost_budget: super::render_budget::SharedRenderCostBudget,
 }
 
 impl<'a> IncludeExpansionContext<'a> {
@@ -5214,6 +5242,7 @@ impl<'a> IncludeExpansionContext<'a> {
             settings: self.settings,
             expand_wikidot_image_blocks: self.expand_wikidot_image_blocks,
             max_total_includes: self.max_total_includes,
+            render_cost_budget: self.render_cost_budget.clone(),
         }
     }
 }
