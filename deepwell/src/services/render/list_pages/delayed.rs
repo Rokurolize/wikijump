@@ -10,7 +10,10 @@
  * (at your option) any later version.
  */
 
-use super::scanner::{ListPagesModuleMatch, find_list_pages_module_matches};
+use super::scanner::{
+    ListPagesModuleMatch, find_list_pages_module_matches,
+    find_list_pages_module_matches_with_budget,
+};
 use super::substitution::{
     ListPagesSubstitutionContext, substitute_list_pages_rating_only,
     substitute_list_pages_variables_inner,
@@ -28,6 +31,7 @@ use crate::services::render::compat::text_fragments::CompatTextFragments;
 use crate::services::render::ftml_page_existence::WikidotCompatLinkTitleMap;
 use crate::services::render::iftags::resolve_outermost_wikidot_iftags;
 use crate::services::render::literal_regions::LiteralRegionIndex;
+use crate::services::render::render_budget::SharedRenderCostBudget;
 use crate::services::render::service::{
     RenderService, render_list_pages_numbered_rows_with_titles,
     render_list_pages_table_rows,
@@ -85,6 +89,35 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
     compat_text: &mut CompatTextFragments,
     uses_star_rating: bool,
     numbered_link_titles: Option<&WikidotCompatLinkTitleMap>,
+) -> PreparedDelayedListPagesRow {
+    prepare_delayed_list_pages_row_with_budget(
+        template,
+        body,
+        page,
+        index,
+        total,
+        context,
+        outer_page_tags,
+        compat_text,
+        uses_star_rating,
+        numbered_link_titles,
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
+    template: &ListPagesTemplatePlan,
+    body: &str,
+    page: &FoundPageRow,
+    index: usize,
+    total: usize,
+    context: &ListPagesSubstitutionContext<'_>,
+    outer_page_tags: &[Cow<'_, str>],
+    compat_text: &mut CompatTextFragments,
+    uses_star_rating: bool,
+    numbered_link_titles: Option<&WikidotCompatLinkTitleMap>,
+    render_cost_budget: Option<&SharedRenderCostBudget>,
 ) -> PreparedDelayedListPagesRow {
     let mut generated_slots = Vec::new();
     let mut runtime_scalar_ranges = Vec::new();
@@ -156,7 +189,7 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
         }
     };
     RenderService::protect_list_pages_wikidot_embed_iframes(&mut body, &mut fragments);
-    body = protect_nested_list_pages(&body, &mut fragments);
+    body = protect_nested_list_pages(&body, &mut fragments, render_cost_budget);
     let mut html_fragments = (!fragments.is_empty()).then_some(fragments);
     if generated_slots.is_empty()
         && runtime_scalar_ranges.is_empty()
@@ -730,9 +763,29 @@ fn linked_parser_function_projection(source: &str) -> String {
 pub(in crate::services::render) fn find_list_pages_module_matches_with_delayed_links(
     source: &str,
 ) -> Vec<ListPagesModuleMatch<'_>> {
+    find_list_pages_module_matches_with_delayed_links_inner(source, None)
+}
+
+pub(in crate::services::render) fn find_list_pages_module_matches_with_delayed_links_budgeted<
+    'a,
+>(
+    source: &'a str,
+    budget: &SharedRenderCostBudget,
+) -> Vec<ListPagesModuleMatch<'a>> {
+    find_list_pages_module_matches_with_delayed_links_inner(source, Some(budget))
+}
+
+fn find_list_pages_module_matches_with_delayed_links_inner<'a>(
+    source: &'a str,
+    budget: Option<&SharedRenderCostBudget>,
+) -> Vec<ListPagesModuleMatch<'a>> {
     let projection = linked_parser_function_projection(source);
     let projection_start = projection.as_ptr() as usize;
-    find_list_pages_module_matches(&projection)
+    let modules = budget.map_or_else(
+        || find_list_pages_module_matches(&projection),
+        |budget| find_list_pages_module_matches_with_budget(&projection, budget),
+    );
+    modules
         .into_iter()
         .map(|module| {
             let head_start = module.head.as_ptr() as usize - projection_start;
@@ -1018,8 +1071,9 @@ fn seal_list_pages_delayed_output_with_modes(
 fn protect_nested_list_pages(
     source: &str,
     fragments: &mut CompatHtmlFragments,
+    render_cost_budget: Option<&SharedRenderCostBudget>,
 ) -> String {
-    let mut ranges = nested_list_pages_boundary_ranges(source);
+    let mut ranges = nested_list_pages_boundary_ranges(source, render_cost_budget);
     if ranges.is_empty() {
         return source.to_owned();
     }
@@ -1043,12 +1097,26 @@ fn protect_nested_list_pages(
     protected
 }
 
-fn nested_list_pages_boundary_ranges(source: &str) -> Vec<(usize, usize, usize)> {
+fn nested_list_pages_boundary_ranges(
+    source: &str,
+    render_cost_budget: Option<&SharedRenderCostBudget>,
+) -> Vec<(usize, usize, usize)> {
     let mut pending = vec![(0usize, source.len())];
     let mut ranges = Vec::new();
     while let Some((base, end)) = pending.pop() {
         let segment = &source[base..end];
-        for module in find_list_pages_module_matches_with_delayed_links(segment) {
+        let modules = render_cost_budget.map_or_else(
+            || find_list_pages_module_matches_with_delayed_links(segment),
+            |budget| {
+                find_list_pages_module_matches_with_delayed_links_budgeted(
+                    segment, budget,
+                )
+            },
+        );
+        if render_cost_budget.is_some_and(|budget| budget.is_exhausted()) {
+            return Vec::new();
+        }
+        for module in modules {
             let body_start = base + module.body_start;
             let body_end = body_start + module.body.len();
             ranges.push((0, base + module.start, body_start));
@@ -1511,7 +1579,26 @@ fn _assert_module_body_ranges_are_original(source: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::render::render_budget::RenderCostBudget;
     use std::collections::BTreeMap;
+
+    #[test]
+    fn nested_list_pages_protection_fails_closed_on_shared_budget_exhaustion() {
+        let mut source = String::new();
+        for depth in 0..8 {
+            source.push_str(&format!("[[module ListPages name=\"nested-{depth}\"]]"));
+        }
+        source.push_str(&"body ".repeat(300));
+        for _ in 0..8 {
+            source.push_str("[[/module]]");
+        }
+        let budget = RenderCostBudget::new(2);
+
+        let ranges = nested_list_pages_boundary_ranges(&source, Some(&budget));
+
+        assert!(ranges.is_empty(), "exhaustion must preserve the row source");
+        assert!(budget.is_exhausted());
+    }
 
     fn empty_substitution_context<'a>(
         user_displays: &'a BTreeMap<i64, super::super::WikidotUserDisplay>,
