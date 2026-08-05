@@ -1,1 +1,0 @@
-# @wikijump/api
