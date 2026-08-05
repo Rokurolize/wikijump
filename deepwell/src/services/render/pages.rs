@@ -43,14 +43,15 @@ use ftml::settings::WikitextSettings;
 use regex::Regex;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement};
 use std::collections::{BTreeSet, HashMap};
-use std::sync::LazyLock;
+use std::future::Future;
+use std::sync::{Arc, LazyLock};
 
 pub(super) static PAGES_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[module\s+Pages(?P<head>[^\]]*)\]\]").unwrap());
 
 const PAGES_PER_PAGE: usize = 20;
 
-#[derive(Debug, FromQueryResult)]
+#[derive(Debug, Clone, FromQueryResult)]
 pub(super) struct PagesModulePage {
     pub page_id: i64,
     pub page_category_id: i64,
@@ -92,6 +93,31 @@ impl Default for PagesModuleArguments {
             order: PagesModuleOrder::TitleAsc,
             limit: None,
         }
+    }
+}
+
+#[derive(Default)]
+struct PagesModulePagesCache {
+    pages: HashMap<PagesModuleArguments, Arc<Vec<PagesModulePage>>>,
+}
+
+impl PagesModulePagesCache {
+    async fn get_or_init<F, Fut>(
+        &mut self,
+        arguments: PagesModuleArguments,
+        load: F,
+    ) -> Result<Arc<Vec<PagesModulePage>>>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Arc<Vec<PagesModulePage>>>>,
+    {
+        if let Some(pages) = self.pages.get(&arguments) {
+            return Ok(Arc::clone(pages));
+        }
+
+        let pages = load().await?;
+        self.pages.insert(arguments, Arc::clone(&pages));
+        Ok(pages)
     }
 }
 
@@ -151,6 +177,7 @@ pub(super) async fn expand_pages_modules(
 
     let mut expanded = String::with_capacity(wikitext.len());
     let mut cursor = 0;
+    let mut pages_cache = PagesModulePagesCache::default();
 
     for captures in PAGES_MODULE_REGEX.captures_iter(&wikitext) {
         let mtch = captures.get(0).unwrap();
@@ -169,10 +196,17 @@ pub(super) async fn expand_pages_modules(
             continue;
         }
 
-        let pages = load_pages_module_pages(ctx, current_site_id, &arguments).await?;
+        let load_arguments = arguments.clone();
+        let pages = pages_cache
+            .get_or_init(arguments.clone(), move || async move {
+                load_pages_module_pages(ctx, current_site_id, &load_arguments)
+                    .await
+                    .map(Arc::new)
+            })
+            .await?;
         let html = render_pages_module(
             page_info,
-            &pages,
+            pages.as_ref(),
             requested_page.unwrap_or(1),
             arguments.details,
         );
@@ -649,5 +683,30 @@ mod tests {
         assert!(!rendered.contains("<script>"));
         assert!(rendered.contains("&lt;script&gt;alert(1)&lt;/script&gt;"));
         assert!(rendered.contains("href=\"/unsafe&quot;&lt;slug&gt;\""));
+    }
+
+    #[tokio::test]
+    async fn repeated_pages_modules_reuse_the_same_argument_result() {
+        let mut cache = PagesModulePagesCache::default();
+        let arguments = PagesModuleArguments::default();
+        let mut loads = 0;
+
+        let first = cache
+            .get_or_init(arguments.clone(), || async {
+                loads += 1;
+                Ok(std::sync::Arc::new(vec![page(1)]))
+            })
+            .await
+            .expect("the first Pages module load should succeed");
+        let second = cache
+            .get_or_init(arguments, || async {
+                loads += 1;
+                Ok(std::sync::Arc::new(vec![page(2)]))
+            })
+            .await
+            .expect("the cached Pages module load should succeed");
+
+        assert_eq!(loads, 1);
+        assert_eq!(first.as_slice()[0].page_id, second.as_slice()[0].page_id);
     }
 }
