@@ -75,6 +75,24 @@ static NEXT_PREVIOUS_ARGUMENT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     .expect("NextPreviousPage argument regular expression should compile")
 });
 
+/// Keep authored pages from expanding an unbounded number of legacy modules
+/// in one render. The frozen corpus contains at most eight occurrences in a
+/// page, so this leaves room for ordinary authored pages while bounding work.
+pub(super) const MAX_NEXT_PREVIOUS_PAGE_MODULES_PER_RENDER: usize = 64;
+
+/// Bound the database scans performed by NextPage and PreviousPage. A module
+/// whose query would exceed this budget remains literal instead of running an
+/// extra scan.
+pub(super) const MAX_NEXT_PREVIOUS_PAGE_QUERIES_PER_RENDER: usize = 32;
+
+fn next_previous_page_module_budget_exceeded(module_count: usize) -> bool {
+    module_count >= MAX_NEXT_PREVIOUS_PAGE_MODULES_PER_RENDER
+}
+
+fn next_previous_page_query_budget_exceeded(query_count: usize) -> bool {
+    query_count >= MAX_NEXT_PREVIOUS_PAGE_QUERIES_PER_RENDER
+}
+
 #[derive(Debug)]
 pub(super) struct NextPreviousPageExpansion {
     pub(super) wikitext: String,
@@ -175,6 +193,8 @@ impl RenderService {
         let mut score_filter_cache = PageQueryScoreFilterCache::default();
         let mut author_resolution_cache =
             BTreeMap::<ListPagesAuthorCacheKey, ResolvedListPagesAuthors>::new();
+        let mut module_count = 0;
+        let mut query_count = 0;
 
         for occurrence in occurrences {
             if literal_regions.contains(occurrence.start) {
@@ -191,6 +211,21 @@ impl RenderService {
                     .push_str(&compat_text.push_escaped_html_text(occurrence.original));
                 continue;
             };
+            if next_previous_page_module_budget_exceeded(module_count) {
+                expanded
+                    .push_str(&compat_text.push_escaped_html_text(occurrence.original));
+                continue;
+            }
+            module_count += 1;
+            if !arguments.no_candidate_can_match {
+                if next_previous_page_query_budget_exceeded(query_count) {
+                    expanded.push_str(
+                        &compat_text.push_escaped_html_text(occurrence.original),
+                    );
+                    continue;
+                }
+                query_count += 1;
+            }
             let pages = select_next_previous_page(
                 ctx,
                 current_site_id,
@@ -717,7 +752,12 @@ fn next_previous_row_title(row: &FoundPageRow) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::{NextPreviousOrder, parse_next_previous_page_arguments};
+    use super::{
+        MAX_NEXT_PREVIOUS_PAGE_MODULES_PER_RENDER,
+        MAX_NEXT_PREVIOUS_PAGE_QUERIES_PER_RENDER, NextPreviousOrder,
+        next_previous_page_module_budget_exceeded,
+        next_previous_page_query_budget_exceeded, parse_next_previous_page_arguments,
+    };
     use crate::services::render::UrlArguments;
     use ftml::data::PageInfo;
     use ftml::prelude::ScoreValue;
@@ -751,5 +791,21 @@ mod tests {
         assert_eq!(parsed.all_tags[0].as_ref(), "required");
         assert_eq!(parsed.any_tags[0].as_ref(), "shared");
         assert_eq!(parsed.no_tags[0].as_ref(), "blocked");
+    }
+
+    #[test]
+    fn next_previous_page_budgets_preserve_after_the_last_allowed_work() {
+        assert!(!next_previous_page_module_budget_exceeded(
+            MAX_NEXT_PREVIOUS_PAGE_MODULES_PER_RENDER - 1
+        ));
+        assert!(next_previous_page_module_budget_exceeded(
+            MAX_NEXT_PREVIOUS_PAGE_MODULES_PER_RENDER
+        ));
+        assert!(!next_previous_page_query_budget_exceeded(
+            MAX_NEXT_PREVIOUS_PAGE_QUERIES_PER_RENDER - 1
+        ));
+        assert!(next_previous_page_query_budget_exceeded(
+            MAX_NEXT_PREVIOUS_PAGE_QUERIES_PER_RENDER
+        ));
     }
 }
