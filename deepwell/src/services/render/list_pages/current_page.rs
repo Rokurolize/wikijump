@@ -40,9 +40,12 @@ pub(in crate::services::render) fn count_pages_unbounded_total(
     scanned_total: usize,
 ) -> Option<usize> {
     match raw_scan_completion {
-        CountPagesRawScanCompletion::Complete
-        | CountPagesRawScanCompletion::RandomSampleCapped => Some(scanned_total),
-        CountPagesRawScanCompletion::Capped => None,
+        CountPagesRawScanCompletion::Complete => Some(scanned_total),
+        // A random-order scan is deliberately bounded to one render window.
+        // Returning its permission-filtered sample count would reveal the
+        // hidden-page ratio in that window, so retain the original module.
+        CountPagesRawScanCompletion::RandomSampleCapped
+        | CountPagesRawScanCompletion::Capped => None,
     }
 }
 
@@ -57,8 +60,9 @@ pub(in crate::services::render) fn count_pages_scan_requires_preservation(
     viewable_count: usize,
     target_count: usize,
 ) -> bool {
-    raw_scan_completion == CountPagesRawScanCompletion::Capped
-        && viewable_count < target_count
+    raw_scan_completion == CountPagesRawScanCompletion::RandomSampleCapped
+        || (raw_scan_completion == CountPagesRawScanCompletion::Capped
+            && viewable_count < target_count)
 }
 
 pub(in crate::services::render) fn list_pages_row_scan_target(
@@ -69,7 +73,7 @@ pub(in crate::services::render) fn list_pages_row_scan_target(
     exclude_current_page: bool,
 ) -> u64 {
     let rows = if per_page.is_some() {
-        overall_limit.unwrap_or(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
+        overall_limit.unwrap_or(requested_limit)
     } else {
         requested_limit
     };
