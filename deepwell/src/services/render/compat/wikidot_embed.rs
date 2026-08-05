@@ -49,6 +49,30 @@ static WIKIDOT_EMBED_BLOCK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 const WIKIDOT_EMBED_NO_MATCH_HTML: &str =
     r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#;
+
+#[cfg(test)]
+use std::cell::Cell;
+
+#[cfg(test)]
+thread_local! {
+    static WIKIDOT_EMBED_RESTORE_SCANNED_BYTES: Cell<usize> = const { Cell::new(0) };
+}
+
+#[inline]
+fn record_wikidot_embed_restore_scanned_bytes(bytes: usize) {
+    #[cfg(test)]
+    WIKIDOT_EMBED_RESTORE_SCANNED_BYTES.with(|total| {
+        total.set(total.get().saturating_add(bytes));
+    });
+    #[cfg(not(test))]
+    let _ = bytes;
+}
+
+#[cfg(test)]
+fn take_wikidot_embed_restore_scanned_bytes() -> usize {
+    WIKIDOT_EMBED_RESTORE_SCANNED_BYTES.with(|total| total.replace(0))
+}
+
 static WIKIDOT_RENDERED_ANCHOR_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"(?s)<a href="[^"]+">(.*?)</a>"#).unwrap());
 static WIKIDOT_STYLEFRAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -75,15 +99,18 @@ impl RenderService {
                 .into_owned();
         }
         let iframes = Self::protect_wikidot_embed_iframes(wikitext);
-        for (index, iframe) in iframes.into_iter().enumerate() {
-            let marker = format!("{WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX}{index}X");
-            let trusted = if iframe == WIKIDOT_EMBED_NO_MATCH_HTML {
-                compat_html.push_block_html_allowing_span_parent(iframe)
-            } else {
-                compat_html.push_html(iframe)
-            };
-            *wikitext = wikitext.replace(&marker, &trusted);
-        }
+        let trusted_iframes = iframes
+            .into_iter()
+            .map(|iframe| {
+                if iframe == WIKIDOT_EMBED_NO_MATCH_HTML {
+                    compat_html.push_block_html_allowing_span_parent(iframe)
+                } else {
+                    compat_html.push_html(iframe)
+                }
+            })
+            .collect::<Vec<_>>();
+        *wikitext =
+            replace_wikidot_embed_markers(std::mem::take(wikitext), &trusted_iframes);
     }
 
     pub(in crate::services::render) fn protect_wikidot_embed_iframes(
@@ -151,18 +178,55 @@ impl RenderService {
     }
 
     pub(in crate::services::render) fn restore_protected_wikidot_embed_iframes(
-        mut html: String,
+        html: String,
         iframes: &[String],
     ) -> String {
-        for (index, iframe) in iframes.iter().enumerate() {
-            let marker = format!("{WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX}{index}X");
-            html = if iframe == WIKIDOT_EMBED_NO_MATCH_HTML {
-                restore_wikidot_embed_error_block(html, &marker, iframe)
-            } else {
-                html.replace(&marker, iframe)
-            };
+        if iframes.is_empty() || !html.contains(WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX) {
+            return html;
         }
-        html
+
+        record_wikidot_embed_restore_scanned_bytes(html.len());
+        let markers = collect_wikidot_embed_markers(&html, iframes.len());
+        if markers.is_empty() {
+            return html;
+        }
+        let paragraphs = collect_wikidot_embed_paragraphs(&html);
+        let mut output = String::with_capacity(html.len());
+        let mut source_cursor = 0;
+        let mut suppressed_paragraph_end = None;
+
+        for marker in markers {
+            append_wikidot_embed_source_range(
+                &html,
+                &mut source_cursor,
+                marker.start,
+                &mut output,
+                &mut suppressed_paragraph_end,
+            );
+            let iframe = &iframes[marker.index];
+            if iframe == WIKIDOT_EMBED_NO_MATCH_HTML
+                && restore_wikidot_embed_error_paragraph(
+                    &mut output,
+                    &marker,
+                    &paragraphs,
+                    &mut suppressed_paragraph_end,
+                )
+            {
+                source_cursor = marker.end;
+                continue;
+            }
+            output.push_str(iframe);
+            source_cursor = marker.end;
+        }
+
+        append_wikidot_embed_source_range(
+            &html,
+            &mut source_cursor,
+            html.len(),
+            &mut output,
+            &mut suppressed_paragraph_end,
+        );
+        output
     }
 
     pub(in crate::services::render) fn allowed_wikidot_embed_iframe(
@@ -226,52 +290,205 @@ impl RenderService {
 /// in one paragraph. Split only a plain-text paragraph containing the marker;
 /// inline markup and malformed HTML retain the established literal replacement
 /// path.
-fn restore_wikidot_embed_error_block(
-    html: String,
-    marker: &str,
-    error_block: &str,
-) -> String {
-    let mut output = String::with_capacity(html.len() + error_block.len());
-    let mut cursor = 0;
-    while let Some(relative_marker_start) = html[cursor..].find(marker) {
-        let marker_start = cursor + relative_marker_start;
-        let marker_end = marker_start + marker.len();
-        let paragraph_start = html[..marker_start].rfind("<p>");
-        let paragraph_end = html[marker_end..]
-            .find("</p>")
-            .map(|relative| marker_end + relative);
-        let Some((paragraph_start, paragraph_end)) = paragraph_start.zip(paragraph_end)
-        else {
-            output.push_str(&html[cursor..marker_start]);
-            output.push_str(error_block);
-            cursor = marker_end;
-            continue;
-        };
-        let body_start = paragraph_start + "<p>".len();
-        if paragraph_start < cursor
-            || html[body_start..marker_start].contains("</p>")
-            || !wikidot_embed_paragraph_side_is_plain(&html[body_start..marker_start])
-            || !wikidot_embed_paragraph_side_is_plain(&html[marker_end..paragraph_end])
-        {
-            output.push_str(&html[cursor..marker_start]);
-            output.push_str(error_block);
-            cursor = marker_end;
-            continue;
-        }
+#[derive(Debug, Clone, Copy)]
+struct WikidotEmbedMarker {
+    start: usize,
+    end: usize,
+    index: usize,
+}
 
-        output.push_str(&html[cursor..paragraph_start]);
-        let leading = &html[body_start..marker_start];
-        if !leading.trim().is_empty() {
-            output.push_str("<p>");
-            output.push_str(leading);
-            output.push_str("</p>");
+#[derive(Debug)]
+struct WikidotEmbedParagraph {
+    body_start: usize,
+    end: usize,
+    disallowed_tag_starts: Vec<usize>,
+}
+
+fn collect_wikidot_embed_markers(
+    html: &str,
+    iframe_count: usize,
+) -> Vec<WikidotEmbedMarker> {
+    let mut markers = Vec::new();
+    let mut cursor = 0;
+    while let Some(relative_start) =
+        html[cursor..].find(WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX)
+    {
+        let start = cursor + relative_start;
+        let digits_start = start + WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX.len();
+        let mut digits_end = digits_start;
+        while html
+            .as_bytes()
+            .get(digits_end)
+            .is_some_and(u8::is_ascii_digit)
+        {
+            digits_end += 1;
         }
-        output.push_str(error_block);
-        output.push_str(&html[marker_end..paragraph_end]);
-        cursor = paragraph_end + "</p>".len();
+        if digits_end > digits_start
+            && html.as_bytes().get(digits_end) == Some(&b'X')
+            && let Ok(index) = html[digits_start..digits_end].parse::<usize>()
+            && index < iframe_count
+        {
+            let end = digits_end + 1;
+            markers.push(WikidotEmbedMarker { start, end, index });
+            cursor = end;
+        } else {
+            cursor = digits_start;
+        }
     }
-    output.push_str(&html[cursor..]);
+    markers
+}
+
+fn replace_wikidot_embed_markers(text: String, replacements: &[String]) -> String {
+    if replacements.is_empty() || !text.contains(WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX) {
+        return text;
+    }
+    let markers = collect_wikidot_embed_markers(&text, replacements.len());
+    if markers.is_empty() {
+        return text;
+    }
+
+    let mut output = String::with_capacity(text.len());
+    let mut cursor = 0;
+    for marker in markers {
+        output.push_str(&text[cursor..marker.start]);
+        output.push_str(&replacements[marker.index]);
+        cursor = marker.end;
+    }
+    output.push_str(&text[cursor..]);
     output
+}
+
+fn collect_wikidot_embed_paragraphs(html: &str) -> Vec<WikidotEmbedParagraph> {
+    let mut paragraphs = Vec::new();
+    let mut open_paragraphs = Vec::new();
+    let mut cursor = 0;
+    while cursor < html.len() {
+        let next_open = html[cursor..].find("<p>").map(|offset| cursor + offset);
+        let next_close = html[cursor..].find("</p>").map(|offset| cursor + offset);
+        let Some((position, opening)) = (match (next_open, next_close) {
+            (Some(open), Some(close)) if open < close => Some((open, true)),
+            (Some(open), None) => Some((open, true)),
+            (_, Some(close)) => Some((close, false)),
+            (None, None) => None,
+        }) else {
+            break;
+        };
+
+        if opening {
+            open_paragraphs.push(position + "<p>".len());
+            cursor = position + "<p>".len();
+        } else {
+            if let Some(body_start) = open_paragraphs.pop() {
+                let disallowed_tag_starts =
+                    collect_disallowed_embed_paragraph_tags(html, body_start, position);
+                paragraphs.push(WikidotEmbedParagraph {
+                    body_start,
+                    end: position,
+                    disallowed_tag_starts,
+                });
+            }
+            cursor = position + "</p>".len();
+        }
+    }
+    paragraphs.sort_unstable_by_key(|paragraph| paragraph.body_start);
+    paragraphs
+}
+
+fn collect_disallowed_embed_paragraph_tags(
+    html: &str,
+    body_start: usize,
+    body_end: usize,
+) -> Vec<usize> {
+    let mut disallowed = Vec::new();
+    let mut cursor = body_start;
+    while let Some(relative_start) = html[cursor..body_end].find('<') {
+        let start = cursor + relative_start;
+        let rest = &html[start..body_end];
+        if let Some(after) = rest.strip_prefix("<br>") {
+            cursor = body_end - after.len();
+        } else if let Some(after) = rest
+            .strip_prefix("<br/>")
+            .or_else(|| rest.strip_prefix("<br />"))
+        {
+            cursor = body_end - after.len();
+        } else {
+            disallowed.push(start);
+            cursor = start + 1;
+        }
+    }
+    disallowed
+}
+
+fn append_wikidot_embed_source_range(
+    html: &str,
+    source_cursor: &mut usize,
+    end: usize,
+    output: &mut String,
+    suppressed_paragraph_end: &mut Option<usize>,
+) {
+    if *source_cursor >= end {
+        return;
+    }
+    if let Some(paragraph_end) = *suppressed_paragraph_end {
+        if paragraph_end < *source_cursor {
+            *suppressed_paragraph_end = None;
+        } else if paragraph_end < end {
+            output.push_str(&html[*source_cursor..paragraph_end]);
+            *source_cursor = paragraph_end + "</p>".len();
+            *suppressed_paragraph_end = None;
+        } else if paragraph_end == end {
+            output.push_str(&html[*source_cursor..paragraph_end]);
+            *source_cursor = end;
+            return;
+        }
+    }
+    output.push_str(&html[*source_cursor..end]);
+    *source_cursor = end;
+}
+
+fn restore_wikidot_embed_error_paragraph(
+    output: &mut String,
+    marker: &WikidotEmbedMarker,
+    paragraphs: &[WikidotEmbedParagraph],
+    suppressed_paragraph_end: &mut Option<usize>,
+) -> bool {
+    let paragraph_index =
+        paragraphs.partition_point(|paragraph| paragraph.body_start <= marker.start);
+    let Some(paragraph) = paragraph_index
+        .checked_sub(1)
+        .and_then(|index| paragraphs.get(index))
+        .filter(|paragraph| marker.start < paragraph.end)
+    else {
+        return false;
+    };
+    let Some(paragraph_start) = output.rfind("<p>") else {
+        return false;
+    };
+    let body_start = paragraph_start + "<p>".len();
+    if body_start > output.len() {
+        return false;
+    }
+    let leading = &output[body_start..];
+    if leading.contains("</p>")
+        || !wikidot_embed_paragraph_side_is_plain(leading)
+        || paragraph
+            .disallowed_tag_starts
+            .partition_point(|&position| position < marker.end)
+            != paragraph.disallowed_tag_starts.len()
+    {
+        return false;
+    }
+
+    let leading = leading.to_owned();
+    output.truncate(paragraph_start);
+    if !leading.trim().is_empty() {
+        output.push_str("<p>");
+        output.push_str(&leading);
+        output.push_str("</p>");
+    }
+    output.push_str(WIKIDOT_EMBED_NO_MATCH_HTML);
+    *suppressed_paragraph_end = Some(paragraph.end);
+    true
 }
 
 fn wikidot_embed_paragraph_side_is_plain(value: &str) -> bool {
@@ -289,4 +506,74 @@ fn wikidot_embed_paragraph_side_is_plain(value: &str) -> bool {
         }
     }
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unsupported_embed_error_keeps_wikidot_plain_paragraph_split() {
+        let marker = format!("{WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX}0X");
+        let html = format!("<p>before{marker}<br>after</p>");
+        let restored = RenderService::restore_protected_wikidot_embed_iframes(
+            html,
+            &[WIKIDOT_EMBED_NO_MATCH_HTML.to_owned()],
+        );
+
+        assert_eq!(
+            restored,
+            concat!(
+                "<p>before</p>",
+                r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#,
+                "<br>after",
+            ),
+        );
+    }
+
+    #[test]
+    fn unsupported_embed_error_stays_inline_with_markup() {
+        let marker = format!("{WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX}0X");
+        let html = format!("<p>before <strong>{marker}</strong> after</p>");
+        let restored = RenderService::restore_protected_wikidot_embed_iframes(
+            html,
+            &[WIKIDOT_EMBED_NO_MATCH_HTML.to_owned()],
+        );
+
+        assert_eq!(
+            restored,
+            format!(
+                r#"<p>before <strong>{WIKIDOT_EMBED_NO_MATCH_HTML}</strong> after</p>"#,
+            ),
+        );
+    }
+
+    #[test]
+    fn dense_unsupported_embeds_do_not_rescan_the_output_per_marker() {
+        const MARKER_COUNT: usize = 1_024;
+
+        let iframes = (0..MARKER_COUNT)
+            .map(|_| WIKIDOT_EMBED_NO_MATCH_HTML.to_owned())
+            .collect::<Vec<_>>();
+        let html = (0..MARKER_COUNT)
+            .map(|index| format!("<p>{WIKIDOT_EMBED_IFRAME_SENTINEL_PREFIX}{index}X</p>"))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        let restored = RenderService::restore_protected_wikidot_embed_iframes(
+            html.clone(),
+            &iframes,
+        );
+        let scanned_bytes = take_wikidot_embed_restore_scanned_bytes();
+
+        assert_eq!(
+            restored.matches(WIKIDOT_EMBED_NO_MATCH_HTML).count(),
+            MARKER_COUNT,
+        );
+        assert!(
+            scanned_bytes <= html.len() * 4,
+            "embed restoration rescanned {scanned_bytes} bytes for {} source bytes",
+            html.len(),
+        );
+    }
 }
