@@ -55,7 +55,10 @@ export async function captureDocumentObservation(
   // standing canary contract carries PAGE_CHROME_SKELETON explicitly; do not
   // silently add it to every ad-hoc observation and turn an unrelated
   // contract into a page-chrome assertion.
-  const skeleton = contract?.page_chrome_skeleton ?? null;
+  const skeleton =
+    contract?.capture_page_chrome_skeleton ??
+    contract?.page_chrome_skeleton ??
+    null;
   const documentPhase = await page.evaluate(
     ({
       geometrySelectors: selectors,
@@ -242,6 +245,22 @@ export async function captureDocumentObservation(
             natural_width: image.naturalWidth,
             natural_height: image.naturalHeight,
           })),
+        page_content_rendered_images: root
+          ? [...root.querySelectorAll("img")].filter(rendered).length
+          : 0,
+        page_content_broken_images: root
+          ? [...root.querySelectorAll("img")]
+              .filter(
+                (image) =>
+                  rendered(image) &&
+                  (!image.complete || image.naturalWidth <= 0),
+              )
+              .map((image) => ({
+                src: image.currentSrc || image.src,
+                natural_width: image.naturalWidth,
+                natural_height: image.naturalHeight,
+              }))
+          : [],
         page_chrome_skeleton: pageChromeSkeleton,
       };
     },

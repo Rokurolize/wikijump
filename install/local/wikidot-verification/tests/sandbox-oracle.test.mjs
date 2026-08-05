@@ -111,6 +111,7 @@ function liveFixture() {
     owner: "FTML",
     assertion_class: "match-live",
     theme_family: null,
+    comparison_scope: "construct",
     provenance: provenance(),
   };
 }
@@ -129,6 +130,17 @@ test("registry rejects delayed constructs assigned to the live assertion", () =>
         ],
       }),
     /match-frozen-preserved/u,
+  );
+});
+
+test("page-chrome scope requires an explicit theme family", () => {
+  assert.throws(
+    () =>
+      validateSandboxOracleRegistry({
+        schema: SANDBOX_ORACLE_REGISTRY_SCHEMA,
+        fixtures: [{...liveFixture(), comparison_scope: "page-chrome"}],
+      }),
+    /theme_family/u,
   );
 });
 
@@ -181,6 +193,53 @@ test("match-live compares the frozen capture corner to corner", () => {
   assert.equal(result.status, "pass");
   assert.equal(result.layers["dom-signature"].status, "pass");
   assert.equal(result.layers["screenshot-receipt"].status, "pass");
+});
+
+test("construct scope ignores page chrome while preserving construct findings", () => {
+  const fixture = liveFixture();
+  const local = capture({
+    page_chrome_skeleton: {
+      links: [{parent: "body", child: "#skrollr-body", parent_count: 1, child_count: 0, direct_child_count: 0}],
+    },
+    document: {
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {status: "complete"},
+      page_content_rendered_images: 1,
+      page_content_broken_images: [],
+    },
+  });
+  const frozen = capture({
+    input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    document: {
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {status: "complete"},
+      page_content_rendered_images: 1,
+      page_content_broken_images: [],
+    },
+  });
+  const result = compareSandboxOracleFixture({
+    fixture,
+    local,
+    frozen,
+    contract: {
+      geometry_selectors: [],
+      first_paint_geometry_selectors: [],
+      presence_probes: [],
+      first_paint_custom_properties: {},
+      page_chrome_skeleton: {
+        links: [{parent: "body", child: "#skrollr-body"}],
+      },
+    },
+  });
+  assert.equal(result.status, "pass");
+  assert.equal(result.comparison_scope, "construct");
+  assert.equal(
+    result.findings.some((finding) => finding.code === "page_chrome_skeleton_divergence"),
+    false,
+  );
 });
 
 test("normalization remains a blocking finding in the sandbox gate", () => {

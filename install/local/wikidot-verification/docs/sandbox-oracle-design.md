@@ -110,6 +110,23 @@ matrix on two axes that keep it from exploding:
   fixtures repeat one representative page across each canary theme family.
 - A small hand-picked set of interaction pages covers known cross-effects.
 
+The comparison scope is explicit for every fixture. Axis 1 syntax and
+interaction fixtures use `comparison_scope: "construct"`: layers 1-4 inspect
+the `#page-content` construct region and do not compare site chrome, theme
+assets, or page-level geometry. Axis 2 theme fixtures use
+`comparison_scope: "page-chrome"`: they compare the full page and skeleton,
+but only after the live sandbox page has been configured with the same named
+theme as the local mirror. A bare live sandbox page and a themed local page are
+not a valid oracle pair. Delayed fixtures remain construct-scoped and use the
+frozen-preserved assertion class.
+
+The 2026-08-05 probe found that the current sandbox page shell serves the
+Standard Blue theme while the local mirror serves the Sigma-style Wikidot
+layout. The theme rows therefore remain observation-blocked until a run-owned
+capture uses the same named theme on both sides; the probe and cleanup receipt
+are retained at `/home/roku/oracle-store/wjlab/sandbox-oracle-20260805-theme-simple-probe.json`
+and `/home/roku/oracle-store/wjlab/sandbox-oracle-20260805-theme-route-probe.json`.
+
 ### Axis 1 - syntax fixtures (one baseline theme, FTML-owned DOM)
 
 Each row isolates a construct family drawn from this engagement's real merged-PR
@@ -229,8 +246,11 @@ of an id, or extra wrapper divs above #container-wrap-wrap are currently
 invisible to every existing gate. The oracle must extend capture scope UPWARD to
 the page-chrome skeleton - assert the ancestor chain, the expected ids
 (#skrollr-body, #container-wrap-wrap, #top-bar), and the wrapper structure - not
-just #page-content downward. Without this, a page-chrome skeleton regression
-cannot be pinned by anything that exists today.
+just #page-content downward. The oracle's `page-chrome` scope derives its
+expected link list from the live Wikidot observation, and a local mutation that
+removes one live wrapper must make the skeleton contract red. Construct-scoped
+fixtures deliberately omit this full-page assertion; otherwise a theme
+mismatch would be reported once for every syntax construct.
 
 ### Volatile-attribute normalization (required)
 
@@ -241,6 +261,18 @@ hash cycle). Reuse render-compare.mjs normalization channels (hostname_map,
 request_id, semantic_timestamp, cache_buster, env_id) where they apply. If
 enabling a normalization is what makes a difference disappear, that is a finding
 (normalization_hides_difference), never a silent free pass.
+
+### Request-gate boundary
+
+The capture gate admits the Wikidot-family page and resource hosts. The harness
+does not have a portable initiator-chain API across its browser adapters, so its
+fallback boundary is resource-based: stylesheets, fonts, and images from any
+public host are admitted through the same four-second gate because themes
+declare them as rendering dependencies; scripts and fetch/XHR requests from
+hosts outside the site under test are aborted before admission. Every abort is
+recorded per fixture. If admitting or blocking a resource changes the
+comparison, the verdict records `normalization_hides_difference`; it is never a
+silent match.
 
 ## 6. What the oracle unblocks
 

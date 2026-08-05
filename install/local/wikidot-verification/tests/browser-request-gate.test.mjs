@@ -10,6 +10,7 @@ import {
   createPersistentBrowserRequestGate,
   isWikidotCapturePublicOrigin,
   installBrowserRequestGate,
+  isCaptureDependencyResourceType,
   localBrowserCaptureOrigins,
   parseRetryAfterMilliseconds,
 } from "../src/browser-request-gate.mjs";
@@ -170,6 +171,34 @@ test("the public gate admits Wikidot and css.wikidot.com but blocks unrelated pu
   assert.equal(isWikidotCapturePublicOrigin("http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/WIKIDOT.combined.js"), true);
   assert.equal(isWikidotCapturePublicOrigin("https://d3g0gp89917ko0.cloudfront.net/ads.js"), false);
   assert.equal(isWikidotCapturePublicOrigin("https://example.com"), false);
+});
+
+test("theme dependencies are admitted by resource type while third-party execution is blocked", async () => {
+  const clock = createClock();
+  const gate = createBrowserRequestGate({intervalMs: 4_000, now: clock.now, sleep: clock.sleep});
+  const context = createContext();
+  await installBrowserRequestGate(context, {gate, publicOriginPredicate: isWikidotCapturePublicOrigin});
+  const handler = context.routes[0].handler;
+  const stylesheet = createRoute("https://cdn.scpwiki.com/theme/en/sigma/theme.css", {resourceType: "stylesheet"});
+  const font = createRoute("https://cdn.scpwiki.com/theme/en/sigma/font.woff2", {resourceType: "font"});
+  const image = createRoute("https://cdn.scpwiki.com/theme/en/sigma/logo.svg", {resourceType: "image"});
+  const script = createRoute("https://cdn.scpwiki.com/theme/en/sigma/theme.js", {resourceType: "script"});
+
+  await handler(stylesheet);
+  await handler(font);
+  await handler(image);
+  await handler(script);
+
+  assert.deepEqual(stylesheet.actions, [{type: "continue"}]);
+  assert.deepEqual(font.actions, [{type: "continue"}]);
+  assert.deepEqual(image.actions, [{type: "continue"}]);
+  assert.deepEqual(script.actions, [{type: "abort", reason: "blockedbyclient"}]);
+  assert.equal(isCaptureDependencyResourceType("stylesheet"), true);
+  assert.equal(isCaptureDependencyResourceType("font"), true);
+  assert.equal(isCaptureDependencyResourceType("image"), true);
+  assert.equal(isCaptureDependencyResourceType("script"), false);
+  assert.equal(gate.snapshot().public_requests, 3);
+  assert.deepEqual(gate.snapshot().blocked_hosts, {"cdn.scpwiki.com": 1});
 });
 
 test("a source response cache serves repeated cacheable assets without another gate grant", async () => {

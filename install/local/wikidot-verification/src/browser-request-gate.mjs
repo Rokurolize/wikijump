@@ -15,6 +15,11 @@ const STATE_SCHEMA = "wikijump_full_parity.browser_request_gate_state.v1";
 const STATE_CONFIRMATIONS = new Set(["pending", "sealed"]);
 const LOCAL_WIKIJUMP_HOST_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.wikijump\.localhost$/u;
 const WIKIDOT_STATIC_CDN_RE = /^[a-z0-9-]+\.cloudfront\.net$/u;
+const CAPTURE_DEPENDENCY_RESOURCE_TYPES = new Set([
+  "stylesheet",
+  "font",
+  "image",
+]);
 
 function defaultNow() {
   return Date.now();
@@ -153,6 +158,10 @@ export function isWikidotCapturePublicOrigin(value) {
     (url.hostname.toLowerCase() === "wikidot.com" ||
       isWikidotResourceHost(url.hostname.toLowerCase()) ||
       (WIKIDOT_STATIC_CDN_RE.test(url.hostname.toLowerCase()) && url.pathname.startsWith("/v--")));
+}
+
+export function isCaptureDependencyResourceType(resourceType) {
+  return CAPTURE_DEPENDENCY_RESOURCE_TYPES.has(resourceType);
 }
 
 export function parseRetryAfterMilliseconds(value, {epochNow = Date.now} = {}) {
@@ -464,7 +473,11 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
         await route.continue();
         return;
       }
-      if (publicOriginPredicate !== null && !publicOriginPredicate(url)) {
+      if (
+        publicOriginPredicate !== null &&
+        !publicOriginPredicate(url) &&
+        !isCaptureDependencyResourceType(route.request().resourceType())
+      ) {
         gate.recordUnsupportedRequestBlocked(url.hostname);
         await abortRoute(route);
         return;

@@ -29,6 +29,10 @@ export const SANDBOX_ORACLE_OWNERS = Object.freeze([
   "FTML",
   "Framerail/Deepwell",
 ]);
+export const SANDBOX_ORACLE_COMPARISON_SCOPES = Object.freeze([
+  "construct",
+  "page-chrome",
+]);
 export const SANDBOX_ORACLE_LAYER_NAMES = Object.freeze([
   "dom-signature",
   "structure-geometry",
@@ -51,6 +55,7 @@ export const SANDBOX_ORACLE_DELAYED_FAMILIES = Object.freeze([
 
 const OWNER_SET = new Set(SANDBOX_ORACLE_OWNERS);
 const ASSERTION_SET = new Set(SANDBOX_ORACLE_ASSERTION_CLASSES);
+const COMPARISON_SCOPE_SET = new Set(SANDBOX_ORACLE_COMPARISON_SCOPES);
 const DELAYED_SET = new Set(SANDBOX_ORACLE_DELAYED_FAMILIES);
 
 function normalizedFamily(value) {
@@ -197,6 +202,16 @@ export function validateSandboxOracleFixture(value, index = 0) {
   if (themeFamily !== null && typeof themeFamily !== "string") {
     throw new Error(`fixtures[${index}].theme_family must be a string or null`);
   }
+  const comparisonScope = entry.comparison_scope ??
+    (themeFamily === null ? "construct" : "page-chrome");
+  if (!COMPARISON_SCOPE_SET.has(comparisonScope)) {
+    throw new Error(`fixtures[${index}].comparison_scope is unsupported`);
+  }
+  if (comparisonScope === "page-chrome" && themeFamily === null) {
+    throw new Error(
+      `fixtures[${index}] page-chrome comparisons require a theme_family`,
+    );
+  }
   const result = {
     fixture_id: fixtureId,
     construct_family: constructFamily,
@@ -204,6 +219,7 @@ export function validateSandboxOracleFixture(value, index = 0) {
     owner,
     assertion_class: assertionClass,
     theme_family: themeFamily,
+    comparison_scope: comparisonScope,
     provenance: validateProvenance(
       entry.provenance,
       `fixtures[${index}].provenance`,
@@ -501,14 +517,19 @@ function preservedLayers(fixture, local, thresholds) {
   };
 }
 
-function liveLayers(local, frozen, thresholds, contract) {
+function liveLayers(local, frozen, thresholds, contract, comparisonScope) {
+  const scopedContract = {
+    ...(contract ?? {}),
+    comparison_scope: comparisonScope,
+    ...(comparisonScope === "construct" ? {page_chrome_skeleton: null} : {}),
+  };
   const dom = exactDomLayer(local, frozen);
   const comparison = compareCaptures(
     local,
     frozen,
     thresholds,
     [],
-    contract,
+    scopedContract,
   );
   const classified = classifyCaptureAnomalies(comparison);
   return {
@@ -613,6 +634,7 @@ export function compareSandboxOracleFixture({
       frozen,
       checkedThresholds,
       contract,
+      checkedFixture.comparison_scope,
     );
   } else {
     layers = preservedLayers(
@@ -629,6 +651,7 @@ export function compareSandboxOracleFixture({
   return {
     fixture_id: checkedFixture.fixture_id,
     assertion_class: checkedFixture.assertion_class,
+    comparison_scope: checkedFixture.comparison_scope,
     provenance: checkedFixture.provenance,
     status: findings.length === 0 ? "pass" : "fail",
     verdict: findings.length === 0 ? "match" : "regression",

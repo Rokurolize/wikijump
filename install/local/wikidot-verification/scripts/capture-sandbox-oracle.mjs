@@ -142,16 +142,27 @@ function resourceFor(fixture, source, registry, runId, target) {
   };
 }
 
-function browserContract() {
+function browserContract(fixture) {
+  const comparisonScope = fixture.comparison_scope;
+  const pageChrome = comparisonScope === "page-chrome";
   return {
-    geometry_selectors: ["#main-content", "#page-content", "#header", "#side-bar", "#header h1 a"],
-    first_paint_geometry_selectors: ["#header"],
+    comparison_scope: comparisonScope,
+    geometry_selectors: pageChrome
+      ? ["#main-content", "#page-content", "#header", "#side-bar", "#header h1 a"]
+      : ["#page-content"],
+    first_paint_geometry_selectors: pageChrome ? ["#header"] : [],
     presence_probes: [
       {id: "oracle_page_content", selector: "#page-content", minimum_count: 1, require_rendered: false},
-      {id: "oracle_header", selector: "#header", minimum_count: 1, require_rendered: false},
+      ...(pageChrome
+        ? [{id: "oracle_header", selector: "#header", minimum_count: 1, require_rendered: false}]
+        : []),
     ],
     first_paint_custom_properties: {},
-    page_chrome_skeleton: PAGE_CHROME_SKELETON,
+    // Keep collecting the chain for every capture, but only compare it for
+    // full-page theme fixtures. The expected chain is replaced by the live
+    // observation below, so Wikidot remains the authority.
+    capture_page_chrome_skeleton: PAGE_CHROME_SKELETON,
+    page_chrome_skeleton: pageChrome ? PAGE_CHROME_SKELETON : null,
   };
 }
 
@@ -414,10 +425,25 @@ async function main(argv) {
         localAttempted = true;
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "create-local"}));
         localPage = await withTimeout(wikijump.create(localResource, {source: source.source}), `local create ${fixture.fixture_id}`);
-        contract = browserContract();
+        contract = browserContract(fixture);
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-live"}));
         const liveResult = await captureFixtureObservation({context: browser.context, page: liveBrowserPage, url: liveResource.url, label: "live", index: captureIndex, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs, fixtureId: fixture.fixture_id});
         liveCapture = liveResult.capture;
+        if (
+          fixture.comparison_scope === "page-chrome" &&
+          liveCapture.page_chrome_skeleton?.schema &&
+          Array.isArray(liveCapture.page_chrome_skeleton.links)
+        ) {
+          contract = {
+            ...contract,
+            page_chrome_skeleton: {
+              schema: liveCapture.page_chrome_skeleton.schema,
+              links: liveCapture.page_chrome_skeleton.links.map(
+                ({parent, child}) => ({parent, child}),
+              ),
+            },
+          };
+        }
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-local"}));
         const localResult = await captureFixtureObservation({context: browser.context, page: localBrowserPage, url: localResource.url, label: "local", index: captureIndex, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs, fixtureId: fixture.fixture_id});
         localCapture = localResult.capture;
@@ -460,7 +486,7 @@ async function main(argv) {
         const error = fixtureError === null ? new Error("fixture capture did not produce both observations") : new Error(fixtureError.message);
         liveCapture ??= captureFailure({url: liveResource.url, error});
         localCapture ??= captureFailure({url: localResource.url, error});
-        contract ??= browserContract();
+        contract ??= browserContract(fixture);
         upsertProgressRow(captures, {fixture_id: fixture.fixture_id, live: liveCapture, local: localCapture, resources: {live: liveResource, local: localResource}});
         upsertProgressRow(contracts, {fixture_id: fixture.fixture_id, contract});
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-recorded-failure"}));
