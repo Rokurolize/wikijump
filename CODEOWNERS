@@ -8,7 +8,6 @@ deepwell                            @emmiegit
 
 # Frontend / Web server
 framerail                           @Zokhoi @hoah2333 @emmiegit
-web                                 @Zokhoi @hoah2333
 
 # Localization
 .github/workflows/locales.yaml      @emmiegit

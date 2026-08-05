@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'web/database/**'
       - 'install/common/postgres/**'
       - 'install/local/postgres/Dockerfile'
       - '.github/workflows/docker-build-postgres.local.yaml'
