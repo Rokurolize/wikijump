@@ -4,6 +4,7 @@ mod rate;
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::future::Future;
 use std::sync::LazyLock;
 
 use regex::Regex;
@@ -178,6 +179,27 @@ static FEATUREDSITE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+FeaturedSite\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
         .expect("FeaturedSite module expression is valid")
 });
+
+#[derive(Default)]
+struct MembershipByPasswordResultCache {
+    rendered: Option<Option<&'static str>>,
+}
+
+impl MembershipByPasswordResultCache {
+    async fn get_or_init<F, Fut>(&mut self, load: F) -> Result<Option<&'static str>>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Option<&'static str>>>,
+    {
+        if let Some(rendered) = self.rendered {
+            return Ok(rendered);
+        }
+
+        let rendered = load().await?;
+        self.rendered = Some(rendered);
+        Ok(rendered)
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum PageCalendarCategorySelector {
@@ -1793,6 +1815,7 @@ impl RenderService {
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
+        let mut result_cache = MembershipByPasswordResultCache::default();
         for captures in MEMBERSHIPBYPASSWORD_MODULE_REGEX.captures_iter(&wikitext) {
             let matched = captures
                 .get(0)
@@ -1804,13 +1827,16 @@ impl RenderService {
             if !head.trim().is_empty() {
                 continue;
             }
-            let Some(rendered) = Self::render_membership_by_password_module(
-                ctx,
-                current_site_id,
-                viewer_user_id,
-            )
-            .await?
-            else {
+            let rendered = result_cache
+                .get_or_init(|| {
+                    Self::render_membership_by_password_module(
+                        ctx,
+                        current_site_id,
+                        viewer_user_id,
+                    )
+                })
+                .await?;
+            let Some(rendered) = rendered else {
                 continue;
             };
             output.push_str(&wikitext[cursor..matched.start()]);
@@ -2542,4 +2568,37 @@ fn wikidot_scope_head_is(source: &str, start: usize, expected: &str) -> bool {
         return false;
     };
     tail[..end].trim().eq_ignore_ascii_case(expected)
+}
+
+#[cfg(test)]
+mod membership_by_password_tests {
+    use std::cell::Cell;
+
+    use super::MembershipByPasswordResultCache;
+
+    #[tokio::test]
+    async fn repeated_membership_modules_reuse_the_same_render_result() {
+        let loads = Cell::new(0);
+        let mut cache = MembershipByPasswordResultCache::default();
+
+        let first = cache
+            .get_or_init(|| async {
+                loads.set(loads.get() + 1);
+                Ok(Some("member"))
+            })
+            .await
+            .expect("the first membership lookup should succeed");
+        let second = cache
+            .get_or_init(|| async {
+                panic!("a cached membership result must not query again");
+                #[allow(unreachable_code)]
+                Ok(None)
+            })
+            .await
+            .expect("the cached membership result should succeed");
+
+        assert_eq!(first, Some("member"));
+        assert_eq!(second, Some("member"));
+        assert_eq!(loads.get(), 1);
+    }
 }
