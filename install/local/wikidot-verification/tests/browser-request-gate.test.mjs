@@ -8,7 +8,9 @@ import {
   createBrowserRequestGate,
   createBrowserResponseCache,
   createPersistentBrowserRequestGate,
+  isWikidotCapturePublicOrigin,
   installBrowserRequestGate,
+  isCaptureDependencyResourceType,
   localBrowserCaptureOrigins,
   parseRetryAfterMilliseconds,
 } from "../src/browser-request-gate.mjs";
@@ -141,6 +143,62 @@ test("source and local contexts share the gate while only the exact local origin
   assert.deepEqual(gate.snapshot().grants.map((grant) => grant.released_at_epoch_ms), [0, 4_000]);
   assert.equal(gate.snapshot().local_exempt_requests, 1);
   assert.equal(gate.snapshot().websocket_connections_blocked, 1);
+});
+
+test("the public gate admits Wikidot and css.wikidot.com but blocks unrelated public hosts before admission", async () => {
+  const clock = createClock();
+  const gate = createBrowserRequestGate({intervalMs: 4_000, now: clock.now, sleep: clock.sleep});
+  gate.setActiveFixture("syntax-collapsible");
+  const context = createContext();
+  await installBrowserRequestGate(context, {gate, publicOriginPredicate: isWikidotCapturePublicOrigin});
+  const handler = context.routes[0].handler;
+  const ad = createRoute("https://api.rlcdn.com/api/identity");
+  const css = createRoute("https://css.wikidot.com/local--code/1", {resourceType: "stylesheet"});
+  const page = createRoute("http://sandbox-for-codex.wikidot.com/codex-oracle:fixture");
+
+  await handler(ad);
+  await handler(css);
+  await handler(page);
+
+  assert.deepEqual(ad.actions, [{type: "abort", reason: "blockedbyclient"}]);
+  assert.deepEqual(css.actions, [{type: "continue"}]);
+  assert.deepEqual(page.actions, [{type: "continue"}]);
+  assert.equal(gate.snapshot().public_requests, 2);
+  assert.deepEqual(gate.snapshot().blocked_hosts, {"api.rlcdn.com": 1});
+  assert.deepEqual(gate.snapshot().blocked_hosts_by_fixture, {"syntax-collapsible": {"api.rlcdn.com": 1}});
+  assert.equal(isWikidotCapturePublicOrigin("https://css.wikidot.com"), true);
+  assert.equal(isWikidotCapturePublicOrigin("https://wikidot.com"), true);
+  assert.equal(isWikidotCapturePublicOrigin("http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/WIKIDOT.combined.js"), true);
+  assert.equal(isWikidotCapturePublicOrigin("https://d3g0gp89917ko0.cloudfront.net/ads.js"), false);
+  assert.equal(isWikidotCapturePublicOrigin("https://example.com"), false);
+});
+
+test("theme dependencies are admitted by resource type while third-party execution is blocked", async () => {
+  const clock = createClock();
+  const gate = createBrowserRequestGate({intervalMs: 4_000, now: clock.now, sleep: clock.sleep});
+  const context = createContext();
+  await installBrowserRequestGate(context, {gate, publicOriginPredicate: isWikidotCapturePublicOrigin});
+  const handler = context.routes[0].handler;
+  const stylesheet = createRoute("https://cdn.scpwiki.com/theme/en/sigma/theme.css", {resourceType: "stylesheet"});
+  const font = createRoute("https://cdn.scpwiki.com/theme/en/sigma/font.woff2", {resourceType: "font"});
+  const image = createRoute("https://cdn.scpwiki.com/theme/en/sigma/logo.svg", {resourceType: "image"});
+  const script = createRoute("https://cdn.scpwiki.com/theme/en/sigma/theme.js", {resourceType: "script"});
+
+  await handler(stylesheet);
+  await handler(font);
+  await handler(image);
+  await handler(script);
+
+  assert.deepEqual(stylesheet.actions, [{type: "continue"}]);
+  assert.deepEqual(font.actions, [{type: "continue"}]);
+  assert.deepEqual(image.actions, [{type: "continue"}]);
+  assert.deepEqual(script.actions, [{type: "abort", reason: "blockedbyclient"}]);
+  assert.equal(isCaptureDependencyResourceType("stylesheet"), true);
+  assert.equal(isCaptureDependencyResourceType("font"), true);
+  assert.equal(isCaptureDependencyResourceType("image"), true);
+  assert.equal(isCaptureDependencyResourceType("script"), false);
+  assert.equal(gate.snapshot().public_requests, 3);
+  assert.deepEqual(gate.snapshot().blocked_hosts, {"cdn.scpwiki.com": 1});
 });
 
 test("a source response cache serves repeated cacheable assets without another gate grant", async () => {

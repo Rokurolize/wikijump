@@ -495,6 +495,9 @@ export function compareCaptures(
   contract = null,
 ) {
   const checkedThresholds = validateThresholds(thresholds);
+  const constructScope = contract?.comparison_scope === "construct";
+  const localDocument = local.document ?? {};
+  const liveDocument = live.document ?? {};
   const anomalies = [];
   const liveFailureKeys = new Set(
     (live.failures ?? [])
@@ -574,23 +577,35 @@ export function compareCaptures(
     "domcontentloaded_immediate_",
   );
   anomalies.push(...immediateGeometry.anomalies);
-  const imageCountDelta =
-    (local.rendered_images ?? 0) - (live.rendered_images ?? 0);
+  const localRenderedImages = constructScope
+    ? (localDocument.page_content_rendered_images ?? local.rendered_images ?? 0)
+    : (local.rendered_images ?? 0);
+  const liveRenderedImages = constructScope
+    ? (liveDocument.page_content_rendered_images ?? live.rendered_images ?? 0)
+    : (live.rendered_images ?? 0);
+  const imageCountDelta = localRenderedImages - liveRenderedImages;
   if (Math.abs(imageCountDelta) > checkedThresholds.image_count_delta) {
     anomalies.push({
       code: "rendered_image_count_divergence",
       detail: {
-        local: local.rendered_images ?? 0,
-        live: live.rendered_images ?? 0,
+        local: localRenderedImages,
+        live: liveRenderedImages,
         delta: imageCountDelta,
+        scope: constructScope ? "construct" : "page-chrome",
       },
     });
   }
-  const classifiedBrokenImages = (local.broken_images ?? []).map((image) => {
+  const localBrokenImages = constructScope
+    ? (localDocument.page_content_broken_images ?? local.broken_images ?? [])
+    : (local.broken_images ?? []);
+  const liveBrokenImages = constructScope
+    ? (liveDocument.page_content_broken_images ?? live.broken_images ?? [])
+    : (live.broken_images ?? []);
+  const classifiedBrokenImages = localBrokenImages.map((image) => {
     const classification =
       /^https?:\/\//u.test(image.src) &&
       isExternalFailure({ url: image.src }, local) &&
-      (live.broken_images ?? []).some(
+      liveBrokenImages.some(
         (candidate) => candidate.src === image.src,
       )
         ? "parity_matched"
@@ -601,9 +616,9 @@ export function compareCaptures(
     return { ...image, classification };
   });
   const localBrokenSources = new Set(
-    (local.broken_images ?? []).map((image) => image.src),
+    localBrokenImages.map((image) => image.src),
   );
-  const liveOnlyBrokenImages = (live.broken_images ?? []).filter(
+  const liveOnlyBrokenImages = liveBrokenImages.filter(
     (image) => !localBrokenSources.has(image.src),
   );
   const dom = multisetDistance(
@@ -660,9 +675,10 @@ export function compareCaptures(
     attributes,
     domcontentloaded_immediate_geometry: immediateGeometry.geometry,
     image_counts: {
-      local: local.rendered_images ?? 0,
-      live: live.rendered_images ?? 0,
+      local: localRenderedImages,
+      live: liveRenderedImages,
       delta: imageCountDelta,
+      scope: constructScope ? "construct" : "page-chrome",
     },
     dom_multiset_distance: dom,
     domcontentloaded_immediate_custom_properties: immediateProperties,

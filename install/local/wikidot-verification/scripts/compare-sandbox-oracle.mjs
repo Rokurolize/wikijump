@@ -39,7 +39,7 @@ function parseArgs(argv) {
 function usage() {
   return [
     "Usage: node scripts/compare-sandbox-oracle.mjs",
-    "  --registry PATH --local PATH [--frozen PATH] [--contracts PATH]",
+    "  --registry PATH --local PATH [--frozen PATH] [--contracts PATH] [--capture-receipt PATH]",
     "  --run-id ID --output PATH",
   ].join("\n");
 }
@@ -111,12 +111,18 @@ async function main() {
   const contracts = contractMap(
     args.contracts ? await readJson(args.contracts, "contracts") : null,
   );
+  const captureReceipt = args.capture_receipt
+    ? await readJson(args.capture_receipt, "capture receipt")
+    : null;
+  const blockedHostsByFixture =
+    captureReceipt?.request_gate?.blocked_hosts_by_fixture ?? {};
   const results = registry.fixtures.map((fixture) =>
     compareSandboxOracleFixture({
       fixture,
       local: local.get(fixture.fixture_id),
       frozen: frozen.get(fixture.fixture_id),
       contract: contracts.get(fixture.fixture_id) ?? null,
+      blockedHosts: blockedHostsByFixture[fixture.fixture_id] ?? null,
     }),
   );
   const { verdict, exitCode } = aggregateSandboxOracleVerdict({

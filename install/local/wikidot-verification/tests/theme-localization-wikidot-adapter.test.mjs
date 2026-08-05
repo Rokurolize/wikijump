@@ -80,6 +80,21 @@ test("private-site adapter uses the execution interface without ListPages lookup
   await assert.rejects(adapter.create(legacy, {source}), /validated/);
 });
 
+test("private-site adapter accepts only the oracle run-owned namespace", async () => {
+  const helper = new FakeHelper();
+  const adapter = new WikidotThemePageAdapter({helperClient: helper, siteSlug: "sandbox-for-codex"});
+  const source = "[[collapsible]]oracle[[/collapsible]]";
+  const slug = "codex-oracle:20260805-adapter-syntax-inline";
+  const resource = {resource_id: "syntax:inline", target: "wikidot", site_slug: "sandbox-for-codex", slug, url: `http://sandbox-for-codex.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Oracle fixture", tags: ["codex-oracle"]};
+  await adapter.connect();
+  assert.equal(await adapter.inspect(resource), null);
+  await adapter.create(resource, {source});
+  assert.deepEqual(helper.calls.find(({action}) => action === "create").fields.tags, ["codex-oracle"]);
+  await adapter.remove(resource, {expected: {title: resource.title, source_sha256: targetRoundTripSourceSha256("wikidot", source), tags: resource.tags}, identity: 1234});
+  const unsupported = "codex-oracle:20260805-";
+  await assert.rejects(adapter.inspect({...resource, slug: unsupported, url: `http://sandbox-for-codex.wikidot.com/${unsupported}`}), /validated/);
+});
+
 test("private-site adapter exposes exact read-only reference prerequisites", async () => {
   const helper = new FakeHelper();
   const adapter = new WikidotThemePageAdapter({helperClient: helper});

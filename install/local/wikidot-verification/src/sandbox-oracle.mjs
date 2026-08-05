@@ -29,6 +29,10 @@ export const SANDBOX_ORACLE_OWNERS = Object.freeze([
   "FTML",
   "Framerail/Deepwell",
 ]);
+export const SANDBOX_ORACLE_COMPARISON_SCOPES = Object.freeze([
+  "construct",
+  "page-chrome",
+]);
 export const SANDBOX_ORACLE_LAYER_NAMES = Object.freeze([
   "dom-signature",
   "structure-geometry",
@@ -51,6 +55,7 @@ export const SANDBOX_ORACLE_DELAYED_FAMILIES = Object.freeze([
 
 const OWNER_SET = new Set(SANDBOX_ORACLE_OWNERS);
 const ASSERTION_SET = new Set(SANDBOX_ORACLE_ASSERTION_CLASSES);
+const COMPARISON_SCOPE_SET = new Set(SANDBOX_ORACLE_COMPARISON_SCOPES);
 const DELAYED_SET = new Set(SANDBOX_ORACLE_DELAYED_FAMILIES);
 
 function normalizedFamily(value) {
@@ -197,6 +202,16 @@ export function validateSandboxOracleFixture(value, index = 0) {
   if (themeFamily !== null && typeof themeFamily !== "string") {
     throw new Error(`fixtures[${index}].theme_family must be a string or null`);
   }
+  const comparisonScope = entry.comparison_scope ??
+    (themeFamily === null ? "construct" : "page-chrome");
+  if (!COMPARISON_SCOPE_SET.has(comparisonScope)) {
+    throw new Error(`fixtures[${index}].comparison_scope is unsupported`);
+  }
+  if (comparisonScope === "page-chrome" && themeFamily === null) {
+    throw new Error(
+      `fixtures[${index}] page-chrome comparisons require a theme_family`,
+    );
+  }
   const result = {
     fixture_id: fixtureId,
     construct_family: constructFamily,
@@ -204,6 +219,7 @@ export function validateSandboxOracleFixture(value, index = 0) {
     owner,
     assertion_class: assertionClass,
     theme_family: themeFamily,
+    comparison_scope: comparisonScope,
     provenance: validateProvenance(
       entry.provenance,
       `fixtures[${index}].provenance`,
@@ -243,6 +259,67 @@ export function validateSandboxOracleRegistry(value) {
     ...(registry.status ? { status: String(registry.status) } : {}),
     fixtures: Object.freeze(fixtures),
   });
+}
+
+/**
+ * A browser capture is evidence, not merely an object that the comparator can
+ * partially inspect.  Refuse to carry a navigation or observation failure
+ * into a frozen fixture set: otherwise the capture loop can continue and
+ * produce a receipt whose missing screenshots look like a valid fixture.
+ */
+export function validateSandboxOracleCapture(value, name = "capture") {
+  const capture = requirePlainObject(value, name);
+  if (capture.capture_error !== undefined) {
+    throw new Error(
+      `${name} failed: ${JSON.stringify(capture.capture_error)}`,
+    );
+  }
+  if (
+    !Number.isInteger(capture.navigation_status) ||
+    capture.navigation_status < 200 ||
+    capture.navigation_status >= 400
+  ) {
+    throw new Error(
+      `${name} has no successful navigation status: ${String(capture.navigation_status)}`,
+    );
+  }
+  if (!isPlainObject(capture.dom_signature)) {
+    throw new Error(`${name} is missing dom_signature`);
+  }
+  if (!isPlainObject(capture.page_chrome_skeleton)) {
+    throw new Error(`${name} is missing page_chrome_skeleton`);
+  }
+  const completion = capture.document?.resource_completion;
+  if (
+    !isPlainObject(completion) ||
+    !new Set(["complete", "bounded_domcontentloaded"]).has(completion.status)
+  ) {
+    throw new Error(`${name} is missing a bounded resource-completion receipt`);
+  }
+  if (
+    completion.status === "bounded_domcontentloaded" &&
+    (!Number.isSafeInteger(completion.load_timeout_ms) ||
+      completion.load_timeout_ms <= 0 ||
+      !Array.isArray(completion.pending_image_urls) ||
+      completion.pending_image_urls.some((url) => typeof url !== "string"))
+  ) {
+    throw new Error(`${name} has an invalid bounded resource-completion receipt`);
+  }
+  const screenshots = [
+    ["first_paint.screenshot", capture.first_paint?.screenshot],
+    ["settled_viewport_screenshot", capture.settled_viewport_screenshot],
+    ["screenshot", capture.screenshot],
+  ];
+  for (const [label, screenshot] of screenshots) {
+    if (
+      !isPlainObject(screenshot) ||
+      typeof screenshot.sha256 !== "string" ||
+      !/^[0-9a-f]{64}$/u.test(screenshot.sha256)
+    ) {
+      throw new Error(`${name} is missing ${label}`);
+    }
+  }
+  return capture;
 }
 
 function layer(status, findings = [], detail = null) {
@@ -440,14 +517,19 @@ function preservedLayers(fixture, local, thresholds) {
   };
 }
 
-function liveLayers(local, frozen, thresholds, contract) {
+function liveLayers(local, frozen, thresholds, contract, comparisonScope) {
+  const scopedContract = {
+    ...(contract ?? {}),
+    comparison_scope: comparisonScope,
+    ...(comparisonScope === "construct" ? {page_chrome_skeleton: null} : {}),
+  };
   const dom = exactDomLayer(local, frozen);
   const comparison = compareCaptures(
     local,
     frozen,
     thresholds,
     [],
-    contract,
+    scopedContract,
   );
   const classified = classifyCaptureAnomalies(comparison);
   return {
@@ -491,15 +573,52 @@ function flattenLayerFindings(layers) {
     );
 }
 
+function normalizedBlockedHosts(value) {
+  if (value === undefined || value === null) return [];
+  if (!isPlainObject(value)) {
+    throw new Error("blockedHosts must be an object of host counts");
+  }
+  return Object.entries(value)
+    .map(([hostname, count]) => {
+      if (!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/u.test(hostname)) {
+        throw new Error(`blockedHosts contains an invalid hostname: ${hostname}`);
+      }
+      if (!Number.isSafeInteger(count) || count <= 0) {
+        throw new Error(`blockedHosts.${hostname} must be a positive safe integer`);
+      }
+      return [hostname, count];
+    })
+    .sort(([left], [right]) => left.localeCompare(right));
+}
+
+function appendBlockedResourceFinding(layers, blockedHosts) {
+  if (blockedHosts.length === 0 || flattenLayerFindings(layers).length > 0) {
+    return false;
+  }
+  const finding = {
+    code: "normalization_hides_difference",
+    detail: {
+      reason: "public-origin-resource-blocked-before-request-gate",
+      blocked_hosts: Object.fromEntries(blockedHosts),
+    },
+  };
+  const structure = layers["structure-geometry"];
+  structure.status = "fail";
+  structure.findings = [...(structure.findings ?? []), finding];
+  return true;
+}
+
 export function compareSandboxOracleFixture({
   fixture,
   local,
   frozen = null,
   thresholds = DEFAULT_THRESHOLDS,
   contract = null,
+  blockedHosts = null,
 }) {
   const checkedFixture = validateSandboxOracleFixture(fixture);
   const checkedThresholds = validateThresholds(thresholds);
+  const checkedBlockedHosts = normalizedBlockedHosts(blockedHosts);
   if (!isPlainObject(local)) {
     throw new Error(`local capture is required for ${checkedFixture.fixture_id}`);
   }
@@ -515,6 +634,7 @@ export function compareSandboxOracleFixture({
       frozen,
       checkedThresholds,
       contract,
+      checkedFixture.comparison_scope,
     );
   } else {
     layers = preservedLayers(
@@ -523,10 +643,15 @@ export function compareSandboxOracleFixture({
       checkedThresholds,
     );
   }
+  const blockedResourceFinding = appendBlockedResourceFinding(
+    layers,
+    checkedBlockedHosts,
+  );
   const findings = flattenLayerFindings(layers);
   return {
     fixture_id: checkedFixture.fixture_id,
     assertion_class: checkedFixture.assertion_class,
+    comparison_scope: checkedFixture.comparison_scope,
     provenance: checkedFixture.provenance,
     status: findings.length === 0 ? "pass" : "fail",
     verdict: findings.length === 0 ? "match" : "regression",
@@ -534,6 +659,14 @@ export function compareSandboxOracleFixture({
       SANDBOX_ORACLE_LAYER_NAMES.map((name) => [name, layers[name]]),
     ),
     findings,
+    ...(checkedBlockedHosts.length > 0
+      ? {
+          measurement_boundary: {
+            blocked_hosts: Object.fromEntries(checkedBlockedHosts),
+            finding_added: blockedResourceFinding,
+          },
+        }
+      : {}),
     ...(layers.capture_comparison
       ? { capture_comparison: layers.capture_comparison }
       : {}),

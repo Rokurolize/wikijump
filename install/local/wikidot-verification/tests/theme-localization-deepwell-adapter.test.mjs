@@ -85,6 +85,16 @@ test("Deepwell adapter derives the local origin and site lookup from the selecte
   await assert.rejects(adapter.inspect({...resource, site_slug: DEFAULT_SITE_SLUG}), /does not match/);
 });
 
+test("Deepwell adapter accepts the oracle run-owned namespace with its dedicated tag", async () => {
+  const {rpc, adapter} = await connectedAdapter();
+  const source = "[[collapsible]]oracle[[/collapsible]]";
+  const slug = "codex-oracle:20260805-adapter-syntax-inline";
+  const resource = {resource_id: "syntax:inline", target: "wikijump", site_slug: "sandbox-for-codex", slug, url: `https://sandbox-for-codex.wikijump.localhost/${slug}`, source_sha256: sha256(source), title: "Oracle fixture", tags: ["codex-oracle"]};
+  adapter.siteSlug = "sandbox-for-codex";
+  await adapter.create(resource, {source});
+  assert.deepEqual(rpc.calls.find((call) => call.method === "page_create").params.tags, ["codex-oracle"]);
+});
+
 test("connect rejects an explicit actor that does not match the session user", async () => {
   const rpc = new FakeRpc();
   const adapter = new DeepwellThemePageAdapter({rpcClient: rpc, adminEmail: "admin@wikijump", adminPassword: "password", actorUserId: -1});

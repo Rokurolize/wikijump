@@ -10,6 +10,7 @@ import {
   DEFAULT_REQUEST_INTERVAL_MS,
   acquireBrowserCaptureLock,
   createPersistentBrowserRequestGate,
+  isWikidotCapturePublicOrigin,
   installBrowserRequestGate,
 } from "./browser-request-gate.mjs";
 import { startCaptureEgressProxy } from "./capture-egress-proxy.mjs";
@@ -91,7 +92,8 @@ function throttleConfig({
     local_context_exempt_origins: localOrigins,
     candidate_endpoint: candidate ?? null,
     public_request_policy:
-      "every HTTP(S) request except exact candidate-local origins is admitted by the shared persistent gate",
+      "Wikidot-family requests and non-Wikidot stylesheets, fonts, and images are admitted by the shared persistent gate; scripts and fetches from other public origins are aborted before admission",
+    public_origin_policy: "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, and /v-- static assets on a CloudFront host) are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
     service_workers: "block",
     web_sockets: "blocked_without_network_connection",
     credentials: "none",
@@ -130,6 +132,7 @@ export async function createParityBrowserControls({
     );
     proxy = await startCaptureEgressProxy({
       allowedLocalOrigins: localOrigins,
+      requestTimeoutMs: args.timeoutMs,
       ...(candidate
         ? {
             lookup: localConnectLookup(
@@ -170,6 +173,9 @@ export async function createParityBrowserControls({
         }
         if (failure) throw failure;
         return finalGateSnapshot;
+      },
+      setActiveFixture(fixtureId) {
+        gate.setActiveFixture(fixtureId);
       },
     };
   } catch (error) {
@@ -215,6 +221,7 @@ export async function launchParityBrowser({
     await installBrowserRequestGate(context, {
       gate: controls.gate,
       exemptOrigins: local ? controls.localOrigins : [],
+      publicOriginPredicate: isWikidotCapturePublicOrigin,
     });
     return {
       browser,

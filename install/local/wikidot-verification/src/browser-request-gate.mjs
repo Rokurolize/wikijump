@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import {constants as fsConstants} from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import {isWikidotResourceHost} from "./resource-manifest.mjs";
 
 export const DEFAULT_REQUEST_INTERVAL_MS = 4_000;
 export const DEFAULT_BROWSER_CAPTURE_LOCK = "/var/tmp/wikijump-wikidot-browser-capture.lock";
@@ -13,6 +14,12 @@ const LOCK_SCHEMA = "wikijump_full_parity.browser_capture_lock.v1";
 const STATE_SCHEMA = "wikijump_full_parity.browser_request_gate_state.v1";
 const STATE_CONFIRMATIONS = new Set(["pending", "sealed"]);
 const LOCAL_WIKIJUMP_HOST_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.wikijump\.localhost$/u;
+const WIKIDOT_STATIC_CDN_RE = /^[a-z0-9-]+\.cloudfront\.net$/u;
+const CAPTURE_DEPENDENCY_RESOURCE_TYPES = new Set([
+  "stylesheet",
+  "font",
+  "image",
+]);
 
 function defaultNow() {
   return Date.now();
@@ -142,6 +149,21 @@ export function localBrowserCaptureOrigins(value) {
   return [url.origin, `https://${site}.wjfiles.localhost`];
 }
 
+export function isWikidotCapturePublicOrigin(value) {
+  const url = value instanceof URL ? value : new URL(value);
+  return new Set(["http:", "https:"]).has(url.protocol) &&
+    !url.username &&
+    !url.password &&
+    !url.port &&
+    (url.hostname.toLowerCase() === "wikidot.com" ||
+      isWikidotResourceHost(url.hostname.toLowerCase()) ||
+      (WIKIDOT_STATIC_CDN_RE.test(url.hostname.toLowerCase()) && url.pathname.startsWith("/v--")));
+}
+
+export function isCaptureDependencyResourceType(resourceType) {
+  return CAPTURE_DEPENDENCY_RESOURCE_TYPES.has(resourceType);
+}
+
 export function parseRetryAfterMilliseconds(value, {epochNow = Date.now} = {}) {
   if (typeof value !== "string" || value.trim() === "") return null;
   const text = value.trim();
@@ -192,6 +214,18 @@ export function createBrowserRequestGate({
     retry_after_honored: 0,
     retry_after_invalid: 0,
   };
+  const blockedHosts = new Map();
+  const blockedHostsByFixture = new Map();
+  let activeFixtureId = null;
+
+  function recordBlockedHost(hostname) {
+    const host = typeof hostname === "string" && hostname !== "" ? hostname.toLowerCase() : "<unsupported>";
+    blockedHosts.set(host, (blockedHosts.get(host) ?? 0) + 1);
+    const fixtureKey = activeFixtureId ?? "<unattributed>";
+    const fixtureHosts = blockedHostsByFixture.get(fixtureKey) ?? new Map();
+    fixtureHosts.set(host, (fixtureHosts.get(host) ?? 0) + 1);
+    blockedHostsByFixture.set(fixtureKey, fixtureHosts);
+  }
 
   function schedulePersistence() {
     if (!persistState) return Promise.resolve();
@@ -260,8 +294,9 @@ export function createBrowserRequestGate({
     recordLocalExempt() {
       counters.local_exempt_requests += 1;
     },
-    recordUnsupportedRequestBlocked() {
+    recordUnsupportedRequestBlocked(hostname = null) {
       counters.unsupported_requests_blocked += 1;
+      recordBlockedHost(hostname);
     },
     recordWebSocketBlocked() {
       counters.websocket_connections_blocked += 1;
@@ -273,8 +308,14 @@ export function createBrowserRequestGate({
         ...stateSnapshot({nextAvailableAt, blockedUntil}),
         enforcement_failed: Boolean(enforcementFailure || persistenceFailure),
         grants: [...grants],
+        blocked_hosts: Object.fromEntries([...blockedHosts].sort(([left], [right]) => left.localeCompare(right))),
+        blocked_hosts_by_fixture: Object.fromEntries([...blockedHostsByFixture].sort(([left], [right]) => left.localeCompare(right)).map(([fixture, hosts]) => [fixture, Object.fromEntries([...hosts].sort(([left], [right]) => left.localeCompare(right)))])),
         ...counters,
       };
+    },
+    setActiveFixture(fixtureId) {
+      if (fixtureId !== null && (typeof fixtureId !== "string" || fixtureId === "")) throw new Error("browser request-gate fixture id must be a non-empty string or null");
+      activeFixtureId = fixtureId;
     },
   };
 }
@@ -413,10 +454,11 @@ async function servePublicRoute(route, {gate, responseCache}) {
   await route.fulfill(entry);
 }
 
-export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null} = {}) {
+export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null, publicOriginPredicate = null} = {}) {
   if (!gate || typeof gate.acquire !== "function" || typeof gate.deferForRetryAfter !== "function" || typeof gate.failClosed !== "function" || typeof gate.recordLocalExempt !== "function" || typeof gate.recordUnsupportedRequestBlocked !== "function" || typeof gate.recordWebSocketBlocked !== "function") throw new Error("browser request gate is malformed");
   if (!context || typeof context.route !== "function" || typeof context.routeWebSocket !== "function" || typeof context.on !== "function") throw new Error("browser context cannot enforce request-level capture controls");
   if (responseCache !== null && (typeof responseCache.get !== "function" || typeof responseCache.store !== "function" || typeof responseCache.recordBypass !== "function" || typeof responseCache.snapshot !== "function")) throw new Error("browser response cache is malformed");
+  if (publicOriginPredicate !== null && typeof publicOriginPredicate !== "function") throw new Error("browser request-gate public origin predicate is malformed");
   const exempt = normalizedOrigins(exemptOrigins);
   await context.route("**/*", async (route) => {
     try {
@@ -429,6 +471,15 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
       if (exempt.has(url.origin)) {
         gate.recordLocalExempt();
         await route.continue();
+        return;
+      }
+      if (
+        publicOriginPredicate !== null &&
+        !publicOriginPredicate(url) &&
+        !isCaptureDependencyResourceType(route.request().resourceType())
+      ) {
+        gate.recordUnsupportedRequestBlocked(url.hostname);
+        await abortRoute(route);
         return;
       }
       await servePublicRoute(route, {gate, responseCache});

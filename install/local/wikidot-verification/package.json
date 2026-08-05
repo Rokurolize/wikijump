@@ -14,6 +14,7 @@
     "corpus-pinned-literals": "node scripts/check-corpus-pinned-literals.mjs",
     "wikijump-identifier-leaks": "node scripts/check-wikijump-identifier-leaks.mjs",
     "sandbox-oracle": "node scripts/compare-sandbox-oracle.mjs",
+    "sandbox-oracle-capture": "node scripts/capture-sandbox-oracle.mjs",
     "reference-inventory": "node scripts/build-reference-acquisition-inventory.mjs",
     "listpages-campaign-inventory": "node scripts/build-listpages-campaign-inventory.mjs",
     "listpages-runtime-budget-envelope": "node scripts/build-listpages-runtime-budget-envelope.mjs",
