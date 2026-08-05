@@ -166,11 +166,22 @@ function literalDocumentationKeepsListPagesInactive({
 }
 
 function hasExactListPagesOwnedExecution({
+  invocation,
   liveNodes,
   localNodes,
   localUnsupportedDiagnostic,
 }) {
-  if (localUnsupportedDiagnostic) return false;
+  if (localUnsupportedDiagnostic || invocation === null) return false;
+  // A class name inside authored ListPages content is not ownership evidence.
+  // Only the default/explicit wrapper form has a generated outer shell that we
+  // can compare without recognizing arbitrary authored descendants.
+  if (invocationExpectsWrapper(invocation) !== true) return false;
+  if (
+    topLevelNodesWithClass(liveNodes, "list-pages-box").length !== 1 ||
+    topLevelNodesWithClass(localNodes, "list-pages-box").length !== 1
+  ) {
+    return false;
+  }
   const liveOwned = outermostListPagesOwnedSubtrees(liveNodes);
   const localOwned = outermostListPagesOwnedSubtrees(localNodes);
   return liveOwned.length > 0 &&
@@ -1609,11 +1620,11 @@ function relativeTemporalFixtureProof({
   );
   const limit = lastArgumentValue(invocation, "limit")?.trim() ?? "";
   const perPage = lastArgumentValue(invocation, "perpage")?.trim() ?? "";
-  const bound = [limit, perPage]
+  const bounds = [limit, perPage]
     .map((value) => /^(?:@url\|)?(?<count>[1-9][0-9]*)$/iu.exec(value)?.groups?.count)
     .filter(Boolean)
-    .map(Number)
-    .at(0) ?? 0;
+    .map(Number);
+  const bound = bounds.length === 0 ? 0 : Math.min(...bounds);
   if (bound === 0 || liveItems.length > bound || localItems.length > bound) return null;
   if (liveItems.length === 0 && localItems.length === 0) {
     const tableProof = relativeTemporalTableFixtureProof({
@@ -1932,6 +1943,7 @@ function classifyMismatch(row, reference) {
     };
   }
   if (hasExactListPagesOwnedExecution({
+    invocation,
     liveNodes,
     localNodes,
     localUnsupportedDiagnostic,

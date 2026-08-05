@@ -38,9 +38,9 @@ function readJsonLines(path) {
 
 export function compareFragment(caseId, wikidotHtml, ftmlHtml) {
   const wikidotDom = canonicalDom(wikidotHtml);
-  const ftmlDom = canonicalDom(ftmlHtml);
+  const ftmlDom = canonicalDom(ftmlHtml, {decodeWikidotEmail: false});
   const wikidotText = visibleText(wikidotHtml);
-  const ftmlText = visibleText(ftmlHtml);
+  const ftmlText = visibleText(ftmlHtml, {decodeWikidotEmail: false});
   const domMatches = JSON.stringify(wikidotDom) === JSON.stringify(ftmlDom);
   const textMatches = wikidotText === ftmlText;
   return {

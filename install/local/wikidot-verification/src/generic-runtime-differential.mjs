@@ -539,9 +539,9 @@ export function compareRuntimeFragment(
   {pageSlug = null, wikijumpIdentityHtml = null, htmlBlockBinding = null} = {},
 ) {
   const wikidotDom = canonicalDom(wikidotHtml);
-  const wikijumpDom = canonicalDom(wikijumpHtml);
+  const wikijumpDom = canonicalDom(wikijumpHtml, {decodeWikidotEmail: false});
   const wikidotText = visibleText(wikidotHtml);
-  const wikijumpText = visibleText(wikijumpHtml);
+  const wikijumpText = visibleText(wikijumpHtml, {decodeWikidotEmail: false});
   const domMatches = JSON.stringify(wikidotDom) === JSON.stringify(wikijumpDom);
   const textMatches = wikidotText === wikijumpText;
   const hasHtmlBlocks =

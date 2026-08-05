@@ -347,10 +347,10 @@ async function mapWithConcurrency(values, concurrency, worker) {
 export function compareListPagesPreviewHtml(reference, localHtml) {
   const liveHtml = reference.raw_html;
   const liveDom = canonicalDom(liveHtml);
-  const localDom = canonicalDom(localHtml);
+  const localDom = canonicalDom(localHtml, {decodeWikidotEmail: false});
   const domMatches = JSON.stringify(liveDom) === JSON.stringify(localDom);
   const liveVisibleText = visibleText(liveHtml);
-  const localVisibleText = visibleText(localHtml);
+  const localVisibleText = visibleText(localHtml, {decodeWikidotEmail: false});
   const textMatches = liveVisibleText === localVisibleText;
   return {
     status: domMatches && textMatches ? "match" : "mismatch",
@@ -459,7 +459,7 @@ export async function runListPagesPreviewDifferential({
         local: {
           raw_html: preview.body,
           html_sha256: sha256(preview.body),
-          visible_text: visibleText(preview.body),
+          visible_text: visibleText(preview.body, {decodeWikidotEmail: false}),
           styles: Array.isArray(preview.styles) ? preview.styles : [],
         },
         comparison: compareListPagesPreviewHtml(reference, preview.body),

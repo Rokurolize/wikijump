@@ -133,10 +133,10 @@ export function compareSavedPageRuntime(reference, localDocumentHtml, runtimeIde
   const localHtml = extractSelectedHtml(localDocumentHtml, reference.case.selector);
   const wikidotHtml = reference.selected_html;
   const wikidotDom = canonicalDom(wikidotHtml);
-  const wikijumpDom = canonicalDom(localHtml);
+  const wikijumpDom = canonicalDom(localHtml, {decodeWikidotEmail: false});
   const domMatches = JSON.stringify(wikidotDom) === JSON.stringify(wikijumpDom);
   const wikidotText = visibleText(wikidotHtml);
-  const wikijumpText = visibleText(localHtml);
+  const wikijumpText = visibleText(localHtml, {decodeWikidotEmail: false});
   const textMatches = wikidotText === wikijumpText;
   const expected = reference.case.expected;
   const classShape = classCheck(localHtml, expected.required_class_tokens);
