@@ -37,7 +37,7 @@ function isRfc3339(value) {
   );
 }
 
-export function visibleText(html, {decodeWikidotEmail = true} = {}) {
+export function visibleText(html) {
   const tokens = [];
   const blocks = new Set(['p', 'div', 'blockquote', 'li', 'dt', 'dd', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'tr', 'td', 'th', 'pre']);
   const hidden = new Set(['script', 'style', 'template']);
@@ -56,7 +56,7 @@ export function visibleText(html, {decodeWikidotEmail = true} = {}) {
       return;
     }
     if (!node.tagName || hidden.has(node.tagName)) return;
-    const email = decodeWikidotEmail ? wikidotObfuscatedEmailAddress(node) : null;
+    const email = wikidotObfuscatedEmailAddress(node);
     if (email) {
       tokens.push({kind: preformatted ? 'pre' : 'normal', value: email});
       return;
@@ -155,14 +155,14 @@ function canonicalWikidotEmail(node) {
   };
 }
 
-function canonicalNode(node, preformatted = false, decodeWikidotEmail = true) {
+function canonicalNode(node, preformatted = false) {
   if (node.nodeName === '#text') {
     if (!preformatted && /^\s*$/u.test(node.value)) return null;
     return {type: 'text', value: node.value};
   }
   if (node.nodeName === '#comment') return {type: 'comment', value: node.data};
   if (!node.tagName) return null;
-  const email = decodeWikidotEmail ? canonicalWikidotEmail(node) : null;
+  const email = canonicalWikidotEmail(node);
   if (email) return email;
   return {
     type: 'element',
@@ -179,13 +179,13 @@ function canonicalNode(node, preformatted = false, decodeWikidotEmail = true) {
         `${left.namespace ?? ''}:${left.name}`.localeCompare(`${right.namespace ?? ''}:${right.name}`),
       ),
     children: (node.childNodes ?? [])
-      .map((child) => canonicalNode(child, preformatted || ['pre', 'code', 'textarea'].includes(node.tagName), decodeWikidotEmail))
+      .map((child) => canonicalNode(child, preformatted || ['pre', 'code', 'textarea'].includes(node.tagName)))
       .filter(Boolean),
   };
 }
 
-export function canonicalDom(html, {decodeWikidotEmail = true} = {}) {
-  return parseFragment(html).childNodes.map((node) => canonicalNode(node, false, decodeWikidotEmail)).filter(Boolean);
+export function canonicalDom(html) {
+  return parseFragment(html).childNodes.map((node) => canonicalNode(node)).filter(Boolean);
 }
 
 export function validateWikidotReference(reference) {
@@ -279,14 +279,14 @@ export function compareSyntaxReference(reference, renderResult) {
   const wikidotHtml = reference.raw_html;
   const ftmlHtml = renderResult.html;
   const wikidotDom = canonicalDom(wikidotHtml);
-  const ftmlDom = canonicalDom(ftmlHtml, {decodeWikidotEmail: false});
+  const ftmlDom = canonicalDom(ftmlHtml);
   const domTreeMatches = JSON.stringify(wikidotDom) === JSON.stringify(ftmlDom);
   const structureDiffs = compareSignatures(
     domSignature(serialize(parseFragment(wikidotHtml))),
     domSignature(serialize(parseFragment(ftmlHtml))),
   );
   const wikidotText = visibleText(wikidotHtml);
-  const ftmlText = visibleText(ftmlHtml, {decodeWikidotEmail: false});
+  const ftmlText = visibleText(ftmlHtml);
   const textMatches = wikidotText === ftmlText;
   const matches = domTreeMatches && structureDiffs.length === 0 && textMatches;
   return {

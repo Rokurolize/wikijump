@@ -1,6 +1,7 @@
 import {parse, serializeOuter} from "parse5";
 
 import {canonicalDom, sha256, visibleText} from "./syntax-differential.mjs";
+import {localCanonicalDom, localVisibleText} from "./local-output-comparison.mjs";
 
 export const SAVED_PAGE_REFERENCE_SCHEMA =
   "wikijump_syntax_differential.wikidot_saved_page_reference.v1";
@@ -133,10 +134,10 @@ export function compareSavedPageRuntime(reference, localDocumentHtml, runtimeIde
   const localHtml = extractSelectedHtml(localDocumentHtml, reference.case.selector);
   const wikidotHtml = reference.selected_html;
   const wikidotDom = canonicalDom(wikidotHtml);
-  const wikijumpDom = canonicalDom(localHtml, {decodeWikidotEmail: false});
+  const wikijumpDom = localCanonicalDom(localHtml);
   const domMatches = JSON.stringify(wikidotDom) === JSON.stringify(wikijumpDom);
   const wikidotText = visibleText(wikidotHtml);
-  const wikijumpText = visibleText(localHtml, {decodeWikidotEmail: false});
+  const wikijumpText = localVisibleText(localHtml);
   const textMatches = wikidotText === wikijumpText;
   const expected = reference.case.expected;
   const classShape = classCheck(localHtml, expected.required_class_tokens);

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 import {runCliIfMain} from '../src/cli-entry.mjs';
 import {canonicalDom, sha256, visibleText} from '../src/syntax-differential.mjs';
+import {localCanonicalDom, localVisibleText} from '../src/local-output-comparison.mjs';
 import {renderCases} from './run-syntax-differential.mjs';
 import {extractMarkedFragments} from './verify-ftml-live-pages.mjs';
 
@@ -38,9 +39,9 @@ function readJsonLines(path) {
 
 export function compareFragment(caseId, wikidotHtml, ftmlHtml) {
   const wikidotDom = canonicalDom(wikidotHtml);
-  const ftmlDom = canonicalDom(ftmlHtml, {decodeWikidotEmail: false});
+  const ftmlDom = localCanonicalDom(ftmlHtml);
   const wikidotText = visibleText(wikidotHtml);
-  const ftmlText = visibleText(ftmlHtml, {decodeWikidotEmail: false});
+  const ftmlText = localVisibleText(ftmlHtml);
   const domMatches = JSON.stringify(wikidotDom) === JSON.stringify(ftmlDom);
   const textMatches = wikidotText === ftmlText;
   return {

@@ -1,4 +1,5 @@
 import {canonicalDom, sha256, validateWikidotReference, visibleText} from './syntax-differential.mjs';
+import {localCanonicalDom, localVisibleText} from './local-output-comparison.mjs';
 import {
   bindLocalHtmlBlockPayloads,
   countLocalHtmlBlockHandles,
@@ -539,9 +540,9 @@ export function compareRuntimeFragment(
   {pageSlug = null, wikijumpIdentityHtml = null, htmlBlockBinding = null} = {},
 ) {
   const wikidotDom = canonicalDom(wikidotHtml);
-  const wikijumpDom = canonicalDom(wikijumpHtml, {decodeWikidotEmail: false});
+  const wikijumpDom = localCanonicalDom(wikijumpHtml);
   const wikidotText = visibleText(wikidotHtml);
-  const wikijumpText = visibleText(wikijumpHtml, {decodeWikidotEmail: false});
+  const wikijumpText = localVisibleText(wikijumpHtml);
   const domMatches = JSON.stringify(wikidotDom) === JSON.stringify(wikijumpDom);
   const textMatches = wikidotText === wikijumpText;
   const hasHtmlBlocks =

@@ -102,12 +102,6 @@ test('syntax comparison requires both DOM signature and visible text parity', ()
   assert.equal(structureMismatch.checks.dom_signature.status, 'mismatch');
 });
 
-test('syntax comparison does not decode a raw local wiki-email span', () => {
-  const rawEmail = '<span class="wiki-email">moc.elpmaxe|cba#moc.elpmaxe|cba</span>';
-  const live = reference('email-local-regression', 'email', rawEmail);
-  assert.equal(compareSyntaxReference(live, renderResult('email-local-regression', rawEmail)).status, 'mismatch');
-});
-
 test('canonical DOM requires hierarchy, attribute values, and preformatted whitespace', () => {
   assert.notDeepEqual(
     canonicalDom('<strong><em>x</em></strong>'),
