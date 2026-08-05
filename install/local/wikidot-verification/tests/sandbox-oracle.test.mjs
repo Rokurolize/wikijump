@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
 
 import {
@@ -8,6 +10,8 @@ import {
   validateSandboxOracleCapture,
   validateSandboxOracleRegistry,
 } from "../src/sandbox-oracle.mjs";
+
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../../../");
 
 const HASH = "a".repeat(64);
 
@@ -131,6 +135,15 @@ test("registry rejects delayed constructs assigned to the live assertion", () =>
       }),
     /match-frozen-preserved/u,
   );
+});
+
+test("include target is captured before the page that includes it", () => {
+  const registry = JSON.parse(fs.readFileSync(
+    path.join(REPO_ROOT, "install/local/wikidot-verification/fixtures/sandbox-oracle-fixture-registry.json"),
+    "utf8",
+  ));
+  const ids = registry.fixtures.map(({fixture_id}) => fixture_id);
+  assert.ok(ids.indexOf("syntax-includes-target") < ids.indexOf("syntax-includes"));
 });
 
 test("page-chrome scope requires an explicit theme family", () => {
