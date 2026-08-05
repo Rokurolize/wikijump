@@ -22,6 +22,8 @@ const NEWPAGE_NO_PERMISSION_MESSAGE =
   'Sorry, you can not create a new page in this category. Only members of this site, site administrators and perhaps selected moderators are allowed to do it. <a href="#action:login">Sign in as Wikidot user</a>'
 const NEWPAGE_GENERIC_ERROR_MESSAGE = "An error occurred while processing the request."
 const MAX_WIKIDOT_PAGE_UNIX_NAME_LENGTH = 60
+const MAX_NEWPAGE_PAGE_NAME_LENGTH = 128
+const MAX_NEWPAGE_FORMAT_LENGTH = 512
 
 /**
  * @typedef {{
@@ -175,11 +177,97 @@ const parseDelimitedRegex = (format) => {
 }
 
 /**
+ * Reject regex features whose backtracking cost cannot be bounded by this
+ * synchronous request handler. The accepted NewPage formats are simple
+ * anchored patterns; nested quantifiers, ambiguous alternation,
+ * lookarounds, and backreferences are unsupported and fail closed.
+ *
+ * @param {string} format
+ */
+const newPageFormatIsSafe = (format) => {
+  if (format.length > MAX_NEWPAGE_FORMAT_LENGTH) return false
+  if (!format.startsWith("/")) return true
+
+  const delimiter = format.lastIndexOf("/")
+  if (delimiter <= 0) return true
+
+  const pattern = format.slice(1, delimiter)
+  const groups = [{ hasQuantifier: false, hasAlternation: false }]
+  let escaped = false
+  let inCharacterClass = false
+  let previousWasQuantifier = false
+
+  for (let index = 0; index < pattern.length; index += 1) {
+    const character = pattern[index]
+    if (escaped) {
+      if (/^[1-9]$/u.test(character)) return false
+      escaped = false
+      previousWasQuantifier = false
+      continue
+    }
+    if (character === "\\") {
+      escaped = true
+      continue
+    }
+    if (inCharacterClass) {
+      if (character === "]") inCharacterClass = false
+      continue
+    }
+    if (character === "[") {
+      inCharacterClass = true
+      previousWasQuantifier = false
+      continue
+    }
+    if (character === "(") {
+      if (pattern[index + 1] === "?" && pattern[index + 2] !== ":") return false
+      groups.push({ hasQuantifier: false, hasAlternation: false })
+      previousWasQuantifier = false
+      continue
+    }
+    if (character === "|") {
+      groups.at(-1).hasAlternation = true
+      previousWasQuantifier = false
+      continue
+    }
+    if (character === ")") {
+      if (groups.length === 1) return false
+      const group = groups.pop()
+      const next = pattern[index + 1]
+      const quantifiesGroup = next === "*" || next === "+" || next === "?" || next === "{"
+      if (quantifiesGroup && (group.hasQuantifier || group.hasAlternation)) return false
+      if (quantifiesGroup) groups.at(-1).hasQuantifier = true
+      previousWasQuantifier = false
+      continue
+    }
+    if (
+      character === "*" ||
+      character === "+" ||
+      character === "?" ||
+      character === "{"
+    ) {
+      if (previousWasQuantifier) return false
+      groups.at(-1).hasQuantifier = true
+      previousWasQuantifier = true
+      continue
+    }
+    previousWasQuantifier = false
+  }
+
+  // Let the parser's existing malformed-format fallback handle unclosed
+  // delimiters and groups; only recognized, executable patterns are subject
+  // to the safety decision above.
+  return true
+}
+
+/**
  * @param {string} pageName
  * @param {string} format
  */
 const matchesNewPageFormat = (pageName, format) => {
   if (format.length === 0) return true
+
+  if (pageName.length > MAX_NEWPAGE_PAGE_NAME_LENGTH) return false
+  if (!newPageFormatIsSafe(format)) return false
 
   const regex = parseDelimitedRegex(format)
   if (!regex) return true

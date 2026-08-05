@@ -439,6 +439,24 @@ test("ignores malformed NewPage format strings but enforces valid patterns", asy
   })
 })
 
+test("rejects catastrophic NewPage format patterns without running them", async () => {
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "misc/NewPageHelperAction",
+      event: "createNewPage",
+      moduleName: "Empty",
+      pageName: `${"a".repeat(30)}!`,
+      format: "/^(a+)+$/"
+    }),
+    { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
+  )
+
+  assert.deepEqual(await response.json(), {
+    status: "incorrect_name",
+    message: "The page name is not correct: please fix it and try again"
+  })
+})
+
 test("NewPage template autosave creates an empty page and ignores parent", async () => {
   const calls = []
   const response = await handleAjaxModuleConnectorRequest(
