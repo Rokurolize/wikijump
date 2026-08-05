@@ -69,6 +69,24 @@
         ])
   )
 
+  function removeWikidotHtmlHydrationMarkers() {
+    const pageContent = document.querySelector<HTMLElement>("#page-content")
+    if (!pageContent) return
+
+    // Svelte wraps a server-rendered {@html} value in empty boundary comments
+    // for hydration. Keep those anchors through hydration, then remove only
+    // the two boundary nodes so imported Wikidot content has no framework DOM.
+    const firstChild = pageContent.firstChild
+    if (firstChild?.nodeType === Node.COMMENT_NODE && firstChild.nodeValue === "") {
+      firstChild.remove()
+    }
+
+    const lastChild = pageContent.lastChild
+    if (lastChild?.nodeType === Node.COMMENT_NODE && lastChild.nodeValue === "") {
+      lastChild.remove()
+    }
+  }
+
   async function navigateEdit() {
     // Check edit permission first
     const res = await fetch("?/editPermission", {
@@ -155,6 +173,19 @@
       pagePaneState = PagePane.History
     }
   })
+
+  $effect(() => {
+    if (
+      pageLayoutContext.current !== Layout.WIKIDOT ||
+      data.options?.debug ||
+      data.options?.no_render ||
+      renderedBodyHtml === undefined
+    ) {
+      return
+    }
+
+    queueMicrotask(removeWikidotHtmlHydrationMarkers)
+  })
 </script>
 
 <PageHead
@@ -186,18 +217,20 @@
     </div>
   {/if}
 
-  <div id="page-content" class:hidden={dataFormEditing} use:wikidotTabviews>
-    {#if data.options?.debug}
+  {#if data.options?.debug}
+    <div id="page-content" class:hidden={dataFormEditing} use:wikidotTabviews>
       <textarea class="debug">{JSON.stringify(page, null, 2)}</textarea>
-    {:else if data.options?.no_render}
+    </div>
+  {:else if data.options?.no_render}
+    <div id="page-content" class:hidden={dataFormEditing} use:wikidotTabviews>
       {data.internationalization?.["wiki-page-no-render"]}
       <textarea class="page-source" readonly={true}>{data.wikitext}</textarea>
-    {:else if showRevision}
-      {@html revision?.compiled_body_html}
-    {:else}
-      {@html data.compiled_body_html}
-    {/if}
-  </div>
+    </div>
+  {:else}
+    <div id="page-content" class:hidden={dataFormEditing} use:wikidotTabviews>
+      {@html showRevision ? revision?.compiled_body_html : data.compiled_body_html}
+    </div>
+  {/if}
 
   {#if showRevision}
     {#if revision?.tags?.length}
