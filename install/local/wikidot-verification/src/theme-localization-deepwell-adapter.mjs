@@ -147,7 +147,8 @@ export class DeepwellThemePageAdapter {
     return {identity: page.page_id, source_sha256: sha256(page.wikitext), title: page.title, revision_id: page.revision_id, tags: page.tags};
   }
 
-  async create(resource, payload) {
+  async create(resource, payload, {allowParserErrors = false} = {}) {
+    if (typeof allowParserErrors !== "boolean") throw new Error("Deepwell create parser-error policy must be boolean");
     validateResource(resource, {siteSlug: this.siteSlug});
     if (typeof payload?.source !== "string" || sha256(payload.source) !== resource.source_sha256) throw new Error("Deepwell create source does not match the accepted source hash");
     if (await this.inspect(resource) !== null) throw new Error("Deepwell create-only guard found a preexisting page");
@@ -163,7 +164,7 @@ export class DeepwellThemePageAdapter {
       ip_address: IP_ADDRESS,
       tags: resource.tags ?? [],
     }, this.context(resource));
-    if (result?.parser_errors?.length) throw new Error(`Deepwell page_create reported ${result.parser_errors.length} parser errors: ${parserErrorSummary(result.parser_errors)}`);
+    if (!allowParserErrors && result?.parser_errors?.length) throw new Error(`Deepwell page_create reported ${result.parser_errors.length} parser errors: ${parserErrorSummary(result.parser_errors)}`);
     const actual = await this.inspect(resource);
     if (actual === null || actual.source_sha256 !== resource.source_sha256 || actual.title !== resource.title || JSON.stringify(actual.tags) !== JSON.stringify(resource.tags ?? [])) throw new Error("Deepwell page did not round-trip after create");
     return actual.identity;

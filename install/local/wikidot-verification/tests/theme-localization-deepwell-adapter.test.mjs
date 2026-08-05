@@ -144,6 +144,14 @@ test("parser errors fail after creation so the outer intent ledger can clean up"
   assert.notEqual(await adapter.inspect(fixture.resource), null);
 });
 
+test("preserved fixtures may retain parser errors while ordinary creates remain strict", async () => {
+  const {rpc, adapter} = await connectedAdapter();
+  const fixture = resource();
+  rpc.parserErrors = [{token: "left-block", rule: "block", span: [17, 19], kind: "no-rules-match"}];
+  assert.equal(await adapter.create(fixture.resource, {source: fixture.source}, {allowParserErrors: true}), 100);
+  assert.notEqual(await adapter.inspect(fixture.resource), null);
+});
+
 test("remove refuses changed pages and deletes matching pages with revision fencing", async () => {
   const {rpc, adapter} = await connectedAdapter();
   const fixture = resource();

@@ -425,7 +425,12 @@ async function main(argv) {
         livePage = await withTimeout(wikidot.create(liveResource, {source: source.source}), `live create ${fixture.fixture_id}`);
         localAttempted = true;
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "create-local"}));
-        localPage = await withTimeout(wikijump.create(localResource, {source: source.source}), `local create ${fixture.fixture_id}`);
+        localPage = await withTimeout(
+          wikijump.create(localResource, {source: source.source}, {
+            allowParserErrors: fixture.assertion_class === "match-frozen-preserved",
+          }),
+          `local create ${fixture.fixture_id}`,
+        );
         contract = browserContract(fixture);
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-live"}));
         const liveResult = await captureFixtureObservation({context: browser.context, page: liveBrowserPage, url: liveResource.url, label: "live", index: captureIndex, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs, fixtureId: fixture.fixture_id});
