@@ -191,6 +191,29 @@ export const pages = {
     compiled_body_html:
       '<div class="code" data-wj-language="css"><pre><code>#header h2 span { color: red; }</code></pre></div>'
   },
+  "wikidot-code-math": {
+    page_id: 3000355,
+    revision_id: 9000355,
+    page_created_at: "2026-08-05T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-08-05T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Wikidot Code and Math",
+    slug: "wikidot-code-math",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: String.raw`[[code language="rust"]]
+fn main() { println!("oracle"); }
+[[/code]]
+[[math]]
+x^2 + y^2 = z^2
+[[/math]]`,
+    compiled_body_html: String.raw`<div class="code"><pre><code>fn main() { println!(&quot;oracle&quot;); }</code></pre></div><br>
+<span class="equation-number">(1)</span>
+<div class="math-equation" id="equation-1">\begin{equation} x^2 + y^2 = z^2 \end{equation}</div>`
+  },
   "page-workflow-probe": {
     page_id: 3000340,
     revision_id: 9000340,
