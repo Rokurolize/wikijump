@@ -1759,7 +1759,10 @@ test("preview classifier isolates unsynchronized random selected-row state", asy
       ].join("\n"),
       live: "<p><strong>ONE</strong><br>\nLine one</p>",
       local: "<p><strong>TWO</strong><br>\nLine two<br>\nLine three</p>",
-      expected: ["unsynchronized-random-row-state", "none"],
+      expected: [
+        "listpages-query-or-row-render-divergence",
+        "investigate-query-or-renderer",
+      ],
     },
     {
       id: "random-direct-size-branch-local-empty-remains-actionable",
