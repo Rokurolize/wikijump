@@ -81,6 +81,14 @@
     display: none;
   }
 
+  // Wikidot hides legacy equations until its MathJax loader completes. The
+  // local imported shell does not run that remote loader, so keep the exact
+  // server-rendered equation body visible instead of losing it to the base
+  // stylesheet's display rule.
+  #page-content .math-equation {
+    display: block;
+  }
+
   details.collapsible-block:not([open]) .collapsible-block-unfolded-link {
     display: none;
   }
