@@ -9,6 +9,12 @@ use super::super::literal_regions::{
     LiteralRegionIndex, TextTokenCursor, WikidotTagScan, scan_wikidot_tag,
 };
 
+/// A finite pairing depth keeps malformed source from turning every closer
+/// into a scan of an attacker-sized opener stack. Exceeding it preserves the
+/// complete source as unsafe, which is the fail-closed result for the native
+/// block-list pass.
+pub(super) const MAX_SOURCE_SCOPE_DEPTH: usize = 1_024;
+
 /// Collect source scopes whose rendered parent has not been proven to accept a
 /// trusted block fragment. The early native-list pass runs before FTML has
 /// built that parent, so a known body owner or an unknown paired scope must be
@@ -53,6 +59,9 @@ pub(in crate::services::render) fn collect_unproven_scope_ranges(
             WikidotTagScan::Complete(end) => {
                 match source_scope_tag(bytes, cursor, end) {
                     Some(SourceScopeTag::Open(head)) => {
+                        if open_scopes.len() >= MAX_SOURCE_SCOPE_DEPTH {
+                            return std::iter::once(0..source.len()).collect();
+                        }
                         let identity = source_scope_rule(&head.name)
                             .map(|mut rule| {
                                 if !rule.accepts_open(&head) {
