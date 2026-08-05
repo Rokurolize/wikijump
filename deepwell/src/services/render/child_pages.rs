@@ -21,7 +21,8 @@
 //! Wikidot `ChildPages` runtime module rendering.
 
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::future::Future;
+use std::sync::{Arc, LazyLock};
 
 use regex::Regex;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement};
@@ -30,7 +31,8 @@ use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{module_arguments_are_complete, wikidot_module_arguments};
 use super::service::{
-    RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
+    MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService, escape_list_pages_html_attr,
+    escape_list_pages_html_text,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::ServiceContext;
@@ -43,12 +45,47 @@ pub(super) static CHILD_PAGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+ChildPages(?P<head>(?:\s+[^\]]*)?)\]\]").unwrap()
 });
 
+const MAX_CHILD_PAGES_MODULE_ROWS: usize = MAX_LISTPAGES_RENDER_SCAN_ROWS as usize;
+const CHILD_PAGES_QUERY_LIMIT: usize = MAX_CHILD_PAGES_MODULE_ROWS + 1;
+
 #[derive(Debug, FromQueryResult)]
 struct ChildPagesModulePage {
     page_id: i64,
     page_category_id: i64,
     slug: String,
     title: String,
+}
+
+#[derive(Default)]
+struct ChildPagesModulePagesCache {
+    initialized: bool,
+    pages: Option<Arc<Vec<ChildPagesModulePage>>>,
+}
+
+impl ChildPagesModulePagesCache {
+    async fn get_or_init<F, Fut>(
+        &mut self,
+        load: F,
+    ) -> Result<Option<Arc<Vec<ChildPagesModulePage>>>>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Option<Arc<Vec<ChildPagesModulePage>>>>>,
+    {
+        if self.initialized {
+            return Ok(self.pages.as_ref().map(Arc::clone));
+        }
+
+        let pages = load().await?;
+        self.initialized = true;
+        if let Some(pages) = &pages {
+            self.pages = Some(Arc::clone(pages));
+        }
+        Ok(pages)
+    }
+}
+
+fn child_pages_scan_exceeded(row_count: usize) -> bool {
+    row_count > MAX_CHILD_PAGES_MODULE_ROWS
 }
 
 fn parse_child_pages_module_arguments(head: &str) -> Option<()> {
@@ -112,6 +149,7 @@ impl RenderService {
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut expanded = String::with_capacity(wikitext.len());
         let mut cursor = 0;
+        let mut pages_cache = ChildPagesModulePagesCache::default();
 
         for captures in CHILD_PAGES_MODULE_REGEX.captures_iter(&wikitext) {
             let matched = captures
@@ -127,14 +165,24 @@ impl RenderService {
             }
 
             expanded.push_str(&wikitext[cursor..matched.start()]);
-            let pages = Self::load_child_pages_module_pages(
-                ctx,
-                current_site_id,
-                current_page_id,
-            )
-            .await?;
+            let pages = pages_cache
+                .get_or_init(|| async {
+                    Self::load_child_pages_module_pages(
+                        ctx,
+                        current_site_id,
+                        current_page_id,
+                    )
+                    .await
+                    .map(|pages| pages.map(Arc::new))
+                })
+                .await?;
+            let Some(pages) = pages else {
+                expanded.push_str(matched.as_str());
+                cursor = matched.end();
+                continue;
+            };
             expanded.push_str(
-                &compat_html.push_block_html(render_child_pages_module(&pages)),
+                &compat_html.push_block_html(render_child_pages_module(pages.as_ref())),
             );
             cursor = matched.end();
         }
@@ -150,7 +198,7 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
         current_page_id: i64,
-    ) -> Result<Vec<ChildPagesModulePage>> {
+    ) -> Result<Option<Vec<ChildPagesModulePage>>> {
         let make_error = || {
             Error::new(
                 format!(
@@ -168,13 +216,21 @@ impl RenderService {
              JOIN page_revision child_rev ON child_rev.revision_id = child.latest_revision_id \
              WHERE pp.parent_page_id = $1 \
                AND child.site_id = $2 \
-               AND child.deleted_at IS NULL",
-            [current_page_id.into(), current_site_id.into()],
+               AND child.deleted_at IS NULL \
+             LIMIT $3",
+            [
+                current_page_id.into(),
+                current_site_id.into(),
+                (CHILD_PAGES_QUERY_LIMIT as i64).into(),
+            ],
         );
         let rows = ChildPagesModulePage::find_by_statement(statement)
             .all(txn)
             .await
             .or_raise(make_error)?;
+        if child_pages_scan_exceeded(rows.len()) {
+            return Ok(None);
+        }
 
         let mut category_permissions = HashMap::new();
         let mut viewable = Vec::with_capacity(rows.len());
@@ -207,15 +263,16 @@ impl RenderService {
         }
 
         sort_child_pages_module_pages(&mut viewable);
-        Ok(viewable)
+        Ok(Some(viewable))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        ChildPagesModulePage, parse_child_pages_module_arguments,
-        render_child_pages_module, sort_child_pages_module_pages,
+        ChildPagesModulePage, MAX_CHILD_PAGES_MODULE_ROWS, child_pages_scan_exceeded,
+        parse_child_pages_module_arguments, render_child_pages_module,
+        sort_child_pages_module_pages,
     };
 
     fn page(slug: &str, title: &str) -> ChildPagesModulePage {
@@ -274,5 +331,11 @@ mod tests {
             pages.into_iter().map(|page| page.slug).collect::<Vec<_>>(),
             ["fixture:alpha", "fixture:bravo", "fixture:zulu"],
         );
+    }
+
+    #[test]
+    fn child_pages_preserves_an_unbounded_scan_after_the_render_bound() {
+        assert!(!child_pages_scan_exceeded(MAX_CHILD_PAGES_MODULE_ROWS));
+        assert!(child_pages_scan_exceeded(MAX_CHILD_PAGES_MODULE_ROWS + 1));
     }
 }

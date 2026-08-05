@@ -33,7 +33,8 @@ use regex::Regex;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
-use std::sync::LazyLock;
+use std::future::Future;
+use std::sync::{Arc, LazyLock};
 
 /// The most rows one site-level link module render will load.
 pub(super) const MAX_LINK_LISTING_MODULE_ROWS: usize = 2_000;
@@ -68,6 +69,48 @@ struct WantedPagesModuleSourceRow {
 struct WantedPagesModuleTarget {
     slug: String,
     sources: Vec<LinkModulePage>,
+}
+
+#[derive(Default)]
+struct LinkModulePagesCache {
+    orphaned: Option<Arc<Vec<LinkModulePage>>>,
+    wanted: Option<Arc<Vec<WantedPagesModuleTarget>>>,
+}
+
+impl LinkModulePagesCache {
+    async fn get_or_init_orphaned<F, Fut>(
+        &mut self,
+        load: F,
+    ) -> Result<Arc<Vec<LinkModulePage>>>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Vec<LinkModulePage>>>,
+    {
+        if let Some(pages) = &self.orphaned {
+            return Ok(Arc::clone(pages));
+        }
+
+        let pages = Arc::new(load().await?);
+        self.orphaned = Some(Arc::clone(&pages));
+        Ok(pages)
+    }
+
+    async fn get_or_init_wanted<F, Fut>(
+        &mut self,
+        load: F,
+    ) -> Result<Arc<Vec<WantedPagesModuleTarget>>>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Vec<WantedPagesModuleTarget>>>,
+    {
+        if let Some(targets) = &self.wanted {
+            return Ok(Arc::clone(targets));
+        }
+
+        let targets = Arc::new(load().await?);
+        self.wanted = Some(Arc::clone(&targets));
+        Ok(targets)
+    }
 }
 
 fn render_orphaned_pages_module_box(pages: &[LinkModulePage]) -> String {
@@ -187,15 +230,23 @@ impl RenderService {
             return Ok(wikitext);
         }
 
+        let mut pages_cache = LinkModulePagesCache::default();
         let wikitext = Self::expand_orphaned_pages_modules(
             ctx,
             wikitext,
             current_site_id,
             compat_html,
+            &mut pages_cache,
         )
         .await?;
-        Self::expand_wanted_pages_modules(ctx, wikitext, current_site_id, compat_html)
-            .await
+        Self::expand_wanted_pages_modules(
+            ctx,
+            wikitext,
+            current_site_id,
+            compat_html,
+            &mut pages_cache,
+        )
+        .await
     }
 
     async fn expand_orphaned_pages_modules(
@@ -203,6 +254,7 @@ impl RenderService {
         wikitext: String,
         current_site_id: i64,
         compat_html: &mut CompatHtmlFragments,
+        pages_cache: &mut LinkModulePagesCache,
     ) -> Result<String> {
         if !ORPHANED_PAGES_MODULE_REGEX.is_match(&wikitext) {
             return Ok(wikitext);
@@ -220,10 +272,14 @@ impl RenderService {
                 continue;
             }
 
-            let pages =
-                Self::load_orphaned_pages_module_pages(ctx, current_site_id).await?;
+            let pages = pages_cache
+                .get_or_init_orphaned(|| {
+                    Self::load_orphaned_pages_module_pages(ctx, current_site_id)
+                })
+                .await?;
             expanded.push_str(
-                &compat_html.push_block_html(render_orphaned_pages_module_box(&pages)),
+                &compat_html
+                    .push_block_html(render_orphaned_pages_module_box(pages.as_ref())),
             );
             cursor = mtch.end();
         }
@@ -237,6 +293,7 @@ impl RenderService {
         wikitext: String,
         current_site_id: i64,
         compat_html: &mut CompatHtmlFragments,
+        pages_cache: &mut LinkModulePagesCache,
     ) -> Result<String> {
         if !WANTED_PAGES_MODULE_REGEX.is_match(&wikitext) {
             return Ok(wikitext);
@@ -254,10 +311,14 @@ impl RenderService {
                 continue;
             }
 
-            let targets =
-                Self::load_wanted_pages_module_targets(ctx, current_site_id).await?;
+            let targets = pages_cache
+                .get_or_init_wanted(|| {
+                    Self::load_wanted_pages_module_targets(ctx, current_site_id)
+                })
+                .await?;
             expanded.push_str(
-                &compat_html.push_block_html(render_wanted_pages_module_box(&targets)),
+                &compat_html
+                    .push_block_html(render_wanted_pages_module_box(targets.as_ref())),
             );
             cursor = mtch.end();
         }
@@ -441,8 +502,8 @@ fn compare_case_folded(left: &str, right: &str) -> Ordering {
 #[cfg(test)]
 mod tests {
     use super::{
-        LinkModulePage, WantedPagesModuleTarget, render_orphaned_pages_module_box,
-        render_wanted_pages_module_box,
+        LinkModulePage, LinkModulePagesCache, WantedPagesModuleTarget,
+        render_orphaned_pages_module_box, render_wanted_pages_module_box,
     };
 
     #[test]
@@ -485,5 +546,26 @@ mod tests {
             html.contains(r#"<a href="/missing-page" class="newpage">missing-page</a>"#)
         );
         assert!(!html.contains(r#"<div class="pager">"#));
+    }
+
+    #[tokio::test]
+    async fn repeated_link_modules_reuse_the_same_render_results() {
+        let mut cache = LinkModulePagesCache::default();
+
+        let first = cache
+            .get_or_init_orphaned(|| async { Ok(Vec::new()) })
+            .await
+            .expect("the first orphaned-pages load should succeed");
+        let second = cache
+            .get_or_init_orphaned(|| async {
+                panic!("a cached orphaned-pages result must not query again");
+                #[allow(unreachable_code)]
+                Ok(Vec::new())
+            })
+            .await
+            .expect("the cached orphaned-pages load should succeed");
+
+        assert!(first.is_empty());
+        assert!(second.is_empty());
     }
 }
