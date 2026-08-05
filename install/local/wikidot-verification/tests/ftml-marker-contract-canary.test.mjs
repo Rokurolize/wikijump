@@ -25,7 +25,7 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "3b5fc606f355383bb3eb87a301c51cea967755f2";
+const candidateFtml = "234ae50794e2c468347a14159623e94fc1032432";
 const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
 const sanitizedEnvironment = Object.fromEntries(
