@@ -6936,11 +6936,14 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
     const BETA: &str = "fixture-pagetree-beta";
     const GRANDCHILD: &str = "fixture-pagetree-grandchild";
     const GREAT_GRANDCHILD: &str = "fixture-pagetree-great-grandchild";
+    const PRIVATE_CHILD: &str = "fixture-pagetree-private-child";
+    const PRIVATE_CATEGORY: &str = "fixture-pagetree-private";
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
 
     create_listpages_test_page(
         &mut runner,
@@ -6959,15 +6962,19 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
         (BETA, "Beta Child"),
         (GRANDCHILD, "Alpha Grandchild"),
         (GREAT_GRANDCHILD, "Alpha Great Grandchild"),
+        (PRIVATE_CHILD, "Private Child"),
     ] {
         create_listpages_test_page(&mut runner, site_id, slug, title, "PageTree fixture")
             .await;
     }
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_CHILD, PRIVATE_CATEGORY)
+        .await;
     for (child, parent) in [
         (ALPHA, ROOT),
         (BETA, ROOT),
         (GRANDCHILD, ALPHA),
         (GREAT_GRANDCHILD, GRANDCHILD),
+        (PRIVATE_CHILD, ROOT),
     ] {
         set_listpages_test_parent(&mut runner, site_id, child, parent).await;
     }
@@ -7023,6 +7030,10 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
         default.contains(&format!(r#"<a href="/{GRANDCHILD}">Alpha Grandchild</a>"#))
     );
     assert!(default.contains(&format!(r#"<a href="/{BETA}">Beta Child</a>"#)));
+    assert!(
+        !default.contains(PRIVATE_CHILD),
+        "PageTree must not reveal a private child to an anonymous render:\n{default}"
+    );
     assert!(!default.contains("PageTree Root"));
     assert!(!default.contains("Alpha Great Grandchild"));
     assert!(
@@ -7161,6 +7172,94 @@ async fn listpages_parent_selectors_match_the_saved_page_live_fixture() {
     assert_rows("CHILD", &[CHILD], &[ROOT, HOLDER, SIBLING, UNRELATED]);
     assert_rows("NONE", &[ROOT, UNRELATED], &[HOLDER, SIBLING, CHILD]);
     assert!(!html.contains("[[module ListPages"), "{html}");
+}
+
+#[tokio::test]
+async fn listpages_url_parent_does_not_reveal_private_parent_rows() {
+    const PRIVATE_CATEGORY: &str = "fixture-listpages-url-parent-private";
+    const HOLDER: &str = "fixture-listpages-url-parent-holder";
+    const PRIVATE_PARENT: &str = "fixture-listpages-url-parent-private:parent";
+    const PUBLIC_CHILD: &str = "fixture-listpages-url-parent-public-child";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER,
+        "URL parent holder",
+        "[[module ListPages parent=\"@URL\" order=\"name\" separate=\"no\"]]\nROW %%name%%\n[[/module]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PARENT,
+        "Private URL parent",
+        "private parent",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_CHILD,
+        "Public child of private URL parent",
+        "public child",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_PARENT, PRIVATE_CATEGORY)
+        .await;
+    set_listpages_test_parent(&mut runner, site_id, PUBLIC_CHILD, PRIVATE_PARENT).await;
+
+    let holder = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": HOLDER}),
+    )
+    .expect("URL parent holder should exist");
+    let page_info = PageInfo {
+        page: Cow::Borrowed(HOLDER),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("URL parent holder"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let path_arguments = [UrlArgumentPair {
+        name: "parent".to_owned(),
+        value: Some(PRIVATE_PARENT.to_owned()),
+    }];
+    let html = RenderService::render_page_for_viewer(
+        runner.context(),
+        "[[module ListPages parent=\"@URL\" order=\"name\" separate=\"no\"]]\nROW %%name%%\n[[/module]]".to_owned(),
+        &page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: holder.page_category_id,
+            page_id: holder.page_id,
+        },
+        None,
+        UrlArguments {
+            path_arguments: &path_arguments,
+            ..UrlArguments::default()
+        },
+    )
+    .await
+    .expect("URL parent render should succeed")
+    .html_output
+    .body;
+
+    assert!(
+        !html.contains(PUBLIC_CHILD),
+        "a hidden URL parent must not select or reveal its public child:\n{html}"
+    );
 }
 
 #[tokio::test]
@@ -8944,7 +9043,9 @@ async fn listpages_metadata_selectors_honor_target_view_permissions() {
                 "[[/module]]\n",
                 "[[module ListPages category=\"*\" link_to=\"{PRIVATE_LINK_TARGET}\" separate=\"no\" wrapper=\"no\"]]",
                 "PRIVATE_LINK=%%slug%%",
-                "[[/module]]",
+                "[[/module]]\n",
+                "[[[{PUBLIC_LINK_TARGET}|Public link]]]\n",
+                "[[[{PRIVATE_LINK_TARGET}|Private link]]]",
             ),
             PUBLIC_CHILD = PUBLIC_CHILD,
             PUBLIC_PARENT = PUBLIC_PARENT,
@@ -8969,6 +9070,18 @@ async fn listpages_metadata_selectors_honor_target_view_permissions() {
             && !html.contains(&format!("PRIVATE_LINK={PRIVATE_LINK_SOURCE}"))
             && !html.contains(PUBLIC_INCLUDE_SOURCE),
         "link_to must select public links only, without private-target or include metadata:\n{html}",
+    );
+    assert!(
+        html.contains(&format!(
+            r#"<a href="/{PUBLIC_LINK_TARGET}">Public link</a>"#
+        )),
+        "a viewable ordinary link should remain a normal link:\n{html}",
+    );
+    assert!(
+        html.contains(&format!(
+            r#"<a class="newpage" href="/{PRIVATE_LINK_TARGET}">Private link</a>"#
+        )),
+        "a private ordinary link should be indistinguishable from a missing link:\n{html}",
     );
 }
 

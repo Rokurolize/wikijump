@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod authorized_page_selector;
 mod backlinks;
 mod categories;
 mod child_pages;
@@ -61,6 +62,7 @@ mod structs;
 mod url_arguments;
 mod wikidot_hosts;
 
+pub(crate) use self::authorized_page_selector::AuthorizedPageSelector;
 pub(crate) use self::corpus::{
     CorpusRenderFinalizerService, CorpusRenderInventoryService, RenderFinalizerSettings,
     RenderInventorySettings,

@@ -27,6 +27,7 @@ use std::sync::LazyLock;
 use regex::Regex;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 
+use super::AuthorizedPageSelector;
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{module_arguments_are_complete, wikidot_module_arguments};
@@ -198,6 +199,7 @@ impl RenderService {
         wikitext: String,
         settings: &WikitextSettings,
         current_page: (Option<i64>, Option<i64>),
+        viewer_user_id: Option<i64>,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         let (current_site_id, current_page_id) = current_page;
@@ -215,6 +217,7 @@ impl RenderService {
             settings,
             current_site_id,
             current_page_id,
+            viewer_user_id,
             compat_html,
         )
         .await
@@ -226,6 +229,7 @@ impl RenderService {
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
         current_page_id: Option<i64>,
+        viewer_user_id: Option<i64>,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         if !settings.enable_page_syntax || !PAGE_TREE_MODULE_REGEX.is_match(&wikitext) {
@@ -237,7 +241,7 @@ impl RenderService {
             return Ok(wikitext);
         };
 
-        let tree = Self::load_page_tree(ctx, current_site_id).await?;
+        let tree = Self::load_page_tree(ctx, current_site_id, viewer_user_id).await?;
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
@@ -283,6 +287,7 @@ impl RenderService {
     async fn load_page_tree(
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
+        viewer_user_id: Option<i64>,
     ) -> Result<PageTree> {
         let make_error =
             || Error::new("failed to render PageTree module", ErrorType::Render);
@@ -293,6 +298,8 @@ impl RenderService {
             .all(txn)
             .await
             .or_raise(make_error)?;
+        let mut authorized_selector = AuthorizedPageSelector::new(ctx, viewer_user_id);
+        let pages = authorized_selector.filter_models(pages).await?;
         let revision_ids = pages
             .iter()
             .filter_map(|page| page.latest_revision_id)

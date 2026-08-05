@@ -23,6 +23,7 @@ use crate::models::alias::{self, Entity as Alias};
 use crate::models::page::{self, Entity as Page};
 use crate::models::site::{self, Entity as Site};
 use crate::services::ServiceContext;
+use crate::services::render::AuthorizedPageSelector;
 use crate::types::{AliasType, ConnectionType};
 use crate::utils::trim_default;
 use ftml::data::PageRef;
@@ -191,6 +192,7 @@ pub(super) async fn resolve_page_existence(
     source_site_id: i64,
     source_site_slug: &str,
     page_refs: &[PageRef],
+    viewer_user_id: Option<i64>,
 ) -> Result<PageExistenceSnapshot> {
     let lookups = page_refs
         .iter()
@@ -219,6 +221,12 @@ pub(super) async fn resolve_page_existence(
         }
     }
     let pages = resolve_pages(ctx, page_slugs_by_site).await?;
+    let mut authorized_selector = AuthorizedPageSelector::new(ctx, viewer_user_id);
+    let pages = authorized_selector.filter_models(pages).await?;
+    let pages = pages
+        .into_iter()
+        .map(|page| ((page.site_id, page.slug), page.page_id))
+        .collect();
 
     Ok(finish_page_existence(
         source_site_id,
@@ -272,7 +280,10 @@ pub(super) async fn resolve_connection_counts<'a>(
     let page_slugs_by_site = plan.page_slugs_by_site(source_site_id, &explicit_sites);
     let pages = resolve_pages(ctx, page_slugs_by_site)
         .await
-        .or_raise(make_error)?;
+        .or_raise(make_error)?
+        .into_iter()
+        .map(|page| ((page.site_id, page.slug), page.page_id))
+        .collect();
 
     Ok(plan.finish(source_site_id, &explicit_sites, &pages))
 }
@@ -347,9 +358,9 @@ async fn resolve_explicit_sites(
 async fn resolve_pages(
     ctx: &ServiceContext<'_>,
     page_slugs_by_site: HashMap<i64, HashSet<String>>,
-) -> Result<HashMap<(i64, String), i64>> {
+) -> Result<Vec<page::Model>> {
     if page_slugs_by_site.is_empty() {
-        return Ok(HashMap::new());
+        return Ok(Vec::new());
     }
 
     let condition = page_slugs_by_site.into_iter().fold(
@@ -369,10 +380,7 @@ async fn resolve_pages(
         .await
         .or_raise(|| Error::new("failed to batch-resolve pages", ErrorType::PageLink))?;
 
-    Ok(pages
-        .into_iter()
-        .map(|page| ((page.site_id, page.slug), page.page_id))
-        .collect())
+    Ok(pages)
 }
 
 #[cfg(test)]

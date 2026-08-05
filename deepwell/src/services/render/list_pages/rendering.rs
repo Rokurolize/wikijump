@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::super::AuthorizedPageSelector;
 use super::super::compat::CompatHtmlFragments;
 use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
@@ -265,12 +266,13 @@ impl RenderService {
             .into_iter()
             .map(|parent| Reference::Slug(Cow::Owned(parent)))
             .collect::<Vec<_>>();
-        let existing_static_parents =
-            PageService::get_pages(ctx, current_site_id, &static_parent_references)
-                .await?
-                .into_iter()
-                .map(|page| page.slug)
-                .collect::<BTreeSet<_>>();
+        let mut authorized_selector = AuthorizedPageSelector::new(ctx, viewer_user_id);
+        let existing_static_parents = authorized_selector
+            .resolve_models(current_site_id, &static_parent_references)
+            .await?
+            .into_iter()
+            .map(|page| page.slug)
+            .collect::<BTreeSet<_>>();
         let needs_static_category_existence = module_matches.iter().any(|module| {
             let head = current_data_form_list_pages_head(
                 module.head,
@@ -2236,6 +2238,7 @@ impl RenderService {
                     current_site_id,
                     page_info.site.as_ref(),
                     &fallback_source,
+                    viewer_user_id,
                 )
                 .await?,
             )
