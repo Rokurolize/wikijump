@@ -197,9 +197,11 @@ impl RenderService {
             .collect::<Vec<_>>();
         let mut authorized_selector =
             super::super::AuthorizedPageSelector::new(ctx, viewer_user_id);
-        let pages = authorized_selector
-            .resolve_models(site_id, &references)
-            .await?;
+        // Keep duplicate-slug selection identical to the singular lookup. The
+        // batch lookup must retain every candidate until that selection is
+        // made; filtering first would discard a denied candidate and make the
+        // other duplicate appear to be the singular result.
+        let pages = PageService::get_pages(ctx, site_id, &references).await?;
         let mut pages_by_slug = BTreeMap::<String, Vec<_>>::new();
         for page in pages {
             pages_by_slug
