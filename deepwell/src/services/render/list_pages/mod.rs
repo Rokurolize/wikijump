@@ -1374,6 +1374,47 @@ mod tests {
     }
 
     #[test]
+    fn url_tag_values_keep_wikidot_selector_grammar() {
+        for (url_value, expected_default, expected_all, expected_none) in [
+            (
+                "secret",
+                ["secret"].as_slice(),
+                [].as_slice(),
+                [].as_slice(),
+            ),
+            (
+                "+secret",
+                [].as_slice(),
+                ["secret"].as_slice(),
+                [].as_slice(),
+            ),
+            (
+                "-secret",
+                [].as_slice(),
+                [].as_slice(),
+                ["secret"].as_slice(),
+            ),
+        ] {
+            let path_arguments = [crate::services::render::UrlArgumentPair {
+                name: "tag".to_owned(),
+                value: Some(url_value.to_owned()),
+            }];
+            let url = crate::services::render::UrlArguments {
+                path_arguments: &path_arguments,
+                ..crate::services::render::UrlArguments::default()
+            };
+            let arguments = parse_list_pages_arguments_with_url(
+                r#"tags="@URL|_" separate="no""#,
+                url,
+            )
+            .expect("a URL-backed tag selector should parse");
+            assert_eq!(arguments.default_tags, expected_default, "{url_value}");
+            assert_eq!(arguments.all_tags, expected_all, "{url_value}");
+            assert_eq!(arguments.no_tags, expected_none, "{url_value}");
+        }
+    }
+
+    #[test]
     fn html_escaped_quote_assignments_remain_inert() {
         let arguments = parse_list_pages_arguments(
             "category=&quot;fragment&quot; parent=&quot;.&quot; \
