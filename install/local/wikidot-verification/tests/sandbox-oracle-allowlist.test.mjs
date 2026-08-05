@@ -13,6 +13,7 @@ import {
   validateTargetOrigin,
 } from "../src/theme-localization-e2e.mjs";
 import {SANDBOX_ORACLE_REGISTRY_SCHEMA} from "../src/sandbox-oracle.mjs";
+import {SANDBOX_ORACLE_LOCAL_ORIGINS} from "../src/sandbox-oracle-browser-policy.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HELPER_PATH = path.resolve(HERE, "../scripts/wikidot_theme_page_helper.py");
@@ -39,6 +40,15 @@ test("site allowlist is frozen, shared, and constructs origins from the validate
   assert.equal(validateTargetOrigin("https://sandbox-for-codex.wikijump.localhost", "wikijump", "sandbox-for-codex"), "https://sandbox-for-codex.wikijump.localhost");
   assert.throws(() => validateTargetOrigin("https://scpaiueouiuiuiui.wikidot.com", "wikidot", "sandbox-for-codex"), /hard allowlist/);
   assert.throws(() => validateTargetOrigin("not a URL", "wikidot", "not-allowlisted"), /not allowlisted/);
+});
+
+test("sandbox oracle admits only the page and reserved SCP file origins locally", () => {
+  assert.deepEqual(SANDBOX_ORACLE_LOCAL_ORIGINS, [
+    "https://sandbox-for-codex.wikijump.localhost",
+    "https://scp-wiki.wjfiles.localhost",
+    "https://scp-jp.wjfiles.localhost"
+  ]);
+  assert(!SANDBOX_ORACLE_LOCAL_ORIGINS.some((origin) => origin.includes("*")));
 });
 
 test("oracle fixture slugs are registry-bound and use a distinct run-owned namespace", () => {
