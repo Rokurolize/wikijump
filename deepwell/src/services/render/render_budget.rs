@@ -11,6 +11,7 @@ pub(super) const MAX_SELECTED_CONTENT_RENDER_DEPTH: usize = 8;
 pub(super) struct RenderCostBudget {
     remaining: AtomicU64,
     nested_render_depth: AtomicUsize,
+    exhausted: AtomicUsize,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -37,6 +38,7 @@ impl RenderCostBudget {
         Arc::new(Self {
             remaining: AtomicU64::new(maximum),
             nested_render_depth: AtomicUsize::new(0),
+            exhausted: AtomicUsize::new(0),
         })
     }
 
@@ -52,6 +54,7 @@ impl RenderCostBudget {
         let mut remaining = self.remaining.load(Ordering::Relaxed);
         loop {
             if requested > remaining {
+                self.exhausted.store(1, Ordering::Relaxed);
                 return Err(RenderBudgetExceeded {
                     operation,
                     requested,
@@ -68,6 +71,10 @@ impl RenderCostBudget {
                 Err(observed) => remaining = observed,
             }
         }
+    }
+
+    pub(super) fn is_exhausted(&self) -> bool {
+        self.exhausted.load(Ordering::Relaxed) != 0
     }
 
     pub(super) fn enter_nested_render(

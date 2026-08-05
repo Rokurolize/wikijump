@@ -71,7 +71,7 @@ use super::{
     count_pages_scan_requires_preservation, count_pages_should_remain_literal,
     count_pages_unbounded_total, exact_name_list_pages_batch_key,
     expand_list_pages_generated_includes,
-    find_list_pages_module_matches_with_delayed_links,
+    find_list_pages_module_matches_with_delayed_links_budgeted,
     finish_or_defer_list_pages_delayed_output_with_modes, is_list_pages_visible_tag,
     list_pages_argument_error_with_parent_precedence,
     list_pages_body_starts_with_preparsed_block, list_pages_body_uses_first_image,
@@ -86,7 +86,7 @@ use super::{
     list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
     load_list_pages_data_form_definitions, load_list_pages_first_images,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
-    parse_list_pages_arguments_with_url, prepare_delayed_list_pages_row,
+    parse_list_pages_arguments_with_url, prepare_delayed_list_pages_row_with_budget,
     prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
     protect_ajax_module_literal_markers, push_list_pages_generated_output,
     push_list_pages_generated_output_with_cost, push_list_pages_pager,
@@ -216,7 +216,10 @@ impl RenderService {
                 ListPagesBlockPlan::Static(replacement)
             }
         };
-        let module_matches = find_list_pages_module_matches_with_delayed_links(&wikitext);
+        let module_matches = find_list_pages_module_matches_with_delayed_links_budgeted(
+            &wikitext,
+            &render_cost_budget,
+        );
         let css_yield_openers = collect_list_pages_css_yield_openers(&wikitext);
         let mut css_yield_opener_index = 0usize;
         let module_source_bytes = module_matches.iter().fold(0usize, |total, module| {
@@ -2430,7 +2433,7 @@ impl RenderService {
             } else {
                 Cow::Borrowed(body)
             };
-            let prepared_row = prepare_delayed_list_pages_row(
+            let prepared_row = prepare_delayed_list_pages_row_with_budget(
                 template,
                 row_body.as_ref(),
                 page,
@@ -2441,6 +2444,7 @@ impl RenderService {
                 compat_text,
                 uses_star_rating,
                 numbered_link_titles.as_ref(),
+                Some(render_cost_budget),
             );
             if let Some(fragments) = prepared_row.html_fragments {
                 delayed_html_fragments.push(fragments);
