@@ -94,7 +94,9 @@ use super::presentation::{
     render_list_pages_snapshot_user, render_list_pages_snapshot_wikidot_user,
     render_list_pages_tags, render_list_pages_wikidot_user,
 };
-use super::preview::{list_pages_plain_text, list_pages_preview};
+use super::preview::{
+    list_pages_plain_text, list_pages_preview, list_pages_preview_length,
+};
 use super::scanner::list_pages_runtime_head_can_execute;
 use super::titles::{
     render_list_pages_linked_title, sanitize_list_pages_title,
@@ -2882,11 +2884,8 @@ pub(super) fn substitute_list_pages_variables_inner(
                                 &list_pages_plain_text(compiled_html),
                                 captures
                                     .name("length")
-                                    .map(|length| {
-                                        length
-                                            .as_str()
-                                            .parse()
-                                            .unwrap_or(usize::MAX)
+                                    .and_then(|length| {
+                                        list_pages_preview_length(length.as_str())
                                     }),
                             )
                         })
