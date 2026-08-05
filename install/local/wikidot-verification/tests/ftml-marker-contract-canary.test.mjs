@@ -25,7 +25,8 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
+const candidateFtml = "3b5fc606f355383bb3eb87a301c51cea967755f2";
+const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
 const sanitizedEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(
@@ -48,7 +49,7 @@ const sanitizedEnvironment = Object.fromEntries(
   ),
 );
 
-test("committed receipt binds the exact manifest, lock, and five-surface contract", () => {
+test("committed manifest and lock pin the merged FTML revision", () => {
   const manifest = readFileSync(
     path.join(repositoryRoot, "deepwell/Cargo.toml"),
     "utf8",
@@ -57,17 +58,6 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
     path.join(repositoryRoot, "deepwell/Cargo.lock"),
     "utf8",
   );
-  const receipt = JSON.parse(
-    readFileSync(
-      path.join(
-        repositoryRoot,
-        "install/local/wikidot-verification/artifacts",
-        "ftml-block-argument-pin-canary-20260804-3f02c5af.json",
-      ),
-      "utf8",
-    ),
-  );
-
   assert.equal(
     manifest.match(
       new RegExp(
@@ -86,12 +76,26 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
     )?.length,
     1,
   );
+});
+
+test("the 2026-08-04 marker canary receipt remains immutable", () => {
+  const receipt = JSON.parse(
+    readFileSync(
+      path.join(
+        repositoryRoot,
+        "install/local/wikidot-verification/artifacts",
+        "ftml-block-argument-pin-canary-20260804-3f02c5af.json",
+      ),
+      "utf8",
+    ),
+  );
+
   assert.equal(receipt.status, "pass");
   assert.equal(
     receipt.baseline_ftml_sha,
     "6d1550f283f93ec3f4257ffda238a8f9003eed19",
   );
-  assert.equal(receipt.candidate_ftml_sha, candidateFtml);
+  assert.equal(receipt.candidate_ftml_sha, previousCanaryFtml);
   assert.deepEqual(receipt.required_surfaces, requiredSurfaces);
   assert.deepEqual(receipt.comparison, {
     schema: "wikijump_local_lab.render_compare.v1",
@@ -108,7 +112,7 @@ test("committed receipt binds the exact manifest, lock, and five-surface contrac
   });
 });
 
-test("the prior marker canary receipt remains immutable", () => {
+test("the 2026-08-01 marker canary receipt remains immutable", () => {
   const receipt = JSON.parse(
     readFileSync(
       path.join(
