@@ -242,6 +242,56 @@ test("construct scope ignores page chrome while preserving construct findings", 
   );
 });
 
+test("construct scope excludes page-level geometry from the browser contract", () => {
+  const fixture = liveFixture();
+  const local = capture({
+    document: {
+      geometry: {
+        "#page-content": {
+          count: 1,
+          rect: {x: 427, y: 260, width: 760, height: 720},
+        },
+      },
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {status: "complete"},
+    },
+  });
+  const frozen = capture({
+    input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    document: {
+      geometry: {
+        "#page-content": {
+          count: 1,
+          rect: {x: 113, y: 250, width: 847.5, height: 130},
+        },
+      },
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {status: "complete"},
+    },
+  });
+  const result = compareSandboxOracleFixture({
+    fixture,
+    local,
+    frozen,
+    contract: {
+      geometry_selectors: ["#page-content"],
+      first_paint_geometry_selectors: [],
+      presence_probes: [],
+      first_paint_custom_properties: {},
+      page_chrome_skeleton: null,
+    },
+  });
+  assert.equal(result.status, "pass");
+  assert.equal(result.layers["structure-geometry"].status, "pass");
+  assert.deepEqual(
+    result.layers["structure-geometry"].detail.geometry,
+    [],
+  );
+});
+
 test("normalization remains a blocking finding in the sandbox gate", () => {
   const result = compareSandboxOracleFixture({
     fixture: liveFixture(),

@@ -544,7 +544,11 @@ export function compareCaptures(
   if (live.capture_error) {
     anomalies.push({ code: "live_capture_error", detail: live.capture_error });
   }
-  const selectors = contract?.geometry_selectors ?? requiredSelectors;
+  const selectors = constructScope
+    ? (contract?.geometry_selectors ?? requiredSelectors).filter(
+        (selector) => selector !== "#page-content",
+      )
+    : (contract?.geometry_selectors ?? requiredSelectors);
   const pageChromeSkeleton = contract?.page_chrome_skeleton
     ? comparePageChromeSkeleton(
         local.page_chrome_skeleton,
