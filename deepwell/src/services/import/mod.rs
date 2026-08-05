@@ -23,6 +23,6 @@ mod structs;
 
 pub use self::service::ImportService;
 pub use self::structs::{
-    ImportPage, ImportPageOutput, ImportSite, ImportSiteOutput, ImportUser,
-    ImportUserOutput, ImportedUserType,
+    ImportPage, ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput,
+    ImportSite, ImportSiteOutput, ImportUser, ImportUserOutput, ImportedUserType,
 };

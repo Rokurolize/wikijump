@@ -30,6 +30,11 @@ import {
   pageRevisionAction,
   pageRollbackAction
 } from "$lib/server/load/page/page-revision-actions"
+import {
+  pageLockCreateAction,
+  pageLockHistoryAction,
+  pageLockRemoveAction
+} from "$lib/server/load/page/page-lock-actions"
 
 export const pageActions = {
   delete: pageDeleteAction,
@@ -44,6 +49,9 @@ export const pageActions = {
   fileHistory: pageFileHistoryAction,
   fileRollback: pageFileRollbackAction,
   history: pageHistoryAction,
+  lockCreate: pageLockCreateAction,
+  lockHistory: pageLockHistoryAction,
+  lockRemove: pageLockRemoveAction,
   revision: pageRevisionAction,
   rollback: pageRollbackAction,
   layout: pageLayoutAction,

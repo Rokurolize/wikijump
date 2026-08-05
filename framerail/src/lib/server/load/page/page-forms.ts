@@ -12,6 +12,7 @@ import {
 } from "$lib/server/load/page/page-file-actions"
 import { pageParentSchema } from "$lib/server/load/page/page-relation-actions"
 import { pageRestoreSchema } from "$lib/server/load/page/page-revision-actions"
+import { pageLockSchema } from "$lib/server/load/page/page-lock-actions"
 import { superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
 
@@ -27,6 +28,7 @@ export const buildPageForms = async (request: Request) => ({
   layoutForm: await superValidate(request, valibot(layoutSchema)),
   pageMoveForm: await superValidate(request, valibot(pageMoveSchema)),
   pageParentForm: await superValidate(request, valibot(pageParentSchema)),
+  pageLockForm: await superValidate(request, valibot(pageLockSchema)),
   pageRestoreForm: await superValidate(request, valibot(pageRestoreSchema))
 })
 

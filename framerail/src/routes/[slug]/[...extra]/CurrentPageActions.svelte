@@ -39,6 +39,13 @@
     {data.internationalization?.parents}
   </button>
   <button
+    class="action-button editor-button button-lock clickable"
+    onclick={() => activatePagePane(PagePane.Lock)}
+    type="button"
+  >
+    {data.internationalization?.["wiki-page-lock"]}
+  </button>
+  <button
     class="action-button editor-button button-delete clickable"
     onclick={() => activatePagePane(PagePane.Delete)}
     type="button"

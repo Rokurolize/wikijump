@@ -146,8 +146,9 @@ async fn create_page(runner: &mut TestRunner, site_id: i64, slug: &'static str) 
     .page_id
 }
 
-fn lock_input(reason: &str, override_existing: bool) -> serde_json::Value {
+fn lock_input(page_id: i64, reason: &str, override_existing: bool) -> serde_json::Value {
     json!({
+        "page": page_id,
         "expires_at": null,
         "from_wikidot": false,
         "lock_type": "permission-only",
@@ -157,8 +158,13 @@ fn lock_input(reason: &str, override_existing: bool) -> serde_json::Value {
     })
 }
 
-fn lock_service_input(reason: &str, override_existing: bool) -> CreatePageLockInput {
+fn lock_service_input(
+    page_id: i64,
+    reason: &str,
+    override_existing: bool,
+) -> CreatePageLockInput {
     CreatePageLockInput {
+        page: Reference::Id(page_id),
         expires_at: None,
         from_wikidot: false,
         lock_type: PageLockType::PermissionOnly,
@@ -193,10 +199,11 @@ async fn page_lock_endpoints_require_site_membership_and_page_view_history_permi
     run_endpoint!(
         runner,
         page_lock_create,
-        lock_input("private history", false)
+        lock_input(private_page, "private history", false)
     );
 
-    let history = run_endpoint!(runner, page_lock_get_history);
+    let history =
+        run_endpoint!(runner, page_lock_get_history, json!({"page": private_page}));
     assert_eq!(history.len(), 1);
 
     let other_page = create_page(&mut runner, other_site_id, OTHER_SLUG).await;
@@ -209,7 +216,7 @@ async fn page_lock_endpoints_require_site_membership_and_page_view_history_permi
     let cross_site_create = run_endpoint_err!(
         runner,
         page_lock_create,
-        lock_input("cross-site create", false),
+        lock_input(other_page, "cross-site create", false),
     );
     assert_contains_error!(cross_site_create, ErrorType::PageLock);
 
@@ -218,14 +225,14 @@ async fn page_lock_endpoints_require_site_membership_and_page_view_history_permi
         other_site_id,
         ADMIN_USER_ID,
         Reference::Id(other_page),
-        lock_service_input("cross-site remove", false),
+        lock_service_input(other_page, "cross-site remove", false),
     )
     .await
     .expect("other-site lock fixture should be created");
     let cross_site_remove = run_endpoint_err!(
         runner,
         page_lock_remove,
-        json!({"ip_address": common::IP_ADDRESS}),
+        json!({"page": other_page, "ip_address": common::IP_ADDRESS}),
     );
     assert_contains_error!(cross_site_remove, ErrorType::PageLock);
 
@@ -235,6 +242,7 @@ async fn page_lock_endpoints_require_site_membership_and_page_view_history_permi
         site_id: Some(site_id),
         page_reference: Some(Reference::Id(private_page)),
     });
-    let anonymous_history = run_endpoint_err!(runner, page_lock_get_history);
+    let anonymous_history =
+        run_endpoint_err!(runner, page_lock_get_history, json!({"page": private_page}),);
     assert_contains_error!(anonymous_history, ErrorType::PermissionDenied);
 }

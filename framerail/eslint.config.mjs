@@ -81,6 +81,8 @@ export default defineConfig(
         { fixMixedExportsWithInlineTypeSpecifier: true }
       ],
 
+      "@typescript-eslint/ban-ts-comment": "off",
+
       // TODO: warn no-explicit-any and no-unused-vars
       // should remove them later
       "@typescript-eslint/no-explicit-any": "warn",
@@ -155,6 +157,7 @@ export default defineConfig(
       "./package/**/*",
       "playwright-report/**/*",
       "test-results/**/*",
+      "**/vendor/**/*",
       "**/.DS_Store",
       "**/node_modules",
       "build",

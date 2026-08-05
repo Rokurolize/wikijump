@@ -406,6 +406,19 @@
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
+          id="lock-page-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={() => {
+            showSource = false
+            pagePaneState = PagePane.Lock
+          }}
+          type="button"
+        >
+          {data.internationalization?.["wiki-page-lock"]}
+        </a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
           id="rename-move-button"
           class="btn btn-default"
           href="javascript:;"
