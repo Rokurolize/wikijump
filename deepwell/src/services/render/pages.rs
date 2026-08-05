@@ -29,8 +29,8 @@ use super::module_arguments::wikidot_module_arguments;
 use super::pages_by_tag::expand_pages_by_tag_modules;
 use super::percent_encoding::percent_encode_path_segment;
 use super::service::{
-    RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
-    format_wikidot_list_pages_date,
+    MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService, escape_list_pages_html_attr,
+    escape_list_pages_html_text, format_wikidot_list_pages_date,
 };
 use super::url_arguments::UrlArguments;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -50,8 +50,10 @@ pub(super) static PAGES_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[module\s+Pages(?P<head>[^\]]*)\]\]").unwrap());
 
 const PAGES_PER_PAGE: usize = 20;
+const MAX_PAGES_MODULE_SCAN_ROWS: usize = MAX_LISTPAGES_RENDER_SCAN_ROWS as usize;
+const PAGES_MODULE_QUERY_LIMIT: usize = MAX_PAGES_MODULE_SCAN_ROWS + 1;
 
-#[derive(Debug, Clone, FromQueryResult)]
+#[derive(Debug, FromQueryResult)]
 pub(super) struct PagesModulePage {
     pub page_id: i64,
     pub page_category_id: i64,
@@ -98,7 +100,7 @@ impl Default for PagesModuleArguments {
 
 #[derive(Default)]
 struct PagesModulePagesCache {
-    pages: HashMap<PagesModuleArguments, Arc<Vec<PagesModulePage>>>,
+    pages: HashMap<PagesModuleArguments, Option<Arc<Vec<PagesModulePage>>>>,
 }
 
 impl PagesModulePagesCache {
@@ -106,19 +108,23 @@ impl PagesModulePagesCache {
         &mut self,
         arguments: PagesModuleArguments,
         load: F,
-    ) -> Result<Arc<Vec<PagesModulePage>>>
+    ) -> Result<Option<Arc<Vec<PagesModulePage>>>>
     where
         F: FnOnce() -> Fut,
-        Fut: Future<Output = Result<Arc<Vec<PagesModulePage>>>>,
+        Fut: Future<Output = Result<Option<Arc<Vec<PagesModulePage>>>>>,
     {
         if let Some(pages) = self.pages.get(&arguments) {
-            return Ok(Arc::clone(pages));
+            return Ok(pages.as_ref().map(Arc::clone));
         }
 
         let pages = load().await?;
-        self.pages.insert(arguments, Arc::clone(&pages));
+        self.pages.insert(arguments, pages.as_ref().map(Arc::clone));
         Ok(pages)
     }
+}
+
+fn pages_module_scan_exceeded(row_count: usize) -> bool {
+    row_count > MAX_PAGES_MODULE_SCAN_ROWS
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -201,9 +207,13 @@ pub(super) async fn expand_pages_modules(
             .get_or_init(arguments.clone(), move || async move {
                 load_pages_module_pages(ctx, current_site_id, &load_arguments)
                     .await
-                    .map(Arc::new)
+                    .map(|pages| pages.map(Arc::new))
             })
             .await?;
+        let Some(pages) = pages else {
+            expanded.push_str(mtch.as_str());
+            continue;
+        };
         let html = render_pages_module(
             page_info,
             pages.as_ref(),
@@ -221,7 +231,7 @@ async fn load_pages_module_pages(
     ctx: &ServiceContext<'_>,
     current_site_id: i64,
     arguments: &PagesModuleArguments,
-) -> Result<Vec<PagesModulePage>> {
+) -> Result<Option<Vec<PagesModulePage>>> {
     let make_error = || {
         Error::new(
             format!("failed to load Pages module rows for site ID {current_site_id}"),
@@ -251,7 +261,8 @@ async fn load_pages_module_pages(
          LEFT JOIN \"user\" local_user ON local_user.user_id = pr.user_id \
          WHERE p.site_id = $1 \
            AND p.deleted_at IS NULL \
-           {category_filter}",
+           {category_filter} \
+         LIMIT {PAGES_MODULE_QUERY_LIMIT}",
         ),
         values,
     );
@@ -259,6 +270,9 @@ async fn load_pages_module_pages(
         .all(txn)
         .await
         .or_raise(make_error)?;
+    if pages_module_scan_exceeded(rows.len()) {
+        return Ok(None);
+    }
 
     let mut category_permissions = HashMap::new();
     let mut viewable = Vec::with_capacity(rows.len());
@@ -295,7 +309,7 @@ async fn load_pages_module_pages(
         viewable.truncate(limit);
     }
 
-    Ok(viewable)
+    Ok(Some(viewable))
 }
 
 pub(super) fn render_pages_module(
@@ -685,6 +699,12 @@ mod tests {
         assert!(rendered.contains("href=\"/unsafe&quot;&lt;slug&gt;\""));
     }
 
+    #[test]
+    fn pages_module_preserves_an_unbounded_scan_after_the_render_bound() {
+        assert!(!pages_module_scan_exceeded(MAX_PAGES_MODULE_SCAN_ROWS));
+        assert!(pages_module_scan_exceeded(MAX_PAGES_MODULE_SCAN_ROWS + 1));
+    }
+
     #[tokio::test]
     async fn repeated_pages_modules_reuse_the_same_argument_result() {
         let mut cache = PagesModulePagesCache::default();
@@ -694,19 +714,52 @@ mod tests {
         let first = cache
             .get_or_init(arguments.clone(), || async {
                 loads += 1;
-                Ok(std::sync::Arc::new(vec![page(1)]))
+                Ok(Some(std::sync::Arc::new(vec![page(1)])))
             })
             .await
             .expect("the first Pages module load should succeed");
         let second = cache
             .get_or_init(arguments, || async {
                 loads += 1;
-                Ok(std::sync::Arc::new(vec![page(2)]))
+                Ok(Some(std::sync::Arc::new(vec![page(2)])))
             })
             .await
             .expect("the cached Pages module load should succeed");
 
         assert_eq!(loads, 1);
-        assert_eq!(first.as_slice()[0].page_id, second.as_slice()[0].page_id);
+        assert_eq!(
+            first
+                .as_ref()
+                .expect("first result should render")
+                .as_slice()[0]
+                .page_id,
+            second
+                .as_ref()
+                .expect("cached result should render")
+                .as_slice()[0]
+                .page_id,
+        );
+    }
+
+    #[tokio::test]
+    async fn capped_pages_module_results_are_cached_as_literal_preservation() {
+        let mut cache = PagesModulePagesCache::default();
+        let arguments = PagesModuleArguments::default();
+
+        let first = cache
+            .get_or_init(arguments.clone(), || async { Ok(None) })
+            .await
+            .expect("the capped result should be representable");
+        let second = cache
+            .get_or_init(arguments, || async {
+                panic!("a cached capped result must not query again");
+                #[allow(unreachable_code)]
+                Ok(Some(Arc::new(vec![page(1)])))
+            })
+            .await
+            .expect("the cached capped result should be reusable");
+
+        assert!(first.is_none());
+        assert!(second.is_none());
     }
 }
