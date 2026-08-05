@@ -9,6 +9,7 @@ use super::compat::text_fragments::CompatTextFragments;
 use super::literal_regions::LiteralRegionIndex;
 use regex::Regex;
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::ops::Range;
 use std::sync::LazyLock;
 
@@ -78,6 +79,8 @@ fn resolve_outermost_wikidot_iftags_with_mode(
     let literal_regions = LiteralRegionIndex::new_wikidot_conditional_syntax(wikitext);
     let mut stack = Vec::<OpenGate>::new();
     let mut replacements = Vec::<Replacement>::new();
+    let mut inactive_literal_scopes =
+        HashMap::<(usize, usize), InactiveLiteralScope>::new();
 
     for captures in IFTAGS_TOKEN_REGEX.captures_iter(wikitext) {
         let token = captures.get(0).expect("iftags token");
@@ -87,7 +90,11 @@ fn resolve_outermost_wikidot_iftags_with_mode(
                 .first()
                 .is_some_and(|outer| !wikidot_tag_conditions_match(&outer.spec, tags))
             && literal.is_some_and(|range| {
-                inactive_gate_closes_inside_literal(wikitext, range, token.end())
+                let key = (range.start, range.end);
+                let scope = *inactive_literal_scopes
+                    .entry(key)
+                    .or_insert_with(|| classify_inactive_literal_scope(wikitext, range));
+                inactive_gate_closes_inside_literal(scope, token.end())
             });
         if literal.is_some() && !closes_inactive_root {
             continue;
@@ -186,31 +193,63 @@ fn resolve_outermost_wikidot_iftags_with_mode(
     *wikitext = output;
 }
 
-fn inactive_gate_closes_inside_literal(
+#[derive(Clone, Copy)]
+enum InactiveLiteralScope {
+    Never,
+    Always,
+    AfterClose { close_end: usize },
+}
+
+fn classify_inactive_literal_scope(
     source: &str,
     literal: &Range<usize>,
-    closer_end: usize,
-) -> bool {
+) -> InactiveLiteralScope {
     let literal_source = source[literal.clone()].trim_start_matches([' ', '\t']);
-    let head = literal_source.to_ascii_lowercase();
-    if head.starts_with("[[raw") {
-        return true;
+    if starts_with_ascii_case_insensitive(literal_source, "[[raw")
+        || starts_with_ascii_case_insensitive(literal_source, "[!--")
+    {
+        return InactiveLiteralScope::Always;
     }
-    if head.starts_with("[!--") {
-        return true;
-    }
+
     for (open, close) in [
         ("[[code", "[[/code]]"),
         ("[[html", "[[/html]]"),
         ("[[module", "[[/module]]"),
     ] {
-        if head.starts_with(open) {
-            return !source[closer_end..literal.end]
-                .to_ascii_lowercase()
-                .contains(close);
+        if starts_with_ascii_case_insensitive(literal_source, open) {
+            let close_end =
+                find_last_ascii_case_insensitive(&source[literal.clone()], close)
+                    .map(|offset| literal.start + offset + close.len());
+            return close_end.map_or(InactiveLiteralScope::Always, |close_end| {
+                InactiveLiteralScope::AfterClose { close_end }
+            });
         }
     }
-    false
+    InactiveLiteralScope::Never
+}
+
+fn inactive_gate_closes_inside_literal(
+    scope: InactiveLiteralScope,
+    closer_end: usize,
+) -> bool {
+    match scope {
+        InactiveLiteralScope::Never => false,
+        InactiveLiteralScope::Always => true,
+        InactiveLiteralScope::AfterClose { close_end } => closer_end > close_end,
+    }
+}
+
+fn starts_with_ascii_case_insensitive(source: &str, prefix: &str) -> bool {
+    source
+        .get(..prefix.len())
+        .is_some_and(|head| head.as_bytes().eq_ignore_ascii_case(prefix.as_bytes()))
+}
+
+fn find_last_ascii_case_insensitive(source: &str, needle: &str) -> Option<usize> {
+    source
+        .as_bytes()
+        .windows(needle.len())
+        .rposition(|window| window.eq_ignore_ascii_case(needle.as_bytes()))
 }
 
 fn preserve_nested_tokens(
@@ -790,5 +829,23 @@ mod tests {
         source = preserved.restore(&source);
         assert_eq!(source.matches("[[iftags +beta]]").count(), 10_000);
         assert_eq!(source.matches("[[/iftags]]").count(), 9_998);
+    }
+
+    #[test]
+    fn inactive_literal_recovery_stays_within_linear_budget() {
+        let mut source = String::from("[[iftags +missing]]");
+        for _ in 0..20_000 {
+            source.push_str("[[iftags +missing]]");
+        }
+        source.push_str("\n[!--");
+        for _ in 0..20_000 {
+            source.push_str("[[/iftags]]");
+        }
+        source.push_str("--]");
+
+        let started = Instant::now();
+        let resolved = resolve(&source, &[], 1);
+        assert!(started.elapsed() < Duration::from_secs(2));
+        assert_eq!(resolved, "--]");
     }
 }
