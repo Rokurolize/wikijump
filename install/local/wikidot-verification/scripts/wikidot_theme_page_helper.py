@@ -89,6 +89,8 @@ def validate_slug(value: object, *, kind: str = "theme_page", allow_legacy: bool
             raise PublicError("resource_not_allowed", "reference prerequisite is outside the read-only contract")
         return str(value)
     pattern = (CURRENT_RUN_OWNED_SLUG, LEGACY_RUN_OWNED_SLUG) if allow_legacy else (CURRENT_RUN_OWNED_SLUG,)
+    if isinstance(value, str) and ORACLE_RUN_OWNED_SLUG.fullmatch(value):
+        return value
     if not isinstance(value, str) or len(value) > WIKIDOT_PAGE_SLUG_MAX_LENGTH or not any(candidate.fullmatch(value) for candidate in pattern):
         raise PublicError("resource_not_allowed", "resource is not a run-owned theme page")
     return value
@@ -99,7 +101,7 @@ def require_text(value: object, field: str, maximum: int) -> str:
     return value
 
 def validate_tags(value: object, slug: str) -> list[str]:
-    expected = ["テーマ"] if slug.endswith("-yossistyle") else ["theme"]
+    expected = ["codex-oracle"] if ORACLE_RUN_OWNED_SLUG.fullmatch(slug) else (["テーマ"] if slug.endswith("-yossistyle") else ["theme"])
     if value != expected:
         raise PublicError("invalid_request", "run-owned page tags are invalid")
     return expected
@@ -116,7 +118,15 @@ def validate_page_snapshot(value: object, slug: str) -> PageSnapshot:
         raise PublicError("invalid_request", "expected page snapshot is invalid")
     if not isinstance(source_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", source_sha256) is None:
         raise PublicError("invalid_request", "expected page snapshot is invalid")
-    return {"identity": identity, "title": title, "source_sha256": source_sha256, "tags": validate_tags(value["tags"], slug)}
+    tags = value["tags"]
+    # A create can fail after the page save but before the separate tag save.
+    # Permit exact cleanup of that untagged page while retaining the namespace,
+    # title, source, and identity fences.
+    if ORACLE_RUN_OWNED_SLUG.fullmatch(slug) and tags == []:
+        checked_tags = []
+    else:
+        checked_tags = validate_tags(tags, slug)
+    return {"identity": identity, "title": title, "source_sha256": source_sha256, "tags": checked_tags}
 
 def reject_secret_fields(value: object) -> None:
     if isinstance(value, dict):
@@ -260,7 +270,7 @@ class WikidotBackend:
                 "authenticated page GET did not contain a page id",
             )
         page_id = int(page_id_match.group(1))
-        title_element = self.soup(html, "html.parser").select_one("#page-title")
+        title_element = self.soup(html, "html.parser").select_one("#page-title, .page-title")
         if title_element is None:
             raise PublicError(
                 "page_identity_incomplete",

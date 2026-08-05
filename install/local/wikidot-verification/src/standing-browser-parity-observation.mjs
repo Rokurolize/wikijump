@@ -55,7 +55,10 @@ export async function captureDocumentObservation(
   // standing canary contract carries PAGE_CHROME_SKELETON explicitly; do not
   // silently add it to every ad-hoc observation and turn an unrelated
   // contract into a page-chrome assertion.
-  const skeleton = contract?.page_chrome_skeleton ?? null;
+  const skeleton =
+    contract?.capture_page_chrome_skeleton ??
+    contract?.page_chrome_skeleton ??
+    null;
   const documentPhase = await page.evaluate(
     ({
       geometrySelectors: selectors,
@@ -242,6 +245,22 @@ export async function captureDocumentObservation(
             natural_width: image.naturalWidth,
             natural_height: image.naturalHeight,
           })),
+        page_content_rendered_images: root
+          ? [...root.querySelectorAll("img")].filter(rendered).length
+          : 0,
+        page_content_broken_images: root
+          ? [...root.querySelectorAll("img")]
+              .filter(
+                (image) =>
+                  rendered(image) &&
+                  (!image.complete || image.naturalWidth <= 0),
+              )
+              .map((image) => ({
+                src: image.currentSrc || image.src,
+                natural_width: image.naturalWidth,
+                natural_height: image.naturalHeight,
+              }))
+          : [],
         page_chrome_skeleton: pageChromeSkeleton,
       };
     },
@@ -299,9 +318,35 @@ async function waitForSettledResources(page, timeoutMs) {
     if (value <= 0) throw new Error(`${label} exceeded the capture timeout`);
     return value;
   };
-  await page.waitForLoadState("load", {
-    timeout: remaining("load completion"),
-  });
+  let loadStatus = "complete";
+  try {
+    await page.waitForLoadState("load", {
+      timeout: remaining("load completion"),
+    });
+  } catch (error) {
+    if (error?.name !== "TimeoutError") throw error;
+    // Free Wikidot themes keep third-party frames and resources pending.  A
+    // browser-visible oracle still needs its bounded settled DOM and receipt;
+    // record the load boundary instead of silently returning an incomplete
+    // capture or waiting without a deadline.
+    loadStatus = "bounded_domcontentloaded";
+  }
+  if (loadStatus === "bounded_domcontentloaded") {
+    return await page.evaluate((limit) => ({
+      status: "bounded_domcontentloaded",
+      load_ready_state: document.readyState,
+      font_status: document.fonts?.status ?? "not_supported",
+      image_count: document.images.length,
+      incomplete_image_count: [...document.images].filter(
+        (image) => !image.complete,
+      ).length,
+      load_timeout_ms: limit,
+      pending_image_urls: [...document.images]
+        .filter((image) => !image.complete)
+        .map((image) => image.currentSrc || image.src)
+        .sort(),
+    }), timeoutMs);
+  }
   return await page.evaluate(async (limit) => {
     const waitForImage = (image) => {
       if (image.complete) return Promise.resolve();
@@ -354,6 +399,7 @@ async function waitForSettledResources(page, timeoutMs) {
 
 export async function captureBrowserParityObservation({
   context,
+  page: suppliedPage = null,
   url,
   label,
   index,
@@ -363,17 +409,18 @@ export async function captureBrowserParityObservation({
   timeoutMs,
   settleMs,
 }) {
-  const page = await context.newPage();
+  const page = suppliedPage ?? (await context.newPage());
+  const ownsPage = suppliedPage === null;
   const failures = [];
-  page.on("requestfailed", (request) => {
+  const onRequestFailed = (request) => {
     failures.push({
       kind: "request_failed",
       url: request.url(),
       resource_type: request.resourceType(),
       error: request.failure()?.errorText ?? "request failed",
     });
-  });
-  page.on("response", (response) => {
+  };
+  const onResponse = (response) => {
     if (response.status() >= 400) {
       failures.push({
         kind: "http_error",
@@ -382,7 +429,9 @@ export async function captureBrowserParityObservation({
         status: response.status(),
       });
     }
-  });
+  };
+  page.on("requestfailed", onRequestFailed);
+  page.on("response", onResponse);
   const capturedAt = new Date().toISOString();
   let response = null;
   let firstDocument = null;
@@ -507,6 +556,10 @@ export async function captureBrowserParityObservation({
       capture_error: { name: error.name, message: error.message },
     };
   } finally {
-    await page.close().catch(() => undefined);
+    page.off("requestfailed", onRequestFailed);
+    page.off("response", onResponse);
+    if (ownsPage) {
+      await page.close({runBeforeUnload: false, timeout: 10_000}).catch(() => undefined);
+    }
   }
 }

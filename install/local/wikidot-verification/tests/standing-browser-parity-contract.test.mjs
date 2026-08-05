@@ -195,13 +195,14 @@ test("page-chrome skeleton deletion is a blocking parity regression", () => {
       links: contract.page_chrome_skeleton.links.map((link, index) => ({
         ...link,
         parent_count: 1,
-        child_count: index === 0 ? 0 : 1,
-        direct_child_count: index === 0 ? 0 : 1,
+        child_count: index === 2 ? 0 : 1,
+        direct_child_count: index === 2 ? 0 : 1,
       })),
     },
   });
   const result = compareCaptures(local, live, DEFAULT_THRESHOLDS, [], contract);
   assert.equal(result.status, "fail");
+  assert.equal(local.page_chrome_skeleton.links[3].child_count, 1);
   assert.ok(
     result.anomalies.some(
       (anomaly) => anomaly.code === "page_chrome_skeleton_divergence",

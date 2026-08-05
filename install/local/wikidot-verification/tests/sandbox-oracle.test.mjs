@@ -5,6 +5,7 @@ import {
   aggregateSandboxOracleVerdict,
   compareSandboxOracleFixture,
   SANDBOX_ORACLE_REGISTRY_SCHEMA,
+  validateSandboxOracleCapture,
   validateSandboxOracleRegistry,
 } from "../src/sandbox-oracle.mjs";
 
@@ -54,12 +55,53 @@ function capture(overrides = {}) {
         presence_probes: [],
         custom_properties: {},
       },
+      screenshot: {sha256: HASH, full_page: false},
     },
-    document: { presence_probes: [], custom_properties: {} },
+    document: {
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {status: "complete"},
+    },
+    settled_viewport_screenshot: {sha256: HASH, full_page: false},
     screenshot: { sha256: HASH, full_page: true },
     ...overrides,
   };
 }
+
+test("capture validation fails closed on an incomplete browser observation", () => {
+  assert.throws(
+    () =>
+      validateSandboxOracleCapture(
+        capture({
+          capture_error: {name: "TimeoutError", message: "page.goto"},
+        }),
+        "fixture live capture",
+      ),
+    /fixture live capture failed/u,
+  );
+  assert.throws(
+    () =>
+      validateSandboxOracleCapture(
+        capture({screenshot: null}),
+        "fixture local capture",
+      ),
+    /fixture local capture is missing screenshot/u,
+  );
+  const complete = capture();
+  assert.equal(validateSandboxOracleCapture(complete, "complete capture"), complete);
+  const bounded = capture({
+    document: {
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {
+        status: "bounded_domcontentloaded",
+        load_timeout_ms: 120000,
+        pending_image_urls: ["https://cdn.example/pending.png"],
+      },
+    },
+  });
+  assert.equal(validateSandboxOracleCapture(bounded, "bounded capture"), bounded);
+});
 
 function liveFixture() {
   return {
@@ -69,6 +111,7 @@ function liveFixture() {
     owner: "FTML",
     assertion_class: "match-live",
     theme_family: null,
+    comparison_scope: "construct",
     provenance: provenance(),
   };
 }
@@ -87,6 +130,17 @@ test("registry rejects delayed constructs assigned to the live assertion", () =>
         ],
       }),
     /match-frozen-preserved/u,
+  );
+});
+
+test("page-chrome scope requires an explicit theme family", () => {
+  assert.throws(
+    () =>
+      validateSandboxOracleRegistry({
+        schema: SANDBOX_ORACLE_REGISTRY_SCHEMA,
+        fixtures: [{...liveFixture(), comparison_scope: "page-chrome"}],
+      }),
+    /theme_family/u,
   );
 });
 
@@ -141,6 +195,53 @@ test("match-live compares the frozen capture corner to corner", () => {
   assert.equal(result.layers["screenshot-receipt"].status, "pass");
 });
 
+test("construct scope ignores page chrome while preserving construct findings", () => {
+  const fixture = liveFixture();
+  const local = capture({
+    page_chrome_skeleton: {
+      links: [{parent: "body", child: "#skrollr-body", parent_count: 1, child_count: 0, direct_child_count: 0}],
+    },
+    document: {
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {status: "complete"},
+      page_content_rendered_images: 1,
+      page_content_broken_images: [],
+    },
+  });
+  const frozen = capture({
+    input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    document: {
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {status: "complete"},
+      page_content_rendered_images: 1,
+      page_content_broken_images: [],
+    },
+  });
+  const result = compareSandboxOracleFixture({
+    fixture,
+    local,
+    frozen,
+    contract: {
+      geometry_selectors: [],
+      first_paint_geometry_selectors: [],
+      presence_probes: [],
+      first_paint_custom_properties: {},
+      page_chrome_skeleton: {
+        links: [{parent: "body", child: "#skrollr-body"}],
+      },
+    },
+  });
+  assert.equal(result.status, "pass");
+  assert.equal(result.comparison_scope, "construct");
+  assert.equal(
+    result.findings.some((finding) => finding.code === "page_chrome_skeleton_divergence"),
+    false,
+  );
+});
+
 test("normalization remains a blocking finding in the sandbox gate", () => {
   const result = compareSandboxOracleFixture({
     fixture: liveFixture(),
@@ -162,6 +263,75 @@ test("normalization remains a blocking finding in the sandbox gate", () => {
     result.findings.some(
       (finding) => finding.code === "normalization_hides_difference",
     ),
+  );
+});
+
+test("blocked public resources prevent an otherwise matching fixture from passing silently", () => {
+  const fixture = liveFixture();
+  const result = compareSandboxOracleFixture({
+    fixture,
+    local: capture(),
+    frozen: capture({
+      input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+      final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    }),
+    blockedHosts: {
+      "cdn.example.com": 2,
+      "ads.example.net": 1,
+    },
+  });
+  assert.equal(result.status, "fail");
+  assert.deepEqual(result.measurement_boundary, {
+    blocked_hosts: {
+      "ads.example.net": 1,
+      "cdn.example.com": 2,
+    },
+    finding_added: true,
+  });
+  assert.deepEqual(
+    result.findings.find(
+      (finding) => finding.code === "normalization_hides_difference",
+    ),
+    {
+      layer: "structure-geometry",
+      code: "normalization_hides_difference",
+      detail: {
+        reason: "public-origin-resource-blocked-before-request-gate",
+        blocked_hosts: {
+          "ads.example.net": 1,
+          "cdn.example.com": 2,
+        },
+      },
+    },
+  );
+});
+
+test("blocked host counts are validated before they can affect a verdict", () => {
+  assert.throws(
+    () =>
+      compareSandboxOracleFixture({
+        fixture: liveFixture(),
+        local: capture(),
+        frozen: capture({
+          input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+          final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+        }),
+        blockedHosts: { "not a hostname": 1 },
+      }),
+    /invalid hostname/u,
+  );
+  assert.throws(
+    () =>
+      compareSandboxOracleFixture({
+        fixture: liveFixture(),
+        local: capture(),
+        frozen: capture({
+          input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+          final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+        }),
+        blockedHosts: { "cdn.example.com": 0 },
+      }),
+    /positive safe integer/u,
   );
 });
 

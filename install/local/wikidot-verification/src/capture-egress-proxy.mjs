@@ -4,6 +4,7 @@ import net from "node:net";
 import { pipeline } from "node:stream";
 
 const METADATA = new Set(["169.254.169.254", "100.100.100.200"]);
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
 
 export class CaptureEgressError extends Error {}
 
@@ -111,8 +112,13 @@ export function guardedPipeline(source, destination, onFailure, pipelineImpl = p
 export async function startCaptureEgressProxy({
   allowedLocalOrigins = [],
   lookup = dns.lookup,
+  requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 } = {}) {
+  if (!Number.isSafeInteger(requestTimeoutMs) || requestTimeoutMs <= 0) {
+    throw new CaptureEgressError("proxy request timeout must be a positive safe integer");
+  }
   const allowedTargets = new Set();
+  const activeSockets = new Set();
   for (const raw of allowedLocalOrigins) {
     const url = new URL(raw);
     if (
@@ -177,6 +183,9 @@ export async function startCaptureEgressProxy({
           });
         },
       );
+      upstream.setTimeout(requestTimeoutMs, () => {
+        upstream.destroy(new CaptureEgressError("proxy upstream request timed out"));
+      });
       upstream.on("error", () => deny(response, 502));
       request.on("error", () => upstream.destroy());
       guardedPipeline(request, upstream, (error) => {
@@ -189,13 +198,28 @@ export async function startCaptureEgressProxy({
       deny(response);
     }
   });
+  server.on("connection", (socket) => {
+    activeSockets.add(socket);
+    socket.once("close", () => activeSockets.delete(socket));
+  });
 
   server.on("connect", async (request, client, head) => {
     let upstream;
+    let tunnelTimer = null;
     const closeTunnel = () => {
+      if (tunnelTimer !== null) {
+        clearTimeout(tunnelTimer);
+        tunnelTimer = null;
+      }
       client.destroy();
       upstream?.destroy();
     };
+    const resetTunnelTimeout = () => {
+      if (tunnelTimer !== null) clearTimeout(tunnelTimer);
+      tunnelTimer = setTimeout(closeTunnel, requestTimeoutMs);
+    };
+    client.on("data", resetTunnelTimeout);
+    resetTunnelTimeout();
     client.on("error", closeTunnel);
     client.on("close", () => upstream?.destroy());
     try {
@@ -211,8 +235,11 @@ export async function startCaptureEgressProxy({
         port,
         family: net.isIPv6(address) ? 6 : 4,
       });
+      resetTunnelTimeout();
+      upstream.on("data", resetTunnelTimeout);
       upstream.on("error", closeTunnel);
       upstream.once("connect", () => {
+        resetTunnelTimeout();
         client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
         if (head.length) upstream.write(head);
         client.pipe(upstream);
@@ -230,9 +257,12 @@ export async function startCaptureEgressProxy({
   const { port } = server.address();
   return {
     url: `http://127.0.0.1:${port}`,
-    close: () =>
-      new Promise((resolve, reject) =>
+    close: () => {
+      for (const socket of activeSockets) socket.destroy();
+      server.closeAllConnections?.();
+      return new Promise((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve())),
-      ),
+      );
+    },
   };
 }
