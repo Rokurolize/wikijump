@@ -38,8 +38,8 @@ use crate::utils::now;
 use paste::paste;
 use sea_orm::prelude::Expr;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, ExprTrait, JoinType,
-    QueryFilter, QuerySelect, RelationTrait, Set,
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, JoinType, QueryFilter,
+    QuerySelect, RelationTrait, Set,
 };
 use std::collections::HashMap;
 
@@ -216,9 +216,9 @@ impl RoleService {
                             Expr::value(Some(parent_id)),
                         )
                         .filter(
-                            role::Column::ParentRoleId
-                                .eq(role.role_id)
-                                .and(role::Column::DeletedAt.is_null()),
+                            Condition::all()
+                                .add(role::Column::ParentRoleId.eq(role.role_id))
+                                .add(role::Column::DeletedAt.is_null()),
                         )
                         .exec(txn)
                         .await
@@ -249,9 +249,9 @@ impl RoleService {
         UserRole::update_many()
             .col_expr(user_role::Column::DeletedAt, Expr::value(Some(now())))
             .filter(
-                user_role::Column::RoleId
-                    .eq(role.role_id)
-                    .and(user_role::Column::DeletedAt.is_null()),
+                Condition::all()
+                    .add(user_role::Column::RoleId.eq(role.role_id))
+                    .add(user_role::Column::DeletedAt.is_null()),
             )
             .exec(txn)
             .await
@@ -294,12 +294,12 @@ impl RoleService {
 
         let role = {
             let condition = match reference {
-                Reference::Id(id) => role::Column::RoleId.eq(id),
+                Reference::Id(id) => Condition::from(role::Column::RoleId.eq(id)),
                 Reference::Slug(slug) => {
                     // Get role by role name
-                    role::Column::Name
-                        .eq(slug)
-                        .and(role::Column::DeletedAt.is_null())
+                    Condition::all()
+                        .add(role::Column::Name.eq(slug))
+                        .add(role::Column::DeletedAt.is_null())
                 }
             };
 

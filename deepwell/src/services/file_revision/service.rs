@@ -85,8 +85,6 @@ impl FileRevisionService {
             )
         };
 
-        // Replace with debug_assert_matches! when stablized.
-        // This should correspond to each use of FileRevisionService::create() in FileService.
         debug_assert!(
             matches!(
                 revision_type,

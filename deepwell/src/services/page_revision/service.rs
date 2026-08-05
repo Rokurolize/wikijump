@@ -372,7 +372,7 @@ async fn apply_revision_outdating(
             revision_type,
             PageRevisionType::Regular
                 | PageRevisionType::Rollback
-                | PageRevisionType::Undo
+                | PageRevisionType::Undo,
         ),
         "Revision type is not standard for non-moves",
     );
@@ -433,7 +433,6 @@ impl PageRevisionService {
             )
         };
 
-        // Replace with debug_assert_matches! when stablized
         debug_assert!(
             matches!(
                 revision_type,

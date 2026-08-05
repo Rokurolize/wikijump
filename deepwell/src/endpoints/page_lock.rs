@@ -20,7 +20,9 @@
 
 use super::prelude::*;
 use crate::models::page_lock::Model as PageLockModel;
-use crate::services::page_lock::{CreatePageLockInput, RemovePageLockInput};
+use crate::services::page_lock::{
+    CreatePageLockInput, GetPageLockHistoryInput, RemovePageLockInput,
+};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{MutationAuthorization, PageLockService};
 use crate::types::{Action, Permission, Reference, Resource};
@@ -103,7 +105,6 @@ async fn require_page_view_permission(
         .into())
     }
 }
-
 pub async fn page_lock_create(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -117,9 +118,7 @@ pub async fn page_lock_create(
     let user_id = request
         .user_id()
         .or_raise(|| Error::new("no user ID found", ErrorType::PageLock))?;
-    let page_ref = request
-        .page_reference()
-        .or_raise(|| Error::new("no page reference found", ErrorType::PageLock))?;
+    let page_ref = input.page.clone();
     let page_id = resolve_page_id(ctx, site_id, page_ref.borrow()).await?;
     require_page_lock_permission(
         ctx,
@@ -128,7 +127,6 @@ pub async fn page_lock_create(
         "create a page lock",
     )
     .await?;
-
     info!(
         "Creating page lock of type {:?} for page {:?} in site {}",
         input.lock_type, page_id, site_id,
@@ -154,9 +152,7 @@ pub async fn page_lock_remove(
     let user_id = request
         .user_id()
         .or_raise(|| Error::new("no user ID found", ErrorType::PageLock))?;
-    let page_ref = request
-        .page_reference()
-        .or_raise(|| Error::new("no page reference found", ErrorType::PageLock))?;
+    let page_ref = input.page.clone();
     let page_id = resolve_page_id(ctx, site_id, page_ref.borrow()).await?;
     require_page_lock_permission(
         ctx,
@@ -165,7 +161,6 @@ pub async fn page_lock_remove(
         "remove a page lock",
     )
     .await?;
-
     info!(
         "Removing active page lock for page {:?} in site {}",
         page_id, site_id,
@@ -186,15 +181,15 @@ pub async fn page_lock_remove(
 
 pub async fn page_lock_get_history(
     ctx: &ServiceContext<'_>,
-    _params: Params<'static>,
+    params: Params<'static>,
 ) -> Result<Vec<PageLockModel>> {
+    let input: GetPageLockHistoryInput = parse!(params, PageLock);
+
     let request = ctx.request();
     let site_id = request
         .site_id()
         .or_raise(|| Error::new("no site ID found", ErrorType::PageLock))?;
-    let page_ref = request
-        .page_reference()
-        .or_raise(|| Error::new("no page reference found", ErrorType::PageLock))?;
+    let page_ref = input.page.clone();
     let page_id = resolve_page_id(ctx, site_id, page_ref.borrow()).await?;
     require_page_view_permission(ctx, site_id, page_id).await?;
 

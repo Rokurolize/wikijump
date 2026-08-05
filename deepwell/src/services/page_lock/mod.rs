@@ -22,4 +22,6 @@ mod service;
 mod structs;
 
 pub use self::service::PageLockService;
-pub use self::structs::{CreatePageLockInput, RemovePageLockInput};
+pub use self::structs::{
+    CreatePageLockInput, GetPageLockHistoryInput, RemovePageLockInput,
+};
