@@ -8800,6 +8800,244 @@ async fn listpages_link_to_dot_selects_links_to_the_current_page() {
 }
 
 #[tokio::test]
+async fn listpages_metadata_selectors_honor_target_view_permissions() {
+    const PRIVATE_CATEGORY: &str = "fixture-listpages-metadata-private";
+    const PRIVATE_PARENT: &str = "fixture-listpages-metadata-private:parent";
+    const PUBLIC_CHILD: &str = "fixture-listpages-metadata-public:child";
+    const PUBLIC_PARENT: &str = "fixture-listpages-metadata-public:parent";
+    const PUBLIC_COUNT_CHILD: &str = "fixture-listpages-metadata-public:count-child";
+    const PRIVATE_COUNT_CHILD: &str = "fixture-listpages-metadata-private:count-child";
+    const PUBLIC_LINK_TARGET: &str = "fixture-listpages-metadata-public-link-target";
+    const PRIVATE_LINK_TARGET: &str = "fixture-listpages-metadata-private:link-target";
+    const PUBLIC_LINK_SOURCE: &str = "fixture-listpages-metadata-public-link-source";
+    const PRIVATE_LINK_SOURCE: &str = "fixture-listpages-metadata-private-link-source";
+    const PUBLIC_INCLUDE_SOURCE: &str =
+        "fixture-listpages-metadata-public-include-source";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    for (slug, title) in [
+        (PRIVATE_PARENT, "Private ListPages metadata parent"),
+        (PUBLIC_CHILD, "Public ListPages metadata child"),
+        (PUBLIC_PARENT, "Public ListPages metadata parent"),
+        (PUBLIC_COUNT_CHILD, "Public ListPages metadata count child"),
+        (
+            PRIVATE_COUNT_CHILD,
+            "Private ListPages metadata count child",
+        ),
+        (PUBLIC_LINK_TARGET, "Public ListPages metadata link target"),
+        (
+            PRIVATE_LINK_TARGET,
+            "Private ListPages metadata link target",
+        ),
+        (PUBLIC_LINK_SOURCE, "Public ListPages metadata link source"),
+        (
+            PRIVATE_LINK_SOURCE,
+            "Private ListPages metadata link source",
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, "fixture body.")
+            .await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_INCLUDE_SOURCE,
+        "Public ListPages metadata include source",
+        &format!("[[include {PUBLIC_LINK_TARGET}]]"),
+    )
+    .await;
+
+    for slug in [PRIVATE_PARENT, PRIVATE_COUNT_CHILD, PRIVATE_LINK_TARGET] {
+        set_listpages_test_category_slug(&runner, site_id, slug, PRIVATE_CATEGORY).await;
+    }
+    set_listpages_test_parent(&mut runner, site_id, PUBLIC_CHILD, PRIVATE_PARENT).await;
+    set_listpages_test_parent(&mut runner, site_id, PUBLIC_COUNT_CHILD, PUBLIC_PARENT)
+        .await;
+    set_listpages_test_parent(&mut runner, site_id, PRIVATE_COUNT_CHILD, PUBLIC_PARENT)
+        .await;
+
+    for (source, target) in [
+        (PUBLIC_LINK_SOURCE, PUBLIC_LINK_TARGET),
+        (PRIVATE_LINK_SOURCE, PRIVATE_LINK_TARGET),
+    ] {
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site_id,
+            Reference::Slug(Cow::Borrowed(source)),
+        );
+        let page_id = listpages_test_page_id(&runner, site_id, source).await;
+        let page = PageTable::find_by_id(page_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("ListPages metadata link source lookup should not fail")
+            .expect("ListPages metadata link source should exist");
+        let source_revision = page
+            .latest_revision_id
+            .expect("ListPages metadata link source should have a revision");
+        run_endpoint!(
+            runner,
+            page_edit,
+            json!({
+                "site_id": site_id,
+                "page": source,
+                "last_revision_id": source_revision,
+                "revision_comments": "add ListPages metadata link fixture",
+                "user_id": ADMIN_USER_ID,
+                "wikitext": format!("[[[{target}|linked target]]]") ,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        )
+        .expect("ListPages metadata link source edit should succeed");
+    }
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let private_link_target = PageTable::find()
+        .filter(page::Column::Slug.eq(PRIVATE_LINK_TARGET))
+        .one(runner.context().transaction())
+        .await
+        .expect("private link target lookup should not fail")
+        .expect("private link target should exist");
+    let private_link_view = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: None,
+            site_id,
+            page_reference: Some(Reference::Id(private_link_target.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(private_link_target.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("private link target permission check should not fail");
+    assert!(
+        !private_link_view,
+        "private link target must be denied anonymously"
+    );
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Anonymous ListPages metadata permission preview",
+        format!(
+            concat!(
+                "[[module ListPages category=\"*\" fullname=\"{PUBLIC_CHILD}\" separate=\"no\" wrapper=\"no\"]]",
+                "PARENT=%%parent_fullname%%",
+                "[[/module]]\n",
+                "[[module ListPages category=\"*\" fullname=\"{PUBLIC_PARENT}\" separate=\"no\" wrapper=\"no\"]]",
+                "CHILDREN=%%children%%",
+                "[[/module]]\n",
+                "[[module ListPages category=\"*\" link_to=\"{PUBLIC_LINK_TARGET}\" separate=\"no\" wrapper=\"no\"]]",
+                "PUBLIC_LINK=%%slug%%",
+                "[[/module]]\n",
+                "[[module ListPages category=\"*\" link_to=\"{PRIVATE_LINK_TARGET}\" separate=\"no\" wrapper=\"no\"]]",
+                "PRIVATE_LINK=%%slug%%",
+                "[[/module]]",
+            ),
+            PUBLIC_CHILD = PUBLIC_CHILD,
+            PUBLIC_PARENT = PUBLIC_PARENT,
+            PUBLIC_LINK_TARGET = PUBLIC_LINK_TARGET,
+            PRIVATE_LINK_TARGET = PRIVATE_LINK_TARGET,
+        ),
+    )
+    .await
+    .expect("anonymous ListPages metadata permission preview should render");
+    let html = preview.html_output.body;
+
+    assert!(
+        html.contains("PARENT=") && !html.contains(PRIVATE_PARENT),
+        "a private parent fullname must not cross the ListPages permission boundary:\n{html}",
+    );
+    assert!(
+        html.contains("CHILDREN=1") && !html.contains("CHILDREN=2"),
+        "%%children%% must count only viewable direct children:\n{html}",
+    );
+    assert!(
+        html.contains(&format!("PUBLIC_LINK={PUBLIC_LINK_SOURCE}"))
+            && !html.contains(&format!("PRIVATE_LINK={PRIVATE_LINK_SOURCE}"))
+            && !html.contains(PUBLIC_INCLUDE_SOURCE),
+        "link_to must select public links only, without private-target or include metadata:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_total_does_not_expose_raw_private_candidate_threshold() {
+    const PRIVATE_CATEGORY: &str = "fixture-listpages-total-threshold-private";
+    const PUBLIC_TARGET: &str = "fixture-listpages-total-threshold-public";
+    const PRIVATE_ROW_COUNT: i32 = 250;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_TARGET,
+        "Public ListPages total threshold target",
+        "public target",
+    )
+    .await;
+    let private_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, PRIVATE_CATEGORY)
+            .await
+            .expect("private total threshold category should exist")
+            .category_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO page (
+                created_at, updated_at, deleted_at, from_wikidot, site_id,
+                latest_revision_id, page_category_id, slug, discussion_thread_id, layout
+             )
+             SELECT NOW(), NULL, NULL, false, $1, NULL, $2,
+                    'fixture-listpages-total-threshold-private-' || series, NULL, 'wikidot'
+             FROM generate_series(1, $3) AS series",
+            [
+                Value::from(site_id),
+                Value::from(private_category_id),
+                Value::from(PRIVATE_ROW_COUNT),
+            ],
+        ))
+        .await
+        .expect("private total threshold rows should be inserted");
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Anonymous ListPages total threshold preview",
+        "[[module ListPages category=\"*\" name=\"fixture-listpages-total-threshold-*\" separate=\"no\" wrapper=\"no\"]]TOTAL=%%total%%[[/module]]".to_owned(),
+    )
+    .await
+    .expect("anonymous ListPages total threshold preview should render");
+    let html = preview.html_output.body;
+    assert!(
+        html.contains("TOTAL=1") && !html.contains("%%total%%"),
+        "%%total%% must count visible rows without preserving based on raw private candidates:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_index_remains_absolute_after_offset() {
     const TAG: &str = "verification-listpages-offset-index";
     const INDEX_SLUG: &str = "fixture-listpages-offset-index";

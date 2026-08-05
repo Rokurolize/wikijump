@@ -38,7 +38,7 @@ use crate::models::{page_revision, text};
 use crate::services::ServiceContext;
 use crate::services::score::ScoreValue;
 use crate::services::{PageService, ParentService, ScoreService};
-use crate::types::Reference;
+use crate::types::{ConnectionType, Reference};
 use sea_orm::DatabaseTransaction;
 use sea_orm::FromQueryResult;
 use sea_orm::{
@@ -678,6 +678,10 @@ impl PageQueryService {
 
                             page_connection::Column::ToPageId.is_in(incoming_ids)
                         })
+                        .and_where(
+                            page_connection::Column::ConnectionType
+                                .eq(ConnectionType::Link),
+                        )
                         .to_owned(),
                 ),
             );
