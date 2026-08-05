@@ -30,7 +30,7 @@ use super::percent_encoding::percent_encode_path_segment;
 use super::rate_module::{
     render_read_only_rate_module, render_read_only_star_rate_module,
 };
-use super::runtime_page_queries::find_viewable_list_pages_rows;
+use super::runtime_page_queries::find_viewable_list_pages_rows_with_batch_floor;
 use super::service::{
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PAGECALENDAR_MODULE_REGEX, RATE_MODULE_REGEX,
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
@@ -2156,13 +2156,14 @@ impl RenderService {
             },
         };
         let mut permission_cache = BTreeMap::new();
-        let rows = find_viewable_list_pages_rows(
+        let rows = find_viewable_list_pages_rows_with_batch_floor(
             ctx,
             None,
             query,
             arguments.limit,
             &mut permission_cache,
             None,
+            arguments.limit as u64,
         )
         .await?;
         let runtime_displays = if arguments.comments {
