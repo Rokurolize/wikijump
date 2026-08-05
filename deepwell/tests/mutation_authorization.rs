@@ -134,3 +134,39 @@ async fn raw_storage_mutation_requires_platform_staff() {
     let error = run_endpoint_err!(runner, text_create, json!(["untrusted raw text"]),);
     assert_contains_error!(error, ErrorType::PermissionDenied);
 }
+
+#[tokio::test]
+async fn wikidot_database_import_endpoints_require_platform_staff() {
+    let mut runner = TestRunner::setup().await;
+
+    let anonymous_errors = [
+        run_endpoint_err!(runner, import_wikidot_user, json!({})),
+        run_endpoint_err!(runner, import_wikidot_site, json!({})),
+        run_endpoint_err!(runner, import_wikidot_page, json!({})),
+        run_endpoint_err!(runner, import_wikidot_page_revision, json!({})),
+    ];
+    for error in anonymous_errors {
+        assert_contains_error!(error, ErrorType::PermissionDenied);
+    }
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        ..Default::default()
+    });
+    let non_staff_errors = [
+        run_endpoint_err!(runner, import_wikidot_user, json!({})),
+        run_endpoint_err!(runner, import_wikidot_site, json!({})),
+        run_endpoint_err!(runner, import_wikidot_page, json!({})),
+        run_endpoint_err!(runner, import_wikidot_page_revision, json!({})),
+    ];
+    for error in non_staff_errors {
+        assert_contains_error!(error, ErrorType::PermissionDenied);
+    }
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let admin_error = run_endpoint_err!(runner, import_wikidot_site, json!({}));
+    assert_contains_error!(admin_error, ErrorType::DatabaseImport);
+}

@@ -19,6 +19,7 @@
  */
 
 use super::prelude::*;
+use crate::services::MutationAuthorization;
 use crate::services::import::{
     ImportPage, ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput,
     ImportService, ImportSite, ImportSiteOutput, ImportUser, ImportUserOutput,
@@ -28,6 +29,7 @@ pub async fn import_wikidot_user(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<ImportUserOutput> {
+    MutationAuthorization::require_platform_staff(ctx, "import Wikidot user data")?;
     let input: ImportUser = parse!(params, DatabaseImport);
     info!("Importing Wikidot user ID {}", input.user_id);
     ImportService::add_user(ctx, input).await.or_raise(|| {
@@ -39,6 +41,7 @@ pub async fn import_wikidot_site(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<ImportSiteOutput> {
+    MutationAuthorization::require_platform_staff(ctx, "import Wikidot site data")?;
     let input: ImportSite = parse!(params, DatabaseImport);
     info!("Importing Wikidot site ID {}", input.site_id);
     ImportService::add_site(ctx, input).await.or_raise(|| {
@@ -50,6 +53,7 @@ pub async fn import_wikidot_page(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<ImportPageOutput> {
+    MutationAuthorization::require_platform_staff(ctx, "import Wikidot page data")?;
     let input: ImportPage = parse!(params, DatabaseImport);
     info!("Importing Wikidot page ID {}", input.page_id);
     ImportService::add_page(ctx, input).await.or_raise(|| {
@@ -61,6 +65,10 @@ pub async fn import_wikidot_page_revision(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<ImportPageRevisionOutput> {
+    MutationAuthorization::require_platform_staff(
+        ctx,
+        "import Wikidot page revision data",
+    )?;
     let input: ImportPageRevision = parse!(params, DatabaseImport);
     ImportService::add_page_revision(ctx, input)
         .await
