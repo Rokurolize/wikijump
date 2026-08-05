@@ -2474,7 +2474,7 @@ fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences()
         protected
             .matches(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
             .count(),
-        3
+        2,
     );
     for module in [
         "[[module Members]]",

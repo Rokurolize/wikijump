@@ -6666,6 +6666,122 @@ async fn newpage_module_resolves_existing_templates_in_rendered_pages() {
 }
 
 #[tokio::test]
+async fn newpage_over_budget_template_list_remains_literal() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    const HOLDER_SLUG: &str = "fixture-newpage-over-budget-holder";
+    let names = (0..40)
+        .map(|index| format!("template:fixture-newpage-over-budget-{index}"))
+        .collect::<Vec<_>>()
+        .join(",");
+    let source = format!(
+        "NEWPAGE_OVER_BUDGET_START\n[[module NewPage template=\"{names}\"]]\n[[module NewPage button=\"after-budget\"]]\nNEWPAGE_OVER_BUDGET_END"
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER_SLUG,
+        "Fixture NewPage Over Budget Holder",
+        &source,
+    )
+    .await;
+    let holder = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": HOLDER_SLUG,
+        }),
+    )
+    .expect("over-budget NewPage holder should exist");
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": holder.page_category_id,
+            "page_id": holder.page_id,
+        }),
+    );
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    assert!(
+        html.contains("NEWPAGE_OVER_BUDGET_START")
+            && html.contains("[[module NewPage template=&quot;"),
+        "an over-budget NewPage module must remain literal:\n{html}"
+    );
+    assert!(
+        html.contains("fixture-newpage-over-budget-39"),
+        "the complete authored module must remain visible:\n{html}"
+    );
+    assert_eq!(
+        html.matches("class=\"new-page-box\"").count(),
+        1,
+        "only the later valid NewPage module should expand:\n{html}"
+    );
+    assert!(
+        html.contains(r#"value="after-budget""#),
+        "a later valid NewPage module must remain executable:\n{html}"
+    );
+}
+
+#[tokio::test]
+async fn newpage_modules_after_the_per_render_budget_remain_literal() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    const HOLDER_SLUG: &str = "fixture-newpage-module-budget-holder";
+    let modules = (0..=64)
+        .map(|index| format!(r#"[[module NewPage button="budget-{index}"]]"#))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let source =
+        format!("NEWPAGE_MODULE_BUDGET_START\n{modules}\nNEWPAGE_MODULE_BUDGET_END");
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER_SLUG,
+        "Fixture NewPage Module Budget Holder",
+        &source,
+    )
+    .await;
+    let holder = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": HOLDER_SLUG,
+        }),
+    )
+    .expect("NewPage module budget holder should exist");
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": holder.page_category_id,
+            "page_id": holder.page_id,
+        }),
+    );
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    assert_eq!(
+        html.matches("class=\"new-page-box\"").count(),
+        64,
+        "only the bounded NewPage prefix should expand:\n{html}"
+    );
+    assert!(
+        html.contains("[[module NewPage button=&quot;budget-64&quot;]]"),
+        "the first module after the budget must remain literal:\n{html}"
+    );
+}
+
+#[tokio::test]
 async fn categories_module_lists_active_categories_and_honors_include_hidden() {
     const VISIBLE_CATEGORY: &str = "fixture-categories-visible";
     const HIDDEN_CATEGORY: &str = "_fixture-categories-hidden";
