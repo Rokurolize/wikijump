@@ -1432,6 +1432,7 @@ impl RenderService {
             wikitext,
             settings,
             (current_site_id, current_page_id),
+            viewer_user_id,
             &mut wikidot_compat_html,
         )
         .await
@@ -1828,6 +1829,7 @@ impl RenderService {
             page_info,
             settings,
             current_site_id,
+            viewer_user_id,
             text_block_page_id,
             allow_wikidot_styleframe,
             current_site,
@@ -1844,6 +1846,7 @@ impl RenderService {
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
+        viewer_user_id: Option<i64>,
         text_block_page_id: Option<i64>,
         allow_wikidot_styleframe: bool,
         current_site: Option<SiteModel>,
@@ -1890,7 +1893,11 @@ impl RenderService {
                     (current_site_id, current_site.as_ref())
                 {
                     Self::load_wikidot_compat_fallback_link_titles(
-                        ctx, site_id, &site.slug, &wikitext,
+                        ctx,
+                        site_id,
+                        &site.slug,
+                        &wikitext,
+                        viewer_user_id,
                     )
                     .await
                     .or_raise(make_error)?
@@ -2114,6 +2121,7 @@ impl RenderService {
                     site_id,
                     &render_page_info.site,
                     &page_references,
+                    viewer_user_id,
                 )
                 .await
                 .or_raise(make_error)?,

@@ -46,10 +46,8 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page_revision;
 use crate::models::site::Model as SiteModel;
 use crate::services::ServiceContext;
-use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{LinkService, PageService};
 use crate::types::Reference;
-use crate::types::{Action, Permission, Resource};
 use ftml::data::PageInfo;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::borrow::Cow;
@@ -174,11 +172,17 @@ impl RenderService {
         site_id: i64,
         site_slug: &str,
         wikitext: &str,
+        viewer_user_id: Option<i64>,
     ) -> Result<WikidotCompatLinkTitleMap> {
         let page_refs = collect_fallback_page_references(wikitext);
-        let page_existence =
-            LinkService::resolve_page_existence(ctx, site_id, site_slug, &page_refs)
-                .await?;
+        let page_existence = LinkService::resolve_page_existence(
+            ctx,
+            site_id,
+            site_slug,
+            &page_refs,
+            viewer_user_id,
+        )
+        .await?;
         let mut titles = WikidotCompatLinkTitleMap::new();
         titles.set_page_existence(site_slug.to_owned(), page_existence);
 
@@ -191,7 +195,11 @@ impl RenderService {
             .iter()
             .map(|slug| Reference::Slug(Cow::Borrowed(slug.as_str())))
             .collect::<Vec<_>>();
-        let pages = PageService::get_pages(ctx, site_id, &references).await?;
+        let mut authorized_selector =
+            super::super::AuthorizedPageSelector::new(ctx, viewer_user_id);
+        let pages = authorized_selector
+            .resolve_models(site_id, &references)
+            .await?;
         let mut pages_by_slug = BTreeMap::<String, Vec<_>>::new();
         for page in pages {
             pages_by_slug
@@ -209,37 +217,16 @@ impl RenderService {
                 PageService::get_optional(ctx, site_id, Reference::from(slug.as_str()))
                     .await?
             };
-            if let Some(page) = page {
+            if let Some(page) = page
+                && authorized_selector.page_is_viewable(&page).await?
+            {
                 selected_pages.push(page);
             }
         }
 
-        let mut category_permissions = BTreeMap::new();
         let mut viewable_pages = Vec::with_capacity(selected_pages.len());
         for page in selected_pages {
-            let can_view = if let Some(can_view) =
-                category_permissions.get(&page.page_category_id)
-            {
-                *can_view
-            } else {
-                let can_view = PermissionService::check_user_can(
-                    ctx,
-                    &CheckPermissionContext {
-                        user_id: None,
-                        site_id,
-                        page_reference: Some(Reference::Id(page.page_id)),
-                    },
-                    Permission {
-                        resource_type: Resource::Page,
-                        resource_category: Some(Reference::Id(page.page_category_id)),
-                        action: Action::View,
-                    },
-                )
-                .await?;
-                category_permissions.insert(page.page_category_id, can_view);
-                can_view
-            };
-            if can_view && page.latest_revision_id.is_some() {
+            if page.latest_revision_id.is_some() {
                 viewable_pages.push(page);
             }
         }

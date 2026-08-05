@@ -67,8 +67,16 @@ impl LinkService {
         source_site_id: i64,
         source_site_slug: &str,
         page_refs: &[ftml::data::PageRef],
+        viewer_user_id: Option<i64>,
     ) -> Result<PageExistenceSnapshot> {
-        resolve_page_existence(ctx, source_site_id, source_site_slug, page_refs).await
+        resolve_page_existence(
+            ctx,
+            source_site_id,
+            source_site_slug,
+            page_refs,
+            viewer_user_id,
+        )
+        .await
     }
 
     pub async fn get_from(
