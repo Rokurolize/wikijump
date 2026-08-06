@@ -90,6 +90,27 @@ function outermostListPagesOwnedSubtrees(nodes) {
   return output;
 }
 
+function normalizeListPagesOwnedWhitespace(node) {
+  if (node?.type === "text") {
+    return node.value.trim() === "" ? null : { ...node };
+  }
+  if (node?.type !== "element") return node === undefined ? null : { ...node };
+  return {
+    ...node,
+    children: (node.children ?? [])
+      .map(normalizeListPagesOwnedWhitespace)
+      .filter((child) => child !== null),
+  };
+}
+
+function listPagesOwnedSubtreesEqual(liveNodes, localNodes) {
+  return JSON.stringify(
+    liveNodes.map(normalizeListPagesOwnedWhitespace),
+  ) === JSON.stringify(
+    localNodes.map(normalizeListPagesOwnedWhitespace),
+  );
+}
+
 function literalContextHasExactListPagesExecution({
   row,
   liveNodes,
@@ -105,7 +126,7 @@ function literalContextHasExactListPagesExecution({
   const liveOwned = outermostListPagesOwnedSubtrees(liveNodes);
   const localOwned = outermostListPagesOwnedSubtrees(localNodes);
   return liveOwned.length > 0 &&
-    JSON.stringify(liveOwned) === JSON.stringify(localOwned);
+    listPagesOwnedSubtreesEqual(liveOwned, localOwned);
 }
 
 function asciiCaseInsensitiveOccurrenceCount(text, needle) {
@@ -166,26 +187,32 @@ function literalDocumentationKeepsListPagesInactive({
 }
 
 function hasExactListPagesOwnedExecution({
-  invocation,
+  invocations,
   liveNodes,
   localNodes,
   localUnsupportedDiagnostic,
 }) {
-  if (localUnsupportedDiagnostic || invocation === null) return false;
-  // A class name inside authored ListPages content is not ownership evidence.
-  // Only the default/explicit wrapper form has a generated outer shell that we
-  // can compare without recognizing arbitrary authored descendants.
-  if (invocationExpectsWrapper(invocation) !== true) return false;
   if (
-    topLevelNodesWithClass(liveNodes, "list-pages-box").length !== 1 ||
-    topLevelNodesWithClass(localNodes, "list-pages-box").length !== 1
-  ) {
-    return false;
-  }
+    localUnsupportedDiagnostic ||
+    !Array.isArray(invocations) ||
+    invocations.length === 0 ||
+    invocations.some((candidate) =>
+      candidate.execution_context !== "executable" ||
+      invocationExpectsWrapper(candidate) !== true ||
+      /\bclass\s*=\s*["'][^"']*\blist-pages-box\b/iu.test(candidate.body)
+    ) ||
+    (invocations.length > 1 && invocations.some((candidate) =>
+      candidate.balanced !== true
+    ))
+  ) return false;
+  // A default/explicit wrapper invocation gives us a generic ownership anchor.
+  // Compare every outermost generated shell so imported components and pages
+  // containing more than one shell remain covered without recognizing content
+  // by page or source text.
   const liveOwned = outermostListPagesOwnedSubtrees(liveNodes);
   const localOwned = outermostListPagesOwnedSubtrees(localNodes);
   return liveOwned.length > 0 &&
-    JSON.stringify(liveOwned) === JSON.stringify(localOwned);
+    listPagesOwnedSubtreesEqual(liveOwned, localOwned);
 }
 
 function nodeAttribute(node, name) {
@@ -1866,6 +1893,12 @@ function classifyMismatch(row, reference) {
   const liveNodes = canonicalDom(liveHtml);
   const localNodes = localDom(row);
   const invocation = exactSingleInvocation(source);
+  const invocations = extractListPagesInvocationsFromSource({
+    branch: "classification",
+    pageFullname: "preview",
+    sourcePath: "preview",
+    source,
+  });
   const liveTopLevelWrappers = topLevelNodesWithClass(
     liveNodes,
     "list-pages-box",
@@ -1943,7 +1976,7 @@ function classifyMismatch(row, reference) {
     };
   }
   if (hasExactListPagesOwnedExecution({
-    invocation,
+    invocations,
     liveNodes,
     localNodes,
     localUnsupportedDiagnostic,
