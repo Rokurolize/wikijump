@@ -6402,6 +6402,54 @@ async fn backlinks_module_ignores_arguments_like_live_wikidot() {
 }
 
 #[tokio::test]
+async fn unknown_module_dispatch_requires_a_valid_legacy_name() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-unknown-module-boundary",
+        "Fixture Unknown Module Boundary",
+        concat!(
+            "[[module foo=\"bar\"]]\n",
+            "[[module https://example.com]]\n",
+            "[[module UnknownOracleModule]]\n",
+            "[[module654 class=\"\"]]",
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-unknown-module-boundary",
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("unknown-module fixture should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(html.contains("[[module foo=&quot;bar&quot;]]"), "{html}");
+    assert!(
+        html.contains(
+            "[[module <a href=\"https://example.com\">https://example.com</a>]]"
+        ),
+        "{html}"
+    );
+    assert!(html.contains("[[module <em>UnknownOracleModule</em>]] No such module"));
+    assert!(html.contains("[[module654 class=&quot;&quot;]]"));
+    assert_eq!(html.matches("No such module").count(), 1, "{html}");
+    assert!(!html.contains("TODO: module"), "{html}");
+}
+
+#[tokio::test]
 async fn orphanedpages_module_lists_pages_without_incoming_internal_links() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

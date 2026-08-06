@@ -2008,6 +2008,7 @@ impl RenderService {
                 body,
                 meta: Vec::new(),
                 styles: wikidot_css_modules,
+                resource_requirements: Vec::new(),
                 backlinks,
             };
             drop(fallback_render_stage);
