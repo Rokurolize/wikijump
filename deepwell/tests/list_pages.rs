@@ -3110,6 +3110,29 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "unknown variables should remain literal while known variables execute:\n{unknown_variable_preview}",
     );
 
+    let unknown_tracking_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "[[image https://tracker.invalid/%%fullname%%/%%unsupported%%]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("unknown variables must make tracking-only templates fail closed")
+    .html_output
+    .body;
+    assert_eq!(
+        unknown_tracking_preview.trim(),
+        r#"<div class="list-pages-box"></div>"#,
+        "unknown tracking templates must not expose substituted page metadata or active image markup:\n{unknown_tracking_preview}",
+    );
+
     let tabbed_preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site_id,

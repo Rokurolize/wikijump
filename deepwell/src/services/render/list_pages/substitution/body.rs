@@ -132,4 +132,14 @@ mod tests {
             "[[%%content{1}%%/module css]]"
         ));
     }
+
+    #[test]
+    fn tracking_markup_detection_is_independent_of_unknown_variables() {
+        assert!(list_pages_body_is_no_visible_tracking_markup(
+            "[[image https://tracker.invalid/%%unsupported%%]]"
+        ));
+        assert!(!list_pages_body_is_no_visible_tracking_markup(
+            "VISIBLE %%unsupported%%"
+        ));
+    }
 }
