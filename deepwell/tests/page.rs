@@ -6402,6 +6402,54 @@ async fn backlinks_module_ignores_arguments_like_live_wikidot() {
 }
 
 #[tokio::test]
+async fn unknown_module_dispatch_requires_a_valid_legacy_name() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-unknown-module-boundary",
+        "Fixture Unknown Module Boundary",
+        concat!(
+            "[[module foo=\"bar\"]]\n",
+            "[[module https://example.com]]\n",
+            "[[module UnknownOracleModule]]\n",
+            "[[module654 class=\"\"]]",
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-unknown-module-boundary",
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("unknown-module fixture should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(html.contains("[[module foo=&quot;bar&quot;]]"), "{html}");
+    assert!(
+        html.contains(
+            "[[module <a href=\"https://example.com\">https://example.com</a>]]"
+        ),
+        "{html}"
+    );
+    assert!(html.contains("[[module <em>UnknownOracleModule</em>]] No such module"));
+    assert!(html.contains("[[module654 class=&quot;&quot;]]"));
+    assert_eq!(html.matches("No such module").count(), 1, "{html}");
+    assert!(!html.contains("TODO: module"), "{html}");
+}
+
+#[tokio::test]
 async fn orphanedpages_module_lists_pages_without_incoming_internal_links() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -18301,6 +18349,98 @@ async fn countpages_substitutes_total_for_tagged_pages() {
             "CountPages fixture should not contain {forbidden:?}:\n{html}"
         );
     }
+}
+
+/// Live capture (sandbox-for-codex, 2026-08-06): an unclosed CountPages
+/// opener with the all-category selector uses Wikidot's deprecated default
+/// shell, while the following source remains outside that shell.  A closed
+/// CountPages with no body is a separate literal case.
+#[tokio::test]
+async fn unclosed_countpages_all_category_uses_live_default_shell() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let slug = "fixture-countpages-unclosed-default-shell";
+    let source = "[[module CountPages category=\"*\"]]";
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        slug,
+        "Fixture CountPages Unclosed Default Shell",
+        source,
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, slug).await;
+    assert!(
+        html.contains(r#"<div class="list-pages-box">"#),
+        "the unclosed CountPages opener should use Wikidot's default shell:\n{html}",
+    );
+    for expected in [
+        r#"<h1><span>%%linked_title%%</span></h1>"#,
+        r#"<p>by %%author%% %%date|%O ago (%e %b %Y, %H:%M)%%</p>"#,
+        r#"<p>%%short%%</p>"#,
+    ] {
+        assert!(
+            html.contains(expected),
+            "the live default shell should preserve {expected:?}:\n{html}",
+        );
+    }
+    assert!(
+        !html.contains("[[module CountPages")
+            && !html.contains("TODO: module CountPages"),
+        "the unclosed CountPages opener must not remain literal or leak an unsupported-module marker:\n{html}",
+    );
+}
+
+/// The same live boundary (sandbox-for-codex, 2026-08-06) leaves source after
+/// the unclosed opener outside the deprecated shell, while a closed empty
+/// CountPages module remains literal rather than selecting that fallback.
+#[tokio::test]
+async fn countpages_unclosed_shell_stops_at_opener_and_closed_empty_stays_literal() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let unclosed_slug = "fixture-countpages-unclosed-default-shell-tail";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        unclosed_slug,
+        "Fixture CountPages Unclosed Default Shell Tail",
+        "[[module CountPages category=\"*\"]]\nTAIL_AFTER_COUNT_PAGES",
+    )
+    .await;
+    let unclosed_html =
+        load_listpages_test_compiled_html(&runner, site_id, unclosed_slug).await;
+    assert!(
+        unclosed_html.contains(r#"<div class="list-pages-box">"#)
+            && unclosed_html.contains("TAIL_AFTER_COUNT_PAGES"),
+        "source after an unclosed CountPages opener must remain after the live default shell:\n{unclosed_html}",
+    );
+
+    let closed_slug = "fixture-countpages-closed-empty-literal";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        closed_slug,
+        "Fixture CountPages Closed Empty Literal",
+        "[[module CountPages]][[/module]]",
+    )
+    .await;
+    let closed_html =
+        load_listpages_test_compiled_html(&runner, site_id, closed_slug).await;
+    assert!(
+        closed_html.contains("[[module CountPages]][[/module]]"),
+        "a closed empty CountPages module must remain literal:\n{closed_html}",
+    );
+    assert!(
+        !closed_html.contains(r#"<div class="list-pages-box">"#),
+        "the deprecated unclosed fallback must not apply to a closed empty module:\n{closed_html}",
+    );
 }
 
 #[tokio::test]

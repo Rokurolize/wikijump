@@ -126,6 +126,14 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Range;
 use std::sync::LazyLock;
 
+const COUNTPAGES_DEFAULT_SHELL: &str = concat!(
+    "<div class=\"list-pages-box\">\n",
+    "<h1><span>%%linked_title%%</span></h1>\n",
+    "<p>by %%author%% %%date|%O ago (%e %b %Y, %H:%M)%%</p>\n",
+    "<p>%%short%%</p>\n",
+    "</div>",
+);
+
 #[path = "rendering/count_block.rs"]
 mod count_block;
 #[path = "rendering/selected_content.rs"]
@@ -966,6 +974,7 @@ impl RenderService {
         settings: &WikitextSettings,
         options: CountPagesExpansionOptions<'_>,
         compat_text: &mut CompatTextFragments,
+        compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         let CountPagesExpansionOptions {
             current_site_id,
@@ -1025,21 +1034,41 @@ impl RenderService {
                 cursor = mtch.end();
                 continue;
             }
-            if !close_reachability
-                .regex_capture_close_is_reachable(mtch.start()..mtch.end())
-            {
-                expanded.push_str(&compat_text.push_escaped_html_text(mtch.as_str()));
-                cursor = mtch.end();
-                continue;
-            }
             let head_match = captures.name("head").unwrap();
             let head = head_match.as_str();
-            let body = captures.name("body").unwrap().as_str();
+            let body_match = captures.name("body");
+            let body = body_match.map_or("", |matched| matched.as_str());
 
             if source_projection_ranges.as_mut().is_some_and(|ranges| {
                 !ranges
                     .range_is_unchanged(&wikitext, head_match.start()..head_match.end())
             }) {
+                expanded.push_str(&compat_text.push_escaped_html_text(mtch.as_str()));
+                cursor = mtch.end();
+                continue;
+            }
+
+            let close_reachable = close_reachability
+                .regex_capture_close_is_reachable(mtch.start()..mtch.end());
+            if !close_reachable {
+                if body_match.is_none()
+                    && Self::count_pages_unclosed_default_shell_head(head, url)
+                {
+                    expanded.push_str(
+                        &compat_html.push_block_html(COUNTPAGES_DEFAULT_SHELL.to_owned()),
+                    );
+                } else {
+                    expanded.push_str(&compat_text.push_escaped_html_text(mtch.as_str()));
+                }
+                cursor = mtch.end();
+                continue;
+            }
+
+            // Live Wikidot preserves a closed, empty CountPages marker with
+            // no arguments as authored text.  Keep this separate from the
+            // executable argument path so a body-bearing or filtered module
+            // cannot accidentally inherit the literal fallback.
+            if body_match.is_some() && body.is_empty() && head.trim().is_empty() {
                 expanded.push_str(&compat_text.push_escaped_html_text(mtch.as_str()));
                 cursor = mtch.end();
                 continue;
@@ -1132,6 +1161,29 @@ impl RenderService {
         expanded.push_str(&wikitext[cursor..]);
         Ok(expanded)
     }
+
+    /// Wikidot still renders the deprecated CountPages default shell when an
+    /// all-category opener is left unclosed.  Keep this narrow: the live
+    /// boundary is the explicit `category="*"` selector with no count bound
+    /// or unsupported filter.  Other malformed CountPages text remains
+    /// escaped instead of being guessed as executable markup.
+    fn count_pages_unclosed_default_shell_head(
+        head: &str,
+        url: UrlArguments<'_>,
+    ) -> bool {
+        let Some(arguments) = parse_list_pages_arguments_with_url(head, url) else {
+            return false;
+        };
+        arguments.category_selector_present
+            && arguments.category_all
+            && arguments.count_pages_explicit_limit.is_none()
+            && arguments.count_pages_per_page.is_none()
+            && !arguments.unsupported_author_filter
+            && !arguments.unsupported_list_pages_filter
+            && !arguments.unsupported_score_filter
+            && !arguments.unsupported_count_pages_filter
+    }
+
     pub(in crate::services::render) async fn load_count_pages_required_tag_totals(
         ctx: &ServiceContext<'_>,
         wikitext: &str,
