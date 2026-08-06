@@ -5,6 +5,7 @@ import test from "node:test";
 
 import {
   aggregateSandboxOracleVerdict,
+  classifyBlockedResourceHosts,
   compareSandboxOracleFixture,
   SANDBOX_ORACLE_REGISTRY_SCHEMA,
   validateSandboxOracleCapture,
@@ -345,10 +346,12 @@ test("blocked public resources prevent an otherwise matching fixture from passin
   });
   assert.equal(result.status, "fail");
   assert.deepEqual(result.measurement_boundary, {
+    allowed_blocked_hosts: {},
     blocked_hosts: {
       "ads.example.net": 1,
       "cdn.example.com": 2,
     },
+    allowed_reason: "sealed-live-completion-policy-exact-external-script",
     finding_added: true,
   });
   assert.deepEqual(
@@ -395,6 +398,110 @@ test("blocked host counts are validated before they can affect a verdict", () =>
         blockedHosts: { "cdn.example.com": 0 },
       }),
     /positive safe integer/u,
+  );
+});
+
+test("only an exact sealed script allowance can move a blocked host to the safety boundary", () => {
+  const live = capture({
+    input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    failures: [{
+      kind: "request_failed",
+      url: "https://cdn.example/advert.js",
+      resource_type: "script",
+      error: "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    }],
+  });
+  const policy = {
+    schema: "wikijump.standing_browser_live_completion_policy.v1",
+    status: "sealed",
+    policy_version: "test-exact-script-v1",
+    allowed_external_failures: [{
+      kind: "request_failed",
+      url: "https://cdn.example/advert.js",
+      resource_type: "script",
+      error: "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    }],
+  };
+  assert.deepEqual(
+    classifyBlockedResourceHosts({
+      blockedHosts: {"cdn.example": 1},
+      live,
+      policy,
+    }),
+    {
+      allowed_blocked_hosts: {"cdn.example": 1},
+      blocking_hosts: {},
+    },
+  );
+  const result = compareSandboxOracleFixture({
+    fixture: liveFixture(),
+    local: capture(),
+    frozen: live,
+    allowedBlockedHosts: {"cdn.example": 1},
+  });
+  assert.equal(result.status, "pass");
+  assert.deepEqual(result.measurement_boundary, {
+    blocked_hosts: {},
+    allowed_blocked_hosts: {"cdn.example": 1},
+    allowed_reason: "sealed-live-completion-policy-exact-external-script",
+    finding_added: false,
+  });
+});
+
+test("unlisted, mismatched, and non-script blocked resources remain blocking", () => {
+  const live = capture({
+    input_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    final_url: "https://sandbox-for-codex.wikidot.com/fixture",
+    failures: [{
+      kind: "request_failed",
+      url: "https://cdn.example/advert.js",
+      resource_type: "script",
+      error: "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    }],
+  });
+  const policy = {
+    schema: "wikijump.standing_browser_live_completion_policy.v1",
+    status: "sealed",
+    policy_version: "test-exact-script-v1",
+    allowed_external_failures: [],
+  };
+  assert.deepEqual(
+    classifyBlockedResourceHosts({blockedHosts: {"cdn.example": 1}, live, policy}),
+    {allowed_blocked_hosts: {}, blocking_hosts: {"cdn.example": 1}},
+  );
+  assert.deepEqual(
+    classifyBlockedResourceHosts({blockedHosts: {"cdn.example": 2}, live, policy: {
+      ...policy,
+      allowed_external_failures: [{
+        kind: "request_failed",
+        url: "https://cdn.example/advert.js",
+        resource_type: "script",
+        error: "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+      }],
+    }}),
+    {allowed_blocked_hosts: {}, blocking_hosts: {"cdn.example": 2}},
+  );
+  const imageLive = {
+    ...live,
+    failures: [{
+      kind: "request_failed",
+      url: "https://cdn.example/advert.png",
+      resource_type: "image",
+      error: "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    }],
+  };
+  assert.deepEqual(
+    classifyBlockedResourceHosts({blockedHosts: {"cdn.example": 1}, live: imageLive, policy: {
+      ...policy,
+      allowed_external_failures: [{
+        kind: "request_failed",
+        url: "https://cdn.example/advert.png",
+        resource_type: "image",
+        error: "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+      }],
+    }}),
+    {allowed_blocked_hosts: {}, blocking_hosts: {"cdn.example": 1}},
   );
 });
 

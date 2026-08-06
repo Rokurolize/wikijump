@@ -45,6 +45,7 @@ test("site allowlist is frozen, shared, and constructs origins from the validate
 test("sandbox oracle admits only the page and reserved SCP file origins locally", () => {
   assert.deepEqual(SANDBOX_ORACLE_LOCAL_ORIGINS, [
     "https://sandbox-for-codex.wikijump.localhost",
+    "https://sandbox-for-codex.wjfiles.localhost",
     "https://scp-wiki.wjfiles.localhost",
     "https://scp-jp.wjfiles.localhost"
   ]);

@@ -17,6 +17,7 @@ import {
 } from "../src/theme-localization-e2e.mjs";
 import {
   aggregateSandboxOracleVerdict,
+  classifyBlockedResourceHosts,
   compareSandboxOracleFixture,
   validateSandboxOracleRegistry,
   validateSandboxOracleCapture,
@@ -225,6 +226,55 @@ async function writeCaptureProgress(outputDir, captures, contracts, resumeGenera
   );
 }
 
+function mergeRequestGateSnapshots(previous, current, replaceFixtures = []) {
+  if (!previous) return current;
+  if (!current) return previous;
+  const replaced = new Set(replaceFixtures);
+  const byFixture = new Map();
+  for (const [fixtureId, hosts] of Object.entries(previous.blocked_hosts_by_fixture ?? {})) {
+    if (!replaced.has(fixtureId)) {
+      const target = byFixture.get(fixtureId) ?? new Map();
+      for (const [hostname, count] of Object.entries(hosts)) {
+        target.set(hostname, (target.get(hostname) ?? 0) + count);
+      }
+      byFixture.set(fixtureId, target);
+    }
+  }
+  for (const [fixtureId, hosts] of Object.entries(current.blocked_hosts_by_fixture ?? {})) {
+    const target = byFixture.get(fixtureId) ?? new Map();
+    for (const [hostname, count] of Object.entries(hosts)) {
+      target.set(hostname, (target.get(hostname) ?? 0) + count);
+    }
+    byFixture.set(fixtureId, target);
+  }
+  const blockedHosts = new Map();
+  for (const hosts of byFixture.values()) {
+    for (const [hostname, count] of hosts) {
+      blockedHosts.set(hostname, (blockedHosts.get(hostname) ?? 0) + count);
+    }
+  }
+  const sum = (field) => (previous[field] ?? 0) + (current[field] ?? 0);
+  return {
+    ...current,
+    blocked_hosts: Object.fromEntries([...blockedHosts].sort(([left], [right]) => left.localeCompare(right))),
+    blocked_hosts_by_fixture: Object.fromEntries(
+      [...byFixture]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([fixtureId, hosts]) => [
+          fixtureId,
+          Object.fromEntries([...hosts].sort(([left], [right]) => left.localeCompare(right))),
+        ]),
+    ),
+    public_requests: sum("public_requests"),
+    local_exempt_requests: sum("local_exempt_requests"),
+    unsupported_requests_blocked: sum("unsupported_requests_blocked"),
+    websocket_connections_blocked: sum("websocket_connections_blocked"),
+    retry_after_honored: sum("retry_after_honored"),
+    retry_after_invalid: sum("retry_after_invalid"),
+    grants: [...(previous.grants ?? []), ...(current.grants ?? [])],
+  };
+}
+
 async function loadPolicy(filePath) {
   const value = validateLiveCompletionPolicy(await readJson(filePath, "live completion policy"));
   return {value, sha256: await sha256File(filePath), filePath};
@@ -365,6 +415,9 @@ async function main(argv) {
   await wikijump.connect();
   const captures = captureState.captures;
   const contracts = captureState.contracts;
+  const previousRequestGateSnapshot = args.resume
+    ? (await readJson(path.join(args.outputDir, "capture-receipt.json"), "previous capture receipt")).request_gate ?? null
+    : null;
   const cleanup = [];
   let controls = null;
   let browser = null;
@@ -501,7 +554,11 @@ async function main(argv) {
     }
   } finally {
     await Promise.resolve(browser?.close?.()).catch(() => undefined);
-    requestGateSnapshot = await Promise.resolve(controls?.close?.()).catch(() => null);
+    requestGateSnapshot = mergeRequestGateSnapshots(
+      previousRequestGateSnapshot,
+      await Promise.resolve(controls?.close?.()).catch(() => null),
+      args.forceFixtures,
+    );
     await Promise.resolve(wikijump.close()).catch(() => undefined);
     await Promise.resolve(wikidot.close()).catch(() => undefined);
   }
@@ -510,14 +567,32 @@ async function main(argv) {
   const frozenRows = captures.map(({fixture_id, live}) => ({fixture_id, capture: live}));
   const contractRows = contracts;
   const blockedHostsByFixture = requestGateSnapshot?.blocked_hosts_by_fixture ?? {};
-  const results = registry.fixtures.map((fixture) => compareSandboxOracleFixture({fixture, local: localRows.find((row) => row.fixture_id === fixture.fixture_id)?.capture, frozen: frozenRows.find((row) => row.fixture_id === fixture.fixture_id)?.capture, thresholds: DEFAULT_THRESHOLDS, contract: contractRows.find((row) => row.fixture_id === fixture.fixture_id)?.contract ?? null, blockedHosts: blockedHostsByFixture[fixture.fixture_id] ?? null}));
+  const blockedHostPolicyByFixture = {};
+  const results = registry.fixtures.map((fixture) => {
+    const frozen = frozenRows.find((row) => row.fixture_id === fixture.fixture_id)?.capture;
+    const blockedHostPolicy = classifyBlockedResourceHosts({
+      blockedHosts: blockedHostsByFixture[fixture.fixture_id] ?? null,
+      live: frozen,
+      policy: policy.value,
+    });
+    blockedHostPolicyByFixture[fixture.fixture_id] = blockedHostPolicy;
+    return compareSandboxOracleFixture({
+      fixture,
+      local: localRows.find((row) => row.fixture_id === fixture.fixture_id)?.capture,
+      frozen,
+      thresholds: DEFAULT_THRESHOLDS,
+      contract: contractRows.find((row) => row.fixture_id === fixture.fixture_id)?.contract ?? null,
+      blockedHosts: blockedHostPolicy.blocking_hosts,
+      allowedBlockedHosts: blockedHostPolicy.allowed_blocked_hosts,
+    });
+  });
   const aggregate = aggregateSandboxOracleVerdict({runId: args.runId, registry, results});
   const outputFlag = args.resume ? "w" : "wx";
   await fs.writeFile(path.join(args.outputDir, "local-captures.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_captures.v1", captures: localRows}, null, 2)}\n`, {flag: outputFlag});
   await fs.writeFile(path.join(args.outputDir, "frozen-captures.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_captures.v1", captures: frozenRows}, null, 2)}\n`, {flag: outputFlag});
   await fs.writeFile(path.join(args.outputDir, "contracts.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_contracts.v1", contracts: contractRows}, null, 2)}\n`, {flag: outputFlag});
   await fs.writeFile(path.join(args.outputDir, "oracle-verdict.json"), `${JSON.stringify(aggregate.verdict, null, 2)}\n`, {flag: outputFlag});
-  await fs.writeFile(path.join(args.outputDir, "capture-receipt.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_capture_receipt.v1", status: aggregate.exitCode === 0 && cleanupFailures.length === 0 ? "pass" : "fail", run_id: args.runId, registry_path: args.registry, registry_sha256: await sha256File(args.registry), sources_path: args.sources, sources_sha256: await sha256File(args.sources), live_origin: LIVE_ORIGIN, local_origin: LOCAL_ORIGIN, runtime_identity: runtimeIdentity, request_gate: requestGateSnapshot, cleanup: {created_and_removed_pages: cleanupSuccesses, residual_pages: cleanupFailures.map(({fixture_id, target, resource, error}) => ({fixture_id, target, resource, error})), failures: cleanupFailures}, policy_sha256: policy.sha256}, null, 2)}\n`, {flag: outputFlag});
+  await fs.writeFile(path.join(args.outputDir, "capture-receipt.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_capture_receipt.v1", status: aggregate.exitCode === 0 && cleanupFailures.length === 0 ? "pass" : "fail", run_id: args.runId, registry_path: args.registry, registry_sha256: await sha256File(args.registry), sources_path: args.sources, sources_sha256: await sha256File(args.sources), live_origin: LIVE_ORIGIN, local_origin: LOCAL_ORIGIN, runtime_identity: runtimeIdentity, request_gate: requestGateSnapshot, blocked_host_policy: {policy_version: policy.value.policy_version, policy_sha256: policy.sha256, by_fixture: blockedHostPolicyByFixture}, cleanup: {created_and_removed_pages: cleanupSuccesses, residual_pages: cleanupFailures.map(({fixture_id, target, resource, error}) => ({fixture_id, target, resource, error})), failures: cleanupFailures}}, null, 2)}\n`, {flag: outputFlag});
   console.log(JSON.stringify({status: aggregate.verdict.aggregate.fail === 0 ? "pass" : "fail", fixtures: aggregate.verdict.fixture_count, failed: aggregate.verdict.aggregate.fail, output_dir: args.outputDir}));
   return aggregate.exitCode === 0 && cleanupFailures.length === 0 ? 0 : 1;
 }

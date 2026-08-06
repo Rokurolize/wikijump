@@ -5,9 +5,12 @@ import {
   comparePageChromeSkeleton,
   DEFAULT_THRESHOLDS,
   evaluatePresenceProbes,
+  isExternalFailure,
   multisetDistance,
   normalizeCssValue,
+  policyAllowsFailure,
   validateThresholds,
+  validateLiveCompletionPolicy,
 } from "./standing-browser-parity-contract.mjs";
 import { compareSignatures } from "./oracle-fixtures.mjs";
 import {
@@ -591,6 +594,51 @@ function normalizedBlockedHosts(value) {
     .sort(([left], [right]) => left.localeCompare(right));
 }
 
+function blockedResourceFailure(failure) {
+  return (
+    failure?.kind === "request_failed" &&
+    failure?.resource_type === "script" &&
+    failure?.error === "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  );
+}
+
+/**
+ * Separate request-gate host counts that are covered by exact live failure
+ * allowances from hosts that must remain a blocking measurement boundary.
+ * The gate only records a host/count, so the count must agree with the
+ * policy-approved live failures before a host can be allowed.
+ */
+export function classifyBlockedResourceHosts({
+  blockedHosts,
+  live,
+  policy,
+}) {
+  const checkedBlockedHosts = normalizedBlockedHosts(blockedHosts);
+  const checkedPolicy = validateLiveCompletionPolicy(policy);
+  if (!isPlainObject(live)) throw new Error("live capture is required");
+  const allowedCounts = new Map();
+  for (const failure of live.failures ?? []) {
+    if (!blockedResourceFailure(failure)) continue;
+    if (!isExternalFailure(failure, live)) continue;
+    if (!policyAllowsFailure(checkedPolicy, failure, live)) continue;
+    const hostname = new URL(failure.url).hostname.toLowerCase();
+    allowedCounts.set(hostname, (allowedCounts.get(hostname) ?? 0) + 1);
+  }
+  const allowedBlockedHosts = [];
+  const blockingHosts = [];
+  for (const [hostname, count] of checkedBlockedHosts) {
+    if (allowedCounts.get(hostname) === count) {
+      allowedBlockedHosts.push([hostname, count]);
+    } else {
+      blockingHosts.push([hostname, count]);
+    }
+  }
+  return {
+    allowed_blocked_hosts: Object.fromEntries(allowedBlockedHosts),
+    blocking_hosts: Object.fromEntries(blockingHosts),
+  };
+}
+
 function appendBlockedResourceFinding(layers, blockedHosts) {
   if (blockedHosts.length === 0 || flattenLayerFindings(layers).length > 0) {
     return false;
@@ -615,10 +663,16 @@ export function compareSandboxOracleFixture({
   thresholds = DEFAULT_THRESHOLDS,
   contract = null,
   blockedHosts = null,
+  allowedBlockedHosts = null,
 }) {
   const checkedFixture = validateSandboxOracleFixture(fixture);
   const checkedThresholds = validateThresholds(thresholds);
   const checkedBlockedHosts = normalizedBlockedHosts(blockedHosts);
+  const checkedAllowedBlockedHosts = normalizedBlockedHosts(allowedBlockedHosts);
+  const blockedHostNames = new Set(checkedBlockedHosts.map(([hostname]) => hostname));
+  if (checkedAllowedBlockedHosts.some(([hostname]) => blockedHostNames.has(hostname))) {
+    throw new Error("blockedHosts and allowedBlockedHosts must be disjoint");
+  }
   if (!isPlainObject(local)) {
     throw new Error(`local capture is required for ${checkedFixture.fixture_id}`);
   }
@@ -659,10 +713,12 @@ export function compareSandboxOracleFixture({
       SANDBOX_ORACLE_LAYER_NAMES.map((name) => [name, layers[name]]),
     ),
     findings,
-    ...(checkedBlockedHosts.length > 0
+    ...(checkedBlockedHosts.length > 0 || checkedAllowedBlockedHosts.length > 0
       ? {
           measurement_boundary: {
             blocked_hosts: Object.fromEntries(checkedBlockedHosts),
+            allowed_blocked_hosts: Object.fromEntries(checkedAllowedBlockedHosts),
+            allowed_reason: "sealed-live-completion-policy-exact-external-script",
             finding_added: blockedResourceFinding,
           },
         }
