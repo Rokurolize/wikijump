@@ -1,6 +1,6 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
-  "updated_at": "2026-07-30",
+  "updated_at": "2026-08-06",
   "catalog_sha256": "5af7164f21add6d7c178acf81dbeee9d65bb468f6ac16bcef8a2c21a16d40124",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
@@ -1621,8 +1621,11 @@
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json",
         "install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",
-        "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json",
-        "install/local/wikidot-verification/artifacts/listpages-corpus-replay-attestation-20260804.json"
+        "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260806.json",
+        "/home/roku/wjlab/evidence/listpages-f8-20260806/acceptance-authoritative-d65bf4ff5-clean-fixture-table.json",
+        "/home/roku/wjlab/runtime/wikijump-standing/refresh-receipt.json",
+        "/home/roku/wjlab/runtime/wikijump-standing/served-3d8b89b46d.json",
+        "/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-3d8b89b46d.json"
       ],
       "live_oracle_evidence": [
         "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json",
@@ -1668,8 +1671,39 @@
           "merge_sha": "cb101c737c6a7fc98acd43dc6184ed2c98ba85fc"
         },
         {
-          "path": "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260802.json",
-          "scope": "Pinned authoritative exact replay on acceptance candidate Wikijump 90a38af51989d25d2cf21e12b9b29adb8d5b8f76 with FTML 3f02c5af6ec7c69599b881a8fc7ece8ea05a0115: 23,964 invocations, 18,996 unique replay keys, classified 23,964, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. Novel (119) and literal (335) lanes are recorded as diagnostic only. Final integration and standing source is 35c1666e3337b396cb427c7e812eccfee0490268 (tree 92f78dab23ba7498d259959714846f4be63fb53c) with the same render/dependency surface; its refresh, served HTTPS, and preview receipts are bound in the checked-in final receipt. The receipt seals render-source paths, FTML and Cargo.lock identities, the synchronized fixture plane, and the exact acceptance candidate; any render or dependency-surface change requires a fresh authoritative replay."
+          "path": "/home/roku/wjlab/evidence/listpages-f8-20260806/acceptance-authoritative-d65bf4ff5-clean-fixture-table.json",
+          "acceptance_artifact_path": "/home/roku/wjlab/evidence/listpages-f8-20260806/acceptance-authoritative-d65bf4ff5-clean-fixture-table.json",
+          "sha256": "e66ba4c98f9bfad759f96f120bfd39047673fe49fe2e3f687f2727f20f647cea",
+          "scope": "Authoritative exact replay bound to the merged PR #1286 render tree 08223468d617191f6a3dc5e49f1059610ea43747 and FTML 234ae50794e2c468347a14159623e94fc1032432: 23,964 invocations, 18,996 unique replay keys, 23,964 classified, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. The candidate commit d65bf4ff5f61566b51bfdfdf3c88153419137f38 is tree-identical for all render and dependency surfaces to merge 3d8b89b46d76e06a54a38edf0da886e047b16038; the later documentation-only merge is recorded separately. Novel (119) and literal (335) lanes are diagnostic only."
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/listpages-f8-20260806/authoritative-classification-attribution-d65-clean-to-fixture-table.json",
+          "sha256": "d62fd57f536627ec8d3f21e034da0eee83ffa47b436b113ac19d064dd1afbb0d",
+          "scope": "One-off attribution between consecutive authoritative classifications: 17 actionable-to-non-actionable transitions and no reverse transitions, all after the candidate-only component:listpages-table fixture correction."
+        },
+        {
+          "repository": "Rokurolize/wikijump",
+          "pull_request": 1286,
+          "merge_sha": "3d8b89b46d76e06a54a38edf0da886e047b16038",
+          "scope": "Preserve ListPages preview and pager semantics; merged normally with the final render tree recorded above."
+        },
+        {
+          "path": "/home/roku/wjlab/runtime/wikijump-standing/refresh-receipt.json",
+          "sha256": "5e7f95ce4376e0d54f4a38be129e227651a8aea3583ebcbb6c051c19f782eeaf",
+          "acceptance_artifact_path": "/home/roku/wjlab/runtime/wikijump-standing/refresh-receipt.json",
+          "scope": "Standing runtime refreshed from merge 3d8b89b46d76e06a54a38edf0da886e047b16038 with FTML 234ae50794e2c468347a14159623e94fc1032432; persistent runtime volumes were preserved."
+        },
+        {
+          "path": "/home/roku/wjlab/runtime/wikijump-standing/served-3d8b89b46d.json",
+          "sha256": "a2eb2ee8fd147b14d0268126a9388ebc211c0661b807149212ceb72ea9ff55b5",
+          "acceptance_artifact_path": "/home/roku/wjlab/runtime/wikijump-standing/served-3d8b89b46d.json",
+          "scope": "HTTPS served-page matrix for the refreshed standing runtime: nine routes, all HTTP 200, one ListPages content root per route, no TODO leakage."
+        },
+        {
+          "path": "/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-3d8b89b46d.json",
+          "sha256": "c274c9dddad43a7a70ce76cda98549ed9ced548cae3a42d5253fff16c0ff00aa",
+          "acceptance_artifact_path": "/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-3d8b89b46d.json",
+          "scope": "Standing anonymous preview matrix: eight representative selector, malformed-head, literal-context, missing-parent, URL fallback, surplus-bracket, and multiline cases passed."
         },
         {
           "path": "install/standing/compose.yaml; install/standing/tests/test_refresh.py",
