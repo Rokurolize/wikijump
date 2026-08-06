@@ -641,7 +641,10 @@ async function buildXmlRpcPage(
   if (!pageMetadata) {
     throw new XmlRpcFault(406, "Argument page invalid: page does not exist")
   }
-  if (!(await canXmlRpcViewPage(siteId, pageMetadata.slug, requestIp, principal))) {
+  const resolvedPrincipal = principal ?? (await getXmlRpcWritePrincipal(requestIp))
+  if (
+    !(await canXmlRpcViewPage(siteId, pageMetadata.slug, requestIp, resolvedPrincipal))
+  ) {
     throw new XmlRpcFault(403, "XML-RPC user is not allowed to view this page", 403)
   }
 
@@ -654,10 +657,14 @@ async function buildXmlRpcPage(
   const parentFullname = parentPage?.slug ?? null
   const parentTitle = parentPage?.title ?? null
   const children = expectDeepwellStringArray(
-    await requestDeepwell("page_select", {
-      site,
-      parent: page.slug
-    }),
+    await requestDeepwell(
+      "page_select",
+      {
+        site,
+        parent: page.slug
+      },
+      { sessionToken: resolvedPrincipal.sessionToken }
+    ),
     "page_select"
   )
 

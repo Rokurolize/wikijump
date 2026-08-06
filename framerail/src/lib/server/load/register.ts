@@ -105,7 +105,9 @@ export async function registerAction({ request, getClientAddress }: RequestEvent
   } catch (error) {
     return failForActionError(
       error,
-      redactAuthActionPayload({ form: clearRegisterPasswords(form) }, submittedPasswords)
+      { form: clearRegisterPasswords(form) },
+      500,
+      (payload) => redactAuthActionPayload(payload, submittedPasswords)
     )
   }
 }
