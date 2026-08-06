@@ -12,6 +12,13 @@ export class PageActionContextMismatchError extends Error {
   readonly code = DEEPWELL_PERMISSION_DENIED
 }
 
+export function requireActionSession<T>(session: T | null | undefined): T {
+  if (session === null || session === undefined) {
+    throw new MissingActionSessionError("Authentication required.")
+  }
+  return session
+}
+
 export interface PublicActionError {
   message: string
   code?: number
@@ -82,7 +89,10 @@ export function failForMissingSession(body: Record<string, unknown> = {}) {
 export function failForActionError(
   error: unknown,
   body: Record<string, unknown> = {},
-  fallbackStatus = 500
+  fallbackStatus = 500,
+  sanitizePayload: (payload: Record<string, unknown>) => Record<string, unknown> = (
+    payload
+  ) => payload
 ) {
   const details = normalizeActionError(error)
   const status =
@@ -93,8 +103,11 @@ export function failForActionError(
         : details.code === DEEPWELL_PERMISSION_DENIED
           ? 403
           : fallbackStatus
-  return fail(status, {
-    ...body,
-    ...details
-  })
+  return fail(
+    status,
+    sanitizePayload({
+      ...body,
+      ...details
+    })
+  )
 }

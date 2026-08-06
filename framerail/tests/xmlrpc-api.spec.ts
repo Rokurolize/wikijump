@@ -1096,7 +1096,12 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
         site_id: 6000005
       }
     ],
-    pageSelect: [{ parent: "scp-173", site: "scp-wiki" }],
+    pageSelect: [
+      {
+        headers: { sessionToken: "fixture-session-token" },
+        params: { parent: "scp-173", site: "scp-wiki" }
+      }
+    ],
     pageView: [
       {
         headers: {
