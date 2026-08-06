@@ -16553,10 +16553,12 @@ async fn listpages_content_fragment_restoration_counts_toward_generated_output_b
     .expect("ListPages content-fragment budget index should exist");
     let body = format!("{SENTINEL}{}", CONTENT_VARIABLE.repeat(CONTENT_REPETITIONS));
     assert!(body.len() <= 256 * 1024);
-    assert!(
-        DIRECTIVE_BYTES * CONTENT_REPETITIONS > GENERATED_BYTE_BUDGET,
-        "restored content must exceed the render-wide generated-output budget",
-    );
+    const {
+        assert!(
+            DIRECTIVE_BYTES * CONTENT_REPETITIONS > GENERATED_BYTE_BUDGET,
+            "restored content must exceed the render-wide generated-output budget",
+        );
+    }
     let source = format!(
         "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]{body}[[/module]]",
     );
