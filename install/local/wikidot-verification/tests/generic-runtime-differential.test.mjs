@@ -205,6 +205,20 @@ test("capture validation rejects an isolated runtime case on a shared page", () 
   );
 });
 
+test("capture validation rejects an isolated marker for a batch-safe runtime case", () => {
+  const batchSafe = {...runtimeCase("batch-safe"), page_scope: "batch-safe"};
+  const invalid = capture(batchSafe);
+  invalid.page_plan.cases[0].page_scope = "isolated";
+
+  assert.throws(
+    () => selectLatestSuccessfulCaptures(
+      [batchSafe],
+      [{path: "invalid.jsonl", captures: [invalid]}],
+    ),
+    /page scope changed: batch-safe/u,
+  );
+});
+
 test("sentinel-free isolated capture uses the whole page content", () => {
   const isolated = {...runtimeCase("isolated", "alpha_"), page_scope: "isolated"};
   const selection = selectLatestSuccessfulCaptures(

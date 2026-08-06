@@ -83,7 +83,9 @@ function validateCapture(value, casesById) {
     if (marker.source_sha256 !== runtimeCase.source_sha256) {
       throw new Error(`page case source identity changed: ${marker.case_id}`);
     }
-    if (runtimeCase.page_scope === 'isolated') {
+    const runtimePageScope = runtimeCase.page_scope ?? 'batch-safe';
+    const markerPageScope = marker.page_scope ?? 'batch-safe';
+    if (runtimePageScope === 'isolated') {
       if (page.cases.length !== 1) {
         throw new Error(`isolated runtime case shares a page: ${marker.case_id}`);
       }
@@ -96,6 +98,9 @@ function validateCapture(value, casesById) {
         throw new Error(`isolated runtime case is not sentinel-free: ${marker.case_id}`);
       }
       continue;
+    }
+    if (markerPageScope !== runtimePageScope) {
+      throw new Error(`page scope changed: ${marker.case_id}`);
     }
     for (const field of ['marker_begin', 'marker_end']) {
       if (typeof marker[field] !== 'string' || !marker[field].startsWith('WJDIFF_')) {
