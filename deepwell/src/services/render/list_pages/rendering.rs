@@ -1737,11 +1737,14 @@ impl RenderService {
         let mut list_pages_metadata = None;
         let missing_current_page_for_selector = current_page_identity.is_none()
             && (current_page_only || exclude_current_page_author);
+        let current_page_excluded_by_author =
+            current_page_only && exclude_current_page_author;
         let rows_are_complete_without_query = zero_page_size
             || oversized_offset_initial_page
             || current_page_date_missing
             || votes_equal_current_zero_votes
             || missing_current_page_for_selector
+            || current_page_excluded_by_author
             || (same_visible_tags && current_visible_tags.is_empty())
             || current_page_only
             || prefetched_pages.is_some()
@@ -1791,6 +1794,7 @@ impl RenderService {
             || current_page_date_missing
             || votes_equal_current_zero_votes
             || missing_current_page_for_selector
+            || current_page_excluded_by_author
             || (same_visible_tags && current_visible_tags.is_empty())
             || link_to_has_no_viewable_targets
         {
