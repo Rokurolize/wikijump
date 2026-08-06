@@ -1,4 +1,5 @@
 import type { Nullable, SiteModel } from "$lib/types"
+import { siteIconRedirectLocation } from "./site-icon-source.ts"
 
 /** Wikidot serves a site's configured favicon from this fixed route. */
 export const FAVICON_ROUTE_PREFIX = "/local--favicon/"
@@ -52,8 +53,9 @@ function extensionOf(source: string): Nullable<string> {
 export function faviconDeclaration(
   site: Nullable<SiteModel>
 ): Nullable<FaviconDeclaration> {
-  const source = site?.favicon_source
-  if (!source) return null
+  if (!site) return null
+  const source = siteIconRedirectLocation(site, site.favicon_source, "favicon")
+  if (source === null) return null
 
   const extension = extensionOf(source)
   if (!extension) return null
@@ -66,5 +68,7 @@ export function faviconDeclaration(
 
 /** Whether a site declares Wikidot's iOS touch icons. */
 export function hasIosIcons(site: Nullable<SiteModel>): boolean {
-  return Boolean(site?.ios_icon_source)
+  return (
+    site !== null && siteIconRedirectLocation(site, site.ios_icon_source, "ios") !== null
+  )
 }

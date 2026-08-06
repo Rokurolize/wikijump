@@ -4,6 +4,8 @@ import {
   getPreloadBackendLocales,
   getPreloadRequestLocales
 } from "$lib/server/load/preload"
+import { siteIconRedirectLocation, type SiteIconSourceKind } from "$lib/site-icon-source"
+import type { SiteModel } from "$lib/types"
 
 const NOT_CONFIGURED_HEADERS = {
   "content-type": "text/plain; charset=utf-8"
@@ -18,17 +20,16 @@ const NOT_CONFIGURED_HEADERS = {
  */
 export async function siteIconResponse(
   request: Request,
-  select: (site: {
-    favicon_source: string | null
-    ios_icon_source: string | null
-  }) => string | null
+  select: (site: SiteModel) => string | null,
+  kind: SiteIconSourceKind
 ): Promise<Response> {
   const { siteId } = loadSiteInfo(request.headers)
   // Deepwell rejects a preload with no locales, so this resolves them the same
   // way an ordinary page request does rather than sending an empty list.
   const locales = getPreloadBackendLocales(getPreloadRequestLocales(request))
   const preload = await preloadView(siteId, locales, undefined)
-  const source = select(preload?.site ?? { favicon_source: null, ios_icon_source: null })
+  const site = preload?.site
+  const source = site ? siteIconRedirectLocation(site, select(site), kind) : null
 
   if (!source) {
     return new Response("This site has no icon configured.\n", {

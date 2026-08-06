@@ -45,6 +45,123 @@ use wikidot_normalize::normalize;
 pub struct SiteService;
 
 const RESERVED_PLATFORM_HOSTNAME_SLUGS: &[&str] = &["acme", "dns", "ech"];
+const LOCAL_FILE_SOURCE_PREFIX: &str = "/local--files/";
+
+#[derive(Debug, Copy, Clone)]
+enum SiteIconSourceKind {
+    Favicon,
+    Ios,
+    Windows,
+}
+
+impl SiteIconSourceKind {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Favicon => "favicon",
+            Self::Ios => "iOS icon",
+            Self::Windows => "Windows tile",
+        }
+    }
+
+    fn wikidot_route_prefix(self) -> Option<&'static str> {
+        match self {
+            Self::Favicon => Some("/local--favicon/"),
+            Self::Ios => Some("/local--iosicon/"),
+            Self::Windows => None,
+        }
+    }
+}
+
+fn source_has_unsafe_text(source: &str) -> bool {
+    source
+        .chars()
+        .any(|character| character.is_control() || character == '\\')
+        || source.to_ascii_lowercase().contains("%0a")
+        || source.to_ascii_lowercase().contains("%0d")
+}
+
+fn is_safe_site_slug(slug: &str) -> bool {
+    !slug.is_empty()
+        && slug.bytes().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-'
+        })
+}
+
+fn path_has_content(path: &str, prefix: &str) -> bool {
+    path.starts_with(prefix) && path.len() > prefix.len()
+}
+
+fn is_safe_local_file_source(source: &str) -> bool {
+    path_has_content(source, LOCAL_FILE_SOURCE_PREFIX)
+        && !source.contains('?')
+        && !source.contains('#')
+}
+
+fn is_site_owned_icon_source(
+    site_slug: &str,
+    from_wikidot: bool,
+    source: &str,
+    kind: SiteIconSourceKind,
+) -> bool {
+    if source.is_empty()
+        || source.chars().count() > 2048
+        || source_has_unsafe_text(source)
+    {
+        return false;
+    }
+    if is_safe_local_file_source(source) {
+        return true;
+    }
+    if !from_wikidot || !is_safe_site_slug(site_slug) {
+        return false;
+    }
+
+    let Ok(url) = reqwest::Url::parse(source) else {
+        return false;
+    };
+    if url.scheme() != "https"
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.port().is_some()
+        || url.query().is_some()
+        || url.fragment().is_some()
+    {
+        return false;
+    }
+
+    let slug = site_slug.to_ascii_lowercase();
+    let Some(host) = url.host_str() else {
+        return false;
+    };
+    if host == format!("{slug}.wdfiles.com") {
+        return path_has_content(url.path(), LOCAL_FILE_SOURCE_PREFIX);
+    }
+
+    kind.wikidot_route_prefix().is_some_and(|prefix| {
+        host == format!("{slug}.wikidot.com") && path_has_content(url.path(), prefix)
+    })
+}
+
+fn validate_site_icon_source(
+    site_slug: &str,
+    from_wikidot: bool,
+    source: &Option<String>,
+    kind: SiteIconSourceKind,
+) -> Result<()> {
+    if source.as_deref().is_none_or(|source| {
+        is_site_owned_icon_source(site_slug, from_wikidot, source, kind)
+    }) {
+        return Ok(());
+    }
+
+    bail!(Error::new(
+        format!(
+            "{} source must be a site-local file or a site-owned imported resource",
+            kind.name(),
+        ),
+        ErrorType::BadRequest,
+    ));
+}
 
 #[allow(dead_code)] // TODO
 const DEFAULT_FORUM_PER_PAGE_DISCUSSION: bool = false;
@@ -182,6 +299,35 @@ impl SiteService {
         let site = Self::get(ctx, reference)
             .await
             .or_raise(|| Error::new("failed to update site data", ErrorType::Site))?;
+
+        let icon_site_slug = match &input.slug {
+            Maybe::Set(slug) => slug.as_str(),
+            Maybe::Unset => site.slug.as_str(),
+        };
+        if let Maybe::Set(source) = &input.favicon_source {
+            validate_site_icon_source(
+                icon_site_slug,
+                site.from_wikidot,
+                source,
+                SiteIconSourceKind::Favicon,
+            )?;
+        }
+        if let Maybe::Set(source) = &input.ios_icon_source {
+            validate_site_icon_source(
+                icon_site_slug,
+                site.from_wikidot,
+                source,
+                SiteIconSourceKind::Ios,
+            )?;
+        }
+        if let Maybe::Set(source) = &input.windows_tile_source {
+            validate_site_icon_source(
+                icon_site_slug,
+                site.from_wikidot,
+                source,
+                SiteIconSourceKind::Windows,
+            )?;
+        }
 
         if let Maybe::Set(max_nest_level) = input.forum_max_nest_level
             && !(0..=10).contains(&max_nest_level)

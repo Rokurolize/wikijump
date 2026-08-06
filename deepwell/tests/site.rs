@@ -241,6 +241,169 @@ async fn site_update_allows_users_with_site_edit_permission() {
 }
 
 #[tokio::test]
+async fn site_update_restricts_icon_sources_to_site_owned_routes() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let site_id = create_site(&runner, n).await;
+    let site = SiteTable::find_by_id(site_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("site lookup should succeed")
+        .expect("test site should exist");
+    let slug = site.slug.clone();
+
+    let local_source = String::from("/local--files/site/favicon.png");
+    let updated = SiteService::update(
+        runner.context(),
+        Reference::Id(site_id),
+        UpdateSiteBody {
+            favicon_source: Maybe::Set(Some(local_source.clone())),
+            ..Default::default()
+        },
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("site-local file source should be accepted");
+    assert_eq!(
+        updated.favicon_source.as_deref(),
+        Some(local_source.as_str())
+    );
+
+    let imported_source =
+        format!("https://{slug}.wikidot.com/local--favicon/favicon.gif");
+    let error = SiteService::update(
+        runner.context(),
+        Reference::Id(site_id),
+        UpdateSiteBody {
+            favicon_source: Maybe::Set(Some(imported_source.clone())),
+            ..Default::default()
+        },
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect_err("local sites must not redirect icons to a Wikidot origin");
+    assert_contains_error!(error, ErrorType::BadRequest);
+
+    let current = SiteTable::find_by_id(site_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("site lookup should succeed")
+        .expect("test site should exist");
+    assert_eq!(
+        current.favicon_source.as_deref(),
+        Some(local_source.as_str())
+    );
+
+    let mut imported = current.into_active_model();
+    imported.from_wikidot = Set(true);
+    imported
+        .update(runner.context().transaction())
+        .await
+        .expect("imported-site fixture should be installed");
+
+    let ios_source = format!("https://{slug}.wikidot.com/local--iosicon/iosicon.png");
+    let tile_source =
+        format!("https://{slug}.wdfiles.com/local--files/site/windows-tile.png");
+    let updated = SiteService::update(
+        runner.context(),
+        Reference::Id(site_id),
+        UpdateSiteBody {
+            favicon_source: Maybe::Set(Some(imported_source.clone())),
+            ios_icon_source: Maybe::Set(Some(ios_source.clone())),
+            windows_tile_source: Maybe::Set(Some(tile_source.clone())),
+            ..Default::default()
+        },
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("site-owned Wikidot and wdfiles sources should be accepted");
+    assert_eq!(
+        updated.favicon_source.as_deref(),
+        Some(imported_source.as_str())
+    );
+    assert_eq!(
+        updated.ios_icon_source.as_deref(),
+        Some(ios_source.as_str())
+    );
+    assert_eq!(
+        updated.windows_tile_source.as_deref(),
+        Some(tile_source.as_str())
+    );
+
+    let invalid_sources = [
+        String::from("https://evil.example/favicon.png"),
+        format!("http://{slug}.wikidot.com/local--favicon/favicon.gif"),
+        format!("https://user@{slug}.wikidot.com/local--favicon/favicon.gif"),
+        format!("https://{slug}.wikidot.com/account/settings"),
+        format!("https://{slug}.wikidot.com/local--iosicon/iosicon.png"),
+        format!("https://{slug}.wikidot.com/local--favicon/favicon.gif?next=evil"),
+        format!("https://{slug}.wdfiles.com/not-local-files/favicon.png"),
+        String::from("//evil.example/favicon.png"),
+        String::from("/local--favicon/favicon.gif"),
+        String::from("/local--files/"),
+        String::from("/local--files/site/favicon.png\r\nLocation: https://evil.example"),
+    ];
+    for source in invalid_sources {
+        let error = SiteService::update(
+            runner.context(),
+            Reference::Id(site_id),
+            UpdateSiteBody {
+                favicon_source: Maybe::Set(Some(source)),
+                ..Default::default()
+            },
+            SYSTEM_USER_ID,
+            common::IP_ADDRESS,
+        )
+        .await
+        .expect_err("untrusted icon source should be rejected");
+        assert_contains_error!(error, ErrorType::BadRequest);
+    }
+
+    for body in [
+        UpdateSiteBody {
+            ios_icon_source: Maybe::Set(Some(imported_source.clone())),
+            ..Default::default()
+        },
+        UpdateSiteBody {
+            windows_tile_source: Maybe::Set(Some(imported_source.clone())),
+            ..Default::default()
+        },
+    ] {
+        let error = SiteService::update(
+            runner.context(),
+            Reference::Id(site_id),
+            body,
+            SYSTEM_USER_ID,
+            common::IP_ADDRESS,
+        )
+        .await
+        .expect_err("an icon source must use the route family for its slot");
+        assert_contains_error!(error, ErrorType::BadRequest);
+    }
+
+    let current = SiteTable::find_by_id(site_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("site lookup should succeed")
+        .expect("test site should exist");
+    assert_eq!(
+        current.favicon_source.as_deref(),
+        Some(imported_source.as_str())
+    );
+    assert_eq!(
+        current.ios_icon_source.as_deref(),
+        Some(ios_source.as_str())
+    );
+    assert_eq!(
+        current.windows_tile_source.as_deref(),
+        Some(tile_source.as_str())
+    );
+}
+
+#[tokio::test]
 async fn category_navigation_update_requires_site_edit_and_supports_inheritance() {
     let mut runner = TestRunner::setup().await;
     let n = next_n();

@@ -9,53 +9,84 @@ import {
   hasIosIcons
 } from "../src/lib/site-icons.ts"
 
+const importedSite = (icons = {}) => ({
+  slug: "scp-wiki",
+  from_wikidot: true,
+  favicon_source: null,
+  ios_icon_source: null,
+  ...icons
+})
+
+const localSite = (icons = {}) => ({
+  slug: "local-wiki",
+  from_wikidot: false,
+  favicon_source: null,
+  ios_icon_source: null,
+  ...icons
+})
+
 test("favicon declaration keeps Wikidot's local route rather than the configured source", () => {
   // Live scp-wiki declares /local--favicon/favicon.gif with type image/gif.
   assert.deepEqual(
-    faviconDeclaration({
-      favicon_source: "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif"
-    }),
+    faviconDeclaration(
+      importedSite({
+        favicon_source: "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif"
+      })
+    ),
     { href: `${FAVICON_ROUTE_PREFIX}favicon.gif`, type: "image/gif" }
   )
 })
 
 test("favicon declaration carries the type matching the configured extension", () => {
-  assert.deepEqual(faviconDeclaration({ favicon_source: "icon.png" }), {
-    href: `${FAVICON_ROUTE_PREFIX}favicon.png`,
-    type: "image/png"
-  })
-  assert.deepEqual(faviconDeclaration({ favicon_source: "icon.ICO" }), {
-    href: `${FAVICON_ROUTE_PREFIX}favicon.ico`,
-    type: "image/x-icon"
-  })
+  assert.deepEqual(
+    faviconDeclaration(localSite({ favicon_source: "/local--files/site/icon.png" })),
+    {
+      href: `${FAVICON_ROUTE_PREFIX}favicon.png`,
+      type: "image/png"
+    }
+  )
+  assert.deepEqual(
+    faviconDeclaration(localSite({ favicon_source: "/local--files/site/icon.ICO" })),
+    {
+      href: `${FAVICON_ROUTE_PREFIX}favicon.ico`,
+      type: "image/x-icon"
+    }
+  )
 })
 
 test("a site without a usable icon declares nothing", () => {
   assert.equal(faviconDeclaration(null), null)
-  assert.equal(faviconDeclaration({ favicon_source: null }), null)
-  assert.equal(faviconDeclaration({ favicon_source: "" }), null)
+  assert.equal(faviconDeclaration(localSite()), null)
+  assert.equal(faviconDeclaration(localSite({ favicon_source: "" })), null)
   assert.equal(
-    faviconDeclaration({ favicon_source: "icon" }),
+    faviconDeclaration(localSite({ favicon_source: "/local--files/site/icon" })),
     null,
     "an extensionless source has no type to declare"
   )
   assert.equal(
-    faviconDeclaration({ favicon_source: "icon.webp" }),
+    faviconDeclaration(localSite({ favicon_source: "/local--files/site/icon.webp" })),
     null,
     "an unmapped extension must not guess a MIME type"
   )
 })
 
-test("query strings and fragments do not become part of the extension", () => {
-  assert.deepEqual(faviconDeclaration({ favicon_source: "icon.gif?v=2" }), {
-    href: `${FAVICON_ROUTE_PREFIX}favicon.gif`,
-    type: "image/gif"
-  })
+test("query strings and fragments are not declared as icon sources", () => {
+  assert.equal(
+    faviconDeclaration(
+      importedSite({
+        favicon_source: "https://scp-wiki.wikidot.com/local--favicon/favicon.gif?v=2"
+      })
+    ),
+    null
+  )
 })
 
 test("iOS touch icons reproduce the three filenames and sizes Wikidot declares", () => {
-  assert.equal(hasIosIcons({ ios_icon_source: "iosicon.png" }), true)
-  assert.equal(hasIosIcons({ ios_icon_source: null }), false)
+  assert.equal(
+    hasIosIcons(localSite({ ios_icon_source: "/local--files/site/iosicon.png" })),
+    true
+  )
+  assert.equal(hasIosIcons(localSite()), false)
   assert.equal(hasIosIcons(null), false)
 
   assert.deepEqual(
