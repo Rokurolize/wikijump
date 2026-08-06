@@ -1,0 +1,55 @@
+{
+  "schema": "wikijump_listpages_compat.final_corpus_replay_receipt.v2",
+  "status": "pass",
+  "wikijump_revision": "3d8b89b46d76e06a54a38edf0da886e047b16038",
+  "wikijump_tree": "08223468d617191f6a3dc5e49f1059610ea43747",
+  "ftml_revision": "234ae50794e2c468347a14159623e94fc1032432",
+  "dependency_lock_sha256": "106d71d7a4653c3dc59ebea97961b5be98b4e3445c9948fbdcc4e1cd919c6ebf",
+  "acceptance_candidate_revision": "d65bf4ff5f61566b51bfdfdf3c88153419137f38",
+  "acceptance_candidate_tree": "08223468d617191f6a3dc5e49f1059610ea43747",
+  "authority": {
+    "mode": "authoritative",
+    "references_sha256": "591a02b209dd156c25e7eab0e12a8a123eac5daf0d1fd99b8b5629ea3cb39792",
+    "scope_sha256": "d1d9aca68fa8377a6381a96e132c2db94b4f81ceca92c5ca52568f6b7e2aabe1",
+    "invocations_sha256": "b9fd4f5fdfa775cba403682ec67485d6c13f5131a30999420cbc14f7a244f641",
+    "reference_count": 18996,
+    "invocation_count": 23964,
+    "unresolved_invocation_count": 0,
+    "actionable_unique_source_count": 0,
+    "actionable_invocation_count": 0,
+    "exit_code": 0,
+    "reconciliation_path": "/home/roku/wjlab/evidence/listpages-f8-20260806/acceptance-authoritative-d65bf4ff5-clean-fixture-table.json",
+    "reconciliation_sha256": "e66ba4c98f9bfad759f96f120bfd39047673fe49fe2e3f687f2727f20f647cea"
+  },
+  "diagnostic_lanes": {
+    "novel": {
+      "reference_count": 119,
+      "matches": 115,
+      "mismatches": 4,
+      "classification_path": "/home/roku/wjlab/evidence/listpages-f8-20260806/novel-final-3d8b89b46d-classification.json",
+      "acceptance_eligible": false
+    },
+    "literal": {
+      "reference_count": 335,
+      "matches": 312,
+      "mismatches": 23,
+      "classification_path": "/home/roku/wjlab/evidence/listpages-f8-20260806/literal-final-3d8b89b46d-classification.json",
+      "acceptance_eligible": false
+    }
+  },
+  "attribution": {
+    "path": "/home/roku/wjlab/evidence/listpages-f8-20260806/authoritative-classification-attribution-d65-clean-to-fixture-table.json",
+    "sha256": "d62fd57f536627ec8d3f21e034da0eee83ffa47b436b113ac19d064dd1afbb0d",
+    "actionable_to_non_actionable": 17,
+    "non_actionable_to_actionable": 0
+  },
+  "standing": {
+    "refresh_receipt_path": "/home/roku/wjlab/runtime/wikijump-standing/refresh-receipt.json",
+    "refresh_receipt_sha256": "5e7f95ce4376e0d54f4a38be129e227651a8aea3583ebcbb6c051c19f782eeaf",
+    "served_https_receipt_path": "/home/roku/wjlab/runtime/wikijump-standing/served-3d8b89b46d.json",
+    "served_https_receipt_sha256": "a2eb2ee8fd147b14d0268126a9388ebc211c0661b807149212ceb72ea9ff55b5",
+    "served_rpc_receipt_path": "/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-3d8b89b46d.json",
+    "served_rpc_receipt_sha256": "c274c9dddad43a7a70ce76cda98549ed9ced548cae3a42d5253fff16c0ff00aa"
+  },
+  "scope_note": "The candidate commit and merge commit have identical render and dependency surfaces. The novel and literal lanes are diagnostic and never acceptance inputs. Documentation-only changes after this receipt do not alter the accepted render surface."
+}
