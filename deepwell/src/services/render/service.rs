@@ -54,6 +54,7 @@ use super::generator::COMPILED_GENERATOR;
 use super::iftags::{
     resolve_outermost_wikidot_iftags,
     resolve_outermost_wikidot_iftags_before_include_expansion,
+    resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview,
 };
 use super::include_attachment_owners::{
     AttachmentOwner, AttachmentProvenanceRegistry, AttachmentVariableOwners,
@@ -1316,6 +1317,7 @@ impl RenderService {
                     source_cache: &mut include_source_cache,
                     compat_text: &mut wikidot_compat_text,
                     expand_wikidot_image_blocks: true,
+                    page_preview,
                     budget: include_budget,
                     render_cost_budget: render_cost_budget.clone(),
                 },
@@ -2786,6 +2788,22 @@ impl RenderService {
         );
     }
 
+    fn prepare_wikidot_conditionals_before_include_expansion_for_page_preview(
+        wikitext: &mut String,
+        preserved: &mut CompatTextFragments,
+        include_depth: usize,
+    ) {
+        if include_depth == 0 {
+            resolve_unbound_include_variable_iftags(wikitext);
+        }
+        if wikitext.contains("[[#") {
+            *wikitext = resolve_wikidot_parser_functions_outside_list_pages(wikitext);
+        }
+        resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview(
+            wikitext, preserved,
+        );
+    }
+
     fn resolve_wikidot_iftags(
         wikitext: &mut String,
         page_info: &ftml::data::PageInfo<'_>,
@@ -3558,6 +3576,7 @@ impl RenderService {
             source_cache,
             compat_text,
             expand_wikidot_image_blocks,
+            page_preview,
             budget,
             render_cost_budget,
         } = options;
@@ -3595,6 +3614,7 @@ impl RenderService {
                 attachment_owner: source_attachment_owner,
                 page_info,
                 settings,
+                page_preview,
                 expand_wikidot_image_blocks,
                 max_total_includes: budget.maximum,
                 render_cost_budget,
@@ -3628,12 +3648,20 @@ impl RenderService {
             if expansion_context.settings.layout.legacy() {
                 expand_malformed_include_targets(&mut wikitext);
             }
-            Self::prepare_wikidot_conditionals_before_include_expansion(
-                &mut wikitext,
-                expansion_context.page_info,
-                compat_text,
-                depth,
-            );
+            if expansion_context.page_preview {
+                Self::prepare_wikidot_conditionals_before_include_expansion_for_page_preview(
+                    &mut wikitext,
+                    compat_text,
+                    depth,
+                );
+            } else {
+                Self::prepare_wikidot_conditionals_before_include_expansion(
+                    &mut wikitext,
+                    expansion_context.page_info,
+                    compat_text,
+                    depth,
+                );
+            }
             Self::mask_wikidot_comment_include_markers(&mut wikitext);
             let image_block_included_pages = if expansion_context
                 .expand_wikidot_image_blocks
@@ -5199,6 +5227,7 @@ pub(super) struct IncludeExpansionOptions<'a> {
     pub(super) source_cache: &'a mut IncludeSourceCache,
     pub(super) compat_text: &'a mut CompatTextFragments,
     pub(super) expand_wikidot_image_blocks: bool,
+    pub(super) page_preview: bool,
     pub(super) budget: IncludeExpansionBudget,
     pub(super) render_cost_budget: super::render_budget::SharedRenderCostBudget,
 }
@@ -5231,6 +5260,7 @@ struct IncludeExpansionContext<'a> {
     attachment_owner: Option<AttachmentOwner>,
     page_info: &'a PageInfo<'a>,
     settings: &'a WikitextSettings,
+    page_preview: bool,
     expand_wikidot_image_blocks: bool,
     max_total_includes: usize,
     render_cost_budget: super::render_budget::SharedRenderCostBudget,
@@ -5248,6 +5278,7 @@ impl<'a> IncludeExpansionContext<'a> {
             }),
             page_info: self.page_info,
             settings: self.settings,
+            page_preview: self.page_preview,
             expand_wikidot_image_blocks: self.expand_wikidot_image_blocks,
             max_total_includes: self.max_total_includes,
             render_cost_budget: self.render_cost_budget.clone(),

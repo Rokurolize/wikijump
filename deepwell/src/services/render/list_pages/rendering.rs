@@ -898,6 +898,7 @@ impl RenderService {
             page_info,
             settings,
             current_site_id,
+            page_preview,
             include_source_cache,
             compat_text,
             &mut include_budget,

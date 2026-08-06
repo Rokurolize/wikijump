@@ -9068,6 +9068,7 @@ fn nested_cross_site_includes_keep_the_original_lookup_site() {
         attachment_owner: None,
         page_info: &page_info,
         settings: &settings,
+        page_preview: false,
         expand_wikidot_image_blocks: true,
         max_total_includes: 100,
         render_cost_budget: RenderCostBudget::new_default(),

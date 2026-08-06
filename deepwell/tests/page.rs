@@ -1708,6 +1708,57 @@ async fn included_iftags_closer_survives_unmatched_inline_raw_on_an_earlier_line
 }
 
 #[tokio::test]
+async fn page_preview_omits_iftags_in_included_sources() {
+    const COMPONENT_SLUG: &str = "component:fixture-iftags-preview-source";
+    const ACTIVE_MARKER: &str = "Included positive branch";
+    const NEGATIVE_MARKER: &str = "Included negative branch";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site.site_id,
+        Reference::Slug(Cow::Borrowed(COMPONENT_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site.site_id,
+            "wikitext": format!(
+                "[[iftags +component]]{ACTIVE_MARKER}[[/iftags]]\n[[iftags -component]]{NEGATIVE_MARKER}[[/iftags]]"
+            ),
+            "title": "PagePreview iftags source",
+            "alt_title": null,
+            "slug": COMPONENT_SLUG,
+            "layout": "wikidot",
+            "tags": ["component"],
+            "revision_comments": "create PagePreview iftags fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site.site_id,
+            "title": "PagePreview iftags consumer",
+            "wikitext": format!(
+                "X\n[[include {COMPONENT_SLUG}]]\n[[iftags +component]]ROOT[[/iftags]]\n[[iftags -component]]ROOT_NEGATIVE[[/iftags]]\nY"
+            ),
+        }),
+    );
+    assert!(preview.body.contains("<p>X</p>") && preview.body.contains("<p>Y</p>"));
+    assert!(!preview.body.contains(ACTIVE_MARKER), "{}", preview.body);
+    assert!(!preview.body.contains(NEGATIVE_MARKER), "{}", preview.body);
+    assert!(!preview.body.contains("ROOT_NEGATIVE"), "{}", preview.body);
+}
+
+#[tokio::test]
 async fn unbound_include_variables_remain_literal_in_attributes_and_text() {
     const COMPONENT_SLUG: &str = "component:fixture-unbound-include-variable";
     const CONSUMER_SLUG: &str = "fixture-unbound-include-variable-consumer";
