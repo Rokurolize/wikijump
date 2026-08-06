@@ -25,7 +25,7 @@ RUN \
     pnpm install --frozen-lockfile && \
     pnpm build && \
     pnpm prune --prod && \
-    rm -rf src/ tests/
+    rm -rf tests/
 
 # Run command
 USER node:node
@@ -33,4 +33,4 @@ ENV NODE_ENV=production
 ENV PORT=3393
 EXPOSE 3393
 
-CMD ["/usr/local/bin/node", "build"]
+CMD ["/usr/local/bin/node", "server.js"]
