@@ -28,6 +28,8 @@ use deepwell::models::wikidot_user::{Entity as WikidotUser, Model as WikidotUser
 use deepwell::models::{known_user, wikidot_user};
 use deepwell::services::RequestContext;
 use deepwell::services::import::ImportUserOutput;
+use deepwell::services::user::UserService;
+use deepwell::types::Reference;
 use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 use serde_json::json;
 use time::macros::{date, datetime};
@@ -193,6 +195,56 @@ async fn user_import_reclaims_existing_wikidot_user() {
         .expect("imported Wikidot user should now be a Wikijump user");
     assert_eq!(imported_user.user_id, user_id);
     assert_eq!(imported_user.slug, "imported-user");
+}
+
+#[tokio::test]
+async fn real_user_lookup_treats_wikidot_only_identity_as_absent() {
+    let runner = TestRunner::setup().await;
+    let user_id = 700_010_i64;
+
+    known_user::ActiveModel {
+        user_id: Set(user_id),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("known_user fixture should insert");
+
+    wikidot_user::ActiveModel {
+        user_id: Set(i32::try_from(user_id).expect("fixture ID should fit i32")),
+        created_at: Set(OffsetDateTime::UNIX_EPOCH),
+        fetched_at: Set(OffsetDateTime::UNIX_EPOCH + time::Duration::seconds(1)),
+        is_deleted: Set(false),
+        name: Set(Some("Wikidot Only User".to_owned())),
+        slug: Set(Some("wikidot-only-user".to_owned())),
+        avatar_s3_hash: Set(None),
+        real_name: Set(None),
+        gender: Set(None),
+        birthday: Set(None),
+        location: Set(None),
+        biography: Set(None),
+        website: Set(None),
+        karma: Set(0),
+        is_pro: Set(false),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("wikidot_user fixture should insert");
+
+    let generic = UserService::get_optional(runner.context(), Reference::Id(user_id))
+        .await
+        .expect("generic lookup should succeed")
+        .expect("generic lookup should find the Wikidot identity");
+    assert!(generic.is_wikidot());
+
+    let real = UserService::get_real_optional(runner.context(), Reference::Id(user_id))
+        .await
+        .expect("optional real-user lookup should not error");
+    assert!(real.is_none());
+
+    let error = UserService::get_real(runner.context(), Reference::Id(user_id))
+        .await
+        .expect_err("strict real-user lookup should report a missing user");
+    assert_contains_error!(error, ErrorType::UserNotFound);
 }
 
 #[tokio::test]
