@@ -2007,6 +2007,7 @@ impl RenderService {
                     url: options.url,
                 },
                 compat_text,
+                compat_html,
             )
             .await
             .or_raise(make_error)?
