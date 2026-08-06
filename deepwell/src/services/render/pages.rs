@@ -665,11 +665,13 @@ mod tests {
         let generated = render_pages_module(&page_info(), &pages, 1, false);
 
         assert!(generated.contains("<span class=\"dots\">...</span>"));
-        let restored = RenderService::restore_wikidot_render_compatibility_for_context(
+        let restored =
+            RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
             &generated,
             None,
             &Config::integration_testing(),
             true,
+            &[],
         );
 
         assert!(restored.contains("<span class=\"dots\">...</span>"));

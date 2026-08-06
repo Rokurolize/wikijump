@@ -35,6 +35,85 @@ use sea_orm::{ActiveModelTrait, ConnectionTrait, Set, Statement, Value};
 use serde_json::json;
 use uuid::Uuid;
 
+#[tokio::test]
+async fn syntax_preview_preserves_delayed_listpages_literal() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+
+    let body = RenderService::render_wikidot_syntax_preview(
+        runner.context(),
+        site.site.site_id,
+        "syntax-only delayed ListPages",
+        "[[module ListPages category=\"*\" perPage=\"1\"]]\n* %%title_linked%%\n[[/module]]"
+            .to_owned(),
+    )
+    .await
+    .expect("syntax-only preview should render")
+    .html_output
+    .body;
+
+    assert!(
+        !body.contains("list-pages-box"),
+        "syntax-only preview must not execute ListPages: {body}"
+    );
+    assert_eq!(
+        body,
+        "<p>[[module ListPages category=&quot;*&quot; perPage=&quot;1&quot;]]</p><ul>\n<li>%%title_linked%%</li>\n</ul><p>[[/module]]</p>",
+    );
+    let endpoint = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site.site_id,
+            "title": "syntax-only delayed ListPages endpoint",
+            "wikitext": "[[module ListPages category=\"*\" perPage=\"1\"]]\n* %%title_linked%%\n[[/module]]",
+            "syntax_only": true,
+        }),
+    );
+    assert_eq!(endpoint.body, body);
+    assert!(
+        body.contains("[[module ListPages"),
+        "syntax-only preview must preserve the delayed opener: {body}"
+    );
+}
+
+#[tokio::test]
+async fn syntax_preview_preserves_other_delayed_fixture_shapes() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    for (title, source, expected) in [
+        (
+            "syntax-only CountPages",
+            "[[module CountPages category=\"*\"]]",
+            "<p>[[module CountPages category=&quot;*&quot;]]</p>",
+        ),
+        (
+            "syntax-only unknown module",
+            "[[module UnknownOracleModule]]preserved body[[/module]]",
+            "<p>[[module UnknownOracleModule]]preserved body[[/module]]</p>",
+        ),
+        (
+            "syntax-only conditional",
+            "[[if module UnknownOracleModule]]preserved conditional[[/if]]",
+            "<p>[[if module UnknownOracleModule]]preserved conditional[[/if]]</p>",
+        ),
+    ] {
+        let body = RenderService::render_wikidot_syntax_preview(
+            runner.context(),
+            site.site.site_id,
+            title,
+            source.to_owned(),
+        )
+        .await
+        .expect("syntax-only delayed fixture should render")
+        .html_output
+        .body;
+        assert_eq!(body, expected);
+    }
+}
+
 /// Reassigns a page's creating revision to another user.
 ///
 /// Page creation is permission-checked against the request actor, so a fixture

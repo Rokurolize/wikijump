@@ -169,7 +169,8 @@ export function normalizeAttributeObservation(
   } else if (
     channels.random_module_id &&
     (/(?:^|[-_])module[-_]?id$/u.test(name) ||
-      /(?:^|[-_])module[-_][0-9a-f]{8,}$/iu.test(value))
+      /(?:^|[-_])module[-_][0-9a-f]{8,}$/iu.test(value) ||
+      /^wiki-tabview-[0-9a-f]{32}$/iu.test(value))
   ) {
     apply("random_module_id", "{{module-id}}");
   } else if (channels.semantic_timestamp && /time|date|timestamp/u.test(name)) {
@@ -178,6 +179,49 @@ export function normalizeAttributeObservation(
     apply("env_id", "{{hex-id}}");
   }
   return { tag, name, value, applied };
+}
+
+// Wikidot allocates a fresh 32-hex tabview identity on every render. The
+// identity binds the tabview's own bootstrap, but is not observable content;
+// compare the shape while keeping the exact narrow pattern visible in the
+// normalization receipt.
+export function normalizeDomSignature(
+  value,
+  channels = DEFAULT_ATTRIBUTE_CHANNELS,
+) {
+  let result = String(value ?? "");
+  const applied = [];
+  if (
+    channels.random_module_id &&
+    /wiki-tabview-[0-9a-f]{32}/iu.test(result)
+  ) {
+    result = result.replace(
+      /wiki-tabview-[0-9a-f]{32}/giu,
+      "wiki-tabview-{{module-id}}",
+    );
+    applied.push("random_module_id");
+  }
+  return {value: result, applied};
+}
+
+export function normalizeDomSignatures(
+  signatures,
+  channels = DEFAULT_ATTRIBUTE_CHANNELS,
+) {
+  const normalized = [];
+  const events = [];
+  for (const signature of signatures ?? []) {
+    const result = normalizeDomSignature(signature, channels);
+    normalized.push(result.value);
+    if (result.applied.length > 0) {
+      events.push({
+        channel: result.applied[0],
+        original: String(signature ?? ""),
+        normalized: result.value,
+      });
+    }
+  }
+  return {signatures: normalized, events};
 }
 
 export function normalizeAttributeSignatures(

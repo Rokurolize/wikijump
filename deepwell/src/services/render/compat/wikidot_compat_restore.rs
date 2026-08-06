@@ -22,7 +22,8 @@ use super::super::service::{
     RenderService, WIKIDOT_COMPAT_STYLE_BLOCK_REGEX, WIKIDOT_EMAIL_SPAN_REGEX,
     WIKIDOT_EMBED_PARAGRAPH_REGEX, WIKIDOT_RENDERED_MAILFORM_DEFAULT_REGEX,
     WIKIDOT_RENDERED_MAILFORM_FIELD_REGEX, WIKIDOT_RENDERED_MAILFORM_MAX_LENGTH_REGEX,
-    WIKIDOT_RENDERED_MAILFORM_REGEX, WIKIDOT_TABVIEW_INIT_SCRIPT, WIKIDOT_TABVIEW_SCRIPT,
+    WIKIDOT_RENDERED_MAILFORM_REGEX, WIKIDOT_TABVIEW_INIT_SCRIPT,
+    WIKIDOT_TABVIEW_PANEL_ID_REGEX, WIKIDOT_TABVIEW_SCRIPT, WIKIDOT_TABVIEW_SCRIPT_URL,
     WIKIJUMP_CODE_BLOCK_OPEN_REGEX, WIKIJUMP_CODE_BLOCK_PANEL_REGEX,
     WIKIJUMP_FOOTNOTE_DATA_ID_REGEX, WIKIJUMP_FOOTNOTE_MARKER_REGEX,
     WIKIJUMP_FOOTNOTE_REF_LEADING_SPACE_REGEX, WIKIJUMP_FOOTNOTE_REF_SPAN_WRAPPER_REGEX,
@@ -38,12 +39,55 @@ use super::footnote_dom::{
 use crate::config::Config;
 use crate::models::site::Model as SiteModel;
 
+fn valid_wikidot_tabview_id(id: &str) -> Option<&str> {
+    let suffix = id.strip_prefix("wiki-tabview-")?;
+    (suffix.len() == 32
+        && suffix
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f')))
+    .then_some(suffix)
+}
+
+fn find_matching_div_end(html: &str, root_start: usize) -> Option<usize> {
+    let mut depth = 0usize;
+    let mut cursor = root_start;
+    while let Some(relative_start) = html[cursor..].find('<') {
+        let start = cursor + relative_start;
+        if html[start..].starts_with("<!--") {
+            let end = html[start + 4..].find("-->")?;
+            cursor = start + 4 + end + 3;
+            continue;
+        }
+        let end = start + html[start..].find('>')?;
+        let tag = &html[start..=end];
+        let bytes = tag.as_bytes();
+        if bytes.starts_with(b"<div")
+            && matches!(
+                bytes.get(4),
+                Some(b'>' | b'/' | b' ' | b'\t' | b'\r' | b'\n')
+            )
+        {
+            depth += 1;
+        } else if bytes.starts_with(b"</div")
+            && matches!(bytes.get(5), Some(b'>') | Some(b' ') | Some(b'\t'))
+        {
+            depth = depth.checked_sub(1)?;
+            if depth == 0 {
+                return Some(end + 1);
+            }
+        }
+        cursor = end + 1;
+    }
+    None
+}
+
 impl RenderService {
-    pub(in crate::services::render) fn restore_wikidot_render_compatibility_for_context(
+    pub(in crate::services::render) fn restore_wikidot_render_compatibility_for_context_with_resources(
         html: &str,
         current_site: Option<&SiteModel>,
         config: &Config,
         allow_styleframe: bool,
+        wikidot_tabview_ids: &[String],
     ) -> String {
         let mut html = html.to_owned();
         if html.contains("[[embed]]") {
@@ -64,6 +108,12 @@ impl RenderService {
         }
         if html.contains("wj-tabs") {
             html = Self::restore_wikidot_tabview_dom_compatibility(&html);
+        }
+        if !wikidot_tabview_ids.is_empty() {
+            html = Self::restore_wikidot_tabview_resource_compatibility(
+                &html,
+                wikidot_tabview_ids,
+            );
         }
         if WIKIDOT_RENDERED_MAILFORM_REGEX.is_match(&html) {
             html = Self::restore_wikidot_mailform_compatibility(&html);
@@ -120,6 +170,65 @@ impl RenderService {
             html = Self::localize_wikidot_local_file_urls(&html, current_site, config);
         }
         html
+    }
+
+    pub(in crate::services::render) fn restore_wikidot_tabview_resource_compatibility(
+        html: &str,
+        tabview_ids: &[String],
+    ) -> String {
+        let mut restored = html.to_owned();
+        for id in tabview_ids {
+            let Some(suffix) = valid_wikidot_tabview_id(id) else {
+                continue;
+            };
+            let opening = format!(r#"<div id="{id}" class="yui-navset">"#);
+            let Some(root_start) = restored.find(&opening) else {
+                continue;
+            };
+            let Some(root_end) = find_matching_div_end(&restored, root_start) else {
+                continue;
+            };
+            let root = &restored[root_start..root_end];
+            let root = root.replacen(
+                r#"class="yui-navset">"#,
+                r#"class="yui-navset yui-navset-top">"#,
+                1,
+            );
+            let root = root.replacen(
+                r#"<li class="selected">"#,
+                r#"<li class="selected" title="active">"#,
+                1,
+            );
+            let root = WIKIDOT_TABVIEW_PANEL_ID_REGEX
+                .replace_all(&root, |captures: &regex::Captures<'_>| {
+                    let index = captures.name("index").map_or("", |value| value.as_str());
+                    if index == "0" {
+                        format!(
+                            r#"<div id="wiki-tab-0-{index}" style="display: block;">"#
+                        )
+                    } else {
+                        format!(r#"<div id="wiki-tab-0-{index}" style="display:none">"#)
+                    }
+                })
+                .into_owned();
+            let loader = format!(
+                r#"<script type="text/javascript" src="{WIKIDOT_TABVIEW_SCRIPT_URL}"></script>
+"#
+            );
+            let initializer = format!(
+                r#"<script type="text/javascript">
+//<![CDATA[
+OZONE.dom.onDomReady(function(){{
+        var tabView{suffix} = new YAHOO.widget.TabView('{id}');
+                }}, "dummy-ondomready-block");
+
+//]]>
+</script>"#
+            );
+            let replacement = format!("{loader}{root}{initializer}");
+            restored.replace_range(root_start..root_end, &replacement);
+        }
+        restored
     }
 
     pub(in crate::services::render) fn restore_wikidot_collapsible_compatibility(
