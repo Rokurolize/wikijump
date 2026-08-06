@@ -453,6 +453,7 @@ pub(super) async fn render_list_pages_selected_content_source(
         RenderInnerOptions {
             render_context: RenderContext::page_preview(current_site_id),
             viewer_user_id,
+            current_page_data_form_values: None,
             max_include_expansions,
             render_cost_budget,
             trace: None,

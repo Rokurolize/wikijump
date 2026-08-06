@@ -63,6 +63,7 @@ impl RenderService {
             RenderInnerOptions {
                 render_context: RenderContext::page_preview(site_id),
                 viewer_user_id: ctx.request().user_id().ok(),
+                current_page_data_form_values: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,

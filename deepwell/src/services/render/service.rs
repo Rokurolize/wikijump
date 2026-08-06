@@ -719,6 +719,7 @@ impl RenderService {
             RenderInnerOptions {
                 render_context: RenderContext::none(),
                 viewer_user_id: None,
+                current_page_data_form_values: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 render_cost_budget: render_cost_budget.clone(),
                 trace: None,
@@ -763,6 +764,7 @@ impl RenderService {
             RenderInnerOptions {
                 render_context: RenderContext::page_nav(site_id, category_id, page_id),
                 viewer_user_id: None,
+                current_page_data_form_values: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
@@ -826,6 +828,7 @@ impl RenderService {
                 // Re-evaluate candidates and visibility for the current AMC
                 // actor on every request.
                 viewer_user_id: ctx.request().user_id,
+                current_page_data_form_values: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
@@ -881,7 +884,40 @@ impl RenderService {
             RenderPageOptions {
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 viewer_user_id: None,
+                current_page_data_form_values: None,
                 url,
+                trace: None,
+            },
+        ))
+        .await
+    }
+
+    /// Render a stored revision from the same raw candidate values that are
+    /// about to be committed.
+    ///
+    /// Category templates may contain ListPages selectors derived from the
+    /// current page's data-form fields. Revision creation renders before the
+    /// new revision row exists, so these values must travel with the candidate
+    /// instead of being read back from the previous committed revision.
+    pub(crate) async fn render_page_with_candidate_data_form_values(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        page_info: &PageInfo<'_>,
+        layout: Layout,
+        id: PageId,
+        current_page_data_form_values: BTreeMap<String, String>,
+    ) -> Result<RenderPageOutput> {
+        Box::pin(Self::render_page_with_include_limit(
+            ctx,
+            wikitext,
+            page_info,
+            layout,
+            id,
+            RenderPageOptions {
+                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                viewer_user_id: None,
+                current_page_data_form_values: Some(current_page_data_form_values),
+                url: UrlArguments::default(),
                 trace: None,
             },
         ))
@@ -912,6 +948,7 @@ impl RenderService {
             RenderPageOptions {
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 viewer_user_id,
+                current_page_data_form_values: None,
                 url,
                 trace: None,
             },
@@ -938,6 +975,7 @@ impl RenderService {
             RenderPageOptions {
                 max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
                 viewer_user_id: None,
+                current_page_data_form_values: None,
                 url: UrlArguments::default(),
                 trace: None,
             },
@@ -962,6 +1000,7 @@ impl RenderService {
             RenderPageOptions {
                 max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
                 viewer_user_id: None,
+                current_page_data_form_values: None,
                 url: UrlArguments::default(),
                 trace: Some(trace),
             },
@@ -982,6 +1021,7 @@ impl RenderService {
         RenderPageOptions {
             max_include_expansions,
             viewer_user_id,
+            current_page_data_form_values,
             url,
             trace,
         }: RenderPageOptions<'_>,
@@ -1017,6 +1057,7 @@ impl RenderService {
             RenderInnerOptions {
                 render_context: RenderContext::page(site_id, category_id, page_id),
                 viewer_user_id,
+                current_page_data_form_values: current_page_data_form_values.clone(),
                 max_include_expansions,
                 render_cost_budget: render_cost_budget.clone(),
                 trace: trace.map(|trace| (trace, CorpusRenderScope::Body)),
@@ -1037,6 +1078,7 @@ impl RenderService {
         let nav_settings = &nav_settings;
         let render_nav_page = |wikitext, scope| {
             let render_cost_budget = render_cost_budget.clone();
+            let current_page_data_form_values = current_page_data_form_values.clone();
             async move {
                 match wikitext {
                     Some(wikitext) => {
@@ -1059,6 +1101,7 @@ impl RenderService {
                                     page_id,
                                 ),
                                 viewer_user_id,
+                                current_page_data_form_values,
                                 max_include_expansions,
                                 render_cost_budget: render_cost_budget.clone(),
                                 trace: trace.map(|trace| (trace, scope)),
@@ -1145,6 +1188,7 @@ impl RenderService {
                 current_category_id: Some(id.category_id),
                 current_page_id: Some(id.page_id),
                 viewer_user_id: None,
+                current_page_data_form_values: None,
                 max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
                 render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
@@ -1268,6 +1312,7 @@ impl RenderService {
             current_category_id,
             current_page_id,
             viewer_user_id,
+            current_page_data_form_values,
             max_include_expansions,
             render_cost_budget,
             trace,
@@ -1373,6 +1418,7 @@ impl RenderService {
                 ListPagesExpansionOptions {
                     current_site_id,
                     current_page_id,
+                    current_page_data_form_values,
                     page_preview,
                     viewer_user_id,
                     include_budget,
@@ -1769,6 +1815,7 @@ impl RenderService {
         let RenderInnerOptions {
             render_context,
             viewer_user_id,
+            current_page_data_form_values,
             max_include_expansions,
             render_cost_budget,
             trace,
@@ -1816,6 +1863,7 @@ impl RenderService {
                 current_category_id,
                 current_page_id,
                 viewer_user_id,
+                current_page_data_form_values,
                 max_include_expansions,
                 render_cost_budget,
                 trace,

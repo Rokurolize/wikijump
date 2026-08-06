@@ -162,6 +162,7 @@ impl RenderService {
         let ListPagesExpansionOptions {
             current_site_id,
             current_page_id,
+            current_page_data_form_values,
             page_preview,
             viewer_user_id,
             mut include_budget,
@@ -212,6 +213,7 @@ impl RenderService {
             current_site_id,
             requested_current_page_id,
             page_info,
+            current_page_data_form_values.clone(),
         )
         .await?;
 
@@ -932,6 +934,7 @@ impl RenderService {
                 ListPagesExpansionOptions {
                     current_site_id: Some(current_site_id),
                     current_page_id: requested_current_page_id,
+                    current_page_data_form_values: current_page_data_form_values.clone(),
                     page_preview,
                     viewer_user_id,
                     include_budget,

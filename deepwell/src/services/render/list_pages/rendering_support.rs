@@ -572,6 +572,8 @@ pub(in crate::services::render) struct ListPagesContentCache {
 pub(in crate::services::render) struct ListPagesExpansionOptions<'a> {
     pub(in crate::services::render) current_site_id: Option<i64>,
     pub(in crate::services::render) current_page_id: Option<i64>,
+    pub(in crate::services::render) current_page_data_form_values:
+        Option<BTreeMap<String, String>>,
     pub(in crate::services::render) page_preview: bool,
     pub(in crate::services::render) viewer_user_id: Option<i64>,
     pub(in crate::services::render) include_budget: IncludeExpansionBudget,

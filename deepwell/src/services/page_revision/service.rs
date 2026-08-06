@@ -32,7 +32,7 @@ use crate::models::page_revision::{
 };
 use crate::models::text::{self, Entity as Text};
 use crate::services::ServiceContext;
-use crate::services::render::UrlArguments;
+use crate::services::page_query::parse_static_wikidot_data_form_values;
 use crate::services::render::{
     CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, RenderPageOutput, StageGuard,
 };
@@ -973,6 +973,8 @@ impl PageRevisionService {
 
         // Set up parse context
         let (category_slug, page_slug) = split_category(slug);
+        let current_page_data_form_values =
+            parse_static_wikidot_data_form_values(&wikitext);
         let wikitext = BlueprintPageService::apply_page_template(
             ctx,
             site_id,
@@ -1005,13 +1007,13 @@ impl PageRevisionService {
         } else {
             // A stored revision render answers no particular request, so it
             // carries no URL arguments.
-            RenderService::render_page(
+            RenderService::render_page_with_candidate_data_form_values(
                 ctx,
                 wikitext,
                 &page_info,
                 layout,
                 id,
-                UrlArguments::default(),
+                current_page_data_form_values,
             )
             .await
         }
