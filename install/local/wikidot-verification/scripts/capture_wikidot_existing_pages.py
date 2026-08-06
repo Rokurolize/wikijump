@@ -31,11 +31,10 @@ def pinned_dependency_identity(
     requirements = requirements_path.read_text()
     requirements_lock = requirements_lock_path.read_text()
     requirement_match = WIKIDOT_PIN.search(requirements)
-    lock_match = WIKIDOT_PIN.search(requirements_lock)
-    if requirement_match is None or lock_match is None:
-        raise RuntimeError("Python dependency files must pin Rokurolize/wikidot.py to a full commit")
-    if requirement_match.group(1) != lock_match.group(1):
-        raise RuntimeError("requirements.txt and requirements.lock pin different wikidot.py commits")
+    if requirement_match is None:
+        raise RuntimeError("requirements.txt must pin Rokurolize/wikidot.py to a full commit")
+    if WIKIDOT_PIN.search(requirements_lock) is not None:
+        raise RuntimeError("requirements.lock must contain only hash-verifiable package artifacts")
     return {
         "wikidot_py_commit": requirement_match.group(1),
         "requirements_sha256": hashlib.sha256(requirements_path.read_bytes()).hexdigest(),
