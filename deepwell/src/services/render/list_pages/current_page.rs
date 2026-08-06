@@ -73,7 +73,11 @@ pub(in crate::services::render) fn list_pages_row_scan_target(
     exclude_current_page: bool,
 ) -> u64 {
     let rows = if per_page.is_some() {
-        overall_limit.unwrap_or(requested_limit)
+        // Wikidot's pager counts the complete matching set when `perPage` is
+        // present without an overall `limit`.  The page size controls the
+        // rendered window, not the query's total.  An explicit `limit` is the
+        // boundary that makes the scan finite.
+        overall_limit.unwrap_or(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
     } else {
         requested_limit
     };

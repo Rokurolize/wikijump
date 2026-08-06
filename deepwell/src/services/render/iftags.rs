@@ -51,6 +51,7 @@ pub(super) fn resolve_outermost_wikidot_iftags(
         tags,
         preserved,
         UnmatchedBoundaryMode::Preserve,
+        false,
     );
 }
 
@@ -67,6 +68,24 @@ pub(super) fn resolve_outermost_wikidot_iftags_before_include_expansion(
         tags,
         preserved,
         UnmatchedBoundaryMode::Defer,
+        false,
+    );
+}
+
+pub(super) fn resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview(
+    wikitext: &mut String,
+    preserved: &mut CompatTextFragments,
+) {
+    // Anonymous PagePreviewModule has no page conditional context: both
+    // positive and negative `iftags` branches are omitted. Keep this mode
+    // limited to the include prepass; ListPages row templates resolve their
+    // own conditions later against the selected row.
+    resolve_outermost_wikidot_iftags_with_mode(
+        wikitext,
+        &[],
+        preserved,
+        UnmatchedBoundaryMode::Defer,
+        true,
     );
 }
 
@@ -75,6 +94,7 @@ fn resolve_outermost_wikidot_iftags_with_mode(
     tags: &[Cow<'_, str>],
     preserved: &mut CompatTextFragments,
     unmatched_mode: UnmatchedBoundaryMode,
+    force_inactive: bool,
 ) {
     let literal_regions = LiteralRegionIndex::new_wikidot_conditional_syntax(wikitext);
     let mut stack = Vec::<OpenGate>::new();
@@ -86,9 +106,9 @@ fn resolve_outermost_wikidot_iftags_with_mode(
         let token = captures.get(0).expect("iftags token");
         let literal = literal_regions.containing_range(token.start());
         let closes_inactive_root = captures.name("close").is_some()
-            && stack
-                .first()
-                .is_some_and(|outer| !wikidot_tag_conditions_match(&outer.spec, tags))
+            && stack.first().is_some_and(|outer| {
+                force_inactive || !wikidot_tag_conditions_match(&outer.spec, tags)
+            })
             && literal.is_some_and(|range| {
                 let key = (range.start, range.end);
                 let scope = *inactive_literal_scopes
@@ -135,7 +155,7 @@ fn resolve_outermost_wikidot_iftags_with_mode(
             }
             continue;
         };
-        let text = if wikidot_tag_conditions_match(&outer.spec, tags) {
+        let text = if !force_inactive && wikidot_tag_conditions_match(&outer.spec, tags) {
             preserve_nested_tokens(
                 wikitext,
                 outer.end..token.start(),
@@ -160,16 +180,17 @@ fn resolve_outermost_wikidot_iftags_with_mode(
                 .filter(|token| token.start < recovery_closer.start)
                 .cloned()
                 .collect::<Vec<_>>();
-            let text = if wikidot_tag_conditions_match(&root.spec, tags) {
-                preserve_nested_tokens(
-                    wikitext,
-                    root.end..recovery_closer.start,
-                    &nested_tokens,
-                    preserved,
-                )
-            } else {
-                String::new()
-            };
+            let text =
+                if !force_inactive && wikidot_tag_conditions_match(&root.spec, tags) {
+                    preserve_nested_tokens(
+                        wikitext,
+                        root.end..recovery_closer.start,
+                        &nested_tokens,
+                        preserved,
+                    )
+                } else {
+                    String::new()
+                };
             replacements.push(Replacement {
                 range: root.start..recovery_closer.end,
                 text,

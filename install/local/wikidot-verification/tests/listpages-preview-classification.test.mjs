@@ -662,6 +662,79 @@ test("preview classifier recognizes executed wrapper-free modules", async () => 
   );
 });
 
+test("preview classifier ignores whitespace-only drift inside the generated ListPages shell", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-owned-whitespace-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages tags="+example"]]',
+    "%%title%%",
+    "[[/module]]",
+  ].join("\n");
+  const liveHtml = [
+    "<p>live surrounding text</p>",
+    '<div class="list-pages-box">',
+    "  <table><tbody><tr><td>one</td></tr></tbody></table>",
+    "</div>",
+  ].join("\n");
+  const localHtml = [
+    "<p>local surrounding text</p>",
+    '<div class="list-pages-box"><table><tbody><tr><td>one</td></tr></tbody></table></div>',
+  ].join("\n");
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference("owned-whitespace", source, liveHtml))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase("owned-whitespace", liveHtml, localHtml)],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "listpages-owned-execution-parity",
+  );
+  assert.equal(result.cases[0].disposition, "none");
+});
+
+test("preview classifier compares every generated shell when a page has multiple modules", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-owned-whitespace-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = [
+    '[[module ListPages tags="+first"]]one[[/module]]',
+    '[[module ListPages tags="+second"]]two[[/module]]',
+  ].join("\n");
+  const liveHtml = [
+    '<div class="list-pages-box"> <table><tbody><tr><td>one</td></tr></tbody></table> </div>',
+    '<div class="list-pages-box"> <table><tbody><tr><td>two</td></tr></tbody></table> </div>',
+  ].join("\n");
+  const localHtml = [
+    '<div class="list-pages-box"><table><tbody><tr><td>one</td></tr></tbody></table></div>',
+    '<div class="list-pages-box"><table><tbody><tr><td>two</td></tr></tbody></table></div>',
+  ].join("\n");
+  await fs.writeFile(
+    referencesPath,
+    `${JSON.stringify(reference("owned-whitespace-multiple", source, liveHtml))}\n`,
+  );
+  await fs.writeFile(verdictPath, JSON.stringify({
+    cases: [mismatchCase("owned-whitespace-multiple", liveHtml, localHtml)],
+  }));
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.equal(
+    result.cases[0].classification,
+    "listpages-owned-execution-parity",
+  );
+  assert.equal(result.cases[0].disposition, "none");
+});
+
 test("preview classifier does not mask a missing zero-row line as fixture state", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
   const referencesPath = path.join(root, "references.jsonl");
