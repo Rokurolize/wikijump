@@ -34,6 +34,8 @@ const CURRENT_SITE_FILE_ORIGIN = "https://wikijump-current-site.invalid"
 /** @type {CspSources} */
 const WIKIDOT_LEGACY_IMAGE_SOURCES = ["https://d3g0gp89917ko0.cloudfront.net"]
 /** @type {CspSources} */
+const WIKIDOT_LEGACY_SCRIPT_SOURCES = ["https://d3g0gp89917ko0.cloudfront.net"]
+/** @type {CspSources} */
 const LOCAL_SCP_FILE_IMAGE_SOURCES = [
   "https://scp-wiki.wjfiles.localhost",
   "https://scp-jp.wjfiles.localhost"
@@ -106,6 +108,11 @@ function fontSources() {
 }
 
 /** @returns {CspSources} */
+function scriptSources() {
+  return ["self", ...WIKIDOT_LEGACY_SCRIPT_SOURCES]
+}
+
+/** @returns {CspSources} */
 function frameSources() {
   return ["self"]
 }
@@ -132,7 +139,7 @@ const config = {
         "img-src": imageSources(),
         "font-src": fontSources(),
         "style-src": styleSources(),
-        "script-src": ["self"],
+        "script-src": scriptSources(),
         "frame-src": frameSources(),
         "connect-src": ["self"],
         "worker-src": ["self", "blob:"],
