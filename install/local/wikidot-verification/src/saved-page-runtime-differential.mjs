@@ -114,7 +114,9 @@ function classCheck(html, requiredTokens) {
 
 export function compiledGeneratorCheck(documentHtml, ftmlSha) {
   const observed = Array.from(
-    documentHtml.matchAll(/"?compiled_generator"?\s*:\s*"([^"]+)"/gu),
+    documentHtml.matchAll(
+      /(?:^|[,{]\s*)(?:"compiled_generator"|compiled_generator)\s*:\s*"([^"]+)"/gu,
+    ),
     (match) => match[1],
   );
   const expectedRevision = ftmlSha.slice(0, 8);

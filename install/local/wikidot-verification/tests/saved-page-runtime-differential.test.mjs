@@ -98,6 +98,13 @@ test("compiled generator check rejects stale, missing, and duplicate page artifa
   );
   assert.equal(
     compiledGeneratorCheck(
+      '{compiled_generator:"ftml v1.42.0 [22222222]; deepwell-render/v1"}',
+      identity.ftml_sha,
+    ).status,
+    "match",
+  );
+  assert.equal(
+    compiledGeneratorCheck(
       '{compiled_generator:"ftml v1.42.0 [11111111]; deepwell-render/v1"}',
       identity.ftml_sha,
     ).status,
@@ -111,6 +118,18 @@ test("compiled generator check rejects stale, missing, and duplicate page artifa
     ).status,
     "mismatch",
   );
+
+  for (const documentHtml of [
+    '{not_compiled_generator:"ftml [22222222]"}',
+    '{xcompiled_generator:"ftml [22222222]"}',
+    'text compiled_generator:"ftml [22222222]"',
+    '{"compiled_generator:"ftml [22222222]"}',
+    '{compiled_generator":"ftml [22222222]"}',
+  ]) {
+    const result = compiledGeneratorCheck(documentHtml, identity.ftml_sha);
+    assert.equal(result.status, "mismatch", documentHtml);
+    assert.deepEqual(result.observed, [], documentHtml);
+  }
 });
 
 test("saved-page case selection is explicit and rejects unknown filters", () => {
