@@ -136,7 +136,8 @@ const config = {
         "frame-src": frameSources(),
         "connect-src": ["self"],
         "worker-src": ["self", "blob:"],
-        "manifest-src": ["self"]
+        "manifest-src": ["self"],
+        "upgrade-insecure-requests": true
       }
     },
     alias: {
