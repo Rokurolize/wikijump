@@ -195,6 +195,17 @@ fn resolve_outermost_wikidot_iftags_with_mode(
                 range: root.start..recovery_closer.end,
                 text,
             });
+            stack.retain(|unclosed| unclosed.start >= recovery_closer.end);
+        } else {
+            stack.insert(0, root);
+        }
+
+        for unclosed in stack {
+            replacements.push(Replacement {
+                range: unclosed.start..unclosed.end,
+                text: preserved
+                    .push_escaped_html_text(&wikitext[unclosed.start..unclosed.end]),
+            });
         }
     }
 
@@ -533,7 +544,7 @@ mod tests {
     }
 
     #[test]
-    fn final_pass_leaves_unclosed_openers_for_ftml_literal_recovery() {
+    fn final_pass_protects_unclosed_openers_before_ftml_recovery() {
         let mut source = concat!(
             "[[iftags +test]]\n",
             "[[div_ class=\"authorlink-wrapper\"]]\n",
@@ -546,7 +557,8 @@ mod tests {
 
         resolve_outermost_wikidot_iftags(&mut source, &tags, &mut preserved);
 
-        assert_eq!(source, original);
+        assert_ne!(source, original);
+        assert_eq!(preserved.restore(&source), original);
     }
 
     #[test]
