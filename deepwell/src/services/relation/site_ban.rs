@@ -31,6 +31,7 @@ use crate::services::role::{RevokeUserRoleInput, RoleService};
 use crate::types::RelationType;
 use crate::utils::now;
 use paste::paste;
+use sea_orm::sea_query::Expr;
 use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
 use serde::Serialize;
 use std::net::{IpAddr, Ipv6Addr};
@@ -213,6 +214,7 @@ impl RelationService {
             ctx,
             ip_address,
             AuditEvent::SiteBanRemove {
+                relation_id: relation.relation_id,
                 site_id,
                 user_id,
                 unbanning_user_id: removed_by,
@@ -223,6 +225,85 @@ impl RelationService {
         .or_raise(make_error)?;
 
         Ok(relation)
+    }
+
+    /// Lifts one expired site-ban relation only if the inspected row is still active.
+    ///
+    /// A replacement ban has a different relation ID and overwrites the inspected row.
+    /// The conditional update therefore treats that race as a benign no-op instead of
+    /// resolving the current site/user relation and removing the replacement.
+    pub async fn lift_expired_site_ban_if_current(
+        ctx: &ServiceContext<'_>,
+        site_ban: RelationModel,
+    ) -> Result<bool> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to lift expired site-ban relation ID {}",
+                    site_ban.relation_id,
+                ),
+                ErrorType::SiteBanRelation,
+            )
+        };
+
+        let metadata: SiteBanData =
+            serde_json::from_value(site_ban.metadata.clone()).or_raise(make_error)?;
+        let Some(banned_until) = metadata.banned_until else {
+            return Ok(false);
+        };
+        if banned_until > now().date() {
+            return Ok(false);
+        }
+
+        let result = Relation::update_many()
+            .col_expr(relation::Column::DeletedAt, Expr::value(Some(now())))
+            .col_expr(
+                relation::Column::DeletedBy,
+                Expr::value(Some(SYSTEM_USER_ID)),
+            )
+            .filter(
+                Condition::all()
+                    .add(relation::Column::RelationId.eq(site_ban.relation_id))
+                    .add(relation::Column::RelationType.eq(RelationType::SiteBan))
+                    .add(relation::Column::OverwrittenAt.is_null())
+                    .add(relation::Column::DeletedAt.is_null()),
+            )
+            .exec(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        match result.rows_affected {
+            0 => return Ok(false),
+            1 => {}
+            rows_affected => {
+                bail!(Error::new(
+                    format!(
+                        "expired site-ban cleanup updated {rows_affected} rows for relation ID {}",
+                        site_ban.relation_id,
+                    ),
+                    ErrorType::SiteBanRelation,
+                ));
+            }
+        }
+
+        Self::invalidate_permission_cache_for_relation(ctx, &site_ban)
+            .await
+            .or_raise(make_error)?;
+        AuditService::log(
+            ctx,
+            IpAddr::V6(Ipv6Addr::LOCALHOST),
+            AuditEvent::SiteBanRemove {
+                relation_id: site_ban.relation_id,
+                site_id: site_ban.dest_id,
+                user_id: site_ban.from_id,
+                unbanning_user_id: SYSTEM_USER_ID,
+                reason: "Site ban expired",
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        Ok(true)
     }
 
     /// Helper method for rejecting an relation if the user is banned.
@@ -278,7 +359,6 @@ impl RelationService {
         };
 
         let txn = ctx.transaction();
-        let today = now().date();
 
         let site_bans = Relation::find()
             .filter(
@@ -294,33 +374,12 @@ impl RelationService {
         let mut lifted = 0;
 
         for site_ban in site_bans {
-            let metadata: SiteBanData =
-                serde_json::from_value(site_ban.metadata.clone()).or_raise(make_error)?;
-
-            let Some(banned_until) = metadata.banned_until else {
-                // Null means this is a permanent ban.
-                continue;
-            };
-
-            if banned_until > today {
-                // The ban has not expired yet.
-                continue;
+            if Self::lift_expired_site_ban_if_current(ctx, site_ban)
+                .await
+                .or_raise(make_error)?
+            {
+                lifted += 1;
             }
-
-            Self::remove_site_ban_with_audit(
-                ctx,
-                RemoveSiteBan {
-                    site_id: site_ban.dest_id,
-                    user_id: site_ban.from_id,
-                    removed_by: SYSTEM_USER_ID,
-                },
-                IpAddr::V6(Ipv6Addr::LOCALHOST),
-                "Site ban expired",
-            )
-            .await
-            .or_raise(make_error)?;
-
-            lifted += 1;
         }
 
         debug!("{lifted} expired site bans were lifted");

@@ -76,6 +76,7 @@ pub enum AuditEvent<'a> {
         reason: &'a str,
     },
     SiteBanRemove {
+        relation_id: i64,
         site_id: i64,
         user_id: i64,
         unbanning_user_id: i64,
@@ -364,6 +365,7 @@ impl<'a> AuditEvent<'a> {
                 extra_number: None,
             },
             AuditEvent::SiteBanRemove {
+                relation_id,
                 site_id,
                 user_id,
                 unbanning_user_id,
@@ -375,7 +377,7 @@ impl<'a> AuditEvent<'a> {
                 site_id: Some(site_id),
                 page_id: None,
                 extra_id_1: Some(unbanning_user_id),
-                extra_id_2: None,
+                extra_id_2: Some(relation_id),
                 extra_string_1: Some(Cow::Borrowed(reason)),
                 extra_string_2: None,
                 extra_number: None,
