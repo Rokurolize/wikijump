@@ -435,6 +435,7 @@ pub(super) const WIKIDOT_RATE_ANCHOR_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTRAT
 pub(super) const WIKIDOT_TABVIEW_SCRIPT: &str = "";
 pub(super) const WIKIDOT_TABVIEW_INIT_SCRIPT: &str =
     r#"<script type="text/javascript"></script>"#;
+pub(super) const WIKIDOT_TABVIEW_SCRIPT_URL: &str = "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js";
 const MAX_WIKIDOT_COMPAT_FALLBACK_TITLE_LINKS: usize = 128;
 
 pub(super) static INCLUDE_VARIABLE_REGEX: LazyLock<Regex> =
@@ -588,6 +589,8 @@ pub(super) static WIKIJUMP_TAB_BUTTON_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 });
 pub(super) static WIKIJUMP_TAB_PANEL_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"(?is)<div class="wj-tabs-panel"[^>]*>"#).unwrap());
+pub(super) static WIKIDOT_TABVIEW_PANEL_ID_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"<div id="wiki-tab-0-(?P<index>[0-9]+)">"#).unwrap());
 static WIKIDOT_IMAGE_BLOCK_INCLUDE_START_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         r#"(?is)\[\[include(?:[ \t\r\n]+|\[!--.*?--\])+"#,
@@ -2145,6 +2148,15 @@ impl RenderService {
                 &user_info,
                 trace,
             );
+            let wikidot_tabview_ids: Vec<String> = html_output
+                .resource_requirements
+                .iter()
+                .filter_map(|requirement| {
+                    requirement
+                        .wikidot_tab_view_requirement()
+                        .map(|requirement| requirement.id().to_owned())
+                })
+                .collect();
             let ParsedFtmlRender {
                 prepared,
                 tree,
@@ -2220,11 +2232,12 @@ impl RenderService {
                         &native_list_wikipedia_links,
                     );
                     html_output.body =
-                        Self::restore_wikidot_render_compatibility_for_context(
+                        Self::restore_wikidot_render_compatibility_for_context_with_resources(
                             &html_output.body,
                             render_current_site.as_ref(),
                             &render_config,
                             allow_wikidot_styleframe,
+                            &wikidot_tabview_ids,
                         );
                     html_output.body =
                         protection.compat_text().restore(&html_output.body);
