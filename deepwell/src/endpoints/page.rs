@@ -34,7 +34,7 @@ use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::render::{WikidotListPagesFeedInput, WikidotListPagesFeedOutput};
-use crate::services::{MutationAuthorization, TextService};
+use crate::services::{MutationAuthorization, SettingsService, TextService};
 use crate::types::{
     Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
     Resource,
@@ -124,14 +124,13 @@ pub async fn wikidot_page_discussion_create(
     params: Params<'static>,
 ) -> Result<Option<WikidotPageDiscussionOutput>> {
     let input: WikidotPageDiscussionInput = parse!(params, Page);
-    let Some(page) =
-        PageService::get_direct_optional_for_update(ctx, input.page_id, false)
-            .await
-            .or_raise(|| Error::new("failed to load discussion page", ErrorType::Page))?
+    let Some(observed_page) = PageService::get_direct_optional(ctx, input.page_id, false)
+        .await
+        .or_raise(|| Error::new("failed to load discussion page", ErrorType::Page))?
     else {
         return Ok(None);
     };
-    if page.site_id != input.site_id {
+    if observed_page.site_id != input.site_id {
         return Ok(None);
     }
 
@@ -140,11 +139,11 @@ pub async fn wikidot_page_discussion_create(
         &CheckPermissionContext {
             user_id: ctx.request().user_id,
             site_id: input.site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
+            page_reference: Some(Reference::Id(observed_page.page_id)),
         },
         Permission {
             resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
+            resource_category: Some(Reference::Id(observed_page.page_category_id)),
             action: Action::View,
         },
     )
@@ -156,6 +155,35 @@ pub async fn wikidot_page_discussion_create(
         )
     })?;
     if !can_view {
+        return Ok(None);
+    }
+
+    let discussion_settings = SettingsService::get_page_discussion_settings_for_update(
+        ctx,
+        observed_page.site_id,
+        observed_page.page_category_id,
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to lock page discussion settings",
+            ErrorType::SiteSettings,
+        )
+    })?;
+    if !discussion_settings.enabled {
+        return Ok(None);
+    }
+
+    let Some(page) =
+        PageService::get_direct_optional_for_update(ctx, input.page_id, false)
+            .await
+            .or_raise(|| Error::new("failed to lock discussion page", ErrorType::Page))?
+    else {
+        return Ok(None);
+    };
+    if page.site_id != observed_page.site_id
+        || page.page_category_id != observed_page.page_category_id
+    {
         return Ok(None);
     }
 

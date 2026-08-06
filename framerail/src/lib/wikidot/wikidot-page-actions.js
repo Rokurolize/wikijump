@@ -40,6 +40,27 @@ export const sourceShowsStandardWikidotPageActions = (sourceSite) => {
 
 /**
  * @param {{
+ *   sourceSite?: string | null
+ *   ratingEnabled: boolean
+ *   discussionEnabled: boolean
+ *   discussionThreadId?: number | null
+ * }} input
+ * @returns {{ showRate: boolean; showDiscuss: boolean }}
+ */
+export const wikidotPageActionVisibility = ({
+  sourceSite,
+  ratingEnabled,
+  discussionEnabled
+}) => {
+  const sourceShowsActions = sourceShowsStandardWikidotPageActions(sourceSite)
+  return {
+    showRate: sourceShowsActions && ratingEnabled,
+    showDiscuss: sourceShowsActions && discussionEnabled
+  }
+}
+
+/**
+ * @param {{
  *   rating?: number | null
  *   comments?: number | null
  *   locale?: string | null

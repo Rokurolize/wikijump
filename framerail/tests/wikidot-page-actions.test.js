@@ -6,7 +6,8 @@ import {
   buildWikidotPageActionLabels,
   formatSigned,
   isWikidotFragmentPage,
-  sourceShowsStandardWikidotPageActions
+  sourceShowsStandardWikidotPageActions,
+  wikidotPageActionVisibility
 } from "../src/lib/wikidot/wikidot-page-actions.js"
 
 test("discussion action uses the frozen Wikidot DOM marker and escapes its label", () => {
@@ -101,6 +102,18 @@ test("can suppress source-disabled Wikidot page actions", () => {
       siteTools: "Site tools",
       options: "Options"
     }
+  )
+})
+
+test("disabled page discussions stay hidden even when an old thread pointer exists", () => {
+  assert.deepEqual(
+    wikidotPageActionVisibility({
+      sourceSite: "scp-wiki",
+      ratingEnabled: true,
+      discussionEnabled: false,
+      discussionThreadId: 42
+    }),
+    { showRate: true, showDiscuss: false }
   )
 })
 

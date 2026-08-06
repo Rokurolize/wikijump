@@ -44,6 +44,23 @@ impl SettingsService {
         site_id: i64,
         category_id: i64,
     ) -> Result<PageDiscussionSettings> {
+        Self::get_page_discussion_settings_inner(ctx, site_id, category_id, false).await
+    }
+
+    pub async fn get_page_discussion_settings_for_update(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        category_id: i64,
+    ) -> Result<PageDiscussionSettings> {
+        Self::get_page_discussion_settings_inner(ctx, site_id, category_id, true).await
+    }
+
+    async fn get_page_discussion_settings_inner(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        category_id: i64,
+        for_update: bool,
+    ) -> Result<PageDiscussionSettings> {
         let make_error = || {
             Error::new(
                 format!(
@@ -52,11 +69,23 @@ impl SettingsService {
                 ErrorType::SiteSettings,
             )
         };
-        let category = CategoryService::get(ctx, site_id, Reference::Id(category_id))
-            .await
-            .or_raise(make_error)?;
+        let category = if for_update {
+            CategoryService::get_for_update(ctx, site_id, Reference::Id(category_id))
+                .await
+        } else {
+            CategoryService::get(ctx, site_id, Reference::Id(category_id)).await
+        }
+        .or_raise(make_error)?;
         let default_category = if category.slug == "_default" {
             None
+        } else if for_update {
+            CategoryService::get_optional_for_update(
+                ctx,
+                site_id,
+                Reference::Slug(Cow::Borrowed("_default")),
+            )
+            .await
+            .or_raise(make_error)?
         } else {
             CategoryService::get_optional(
                 ctx,
