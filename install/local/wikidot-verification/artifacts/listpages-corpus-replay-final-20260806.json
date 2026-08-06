@@ -1,12 +1,13 @@
 {
   "schema": "wikijump_listpages_compat.final_corpus_replay_receipt.v2",
   "status": "pass",
-  "wikijump_revision": "3d8b89b46d76e06a54a38edf0da886e047b16038",
-  "wikijump_tree": "08223468d617191f6a3dc5e49f1059610ea43747",
+  "wikijump_revision": "a3249375d379225384fe325ee19a368de5cb3cc5",
+  "wikijump_tree": "66e0fceecc6a830cc97e8854b75193d88a366e3c",
   "ftml_revision": "234ae50794e2c468347a14159623e94fc1032432",
   "dependency_lock_sha256": "106d71d7a4653c3dc59ebea97961b5be98b4e3445c9948fbdcc4e1cd919c6ebf",
   "acceptance_candidate_revision": "d65bf4ff5f61566b51bfdfdf3c88153419137f38",
   "acceptance_candidate_tree": "08223468d617191f6a3dc5e49f1059610ea43747",
+  "acceptance_render_surface_merge": "3d8b89b46d76e06a54a38edf0da886e047b16038",
   "authority": {
     "mode": "authoritative",
     "references_sha256": "591a02b209dd156c25e7eab0e12a8a123eac5daf0d1fd99b8b5629ea3cb39792",
@@ -45,11 +46,13 @@
   },
   "standing": {
     "refresh_receipt_path": "/home/roku/wjlab/runtime/wikijump-standing/refresh-receipt.json",
-    "refresh_receipt_sha256": "5e7f95ce4376e0d54f4a38be129e227651a8aea3583ebcbb6c051c19f782eeaf",
-    "served_https_receipt_path": "/home/roku/wjlab/runtime/wikijump-standing/served-3d8b89b46d.json",
-    "served_https_receipt_sha256": "a2eb2ee8fd147b14d0268126a9388ebc211c0661b807149212ceb72ea9ff55b5",
-    "served_rpc_receipt_path": "/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-3d8b89b46d.json",
-    "served_rpc_receipt_sha256": "c274c9dddad43a7a70ce76cda98549ed9ced548cae3a42d5253fff16c0ff00aa"
+    "refresh_receipt_sha256": "31962bf64723da26af168c22332e6817596e07a4bb9bdd458e0f940173f36a55",
+    "served_https_receipt_path": "/home/roku/wjlab/runtime/wikijump-standing/served-a3249375d/receipt.json",
+    "served_https_receipt_sha256": "c4d94130e89bb46f0fd07106536499bbf1895aa8387a4361f72201bd36b93979",
+    "served_rpc_receipt_path": "/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-a3249375d.json",
+    "served_rpc_receipt_sha256": "db29421f782b2170a0a5ceeb5fba73f455e819e6550456693039557ca67b6142",
+    "identifier_leak_receipt_path": "/home/roku/wjlab/runtime/wikijump-standing/wikijump-identifier-leaks-a3249375d.json",
+    "identifier_leak_receipt_sha256": "3c5b9b6091400124b3d61db931dbbf78355223e05083ac58e88b33d580bdde27"
   },
-  "scope_note": "The candidate commit and merge commit have identical render and dependency surfaces. The novel and literal lanes are diagnostic and never acceptance inputs. Documentation-only changes after this receipt do not alter the accepted render surface."
+  "scope_note": "The candidate commit and merge commit have identical render and dependency surfaces. The novel and literal lanes are diagnostic and never acceptance inputs. Documentation-only changes after the accepted render merge do not alter that surface; the final standing receipts are bound to the current develop head."
 }
