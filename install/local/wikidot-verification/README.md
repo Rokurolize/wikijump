@@ -192,7 +192,7 @@ The 2026-07-26 benchmark streamed 10,000 frozen matching cases through one debug
 
 ## Python environment
 
-The authenticated Wikidot helper runs from this component's private `.venv`, with the owner's `Rokurolize/wikidot.py` fork pinned by commit in `requirements.txt`. Create or refresh the environment before using the theme-localization execution path:
+The authenticated Wikidot helper runs from this component's private `.venv`. The runtime package subset mirrored from the frozen `requirements.txt` manifest lives in `requirements-pypi.txt`, build packages live in `requirements-build.txt`, and both are hash-locked in `requirements.lock`; the owner's `Rokurolize/wikidot.py` fork remains pinned separately to a full commit in `requirements.txt`. The setup script installs the hash-verified packages first, fetches only that commit, verifies the checked-out `HEAD`, and installs it without dependency resolution or build isolation. Create or refresh the environment before using the theme-localization execution path:
 
 ```sh
 install/local/wikidot-verification/scripts/setup-python-env.sh
