@@ -500,19 +500,17 @@ fn render_simpletodo_module(head: &str, index: usize) -> String {
 
     format!(
         concat!(
-            r#"<script type="text/javascript" src="http://www.wikidot.com/common--javascript/yahooui/animation-min.js"></script>"#,
-            "\n",
             r#"<div class="simpletodo-box" id="simpletodo_{index}">"#,
             r#"<div class="title">Here is a place for your title</div>"#,
             r#"<table class="simpletodo-format-table"><tr><td>"#,
             r#"<div class="simpletodo-sub-box" id="simpletodo_sub_{index}">"#,
             r#"<div class="task"><span class="checkbox"><input type="checkbox" class="checkbox"/></span>"#,
             r#"<span><span class="text">Click me to edit !</span></span>"#,
-            r#"<span class="follow-link"><a href="javascript:;" class="icon1"><span>Follow link</span></a></span>"#,
+            r#"<span class="follow-link"><a class="icon1" aria-disabled="true"><span>Follow link</span></a></span>"#,
             r#"<span class="options"></span></div>"#,
             r#"<div class="task"><span class="checkbox"><input type="checkbox" class="checkbox"/></span>"#,
             r#"<span><span class="text">Drag me !</span></span>"#,
-            r#"<span class="follow-link"><a href="javascript:;" class="icon1">Follow Link</a></span>"#,
+            r#"<span class="follow-link"><a class="icon1" aria-disabled="true">Follow Link</a></span>"#,
             r#"<span class="options"></span></div>"#,
             r#"</div></td></tr></table>"#,
             r#"<div class="bottom-options"></div>"#,
@@ -2704,5 +2702,32 @@ mod new_page_budget_tests {
         assert!(new_page_module_budget_exceeded(
             MAX_NEW_PAGE_MODULES_PER_RENDER
         ));
+    }
+}
+
+#[cfg(test)]
+mod simpletodo_security_tests {
+    use super::render_simpletodo_module;
+
+    #[test]
+    fn valid_simpletodo_shell_contains_no_active_page_content() {
+        let html = render_simpletodo_module(r#" id="fixture""#, 0);
+
+        for forbidden in [
+            "<script",
+            "http://www.wikidot.com/common--javascript/yahooui/animation-min.js",
+            "javascript:",
+            " onclick=",
+            " onload=",
+            " onerror=",
+        ] {
+            assert!(!html.contains(forbidden), "found {forbidden:?}: {html}");
+        }
+        assert!(html.contains(r#"<div class="simpletodo-box" id="simpletodo_0">"#));
+        assert!(html.contains(r#"<div class="label">fixture</div>"#));
+        assert!(
+            html.contains(r#"<span id="simpletodo-data-edit-permission">false</span>"#)
+        );
+        assert_eq!(html.matches(r#"aria-disabled="true""#).count(), 2);
     }
 }

@@ -3454,6 +3454,15 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
 
 #[tokio::test]
 async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
+    const ACTIVE_CONTENT_MARKERS: [&str; 6] = [
+        "<script",
+        "http://www.wikidot.com/common--javascript/yahooui/animation-min.js",
+        "javascript:",
+        " onclick=",
+        " onload=",
+        " onerror=",
+    ];
+
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
@@ -3507,6 +3516,13 @@ async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
         "SimpleToDo with id should render the live initial read-only list shell:\n{}",
         preview.body,
     );
+    for forbidden in ACTIVE_CONTENT_MARKERS {
+        assert!(
+            !preview.body.contains(forbidden),
+            "SimpleToDo must not restore active page-origin content {forbidden:?}:\n{}",
+            preview.body,
+        );
+    }
     assert!(
         preview.body.contains(
             r#"<div class="error-block">Inviting users has been disabled due to severe abuse. Admins can still send email invitations via <a href="/_admin">site admin dashboard</a>.</div>"#
@@ -3520,6 +3536,43 @@ async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
         "implemented modules should not leak raw module source:\n{}",
         preview.body,
     );
+
+    let saved_slug = "fixture-simpletodo-saved-security";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        saved_slug,
+        "Fixture SimpleToDo Saved Security",
+        r#"[[module SimpleToDo id="<script>saved</script>"]]"#,
+    )
+    .await;
+    let saved = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": saved_slug,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("saved SimpleToDo security fixture should exist");
+    let saved_html = saved
+        .compiled_body_html
+        .expect("saved SimpleToDo fixture should include compiled HTML");
+    assert!(
+        saved_html
+            .contains(r#"<div class="label">&lt;script&gt;saved&lt;/script&gt;</div>"#)
+            && saved_html.matches(r#"aria-disabled="true""#).count() == 2
+            && saved_html
+                .contains(r#"<span id="simpletodo-data-edit-permission">false</span>"#),
+        "saved SimpleToDo should preserve only the escaped read-only shell:\n{saved_html}",
+    );
+    for forbidden in ACTIVE_CONTENT_MARKERS {
+        assert!(
+            !saved_html.contains(forbidden),
+            "saved SimpleToDo must not restore active page-origin content {forbidden:?}:\n{saved_html}",
+        );
+    }
 }
 
 #[tokio::test]
