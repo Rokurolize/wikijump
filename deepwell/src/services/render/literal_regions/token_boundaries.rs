@@ -63,7 +63,7 @@ impl TextTokenIndex {
         let mut failed_email_until = 0usize;
         while cursor < bytes.len() {
             if bytes[cursor].is_ascii_alphanumeric() {
-                if matches!(bytes[cursor], b'f' | b'h')
+                if matches!(bytes[cursor], b'f' | b'h' | b'm')
                     && let Some(end) = scan_url(bytes, cursor)
                 {
                     ranges.push(cursor..end);
@@ -257,13 +257,18 @@ fn scan_url(bytes: &[u8], start: usize) -> Option<usize> {
         start + 8
     } else if bytes[start..].starts_with(b"ftp://") {
         start + 6
+    } else if bytes[start..].starts_with(b"mailto:") {
+        start + 7
     } else {
         return None;
     };
     let mut end = body_start;
     while end < bytes.len()
         && !is_discarded_control(bytes[end])
-        && !matches!(bytes[end], b'\n' | b'\r' | b' ' | b'"' | b'|' | b'[' | b']')
+        && !matches!(
+            bytes[end],
+            b'\n' | b'\r' | b' ' | b'\t' | b'"' | b'\'' | b'|' | b'[' | b']'
+        )
         && !bytes[end..].starts_with(b">@")
         && !bytes[end..].starts_with(b"@@")
     {
