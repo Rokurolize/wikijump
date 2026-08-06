@@ -4,9 +4,11 @@ import test from 'node:test';
 import {
   aggregateCompareVerdict,
   comparePair,
+  environmentHostIdentity,
   hasRawMarker,
   matchLedgerEntry,
   normalizeText,
+  normalizeAttributeObservation,
   RENDER_COMPARE_SCHEMA,
 } from '../src/render-compare.mjs';
 
@@ -29,6 +31,29 @@ test('hostname differences are explained by hostname_map channel', () => {
   assert.equal(pair.verdict, 'match');
   const info = pair.findings.find((f) => f.category === 'normalized_difference');
   assert.ok(info?.informational);
+});
+
+test('sandbox oracle file hosts share one environment identity', () => {
+  assert.deepEqual(environmentHostIdentity('http://sandbox-for-codex.wdfiles.com/a.png'), {
+    hostname: 'sandbox-for-codex.wdfiles.com',
+    identity: '{{site-files-host}}',
+  });
+  assert.deepEqual(environmentHostIdentity('https://sandbox-for-codex.wjfiles.localhost/a.png'), {
+    hostname: 'sandbox-for-codex.wjfiles.localhost',
+    identity: '{{site-files-host}}',
+  });
+  assert.deepEqual(
+    normalizeAttributeObservation({
+      tag: 'img',
+      name: 'src',
+      value: 'http://sandbox-for-codex.wdfiles.com/a.png',
+    }),
+    normalizeAttributeObservation({
+      tag: 'img',
+      name: 'src',
+      value: 'https://sandbox-for-codex.wjfiles.localhost/a.png',
+    }),
+  );
 });
 
 test('relative timestamps normalize', () => {

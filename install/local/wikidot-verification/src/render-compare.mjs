@@ -52,6 +52,8 @@ const HOSTNAME_MAP = [
   [/scp-jp\.localhost/g, '{{site-host}}'],
   [/scp-jp\.wdfiles\.com/g, '{{site-files-host}}'],
   [/scp-jp\.wjfiles\.localhost/g, '{{site-files-host}}'],
+  [/sandbox-for-codex\.wdfiles\.com/g, '{{site-files-host}}'],
+  [/sandbox-for-codex\.wjfiles\.localhost/g, '{{site-files-host}}'],
   [/www\.wikidot\.com/g, '{{platform-host}}'],
   [/www\.wikijump\.localhost/g, '{{platform-host}}'],
 ];
@@ -65,6 +67,8 @@ const ENVIRONMENT_HOST_IDENTITIES = Object.freeze({
   'scp-jp.localhost': '{{site-host}}',
   'scp-jp.wdfiles.com': '{{site-files-host}}',
   'scp-jp.wjfiles.localhost': '{{site-files-host}}',
+  'sandbox-for-codex.wdfiles.com': '{{site-files-host}}',
+  'sandbox-for-codex.wjfiles.localhost': '{{site-files-host}}',
   'www.wikidot.com': '{{platform-host}}',
   'www.wikijump.localhost': '{{platform-host}}',
 });
@@ -139,6 +143,14 @@ export function normalizeAttributeObservation(
     });
     if (normalized.text !== value) applied.push("hostname_map");
     value = normalized.text;
+    // Wikidot may emit an HTTP wdfiles URL while the local HTTPS file
+    // endpoint is the same environment resource. Keep the scheme
+    // translation inside the explicit file-host identity channel rather
+    // than treating every HTTP/HTTPS difference as interchangeable.
+    if (/^http:\/\/\{\{site-files-host\}\}/u.test(value)) {
+      value = value.replace(/^http:/u, "https:");
+      if (!applied.includes("hostname_map")) applied.push("hostname_map");
+    }
   }
   if (channels.cache_buster && /(?:^|[?&])v=/u.test(value)) {
     const normalized = value.replace(/([?&])v=[\w.-]+/gu, "$1");

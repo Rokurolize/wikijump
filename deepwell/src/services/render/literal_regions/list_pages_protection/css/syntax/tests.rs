@@ -71,7 +71,7 @@ fn pinned_css_closer_scanner_matches_the_bounded_ftml_oracle() {
 }
 
 fn pinned_ftml_accepts_css_closer(closer: &str) -> bool {
-    let source = format!("[[module CSS]]x{closer}");
+    let source = format!("[[module CSS]]\nx{closer}");
     assert!(source.len() <= MAX_PINNED_ORACLE_SOURCE_BYTES);
     let page_info = PageInfo {
         page: Cow::Borrowed("oracle"),

@@ -360,12 +360,11 @@ pub(in crate::services::render) fn right_bracket_token(
 ) -> (bool, usize) {
     debug_assert_eq!(bytes.get(start), Some(&b']'));
     let remaining = &bytes[start..end];
-    if remaining.starts_with(b"]]]]") {
-        return (false, 3);
-    }
-    let trailing_right_link = start >= 3
-        && bytes[start - 3..start].iter().all(|byte| *byte == b']')
-        && start.checked_sub(4).and_then(|index| bytes.get(index)) != Some(&b']');
+    let run_start = (0..start)
+        .rev()
+        .find(|index| bytes[*index] != b']')
+        .map_or(0, |index| index + 1);
+    let trailing_right_link = (start - run_start) % 4 == 3;
     if remaining.starts_with(b"]]]") && !trailing_right_link {
         (false, 3)
     } else if remaining.starts_with(b"]]") && !trailing_right_link {
@@ -396,9 +395,8 @@ pub(in crate::services::render) fn wikidot_right_bracket_token(
 
 /// Return the pinned tokenizer's possible `LeftBlock` or `LeftBlockEnd`
 /// start in the contiguous `[` run containing `candidate`, plus that run's
-/// exclusive end. The four-bracket precedence consumes one bracket followed
-/// by three-bracket link tokens; only a final two-byte remainder is a block
-/// token.
+/// exclusive end. The tokenizer consumes one bracket at every fourth offset,
+/// then three-bracket link tokens; a two-byte remainder is a block token.
 pub(in crate::services::render) fn left_block_start_in_run(
     bytes: &[u8],
     candidate: usize,
@@ -413,13 +411,7 @@ pub(in crate::services::render) fn left_block_start_in_run(
         run_end += 1;
     }
     let run_len = run_end - run_start;
-    let block_start = if run_len == 2 {
-        Some(run_start)
-    } else if run_len >= 6 && run_len.is_multiple_of(3) {
-        Some(run_end - 2)
-    } else {
-        None
-    };
+    let block_start = (run_len % 4 == 2).then_some(run_end - 2);
     (block_start.filter(|start| *start >= candidate), run_end)
 }
 
