@@ -656,9 +656,15 @@ fn list_pages_scanner_respects_left_bracket_token_precedence() {
         "{}module ListPages name=\"real\"]]body[[/module]]",
         "[".repeat(9),
     );
-    let modules = find_list_pages_module_matches(&nine);
+    assert!(find_list_pages_module_matches(&nine).is_empty());
+
+    let ten = format!(
+        "{}module ListPages name=\"real\"]]body[[/module]]",
+        "[".repeat(10),
+    );
+    let modules = find_list_pages_module_matches(&ten);
     assert_eq!(modules.len(), 1);
-    assert_eq!(modules[0].start, 7);
+    assert_eq!(modules[0].start, 8);
     assert_eq!(modules[0].body, "body");
 
     let forged_close = concat!(
