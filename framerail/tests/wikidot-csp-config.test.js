@@ -40,6 +40,11 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
   assert(
     directives["style-src"]?.some((source) => source === "https://fonts.googleapis.com")
   )
+  assert(
+    directives["script-src"]?.some(
+      (source) => source === "https://d3g0gp89917ko0.cloudfront.net"
+    )
+  )
   for (const origin of ["https://fonts.gstatic.com", "https://nu-scptheme.github.io"]) {
     assert(directives["font-src"]?.some((source) => source === origin))
   }
@@ -70,5 +75,5 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
     !directives["style-src"]?.some((source) => source === "https://*.wjfiles.localhost")
   )
   assert.deepEqual(directives["frame-src"], ["self"])
-  assert.deepEqual(directives["script-src"], ["self"])
+  assert(directives["script-src"]?.includes("self"))
 })
