@@ -1,7 +1,3 @@
-export const STYLEFRAME_MARKER = "wikidot-style-frame"
-export const STYLEFRAME_REGISTRY = "__wikijumpStyleFrameRegistry"
-export const STYLEFRAME_PRELOADED = "wikidotStylePreloaded"
-
 /**
  * @param {string | null | undefined} value
  * @returns {string}
@@ -20,14 +16,6 @@ export const escapeStyleFrameHtml = (value) => {
  */
 export const safeInlineStyleFrameCss = (value) => {
   return value.replace(/<\/(style|script)/giu, "<\\/$1")
-}
-
-/**
- * @param {unknown} value
- * @returns {string}
- */
-export const safeStyleFrameScriptJson = (value) => {
-  return JSON.stringify(value).replace(/</gu, "\\u003c")
 }
 
 /**

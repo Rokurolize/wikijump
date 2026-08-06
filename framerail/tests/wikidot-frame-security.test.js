@@ -36,6 +36,19 @@ test("permits the interwiki frame's required inline presentation", () => {
   )
 })
 
+test("styleFrame permits inline CSS without permitting scripts", () => {
+  const styleFrame = new Response("")
+  applyStaticSecurityHeaders(
+    styleFrame,
+    "/-/wikidot-interwiki/styleFrame.html",
+    undefined,
+    "local"
+  )
+  const policy = styleFrame.headers.get("content-security-policy") ?? ""
+  assert.match(policy, /style-src 'unsafe-inline'/u)
+  assert.doesNotMatch(policy, /script-src/u)
+})
+
 test("keeps ordinary pages unframeable", () => {
   const response = new Response("", {
     headers: { "content-security-policy": "frame-ancestors 'none'" }
