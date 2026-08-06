@@ -11,6 +11,40 @@ const read = (file) => readFileSync(path.join(root, file), "utf8")
 const workflow = (name) => read(`.github/workflows/${name}`)
 const hasYamlLine = (source, expected) => source.split("\n").some((line) => line.trim() === expected)
 
+const jobBlock = (source, jobName) => {
+  const lines = source.split("\n")
+  const start = lines.findIndex((line) => line === `  ${jobName}:`)
+  assert.notEqual(start, -1, `missing job ${jobName}`)
+  const next = lines.findIndex(
+    (line, index) => index > start && /^  [A-Za-z0-9_]+:$/u.test(line)
+  )
+  return lines.slice(start, next === -1 ? lines.length : next)
+}
+
+const yamlScalar = (lines, indentation, key) => {
+  const prefix = `${" ".repeat(indentation)}${key}: `
+  const line = lines.find((candidate) => candidate.startsWith(prefix))
+  assert.ok(line, `missing ${key} at indentation ${indentation}`)
+  return line.slice(prefix.length)
+}
+
+const stepBlock = (job, stepName) => {
+  const start = job.findIndex((line) => line === `      - name: ${stepName}`)
+  assert.notEqual(start, -1, `missing step ${stepName}`)
+  const next = job.findIndex(
+    (line, index) => index > start && line.startsWith("      - name: ")
+  )
+  return job.slice(start, next === -1 ? job.length : next)
+}
+
+const metadataOnlyEdit = ({ eventName = "pull_request", action, baseChanged = false }) =>
+  eventName === "pull_request" && action === "edited" && !baseChanged
+
+const gateCheckName = (event) =>
+  metadataOnlyEdit(event) ? "CI / metadata edit" : "CI / gate"
+
+const gateRunsValidation = (event) => !metadataOnlyEdit(event)
+
 test("one central workflow owns required checks without reacting to labels", () => {
   const source = workflow("ci-gate.yaml")
   const trigger = source.slice(source.indexOf("on:\n"), source.indexOf("\npermissions:\n"))
@@ -31,33 +65,72 @@ test("base edits rerun central CI while metadata edits stay isolated", () => {
   const source = workflow("ci-gate.yaml")
   const concurrency = source.slice(source.indexOf("concurrency:\n"), source.indexOf("\njobs:\n"))
   const classify = source.slice(source.indexOf("  classify:\n"), source.indexOf("  workflow_policy:\n"))
-  const gate = source.slice(source.indexOf("  gate:\n"))
+  const gate = jobBlock(source, "gate")
 
-  for (const section of [concurrency, classify, gate]) {
+  for (const section of [concurrency, classify, gate.join("\n")]) {
     assert.match(section, /github\.event\.action != 'edited' \|\| github\.event\.changes\.base != null/)
   }
   assert.match(concurrency, /format\('ci-pr-\{0\}', github\.event\.pull_request\.number\)/)
   assert.match(concurrency, /format\('ci-run-\{0\}', github\.run_id\)/)
   assert.match(concurrency, /cancel-in-progress:/)
-  assert.match(gate, /^    name: CI \/ gate$/m)
-  assert.doesNotMatch(gate, /CI \/ draft gate/)
+  assert.equal(
+    yamlScalar(gate, 4, "name"),
+    "${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / metadata edit' || 'CI / gate' }}"
+  )
+  assert.doesNotMatch(gate.join("\n"), /CI \/ draft gate/)
 })
 
-test("metadata edits publish the required gate context without running component checks", () => {
+test("metadata edits cannot replace the required gate context", () => {
   const source = workflow("ci-gate.yaml")
-  const gate = source.slice(source.indexOf("  gate:\n"))
+  const gate = jobBlock(source, "gate")
+  const metadataStep = stepBlock(gate, "Metadata edit no-op")
+  const validationStep = stepBlock(gate, "Require every selected check")
 
-  assert.match(
-    gate,
-    /^    name: CI \/ gate$/m,
+  assert.equal(
+    yamlScalar(gate, 4, "name"),
+    "${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / metadata edit' || 'CI / gate' }}"
   )
-  assert.match(gate, /^    if: \$\{\{ always\(\) \}\}$/m)
-  assert.match(gate, /name: Metadata edit no-op/)
-  assert.match(gate, /echo "This pull request metadata change does not affect CI\."/)
-  assert.match(
-    gate,
-    /if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.action != 'edited' \|\| github\.event\.changes\.base != null \}\}/,
+  assert.equal(yamlScalar(gate, 4, "if"), "${{ always() }}")
+  assert.equal(
+    yamlScalar(metadataStep, 8, "if"),
+    "${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null }}"
   )
+  assert.equal(
+    yamlScalar(validationStep, 8, "if"),
+    "${{ github.event_name != 'pull_request' || github.event.action != 'edited' || github.event.changes.base != null }}"
+  )
+
+  const events = [
+    { action: "opened" },
+    { action: "synchronize" },
+    { action: "reopened" },
+    { action: "edited", baseChanged: true },
+    { action: "edited", baseChanged: false }
+  ]
+  for (const event of events) {
+    if (gateCheckName(event) === "CI / gate") {
+      assert.equal(gateRunsValidation(event), true, JSON.stringify(event))
+    } else {
+      assert.equal(gateCheckName(event), "CI / metadata edit")
+      assert.equal(gateRunsValidation(event), false, JSON.stringify(event))
+    }
+  }
+
+  const headSha = "0123456789abcdef"
+  const checkLedger = new Map([
+    ["CI / gate", { headSha, conclusion: "failure" }]
+  ])
+  const recordGate = (event, conclusion) => {
+    checkLedger.set(gateCheckName(event), { headSha, conclusion })
+  }
+  recordGate({ action: "edited" }, "success")
+  assert.deepEqual(checkLedger.get("CI / gate"), { headSha, conclusion: "failure" })
+  assert.deepEqual(checkLedger.get("CI / metadata edit"), {
+    headSha,
+    conclusion: "success"
+  })
+  recordGate({ action: "edited", baseChanged: true }, "success")
+  assert.deepEqual(checkLedger.get("CI / gate"), { headSha, conclusion: "success" })
 })
 
 test("PR classification uses three-dot history while push classification uses two endpoints", () => {
@@ -116,7 +189,7 @@ test("documentation is cheap and unknown paths fail closed", () => {
 test("Deepwell validation stays fast and service-free", () => {
   const source = workflow("ci-gate.yaml")
   const deepwell = source.slice(source.indexOf("  deepwell:\n"), source.indexOf("  wws:\n"))
-  const gate = source.slice(source.indexOf("  gate:\n"))
+  const gate = jobBlock(source, "gate")
 
   assert.match(deepwell, /needs\.classify\.outputs\.deepwell == 'true'/)
   assert.doesNotMatch(deepwell, /services:|DATABASE_URL|Start MinIO|sqlx|clippy|cargo test|target/)
@@ -125,9 +198,12 @@ test("Deepwell validation stays fast and service-free", () => {
     "cargo machete deepwell",
     "cargo fmt --manifest-path deepwell/Cargo.toml --all -- --check"
   ]) assert.ok(deepwell.includes(command), command)
-  assert.ok(hasYamlLine(gate, "- deepwell"))
-  assert.match(gate, /^    name: CI \/ gate$/m)
-  assert.doesNotMatch(gate, /CI \/ draft gate/)
+  assert.ok(hasYamlLine(gate.join("\n"), "- deepwell"))
+  assert.equal(
+    yamlScalar(gate, 4, "name"),
+    "${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / metadata edit' || 'CI / gate' }}"
+  )
+  assert.doesNotMatch(gate.join("\n"), /CI \/ draft gate/)
   assert.doesNotMatch(source, /deepwell_(?:draft|candidate)|tarpaulin|coverage\/cobertura/)
 })
 

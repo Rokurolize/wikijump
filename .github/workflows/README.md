@@ -20,7 +20,11 @@ which is why an unrelated change does not pay for the whole matrix. Its jobs:
   service. Clippy and unit tests run in the required local pre-push preflight.
 - WWS, Framerail, Locales: the per-area equivalents.
 - CI / gate: the single required check that aggregates the rest, so branch
-  protection has one status to require rather than a list that changes.
+  protection has one status to require rather than a list that changes. Only a
+  run that checks the classifier and every selected job publishes this name.
+  A title, body, or other metadata-only pull-request edit publishes the
+  non-required `CI / metadata edit` check instead, so it cannot replace a
+  failed required gate for the same head commit.
 
 The gate also listens for `merge_group`, so a protected-branch merge queue gets
 the same required `CI / gate` context as a pull request. External actions in all
