@@ -245,6 +245,13 @@ pub(in crate::services::render) fn wikidot_list_pages_arguments(
             break;
         }
 
+        if head.as_bytes().get(cursor..cursor.saturating_add(4))
+            == Some(&[b'[', b'!', b'-', b'-'][..])
+        {
+            cursor = wikidot_list_pages_comment_end(head, cursor).unwrap_or(head.len());
+            continue;
+        }
+
         let key_start = cursor;
         while head.as_bytes().get(cursor).is_some_and(|byte| {
             byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-')
@@ -345,6 +352,21 @@ pub(in crate::services::render) fn wikidot_list_pages_arguments(
     }
 
     arguments
+}
+
+fn wikidot_list_pages_comment_end(head: &str, start: usize) -> Option<usize> {
+    const COMMENT_OPEN_LEN: usize = 4;
+    const COMMENT_CLOSE: &[u8] = b"--]";
+
+    let content_start = start.checked_add(COMMENT_OPEN_LEN)?;
+    let relative_end = head
+        .as_bytes()
+        .get(content_start..)?
+        .windows(COMMENT_CLOSE.len())
+        .position(|window| window == COMMENT_CLOSE)?;
+    content_start
+        .checked_add(relative_end)?
+        .checked_add(COMMENT_CLOSE.len())
 }
 
 fn wikidot_list_pages_double_quoted_argument_value(
@@ -487,5 +509,50 @@ mod tests {
             ],
         );
         assert_eq!(arguments[3].value, ".");
+    }
+
+    #[test]
+    fn list_pages_arguments_do_not_promote_inline_comment_assignments() {
+        let arguments = wikidot_list_pages_arguments(concat!(
+            r#"limit="1"[!-- limit="250" order="rating" --] "#,
+            r#"[!-- tags="+hidden" --] order="name""#,
+        ));
+
+        assert_eq!(
+            arguments
+                .iter()
+                .map(|argument| (argument.key, argument.value))
+                .collect::<Vec<_>>(),
+            vec![("limit", "1"), ("order", "name")],
+        );
+    }
+
+    #[test]
+    fn list_pages_arguments_stop_at_an_unclosed_inline_comment() {
+        let arguments =
+            wikidot_list_pages_arguments(r#"limit="1"[!-- limit="250" order="rating""#);
+
+        assert_eq!(
+            arguments
+                .iter()
+                .map(|argument| (argument.key, argument.value))
+                .collect::<Vec<_>>(),
+            vec![("limit", "1")],
+        );
+    }
+
+    #[test]
+    fn list_pages_comment_tokens_inside_quoted_values_remain_value_text() {
+        let arguments = wikidot_list_pages_arguments(
+            r#"description="[!-- visible value --]" limit="1""#,
+        );
+
+        assert_eq!(
+            arguments
+                .iter()
+                .map(|argument| (argument.key, argument.value))
+                .collect::<Vec<_>>(),
+            vec![("description", "[!-- visible value --]"), ("limit", "1"),],
+        );
     }
 }

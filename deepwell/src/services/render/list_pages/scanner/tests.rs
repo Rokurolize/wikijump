@@ -1,5 +1,7 @@
 use super::*;
-use crate::services::render::module_arguments::module_arguments_are_complete;
+use crate::services::render::module_arguments::{
+    module_arguments_are_complete, wikidot_list_pages_arguments,
+};
 
 #[path = "tests/stress.rs"]
 mod stress;
@@ -288,6 +290,23 @@ fn scanner_accepts_an_inline_comment_between_legacy_arguments() {
     assert_eq!(modules.len(), 1, "{modules:#?}");
     assert_eq!(modules[0].body, "\nROW\n");
     assert!(list_pages_runtime_head_can_execute(modules[0].head));
+    assert_eq!(
+        wikidot_list_pages_arguments(modules[0].head)
+            .into_iter()
+            .map(|argument| (argument.key, argument.value))
+            .collect::<Vec<_>>(),
+        vec![
+            ("rating", ">60"),
+            ("order", "rating desc"),
+            ("category", "*"),
+            ("separate", "false"),
+            ("limit", "200"),
+            ("perPage", "35"),
+            ("date", "@URL|2023"),
+            ("prependLine", "||~ Title ||~ Rating ||"),
+        ],
+        "inline comment contents must not become semantic arguments",
+    );
 }
 
 #[test]
