@@ -34,7 +34,7 @@ pub use self::robots::*;
 pub use self::text_block::*;
 pub use self::well_known::*;
 
-use axum::http::header::{HeaderMap, HeaderName};
+use axum::http::header::{COOKIE, HeaderMap, HeaderName};
 
 pub const HEADER_SITE_ID: HeaderName = HeaderName::from_static("x-wikijump-site-id");
 pub const HEADER_SITE_SLUG: HeaderName = HeaderName::from_static("x-wikijump-site-slug");
@@ -86,6 +86,28 @@ fn get_site_slug(headers: &HeaderMap) -> &str {
         "No site slug header in request",
         "Site slug header is not UTF-8",
     )
+}
+
+/// Extract the end-user session cookie forwarded to permission-aware
+/// DEEPWELL requests.
+pub(crate) fn get_session_token(headers: &HeaderMap) -> Option<&str> {
+    for value in headers.get_all(COOKIE) {
+        let Ok(cookie_header) = value.to_str() else {
+            continue;
+        };
+
+        for cookie in cookie_header.split(';') {
+            let Some((name, value)) = cookie.trim().split_once('=') else {
+                continue;
+            };
+
+            if name == "wikijump_token" && !value.is_empty() {
+                return Some(value);
+            }
+        }
+    }
+
+    None
 }
 
 /// Helper function to get which target server Caddy has told us we are.
