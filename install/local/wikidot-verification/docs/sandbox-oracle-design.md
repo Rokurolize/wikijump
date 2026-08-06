@@ -181,7 +181,11 @@ live Wikidot (ListPages returns results). A naive match-live diff would flag a
 legitimate divergence. These fixtures use assertion class "match-frozen-preserved":
 the oracle side is a hand-declared expected preserved DOM shape (Family-A-style
 against a checked-in expectation), NOT the live capture. Do not diff these against
-live rendering.
+live rendering. The local side is obtained through the authenticated Deepwell
+`wikidot_page_preview` `syntax_only` contract, which disables page-context syntax
+and therefore keeps the source markers literal without creating a local page.
+The live page is still captured for provenance and cleanup, but its executed
+output is never used as the expected value for these fixtures.
 
 ### Fixture metadata (registry entry per page)
 

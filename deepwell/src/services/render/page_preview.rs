@@ -29,6 +29,28 @@ impl RenderService {
         title: &str,
         wikitext: String,
     ) -> Result<RenderOutput> {
+        Self::render_wikidot_preview(ctx, site_id, title, wikitext, false).await
+    }
+
+    /// Render only the FTML/Wikidot syntax layer. Runtime modules are kept in
+    /// their delayed form so verifier fixtures can check the local syntax
+    /// contract without comparing it with Wikidot's executed module output.
+    pub async fn render_wikidot_syntax_preview(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        title: &str,
+        wikitext: String,
+    ) -> Result<RenderOutput> {
+        Self::render_wikidot_preview(ctx, site_id, title, wikitext, true).await
+    }
+
+    async fn render_wikidot_preview(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        title: &str,
+        wikitext: String,
+        syntax_only: bool,
+    ) -> Result<RenderOutput> {
         let make_error = || {
             Error::new(
                 format!("failed to render Wikidot page preview in site ID {site_id}"),
@@ -41,7 +63,7 @@ impl RenderService {
         let page_info = PageInfo {
             page: Cow::Borrowed(""),
             category: None,
-            site: Cow::Owned(site.slug),
+            site: Cow::Owned(site.slug.clone()),
             title: Cow::Borrowed(title),
             alt_title: None,
             score: ScoreValue::Integer(0),
@@ -51,27 +73,44 @@ impl RenderService {
         let mut settings =
             WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
         settings.enable_html_blocks = false;
+        if syntax_only {
+            settings.enable_page_syntax = false;
+        }
+        let rendered = if syntax_only {
+            Self::render_wikidot_syntax_inner(
+                ctx,
+                wikitext,
+                &page_info,
+                &settings,
+                site_id,
+                ctx.request().user_id().ok(),
+                site,
+            )
+            .await
+        } else {
+            Self::render_inner(
+                ctx,
+                wikitext,
+                &page_info,
+                &settings,
+                RenderInnerOptions {
+                    render_context: RenderContext::page_preview(site_id),
+                    viewer_user_id: ctx.request().user_id().ok(),
+                    max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                    render_cost_budget: RenderCostBudget::new_default(),
+                    trace: None,
+                    persist_compiled_text: false,
+                    url: UrlArguments::default(),
+                },
+            )
+            .await
+        }
+        .or_raise(make_error)?;
         let RenderInnerOutput {
             html_output,
             errors,
             compiled_hash,
-        } = Box::pin(Self::render_inner(
-            ctx,
-            wikitext,
-            &page_info,
-            &settings,
-            RenderInnerOptions {
-                render_context: RenderContext::page_preview(site_id),
-                viewer_user_id: ctx.request().user_id().ok(),
-                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
-                render_cost_budget: RenderCostBudget::new_default(),
-                trace: None,
-                persist_compiled_text: false,
-                url: UrlArguments::default(),
-            },
-        ))
-        .await
-        .or_raise(make_error)?;
+        } = rendered;
 
         Ok(RenderOutput {
             html_output,

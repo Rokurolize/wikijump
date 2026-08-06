@@ -137,6 +137,19 @@ export class DeepwellThemePageAdapter {
     return {sessionToken: this.sessionToken, siteId: this.siteId, page: resource.slug};
   }
 
+  async syntaxPreview(resource, source) {
+    validateResource(resource, {siteSlug: this.siteSlug});
+    if (typeof source !== "string" || sha256(source) !== resource.source_sha256) throw new Error("Deepwell syntax preview source does not match the accepted source hash");
+    const result = await this.rpc.call("wikidot_page_preview", {
+      site_id: this.siteId,
+      title: resource.title,
+      wikitext: source,
+      syntax_only: true,
+    }, this.context(resource));
+    if (typeof result?.body !== "string") throw new Error("Deepwell syntax preview returned no body");
+    return {body: result.body, styles: Array.isArray(result.styles) ? result.styles : []};
+  }
+
   async inspect(resource) {
     validateResource(resource, {allowLegacy: true, siteSlug: this.siteSlug});
     const page = await this.rpc.call("page_get", {site_id: this.siteId, page: resource.slug, details: {wikitext: true, compiled: false}}, this.context(resource));

@@ -272,6 +272,19 @@ export function validateSandboxOracleRegistry(value) {
  */
 export function validateSandboxOracleCapture(value, name = "capture") {
   const capture = requirePlainObject(value, name);
+  if (capture.capture_mode === "syntax-only") {
+    requireNonEmptyString(capture.raw_html, `${name}.raw_html`);
+    requireSha256(capture.source_sha256, `${name}.source_sha256`);
+    requireSha256(capture.html_sha256, `${name}.html_sha256`);
+    validateDomSignature(capture.dom_signature, `${name}.dom_signature`);
+    if (capture.document?.resource_completion?.status !== "syntax_only") {
+      throw new Error(`${name} has an invalid syntax-only completion receipt`);
+    }
+    return capture;
+  }
+  if (capture.capture_mode !== undefined) {
+    throw new Error(`${name}.capture_mode is unsupported`);
+  }
   if (capture.capture_error !== undefined) {
     throw new Error(
       `${name} failed: ${JSON.stringify(capture.capture_error)}`,

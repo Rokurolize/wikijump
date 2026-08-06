@@ -1844,6 +1844,37 @@ impl RenderService {
         .await
     }
 
+    pub(super) async fn render_wikidot_syntax_inner(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        current_site_id: i64,
+        viewer_user_id: Option<i64>,
+        current_site: SiteModel,
+    ) -> Result<RenderInnerOutput> {
+        Self::render_inner_expanded(
+            ctx,
+            ExpandedRenderWikitext {
+                wikidot_compat_html: CompatHtmlFragments::new(&wikitext),
+                wikidot_compat_text: CompatTextFragments::new(&wikitext),
+                wikitext,
+                included_pages: Vec::new(),
+                url_offset_list_pages_content_bytes: 0,
+            },
+            page_info,
+            settings,
+            Some(current_site_id),
+            viewer_user_id,
+            None,
+            true,
+            Some(current_site),
+            None,
+            false,
+        )
+        .await
+    }
+
     #[allow(clippy::too_many_arguments)]
     async fn render_inner_expanded(
         ctx: &ServiceContext<'_>,
