@@ -15,17 +15,25 @@ export const handlePageQueryRpc = ({ rpcRequest, request }) => {
     rpcRequest.method === "page_select" &&
     hasExactKeys(rpcRequest.params, ["parent", "site"]) &&
     rpcRequest.params.site === "scp-wiki" &&
-    rpcRequest.params.parent === "scp-173"
+    rpcRequest.params.parent === "scp-173" &&
+    request.headers["x-deepwell-session-token"] === "fixture-session-token"
   ) {
-    pageReadRequests.pageSelect.push(rpcRequest.params)
+    pageReadRequests.pageSelect.push({
+      headers: requestContextHeaders(request),
+      params: rpcRequest.params
+    })
     result = ["scp-173-child-a", "scp-173-child-b"]
   } else if (
     rpcRequest.method === "page_select" &&
     hasExactKeys(rpcRequest.params, ["parent", "site"]) &&
     rpcRequest.params.site === "scp-wiki" &&
-    typeof rpcRequest.params.parent === "string"
+    typeof rpcRequest.params.parent === "string" &&
+    request.headers["x-deepwell-session-token"] === "fixture-session-token"
   ) {
-    pageReadRequests.pageSelect.push(rpcRequest.params)
+    pageReadRequests.pageSelect.push({
+      headers: requestContextHeaders(request),
+      params: rpcRequest.params
+    })
     result = []
   } else if (
     rpcRequest.method === "page_tags_select" &&

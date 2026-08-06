@@ -3,7 +3,8 @@ import { preloadView } from "$lib/server/deepwell/views"
 import { resolvePageMutationUserId } from "$lib/server/load/local-authoring-actor"
 import {
   MissingActionSessionError,
-  PageActionContextMismatchError
+  PageActionContextMismatchError,
+  requireActionSession
 } from "$lib/server/load/action-error"
 import {
   getPreloadBackendLocales,
@@ -84,6 +85,8 @@ export async function resolvePageActionRequestContext(
     sessionRequirement !== "none" && sessionToken
       ? await authGetSession(sessionToken)
       : undefined
+  const resolvedSession =
+    sessionRequirement === "required" ? requireActionSession(session) : session
   let requestContext = storedContext
 
   if (requestContext.page === undefined) {
@@ -97,7 +100,7 @@ export async function resolvePageActionRequestContext(
   return {
     requestContext,
     sessionToken,
-    sessionUserId: session?.user_id,
+    sessionUserId: resolvedSession?.user_id,
     siteId,
     siteSlug
   }

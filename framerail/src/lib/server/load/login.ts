@@ -102,7 +102,9 @@ export async function loginAction({ request, getClientAddress, cookies }: Reques
     } catch (error) {
       return failForActionError(
         error,
-        redactAuthActionPayload({ form: clearLoginPassword(form) }, [submittedPassword])
+        { form: clearLoginPassword(form) },
+        500,
+        (payload) => redactAuthActionPayload(payload, [submittedPassword])
       )
     }
   }
@@ -135,9 +137,8 @@ export async function loginAction({ request, getClientAddress, cookies }: Reques
       [submittedPassword]
     )
   } catch (error) {
-    return failForActionError(
-      error,
-      redactAuthActionPayload({ form: clearLoginPassword(form) }, [submittedPassword])
+    return failForActionError(error, { form: clearLoginPassword(form) }, 500, (payload) =>
+      redactAuthActionPayload(payload, [submittedPassword])
     )
   }
 }
