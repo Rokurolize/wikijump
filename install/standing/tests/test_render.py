@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,23 @@ FTML_SHA = "f" * 40
 
 class RenderStandingConfigTest(unittest.TestCase):
     ENV = {**os.environ, "DEEPWELL_RPC_TOKEN": "0" * 64}
+
+    @staticmethod
+    def rendered_files(root: Path) -> dict[str, bytes]:
+        return {
+            str(path.relative_to(root)): path.read_bytes()
+            for path in sorted(root.rglob("*"))
+            if path.is_file()
+        }
+
+    @classmethod
+    def rendered_manifest_sha256(cls, root: Path) -> str:
+        manifest = hashlib.sha256()
+        for relative, contents in cls.rendered_files(root).items():
+            digest = hashlib.sha256(contents).hexdigest()
+            manifest.update(f"{digest}  ./{relative}\n".encode())
+        return manifest.hexdigest()
+
     def make_source(self, root: Path) -> tuple[Path, str]:
         source = root / "source"
         (source / "install/prod/deepwell").mkdir(parents=True)
@@ -76,8 +94,42 @@ class RenderStandingConfigTest(unittest.TestCase):
             compose = (output / "compose.yaml").read_text(encoding="utf-8")
             environment = (output / ".env").read_text(encoding="utf-8")
             self.assertIn("target: /etc/deepwell.toml", compose)
-            self.assertIn("target: /opt/locales", compose)
-            self.assertIn(f"STANDING_LOCALES_SOURCE={source / 'locales'}", environment)
+            self.assertNotIn("target: /opt/locales", compose)
+            self.assertNotIn("STANDING_LOCALES_SOURCE", environment)
+
+    def test_rendered_home_is_independent_of_source_checkout_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            source_a, sha = self.make_source(root / "first")
+            source_b = root / "second" / "source"
+            source_b.parent.mkdir(parents=True)
+            subprocess.run(
+                ("git", "clone", "--quiet", str(source_a), str(source_b)),
+                check=True,
+            )
+            output_a = root / "render-a"
+            output_b = root / "render-b"
+
+            subprocess.run(
+                self.command(source_a, output_a, sha),
+                check=True,
+                text=True,
+                capture_output=True,
+                env=self.ENV,
+            )
+            subprocess.run(
+                self.command(source_b, output_b, sha),
+                check=True,
+                text=True,
+                capture_output=True,
+                env=self.ENV,
+            )
+
+            self.assertEqual(self.rendered_files(output_a), self.rendered_files(output_b))
+            self.assertEqual(
+                self.rendered_manifest_sha256(output_a),
+                self.rendered_manifest_sha256(output_b),
+            )
 
     def test_rejects_dirty_source_before_writing_output(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:

@@ -317,7 +317,6 @@ def main() -> int:
             "STANDING_WWS_IMAGE": prepared_images["wws"]["reference"],
             "STANDING_WIKIJUMP_SHA": identity["wikijump_sha"],
             "STANDING_FTML_SHA": identity["ftml_sha"],
-            "STANDING_LOCALES_SOURCE": str(source_root / "locales"),
             "STANDING_RESOURCE_EXPIRY": expiry,
         }
     )
