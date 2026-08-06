@@ -1425,6 +1425,166 @@ async fn check_permission_endpoint() {
 }
 
 #[tokio::test]
+async fn page_revision_visibility_requires_actual_page_category_edit_permission() {
+    let mut runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    let page_slug = format!("{TEST_CATEGORY_NAME}:revision-visibility-{}", next_n());
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_b),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Slug(page_slug.clone().into())),
+        ..Default::default()
+    });
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": f.site_id,
+            "wikitext": "Revision visibility category fixture",
+            "title": "Revision Visibility Category Fixture",
+            "alt_title": null,
+            "slug": page_slug,
+            "layout": null,
+            "revision_comments": "create category-scoped revision fixture",
+            "user_id": f.user_b,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page.page_id)),
+        ..Default::default()
+    });
+    let error = run_endpoint_err!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": f.site_id,
+            "page_id": page.page_id,
+            "revision_id": page.revision_id,
+            "user_id": f.user_a,
+            "hidden": ["comments"],
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_b),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page.page_id)),
+        ..Default::default()
+    });
+    let revision = run_endpoint!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": f.site_id,
+            "page_id": page.page_id,
+            "revision_id": page.revision_id,
+            "user_id": f.user_b,
+            "hidden": ["comments"],
+        }),
+    );
+    assert_eq!(revision.hidden, vec![String::from("comments")]);
+}
+
+#[tokio::test]
+async fn page_revision_visibility_rejects_a_revision_from_another_page() {
+    let mut runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    let suffix = next_n();
+    let page_a_slug = format!("{TEST_CATEGORY_NAME}:revision-owner-a-{suffix}");
+    let page_b_slug = format!("{TEST_CATEGORY_NAME}:revision-owner-b-{suffix}");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_b),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Slug(page_a_slug.clone().into())),
+        ..Default::default()
+    });
+    let page_a = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": f.site_id,
+            "wikitext": "Revision ownership fixture A",
+            "title": "Revision Ownership Fixture A",
+            "alt_title": null,
+            "slug": page_a_slug,
+            "layout": null,
+            "revision_comments": "create revision ownership fixture A",
+            "user_id": f.user_b,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_b),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Slug(page_b_slug.clone().into())),
+        ..Default::default()
+    });
+    let page_b = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": f.site_id,
+            "wikitext": "Revision ownership fixture B",
+            "title": "Revision Ownership Fixture B",
+            "alt_title": null,
+            "slug": page_b_slug,
+            "layout": null,
+            "revision_comments": "create revision ownership fixture B",
+            "user_id": f.user_b,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_b),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page_a.page_id)),
+        ..Default::default()
+    });
+    let error = run_endpoint_err!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": f.site_id,
+            "page_id": page_a.page_id,
+            "revision_id": page_b.revision_id,
+            "user_id": f.user_b,
+            "hidden": ["comments"],
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PageRevision);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page_b.page_id)),
+        ..Default::default()
+    });
+    let revision_b = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": f.site_id,
+            "page_id": page_b.page_id,
+            "revision_number": 0,
+        }),
+    )
+    .expect("Revision ownership fixture B should remain readable");
+    assert!(
+        revision_b.hidden.is_empty(),
+        "foreign revision was modified despite the page/revision mismatch",
+    );
+}
+
+#[tokio::test]
 async fn page_view_permission_endpoint_hides_missing_and_private_pages() {
     let mut runner = TestRunner::setup().await;
     let f = PermissionFixture::setup(&runner).await;
