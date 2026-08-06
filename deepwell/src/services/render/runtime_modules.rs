@@ -256,6 +256,12 @@ pub(super) struct PageCalendarExpansionOptions<'a> {
 }
 
 #[derive(Clone, Copy, Debug)]
+struct TagCloudExpansionOptions {
+    current_site_id: Option<i64>,
+    current_page_id: Option<i64>,
+}
+
+#[derive(Clone, Copy, Debug)]
 pub(super) struct SecondaryRuntimeModuleExpansionOptions<'a> {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
@@ -1329,84 +1335,6 @@ fn render_tag_cloud_2d(arguments: &TagCloudArguments, tags: &[TagCloudTag]) -> S
     output
 }
 
-fn tag_cloud_hex_color(color: TagCloudColor) -> String {
-    format!("0x{:02x}{:02x}{:02x}", color.red, color.green, color.blue)
-}
-
-fn escape_tag_cloud_javascript_single_quoted(value: &str) -> String {
-    let mut output = String::with_capacity(value.len());
-    for character in value.chars() {
-        match character {
-            '\'' => output.push_str("\\'"),
-            '\\' => output.push_str("\\\\"),
-            '\n' => output.push_str("\\n"),
-            '\r' => output.push_str("\\r"),
-            '<' => output.push_str("\\x3c"),
-            '>' => output.push_str("\\x3e"),
-            '&' => output.push_str("\\x26"),
-            '\u{2028}' => output.push_str("\\u2028"),
-            '\u{2029}' => output.push_str("\\u2029"),
-            _ => output.push(character),
-        }
-    }
-    output
-}
-
-fn render_tag_cloud_3d(arguments: &TagCloudArguments, tags: &[TagCloudTag]) -> String {
-    let (min_count, max_count) = tag_cloud_count_bounds(tags);
-    let flash_id = format!(
-        "flashcontent-{}",
-        tags.iter().fold(273_000_u64, |hash, tag| {
-            hash.wrapping_mul(33)
-                .wrapping_add(tag.name.bytes().map(u64::from).sum::<u64>())
-        }) % 1_000_000
-    );
-    let mut output = String::from("<div class=\"pages-tag-cloud-box\">\n");
-    output.push_str("\t<script type=\"text/javascript\" src=\"http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/tagcloud/swfobject.js\"></script>\n");
-    output.push_str("\t<div id=\"");
-    output.push_str(&escape_list_pages_html_attr(&flash_id));
-    output.push_str("\"></div>\n");
-    output.push_str("\t<script type=\"text/javascript\">\n//<![CDATA[\n");
-    output.push_str(&format!(
-        "var so = new SWFObject(\"/common--javascript/tagcloud/tagcloud.swf\", \"tagcloud\", \"{}\", \"{}\", \"7\", \"#FFFFFF\");\n",
-        arguments.width, arguments.height,
-    ));
-    output.push_str("so.addParam(\"wmode\", \"transparent\");\n");
-    output.push_str("so. addVariable(\"mode\", \"tags\");\n");
-    output.push_str("so. addVariable(\"distr\", \"true\");\n");
-    output.push_str(&format!(
-        "so.addVariable(\"tcolor\", \"{}\");\n",
-        tag_cloud_hex_color(arguments.max_color),
-    ));
-    output.push_str(&format!(
-        "so.addVariable(\"tcolor2\", \"{}\");\n",
-        tag_cloud_hex_color(arguments.min_color),
-    ));
-    output.push_str(&format!(
-        "so.addVariable(\"hicolor\", \"{}\");\n",
-        tag_cloud_hex_color(arguments.max_color),
-    ));
-    output.push_str("so.addVariable(\"tagcloud\", \"<tags>\"+\n");
-    for tag in tags {
-        let ratio = tag_cloud_ratio(tag.count, min_count, max_count);
-        let weight = (12.0 + (18.0 * ratio)).round() as i32;
-        let href = tag_cloud_path(arguments, &tag.name);
-        output.push_str("\t        encodeURIComponent('<a href=\"' + location.protocol + '//' + location.hostname + '");
-        output.push_str(&escape_tag_cloud_javascript_single_quoted(&href));
-        output.push_str("\" style=\"");
-        output.push_str(&weight.to_string());
-        output.push_str("\">");
-        output.push_str(&escape_tag_cloud_javascript_single_quoted(&tag.name));
-        output.push_str("</a>') +\n");
-    }
-    output.push_str("\t\"</tags>\");\n");
-    output.push_str("so.write(\"");
-    output.push_str(&escape_tag_cloud_javascript_single_quoted(&flash_id));
-    output.push_str("\");\n//]]>\n</script>\n");
-    output.push_str("</div>");
-    output
-}
-
 fn render_tag_cloud_module(
     arguments: &TagCloudArguments,
     tag_counts: &[(String, usize)],
@@ -1416,11 +1344,7 @@ fn render_tag_cloud_module(
     }
 
     let tags = displayed_tag_cloud_tags(tag_counts, arguments);
-    if arguments.mode_3d {
-        render_tag_cloud_3d(arguments, &tags)
-    } else {
-        render_tag_cloud_2d(arguments, &tags)
-    }
+    render_tag_cloud_2d(arguments, &tags)
 }
 
 impl RenderService {
@@ -2082,8 +2006,11 @@ impl RenderService {
                 wikitext,
                 page_info,
                 settings,
-                options.current_site_id,
-                options.current_page_id,
+                TagCloudExpansionOptions {
+                    current_site_id: options.current_site_id,
+                    current_page_id: options.current_page_id,
+                },
+                compat_text,
                 compat_html,
             )
             .await
@@ -2227,13 +2154,13 @@ impl RenderService {
         ))
     }
 
-    pub(super) async fn expand_tag_cloud_modules(
+    async fn expand_tag_cloud_modules(
         ctx: &ServiceContext<'_>,
         wikitext: String,
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
-        current_site_id: Option<i64>,
-        current_page_id: Option<i64>,
+        options: TagCloudExpansionOptions,
+        compat_text: &mut CompatTextFragments,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         if !settings.enable_page_syntax || !TAGCLOUD_MODULE_REGEX.is_match(&wikitext) {
@@ -2241,7 +2168,7 @@ impl RenderService {
         }
 
         let (Some(current_site_id), Some(current_page_id)) =
-            (current_site_id, current_page_id)
+            (options.current_site_id, options.current_page_id)
         else {
             return Ok(wikitext);
         };
@@ -2269,6 +2196,11 @@ impl RenderService {
                 continue;
             };
             expanded.push_str(&wikitext[cursor..matched.start()]);
+            if arguments.mode_3d {
+                expanded.push_str(&compat_text.push_escaped_html_text(matched.as_str()));
+                cursor = matched.end();
+                continue;
+            }
             let tags = Self::load_tag_cloud_counts(
                 ctx,
                 current_site_id,

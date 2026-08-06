@@ -20064,7 +20064,8 @@ async fn tagcloud_module_renders_live_category_links_styles_and_boolean_quirks()
 /// Live capture (sandbox-for-codex, 2026-07-29): omitted `category` counts
 /// visible tags site-wide, `skipCategoryFromUrl="true"` removes the category
 /// URL argument, invalid paired colors render Wikidot's error block, and
-/// `mode="3d"` emits Wikidot's legacy SWFObject runtime wrapper.
+/// `mode="3d"` remains literal because its legacy SWFObject runtime would
+/// execute external and inline script in the page origin.
 #[tokio::test]
 async fn tagcloud_module_renders_live_sitewide_skip_3d_and_color_error() {
     fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
@@ -20204,25 +20205,39 @@ async fn tagcloud_module_renders_live_sitewide_skip_3d_and_color_error() {
 
     let threed = section(&html, "THREED_START", "THREED_END");
     assert!(
-        threed.contains(r#"<div class="pages-tag-cloud-box">"#)
-            && threed.contains(
-                r#"src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/tagcloud/swfobject.js""#,
-            )
-            && threed.contains(
-                r##"new SWFObject("/common--javascript/tagcloud/tagcloud.swf", "tagcloud", "123", "77", "7", "#FFFFFF");"##,
-            )
-            && threed.contains(r#"so.addVariable("tcolor", "0x404080");"#)
-            && threed.contains(r#"so.addVariable("tcolor2", "0x8080c0");"#)
-            && threed.contains(r#"so.addVariable("hicolor", "0x404080");"#)
-            && threed.contains(r#"style="12""#)
-            && threed.contains(r#"style="21""#)
-            && threed.contains(r#"style="30""#)
-            && threed.contains(&format!(
-                r#"location.hostname + '/system:page-tags/tag/{tag_alpha}/category/{category}" style="12""#
-            ))
-            && !threed.contains("[[module TagCloud"),
-        "3D TagCloud should emit Wikidot's SWFObject runtime wrapper and encoded tag anchors:\n{html}",
+        threed.contains(&format!(
+            r#"[[module TagCloud category=&quot;{category}&quot; mode=&quot;3d&quot; width=&quot;123&quot; height=&quot;77&quot;]]"#
+        ))
+            && !threed.contains("<script")
+            && !threed.contains("javascript:")
+            && !threed.contains("http://d3g0gp89917ko0.cloudfront.net")
+            && !threed.contains("pages-tag-cloud-box"),
+        "3D TagCloud must remain literal without restoring active page-origin content:\n{html}",
     );
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "TagCloud 3D safety preview",
+            "wikitext": format!(
+                "[[module TagCloud category=\"{category}\" mode=\"3d\" width=\"123\" height=\"77\"]]"
+            ),
+        }),
+    );
+    for forbidden in [
+        "<script",
+        "javascript:",
+        "http://d3g0gp89917ko0.cloudfront.net",
+        "SWFObject",
+    ] {
+        assert!(
+            !preview.body.contains(forbidden),
+            "TagCloud 3D preview must not restore active content {forbidden:?}:\n{}",
+            preview.body,
+        );
+    }
 }
 
 #[tokio::test]
