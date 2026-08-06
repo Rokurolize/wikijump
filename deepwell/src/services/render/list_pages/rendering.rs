@@ -2544,6 +2544,7 @@ impl RenderService {
             if let Some(fragments) = prepared_row.html_fragments {
                 delayed_html_fragments.push(fragments);
             }
+            let logical_body_bytes = prepared_row.logical_body_bytes;
             let rendered_body = prepared_row.body;
             let generated_row_open = if separate {
                 format!(
@@ -2571,11 +2572,11 @@ impl RenderService {
                 &generated_row_open,
                 &generated_row_close,
             );
-            let Some(rendered_row_bytes) =
-                rendered_body.len().checked_add(row_markup_bytes)
+            let Some(rendered_row_bytes) = logical_body_bytes
+                .and_then(|body_bytes| body_bytes.checked_add(row_markup_bytes))
             else {
                 return Ok(ListPagesBlockRenderResult::PreserveOriginal(
-                    "rendered row byte count overflowed",
+                    "logical rendered row byte count overflowed",
                 ));
             };
             if !expansion_budget.try_consume_generated_output_bytes(rendered_row_bytes) {
