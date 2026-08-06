@@ -1675,7 +1675,7 @@
           "path": "/home/roku/wjlab/evidence/listpages-f8-20260806/acceptance-authoritative-d65bf4ff5-clean-fixture-table.json",
           "acceptance_artifact_path": "/home/roku/wjlab/evidence/listpages-f8-20260806/acceptance-authoritative-d65bf4ff5-clean-fixture-table.json",
           "sha256": "e66ba4c98f9bfad759f96f120bfd39047673fe49fe2e3f687f2727f20f647cea",
-          "scope": "Authoritative exact replay bound to the final merged render tree 08223468d617191f6a3dc5e49f1059610ea43747 and FTML 234ae50794e2c468347a14159623e94fc1032432: 23,964 invocations, 18,996 unique replay keys, 23,964 classified, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. The candidate commit d65bf4ff5f61566b51bfdfdf3c88153419137f38 is tree-identical for all render and dependency surfaces to merge 3d8b89b46d76e06a54a38edf0da886e047b16038 and final develop a3249375d379225384fe325ee19a368de5cb3cc5; documentation-only merges do not alter the accepted render surface. Novel (119) and literal (335) lanes are diagnostic only."
+          "scope": "Authoritative exact replay bound to the final merged render tree 08223468d617191f6a3dc5e49f1059610ea43747 and FTML 234ae50794e2c468347a14159623e94fc1032432: 23,964 invocations, 18,996 unique replay keys, 23,964 classified, unresolved 0, actionable unique sources 0, actionable invocations 0, exit 0. The candidate commit d65bf4ff5f61566b51bfdfdf3c88153419137f38 is tree-identical for all render and dependency surfaces to application merge 3d8b89b46d76e06a54a38edf0da886e047b16038 and standing application merge a3249375d379225384fe325ee19a368de5cb3cc5. Current develop 264d2c174cb7af80d2e295ca5e9d6d320bff7d4f differs from that application merge only in documentation/evidence paths. Novel (119) and literal (335) lanes are diagnostic only."
         },
         {
           "path": "/home/roku/wjlab/evidence/listpages-f8-20260806/authoritative-classification-attribution-d65-clean-to-fixture-table.json",
@@ -1695,28 +1695,34 @@
           "scope": "Record final ListPages replay and standing evidence; documentation-only merge after the accepted render surface."
         },
         {
+          "repository": "Rokurolize/wikijump",
+          "pull_request": 1288,
+          "merge_sha": "264d2c174cb7af80d2e295ca5e9d6d320bff7d4f",
+          "scope": "Bind the evidence ledger to the standing application identity; documentation-only merge with no render or dependency changes."
+        },
+        {
           "path": "/home/roku/wjlab/runtime/wikijump-standing/refresh-receipt.json",
           "sha256": "31962bf64723da26af168c22332e6817596e07a4bb9bdd458e0f940173f36a55",
           "acceptance_artifact_path": "/home/roku/wjlab/runtime/wikijump-standing/refresh-receipt.json",
-          "scope": "Standing runtime refreshed from final develop merge a3249375d379225384fe325ee19a368de5cb3cc5 with FTML 234ae50794e2c468347a14159623e94fc1032432; persistent runtime volumes were preserved."
+          "scope": "Standing runtime refreshed from standing application merge a3249375d379225384fe325ee19a368de5cb3cc5 with FTML 234ae50794e2c468347a14159623e94fc1032432; current develop 264d2c174cb7af80d2e295ca5e9d6d320bff7d4f adds documentation/evidence only, and persistent runtime volumes were preserved."
         },
         {
           "path": "/home/roku/wjlab/runtime/wikijump-standing/served-a3249375d/receipt.json",
           "sha256": "c4d94130e89bb46f0fd07106536499bbf1895aa8387a4361f72201bd36b93979",
           "acceptance_artifact_path": "/home/roku/wjlab/runtime/wikijump-standing/served-a3249375d/receipt.json",
-          "scope": "Fresh HTTPS served-page matrix for final develop merge a3249375d: Caddy health plus nine anonymous routes, all HTTP 200, one page-content root per route, and no TODO leakage."
+          "scope": "Fresh HTTPS served-page matrix for standing application merge a3249375d: Caddy health plus nine anonymous routes, all HTTP 200, one page-content root per route, and no TODO leakage; current develop 264d2c174cb7af80d2e295ca5e9d6d320bff7d4f differs only in documentation/evidence."
         },
         {
           "path": "/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-a3249375d.json",
           "sha256": "db29421f782b2170a0a5ceeb5fba73f455e819e6550456693039557ca67b6142",
           "acceptance_artifact_path": "/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-a3249375d.json",
-          "scope": "Fresh standing anonymous preview matrix for final develop merge a3249375d: nine selector, pagination, URL prefix, malformed-head, literal-context, missing-parent, private-visibility, surplus-bracket, and multiline cases passed."
+          "scope": "Fresh standing anonymous preview matrix for standing application merge a3249375d: nine selector, pagination, URL prefix, malformed-head, literal-context, missing-parent, private-visibility, surplus-bracket, and multiline cases passed; current develop 264d2c174cb7af80d2e295ca5e9d6d320bff7d4f differs only in documentation/evidence."
         },
         {
           "path": "/home/roku/wjlab/runtime/wikijump-standing/wikijump-identifier-leaks-a3249375d.json",
           "sha256": "3c5b9b6091400124b3d61db931dbbf78355223e05083ac58e88b33d580bdde27",
           "acceptance_artifact_path": "/home/roku/wjlab/runtime/wikijump-standing/wikijump-identifier-leaks-a3249375d.json",
-          "scope": "Fresh final standing identifier-leak verifier: 40 cases, zero leaked identifiers, zero render errors."
+          "scope": "Fresh standing application identifier-leak verifier: 40 cases, zero leaked identifiers, zero render errors; current develop 264d2c174cb7af80d2e295ca5e9d6d320bff7d4f differs only in documentation/evidence."
         },
         {
           "path": "install/standing/compose.yaml; install/standing/tests/test_refresh.py",

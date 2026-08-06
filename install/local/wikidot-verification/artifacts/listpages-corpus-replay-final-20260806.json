@@ -3,6 +3,8 @@
   "status": "pass",
   "wikijump_revision": "a3249375d379225384fe325ee19a368de5cb3cc5",
   "wikijump_tree": "66e0fceecc6a830cc97e8854b75193d88a366e3c",
+  "current_develop_revision": "264d2c174cb7af80d2e295ca5e9d6d320bff7d4f",
+  "current_develop_tree": "341a43bee26e3aa75f606807f193aecc9035e838",
   "ftml_revision": "234ae50794e2c468347a14159623e94fc1032432",
   "dependency_lock_sha256": "106d71d7a4653c3dc59ebea97961b5be98b4e3445c9948fbdcc4e1cd919c6ebf",
   "acceptance_candidate_revision": "d65bf4ff5f61566b51bfdfdf3c88153419137f38",
@@ -54,5 +56,5 @@
     "identifier_leak_receipt_path": "/home/roku/wjlab/runtime/wikijump-standing/wikijump-identifier-leaks-a3249375d.json",
     "identifier_leak_receipt_sha256": "3c5b9b6091400124b3d61db931dbbf78355223e05083ac58e88b33d580bdde27"
   },
-  "scope_note": "The candidate commit and merge commit have identical render and dependency surfaces. The novel and literal lanes are diagnostic and never acceptance inputs. Documentation-only changes after the accepted render merge do not alter that surface; the final standing receipts are bound to the current develop head."
+  "scope_note": "The acceptance candidate, application merge 3d8b89b46d76e06a54a38edf0da886e047b16038, and standing application merge a3249375d379225384fe325ee19a368de5cb3cc5 have identical render and dependency surfaces. The current develop head 264d2c174cb7af80d2e295ca5e9d6d320bff7d4f differs from that application merge only in documentation/evidence paths; the standing receipts therefore remain correctly bound to a3249375d. The novel and literal lanes are diagnostic and never acceptance inputs."
 }
