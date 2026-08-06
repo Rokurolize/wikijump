@@ -4560,6 +4560,76 @@ async fn linked_listpages_values_keep_typed_owner_boundaries_in_preview() {
 }
 
 #[tokio::test]
+async fn listpages_runtime_scalar_title_stays_inert_in_delayed_row() {
+    const TARGET_SLUG: &str = "listpages-runtime-scalar-title-20260807";
+    const ATTACK_TITLE: &str = "**RUNTIME_SCALAR_MARKUP**";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Runtime scalar title target",
+            "title": ATTACK_TITLE,
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "runtime scalar title security regression",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Runtime scalar title preview",
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\"]]\n\
+             [[row]]\n\
+             TITLE=%%title%%\n\
+             [[/row]]\n\
+             [[/module]]",
+        ),
+    )
+    .await
+    .expect("ListPages should render the runtime-scalar title fixture")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains("TITLE=**RUNTIME_SCALAR_MARKUP**"),
+        "a database title must remain literal text after delayed binding:\n{preview}",
+    );
+    assert!(
+        !preview.contains("<strong>RUNTIME_SCALAR_MARKUP</strong>"),
+        "a runtime scalar must not acquire authored markup authority:\n{preview}",
+    );
+    assert!(
+        !preview.contains("TODO: module ListPages") && !preview.contains("<iframe"),
+        "a runtime scalar must not create a network-capable iframe or fall back to a module placeholder:\n{preview}",
+    );
+}
+
+#[tokio::test]
 async fn linked_listpages_values_keep_the_runtime_wrapper_outside_list_mode() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
