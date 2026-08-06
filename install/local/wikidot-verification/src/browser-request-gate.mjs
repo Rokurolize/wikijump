@@ -408,8 +408,36 @@ function responseCanBeCached(response, cache) {
   if (response.status() !== 200) return false;
   const headers = response.headers();
   const cacheControl = headers["cache-control"]?.toLowerCase() ?? "";
-  if (/(?:^|,)\s*no-store(?:\s|,|$)/u.test(cacheControl)) return false;
-  if (headers["set-cookie"] !== undefined || headers.vary?.trim() === "*") return false;
+  const cacheDirectives = new Map(
+    cacheControl
+      .split(",")
+      .map((directive) => directive.trim())
+      .filter(Boolean)
+      .map((directive) => {
+        const separator = directive.indexOf("=");
+        return separator === -1
+          ? [directive, null]
+          : [directive.slice(0, separator).trim(), directive.slice(separator + 1).trim()];
+      }),
+  );
+  if (
+    ["no-store", "no-cache", "private", "must-revalidate"].some((directive) =>
+      cacheDirectives.has(directive),
+    )
+  ) {
+    return false;
+  }
+  const maxAge = cacheDirectives.get("max-age");
+  if (maxAge !== undefined) {
+    const normalizedMaxAge = maxAge?.replace(/^"|"$/gu, "") ?? "";
+    if (!/^\d+$/u.test(normalizedMaxAge) || Number(normalizedMaxAge) === 0) return false;
+  }
+  const variesByRequestHeader =
+    headers.vary
+      ?.split(",")
+      .map((header) => header.trim())
+      .some(Boolean) ?? false;
+  if (headers["set-cookie"] !== undefined || variesByRequestHeader) return false;
   const contentLength = headers["content-length"];
   return contentLength === undefined || (/^\d+$/u.test(contentLength) && Number(contentLength) <= cache.maxEntryBytes);
 }
