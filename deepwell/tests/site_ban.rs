@@ -369,6 +369,7 @@ async fn lifecycle_membership_blocking_and_audit() {
     assert_eq!(remove_event.user_id, Some(user_id));
     assert_eq!(remove_event.site_id, Some(site_id));
     assert_eq!(remove_event.extra_id_1, Some(ADMIN_USER_ID));
+    assert_eq!(remove_event.extra_id_2, Some(removed.relation_id));
     assert_eq!(
         remove_event.extra_string_1.as_deref(),
         Some("Test site ban removal")
@@ -439,6 +440,7 @@ async fn expiration_cleanup_preserves_future_and_permanent_bans() {
     assert_eq!(expiry_event.user_id, Some(user_id));
     assert_eq!(expiry_event.site_id, Some(site_id));
     assert_eq!(expiry_event.extra_id_1, Some(SYSTEM_USER_ID));
+    assert_eq!(expiry_event.extra_id_2, Some(expired_relation.relation_id));
     assert_eq!(
         expiry_event.extra_string_1.as_deref(),
         Some("Site ban expired")
@@ -520,4 +522,103 @@ async fn expiration_cleanup_preserves_future_and_permanent_bans() {
     .expect("Permanent site ban was incorrectly lifted");
 
     assert_eq!(permanent_ban.metadata["banned_until"], json!(null));
+}
+
+#[tokio::test]
+async fn expiration_cleanup_does_not_remove_a_replacement_ban() {
+    let runner = TestRunner::setup().await;
+    let site_id = test_site_id(&runner).await;
+    let user_id = UNKNOWN_USER_ID;
+
+    clear_site_ban(&runner, site_id, user_id).await;
+    clear_site_membership(&runner, site_id, user_id).await;
+
+    run_endpoint!(
+        runner,
+        site_ban_set,
+        json!({
+            "site_id": site_id,
+            "user_id": user_id,
+            "metadata": {
+                "banned_until": "2000-01-01",
+                "reason": "stale expired ban",
+            },
+            "created_by": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let expired = run_endpoint!(
+        runner,
+        site_ban_get,
+        json!({
+            "site_id": site_id,
+            "user_id": user_id,
+        }),
+    )
+    .expect("Expired ban fixture was not created");
+
+    run_endpoint!(
+        runner,
+        site_ban_set,
+        json!({
+            "site_id": site_id,
+            "user_id": user_id,
+            "metadata": {
+                "banned_until": "2999-01-01",
+                "reason": "replacement future ban",
+            },
+            "created_by": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let replacement = run_endpoint!(
+        runner,
+        site_ban_get,
+        json!({
+            "site_id": site_id,
+            "user_id": user_id,
+        }),
+    )
+    .expect("Replacement ban fixture was not created");
+    assert_ne!(expired.relation_id, replacement.relation_id);
+
+    let lifted = RelationService::lift_expired_site_ban_if_current(
+        runner.context(),
+        expired.clone(),
+    )
+    .await
+    .expect("Stale cleanup attempt failed");
+    assert!(!lifted, "Stale expired relation was reported as lifted");
+
+    let active = run_endpoint!(
+        runner,
+        site_ban_get,
+        json!({
+            "site_id": site_id,
+            "user_id": user_id,
+        }),
+    )
+    .expect("Replacement ban was incorrectly removed");
+    assert_eq!(active.relation_id, replacement.relation_id);
+    assert_eq!(active.metadata["banned_until"], json!("2999-01-01"));
+
+    let stale = Relation::find_by_id(expired.relation_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Unable to query stale ban relation")
+        .expect("Stale ban relation was not found");
+    assert!(stale.overwritten_at.is_some());
+    assert_eq!(stale.deleted_at, None);
+
+    let removal_events = AuditLog::find()
+        .filter(audit_log::Column::EventType.eq("site_ban.remove"))
+        .filter(audit_log::Column::SiteId.eq(site_id))
+        .filter(audit_log::Column::UserId.eq(user_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("Unable to query ban-removal audit events");
+    assert!(
+        removal_events.is_empty(),
+        "Stale cleanup emitted a removal audit event: {removal_events:?}",
+    );
 }
