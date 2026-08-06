@@ -475,6 +475,23 @@ fn preserves_valid_bibcite_after_removing_stray_closer_protection() {
 }
 
 #[test]
+fn preserves_unclosed_bibliography_after_footnote() {
+    let rendered = render_wikidot_page_body_after_compat_restore(
+        "A claim[[footnote]]with a note[[/footnote]].\n\n[[bibliography]]",
+    );
+
+    assert!(rendered.contains("<p>[[bibliography]]</p>"), "{rendered}");
+    assert!(
+        rendered.contains(r#"<div class="footnotes-footer">"#),
+        "{rendered}"
+    );
+    assert!(
+        !rendered.contains(r#"<div class="bibitems">"#),
+        "{rendered}"
+    );
+}
+
+#[test]
 fn restores_wikidot_email_visibility() {
     let html = concat!(
         r#"<p><strong>Email:</strong> "#,
