@@ -13,6 +13,7 @@ const directives = config.kit?.csp?.directives
 if (!directives) throw new Error("CSP directives are missing")
 
 test("allows captured Wikidot legacy asset origins in local CSP", () => {
+  assert.equal(directives["upgrade-insecure-requests"], true)
   assert(directives["style-src"]?.some((source) => source === "https://cdn.jsdelivr.net"))
   assert(directives["font-src"]?.some((source) => source === "https://cdn.jsdelivr.net"))
   assert(
