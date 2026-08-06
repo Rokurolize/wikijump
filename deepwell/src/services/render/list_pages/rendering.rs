@@ -218,23 +218,26 @@ impl RenderService {
 
         let initial_remaining_include_expansions = include_budget.remaining;
         let current_category = Self::page_info_category_slug(page_info);
-        let unsupported_plan =
-            |module_source: &str, body: &str, compat_html: &mut CompatHtmlFragments| {
-                let replacement = unsupported_list_pages_replacement(module_source, body);
-                if replacement == module_source {
-                    ListPagesBlockPlan::PreserveOriginal("unsupported template shape")
-                } else {
-                    ListPagesBlockPlan::Static(compat_html.push_block_html(
-                        r#"<div class="list-pages-box"></div>"#.to_owned(),
-                    ))
-                }
-            };
-        let compile_template = |body: &str| {
-            ListPagesTemplatePlan::compile(body).filter(|template| {
-                !(template.has_unknown_variables()
-                    && list_pages_body_is_no_visible_tracking_markup(template.body()))
-            })
+        let unsupported_plan = |module_source: &str, body: &str| {
+            let replacement = unsupported_list_pages_replacement(module_source, body);
+            if replacement == module_source {
+                ListPagesBlockPlan::PreserveOriginal("unsupported template shape")
+            } else {
+                ListPagesBlockPlan::Static(replacement)
+            }
         };
+        let unsafe_unknown_tracking_template = |template: &ListPagesTemplatePlan| {
+            template.has_unknown_variables()
+                && list_pages_body_is_no_visible_tracking_markup(template.body())
+        };
+        let fail_closed_unknown_tracking_plan =
+            |compat_html: &mut CompatHtmlFragments| {
+                ListPagesBlockPlan::Static(
+                    compat_html.push_block_html(
+                        r#"<div class="list-pages-box"></div>"#.to_owned(),
+                    ),
+                )
+            };
         let module_matches = find_list_pages_module_matches_with_delayed_links_budgeted(
             &wikitext,
             &render_cost_budget,
@@ -358,22 +361,23 @@ impl RenderService {
                 } else {
                     module.body
                 };
-                let zero_row_runtime_output = parse_list_pages_arguments_with_url(
-                    head, url,
-                )
-                .is_some_and(|arguments| {
-                    arguments
-                        .rss_title
-                        .as_deref()
-                        .is_some_and(|title| !title.is_empty())
-                        || !arguments.separate
-                            && (arguments.prepend_line.is_some()
-                                || arguments.append_line.is_some()
-                                || compile_template(body).is_some_and(|template| {
-                                    template.head_section().is_some()
-                                        || template.foot_section().is_some()
-                                }))
-                });
+                let zero_row_runtime_output =
+                    parse_list_pages_arguments_with_url(head, url).is_some_and(
+                        |arguments| {
+                            arguments
+                                .rss_title
+                                .as_deref()
+                                .is_some_and(|title| !title.is_empty())
+                                || !arguments.separate
+                                    && (arguments.prepend_line.is_some()
+                                        || arguments.append_line.is_some()
+                                        || ListPagesTemplatePlan::compile(body)
+                                            .is_some_and(|template| {
+                                                template.head_section().is_some()
+                                                    || template.foot_section().is_some()
+                                            }))
+                        },
+                    );
                 let static_categories_prove_empty = !zero_row_runtime_output
                     && static_category_preflight.as_ref().is_some_and(
                         |(categories, _)| {
@@ -486,15 +490,20 @@ impl RenderService {
                         arguments.unsupported_author_filter = false;
                         arguments.unsupported_list_pages_filter = false;
                         arguments.unsupported_score_filter = false;
-                        compile_template(body).map_or_else(
-                            || unsupported_plan(module_original, body, compat_html),
-                            |template| ListPagesBlockPlan::Render {
+                        match ListPagesTemplatePlan::compile(body) {
+                            Some(template)
+                                if unsafe_unknown_tracking_template(&template) =>
+                            {
+                                fail_closed_unknown_tracking_plan(compat_html)
+                            }
+                            Some(template) => ListPagesBlockPlan::Render {
                                 arguments,
                                 template,
                                 batch_key: None,
                                 legacy_tail: None,
                             },
-                        )
+                            None => unsupported_plan(module_original, body),
+                        }
                     } else {
                         let replacement = if arguments.wrapper {
                             compat_html.push_block_html(
@@ -537,7 +546,7 @@ impl RenderService {
                         list_pages_body_inline_count_pages_legacy_tail(body)
                     {
                         ListPagesTemplatePlan::compile("").map_or_else(
-                            || unsupported_plan(module_original, body, compat_html),
+                            || unsupported_plan(module_original, body),
                             |template| ListPagesBlockPlan::Render {
                                 arguments,
                                 template,
@@ -547,7 +556,7 @@ impl RenderService {
                         )
                     } else if list_pages_body_has_standalone_count_pages_opening(body) {
                         ListPagesTemplatePlan::compile("").map_or_else(
-                            || unsupported_plan(module_original, body, compat_html),
+                            || unsupported_plan(module_original, body),
                             |template| {
                                 let batch_key = exact_name_list_pages_batch_key(
                                     head,
@@ -563,24 +572,28 @@ impl RenderService {
                                 }
                             },
                         )
-                    } else if let Some(template) = compile_template(body) {
-                        let batch_key = exact_name_list_pages_batch_key(
-                            head,
-                            &template,
-                            &arguments,
-                            current_category.as_ref(),
-                        );
-                        ListPagesBlockPlan::Render {
-                            arguments,
-                            template,
-                            batch_key,
-                            legacy_tail: None,
+                    } else if let Some(template) = ListPagesTemplatePlan::compile(body) {
+                        if unsafe_unknown_tracking_template(&template) {
+                            fail_closed_unknown_tracking_plan(compat_html)
+                        } else {
+                            let batch_key = exact_name_list_pages_batch_key(
+                                head,
+                                &template,
+                                &arguments,
+                                current_category.as_ref(),
+                            );
+                            ListPagesBlockPlan::Render {
+                                arguments,
+                                template,
+                                batch_key,
+                                legacy_tail: None,
+                            }
                         }
                     } else {
-                        unsupported_plan(module_original, body, compat_html)
+                        unsupported_plan(module_original, body)
                     }
                 } else {
-                    unsupported_plan(module_original, body, compat_html)
+                    unsupported_plan(module_original, body)
                 };
                 ListPagesBlock {
                     start: module.start,
