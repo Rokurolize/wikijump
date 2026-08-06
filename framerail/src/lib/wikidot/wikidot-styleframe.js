@@ -4,7 +4,6 @@ import {
   localizeWikidotThemeUrl,
   safeInlineStyleFrameCss
 } from "./wikidot-styleframe-contract.js"
-import { buildWikidotStyleFrameRuntime } from "./wikidot-styleframe-runtime.js"
 import {
   buildWikidotInlineStyleFrameHead,
   extractWikidotStyleFrameDeclarations,
@@ -46,11 +45,6 @@ export const buildWikidotStyleFrameHtml = ({
     .map((theme) => `<li>${escapeStyleFrameHtml(theme)}</li>`)
     .join("")
   const styleBlock = inlineCss ? `<style>${inlineCss}</style>` : ""
-  const script = buildWikidotStyleFrameRuntime({
-    priority: priority ?? "",
-    themes: localizedThemes,
-    css: inlineCss
-  })
 
   return `<!doctype html>
 <html>
@@ -64,7 +58,6 @@ export const buildWikidotStyleFrameHtml = ({
   </head>
   <body>
     <ul hidden>${themeList}</ul>
-    <script>${script}</script>
   </body>
 </html>
 `
