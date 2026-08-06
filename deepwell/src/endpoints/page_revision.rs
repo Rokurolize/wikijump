@@ -20,7 +20,7 @@
 
 use super::prelude::*;
 use crate::models::page_revision::Model as PageRevisionModel;
-use crate::services::page::GetPageReference;
+use crate::services::page::{GetPageReference, PageService};
 use crate::services::page_revision::{
     CountPageRevisions, GetPageRevisionDetails, GetPageRevisionRangeDetails,
     PageRevisionCountOutput, PageRevisionModelFiltered, UpdatePageRevisionDetails,
@@ -91,18 +91,26 @@ pub async fn page_revision_edit(
     params: Params<'static>,
 ) -> Result<PageRevisionModelFiltered> {
     let UpdatePageRevisionDetails { input, details } = parse!(params, PageRevision);
+    let make_error =
+        || Error::new("failed to edit a page revision", ErrorType::PageRevision);
+
     MutationAuthorization::require_matching_actor(
         ctx,
         input.user_id,
         "edit page revision visibility",
     )?;
+    let page = PageService::get_direct_optional_for_update(ctx, input.page_id, false)
+        .await
+        .or_raise(make_error)?
+        .filter(|page| page.site_id == input.site_id)
+        .ok_or_else(make_error)?;
     MutationAuthorization::require_permission(
         ctx,
         input.site_id,
         Some(Reference::Id(input.page_id)),
         Permission {
             resource_type: Resource::Page,
-            resource_category: None,
+            resource_category: Some(Reference::Id(page.page_category_id)),
             action: Action::Edit,
         },
         "edit page revision visibility",
@@ -113,9 +121,6 @@ pub async fn page_revision_edit(
         "Editing revision ID {} for page ID {} in site ID {}",
         input.revision_id, input.page_id, input.site_id,
     );
-
-    let make_error =
-        || Error::new("failed to edit a page revision", ErrorType::PageRevision);
 
     let revision_id = input.revision_id;
     PageRevisionService::update(ctx, input)

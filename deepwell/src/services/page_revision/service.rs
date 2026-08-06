@@ -53,8 +53,8 @@ use ftml::parsing::ParseError;
 use paste::paste;
 use ref_map::OptionRefMap;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, JoinType, PaginatorTrait,
-    QueryFilter, QueryOrder, QuerySelect, RelationTrait, Set,
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, JoinType,
+    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, RelationTrait, Set,
 };
 use sea_query::{Order, Query, SimpleExpr};
 use std::collections::BTreeMap;
@@ -1327,6 +1327,20 @@ impl PageRevisionService {
             .await
             .or_raise(make_error)?;
 
+        let revision = PageRevision::find()
+            .filter(
+                Condition::all()
+                    .add(page_revision::Column::RevisionId.eq(revision_id))
+                    .add(page_revision::Column::SiteId.eq(site_id))
+                    .add(page_revision::Column::PageId.eq(page_id)),
+            )
+            .one(txn)
+            .await
+            .or_raise(make_error)?;
+        let Some(revision) = revision else {
+            bail!(make_error());
+        };
+
         if revision_id == latest.revision_id && contains(&hidden, "wikitext") {
             bail!(Error::new(
                 "cannot hide latest page revision",
@@ -1339,12 +1353,9 @@ impl PageRevisionService {
 
         // Update the revision
 
-        let model = page_revision::ActiveModel {
-            updated_at: Set(Some(now())),
-            revision_id: Set(revision_id),
-            hidden: Set(hidden),
-            ..Default::default()
-        };
+        let mut model = revision.into_active_model();
+        model.updated_at = Set(Some(now()));
+        model.hidden = Set(hidden);
 
         // Update and return
         model.update(txn).await.or_raise(make_error)?;
