@@ -362,6 +362,22 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String)> 
 }
 
 impl ListPagesTemplatePlan {
+    pub(in crate::services::render) fn empty_row() -> Self {
+        let variables = ListPagesVariables::default();
+        Self {
+            body: String::new(),
+            default_template: false,
+            sections: ListPagesSections::default(),
+            variables,
+            fields: found_page_fields(variables),
+            content_sections: BTreeSet::new(),
+            output_shape: ListPagesOutputShape::Plain,
+            rating_only: false,
+            #[cfg(test)]
+            variable_traversals: 0,
+        }
+    }
+
     pub(in crate::services::render) fn compile(body: &str) -> Option<Self> {
         if body.len() > MAX_LISTPAGES_TEMPLATE_BODY_BYTES {
             return None;
@@ -699,6 +715,20 @@ mod tests {
         assert!(plan.uses_created_at());
         assert!(ListPagesTemplatePlan::compile("%%form_data%%").is_some());
         assert!(ListPagesTemplatePlan::compile("%%form_raw%%").is_some());
+    }
+
+    #[test]
+    fn empty_row_is_distinct_from_the_default_template() {
+        let empty = ListPagesTemplatePlan::empty_row();
+        let default = ListPagesTemplatePlan::compile("")
+            .expect("an ordinary empty ListPages body should use the default template");
+
+        assert_eq!(empty.body(), "");
+        assert!(!empty.is_default_template());
+        assert_eq!(empty.output_shape(), ListPagesOutputShape::Plain);
+        assert_eq!(empty.variable_traversals(), 0);
+        assert_ne!(default.body(), empty.body());
+        assert!(default.is_default_template());
     }
 
     #[test]
