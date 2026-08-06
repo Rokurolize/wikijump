@@ -8,8 +8,10 @@ import {
   MissingActionSessionError,
   normalizeActionError,
   PageActionContextMismatchError,
+  requireActionSession,
   readActionJson
 } from "../src/lib/server/load/action-error.ts"
+import { redactAuthActionPayload } from "../src/lib/server/load/auth-form-redaction.js"
 
 test("action errors preserve validated public Deepwell details", () => {
   assert.deepEqual(
@@ -50,6 +52,33 @@ test("action failures classify permission errors and honor fallback statuses", (
   })
 })
 
+test("action failures sanitize the final merged payload", () => {
+  const password = "correct horse battery staple"
+  const failure = failForActionError(
+    {
+      message: `Backend echoed ${password}`,
+      code: 4001,
+      data: { nested: [{ submitted: password }] }
+    },
+    {
+      form: { data: { password } },
+      diagnostic: `Form contained ${password}`
+    },
+    500,
+    (payload) => redactAuthActionPayload(payload, [password])
+  )
+
+  assert.equal(failure.status, 500)
+  assert.deepEqual(failure.data, {
+    form: { data: { password: "" } },
+    diagnostic: "Form contained ",
+    message: "Backend echoed ",
+    code: 4001,
+    data: { nested: [{ submitted: "" }] }
+  })
+  assert.doesNotMatch(JSON.stringify(failure.data), new RegExp(password))
+})
+
 test("missing sessions remain an explicit authentication failure", () => {
   const failure = failForMissingSession({ form: "preserved" })
   assert.equal(failure.status, 401)
@@ -57,6 +86,13 @@ test("missing sessions remain an explicit authentication failure", () => {
     form: "preserved",
     message: "Authentication required."
   })
+})
+
+test("required action sessions reject invalid or expired tokens before use", () => {
+  const session = { user_id: 42 }
+  assert.equal(requireActionSession(session), session)
+  assert.throws(() => requireActionSession(undefined), MissingActionSessionError)
+  assert.throws(() => requireActionSession(null), MissingActionSessionError)
 })
 
 test("page action context failures retain authentication and authorization status", () => {
