@@ -4363,10 +4363,8 @@ async fn listpages_default_rows_expand_secondary_page_body_modules() {
     );
     assert!(
         preview.contains(r#"class="html-block-iframe""#)
-            && preview.contains(concat!(
-                r#"src="/listpages-default-secondary-module-target/html/"#,
-                "027f08b17e5ae3eabc27035d0ca348a0a704673e-",
-            ))
+            && preview
+                .contains(r#"src="/listpages-default-secondary-module-target/html/1""#,)
             && !preview.contains(r#"src="https://example.com/""#)
             && !preview.contains("[[html]]")
             && !preview.contains("NESTED_HTML_PAYLOAD"),

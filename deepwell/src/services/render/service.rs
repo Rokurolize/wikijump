@@ -137,7 +137,6 @@ use ftml::render::html::HtmlOutput;
 use ftml::tree::{CodeBlock, VariableMap};
 use ftml::{self};
 use regex::Regex;
-use sha1::{Digest as _, Sha1};
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
@@ -1718,35 +1717,19 @@ impl RenderService {
             full_slug
         };
         let mut search_start = 0;
-        for (index, html) in html_blocks.iter().enumerate() {
+        for index in 1..=html_blocks.len() {
             let Some(relative_start) = body[search_start..].find(PLACEHOLDER) else {
                 break;
             };
             let start = search_start + relative_start;
             let end = start + PLACEHOLDER.len();
-            let digest = Sha1::digest(html.as_bytes());
-            let mut content_hash = String::with_capacity(40);
-            for byte in &digest {
-                use std::fmt::Write as _;
-                write!(&mut content_hash, "{byte:02x}")
-                    .expect("writing a SHA-1 digest to String cannot fail");
-            }
-            let route_nonce = full_slug
-                .bytes()
-                .chain((index + 1).to_le_bytes())
-                .chain(digest.iter().copied())
-                .fold(0xcbf2_9ce4_8422_2325_u64, |hash, byte| {
-                    hash.wrapping_mul(0x100_0000_01b3)
-                        .wrapping_add(u64::from(byte))
-                });
             let iframe = format!(
                 concat!(
-                    r#"<iframe src="/{}/html/{}-{}" allowtransparency="true" "#,
+                    r#"<iframe src="/{}/html/{}" allowtransparency="true" "#,
                     r#"frameborder="0" class="html-block-iframe"></iframe>"#,
                 ),
                 escape_list_pages_html_attr(&full_slug),
-                content_hash,
-                route_nonce,
+                index,
             );
             body.replace_range(start..end, &iframe);
             search_start = start + iframe.len();

@@ -3529,7 +3529,10 @@ async fn wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execut
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
     let slug = "fixture-preview-html-lifecycle";
-    let source = "[[html]]\n<b>X</b>\n[[/html]]";
+    let source = concat!(
+        "[[html]]\n<b>X</b>\n[[/html]]\n",
+        "[[html]]\n<i>Y</i>\n[[/html]]",
+    );
 
     runner.set_request_context(RequestContext {
         session: None,
@@ -3548,7 +3551,10 @@ async fn wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execut
     );
     assert_eq!(
         preview.body,
-        "<p>[[html]]<br>\n&lt;b&gt;X&lt;/b&gt;<br>\n[[/html]]</p>",
+        concat!(
+            "<p>[[html]]<br>\n&lt;b&gt;X&lt;/b&gt;<br>\n[[/html]]<br>\n",
+            "[[html]]<br>\n&lt;i&gt;Y&lt;/i&gt;<br>\n[[/html]]</p>",
+        ),
     );
     assert!(!preview.body.contains("<iframe"), "{}", preview.body);
 
@@ -3589,13 +3595,13 @@ async fn wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execut
     else {
         panic!("expected saved HTML lifecycle page, got {view:?}");
     };
-    assert!(
-        compiled_body_html
-            .strip_prefix(r#"<p><iframe src="/fixture-preview-html-lifecycle/html/"#)
-            .is_some_and(|body| body.ends_with(
-                r#"" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></p>"#,
-            )),
-        "saved HTML blocks must execute through the local runtime route: {compiled_body_html}",
+    assert_eq!(
+        compiled_body_html,
+        concat!(
+            r#"<p><iframe src="/fixture-preview-html-lifecycle/html/1" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe>"#,
+            r#"</p><p><iframe src="/fixture-preview-html-lifecycle/html/2" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></p>"#,
+        ),
+        "saved HTML blocks must use the numeric ordinals resolved by WWS: {compiled_body_html}",
     );
 }
 
