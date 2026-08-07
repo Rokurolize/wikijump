@@ -7,7 +7,7 @@ local half of the same checks, so most failures can be found before pushing.
 
 ## Pull-request validation
 
-`ci-gate.yaml` is the required gate. It classifies the changed paths with
+`ci-gate.yaml` publishes the central advisory CI status. It classifies the changed paths with
 `.github/scripts/classify-changes.mjs` and then runs only the affected areas,
 which is why an unrelated change does not pay for the whole matrix. Its jobs:
 
@@ -17,16 +17,24 @@ which is why an unrelated change does not pay for the whole matrix. Its jobs:
   structure itself, including that third-party actions are pinned to full
   commit SHAs and that the Framerail unit and browser suites stay separate.
 - Deepwell fast checks: dependency hygiene and formatting without compiling the
-  service. Clippy and unit tests run in the required local pre-push preflight.
+  service. Clippy and unit tests run in the authoritative local pre-push preflight.
 - WWS, Framerail, Locales: the per-area equivalents.
-- CI / gate: the single required check that aggregates the rest, so branch
-  protection has one status to require rather than a list that changes.
+- CI / gate: the single aggregate status for the rest. Branch protection does
+  not require it; merge readiness comes from the recorded local validation.
+  Only a run that checks the classifier and every selected job publishes this name.
+  A title, body, or other metadata-only pull-request edit publishes the
+  distinct `CI / metadata edit` check instead, so it cannot replace a useful
+  aggregate result for the same head commit.
 
-The gate also listens for `merge_group`, so a protected-branch merge queue gets
-the same required `CI / gate` context as a pull request. External actions in all
+The gate also listens for `merge_group`, so a merge queue gets the same
+aggregate `CI / gate` context as a pull request. External actions in all
 workflows are pinned to full commit SHAs; the version comments are the human
 readable release references. Runtime tool setup uses the versions declared by
 the corresponding package manifests rather than a moving `latest` tag.
+
+GitHub Actions may be delayed or unavailable without changing the acceptance
+decision. Development, regression testing, and integration rehearsals must be
+runnable locally, and landing must not wait for an Actions result.
 
 `full-ci.yaml` is opt-in through the `full-ci` label and runs the Playwright
 browser suite. It does not generate or export coverage.
