@@ -11951,6 +11951,15 @@ async fn current_page_listpages_created_by_uses_creation_revision() {
                 "[[module ListPages range=\".\"]]\n",
                 "CREATED_BY=%%created_by%%\n",
                 "UPDATED_BY=%%updated_by%%\n",
+                "[[/module]]\n",
+                "[[module ListPages range=\".\" created_by=\"-=\"]]\n",
+                "EXCLUDED_RANGE=%%fullname%%\n",
+                "[[/module]]\n",
+                "[[module ListPages name=\"=\" created_by=\"-=\"]]\n",
+                "EXCLUDED_NAME=%%fullname%%\n",
+                "[[/module]]\n",
+                "[[module ListPages range=\".\" created_by=\"=\"]]\n",
+                "INCLUDED_CURRENT=%%fullname%%\n",
                 "[[/module]]"
             ),
             "title": "Fixture ListPages Created By Revision",
@@ -11982,6 +11991,15 @@ async fn current_page_listpages_created_by_uses_creation_revision() {
                 "[[module ListPages range=\".\"]]\n",
                 "CREATED_BY=%%created_by%%\n",
                 "UPDATED_BY=%%updated_by%%\n",
+                "[[/module]]\n",
+                "[[module ListPages range=\".\" created_by=\"-=\"]]\n",
+                "EXCLUDED_RANGE=%%fullname%%\n",
+                "[[/module]]\n",
+                "[[module ListPages name=\"=\" created_by=\"-=\"]]\n",
+                "EXCLUDED_NAME=%%fullname%%\n",
+                "[[/module]]\n",
+                "[[module ListPages range=\".\" created_by=\"=\"]]\n",
+                "INCLUDED_CURRENT=%%fullname%%\n",
                 "[[/module]]\n",
                 "after edit"
             ),
@@ -12038,6 +12056,16 @@ async fn current_page_listpages_created_by_uses_creation_revision() {
         !html.contains("CREATED_BY=Admin Editor"),
         "range=. ListPages must not use the latest editor as created_by:\n{html}"
     );
+    assert!(
+        html.contains(&format!("INCLUDED_CURRENT={page_slug}")),
+        "created_by=\"=\" should retain the selected current page:\n{html}"
+    );
+    for forbidden in ["EXCLUDED_RANGE=", "EXCLUDED_NAME="] {
+        assert!(
+            !html.contains(forbidden),
+            "created_by=\"-=\" must exclude the current page for every current-page selector, but found {forbidden:?}:\n{html}"
+        );
+    }
 }
 
 #[tokio::test]
