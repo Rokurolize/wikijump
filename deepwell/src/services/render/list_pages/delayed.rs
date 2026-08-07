@@ -1755,6 +1755,13 @@ mod tests {
             false,
             None,
         );
+        assert!(
+            prepared
+                .body
+                .contains(r#"const value="%%date|1778581468%%";"#),
+            "HTML-block variables must be substituted to Wikidot's raw date marker before FTML extracts the hosted payload: {}",
+            prepared.body,
+        );
         let page_info = PageInfo {
             page: Cow::Borrowed("site"),
             category: Some(Cow::Borrowed("search")),
@@ -1783,11 +1790,8 @@ mod tests {
         let sealed = compat_html.restore(&sealed);
 
         assert!(
-            sealed.contains(concat!(
-                r#"src="/search:site/html/"#,
-                "5d9cdf434ead83b1df436ceed159bcdce9a1e602-",
-            )),
-            "Wikidot hashes the raw `%%date|1778581468%%` payload: {sealed}",
+            sealed.contains(r#"src="/search:site/html/1""#),
+            "the extracted HTML block must use the first resolvable numeric route: {sealed}",
         );
     }
 
