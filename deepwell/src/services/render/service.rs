@@ -1562,6 +1562,12 @@ impl RenderService {
                 &mut wikidot_compat_text,
             );
         }
+        wikitext = Self::finalize_runtime_module_residuals(
+            wikitext,
+            settings,
+            &mut wikidot_compat_text,
+            &mut wikidot_compat_html,
+        );
 
         if let Some((trace, CorpusRenderScope::Body)) = trace {
             trace.set_dimension(CorpusRenderDimension::ExpandedBytes, wikitext.len());

@@ -183,6 +183,12 @@ static FEATUREDSITE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+FeaturedSite\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
         .expect("FeaturedSite module expression is valid")
 });
+static RUNTIME_MODULE_RESIDUAL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?is)\[\[module[ \t]+(?P<name>Redirect|NewPage|PagesByTag|LoginStatus|NaviBar|FooterBar|PageOptionsBottom|AdModuleAboveContent|AdModuleBelowContent|AdModuleAboveSidebar|AdModuleBelowSidebar|AdModuleBelowFooter)\b(?P<head>(?:[^\]"'\r\n]+|"[^"]*"|'[^']*')*)\]\]"#,
+    )
+    .expect("runtime module residual expression is valid")
+});
 
 #[derive(Default)]
 struct MembershipByPasswordResultCache {
@@ -1425,7 +1431,71 @@ fn render_tag_cloud_module(
     }
 }
 
+fn is_literal_runtime_module_residual(name: &str) -> bool {
+    ["Redirect", "NewPage", "PagesByTag"]
+        .iter()
+        .any(|candidate| name.eq_ignore_ascii_case(candidate))
+}
+
+fn render_unavailable_page_module(name: &str) -> String {
+    format!(
+        concat!(
+            r#"<div class="error-block">[[module <em>{}</em>]] No such module, please "#,
+            r#"<a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a>"#,
+            " and fix this page.</div>",
+        ),
+        escape_list_pages_html_text(name),
+    )
+}
+
 impl RenderService {
+    pub(super) fn finalize_runtime_module_residuals(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_text: &mut CompatTextFragments,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
+        if !settings.enable_page_syntax
+            || !RUNTIME_MODULE_RESIDUAL_REGEX.is_match(&wikitext)
+        {
+            return wikitext;
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in RUNTIME_MODULE_RESIDUAL_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a residual module capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            let name = captures
+                .name("name")
+                .expect("a residual module capture always has a name")
+                .as_str();
+            let head = captures.name("head").map_or("", |mtch| mtch.as_str());
+            let replacement = if is_literal_runtime_module_residual(name) {
+                compat_text.push_escaped_html_text(matched.as_str())
+            } else if head.trim().is_empty() {
+                compat_html.push_block_html(render_unavailable_page_module(name))
+            } else {
+                continue;
+            };
+
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&replacement);
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
     pub(super) fn expand_registry_modules_with_registry(
         wikitext: String,
         settings: &WikitextSettings,
@@ -2704,5 +2774,83 @@ mod new_page_budget_tests {
         assert!(new_page_module_budget_exceeded(
             MAX_NEW_PAGE_MODULES_PER_RENDER
         ));
+    }
+}
+
+#[cfg(test)]
+mod runtime_module_residual_tests {
+    use std::borrow::Cow;
+
+    use super::RenderService;
+    use crate::services::render::compat::CompatHtmlFragments;
+    use crate::services::render::compat::text_fragments::CompatTextFragments;
+    use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::render::{Render, html::HtmlRender};
+    use ftml::settings::{WikitextMode, WikitextSettings};
+
+    #[test]
+    fn finalizes_only_deepwell_owned_residual_modules() {
+        let source = concat!(
+            "[[module Redirect destination=\"target\"]]\n",
+            "[[module NewPage button=\"over-budget\"]]\n",
+            "[[module PagesByTag tag=\"a\" limit=\"5\"]]\n",
+            "[[module LoginStatus]]\n",
+            "[[module LoginStatus foo=\"bar\"]]\n",
+            "[[module UnknownOracleModule]]\n",
+            "@@[[module NewPage button=\"literal\"]]@@",
+        );
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let page_info = PageInfo {
+            page: Cow::Borrowed("page"),
+            category: None,
+            site: Cow::Borrowed("site"),
+            title: Cow::Borrowed("Page"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let mut compat_text = CompatTextFragments::new(source);
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let mut protected = RenderService::finalize_runtime_module_residuals(
+            source.to_owned(),
+            &settings,
+            &mut compat_text,
+            &mut compat_html,
+        );
+        ftml::preprocess_for_layout(&mut protected, settings.layout);
+        let tokens = ftml::tokenize(&protected);
+        let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        assert!(errors.is_empty(), "{errors:#?}");
+        let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+        let rendered = compat_html.restore(&rendered);
+        let rendered = compat_text.restore(&rendered);
+
+        for literal in [
+            "[[module Redirect destination=&quot;target&quot;]]",
+            "[[module NewPage button=&quot;over-budget&quot;]]",
+            "[[module PagesByTag tag=&quot;a&quot; limit=&quot;5&quot;]]",
+        ] {
+            assert!(
+                rendered.contains(literal),
+                "missing {literal:?}: {rendered}"
+            );
+        }
+        assert!(rendered.contains(concat!(
+            r#"<div class="error-block">[[module <em>LoginStatus</em>]] No such module, please "#,
+            r#"<a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a>"#,
+            " and fix this page.</div>",
+        )));
+        assert!(rendered.contains(
+            r#"[[module <em>LoginStatus</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules""#,
+        ));
+        assert!(rendered.contains(
+            r#"[[module <em>UnknownOracleModule</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules""#,
+        ));
+        assert!(
+            rendered.contains("[[module NewPage button=&quot;literal&quot;]]"),
+            "{rendered}",
+        );
     }
 }
