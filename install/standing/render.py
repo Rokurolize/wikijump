@@ -133,7 +133,6 @@ def main() -> int:
             "STANDING_NETWORK_NAME": network_name,
             "STANDING_WIKIJUMP_SHA": identity["wikijump_sha"],
             "STANDING_FTML_SHA": identity["ftml_sha"],
-            "STANDING_LOCALES_SOURCE": str((source_root / "locales").resolve()),
             "DEEPWELL_RPC_TOKEN": rpc_token,
             **{f"STANDING_{argument.upper()}": value for argument, value in images.items()},
         }
@@ -141,8 +140,6 @@ def main() -> int:
         template_sha256 = hashlib.sha256(template.read_bytes()).hexdigest()
         receipt = {
             "schema_version": 1,
-            "rendered_at": datetime.now(UTC).isoformat(),
-            "source_root": str(source_root),
             "template_sha256": template_sha256,
             "project_name": project_name,
             "network_name": network_name,

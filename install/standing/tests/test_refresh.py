@@ -143,6 +143,20 @@ class RefreshStandingTest(unittest.TestCase):
         self.assertIn("sqlx migrate run --source /opt/deepwell/migrations", start)
         self.assertIn("exec /usr/local/bin/deepwell", start)
 
+    def test_standing_deepwell_uses_image_locales_without_a_host_bind(self) -> None:
+        compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")
+        dockerfile = (SCRIPT.parents[1] / "prod/deepwell/Dockerfile").read_text(
+            encoding="utf-8"
+        )
+        renderer = (SCRIPT.parent / "render.py").read_text(encoding="utf-8")
+        refresher = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("COPY ./locales/fluent /opt/locales/fluent", dockerfile)
+        self.assertNotIn("target: /opt/locales", compose)
+        self.assertNotIn("STANDING_LOCALES_SOURCE", compose)
+        self.assertNotIn("STANDING_LOCALES_SOURCE", renderer)
+        self.assertNotIn("STANDING_LOCALES_SOURCE", refresher)
+
     def test_prepared_receipt_rejects_mutable_or_wrong_image_reference(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
             root = Path(temporary_dir)
