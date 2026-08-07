@@ -608,52 +608,12 @@ impl UserService {
     /// Optional version of `get()`.
     pub async fn get_optional(
         ctx: &ServiceContext<'_>,
-        mut reference: Reference<'_>,
+        reference: Reference<'_>,
     ) -> Result<Option<User>> {
         let txn = ctx.transaction();
         let make_error = || Error::new("failed to get user", ErrorType::User);
-
-        // If slug, determine if this is a user alias.
-        //
-        // NOTE: Originally I tried having a direct query to
-        //       select both the user and user_alias table at
-        //       the same time. I tried a JOIN and a subquery,
-        //       but for both the query planner indictated that
-        //       they would be slower than doing queries on
-        //       simple indexes directly, which is why we are
-        //       doing it this way.
-        //
-        //       When the wikidot_user table was later added,
-        //       we maintained the same query instead of trying
-        //       to join across multiple tables.
-
-        if let Reference::Slug(ref slug) = reference
-            && let Some(alias) = AliasService::get_optional(ctx, AliasType::User, slug)
-                .await
-                .or_raise(make_error)?
-        {
-            // If present, this is the actual user. Proceed with SELECT by id.
-            // Rewrite reference so in the "real" user search
-            // we locate directly via user ID.
-            reference = Reference::Id(alias.target_id);
-        }
-
-        let wikijump_user = match reference {
-            Reference::Id(id) => WikijumpUser::find_by_id(id)
-                .one(txn)
-                .await
-                .or_raise(make_error)?,
-
-            Reference::Slug(ref slug) => WikijumpUser::find()
-                .filter(
-                    Condition::all()
-                        .add(user::Column::Slug.eq(slug.as_ref()))
-                        .add(user::Column::DeletedAt.is_null()),
-                )
-                .one(txn)
-                .await
-                .or_raise(make_error)?,
-        };
+        let reference = Self::resolve_user_reference(ctx, reference).await?;
+        let wikijump_user = Self::get_real_optional_resolved(ctx, &reference).await?;
 
         if let Some(user) = wikijump_user {
             debug!("Found Wikijump user '{}' (ID {})", user.slug, user.user_id);
@@ -666,8 +626,8 @@ impl UserService {
             value.try_into().ok()
         }
 
-        let wikidot_user = match reference {
-            Reference::Id(id) => match i64_to_i32(id) {
+        let wikidot_user = match &reference {
+            Reference::Id(id) => match i64_to_i32(*id) {
                 // If it doesn't fit into a 32-bit int,
                 // there's no way it's a real Wikidot user.
                 None => None,
@@ -679,7 +639,7 @@ impl UserService {
                     .or_raise(make_error)?,
             },
 
-            Reference::Slug(ref slug) => WikidotUser::find()
+            Reference::Slug(slug) => WikidotUser::find()
                 .filter(
                     Condition::all()
                         .add(wikidot_user::Column::Slug.eq(slug.as_ref()))
@@ -691,6 +651,46 @@ impl UserService {
         };
 
         Ok(wikidot_user.map(User::Wikidot))
+    }
+
+    async fn resolve_user_reference<'a>(
+        ctx: &ServiceContext<'_>,
+        reference: Reference<'a>,
+    ) -> Result<Reference<'a>> {
+        let Reference::Slug(slug) = reference else {
+            return Ok(reference);
+        };
+        let make_error = || Error::new("failed to get user", ErrorType::User);
+        match AliasService::get_optional(ctx, AliasType::User, &slug)
+            .await
+            .or_raise(make_error)?
+        {
+            Some(alias) => Ok(Reference::Id(alias.target_id)),
+            None => Ok(Reference::Slug(slug)),
+        }
+    }
+
+    async fn get_real_optional_resolved(
+        ctx: &ServiceContext<'_>,
+        reference: &Reference<'_>,
+    ) -> Result<Option<WikijumpUserModel>> {
+        let txn = ctx.transaction();
+        let make_error = || Error::new("failed to get user", ErrorType::User);
+        match reference {
+            Reference::Id(id) => WikijumpUser::find_by_id(*id)
+                .one(txn)
+                .await
+                .or_raise(make_error),
+            Reference::Slug(slug) => WikijumpUser::find()
+                .filter(
+                    Condition::all()
+                        .add(user::Column::Slug.eq(slug.as_ref()))
+                        .add(user::Column::DeletedAt.is_null()),
+                )
+                .one(txn)
+                .await
+                .or_raise(make_error),
+        }
     }
 
     /// Fetches a Wikijump user, or Wikidot user record as fallback.
@@ -705,13 +705,8 @@ impl UserService {
         ctx: &ServiceContext<'_>,
         reference: Reference<'_>,
     ) -> Result<Option<WikijumpUserModel>> {
-        match Self::get_optional(ctx, reference).await? {
-            None => Ok(None),
-            Some(user) => {
-                let user = user.unwrap_wikijump()?;
-                Ok(Some(user))
-            }
-        }
+        let reference = Self::resolve_user_reference(ctx, reference).await?;
+        Self::get_real_optional_resolved(ctx, &reference).await
     }
 
     /// Fetches the real (Wikijump) user associated with the given reference, if any.
@@ -721,7 +716,7 @@ impl UserService {
         ctx: &ServiceContext<'_>,
         reference: Reference<'_>,
     ) -> Result<WikijumpUserModel> {
-        Self::get(ctx, reference).await?.unwrap_wikijump()
+        find_or_error!(Self::get_real_optional(ctx, reference), "user", User)
     }
 
     pub async fn update(
