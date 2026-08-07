@@ -1500,10 +1500,10 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
             "urlattrprefix" => {
                 unsupported_count_pages_filter = true;
             }
-            "form" => {
-                unsupported_count_pages_filter = true;
-                unsupported_list_pages_filter = true;
-            }
+            // Live Wikidot accepts this legacy, non-data-form argument as a
+            // no-op. Underscore-prefixed fields remain owned by the data-form
+            // selector branch below.
+            "form" => {}
             _ if raw_key.starts_with('_') => {
                 let value = static_list_pages_selector(
                     value,
