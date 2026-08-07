@@ -1293,7 +1293,8 @@ impl<'a> ModuleEventScanner<'a> {
                                 ModuleHeadValidation::ValidRuntimeUnsafe
                             } else if list_pages_compatibility
                                 && runtime_recognized
-                                && validation_head.contains(['\n', '\r'])
+                                && (first_rollback_marker.is_some()
+                                    || validation_head.contains(['\n', '\r']))
                             {
                                 self.ambiguous_whole_head = true;
                                 finish_head_scan!(

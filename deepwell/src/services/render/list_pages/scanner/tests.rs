@@ -1596,6 +1596,11 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
 
     for runtime_ambiguous_head in [
         concat!(
+            "[[module ListPages name=\"x",
+            "[[module ListPages name=secret]]%%content%%\" 1=bad]]",
+            "outer[[/module]]",
+        ),
+        concat!(
             "[[module ListPages name=foo[[x]]",
             "[[module ListPages name=secret]]H[[/module]][[/module]]",
         ),
