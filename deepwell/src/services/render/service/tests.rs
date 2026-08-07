@@ -12207,6 +12207,7 @@ fn malformed_iftags_remain_literal_after_ftml_recovery() {
         "[[iftags +alpha]]selected[[/iftags]]\n",
         "[[iftags +alpha]]unclosed\n",
         "[[iftags -alpha]]repeated\n",
+        "**later bold**\n",
     )
     .to_owned();
     let mut wikidot_compat_text = CompatTextFragments::new(&wikitext);
@@ -12231,7 +12232,8 @@ fn malformed_iftags_remain_literal_after_ftml_recovery() {
     );
     let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
     let tokens = ftml::tokenize(&inner.wikitext);
-    let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{errors:#?}");
     let html = HtmlRender.render(&tree, &page_info, &settings).body;
     let html = inner
         .protection
@@ -12242,6 +12244,7 @@ fn malformed_iftags_remain_literal_after_ftml_recovery() {
     for marker in ["selected", "unclosed", "repeated"] {
         assert!(html.contains(marker), "{marker}: {html}");
     }
+    assert!(html.contains("<strong>later bold</strong>"), "{html}");
 }
 
 fn wikidot_site(slug: &str, preferred_domain: Option<&str>) -> SiteModel {
