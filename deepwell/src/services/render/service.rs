@@ -885,6 +885,7 @@ impl RenderService {
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 viewer_user_id: None,
                 current_page_data_form_values: None,
+                persist_page_artifacts: true,
                 url,
                 trace: None,
             },
@@ -917,6 +918,7 @@ impl RenderService {
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 viewer_user_id: None,
                 current_page_data_form_values: Some(current_page_data_form_values),
+                persist_page_artifacts: true,
                 url: UrlArguments::default(),
                 trace: None,
             },
@@ -949,6 +951,7 @@ impl RenderService {
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
                 viewer_user_id,
                 current_page_data_form_values: None,
+                persist_page_artifacts: false,
                 url,
                 trace: None,
             },
@@ -976,6 +979,7 @@ impl RenderService {
                 max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
                 viewer_user_id: None,
                 current_page_data_form_values: None,
+                persist_page_artifacts: true,
                 url: UrlArguments::default(),
                 trace: None,
             },
@@ -1001,6 +1005,7 @@ impl RenderService {
                 max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
                 viewer_user_id: None,
                 current_page_data_form_values: None,
+                persist_page_artifacts: true,
                 url: UrlArguments::default(),
                 trace: Some(trace),
             },
@@ -1022,6 +1027,7 @@ impl RenderService {
             max_include_expansions,
             viewer_user_id,
             current_page_data_form_values,
+            persist_page_artifacts,
             url,
             trace,
         }: RenderPageOptions<'_>,
@@ -1055,13 +1061,17 @@ impl RenderService {
             page_info,
             &page_settings,
             RenderInnerOptions {
-                render_context: RenderContext::page(site_id, category_id, page_id),
+                render_context: if persist_page_artifacts {
+                    RenderContext::page(site_id, category_id, page_id)
+                } else {
+                    RenderContext::page_view(site_id, category_id, page_id)
+                },
                 viewer_user_id,
                 current_page_data_form_values: current_page_data_form_values.clone(),
                 max_include_expansions,
                 render_cost_budget: render_cost_budget.clone(),
                 trace: trace.map(|trace| (trace, CorpusRenderScope::Body)),
-                persist_compiled_text: true,
+                persist_compiled_text: persist_page_artifacts,
                 url,
             },
         )
@@ -1105,7 +1115,7 @@ impl RenderService {
                                 max_include_expansions,
                                 render_cost_budget: render_cost_budget.clone(),
                                 trace: trace.map(|trace| (trace, scope)),
-                                persist_compiled_text: true,
+                                persist_compiled_text: persist_page_artifacts,
                                 // Whether a nav bar's own modules read the viewed
                                 // page's URL arguments is not captured, so they
                                 // keep rendering as they do without one.
@@ -1149,9 +1159,14 @@ impl RenderService {
         html_output.styles.extend(body_styles);
         let styles_json =
             serde_json::to_string(&html_output.styles).or_raise(make_error)?;
-        let compiled_body_styles_hash = TextService::create(ctx, styles_json)
-            .await
-            .or_raise(make_error)?;
+        let compiled_body_styles_hash = Self::compiled_text_hash(
+            ctx,
+            None,
+            &styles_json,
+            persist_page_artifacts,
+            make_error,
+        )
+        .await?;
 
         Ok(RenderPageOutput {
             html_output,

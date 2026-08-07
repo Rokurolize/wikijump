@@ -32,6 +32,7 @@ use deepwell::models::page::{self, Entity as PageTable};
 use deepwell::models::page_category::{self, Entity as PageCategoryTable};
 use deepwell::models::page_revision::Entity as PageRevisionTable;
 use deepwell::models::role_permission::{self, Entity as RolePermissionTable};
+use deepwell::models::text;
 use deepwell::models::text_block;
 use deepwell::models::user::Entity as UserTable;
 use deepwell::services::blob::{EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
@@ -71,7 +72,7 @@ use deepwell::types::{
 };
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel,
-    QueryFilter, Set, Statement, Value,
+    PaginatorTrait, QueryFilter, Set, Statement, Value,
 };
 use serde_json::json;
 use std::borrow::Cow;
@@ -2730,6 +2731,7 @@ async fn listusers_module_matches_live_preview_and_runtime_viewer() {
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
     set_test_user_name(&runner, SAMPLE_USER_ID, "ListUsers Person").await;
+    set_test_user_name(&runner, ADMIN_USER_ID, "ListUsers Admin").await;
 
     let preview_source = concat!(
         "[[module ListUsers users=\".\"]]\n",
@@ -2800,9 +2802,15 @@ async fn listusers_module_matches_live_preview_and_runtime_viewer() {
     );
 
     let page_source = concat!(
+        "[[html]]\n",
+        "<p>stable authored block</p>\n",
+        "[[/html]]\n",
         "VIEW_START\n",
         "[[module ListUsers users=\".\"]]\n",
         "VIEW %%title%% %%name%% %%number%%\n",
+        "[[html]]\n",
+        "<p>viewer-only %%title%% %%name%% %%number%%</p>\n",
+        "[[/html]]\n",
         "[[/module]]\n",
         "VIEW_END",
     );
@@ -2832,6 +2840,13 @@ async fn listusers_module_matches_live_preview_and_runtime_viewer() {
             .contains("VIEW ListUsers Person"),
         "stored revision HTML must not bake in the editor identity:\n{:?}",
         stored_page.compiled_body_html,
+    );
+    let stored_text_blocks =
+        snapshot_page_text_blocks(&runner, stored_page.page_id).await;
+    assert_eq!(
+        stored_text_blocks.len(),
+        1,
+        "the authoritative save should persist only the viewer-independent HTML block",
     );
 
     let sample_session_token = SessionService::create(
@@ -2867,6 +2882,11 @@ async fn listusers_module_matches_live_preview_and_runtime_viewer() {
             && !anonymous_body.contains("[[module ListUsers"),
         "anonymous page view should render an empty users=\".\" module:\n{anonymous_body}",
     );
+    assert_eq!(
+        snapshot_page_text_blocks(&runner, stored_page.page_id).await,
+        stored_text_blocks,
+        "an anonymous GET rerender must not rewrite the saved page's hosted text blocks",
+    );
 
     let authenticated_view = run_endpoint!(
         runner,
@@ -2887,6 +2907,179 @@ async fn listusers_module_matches_live_preview_and_runtime_viewer() {
     assert!(
         authenticated_body.contains("<p>VIEW ListUsers Person listusers-person -5</p>"),
         "authenticated page view should render ListUsers for the request viewer:\n{authenticated_body}",
+    );
+    assert_eq!(
+        snapshot_page_text_blocks(&runner, stored_page.page_id).await,
+        stored_text_blocks,
+        "a viewer-dependent GET rerender must not persist that viewer's identity to hosted text blocks",
+    );
+
+    let admin_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "ListUsers second runtime viewer test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let admin_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": admin_session_token,
+            "route": {"slug": "fixture-listusers-viewer", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let admin_body = match admin_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found admin ListUsers view, got {other:?}"),
+    };
+    assert!(
+        admin_body.contains("<p>VIEW ListUsers Admin listusers-admin -1</p>"),
+        "a second authenticated viewer should receive their own ListUsers output:\n{admin_body}",
+    );
+    assert_eq!(
+        snapshot_page_text_blocks(&runner, stored_page.page_id).await,
+        stored_text_blocks,
+        "a second viewer-dependent GET rerender must leave the authoritative text blocks unchanged",
+    );
+}
+
+#[tokio::test]
+async fn request_argument_page_views_do_not_persist_hosted_text_blocks() {
+    fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
+        html.split_once(start)
+            .unwrap_or_else(|| panic!("missing section start {start:?}"))
+            .1
+            .split_once(end)
+            .unwrap_or_else(|| panic!("missing section end {end:?}"))
+            .0
+    }
+
+    const HOLDER: &str = "fixture-readonly-view-holder";
+    const ALPHA: &str = "fixture-readonly-view-target-alpha";
+    const BRAVO: &str = "fixture-readonly-view-target-bravo";
+    const ALPHA_TAG: &str = "fixture-readonly-view-alpha-tag";
+    const BRAVO_TAG: &str = "fixture-readonly-view-bravo-tag";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title, tag) in [
+        (ALPHA, "Alpha Read-only View Target", ALPHA_TAG),
+        (BRAVO, "Bravo Read-only View Target", BRAVO_TAG),
+    ] {
+        let revision_id =
+            create_listpages_test_page(&mut runner, site_id, slug, title, "target body")
+                .await;
+        set_listpages_test_tags(&mut runner, site_id, slug, revision_id, &[tag]).await;
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER,
+        "Fixture Read-only View Holder",
+        concat!(
+            "[[html]]<p>stable request-argument block</p>[[/html]]\n",
+            "PAGER_START\n",
+            "[[module ListPages name=\"fixture-readonly-view-target-*\" order=\"title\" separate=\"no\" perPage=\"1\" limit=\"2\"]]\n",
+            "PAGER %%title%%\n",
+            "[[html]]<p>PAGER_BLOCK %%title%%</p>[[/html]]\n",
+            "[[/module]]\n",
+            "PAGER_END\n",
+            "TAG_START\n",
+            "[[module ListPages name=\"fixture-readonly-view-target-*\" tags=\"@URL\" order=\"title\" separate=\"no\" limit=\"2\"]]\n",
+            "TAG %%title%%\n",
+            "[[html]]<p>TAG_BLOCK %%title%%</p>[[/html]]\n",
+            "[[/module]]\n",
+            "TAG_END",
+        ),
+    )
+    .await;
+
+    let holder = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": HOLDER}),
+    )
+    .expect("read-only view holder should exist");
+    let stored_text_blocks = snapshot_page_text_blocks(&runner, holder.page_id).await;
+    assert!(
+        stored_text_blocks
+            .iter()
+            .any(|(_, contents)| String::from_utf8_lossy(contents)
+                .contains("stable request-argument block")),
+        "the authoritative render should persist its stable hosted block",
+    );
+    let stored_text_count = persisted_text_count(&runner).await;
+
+    let view = async |extra: &str| {
+        run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": HOLDER, "extra": extra},
+                "locales": ["en-US", "en"],
+            }),
+        )
+    };
+
+    let second_page = match view("/p/2").await {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found /p/2 page view, got {other:?}"),
+    };
+    let pager = section(&second_page, "PAGER_START", "PAGER_END");
+    assert!(
+        pager.contains("PAGER Bravo Read-only View Target")
+            && !pager.contains("PAGER Alpha Read-only View Target"),
+        "/p/2 should render the second ListPages slice:\n{second_page}",
+    );
+    assert_eq!(
+        snapshot_page_text_blocks(&runner, holder.page_id).await,
+        stored_text_blocks,
+        "GET /p/2 must not replace the authoritative hosted blocks with its selected row",
+    );
+    assert_eq!(
+        persisted_text_count(&runner).await,
+        stored_text_count,
+        "GET /p/2 must not persist request-specific body, navigation, or style text",
+    );
+
+    let tagged = match view(&format!("/tag/{BRAVO_TAG}")).await {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found /tag page view, got {other:?}"),
+    };
+    let tagged_rows = section(&tagged, "TAG_START", "TAG_END");
+    assert!(
+        tagged_rows.contains("TAG Bravo Read-only View Target")
+            && !tagged_rows.contains("TAG Alpha Read-only View Target"),
+        "/tag should change only the request-specific ListPages result:\n{tagged}",
+    );
+    assert_eq!(
+        snapshot_page_text_blocks(&runner, holder.page_id).await,
+        stored_text_blocks,
+        "GET /tag must not persist request-selected hosted blocks",
+    );
+    assert_eq!(
+        persisted_text_count(&runner).await,
+        stored_text_count,
+        "GET /tag must not persist request-specific body, navigation, or style text",
     );
 }
 
@@ -15688,6 +15881,37 @@ async fn set_test_user_name(runner: &TestRunner, user_id: i64, name: &str) {
         .update(runner.context().transaction())
         .await
         .expect("test user update should not fail");
+}
+
+async fn snapshot_page_text_blocks(
+    runner: &TestRunner,
+    page_id: i64,
+) -> Vec<(text_block::Model, Vec<u8>)> {
+    let mut rows = text_block::Entity::find()
+        .filter(text_block::Column::PageId.eq(page_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("text-block snapshot query should succeed");
+    rows.sort_by(|left, right| left.s3_filename.cmp(&right.s3_filename));
+
+    let mut snapshot = Vec::with_capacity(rows.len());
+    for row in rows {
+        let object = runner
+            .context()
+            .s3_tblocks_bucket()
+            .get_object(&row.s3_filename)
+            .await
+            .expect("text-block snapshot object should be readable");
+        snapshot.push((row, object.into()));
+    }
+    snapshot
+}
+
+async fn persisted_text_count(runner: &TestRunner) -> u64 {
+    text::Entity::find()
+        .count(runner.context().transaction())
+        .await
+        .expect("persisted text count should be readable")
 }
 
 async fn create_listpages_test_page(
