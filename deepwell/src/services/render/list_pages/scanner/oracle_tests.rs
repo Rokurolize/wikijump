@@ -97,9 +97,13 @@ fn right_bracket_scanner_matches_pinned_tokens_for_short_runs_and_marker_ownersh
                 wikidot_right_bracket_token(bytes, start, bytes.len(), &mut text_tokens);
             let (oracle_token, oracle_span) =
                 token_covering(&tokens, start).expect("every bracket belongs to a token");
+            let oracle_slice = &source[oracle_span.clone()];
             assert!(
                 oracle_span.start == start
-                    || matches!(oracle_token, Token::RightMath | Token::RightComment),
+                    || oracle_token == Token::RightMath
+                    || oracle_slice.strip_suffix(']').is_some_and(|hyphens| {
+                        hyphens.len() >= 2 && hyphens.bytes().all(|byte| byte == b'-')
+                    }),
                 "the monotone caller must not call inside a bracket token: source={source:?}, start={start}, oracle={oracle_token:?} {oracle_span:?}",
             );
             let oracle_is_right_block =

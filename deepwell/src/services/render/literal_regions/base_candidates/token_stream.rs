@@ -411,8 +411,9 @@ mod tests {
     }
 
     fn pinned_delimiters(source: &str) -> Vec<DelimiterIdentity> {
-        ftml::tokenize(source)
-            .tokens()
+        let tokenization = ftml::tokenize(source);
+        let tokens = tokenization.tokens();
+        let mut delimiters = tokens
             .iter()
             .filter_map(|token| {
                 let kind = match token.token {
@@ -422,7 +423,6 @@ mod tests {
                     Token::LeftMath => DelimiterKind::InlineMathOpen,
                     Token::RightMath => DelimiterKind::InlineMathClose,
                     Token::LeftComment => DelimiterKind::CommentOpen,
-                    Token::RightComment => DelimiterKind::CommentClose,
                     _ => return None,
                 };
                 Some(DelimiterIdentity {
@@ -430,7 +430,43 @@ mod tests {
                     start: token.span.start,
                 })
             })
-            .collect()
+            .collect::<Vec<_>>();
+
+        for (index, token) in tokens.iter().enumerate() {
+            if token.slice.strip_suffix(']').is_some_and(|hyphens| {
+                hyphens.len() >= 2 && hyphens.bytes().all(|byte| byte == b'-')
+            }) {
+                delimiters.push(DelimiterIdentity {
+                    kind: DelimiterKind::CommentClose,
+                    start: token.span.end - 3,
+                });
+                continue;
+            }
+            if token.token != Token::RightBracket {
+                continue;
+            }
+            let mut start = token.span.start;
+            let mut hyphen_count = 0usize;
+            for previous in tokens[..index].iter().rev() {
+                if previous.span.end != start
+                    || previous.slice.is_empty()
+                    || !previous.slice.bytes().all(|byte| byte == b'-')
+                {
+                    break;
+                }
+                start = previous.span.start;
+                hyphen_count += previous.slice.len();
+            }
+            if hyphen_count >= 2 {
+                delimiters.push(DelimiterIdentity {
+                    kind: DelimiterKind::CommentClose,
+                    start: token.span.start - 2,
+                });
+            }
+        }
+
+        delimiters.sort_unstable_by_key(|token| (token.start, token.kind.source_order()));
+        delimiters
     }
 
     #[test]
