@@ -73,6 +73,7 @@ pub(in crate::services::render) async fn load_current_page_data_form_context(
     current_site_id: i64,
     current_page_id: Option<i64>,
     page_info: &PageInfo<'_>,
+    candidate_values: Option<BTreeMap<String, String>>,
 ) -> Result<Option<ListPagesCurrentDataFormContext>> {
     let Some(current_page_id) = current_page_id else {
         return Ok(None);
@@ -100,15 +101,17 @@ pub(in crate::services::render) async fn load_current_page_data_form_context(
     let Some(definition) = definitions.get(&category.category_id).cloned() else {
         return Ok(None);
     };
-    let wikitext = PageRevisionService::get_wikitext_optional(
-        ctx,
-        current_site_id,
-        Reference::Id(current_page_id),
-    )
-    .await?
-    .unwrap_or_default();
-    Ok(Some(ListPagesCurrentDataFormContext {
-        values: parse_static_wikidot_data_form_values(&wikitext),
-        definition,
-    }))
+    let values = if let Some(values) = candidate_values {
+        values
+    } else {
+        let wikitext = PageRevisionService::get_wikitext_optional(
+            ctx,
+            current_site_id,
+            Reference::Id(current_page_id),
+        )
+        .await?
+        .unwrap_or_default();
+        parse_static_wikidot_data_form_values(&wikitext)
+    };
+    Ok(Some(ListPagesCurrentDataFormContext { values, definition }))
 }

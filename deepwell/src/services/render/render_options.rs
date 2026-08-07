@@ -29,6 +29,7 @@ use super::diagnostics::{CorpusRenderScope, CorpusRenderTrace};
 use super::list_pages::ListPagesPagerRoute;
 use super::render_budget::SharedRenderCostBudget;
 use super::url_arguments::UrlArguments;
+use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum RenderLifecycle {
@@ -51,6 +52,7 @@ pub(super) struct RenderContext {
 pub(super) struct RenderInnerOptions<'a> {
     pub(super) render_context: RenderContext,
     pub(super) viewer_user_id: Option<i64>,
+    pub(super) current_page_data_form_values: Option<BTreeMap<String, String>>,
     pub(super) max_include_expansions: usize,
     pub(super) render_cost_budget: SharedRenderCostBudget,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
@@ -63,10 +65,11 @@ pub(super) struct RenderInnerOptions<'a> {
 }
 
 /// What distinguishes one page render from another beyond its wikitext.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(super) struct RenderPageOptions<'a> {
     pub(super) max_include_expansions: usize,
     pub(super) viewer_user_id: Option<i64>,
+    pub(super) current_page_data_form_values: Option<BTreeMap<String, String>>,
 
     /// Whether this render may update compiled text and hosted page blocks.
     pub(super) persist_page_artifacts: bool,
@@ -83,6 +86,7 @@ pub(super) struct RenderExpansionOptions<'a> {
     pub(super) current_category_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
     pub(super) viewer_user_id: Option<i64>,
+    pub(super) current_page_data_form_values: Option<BTreeMap<String, String>>,
     pub(super) max_include_expansions: usize,
     pub(super) render_cost_budget: SharedRenderCostBudget,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,

@@ -10473,7 +10473,7 @@ async fn listpages_template_selectors_can_use_current_page_data_form_values() {
     ] {
         create_listpages_test_page(&mut runner, site_id, slug, title, source).await;
     }
-    create_listpages_test_page(
+    let holder_revision = create_listpages_test_page(
         &mut runner,
         site_id,
         HOLDER_SLUG,
@@ -10513,6 +10513,44 @@ async fn listpages_template_selectors_can_use_current_page_data_form_values() {
     assert!(
         !html.contains("%%form_raw{scotland}%%") && !html.contains("[[module ListPages"),
         "resolved current-page data-form selector variables must not remain literal:\n{html}",
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(HOLDER_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": HOLDER_SLUG,
+            "last_revision_id": holder_revision,
+            "revision_comments": "change current data-form selector values",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "scotland: visit\nkind: rock\nalbums: '01'\n\nEdited holder body.",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("editing the data-form holder should create a revision");
+
+    let edited_html =
+        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    assert!(
+        edited_html.contains("rock-visit|Rock|Yes"),
+        "revision compilation must resolve current-page data-form selectors from the edit candidate rather than the previous committed revision:\n{edited_html}",
+    );
+    for stale in ["folk-visit|Folk|Yes", "folk-no|Folk|No"] {
+        assert!(
+            !edited_html.contains(stale),
+            "the edited revision must not retain a row selected by stale form values ({stale}):\n{edited_html}",
+        );
+    }
+    assert!(
+        edited_html.contains("Edited holder body."),
+        "the edited candidate body and its ListPages selector must compile from the same source revision:\n{edited_html}",
     );
 }
 
