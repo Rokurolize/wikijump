@@ -27,16 +27,12 @@ export const createFramerailHttpServer = ({
   return { server, closeServer }
 }
 
-export const startFramerailServer = async () => {
-  const { handler } = await import("./build/handler.js")
-  const path = process.env.SOCKET_PATH
-  const host = process.env.HOST ?? "0.0.0.0"
-  const port = process.env.PORT ?? "3000"
-  const { responseStore, tokenStore } = createArticleResponseCacheStores()
-  const resetRuntimeStores = configureArticleResponseCacheStores({
-    responseStore,
-    tokenStore
-  })
+export const createFramerailServerRuntime = ({
+  handler,
+  cacheStores = createArticleResponseCacheStores()
+}) => {
+  const { responseStore, tokenStore } = cacheStores
+  const resetRuntimeStores = configureArticleResponseCacheStores(cacheStores)
   const fenceCache = createMemoryArticleResponseFenceCache({
     store: tokenStore,
     subscriber: tokenStore
@@ -55,6 +51,16 @@ export const startFramerailServer = async () => {
       tokenStore?.reset?.()
     }
   })
+
+  return { ...lifecycle, cacheStores, fenceCache }
+}
+
+export const startFramerailServer = async () => {
+  const { handler } = await import("./build/handler.js")
+  const path = process.env.SOCKET_PATH
+  const host = process.env.HOST ?? "0.0.0.0"
+  const port = process.env.PORT ?? "3000"
+  const lifecycle = createFramerailServerRuntime({ handler })
 
   lifecycle.server.listen(path ? { path } : { host, port }, () => {
     console.log(`Listening on ${path || `http://${host}:${port}`}`)

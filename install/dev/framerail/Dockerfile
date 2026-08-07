@@ -19,7 +19,7 @@ RUN \
     pnpm install --frozen-lockfile && \
     pnpm build && \
     pnpm prune --prod && \
-    rm -rf src/ tests/
+    rm -rf tests/
 
 # Run command
 USER node:node
@@ -28,4 +28,4 @@ ENV FRAMERAIL_ENV=dev
 ENV PORT=3393
 EXPOSE 3393
 
-CMD ["/usr/local/bin/node", "build"]
+CMD ["/usr/local/bin/node", "server.js"]
