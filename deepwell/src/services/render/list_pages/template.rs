@@ -219,6 +219,7 @@ pub(in crate::services::render) struct ListPagesTemplatePlan {
     content_sections: BTreeSet<Option<usize>>,
     output_shape: ListPagesOutputShape,
     rating_only: bool,
+    has_unknown_variables: bool,
     #[cfg(test)]
     variable_traversals: usize,
 }
@@ -376,9 +377,11 @@ impl ListPagesTemplatePlan {
         let mut content_sections = BTreeSet::new();
         let mut variable_count = 0;
         let mut rating_only = true;
+        let mut has_unknown_variables = false;
 
         for captures in LISTPAGES_VARIABLE_REGEX.captures_iter(body) {
             let Some(variable) = ListPagesVariable::parse(&captures["name"]) else {
+                has_unknown_variables = true;
                 continue;
             };
             if !variable.supports_suffix(
@@ -386,6 +389,7 @@ impl ListPagesTemplatePlan {
                 captures.name("length").map(|matched| matched.as_str()),
                 captures.name("format").map(|matched| matched.as_str()),
             ) {
+                has_unknown_variables = true;
                 continue;
             }
             variable_count += 1;
@@ -409,6 +413,7 @@ impl ListPagesTemplatePlan {
             content_sections,
             output_shape: output_shape(body),
             rating_only: variable_count > 0 && rating_only,
+            has_unknown_variables,
             #[cfg(test)]
             variable_traversals: 1,
         })
@@ -576,6 +581,10 @@ impl ListPagesTemplatePlan {
         self.rating_only
     }
 
+    pub(in crate::services::render) fn has_unknown_variables(&self) -> bool {
+        self.has_unknown_variables
+    }
+
     #[cfg(test)]
     fn variable_traversals(&self) -> usize {
         self.variable_traversals
@@ -697,6 +706,23 @@ mod tests {
             "%%unsupported%%|%%created_at%%|%%createdbyunix%%",
         );
         assert!(plan.uses_created_at());
+        assert!(plan.has_unknown_variables());
+        assert!(
+            !ListPagesTemplatePlan::compile("%%created_at%%")
+                .expect("known variable should compile")
+                .has_unknown_variables()
+        );
+        let sectioned = ListPagesTemplatePlan::compile(concat!(
+            "[[body]]\n",
+            "[[image https://tracker.invalid/%%unsupported%%]]\n",
+            "[[/body]]",
+        ))
+        .expect("a sectioned tracking template should compile before policy filtering");
+        assert_eq!(
+            sectioned.body(),
+            "[[image https://tracker.invalid/%%unsupported%%]]"
+        );
+        assert!(sectioned.has_unknown_variables());
         assert!(ListPagesTemplatePlan::compile("%%form_data%%").is_some());
         assert!(ListPagesTemplatePlan::compile("%%form_raw%%").is_some());
     }
