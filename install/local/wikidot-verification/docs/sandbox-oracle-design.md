@@ -122,9 +122,24 @@ frozen-preserved assertion class.
 
 The 2026-08-05 probe found that the current sandbox page shell serves the
 Standard Blue theme while the local mirror serves the Sigma-style Wikidot
-layout. The theme rows therefore remain observation-blocked until a run-owned
-capture uses the same named theme on both sides; the probe and cleanup receipt
-are retained at `/home/roku/oracle-store/wjlab/sandbox-oracle-20260805-theme-simple-probe.json`
+layout. A run-owned CDP operation then applied Sigma to the live sandbox and
+restored Standard Blue after capture. The operation receipts are retained at
+`/home/roku/oracle-store/wjlab/sandbox-oracle-20260807-theme-config/live-theme-sigma-applied.json`
+and
+`/home/roku/oracle-store/wjlab/sandbox-oracle-20260807-theme-config/live-theme-restored-after-recapture.json`.
+
+The same-theme capture completed all 26 fixtures: 21 passed and five remain
+explicit residuals. Sigma still has a page-chrome geometry mismatch because
+the local sandbox site data, navigation, and sidebar differ from the live
+site's shell. Basalt, Flopstyle, and Black-Highlighter are not treated as
+renderer matches: their captures observe moving live theme sources and/or
+external stylesheet timeouts. The themed collapsible has matching DOM and
+geometry but local-only external stylesheet aborts. These residuals remain
+actionable for the standing chrome/theme work (issues #610 and #755); they are
+not suppressed by the oracle classifier.
+
+The original probe and cleanup receipt remain at
+`/home/roku/oracle-store/wjlab/sandbox-oracle-20260805-theme-simple-probe.json`
 and `/home/roku/oracle-store/wjlab/sandbox-oracle-20260805-theme-route-probe.json`.
 
 ### Axis 1 - syntax fixtures (one baseline theme, FTML-owned DOM)
@@ -181,7 +196,11 @@ live Wikidot (ListPages returns results). A naive match-live diff would flag a
 legitimate divergence. These fixtures use assertion class "match-frozen-preserved":
 the oracle side is a hand-declared expected preserved DOM shape (Family-A-style
 against a checked-in expectation), NOT the live capture. Do not diff these against
-live rendering.
+live rendering. The local side is obtained through the authenticated Deepwell
+`wikidot_page_preview` `syntax_only` contract, which disables page-context syntax
+and therefore keeps the source markers literal without creating a local page.
+The live page is still captured for provenance and cleanup, but its executed
+output is never used as the expected value for these fixtures.
 
 ### Fixture metadata (registry entry per page)
 

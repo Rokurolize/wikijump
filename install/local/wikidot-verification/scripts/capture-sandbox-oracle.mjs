@@ -22,6 +22,7 @@ import {
   validateSandboxOracleRegistry,
   validateSandboxOracleCapture,
 } from "../src/sandbox-oracle.mjs";
+import {domSignature} from "../src/oracle-fixtures.mjs";
 import {
   DEFAULT_THRESHOLDS,
   validateLiveCompletionPolicy,
@@ -399,6 +400,32 @@ async function captureFixtureObservation({
   }
 }
 
+function captureSyntaxObservation({url, source, body}) {
+  return validateSandboxOracleCapture({
+    capture_mode: "syntax-only",
+    input_url: url,
+    final_url: null,
+    navigation_status: 200,
+    failures: [],
+    source_sha256: sha256(source),
+    raw_html: body,
+    html_sha256: sha256(body),
+    document: {
+      geometry: {},
+      presence_probes: [],
+      custom_properties: {},
+      resource_completion: {status: "syntax_only"},
+    },
+    geometry: {},
+    page_chrome_skeleton: {schema: PAGE_CHROME_SKELETON.schema, links: []},
+    dom_signature: domSignature(body),
+    dom_signatures: [],
+    attribute_signatures: [],
+    rendered_images: 0,
+    broken_images: [],
+  }, `syntax capture ${url}`);
+}
+
 async function main(argv) {
   const args = parseArgs(argv);
   const {registry, sourceMap} = await prepareInputs(args);
@@ -461,6 +488,7 @@ async function main(argv) {
       const source = sourceMap.get(fixture.fixture_id);
       const liveResource = resourceFor(fixture, source, registry, args.runId, "wikidot");
       const localResource = resourceFor(fixture, source, registry, args.runId, "wikijump");
+      const syntaxOnly = fixture.assertion_class === "match-frozen-preserved";
       let livePage = null;
       let localPage = null;
       let liveAttempted = false;
@@ -472,18 +500,18 @@ async function main(argv) {
       try {
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "inspect"}));
         if (await withTimeout(wikidot.inspect(liveResource), `live inspect ${fixture.fixture_id}`) !== null) throw new Error(`live oracle page already exists: ${liveResource.slug}`);
-        if (await withTimeout(wikijump.inspect(localResource), `local inspect ${fixture.fixture_id}`) !== null) throw new Error(`local oracle page already exists: ${localResource.slug}`);
+        if (!syntaxOnly && await withTimeout(wikijump.inspect(localResource), `local inspect ${fixture.fixture_id}`) !== null) throw new Error(`local oracle page already exists: ${localResource.slug}`);
         liveAttempted = true;
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "create-live"}));
         livePage = await withTimeout(wikidot.create(liveResource, {source: source.source}), `live create ${fixture.fixture_id}`);
-        localAttempted = true;
-        console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "create-local"}));
-        localPage = await withTimeout(
-          wikijump.create(localResource, {source: source.source}, {
-            allowParserErrors: fixture.assertion_class === "match-frozen-preserved",
-          }),
-          `local create ${fixture.fixture_id}`,
-        );
+        if (!syntaxOnly) {
+          localAttempted = true;
+          console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "create-local"}));
+          localPage = await withTimeout(
+            wikijump.create(localResource, {source: source.source}),
+            `local create ${fixture.fixture_id}`,
+          );
+        }
         contract = browserContract(fixture);
         console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-live"}));
         const liveResult = await captureFixtureObservation({context: browser.context, page: liveBrowserPage, url: liveResource.url, label: "live", index: captureIndex, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs, fixtureId: fixture.fixture_id});
@@ -503,12 +531,18 @@ async function main(argv) {
             },
           };
         }
-        console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-local"}));
-        const localResult = await captureFixtureObservation({context: browser.context, page: localBrowserPage, url: localResource.url, label: "local", index: captureIndex, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs, fixtureId: fixture.fixture_id});
-        localCapture = localResult.capture;
-        if (liveResult.validation_error || localResult.validation_error) {
-          console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-validation-failed", live: liveResult.validation_error, local: localResult.validation_error}));
+        let localResult;
+        if (syntaxOnly) {
+          console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-local-syntax"}));
+          const syntax = await withTimeout(wikijump.syntaxPreview(localResource, source.source), `local syntax preview ${fixture.fixture_id}`);
+          localCapture = captureSyntaxObservation({url: localResource.url, source: source.source, body: syntax.body});
+          localResult = {validation_error: null};
+        } else {
+          console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-local"}));
+          localResult = await captureFixtureObservation({context: browser.context, page: localBrowserPage, url: localResource.url, label: "local", index: captureIndex, outputDir: args.outputDir, contract, viewport: args.viewport, timeoutMs: args.timeoutMs, settleMs: args.settleMs, fixtureId: fixture.fixture_id});
+          localCapture = localResult.capture;
         }
+        if (liveResult.validation_error || localResult.validation_error) console.log(JSON.stringify({fixture_id: fixture.fixture_id, phase: "capture-validation-failed", live: liveResult.validation_error, local: localResult.validation_error}));
         upsertProgressRow(captures, {fixture_id: fixture.fixture_id, live: liveCapture, local: localCapture, resources: {live: liveResource, local: localResource}});
         upsertProgressRow(contracts, {fixture_id: fixture.fixture_id, contract});
         cleanup.push({fixture_id: fixture.fixture_id, live: {resource: liveResource, expected: {title: source.title, source_sha256: liveResource.source_sha256, tags: liveResource.tags}, identity: livePage}, local: {resource: localResource, expected: {title: source.title, source_sha256: localResource.source_sha256, tags: localResource.tags}, identity: localPage}});

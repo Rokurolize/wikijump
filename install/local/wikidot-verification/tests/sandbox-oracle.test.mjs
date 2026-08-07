@@ -108,6 +108,28 @@ test("capture validation fails closed on an incomplete browser observation", () 
   assert.equal(validateSandboxOracleCapture(bounded, "bounded capture"), bounded);
 });
 
+test("capture validation accepts an explicit syntax-only delayed observation", () => {
+  const syntaxCapture = {
+    capture_mode: "syntax-only",
+    source_sha256: HASH,
+    raw_html: "<p>[[module ListPages]]</p>",
+    html_sha256: HASH,
+    dom_signature: {
+      tags: {p: 1},
+      classes: {},
+      attrs: {},
+      id_count: 0,
+      comment_count: 0,
+    },
+    document: {resource_completion: {status: "syntax_only"}},
+  };
+  assert.equal(validateSandboxOracleCapture(syntaxCapture, "syntax capture"), syntaxCapture);
+  assert.throws(
+    () => validateSandboxOracleCapture({...syntaxCapture, document: {resource_completion: {status: "complete"}}}, "syntax capture"),
+    /syntax-only completion/u,
+  );
+});
+
 function liveFixture() {
   return {
     fixture_id: "syntax-inline-bold",

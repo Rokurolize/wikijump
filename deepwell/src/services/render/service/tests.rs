@@ -475,6 +475,23 @@ fn preserves_valid_bibcite_after_removing_stray_closer_protection() {
 }
 
 #[test]
+fn preserves_unclosed_bibliography_after_footnote() {
+    let rendered = render_wikidot_page_body_after_compat_restore(
+        "A claim[[footnote]]with a note[[/footnote]].\n\n[[bibliography]]",
+    );
+
+    assert!(rendered.contains("<p>[[bibliography]]</p>"), "{rendered}");
+    assert!(
+        rendered.contains(r#"<div class="footnotes-footer">"#),
+        "{rendered}"
+    );
+    assert!(
+        !rendered.contains(r#"<div class="bibitems">"#),
+        "{rendered}"
+    );
+}
+
+#[test]
 fn restores_wikidot_email_visibility() {
     let html = concat!(
         r#"<p><strong>Email:</strong> "#,
@@ -3639,12 +3656,14 @@ fn missing_include_with_spaced_empty_separator_matches_live_browser_dom() {
     let tokens = ftml::tokenize(&expanded);
     let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
     let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
-    let restored = RenderService::restore_wikidot_render_compatibility_for_context(
-        &rendered,
-        None,
-        &Config::integration_testing(),
-        true,
-    );
+    let restored =
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            &rendered,
+            None,
+            &Config::integration_testing(),
+            true,
+            &[],
+        );
     let restored = compat_text.restore(&restored);
 
     assert_eq!(
@@ -6034,11 +6053,12 @@ fn renders_and_localizes_wikidot_file_attachment_link() {
     config.files_domain_no_dot = "wjfiles.localhost".to_owned();
 
     assert_eq!(
-        RenderService::restore_wikidot_render_compatibility_for_context(
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
             &rendered,
             Some(&site),
             &config,
             true,
+            &[],
         ),
         r#"<p><a href="https://scp-wiki-en-corpus.wjfiles.localhost/local--files/scp-2276/elements.tsv">Download Catalog</a></p>"#,
     );
@@ -7741,8 +7761,12 @@ fn standalone_render_does_not_activate_rendered_styleframe_embeds() {
     let config = Config::integration_testing();
 
     assert_eq!(
-        RenderService::restore_wikidot_render_compatibility_for_context(
-            html, None, &config, false,
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            html,
+            None,
+            &config,
+            false,
+            &[],
         ),
         html,
     );
@@ -10628,6 +10652,57 @@ fn restores_wikidot_tabview_panel_visibility_per_tabview() {
     assert!(restored.contains(r#"<div style="display:none">First B</div>"#));
     assert!(restored.contains(r#"<div style="display: block;">Second A</div>"#));
     assert!(restored.contains(r#"<div style="display:none">Second B</div>"#));
+}
+
+#[test]
+fn restores_typed_wikidot_tabview_resource_requirements() {
+    let id = "wiki-tabview-0123456789abcdef0123456789abcdef".to_owned();
+    let html = format!(
+        r#"<p>Before</p><div id="{id}" class="yui-navset"><ul class="yui-nav"><li class="selected"><a href="javascript:;"><em>One</em></a></li><li><a href="javascript:;"><em>Two</em></a></li></ul><div class="yui-content"><div id="wiki-tab-0-0"><p>First</p></div><div id="wiki-tab-0-1"><p>Second</p></div></div></div><p>After</p>"#
+    );
+
+    let restored =
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            &html,
+            None,
+            &Config::integration_testing(),
+            true,
+            std::slice::from_ref(&id),
+        );
+
+    assert!(restored.starts_with(
+        r#"<p>Before</p><script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>
+<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset yui-navset-top">"#
+    ));
+    assert!(restored.contains(r#"<li class="selected" title="active">"#));
+    assert!(restored.contains(
+        r#"<div id="wiki-tab-0-0" style="display: block;"><p>First</p></div>"#
+    ));
+    assert!(
+        restored.contains(
+            r#"<div id="wiki-tab-0-1" style="display:none"><p>Second</p></div>"#
+        )
+    );
+    assert!(restored.contains(
+        r#"var tabView0123456789abcdef0123456789abcdef = new YAHOO.widget.TabView('wiki-tabview-0123456789abcdef0123456789abcdef');"#
+    ));
+    assert!(restored.ends_with("</script><p>After</p>"));
+    assert_eq!(restored.matches("tabview-min.js").count(), 1, "{restored}");
+}
+
+#[test]
+fn ignores_untrusted_or_unmatched_wikidot_tabview_resource_requirements() {
+    let html = r#"<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset"></div>"#;
+    assert_eq!(
+        RenderService::restore_wikidot_tabview_resource_compatibility(
+            html,
+            &[
+                "wiki-tabview-x');alert(1)//".to_owned(),
+                "wiki-tabview-fedcba9876543210fedcba9876543210".to_owned(),
+            ],
+        ),
+        html,
+    );
 }
 
 #[test]

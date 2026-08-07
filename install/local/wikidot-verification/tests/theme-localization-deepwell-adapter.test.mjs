@@ -46,6 +46,7 @@ class FakeRpc {
       this.page = null;
       return {};
     }
+    if (method === "wikidot_page_preview") return {body: "<p>[[module ListPages]]</p>", styles: []};
     throw new Error(`unexpected method ${method}`);
   }
 }
@@ -93,6 +94,18 @@ test("Deepwell adapter accepts the oracle run-owned namespace with its dedicated
   adapter.siteSlug = "sandbox-for-codex";
   await adapter.create(resource, {source});
   assert.deepEqual(rpc.calls.find((call) => call.method === "page_create").params.tags, ["codex-oracle"]);
+});
+
+test("syntax preview uses the explicit delayed-render contract", async () => {
+  const {rpc, adapter} = await connectedAdapter();
+  adapter.siteSlug = "sandbox-for-codex";
+  const source = "[[module ListPages]]";
+  const resource = {resource_id: "oracle:syntax", target: "wikijump", site_slug: "sandbox-for-codex", slug: "codex-oracle:20260805-adapter-syntax-only", url: "https://sandbox-for-codex.wikijump.localhost/codex-oracle:20260805-adapter-syntax-only", source_sha256: sha256(source), title: "Oracle syntax-only fixture", tags: ["codex-oracle"]};
+  const result = await adapter.syntaxPreview(resource, source);
+  assert.equal(result.body, "<p>[[module ListPages]]</p>");
+  const call = rpc.calls.find(({method}) => method === "wikidot_page_preview");
+  assert.deepEqual(call.params, {site_id: 42, title: resource.title, wikitext: source, syntax_only: true});
+  assert.equal(call.context.page, resource.slug);
 });
 
 test("connect rejects an explicit actor that does not match the session user", async () => {

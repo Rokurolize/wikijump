@@ -22,6 +22,7 @@ import {
   environmentHostIdentity,
   normalizeAttributeObservation,
   normalizeAttributeSignatures,
+  normalizeDomSignatures,
 } from "./render-compare.mjs";
 
 export const STANDING_BROWSER_CAPTURE_SCHEMA =
@@ -399,6 +400,42 @@ function environmentTranslationEvent(local, live, raw, normalized) {
   };
 }
 
+function tabviewIdentityTranslationEvent(local, live, raw, normalized) {
+  const localRows = (local ?? [])
+    .map(rawAttributeObservation)
+    .sort((left, right) =>
+      rawObservationKey(left).localeCompare(rawObservationKey(right)),
+    );
+  const liveRows = (live ?? [])
+    .map(rawAttributeObservation)
+    .sort((left, right) =>
+      rawObservationKey(left).localeCompare(rawObservationKey(right)),
+    );
+  if (localRows.length !== liveRows.length) return null;
+  const pairs = [];
+  for (const [index, localRow] of localRows.entries()) {
+    const liveRow = liveRows[index];
+    if (localRow.tag !== liveRow.tag || localRow.name !== liveRow.name) return null;
+    const localNormalized = normalizeAttributeObservation(localRow);
+    const liveNormalized = normalizeAttributeObservation(liveRow);
+    if (JSON.stringify(localNormalized) !== JSON.stringify(liveNormalized)) {
+      return null;
+    }
+    if (rawObservationKey(localRow) === rawObservationKey(liveRow)) continue;
+    if (
+      localRow.name !== "id" ||
+      !/^wiki-tabview-[0-9a-f]{32}$/iu.test(localRow.value) ||
+      !/^wiki-tabview-[0-9a-f]{32}$/iu.test(liveRow.value)
+    ) return null;
+    pairs.push({local: localRow.value, live: liveRow.value});
+  }
+  if (pairs.length === 0) return null;
+  return {
+    code: "volatile_tabview_identity_translation",
+    detail: {raw, normalized, pairs},
+  };
+}
+
 export function compareAttributeSignatures(local, live) {
   const localRaw = attributeMultiset(local);
   const liveRaw = attributeMultiset(live);
@@ -420,6 +457,22 @@ export function compareAttributeSignatures(local, live) {
     );
     if (environmentTranslation) normalizationEvents.push(environmentTranslation);
     else {
+      const tabviewIdentityTranslation = tabviewIdentityTranslationEvent(
+        local,
+        live,
+        raw,
+        normalized,
+      );
+      if (tabviewIdentityTranslation) {
+        normalizationEvents.push(tabviewIdentityTranslation);
+        return {
+          status: "pass",
+          raw,
+          normalized,
+          anomalies,
+          normalization_events: normalizationEvents,
+        };
+      }
       anomalies.push({
         code: "normalization_hides_difference",
         detail: {
@@ -699,10 +752,13 @@ export function compareCaptures(
   const liveOnlyBrokenImages = liveBrokenImages.filter(
     (image) => !localBrokenSources.has(image.src),
   );
-  const dom = multisetDistance(
+  const localDom = normalizeDomSignatures(local.dom_signatures ?? []);
+  const liveDom = normalizeDomSignatures(live.dom_signatures ?? []);
+  const rawDom = multisetDistance(
     local.dom_signatures ?? [],
     live.dom_signatures ?? [],
   );
+  const dom = multisetDistance(localDom.signatures, liveDom.signatures);
   if (dom.ratio > checkedThresholds.dom_multiset_distance_ratio) {
     anomalies.push({ code: "dom_structure_divergence", detail: dom });
   }
@@ -757,6 +813,11 @@ export function compareCaptures(
       live: liveRenderedImages,
       delta: imageCountDelta,
       scope: constructScope ? "construct" : "page-chrome",
+    },
+    dom_signature_normalization: {
+      raw: rawDom,
+      normalized: dom,
+      events: [...localDom.events, ...liveDom.events],
     },
     dom_multiset_distance: dom,
     domcontentloaded_immediate_custom_properties: immediateProperties,

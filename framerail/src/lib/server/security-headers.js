@@ -41,7 +41,7 @@ const WIKIDOT_INTERWIKI_FRAME_POLICIES = new Map([
 ])
 const LOCAL_WIKIDOT_STYLEFRAME_PATHNAME = "/-/wikidot-interwiki/styleFrame.html"
 const WIKIDOT_STYLEFRAME_POLICY =
-  "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-ancestors 'self'"
+  "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self'"
 
 const shouldSetHsts = (deploymentEnvironment = parseDeploymentEnvironment()) => {
   return deploymentEnvironment !== "local"

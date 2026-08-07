@@ -223,6 +223,72 @@ test("volatile attribute normalization is a finding rather than a silent pass", 
   );
 });
 
+test("tabview instance identities normalize only the live 32-hex shape", () => {
+  const live = capture({
+    dom_signatures: [
+      "div#wiki-tabview-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.yui-navset",
+    ],
+    attribute_signatures: [
+      {
+        tag: "div",
+        name: "id",
+        value: "wiki-tabview-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      },
+    ],
+  });
+  const local = capture({
+    dom_signatures: [
+      "div#wiki-tabview-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.yui-navset",
+    ],
+    attribute_signatures: [
+      {
+        tag: "div",
+        name: "id",
+        value: "wiki-tabview-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      },
+    ],
+  });
+  const result = compareCaptures(local, live, DEFAULT_THRESHOLDS, [], {
+    comparison_scope: "construct",
+    geometry_selectors: [],
+    first_paint_geometry_selectors: [],
+    presence_probes: [],
+    first_paint_custom_properties: {},
+  });
+  assert.equal(result.status, "pass");
+  assert.equal(result.dom_multiset_distance.different_elements, 0);
+  assert.equal(result.dom_signature_normalization.events.length, 2);
+  assert.equal(result.attributes.status, "pass");
+});
+
+test("tabview normalization remains fail-closed for malformed identities", () => {
+  const result = compareCaptures(
+    capture({
+      dom_signatures: ["div#wiki-tabview-not-a-tabview-id.yui-navset"],
+    }),
+    capture({
+      dom_signatures: [
+        "div#wiki-tabview-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.yui-navset",
+      ],
+    }),
+    DEFAULT_THRESHOLDS,
+    [],
+    {
+      comparison_scope: "construct",
+      geometry_selectors: [],
+      first_paint_geometry_selectors: [],
+      presence_probes: [],
+      first_paint_custom_properties: {},
+    },
+  );
+  assert.equal(result.status, "fail");
+  assert.ok(
+    result.anomalies.some(
+      (anomaly) => anomaly.code === "dom_structure_divergence",
+    ),
+  );
+});
+
 test("SCP file asset host localization is equivalent across live and local captures", () => {
   const result = compareAttributeSignatures(
     [{

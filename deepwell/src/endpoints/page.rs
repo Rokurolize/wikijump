@@ -71,6 +71,8 @@ struct WikidotPagePreviewInput {
     site_id: i64,
     title: String,
     wikitext: String,
+    #[serde(default)]
+    syntax_only: bool,
 }
 
 #[derive(Deserialize)]
@@ -96,13 +98,23 @@ pub async fn wikidot_page_preview(
     params: Params<'static>,
 ) -> Result<WikidotPagePreviewOutput> {
     let input: WikidotPagePreviewInput = parse!(params, Page);
-    let output = RenderService::render_wikidot_page_preview(
-        ctx,
-        input.site_id,
-        &input.title,
-        input.wikitext,
-    )
-    .await
+    let output = if input.syntax_only {
+        RenderService::render_wikidot_syntax_preview(
+            ctx,
+            input.site_id,
+            &input.title,
+            input.wikitext,
+        )
+        .await
+    } else {
+        RenderService::render_wikidot_page_preview(
+            ctx,
+            input.site_id,
+            &input.title,
+            input.wikitext,
+        )
+        .await
+    }
     .or_raise(|| {
         Error::new(
             format!(
