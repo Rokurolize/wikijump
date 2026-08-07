@@ -4709,6 +4709,38 @@ async fn listpages_runtime_scalar_title_stays_inert_in_delayed_row() {
 }
 
 #[tokio::test]
+async fn delayed_listpages_unicode_space_div_owner_stays_utf8_aligned() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Delayed ListPages Unicode-space div preview",
+        concat!(
+            "[[module ListPages limit=\"1\"]]\n",
+            "[[\u{2003}div]]%%title_linked%%[[/div]]\n",
+            "<br>\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("Unicode-spaced delayed div ownership must not panic")
+    .html_output
+    .body;
+
+    assert!(
+        !preview.contains("%%title_linked%%")
+            && !preview.contains("TODO: module ListPages")
+            && preview.contains("<br>"),
+        "the delayed row should bind its page link and preserve following content:\n{preview}",
+    );
+}
+
+#[tokio::test]
 async fn linked_listpages_values_keep_the_runtime_wrapper_outside_list_mode() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
