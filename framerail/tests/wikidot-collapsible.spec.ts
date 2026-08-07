@@ -11,6 +11,10 @@ test("Wikidot-compatible collapsibles preserve legacy interaction", async ({ pag
   })
 
   await page.goto("/wikidot-collapsible")
+  const initialNavigation = await page.evaluate(() => ({
+    historyLength: history.length,
+    url: location.href
+  }))
 
   await expect
     .poll(() =>
@@ -38,17 +42,33 @@ test("Wikidot-compatible collapsibles preserve legacy interaction", async ({ pag
   await showLink.click()
   await expect(foldedHandle).toBeHidden()
   await expect(unfolded).toBeVisible()
+  await expect(page.locator("body")).toBeFocused()
+  expect(
+    await page.evaluate(() => ({ historyLength: history.length, url: location.href }))
+  ).toEqual(initialNavigation)
 
   await hideLinks.first().press("Space")
   await expect(foldedHandle).toBeVisible()
   await expect(unfolded).toBeHidden()
+  await expect(page.locator("body")).toBeFocused()
+  expect(
+    await page.evaluate(() => ({ historyLength: history.length, url: location.href }))
+  ).toEqual(initialNavigation)
 
   await showLink.press("Enter")
   await expect(foldedHandle).toBeHidden()
   await expect(unfolded).toBeVisible()
+  await expect(page.locator("body")).toBeFocused()
+  expect(
+    await page.evaluate(() => ({ historyLength: history.length, url: location.href }))
+  ).toEqual(initialNavigation)
   await hideLinks.last().click()
   await expect(foldedHandle).toBeVisible()
   await expect(unfolded).toBeHidden()
+  await expect(page.locator("body")).toBeFocused()
+  expect(
+    await page.evaluate(() => ({ historyLength: history.length, url: location.href }))
+  ).toEqual(initialNavigation)
 
   const initiallyOpen = page.locator("#open-collapsible")
   await expect(initiallyOpen.locator(":scope > .collapsible-block-folded")).toBeHidden()
