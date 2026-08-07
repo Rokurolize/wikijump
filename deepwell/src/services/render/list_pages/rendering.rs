@@ -557,23 +557,19 @@ impl RenderService {
                             },
                         )
                     } else if list_pages_body_has_standalone_count_pages_opening(body) {
-                        ListPagesTemplatePlan::compile("").map_or_else(
-                            || unsupported_plan(module_original, body),
-                            |template| {
-                                let batch_key = exact_name_list_pages_batch_key(
-                                    head,
-                                    &template,
-                                    &arguments,
-                                    current_category.as_ref(),
-                                );
-                                ListPagesBlockPlan::Render {
-                                    arguments,
-                                    template,
-                                    batch_key,
-                                    legacy_tail: None,
-                                }
-                            },
-                        )
+                        let template = ListPagesTemplatePlan::empty_row();
+                        let batch_key = exact_name_list_pages_batch_key(
+                            head,
+                            &template,
+                            &arguments,
+                            current_category.as_ref(),
+                        );
+                        ListPagesBlockPlan::Render {
+                            arguments,
+                            template,
+                            batch_key,
+                            legacy_tail: None,
+                        }
                     } else if let Some(template) = ListPagesTemplatePlan::compile(body) {
                         if unsafe_unknown_tracking_template(&template) {
                             fail_closed_unknown_tracking_plan(compat_html)

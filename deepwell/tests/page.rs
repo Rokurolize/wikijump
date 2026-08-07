@@ -18979,6 +18979,8 @@ INNER_TOTAL=%%total%%; INNER_COUNT=%%count%%; [[[start|start link]]]
         "Wikidot still emits the outer ListPages container and an empty result item:\n{html}",
     );
     for forbidden in [
+        "Fixture CountPages Nested ListPages Target",
+        "Fixture CountPages nested target marker.",
         "OUTER=",
         "INNER_TOTAL=",
         "INNER_COUNT=",
