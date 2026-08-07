@@ -221,10 +221,10 @@ jobs:
           cargo run --locked
 
   gate:
-    # Branch protection requires CI / gate. Publish that name only when this
-    # run validates the classifier and every selected component result. A
+    # Keep one stable advisory aggregate. Publish CI / gate only when this run
+    # validates the classifier and every selected component result. A
     # metadata-only edit still gets a cheap visible check, but under a distinct
-    # non-required name so it cannot replace a failed gate for the same head.
+    # name so it cannot replace the aggregate result for the same head.
     name: ${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / metadata edit' || 'CI / gate' }}
     needs:
       - classify

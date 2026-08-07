@@ -45,7 +45,7 @@ const gateCheckName = (event) =>
 
 const gateRunsValidation = (event) => !metadataOnlyEdit(event)
 
-test("one central workflow owns required checks without reacting to labels", () => {
+test("one central workflow owns the aggregate check without reacting to labels", () => {
   const source = workflow("ci-gate.yaml")
   const trigger = source.slice(source.indexOf("on:\n"), source.indexOf("\npermissions:\n"))
 
@@ -80,7 +80,7 @@ test("base edits rerun central CI while metadata edits stay isolated", () => {
   assert.doesNotMatch(gate.join("\n"), /CI \/ draft gate/)
 })
 
-test("metadata edits cannot replace the required gate context", () => {
+test("metadata edits cannot replace the aggregate gate context", () => {
   const source = workflow("ci-gate.yaml")
   const gate = jobBlock(source, "gate")
   const metadataStep = stepBlock(gate, "Metadata edit no-op")
@@ -143,7 +143,7 @@ test("PR classification uses three-dot history while push classification uses tw
   assert.doesNotMatch(classify, /pulls\/.*files|github\.event\.pull_request\.changed_files/)
 })
 
-test("component and lockfile changes select required validation", () => {
+test("component and lockfile changes select complete validation", () => {
   assert.equal(classifyChanges(["deepwell/Cargo.lock"]).deepwell, true)
   assert.equal(classifyChanges(["wws/Cargo.lock"]).wws, true)
   assert.equal(classifyChanges(["locales/validator/Cargo.lock"]).locales, true)
