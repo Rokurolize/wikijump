@@ -374,6 +374,7 @@ impl ListPagesTemplatePlan {
             content_sections: BTreeSet::new(),
             output_shape: ListPagesOutputShape::Plain,
             rating_only: false,
+            has_unknown_variables: false,
             #[cfg(test)]
             variable_traversals: 0,
         }
