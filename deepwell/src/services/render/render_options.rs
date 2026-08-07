@@ -68,6 +68,9 @@ pub(super) struct RenderPageOptions<'a> {
     pub(super) max_include_expansions: usize,
     pub(super) viewer_user_id: Option<i64>,
 
+    /// Whether this render may update compiled text and hosted page blocks.
+    pub(super) persist_page_artifacts: bool,
+
     /// The Wikidot URL path arguments this request carried.
     pub(super) url: UrlArguments<'a>,
 
@@ -105,6 +108,16 @@ impl RenderContext {
             current_category_id: Some(category_id),
             current_page_id: Some(page_id),
             text_block_page_id: Some(page_id),
+            lifecycle: RenderLifecycle::SavedPage,
+        }
+    }
+
+    pub(super) fn page_view(site_id: i64, category_id: i64, page_id: i64) -> Self {
+        Self {
+            current_site_id: Some(site_id),
+            current_category_id: Some(category_id),
+            current_page_id: Some(page_id),
+            text_block_page_id: None,
             lifecycle: RenderLifecycle::SavedPage,
         }
     }

@@ -6269,6 +6269,20 @@ fn page_nav_render_context_keeps_current_page_without_text_block_target() {
 }
 
 #[test]
+fn page_view_render_context_keeps_current_page_without_text_block_target() {
+    assert_eq!(
+        RenderContext::page_view(7, 9, 11),
+        RenderContext {
+            current_site_id: Some(7),
+            current_category_id: Some(9),
+            current_page_id: Some(11),
+            text_block_page_id: None,
+            lifecycle: RenderLifecycle::SavedPage,
+        },
+    );
+}
+
+#[test]
 fn page_render_context_uses_current_page_as_text_block_target() {
     assert_eq!(
         RenderContext::page(7, 9, 11),
