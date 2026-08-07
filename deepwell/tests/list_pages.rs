@@ -3110,6 +3110,120 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "unknown variables should remain literal while known variables execute:\n{unknown_variable_preview}",
     );
 
+    let unknown_tracking_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "[[image https://tracker.invalid/%%fullname%%/%%unsupported%%]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("unknown variables must make tracking-only templates fail closed")
+    .html_output
+    .body;
+    assert_eq!(
+        unknown_tracking_preview.trim(),
+        r#"<div class="list-pages-box"></div>"#,
+        "unknown tracking templates must not expose substituted page metadata or active image markup:\n{unknown_tracking_preview}",
+    );
+
+    for (label, body) in [
+        (
+            "hidden image",
+            "[[image https://tracker.invalid/%%fullname%%/%%unsupported%%]]",
+        ),
+        (
+            "hidden iframe",
+            r#"<iframe src="https://tracker.invalid/%%fullname%%/%%unsupported%%" style="display: none"></iframe>"#,
+        ),
+        (
+            "hidden ListUsers module",
+            "[[module ListUsers users=\"%%fullname%%/%%unsupported%%\"]]\n[[/module]]",
+        ),
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            format!(
+                concat!(
+                    "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" ",
+                    "wrapper=\"no\"]]\n{BODY}\n[[/module]]",
+                ),
+                TARGET_SLUG = TARGET_SLUG,
+                BODY = body,
+            ),
+        )
+        .await
+        .expect("unknown tracking shapes must fail closed")
+        .html_output
+        .body;
+        assert_eq!(
+            preview.trim(),
+            r#"<div class="list-pages-box"></div>"#,
+            "{label} with an unknown variable must not become active ListPages output:\n{preview}",
+        );
+    }
+
+    let sectioned_unknown_tracking_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "[[head]]VISIBLE-HEAD[[/head]]\n",
+                "[[body]]\n",
+                "[[image https://tracker.invalid/%%fullname%%/%%unsupported%%]]\n",
+                "[[/body]]\n",
+                "[[foot]]VISIBLE-FOOT[[/foot]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("section wrappers must not hide an unknown tracking body")
+    .html_output
+    .body;
+    assert_eq!(
+        sectioned_unknown_tracking_preview.trim(),
+        r#"<div class="list-pages-box"></div>"#,
+        "the effective section body must use the existing tracking-only policy:\n{sectioned_unknown_tracking_preview}",
+    );
+
+    let visible_authored_image_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "VISIBLE [[image https://example.invalid/%%fullname%%/%%unsupported%%]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("visible authored images must remain outside the tracking-only policy")
+    .html_output
+    .body;
+    assert!(
+        visible_authored_image_preview.contains("VISIBLE")
+            && visible_authored_image_preview.contains(TARGET_SLUG)
+            && visible_authored_image_preview.contains("%%unsupported%%")
+            && !visible_authored_image_preview
+                .contains(r#"<div class="list-pages-box">"#),
+        "ordinary visible image markup must remain active while unknown tokens stay literal:\n{visible_authored_image_preview}",
+    );
+
     let tabbed_preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site_id,

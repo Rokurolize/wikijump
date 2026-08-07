@@ -128,7 +128,8 @@ pub(super) use self::substitution::{
     count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
     count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
     exact_name_list_pages_batch_key, list_pages_author_cache_key,
-    list_pages_first_paragraph, list_pages_has_unsupported_page_type_selector,
+    list_pages_body_is_no_visible_tracking_markup, list_pages_first_paragraph,
+    list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
     list_pages_static_parent_fullname_with_url, parse_list_pages_arguments,
     parse_list_pages_arguments_with_url, union_found_page_fields,
@@ -136,9 +137,9 @@ pub(super) use self::substitution::{
 };
 #[cfg(test)]
 pub(super) use self::substitution::{
-    ListPagesOffsetOrigin, list_pages_body_is_no_visible_tracking_markup,
-    list_pages_body_uses_content_variable, list_pages_body_variables_supported,
-    list_pages_static_parent_fullname, parse_list_pages_date_selector,
+    ListPagesOffsetOrigin, list_pages_body_uses_content_variable,
+    list_pages_body_variables_supported, list_pages_static_parent_fullname,
+    parse_list_pages_date_selector,
 };
 
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
