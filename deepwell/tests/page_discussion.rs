@@ -15,13 +15,17 @@ mod common;
 
 use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, ANONYMOUS_USER_ID};
+use deepwell::models::forum_thread::Entity as ForumThreadTable;
 use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
 use deepwell::services::forum_thread::{CreateForumThread, GetForumThread};
 use deepwell::services::{
-    ForumService, ForumThreadService, PageService, RequestContext, ServiceContext,
+    CategoryService, ForumService, ForumThreadService, PageService, RequestContext,
+    ServiceContext, SettingsService,
 };
 use deepwell::types::Reference;
-use sea_orm::{ConnectionTrait, Statement, TransactionTrait, Value};
+use sea_orm::{
+    ConnectionTrait, EntityTrait, PaginatorTrait, Statement, TransactionTrait, Value,
+};
 use serde_json::json;
 use std::time::Duration;
 
@@ -37,6 +41,21 @@ fn set_actor(
         site_id: Some(site_id),
         page_reference: Some(page),
     });
+}
+
+async fn set_page_discussion_policy(runner: &TestRunner, page_id: i64, enabled: bool) {
+    let page = PageService::get_direct(runner.context(), page_id, false)
+        .await
+        .expect("discussion policy page should exist");
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE page_category SET per_page_discussion = $1 WHERE category_id = $2",
+            [Value::from(enabled), Value::from(page.page_category_id)],
+        ))
+        .await
+        .expect("discussion policy should update");
 }
 
 #[tokio::test]
@@ -104,6 +123,7 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    set_page_discussion_policy(&runner, page.page_id, true).await;
 
     set_actor(&mut runner, None, site_id, Reference::Id(page.page_id));
     let first = run_endpoint!(
@@ -314,8 +334,162 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
 }
 
 #[tokio::test]
+async fn wikidot_page_discussion_respects_disabled_page_policy() {
+    const ENABLED_PAGE_SLUG: &str = "discussion-policy:enabled-before-disable";
+    const DISABLED_PAGE_SLUG: &str = "discussion-policy:disabled-fixture";
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Disabled page discussion fixture group".to_owned(),
+            description: "Disabled page discussion fixture group".to_owned(),
+            visible: false,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("disabled discussion forum group should be created");
+    ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Disabled policy per-page discussions".to_owned(),
+            description: "Disabled policy per-page discussions".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("disabled discussion forum category should be created");
+
+    macro_rules! create_page {
+        ($slug:expr, $title:expr) => {{
+            set_actor(
+                &mut runner,
+                Some(ADMIN_USER_ID),
+                site_id,
+                Reference::from($slug),
+            );
+            run_endpoint!(
+                runner,
+                page_create,
+                json!({
+                    "site_id": site_id,
+                    "wikitext": "Discussion policy fixture body",
+                    "title": $title,
+                    "alt_title": null,
+                    "slug": $slug,
+                    "layout": "wikidot",
+                    "revision_comments": "page discussion policy fixture",
+                    "user_id": ADMIN_USER_ID,
+                    "bypass_filter": true,
+                    "ip_address": common::IP_ADDRESS,
+                }),
+            )
+        }};
+    }
+
+    let enabled_page =
+        create_page!(ENABLED_PAGE_SLUG, "Page Discussion Enabled Before Disable");
+    let disabled_page =
+        create_page!(DISABLED_PAGE_SLUG, "Page Discussion Disabled Fixture");
+    set_page_discussion_policy(&runner, enabled_page.page_id, true).await;
+
+    set_actor(
+        &mut runner,
+        None,
+        site_id,
+        Reference::Id(enabled_page.page_id),
+    );
+    let existing = run_endpoint!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": enabled_page.page_id }),
+    )
+    .expect("enabled page should receive a discussion thread");
+    let thread_count = ForumThreadTable::find()
+        .count(runner.context().transaction())
+        .await
+        .expect("forum thread count should be readable");
+
+    set_page_discussion_policy(&runner, enabled_page.page_id, false).await;
+    set_actor(
+        &mut runner,
+        None,
+        site_id,
+        Reference::Id(disabled_page.page_id),
+    );
+    assert!(
+        run_endpoint!(
+            runner,
+            wikidot_page_discussion_create,
+            json!({ "site_id": site_id, "page_id": disabled_page.page_id }),
+        )
+        .is_none(),
+        "an anonymous viewer must not create a thread while page discussions are disabled",
+    );
+    assert_eq!(
+        ForumThreadTable::find()
+            .count(runner.context().transaction())
+            .await
+            .expect("forum thread count should remain readable"),
+        thread_count,
+        "a disabled discussion request must not create persistent forum state",
+    );
+    let stored_disabled_page =
+        PageService::get_direct(runner.context(), disabled_page.page_id, false)
+            .await
+            .expect("disabled discussion page should still exist");
+    assert_eq!(stored_disabled_page.discussion_thread_id, None);
+
+    set_actor(
+        &mut runner,
+        None,
+        site_id,
+        Reference::Id(enabled_page.page_id),
+    );
+    assert!(
+        run_endpoint!(
+            runner,
+            wikidot_page_discussion_create,
+            json!({ "site_id": site_id, "page_id": enabled_page.page_id }),
+        )
+        .is_none(),
+        "an existing thread pointer must not bypass a newly disabled page policy",
+    );
+    let stored_enabled_page =
+        PageService::get_direct(runner.context(), enabled_page.page_id, false)
+            .await
+            .expect("formerly enabled discussion page should still exist");
+    assert_eq!(
+        stored_enabled_page.discussion_thread_id,
+        Some(existing.thread_id)
+    );
+    assert_eq!(
+        ForumThreadTable::find()
+            .count(runner.context().transaction())
+            .await
+            .expect("forum thread count should remain readable"),
+        thread_count,
+    );
+}
+
+#[tokio::test]
 async fn wikidot_page_discussion_rejects_cross_site_thread_associations() {
-    const PAGE_SLUG: &str = "page-discussion-cross-site-fixture";
+    const PAGE_SLUG: &str = "discussion-cross-site:fixture";
 
     let mut runner = TestRunner::setup().await;
     let test_site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
@@ -349,6 +523,7 @@ async fn wikidot_page_discussion_rejects_cross_site_thread_associations() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    set_page_discussion_policy(&runner, page.page_id, true).await;
 
     let group = ForumService::create_group(
         runner.context(),
@@ -485,7 +660,73 @@ async fn page_discussion_page_lookup_holds_an_exclusive_row_lock() {
 }
 
 #[tokio::test]
+async fn page_discussion_policy_lookup_holds_an_exclusive_category_lock() {
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "scp-wiki" }))
+        .expect("seeded SCP Wiki site should exist")
+        .site
+        .site_id;
+    let category =
+        CategoryService::get(runner.context(), site_id, Reference::from("_default"))
+            .await
+            .expect("the seeded SCP Wiki default category should exist");
+    let state = runner.state().clone();
+
+    let first_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("the first policy transaction should start");
+    let first_context = ServiceContext::new(&state, &first_transaction);
+    SettingsService::get_page_discussion_settings_for_update(
+        &first_context,
+        site_id,
+        category.category_id,
+    )
+    .await
+    .expect("the first discussion policy lock should succeed");
+
+    let second_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("the competing policy transaction should start");
+    let backend = second_transaction.get_database_backend();
+    let mut competing_update = Box::pin(second_transaction.execute_raw(
+        Statement::from_sql_and_values(
+            backend,
+            "UPDATE page_category SET per_page_discussion = NOT COALESCE(per_page_discussion, FALSE) WHERE category_id = $1",
+            [Value::from(category.category_id)],
+        ),
+    ));
+    assert!(
+        tokio::time::timeout(Duration::from_millis(100), competing_update.as_mut())
+            .await
+            .is_err(),
+        "a competing policy update must wait for the discussion request transaction",
+    );
+
+    drop(first_context);
+    first_transaction
+        .rollback()
+        .await
+        .expect("the first policy transaction should roll back");
+    tokio::time::timeout(Duration::from_secs(2), competing_update.as_mut())
+        .await
+        .expect("the competing policy update should proceed after release")
+        .expect("the competing policy update should succeed");
+    drop(competing_update);
+    second_transaction
+        .rollback()
+        .await
+        .expect("the competing policy transaction should roll back");
+}
+
+#[tokio::test]
 async fn imported_page_discussion_pointer_can_be_claimed_by_only_one_page() {
+    const FIRST_PAGE_SLUG: &str = "discussion-pointer:first";
+    const SECOND_PAGE_SLUG: &str = "discussion-pointer:second";
+
     let mut runner = TestRunner::setup().await;
     let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
         .expect("seeded test site should exist")
@@ -526,7 +767,7 @@ async fn imported_page_discussion_pointer_can_be_claimed_by_only_one_page() {
         &mut runner,
         Some(ADMIN_USER_ID),
         site_id,
-        Reference::from("page-discussion-pointer-a"),
+        Reference::from(FIRST_PAGE_SLUG),
     );
     let first_page = run_endpoint!(
         runner,
@@ -536,7 +777,7 @@ async fn imported_page_discussion_pointer_can_be_claimed_by_only_one_page() {
             "wikitext": "First imported pointer fixture",
             "title": "First imported pointer fixture",
             "alt_title": null,
-            "slug": "page-discussion-pointer-a",
+            "slug": FIRST_PAGE_SLUG,
             "layout": "wikidot",
             "revision_comments": "first imported pointer fixture",
             "user_id": ADMIN_USER_ID,
@@ -548,7 +789,7 @@ async fn imported_page_discussion_pointer_can_be_claimed_by_only_one_page() {
         &mut runner,
         Some(ADMIN_USER_ID),
         site_id,
-        Reference::from("page-discussion-pointer-b"),
+        Reference::from(SECOND_PAGE_SLUG),
     );
     let second_page = run_endpoint!(
         runner,
@@ -558,7 +799,7 @@ async fn imported_page_discussion_pointer_can_be_claimed_by_only_one_page() {
             "wikitext": "Second imported pointer fixture",
             "title": "Second imported pointer fixture",
             "alt_title": null,
-            "slug": "page-discussion-pointer-b",
+            "slug": SECOND_PAGE_SLUG,
             "layout": "wikidot",
             "revision_comments": "second imported pointer fixture",
             "user_id": ADMIN_USER_ID,
@@ -566,6 +807,7 @@ async fn imported_page_discussion_pointer_can_be_claimed_by_only_one_page() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    set_page_discussion_policy(&runner, first_page.page_id, true).await;
     let thread = ForumThreadService::create(
         runner.context(),
         CreateForumThread {
@@ -638,6 +880,10 @@ async fn imported_page_discussion_pointer_can_be_claimed_by_only_one_page() {
 
 #[tokio::test]
 async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
+    const FIRST_PAGE_SLUG: &str = "discussion-containers:first";
+    const SECOND_PAGE_SLUG: &str = "discussion-containers:second";
+    const THIRD_PAGE_SLUG: &str = "discussion-containers:third";
+
     let mut runner = TestRunner::setup().await;
     let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
         .expect("seeded test site should exist")
@@ -678,7 +924,7 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
         &mut runner,
         Some(ADMIN_USER_ID),
         site_id,
-        Reference::from("page-discussion-container-a"),
+        Reference::from(FIRST_PAGE_SLUG),
     );
     let first_page = run_endpoint!(
         runner,
@@ -688,7 +934,7 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
             "wikitext": "Container lifecycle fixture A",
             "title": "Container lifecycle fixture A",
             "alt_title": null,
-            "slug": "page-discussion-container-a",
+            "slug": FIRST_PAGE_SLUG,
             "layout": "wikidot",
             "revision_comments": "container lifecycle fixture A",
             "user_id": ADMIN_USER_ID,
@@ -696,6 +942,7 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    set_page_discussion_policy(&runner, first_page.page_id, true).await;
     set_actor(
         &mut runner,
         None,
@@ -807,7 +1054,7 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
         &mut runner,
         Some(ADMIN_USER_ID),
         site_id,
-        Reference::from("page-discussion-container-b"),
+        Reference::from(SECOND_PAGE_SLUG),
     );
     let second_page = run_endpoint!(
         runner,
@@ -817,7 +1064,7 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
             "wikitext": "Container lifecycle fixture B",
             "title": "Container lifecycle fixture B",
             "alt_title": null,
-            "slug": "page-discussion-container-b",
+            "slug": SECOND_PAGE_SLUG,
             "layout": "wikidot",
             "revision_comments": "container lifecycle fixture B",
             "user_id": ADMIN_USER_ID,
@@ -872,7 +1119,7 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
         &mut runner,
         Some(ADMIN_USER_ID),
         site_id,
-        Reference::from("page-discussion-container-c"),
+        Reference::from(THIRD_PAGE_SLUG),
     );
     let third_page = run_endpoint!(
         runner,
@@ -882,7 +1129,7 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
             "wikitext": "Container lifecycle fixture C",
             "title": "Container lifecycle fixture C",
             "alt_title": null,
-            "slug": "page-discussion-container-c",
+            "slug": THIRD_PAGE_SLUG,
             "layout": "wikidot",
             "revision_comments": "container lifecycle fixture C",
             "user_id": ADMIN_USER_ID,

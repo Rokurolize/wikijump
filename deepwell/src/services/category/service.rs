@@ -35,7 +35,7 @@ use crate::utils::now;
 use paste::paste;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter,
-    QueryOrder, Set,
+    QueryOrder, QuerySelect, Set,
 };
 use sea_query::{Expr, ExprTrait, Func, Query};
 use std::net::IpAddr;
@@ -109,6 +109,39 @@ impl CategoryService {
         Ok(category)
     }
 
+    pub async fn get_optional_for_update(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        reference: Reference<'_>,
+    ) -> Result<Option<PageCategoryModel>> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to lock page category {:?} in site ID {}",
+                    reference, site_id,
+                ),
+                ErrorType::PageCategory,
+            )
+        };
+
+        let condition = match reference.borrow() {
+            Reference::Id(id) => page_category::Column::CategoryId.eq(id),
+            Reference::Slug(slug) => page_category::Column::Slug.eq(slug),
+        };
+        let category = PageCategory::find()
+            .filter(
+                Condition::all()
+                    .add(page_category::Column::SiteId.eq(site_id))
+                    .add(condition),
+            )
+            .lock_exclusive()
+            .one(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        Ok(category)
+    }
+
     #[inline]
     pub async fn get(
         ctx: &ServiceContext<'_>,
@@ -117,6 +150,19 @@ impl CategoryService {
     ) -> Result<PageCategoryModel> {
         find_or_error!(
             Self::get_optional(ctx, site_id, reference),
+            "page category",
+            PageCategory,
+        )
+    }
+
+    #[inline]
+    pub async fn get_for_update(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        reference: Reference<'_>,
+    ) -> Result<PageCategoryModel> {
+        find_or_error!(
+            Self::get_optional_for_update(ctx, site_id, reference),
             "page category",
             PageCategory,
         )
