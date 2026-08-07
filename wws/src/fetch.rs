@@ -20,6 +20,7 @@
 
 use crate::deepwell::FileData;
 use crate::error::{BasicError, ResponseResult, build_basic_error_response};
+use crate::handler::get_session_token;
 use crate::range::ByteRange;
 use crate::state::ServerState;
 use axum::body::Body;
@@ -41,7 +42,14 @@ pub async fn fetch_file_info(
         .await?;
 
     state
-        .get_file_or_response(headers, site_id, page_id, page_slug, filename)
+        .get_file_or_response(
+            headers,
+            site_id,
+            page_id,
+            page_slug,
+            filename,
+            get_session_token(headers),
+        )
         .await
 }
 

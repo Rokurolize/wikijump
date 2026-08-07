@@ -221,10 +221,11 @@ jobs:
           cargo run --locked
 
   gate:
-    # Keep one stable status context: branch protection requires CI / gate.
-    # Draft mode still selects the cheaper validation set through the classifier;
-    # it must not publish a different check name that GitHub treats as missing.
-    name: CI / gate
+    # Keep one stable advisory aggregate. Publish CI / gate only when this run
+    # validates the classifier and every selected component result. A
+    # metadata-only edit still gets a cheap visible check, but under a distinct
+    # name so it cannot replace the aggregate result for the same head.
+    name: ${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / metadata edit' || 'CI / gate' }}
     needs:
       - classify
       - workflow_policy

@@ -23,6 +23,7 @@ use crate::config::Secrets;
 use crate::deepwell::{Deepwell, FileData, PageData};
 use crate::error::{
     BasicError, FallbackError, ResponseResult, Result, build_basic_error_response,
+    is_deepwell_permission_denied,
 };
 use axum::http::HeaderMap;
 use axum::response::IntoResponse;
@@ -186,20 +187,14 @@ impl ServerStateInner {
         site_id: i64,
         page_id: i64,
         filename: &str,
+        session_token: Option<&str>,
     ) -> Result<Option<FileData>> {
-        match self.cache.get_file(site_id, page_id, filename).await? {
-            Some(data) => Ok(Some(data)),
-            None => match self.deepwell.get_file(site_id, page_id, filename).await? {
-                None => Ok(None),
-                Some(data) => {
-                    self.cache
-                        .set_file(site_id, page_id, filename, &data)
-                        .await?;
-
-                    Ok(Some(data))
-                }
-            },
-        }
+        // File metadata is permission-sensitive.  Re-ask DEEPWELL on every
+        // request so a cached response cannot bypass a changed Page:View
+        // policy or reuse one actor's authorization for another actor.
+        self.deepwell
+            .get_file(site_id, page_id, filename, session_token)
+            .await
     }
 
     pub async fn get_file_or_response(
@@ -209,8 +204,12 @@ impl ServerStateInner {
         page_id: i64,
         page_slug: &str,
         filename: &str,
+        session_token: Option<&str>,
     ) -> ResponseResult<FileData> {
-        match self.get_file(site_id, page_id, filename).await {
+        match self
+            .get_file(site_id, page_id, filename, session_token)
+            .await
+        {
             Ok(Some(file_info)) => Ok(file_info),
             Ok(None) => {
                 error!(
@@ -241,16 +240,21 @@ impl ServerStateInner {
                     "Cannot get file info: {error}",
                 );
 
-                let response = build_basic_error_response(
-                    self,
-                    headers,
+                let error_kind = if is_deepwell_permission_denied(&error) {
+                    BasicError::FileName {
+                        site_id,
+                        page_slug,
+                        filename,
+                    }
+                } else {
                     BasicError::FileFetch {
                         site_id,
                         page_slug,
                         filename,
-                    },
-                )
-                .await;
+                    }
+                };
+                let response =
+                    build_basic_error_response(self, headers, error_kind).await;
 
                 Err(response)
             }
@@ -261,8 +265,19 @@ impl ServerStateInner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::Router;
+    use axum::body::Bytes;
+    use axum::extract::State as AxumState;
+    use axum::http::HeaderMap;
+    use axum::response::{IntoResponse, Response};
+    use axum::routing::post;
     use s3::creds::Credentials;
     use s3::region::Region;
+    use serde_json::{Value, json};
+    use std::sync::{Arc, Mutex};
+    use tokio::net::TcpListener;
+
+    type Requests = Arc<Mutex<Vec<Value>>>;
 
     fn test_secrets(path_style: bool) -> Secrets {
         Secrets {
@@ -287,6 +302,88 @@ mod tests {
         }
     }
 
+    async fn file_rpc(AxumState(requests): AxumState<Requests>, body: Bytes) -> Response {
+        let request: Value = serde_json::from_slice(&body).unwrap();
+        let id = request["id"].clone();
+        assert_eq!(request["method"], "file_get");
+        requests.lock().unwrap().push(request);
+
+        (
+            [("content-type", "application/json")],
+            json!({
+                "jsonrpc": "2.0",
+                "result": {
+                    "file_id": 7,
+                    "mime": "text/plain",
+                    "size": 42,
+                    "s3_hash": "private-blob"
+                },
+                "id": id
+            })
+            .to_string(),
+        )
+            .into_response()
+    }
+
+    async fn denied_file_rpc(
+        AxumState(requests): AxumState<Requests>,
+        body: Bytes,
+    ) -> Response {
+        let request: Value = serde_json::from_slice(&body).unwrap();
+        let method = request["method"].as_str().unwrap().to_owned();
+        let id = request["id"].clone();
+        requests.lock().unwrap().push(request);
+        let body = match method.as_str() {
+            "file_get" => json!({
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": 3106,
+                    "message": "permission denied"
+                },
+                "id": id
+            }),
+            "basic_error_missing_file_name" => json!({
+                "jsonrpc": "2.0",
+                "result": {"title": "missing", "body": "not found"},
+                "id": id
+            }),
+            "basic_error_file_fetch" => json!({
+                "jsonrpc": "2.0",
+                "result": {"title": "fetch", "body": "fetch failed"},
+                "id": id
+            }),
+            other => panic!("unexpected JSON-RPC method: {other}"),
+        };
+
+        ([("content-type", "application/json")], body.to_string()).into_response()
+    }
+
+    async fn spawn_file_rpc() -> (String, Requests, tokio::task::JoinHandle<()>) {
+        let requests = Requests::default();
+        let app = Router::new()
+            .route("/", post(file_rpc))
+            .with_state(Arc::clone(&requests));
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let task = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (format!("http://{address}"), requests, task)
+    }
+
+    async fn spawn_denied_file_rpc() -> (String, Requests, tokio::task::JoinHandle<()>) {
+        let requests = Requests::default();
+        let app = Router::new()
+            .route("/", post(denied_file_rpc))
+            .with_state(Arc::clone(&requests));
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let task = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (format!("http://{address}"), requests, task)
+    }
+
     #[tokio::test]
     async fn build_server_state_initializes_clients_and_buckets_without_check() {
         let state = build_server_state(false, test_secrets(true)).await.unwrap();
@@ -301,5 +398,56 @@ mod tests {
             state.s3_tblocks_bucket.request_timeout,
             Some(BUCKET_REQUEST_TIMEOUT),
         );
+    }
+
+    #[tokio::test]
+    async fn file_metadata_rechecks_deepwell_authorization_instead_of_using_cache() {
+        let (deepwell_url, requests, server) = spawn_file_rpc().await;
+        let mut secrets = test_secrets(true);
+        secrets.deepwell_url = deepwell_url;
+        // No Redis server is available on this port. A file request must not
+        // consult the old unqualified metadata cache before checking ACLs.
+        secrets.redis_url = str!("redis://127.0.0.1:1/");
+        let state = build_server_state(false, secrets).await.unwrap();
+
+        let file = state
+            .get_file(42, 123, "secret.png", Some("actor-session"))
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(file.s3_hash, "private-blob");
+        let requests = requests.lock().unwrap();
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0]["params"]["session_token"], "actor-session");
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn permission_denied_file_metadata_uses_the_non_disclosing_not_found_response()
+    {
+        let (deepwell_url, requests, server) = spawn_denied_file_rpc().await;
+        let mut secrets = test_secrets(true);
+        secrets.deepwell_url = deepwell_url;
+        secrets.redis_url = str!("redis://127.0.0.1:1/");
+        let state = build_server_state(false, secrets).await.unwrap();
+
+        let response = state
+            .get_file_or_response(
+                &HeaderMap::new(),
+                42,
+                123,
+                "private-page",
+                "secret.png",
+                None,
+            )
+            .await
+            .unwrap_err();
+
+        assert_eq!(response.status(), axum::http::StatusCode::NOT_FOUND);
+        let requests = requests.lock().unwrap();
+        assert_eq!(requests[0]["method"], "file_get");
+        assert_eq!(requests[1]["method"], "basic_error_missing_file_name");
+        server.abort();
     }
 }

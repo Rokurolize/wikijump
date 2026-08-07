@@ -3189,6 +3189,120 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         "unknown variables should remain literal while known variables execute:\n{unknown_variable_preview}",
     );
 
+    let unknown_tracking_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "[[image https://tracker.invalid/%%fullname%%/%%unsupported%%]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("unknown variables must make tracking-only templates fail closed")
+    .html_output
+    .body;
+    assert_eq!(
+        unknown_tracking_preview.trim(),
+        r#"<div class="list-pages-box"></div>"#,
+        "unknown tracking templates must not expose substituted page metadata or active image markup:\n{unknown_tracking_preview}",
+    );
+
+    for (label, body) in [
+        (
+            "hidden image",
+            "[[image https://tracker.invalid/%%fullname%%/%%unsupported%%]]",
+        ),
+        (
+            "hidden iframe",
+            r#"<iframe src="https://tracker.invalid/%%fullname%%/%%unsupported%%" style="display: none"></iframe>"#,
+        ),
+        (
+            "hidden ListUsers module",
+            "[[module ListUsers users=\"%%fullname%%/%%unsupported%%\"]]\n[[/module]]",
+        ),
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unsaved preview",
+            format!(
+                concat!(
+                    "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" ",
+                    "wrapper=\"no\"]]\n{BODY}\n[[/module]]",
+                ),
+                TARGET_SLUG = TARGET_SLUG,
+                BODY = body,
+            ),
+        )
+        .await
+        .expect("unknown tracking shapes must fail closed")
+        .html_output
+        .body;
+        assert_eq!(
+            preview.trim(),
+            r#"<div class="list-pages-box"></div>"#,
+            "{label} with an unknown variable must not become active ListPages output:\n{preview}",
+        );
+    }
+
+    let sectioned_unknown_tracking_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "[[head]]VISIBLE-HEAD[[/head]]\n",
+                "[[body]]\n",
+                "[[image https://tracker.invalid/%%fullname%%/%%unsupported%%]]\n",
+                "[[/body]]\n",
+                "[[foot]]VISIBLE-FOOT[[/foot]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("section wrappers must not hide an unknown tracking body")
+    .html_output
+    .body;
+    assert_eq!(
+        sectioned_unknown_tracking_preview.trim(),
+        r#"<div class="list-pages-box"></div>"#,
+        "the effective section body must use the existing tracking-only policy:\n{sectioned_unknown_tracking_preview}",
+    );
+
+    let visible_authored_image_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "VISIBLE [[image https://example.invalid/%%fullname%%/%%unsupported%%]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("visible authored images must remain outside the tracking-only policy")
+    .html_output
+    .body;
+    assert!(
+        visible_authored_image_preview.contains("VISIBLE")
+            && visible_authored_image_preview.contains(TARGET_SLUG)
+            && visible_authored_image_preview.contains("%%unsupported%%")
+            && !visible_authored_image_preview
+                .contains(r#"<div class="list-pages-box">"#),
+        "ordinary visible image markup must remain active while unknown tokens stay literal:\n{visible_authored_image_preview}",
+    );
+
     let tabbed_preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site_id,
@@ -4636,6 +4750,108 @@ async fn linked_listpages_values_keep_typed_owner_boundaries_in_preview() {
             "{label} must not leak a generated slot or module placeholder:\n{preview}",
         );
     }
+}
+
+#[tokio::test]
+async fn listpages_runtime_scalar_title_stays_inert_in_delayed_row() {
+    const TARGET_SLUG: &str = "listpages-runtime-scalar-title-20260807";
+    const ATTACK_TITLE: &str = "**RUNTIME_SCALAR_MARKUP**";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Runtime scalar title target",
+            "title": ATTACK_TITLE,
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "runtime scalar title security regression",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Runtime scalar title preview",
+        format!(
+            "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\"]]\n\
+             [[row]]\n\
+             TITLE=%%title%%\n\
+             [[/row]]\n\
+             [[/module]]",
+        ),
+    )
+    .await
+    .expect("ListPages should render the runtime-scalar title fixture")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains("TITLE=**RUNTIME_SCALAR_MARKUP**"),
+        "a database title must remain literal text after delayed binding:\n{preview}",
+    );
+    assert!(
+        !preview.contains("<strong>RUNTIME_SCALAR_MARKUP</strong>"),
+        "a runtime scalar must not acquire authored markup authority:\n{preview}",
+    );
+    assert!(
+        !preview.contains("TODO: module ListPages") && !preview.contains("<iframe"),
+        "a runtime scalar must not create a network-capable iframe or fall back to a module placeholder:\n{preview}",
+    );
+}
+
+#[tokio::test]
+async fn delayed_listpages_unicode_space_div_owner_stays_utf8_aligned() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Delayed ListPages Unicode-space div preview",
+        concat!(
+            "[[module ListPages limit=\"1\"]]\n",
+            "[[\u{2003}div]]%%title_linked%%[[/div]]\n",
+            "<br>\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("Unicode-spaced delayed div ownership must not panic")
+    .html_output
+    .body;
+
+    assert!(
+        !preview.contains("%%title_linked%%")
+            && !preview.contains("TODO: module ListPages")
+            && preview.contains("<br>"),
+        "the delayed row should bind its page link and preserve following content:\n{preview}",
+    );
 }
 
 #[tokio::test]

@@ -23,11 +23,12 @@ mod date_selectors;
 mod generated_values;
 mod selectors;
 
-pub(in crate::services::render) use self::body::unsupported_list_pages_replacement;
+pub(in crate::services::render) use self::body::{
+    list_pages_body_is_no_visible_tracking_markup, unsupported_list_pages_replacement,
+};
 #[cfg(test)]
 pub(in crate::services::render) use self::body::{
-    list_pages_body_is_no_visible_tracking_markup, list_pages_body_uses_content_variable,
-    list_pages_body_variables_supported,
+    list_pages_body_uses_content_variable, list_pages_body_variables_supported,
 };
 pub(in crate::services::render) use self::date_selectors::parse_list_pages_date_selector;
 pub(in crate::services::render) use self::generated_values::{
@@ -2270,6 +2271,7 @@ pub(super) fn substitute_list_pages_variables_inner(
     context: &ListPagesSubstitutionContext<'_>,
     compat_html: &mut CompatHtmlFragments,
     compat_text: &mut CompatTextFragments,
+    mut tracked_content_fragments: Option<&mut BTreeSet<usize>>,
     mut generated_slots: Option<&mut Vec<ListPagesGeneratedSlot>>,
     mut runtime_scalar_ranges: Option<&mut Vec<Range<usize>>>,
     runtime_title_is_delayed: bool,
@@ -2869,6 +2871,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                             protect_list_pages_content_insertion(
                                 &wikidot_content_section(wikitext, section),
                                 compat_text,
+                                tracked_content_fragments.as_deref_mut(),
                             )
                         })
                         .unwrap_or_default()

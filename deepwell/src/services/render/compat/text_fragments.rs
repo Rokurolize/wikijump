@@ -1,6 +1,7 @@
 //! Compatibility-local provenance for text hidden from FTML.
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 use uuid::Uuid;
 
 pub(in crate::services::render) const COMPAT_TEXT_MARKER_PREFIX: &str =
@@ -27,17 +28,55 @@ impl CompatTextFragments {
         }
     }
 
-    pub(in crate::services::render) fn push(&mut self, text: &str) -> String {
+    fn push_owned(&mut self, text: String) -> (String, usize) {
         let index = self.fragments.len();
-        self.fragments.push(text.to_owned());
-        format!("{}{index}X", self.namespace)
+        self.fragments.push(text);
+        (format!("{}{index}X", self.namespace), index)
+    }
+
+    pub(in crate::services::render) fn push(&mut self, text: &str) -> String {
+        self.push_owned(text.to_owned()).0
     }
 
     pub(in crate::services::render) fn push_escaped_html_text(
         &mut self,
         text: &str,
     ) -> String {
-        self.push(&escape_html_text(text))
+        self.push_owned(escape_html_text(text)).0
+    }
+
+    pub(in crate::services::render) fn push_tracked_escaped_html_text(
+        &mut self,
+        text: &str,
+    ) -> (String, usize) {
+        self.push_owned(escape_html_text(text))
+    }
+
+    pub(in crate::services::render) fn logical_len_for_tracked_fragments(
+        &self,
+        text: &str,
+        tracked: &BTreeSet<usize>,
+    ) -> Option<usize> {
+        if tracked.is_empty() || !text.contains(&self.namespace) {
+            return Some(text.len());
+        }
+
+        let mut logical_len = text.len();
+        let mut cursor = 0;
+        while let Some(offset) = text[cursor..].find(&self.namespace) {
+            let start = cursor + offset;
+            if let Some((index, marker_len)) = self.marker_at(&text[start..]) {
+                if tracked.contains(&index) {
+                    logical_len = logical_len
+                        .checked_sub(marker_len)?
+                        .checked_add(self.fragments[index].len())?;
+                }
+                cursor = start + marker_len;
+            } else {
+                cursor = start + self.namespace.len();
+            }
+        }
+        Some(logical_len)
     }
 
     pub(in crate::services::render) fn restore(&self, text: &str) -> String {
@@ -133,6 +172,29 @@ mod tests {
             format!(
                 "&lt;script&gt;&amp;&quot;&#39;|[[module ListPages]]|{authored_marker}"
             ),
+        );
+    }
+
+    #[test]
+    fn tracked_logical_length_counts_surviving_restored_fragments_once_per_marker() {
+        let mut fragments = CompatTextFragments::new("");
+        let (tracked, tracked_index) =
+            fragments.push_tracked_escaped_html_text("[[<unsafe>&]]");
+        let untracked = fragments.push("ordinary");
+        let source = format!("{tracked}|{tracked}|{untracked}");
+        let tracked_indices = BTreeSet::from([tracked_index]);
+        let restored_tracked_len = escape_html_text("[[<unsafe>&]]").len();
+
+        assert_eq!(
+            fragments.logical_len_for_tracked_fragments(&source, &tracked_indices,),
+            Some(restored_tracked_len * 2 + 2 + untracked.len()),
+        );
+        assert_eq!(
+            fragments.logical_len_for_tracked_fragments(
+                "marker was removed",
+                &tracked_indices,
+            ),
+            Some("marker was removed".len()),
         );
     }
 }

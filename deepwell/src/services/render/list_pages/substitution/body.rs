@@ -132,4 +132,30 @@ mod tests {
             "[[%%content{1}%%/module css]]"
         ));
     }
+
+    #[test]
+    fn tracking_markup_detection_is_independent_of_unknown_variables() {
+        for body in [
+            "[[image https://tracker.invalid/%%unsupported%%]]",
+            "<iframe src=\"https://tracker.invalid/%%unsupported%%\" style=\"display: none\"></iframe>",
+            "[[module ListUsers users=\"%%unsupported%%\"]]\n[[/module]]",
+        ] {
+            assert!(
+                list_pages_body_is_no_visible_tracking_markup(body),
+                "existing tracking-only classifier should recognize {body:?}",
+            );
+            assert!(
+                ListPagesTemplatePlan::compile(body)
+                    .is_some_and(|template| template.has_unknown_variables()),
+                "unknown variables should remain observable to the render policy: {body:?}",
+            );
+        }
+
+        assert!(!list_pages_body_is_no_visible_tracking_markup(
+            "VISIBLE %%unsupported%%"
+        ));
+        assert!(!list_pages_body_is_no_visible_tracking_markup(
+            "VISIBLE\n[[image https://example.invalid/visible.png]]"
+        ));
+    }
 }

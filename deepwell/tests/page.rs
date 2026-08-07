@@ -3647,6 +3647,15 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
 
 #[tokio::test]
 async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
+    const ACTIVE_CONTENT_MARKERS: [&str; 6] = [
+        "<script",
+        "http://www.wikidot.com/common--javascript/yahooui/animation-min.js",
+        "javascript:",
+        " onclick=",
+        " onload=",
+        " onerror=",
+    ];
+
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
@@ -3700,6 +3709,13 @@ async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
         "SimpleToDo with id should render the live initial read-only list shell:\n{}",
         preview.body,
     );
+    for forbidden in ACTIVE_CONTENT_MARKERS {
+        assert!(
+            !preview.body.contains(forbidden),
+            "SimpleToDo must not restore active page-origin content {forbidden:?}:\n{}",
+            preview.body,
+        );
+    }
     assert!(
         preview.body.contains(
             r#"<div class="error-block">Inviting users has been disabled due to severe abuse. Admins can still send email invitations via <a href="/_admin">site admin dashboard</a>.</div>"#
@@ -3713,6 +3729,43 @@ async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
         "implemented modules should not leak raw module source:\n{}",
         preview.body,
     );
+
+    let saved_slug = "fixture-simpletodo-saved-security";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        saved_slug,
+        "Fixture SimpleToDo Saved Security",
+        r#"[[module SimpleToDo id="<script>saved</script>"]]"#,
+    )
+    .await;
+    let saved = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": saved_slug,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("saved SimpleToDo security fixture should exist");
+    let saved_html = saved
+        .compiled_body_html
+        .expect("saved SimpleToDo fixture should include compiled HTML");
+    assert!(
+        saved_html
+            .contains(r#"<div class="label">&lt;script&gt;saved&lt;/script&gt;</div>"#)
+            && saved_html.matches(r#"aria-disabled="true""#).count() == 2
+            && saved_html
+                .contains(r#"<span id="simpletodo-data-edit-permission">false</span>"#),
+        "saved SimpleToDo should preserve only the escaped read-only shell:\n{saved_html}",
+    );
+    for forbidden in ACTIVE_CONTENT_MARKERS {
+        assert!(
+            !saved_html.contains(forbidden),
+            "saved SimpleToDo must not restore active page-origin content {forbidden:?}:\n{saved_html}",
+        );
+    }
 }
 
 #[tokio::test]
@@ -16772,6 +16825,93 @@ async fn listpages_aggregate_generated_output_budget_preserves_overflowing_modul
 }
 
 #[tokio::test]
+async fn listpages_content_fragment_restoration_counts_toward_generated_output_budget() {
+    const INDEX_SLUG: &str = "fixture-listpages-content-fragment-budget-index";
+    const TARGET_SLUG: &str = "fixture-listpages-content-fragment-budget-target";
+    const SENTINEL: &str = "CONTENT_FRAGMENT_BUDGET_SENTINEL";
+    const DIRECTIVE_BYTES: usize = 2 * 1024;
+    const GENERATED_BYTE_BUDGET: usize = 16 * 1024 * 1024;
+    const CONTENT_VARIABLE: &str = "%%content{1}%%";
+    const CONTENT_REPETITIONS: usize = GENERATED_BYTE_BUDGET / DIRECTIVE_BYTES + 1;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let directive = format!("[[{}]]", "x".repeat(DIRECTIVE_BYTES - 4));
+    assert_eq!(directive.len(), DIRECTIVE_BYTES);
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "ListPages Content Fragment Budget Target",
+        &directive,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "ListPages Content Fragment Budget Index",
+        "placeholder",
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+        }),
+    )
+    .expect("ListPages content-fragment budget index should exist");
+    let body = format!("{SENTINEL}{}", CONTENT_VARIABLE.repeat(CONTENT_REPETITIONS));
+    assert!(body.len() <= 256 * 1024);
+    const {
+        assert!(
+            DIRECTIVE_BYTES * CONTENT_REPETITIONS > GENERATED_BYTE_BUDGET,
+            "restored content must exceed the render-wide generated-output budget",
+        );
+    }
+    let source = format!(
+        "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]{body}[[/module]]",
+    );
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("ListPages Content Fragment Budget Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id: page.page_id,
+    };
+
+    let output = RenderService::render_page(
+        runner.context(),
+        source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("restored content overflow should preserve the complete module");
+    let html = output.html_output.body;
+    assert!(
+        html.contains(SENTINEL) && html.contains(CONTENT_VARIABLE),
+        "escaped content hidden behind compact compatibility markers must still count toward the generated-output budget:\n{}",
+        &html[..html.len().min(4_096)],
+    );
+}
+
+#[tokio::test]
 async fn listpages_following_paragraph_boundary_counts_toward_generated_output_budget() {
     const INDEX_SLUG: &str = "fixture-listpages-paragraph-byte-budget-index";
     const TARGET_PREFIX: &str = "fixture-listpages-paragraph-byte-budget-row";
@@ -20273,7 +20413,8 @@ async fn tagcloud_module_renders_live_category_links_styles_and_boolean_quirks()
 /// Live capture (sandbox-for-codex, 2026-07-29): omitted `category` counts
 /// visible tags site-wide, `skipCategoryFromUrl="true"` removes the category
 /// URL argument, invalid paired colors render Wikidot's error block, and
-/// `mode="3d"` emits Wikidot's legacy SWFObject runtime wrapper.
+/// `mode="3d"` remains literal because its legacy SWFObject runtime would
+/// execute external and inline script in the page origin.
 #[tokio::test]
 async fn tagcloud_module_renders_live_sitewide_skip_3d_and_color_error() {
     fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
@@ -20413,25 +20554,39 @@ async fn tagcloud_module_renders_live_sitewide_skip_3d_and_color_error() {
 
     let threed = section(&html, "THREED_START", "THREED_END");
     assert!(
-        threed.contains(r#"<div class="pages-tag-cloud-box">"#)
-            && threed.contains(
-                r#"src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/tagcloud/swfobject.js""#,
-            )
-            && threed.contains(
-                r##"new SWFObject("/common--javascript/tagcloud/tagcloud.swf", "tagcloud", "123", "77", "7", "#FFFFFF");"##,
-            )
-            && threed.contains(r#"so.addVariable("tcolor", "0x404080");"#)
-            && threed.contains(r#"so.addVariable("tcolor2", "0x8080c0");"#)
-            && threed.contains(r#"so.addVariable("hicolor", "0x404080");"#)
-            && threed.contains(r#"style="12""#)
-            && threed.contains(r#"style="21""#)
-            && threed.contains(r#"style="30""#)
-            && threed.contains(&format!(
-                r#"location.hostname + '/system:page-tags/tag/{tag_alpha}/category/{category}" style="12""#
-            ))
-            && !threed.contains("[[module TagCloud"),
-        "3D TagCloud should emit Wikidot's SWFObject runtime wrapper and encoded tag anchors:\n{html}",
+        threed.contains(&format!(
+            r#"[[module TagCloud category=&quot;{category}&quot; mode=&quot;3d&quot; width=&quot;123&quot; height=&quot;77&quot;]]"#
+        ))
+            && !threed.contains("<script")
+            && !threed.contains("javascript:")
+            && !threed.contains("http://d3g0gp89917ko0.cloudfront.net")
+            && !threed.contains("pages-tag-cloud-box"),
+        "3D TagCloud must remain literal without restoring active page-origin content:\n{html}",
     );
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "TagCloud 3D safety preview",
+            "wikitext": format!(
+                "[[module TagCloud category=\"{category}\" mode=\"3d\" width=\"123\" height=\"77\"]]"
+            ),
+        }),
+    );
+    for forbidden in [
+        "<script",
+        "javascript:",
+        "http://d3g0gp89917ko0.cloudfront.net",
+        "SWFObject",
+    ] {
+        assert!(
+            !preview.body.contains(forbidden),
+            "TagCloud 3D preview must not restore active content {forbidden:?}:\n{}",
+            preview.body,
+        );
+    }
 }
 
 #[tokio::test]

@@ -43,6 +43,7 @@ use ftml::delayed::{
 };
 use ftml::settings::{WikitextMode, WikitextSettings};
 use std::borrow::Cow;
+use std::collections::BTreeSet;
 use std::ops::Range;
 
 pub(in crate::services::render) const MAX_NESTED_LISTPAGES_DEPTH: usize = 8;
@@ -56,6 +57,7 @@ pub(in crate::services::render) struct ListPagesGeneratedSlot {
 
 pub(in crate::services::render) struct PreparedDelayedListPagesRow {
     pub body: String,
+    pub logical_body_bytes: Option<usize>,
     pub generated_slots: Vec<ListPagesGeneratedSlot>,
     pub runtime_scalar_ranges: Vec<Range<usize>>,
     pub html_fragments: Option<CompatHtmlFragments>,
@@ -121,6 +123,7 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
 ) -> PreparedDelayedListPagesRow {
     let mut generated_slots = Vec::new();
     let mut runtime_scalar_ranges = Vec::new();
+    let mut tracked_content_fragments = BTreeSet::new();
     let mut prepared_body = suppress_generated_list_pages_heading_toc(body).into_owned();
     // ListPages rows are extracted before the outer page's FTML pass. Apply
     // the same Wikidot compatibility preprocessing while the row is still
@@ -173,6 +176,7 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
             context,
             &mut fragments,
             compat_text,
+            &mut tracked_content_fragments,
             &mut generated_slots,
             &mut runtime_scalar_ranges,
             runtime_title_is_delayed,
@@ -218,8 +222,11 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
     } else {
         suppress_generated_list_pages_heading_toc(&body).into_owned()
     };
+    let logical_body_bytes =
+        compat_text.logical_len_for_tracked_fragments(&body, &tracked_content_fragments);
     PreparedDelayedListPagesRow {
         body,
+        logical_body_bytes,
         generated_slots,
         runtime_scalar_ranges,
         html_fragments,
@@ -683,6 +690,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_delayed(
     context: &ListPagesSubstitutionContext<'_>,
     compat_html: &mut CompatHtmlFragments,
     compat_text: &mut CompatTextFragments,
+    tracked_content_fragments: &mut BTreeSet<usize>,
     generated_slots: &mut Vec<ListPagesGeneratedSlot>,
     runtime_scalar_ranges: &mut Vec<Range<usize>>,
     runtime_title_is_delayed: bool,
@@ -695,6 +703,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_delayed(
         context,
         compat_html,
         compat_text,
+        Some(tracked_content_fragments),
         Some(generated_slots),
         Some(runtime_scalar_ranges),
         runtime_title_is_delayed,
@@ -719,6 +728,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         context,
         compat_html,
         compat_text,
+        None,
         None,
         None,
         false,

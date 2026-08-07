@@ -183,6 +183,12 @@ static FEATUREDSITE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+FeaturedSite\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
         .expect("FeaturedSite module expression is valid")
 });
+static RUNTIME_MODULE_RESIDUAL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?is)\[\[module[ \t]+(?P<name>Redirect|NewPage|PagesByTag|LoginStatus|NaviBar|FooterBar|PageOptionsBottom|AdModuleAboveContent|AdModuleBelowContent|AdModuleAboveSidebar|AdModuleBelowSidebar|AdModuleBelowFooter)\b(?P<head>(?:[^\]"'\r\n]+|"[^"]*"|'[^']*')*)\]\]"#,
+    )
+    .expect("runtime module residual expression is valid")
+});
 
 #[derive(Default)]
 struct MembershipByPasswordResultCache {
@@ -253,6 +259,12 @@ pub(super) struct PageCalendarExpansionOptions<'a> {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
     pub(super) url: UrlArguments<'a>,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct TagCloudExpansionOptions {
+    current_site_id: Option<i64>,
+    current_page_id: Option<i64>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -500,19 +512,17 @@ fn render_simpletodo_module(head: &str, index: usize) -> String {
 
     format!(
         concat!(
-            r#"<script type="text/javascript" src="http://www.wikidot.com/common--javascript/yahooui/animation-min.js"></script>"#,
-            "\n",
             r#"<div class="simpletodo-box" id="simpletodo_{index}">"#,
             r#"<div class="title">Here is a place for your title</div>"#,
             r#"<table class="simpletodo-format-table"><tr><td>"#,
             r#"<div class="simpletodo-sub-box" id="simpletodo_sub_{index}">"#,
             r#"<div class="task"><span class="checkbox"><input type="checkbox" class="checkbox"/></span>"#,
             r#"<span><span class="text">Click me to edit !</span></span>"#,
-            r#"<span class="follow-link"><a href="javascript:;" class="icon1"><span>Follow link</span></a></span>"#,
+            r#"<span class="follow-link"><a class="icon1" aria-disabled="true"><span>Follow link</span></a></span>"#,
             r#"<span class="options"></span></div>"#,
             r#"<div class="task"><span class="checkbox"><input type="checkbox" class="checkbox"/></span>"#,
             r#"<span><span class="text">Drag me !</span></span>"#,
-            r#"<span class="follow-link"><a href="javascript:;" class="icon1">Follow Link</a></span>"#,
+            r#"<span class="follow-link"><a class="icon1" aria-disabled="true">Follow Link</a></span>"#,
             r#"<span class="options"></span></div>"#,
             r#"</div></td></tr></table>"#,
             r#"<div class="bottom-options"></div>"#,
@@ -1331,84 +1341,6 @@ fn render_tag_cloud_2d(arguments: &TagCloudArguments, tags: &[TagCloudTag]) -> S
     output
 }
 
-fn tag_cloud_hex_color(color: TagCloudColor) -> String {
-    format!("0x{:02x}{:02x}{:02x}", color.red, color.green, color.blue)
-}
-
-fn escape_tag_cloud_javascript_single_quoted(value: &str) -> String {
-    let mut output = String::with_capacity(value.len());
-    for character in value.chars() {
-        match character {
-            '\'' => output.push_str("\\'"),
-            '\\' => output.push_str("\\\\"),
-            '\n' => output.push_str("\\n"),
-            '\r' => output.push_str("\\r"),
-            '<' => output.push_str("\\x3c"),
-            '>' => output.push_str("\\x3e"),
-            '&' => output.push_str("\\x26"),
-            '\u{2028}' => output.push_str("\\u2028"),
-            '\u{2029}' => output.push_str("\\u2029"),
-            _ => output.push(character),
-        }
-    }
-    output
-}
-
-fn render_tag_cloud_3d(arguments: &TagCloudArguments, tags: &[TagCloudTag]) -> String {
-    let (min_count, max_count) = tag_cloud_count_bounds(tags);
-    let flash_id = format!(
-        "flashcontent-{}",
-        tags.iter().fold(273_000_u64, |hash, tag| {
-            hash.wrapping_mul(33)
-                .wrapping_add(tag.name.bytes().map(u64::from).sum::<u64>())
-        }) % 1_000_000
-    );
-    let mut output = String::from("<div class=\"pages-tag-cloud-box\">\n");
-    output.push_str("\t<script type=\"text/javascript\" src=\"http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/tagcloud/swfobject.js\"></script>\n");
-    output.push_str("\t<div id=\"");
-    output.push_str(&escape_list_pages_html_attr(&flash_id));
-    output.push_str("\"></div>\n");
-    output.push_str("\t<script type=\"text/javascript\">\n//<![CDATA[\n");
-    output.push_str(&format!(
-        "var so = new SWFObject(\"/common--javascript/tagcloud/tagcloud.swf\", \"tagcloud\", \"{}\", \"{}\", \"7\", \"#FFFFFF\");\n",
-        arguments.width, arguments.height,
-    ));
-    output.push_str("so.addParam(\"wmode\", \"transparent\");\n");
-    output.push_str("so. addVariable(\"mode\", \"tags\");\n");
-    output.push_str("so. addVariable(\"distr\", \"true\");\n");
-    output.push_str(&format!(
-        "so.addVariable(\"tcolor\", \"{}\");\n",
-        tag_cloud_hex_color(arguments.max_color),
-    ));
-    output.push_str(&format!(
-        "so.addVariable(\"tcolor2\", \"{}\");\n",
-        tag_cloud_hex_color(arguments.min_color),
-    ));
-    output.push_str(&format!(
-        "so.addVariable(\"hicolor\", \"{}\");\n",
-        tag_cloud_hex_color(arguments.max_color),
-    ));
-    output.push_str("so.addVariable(\"tagcloud\", \"<tags>\"+\n");
-    for tag in tags {
-        let ratio = tag_cloud_ratio(tag.count, min_count, max_count);
-        let weight = (12.0 + (18.0 * ratio)).round() as i32;
-        let href = tag_cloud_path(arguments, &tag.name);
-        output.push_str("\t        encodeURIComponent('<a href=\"' + location.protocol + '//' + location.hostname + '");
-        output.push_str(&escape_tag_cloud_javascript_single_quoted(&href));
-        output.push_str("\" style=\"");
-        output.push_str(&weight.to_string());
-        output.push_str("\">");
-        output.push_str(&escape_tag_cloud_javascript_single_quoted(&tag.name));
-        output.push_str("</a>') +\n");
-    }
-    output.push_str("\t\"</tags>\");\n");
-    output.push_str("so.write(\"");
-    output.push_str(&escape_tag_cloud_javascript_single_quoted(&flash_id));
-    output.push_str("\");\n//]]>\n</script>\n");
-    output.push_str("</div>");
-    output
-}
-
 fn render_tag_cloud_module(
     arguments: &TagCloudArguments,
     tag_counts: &[(String, usize)],
@@ -1418,14 +1350,74 @@ fn render_tag_cloud_module(
     }
 
     let tags = displayed_tag_cloud_tags(tag_counts, arguments);
-    if arguments.mode_3d {
-        render_tag_cloud_3d(arguments, &tags)
-    } else {
-        render_tag_cloud_2d(arguments, &tags)
-    }
+    render_tag_cloud_2d(arguments, &tags)
+}
+
+fn is_literal_runtime_module_residual(name: &str) -> bool {
+    ["Redirect", "NewPage", "PagesByTag"]
+        .iter()
+        .any(|candidate| name.eq_ignore_ascii_case(candidate))
+}
+
+fn render_unavailable_page_module(name: &str) -> String {
+    format!(
+        concat!(
+            r#"<div class="error-block">[[module <em>{}</em>]] No such module, please "#,
+            r#"<a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a>"#,
+            " and fix this page.</div>",
+        ),
+        escape_list_pages_html_text(name),
+    )
 }
 
 impl RenderService {
+    pub(super) fn finalize_runtime_module_residuals(
+        wikitext: String,
+        settings: &WikitextSettings,
+        compat_text: &mut CompatTextFragments,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
+        if !settings.enable_page_syntax
+            || !RUNTIME_MODULE_RESIDUAL_REGEX.is_match(&wikitext)
+        {
+            return wikitext;
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in RUNTIME_MODULE_RESIDUAL_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a residual module capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            let name = captures
+                .name("name")
+                .expect("a residual module capture always has a name")
+                .as_str();
+            let head = captures.name("head").map_or("", |mtch| mtch.as_str());
+            let replacement = if is_literal_runtime_module_residual(name) {
+                compat_text.push_escaped_html_text(matched.as_str())
+            } else if head.trim().is_empty() {
+                compat_html.push_block_html(render_unavailable_page_module(name))
+            } else {
+                continue;
+            };
+
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&replacement);
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
     pub(super) fn expand_registry_modules_with_registry(
         wikitext: String,
         settings: &WikitextSettings,
@@ -2084,8 +2076,11 @@ impl RenderService {
                 wikitext,
                 page_info,
                 settings,
-                options.current_site_id,
-                options.current_page_id,
+                TagCloudExpansionOptions {
+                    current_site_id: options.current_site_id,
+                    current_page_id: options.current_page_id,
+                },
+                compat_text,
                 compat_html,
             )
             .await
@@ -2229,13 +2224,13 @@ impl RenderService {
         ))
     }
 
-    pub(super) async fn expand_tag_cloud_modules(
+    async fn expand_tag_cloud_modules(
         ctx: &ServiceContext<'_>,
         wikitext: String,
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
-        current_site_id: Option<i64>,
-        current_page_id: Option<i64>,
+        options: TagCloudExpansionOptions,
+        compat_text: &mut CompatTextFragments,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         if !settings.enable_page_syntax || !TAGCLOUD_MODULE_REGEX.is_match(&wikitext) {
@@ -2243,7 +2238,7 @@ impl RenderService {
         }
 
         let (Some(current_site_id), Some(current_page_id)) =
-            (current_site_id, current_page_id)
+            (options.current_site_id, options.current_page_id)
         else {
             return Ok(wikitext);
         };
@@ -2271,6 +2266,11 @@ impl RenderService {
                 continue;
             };
             expanded.push_str(&wikitext[cursor..matched.start()]);
+            if arguments.mode_3d {
+                expanded.push_str(&compat_text.push_escaped_html_text(matched.as_str()));
+                cursor = matched.end();
+                continue;
+            }
             let tags = Self::load_tag_cloud_counts(
                 ctx,
                 current_site_id,
@@ -2704,5 +2704,110 @@ mod new_page_budget_tests {
         assert!(new_page_module_budget_exceeded(
             MAX_NEW_PAGE_MODULES_PER_RENDER
         ));
+    }
+}
+
+#[cfg(test)]
+mod runtime_module_residual_tests {
+    use std::borrow::Cow;
+
+    use super::RenderService;
+    use crate::services::render::compat::CompatHtmlFragments;
+    use crate::services::render::compat::text_fragments::CompatTextFragments;
+    use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::render::{Render, html::HtmlRender};
+    use ftml::settings::{WikitextMode, WikitextSettings};
+
+    #[test]
+    fn finalizes_only_deepwell_owned_residual_modules() {
+        let source = concat!(
+            "[[module Redirect destination=\"target\"]]\n",
+            "[[module NewPage button=\"over-budget\"]]\n",
+            "[[module PagesByTag tag=\"a\" limit=\"5\"]]\n",
+            "[[module LoginStatus]]\n",
+            "[[module LoginStatus foo=\"bar\"]]\n",
+            "[[module UnknownOracleModule]]\n",
+            "@@[[module NewPage button=\"literal\"]]@@",
+        );
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let page_info = PageInfo {
+            page: Cow::Borrowed("page"),
+            category: None,
+            site: Cow::Borrowed("site"),
+            title: Cow::Borrowed("Page"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let mut compat_text = CompatTextFragments::new(source);
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let mut protected = RenderService::finalize_runtime_module_residuals(
+            source.to_owned(),
+            &settings,
+            &mut compat_text,
+            &mut compat_html,
+        );
+        ftml::preprocess_for_layout(&mut protected, settings.layout);
+        let tokens = ftml::tokenize(&protected);
+        let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        assert!(errors.is_empty(), "{errors:#?}");
+        let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+        let rendered = compat_html.restore(&rendered);
+        let rendered = compat_text.restore(&rendered);
+
+        for literal in [
+            "[[module Redirect destination=&quot;target&quot;]]",
+            "[[module NewPage button=&quot;over-budget&quot;]]",
+            "[[module PagesByTag tag=&quot;a&quot; limit=&quot;5&quot;]]",
+        ] {
+            assert!(
+                rendered.contains(literal),
+                "missing {literal:?}: {rendered}"
+            );
+        }
+        assert!(rendered.contains(concat!(
+            r#"<div class="error-block">[[module <em>LoginStatus</em>]] No such module, please "#,
+            r#"<a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a>"#,
+            " and fix this page.</div>",
+        )));
+        assert!(rendered.contains(
+            r#"[[module <em>LoginStatus</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules""#,
+        ));
+        assert!(rendered.contains(
+            r#"[[module <em>UnknownOracleModule</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules""#,
+        ));
+        assert!(
+            rendered.contains("[[module NewPage button=&quot;literal&quot;]]"),
+            "{rendered}",
+        );
+    }
+}
+
+#[cfg(test)]
+mod simpletodo_security_tests {
+    use super::render_simpletodo_module;
+
+    #[test]
+    fn valid_simpletodo_shell_contains_no_active_page_content() {
+        let html = render_simpletodo_module(r#" id="fixture""#, 0);
+
+        for forbidden in [
+            "<script",
+            "http://www.wikidot.com/common--javascript/yahooui/animation-min.js",
+            "javascript:",
+            " onclick=",
+            " onload=",
+            " onerror=",
+        ] {
+            assert!(!html.contains(forbidden), "found {forbidden:?}: {html}");
+        }
+        assert!(html.contains(r#"<div class="simpletodo-box" id="simpletodo_0">"#));
+        assert!(html.contains(r#"<div class="label">fixture</div>"#));
+        assert!(
+            html.contains(r#"<span id="simpletodo-data-edit-permission">false</span>"#)
+        );
+        assert_eq!(html.matches(r#"aria-disabled="true""#).count(), 2);
     }
 }

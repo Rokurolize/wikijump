@@ -75,6 +75,7 @@ use super::{
     find_list_pages_module_matches_with_delayed_links_budgeted,
     finish_or_defer_list_pages_delayed_output_with_modes, is_list_pages_visible_tag,
     list_pages_argument_error_with_parent_precedence,
+    list_pages_body_is_no_visible_tracking_markup,
     list_pages_body_starts_with_preparsed_block, list_pages_body_uses_first_image,
     list_pages_content_query_target, list_pages_created_by_unix,
     list_pages_feed_info_html, list_pages_feed_only_render_result,
@@ -227,6 +228,18 @@ impl RenderService {
                 ListPagesBlockPlan::Static(replacement)
             }
         };
+        let unsafe_unknown_tracking_template = |template: &ListPagesTemplatePlan| {
+            template.has_unknown_variables()
+                && list_pages_body_is_no_visible_tracking_markup(template.body())
+        };
+        let fail_closed_unknown_tracking_plan =
+            |compat_html: &mut CompatHtmlFragments| {
+                ListPagesBlockPlan::Static(
+                    compat_html.push_block_html(
+                        r#"<div class="list-pages-box"></div>"#.to_owned(),
+                    ),
+                )
+            };
         let module_matches = find_list_pages_module_matches_with_delayed_links_budgeted(
             &wikitext,
             &render_cost_budget,
@@ -479,15 +492,20 @@ impl RenderService {
                         arguments.unsupported_author_filter = false;
                         arguments.unsupported_list_pages_filter = false;
                         arguments.unsupported_score_filter = false;
-                        ListPagesTemplatePlan::compile(body).map_or_else(
-                            || unsupported_plan(module_original, body),
-                            |template| ListPagesBlockPlan::Render {
+                        match ListPagesTemplatePlan::compile(body) {
+                            Some(template)
+                                if unsafe_unknown_tracking_template(&template) =>
+                            {
+                                fail_closed_unknown_tracking_plan(compat_html)
+                            }
+                            Some(template) => ListPagesBlockPlan::Render {
                                 arguments,
                                 template,
                                 batch_key: None,
                                 legacy_tail: None,
                             },
-                        )
+                            None => unsupported_plan(module_original, body),
+                        }
                     } else {
                         let replacement = if arguments.wrapper {
                             compat_html.push_block_html(
@@ -557,17 +575,21 @@ impl RenderService {
                             },
                         )
                     } else if let Some(template) = ListPagesTemplatePlan::compile(body) {
-                        let batch_key = exact_name_list_pages_batch_key(
-                            head,
-                            &template,
-                            &arguments,
-                            current_category.as_ref(),
-                        );
-                        ListPagesBlockPlan::Render {
-                            arguments,
-                            template,
-                            batch_key,
-                            legacy_tail: None,
+                        if unsafe_unknown_tracking_template(&template) {
+                            fail_closed_unknown_tracking_plan(compat_html)
+                        } else {
+                            let batch_key = exact_name_list_pages_batch_key(
+                                head,
+                                &template,
+                                &arguments,
+                                current_category.as_ref(),
+                            );
+                            ListPagesBlockPlan::Render {
+                                arguments,
+                                template,
+                                batch_key,
+                                legacy_tail: None,
+                            }
                         }
                     } else {
                         unsupported_plan(module_original, body)
@@ -2547,6 +2569,7 @@ impl RenderService {
             if let Some(fragments) = prepared_row.html_fragments {
                 delayed_html_fragments.push(fragments);
             }
+            let logical_body_bytes = prepared_row.logical_body_bytes;
             let rendered_body = prepared_row.body;
             let generated_row_open = if separate {
                 format!(
@@ -2574,11 +2597,11 @@ impl RenderService {
                 &generated_row_open,
                 &generated_row_close,
             );
-            let Some(rendered_row_bytes) =
-                rendered_body.len().checked_add(row_markup_bytes)
+            let Some(rendered_row_bytes) = logical_body_bytes
+                .and_then(|body_bytes| body_bytes.checked_add(row_markup_bytes))
             else {
                 return Ok(ListPagesBlockRenderResult::PreserveOriginal(
-                    "rendered row byte count overflowed",
+                    "logical rendered row byte count overflowed",
                 ));
             };
             if !expansion_budget.try_consume_generated_output_bytes(rendered_row_bytes) {

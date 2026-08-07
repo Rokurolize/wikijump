@@ -22,6 +22,11 @@ CANARY_URL = "http://scp-wiki.wikijump.localhost/scp-9506"
 FTML_SOURCE = re.compile(
     r'source = "git\+https://github\.com/Rokurolize/ftml[^\"]*#([0-9a-f]{40})"'
 )
+ENVIRONMENT_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+RESOURCE_EXPIRY = re.compile(
+    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
+    r"(?:\.[0-9]{1,6})?\+00:00"
+)
 
 
 def command(*args: str, cwd: Path, capture: bool = True) -> str:
@@ -75,6 +80,11 @@ def read_environment(path: Path) -> dict[str, str]:
 
 
 def write_environment(path: Path, values: dict[str, str]) -> None:
+    for key, value in values.items():
+        if not isinstance(key, str) or ENVIRONMENT_KEY.fullmatch(key) is None:
+            raise ValueError(f"invalid environment key: {key!r}")
+        if not isinstance(value, str) or not value.isprintable():
+            raise ValueError(f"{key} must contain one printable, single-line environment value")
     contents = "".join(f"{key}={value}\n" for key, value in sorted(values.items()))
     with tempfile.NamedTemporaryFile(
         "w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", delete=False
@@ -169,6 +179,20 @@ def image_reference(wikijump_sha: str, service: str) -> str:
     return f"local/wikijump-standing-{wikijump_sha[:12]}-{service}"
 
 
+def prepared_resource_expiry(receipt: dict[str, object]) -> str:
+    disposition = receipt.get("resource_disposition")
+    if not isinstance(disposition, dict):
+        raise ValueError("prepared receipt resource expiry is invalid")
+    expiry = disposition.get("expiry")
+    if not isinstance(expiry, str) or RESOURCE_EXPIRY.fullmatch(expiry) is None:
+        raise ValueError("prepared receipt resource expiry is invalid")
+    try:
+        datetime.fromisoformat(expiry)
+    except ValueError as error:
+        raise ValueError("prepared receipt resource expiry is invalid") from error
+    return expiry
+
+
 def load_prepared_receipt(
     path: Path, source_root: Path, identity: dict[str, str]
 ) -> tuple[dict[str, object], str]:
@@ -200,6 +224,7 @@ def load_prepared_receipt(
         dockerfile = source_root / "install" / "prod" / service / "Dockerfile"
         if not isinstance(dockerfiles, dict) or dockerfiles.get(service) != file_sha256(dockerfile):
             raise ValueError(f"prepared image {service} Dockerfile identity is stale")
+    prepared_resource_expiry(receipt)
     return receipt, file_sha256(path)
 
 
@@ -305,9 +330,7 @@ def main() -> int:
         if not isinstance(labels, dict) or labels.get("com.rokurolize.wikijump.sha") != identity["wikijump_sha"]:
             raise RuntimeError(f"prepared image {service} is not labelled for this source")
 
-    expiry = str(prepared_receipt.get("resource_disposition", {}).get("expiry", ""))
-    if not expiry:
-        raise ValueError("prepared receipt has no resource expiry")
+    expiry = prepared_resource_expiry(prepared_receipt)
     activation_verified = time.monotonic()
 
     environment.update(
