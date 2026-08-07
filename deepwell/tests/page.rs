@@ -16787,6 +16787,93 @@ async fn listpages_aggregate_generated_output_budget_preserves_overflowing_modul
 }
 
 #[tokio::test]
+async fn listpages_content_fragment_restoration_counts_toward_generated_output_budget() {
+    const INDEX_SLUG: &str = "fixture-listpages-content-fragment-budget-index";
+    const TARGET_SLUG: &str = "fixture-listpages-content-fragment-budget-target";
+    const SENTINEL: &str = "CONTENT_FRAGMENT_BUDGET_SENTINEL";
+    const DIRECTIVE_BYTES: usize = 2 * 1024;
+    const GENERATED_BYTE_BUDGET: usize = 16 * 1024 * 1024;
+    const CONTENT_VARIABLE: &str = "%%content{1}%%";
+    const CONTENT_REPETITIONS: usize = GENERATED_BYTE_BUDGET / DIRECTIVE_BYTES + 1;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let directive = format!("[[{}]]", "x".repeat(DIRECTIVE_BYTES - 4));
+    assert_eq!(directive.len(), DIRECTIVE_BYTES);
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "ListPages Content Fragment Budget Target",
+        &directive,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "ListPages Content Fragment Budget Index",
+        "placeholder",
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+        }),
+    )
+    .expect("ListPages content-fragment budget index should exist");
+    let body = format!("{SENTINEL}{}", CONTENT_VARIABLE.repeat(CONTENT_REPETITIONS));
+    assert!(body.len() <= 256 * 1024);
+    const {
+        assert!(
+            DIRECTIVE_BYTES * CONTENT_REPETITIONS > GENERATED_BYTE_BUDGET,
+            "restored content must exceed the render-wide generated-output budget",
+        );
+    }
+    let source = format!(
+        "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]{body}[[/module]]",
+    );
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("ListPages Content Fragment Budget Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id: page.page_id,
+    };
+
+    let output = RenderService::render_page(
+        runner.context(),
+        source,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("restored content overflow should preserve the complete module");
+    let html = output.html_output.body;
+    assert!(
+        html.contains(SENTINEL) && html.contains(CONTENT_VARIABLE),
+        "escaped content hidden behind compact compatibility markers must still count toward the generated-output budget:\n{}",
+        &html[..html.len().min(4_096)],
+    );
+}
+
+#[tokio::test]
 async fn listpages_following_paragraph_boundary_counts_toward_generated_output_budget() {
     const INDEX_SLUG: &str = "fixture-listpages-paragraph-byte-budget-index";
     const TARGET_PREFIX: &str = "fixture-listpages-paragraph-byte-budget-row";

@@ -2271,6 +2271,7 @@ pub(super) fn substitute_list_pages_variables_inner(
     context: &ListPagesSubstitutionContext<'_>,
     compat_html: &mut CompatHtmlFragments,
     compat_text: &mut CompatTextFragments,
+    mut tracked_content_fragments: Option<&mut BTreeSet<usize>>,
     mut generated_slots: Option<&mut Vec<ListPagesGeneratedSlot>>,
     mut runtime_scalar_ranges: Option<&mut Vec<Range<usize>>>,
     runtime_title_is_delayed: bool,
@@ -2870,6 +2871,7 @@ pub(super) fn substitute_list_pages_variables_inner(
                             protect_list_pages_content_insertion(
                                 &wikidot_content_section(wikitext, section),
                                 compat_text,
+                                tracked_content_fragments.as_deref_mut(),
                             )
                         })
                         .unwrap_or_default()

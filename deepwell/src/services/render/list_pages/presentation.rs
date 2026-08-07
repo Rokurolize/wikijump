@@ -59,6 +59,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables(
         &mut compat_text,
         None,
         None,
+        None,
         false,
     );
     compat_text.restore(&compat_html.restore(&protected))
