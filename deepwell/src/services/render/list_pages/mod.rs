@@ -1551,6 +1551,93 @@ mod tests {
     }
 
     #[test]
+    fn later_range_replaces_the_prior_range_owned_limit() {
+        for (
+            head,
+            expected_limit,
+            expected_explicit_limit,
+            expected_current_page,
+            expected_exclude_current,
+            expected_relative,
+        ) in [
+            (r#"range="." range="others""#, None, None, false, true, None),
+            (r#"range="." range="0""#, None, None, false, false, None),
+            (
+                r#"limit="5" range="." range="others""#,
+                Some(5),
+                Some(5),
+                false,
+                true,
+                None,
+            ),
+            (
+                r#"limit="5" range="." range="0""#,
+                Some(5),
+                Some(5),
+                false,
+                false,
+                None,
+            ),
+            (
+                r#"range="." limit="5" range="others""#,
+                Some(5),
+                Some(5),
+                false,
+                true,
+                None,
+            ),
+            (
+                r#"range="." range="before""#,
+                None,
+                None,
+                false,
+                false,
+                Some(RangeSelector::Before),
+            ),
+            (
+                r#"range="others" range=".""#,
+                Some(1),
+                None,
+                true,
+                false,
+                None,
+            ),
+            (
+                r#"limit="5" range=".""#,
+                Some(1),
+                Some(5),
+                true,
+                false,
+                None,
+            ),
+            (
+                r#"range="." limit="5""#,
+                Some(5),
+                Some(5),
+                true,
+                false,
+                None,
+            ),
+            (r#"range="." range=".""#, Some(1), None, true, false, None),
+        ] {
+            let arguments = parse_list_pages_arguments(head)
+                .unwrap_or_else(|| panic!("valid range sequence must parse: {head}"));
+
+            assert_eq!(arguments.limit, expected_limit, "{head}");
+            assert_eq!(
+                arguments.count_pages_explicit_limit, expected_explicit_limit,
+                "{head}",
+            );
+            assert_eq!(arguments.current_page_only, expected_current_page, "{head}");
+            assert_eq!(
+                arguments.exclude_current_page, expected_exclude_current,
+                "{head}",
+            );
+            assert_eq!(arguments.relative_range, expected_relative, "{head}");
+        }
+    }
+
+    #[test]
     fn list_pages_effective_argument_state_matches_live_errors_and_fallbacks() {
         for (head, has_current_page, expected) in [
             (r#"name!="missing""#, false, None),

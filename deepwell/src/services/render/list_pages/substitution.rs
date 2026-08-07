@@ -557,6 +557,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     let mut range_current_page_only = false;
     let mut range_exclude_current_page = false;
     let mut relative_range = None;
+    let mut range_displaced_limit: Option<Option<u64>> = None;
     let mut page_type = PageTypeSelector::Normal;
     let mut page_parent = PageParentSelector::All;
     let mut static_parent_fullname = None;
@@ -949,6 +950,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 rss_path.limit = nonempty_list_pages_feed_value(value);
                 if let Some(parsed) = parse_list_pages_numeric_argument(value) {
                     limit = Some(parsed);
+                    range_displaced_limit = None;
                     count_pages_explicit_limit = Some(parsed);
                 }
             }
@@ -1187,6 +1189,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 let value = exact_raw_color_list_pages_name(value).unwrap_or(value);
                 let selector = if value == "=" {
                     limit = Some(1);
+                    range_displaced_limit = None;
                     Some(ListPagesNameSelector::CurrentPage)
                 } else if !value.is_empty() && !is_dynamic_list_pages_value(value) {
                     let value = wikidot_list_pages_name_slug(value);
@@ -1274,12 +1277,16 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     UrlSelector::Dropped => continue,
                 };
                 rss_path.range = nonempty_list_pages_feed_value(value);
+                if let Some(displaced_limit) = range_displaced_limit.take() {
+                    limit = displaced_limit;
+                }
                 range_current_page_only = false;
                 range_exclude_current_page = false;
                 relative_range = None;
                 match value {
                     "." => {
                         range_current_page_only = true;
+                        range_displaced_limit = Some(limit);
                         limit = Some(1);
                     }
                     "others" | "other" => {
