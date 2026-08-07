@@ -18,11 +18,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::get_site_id;
+use super::{get_session_token, get_site_id};
 use crate::deepwell::{TextBlockId, TextBlockIndex, TextBlockType};
 use crate::error::{
     BasicError, Error as WwsError, FallbackError, TextBlockErrorReason,
-    build_basic_error_response,
+    build_basic_error_response, is_deepwell_permission_denied,
 };
 use crate::state::ServerState;
 use axum::body::Body;
@@ -315,16 +315,6 @@ async fn get_text_block_info(
     }
 }
 
-fn is_deepwell_permission_denied(error: &WwsError) -> bool {
-    const DEEPWELL_PERMISSION_DENIED_CODE: i32 = 3106;
-
-    matches!(
-        error,
-        WwsError::Deepwell(ClientError::Call(rpc_error))
-            if rpc_error.code() == DEEPWELL_PERMISSION_DENIED_CODE
-    )
-}
-
 struct TextBlockLookup<'a> {
     site_id: i64,
     page_id: i64,
@@ -363,26 +353,6 @@ fn get_headers(headers: HashMap<String, String>) -> Headers {
         content_type: content_type.expect("No Content-Type header in S3 response"),
         etag: etag.expect("No ETag header in S3 response"),
     }
-}
-
-fn get_session_token(headers: &HeaderMap) -> Option<&str> {
-    for value in headers.get_all(header::COOKIE) {
-        let Ok(cookie_header) = value.to_str() else {
-            continue;
-        };
-
-        for cookie in cookie_header.split(';') {
-            let Some((name, value)) = cookie.trim().split_once('=') else {
-                continue;
-            };
-
-            if name == "wikijump_token" && !value.is_empty() {
-                return Some(value);
-            }
-        }
-    }
-
-    None
 }
 
 #[cfg(test)]

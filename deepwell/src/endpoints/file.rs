@@ -34,13 +34,22 @@ pub async fn file_get(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<Option<GetFileOutput>> {
-    let GetFileDetails { input, details } = parse!(params, File);
+    let GetFileDetails {
+        input,
+        details,
+        session_token,
+    } = parse!(params, File);
 
     let make_error = || Error::new("failed to get file", ErrorType::File);
 
-    ensure_parent_page_view_permission(ctx, input.site_id, input.page_id)
-        .await
-        .or_raise(make_error)?;
+    ensure_parent_page_view_permission(
+        ctx,
+        input.site_id,
+        input.page_id,
+        session_token.as_deref(),
+    )
+    .await
+    .or_raise(make_error)?;
 
     // We cannot use get_id() because we need File for build_file_response().
     let file = FileService::get_optional(ctx, input)
@@ -341,12 +350,26 @@ pub(super) async fn ensure_parent_page_view_permission(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     page_id: i64,
+    session_token: Option<&str>,
 ) -> Result<()> {
+    let user_id = match session_token {
+        Some("") | None => ctx.request().user_id,
+        Some(token) => SessionService::get_optional(ctx, token)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to resolve parent page view session",
+                    ErrorType::Permission,
+                )
+            })?
+            .map(|session| session.user_id),
+    };
+
     ensure_parent_page_permission(
         ctx,
         site_id,
         page_id,
-        ctx.request().user_id,
+        user_id,
         Action::View,
         "view this file's parent page",
     )

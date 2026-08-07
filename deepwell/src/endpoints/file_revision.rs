@@ -44,7 +44,7 @@ pub async fn file_revision_count(
         )
     };
 
-    ensure_parent_page_view_permission(ctx, site_id, page_id)
+    ensure_parent_page_view_permission(ctx, site_id, page_id, None)
         .await
         .or_raise(make_error)?;
 
@@ -73,7 +73,7 @@ pub async fn file_revision_get(
     params: Params<'static>,
 ) -> Result<Option<FileRevisionModelFiltered>> {
     let input: GetFileRevision = parse!(params, FileRevision);
-    ensure_parent_page_view_permission(ctx, input.site_id, input.page_id)
+    ensure_parent_page_view_permission(ctx, input.site_id, input.page_id, None)
         .await
         .or_raise(|| {
             Error::new(
@@ -96,7 +96,7 @@ pub async fn file_revision_range(
     params: Params<'static>,
 ) -> Result<Vec<FileRevisionModelFiltered>> {
     let input: GetFileRevisionRange = parse!(params, FileRevision);
-    ensure_parent_page_view_permission(ctx, input.site_id, input.page_id)
+    ensure_parent_page_view_permission(ctx, input.site_id, input.page_id, None)
         .await
         .or_raise(|| {
             Error::new(

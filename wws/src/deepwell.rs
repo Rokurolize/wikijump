@@ -117,12 +117,14 @@ impl Deepwell {
         site_id: i64,
         page_id: i64,
         filename: &str,
+        session_token: Option<&str>,
     ) -> Result<Option<FileData>> {
         let params = rpc_object! {
             "site_id" => site_id,
             "page_id" => page_id,
             "file" => filename,
             "data" => false,
+            "session_token" => session_token,
         };
 
         let file_data: Option<FileData> = self.client.request("file_get", params).await?;
@@ -495,7 +497,7 @@ mod tests {
         );
 
         let file = deepwell
-            .get_file(42, 123, "image.png")
+            .get_file(42, 123, "image.png", Some("session-token"))
             .await
             .unwrap()
             .unwrap();
@@ -542,6 +544,7 @@ mod tests {
         assert_eq!(file_get[0]["params"]["page_id"], 123);
         assert_eq!(file_get[0]["params"]["file"], "image.png");
         assert_eq!(file_get[0]["params"]["data"], false);
+        assert_eq!(file_get[0]["params"]["session_token"], "session-token");
 
         let block_gets = requests_by_method(&requests, "text_block_get_index");
         assert_eq!(block_gets[0]["params"]["block_type"], "html");

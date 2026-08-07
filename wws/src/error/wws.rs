@@ -30,6 +30,16 @@ pub type StdResult<T, E> = std::result::Result<T, E>;
 pub type ResponseResult<T> = StdResult<T, Response>;
 pub type Result<T> = StdResult<T, Error>;
 
+pub(crate) const DEEPWELL_PERMISSION_DENIED_CODE: i32 = 3106;
+
+pub(crate) fn is_deepwell_permission_denied(error: &Error) -> bool {
+    matches!(
+        error,
+        Error::Deepwell(ClientError::Call(rpc_error))
+            if rpc_error.code() == DEEPWELL_PERMISSION_DENIED_CODE
+    )
+}
+
 /// Wrapper error for possible upstream errors.
 #[derive(ThisError, Debug)]
 pub enum Error {

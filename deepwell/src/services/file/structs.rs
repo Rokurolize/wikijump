@@ -62,6 +62,10 @@ pub struct GetFileDetails<'a> {
 
     #[serde(default)]
     pub details: FileDetails,
+
+    /// Optional end-user session used for the parent-page view check.
+    #[serde(default)]
+    pub session_token: Option<String>,
 }
 
 #[derive(Serialize, Debug, Clone)]
