@@ -1176,13 +1176,25 @@
       "batch_name": "actions-authoring",
       "landing": "PR2",
       "goal": "typed action and atomic mutation services",
-      "status": "planned",
-      "implementation_commits": [],
-      "unit_cases": [],
+      "status": "passed",
+      "implementation_commits": [
+        "963ecbcf90c9c367ef9e8a15e0ce78772f382f53"
+      ],
+      "unit_cases": [
+        "install/local/wikidot-verification/tests/local-administration-module-policy.test.mjs"
+      ],
       "integration_cases": [],
       "runtime_cases": [],
       "browser_cases": [],
-      "artifacts": []
+      "artifacts": [
+        {
+          "kind": "receipt",
+          "path": "install/local/wikidot-verification/artifacts/issue-1038-receipt-963ecbcf90.json",
+          "sha256": "e3096ecf74b687ceb4ba8b681a755ccf0bcbde9eea96a9309a5184da07f0b435",
+          "candidate_commit": "963ecbcf90c9c367ef9e8a15e0ce78772f382f53",
+          "candidate_tree": "5ecc4c1e677272f1c068e362c031db1686a66259"
+        }
+      ]
     },
     {
       "number": 1039,
