@@ -85,14 +85,15 @@ use super::{
     list_pages_html_encoded_head_owns_script_tail, list_pages_parent_fullname,
     list_pages_revision_count, list_pages_row_markup_bytes, list_pages_row_scan_target,
     list_pages_runtime_container_open, list_pages_runtime_row_container_close,
-    list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
-    list_pages_unknown_link_target_slugs, load_list_pages_data_form_definitions,
-    load_list_pages_first_images, page_query_cap_requires_original_module,
-    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
-    prepare_delayed_list_pages_row_with_budget, prepare_list_pages_rendered_block,
-    preserve_list_pages_module_matches, protect_ajax_module_literal_markers,
-    push_list_pages_generated_output, push_list_pages_generated_output_with_cost,
-    push_list_pages_pager, push_list_pages_trailing_runtime_blocks, raw_module_close_end,
+    list_pages_runtime_row_container_open, list_pages_static_category_preflight,
+    list_pages_static_parent_fullname_with_url, list_pages_unknown_link_target_slugs,
+    load_list_pages_data_form_definitions, load_list_pages_first_images,
+    page_query_cap_requires_original_module, parse_list_pages_arguments,
+    parse_list_pages_arguments_with_url, prepare_delayed_list_pages_row_with_budget,
+    prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
+    protect_ajax_module_literal_markers, push_list_pages_generated_output,
+    push_list_pages_generated_output_with_cost, push_list_pages_pager,
+    push_list_pages_trailing_runtime_blocks, raw_module_close_end,
     resolve_list_pages_first_image, restore_pending_nested_list_pages,
     seal_pending_list_pages_delayed_outputs, seal_zero_row_list_pages_wrapper,
     seed_random_list_pages_order, should_render_current_page_list_pages_row,
@@ -2638,10 +2639,7 @@ impl RenderService {
             let logical_body_bytes = prepared_row.logical_body_bytes;
             let rendered_body = prepared_row.body;
             let generated_row_open = if separate {
-                format!(
-                    "{}\n\n",
-                    list_pages_runtime_container_open(compat_html, "list-pages-item"),
-                )
+                format!("{}\n\n", list_pages_runtime_row_container_open(compat_html),)
             } else {
                 String::new()
             };

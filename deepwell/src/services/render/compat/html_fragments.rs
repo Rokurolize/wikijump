@@ -53,11 +53,18 @@ enum CompatFragment {
         trim_preceding_space: bool,
         allow_span_parent: bool,
         unwrap_residual_div_paragraph_prefix: bool,
+        list_pages_row_boundary: Option<ListPagesRowBoundary>,
     },
     Plain {
         plain: String,
         html: String,
     },
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+enum ListPagesRowBoundary {
+    Open,
+    Close,
 }
 
 impl CompatHtmlFragments {
@@ -89,6 +96,7 @@ impl CompatHtmlFragments {
             trim_preceding_space: false,
             allow_span_parent: false,
             unwrap_residual_div_paragraph_prefix: false,
+            list_pages_row_boundary: None,
         })
     }
 
@@ -105,9 +113,11 @@ impl CompatHtmlFragments {
             trim_preceding_space: false,
             allow_span_parent: true,
             unwrap_residual_div_paragraph_prefix: false,
+            list_pages_row_boundary: None,
         })
     }
 
+    #[cfg(test)]
     pub(in crate::services::render) fn push_block_html_trimming_preceding_space(
         &mut self,
         html: String,
@@ -117,6 +127,33 @@ impl CompatHtmlFragments {
             trim_preceding_space: true,
             allow_span_parent: false,
             unwrap_residual_div_paragraph_prefix: false,
+            list_pages_row_boundary: None,
+        })
+    }
+
+    pub(in crate::services::render) fn push_list_pages_row_open(
+        &mut self,
+        html: String,
+    ) -> String {
+        self.push_fragment(CompatFragment::BlockHtml {
+            html,
+            trim_preceding_space: false,
+            allow_span_parent: false,
+            unwrap_residual_div_paragraph_prefix: false,
+            list_pages_row_boundary: Some(ListPagesRowBoundary::Open),
+        })
+    }
+
+    pub(in crate::services::render) fn push_list_pages_row_close(
+        &mut self,
+        html: String,
+    ) -> String {
+        self.push_fragment(CompatFragment::BlockHtml {
+            html,
+            trim_preceding_space: true,
+            allow_span_parent: false,
+            unwrap_residual_div_paragraph_prefix: false,
+            list_pages_row_boundary: Some(ListPagesRowBoundary::Close),
         })
     }
 
@@ -132,6 +169,7 @@ impl CompatHtmlFragments {
             trim_preceding_space: false,
             allow_span_parent: false,
             unwrap_residual_div_paragraph_prefix: true,
+            list_pages_row_boundary: None,
         })
     }
 
@@ -262,6 +300,7 @@ impl CompatHtmlFragments {
             let CompatFragment::BlockHtml {
                 html,
                 trim_preceding_space: trim,
+                list_pages_row_boundary: None,
                 ..
             } = &self.fragments[index]
             else {
@@ -345,6 +384,20 @@ impl CompatHtmlFragments {
                     continue;
                 }
                 if let Some(fragment) = value(&self.fragments[index]) {
+                    let row_boundary = match &self.fragments[index] {
+                        CompatFragment::BlockHtml {
+                            list_pages_row_boundary,
+                            ..
+                        } => *list_pages_row_boundary,
+                        CompatFragment::Html(_) | CompatFragment::Plain { .. } => None,
+                    };
+                    if row_boundary == Some(ListPagesRowBoundary::Close)
+                        && !parent_stack.has_list_pages_row_boundary()
+                    {
+                        output.push_str(&text[start..marker_end]);
+                        cursor = marker_end;
+                        continue;
+                    }
                     if matches!(
                         &self.fragments[index],
                         CompatFragment::BlockHtml {
@@ -354,6 +407,7 @@ impl CompatHtmlFragments {
                     ) && output.ends_with(' ')
                     {
                         output.pop();
+                        parent_stack.truncate_trailing_ascii_whitespace(output.len());
                     }
                     let allow_span_parent = matches!(
                         &self.fragments[index],
@@ -369,13 +423,12 @@ impl CompatHtmlFragments {
                             ..
                         },
                     );
-                    if unwrap_block_paragraphs
+                    let restored_fragment_start = if unwrap_block_paragraphs
                         && matches!(
                             &self.fragments[index],
                             CompatFragment::BlockHtml { .. },
-                        )
-                    {
-                        if restore_block_html_from_paragraph(
+                        ) {
+                        if let Some(fragment_start) = restore_block_html_from_paragraph(
                             &mut output,
                             text,
                             marker_end,
@@ -384,18 +437,41 @@ impl CompatHtmlFragments {
                             &mut parent_stack,
                             unwrap_residual_div_paragraph_prefix,
                         ) {
-                            continue;
+                            Some(fragment_start)
+                        } else {
+                            if !parent_stack
+                                .parent_accepts_block_fragment(&output, allow_span_parent)
+                            {
+                                output.push_str(&text[start..marker_end]);
+                                cursor = marker_end;
+                                continue;
+                            }
+                            None
                         }
-                        if !parent_stack
-                            .parent_accepts_block_fragment(&output, allow_span_parent)
-                        {
-                            output.push_str(&text[start..marker_end]);
-                            cursor = marker_end;
-                            continue;
+                    } else {
+                        None
+                    };
+                    let fragment_start = restored_fragment_start.unwrap_or_else(|| {
+                        let fragment_start = output.len();
+                        output.push_str(fragment);
+                        cursor = start + len;
+                        fragment_start
+                    });
+                    match row_boundary {
+                        Some(ListPagesRowBoundary::Open) => {
+                            parent_stack.record_list_pages_row_boundary(
+                                &output,
+                                fragment_start + fragment.len(),
+                            );
                         }
+                        Some(ListPagesRowBoundary::Close) => {
+                            parent_stack.close_list_pages_row_boundary(
+                                &mut output,
+                                fragment_start,
+                            );
+                        }
+                        None => {}
                     }
-                    output.push_str(fragment);
-                    cursor = start + len;
                 } else {
                     output.push_str(&text[start..start + len]);
                     cursor = start + len;
@@ -433,24 +509,20 @@ fn restore_block_html_from_paragraph(
     cursor: &mut usize,
     parent_stack: &mut IncrementalHtmlElementStack,
     unwrap_residual_div_paragraph_prefix: bool,
-) -> bool {
-    let Some(paragraph_start) = output.rfind("<p>") else {
-        return false;
-    };
+) -> Option<usize> {
+    let paragraph_start = output.rfind("<p>")?;
     let leading = &output[paragraph_start + 3..];
     if !contains_only_text_breaks_and_balanced_inline_elements(leading) {
-        return false;
+        return None;
     }
-    let Some(paragraph_end) = text[marker_end..].find("</p>") else {
-        return false;
-    };
+    let paragraph_end = text[marker_end..].find("</p>")?;
     let trailing_end = marker_end + paragraph_end;
     let trailing = &text[marker_end..trailing_end];
     if !contains_only_text_breaks_and_balanced_inline_elements(trailing) {
-        return false;
+        return None;
     }
     if !parent_stack.parent_is_safe(&output[..paragraph_start]) {
-        return false;
+        return None;
     }
 
     let leading_end = trailing_break_start(leading).unwrap_or(leading.len());
@@ -472,6 +544,7 @@ fn restore_block_html_from_paragraph(
     } else {
         output.push_str("</p>");
     }
+    let fragment_start = output.len();
     output.push_str(fragment);
     if trailing_is_empty {
         *cursor = trailing_end + "</p>".len();
@@ -479,7 +552,7 @@ fn restore_block_html_from_paragraph(
         output.push_str("<p>");
         *cursor = marker_end + trailing_start;
     }
-    true
+    Some(fragment_start)
 }
 
 fn starts_with_unmatched_residual_wikidot_div(value: &str) -> bool {
@@ -599,6 +672,7 @@ fn leading_break_end(value: &str) -> Option<usize> {
 struct IncrementalHtmlElementStack {
     parsed: usize,
     stack: Vec<String>,
+    list_pages_row_depths: Vec<usize>,
     valid: bool,
 }
 
@@ -607,12 +681,51 @@ impl Default for IncrementalHtmlElementStack {
         Self {
             parsed: 0,
             stack: Vec::new(),
+            list_pages_row_depths: Vec::new(),
             valid: true,
         }
     }
 }
 
 impl IncrementalHtmlElementStack {
+    fn truncate_trailing_ascii_whitespace(&mut self, new_len: usize) {
+        self.parsed = self.parsed.min(new_len);
+    }
+
+    fn has_list_pages_row_boundary(&self) -> bool {
+        !self.list_pages_row_depths.is_empty()
+    }
+
+    fn record_list_pages_row_boundary(&mut self, html: &str, end: usize) {
+        if self.advance(&html[..end]) {
+            self.list_pages_row_depths.push(self.stack.len());
+        }
+    }
+
+    fn close_list_pages_row_boundary(&mut self, html: &mut String, start: usize) {
+        if !self.advance(&html[..start]) {
+            return;
+        }
+        let Some(depth) = self.list_pages_row_depths.pop() else {
+            return;
+        };
+        if self.stack.len() < depth {
+            self.valid = false;
+            return;
+        }
+        let mut closing = String::new();
+        while self.stack.len() > depth {
+            let element = self
+                .stack
+                .pop()
+                .expect("row depth is below the current element stack");
+            write!(&mut closing, "</{element}>")
+                .expect("writing to a String cannot fail");
+        }
+        html.insert_str(start, &closing);
+        self.parsed = start + closing.len();
+    }
+
     fn parent_is_safe(&mut self, html: &str) -> bool {
         self.parent_accepts_block_fragment(html, false)
     }
@@ -625,16 +738,23 @@ impl IncrementalHtmlElementStack {
         if self.parsed > html.len() {
             *self = Self::default();
         }
+        self.advance(html)
+            && self.stack.last().is_none_or(|parent| {
+                is_safe_block_html_container(parent)
+                    || (allow_span_parent && parent == "span")
+            })
+    }
+
+    fn advance(&mut self, html: &str) -> bool {
+        if self.parsed > html.len() {
+            *self = Self::default();
+        }
         if self.valid {
             record_html_parent_scanned_bytes(html.len().saturating_sub(self.parsed));
             self.valid =
                 advance_open_html_element_stack(html, &mut self.parsed, &mut self.stack);
         }
         self.valid
-            && self.stack.last().is_none_or(|parent| {
-                is_safe_block_html_container(parent)
-                    || (allow_span_parent && parent == "span")
-            })
     }
 }
 
@@ -991,6 +1111,53 @@ mod tests {
             fragments.restore(&format!("after<p>{trimming}</p>")),
             "after</div>",
         );
+    }
+
+    #[test]
+    fn list_pages_row_boundary_closes_unmatched_summary_html() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let row_open = fragments
+            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
+        let row_close = fragments.push_list_pages_row_close("</div>".to_owned());
+
+        assert_eq!(
+            fragments.restore(&format!(
+                "<p>{row_open}</p><div class=\"summary-owner\"><p>FIRST</p><p>{row_close}</p>",
+            )),
+            concat!(
+                r#"<div class="list-pages-item">"#,
+                r#"<div class="summary-owner"><p>FIRST</p></div>"#,
+                "</div>",
+            ),
+        );
+    }
+
+    #[test]
+    fn list_pages_row_boundary_preserves_balanced_summary_html() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let row_open = fragments
+            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
+        let row_close = fragments.push_list_pages_row_close("</div>".to_owned());
+
+        assert_eq!(
+            fragments.restore(&format!(
+                "<p>{row_open}</p><div class=\"summary-owner\">FIRST</div><p>{row_close}</p>",
+            )),
+            concat!(
+                r#"<div class="list-pages-item">"#,
+                r#"<div class="summary-owner">FIRST</div>"#,
+                "</div>",
+            ),
+        );
+    }
+
+    #[test]
+    fn list_pages_row_close_without_its_open_boundary_remains_literal() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let row_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let html = format!("<p>{row_close}</p>");
+
+        assert_eq!(fragments.restore(&html), html);
     }
 
     #[test]

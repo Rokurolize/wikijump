@@ -2964,7 +2964,7 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         page_create,
         json!({
             "site_id": site_id,
-            "wikitext": "Preview context target",
+            "wikitext": "[[>]]",
             "title": "ListPages Preview Context Target",
             "alt_title": null,
             "slug": TARGET_SLUG,
@@ -3020,10 +3020,22 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
     .expect("a bare own-line ListPages invocation should execute")
     .html_output
     .body;
+    let target_row_start = bare_own_line_preview
+        .find(&format!(
+            r#"<div class="list-pages-item"><h1><span><a href="/{TARGET_SLUG}">"#,
+        ))
+        .expect("the target row should be present");
+    let target_row_tail = &bare_own_line_preview[target_row_start..];
+    let target_row_end = target_row_tail[1..]
+        .find(r#"<div class="list-pages-item">"#)
+        .map_or(target_row_tail.len(), |offset| offset + 1);
+    let target_row = &target_row_tail[..target_row_end];
     assert!(
         bare_own_line_preview.contains(r#"<div class="list-pages-box">"#)
             && bare_own_line_preview.contains("ListPages Preview Context Target")
             && bare_own_line_preview.contains("by Administrator")
+            && target_row.contains(r#"<div style="text-align: right;">"#)
+            && target_row.ends_with("</div></div>")
             && !bare_own_line_preview.contains("[[module ListPages]]"),
         "the exact empty-head invocation must use the default query and row template:\n{bare_own_line_preview}",
     );
