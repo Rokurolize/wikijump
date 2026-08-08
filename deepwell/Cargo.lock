@@ -1557,10 +1557,12 @@ dependencies = [
 [[package]]
 name = "ftml"
 version = "1.42.0+roku.20260630.1"
-source = "git+https://github.com/Rokurolize/ftml?rev=fd624c35455a2397bc678a16cc97c8effaec5480#fd624c35455a2397bc678a16cc97c8effaec5480"
+source = "git+https://github.com/Rokurolize/ftml?rev=57c5790d08d6f18055fa73aa265e2f5d03c80d77#57c5790d08d6f18055fa73aa265e2f5d03c80d77"
 dependencies = [
  "built",
  "cfg-if",
+ "cssparser",
+ "cssparser-color",
  "entities",
  "enum-map",
  "getrandom 0.3.4",
@@ -1584,6 +1586,7 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "serde_repr",
+ "sha2 0.11.0",
  "str-macro",
  "strum",
  "strum_macros",

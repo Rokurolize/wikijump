@@ -577,6 +577,10 @@ impl<'a> ModuleEventScanner<'a> {
             };
             self.advance_to(start + 2);
 
+            if source_block_open_is_backslash_escaped(self.source, start) {
+                continue;
+            }
+
             if let Some(end) = self.literal_regions.containing_end(start) {
                 self.advance_to(end);
                 continue;
@@ -1429,6 +1433,17 @@ impl<'a> ModuleEventScanner<'a> {
             true
         }
     }
+}
+
+fn source_block_open_is_backslash_escaped(source: &str, start: usize) -> bool {
+    let bytes = source.as_bytes();
+    let mut cursor = start;
+    let mut backslashes = 0usize;
+    while cursor > 0 && bytes[cursor - 1] == b'\\' {
+        cursor -= 1;
+        backslashes += 1;
+    }
+    backslashes % 2 == 1
 }
 
 #[derive(Clone, Copy)]

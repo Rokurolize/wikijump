@@ -350,6 +350,54 @@ After"#;
 }
 
 #[tokio::test]
+async fn escaped_registered_listpages_openers_remain_literal_in_preview() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for source in [
+        "\\[[module ListPages limit=\"1\"]]body[[/module]]",
+        "BEFORE\n\\[[module ListPages limit=\"1\"]]body[[/module]]\nAFTER",
+    ] {
+        let preview = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Escaped ListPages preview",
+            source.to_owned(),
+        )
+        .await
+        .expect("escaped ListPages source should render")
+        .html_output
+        .body;
+
+        assert!(
+            preview
+                .contains(r#"\[[module ListPages limit=&quot;1&quot;]]body[[/module]]"#),
+            "the single-backslash source must remain visible: {preview}",
+        );
+        assert!(
+            !preview.contains("list-pages-box")
+                && !preview.contains("list-pages-item")
+                && !preview.contains("TODO: module ListPages"),
+            "escaped source must not dispatch ListPages: {preview}",
+        );
+    }
+
+    let unescaped = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unescaped ListPages preview",
+        "[[module ListPages limit=\"1\"]]body[[/module]]".to_owned(),
+    )
+    .await
+    .expect("unescaped ListPages source should render")
+    .html_output
+    .body;
+    assert!(unescaped.contains("list-pages-box"), "{unescaped}");
+}
+
+#[tokio::test]
 async fn listpages_updated_at_preview_keeps_server_date_spaces_breakable() {
     const TARGET_SLUG: &str = "listpages-date-space-target-20260802";
 
@@ -3616,13 +3664,16 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
             source.clone(),
         )
         .await
-        .expect("a zero-baseline score selector without a current page should render")
+        .expect(
+            "a current-page score selector without a current page should render empty",
+        )
         .html_output
         .body;
         assert!(
-            preview.contains(&format!("ROW {TARGET_SLUG}"))
+            preview.contains("class=\"list-pages-box\"")
+                && !preview.contains("ROW ")
                 && !preview.contains("[[module ListPages"),
-            "Wikidot compares an unsaved preview's rating and vote selectors with the zero baseline for {selector}:\n{preview}",
+            "Wikidot has no current score/vote source in an unsaved preview for {selector}:\n{preview}",
         );
     }
 
@@ -4744,6 +4795,14 @@ async fn linked_listpages_values_keep_typed_owner_boundaries_in_preview() {
             ),
         ),
         (
+            "tag image alt projection",
+            "[[image https://example.com/x.png alt=\"%%tags_linked%%\"]]",
+            concat!(
+                "<img src=\"https://example.com/x.png\" class=\"image\" ",
+                "alt=\"[/system:page-tags/tag/component component]\">",
+            ),
+        ),
+        (
             "tag link in outer-page tag conditional",
             "[[iftags +component]]%%tags_linked%%[[/iftags]]",
             "BEGIN||END",
@@ -4772,6 +4831,12 @@ async fn linked_listpages_values_keep_typed_owner_boundaries_in_preview() {
             preview.contains(expected),
             "{label} should preserve its evidenced owner boundary:\n{preview}",
         );
+        if label.starts_with("tag image ") {
+            assert!(
+                !preview.contains("<p>BEGIN|") && !preview.contains("|END</p>"),
+                "generated image attributes keep Wikidot's delayed block boundary:\n{preview}",
+            );
+        }
         assert!(
             !preview.contains("%%title_linked%%")
                 && !preview.contains("%%tags_linked%%")

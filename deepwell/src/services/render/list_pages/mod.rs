@@ -1444,7 +1444,7 @@ mod tests {
     #[test]
     fn list_pages_argument_activation_preserves_wikidot_source_grammar() {
         let arguments = parse_list_pages_arguments(concat!(
-            r#"name="target" NAME="missing" name=bare name='single' "#,
+            r#"name="target" NAME="missing" name=bare name='single' full_slug="missing" fullslug="missing" "#,
             r#"tags="component" TAGS="missing" tags=bare tags='single' "#,
             r#"limit="2" LIMIT="0" limit=0 limit='0' "#,
             r#"offset="3" OFFSET="1" offset=1 offset='1' "#,
@@ -1456,7 +1456,7 @@ mod tests {
             r#"created_by="" createdby="missing" CREATED_BY="missing" "#,
             r#"rss="" rssTitle="Alias" RSS="Wrong" rssTitle='Wrong' "#,
             r#"prependLine="before" prependline="wrong" prependLine='wrong' "#,
-            r#"appendLine="after" appendline="wrong" appendLine=wrong "#,
+            r#"appendLine="after" appendline="wrong" appendLine=wrong appendLine='wrong' "#,
             r#"score=">100000" createdat="1900" updatedat="1900" "#,
             r#"rating>100000 votes>100000 created_at>2100 date>2100 "#,
             r#"name!="ignored" range!="others""#,

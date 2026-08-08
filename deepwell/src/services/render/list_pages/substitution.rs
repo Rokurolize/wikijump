@@ -378,7 +378,7 @@ pub(in crate::services::render) fn exact_name_list_pages_batch_key(
             return None;
         }
         match argument.key.to_ascii_lowercase().as_str() {
-            "name" | "fullname" | "full_slug" | "fullslug" => {
+            "name" | "fullname" => {
                 name_arguments += 1;
             }
             "category" => {}
@@ -608,8 +608,6 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 | "tag"
                 | "name"
                 | "fullname"
-                | "full_slug"
-                | "fullslug"
                 | "limit"
                 | "offset"
                 | "perpage"
@@ -638,8 +636,6 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 | "tag"
                 | "name"
                 | "fullname"
-                | "full_slug"
-                | "fullslug"
                 | "limit"
                 | "offset"
                 | "perPage"
@@ -657,10 +653,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 | "rssOnly"
                 | "prependLine"
                 | "appendLine"
-        ) && (double_quoted_assignment
-            || matches!(raw_key, "appendLine")
-                && argument.op == "="
-                && argument.value_kind == WikidotModuleArgumentValueKind::SingleQuoted);
+        ) && double_quoted_assignment;
         if exact_grammar_family && !exact_grammar_token
             || matches!(key.as_str(), "createdat" | "updatedat")
         {
@@ -1166,7 +1159,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 };
                 reverse = matches!(value.to_ascii_lowercase().as_str(), "yes" | "true");
             }
-            "name" | "fullname" | "full_slug" | "fullslug" => {
+            "name" | "fullname" => {
                 let resolved_url_name;
                 let value = match resolve_url_selector(
                     value,

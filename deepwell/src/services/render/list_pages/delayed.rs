@@ -1106,10 +1106,11 @@ fn seal_list_pages_delayed_output_with_modes(
     // for the outer page parse. Leaving nested markers inside the new block
     // fragment would intentionally prevent recursive restoration.
     sealed_body = compat_html.restore(&sealed_body);
+    let delayed_block_output = !block_output && sealed_body.starts_with("\n\n");
     if !block_output {
         sealed_body = strip_single_list_pages_paragraph(sealed_body);
     }
-    Ok(if block_output {
+    Ok(if block_output || delayed_block_output {
         compat_html.push_block_html_allowing_span_parent(sealed_body)
     } else {
         compat_html.push_html(sealed_body)
