@@ -3010,6 +3010,24 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
          while leaving the raw closer literal:\n{empty_body_preview}",
     );
 
+    let bare_own_line_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved bare ListPages preview",
+        "[[module ListPages]]".to_owned(),
+    )
+    .await
+    .expect("a bare own-line ListPages invocation should execute")
+    .html_output
+    .body;
+    assert!(
+        bare_own_line_preview.contains(r#"<div class="list-pages-box">"#)
+            && bare_own_line_preview.contains("ListPages Preview Context Target")
+            && bare_own_line_preview.contains("by Administrator")
+            && !bare_own_line_preview.contains("[[module ListPages]]"),
+        "the exact empty-head invocation must use the default query and row template:\n{bare_own_line_preview}",
+    );
+
     let html_encoded_script_preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site_id,
