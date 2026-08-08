@@ -66,7 +66,7 @@ use super::{
     ListPagesPagerRoute, ListPagesRenderedBlock, ListPagesSubstitutionContext,
     MAX_NESTED_LISTPAGES_DEPTH, MAX_NESTED_LISTPAGES_MODULES_PER_PASS,
     PendingDelayedListPagesOutput, ResolvedListPagesAuthors,
-    append_list_pages_delayed_occurrences, append_list_pages_runtime_scalar_ranges,
+    append_list_pages_delayed_occurrences, append_list_pages_runtime_text_ranges,
     count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
     count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
     count_pages_scan_requires_preservation, count_pages_should_remain_literal,
@@ -86,13 +86,13 @@ use super::{
     list_pages_revision_count, list_pages_row_markup_bytes, list_pages_row_scan_target,
     list_pages_runtime_container_open, list_pages_runtime_row_container_close,
     list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
-    load_list_pages_data_form_definitions, load_list_pages_first_images,
-    page_query_cap_requires_original_module, parse_list_pages_arguments,
-    parse_list_pages_arguments_with_url, prepare_delayed_list_pages_row_with_budget,
-    prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
-    protect_ajax_module_literal_markers, push_list_pages_generated_output,
-    push_list_pages_generated_output_with_cost, push_list_pages_pager,
-    push_list_pages_trailing_runtime_blocks, raw_module_close_end,
+    list_pages_unknown_link_target_slugs, load_list_pages_data_form_definitions,
+    load_list_pages_first_images, page_query_cap_requires_original_module,
+    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
+    prepare_delayed_list_pages_row_with_budget, prepare_list_pages_rendered_block,
+    preserve_list_pages_module_matches, protect_ajax_module_literal_markers,
+    push_list_pages_generated_output, push_list_pages_generated_output_with_cost,
+    push_list_pages_pager, push_list_pages_trailing_runtime_blocks, raw_module_close_end,
     resolve_list_pages_first_image, restore_pending_nested_list_pages,
     seal_pending_list_pages_delayed_outputs, seal_zero_row_list_pages_wrapper,
     seed_random_list_pages_order, should_render_current_page_list_pages_row,
@@ -2258,7 +2258,7 @@ impl RenderService {
         }
         let included_pages = Vec::new();
         let mut delayed_occurrences = Vec::new();
-        let mut delayed_runtime_scalar_ranges = Vec::new();
+        let mut delayed_runtime_text_ranges = Vec::new();
         let mut delayed_html_fragments = Vec::new();
         if !separate
             && let Some(prepend_line) = prepend_line
@@ -2287,6 +2287,7 @@ impl RenderService {
         }
         let render_generated_html =
             template.output_shape() == ListPagesOutputShape::TableRows;
+        let unknown_link_target_slugs = list_pages_unknown_link_target_slugs(body);
         // Form wiki fields are inserted after the outer ListPages template has
         // been expanded. Their links therefore are not visible to the normal
         // page-level fallback-title scan; include the selected source values
@@ -2296,8 +2297,14 @@ impl RenderService {
             .lines()
             .any(|line| native_numbered_list_content(line).is_some())
             || wants_data_form_values
+            || !unknown_link_target_slugs.is_empty()
         {
             let mut fallback_source = body.to_owned();
+            for slug in &unknown_link_target_slugs {
+                fallback_source.push_str("\n[[[");
+                fallback_source.push_str(slug);
+                fallback_source.push_str("|runtime target]]]");
+            }
             if wants_data_form_values {
                 for page in &pages {
                     if let Some(wikitext) = content_cache
@@ -2624,9 +2631,9 @@ impl RenderService {
                     "generated slot source range escaped its substituted row",
                 ));
             }
-            if !append_list_pages_runtime_scalar_ranges(
-                &mut delayed_runtime_scalar_ranges,
-                prepared_row.runtime_scalar_ranges,
+            if !append_list_pages_runtime_text_ranges(
+                &mut delayed_runtime_text_ranges,
+                prepared_row.runtime_text_ranges,
                 rendered_body_start,
                 rendered_body.len(),
             ) {
@@ -2704,7 +2711,7 @@ impl RenderService {
             finish_or_defer_list_pages_delayed_output_with_modes(
                 output,
                 delayed_occurrences,
-                delayed_runtime_scalar_ranges,
+                delayed_runtime_text_ranges,
                 delayed_html_fragments,
                 defer_for_include_expansion,
                 page_info,
@@ -2713,6 +2720,9 @@ impl RenderService {
                 compat_text,
                 block_output,
                 list_pages_inline,
+                numbered_link_titles
+                    .as_ref()
+                    .and_then(|titles| titles.page_existence()),
             )?;
         Ok(ListPagesBlockRenderResult::Expanded(
             ListPagesRenderedBlock {

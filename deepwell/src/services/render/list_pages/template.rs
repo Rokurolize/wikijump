@@ -11,7 +11,7 @@ use super::budget::MAX_LISTPAGES_TEMPLATE_BODY_BYTES;
 pub(in crate::services::render) static LISTPAGES_VARIABLE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| {
         Regex::new(
-        r"%%(?P<name>[A-Za-z0-9_]+)(?:\{(?P<argument>[A-Za-z0-9_-]+)\})?(?:\((?P<length>[0-9]+)\))?(?:\|(?P<format>.*?))?%%",
+        r"%%(?P<name>[A-Za-z0-9_]+)(?:\{(?P<argument>[A-Za-z0-9_-]+)\})?(?:\((?P<length>[0-9]+)\))?(?:\|(?P<format>(?:[^%]|%[^%])+?))?%%",
     )
     .unwrap()
     });
@@ -187,6 +187,12 @@ pub(in crate::services::render) fn list_pages_variable_capture_is_valid(
             captures.name("format").map(|matched| matched.as_str()),
         )
     })
+}
+
+pub(in crate::services::render) fn list_pages_variable_capture_has_unknown_name(
+    captures: &regex::Captures<'_>,
+) -> bool {
+    ListPagesVariable::parse(&captures["name"]).is_none()
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -742,6 +748,40 @@ mod tests {
         assert!(sectioned.has_unknown_variables());
         assert!(ListPagesTemplatePlan::compile("%%form_data%%").is_some());
         assert!(ListPagesTemplatePlan::compile("%%form_raw%%").is_some());
+    }
+
+    #[test]
+    fn incomplete_unknown_variable_does_not_consume_the_next_known_token() {
+        let body = "BEGIN|%%unknown|%%title%%|END";
+        let plan = ListPagesTemplatePlan::compile(body)
+            .expect("an incomplete unknown token must not abort the row plan");
+
+        assert_eq!(plan.body(), body);
+        assert!(plan.fields().title, "the later title dependency was hidden");
+        assert!(
+            !plan.has_unknown_variables(),
+            "an unclosed delimiter is source text, not a complete unknown variable",
+        );
+
+        let captures = LISTPAGES_VARIABLE_REGEX
+            .captures_iter(body)
+            .map(|captures| captures[0].to_owned())
+            .collect::<Vec<_>>();
+        assert_eq!(captures, ["%%title%%"]);
+
+        for token in [
+            "%%unknown|x%%",
+            "%%created_at|%Y/%m/%d%%",
+            "%%created_at|%O ago (%e %b %Y, %H:%M)%%",
+        ] {
+            assert_eq!(
+                LISTPAGES_VARIABLE_REGEX
+                    .find(token)
+                    .map(|matched| matched.as_str()),
+                Some(token),
+                "non-empty formats with ordinary percent directives remain valid",
+            );
+        }
     }
 
     #[test]
