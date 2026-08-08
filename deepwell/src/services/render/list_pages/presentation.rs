@@ -192,8 +192,8 @@ pub(in crate::services::render) fn render_list_pages_wikidot_user(
         concat!(
             r#"<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">"#,
             r#"<a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
-            r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
-            r#"alt="{name_attr}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})" />"#,
+            r#"<img class="small" src="https://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
+            r#"alt="{name_attr}" style="background-image:url(https://www.wikidot.com/userkarma.php?u={user_id})" />"#,
             r#"</a><a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">{name_text}</a>"#,
             r#"</span>"#
         ),
@@ -405,6 +405,11 @@ mod tests {
             "unexpected user markup: {html}"
         );
         assert!(!html.contains(r#"alt="quoted" onload="alert(1)""#));
+        assert!(html.contains("https://www.wikidot.com/avatar.php?userid=42"));
+        assert!(html.contains(
+            "background-image:url(https://www.wikidot.com/userkarma.php?u=42)"
+        ));
+        assert!(html.contains("http://www.wikidot.com/user:info/quoted-user"));
         assert!(
             feed_html.contains(r##"alt="quoted&quot; onload=&quot;alert(1)&quot;""##),
             "unexpected feed user markup: {feed_html}"

@@ -1130,6 +1130,40 @@ fn strip_single_list_pages_paragraph(html: String) -> String {
     inner.to_owned()
 }
 
+pub(in crate::services::render) fn replace_recursive_list_pages_with_error(
+    source: &str,
+    fragments: &mut CompatHtmlFragments,
+    render_cost_budget: &SharedRenderCostBudget,
+) -> String {
+    let modules = find_list_pages_module_matches_with_delayed_links_budgeted(
+        source,
+        render_cost_budget,
+    );
+    if modules.is_empty() || render_cost_budget.is_exhausted() {
+        return source.to_owned();
+    }
+
+    let error = fragments.push_block_html(
+        r#"<div class="error-block">The ListPages module does not work recursively.</div>"#
+            .to_owned(),
+    );
+    let mut output = String::with_capacity(source.len());
+    let mut cursor = 0usize;
+    for module in modules {
+        if module.start < cursor || module.preserve_original || !module.runtime_safe {
+            continue;
+        }
+        output.push_str(&source[cursor..module.start]);
+        output.push_str(&error);
+        cursor = module.end;
+    }
+    if cursor == 0 {
+        return source.to_owned();
+    }
+    output.push_str(&source[cursor..]);
+    output
+}
+
 fn protect_nested_list_pages(
     source: &str,
     fragments: &mut CompatHtmlFragments,
@@ -1706,6 +1740,7 @@ mod tests {
             page_wikitext: None,
             page_rendered_content: None,
             page_rendered_summary: None,
+            page_rendered_summary_is_block: false,
             default_summary_first_paragraph: false,
             fallback_link_titles: None,
             page_rendered_first_paragraph: None,

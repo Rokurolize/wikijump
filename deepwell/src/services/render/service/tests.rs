@@ -188,6 +188,7 @@ fn list_pages_substitution_context_with_mode<'a>(
         page_wikitext,
         page_rendered_content: None,
         page_rendered_summary: None,
+        page_rendered_summary_is_block: false,
         default_summary_first_paragraph: false,
         fallback_link_titles: None,
         page_rendered_first_paragraph: None,
@@ -6264,6 +6265,7 @@ fn page_nav_render_context_keeps_current_page_without_text_block_target() {
             current_page_id: Some(11),
             text_block_page_id: None,
             lifecycle: RenderLifecycle::SavedPage,
+            suppress_nested_list_pages: false,
         },
     );
 }
@@ -6278,6 +6280,7 @@ fn page_view_render_context_keeps_current_page_without_text_block_target() {
             current_page_id: Some(11),
             text_block_page_id: None,
             lifecycle: RenderLifecycle::SavedPage,
+            suppress_nested_list_pages: false,
         },
     );
 }
@@ -6292,6 +6295,7 @@ fn page_render_context_uses_current_page_as_text_block_target() {
             current_page_id: Some(11),
             text_block_page_id: Some(11),
             lifecycle: RenderLifecycle::SavedPage,
+            suppress_nested_list_pages: false,
         },
     );
 }

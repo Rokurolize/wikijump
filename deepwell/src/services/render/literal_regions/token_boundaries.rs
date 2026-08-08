@@ -196,6 +196,11 @@ fn scan_email(bytes: &[u8], start: usize, identifier_end: usize) -> EmailScan {
                 | b'}'
                 | b'<'
                 | b'>'
+                | b'|'
+                | b'('
+                | b')'
+                | b'"'
+                | b':'
                 | b'\n'
                 | b'\r'
         )
@@ -221,6 +226,7 @@ fn scan_email(bytes: &[u8], start: usize, identifier_end: usize) -> EmailScan {
                 | b'}'
                 | b'<'
                 | b'>'
+                | b'|'
                 | b'\n'
                 | b'\r'
         )
@@ -237,7 +243,17 @@ fn scan_email(bytes: &[u8], start: usize, identifier_end: usize) -> EmailScan {
         && !is_discarded_control(bytes[end])
         && !matches!(
             bytes[end],
-            b' ' | b'\t' | b'@' | b'[' | b']' | b'{' | b'}' | b'<' | b'>' | b'\n' | b'\r'
+            b' ' | b'\t'
+                | b'@'
+                | b'['
+                | b']'
+                | b'{'
+                | b'}'
+                | b'<'
+                | b'>'
+                | b'|'
+                | b'\n'
+                | b'\r'
         )
     {
         end += 1;
@@ -387,13 +403,6 @@ pub(in crate::services::render) fn wikidot_right_bracket_token(
 ) -> (bool, usize) {
     if start > 0 && bytes[start - 1] == b'$' && !text_tokens.contains(start - 1) {
         return (false, 2.min(end - start));
-    }
-    if start >= 2
-        && bytes.get(start - 2..start) == Some(&b"--"[..])
-        && comment_close_is_token(bytes, start - 2)
-        && !text_tokens.contains(start - 2)
-    {
-        return (false, 1);
     }
     right_bracket_token(bytes, start, end)
 }

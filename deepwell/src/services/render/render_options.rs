@@ -46,6 +46,7 @@ pub(super) struct RenderContext {
     pub(super) current_page_id: Option<i64>,
     pub(super) text_block_page_id: Option<i64>,
     pub(super) lifecycle: RenderLifecycle,
+    pub(super) suppress_nested_list_pages: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -93,6 +94,7 @@ pub(super) struct RenderExpansionOptions<'a> {
     pub(super) url: UrlArguments<'a>,
     pub(super) list_pages_pager_route: ListPagesPagerRoute,
     pub(super) page_preview: bool,
+    pub(super) suppress_nested_list_pages: bool,
 }
 
 impl RenderContext {
@@ -103,6 +105,7 @@ impl RenderContext {
             current_page_id: None,
             text_block_page_id: None,
             lifecycle: RenderLifecycle::Standalone,
+            suppress_nested_list_pages: false,
         }
     }
 
@@ -113,6 +116,7 @@ impl RenderContext {
             current_page_id: Some(page_id),
             text_block_page_id: Some(page_id),
             lifecycle: RenderLifecycle::SavedPage,
+            suppress_nested_list_pages: false,
         }
     }
 
@@ -123,6 +127,7 @@ impl RenderContext {
             current_page_id: Some(page_id),
             text_block_page_id: None,
             lifecycle: RenderLifecycle::SavedPage,
+            suppress_nested_list_pages: false,
         }
     }
 
@@ -133,6 +138,7 @@ impl RenderContext {
             current_page_id: Some(current_page_id),
             text_block_page_id: None,
             lifecycle: RenderLifecycle::SavedPage,
+            suppress_nested_list_pages: false,
         }
     }
 
@@ -143,6 +149,7 @@ impl RenderContext {
             current_page_id: Some(0),
             text_block_page_id: None,
             lifecycle: RenderLifecycle::AjaxModule,
+            suppress_nested_list_pages: false,
         }
     }
 
@@ -153,6 +160,27 @@ impl RenderContext {
             current_page_id: None,
             text_block_page_id: None,
             lifecycle: RenderLifecycle::PagePreview,
+            suppress_nested_list_pages: false,
+        }
+    }
+
+    pub(super) fn list_pages_default_summary(
+        site_id: i64,
+        category_id: i64,
+        page_id: i64,
+        page_preview: bool,
+    ) -> Self {
+        Self {
+            current_site_id: Some(site_id),
+            current_category_id: (!page_preview).then_some(category_id),
+            current_page_id: (!page_preview).then_some(page_id),
+            text_block_page_id: None,
+            lifecycle: if page_preview {
+                RenderLifecycle::PagePreview
+            } else {
+                RenderLifecycle::SavedPage
+            },
+            suppress_nested_list_pages: true,
         }
     }
 
@@ -182,6 +210,7 @@ mod tests {
                 current_page_id: None,
                 text_block_page_id: None,
                 lifecycle: RenderLifecycle::PagePreview,
+                suppress_nested_list_pages: false,
             },
         );
         assert_eq!(

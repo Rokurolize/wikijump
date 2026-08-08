@@ -25,7 +25,7 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "140a5df4310cb05708621b0a12e556f07ad22b40";
+const candidateFtml = "2141a54d41d293410577178ab115981c9b551b7f";
 const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
 const sanitizedEnvironment = Object.fromEntries(
@@ -275,6 +275,7 @@ test("marker canary gives each disposable stack a run-owned administrator passwo
     });
     const users = JSON.parse(await fs.readFile(path.join(root, "seeder", "users.json"), "utf8"));
     assert.equal(users.find((user) => user.slug === "administrator").password, "run-owned-admin-secret");
+    assert.equal((await fs.stat(path.join(root, "seeder", "users.json"))).mode & 0o777, 0o644);
     assert.equal((await readSeedAdministrator(repositoryRoot)).password, null);
   } finally {
     await fs.rm(root, {recursive: true, force: true});

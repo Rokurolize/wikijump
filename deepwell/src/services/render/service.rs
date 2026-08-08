@@ -86,6 +86,7 @@ use super::list_pages::{
     ListPagesExpansion, ListPagesExpansionOptions,
     build_wikidot_list_pages_module_request, protect_ajax_module_literal_markers,
     protect_generated_parser_function_comment_gates,
+    replace_recursive_list_pages_with_error,
     resolve_wikidot_parser_functions_outside_list_pages,
 };
 use super::literal_regions::LiteralRegionIndex;
@@ -1213,6 +1214,7 @@ impl RenderService {
                 url: UrlArguments::default(),
                 list_pages_pager_route: super::list_pages::ListPagesPagerRoute::SavedPage,
                 page_preview: false,
+                suppress_nested_list_pages: false,
             },
         )
         .await?;
@@ -1336,6 +1338,7 @@ impl RenderService {
             url,
             list_pages_pager_route,
             page_preview,
+            suppress_nested_list_pages,
         } = options;
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
@@ -1415,6 +1418,13 @@ impl RenderService {
             neutralize_authored_markers(&mut wikitext);
         }
         let mut wikidot_compat_html = CompatHtmlFragments::new(&wikitext);
+        if suppress_nested_list_pages {
+            wikitext = replace_recursive_list_pages_with_error(
+                &wikitext,
+                &mut wikidot_compat_html,
+                &render_cost_budget,
+            );
+        }
         let ListPagesExpansion {
             wikitext: expanded_wikitext,
             included_pages: list_pages_included_pages,
@@ -1581,14 +1591,14 @@ impl RenderService {
                     }
                     _ => PageRatingType::PlusMinus,
                 };
-            let rate_score = match (has_rate_module, current_page_id) {
-                (true, Some(page_id)) => ScoreService::score(ctx, page_id)
+            let rate_score = match (has_rate_module, current_page_id, page_preview) {
+                (true, Some(page_id), false) => ScoreService::score(ctx, page_id)
                     .await
                     .or_raise(make_error)?,
                 _ => page_info.score,
             };
-            let rating_votes = match (has_rate_module, current_page_id) {
-                (true, Some(page_id)) => Some(
+            let rating_votes = match (has_rate_module, current_page_id, page_preview) {
+                (true, Some(page_id), false) => Some(
                     PageQueryService::effective_vote_count(ctx, page_id)
                         .await
                         .or_raise(make_error)?,
@@ -1836,6 +1846,7 @@ impl RenderService {
             current_page_id,
             text_block_page_id,
             lifecycle,
+            suppress_nested_list_pages,
         } = render_context;
         let allow_wikidot_styleframe = matches!(
             lifecycle,
@@ -1877,6 +1888,7 @@ impl RenderService {
                 url,
                 list_pages_pager_route,
                 page_preview: lifecycle == RenderLifecycle::PagePreview,
+                suppress_nested_list_pages,
             },
         )
         .await?;

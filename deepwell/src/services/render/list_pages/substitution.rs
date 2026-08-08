@@ -2000,6 +2000,7 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) page_wikitext: Option<&'a str>,
     pub(in crate::services::render) page_rendered_content: Option<&'a str>,
     pub(in crate::services::render) page_rendered_summary: Option<&'a str>,
+    pub(in crate::services::render) page_rendered_summary_is_block: bool,
     pub(in crate::services::render) default_summary_first_paragraph: bool,
     pub(in crate::services::render) fallback_link_titles:
         Option<&'a WikidotCompatLinkTitleMap>,
@@ -2112,6 +2113,14 @@ fn push_list_pages_rendered_fragment(
     html: &str,
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
+    push_list_pages_rendered_fragment_with_mode(html, compat_html, false)
+}
+
+fn push_list_pages_rendered_fragment_with_mode(
+    html: &str,
+    compat_html: &mut CompatHtmlFragments,
+    force_block: bool,
+) -> String {
     // The secondary Ad/AdSense handlers emit this exact empty paragraph as a
     // block marker in an ordinary page render.  Inside a ListPages content
     // value Wikidot leaves the surrounding paragraph boundary in place and
@@ -2129,10 +2138,11 @@ fn push_list_pages_rendered_fragment(
     // block so it can close the surrounding row paragraph; other runtime
     // module errors may contain nested trusted markers and must stay inline
     // until their own fragment stack is restored.
-    if (list_pages_rendered_fragment_has_block_root(&rendered)
-        && rendered.contains(
-            r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#,
-        ))
+    if force_block
+        || (list_pages_rendered_fragment_has_block_root(&rendered)
+            && rendered.contains(
+                r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#,
+            ))
         || has_html_block
     {
         compat_html.push_block_html(rendered)
@@ -2522,7 +2532,13 @@ pub(super) fn substitute_list_pages_variables_inner(
                 section
             }
         },
-        |html| push_list_pages_rendered_fragment(html, compat_html),
+        |html| {
+            push_list_pages_rendered_fragment_with_mode(
+                html,
+                compat_html,
+                context.page_rendered_summary_is_block,
+            )
+        },
     );
     let first_paragraph = context.page_rendered_first_paragraph.map_or_else(
         || {
@@ -2964,7 +2980,7 @@ mod tests {
 
     use super::{
         list_pages_rendered_fragment_has_html_block, list_pages_rendered_inline_fragment,
-        push_list_pages_rendered_fragment,
+        push_list_pages_rendered_fragment, push_list_pages_rendered_fragment_with_mode,
     };
 
     #[test]
@@ -3015,6 +3031,22 @@ mod tests {
         assert!(!list_pages_rendered_fragment_has_html_block(
             r#"<p><iframe src="/page/html/hash-1" class="other-iframe"></iframe></p>"#,
         ));
+    }
+
+    #[test]
+    fn forced_block_rendered_fragment_escapes_the_outer_row_paragraph() {
+        let mut compat_html = CompatHtmlFragments::new("");
+        let marker = push_list_pages_rendered_fragment_with_mode(
+            r#"<div style="text-align: right;"><div class="page-rate-widget-box"></div></div><p>body</p>"#,
+            &mut compat_html,
+            true,
+        );
+
+        let restored = compat_html.restore(&format!("<p>{marker}</p>"));
+        assert_eq!(
+            restored,
+            r#"<div style="text-align: right;"><div class="page-rate-widget-box"></div></div><p>body</p>"#,
+        );
     }
 
     #[test]

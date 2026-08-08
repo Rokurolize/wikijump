@@ -219,6 +219,7 @@ impl ListPagesVariables {
 pub(in crate::services::render) struct ListPagesTemplatePlan {
     body: String,
     default_template: bool,
+    default_summary_first_paragraph: bool,
     sections: ListPagesSections,
     variables: ListPagesVariables,
     fields: FoundPageFields,
@@ -289,7 +290,7 @@ struct ListPagesSectionPair {
 /// when it is the immediately preceding balanced section, and a foot is
 /// once-emitted only when it is the immediately following balanced section.
 /// Other source is local recovery and does not get reordered around the body.
-fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String)> {
+fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String, bool)> {
     let literal_regions = LiteralRegionIndex::new(body);
     let mut stacks: [Vec<ListPagesSectionMarker>; 3] =
         std::array::from_fn(|_| Vec::new());
@@ -353,7 +354,7 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String)> 
     let Some(body_pair) = body_pair else {
         // Without a body pair, Wikidot treats all section-shaped source as
         // ordinary per-row template text.
-        return Some((ListPagesSections::default(), body.to_owned()));
+        return Some((ListPagesSections::default(), body.to_owned(), false));
     };
 
     let head_pair = pairs
@@ -390,6 +391,7 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String)> 
         body[body_pair.content_start..body_pair.content_end]
             .trim()
             .to_owned(),
+        true,
     ))
 }
 
@@ -416,6 +418,7 @@ impl ListPagesTemplatePlan {
         Self {
             body: String::new(),
             default_template: false,
+            default_summary_first_paragraph: false,
             sections: ListPagesSections::default(),
             variables,
             fields: found_page_fields(variables),
@@ -432,8 +435,9 @@ impl ListPagesTemplatePlan {
         if body.len() > MAX_LISTPAGES_TEMPLATE_BODY_BYTES {
             return None;
         }
-        let (sections, body) = split_list_pages_sections(body)?;
+        let (sections, body, explicit_body_section) = split_list_pages_sections(body)?;
         let default_template = body.trim().is_empty();
+        let default_summary_first_paragraph = default_template && !explicit_body_section;
         let body = match body.trim() {
             "" => DEFAULT_LISTPAGES_TEMPLATE,
             body => body,
@@ -472,6 +476,7 @@ impl ListPagesTemplatePlan {
         Some(Self {
             body: body.to_owned(),
             default_template,
+            default_summary_first_paragraph,
             sections,
             variables,
             fields: found_page_fields(variables),
@@ -490,6 +495,16 @@ impl ListPagesTemplatePlan {
 
     pub(in crate::services::render) fn is_default_template(&self) -> bool {
         self.default_template
+    }
+
+    pub(in crate::services::render) fn default_summary_first_paragraph(&self) -> bool {
+        self.default_summary_first_paragraph
+    }
+
+    pub(in crate::services::render) fn use_full_default_summary(&mut self) {
+        if self.default_template {
+            self.default_summary_first_paragraph = false;
+        }
     }
 
     /// The section emitted once before the rows, if the template declares one.
@@ -1153,6 +1168,20 @@ mod section_tests {
             ),
         );
         assert_eq!(plan.foot_section(), Some("F"));
+        assert!(plan.is_default_template());
+        assert!(
+            !plan.default_summary_first_paragraph(),
+            "an explicit body section uses Wikidot's complete first content section",
+        );
+
+        let mut unsectioned = ListPagesTemplatePlan::compile("")
+            .expect("an empty unsectioned body should use the default row");
+        assert!(unsectioned.default_summary_first_paragraph());
+        unsectioned.use_full_default_summary();
+        assert!(
+            !unsectioned.default_summary_first_paragraph(),
+            "preparsed owners can select the full default summary",
+        );
     }
 
     #[test]

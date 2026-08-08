@@ -4255,7 +4255,38 @@ async fn listpages_default_rows_render_only_the_first_paragraph() {
     );
     assert!(
         !preview.contains("SECOND_PARAGRAPH"),
-        "the default row must not widen %%first_paragraph%% to the full page:\n{preview}",
+        "an unsectioned PagePreview default row keeps Wikidot's first-paragraph recovery:\n{preview}",
+    );
+
+    let explicit_empty_body = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved explicit-empty-body ListPages preview",
+        format!(
+            concat!(
+                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "[[head]]EXPLICIT_HEAD[[/head]]\n",
+                "[[body]][[/body]]\n",
+                "[[foot]]EXPLICIT_FOOT[[/foot]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await
+    .expect("an explicit empty body should use the full default summary")
+    .html_output
+    .body;
+    assert!(
+        explicit_empty_body.contains("FIRST_PARAGRAPH")
+            && explicit_empty_body.contains("SECOND_PARAGRAPH")
+            && explicit_empty_body.contains("EXPLICIT_HEAD")
+            && explicit_empty_body.contains("EXPLICIT_FOOT"),
+        "an explicit body section uses the complete first content section:\n{explicit_empty_body}",
+    );
+    assert!(
+        !explicit_empty_body.contains("<p><h1"),
+        "an unwrapped default row must remain in FTML's block stream:\n{explicit_empty_body}",
     );
 }
 

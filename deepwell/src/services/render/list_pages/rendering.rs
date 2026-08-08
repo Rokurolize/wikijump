@@ -141,7 +141,8 @@ mod count_block;
 mod selected_content;
 
 use self::selected_content::{
-    render_list_pages_selected_content_source, select_list_pages_rows,
+    render_list_pages_default_summary_source, render_list_pages_selected_content_source,
+    select_list_pages_rows,
 };
 
 impl RenderService {
@@ -363,23 +364,29 @@ impl RenderService {
                 } else {
                     module.body
                 };
-                let zero_row_runtime_output =
-                    parse_list_pages_arguments_with_url(head, url).is_some_and(
-                        |arguments| {
-                            arguments
-                                .rss_title
-                                .as_deref()
-                                .is_some_and(|title| !title.is_empty())
-                                || !arguments.separate
-                                    && (arguments.prepend_line.is_some()
-                                        || arguments.append_line.is_some()
-                                        || ListPagesTemplatePlan::compile(body)
-                                            .is_some_and(|template| {
-                                                template.head_section().is_some()
-                                                    || template.foot_section().is_some()
-                                            }))
-                        },
-                    );
+                let compile_template = |source: &str| {
+                    let mut template = ListPagesTemplatePlan::compile(source)?;
+                    if body_was_preparsed {
+                        template.use_full_default_summary();
+                    }
+                    Some(template)
+                };
+                let zero_row_runtime_output = parse_list_pages_arguments_with_url(
+                    head, url,
+                )
+                .is_some_and(|arguments| {
+                    arguments
+                        .rss_title
+                        .as_deref()
+                        .is_some_and(|title| !title.is_empty())
+                        || !arguments.separate
+                            && (arguments.prepend_line.is_some()
+                                || arguments.append_line.is_some()
+                                || compile_template(body).is_some_and(|template| {
+                                    template.head_section().is_some()
+                                        || template.foot_section().is_some()
+                                }))
+                });
                 let static_categories_prove_empty = !zero_row_runtime_output
                     && static_category_preflight.as_ref().is_some_and(
                         |(categories, _)| {
@@ -431,13 +438,11 @@ impl RenderService {
                                 .is_some_and(|title| !title.is_empty())
                     })
                     .and_then(|arguments| {
-                        ListPagesTemplatePlan::compile("").map(|template| {
-                            ListPagesBlockPlan::Render {
-                                arguments,
-                                template,
-                                batch_key: None,
-                                legacy_tail: None,
-                            }
+                        compile_template("").map(|template| ListPagesBlockPlan::Render {
+                            arguments,
+                            template,
+                            batch_key: None,
+                            legacy_tail: None,
                         })
                     });
                 let missing_static_parent =
@@ -492,7 +497,7 @@ impl RenderService {
                         arguments.unsupported_author_filter = false;
                         arguments.unsupported_list_pages_filter = false;
                         arguments.unsupported_score_filter = false;
-                        match ListPagesTemplatePlan::compile(body) {
+                        match compile_template(body) {
                             Some(template)
                                 if unsafe_unknown_tracking_template(&template) =>
                             {
@@ -547,7 +552,7 @@ impl RenderService {
                     } else if let Some(legacy_tail) =
                         list_pages_body_inline_count_pages_legacy_tail(body)
                     {
-                        ListPagesTemplatePlan::compile("").map_or_else(
+                        compile_template("").map_or_else(
                             || unsupported_plan(module_original, body),
                             |template| ListPagesBlockPlan::Render {
                                 arguments,
@@ -570,7 +575,7 @@ impl RenderService {
                             batch_key,
                             legacy_tail: None,
                         }
-                    } else if let Some(template) = ListPagesTemplatePlan::compile(body) {
+                    } else if let Some(template) = compile_template(body) {
                         if unsafe_unknown_tracking_template(&template) {
                             fail_closed_unknown_tracking_plan(compat_html)
                         } else {
@@ -1677,6 +1682,8 @@ impl RenderService {
         let wants_rendered_content = template.content_sections().contains(&None);
         let wants_summary = template.uses_first_paragraph();
         let wants_first_paragraph = wants_summary;
+        let wants_full_default_summary = template.is_default_template()
+            && !(template.default_summary_first_paragraph() && page_info.page.is_empty());
         let wants_preview = template.uses_preview();
         let wants_size = template.uses_size();
         let wants_first_image = list_pages_body_uses_first_image(template.body());
@@ -2394,7 +2401,11 @@ impl RenderService {
                                 .alt_title
                                 .as_deref()
                                 .map(|title| Cow::Owned(title.to_owned())),
-                            score: ScoreValue::Float(page.score.unwrap_or(0.0).into()),
+                            score: if wants_full_default_summary && page_preview {
+                                ScoreValue::Integer(0)
+                            } else {
+                                ScoreValue::Float(page.score.unwrap_or(0.0).into())
+                            },
                             tags: page
                                 .tags
                                 .as_deref()
@@ -2431,30 +2442,61 @@ impl RenderService {
                             None
                         };
                         let summary_source = wants_summary.then(|| {
-                            Self::suppress_rate_modules_in_list_pages_content(
-                                wikidot_content_section(wikitext, Some(1)),
-                                settings,
-                            )
-                        });
-                        let rendered_summary =
-                            if let Some(summary) = summary_source.as_deref() {
-                                Some(
-                                    render_list_pages_selected_content_source(
-                                        ctx,
-                                        summary,
-                                        &selected_page_info,
-                                        settings,
-                                        current_site_id,
-                                        viewer_user_id,
-                                        max_include_expansions,
-                                        render_cost_budget.clone(),
-                                        url,
-                                    )
-                                    .await?,
-                                )
+                            let summary = wikidot_content_section(wikitext, Some(1));
+                            if wants_full_default_summary {
+                                summary
                             } else {
-                                None
-                            };
+                                Self::suppress_rate_modules_in_list_pages_content(
+                                    summary, settings,
+                                )
+                            }
+                        });
+                        let rendered_summary = if let Some(summary) =
+                            summary_source.as_deref()
+                        {
+                            Some(if wants_full_default_summary {
+                                let category_id = page.page_category_id.ok_or_else(|| {
+                                        Error::new(
+                                            "default ListPages summary page category unavailable",
+                                            ErrorType::Render,
+                                        )
+                                    })?;
+                                render_list_pages_default_summary_source(
+                                    ctx,
+                                    summary,
+                                    if page_preview {
+                                        page_info
+                                    } else {
+                                        &selected_page_info
+                                    },
+                                    settings,
+                                    current_site_id,
+                                    category_id,
+                                    page.page_id,
+                                    page_preview,
+                                    viewer_user_id,
+                                    max_include_expansions,
+                                    render_cost_budget.clone(),
+                                    url,
+                                )
+                                .await?
+                            } else {
+                                render_list_pages_selected_content_source(
+                                    ctx,
+                                    summary,
+                                    &selected_page_info,
+                                    settings,
+                                    current_site_id,
+                                    viewer_user_id,
+                                    max_include_expansions,
+                                    render_cost_budget.clone(),
+                                    url,
+                                )
+                                .await?
+                            })
+                        } else {
+                            None
+                        };
                         let rendered_first_paragraph = if wants_first_paragraph {
                             let first_paragraph = summary_source
                                 .as_deref()
@@ -2512,8 +2554,10 @@ impl RenderService {
                 page_wikitext: page_wikitext.as_deref(),
                 page_rendered_content: rendered_page_content.as_deref(),
                 page_rendered_summary: rendered_page_summary.as_deref(),
+                page_rendered_summary_is_block: wants_full_default_summary,
                 default_summary_first_paragraph:
-                    template.is_default_template() && page_info.page.is_empty(),
+                    template.default_summary_first_paragraph()
+                        && page_info.page.is_empty(),
                 fallback_link_titles: numbered_link_titles.as_ref(),
                 page_rendered_first_paragraph: rendered_page_first_paragraph
                     .as_deref(),
@@ -2717,6 +2761,7 @@ impl RenderService {
         let block_output = wrapper
             || separate
             || render_generated_html
+            || template.is_default_template()
             || list_pages_template_has_block_section(template);
         let list_pages_inline = wrapper
             && !separate
