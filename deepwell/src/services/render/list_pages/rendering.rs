@@ -2297,11 +2297,7 @@ impl RenderService {
         if !separate
             && let Some(head) = template.head_section()
             && (!push_list_pages_generated_output(&mut output, head, expansion_budget)
-                || !push_list_pages_generated_output(
-                    &mut output,
-                    "\n\n",
-                    expansion_budget,
-                ))
+                || !push_list_pages_generated_output(&mut output, "\n", expansion_budget))
         {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal(
                 "head section exceeds generated-output budget",

@@ -2707,6 +2707,36 @@ async fn listpages_unwrapped_sectioned_block_template_stays_outside_paragraph() 
     runner.teardown().await;
 }
 
+/// Anonymous Wikidot PagePreview evidence, 2026-07-30:
+/// `section-grammar-live.jsonl`, case `scout-sections-perm-hbf`.
+#[tokio::test]
+async fn listpages_combined_inline_sections_share_one_paragraph() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let body = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "scout-sections-perm-hbf",
+        concat!(
+            "[[module ListPages fullname=\"scp-002\" separate=\"no\" wrapper=\"no\"]]\n",
+            "[[head]]H[[/head]]\n",
+            "[[body]]B=%%title%%[[/body]]\n",
+            "[[foot]]F[[/foot]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("combined inline ListPages sections should render")
+    .html_output
+    .body;
+
+    assert_eq!(body, "<p>H<br>\nB=SCP-002<br>\nF</p>");
+
+    runner.teardown().await;
+}
+
 /// Anonymous Wikidot PagePreview evidence, 2026-07-29:
 /// `cn:wanderers:enter-the-library:L388:B15100`.
 ///
