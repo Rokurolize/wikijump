@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+
+const repositoryRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../../..",
+);
 
 function files(root) {
   const output = [];
@@ -14,7 +20,7 @@ function files(root) {
 }
 
 test("cross-site administration modules ship no remote mutation URL", () => {
-  const relevant = files("deepwell/src").filter((file) =>
+  const relevant = files(path.join(repositoryRoot, "deepwell/src")).filter((file) =>
     /clone|site_grid|runtime_module|module/i.test(file),
   );
   const source = relevant.map((file) => fs.readFileSync(file, "utf8")).join("\n");
