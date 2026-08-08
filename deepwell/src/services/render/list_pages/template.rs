@@ -239,6 +239,7 @@ pub(in crate::services::render) struct ListPagesTemplatePlan {
 #[derive(Debug, Default, PartialEq, Eq)]
 struct ListPagesSections {
     head: Option<String>,
+    head_starts_on_next_line: bool,
     foot: Option<String>,
 }
 
@@ -368,6 +369,15 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String, b
                 )
         })
         .max_by_key(|pair| pair.close_end);
+    let head_starts_on_next_line = head_pair.is_some_and(|pair| {
+        matches!(
+            body[pair.content_start..pair.content_end]
+                .trim_start_matches([' ', '\t'])
+                .as_bytes()
+                .first(),
+            Some(b'\r' | b'\n')
+        )
+    });
     let head = head_pair.map(|pair| {
         let mut content = body[pair.content_start..pair.content_end].trim().to_owned();
         let residual = body[pair.close_end..body_pair.open_start].trim();
@@ -387,7 +397,11 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String, b
         .map(|pair| body[pair.content_start..pair.content_end].trim().to_owned());
 
     Some((
-        ListPagesSections { head, foot },
+        ListPagesSections {
+            head,
+            head_starts_on_next_line,
+            foot,
+        },
         body[body_pair.content_start..body_pair.content_end]
             .trim()
             .to_owned(),
@@ -510,6 +524,14 @@ impl ListPagesTemplatePlan {
     /// The section emitted once before the rows, if the template declares one.
     pub(in crate::services::render) fn head_section(&self) -> Option<&str> {
         self.sections.head.as_deref()
+    }
+
+    pub(in crate::services::render) fn head_row_separator(&self) -> &'static str {
+        if self.sections.head_starts_on_next_line {
+            "\n\n"
+        } else {
+            "\n"
+        }
     }
 
     /// The section emitted once after the rows, if the template declares one.

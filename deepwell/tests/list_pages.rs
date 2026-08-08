@@ -2737,6 +2737,46 @@ async fn listpages_combined_inline_sections_share_one_paragraph() {
     runner.teardown().await;
 }
 
+/// Anonymous Wikidot PagePreview evidence, 2026-08-09:
+/// `issue-1010-generated-heading-foot-boundary-scp-wiki-live.jsonl`, case
+/// `scout-generated-heading-foot-section-level-two`.
+#[tokio::test]
+async fn listpages_own_line_head_starts_a_separate_paragraph() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let body = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "scout-generated-heading-foot-section",
+        concat!(
+            "[[module ListPages fullname=\"scp-002\" separate=\"no\" wrapper=\"no\"]]\n",
+            "[[head]]\n",
+            "HEAD\n",
+            "[[/head]]\n",
+            "[[body]]\n",
+            "ROW=%%fullname%%\n",
+            "[[/body]]\n",
+            "[[foot]]\n",
+            "+ FOOT\n",
+            "[[/foot]]\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("own-line ListPages sections should render")
+    .html_output
+    .body;
+
+    assert_eq!(
+        body,
+        "<p>HEAD</p><p>ROW=scp-002</p><h1><span>FOOT</span></h1>",
+    );
+
+    runner.teardown().await;
+}
+
 /// Anonymous Wikidot PagePreview evidence, 2026-07-29:
 /// `cn:wanderers:enter-the-library:L388:B15100`.
 ///
