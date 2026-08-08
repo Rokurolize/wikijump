@@ -1494,6 +1494,63 @@ mod tests {
     }
 
     #[test]
+    fn non_data_form_form_argument_is_inert() {
+        for form in [
+            r#"form="""#,
+            r#"form=" ""#,
+            r#"form="1""#,
+            r#"form="name""#,
+            r#"form="*""#,
+            r#"form="yes""#,
+            r#"form="no""#,
+            r#"FORM="name""#,
+            r#"Form="name""#,
+            r#"fOrM="name""#,
+            "form=name",
+            "form='name'",
+            "form=",
+            r#"form="a" form="b""#,
+            r#"form="@URL""#,
+            r#"form="@URL|name""#,
+            r#"form="component:image-block""#,
+        ] {
+            let head = format!(
+                r#"category="*" name="component:image-block" separate="no" wrapper="no" {form}"#,
+            );
+            let arguments = parse_list_pages_arguments(&head)
+                .unwrap_or_else(|| panic!("inert form argument must not abort {head:?}"));
+
+            assert!(arguments.category_all, "{head}");
+            assert_eq!(
+                arguments.slug.as_deref(),
+                Some("component:image-block"),
+                "{head}",
+            );
+            assert!(!arguments.separate, "{head}");
+            assert!(!arguments.wrapper, "{head}");
+            assert!(!arguments.unsupported_list_pages_filter, "{head}");
+            assert!(!arguments.unsupported_count_pages_filter, "{head}");
+
+            let source = format!(
+                "[[module ListPages {head}]]\nBEGIN|%%fullname%%|END\n[[/module]]",
+            );
+            assert_eq!(
+                scanner::find_list_pages_module_matches(&source).len(),
+                1,
+                "scanner and argument parser must agree for {head:?}",
+            );
+        }
+
+        let data_form = parse_list_pages_arguments(
+            r#"category="*" name="component:image-block" _form="name""#,
+        )
+        .expect("underscore-prefixed form remains a data-form selector");
+        assert_eq!(data_form.data_form_fields.len(), 1);
+        assert_eq!(data_form.data_form_fields[0].field.as_ref(), "form");
+        assert_eq!(data_form.data_form_fields[0].value.as_ref(), "name");
+    }
+
+    #[test]
     fn list_pages_effective_argument_state_matches_live_errors_and_fallbacks() {
         for (head, has_current_page, expected) in [
             (r#"name!="missing""#, false, None),
