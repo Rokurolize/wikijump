@@ -1144,7 +1144,7 @@ pub(in crate::services::render) fn replace_recursive_list_pages_with_error(
         return source.to_owned();
     }
 
-    let error = fragments.push_block_html(
+    let error = fragments.push_block_html_unwrapping_residual_div_prefix(
         r#"<div class="error-block">The ListPages module does not work recursively.</div>"#
             .to_owned(),
     );

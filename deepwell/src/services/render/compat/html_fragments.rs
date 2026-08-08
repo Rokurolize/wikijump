@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Write as _;
 use uuid::Uuid;
 
+use super::super::RenderService;
 use super::super::html_text::{
     HtmlDataSegment, OPAQUE_ELEMENTS, TagKind, html_data_segments,
     is_foreign_self_closing, opaque_element_end, protected_construct_end, tag_kind,
@@ -51,6 +52,7 @@ enum CompatFragment {
         html: String,
         trim_preceding_space: bool,
         allow_span_parent: bool,
+        unwrap_residual_div_paragraph_prefix: bool,
     },
     Plain {
         plain: String,
@@ -86,6 +88,7 @@ impl CompatHtmlFragments {
             html,
             trim_preceding_space: false,
             allow_span_parent: false,
+            unwrap_residual_div_paragraph_prefix: false,
         })
     }
 
@@ -101,6 +104,7 @@ impl CompatHtmlFragments {
             html,
             trim_preceding_space: false,
             allow_span_parent: true,
+            unwrap_residual_div_paragraph_prefix: false,
         })
     }
 
@@ -112,6 +116,22 @@ impl CompatHtmlFragments {
             html,
             trim_preceding_space: true,
             allow_span_parent: false,
+            unwrap_residual_div_paragraph_prefix: false,
+        })
+    }
+
+    /// Registers a trusted block produced while rendering a default-summary
+    /// fragment. Live Wikidot leaves a preceding unmatched `[[div]]` fragment
+    /// at the flow root in this context instead of wrapping it in a paragraph.
+    pub(in crate::services::render) fn push_block_html_unwrapping_residual_div_prefix(
+        &mut self,
+        html: String,
+    ) -> String {
+        self.push_fragment(CompatFragment::BlockHtml {
+            html,
+            trim_preceding_space: false,
+            allow_span_parent: false,
+            unwrap_residual_div_paragraph_prefix: true,
         })
     }
 
@@ -342,6 +362,13 @@ impl CompatHtmlFragments {
                             ..
                         },
                     );
+                    let unwrap_residual_div_paragraph_prefix = matches!(
+                        &self.fragments[index],
+                        CompatFragment::BlockHtml {
+                            unwrap_residual_div_paragraph_prefix: true,
+                            ..
+                        },
+                    );
                     if unwrap_block_paragraphs
                         && matches!(
                             &self.fragments[index],
@@ -355,6 +382,7 @@ impl CompatHtmlFragments {
                             fragment,
                             &mut cursor,
                             &mut parent_stack,
+                            unwrap_residual_div_paragraph_prefix,
                         ) {
                             continue;
                         }
@@ -404,6 +432,7 @@ fn restore_block_html_from_paragraph(
     fragment: &str,
     cursor: &mut usize,
     parent_stack: &mut IncrementalHtmlElementStack,
+    unwrap_residual_div_paragraph_prefix: bool,
 ) -> bool {
     let Some(paragraph_start) = output.rfind("<p>") else {
         return false;
@@ -426,11 +455,15 @@ fn restore_block_html_from_paragraph(
 
     let leading_end = trailing_break_start(leading).unwrap_or(leading.len());
     let trailing_start = leading_break_end(trailing).unwrap_or(0);
+    let unwrap_leading = unwrap_residual_div_paragraph_prefix
+        && starts_with_unmatched_residual_wikidot_div(&leading[..leading_end]);
     output.truncate(paragraph_start + 3 + leading_end);
     let leading_is_empty = output[paragraph_start + 3..].trim().is_empty();
     let trailing_is_empty = trailing[trailing_start..].trim().is_empty();
     if leading_is_empty {
         output.truncate(paragraph_start);
+    } else if unwrap_leading {
+        output.replace_range(paragraph_start..paragraph_start + 3, "");
     } else {
         output.push_str("</p>");
     }
@@ -442,6 +475,21 @@ fn restore_block_html_from_paragraph(
         *cursor = marker_end + trailing_start;
     }
     true
+}
+
+fn starts_with_unmatched_residual_wikidot_div(value: &str) -> bool {
+    let value = value.trim_start();
+    let Some(marker_end) = value.find("]]") else {
+        return false;
+    };
+    let marker_end = marker_end + 2;
+    let marker =
+        RenderService::decode_residual_wikidot_marker_quotes(&value[..marker_end]);
+    if RenderService::wikidot_residual_div_attributes(&marker).is_none() {
+        return false;
+    }
+
+    !value.to_ascii_lowercase().contains("[[/div]]")
 }
 
 fn contains_only_text_breaks_and_balanced_inline_elements(value: &str) -> bool {
@@ -835,6 +883,34 @@ mod tests {
             fragments.restore(&format!("<p><script>unsafe</script><br>{marker}</p>")),
             format!("<p><script>unsafe</script><br>{marker}</p>"),
         );
+    }
+
+    #[test]
+    fn opted_in_block_html_unwraps_only_an_unmatched_residual_div_prefix() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker = fragments.push_block_html_unwrapping_residual_div_prefix(
+            "<div>trusted block</div>".to_owned(),
+        );
+
+        assert_eq!(
+            fragments.restore(&format!(
+                "<p>[[div class=&quot;licensebox&quot;]]<br>prefix{marker}</p>",
+            )),
+            concat!(
+                "[[div class=&quot;licensebox&quot;]]<br>prefix",
+                "<div>trusted block</div>",
+            ),
+        );
+        for leading in [
+            "plain prefix",
+            "[[div class=&quot;licensebox&quot;]][[/div]]",
+            "[[div onclick=&quot;unsafe()&quot;]]",
+        ] {
+            assert_eq!(
+                fragments.restore(&format!("<p>{leading}{marker}</p>")),
+                format!("<p>{leading}</p><div>trusted block</div>"),
+            );
+        }
     }
 
     #[test]

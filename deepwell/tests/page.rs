@@ -11526,6 +11526,58 @@ async fn listpages_unclosed_empty_body_uses_the_live_default_template() {
 }
 
 #[tokio::test]
+async fn listpages_default_summary_unwraps_residual_div_before_recursive_error() {
+    const TARGET_SLUG: &str = "fixture-listpages-default-summary-residual-div-target";
+    const INDEX_SLUG: &str = "fixture-listpages-default-summary-residual-div-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Default Summary Residual Div Target",
+        concat!(
+            "[[div class=\"licensebox\"]]\n",
+            "Default summary prefix.\n",
+            "[[module ListPages category=\"*\"]]%%title%%[[/module]]\n",
+            "=====\n",
+            "Outside the default summary section.",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Default Summary Residual Div Index",
+        concat!(
+            "[[module ListPages category=\"*\" ",
+            "fullname=\"fixture-listpages-default-summary-residual-div-target\"]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    let expected = concat!(
+        "[[div class=&quot;licensebox&quot;]]<br>\n",
+        "Default summary prefix.",
+        r#"<div class="error-block">The ListPages module does not work recursively.</div>"#,
+    );
+    assert!(
+        html.contains(expected),
+        "the runtime-owned default summary boundary must match live Wikidot:\n{html}",
+    );
+    assert!(
+        !html.contains(&format!("<p>{expected}")),
+        "the residual generated div prefix must not remain paragraph-wrapped:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_code_and_html_bodies_follow_the_live_preparse_failure_shape() {
     const TARGET_SLUG: &str = "fixture-listpages-preparse-target";
     const INDEX_SLUG: &str = "fixture-listpages-preparse-index";
