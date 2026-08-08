@@ -2206,6 +2206,14 @@ impl RenderService {
             && !separate
             && prepend_line.as_deref().is_some_and(|line| !line.is_empty())
             && append_line.as_deref().is_some_and(|line| !line.is_empty());
+        let separate_zero_row_sections = pages.is_empty()
+            && !separate
+            && template
+                .head_section()
+                .is_some_and(|section| !section.is_empty())
+            && template
+                .foot_section()
+                .is_some_and(|section| !section.is_empty());
         let site_title = if template.uses_site_title() {
             Some(
                 SiteService::get(ctx, Reference::Id(current_site_id))
@@ -2649,7 +2657,13 @@ impl RenderService {
         }
         if !separate
             && let Some(foot) = template.foot_section()
-            && (!push_list_pages_generated_output(&mut output, foot, expansion_budget)
+            && ((separate_zero_row_sections
+                && !push_list_pages_generated_output(
+                    &mut output,
+                    "\n",
+                    expansion_budget,
+                ))
+                || !push_list_pages_generated_output(&mut output, foot, expansion_budget)
                 || !push_list_pages_generated_output(&mut output, "\n", expansion_budget))
         {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal(
