@@ -1232,7 +1232,7 @@ fn list_pages_scanner_preserves_multiline_image_link_and_quoted_alt_head() {
 
 #[test]
 fn positional_heads_keep_competing_tokens_and_quotes_in_the_source_value() {
-    for source_value in ["foo]]]\n", "foo$]]\n", "foo\"bar\n"] {
+    for source_value in ["foo]]]\n", "foo$]]\n", "foo--]]\n", "foo\"bar\n"] {
         let source = format!(
             "[[image {source_value}alt=\"[[module ListPages name='fake']]ignored[[/module]]\"\n]]\n\
              [[module ListPages name=\"real\"]]kept[[/module]]",
@@ -1243,15 +1243,6 @@ fn positional_heads_keep_competing_tokens_and_quotes_in_the_source_value() {
         assert_eq!(modules[0].head, "name=\"real\"", "{source_value:?}");
         assert_eq!(modules[0].body, "kept", "{source_value:?}");
     }
-
-    let bare_comment_shaped_close = concat!(
-        "[[image foo--]]alt=\"[[module ListPages name='visible']]shown[[/module]]\"]]\n",
-        "[[module ListPages name=\"real\"]]kept[[/module]]",
-    );
-    let modules = find_list_pages_module_matches(bare_comment_shaped_close);
-    assert_eq!(modules.len(), 2);
-    assert_eq!(modules[0].head, "name='visible'");
-    assert_eq!(modules[1].head, "name=\"real\"");
 
     for star in ["*radio", "* radio"] {
         let source = format!(
@@ -1278,23 +1269,15 @@ fn positional_heads_keep_competing_tokens_and_quotes_in_the_source_value() {
 
 #[test]
 fn complete_whole_heads_own_nested_blocks_across_competing_right_tokens() {
-    let competing = "$]]";
-    let source = format!(
-        "[[user foo{competing} [[module ListPages name=\"hidden\"]]x[[/module]] ]]\n\
-         [[module ListPages name=\"also-hidden\"]]y[[/module]]",
-    );
-    let modules = find_list_pages_module_matches(&source);
-    assert_eq!(modules.len(), 1, "{competing:?}");
-    assert_eq!(modules[0].head, "name=\"also-hidden\"", "{competing:?}");
-
-    let bare_comment_shaped_close = concat!(
-        "[[user foo--]] [[module ListPages name=\"visible\"]]x[[/module]] ]]\n",
-        "[[module ListPages name=\"also-visible\"]]y[[/module]]",
-    );
-    let modules = find_list_pages_module_matches(bare_comment_shaped_close);
-    assert_eq!(modules.len(), 2);
-    assert_eq!(modules[0].head, "name=\"visible\"");
-    assert_eq!(modules[1].head, "name=\"also-visible\"");
+    for competing in ["$]]", "--]]"] {
+        let source = format!(
+            "[[user foo{competing} [[module ListPages name=\"hidden\"]]x[[/module]] ]]\n\
+             [[module ListPages name=\"also-hidden\"]]y[[/module]]",
+        );
+        let modules = find_list_pages_module_matches(&source);
+        assert_eq!(modules.len(), 1, "{competing:?}");
+        assert_eq!(modules[0].head, "name=\"also-hidden\"", "{competing:?}");
+    }
 
     let uppercase_url = concat!(
         "[[user HTTP://e.test/a$]][[module ListPages name=\"hidden\"]]x[[/module]] ]]",
@@ -1442,9 +1425,9 @@ fn email_owned_quotes_do_not_change_tag_or_module_head_state() {
         "[[span title=\"\\foo@bar.example\n",
         "[[module ListPages name='live']]X[[/module]]\n\"]]",
     );
-    let modules = find_list_pages_module_matches(owned_token_resets_line_continuation);
-    assert_eq!(modules.len(), 1);
-    assert_eq!(modules[0].head, "name='live'");
+    assert!(
+        find_list_pages_module_matches(owned_token_resets_line_continuation).is_empty()
+    );
 }
 
 #[test]
@@ -1484,6 +1467,7 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
         "[[module ListPages limit=\"1\"\u{000b}]]x[[/module]]",
         "[[module ListPages limit=\u{000c}1]]x[[/module]]",
         "[[module ListPages \u{00a0}limit=\"1\"]]x[[/module]]",
+        "[[module ListPages name=\"secret@site.example\" wrapper=no\"]]x[[/module]]",
         "[[module ListPages name=a]b]]x[[/module]]",
         "[[module ListPages ---]=\"x\"]]x[[/module]]",
         "[[module ListPages 1=bare]]x[[/module]]",
@@ -1517,7 +1501,6 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
         "[[module ListPages name=\"foo...\"]]x[[/module]]",
         "[[module ListPages name=\"`x'\"]]x[[/module]]",
         "[[module ListPages name=\"foo\\nbar\"]]x[[/module]]",
-        "[[module ListPages name=\"secret@site.example\" wrapper=no\"]]x[[/module]]",
         "[[module ListPages [!--=\"x\"]]x[[/module]]",
         "[[module ListPages --]=\"x\"]]x[[/module]]",
         "[[module ListPages [!----]=\"x\"]]x[[/module]]",
@@ -1715,25 +1698,16 @@ fn module_names_and_subnames_use_unicode_trim() {
 }
 
 #[test]
-fn module_heads_do_not_close_on_math_right_tokens() {
-    let competing = "$]]";
-    let source = format!(
-        "[[module ListPages {competing}A[[/module]]\n\
-         [[module ListPages name=\"live\"]]B[[/module]]",
-    );
-    let modules = find_list_pages_module_matches(&source);
-    assert_eq!(modules.len(), 1, "{competing:?}");
-    assert_eq!(modules[0].head, "name=\"live\"", "{competing:?}");
-
-    let bare_comment_shaped_close = concat!(
-        "[[module ListPages --]]A[[/module]]\n",
-        "[[module ListPages name=\"live\"]]B[[/module]]",
-    );
-    let modules = find_list_pages_module_matches(bare_comment_shaped_close);
-    assert_eq!(modules.len(), 2);
-    assert_eq!(modules[0].head, "--");
-    assert!(!modules[0].runtime_safe);
-    assert_eq!(modules[1].head, "name=\"live\"");
+fn module_heads_do_not_close_on_math_or_comment_right_tokens() {
+    for competing in ["$]]", "--]]"] {
+        let source = format!(
+            "[[module ListPages {competing}A[[/module]]\n\
+             [[module ListPages name=\"live\"]]B[[/module]]",
+        );
+        let modules = find_list_pages_module_matches(&source);
+        assert_eq!(modules.len(), 1, "{competing:?}");
+        assert_eq!(modules[0].head, "name=\"live\"", "{competing:?}");
+    }
 }
 
 #[test]
