@@ -984,7 +984,7 @@ fn exact_name_list_pages_batch_classifier_is_deliberately_narrow() {
         let head = format!(r#" {inert_alias}="scp-173" category="*""#);
         let arguments =
             parse_list_pages_arguments(&head).expect("inert alias should not abort");
-        assert_eq!(arguments.slug.as_deref(), Some("scp-173"), "{inert_alias}",);
+        assert_eq!(arguments.slug, None, "{inert_alias}");
         assert!(
             exact_name_list_pages_batch_key(
                 &head,
@@ -992,8 +992,8 @@ fn exact_name_list_pages_batch_classifier_is_deliberately_narrow() {
                 &arguments,
                 "_default",
             )
-            .is_some(),
-            "{inert_alias} is a supported full-slug alias",
+            .is_none(),
+            "{inert_alias} must remain inert",
         );
     }
 
@@ -11284,7 +11284,7 @@ fn direct_component_source_unwraps_balanced_and_preserves_malformed_dynamic_ifta
 }
 
 #[test]
-fn parser_functions_select_includes_before_include_collection() {
+fn parser_functions_apply_first_closer_before_include_collection() {
     let mut source = concat!(
         "[[#if 0 | [[include component:hidden-if]] | ",
         "[[include component:visible-if]] ]]\n",
@@ -11318,13 +11318,23 @@ fn parser_functions_select_includes_before_include_collection() {
             .map(|include| include.page_ref().page())
             .collect::<Vec<_>>(),
         [
-            "component:visible-if",
             "component:visible-string",
             "component:visible-placeholder",
             "component:visible-ifexpr",
         ],
     );
-    assert!(!source.contains("component:hidden"));
+    assert_eq!(
+        source,
+        concat!(
+            " | [[include component:visible-if]] ]]\n",
+            "[[include component:visible-string | ",
+            "[[include component:hidden-string]] ]]\n",
+            "[[include component:visible-placeholder | ",
+            "[[include component:hidden-placeholder]] ]]\n",
+            "[[include component:visible-ifexpr | ",
+            "[[include component:hidden-ifexpr]] ]]\n",
+        ),
+    );
 }
 
 #[test]
