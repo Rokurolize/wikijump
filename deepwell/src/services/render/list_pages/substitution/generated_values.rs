@@ -12,10 +12,14 @@
 
 use crate::services::page_query::FoundPageRow;
 use crate::services::render::compat::text_fragments::CompatTextFragments;
-use crate::services::render::service::{RenderService, format_list_pages_rating};
+use crate::services::render::service::{
+    RenderService, format_list_pages_rating, native_list_page_link_slug,
+};
 use std::collections::BTreeSet;
 
-use super::super::template::LISTPAGES_VARIABLE_REGEX;
+use super::super::template::{
+    LISTPAGES_VARIABLE_REGEX, list_pages_variable_capture_has_unknown_name,
+};
 
 pub(in crate::services::render) fn substitute_list_pages_rating_only(
     template: &str,
@@ -84,6 +88,47 @@ pub(super) fn list_pages_variable_starts_triple_link_target(
         .is_some_and(|opening| template[opening + 3..start].trim().is_empty())
 }
 
+pub(in crate::services::render) fn list_pages_unknown_link_target_slugs(
+    template: &str,
+) -> BTreeSet<String> {
+    const MAX_UNKNOWN_LINK_TARGETS: usize = 128;
+
+    let mut slugs = BTreeSet::new();
+    for captures in LISTPAGES_VARIABLE_REGEX.captures_iter(template) {
+        if !(list_pages_variable_capture_has_unknown_name(&captures)
+            && captures.name("argument").is_none()
+            && captures.name("length").is_none()
+            && captures.name("format").is_none())
+        {
+            continue;
+        }
+        let Some(matched) = captures.get(0) else {
+            continue;
+        };
+        if !list_pages_variable_starts_triple_link_target(template, matched.start()) {
+            continue;
+        }
+        let tail = &template[matched.end()..];
+        let Some(delimiter) = [tail.find('|'), tail.find("]]]")]
+            .into_iter()
+            .flatten()
+            .min()
+        else {
+            continue;
+        };
+        if !tail[..delimiter].trim().is_empty() {
+            continue;
+        }
+        if let Some(slug) = native_list_page_link_slug(&captures["name"]) {
+            slugs.insert(slug);
+            if slugs.len() >= MAX_UNKNOWN_LINK_TARGETS {
+                break;
+            }
+        }
+    }
+    slugs
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -107,6 +152,20 @@ mod tests {
         assert_eq!(
             fragments.restore(&protected),
             "before [[&lt;unsafe&gt;&amp;]] after",
+        );
+    }
+
+    #[test]
+    fn unknown_link_targets_are_collected_only_for_the_complete_target() {
+        assert_eq!(
+            list_pages_unknown_link_target_slugs(concat!(
+                "[[[%%unknown%%|LABEL]]] ",
+                "[[[ %%OTHER%% |LABEL]]] ",
+                "[[[prefix-%%ignored%%|LABEL]]] ",
+                "[[[%%formatted|x%%|LABEL]]] ",
+                "%%outside%%",
+            )),
+            BTreeSet::from(["other".to_owned(), "unknown".to_owned()]),
         );
     }
 }

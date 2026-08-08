@@ -74,7 +74,7 @@ pub(super) use self::delayed::substitute_list_pages_variables_with_fragments;
 pub(super) use self::delayed::{
     MAX_NESTED_LISTPAGES_DEPTH, MAX_NESTED_LISTPAGES_MODULES_PER_PASS,
     PendingDelayedListPagesOutput, append_list_pages_delayed_occurrences,
-    append_list_pages_runtime_scalar_ranges,
+    append_list_pages_runtime_text_ranges,
     find_list_pages_module_matches_with_delayed_links_budgeted,
     finish_or_defer_list_pages_delayed_output_with_modes, list_pages_row_markup_bytes,
     list_pages_runtime_container_close, list_pages_runtime_container_open,
@@ -131,9 +131,9 @@ pub(super) use self::substitution::{
     list_pages_body_is_no_visible_tracking_markup, list_pages_first_paragraph,
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
-    list_pages_static_parent_fullname_with_url, parse_list_pages_arguments,
-    parse_list_pages_arguments_with_url, union_found_page_fields,
-    unsupported_list_pages_replacement,
+    list_pages_static_parent_fullname_with_url, list_pages_unknown_link_target_slugs,
+    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
+    union_found_page_fields, unsupported_list_pages_replacement,
 };
 #[cfg(test)]
 pub(super) use self::substitution::{

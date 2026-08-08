@@ -32,7 +32,8 @@ pub(in crate::services::render) use self::body::{
 };
 pub(in crate::services::render) use self::date_selectors::parse_list_pages_date_selector;
 pub(in crate::services::render) use self::generated_values::{
-    list_pages_first_paragraph, substitute_list_pages_rating_only,
+    list_pages_first_paragraph, list_pages_unknown_link_target_slugs,
+    substitute_list_pages_rating_only,
 };
 use self::generated_values::{
     list_pages_variable_starts_triple_link_target, protect_list_pages_content_insertion,
@@ -48,7 +49,8 @@ pub(in crate::services::render) use self::selectors::{
 };
 
 use super::template::{
-    LISTPAGES_VARIABLE_REGEX, ListPagesTemplatePlan, list_pages_variable_capture_is_valid,
+    LISTPAGES_VARIABLE_REGEX, ListPagesTemplatePlan,
+    list_pages_variable_capture_has_unknown_name, list_pages_variable_capture_is_valid,
 };
 use crate::services::page_query::{
     AuthorSelector, ComparisonOperation, CountPagesExactCountEligibilityDiagnostics,
@@ -87,7 +89,7 @@ use super::data_forms::{
     substitute_list_pages_form_hint, substitute_list_pages_form_label,
     substitute_list_pages_form_raw,
 };
-use super::delayed::ListPagesGeneratedSlot;
+use super::delayed::{ListPagesGeneratedSlot, ListPagesRuntimeTextRange};
 use super::parents::ListPagesParentDisplay;
 use super::presentation::{
     format_list_pages_created_at, is_list_pages_hidden_tag, is_list_pages_visible_tag,
@@ -2273,7 +2275,7 @@ pub(super) fn substitute_list_pages_variables_inner(
     compat_text: &mut CompatTextFragments,
     mut tracked_content_fragments: Option<&mut BTreeSet<usize>>,
     mut generated_slots: Option<&mut Vec<ListPagesGeneratedSlot>>,
-    mut runtime_scalar_ranges: Option<&mut Vec<Range<usize>>>,
+    mut runtime_text_ranges: Option<&mut Vec<ListPagesRuntimeTextRange>>,
     runtime_title_is_delayed: bool,
 ) -> String {
     let html_body_ranges = collect_list_pages_html_body_ranges(template);
@@ -2539,11 +2541,22 @@ pub(super) fn substitute_list_pages_variables_inner(
                 .any(|range| range.start <= matched.start() && matched.end() <= range.end);
             substituted_cursor += matched.start() - source_cursor;
             let replacement_start = substituted_cursor;
-            let runtime_scalar = generated_slots.is_some()
-                && runtime_scalar_ranges.is_some()
-                && list_pages_variable_capture_is_valid(captures)
-                && captures["name"].eq_ignore_ascii_case("title")
-                && runtime_title_is_delayed;
+            let runtime_origin = if generated_slots.is_some()
+                && runtime_text_ranges.is_some()
+            {
+                if list_pages_variable_capture_has_unknown_name(captures) {
+                    Some(ftml::delayed::TextOrigin::RuntimeLiteral)
+                } else if list_pages_variable_capture_is_valid(captures)
+                    && captures["name"].eq_ignore_ascii_case("title")
+                    && runtime_title_is_delayed
+                {
+                    Some(ftml::delayed::TextOrigin::RuntimeScalar)
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
             let mut replacement = if !list_pages_variable_capture_is_valid(captures) {
                 captures[0].to_owned()
             } else {
@@ -2915,11 +2928,15 @@ pub(super) fn substitute_list_pages_variables_inner(
             if generated_slots.is_some() {
                 neutralize_authored_markers(&mut replacement);
             }
-            if runtime_scalar
+            if let Some(origin) = runtime_origin
                 && !replacement.is_empty()
-                && let Some(ranges) = runtime_scalar_ranges.as_mut()
+                && let Some(ranges) = runtime_text_ranges.as_mut()
             {
-                ranges.push(replacement_start..replacement_start + replacement.len());
+                ranges.push(ListPagesRuntimeTextRange {
+                    source_range: replacement_start
+                        ..replacement_start + replacement.len(),
+                    origin,
+                });
             }
             source_cursor = matched.end();
             substituted_cursor = replacement_start + replacement.len();
