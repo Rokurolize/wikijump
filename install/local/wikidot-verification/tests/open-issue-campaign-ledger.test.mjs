@@ -38,3 +38,36 @@ test("tracking completion fails while child work remains", async () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /tracking issue passed before/);
 });
+
+test("passed issues require an exact candidate identity", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "wj-ledger-"));
+  const ledger = JSON.parse(await fs.readFile(canonical, "utf8"));
+  const entry = ledger.entries.find((candidate) => candidate.number === 1038);
+  entry.status = "passed";
+  entry.candidate_identity = null;
+  const file = path.join(temporary, "ledger.json");
+  await fs.writeFile(file, JSON.stringify(ledger));
+  const result = run(file);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /candidate identity/);
+});
+
+test("passed issues cover every declared case kind", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "wj-ledger-"));
+  const ledger = JSON.parse(await fs.readFile(canonical, "utf8"));
+  const entry = ledger.entries.find((candidate) => candidate.number === 1038);
+  entry.status = "passed";
+  entry.candidate_identity = {
+    wikijump_commit: "1".repeat(40),
+    wikijump_tree: "2".repeat(40),
+    ftml_commit: "3".repeat(40),
+    cargo_lock_sha256: "4".repeat(64),
+    fixture_overlay_sha256: "5".repeat(64),
+  };
+  entry.required_case_kinds = ["unit", "integration", "runtime"];
+  const file = path.join(temporary, "ledger.json");
+  await fs.writeFile(file, JSON.stringify(ledger));
+  const result = run(file);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /required integration case/);
+});

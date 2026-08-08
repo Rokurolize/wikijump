@@ -1176,7 +1176,7 @@
       "batch_name": "actions-authoring",
       "landing": "PR2",
       "goal": "typed action and atomic mutation services",
-      "status": "passed",
+      "status": "in_progress",
       "implementation_commits": [
         "963ecbcf90c9c367ef9e8a15e0ce78772f382f53"
       ],
@@ -1186,6 +1186,12 @@
       "integration_cases": [],
       "runtime_cases": [],
       "browser_cases": [],
+      "required_case_kinds": [
+        "unit",
+        "integration",
+        "runtime"
+      ],
+      "candidate_identity": null,
       "artifacts": [
         {
           "kind": "receipt",
