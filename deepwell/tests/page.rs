@@ -11575,6 +11575,10 @@ async fn listpages_default_summary_unwraps_residual_div_before_recursive_error()
         !html.contains(&format!("<p>{expected}")),
         "the residual generated div prefix must not remain paragraph-wrapped:\n{html}",
     );
+    assert!(
+        html.contains("</p>\n[[div class=&quot;licensebox&quot;]]"),
+        "the residual generated div prefix must retain its root flow break:\n{html}",
+    );
 }
 
 #[tokio::test]

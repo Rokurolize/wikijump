@@ -463,7 +463,12 @@ fn restore_block_html_from_paragraph(
     if leading_is_empty {
         output.truncate(paragraph_start);
     } else if unwrap_leading {
-        output.replace_range(paragraph_start..paragraph_start + 3, "");
+        let flow_break = if output[..paragraph_start].ends_with('\n') {
+            ""
+        } else {
+            "\n"
+        };
+        output.replace_range(paragraph_start..paragraph_start + 3, flow_break);
     } else {
         output.push_str("</p>");
     }
@@ -897,7 +902,17 @@ mod tests {
                 "<p>[[div class=&quot;licensebox&quot;]]<br>prefix{marker}</p>",
             )),
             concat!(
-                "[[div class=&quot;licensebox&quot;]]<br>prefix",
+                "\n[[div class=&quot;licensebox&quot;]]<br>prefix",
+                "<div>trusted block</div>",
+            ),
+        );
+        assert_eq!(
+            fragments.restore(&format!(
+                "<div>preceding block</div><p>[[div class=&quot;licensebox&quot;]]{marker}</p>",
+            )),
+            concat!(
+                "<div>preceding block</div>\n",
+                "[[div class=&quot;licensebox&quot;]]",
                 "<div>trusted block</div>",
             ),
         );
