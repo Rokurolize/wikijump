@@ -24,6 +24,7 @@ use super::{
     register_generated_list_pages_html, strip_generated_list_pages_html_markers,
 };
 use crate::error::prelude::{Error, ErrorType, Result};
+use crate::services::PageExistenceSnapshot;
 use crate::services::page_query::FoundPageRow;
 use crate::services::render::compat::CompatHtmlFragments;
 use crate::services::render::compat::preparation::neutralize_authored_markers;
@@ -55,11 +56,17 @@ pub(in crate::services::render) struct ListPagesGeneratedSlot {
     pub(in crate::services::render) value: GeneratedValue<'static>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(in crate::services::render) struct ListPagesRuntimeTextRange {
+    pub(in crate::services::render) source_range: Range<usize>,
+    pub(in crate::services::render) origin: TextOrigin,
+}
+
 pub(in crate::services::render) struct PreparedDelayedListPagesRow {
     pub body: String,
     pub logical_body_bytes: Option<usize>,
     pub generated_slots: Vec<ListPagesGeneratedSlot>,
-    pub runtime_scalar_ranges: Vec<Range<usize>>,
+    pub runtime_text_ranges: Vec<ListPagesRuntimeTextRange>,
     pub html_fragments: Option<CompatHtmlFragments>,
 }
 
@@ -70,13 +77,20 @@ pub(in crate::services::render) struct PendingDelayedListPagesOutput {
     block_output: bool,
     list_pages_inline: bool,
     boundary_markers: Option<(String, String)>,
+    page_existence: Option<PageExistenceSnapshot>,
 }
 
 #[derive(Debug)]
 struct PendingDelayedListPagesSlot {
     marker: String,
     source: String,
-    value: Option<GeneratedValue<'static>>,
+    value: PendingDelayedListPagesSlotValue,
+}
+
+#[derive(Debug, Clone)]
+enum PendingDelayedListPagesSlotValue {
+    Generated(GeneratedValue<'static>),
+    RuntimeText(TextOrigin),
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -122,7 +136,7 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
     render_cost_budget: Option<&SharedRenderCostBudget>,
 ) -> PreparedDelayedListPagesRow {
     let mut generated_slots = Vec::new();
-    let mut runtime_scalar_ranges = Vec::new();
+    let mut runtime_text_ranges = Vec::new();
     let mut tracked_content_fragments = BTreeSet::new();
     let mut prepared_body = suppress_generated_list_pages_heading_toc(body).into_owned();
     // ListPages rows are extracted before the outer page's FTML pass. Apply
@@ -178,15 +192,15 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
             compat_text,
             &mut tracked_content_fragments,
             &mut generated_slots,
-            &mut runtime_scalar_ranges,
+            &mut runtime_text_ranges,
             runtime_title_is_delayed,
         );
         resolve_list_pages_expr_parser_functions(
             &mut body,
             &mut generated_slots,
-            &mut runtime_scalar_ranges,
+            &mut runtime_text_ranges,
         );
-        if generated_slots.is_empty() && runtime_scalar_ranges.is_empty() {
+        if generated_slots.is_empty() && runtime_text_ranges.is_empty() {
             RenderService::resolve_wikidot_parser_functions(&body)
         } else {
             body
@@ -196,7 +210,7 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
     body = protect_nested_list_pages(&body, &mut fragments, render_cost_budget);
     let mut html_fragments = (!fragments.is_empty()).then_some(fragments);
     if generated_slots.is_empty()
-        && runtime_scalar_ranges.is_empty()
+        && runtime_text_ranges.is_empty()
         && let Some(fragments) = html_fragments.as_ref()
     {
         let numbered =
@@ -208,7 +222,7 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
     }
 
     let delayed = !generated_slots.is_empty()
-        || !runtime_scalar_ranges.is_empty()
+        || !runtime_text_ranges.is_empty()
         || html_fragments.is_some();
     let body = if delayed {
         body
@@ -228,7 +242,7 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
         body,
         logical_body_bytes,
         generated_slots,
-        runtime_scalar_ranges,
+        runtime_text_ranges,
         html_fragments,
     }
 }
@@ -266,7 +280,7 @@ fn list_pages_template_requires_runtime_title(source: &str) -> bool {
 fn resolve_list_pages_expr_parser_functions(
     body: &mut String,
     generated_slots: &mut Vec<ListPagesGeneratedSlot>,
-    runtime_scalar_ranges: &mut Vec<Range<usize>>,
+    runtime_text_ranges: &mut Vec<ListPagesRuntimeTextRange>,
 ) {
     if !body.contains("[[#") {
         return;
@@ -288,7 +302,7 @@ fn resolve_list_pages_expr_parser_functions(
     #[derive(Clone, Copy)]
     enum ProtectedKind {
         Generated(usize),
-        RuntimeScalar,
+        RuntimeText(TextOrigin),
     }
 
     struct ProtectedOccurrence {
@@ -302,12 +316,12 @@ fn resolve_list_pages_expr_parser_functions(
         .iter()
         .enumerate()
         .map(|(index, slot)| (slot.source_range.clone(), ProtectedKind::Generated(index)))
-        .chain(
-            runtime_scalar_ranges
-                .iter()
-                .cloned()
-                .map(|range| (range, ProtectedKind::RuntimeScalar)),
-        )
+        .chain(runtime_text_ranges.iter().map(|range| {
+            (
+                range.source_range.clone(),
+                ProtectedKind::RuntimeText(range.origin),
+            )
+        }))
         .collect::<Vec<_>>();
     source_occurrences.sort_by_key(|(range, _)| range.start);
     if source_occurrences
@@ -377,8 +391,11 @@ fn resolve_list_pages_expr_parser_functions(
                 slot.source_range = source_start..source_end;
                 remapped_generated_slots.push(slot);
             }
-            ProtectedKind::RuntimeScalar => {
-                remapped_runtime_ranges.push(source_start..source_end);
+            ProtectedKind::RuntimeText(origin) => {
+                remapped_runtime_ranges.push(ListPagesRuntimeTextRange {
+                    source_range: source_start..source_end,
+                    origin,
+                });
             }
         }
         resolved_cursor = marker_start + occurrence.marker.len();
@@ -386,7 +403,7 @@ fn resolve_list_pages_expr_parser_functions(
     restored.push_str(&resolved[resolved_cursor..]);
 
     *generated_slots = remapped_generated_slots;
-    *runtime_scalar_ranges = remapped_runtime_ranges;
+    *runtime_text_ranges = remapped_runtime_ranges;
     *body = restored;
 }
 
@@ -666,17 +683,21 @@ pub(in crate::services::render) fn append_list_pages_delayed_occurrences(
     true
 }
 
-pub(in crate::services::render) fn append_list_pages_runtime_scalar_ranges(
-    ranges: &mut Vec<Range<usize>>,
-    row_ranges: Vec<Range<usize>>,
+pub(in crate::services::render) fn append_list_pages_runtime_text_ranges(
+    ranges: &mut Vec<ListPagesRuntimeTextRange>,
+    row_ranges: Vec<ListPagesRuntimeTextRange>,
     rendered_body_start: usize,
     rendered_body_len: usize,
 ) -> bool {
     for range in row_ranges {
-        if range.end > rendered_body_len {
+        if range.source_range.end > rendered_body_len {
             return false;
         }
-        ranges.push(rendered_body_start + range.start..rendered_body_start + range.end);
+        ranges.push(ListPagesRuntimeTextRange {
+            source_range: rendered_body_start + range.source_range.start
+                ..rendered_body_start + range.source_range.end,
+            origin: range.origin,
+        });
     }
     true
 }
@@ -692,7 +713,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_delayed(
     compat_text: &mut CompatTextFragments,
     tracked_content_fragments: &mut BTreeSet<usize>,
     generated_slots: &mut Vec<ListPagesGeneratedSlot>,
-    runtime_scalar_ranges: &mut Vec<Range<usize>>,
+    runtime_text_ranges: &mut Vec<ListPagesRuntimeTextRange>,
     runtime_title_is_delayed: bool,
 ) -> String {
     substitute_list_pages_variables_inner(
@@ -705,7 +726,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_delayed(
         compat_text,
         Some(tracked_content_fragments),
         Some(generated_slots),
-        Some(runtime_scalar_ranges),
+        Some(runtime_text_ranges),
         runtime_title_is_delayed,
     )
 }
@@ -865,7 +886,7 @@ pub(in crate::services::render) fn resolve_wikidot_parser_functions_outside_list
 pub(in crate::services::render) fn seal_list_pages_delayed_output(
     output: String,
     delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
-    runtime_scalar_ranges: Vec<Range<usize>>,
+    runtime_text_ranges: Vec<ListPagesRuntimeTextRange>,
     delayed_html_fragments: Vec<CompatHtmlFragments>,
     page_info: &PageInfo<'_>,
     settings: &WikitextSettings,
@@ -874,7 +895,7 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output(
     seal_list_pages_delayed_output_with_mode(
         output,
         delayed_occurrences,
-        runtime_scalar_ranges,
+        runtime_text_ranges,
         delayed_html_fragments,
         page_info,
         settings,
@@ -887,7 +908,7 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output(
 pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
     output: String,
     delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
-    runtime_scalar_ranges: Vec<Range<usize>>,
+    runtime_text_ranges: Vec<ListPagesRuntimeTextRange>,
     delayed_html_fragments: Vec<CompatHtmlFragments>,
     page_info: &PageInfo<'_>,
     settings: &WikitextSettings,
@@ -897,13 +918,14 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
     seal_list_pages_delayed_output_with_modes(
         output,
         delayed_occurrences,
-        runtime_scalar_ranges,
+        runtime_text_ranges,
         delayed_html_fragments,
         page_info,
         settings,
         compat_html,
         block_output,
         false,
+        None,
     )
 }
 
@@ -911,17 +933,18 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
 fn seal_list_pages_delayed_output_with_modes(
     mut output: String,
     delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
-    runtime_scalar_ranges: Vec<Range<usize>>,
+    runtime_text_ranges: Vec<ListPagesRuntimeTextRange>,
     delayed_html_fragments: Vec<CompatHtmlFragments>,
     page_info: &PageInfo<'_>,
     settings: &WikitextSettings,
     compat_html: &mut CompatHtmlFragments,
     block_output: bool,
     list_pages_inline: bool,
+    page_existence: Option<&PageExistenceSnapshot>,
 ) -> Result<String> {
     if output.is_empty()
         && delayed_occurrences.is_empty()
-        && runtime_scalar_ranges.is_empty()
+        && runtime_text_ranges.is_empty()
         && delayed_html_fragments.is_empty()
     {
         return Ok(String::new());
@@ -933,7 +956,7 @@ fn seal_list_pages_delayed_output_with_modes(
     // an otherwise inline module.
     if !block_output
         && delayed_occurrences.is_empty()
-        && runtime_scalar_ranges.is_empty()
+        && runtime_text_ranges.is_empty()
         && delayed_html_fragments.is_empty()
     {
         return Ok(output);
@@ -944,11 +967,11 @@ fn seal_list_pages_delayed_output_with_modes(
     // above, so their `%%...%%` markers remain byte-stable.
     if settings.enable_page_syntax
         && delayed_occurrences.is_empty()
-        && runtime_scalar_ranges.is_empty()
+        && runtime_text_ranges.is_empty()
     {
         ftml::preprocess_for_layout(&mut output, settings.layout);
     }
-    if delayed_occurrences.is_empty() && runtime_scalar_ranges.is_empty() {
+    if delayed_occurrences.is_empty() && runtime_text_ranges.is_empty() {
         // Static rows may already contain the narrowly generated table or
         // numbered-list HTML produced by Wikijump's ListPages compatibility
         // renderer. Protect those blocks before the mandatory FTML List-mode
@@ -960,8 +983,13 @@ fn seal_list_pages_delayed_output_with_modes(
     let generated_capacity = delayed_occurrences.len();
     let mut occurrences = delayed_occurrences
         .into_iter()
-        .map(|(range, value)| (range, Some(value)))
-        .chain(runtime_scalar_ranges.into_iter().map(|range| (range, None)))
+        .map(|(range, value)| (range, PendingDelayedListPagesSlotValue::Generated(value)))
+        .chain(runtime_text_ranges.into_iter().map(|range| {
+            (
+                range.source_range,
+                PendingDelayedListPagesSlotValue::RuntimeText(range.origin),
+            )
+        }))
         .collect::<Vec<_>>();
     occurrences.sort_by_key(|(range, _)| range.start);
 
@@ -983,28 +1011,28 @@ fn seal_list_pages_delayed_output_with_modes(
                 TextOrigin::Authored,
             ));
         }
-        if let Some(value) = value {
-            let id = SlotId::new(
-                u32::try_from(generated_index)
-                    .expect("ListPages generated slot count is budget-bounded"),
-            );
-            generated_index += 1;
-            let kind = match &value {
-                GeneratedValue::PageLink { .. } => GeneratedKind::PageLink,
-                GeneratedValue::TagLinks { .. } => GeneratedKind::TagLinks,
-            };
-            segments.push(InputSegment::generated(GeneratedInput {
-                source_range: source_range.clone(),
-                id,
-                kind,
-                occurrence: 0,
-            }));
-            bindings.push((id, value));
-        } else {
-            segments.push(InputSegment::text(
-                source_range.clone(),
-                TextOrigin::RuntimeScalar,
-            ));
+        match value {
+            PendingDelayedListPagesSlotValue::Generated(value) => {
+                let id = SlotId::new(
+                    u32::try_from(generated_index)
+                        .expect("ListPages generated slot count is budget-bounded"),
+                );
+                generated_index += 1;
+                let kind = match &value {
+                    GeneratedValue::PageLink { .. } => GeneratedKind::PageLink,
+                    GeneratedValue::TagLinks { .. } => GeneratedKind::TagLinks,
+                };
+                segments.push(InputSegment::generated(GeneratedInput {
+                    source_range: source_range.clone(),
+                    id,
+                    kind,
+                    occurrence: 0,
+                }));
+                bindings.push((id, value));
+            }
+            PendingDelayedListPagesSlotValue::RuntimeText(origin) => {
+                segments.push(InputSegment::text(source_range.clone(), origin));
+            }
         }
         cursor = source_range.end;
     }
@@ -1043,7 +1071,14 @@ fn seal_list_pages_delayed_output_with_modes(
             ErrorType::Render,
         )
     })?;
-    let sealed = bound.render_html(page_info, &list_settings);
+    let sealed = match page_existence {
+        Some(page_existence) => bound.render_html_with_page_existence(
+            page_info,
+            &list_settings,
+            page_existence,
+        ),
+        None => bound.render_html(page_info, &list_settings),
+    };
     let mut sealed_body = sealed.body().to_owned();
     for fragments in &delayed_html_fragments {
         sealed_body = fragments.restore(&sealed_body);
@@ -1071,11 +1106,28 @@ fn seal_list_pages_delayed_output_with_modes(
     // for the outer page parse. Leaving nested markers inside the new block
     // fragment would intentionally prevent recursive restoration.
     sealed_body = compat_html.restore(&sealed_body);
+    if !block_output {
+        sealed_body = strip_single_list_pages_paragraph(sealed_body);
+    }
     Ok(if block_output {
         compat_html.push_block_html_allowing_span_parent(sealed_body)
     } else {
         compat_html.push_html(sealed_body)
     })
+}
+
+fn strip_single_list_pages_paragraph(html: String) -> String {
+    let without_trailing_newline = html.strip_suffix('\n').unwrap_or(&html);
+    let Some(inner) = without_trailing_newline
+        .strip_prefix("<p>")
+        .and_then(|value| value.strip_suffix("</p>"))
+    else {
+        return html;
+    };
+    if inner.contains("<p") || inner.contains("</p>") {
+        return html;
+    }
+    inner.to_owned()
 }
 
 fn protect_nested_list_pages(
@@ -1241,14 +1293,14 @@ pub(in crate::services::render) fn seal_zero_row_list_pages_wrapper(
 pub(in crate::services::render) fn protect_list_pages_delayed_output(
     output: String,
     delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
-    runtime_scalar_ranges: Vec<Range<usize>>,
+    runtime_text_ranges: Vec<ListPagesRuntimeTextRange>,
     delayed_html_fragments: Vec<CompatHtmlFragments>,
     compat_text: &mut CompatTextFragments,
 ) -> Result<(String, Option<PendingDelayedListPagesOutput>)> {
     protect_list_pages_delayed_output_with_mode(
         output,
         delayed_occurrences,
-        runtime_scalar_ranges,
+        runtime_text_ranges,
         delayed_html_fragments,
         compat_text,
         true,
@@ -1258,7 +1310,7 @@ pub(in crate::services::render) fn protect_list_pages_delayed_output(
 pub(in crate::services::render) fn protect_list_pages_delayed_output_with_mode(
     output: String,
     delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
-    runtime_scalar_ranges: Vec<Range<usize>>,
+    runtime_text_ranges: Vec<ListPagesRuntimeTextRange>,
     delayed_html_fragments: Vec<CompatHtmlFragments>,
     compat_text: &mut CompatTextFragments,
     block_output: bool,
@@ -1266,11 +1318,12 @@ pub(in crate::services::render) fn protect_list_pages_delayed_output_with_mode(
     protect_list_pages_delayed_output_with_modes(
         output,
         delayed_occurrences,
-        runtime_scalar_ranges,
+        runtime_text_ranges,
         delayed_html_fragments,
         compat_text,
         block_output,
         false,
+        None,
     )
 }
 
@@ -1278,16 +1331,22 @@ pub(in crate::services::render) fn protect_list_pages_delayed_output_with_mode(
 fn protect_list_pages_delayed_output_with_modes(
     output: String,
     delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
-    runtime_scalar_ranges: Vec<Range<usize>>,
+    runtime_text_ranges: Vec<ListPagesRuntimeTextRange>,
     delayed_html_fragments: Vec<CompatHtmlFragments>,
     compat_text: &mut CompatTextFragments,
     block_output: bool,
     list_pages_inline: bool,
+    page_existence: Option<PageExistenceSnapshot>,
 ) -> Result<(String, Option<PendingDelayedListPagesOutput>)> {
     let mut occurrences = delayed_occurrences
         .into_iter()
-        .map(|(range, value)| (range, Some(value)))
-        .chain(runtime_scalar_ranges.into_iter().map(|range| (range, None)))
+        .map(|(range, value)| (range, PendingDelayedListPagesSlotValue::Generated(value)))
+        .chain(runtime_text_ranges.into_iter().map(|range| {
+            (
+                range.source_range,
+                PendingDelayedListPagesSlotValue::RuntimeText(range.origin),
+            )
+        }))
         .collect::<Vec<_>>();
     occurrences.sort_by_key(|(range, _)| range.start);
 
@@ -1329,6 +1388,7 @@ fn protect_list_pages_delayed_output_with_modes(
             block_output,
             list_pages_inline,
             boundary_markers: None,
+            page_existence,
         }),
     ))
 }
@@ -1337,7 +1397,7 @@ fn protect_list_pages_delayed_output_with_modes(
 pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output(
     output: String,
     delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
-    runtime_scalar_ranges: Vec<Range<usize>>,
+    runtime_text_ranges: Vec<ListPagesRuntimeTextRange>,
     delayed_html_fragments: Vec<CompatHtmlFragments>,
     defer_for_include_expansion: bool,
     page_info: &PageInfo<'_>,
@@ -1348,7 +1408,7 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output(
     finish_or_defer_list_pages_delayed_output_with_mode(
         output,
         delayed_occurrences,
-        runtime_scalar_ranges,
+        runtime_text_ranges,
         delayed_html_fragments,
         defer_for_include_expansion,
         page_info,
@@ -1363,7 +1423,7 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output(
 pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_with_mode(
     output: String,
     delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
-    runtime_scalar_ranges: Vec<Range<usize>>,
+    runtime_text_ranges: Vec<ListPagesRuntimeTextRange>,
     delayed_html_fragments: Vec<CompatHtmlFragments>,
     defer_for_include_expansion: bool,
     page_info: &PageInfo<'_>,
@@ -1375,7 +1435,7 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
     finish_or_defer_list_pages_delayed_output_with_modes(
         output,
         delayed_occurrences,
-        runtime_scalar_ranges,
+        runtime_text_ranges,
         delayed_html_fragments,
         defer_for_include_expansion,
         page_info,
@@ -1384,6 +1444,7 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
         compat_text,
         block_output,
         false,
+        None,
     )
 }
 
@@ -1391,7 +1452,7 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
 pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_with_modes(
     output: String,
     delayed_occurrences: Vec<(Range<usize>, GeneratedValue<'static>)>,
-    runtime_scalar_ranges: Vec<Range<usize>>,
+    runtime_text_ranges: Vec<ListPagesRuntimeTextRange>,
     delayed_html_fragments: Vec<CompatHtmlFragments>,
     defer_for_include_expansion: bool,
     page_info: &PageInfo<'_>,
@@ -1400,6 +1461,7 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
     compat_text: &mut CompatTextFragments,
     block_output: bool,
     list_pages_inline: bool,
+    page_existence: Option<&PageExistenceSnapshot>,
 ) -> Result<(String, Option<PendingDelayedListPagesOutput>)> {
     // Every executed ListPages body belongs to FTML's List mode, including a
     // wholly authored/static row. Parsing only rows with typed values here
@@ -1411,11 +1473,12 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
         let (protected, pending) = protect_list_pages_delayed_output_with_modes(
             output,
             delayed_occurrences,
-            runtime_scalar_ranges,
+            runtime_text_ranges,
             delayed_html_fragments,
             compat_text,
             block_output,
             list_pages_inline,
+            page_existence.cloned(),
         )?;
         Ok((
             register_generated_list_pages_html(protected, compat_html),
@@ -1426,13 +1489,14 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
             seal_list_pages_delayed_output_with_modes(
                 output,
                 delayed_occurrences,
-                runtime_scalar_ranges,
+                runtime_text_ranges,
                 delayed_html_fragments,
                 page_info,
                 settings,
                 compat_html,
                 block_output,
                 list_pages_inline,
+                page_existence,
             )?,
             None,
         ))
@@ -1476,12 +1540,18 @@ fn seal_protected_list_pages_delayed_output_with_mode(
     compat_html: &mut CompatHtmlFragments,
     block_output: bool,
 ) -> Result<String> {
-    let list_pages_inline = pending.list_pages_inline;
+    let PendingDelayedListPagesOutput {
+        slots,
+        html_fragments,
+        list_pages_inline,
+        page_existence,
+        ..
+    } = pending;
     let mut output = String::with_capacity(protected.len());
-    let mut delayed_occurrences = Vec::with_capacity(pending.slots.len());
-    let mut runtime_scalar_ranges = Vec::with_capacity(pending.slots.len());
+    let mut delayed_occurrences = Vec::with_capacity(slots.len());
+    let mut runtime_text_ranges = Vec::with_capacity(slots.len());
     let mut cursor = 0;
-    for slot in pending.slots {
+    for slot in slots {
         let Some(relative_start) = protected[cursor..].find(&slot.marker) else {
             return Err(Error::new(
                 "typed ListPages slot marker was lost during runtime expansion",
@@ -1494,10 +1564,16 @@ fn seal_protected_list_pages_delayed_output_with_mode(
         let source_start = output.len();
         output.push_str(&slot.source);
         let source_end = output.len();
-        if let Some(value) = slot.value {
-            delayed_occurrences.push((source_start..source_end, value));
-        } else {
-            runtime_scalar_ranges.push(source_start..source_end);
+        match slot.value {
+            PendingDelayedListPagesSlotValue::Generated(value) => {
+                delayed_occurrences.push((source_start..source_end, value));
+            }
+            PendingDelayedListPagesSlotValue::RuntimeText(origin) => {
+                runtime_text_ranges.push(ListPagesRuntimeTextRange {
+                    source_range: source_start..source_end,
+                    origin,
+                });
+            }
         }
         cursor = marker_start + slot.marker.len();
     }
@@ -1506,13 +1582,14 @@ fn seal_protected_list_pages_delayed_output_with_mode(
     seal_list_pages_delayed_output_with_modes(
         output,
         delayed_occurrences,
-        runtime_scalar_ranges,
-        pending.html_fragments,
+        runtime_text_ranges,
+        html_fragments,
         page_info,
         settings,
         compat_html,
         block_output,
         list_pages_inline,
+        page_existence.as_ref(),
     )
 }
 
@@ -1686,6 +1763,53 @@ mod tests {
     }
 
     #[test]
+    fn combined_runtime_text_defers_one_paragraph_to_the_outer_page() {
+        let source = "BEGIN|%%unknown%%|END";
+        let page_info = PageInfo {
+            page: Cow::Borrowed("preview"),
+            category: None,
+            site: Cow::Borrowed("sandbox-for-codex"),
+            title: Cow::Borrowed("Preview"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(
+            WikitextMode::Page,
+            ftml::layout::Layout::Wikidot,
+        );
+        let range_start = source.find("%%unknown%%").expect("unknown token fixture");
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let sealed = seal_list_pages_delayed_output_with_mode(
+            source.to_owned(),
+            Vec::new(),
+            vec![ListPagesRuntimeTextRange {
+                source_range: range_start..range_start + "%%unknown%%".len(),
+                origin: TextOrigin::RuntimeLiteral,
+            }],
+            Vec::new(),
+            &page_info,
+            &settings,
+            &mut compat_html,
+            false,
+        )
+        .expect("combined runtime-text row should seal");
+
+        assert_eq!(
+            compat_html.restore(&sealed),
+            source,
+            "the outer page owns the only paragraph wrapper",
+        );
+    }
+
+    #[test]
+    fn combined_runtime_text_keeps_multiple_paragraphs_structural() {
+        let html = "<p>one</p>\n<p>two</p>".to_owned();
+        assert_eq!(strip_single_list_pages_paragraph(html.clone()), html);
+    }
+
+    #[test]
     fn deferred_html_fragments_survive_without_generated_slots() {
         let mut row_fragments = CompatHtmlFragments::new("");
         let row_marker =
@@ -1790,7 +1914,7 @@ mod tests {
         let sealed = seal_list_pages_delayed_output(
             prepared.body,
             Vec::new(),
-            prepared.runtime_scalar_ranges,
+            prepared.runtime_text_ranges,
             prepared.html_fragments.into_iter().collect(),
             &page_info,
             &settings,
@@ -1876,9 +2000,13 @@ mod tests {
             "an executable table cell attribute must remain CSS: {}",
             prepared.body,
         );
-        assert_eq!(prepared.runtime_scalar_ranges.len(), 1);
+        assert_eq!(prepared.runtime_text_ranges.len(), 1);
         assert_eq!(
-            &prepared.body[prepared.runtime_scalar_ranges[0].clone()],
+            prepared.runtime_text_ranges[0].origin,
+            TextOrigin::RuntimeScalar,
+        );
+        assert_eq!(
+            &prepared.body[prepared.runtime_text_ranges[0].source_range.clone()],
             "Generated...",
         );
         let page_info = PageInfo {
@@ -1899,7 +2027,7 @@ mod tests {
         let sealed = seal_list_pages_delayed_output(
             prepared.body.clone(),
             Vec::new(),
-            prepared.runtime_scalar_ranges.clone(),
+            prepared.runtime_text_ranges.clone(),
             Vec::new(),
             &page_info,
             &settings,
@@ -1917,6 +2045,108 @@ mod tests {
             "literal code must retain authored dot runs: {}",
             prepared.body,
         );
+    }
+
+    #[test]
+    fn unknown_variables_are_runtime_text_inside_recovered_owners() {
+        let page = FoundPageRow {
+            page_id: 1,
+            site_id: 1,
+            title: Some("Generated".to_owned()),
+            alt_title: None,
+            slug: Some("generated".to_owned()),
+            page_category_id: None,
+            page_revision_id: None,
+            tags: None,
+            created_at: None,
+            created_by: None,
+            updated_at: None,
+            updated_by: None,
+            score: None,
+        };
+        let user_displays = BTreeMap::new();
+        let snapshot_displays = BTreeMap::new();
+        let runtime_displays = BTreeMap::new();
+        let data_form_values = BTreeMap::new();
+        let context = empty_substitution_context(
+            &user_displays,
+            &snapshot_displays,
+            &runtime_displays,
+            &data_form_values,
+        );
+        let page_info = PageInfo {
+            page: Cow::Borrowed("preview"),
+            category: None,
+            site: Cow::Borrowed("sandbox-for-codex"),
+            title: Cow::Borrowed("Preview"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(
+            WikitextMode::Page,
+            ftml::layout::Layout::Wikidot,
+        );
+
+        for (source, expected) in [
+            (
+                "BEGIN|[[code]]\n%%unknown%%\n[[/code]]\n%%title%%|END",
+                concat!(
+                    "<p>BEGIN|[[code]]<br>\n",
+                    "%%unknown%%<br>\n",
+                    "[[/code]]<br>\n",
+                    "Generated|END</p>",
+                ),
+            ),
+            (
+                "BEGIN|[[div class=\"%%unknown%%\"]]X[[/div]]|%%title%%|END",
+                concat!(
+                    "<p>BEGIN|[[div class=&quot;%%unknown%%&quot;]]",
+                    "X[[/div]]|Generated|END</p>",
+                ),
+            ),
+        ] {
+            let template = ListPagesTemplatePlan::compile(source)
+                .expect("supported unknown-variable row");
+            let mut compat_text = CompatTextFragments::new(source);
+            let prepared = prepare_delayed_list_pages_row(
+                &template,
+                template.body(),
+                &page,
+                1,
+                1,
+                &context,
+                &[],
+                &mut compat_text,
+                false,
+                None,
+            );
+            assert_eq!(prepared.runtime_text_ranges.len(), 1, "{source}");
+            assert_eq!(
+                prepared.runtime_text_ranges[0].origin,
+                TextOrigin::RuntimeLiteral,
+                "{source}",
+            );
+            assert_eq!(
+                &prepared.body[prepared.runtime_text_ranges[0].source_range.clone()],
+                "%%unknown%%",
+                "{source}",
+            );
+
+            let mut compat_html = CompatHtmlFragments::new(source);
+            let sealed = seal_list_pages_delayed_output(
+                prepared.body,
+                Vec::new(),
+                prepared.runtime_text_ranges,
+                prepared.html_fragments.into_iter().collect(),
+                &page_info,
+                &settings,
+                &mut compat_html,
+            )
+            .expect("unknown-variable row should seal");
+            assert_eq!(compat_html.restore(&sealed), expected, "{source}");
+        }
     }
 
     #[test]
@@ -1985,7 +2215,7 @@ mod tests {
         let sealed = seal_list_pages_delayed_output(
             prepared.body,
             Vec::new(),
-            prepared.runtime_scalar_ranges,
+            prepared.runtime_text_ranges,
             Vec::new(),
             &page_info,
             &settings,
