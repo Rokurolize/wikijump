@@ -471,7 +471,7 @@ pub(super) static PAGECALENDAR_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 });
 pub(super) static REGISTRY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)\[\[module\s+(?P<name>Members|NewPage|Clone|Join)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
+        r#"(?is)\[\[module\s+(?P<name>NewPage|Clone|Join)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
     )
     .unwrap()
 });
@@ -5324,7 +5324,9 @@ pub(super) fn format_list_pages_rating(score: Option<f32>) -> String {
     }
 }
 
-pub(super) fn render_members_module_placeholder(group: &str) -> String {
+#[cfg(test)]
+/// Captured legacy HTML used only to exercise generic fragment protection.
+pub(super) fn members_compat_html_fixture(group: &str) -> String {
     let group_attr = escape_list_pages_html_attr(group);
     let group_script = escape_javascript_single_quoted(group);
     let body = if group.eq_ignore_ascii_case("moderators") {

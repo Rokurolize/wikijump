@@ -37,9 +37,9 @@ use super::service::{
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PAGECALENDAR_MODULE_REGEX, RATE_MODULE_REGEX,
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
     escape_list_pages_html_attr, escape_list_pages_html_text, render_clone_module,
-    render_members_module_placeholder,
 };
 use super::url_arguments::UrlArguments;
+use super::user_directory::render_members_module;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::membership::{JoinModuleState, MembershipPolicy, MembershipService};
 use crate::services::page_query::{
@@ -167,6 +167,10 @@ const MEMBERSHIP_APPLY_ANONYMOUS_HTML: &str = concat!(
 static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListUsers(?P<head>(?:[^\]"]+|"[^"]*")*)\]\](?P<body>.*?)\[\[/module\]\]"#)
         .expect("ListUsers module expression is valid")
+});
+static MEMBERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+Members\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("Members module expression is valid")
 });
 static LISTDRAFTS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListDrafts(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
@@ -1478,7 +1482,8 @@ impl RenderService {
     ) -> String {
         // NewPage is expanded by the runtime-backed pass above. Keeping it
         // out of this context-free fallback is what lets that pass preserve
-        // over-budget or otherwise unsupported modules literally.
+        // over-budget or otherwise unsupported modules literally. Members
+        // has its own site-scoped directory pass and is not in this registry.
         Self::expand_registry_modules_matching(wikitext, settings, compat_html, |name| {
             !name.eq_ignore_ascii_case("NewPage") && !name.eq_ignore_ascii_case("Join")
         })
@@ -1515,12 +1520,7 @@ impl RenderService {
             }
             output.push_str(&wikitext[cursor..matched.start()]);
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
-            let rendered = if name.eq_ignore_ascii_case("Members") {
-                let group = wikidot_module_argument(head, "group")
-                    .unwrap_or("members")
-                    .trim();
-                render_members_module_placeholder(group)
-            } else if name.eq_ignore_ascii_case("NewPage") {
+            let rendered = if name.eq_ignore_ascii_case("NewPage") {
                 render_new_page_module(head, NewPageTemplateRendering::None)
             } else if name.eq_ignore_ascii_case("Clone") {
                 render_clone_module(head)
@@ -1541,21 +1541,6 @@ impl RenderService {
         }
         output.push_str(&wikitext[cursor..]);
         output
-    }
-
-    #[cfg(test)]
-    pub(super) fn expand_members_modules(
-        wikitext: String,
-        settings: &WikitextSettings,
-    ) -> String {
-        let mut fragments = CompatHtmlFragments::new(&wikitext);
-        let protected = Self::expand_registry_modules_matching(
-            wikitext,
-            settings,
-            &mut fragments,
-            |name| name.eq_ignore_ascii_case("Members"),
-        );
-        fragments.restore(&protected)
     }
 
     #[cfg(test)]
@@ -1732,6 +1717,50 @@ impl RenderService {
         }
         output.push_str(&wikitext[cursor..]);
         output
+    }
+
+    async fn expand_members_modules_with_directory(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        settings: &WikitextSettings,
+        current_site_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> Result<String> {
+        if !settings.enable_page_syntax || !MEMBERS_MODULE_REGEX.is_match(&wikitext) {
+            return Ok(wikitext);
+        }
+        let Some(site_id) = current_site_id else {
+            return Ok(wikitext);
+        };
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        let mut module_index = 0;
+        for captures in MEMBERS_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a Members capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            module_index += 1;
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            let Some(rendered) =
+                render_members_module(ctx, site_id, head, module_index).await?
+            else {
+                continue;
+            };
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&compat_html.push_block_html(rendered));
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return Ok(wikitext);
+        }
+        output.push_str(&wikitext[cursor..]);
+        Ok(output)
     }
 
     async fn expand_list_users_modules(
@@ -2166,6 +2195,15 @@ impl RenderService {
             options.viewer_user_id,
             compat_html,
         );
+        wikitext = Self::expand_members_modules_with_directory(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext = Self::expand_list_users_modules(
             ctx,
             wikitext,

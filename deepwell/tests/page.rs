@@ -4084,6 +4084,107 @@ async fn page_render_star_rate_module_consumes_body_and_substitutes_live_variabl
 }
 
 #[tokio::test]
+async fn wikidot_user_blocks_resolve_extant_numeric_and_missing_identities() {
+    const EXTANT_USER_ID: i64 = 19_102_600;
+    const DELETED_USER_ID: i64 = 19_102_601;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO known_user (user_id) VALUES ($1), ($2)",
+            [Value::from(EXTANT_USER_ID), Value::from(DELETED_USER_ID)],
+        ))
+        .await
+        .expect("user-block known-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") VALUES ",
+                "($1, NOW(), NOW(), FALSE, 'Extant User', 'extant-user', 5, FALSE), ",
+                "($2, NOW(), NOW(), TRUE, 'Deleted User', 'deleted-user', 0, FALSE)",
+            ),
+            [Value::from(EXTANT_USER_ID), Value::from(DELETED_USER_ID)],
+        ))
+        .await
+        .expect("user-block Wikidot fixtures should be inserted");
+
+    let source = format!(concat!(
+        "NAME=[[user Extant User]]\n",
+        "ID=[[*user {EXTANT_USER_ID}]]\n",
+        "DELETED=[[user Deleted User]]\n",
+        "A=[[user v7ws=\"alpha\tbeta\u{00a0}gamma\"]]\n",
+        "B=[[user v7ser=\"serialized body\"]]\n",
+        "C=[[user v7text=\"visible text\"]]\n",
+        "D=[[user v7arg=\"one\" v7arg=\"two\"]]\n",
+        "E=[[user v7arg=\"\"]]\n",
+        "F=[[user v7UnknownArgument=\"x\"]]\n",
+        "G=[[user v7arg='single quoted' data-v7=unquoted]]",
+    ),);
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Wikidot user identity matrix",
+            "wikitext": source,
+        }),
+    );
+    let html = preview.body;
+
+    assert!(
+        html.contains("http://www.wikidot.com/user:info/extant-user")
+            && html.contains(&format!(
+                "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID}); return false;"
+            ))
+            && html.contains(">Extant User</a>"),
+        "extant name and numeric ID references should share the imported identity:\n{html}",
+    );
+    assert_eq!(
+        html.matches(&format!(
+            "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID})"
+        ))
+        .count(),
+        3,
+        "a plain user has one profile link and a starred user has avatar and name links:\n{html}",
+    );
+    for missing in [
+        "Deleted User",
+        "v7ws=&quot;alpha beta gamma&quot;",
+        "v7ser=&quot;serialized body&quot;",
+        "v7text=&quot;visible text&quot;",
+        "v7arg=&quot;one&quot; v7arg=&quot;two&quot;",
+        "v7arg=&quot;&quot;",
+        "v7UnknownArgument=&quot;x&quot;",
+        "v7arg='single quoted' data-v7=unquoted",
+    ] {
+        assert!(
+            html.contains(&format!(
+                r#"<span class="error-inline"><em>{missing}</em></span> does not match any existing user name"#,
+            )),
+            "unknown and deleted lookup keys must render the live non-link error for {missing}:\n{html}",
+        );
+    }
+    assert!(
+        !html.contains("user:info/deleted-user"),
+        "deleted identity must not become a profile existence side channel:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn listusers_module_matches_live_preview_and_runtime_viewer() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -4309,6 +4410,203 @@ async fn listusers_module_matches_live_preview_and_runtime_viewer() {
         stored_text_blocks,
         "a second viewer-dependent GET rerender must leave the authoritative text blocks unchanged",
     );
+}
+
+#[tokio::test]
+async fn members_module_queries_only_visible_site_members_and_roles() {
+    const ALPHA_USER_ID: i64 = 19_103_200;
+    const ZETA_USER_ID: i64 = 19_103_201;
+    const DELETED_USER_ID: i64 = 19_103_202;
+    const OTHER_SITE_USER_ID: i64 = 19_103_203;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let other_site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded comparison site should exist")
+        .site
+        .site_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO known_user (user_id) VALUES ($1), ($2), ($3), ($4)",
+            [
+                Value::from(ALPHA_USER_ID),
+                Value::from(ZETA_USER_ID),
+                Value::from(DELETED_USER_ID),
+                Value::from(OTHER_SITE_USER_ID),
+            ],
+        ))
+        .await
+        .expect("member-directory known-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") VALUES ",
+                "($1, NOW(), NOW(), FALSE, 'Alpha Member', 'alpha-member', 2, FALSE), ",
+                "($2, NOW(), NOW(), FALSE, 'Zeta Member', 'zeta-member', 4, FALSE), ",
+                "($3, NOW(), NOW(), TRUE, 'Deleted Member', 'deleted-member', 0, FALSE), ",
+                "($4, NOW(), NOW(), FALSE, 'Other Site Member', 'other-site-member', 3, FALSE)",
+            ),
+            [
+                Value::from(ALPHA_USER_ID),
+                Value::from(ZETA_USER_ID),
+                Value::from(DELETED_USER_ID),
+                Value::from(OTHER_SITE_USER_ID),
+            ],
+        ))
+        .await
+        .expect("member-directory Wikidot fixtures should be inserted");
+    for user_id in [ALPHA_USER_ID, ZETA_USER_ID, DELETED_USER_ID] {
+        RelationService::create_site_member(
+            runner.context(),
+            CreateSiteMember {
+                site_id,
+                user_id,
+                metadata: SiteMemberData {
+                    accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+                },
+                created_by: SYSTEM_USER_ID,
+            },
+        )
+        .await
+        .expect("member-directory fixture membership should be created");
+    }
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id: other_site_id,
+            user_id: OTHER_SITE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("comparison-site member fixture should be created");
+    let moderator_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("moderator")),
+    )
+    .await
+    .expect("seeded moderator role should exist");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            user_id: ALPHA_USER_ID,
+            role_id: moderator_role.role_id,
+            site_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("member-directory moderator fixture should be granted");
+
+    let source = concat!(
+        "MEMBERS_START\n",
+        "[[module Members order=\"nameDesc\" showSince=\"false\"]]\n",
+        "MEMBERS_END\n",
+        "MODERATORS_START\n",
+        "[[module Members group=\"moderators\"]]\n",
+        "MODERATORS_END\n",
+        "INVALID_START\n",
+        "[[module Members group=\"owners\"]]\n",
+        "INVALID_END",
+    );
+    let mut bodies = Vec::new();
+    for actor in [None, Some(SAMPLE_USER_ID), Some(ADMIN_USER_ID)] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: actor,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        bodies.push(
+            run_endpoint!(
+                runner,
+                wikidot_page_preview,
+                json!({
+                    "site_id": site_id,
+                    "title": "Members directory matrix",
+                    "wikitext": source,
+                }),
+            )
+            .body,
+        );
+    }
+
+    for (actor, html) in ["anonymous", "non-member", "administrator"]
+        .into_iter()
+        .zip(&bodies)
+    {
+        let members = html
+            .split_once("MEMBERS_START")
+            .and_then(|(_, tail)| tail.split_once("MEMBERS_END"))
+            .map(|(members, _)| members)
+            .expect("member directory should remain between authored markers");
+        let moderators = html
+            .split_once("MODERATORS_START")
+            .and_then(|(_, tail)| tail.split_once("MODERATORS_END"))
+            .map(|(moderators, _)| moderators)
+            .expect("moderator directory should remain between authored markers");
+
+        let zeta = members
+            .find("Zeta Member")
+            .expect("visible Zeta member should render");
+        let alpha = members
+            .find("Alpha Member")
+            .expect("visible Alpha member should render");
+        assert!(
+            zeta < alpha,
+            "nameDesc must order after identity filtering: {members}"
+        );
+        assert!(
+            !members.contains("Deleted Member")
+                && !members.contains("since <span class=\"odate"),
+            "{actor} output must hide deleted identities and honor showSince=false:\n{members}",
+        );
+        assert!(
+            html.contains(r#"id="ml-1""#)
+                && html.contains(r#"id="ml-2""#)
+                && moderators.contains("Alpha Member")
+                && !moderators.contains("Zeta Member")
+                && moderators.contains("p.group     = 'moderators'"),
+            "module IDs must be unique and moderator rows must come from this site's active role assignments:\n{html}",
+        );
+        assert!(
+            members.contains("p.group     = ''")
+                && members.contains("p.order     = 'nameDesc'")
+                && members.contains("membership/MembersListModule"),
+            "member directory must retain Wikidot's read-only paging contract:\n{members}",
+        );
+        assert!(
+            !html.contains("ml-607935")
+                && !html.contains("lambert-eggman")
+                && !html.contains("user:info/deleted-member")
+                && !html.contains("Other Site Member"),
+            "directory output must not retain captured, deleted, or cross-site identities:\n{html}",
+        );
+        let invalid = html
+            .split_once("INVALID_START")
+            .and_then(|(_, tail)| tail.split_once("INVALID_END"))
+            .map(|(invalid, _)| invalid)
+            .expect("invalid module should remain between authored markers");
+        assert!(
+            invalid.contains("No such module")
+                && !invalid.contains("Alpha Member")
+                && !invalid.contains("Zeta Member"),
+            "unverified groups must fail closed instead of widening the site query:\n{invalid}",
+        );
+    }
 }
 
 #[tokio::test]

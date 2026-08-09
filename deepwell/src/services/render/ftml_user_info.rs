@@ -19,12 +19,14 @@
  */
 
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::models::wikidot_user::{self, Entity as WikidotUser};
+use crate::models::wikidot_user::{
+    self, Entity as WikidotUser, Model as WikidotUserModel,
+};
 use crate::services::ServiceContext;
 use crate::services::page_query::normalize_wikidot_author_name;
 use ftml::data::{KarmaLevel, UserInfo};
 use ftml::render::UserInfoResolver;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -35,55 +37,113 @@ pub(super) struct UserInfoSnapshot {
 
 impl UserInfoSnapshot {
     pub(super) async fn load(ctx: &ServiceContext<'_>, names: &[String]) -> Result<Self> {
-        let slugs = names
-            .iter()
-            .map(|name| normalize_wikidot_author_name(name))
-            .filter(|slug| !slug.is_empty())
-            .collect::<BTreeSet<_>>();
-        if slugs.is_empty() {
+        let (slugs, user_ids) = user_reference_sets(names);
+        if slugs.is_empty() && user_ids.is_empty() {
             return Ok(Self::default());
         }
 
-        let users = WikidotUser::find()
-            .filter(wikidot_user::Column::Slug.is_in(slugs))
-            .filter(wikidot_user::Column::IsDeleted.eq(false))
-            .all(ctx.transaction())
-            .await
-            .or_raise(|| {
-                Error::new(
-                    "failed to resolve Wikidot users for FTML render",
-                    ErrorType::Render,
-                )
-            })?;
+        let users = load_visible_wikidot_users(ctx, &slugs, &user_ids).await?;
+        let mut resolved = BTreeMap::new();
+        for user in users {
+            let Some(info) = wikidot_user_info(user) else {
+                continue;
+            };
+            resolved.insert(info.user_id.to_string(), info.clone());
+            resolved.insert(normalize_wikidot_author_name(&info.user_slug), info);
+        }
 
-        Ok(Self {
-            users: users
-                .into_iter()
-                .filter_map(|user| {
-                    let slug = user.slug?;
-                    let name = user.name.unwrap_or_else(|| slug.clone());
-                    let user_id = i64::from(user.user_id);
-                    let karma = u8::try_from(user.karma)
-                        .ok()
-                        .and_then(KarmaLevel::new)
-                        .unwrap_or(KarmaLevel::Zero);
-                    let info = UserInfo {
-                        user_id,
-                        user_slug: Cow::Owned(slug.clone()),
-                        user_name: Cow::Owned(name),
-                        user_karma: karma,
-                        user_avatar_data: Cow::Owned(format!(
-                            "http://www.wikidot.com/avatar.php?userid={user_id}&amp;size=small"
-                        )),
-                        user_profile_url: Cow::Owned(format!(
-                            "http://www.wikidot.com/user:info/{slug}"
-                        )),
-                    };
-                    Some((slug, info))
-                })
-                .collect(),
-        })
+        Ok(Self { users: resolved })
     }
+}
+
+fn user_reference_sets(names: &[String]) -> (BTreeSet<String>, BTreeSet<i32>) {
+    let mut slugs = BTreeSet::new();
+    let mut user_ids = BTreeSet::new();
+    for name in names {
+        let trimmed = name.trim();
+        if !trimmed.is_empty() && trimmed.bytes().all(|byte| byte.is_ascii_digit()) {
+            if let Ok(user_id) = trimmed.parse() {
+                user_ids.insert(user_id);
+            }
+            continue;
+        }
+        let slug = normalize_wikidot_author_name(name);
+        if !slug.is_empty() {
+            slugs.insert(slug);
+        }
+    }
+    (slugs, user_ids)
+}
+
+pub(super) async fn load_wikidot_user_info_by_ids(
+    ctx: &ServiceContext<'_>,
+    user_ids: &BTreeSet<i64>,
+) -> Result<BTreeMap<i64, UserInfo<'static>>> {
+    let user_ids = user_ids
+        .iter()
+        .filter_map(|user_id| i32::try_from(*user_id).ok())
+        .collect::<BTreeSet<_>>();
+    if user_ids.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+
+    let users = load_visible_wikidot_users(ctx, &BTreeSet::new(), &user_ids).await?;
+    Ok(users
+        .into_iter()
+        .filter_map(wikidot_user_info)
+        .map(|user| (user.user_id, user))
+        .collect())
+}
+
+async fn load_visible_wikidot_users(
+    ctx: &ServiceContext<'_>,
+    slugs: &BTreeSet<String>,
+    user_ids: &BTreeSet<i32>,
+) -> Result<Vec<WikidotUserModel>> {
+    let mut reference = Condition::any();
+    if !slugs.is_empty() {
+        reference =
+            reference.add(wikidot_user::Column::Slug.is_in(slugs.iter().cloned()));
+    }
+    if !user_ids.is_empty() {
+        reference =
+            reference.add(wikidot_user::Column::UserId.is_in(user_ids.iter().copied()));
+    }
+
+    WikidotUser::find()
+        .filter(
+            Condition::all()
+                .add(wikidot_user::Column::IsDeleted.eq(false))
+                .add(reference),
+        )
+        .all(ctx.transaction())
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to resolve visible Wikidot users for render",
+                ErrorType::Render,
+            )
+        })
+}
+
+fn wikidot_user_info(user: WikidotUserModel) -> Option<UserInfo<'static>> {
+    let slug = user.slug?;
+    let name = user.name.unwrap_or_else(|| slug.clone());
+    let user_id = i64::from(user.user_id);
+    let karma = u8::try_from(user.karma)
+        .ok()
+        .and_then(KarmaLevel::new)
+        .unwrap_or(KarmaLevel::Zero);
+    Some(UserInfo {
+        user_id,
+        user_slug: Cow::Owned(slug.clone()),
+        user_name: Cow::Owned(name),
+        user_karma: karma,
+        user_avatar_data: Cow::Owned(format!(
+            "http://www.wikidot.com/avatar.php?userid={user_id}&amp;size=small"
+        )),
+        user_profile_url: Cow::Owned(format!("http://www.wikidot.com/user:info/{slug}")),
+    })
 }
 
 impl UserInfoResolver for UserInfoSnapshot {
@@ -116,5 +176,14 @@ mod tests {
 
         assert_eq!(snapshot.user_info(" SYSTEM "), Some(canonical));
         assert!(snapshot.user_info("unknown").is_none());
+    }
+
+    #[test]
+    fn numeric_user_references_do_not_fall_through_to_the_slug_namespace() {
+        let references = [" 122357 ".to_owned(), "System User".to_owned()];
+        let (slugs, user_ids) = user_reference_sets(&references);
+
+        assert_eq!(slugs, BTreeSet::from(["system-user".to_owned()]));
+        assert_eq!(user_ids, BTreeSet::from([122357]));
     }
 }

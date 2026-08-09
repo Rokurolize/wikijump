@@ -52,7 +52,6 @@ use super::super::list_pages::{
     unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
 };
 use super::super::literal_regions::ListPagesSourceProjection;
-use super::super::module_arguments::wikidot_module_argument;
 use super::super::new_page_module::{NewPageTemplateRendering, render_new_page_module};
 use super::super::render_options::RenderLifecycle;
 use super::super::runtime_page_queries::{
@@ -77,10 +76,10 @@ use super::{
     WIKIDOT_INLINE_HTML_SENTINEL_PREFIX, WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX,
     WikidotCompatLinkTitleMap, extract_css_modules as extract_css_modules_with_registry,
     find_balanced_ul_end, has_include_opening_candidate, include_error,
-    native_list_page_link_default_label, parse_wikidot_compat_color_descriptor,
-    protect_forwarded_attachment_variables, render_clone_module,
-    render_list_pages_numbered_rows_with_titles, render_list_pages_table_rows,
-    render_members_module_placeholder, render_native_list_inline_wikidot_spans,
+    members_compat_html_fixture, native_list_page_link_default_label,
+    parse_wikidot_compat_color_descriptor, protect_forwarded_attachment_variables,
+    render_clone_module, render_list_pages_numbered_rows_with_titles,
+    render_list_pages_table_rows, render_native_list_inline_wikidot_spans,
     render_native_list_page_link, wikidot_no_such_include_replacement,
 };
 use crate::config::Config;
@@ -2227,26 +2226,8 @@ fn renders_japanese_wikidot_read_only_rate_module_labels() {
 }
 
 #[test]
-fn renders_wikidot_members_module_placeholder() {
-    let head = r#" group="moderators" order="joined""#;
-    assert_eq!(wikidot_module_argument(head, "group"), Some("moderators"));
-
-    let rendered = RenderService::expand_members_modules(
-        "[[module Members group=\"moderators\"]]".to_owned(),
-        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-    );
-
-    assert!(rendered.contains(
-        r#"<div id="ml-607935" data-wikijump-compat-members="1" data-group="moderators">"#
-    ));
-    assert!(rendered.contains(r#"<span class="printuser avatarhover">"#));
-    assert!(rendered.contains("membership/MembersListModule"));
-    assert!(!rendered.contains("[[module Members"));
-}
-
-#[test]
 fn protects_wikidot_members_module_html_before_parsing() {
-    let mut wikitext = render_members_module_placeholder("moderators");
+    let mut wikitext = members_compat_html_fixture("moderators");
     let fragments = RenderService::protect_generated_wikidot_compat_html(
         &mut wikitext,
         &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
@@ -2273,7 +2254,7 @@ fn wikidot_compatibility_fallback_restores_generated_members_html_as_block() {
             "[[/div]]\n",
             "after\n",
         ),
-        render_members_module_placeholder("moderators"),
+        members_compat_html_fixture("moderators"),
     );
 
     let rendered = render_wikidot_fallback_after_generated_compat_restore(&source);
@@ -2396,28 +2377,6 @@ fn renders_wikidot_join_module_anonymous_dom() {
 }
 
 #[test]
-fn family_specific_registry_module_helper_preserves_skipped_prefixes_once() {
-    let source = concat!(
-        "prefix [[module Clone]] between ",
-        "[[module NewPage]] after ",
-        "[[module Members]] suffix",
-    );
-    let rendered = RenderService::expand_members_modules(
-        source.to_owned(),
-        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-    );
-
-    assert_eq!(rendered.matches("prefix ").count(), 1);
-    assert_eq!(rendered.matches(" between ").count(), 1);
-    assert_eq!(rendered.matches(" after ").count(), 1);
-    assert!(rendered.contains("[[module Clone]]"));
-    assert!(rendered.contains("[[module NewPage]]"));
-    assert!(rendered.contains("membership/MembersListModule"));
-    assert!(!rendered.contains("[[module Members]]"));
-    assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-}
-
-#[test]
 fn clone_html_is_registered_only_by_its_runtime_producer() {
     let source = "[[module Clone button=\"Clone <now>\"]]";
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
@@ -2446,7 +2405,7 @@ fn registry_module_expansion_does_not_match_name_prefixes() {
         "[[module MembershipEmailInvitation]] ",
         "[[module NewPageExtra]] ",
         "[[module Joinery]] ",
-        "[[module Members]]",
+        "[[module Join]]",
     );
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut fragments = CompatHtmlFragments::new(source);
@@ -2461,7 +2420,7 @@ fn registry_module_expansion_does_not_match_name_prefixes() {
             .matches(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
             .count(),
         1,
-        "only the exact Members module should be expanded:\n{protected}",
+        "only the exact Join module should be expanded:\n{protected}",
     );
     assert!(protected.contains("[[module MembershipByPassword]]"));
     assert!(protected.contains("[[module MembershipEmailInvitation]]"));
@@ -2469,15 +2428,15 @@ fn registry_module_expansion_does_not_match_name_prefixes() {
     assert!(protected.contains("[[module Joinery]]"));
 
     let restored = fragments.restore(&protected);
-    assert!(restored.contains("membership/MembersListModule"));
-    assert!(!restored.contains("[[module Members]]"));
+    assert!(restored.contains(r#"<div class="join-box">"#));
+    assert!(!restored.contains("[[module Join]]"));
     assert!(!restored.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
 }
 
 #[test]
 fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences() {
     let modules = concat!(
-        "[[module Members]] ",
+        "[[module Join]] ",
         "[[module NewPage]] ",
         "[[module Clone]]",
     );
@@ -2487,16 +2446,16 @@ fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences()
             "[[code]]\n{modules}\n[[/code]]\n",
             "[[raw]]\n{modules}\n[[/raw]]\n",
             "[!-- {modules} --]\n",
-            "[[div data-module=\"[[module Members]]\"]]members[[/div]]\n",
+            "[[div data-module=\"[[module Join]]\"]]join[[/div]]\n",
             "[[div data-module=\"[[module NewPage]]\"]]new page[[/div]]\n",
             "[[div data-module=\"[[module Clone]]\"]]clone[[/div]]\n",
-            "<div data-module=\"[[module Members]]\">members</div>\n",
+            "<div data-module=\"[[module Join]]\">join</div>\n",
             "<div data-module=\"[[module NewPage]]\">new page</div>\n",
             "<div data-module=\"[[module Clone]]\">clone</div>\n",
             "<pre>{modules}</pre>\n",
             "<!-- {modules} -->\n",
             "[[module Clone button=\"clone-first\"]]",
-            "[[module Members group=\"moderators\"]]",
+            "[[module Join]]",
             "[[module NewPage button=\"new-last\"]]\n",
         ),
         modules = modules
@@ -2515,19 +2474,15 @@ fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences()
             .count(),
         2,
     );
-    for module in [
-        "[[module Members]]",
-        "[[module NewPage]]",
-        "[[module Clone]]",
-    ] {
+    for module in ["[[module Join]]", "[[module NewPage]]", "[[module Clone]]"] {
         assert_eq!(protected.matches(module).count(), 8, "{module}");
     }
 
     let restored = fragments.restore(&protected);
     let clone = restored.find("clone-first").unwrap();
-    let members = restored.find("membership/MembersListModule").unwrap();
+    let join = restored.rfind(r#"<div class="join-box">"#).unwrap();
     let new_page = restored.find("new-last").unwrap();
-    assert!(clone < members && members < new_page);
+    assert!(clone < join && join < new_page);
     assert!(!restored.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
 
     let mut output =
@@ -2543,7 +2498,7 @@ fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences()
 
 #[test]
 fn registry_module_expansion_does_not_reclassify_a_later_literal_candidate() {
-    let source = r#"[[module Members group="@@"]][[module NewPage]]@@"#;
+    let source = r#"[[module Clone button="@@"]][[module NewPage]]@@"#;
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut fragments = CompatHtmlFragments::new(source);
     let protected = RenderService::expand_registry_modules_with_registry(
@@ -2561,7 +2516,7 @@ fn registry_module_expansion_does_not_reclassify_a_later_literal_candidate() {
     assert!(protected.contains("[[module NewPage]]@@"));
 
     let restored = fragments.restore(&protected);
-    assert!(restored.contains("membership/MembersListModule"));
+    assert!(restored.contains(r#"<a class="button""#));
     assert!(restored.contains("[[module NewPage]]@@"));
     assert!(!restored.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
 }
@@ -2856,9 +2811,8 @@ fn compat_html_restoration_ignores_authored_legacy_sentinel_text() {
 
 #[test]
 fn members_group_cannot_close_its_generated_script() {
-    let rendered = render_members_module_placeholder(
-        "</script><img src=x onerror='alert(1)'>&\u{2028}",
-    );
+    let rendered =
+        members_compat_html_fixture("</script><img src=x onerror='alert(1)'>&\u{2028}");
 
     assert_eq!(rendered.matches("</script>").count(), 1);
     assert!(!rendered.contains("</script><img"));

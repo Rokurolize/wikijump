@@ -67,6 +67,7 @@ mod search_feed;
 mod service;
 mod structs;
 mod url_arguments;
+mod user_directory;
 mod wikidot_hosts;
 
 pub(crate) use self::authorized_page_selector::AuthorizedPageSelector;
