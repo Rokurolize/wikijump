@@ -2488,10 +2488,12 @@
       "status": "implemented",
       "confirmed_public_seams": [
         "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, page-parent table, and page-view interface",
+        "Deepwell public saved page_view rendering for viewer-authorized PageTree rows and fail-closed resource saturation",
         "RenderService PageTree module rendering for parent hierarchy traversal, explicit roots, showRoot, depth, and attribute parsing"
       ],
       "tests": [
         "deepwell/tests/page.rs::page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
+        "deepwell/tests/page.rs::page_tree_resource_bounds_fail_closed_without_partial_visible_rows",
         "deepwell/src/services/render/page_tree.rs::tests::arguments_match_live_case_sensitive_semantics",
         "deepwell/src/services/render/page_tree.rs::tests::live_dom_depth_and_cycle_boundaries_are_preserved",
         "deepwell/src/services/render/page_tree.rs::tests::url_and_cross_site_root_forms_fail_closed"
