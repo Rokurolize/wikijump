@@ -900,14 +900,16 @@
         {
           "case_id": "M1043_OPTIONS_MATRIX",
           "acceptance": "Bind size, order, viewer defaults, accepted values, aliases, invalid values, duplicates, and empty occurrences to evidence-backed source tests.",
-          "classification": "needs_source",
-          "reason": "The implementation accepts a documented option set, but existing tests exercise only thumbnail and do not source-bind the full matrix or last-occurrence behavior.",
+          "classification": "source_ready",
+          "reason": "Public PagePreview tests bind documented size and viewer defaults and values plus exact invalid and empty selection errors against an otherwise renderable owned file. A saved page_rerender to page_view matrix gives name and created-at opposing fixture dimensions for every documented order value and alias, while one combined case proves that the last canonical size, order, and viewer occurrence replaces earlier state.",
           "source_paths": [
             "deepwell/src/services/render/compat/wikidot_gallery.rs"
           ],
-          "existing_tests": [],
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_gallery_preview_enforces_size_viewer_and_invalid_option_matrix",
+            "deepwell/tests/page.rs::wikidot_gallery_saved_page_view_enforces_order_and_last_occurrence_matrix"
+          ],
           "evidence_ids": ["E_FOCUSED_CORPUS", "E_V7_CORPUS"],
-          "missing_source": ["table-driven Gallery option conformance test"],
           "next_command_ids": ["C_DEEPWELL_GALLERY"]
         },
         {
@@ -1260,8 +1262,8 @@
     "issue_count": 7,
     "subrow_count": 43,
     "classification_counts": {
-      "source_ready": 19,
-      "needs_source": 4,
+      "source_ready": 20,
+      "needs_source": 3,
       "candidate_required": 11,
       "blocked_evidence": 9
     },
