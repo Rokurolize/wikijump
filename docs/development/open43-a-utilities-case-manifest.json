@@ -1,12 +1,12 @@
 {
   "schema": "wikijump.open43.a_utilities_case_manifest.v1",
   "source": {
-    "wikijump_base": "8e5cb8863fb19b58df7f30817f41632f721ac74a",
-    "wikijump_base_tree": "188aa8c7c99f2e10aa0ed2eaa8fcb51b7d634e1b",
-    "implementation_commit": "4ab7fdd30641f2f47506a69ef7705ea0390db07a",
-    "implementation_tree": "9a48bc4ea1508cf6c0b341ef21b23cc82452eed7",
-    "ftml_pin": "902e72a2ff261b7af42402734b2f8b659e6a294a",
-    "deepwell_cargo_lock_sha256": "cd18d236a4ca3f82a53f7a1b12dc9ce09e7552e8f5f3dac4dbb30139d42e8154"
+    "wikijump_base": "78d83cb920a7ea72626f2bcfc747f1493686900b",
+    "wikijump_base_tree": "925c2b3aa20eb49f59aac6ce7230b3a30af7e30c",
+    "implementation_commit": "72a44f65e74cbbec57f8806ba221cac7653a0866",
+    "implementation_tree": "aa676abdb0dab1eeb4e335fb6d9f90686405fac6",
+    "ftml_pin": "62ebba4efda1f10e82363c23c925061fbe939e49",
+    "deepwell_cargo_lock_sha256": "a3c857b33911bd3420f773057fa08e8693170fd3047e6ea7ff3e127b77bb4dd9"
   },
   "evidence": [
     {
@@ -75,14 +75,17 @@
       "issue": 1038,
       "status": "implemented_unverified",
       "public_test": "deepwell/tests/page.rs::anonymous_page_and_site_utility_modules_match_frozen_safe_states",
-      "result": "ThemePreviewer, ManageSite, Clone, Dashboard, PetitionAdmin, and argument-free SiteGrid now produce their frozen anonymous error or unavailable states through the public page preview seam. The new site-utility consumer is actor-aware for modules where authenticated behavior is not established and never performs a query or mutation."
+      "result": "ThemePreviewer, ManageSite, Clone, Dashboard, PetitionAdmin, and closer-free argument-free SiteGrid produce their frozen anonymous error or unavailable states through the public page preview seam. FTML does not type this exact closer-free SiteGrid source, so its established bounded raw-source path remains documented debt and was not broadened. The site-utility consumer is actor-aware for modules where authenticated behavior is not established and never performs a query or mutation."
     },
     {
       "case_id": "A1038_LITERAL_AND_BODY_OWNERSHIP",
       "issue": 1038,
-      "status": "partial",
-      "public_test": "deepwell/tests/page.rs::site_utility_modules_preserve_literal_and_reject_unsupported_shapes",
-      "result": "The consumer uses the existing literal-region owner index, and unsupported attribute or body-bearing shapes cannot enter the evidenced anonymous consumer. Central execution found that pinned FTML still collapses a body-bearing unknown SiteGrid block, so exact authored-body preservation remains actionable until FTML exposes a typed delayed module node."
+      "status": "implemented_unverified",
+      "public_tests": [
+        "deepwell/tests/page.rs::typed_sitegrid_empty_body_matches_frozen_preview_and_saved_state",
+        "deepwell/tests/page.rs::site_utility_modules_preserve_literal_and_reject_unsupported_shapes"
+      ],
+      "result": "FTML pin 62ebba4efda1f10e82363c23c925061fbe939e49 preserves body-bearing unknown modules as typed name, ordered arguments, and body. Deepwell resolves only a root SiteGrid node whose name is exact, arguments are empty, and trimmed body is empty, through both public PagePreview and saved-page seams. Literal-owned source stays text. Argumented, populated, case-variant, and foreign runtime nodes retain FTML's generic fail-closed output; no raw body scanner or final-HTML recognition was added."
     },
     {
       "case_id": "A1038_AUTHENTICATED_ACTOR_MATRIX",
@@ -100,7 +103,7 @@
       "case_id": "A1038_SITEGRID_POPULATED",
       "issue": 1038,
       "status": "unimplemented",
-      "result": "The argument-free empty error is frozen, but local or remote site identity resolution, random selection, limit semantics, thumbnail resources, descriptions, private-site non-disclosure, and browser hovertips are not. A body-bearing SiteGrid remains unconsumed."
+      "result": "The argument-free empty error and typed empty-body ownership are implemented. Local or remote site identity resolution, random selection, limit semantics, thumbnail resources, descriptions, private-site non-disclosure, and browser hovertips are not observed. A SiteGrid with any argument or non-whitespace body remains on FTML's generic fail-closed path rather than inferring populated behavior from documentation alone."
     },
     {
       "case_id": "A1038_THEMEPREVIEWER_ACTIVE",
@@ -118,6 +121,7 @@
   "central_commands": [
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
     "cargo test --manifest-path deepwell/Cargo.toml --test page anonymous_page_and_site_utility_modules_match_frozen_safe_states -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page typed_sitegrid_empty_body_matches_frozen_preview_and_saved_state -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page site_utility_modules_preserve_literal_and_reject_unsupported_shapes -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page simpletodo_and_sendinvitations_modules_match_live_preview_basics -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page imported_redirect_noredirect_renders_live_error_block -- --exact --nocapture",
@@ -147,7 +151,6 @@
         "authenticated actor matrix",
         "local Clone action contract",
         "populated SiteGrid and active ThemePreviewer evidence",
-        "FTML typed delayed ownership for body-bearing SiteGrid",
         "served browser lifecycle evidence"
       ]
     }
