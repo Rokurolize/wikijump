@@ -1,0 +1,433 @@
+{
+  "schema": "wikijump.open43.a_authoring_closure_audit.v1",
+  "scope": [
+    1061,
+    1063
+  ],
+  "audit_identity": {
+    "audited_at": "2026-08-09",
+    "branch": "agent/open87-pr2/a-authoring-closure-g4",
+    "integration_base": "4411b3c52c4ed029d83070811b7952c0e15d4122",
+    "integration_base_tree": "b4c8eb9f070ea2b3153ce930face6d01d8659a68",
+    "ftml_pin": "62ebba4efda1f10e82363c23c925061fbe939e49",
+    "deepwell_cargo_lock_sha256": "a3c857b33911bd3420f773057fa08e8693170fd3047e6ea7ff3e127b77bb4dd9",
+    "framerail_pnpm_lock_sha256": "3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406",
+    "implementation_ledger_sha256": "fb11c187deab22534122fff1069b01e9b1140a76c7b29ece956faa8544162b18",
+    "live_observations_sha256": "edf1a1773f1e436403fa9bb95ec7f11d72627ed044d0e21f0f9c92edd4106613",
+    "prior_authoring_manifest_sha256": "e39a6f3aef966a99ff821c330f8d714301773e259c5e7ae63ab6561d64d44935",
+    "local_authoring_boundary_sha256": "551e21ad2b123f1f66c5be1938b7aa162ac49a8532baf23510868a7c38bcd722",
+    "referent_table_sha256": "3516400e48fce0ff500f315548700e055886d981ae288f85a4f1df7ae8dfa2ae",
+    "specification_sha256": {
+      "module_css": "552e51bbaf8d199797f30ccfd32577d9a3da918b236fa667f94562f4b01900dd",
+      "collaborative_editing": "d3d3b625be065df8709e979381151869d2459a7cea9dc5a504f32a0553b3e552",
+      "page_editing_history": "37b73b0a101a664e6176094d67589e07c301b4559da3f158b117c7e210df1eb3",
+      "page_parent_relations": "f48ae7eec5ce889f0e98a62a81b94511e2307c7adff66848a2f4f812babd868d"
+    }
+  },
+  "tracker_reads": [
+    {
+      "issue": 1061,
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:44:58Z",
+      "url": "https://github.com/Rokurolize/wikijump/issues/1061",
+      "canonical_read_payload_sha256": "a2cebc17d9da35e3665eaff7c1a0649edbd41077fbaa3b2ff13d40b945b9d4aa"
+    },
+    {
+      "issue": 1063,
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:45:00Z",
+      "url": "https://github.com/Rokurolize/wikijump/issues/1063",
+      "canonical_read_payload_sha256": "f853f1b73c693ab53e4f801d24f912f1ce4d59968d78e47c75e42abe493984ba"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "AUTHORING_STALE_COMPONENT_CASCADE_20260802",
+      "authority": "The local standing reproduction that records stale dependent CSS after a component save and the corrected computed styles only after an article rerender.",
+      "path": "/home/roku/codex-thread-workspaces/theme-localization-20260802-019fbe58/authored-page-cascade.json",
+      "sha256": "2535f85e12b033e523bc72cac3ad0e1cca7a382acc16019b5bf7b7997925c65e"
+    },
+    {
+      "evidence_id": "AUTHORING_LOCALIZATION_RECEIPT_20260802",
+      "authority": "The source, runtime, browser, and local-authoring receipt cited by both issue reports.",
+      "path": "/home/roku/codex-thread-workspaces/theme-localization-20260802-019fbe58/receipt.md",
+      "sha256": "a1d95733beb35132b0a50e34b709f4c65cfd0648c955639a61737b4a5c605c7e"
+    }
+  ],
+  "method": {
+    "tracker_read_canonicalization": "gh issue view <issue> --repo Rokurolize/wikijump --json number,title,state,updatedAt,body,comments,url,labels | jq -cS .",
+    "public_deepwell_seams": [
+      "page_edit",
+      "article_view",
+      "page_get",
+      "page_revision_diff",
+      "user_edit",
+      "user_get"
+    ],
+    "public_framerail_seams": [
+      "POST ?/revisionDiff",
+      "GET /-/settings",
+      "POST /-/settings?/display",
+      "served #breadcrumbs"
+    ],
+    "ordering_rules": [
+      "Use internal records only to arrange or inspect a fixture. Require a public action, JSON-RPC response, article response, or served browser observation for acceptance.",
+      "Preserve the existing site-wide public-content cache fence. Do not replace it with a page-local cache contract during this audit.",
+      "Require page-view authority before revision comparison, and return no source when either revision is missing or hidden.",
+      "Require the authenticated session actor for settings writes and do not accept a client-selected settings owner.",
+      "Do not claim exact legacy authoring DOM from a read-only live observation."
+    ],
+    "source_change_disposition": "No production behavior changed in this lane. The current source already implements the smallest evidenced vertical slices. The remaining gaps are post-commit job execution, missing public regression rows, exact-candidate runtime behavior, browser intervals, or unavailable live authoring evidence. Implementing those from source inspection alone would either overclaim acceptance or guess a legacy contract."
+  },
+  "issues": [
+    {
+      "issue": 1061,
+      "source_ready": [
+        {
+          "case_id": "A1061_COMPONENT_TO_PUBLIC_READ",
+          "status": "implemented_unverified",
+          "implementation_commits": [
+            "f87685dea"
+          ],
+          "public_tests": [
+            "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page"
+          ],
+          "result": "The public test creates the component, dependent, and unrelated page through page_create, edits the component through page_edit, selects the recorded dependent, rerenders it, and proves through article_view that the next public response contains blue and no red CSS. The dependency table assertion is supporting evidence and is not the acceptance endpoint."
+        },
+        {
+          "case_id": "A1061_UNRELATED_PAGE_STAYS_UNCHANGED",
+          "status": "implemented_unverified",
+          "implementation_commits": [
+            "f87685dea"
+          ],
+          "public_tests": [
+            "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page"
+          ],
+          "result": "The same public JSON-RPC test proves that the unrelated page keeps its revision, compiled styles, and compiled timestamp while the dependent page changes."
+        },
+        {
+          "case_id": "A1061_SITE_WIDE_PUBLIC_CACHE_FENCE",
+          "status": "implemented_unverified",
+          "implementation": [
+            "deepwell/src/services/page_revision/service.rs#PageRevisionService::rerender_inner",
+            "deepwell/src/services/context.rs#ServiceContext::defer_public_content_cache_invalidate_site"
+          ],
+          "result": "Dependent rerender retains the established site-wide public-content invalidation action. This audit does not introduce a page-local cache key or cache invalidation path."
+        }
+      ],
+      "needs_source": [
+        {
+          "case_id": "A1061_POST_COMMIT_RERENDER_DISPATCH",
+          "missing_source": "No public regression proves that component-save rerender jobs are dispatched only after commit, leave no queue entry after rollback, and are consumed before the asserted next article read. OutdateService currently iterates dependents and calls its queue path directly, while ServiceContext exposes a distinct deferred post-commit rerender action.",
+          "blocked_by": [
+            "A1061_EXACT_POST_COMMIT_WORKER_CANDIDATE"
+          ]
+        },
+        {
+          "case_id": "A1061_DEPENDENT_DEDUPLICATION_AND_CYCLES",
+          "missing_source": "The current public regression establishes one recorded connection, but it does not prove once-only queueing when the same dependent has multiple supported include connection types or when the dependency graph cycles.",
+          "blocked_by": [
+            "A1061_EXACT_POST_COMMIT_WORKER_CANDIDATE"
+          ]
+        }
+      ],
+      "candidate_required": [
+        {
+          "case_id": "A1061_EXACT_PUBLIC_SLICE_CANDIDATE",
+          "requires": "Run the existing public test on the exact integration candidate and bind the receipt to source, FTML, Cargo.lock, database fixture, and cache identities."
+        },
+        {
+          "case_id": "A1061_EXACT_POST_COMMIT_WORKER_CANDIDATE",
+          "requires": "Add and run a committed transaction and Redis queue regression that covers commit, rollback, duplicate connection, cycle, worker consumption, and the first article_view after consumption. Do not change the site-wide public cache fence while isolating this path."
+        },
+        {
+          "case_id": "A1061_FIRST_RELOAD_INTERVALS",
+          "requires": "Against the exact candidate, save the component in the editable local site and capture the dependent article from navigation start through settled layout. The first reload must contain no old red computed style and must not require an article edit or cache-bypass reload."
+        }
+      ],
+      "blocked_evidence": [
+        {
+          "case_id": "A1061_PRIVATE_DENIED_CROSS_SITE_MATRIX",
+          "missing": "The cited live comparison was read-only, and the frozen local receipt does not seal private, denied, cross-site, deleted, rollback, or concurrent include transitions.",
+          "forbidden_inference": "Do not infer these transitions from the one authorized local component, adopt a denied component, reuse stale authorized CSS silently, or broaden cross-site include authority."
+        },
+        {
+          "case_id": "A1061_PAGE_LOCAL_CACHE_IDENTITY",
+          "missing": "The issue comment proposes a component-revision cache identity, but the integrated architecture uses a site-wide public cache fence and no candidate receipt establishes that a narrower key is required.",
+          "forbidden_inference": "Do not replace the established site-wide fence with page-local invalidation merely to satisfy the older proposed shape. Verify the existing fence on the candidate first."
+        }
+      ],
+      "closure_verdict": "source_candidate_and_evidence_required"
+    },
+    {
+      "issue": 1063,
+      "source_ready": [
+        {
+          "case_id": "A1063_TYPED_REVISION_DIFF",
+          "status": "implemented_unverified",
+          "implementation_commits": [
+            "f87685dea",
+            "f16feab93"
+          ],
+          "public_tests": [
+            "deepwell/tests/page.rs#revision_diff_returns_typed_lines_without_exposing_hidden_source",
+            "framerail/tests/authoring-workflows.test.js#connects a typed revision diff to the history pane without raw HTML"
+          ],
+          "result": "The public page_revision_diff endpoint checks page-view authority, binds both revision lookups to one site and page, returns typed bounded lines, and returns no pair for a missing or hidden source. Framerail passes a trusted request context and renders line.text as escaped Svelte text rather than raw HTML."
+        },
+        {
+          "case_id": "A1063_BREADCRUMB_PUBLIC_PAYLOAD",
+          "status": "implemented_unverified",
+          "implementation_commits": [
+            "f87685dea"
+          ],
+          "public_tests": [
+            "deepwell/tests/page.rs#imported_breadcrumbs_hide_private_and_deleted_ancestors"
+          ],
+          "result": "The public article_view response returns an ordered visible chain and proves that deleted or newly private ancestors do not leak. The test also proves actor-scoped article cache separation after permission revocation."
+        },
+        {
+          "case_id": "A1063_SELF_SETTINGS_WORKFLOW",
+          "status": "implemented_unverified",
+          "implementation_commits": [
+            "f87685dea",
+            "f16feab93"
+          ],
+          "public_tests": [
+            "deepwell/tests/user.rs#display_locale_preferences_round_trip_only_for_the_session_actor",
+            "framerail/tests/authoring-workflows.test.js#normalizes ordered display-language preferences before persistence",
+            "framerail/tests/authoring-workflows.test.js#replaces the settings placeholder with an authenticated persisted form"
+          ],
+          "result": "The Framerail settings route derives its update target from authGetSession, redirects anonymous loaders to /-/login, and keeps this route separate from site administration. Deepwell persists a valid ordered locale list and rejects an empty list or an ordinary cross-actor update; its established platform-staff authority is not exposed as a client-selected fallback by this route."
+        }
+      ],
+      "needs_source": [
+        {
+          "case_id": "A1063_DIFF_FULL_NONDISCLOSURE_REGRESSION",
+          "missing_source": "The endpoint contains a page-view permission check, but the public regression does not cover another page, another site, an unauthorized actor, deleted history, reversed pairs, equal revisions, long lines, or limit failures as independent cases.",
+          "blocked_by": [
+            "A1063_DIFF_BROWSER_WORKFLOW"
+          ]
+        },
+        {
+          "case_id": "A1063_BREADCRUMB_RELATION_BOUNDARIES",
+          "missing_source": "The public regression covers one visible chain plus private and deleted ancestors, but it does not bind parent-none, missing parent, cycle, or rename behavior to named public cases.",
+          "blocked_by": [
+            "A1063_BREADCRUMB_SERVED_CANDIDATE"
+          ]
+        },
+        {
+          "case_id": "A1063_SETTINGS_ACTION_BOUNDARY_REGRESSION",
+          "missing_source": "The source derives the owner from the authenticated session and SvelteKit supplies the origin boundary, but no public server-action regression covers anonymous redirect, missing session, invalid form, successful save, cancel, reload, and cross-actor submission together.",
+          "blocked_by": [
+            "A1063_SETTINGS_BROWSER_WORKFLOW"
+          ]
+        }
+      ],
+      "candidate_required": [
+        {
+          "case_id": "A1063_EXACT_PUBLIC_SOURCE_CANDIDATE",
+          "requires": "Run the four focused Deepwell tests and the focused Framerail Node test on one exact candidate identity."
+        },
+        {
+          "case_id": "A1063_DIFF_BROWSER_WORKFLOW",
+          "requires": "Run the served History workflow for loading, success, fail-closed error, swap, escaped source, long and empty lines, back and forward navigation, and focus. Record the request actor and confirm that hidden source is never rendered."
+        },
+        {
+          "case_id": "A1063_BREADCRUMB_SERVED_CANDIDATE",
+          "requires": "Run parent-none, one, chain, private, missing, deleted, cycle, and rename fixtures through article_view and the served #breadcrumbs DOM. Compare links, titles, order, separators, cache identity, initial paint, and settled output."
+        },
+        {
+          "case_id": "A1063_SETTINGS_BROWSER_WORKFLOW",
+          "requires": "Run anonymous redirect and authenticated invalid, save, cancel, reload, CSRF rejection, and cross-actor controls through the served settings route. Confirm persistence through a fresh page load rather than client state alone."
+        }
+      ],
+      "blocked_evidence": [
+        {
+          "case_id": "A1063_LEGACY_AUTHORING_PRESENTATION",
+          "missing": "The live site remained read-only. No authoritative capture defines exact Wikidot revision-diff or user-settings DOM, messages, keyboard behavior, errors, or intermediate frames.",
+          "forbidden_inference": "Do not label the accessible Wikijump diff and settings UI exact legacy DOM or fabricate a Wikidot authoring presentation from the page-history documentation."
+        },
+        {
+          "case_id": "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY",
+          "missing": "The feature specification establishes breadcrumb navigation, but no sealed live matrix covers missing, deleted, private, cyclic, renamed, or cross-site parent relations.",
+          "forbidden_inference": "Do not recognize a captured page chain or expose a hidden ancestor to preserve a visually complete path."
+        }
+      ],
+      "closure_verdict": "source_candidate_and_evidence_required"
+    }
+  ],
+  "cache_and_authority_audit": {
+    "cache_fence": "PageRevisionService rerender continues to call defer_public_content_cache_invalidate_site. No page-local invalidation was added.",
+    "component_queue_observation": "OutdateService enumerates recorded include and component connections, then calls its queue path. This is not accepted as proof of transaction-commit ordering, rollback cleanup, once-only dispatch, or worker completion.",
+    "revision_diff_authority": "page_revision_diff resolves the page inside the submitted site, checks request-actor page-view permission, binds both revisions to the same site and page, and rejects hidden source before loading text.",
+    "settings_authority": "The Framerail action derives the target user from authGetSession and Deepwell enforces self or platform staff. The public issue slice claims self-only behavior and does not treat staff authority as a client fallback."
+  },
+  "ledger_reconciliation": {
+    "global_ledger_is_not_a_closure_receipt": true,
+    "observed_statuses": [
+      {
+        "feature": "module-css",
+        "ledger_status": "implemented",
+        "audit_disposition": "The module renderer is implemented, but this ledger row does not prove component-save dependency invalidation or worker completion for issue 1061."
+      },
+      {
+        "feature": "page-editing-history",
+        "ledger_status": "pending",
+        "audit_disposition": "Typed diff source exists, but the full permission and served browser acceptance matrix remains incomplete."
+      },
+      {
+        "feature": "collaborative-editing",
+        "ledger_status": "pending",
+        "audit_disposition": "The authoring slices in this audit do not complete the broad collaboration feature."
+      },
+      {
+        "feature": "page-parent-relations",
+        "ledger_status": "pending",
+        "audit_disposition": "A public permission-filtered breadcrumb payload exists, but the relation and served DOM matrix remains incomplete."
+      }
+    ],
+    "rule": "Do not close either issue or upgrade a broad ledger row from this audit alone. Every source-ready row needs central validation, every needs-source row needs a public regression and any required production change, and every candidate row needs an exact identity-bound receipt."
+  },
+  "central_commands": [
+    "cargo fmt --manifest-path deepwell/Cargo.toml --check",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page component_css_edit_refreshes_only_the_recorded_dependent_page -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page revision_diff_returns_typed_lines_without_exposing_hidden_source -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page imported_breadcrumbs_hide_private_and_deleted_ancestors -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test user display_locale_preferences_round_trip_only_for_the_session_actor -- --exact --nocapture",
+    "node --test framerail/tests/authoring-workflows.test.js",
+    "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
+    "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
+    "node scripts/generate-wikidot-specifications.mjs --check",
+    "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
+    "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scpaiueouiuiuiui --rpc-url http://127.0.0.1:2747/jsonrpc"
+  ],
+  "runtime_commands": [
+    {
+      "case_ids": [
+        "A1061_COMPONENT_TO_PUBLIC_READ",
+        "A1061_UNRELATED_PAGE_STAYS_UNCHANGED"
+      ],
+      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page component_css_edit_refreshes_only_the_recorded_dependent_page -- --exact --nocapture",
+      "status": "existing_public_test",
+      "limitation": "This test calls the rerender service explicitly. It does not prove post-commit queue or worker execution."
+    },
+    {
+      "case_ids": [
+        "A1061_POST_COMMIT_RERENDER_DISPATCH",
+        "A1061_DEPENDENT_DEDUPLICATION_AND_CYCLES"
+      ],
+      "command": "cargo test --manifest-path deepwell/Cargo.toml --test job_queue component_css_save_dispatches_one_post_commit_dependent_rerender -- --exact --nocapture",
+      "status": "candidate_test_missing",
+      "prerequisite": "Add the named public transaction and queue regression before running this command."
+    },
+    {
+      "case_ids": [
+        "A1063_TYPED_REVISION_DIFF",
+        "A1063_BREADCRUMB_PUBLIC_PAYLOAD",
+        "A1063_SELF_SETTINGS_WORKFLOW"
+      ],
+      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page revision_diff_returns_typed_lines_without_exposing_hidden_source -- --exact --nocapture && cargo test --manifest-path deepwell/Cargo.toml --test page imported_breadcrumbs_hide_private_and_deleted_ancestors -- --exact --nocapture && cargo test --manifest-path deepwell/Cargo.toml --test user display_locale_preferences_round_trip_only_for_the_session_actor -- --exact --nocapture",
+      "status": "existing_public_tests"
+    }
+  ],
+  "browser_commands": [
+    {
+      "case_ids": [
+        "A1061_FIRST_RELOAD_INTERVALS"
+      ],
+      "command": "pnpm --dir framerail test tests/page-workflows.spec.ts --grep 'component CSS save changes the dependent article on the first reload'",
+      "status": "candidate_test_missing",
+      "prerequisite": "Add the named exact-runtime Playwright case. The existing fixture-server suite cannot prove the real rerender worker or initial stale paint."
+    },
+    {
+      "case_ids": [
+        "A1063_DIFF_BROWSER_WORKFLOW"
+      ],
+      "command": "pnpm --dir framerail test tests/page-workflows.spec.ts --grep 'revision diff is escaped and preserves loading error swap navigation and focus'",
+      "status": "candidate_test_missing",
+      "prerequisite": "Add the named served History workflow case with an actor-aware Deepwell fixture."
+    },
+    {
+      "case_ids": [
+        "A1063_BREADCRUMB_SERVED_CANDIDATE"
+      ],
+      "command": "pnpm --dir framerail test tests/page-workflows.spec.ts --grep 'breadcrumbs render permission-filtered ancestors'",
+      "status": "candidate_test_missing",
+      "prerequisite": "Add the named served DOM case for every relation state before running this command."
+    },
+    {
+      "case_ids": [
+        "A1063_SETTINGS_BROWSER_WORKFLOW"
+      ],
+      "command": "pnpm --dir framerail test tests/page-workflows.spec.ts --grep 'user settings redirect anonymous actors and persist self locale preferences'",
+      "status": "candidate_test_missing",
+      "prerequisite": "Add the named authenticated browser case with session, CSRF, save, cancel, and reload controls."
+    }
+  ],
+  "lane_validation": {
+    "audit_structure": {
+      "status": "pass",
+      "scope_exact_once": true,
+      "case_ids_unique": true,
+      "command_groups_present": [
+        "central",
+        "runtime",
+        "browser"
+      ]
+    },
+    "cargo_runtime_browser": {
+      "status": "not_run_by_delegation",
+      "owner": "central candidate, runtime, and browser lanes"
+    },
+    "direct_rustfmt": {
+      "command": "rustfmt --edition 2024 --check deepwell/tests/page.rs deepwell/tests/user.rs deepwell/src/endpoints/page_revision.rs deepwell/src/services/page_revision/service.rs deepwell/src/services/outdate.rs deepwell/src/services/context.rs",
+      "status": "pass"
+    },
+    "framerail_focused_node": {
+      "command": "node --test framerail/tests/authoring-workflows.test.js",
+      "failed": 0,
+      "passed": 3,
+      "skipped": 0,
+      "status": "pass",
+      "dependency_identity": "The dedicated worktree had no node_modules. The passing retry temporarily reused the dependency tree whose framerail/pnpm-lock.yaml SHA-256 matched 3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406, then removed the temporary reference."
+    },
+    "implementation_ledger_check": {
+      "command": "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
+      "status": "pass",
+      "validated_entries": 210
+    },
+    "specification_generation_check": {
+      "command": "node scripts/generate-wikidot-specifications.mjs --check",
+      "status": "pass",
+      "validated_specifications": 210,
+      "validated_corpus_pages": 1806
+    },
+    "corpus_pinned_literals": {
+      "command": "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
+      "status": "failed_on_pre_existing_unrelated_findings",
+      "scanned_rust_files": 141,
+      "captured_pages": 77,
+      "findings": [
+        {
+          "path": "deepwell/src/services/render/runtime_modules.rs",
+          "lines": [
+            1846,
+            1894
+          ],
+          "literal": "AnonymousNotificationsUnsubscribe"
+        },
+        {
+          "path": "deepwell/src/services/render/runtime_modules.rs",
+          "lines": [
+            1858,
+            1895
+          ],
+          "literal": "MembershipEmailInvitation"
+        }
+      ],
+      "authoring_result": "No production or render source changed in this lane. The strict scanner reported four findings in the pre-existing runtime module dispatch and no authoring-specific finding. It also printed 41 short notices for review."
+    }
+  },
+  "closure_rule": "This lane closes neither issue. Issue 1061 requires an exact post-commit worker receipt and first-reload browser intervals in addition to the current explicit-rerender slice. Issue 1063 requires the missing public regression rows and served diff, breadcrumb, and settings browser receipts. Exact Wikidot authoring presentation remains unimplemented until authoritative live evidence exists."
+}
