@@ -8,10 +8,10 @@
     "blocked_evidence": "No safe live wire contract or durable local domain authority exists. The behavior must remain inert or unavailable rather than be guessed."
   },
   "source": {
-    "integration_base": "4db51544cddf2e9d9d90ff27180d2f1c7ccc26c4",
-    "integration_base_tree": "2f7c0ec846ba5cbc7bf8a196d8ffd9bc8c41b46b",
-    "audited_source_commit": "417e31af0de7a362faba92766fce0cd8f60da835",
-    "audited_source_tree": "61d10989825b27818109cd14f92c5edee71bcac2",
+    "integration_base": "25f19ee3ce76bed6c4b0a83723bda41209ffe3ed",
+    "integration_base_tree": "abeaf9f7209ad8e44196c5a27d1b77a5558eac87",
+    "audited_source_commit": "557795249d98326177d1d9dc7ba6160431c239d2",
+    "audited_source_tree": "2da8a606cbc59efb410d84abebcbc49ff9a5f3dd",
     "ftml_revision": "62ebba4efda1f10e82363c23c925061fbe939e49",
     "deepwell_cargo_lock_sha256": "a3c857b33911bd3420f773057fa08e8693170fd3047e6ea7ff3e127b77bb4dd9",
     "framerail_pnpm_lock_sha256": "3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406",
@@ -531,7 +531,7 @@
             "deepwell/src/services/legacy_action.rs",
             "deepwell/tests/page.rs::wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent"
           ],
-          "result": "The browser submits only revision and registry coordinates. The endpoint authenticates the request actor and uses the existing page edit permission, locked current page, revision check, audit, and cache invalidation path."
+          "result": "The browser submits only revision and registry coordinates. The endpoint authenticates the request actor and uses the existing page edit permission, transaction-locked current page, PageLock bypass authority, revision check, audit, and cache invalidation path."
         },
         {
           "case_id": "A1041_FIXED_BROWSER_ACTIONS",
@@ -542,16 +542,19 @@
             "framerail/tests/wikidot-legacy-action-request.test.js"
           ],
           "result": "The WeakMap binding preserves served DOM and rejects extra, missing, forged, or unsupported sidecars."
-        }
-      ],
-      "needs_source": [
+        },
         {
           "case_id": "A1041_SET_TAGS_DENIAL_MATRIX_TESTS",
           "acceptance": "Explicitly prove locked, deleted, private, route-mismatched, actor-mismatched, and cross-site set-tags requests leave revision, tags, audit, and cache state unchanged.",
           "owner": "deepwell-public-integration-tests",
-          "result": "The production path composes existing permission, page lock, deletion, route, actor, site, and revision owners, but the focused public test covers forged, first, idempotent, and stale cases only. Add a table-driven denial matrix before closure."
+          "evidence": [
+            "deepwell/src/services/legacy_action.rs",
+            "deepwell/tests/page.rs::wikidot_set_tags_denials_preserve_public_page_state"
+          ],
+          "result": "The table-driven public mutation matrix rejects all six identities. Each case compares administrator-visible tags, current revision identity and count, updated/deleted timestamps, and compiled HTML before and after; the page.edit audit count is a secondary no-side-effect check. The locked case reuses PageLockService::can_user_bypass_lock rather than adding a second lock policy. Rust execution remains assigned to the central Cargo broker."
         }
       ],
+      "needs_source": [],
       "candidate_required": [
         {
           "case_id": "A1041_CENTRAL_REGISTRY_AND_MUTATION",
@@ -584,6 +587,7 @@
         "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::legacy_actions::tests -- --nocapture",
         "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars -- --exact --nocapture",
         "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent -- --exact --nocapture",
+        "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_set_tags_denials_preserve_public_page_state -- --exact --nocapture",
         "node --test framerail/tests/wikidot-legacy-actions.test.js framerail/tests/wikidot-legacy-action-request.test.js"
       ]
     },
@@ -676,6 +680,30 @@
       "status": "pass"
     },
     {
+      "command": "rustfmt --edition 2024 --check deepwell/src/services/legacy_action.rs deepwell/tests/page.rs",
+      "status": "pass"
+    },
+    {
+      "command": "node scripts/generate-wikidot-specifications.mjs --check",
+      "status": "pass",
+      "result": "Validated 210 specifications and 1806 corpus pages."
+    },
+    {
+      "command": "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
+      "status": "pass",
+      "result": "Validated 210 implementation ledger entries."
+    },
+    {
+      "command": "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/focused-uncovered/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl deepwell/src/services/legacy_action.rs",
+      "status": "pass",
+      "result": "1 Rust file scanned against 1867 captured pages; no corpus-pinned literals."
+    },
+    {
+      "command": "/home/roku/.agents/skills/autoreview/scripts/autoreview --mode local --prompt <A1041-set-tags-denial-scope-baseline>",
+      "status": "pass",
+      "result": "Source review was clean with no accepted/actionable findings and overall patch correct 0.97. Audit-amendment review was clean with no accepted/actionable findings and overall patch correct 0.98."
+    },
+    {
       "command": "cargo test",
       "status": "not_run_by_lane_contract",
       "result": "The central Cargo broker owns the shared Deepwell target."
@@ -688,6 +716,7 @@
     "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::membership_actions::tests -- --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_set_tags_denials_preserve_public_page_state -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test vote_authorization vote_mutations_require_route_target_view_permission -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page public_membership_module_states_are_distinct_and_opaque -- --exact --nocapture",
