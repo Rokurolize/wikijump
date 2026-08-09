@@ -28,15 +28,34 @@
       "implementation_ledger_sha256": "31a5ef2658648ca0e133c9a2f4af7e85193547c979a308cbaa9828af61c661da",
       "catalog_sha256": "29b7dd89226b06029ec1af200066d6fa1bf822d76862072b73e2b49c857c038f",
       "audited_at": "2026-08-09"
+    },
+    {
+      "scope": "Issue 1034 anonymous read-only FrontForum and forum route, query, and Ajax vertical slice",
+      "integration_base": "b21a91941fc13ec4a5a722c6cb51f06c5e6c9472",
+      "integration_base_tree": "e67cd23a0469c9d849ac6ec34c3a1154bd17f156",
+      "branch": "agent/open87-pr2/q-forum-evidence-g9",
+      "source_commit": "d4e001a240371abd7dadfcc4570c03a27dd46638",
+      "source_tree": "a52c40e595c5a4ff93265becb846da856bac1cfc",
+      "live_observations_sha256": "30c8aad7263df82cda0c7b68a21ae8ef517d4cbc4c916cdaf76e8809ac2496ad",
+      "implementation_ledger_sha256": "c3d6272547600636efd886a39dfdc5234aa42161bb26effd61373f4809408be7",
+      "catalog_sha256": "ba6dfa1d11de881bb718502be4a6c46a929c114082c418c7238eca3013b87ef7",
+      "pagination_artifact_sha256": "c419482631993c96087281b00027ec1c6ebbefecff2f76f1dff58bdfc7d6db13",
+      "pagination_external_manifest_sha256": "fbb3ed48518950fa37b3df2f30677872322a1e9dfcfc29b2cbf7cf226bb84667",
+      "pagination_external_sha256s_sha256": "5495db3d6d01675ed4ff66ad502e4599bab81d27ed78eb3dd18c1912c0796c40",
+      "audited_at": "2026-08-09"
     }
   ],
   "method": {
     "public_deepwell_seams": [
       "wikidot_page_preview",
-      "page_view"
+      "page_view",
+      "wikidot_forum_module"
     ],
     "public_framerail_seams": [
-      "POST /ajax-module-connector.php"
+      "POST /ajax-module-connector.php",
+      "GET /forum/start[/hidden/show]",
+      "GET /forum/c-<id>/<name>",
+      "GET /forum/t-<id>/<name>"
     ],
     "ordering_rules": [
       "Apply site, actor, group, category, deletion, and page-view authority before sorting, counts, limits, or pagination.",
@@ -45,7 +64,7 @@
       "Do not treat page-discussion thread provisioning as authority to create a forum post or a standalone forum thread."
     ],
     "tracker_read_canonicalization": "gh issue view <issue> --repo Rokurolize/wikijump --json number,title,state,updatedAt,body,comments,url | jq -cS .",
-    "source_change_disposition": "The original lane established the forum-mini behavior and public case bindings. This amendment implements only the newly observed current RecentThreads placeholder contract. It also seals anonymous read-only FrontForum, Comments, forum route, and Ajax evidence, but leaves those broader production slices actionable because the evidence does not define their full selection, actor, browser lifecycle, or mutation contracts."
+    "source_change_disposition": "The original lane established the forum-mini behavior and public case bindings. The first amendment implements the observed current RecentThreads placeholder contract. The second implements only the sealed anonymous read-only default FrontForum, ForumStart, category, thread header, thread posts, and RecentPosts first-page contracts through public Deepwell, Ajax, and served-route seams. Comments, write modules, later-page controls, non-anonymous actors, and browser lifecycle remain explicit gaps."
   },
   "tracker_reads": [
     {
@@ -93,6 +112,18 @@
       "actor": "anonymous",
       "mutation": false,
       "authority": "Anonymous PagePreview, served GET, and read-only Ajax observations for the exact current RecentThreads placeholder and nonterminal FrontForum, Comments, category, thread, and recent-post surfaces."
+    },
+    {
+      "evidence_id": "FORUM_Q1034_CATEGORY_PAGINATION_LIVE_20260809",
+      "path": "install/local/wikidot-verification/artifacts/forum-q1034-pagination-live-20260809.json",
+      "sha256": "c419482631993c96087281b00027ec1c6ebbefecff2f76f1dff58bdfc7d6db13",
+      "external_manifest_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/manifest.json",
+      "external_manifest_sha256": "fbb3ed48518950fa37b3df2f30677872322a1e9dfcfc29b2cbf7cf226bb84667",
+      "external_sha256s_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/SHA256SUMS",
+      "external_sha256s_sha256": "5495db3d6d01675ed4ff66ad502e4599bab81d27ed78eb3dd18c1912c0796c40",
+      "actor": "anonymous",
+      "mutation": false,
+      "authority": "Anonymous read-only Ajax observations on a 201-thread category establish the 20-thread page size and the row counts for full, final partial, and out-of-range pages."
     }
   ],
   "mutation_boundary_audit": {
@@ -221,19 +252,20 @@
         {
           "case_id": "Q1034_RECENTPOSTS_PERMISSION_FIRST_READ_MODEL",
           "status": "implemented_unverified",
-          "evidence_id": "MODULE_OWN_LINE_LIVE_REFERENCES",
+          "evidence_id": "FORUM_Q1034_READONLY_LIVE_20260809",
           "public_tests": [
             "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
           ],
-          "result": "Public preview and saved page_view cover empty and populated output, exact post DOM, routes, compiled content, newest-first order, and two pages. Hidden groups and private page discussions are removed before ordering, counts, and pagination."
+          "result": "Public preview, saved page_view, and the read-only forum RPC cover empty and populated output, exact post DOM, routes, compiled content, newest-first order, and the observed first Ajax page. Hidden groups and private page discussions are removed before ordering and limits; unobserved later Ajax pages fail closed."
         },
         {
           "case_id": "Q1034_UNSUPPORTED_FORUM_AJAX_FAILS_CLOSED",
           "status": "implemented_unverified",
           "public_tests": [
-            "framerail/tests/ajax-module-connector.test.js#fails closed for unsupported modules and duplicate fields"
+            "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
+            "framerail/tests/ajax-module-connector.test.js#passes read-only forum missing states through and rejects unsealed shapes"
           ],
-          "result": "Framerail returns a stable not_ok envelope for forum/ForumStartModule instead of routing the request to ListPages or a mutation helper."
+          "result": "Framerail dispatches only the exact read-only forum module and scalar-parameter allowlist. Unknown fields, unsupported modules, Comments, and ForumNewThread return a stable not_ok envelope and cannot reach a mutation helper."
         },
         {
           "case_id": "Q1034_RECENTTHREADS_GENERAL_READ_MODEL",
@@ -244,24 +276,44 @@
             "deepwell/src/services/render/url_arguments.rs#forum_modules_require_runtime_rendering_and_only_recent_posts_reads_page"
           ],
           "result": "Anonymous PagePreview on sandbox-for-codex, scp-wiki, and community returns the exact current text later. The implementation and public test cover own-line recognition, observed argument insensitivity, ASCII-case-insensitive module names, closing-body consumption, inline and raw ownership, and the RecentThreadsX lookalike boundary."
+        },
+        {
+          "case_id": "Q1034_POPULATED_FORUM_SURFACES",
+          "status": "implemented_unverified",
+          "evidence_id": "FORUM_Q1034_READONLY_LIVE_20260809",
+          "public_tests": [
+            "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+            "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries"
+          ],
+          "result": "The default FrontForum single-category read model and the ForumStart, category, thread header, first thread-post page, and RecentPosts first-page read models are implemented through public Deepwell seams. Visibility is applied before counts and limits, a saturated 1001-row candidate scan fails closed, and category page 1 emits exactly 20 rows. Advanced FrontForum selectors, Comments, later-page controls, actors, and writes remain nonterminal."
+        },
+        {
+          "case_id": "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX",
+          "status": "implemented_unverified",
+          "evidence_id": "FORUM_Q1034_READONLY_LIVE_20260809",
+          "public_tests": [
+            "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+            "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
+            "framerail/tests/ajax-module-connector.test.js#passes read-only forum missing states through and rejects unsealed shapes"
+          ],
+          "result": "The exact read-only ForumStart, category, thread header, thread posts, and RecentPosts module allowlist now reaches wikidot_forum_module with the observed Wikidot envelope. The served /forum/start, /forum/start/hidden/show, /forum/c-<id>/<name>, and /forum/t-<id>/<name> routes use the same read model and preserve the observed missing states."
         }
       ],
       "needs_source": [
         {
-          "case_id": "Q1034_POPULATED_FORUM_SURFACES",
-          "missing_source": "Comments, FrontForum, ForumCategory, ForumNewThread, and ForumThread still implement only their observed no-context branches. The anonymous baseline now establishes FrontForum populated and invalid-category output, Comments forward and reverse reads, and populated, empty, and missing category and thread reads, but it does not establish complete selection, pagination, actor, or mutation behavior.",
+          "case_id": "Q1034_COMMENTS_PAGE_THREAD_READ_MODEL",
+          "missing_source": "ForumCommentsListModule remains unsupported. The live read-only artifact seals forward and reverse Comments reads, but the local implementation still lacks a public resolver that maps an authorized page to its discussion thread, selects visible posts in the observed direction and page, and returns no_page without exposing a page-existence or permission oracle.",
           "evidence_id": "FORUM_Q1034_READONLY_LIVE_20260809",
-          "actionable_readonly_slice": "Implement the observed FrontForum single-category limit, Comments page-thread read, and forum category and thread read models through public Deepwell seams without exposing mutation controls.",
+          "actionable_readonly_slice": "Add only the observed anonymous page-discussion read path after the page-to-thread and page-view authority are explicit. Do not add comment creation, editing, deletion, or token handling.",
           "blocked_by": [
-            "Q1034_POPULATED_READ_MODEL_COVERAGE",
-            "Q1034_FORUM_MUTATION_AUTHORITY"
+            "Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX"
           ]
         },
         {
-          "case_id": "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX",
-          "missing_source": "The category and thread routes render untranslated placeholders, /forum/start reaches the invalid-route fallback, and the observed read-only forum Ajax modules remain unsupported. The exact public URL, moduleName, parameter, success, no_category, no_thread, and no_page wire shapes are now sealed and actionable.",
-          "evidence_id": "FORUM_Q1034_READONLY_LIVE_20260809",
-          "actionable_readonly_slice": "Implement ForumStartModule, ForumViewCategoryModule, ForumViewThreadModule, ForumViewThreadPostsModule, ForumCommentsListModule, and ForumRecentPostsListModule read paths plus their observed public routes. Keep all write modules unsupported.",
+          "case_id": "Q1034_FORUM_LATER_PAGE_AND_PAGER_READ_MODEL",
+          "missing_source": "ForumViewCategoryModule intentionally accepts only page 1 and ForumRecentPostsListModule intentionally accepts only its observed first Ajax page. Category evidence now fixes the 20-row page boundary and captures later-page row counts, but exact pager DOM, href and replacement lifecycle are not implemented; RecentPosts later-page Ajax behavior is still unobserved.",
+          "evidence_id": "FORUM_Q1034_CATEGORY_PAGINATION_LIVE_20260809",
+          "actionable_readonly_slice": "Implement category page 2 and later only together with the captured pager contract. Keep later RecentPosts Ajax pages fail closed until their live request and response behavior is sealed.",
           "blocked_by": [
             "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE"
           ]
@@ -270,11 +322,11 @@
       "candidate_required": [
         {
           "case_id": "Q1034_EXACT_CANDIDATE_PUBLIC_READ_MODELS",
-          "requires": "Run all three public Deepwell tests against the exact merged candidate. Bind each receipt to the anonymous request actor and fixture identities."
+          "requires": "Run all four public Deepwell tests against the exact merged candidate, including wikidot_forum_module. Bind each receipt to the anonymous request actor and fixture identities and prove permission-before-count and permission-before-limit behavior plus the 20-row first-page boundary."
         },
         {
-          "case_id": "Q1034_EXACT_CANDIDATE_FORUM_AJAX_FAIL_CLOSED",
-          "requires": "Run the focused Ajax connector Node test and one exact-candidate HTTP request. Confirm that unsupported forum modules cannot reach ListPages, page creation, or page-discussion mutation."
+          "case_id": "Q1034_EXACT_CANDIDATE_FORUM_ROUTES_AND_AJAX",
+          "requires": "Run the focused 19-case Ajax connector Node test, Framerail type/build validation, and exact-candidate GET and POST requests for ForumStart, category, thread, thread posts, RecentPosts, and missing states. Confirm that Comments, ForumNewThread, unknown fields, and unsupported modules remain fail closed and cannot reach mutation authority."
         },
         {
           "case_id": "Q1034_EXACT_CANDIDATE_RECENTTHREADS",
@@ -284,7 +336,7 @@
       "blocked_evidence": [
         {
           "case_id": "Q1034_POPULATED_READ_MODEL_COVERAGE",
-          "missing": "The sealed anonymous baseline does not define FrontForum feeds, offsets, multiple categories, custom templates, relative-link rewriting, all pagination boundaries, private visibility, deletion, or complete Comments and ForumNewThread states.",
+          "missing": "The default anonymous FrontForum and core forum reads are implemented. The sealed baseline still does not define FrontForum feeds, offsets, multiple categories, custom templates, relative-link rewriting, private visibility, deletion, or complete ForumNewThread states.",
           "forbidden_inference": "Do not recognize captured page data, treat one category as the general selector contract, or infer actor and mutation behavior from anonymous reads."
         },
         {
@@ -294,7 +346,7 @@
         },
         {
           "case_id": "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE",
-          "missing": "The HTTP and connector wire contract is sealed, but no browser evidence covers category changes, pagination, history, focus, failed requests, intermediate paint, and settled output on the exact candidate.",
+          "missing": "The HTTP and connector read-only wire contract is implemented, and category live evidence establishes 20 rows per page. Exact pager DOM, later-page replacement, category changes, history, focus, failed requests, intermediate paint, and settled output remain unimplemented or unverified on the exact candidate; RecentPosts later-page Ajax behavior remains unobserved.",
           "forbidden_inference": "Do not claim browser parity from a final Ajax body or conceal loading and failure differences through normalization."
         },
         {
@@ -329,7 +381,7 @@
     },
     "direct_rustfmt": {
       "status": "pass",
-      "command": "rustfmt --edition 2024 deepwell/src/services/render/forum_modules.rs deepwell/src/services/render/url_arguments.rs deepwell/tests/page.rs"
+      "command": "rustfmt --edition 2024 --check deepwell/src/api.rs deepwell/src/endpoints/page.rs deepwell/src/services/render/forum_front.rs deepwell/src/services/render/forum_modules.rs deepwell/src/services/render/forum_read_routes.rs deepwell/src/services/render/mod.rs deepwell/src/services/render/url_arguments.rs deepwell/tests/page.rs"
     },
     "q1034_readonly_evidence": {
       "status": "pass",
@@ -340,11 +392,27 @@
       "external_manifest_sha256": "10bd8aca6854fd54db4659b6c449548fad7ec730779fca70e3a495b59a0d97f5",
       "external_sha256s_sha256": "a9f5453a596371509e9aa5e9a7f2cc45f68ee839f3a447a750c49f954510f909",
       "external_sha256_check": "pass",
-      "resolved_source_case": "Q1034_RECENTTHREADS_GENERAL_READ_MODEL",
-      "actionable_source_cases": [
+      "resolved_source_cases": [
+        "Q1034_RECENTTHREADS_GENERAL_READ_MODEL",
         "Q1034_POPULATED_FORUM_SURFACES",
         "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX"
+      ],
+      "actionable_source_cases": [
+        "Q1034_COMMENTS_PAGE_THREAD_READ_MODEL",
+        "Q1034_FORUM_LATER_PAGE_AND_PAGER_READ_MODEL"
       ]
+    },
+    "q1034_category_pagination_evidence": {
+      "status": "pass",
+      "actor": "anonymous",
+      "mutation": false,
+      "repository_artifact_case_count": 4,
+      "repository_artifact_sha256": "c419482631993c96087281b00027ec1c6ebbefecff2f76f1dff58bdfc7d6db13",
+      "external_manifest_sha256": "fbb3ed48518950fa37b3df2f30677872322a1e9dfcfc29b2cbf7cf226bb84667",
+      "external_sha256s_sha256": "5495db3d6d01675ed4ff66ad502e4599bab81d27ed78eb3dd18c1912c0796c40",
+      "external_sha256_check": "pass",
+      "observed_page_size": 20,
+      "implementation_scope": "page 1 only; page >1 fails closed"
     },
     "sealed_case_id_reconciliation": {
       "status": "pass",
@@ -356,7 +424,7 @@
     "framerail_focused_node": {
       "status": "pass",
       "command": "node --test framerail/tests/ajax-module-connector.test.js",
-      "passed": 17,
+      "passed": 19,
       "failed": 0,
       "skipped": 0
     },
@@ -369,11 +437,26 @@
       "validated_specifications": 210,
       "validated_corpus_pages": 1806
     },
+    "autoreview": {
+      "status": "pass",
+      "mode": "branch",
+      "base": "b21a91941fc13ec4a5a722c6cb51f06c5e6c9472",
+      "engine": "codex",
+      "model": "gpt-5.6-sol",
+      "patch_correct_probability": 0.93,
+      "actionable_findings": 0,
+      "secret_scan": "pass",
+      "review_focus": "leaf ownership, permission-before-limit, bounded scan saturation, 20-row page boundary, RecentPosts first-page boundary, Ajax allowlist and envelope, and route missing states"
+    },
     "corpus_pinned_literals": {
       "status": "failed_on_pre_existing_unrelated_findings",
-      "scanned_rust_files": 141,
+      "scanned_rust_files": 143,
       "captured_pages": 101,
-      "lane_changed_production_paths": [],
+      "lane_changed_production_paths": [
+        "deepwell/src/services/render/forum_front.rs",
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_read_routes.rs"
+      ],
       "findings": [
         {
           "path": "deepwell/src/services/render/runtime_modules.rs",
@@ -392,7 +475,7 @@
           "literal": "MembershipEmailInvitation"
         }
       ],
-      "forum_result": "The scanner reported no finding in forum_mini.rs or forum_modules.rs. It reported short notices for forum module names, which do not fail the strict gate."
+      "forum_result": "The scanner reported no corpus-pinned finding in forum_front.rs, forum_modules.rs, or forum_read_routes.rs. It reported only short review notices for established forum module names in forum_modules.rs; the strict failure remains the two pre-existing unrelated runtime_modules.rs literals."
     }
   },
   "central_commands": [
@@ -403,11 +486,13 @@
     "cargo test --manifest-path deepwell/Cargo.toml --test page recent_threads_matches_live_placeholder_and_owner_boundaries -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml services::render::url_arguments::tests::forum_modules_require_runtime_rendering_and_only_recent_posts_reads_page -- --exact --nocapture",
     "node --test framerail/tests/ajax-module-connector.test.js",
+    "pnpm --dir framerail check",
+    "pnpm --dir framerail build",
     "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
     "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
     "node scripts/generate-wikidot-specifications.mjs --check",
     "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/forum-mini-live-reference.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
     "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scp-wiki --rpc-url http://127.0.0.1:2747/jsonrpc"
   ],
-  "closure_rule": "This lane does not close either issue. RecentThreads is source-ready but still needs central Rust validation and an exact-candidate receipt. The populated forum and dedicated route and Ajax rows remain actionable source work with explicit residual evidence blockers. Mutation, actor, and browser lifecycle rows remain unimplemented until authoritative evidence and matching local authority define a safe vertical slice."
+  "closure_rule": "This lane does not close either issue. RecentThreads, the default anonymous FrontForum and forum read models, and the dedicated read-only routes and Ajax allowlist are source-ready but still need central Rust, Framerail, exact-candidate HTTP, and browser receipts. Comments, later-page controls, mutation, non-anonymous actors, and the full browser lifecycle remain explicit source or evidence gaps until authoritative behavior and matching local authority define a safe vertical slice."
 }

@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-08-09",
-  "catalog_sha256": "29b7dd89226b06029ec1af200066d6fa1bf822d76862072b73e2b49c857c038f",
+  "catalog_sha256": "ba6dfa1d11de881bb718502be4a6c46a929c114082c418c7238eca3013b87ef7",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -1452,27 +1452,43 @@
       "status": "in_progress",
       "confirmed_public_seams": [
         "Anonymous live Wikidot edit/PagePreviewModule",
-        "Deepwell public wikidot_page_preview rendering"
+        "Anonymous live Wikidot Ajax Module Connector and served forum route",
+        "Deepwell public wikidot_forum_module rendering",
+        "Framerail POST /ajax-module-connector.php and GET /forum/c-<id>/<name>"
       ],
       "tests": [
         {
           "path": "deepwell/tests/page.rs",
           "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
           "scope": "exact missing-category output and source-owner behavior"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "scope": "first-page category summary, permission-before-count thread table, exact 20-row first-page boundary, later-page fail-closed behavior, routes, and no_category wire status"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches the sealed read-only forum modules with Wikidot metadata",
+          "scope": "exact ForumViewCategoryModule dispatch parameters and response metadata"
         }
       ],
       "implementation_files": [
         "deepwell/src/services/render/forum_modules.rs",
-        "deepwell/src/services/render/runtime_modules.rs"
+        "deepwell/src/services/render/forum_read_routes.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/routes/forum/c-[category=id]/[...name]/+page.server.ts"
       ],
       "documentation_evidence": [
         "specifications/module/module-forumcategory.md"
       ],
       "live_oracle_evidence": [
-        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumcategory"
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumcategory",
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Populated category routes, thread selection and pagination, actor visibility, and browser interaction remain unimplemented."
+        "The observed 20-row first-page boundary is implemented. Later category pages, exact pager DOM and transitions, full actor and category-permission behavior, and mutation controls remain unimplemented or unverified."
       ]
     },
     "module-forumnewthread": {
@@ -1506,55 +1522,81 @@
       "status": "in_progress",
       "confirmed_public_seams": [
         "Anonymous live Wikidot edit/PagePreviewModule",
-        "Deepwell public wikidot_page_preview rendering"
+        "Anonymous live Wikidot Ajax Module Connector and served forum route",
+        "Deepwell public wikidot_page_preview and wikidot_forum_module rendering",
+        "Framerail POST /ajax-module-connector.php and GET /forum/start[/hidden/show]"
       ],
       "tests": [
         {
           "path": "deepwell/tests/page.rs",
           "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
           "scope": "visible and empty groups/categories, exact table DOM, escaping, ordering, counts, latest post, hidden groups, and private page discussions"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches the sealed read-only forum modules with Wikidot metadata",
+          "scope": "ForumStartModule hidden parameter and Wikidot Ajax response metadata"
         }
       ],
       "implementation_files": [
         "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_read_routes.rs",
         "deepwell/src/services/render/forum_visibility.rs",
-        "deepwell/src/services/render/runtime_modules.rs"
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/routes/forum/start/[...extra]/+page.server.ts"
       ],
       "documentation_evidence": [
         "specifications/module/module-forumstart.md"
       ],
       "live_oracle_evidence": [
-        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumstart"
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumstart",
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Dedicated /forum/start browser routing, show-hidden behavior, authenticated actor matrix, imported-user avatar settling, and refresh after mutations remain unverified."
+        "Authenticated actor behavior, imported-user avatar settling, browser navigation and intermediate states, and refresh after mutations remain unverified."
       ]
     },
     "module-forumthread": {
       "status": "in_progress",
       "confirmed_public_seams": [
         "Anonymous live Wikidot edit/PagePreviewModule",
-        "Deepwell public wikidot_page_preview rendering"
+        "Anonymous live Wikidot Ajax Module Connector and served forum route",
+        "Deepwell public wikidot_forum_module rendering",
+        "Framerail POST /ajax-module-connector.php and GET /forum/t-<id>/<name>"
       ],
       "tests": [
         {
           "path": "deepwell/tests/page.rs",
           "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
           "scope": "exact missing-thread output and source-owner behavior"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "scope": "permission-filtered thread header, first post page, compiled bodies, and no_thread wire status"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches the sealed read-only forum modules with Wikidot metadata",
+          "scope": "ForumViewThreadModule and ForumViewThreadPostsModule dispatch parameters and response metadata"
         }
       ],
       "implementation_files": [
         "deepwell/src/services/render/forum_modules.rs",
-        "deepwell/src/services/render/runtime_modules.rs"
+        "deepwell/src/services/render/forum_read_routes.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/routes/forum/t-[thread=id]/[...name]/+page.server.ts"
       ],
       "documentation_evidence": [
         "specifications/module/module-forumthread.md"
       ],
       "live_oracle_evidence": [
-        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumthread"
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumthread",
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Populated thread routes, nested replies, pagination, actor visibility, post actions, mutations, and browser interaction remain unimplemented."
+        "Post pages beyond the observed first page, nested-reply presentation, full actor visibility, post actions and mutations, and browser interaction remain unimplemented or unverified."
       ]
     },
     "module-frontforum": {
@@ -1568,20 +1610,27 @@
           "path": "deepwell/tests/page.rs",
           "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
           "scope": "exact missing-category output, unobserved-argument fail-closed behavior, and source ownership"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "scope": "default item DOM, category and limit selection, permission-before-limit, comments count, and missing category"
         }
       ],
       "implementation_files": [
+        "deepwell/src/services/render/forum_front.rs",
         "deepwell/src/services/render/forum_modules.rs",
-        "deepwell/src/services/render/runtime_modules.rs"
+        "deepwell/src/services/render/forum_visibility.rs"
       ],
       "documentation_evidence": [
         "specifications/module/module-frontforum.md"
       ],
       "live_oracle_evidence": [
-        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-frontforum"
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-frontforum",
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Populated category selection, custom-body variables, feed output, limits, offsets, permission matrix, and relative-link behavior remain unimplemented."
+        "Multiple categories, custom-body variables, feed output, offsets, fixRelativeLinks, full actor visibility, deletion, and browser behavior remain unimplemented or unverified."
       ]
     },
     "module-frontspecialmini": {
@@ -2480,29 +2529,39 @@
       "status": "in_progress",
       "confirmed_public_seams": [
         "Anonymous live Wikidot edit/PagePreviewModule",
-        "Deepwell public saved-page page_view rendering"
+        "Anonymous live Wikidot Ajax Module Connector",
+        "Deepwell public saved-page page_view and wikidot_forum_module rendering",
+        "Framerail POST /ajax-module-connector.php"
       ],
       "tests": [
         {
           "path": "deepwell/tests/page.rs",
           "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
           "scope": "exact container and post DOM, visible category options, compiled content, ordering, 20-row pagination, hidden groups, and private page discussions"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches the sealed read-only forum modules with Wikidot metadata",
+          "scope": "ForumRecentPostsListModule first-page and categoryId dispatch, later-page fail-closed behavior, and Wikidot response metadata"
         }
       ],
       "implementation_files": [
         "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_read_routes.rs",
         "deepwell/src/services/render/forum_visibility.rs",
         "deepwell/src/services/render/runtime_modules.rs",
-        "deepwell/src/services/render/url_arguments.rs"
+        "deepwell/src/services/render/url_arguments.rs",
+        "framerail/src/lib/server/ajax-module-connector.js"
       ],
       "documentation_evidence": [
         "specifications/module/module-recentposts.md"
       ],
       "live_oracle_evidence": [
-        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-recentposts"
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-recentposts",
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "The category selector Ajax request, beyond-candidate pagination, dedicated /forum/recent-posts browser route, full actor matrix, exact middle/final pager geometry, signatures, post actions, and mutation-driven refresh remain unimplemented or unverified."
+        "The Ajax read model is limited to the observed first page. Later pages, beyond-candidate pagination, a dedicated recent-posts route, full actor behavior, exact middle and final pager geometry, signatures, post actions, browser transitions, and mutation-driven refresh remain unimplemented or unverified."
       ]
     },
     "module-recentthreads": {

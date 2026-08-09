@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 65,
+    "observation_count": 66,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -1841,7 +1841,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809"
+      ]
     },
     {
       "id": "module-forumnewthread",
@@ -1889,7 +1891,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809"
+      ]
     },
     {
       "id": "module-forumthread",
@@ -1913,7 +1917,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809"
+      ]
     },
     {
       "id": "module-frontforum",
@@ -1937,7 +1943,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809"
+      ]
     },
     {
       "id": "module-frontspecialmini",
@@ -2726,7 +2734,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809"
+      ]
     },
     {
       "id": "module-recentthreads",
