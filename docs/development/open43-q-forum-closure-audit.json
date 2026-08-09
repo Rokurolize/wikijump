@@ -108,6 +108,10 @@
       "catalog_sha256": "6506a7710947d8e17b2170ce3ab2f720f1b345845bc3ffc789fb366d332a2f77",
       "readonly_artifact_sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
       "external_sha256s_sha256": "225897681df10c1e8c307053056849990fc32ebe10e47f2ab9012685bda709ff",
+      "multi_populated_empty_evidence_sha256": "a6b74dd9b0f99a1fc7d54ebfda7d6274fa7318dcd73ff1b5075712851399d37c",
+      "multi_empty_populated_evidence_sha256": "b19ba05477ca6d74ecad3ecfedb6b07ba62eb42e2b6632e5e0110ccfbbaf34fc",
+      "multi_all_missing_evidence_sha256": "05eaebfa3f62a6067cf75b12a7932262318730485f80e8d7622e7c0903e08506",
+      "multi_malformed_evidence_sha256": "55b9f18f883b03ec0b549b8234a860a0f4c7aafa2aad42ccb124d73eeb9f246b",
       "audited_at": "2026-08-10"
     }
   ],
@@ -685,6 +689,16 @@
         "findings": 0,
         "short_notices": 11,
         "disposition": "All notices are established short forum module names or scalar vocabulary; no captured page content was recognized."
+      },
+      "autoreview": {
+        "status": "pass",
+        "mode": "branch",
+        "base": "eee723e8be459cbe890b739b6f833dfde6435c9f",
+        "engine": "codex",
+        "model": "gpt-5.6-sol",
+        "patch_correct_probability": 0.98,
+        "actionable_findings": 0,
+        "secret_scan": "pass"
       },
       "cargo_runtime_browser": "not_run_by_delegation",
       "central_rust_command": "cargo test --manifest-path deepwell/Cargo.toml --test page forum_start_and_recent_posts_filter_before_counts_order_and_pagination -- --exact --nocapture"
