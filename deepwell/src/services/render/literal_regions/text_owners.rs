@@ -175,6 +175,11 @@ pub(super) fn collect_monospace_owner_ranges_with_text_tokens(
         .collect()
 }
 
+pub(super) fn collect_monospace_owner_ranges(source: &str) -> Vec<Range<usize>> {
+    let text_tokens = TextTokenIndex::new(source);
+    collect_monospace_owner_ranges_with_text_tokens(source, &text_tokens)
+}
+
 fn merge_candidate_streams(
     links: Vec<ParserOwnerCandidate>,
     colors: Vec<ParserOwnerCandidate>,

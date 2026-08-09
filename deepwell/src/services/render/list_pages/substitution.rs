@@ -93,9 +93,10 @@ use super::delayed::{ListPagesGeneratedSlot, ListPagesRuntimeTextRange};
 use super::parents::ListPagesParentDisplay;
 use super::presentation::{
     format_list_pages_created_at, is_list_pages_hidden_tag, is_list_pages_visible_tag,
-    list_pages_created_by_unix, protect_list_pages_generated_html,
-    render_list_pages_snapshot_user, render_list_pages_snapshot_wikidot_user,
-    render_list_pages_tags, render_list_pages_wikidot_user,
+    list_pages_created_by_unix, list_pages_tag_target_prefix,
+    protect_list_pages_generated_html, render_list_pages_snapshot_user,
+    render_list_pages_snapshot_wikidot_user, render_list_pages_tags,
+    render_list_pages_wikidot_user,
 };
 use super::preview::{
     list_pages_plain_text, list_pages_preview, list_pages_preview_length,
@@ -254,6 +255,7 @@ pub(in crate::services::render) struct ListPagesArguments {
     pub(in crate::services::render) count_pages_explicit_limit: Option<u64>,
     pub(in crate::services::render) count_pages_per_page: Option<u64>,
     pub(in crate::services::render) url_attr_prefix: Option<Cow<'static, str>>,
+    pub(in crate::services::render) tag_target: Option<Cow<'static, str>>,
     pub(in crate::services::render) offset: u32,
     pub(in crate::services::render) offset_origin: ListPagesOffsetOrigin,
     pub(in crate::services::render) offset_beyond_render_window: Option<u64>,
@@ -378,7 +380,7 @@ pub(in crate::services::render) fn exact_name_list_pages_batch_key(
             return None;
         }
         match argument.key.to_ascii_lowercase().as_str() {
-            "name" | "fullname" | "full_slug" | "fullslug" => {
+            "name" | "fullname" => {
                 name_arguments += 1;
             }
             "category" => {}
@@ -471,16 +473,19 @@ pub(in crate::services::render) fn list_pages_static_parent_fullname_with_url(
     let arguments = wikidot_list_pages_arguments(head);
     let url_attr_prefix = arguments
         .iter()
-        .filter(|argument| argument.key.eq_ignore_ascii_case("urlattrprefix"))
-        .map(|argument| argument.value.trim())
+        .filter(|argument| {
+            argument.key == "urlAttrPrefix"
+                && argument.op == "="
+                && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
+        })
+        .map(|argument| argument.value)
         .rfind(|prefix| !prefix.is_empty());
     let value = arguments
         .into_iter()
-        .filter(|argument| argument.key.eq_ignore_ascii_case("parent"))
         .filter(|argument| {
-            argument.value_kind != WikidotModuleArgumentValueKind::Bare
-                || !(argument.value.starts_with("&quot;")
-                    && argument.value.ends_with("&quot;"))
+            argument.key == "parent"
+                && argument.op == "="
+                && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
         })
         .map(|argument| argument.value.trim())
         .next_back()
@@ -522,8 +527,12 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     let head_arguments = wikidot_list_pages_arguments(head);
     let url_attr_prefix = head_arguments
         .iter()
-        .filter(|argument| argument.key.eq_ignore_ascii_case("urlattrprefix"))
-        .map(|argument| argument.value.trim())
+        .filter(|argument| {
+            argument.key == "urlAttrPrefix"
+                && argument.op == "="
+                && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
+        })
+        .map(|argument| argument.value)
         .rfind(|prefix| !prefix.is_empty())
         .map(|prefix| Cow::Owned(prefix.to_owned()));
 
@@ -550,13 +559,16 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     let mut limit = None;
     let mut count_pages_explicit_limit = None;
     let mut count_pages_per_page = None;
+    let mut tag_target = None;
     let mut offset = 0;
     let mut offset_origin = ListPagesOffsetOrigin::Static;
     let mut offset_beyond_render_window = None;
     let mut exclude_current_page = false;
+    let mut skip_current_page = false;
     let mut range_current_page_only = false;
     let mut range_exclude_current_page = false;
     let mut relative_range = None;
+    let mut range_displaced_limit: Option<Option<u64>> = None;
     let mut page_type = PageTypeSelector::Normal;
     let mut page_parent = PageParentSelector::All;
     let mut static_parent_fullname = None;
@@ -607,8 +619,6 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 | "tag"
                 | "name"
                 | "fullname"
-                | "full_slug"
-                | "fullslug"
                 | "limit"
                 | "offset"
                 | "perpage"
@@ -637,8 +647,6 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 | "tag"
                 | "name"
                 | "fullname"
-                | "full_slug"
-                | "fullslug"
                 | "limit"
                 | "offset"
                 | "perPage"
@@ -656,10 +664,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 | "rssOnly"
                 | "prependLine"
                 | "appendLine"
-        ) && (double_quoted_assignment
-            || matches!(raw_key, "appendLine")
-                && argument.op == "="
-                && argument.value_kind == WikidotModuleArgumentValueKind::SingleQuoted);
+        ) && double_quoted_assignment;
         if exact_grammar_family && !exact_grammar_token
             || matches!(key.as_str(), "createdat" | "updatedat")
         {
@@ -720,7 +725,10 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 let mut empty_url_fallback = false;
                 let value = match resolve_url_selector(
                     value,
-                    url.value_for_list_pages_argument(url_attr_prefix.as_deref(), "tag"),
+                    url.value_for_list_pages_argument(
+                        url_attr_prefix.as_deref(),
+                        raw_key,
+                    ),
                 ) {
                     UrlSelector::Static(resolved) => {
                         empty_url_fallback = is_dynamic_list_pages_value(value)
@@ -810,7 +818,10 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 let resolved_url_tag;
                 let value = match resolve_url_selector(
                     value,
-                    url.value_for_list_pages_argument(url_attr_prefix.as_deref(), "tag"),
+                    url.value_for_list_pages_argument(
+                        url_attr_prefix.as_deref(),
+                        raw_key,
+                    ),
                 ) {
                     UrlSelector::Static(value) => value,
                     UrlSelector::Resolved(tag) => {
@@ -949,6 +960,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 rss_path.limit = nonempty_list_pages_feed_value(value);
                 if let Some(parsed) = parse_list_pages_numeric_argument(value) {
                     limit = Some(parsed);
+                    range_displaced_limit = None;
                     count_pages_explicit_limit = Some(parsed);
                 }
             }
@@ -1064,6 +1076,9 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 page_type = parse_list_pages_page_type(value)?;
             }
             "parent" => {
+                if raw_key != "parent" || !double_quoted_assignment {
+                    continue;
+                }
                 let resolved_url_parent;
                 let value = match resolve_url_selector(
                     value,
@@ -1111,8 +1126,12 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 append_line = Some(value.to_owned());
             }
             "order" => {
+                if raw_key != "order" || !double_quoted_assignment {
+                    continue;
+                }
                 if value.is_empty() {
                     rss_path.order = None;
+                    order = None;
                     continue;
                 }
                 let resolved_url_order;
@@ -1164,7 +1183,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 };
                 reverse = matches!(value.to_ascii_lowercase().as_str(), "yes" | "true");
             }
-            "name" | "fullname" | "full_slug" | "fullslug" => {
+            "name" | "fullname" => {
                 let resolved_url_name;
                 let value = match resolve_url_selector(
                     value,
@@ -1187,6 +1206,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 let value = exact_raw_color_list_pages_name(value).unwrap_or(value);
                 let selector = if value == "=" {
                     limit = Some(1);
+                    range_displaced_limit = None;
                     Some(ListPagesNameSelector::CurrentPage)
                 } else if !value.is_empty() && !is_dynamic_list_pages_value(value) {
                     let value = wikidot_list_pages_name_slug(value);
@@ -1274,12 +1294,16 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     UrlSelector::Dropped => continue,
                 };
                 rss_path.range = nonempty_list_pages_feed_value(value);
+                if let Some(displaced_limit) = range_displaced_limit.take() {
+                    limit = displaced_limit;
+                }
                 range_current_page_only = false;
                 range_exclude_current_page = false;
                 relative_range = None;
                 match value {
                     "." => {
                         range_current_page_only = true;
+                        range_displaced_limit = Some(limit);
                         limit = Some(1);
                     }
                     "others" | "other" => {
@@ -1297,9 +1321,31 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 }
             }
             "skipcurrent" | "skip_current" => {
-                if matches!(value.to_ascii_lowercase().as_str(), "yes" | "true") {
-                    exclude_current_page = true;
+                if raw_key != "skipCurrent" || !double_quoted_assignment {
+                    continue;
                 }
+                unsupported_count_pages_filter |= is_dynamic_list_pages_value(value);
+                let resolved_url_skip_current;
+                let value = match resolve_url_selector(
+                    value,
+                    url.value_for_list_pages_argument(
+                        url_attr_prefix.as_deref(),
+                        raw_key,
+                    ),
+                ) {
+                    UrlSelector::Static(value) => value,
+                    UrlSelector::Resolved(resolved) => {
+                        unsupported_count_pages_filter = true;
+                        resolved_url_skip_current = resolved;
+                        resolved_url_skip_current.as_str()
+                    }
+                    UrlSelector::Dropped => {
+                        skip_current_page = false;
+                        continue;
+                    }
+                };
+                skip_current_page =
+                    matches!(value.trim().to_ascii_lowercase().as_str(), "yes" | "true");
             }
             "wrapper" => {
                 wrapper = parse_list_pages_false_only_boolean_argument(raw_value);
@@ -1465,6 +1511,13 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 }
             }
             "link_to" | "linkto" => {
+                if raw_key != "link_to" || !double_quoted_assignment {
+                    continue;
+                }
+                link_to.clear();
+                if value.is_empty() {
+                    continue;
+                }
                 unsupported_count_pages_filter = true;
                 let resolved_url_link;
                 let value = match resolve_url_selector(
@@ -1495,11 +1548,17 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 normalize(&mut target);
                 link_to.push(Cow::Owned(target));
             }
-            // Live Wikidot accepts this deprecated argument, but the
-            // controlled renderer leaves %%tags%% plain. Preserve that no-op
-            // instead of applying the legacy documentation's link target.
-            "tagtarget" | "tag_target" => {}
+            "tagtarget" | "tag_target" => {
+                if raw_key != "tagTarget" || !double_quoted_assignment {
+                    continue;
+                }
+                tag_target = (!argument.value.is_empty())
+                    .then(|| Cow::Owned(argument.value.to_owned()));
+            }
             "urlattrprefix" => {
+                if raw_key != "urlAttrPrefix" || !double_quoted_assignment {
+                    continue;
+                }
                 unsupported_count_pages_filter = true;
             }
             // Live Wikidot accepts this legacy, non-data-form argument as a
@@ -1507,6 +1566,34 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
             // selector branch below.
             "form" => {}
             _ if raw_key.starts_with('_') => {
+                if argument.value_kind != WikidotModuleArgumentValueKind::DoubleQuoted
+                    || !matches!(argument.op, "=" | "!=")
+                {
+                    continue;
+                }
+                if argument.value.is_empty() {
+                    continue;
+                }
+                unsupported_count_pages_filter |= is_dynamic_list_pages_value(value);
+                let resolved_url_field;
+                let value = match resolve_url_selector(
+                    value,
+                    url.value_for_list_pages_argument(
+                        url_attr_prefix.as_deref(),
+                        raw_key,
+                    ),
+                ) {
+                    UrlSelector::Static(value) => value,
+                    UrlSelector::Resolved(resolved) => {
+                        unsupported_count_pages_filter = true;
+                        resolved_url_field = resolved;
+                        resolved_url_field.as_str()
+                    }
+                    UrlSelector::Dropped => {
+                        unsupported_count_pages_filter = true;
+                        continue;
+                    }
+                };
                 let value = static_list_pages_selector(
                     value,
                     &mut unsupported_count_pages_filter,
@@ -1514,7 +1601,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 let field = raw_key
                     .strip_prefix('_')
                     .expect("data form selector should start with an underscore");
-                if field.is_empty() || is_dynamic_list_pages_value(value) {
+                if is_dynamic_list_pages_value(value) {
                     return None;
                 }
                 data_form_fields.push(DataFormSelector {
@@ -1547,6 +1634,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     }
     current_page_only |= range_current_page_only;
     exclude_current_page |= range_exclude_current_page;
+    exclude_current_page |= skip_current_page;
     if same_visible_tags
         && default_tags.is_empty()
         && all_tags.is_empty()
@@ -1581,6 +1669,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
         count_pages_explicit_limit,
         count_pages_per_page,
         url_attr_prefix,
+        tag_target,
         offset,
         offset_origin,
         offset_beyond_render_window,
@@ -1904,12 +1993,12 @@ pub(in crate::services::render) fn parse_list_pages_order(
 
     let property = match value.to_ascii_lowercase().as_str() {
         "name" | "slug" => OrderProperty::PageSlug,
-        "fullname" | "fullslug" | "full_slug" => OrderProperty::FullSlug,
+        "fullname" => OrderProperty::FullSlug,
         "title" => OrderProperty::Title,
         "alt_title" | "alttitle" => OrderProperty::AltTitle,
         "created_by" | "createdby" => OrderProperty::CreatedBy,
-        "created_at" | "createdat" | "date" | "datecreated" => OrderProperty::CreatedAt,
-        "updated_at" | "updatedat" | "updated" | "dateedited" => OrderProperty::UpdatedAt,
+        "created_at" | "date" | "datecreated" => OrderProperty::CreatedAt,
+        "updated_at" | "updated" | "dateedited" => OrderProperty::UpdatedAt,
         "size" | "pagelength" => OrderProperty::Size,
         "rating" | "score" => OrderProperty::Score,
         "votes" => OrderProperty::Votes,
@@ -1985,6 +2074,7 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) site: &'a str,
     pub(in crate::services::render) site_title: &'a str,
     pub(in crate::services::render) category: &'a str,
+    pub(in crate::services::render) tag_target: Option<&'a str>,
     pub(in crate::services::render) user_displays: &'a BTreeMap<i64, WikidotUserDisplay>,
     pub(in crate::services::render) snapshot_displays:
         &'a BTreeMap<i64, ListPagesSnapshotDisplay>,
@@ -1993,6 +2083,7 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) page_wikitext: Option<&'a str>,
     pub(in crate::services::render) page_rendered_content: Option<&'a str>,
     pub(in crate::services::render) page_rendered_summary: Option<&'a str>,
+    pub(in crate::services::render) page_rendered_summary_is_block: bool,
     pub(in crate::services::render) default_summary_first_paragraph: bool,
     pub(in crate::services::render) fallback_link_titles:
         Option<&'a WikidotCompatLinkTitleMap>,
@@ -2105,6 +2196,14 @@ fn push_list_pages_rendered_fragment(
     html: &str,
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
+    push_list_pages_rendered_fragment_with_mode(html, compat_html, false)
+}
+
+fn push_list_pages_rendered_fragment_with_mode(
+    html: &str,
+    compat_html: &mut CompatHtmlFragments,
+    force_block: bool,
+) -> String {
     // The secondary Ad/AdSense handlers emit this exact empty paragraph as a
     // block marker in an ordinary page render.  Inside a ListPages content
     // value Wikidot leaves the surrounding paragraph boundary in place and
@@ -2122,10 +2221,11 @@ fn push_list_pages_rendered_fragment(
     // block so it can close the surrounding row paragraph; other runtime
     // module errors may contain nested trusted markers and must stay inline
     // until their own fragment stack is restored.
-    if (list_pages_rendered_fragment_has_block_root(&rendered)
-        && rendered.contains(
-            r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#,
-        ))
+    if force_block
+        || (list_pages_rendered_fragment_has_block_root(&rendered)
+            && rendered.contains(
+                r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#,
+            ))
         || has_html_block
     {
         compat_html.push_block_html(rendered)
@@ -2515,7 +2615,13 @@ pub(super) fn substitute_list_pages_variables_inner(
                 section
             }
         },
-        |html| push_list_pages_rendered_fragment(html, compat_html),
+        |html| {
+            push_list_pages_rendered_fragment_with_mode(
+                html,
+                compat_html,
+                context.page_rendered_summary_is_block,
+            )
+        },
     );
     let first_paragraph = context.page_rendered_first_paragraph.map_or_else(
         || {
@@ -2687,7 +2793,8 @@ pub(super) fn substitute_list_pages_variables_inner(
                 "tags" => tags_text.clone(),
                 "tags_linked" | "tagslinked"
                     if generated_slots.is_some()
-                        && captures.name("format").is_none() =>
+                        && captures.name("format").is_none()
+                        && context.tag_target.is_none() =>
                 {
                     let marker = captures[0].to_owned();
                     generated_slots
@@ -2711,9 +2818,19 @@ pub(super) fn substitute_list_pages_variables_inner(
                     marker
                 }
                 "tags_linked" | "tagslinked" => {
+                    let tag_target_prefix;
+                    let path_prefix = match captures.name("format") {
+                        Some(format) => Some(format.as_str()),
+                        None => {
+                            tag_target_prefix = context
+                                .tag_target
+                                .and_then(list_pages_tag_target_prefix);
+                            tag_target_prefix.as_deref()
+                        }
+                    };
                     render_list_pages_tags(
                         &visible_tags,
-                        captures.name("format").map(|matched| matched.as_str()),
+                        path_prefix,
                         context.render_generated_html,
                         compat_html,
                     )
@@ -2957,7 +3074,7 @@ mod tests {
 
     use super::{
         list_pages_rendered_fragment_has_html_block, list_pages_rendered_inline_fragment,
-        push_list_pages_rendered_fragment,
+        push_list_pages_rendered_fragment, push_list_pages_rendered_fragment_with_mode,
     };
 
     #[test]
@@ -3008,6 +3125,22 @@ mod tests {
         assert!(!list_pages_rendered_fragment_has_html_block(
             r#"<p><iframe src="/page/html/hash-1" class="other-iframe"></iframe></p>"#,
         ));
+    }
+
+    #[test]
+    fn forced_block_rendered_fragment_escapes_the_outer_row_paragraph() {
+        let mut compat_html = CompatHtmlFragments::new("");
+        let marker = push_list_pages_rendered_fragment_with_mode(
+            r#"<div style="text-align: right;"><div class="page-rate-widget-box"></div></div><p>body</p>"#,
+            &mut compat_html,
+            true,
+        );
+
+        let restored = compat_html.restore(&format!("<p>{marker}</p>"));
+        assert_eq!(
+            restored,
+            r#"<div style="text-align: right;"><div class="page-rate-widget-box"></div></div><p>body</p>"#,
+        );
     }
 
     #[test]

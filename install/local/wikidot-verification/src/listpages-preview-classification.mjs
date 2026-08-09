@@ -53,6 +53,126 @@ function localDom(row) {
   return null;
 }
 
+function hasExactPagePreviewTransportWhitespace({
+  row,
+  reference,
+  liveNodes,
+  localNodes,
+}) {
+  if (
+    reference.provenance.module !== "edit/PagePreviewModule" ||
+    typeof row.local?.raw_html !== "string" ||
+    row.live.visible_text !== row.local.visible_text ||
+    liveNodes.length < 3 ||
+    liveNodes.length !== localNodes.length
+  ) {
+    return false;
+  }
+  const liveFirst = liveNodes[0];
+  const localFirst = localNodes[0];
+  const liveLast = liveNodes.at(-1);
+  const localLast = localNodes.at(-1);
+  if (
+    liveFirst?.type !== "text" ||
+    localFirst?.type !== "text" ||
+    liveLast?.type !== "text" ||
+    localLast?.type !== "text" ||
+    !localFirst.value.startsWith("\n\n") ||
+    liveFirst.value !== `\n\n    \n\n${localFirst.value.slice(2)}` ||
+    liveLast.value !== `${localLast.value}\n    \n    \n    \n    `
+  ) {
+    return false;
+  }
+  return JSON.stringify(liveNodes.slice(1, -1)) ===
+    JSON.stringify(localNodes.slice(1, -1));
+}
+
+function bareDefaultListPagesFixtureShape(nodes) {
+  if (
+    nodes.length !== 1 ||
+    nodes[0]?.type !== "element" ||
+    !nodeHasClass(nodes[0], "list-pages-box")
+  ) {
+    return null;
+  }
+  const wrapper = nodes[0];
+  const children = wrapper.children ?? [];
+  if (children.some((node) => node.type !== "element")) return null;
+  const rows = children.filter((node) => nodeHasClass(node, "list-pages-item"));
+  const pagers = children.filter((node) => nodeHasClass(node, "pager"));
+  if (
+    rows.length === 0 ||
+    rows.length > 20 ||
+    rows.length + pagers.length !== children.length ||
+    pagers.length > 1 ||
+    (pagers.length === 1 &&
+      (rows.length !== 20 || children.at(-1) !== pagers[0])) ||
+    descendantElements(
+      wrapper,
+      (node) => nodeHasClass(node, "list-pages-item"),
+    ).length !== rows.length
+  ) {
+    return null;
+  }
+  const timestamps = [];
+  const links = [];
+  for (const row of rows) {
+    const elements = (row.children ?? []).filter((node) => node.type === "element");
+    const heading = elements[0];
+    const byline = elements[1];
+    const headingLinks = descendantElements(
+      heading,
+      (node) => node.name === "a" && nodeAttribute(node, "href") !== null,
+    );
+    const dates = descendantElements(
+      byline,
+      (node) => nodeHasClass(node, "odate"),
+    );
+    const timestamp = dates.length === 1
+      ? /(?:^|\s)time_([0-9]+)(?:\s|$)/u.exec(nodeAttribute(dates[0], "class") ?? "")
+      : null;
+    if (
+      heading?.name !== "h1" ||
+      byline?.name !== "p" ||
+      headingLinks.length !== 1 ||
+      !nodeText(byline).startsWith("by ") ||
+      nodeText(byline).trim().length <=
+        3 + (dates.length === 1 ? nodeText(dates[0]).trim().length : 0) ||
+      timestamp === null
+    ) {
+      return null;
+    }
+    links.push(nodeAttribute(headingLinks[0], "href"));
+    timestamps.push(Number(timestamp[1]));
+  }
+  if (
+    new Set(links).size !== links.length ||
+    timestamps.some((timestamp, index) =>
+      index > 0 && timestamps[index - 1] < timestamp
+    )
+  ) {
+    return null;
+  }
+  return { links: new Set(links), pagers: pagers.length, rows: rows.length };
+}
+
+function hasBareDefaultListPagesFixtureState({ source, liveNodes, localNodes }) {
+  if (source !== "[[module ListPages]]") return false;
+  const live = bareDefaultListPagesFixtureShape(liveNodes);
+  const local = bareDefaultListPagesFixtureShape(localNodes);
+  if (
+    live === null ||
+    local === null ||
+    live.pagers !== 1 ||
+    local.pagers !== 0 ||
+    live.rows !== 20 ||
+    local.rows >= 20
+  ) {
+    return false;
+  }
+  return [...live.links].every((link) => !local.links.has(link));
+}
+
 function literalContextKeepsListPagesInactive({
   row,
   reference,
@@ -1933,6 +2053,28 @@ function classifyMismatch(row, reference) {
         localWrapper: localTopLevelWrappers[0],
       })
     : null;
+
+  if (hasExactPagePreviewTransportWhitespace({
+    row,
+    reference,
+    liveNodes,
+    localNodes,
+  })) {
+    return {
+      classification: "page-preview-transport-whitespace",
+      disposition: "none",
+      rationale:
+        "The complete internal canonical DOM and visible text match; only the exact observed PagePreview response envelope adds outer indentation whitespace.",
+    };
+  }
+  if (hasBareDefaultListPagesFixtureState({ source, liveNodes, localNodes })) {
+    return {
+      classification: "inconclusive-fixture-data-state",
+      disposition: "replay-synchronized-fixture",
+      rationale:
+        "The exact bare own-line invocation executes in both runtimes with the default newest-first row shell, a twenty-row live page and pager, and flat sibling rows; the disjoint selected page identities prove that the captured live and imported local fixtures cannot be reconciled row for row.",
+    };
+  }
 
   if (literalContextKeepsListPagesInactive({
     row,

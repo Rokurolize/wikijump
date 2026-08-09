@@ -92,6 +92,8 @@ pub(in crate::services::render) fn render_list_pages_tags(
     render_as_html: bool,
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
+    let whitespace_target =
+        path_prefix.is_some_and(|prefix| !prefix.is_empty() && prefix.trim().is_empty());
     let path_prefix = path_prefix
         .filter(|prefix| !prefix.trim().is_empty())
         .unwrap_or("/system:page-tags/tag/");
@@ -99,6 +101,14 @@ pub(in crate::services::render) fn render_list_pages_tags(
         .map(|tag| {
             let href = list_pages_tag_link_href(path_prefix, tag);
             let label = compat_html.push_plain(tag);
+            if whitespace_target {
+                let linked_label = format!("/tag/{tag} {label}");
+                return if render_as_html {
+                    format!(r#"<a href="/">{linked_label}</a>"#)
+                } else {
+                    format!("[/ {linked_label}]")
+                };
+            }
             if render_as_html {
                 format!(
                     r#"<a href="{href}">{label}</a>"#,
@@ -110,6 +120,24 @@ pub(in crate::services::render) fn render_list_pages_tags(
         })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+pub(in crate::services::render) fn list_pages_tag_target_prefix(
+    target: &str,
+) -> Option<String> {
+    if target.is_empty() {
+        None
+    } else if target.trim().is_empty() {
+        Some(target.to_owned())
+    } else if target.starts_with("http://") || target.starts_with("https://") {
+        Some(format!("{target}/tag/"))
+    } else if target.starts_with("//") {
+        Some(format!("/{}/tag/", target.trim_start_matches('/')))
+    } else if target.starts_with(['/', '.']) {
+        Some(format!("{target}/tag/"))
+    } else {
+        Some(format!("/{target}/tag/"))
+    }
 }
 
 pub(in crate::services::render) fn list_pages_tag_link_href(
@@ -192,8 +220,8 @@ pub(in crate::services::render) fn render_list_pages_wikidot_user(
         concat!(
             r#"<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">"#,
             r#"<a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
-            r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
-            r#"alt="{name_attr}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})" />"#,
+            r#"<img class="small" src="https://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
+            r#"alt="{name_attr}" style="background-image:url(https://www.wikidot.com/userkarma.php?u={user_id})" />"#,
             r#"</a><a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">{name_text}</a>"#,
             r#"</span>"#
         ),
@@ -383,9 +411,27 @@ pub(in crate::services::render) fn protect_list_pages_generated_html(
 #[cfg(test)]
 mod tests {
     use super::{
-        WikidotUserDisplay, render_list_pages_wikidot_feed_user,
-        render_list_pages_wikidot_user,
+        WikidotUserDisplay, list_pages_tag_target_prefix,
+        render_list_pages_wikidot_feed_user, render_list_pages_wikidot_user,
     };
+
+    #[test]
+    fn tag_target_builds_live_paths_without_admitting_protocol_relative_urls() {
+        for (target, expected) in [
+            ("landing", Some("/landing/tag/")),
+            ("/landing", Some("/landing/tag/")),
+            (".", Some("./tag/")),
+            (
+                "https://example.com/tags/",
+                Some("https://example.com/tags//tag/"),
+            ),
+            ("//example.com", Some("/example.com/tag/")),
+            ("", None),
+            (" ", Some(" ")),
+        ] {
+            assert_eq!(list_pages_tag_target_prefix(target).as_deref(), expected);
+        }
+    }
 
     #[test]
     fn imported_user_names_are_safe_in_avatar_alt_attributes() {
@@ -405,6 +451,11 @@ mod tests {
             "unexpected user markup: {html}"
         );
         assert!(!html.contains(r#"alt="quoted" onload="alert(1)""#));
+        assert!(html.contains("https://www.wikidot.com/avatar.php?userid=42"));
+        assert!(html.contains(
+            "background-image:url(https://www.wikidot.com/userkarma.php?u=42)"
+        ));
+        assert!(html.contains("http://www.wikidot.com/user:info/quoted-user"));
         assert!(
             feed_html.contains(r##"alt="quoted&quot; onload=&quot;alert(1)&quot;""##),
             "unexpected feed user markup: {feed_html}"

@@ -369,8 +369,10 @@ export async function prepareRunOwnedSeeder(repository, destination, password) {
     throw new Error("run-owned seeder requires a passwordless seeded administrator");
   }
   administrator.password = password;
-  await fs.writeFile(usersPath, `${JSON.stringify(users, null, 2)}\n`, {encoding: "utf8", mode: 0o600});
-  await fs.chmod(usersPath, 0o600);
+  // The run root is private (0700), while the bind-mounted seeder must be
+  // readable by Deepwell's non-host UID inside the disposable container.
+  await fs.writeFile(usersPath, `${JSON.stringify(users, null, 2)}\n`, {encoding: "utf8", mode: 0o644});
+  await fs.chmod(usersPath, 0o644);
   return Object.freeze({email: administrator.email, password});
 }
 

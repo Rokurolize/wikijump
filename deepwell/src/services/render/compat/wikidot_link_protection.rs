@@ -20,11 +20,11 @@
 
 use super::super::literal_regions::LiteralRegionIndex;
 use super::super::service::{
-    ProtectedWikidotCompatLink, RenderService, WIKIDOT_ANCHOR_MARKER_REGEX,
-    WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX, WIKIDOT_CURRENT_PAGE_LINK_REGEX,
-    WIKIDOT_STAR_LOCAL_LINK_REGEX, WIKIDOT_WIKIPEDIA_LINK_REGEX,
-    WIKIDOT_WIKIPEDIA_LINK_SENTINEL_NONCE_LEN, WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX,
-    escape_list_pages_html_attr, escape_list_pages_html_text,
+    ProtectedWikidotCompatLink, RenderService, WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX,
+    WIKIDOT_CURRENT_PAGE_LINK_REGEX, WIKIDOT_STAR_LOCAL_LINK_REGEX,
+    WIKIDOT_WIKIPEDIA_LINK_REGEX, WIKIDOT_WIKIPEDIA_LINK_SENTINEL_NONCE_LEN,
+    WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX, escape_list_pages_html_attr,
+    escape_list_pages_html_text,
 };
 use super::issued_markers::restore_issued_html_text_markers;
 use ftml::settings::WikitextSettings;
@@ -109,57 +109,9 @@ impl RenderService {
         }
 
         let mut links = Vec::new();
-        Self::protect_wikidot_anchor_markers(wikitext, &mut links);
         Self::protect_wikidot_current_page_links(wikitext, &mut links);
         Self::protect_wikidot_star_local_links(wikitext, &mut links);
         links
-    }
-
-    pub(in crate::services::render) fn protect_wikidot_anchor_markers(
-        wikitext: &mut String,
-        links: &mut Vec<ProtectedWikidotCompatLink>,
-    ) {
-        let source = wikitext.clone();
-        let mut output = String::with_capacity(source.len());
-        let mut last = 0;
-
-        for captures in WIKIDOT_ANCHOR_MARKER_REGEX.captures_iter(&source) {
-            let Some(marker_match) = captures.get(0) else {
-                continue;
-            };
-
-            output.push_str(&source[last..marker_match.start()]);
-            last = marker_match.end();
-
-            if Self::is_inside_wikidot_literal_region(&source, marker_match.start()) {
-                output.push_str(marker_match.as_str());
-                continue;
-            }
-
-            let Some(name) = captures.name("name").map(|matched| matched.as_str().trim())
-            else {
-                output.push_str(marker_match.as_str());
-                continue;
-            };
-            if name.is_empty() {
-                output.push_str(marker_match.as_str());
-                continue;
-            }
-
-            let marker = wikidot_compat_link_marker();
-            links.push(ProtectedWikidotCompatLink {
-                anchor: wikidot_named_anchor(name),
-                marker: marker.clone(),
-            });
-            output.push_str(&marker);
-        }
-
-        if last == 0 {
-            return;
-        }
-
-        output.push_str(&source[last..]);
-        *wikitext = output;
     }
 
     pub(in crate::services::render) fn protect_wikidot_current_page_links(
@@ -378,13 +330,6 @@ pub(in crate::services::render) fn wikidot_compat_link_marker() -> String {
     format!(
         "{WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX}{}X",
         Uuid::new_v4().as_simple(),
-    )
-}
-
-pub(in crate::services::render) fn wikidot_named_anchor(name: &str) -> String {
-    format!(
-        r#"<a name="{name}"></a>"#,
-        name = escape_list_pages_html_attr(name),
     )
 }
 

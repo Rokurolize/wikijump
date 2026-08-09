@@ -20,7 +20,7 @@
 
 use super::super::super::literal_regions::{
     ListPagesSourceProjection, TextTokenCursor, left_block_start_in_run,
-    wikidot_right_bracket_token, wikidot_trimmed_name,
+    right_bracket_token, wikidot_right_bracket_token, wikidot_trimmed_name,
 };
 use ftml::parsing::Token;
 use std::ops::Range;
@@ -91,24 +91,43 @@ fn right_bracket_scanner_matches_pinned_tokens_for_short_runs_and_marker_ownersh
         let bytes = source.as_bytes();
         let mut text_tokens = TextTokenCursor::new(&source);
         let mut cursor = 0;
+        let mut contextual_restart_until = 0;
         while let Some(relative) = source[cursor..].find(']') {
             let start = cursor + relative;
+            let comment_owned = start >= 2
+                && bytes.get(start - 2..start) == Some(&b"--"[..])
+                && bytes.get(start.wrapping_sub(3)) != Some(&b'-')
+                && !text_tokens.contains(start - 2);
             let (actual_is_right_block, actual_len) =
                 wikidot_right_bracket_token(bytes, start, bytes.len(), &mut text_tokens);
             let (oracle_token, oracle_span) =
                 token_covering(&tokens, start).expect("every bracket belongs to a token");
+            if comment_owned {
+                // The scanner gives the comment closer contextual ownership, so
+                // the remaining bracket run starts a fresh token boundary here.
+                contextual_restart_until = oracle_span.end;
+            }
+            let contextual_restart = start < contextual_restart_until;
             let oracle_slice = &source[oracle_span.clone()];
             assert!(
                 oracle_span.start == start
                     || oracle_token == Token::RightMath
+                    || contextual_restart
                     || oracle_slice.strip_suffix(']').is_some_and(|hyphens| {
                         hyphens.len() >= 2 && hyphens.bytes().all(|byte| byte == b'-')
                     }),
                 "the monotone caller must not call inside a bracket token: source={source:?}, start={start}, oracle={oracle_token:?} {oracle_span:?}",
             );
-            let oracle_is_right_block =
-                oracle_token == Token::RightBlock && oracle_span.start == start;
-            let oracle_len = oracle_span.end - start;
+            let (oracle_is_right_block, oracle_len) = if comment_owned {
+                (false, 1)
+            } else if contextual_restart {
+                right_bracket_token(bytes, start, bytes.len())
+            } else {
+                (
+                    oracle_token == Token::RightBlock && oracle_span.start == start,
+                    oracle_span.end - start,
+                )
+            };
             assert_eq!(
                 (actual_is_right_block, actual_len),
                 (oracle_is_right_block, oracle_len),

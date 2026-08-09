@@ -682,6 +682,10 @@ impl PageQueryService {
                             page_connection::Column::ConnectionType
                                 .eq(ConnectionType::Link),
                         )
+                        .and_where(
+                            Expr::col(page_connection::Column::FromPageId)
+                                .ne(Expr::col(page_connection::Column::ToPageId)),
+                        )
                         .to_owned(),
                 ),
             );

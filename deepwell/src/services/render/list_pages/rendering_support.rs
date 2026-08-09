@@ -266,11 +266,36 @@ pub(in crate::services::render) fn list_pages_body_starts_with_preparsed_block(
     body: &str,
 ) -> bool {
     let body = body.trim_start_matches(char::is_whitespace);
-    body.get(.."[[code]]".len())
+    if body
+        .get(.."[[code]]".len())
         .is_some_and(|opening| opening.eq_ignore_ascii_case("[[code]]"))
         || body
             .get(.."[[html]]".len())
             .is_some_and(|opening| opening.eq_ignore_ascii_case("[[html]]"))
+    {
+        return true;
+    }
+
+    // Wikidot's code pass can take ownership after a complete head-shaped
+    // prefix. When the only body markers are inside that code owner,
+    // ListPages executes its default row and leaves the complete authored
+    // suffix for the later page pass. Keep this deliberately narrower than a
+    // general search for code blocks: ordinary prose before code remains a
+    // per-row template.
+    let lowercase = body.to_ascii_lowercase();
+    let Some(code_start) = lowercase.find("[[code]]") else {
+        return false;
+    };
+    let prefix = lowercase[..code_start].trim();
+    if !prefix.starts_with("[[head]]") || !prefix.ends_with("[[/head]]") {
+        return false;
+    }
+    let code_body_start = code_start + "[[code]]".len();
+    let Some(relative_code_end) = lowercase[code_body_start..].find("[[/code]]") else {
+        return false;
+    };
+    let code_body = &lowercase[code_body_start..code_body_start + relative_code_end];
+    code_body.contains("[[body]]") && code_body.contains("[[/body]]")
 }
 
 /// A sectioned ListPages template can emit a block element even when the
@@ -684,6 +709,28 @@ mod tests {
         let tokens = ftml::tokenize(source);
         let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
         HtmlRender.render(&tree, &page_info, &settings).body
+    }
+
+    #[test]
+    fn preparsed_code_boundary_accepts_only_the_evidenced_section_prefix() {
+        assert!(list_pages_body_starts_with_preparsed_block(concat!(
+            "[[head]]H[[/head]]\n",
+            "[[code]]\n",
+            "[[body]]B=%%title%%[[/body]]\n",
+            "[[/code]]\n",
+            "[[foot]]F[[/foot]]",
+        )));
+        assert!(list_pages_body_starts_with_preparsed_block(
+            "[[code]]literal[[/code]]",
+        ));
+        assert!(!list_pages_body_starts_with_preparsed_block(concat!(
+            "ordinary prose\n",
+            "[[code]][[body]]B[[/body]][[/code]]",
+        )));
+        assert!(!list_pages_body_starts_with_preparsed_block(concat!(
+            "[[head]]H[[/head]]\n",
+            "[[code]]ordinary code[[/code]]",
+        )));
     }
 
     #[test]

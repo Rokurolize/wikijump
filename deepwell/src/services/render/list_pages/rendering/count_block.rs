@@ -52,6 +52,7 @@ impl RenderService {
             count_pages_explicit_limit,
             count_pages_per_page: _,
             url_attr_prefix: _,
+            tag_target: _,
             offset,
             offset_origin: _,
             offset_beyond_render_window,

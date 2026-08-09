@@ -293,7 +293,7 @@ fn list_pages_pager_href_path(
     for argument in url.path_arguments {
         segments.push(percent_encode_path_segment(&argument.name));
         if !replaced
-            && argument.name.eq_ignore_ascii_case(key.as_ref())
+            && argument.name == key
             && argument
                 .value
                 .as_deref()
@@ -307,9 +307,50 @@ fn list_pages_pager_href_path(
     }
 
     if !replaced {
-        segments.push(percent_encode_path_segment(key.as_ref()));
+        segments.push(key.into_owned());
         segments.push(target_page.to_string());
     }
 
     format!("/{}", segments.join("/"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::borrow::Cow;
+
+    #[test]
+    fn pager_preserves_the_exact_authored_prefix_in_the_raw_href() {
+        let page_info = PageInfo {
+            page: Cow::Borrowed("holder"),
+            category: None,
+            site: Cow::Borrowed("sandbox-for-codex"),
+            title: Cow::Borrowed("Holder"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+
+        assert_eq!(
+            list_pages_pager_href_path(
+                &page_info,
+                ListPagesPagerRoute::AjaxModuleConnector,
+                UrlArguments::default(),
+                Some("  x/y  "),
+                2,
+            ),
+            "/ajax-module-connector.php/  x/y  _p/2",
+        );
+        assert_eq!(
+            list_pages_pager_href_path(
+                &page_info,
+                ListPagesPagerRoute::AjaxModuleConnector,
+                UrlArguments::default(),
+                Some("日本語"),
+                2,
+            ),
+            "/ajax-module-connector.php/日本語_p/2",
+        );
+    }
 }

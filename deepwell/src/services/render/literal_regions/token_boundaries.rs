@@ -190,6 +190,7 @@ fn scan_email(bytes: &[u8], start: usize, identifier_end: usize) -> EmailScan {
             b' ' | b'\t'
                 | b'%'
                 | b'@'
+                | b'|'
                 | b'['
                 | b']'
                 | b'{'
@@ -215,6 +216,7 @@ fn scan_email(bytes: &[u8], start: usize, identifier_end: usize) -> EmailScan {
             b' ' | b'\t'
                 | b'@'
                 | b'.'
+                | b'|'
                 | b'['
                 | b']'
                 | b'{'
@@ -237,7 +239,17 @@ fn scan_email(bytes: &[u8], start: usize, identifier_end: usize) -> EmailScan {
         && !is_discarded_control(bytes[end])
         && !matches!(
             bytes[end],
-            b' ' | b'\t' | b'@' | b'[' | b']' | b'{' | b'}' | b'<' | b'>' | b'\n' | b'\r'
+            b' ' | b'\t'
+                | b'@'
+                | b'|'
+                | b'['
+                | b']'
+                | b'{'
+                | b'}'
+                | b'<'
+                | b'>'
+                | b'\n'
+                | b'\r'
         )
     {
         end += 1;

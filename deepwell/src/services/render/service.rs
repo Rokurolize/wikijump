@@ -62,7 +62,8 @@ use super::include_attachment_owners::{
     preserve_argument_quotes, protect_forwarded_attachment_variables,
     qualify_included_relative_image_attachments,
     qualify_relative_image_variable_attachments, relative, semantic_attachment_value,
-    split_wikidot_include_argument_segments, wikidot_include_segment_is_space,
+    split_wikidot_include_argument_segments, wikidot_include_directive_ranges,
+    wikidot_include_segment_is_space,
 };
 use super::include_comment_branches::remove_unresolved_include_comment_branches;
 use super::include_missing::{
@@ -86,6 +87,7 @@ use super::list_pages::{
     ListPagesExpansion, ListPagesExpansionOptions,
     build_wikidot_list_pages_module_request, protect_ajax_module_literal_markers,
     protect_generated_parser_function_comment_gates,
+    replace_recursive_list_pages_with_error,
     resolve_wikidot_parser_functions_outside_list_pages,
 };
 use super::literal_regions::LiteralRegionIndex;
@@ -335,6 +337,9 @@ impl RenderProtectionBundle {
 
     fn take_css_modules(&mut self) -> Vec<String> {
         std::mem::take(&mut self.wikidot_css_modules)
+            .into_iter()
+            .map(|css| self.wikidot_compat_text.restore(&css))
+            .collect()
     }
 
     fn take_native_list_wikipedia_links(&mut self) -> Vec<WikidotWikipediaLink> {
@@ -512,8 +517,6 @@ pub(super) static WIKIJUMP_FOOTNOTE_DATA_ID_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"data-id="(?P<id>[0-9]+)""#).unwrap());
 static WIKIDOT_USER_INLINE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[\[\*user\s+(?P<name>[^\]]+)\]\]").unwrap());
-pub(super) static WIKIDOT_ANCHOR_MARKER_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\[\[#\s+(?P<name>[^\]\n]+)\]\]").unwrap());
 pub(super) static WIKIDOT_CURRENT_PAGE_LINK_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[#\s+(?P<label>[^\]\n]+)\]").unwrap());
 pub(super) static WIKIDOT_STAR_LOCAL_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -1213,6 +1216,7 @@ impl RenderService {
                 url: UrlArguments::default(),
                 list_pages_pager_route: super::list_pages::ListPagesPagerRoute::SavedPage,
                 page_preview: false,
+                suppress_nested_list_pages: false,
             },
         )
         .await?;
@@ -1336,6 +1340,7 @@ impl RenderService {
             url,
             list_pages_pager_route,
             page_preview,
+            suppress_nested_list_pages,
         } = options;
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
@@ -1415,6 +1420,13 @@ impl RenderService {
             neutralize_authored_markers(&mut wikitext);
         }
         let mut wikidot_compat_html = CompatHtmlFragments::new(&wikitext);
+        if suppress_nested_list_pages {
+            wikitext = replace_recursive_list_pages_with_error(
+                &wikitext,
+                &mut wikidot_compat_html,
+                &render_cost_budget,
+            );
+        }
         let ListPagesExpansion {
             wikitext: expanded_wikitext,
             included_pages: list_pages_included_pages,
@@ -1581,14 +1593,14 @@ impl RenderService {
                     }
                     _ => PageRatingType::PlusMinus,
                 };
-            let rate_score = match (has_rate_module, current_page_id) {
-                (true, Some(page_id)) => ScoreService::score(ctx, page_id)
+            let rate_score = match (has_rate_module, current_page_id, page_preview) {
+                (true, Some(page_id), false) => ScoreService::score(ctx, page_id)
                     .await
                     .or_raise(make_error)?,
                 _ => page_info.score,
             };
-            let rating_votes = match (has_rate_module, current_page_id) {
-                (true, Some(page_id)) => Some(
+            let rating_votes = match (has_rate_module, current_page_id, page_preview) {
+                (true, Some(page_id), false) => Some(
                     PageQueryService::effective_vote_count(ctx, page_id)
                         .await
                         .or_raise(make_error)?,
@@ -1681,8 +1693,11 @@ impl RenderService {
             Self::protect_wikidot_inline_html_spans(&mut expanded.wikitext, settings);
         let wikidot_color_spans =
             Self::protect_wikidot_color_spans(&mut expanded.wikitext, settings);
-        expanded.wikitext =
-            Self::escape_unrendered_wikidot_color_markers(expanded.wikitext, settings);
+        expanded.wikitext = Self::protect_unrendered_wikidot_color_markers(
+            expanded.wikitext,
+            settings,
+            &mut wikidot_compat_text,
+        );
         let (rendered, native_list_wikipedia_links) =
             Self::render_long_native_list_runs_with_registry(
                 expanded.wikitext,
@@ -1836,6 +1851,7 @@ impl RenderService {
             current_page_id,
             text_block_page_id,
             lifecycle,
+            suppress_nested_list_pages,
         } = render_context;
         let allow_wikidot_styleframe = matches!(
             lifecycle,
@@ -1877,6 +1893,7 @@ impl RenderService {
                 url,
                 list_pages_pager_route,
                 page_preview: lifecycle == RenderLifecycle::PagePreview,
+                suppress_nested_list_pages,
             },
         )
         .await?;
@@ -2875,8 +2892,10 @@ impl RenderService {
             // Nested sources were already resolved against their include callsite immediately before recursion.
             resolve_unbound_include_variable_iftags(wikitext);
         }
-        if wikitext.contains("[[#") {
-            *wikitext = resolve_wikidot_parser_functions_outside_list_pages(wikitext);
+        if include_depth == 0 && wikitext.contains("[[#") {
+            *wikitext = Self::resolve_wikidot_parser_functions_before_include_collection(
+                wikitext,
+            );
         }
         resolve_outermost_wikidot_iftags_before_include_expansion(
             wikitext,
@@ -2893,8 +2912,10 @@ impl RenderService {
         if include_depth == 0 {
             resolve_unbound_include_variable_iftags(wikitext);
         }
-        if wikitext.contains("[[#") {
-            *wikitext = resolve_wikidot_parser_functions_outside_list_pages(wikitext);
+        if include_depth == 0 && wikitext.contains("[[#") {
+            *wikitext = Self::resolve_wikidot_parser_functions_before_include_collection(
+                wikitext,
+            );
         }
         resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview(
             wikitext, preserved,
@@ -2914,6 +2935,24 @@ impl RenderService {
             return value.to_owned();
         }
         ftml::preproc::resolve_wikidot_parser_functions(value)
+    }
+
+    fn resolve_wikidot_parser_functions_before_include_collection(
+        source: &str,
+    ) -> String {
+        let ranges = wikidot_include_directive_ranges(source);
+        if ranges.is_empty() {
+            return resolve_wikidot_parser_functions_outside_list_pages(source);
+        }
+
+        let mut fragments = CompatTextFragments::new(source);
+        let mut protected = source.to_owned();
+        for range in ranges.into_iter().rev() {
+            let marker = fragments.push(&source[range.clone()]);
+            protected.replace_range(range, &marker);
+        }
+        let resolved = resolve_wikidot_parser_functions_outside_list_pages(&protected);
+        fragments.restore(&resolved)
     }
 
     fn normalize_wikidot_div_style_url_quotes(wikitext: &mut String) {
@@ -2957,9 +2996,19 @@ impl RenderService {
         if !wikitext.contains("{$") {
             return;
         }
+        let literal_regions = LiteralRegionIndex::new_wikidot_syntax(wikitext);
+        let monospace_regions =
+            LiteralRegionIndex::new_wikidot_monospace_syntax(wikitext);
         *wikitext = INCLUDE_VARIABLE_REGEX
             .replace_all(wikitext, |captures: &regex::Captures<'_>| {
-                fragments.push(captures.get(0).expect("full match").as_str())
+                let matched = captures.get(0).expect("full match");
+                if literal_regions.contains(matched.start())
+                    || monospace_regions.contains(matched.start())
+                {
+                    matched.as_str().to_owned()
+                } else {
+                    fragments.push(matched.as_str())
+                }
             })
             .into_owned();
     }
@@ -4122,9 +4171,10 @@ impl RenderService {
         restore_protected_wikidot_inline_html(html, spans)
     }
 
-    fn escape_unrendered_wikidot_color_markers(
+    fn protect_unrendered_wikidot_color_markers(
         wikitext: String,
         settings: &WikitextSettings,
+        fragments: &mut CompatTextFragments,
     ) -> String {
         if !settings.enable_page_syntax {
             return wikitext;
@@ -4138,7 +4188,7 @@ impl RenderService {
             if literal_regions.contains(start) {
                 output.push_str("##");
             } else {
-                output.push_str("&#35;&#35;");
+                output.push_str(&fragments.push("##"));
             }
             cursor = start + 2;
         }

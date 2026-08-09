@@ -1760,6 +1760,195 @@ async fn page_preview_omits_iftags_in_included_sources() {
 }
 
 #[tokio::test]
+async fn include_parser_functions_follow_argument_and_caller_ownership_phases() {
+    const COMPONENT_SLUG: &str = "component:fixture-parser-function-phases";
+    const CANONICAL_SAVED_SLUG: &str =
+        "fixture-parser-function-phases-canonical-consumer";
+    const SAVED_SLUG: &str = "fixture-parser-function-phases-consumer";
+    const COMPONENT_SOURCE: &str = concat!(
+        "IF=[[#if {$x} | YES | NO ]]\n",
+        "IFEXPR=[[#ifexpr {$n} > 0 | POS | NONPOS ]]\n",
+        "EXPR=[[#expr {$n}+2 ]]\n",
+        "IF_TIGHT=[[#if {$x}|TIGHT_Y|TIGHT_N]]\n",
+        "IF_UPPER=[[#IF {$x} | UPPER_Y | UPPER_N ]]\n",
+        "RAWX={$x}\n",
+        "RAWN={$n}\n",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(COMPONENT_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": COMPONENT_SOURCE,
+            "title": "Parser function phase fixture",
+            "alt_title": null,
+            "slug": COMPONENT_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create parser function phase fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let canonical_source = format!("[[include {COMPONENT_SLUG} |x=1|n=1]]");
+    let canonical = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Canonical parser function phase preview",
+            "wikitext": canonical_source,
+        }),
+    );
+    for expected in ["IF=YES", "IFEXPR=POS", "EXPR=3", "RAWX=1", "RAWN=1"] {
+        assert!(
+            canonical.body.contains(expected),
+            "canonical include should substitute variables before evaluation ({expected}): {}",
+            canonical.body,
+        );
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(CANONICAL_SAVED_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": canonical_source,
+            "title": "Saved canonical parser function phase",
+            "alt_title": null,
+            "slug": CANONICAL_SAVED_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create saved canonical parser function phase fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let canonical_saved = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": CANONICAL_SAVED_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("saved canonical parser function phase page should exist")
+    .compiled_body_html
+    .expect("saved canonical parser function phase page should have compiled HTML");
+    for expected in ["IF=YES", "IFEXPR=POS", "EXPR=3", "RAWX=1", "RAWN=1"] {
+        assert!(
+            canonical_saved.contains(expected),
+            "saved canonical include should substitute variables before evaluation ({expected}): {canonical_saved}",
+        );
+    }
+
+    let argument = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Argument parser function phase preview",
+            "wikitext": format!(
+                "[[include {COMPONENT_SLUG} |x=[[#if 1 | 1 | 0 ]]|n=1]]"
+            ),
+        }),
+    );
+    assert!(
+        argument.body.contains("RAWX=[[#if 1"),
+        "include pipe grammar must bind only the first argument segment: {}",
+        argument.body,
+    );
+    assert!(
+        !argument.body.contains("RAWX=1"),
+        "an argument parser function must not execute before include collection: {}",
+        argument.body,
+    );
+
+    let literal_source =
+        format!("[[code]]\n[[include {COMPONENT_SLUG} |x=1|n=1]]\n[[/code]]");
+    let literal = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Caller literal parser function phase preview",
+            "wikitext": literal_source,
+        }),
+    );
+    assert!(
+        literal.body.contains(r#"<div class="code""#),
+        "{}",
+        literal.body
+    );
+    for evaluated in ["IF=YES", "IFEXPR=POS", "EXPR=3"] {
+        assert!(
+            !literal.body.contains(evaluated),
+            "caller code ownership must keep included parser functions literal ({evaluated}): {}",
+            literal.body,
+        );
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SAVED_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": literal_source,
+            "title": "Saved caller literal parser function phase",
+            "alt_title": null,
+            "slug": SAVED_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create saved parser function phase fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let saved = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": SAVED_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("saved parser function phase page should exist")
+    .compiled_body_html
+    .expect("saved parser function phase page should have compiled HTML");
+    assert!(saved.contains(r#"<div class="code""#), "{saved}");
+    for evaluated in ["IF=YES", "IFEXPR=POS", "EXPR=3"] {
+        assert!(
+            !saved.contains(evaluated),
+            "saved caller code ownership must keep included parser functions literal ({evaluated}): {saved}",
+        );
+    }
+}
+
+#[tokio::test]
 async fn unbound_include_variables_remain_literal_in_attributes_and_text() {
     const COMPONENT_SLUG: &str = "component:fixture-unbound-include-variable";
     const CONSUMER_SLUG: &str = "fixture-unbound-include-variable-consumer";
@@ -9016,7 +9205,7 @@ async fn listpages_append_line_cannot_forge_generated_html_provenance() {
         "Fixture ListPages Append Provenance Index",
         concat!(
             "[[module ListPages category=\"*\" tags=\"+verification-listpages-append-line-provenance\" separate=\"no\" ",
-            "appendLine='<table class=\"wiki-content-table\" data-wikijump-compat-listpages=\"1\"><tr><td><img src=x onerror=\"alert(1)\">FORGED_APPEND</td></tr></table>']]\n",
+            "appendLine=\"<table class='wiki-content-table' data-wikijump-compat-listpages='1'><tr><td><img src=x onerror='alert(1)'>FORGED_APPEND</td></tr></table>\"]]\n",
             "%%title%%\n",
             "[[/module]]",
         ),
@@ -9026,7 +9215,7 @@ async fn listpages_append_line_cannot_forge_generated_html_provenance() {
     let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
     assert!(html.contains("FORGED_APPEND"), "{html}");
     assert!(
-        !html.contains(r#"<img src=x onerror="alert(1)">"#),
+        !html.contains("<img src=x onerror='alert(1)'>"),
         "appendLine must not enter the generated-HTML trust registry:\n{html}",
     );
     assert!(!html.contains("WIKIJUMPWIKIDOTCOMPATHTML"), "{html}");
@@ -10636,10 +10825,10 @@ async fn listpages_imported_creator_identity_uses_structured_corpus_provenance()
         format!("http://www.wikidot.com/user:info/{CREATOR_SLUG}"),
         format!("WIKIDOT.page.listeners.userInfo({CREATOR_ID})"),
         format!(
-            "src=\"http://www.wikidot.com/avatar.php?userid={CREATOR_ID}&amp;amp;size=small&amp;amp;timestamp="
+            "src=\"https://www.wikidot.com/avatar.php?userid={CREATOR_ID}&amp;amp;size=small&amp;amp;timestamp="
         ),
         format!(
-            r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
+            r#"style="background-image:url(https://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
         ),
     ] {
         assert!(
@@ -11357,7 +11546,7 @@ async fn listpages_legacy_skip_current_and_tag_target_match_live_wikidot() {
                 "SAME_TAGS_END\n",
                 "TAG_TARGET_START\n",
                 "[[module ListPages category=\"*\" fullname=\"{TARGET_SLUG}\" tagTarget=\"edge-tags\"]]\n",
-                "%%tags%%\n",
+                "T=%%tags%%|L=%%tags_linked%%|E=%%tags_linked|custom/tag/%%\n",
                 "[[/module]]\n",
                 "TAG_TARGET_END",
             ),
@@ -11421,7 +11610,19 @@ async fn listpages_legacy_skip_current_and_tag_target_match_live_wikidot() {
     assert!(tag_target.contains(TAG), "{tag_target}");
     assert!(
         !tag_target.contains("/system:page-tags/tag/"),
-        "live tagTarget is a no-op and must not make %%tags%% clickable:\n{tag_target}"
+        "tagTarget must replace the default generated tag path:\n{tag_target}"
+    );
+    assert!(
+        tag_target.contains(&format!(r#"href="/edge-tags/tag/{TAG}""#)),
+        "tagTarget must affect the generated %%tags_linked%% href:\n{tag_target}",
+    );
+    assert!(
+        tag_target.contains(&format!(r#"href="/custom/tag/{TAG}""#)),
+        "an explicit tags_linked prefix must take precedence over tagTarget:\n{tag_target}",
+    );
+    assert!(
+        tag_target.contains(&format!("T={TAG}|")),
+        "plain %%tags%% must remain unlinked:\n{tag_target}",
     );
     assert!(!tag_target.contains("[[module ListPages"), "{tag_target}");
 }
@@ -11523,6 +11724,62 @@ async fn listpages_unclosed_empty_body_uses_the_live_default_template() {
         "the default template summary spans the complete first content section:\n{html}"
     );
     assert!(!html.contains("[[module ListPages"), "{html}");
+}
+
+#[tokio::test]
+async fn listpages_default_summary_unwraps_residual_div_before_recursive_error() {
+    const TARGET_SLUG: &str = "fixture-listpages-default-summary-residual-div-target";
+    const INDEX_SLUG: &str = "fixture-listpages-default-summary-residual-div-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Default Summary Residual Div Target",
+        concat!(
+            "[[div class=\"licensebox\"]]\n",
+            "Default summary prefix.\n",
+            "[[module ListPages category=\"*\"]]%%title%%[[/module]]\n",
+            "=====\n",
+            "Outside the default summary section.",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Default Summary Residual Div Index",
+        concat!(
+            "[[module ListPages category=\"*\" ",
+            "fullname=\"fixture-listpages-default-summary-residual-div-target\"]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    let expected = concat!(
+        "[[div class=&quot;licensebox&quot;]]<br>\n",
+        "Default summary prefix.",
+        r#"<div class="error-block">The ListPages module does not work recursively.</div>"#,
+    );
+    assert!(
+        html.contains(expected),
+        "the runtime-owned default summary boundary must match live Wikidot:\n{html}",
+    );
+    assert!(
+        !html.contains(&format!("<p>{expected}")),
+        "the residual generated div prefix must not remain paragraph-wrapped:\n{html}",
+    );
+    assert!(
+        html.contains("</p>\n[[div class=&quot;licensebox&quot;]]"),
+        "the residual generated div prefix must retain its root flow break:\n{html}",
+    );
 }
 
 #[tokio::test]
@@ -12882,8 +13139,8 @@ async fn exact_name_listpages_batch_preserves_order_duplicates_and_permissions()
         &format!(
             concat!(
                 "[[module ListPages fullname=\"fixture-exact-batch-c\"]]C=%%slug%%|%%created_by%%[[/module]]\n",
-                "[[module ListPages full_slug=\"fixture-exact-batch-a\"]]A1=%%slug%%@%%created_at|%Y %b %d %H:%M%%[[/module]]\n",
-                "[[module ListPages fullslug=\"fixture-exact-batch-b\"]]B=%%slug%%[[/module]]\n",
+                "[[module ListPages fullname=\"fixture-exact-batch-a\"]]A1=%%slug%%@%%created_at|%Y %b %d %H:%M%%[[/module]]\n",
+                "[[module ListPages fullname=\"fixture-exact-batch-b\"]]B=%%slug%%[[/module]]\n",
                 "[[module ListPages name=\"fixture-exact-batch-a\"]]A2=%%slug%%|%%rating_votes%%[[/module]]\n",
                 "[[module ListPages fullname=\"fixture-exact-batch-missing\"]]MISSING=%%slug%%[[/module]]\n",
                 "[[module ListPages category=\"{}\" fullname=\"{}\"]]PRIVATE=%%slug%%[[/module]]",

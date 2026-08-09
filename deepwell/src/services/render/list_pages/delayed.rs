@@ -658,10 +658,16 @@ pub(in crate::services::render) fn list_pages_runtime_container_close(
     compat_html.push_block_html("</div>".to_owned())
 }
 
+pub(in crate::services::render) fn list_pages_runtime_row_container_open(
+    compat_html: &mut CompatHtmlFragments,
+) -> String {
+    compat_html.push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned())
+}
+
 pub(in crate::services::render) fn list_pages_runtime_row_container_close(
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
-    compat_html.push_block_html_trimming_preceding_space("</div>".to_owned())
+    compat_html.push_list_pages_row_close("</div>".to_owned())
 }
 
 pub(in crate::services::render) fn append_list_pages_delayed_occurrences(
@@ -1100,16 +1106,29 @@ fn seal_list_pages_delayed_output_with_modes(
         &html_blocks,
     );
     sealed_body = strip_generated_list_pages_html_markers(sealed_body);
+    // A residual alignment opener here belongs to one selected page summary.
+    // Restore it while typed row boundaries can still keep it inside that row.
+    if sealed_body.contains("[[=")
+        || sealed_body.contains("[[<")
+        || sealed_body.contains("[[>")
+        || sealed_body.contains("[[/=")
+        || sealed_body.contains("[[/<")
+        || sealed_body.contains("[[/>")
+    {
+        sealed_body =
+            RenderService::restore_residual_wikidot_alignment_markers(&sealed_body);
+    }
     // Wikijump owns the fixed ListPages runtime containers and registers them
     // as trusted block fragments. Resolve those markers after FTML has parsed
     // the authored List-mode template, then protect the complete sealed block
     // for the outer page parse. Leaving nested markers inside the new block
     // fragment would intentionally prevent recursive restoration.
     sealed_body = compat_html.restore(&sealed_body);
+    let delayed_block_output = !block_output && sealed_body.starts_with("\n\n");
     if !block_output {
         sealed_body = strip_single_list_pages_paragraph(sealed_body);
     }
-    Ok(if block_output {
+    Ok(if block_output || delayed_block_output {
         compat_html.push_block_html_allowing_span_parent(sealed_body)
     } else {
         compat_html.push_html(sealed_body)
@@ -1128,6 +1147,40 @@ fn strip_single_list_pages_paragraph(html: String) -> String {
         return html;
     }
     inner.to_owned()
+}
+
+pub(in crate::services::render) fn replace_recursive_list_pages_with_error(
+    source: &str,
+    fragments: &mut CompatHtmlFragments,
+    render_cost_budget: &SharedRenderCostBudget,
+) -> String {
+    let modules = find_list_pages_module_matches_with_delayed_links_budgeted(
+        source,
+        render_cost_budget,
+    );
+    if modules.is_empty() || render_cost_budget.is_exhausted() {
+        return source.to_owned();
+    }
+
+    let error = fragments.push_block_html_unwrapping_residual_div_prefix(
+        r#"<div class="error-block">The ListPages module does not work recursively.</div>"#
+            .to_owned(),
+    );
+    let mut output = String::with_capacity(source.len());
+    let mut cursor = 0usize;
+    for module in modules {
+        if module.start < cursor || module.preserve_original || !module.runtime_safe {
+            continue;
+        }
+        output.push_str(&source[cursor..module.start]);
+        output.push_str(&error);
+        cursor = module.end;
+    }
+    if cursor == 0 {
+        return source.to_owned();
+    }
+    output.push_str(&source[cursor..]);
+    output
 }
 
 fn protect_nested_list_pages(
@@ -1700,12 +1753,14 @@ mod tests {
             site: "sandbox-for-codex",
             site_title: "Sandbox",
             category: "",
+            tag_target: None,
             user_displays,
             snapshot_displays,
             runtime_displays,
             page_wikitext: None,
             page_rendered_content: None,
             page_rendered_summary: None,
+            page_rendered_summary_is_block: false,
             default_summary_first_paragraph: false,
             fallback_link_titles: None,
             page_rendered_first_paragraph: None,
