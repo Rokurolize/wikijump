@@ -207,3 +207,33 @@ export async function commitDirectCorpusAttachmentStaging(args, sqlExecutor, dir
   });
   return parseAttachmentStagingResults(await sqlExecutor.runSql(sql, { capture: true }));
 }
+
+export async function rerenderDirectCorpusAttachmentPages({
+  skipRerender,
+  stagingRows,
+  getPage,
+  rerenderPage,
+}) {
+  if (skipRerender) return { attachment_direct_pages_rerendered: 0 };
+
+  const changedPages = new Map();
+  for (const row of stagingRows) {
+    if (!['insert', 'backfill_descriptor', 'replace_descriptor'].includes(row.action)) continue;
+    const existingPageId = changedPages.get(row.fullname);
+    if (existingPageId !== undefined && existingPageId !== row.page_id) {
+      throw new Error(`${row.fullname}: direct attachment staging returned inconsistent page identity`);
+    }
+    changedPages.set(row.fullname, row.page_id);
+  }
+
+  let rerendered = 0;
+  for (const [fullname, pageId] of changedPages) {
+    const page = await getPage(fullname);
+    if (page === null || page.page_id !== pageId) {
+      throw new Error(`${fullname}: direct attachment page identity mismatch before rerender`);
+    }
+    await rerenderPage(page.page_id, page.page_category_id);
+    rerendered += 1;
+  }
+  return { attachment_direct_pages_rerendered: rerendered };
+}

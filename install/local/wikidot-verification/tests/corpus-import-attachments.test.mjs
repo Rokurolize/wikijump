@@ -9,6 +9,7 @@ import test from 'node:test';
 import {
   materializeCorpusRowAttachments,
   readCorpusAttachmentBytes,
+  rerenderDirectCorpusAttachmentPages,
 } from '../src/corpus-import-attachments.mjs';
 
 function attachmentFixture(bytes = Buffer.from('fixture attachment')) {
@@ -236,4 +237,40 @@ test('materializeCorpusRowAttachments preserves file_create failure when cleanup
     params: { user_id: 29, pending_blob_id: 'issue-1062-commit-failure' },
     requestContext: { siteId: 17, pageRef: 23 },
   });
+});
+
+test('rerenderDirectCorpusAttachmentPages refreshes each page whose saved file rows changed', async () => {
+  const pages = new Map([
+    ['scp-173', { page_id: 173, page_category_id: 17 }],
+    ['scp-174', { page_id: 174, page_category_id: 17 }],
+  ]);
+  const rerendered = [];
+  const result = await rerenderDirectCorpusAttachmentPages({
+    skipRerender: false,
+    stagingRows: [
+      { action: 'insert', fullname: 'scp-173', page_id: 173 },
+      { action: 'insert', fullname: 'scp-173', page_id: 173 },
+      { action: 'backfill_descriptor', fullname: 'scp-174', page_id: 174 },
+      { action: 'replace_descriptor', fullname: 'scp-174', page_id: 174 },
+      { action: 'skip_existing', fullname: 'scp-175', page_id: 175 },
+    ],
+    getPage: async (fullname) => pages.get(fullname) ?? null,
+    rerenderPage: async (pageId, categoryId) => rerendered.push({ pageId, categoryId }),
+  });
+
+  assert.deepEqual(result, { attachment_direct_pages_rerendered: 2 });
+  assert.deepEqual(rerendered, [
+    { pageId: 173, categoryId: 17 },
+    { pageId: 174, categoryId: 17 },
+  ]);
+
+  await assert.rejects(
+    rerenderDirectCorpusAttachmentPages({
+      skipRerender: false,
+      stagingRows: [{ action: 'insert', fullname: 'scp-173', page_id: 999 }],
+      getPage: async () => pages.get('scp-173'),
+      rerenderPage: async () => assert.fail('mismatched page must not rerender'),
+    }),
+    /page identity mismatch/,
+  );
 });

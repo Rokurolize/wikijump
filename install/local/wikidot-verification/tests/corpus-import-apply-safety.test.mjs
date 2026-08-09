@@ -227,11 +227,13 @@ test('apply-corpus-import-manifest dry-run direct attachment mode plans selected
     filename: 'pixel.png',
     bytes: Buffer.from([1, 2, 3]),
     originalUrl: 'https://scp-wiki.wikidot.com/local--files/scp-173/pixel.png',
+    mimeDescription: 'data',
   });
   writePageAttachment(root, 'en', 'scp-174', {
     filename: 'pixel.png',
     bytes: Buffer.from([1, 2, 3]),
     originalUrl: 'https://scp-wiki.wikidot.com/local--files/scp-174/pixel.png',
+    mimeDescription: 'data',
   });
   const rows = buildCorpusImportManifest({
     corpusRoot: root,
@@ -273,6 +275,46 @@ test('apply-corpus-import-manifest dry-run direct attachment mode plans selected
       unique_bytes: 3,
     },
   });
+});
+
+test('apply-corpus-import-manifest rejects RPC corpus attachments before host descriptors can render', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-apply-'));
+  writePage(root, 'en', 'scp-173', {
+    entityId: 'abababab-abab-4bab-8bab-abababababab',
+    source: '[[image https://scp-wiki.wikidot.com/local--files/scp-173/pixel.png]]',
+  });
+  writePageAttachment(root, 'en', 'scp-173', {
+    filename: 'pixel.png',
+    bytes: Buffer.from([1, 2, 3]),
+    originalUrl: 'https://scp-wiki.wikidot.com/local--files/scp-173/pixel.png',
+    mimeDescription: 'PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced',
+  });
+  const rows = buildCorpusImportManifest({
+    corpusRoot: root,
+    branch: 'en',
+    sourceSite: 'scp-wiki',
+    sourceBranch: 'en',
+  });
+  const manifestPath = path.join(root, 'manifest.jsonl');
+  fs.writeFileSync(manifestPath, formatJsonl(rows));
+
+  const { spawnSync } = await import('node:child_process');
+  const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const result = spawnSync(process.execPath, [
+    path.join(packageRoot, 'scripts/apply-corpus-import-manifest.mjs'),
+    '--manifest',
+    manifestPath,
+    '--dry-run',
+    '--attachment-create-mode',
+    'rpc',
+  ], {
+    cwd: packageRoot,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /corpus attachments require --attachment-create-mode direct/u);
 });
 
 test('apply-corpus-import-manifest rejects unsafe direct attachment mode combinations', async () => {

@@ -29,7 +29,7 @@ export function writePage(root, branch, fullname, { entityId, meta = {}, source 
   fs.writeFileSync(path.join(pageDir, 'entity_id.txt'), `${entityId}\n`);
 }
 
-export function writePageAttachment(root, branch, fullname, { filename, bytes, originalUrl } = {}) {
+export function writePageAttachment(root, branch, fullname, { filename, bytes, originalUrl, mimeDescription = null } = {}) {
   const pageDir = path.join(root, branch, 'pages', fullname);
   const filesDir = path.join(pageDir, 'files');
   const filePath = path.join(filesDir, filename);
@@ -45,6 +45,7 @@ export function writePageAttachment(root, branch, fullname, { filename, bytes, o
         path: `files/${filename}`,
         sha256: cryptoSha256(bytes),
         mime: 'image/png',
+        ...(mimeDescription === null ? {} : { mime_description: mimeDescription }),
         size: bytes.length,
       },
     ], null, 2)}\n`,

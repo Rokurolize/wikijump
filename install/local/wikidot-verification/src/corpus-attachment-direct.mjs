@@ -42,6 +42,37 @@ function readVerifiedAttachmentBytes(row, attachment) {
   return bytes;
 }
 
+function descriptorFromDescription(description, filePath) {
+  const label = typeof description === 'string'
+    ? description.split(',', 1)[0].trim()
+    : '';
+  if (!label || !description || /[\r\n\0]/u.test(description)) {
+    throw new Error(`${filePath}: attachment content descriptor is absent or invalid`);
+  }
+  return { label, description };
+}
+
+function requireContentDescriptor(descriptor, filePath) {
+  if (
+    descriptor === null
+    || typeof descriptor !== 'object'
+    || Array.isArray(descriptor)
+    || typeof descriptor.label !== 'string'
+    || descriptor.label.length === 0
+    || typeof descriptor.description !== 'string'
+    || descriptor.description.length === 0
+    || /[\r\n\0]/u.test(descriptor.label)
+    || /[\r\n\0]/u.test(descriptor.description)
+  ) {
+    throw new Error(`${filePath}: attachment content descriptor is absent or invalid`);
+  }
+  const derived = descriptorFromDescription(descriptor.description, filePath);
+  if (descriptor.label !== derived.label) {
+    throw new Error(`${filePath}: attachment content descriptor label does not match its evidenced description prefix`);
+  }
+  return derived;
+}
+
 export function attachmentS3KeyHex(bytes) {
   return crypto.createHash('sha512').update(bytes).digest('hex');
 }
@@ -75,7 +106,18 @@ export function planDirectAttachmentMaterialization(rows) {
         uniqueBytes = addSafeInteger(uniqueBytes, bytes.length, 'attachment unique_bytes');
       }
 
-      attachments.push({ fullname: row.fullname, filename: attachment.filename, file_path: attachment.file_path, sha256: attachment.sha256, size: bytes.length, mime: attachment.mime ?? null, s3_key_hex: s3KeyHex, duplicate });
+      if (!Object.hasOwn(attachment, 'content_type_description')) {
+        throw new Error(`${attachment.file_path}: imported attachment has no provenance-backed content descriptor`);
+      }
+      const descriptor = requireContentDescriptor({
+        label: descriptorFromDescription(
+          attachment.content_type_description,
+          attachment.file_path,
+        ).label,
+        description: attachment.content_type_description,
+      }, attachment.file_path);
+
+      attachments.push({ fullname: row.fullname, filename: attachment.filename, file_path: attachment.file_path, sha256: attachment.sha256, size: bytes.length, mime: attachment.mime ?? null, s3_key_hex: s3KeyHex, content_type_label: descriptor.label, content_type_description: descriptor.description, replace_existing_descriptor: true, duplicate });
     }
   }
 
