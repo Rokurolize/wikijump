@@ -1,8 +1,43 @@
 {
   "schema": "wikijump.wikidot_live_observations.v1",
-  "generated_date": "2026-08-09",
+  "generated_date": "2026-08-10",
   "authority": "Reproducible live Wikidot behavior is canonical and overrides conflicting or incomplete documentation-derived claims.",
   "observations": [
+    {
+      "id": "image-head-ascii-whitespace-boundary-20260810",
+      "title": "Image heads accept ASCII horizontal whitespace but not NBSP or lookalike names",
+      "feature_ids": [
+        "syntax-images"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-08-10",
+      "analysis": "Ten anonymous PagePreviewModule probes isolate the head boundary for the f=image and =image spellings. One ASCII space, two ASCII spaces, and one tab each activate the image. Replacing the separators with NBSP keeps the construct literal, as do the ff=image and ==image lookalike names.",
+      "normative_behavior": [
+        "The exact f=image and =image heads accept one or more ASCII spaces or a tab before the source and between the source and attributes.",
+        "An active f=image external source renders a plain image-container. An active =image external source renders an image-container aligncenter. Both retain the external image URL, width, image class, and filename-derived alt text.",
+        "NBSP is not an image-head or image-argument separator. The tested NBSP forms remain literal text, while their URL-shaped substring can still receive ordinary automatic-link rendering.",
+        "The ff=image and ==image lookalikes are not image heads and remain literal text. They do not create an image element or acquire image-source ownership.",
+        "These observations define only the image head and horizontal separator boundary. They do not widen unobserved width, size, quote, or alignment-token rules."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+          "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+          "case_ids": [
+            "m776-space-one",
+            "m776-space-two",
+            "m776-tab",
+            "m776-nbsp",
+            "m776-float-lookalike",
+            "m806-space-one",
+            "m806-space-two",
+            "m806-tab",
+            "m806-nbsp",
+            "m806-lookalike"
+          ]
+        }
+      ]
+    },
     {
       "id": "forum-q1034-readonly-surfaces-20260809",
       "title": "RecentThreads currently renders one site-independent placeholder",

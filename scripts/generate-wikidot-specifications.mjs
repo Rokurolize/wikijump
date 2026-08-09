@@ -190,6 +190,11 @@ for (const observation of liveObservations.observations) {
           capturedCaseIds.add(observation.case_id);
         }
       }
+      for (const rule of row.general_rules ?? []) {
+        for (const caseId of rule.case_ids ?? []) {
+          capturedCaseIds.add(caseId);
+        }
+      }
     }
     for (const caseId of evidence.case_ids) {
       invariant(

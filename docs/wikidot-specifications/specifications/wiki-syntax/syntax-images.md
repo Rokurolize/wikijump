@@ -20,6 +20,31 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Image heads accept ASCII horizontal whitespace but not NBSP or lookalike names
+
+- Observation ID: `image-head-ascii-whitespace-boundary-20260810`
+- Classification: `documentation-omission`
+- Observed at: `2026-08-10`
+- Analysis: Ten anonymous PagePreviewModule probes isolate the head boundary for the f=image and =image spellings. One ASCII space, two ASCII spaces, and one tab each activate the image. Replacing the separators with NBSP keeps the construct literal, as do the ff=image and ==image lookalike names.
+
+Normative behavior:
+
+- The exact f=image and =image heads accept one or more ASCII spaces or a tab before the source and between the source and attributes.
+- An active f=image external source renders a plain image-container. An active =image external source renders an image-container aligncenter. Both retain the external image URL, width, image class, and filename-derived alt text.
+- NBSP is not an image-head or image-argument separator. The tested NBSP forms remain literal text, while their URL-shaped substring can still receive ordinary automatic-link rendering.
+- The ff=image and ==image lookalikes are not image heads and remain literal text. They do not create an image element or acquire image-source ownership.
+- These observations define only the image head and horizontal separator boundary. They do not widen unobserved width, size, quote, or alignment-token rules.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json` (SHA-256 `9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410`), cases: `m776-space-one`, `m776-space-two`, `m776-tab`, `m776-nbsp`, `m776-float-lookalike`, `m806-space-one`, `m806-space-two`, `m806-tab`, `m806-nbsp`, `m806-lookalike`
+
+
 
 ## Suggested public TDD seams
 

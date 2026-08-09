@@ -1,6 +1,6 @@
 {
   "schema": "wikijump.open43.m_closure_audit.v1",
-  "generated_on": "2026-08-09",
+  "generated_on": "2026-08-10",
   "scope": {
     "issues": [756, 776, 806, 1039, 1042, 1043, 1062],
     "issue_count": 7,
@@ -135,14 +135,36 @@
     },
     {
       "path": "docs/wikidot-specifications/live-observations.json",
-      "sha256": "edf1a1773f1e436403fa9bb95ec7f11d72627ed044d0e21f0f9c92edd4106613",
-      "feature_specific_rows_for_scope": 0
+      "sha256": "98f89d5d07171eb68f165f87cead338ecea1d3a1c6c5b6b745a967e6f212b49a",
+      "feature_specific_rows_for_scope": 1
     }
   ],
   "evidence_registry": {
     "E_OPEN43_READONLY_LIVE_20260810": {
       "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
       "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410"
+    },
+    "E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810": {
+      "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+      "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+      "selector": "general_rules[evidence_id=E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810]",
+      "external_evidence_root": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809",
+      "external_sha256s": {
+        "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/SHA256SUMS",
+        "sha256": "225897681df10c1e8c307053056849990fc32ebe10e47f2ab9012685bda709ff"
+      },
+      "raw_case_sha256s": {
+        "m776-space-one": "eb8c6514231cb84ebf93fa74d51f3d0778dbaf3c331cc20e60b8407afcea32fb",
+        "m776-space-two": "0e4d11510091db9c36a5577045557d860dcef9968f6cafb15796e1ef3400410e",
+        "m776-tab": "62be99f1c683419f9e666a2d783339f062b023b1a6d1953c591cf40c5cf2e884",
+        "m776-nbsp": "03595fe95a408d8a9820c8c5dea0f037910b36cb211592796bb239af97c14fa5",
+        "m776-float-lookalike": "1ad09a57ca40e4a8da0f435c11af67605ee8f3b80bdd898bc3606a60fe933856",
+        "m806-space-one": "2d45849977ac06c6876b0d511300e25e15c55a1d0e73597e1be83b0c7839ef42",
+        "m806-space-two": "4a5c6ed484ec1cfe582ec5becb0f7aeef782c126d9deb8bf1d2fead118e2368c",
+        "m806-tab": "56442d3b8d917fdd9787c9260c75e9ce1d8b1e7d8aadba2820f8b7304647c235",
+        "m806-nbsp": "ae15ce66c5cc7e6dadfb5298680790cdc2f9230abe4a6a785d1ae39ab5e41353",
+        "m806-lookalike": "4b81255350dfb2398e2f3a140b403bbacde3536df90869514567f3a891c29631"
+      }
     },
     "E_ICON_SCOPE": {
       "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/icon-setting-v1/scoping-verdict.json",
@@ -681,13 +703,33 @@
           ]
         },
         {
+          "case_id": "M776_IMAGE_WHITESPACE_AND_HEAD_BOUNDARY",
+          "acceptance": "Render exact f=image heads with one or two ASCII spaces or a tab as the evidenced plain image-container, while the NBSP and ff=image lookalike controls remain literal and retain ordinary automatic-link ownership.",
+          "classification": "source_ready",
+          "reason": "The current FTML pin owns the exact f=image alias and ASCII whitespace tokenization. One public Deepwell regression independently exact-compares all five live cases through wikidot_page_preview and saved page_view without a Deepwell syntax shim.",
+          "source_paths": [
+            "deepwell/Cargo.toml",
+            "deepwell/Cargo.lock",
+            "deepwell/tests/media.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-space-one",
+            "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-space-two",
+            "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-tab",
+            "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-nbsp",
+            "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-float-lookalike"
+          ],
+          "evidence_ids": ["E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810"],
+          "next_command_ids": ["C_DEEPWELL_MEDIA"]
+        },
+        {
           "case_id": "M776_UNFROZEN_ARGUMENT_MATRIX",
-          "acceptance": "Extend spacing, tab, NBSP, unqualified width, size alias, quoted filename, and float spelling behavior beyond the frozen G06 case.",
+          "acceptance": "Extend unqualified width, size alias, quoted filename, and remaining float spelling behavior beyond the frozen G06 and sealed image-head boundary cases.",
           "classification": "blocked_evidence",
-          "reason": "The issue comment proposes these red cases, but the required two positive and two negative live boundary observations are not frozen for each widened grammar rule.",
+          "reason": "The image-head spacing, tab, NBSP, and lookalike boundary is now sealed separately. The remaining proposed grammar still lacks the required two positive and two negative live boundary observations.",
           "source_paths": [],
           "existing_tests": [],
-          "evidence_ids": ["E_G06", "E_V7_CORPUS", "E_OPEN43_READONLY_LIVE_20260810"],
+          "evidence_ids": ["E_G06", "E_V7_CORPUS"],
           "missing_evidence": [
             "two stopping controls for every remaining width, size, quote, and float token rule"
           ],
@@ -759,13 +801,33 @@
           ]
         },
         {
+          "case_id": "M806_IMAGE_WHITESPACE_AND_HEAD_BOUNDARY",
+          "acceptance": "Render exact =image heads with one or two ASCII spaces or a tab as the evidenced aligncenter image-container, while the NBSP and ==image lookalike controls remain literal and retain ordinary automatic-link ownership.",
+          "classification": "source_ready",
+          "reason": "The current FTML pin owns the exact =image alias and ASCII whitespace tokenization. One public Deepwell regression independently exact-compares all five live cases through wikidot_page_preview and saved page_view without a Deepwell syntax shim.",
+          "source_paths": [
+            "deepwell/Cargo.toml",
+            "deepwell/Cargo.lock",
+            "deepwell/tests/media.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-space-one",
+            "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-space-two",
+            "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-tab",
+            "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-nbsp",
+            "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-lookalike"
+          ],
+          "evidence_ids": ["E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810"],
+          "next_command_ids": ["C_DEEPWELL_MEDIA"]
+        },
+        {
           "case_id": "M806_UNFROZEN_ARGUMENT_MATRIX",
-          "acceptance": "Extend centered-image handling to tab, NBSP, unqualified width, size aliases, quoted filename, and other proposed forms.",
+          "acceptance": "Extend centered-image handling to unqualified width, size aliases, quoted filename, and remaining alignment-token forms beyond the sealed image-head boundary cases.",
           "classification": "blocked_evidence",
-          "reason": "Only the one-space and multiple-space G61 source forms are sealed; the proposed wider grammar lacks the required live boundary controls.",
+          "reason": "The image-head spacing, tab, NBSP, and lookalike boundary is now sealed separately. The remaining proposed grammar still lacks the required live boundary controls.",
           "source_paths": [],
           "existing_tests": [],
-          "evidence_ids": ["E_G61", "E_V7_CORPUS", "E_OPEN43_READONLY_LIVE_20260810"],
+          "evidence_ids": ["E_G61", "E_V7_CORPUS"],
           "missing_evidence": [
             "two stopping controls for every remaining width, size, quote, and centered token rule"
           ],
@@ -1477,9 +1539,9 @@
   },
   "reconciliation": {
     "issue_count": 7,
-    "subrow_count": 43,
+    "subrow_count": 45,
     "classification_counts": {
-      "source_ready": 23,
+      "source_ready": 25,
       "needs_source": 0,
       "candidate_required": 11,
       "blocked_evidence": 9

@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-08-10",
-  "catalog_sha256": "a711b4fc7f78bbc4cc50d8a45206e8fd63bf25f0596648a905f55c1695f7f554",
+  "catalog_sha256": "a3c4349c79615d841dde0c426f29a5151c0e1ad0ad79cf0258a2f2f148bfadd8",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -3791,15 +3791,34 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "syntax-images": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/wiki-syntax/syntax-images.md"
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering",
+        "Deepwell public saved page_view rendering"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "tests": [
+        {
+          "path": "deepwell/tests/media.rs",
+          "name": "image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page",
+          "scope": "exact ten-case f=image and =image ASCII-space, tab, NBSP, and lookalike ownership boundary through public preview and saved page view"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/Cargo.toml",
+        "deepwell/Cargo.lock"
+      ],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-images.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "live-observations.json::image-head-ascii-whitespace-boundary-20260810",
+        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json#E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The live ten-case matrix seals only horizontal separator and exact-head ownership. Remaining width, size, quote, alignment-token, local-file, geometry, and network behavior stays separately actionable."
+      ]
     },
     "syntax-include": {
       "status": "pending",

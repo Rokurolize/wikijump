@@ -24,6 +24,7 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::services::render::UrlArguments;
+use deepwell::services::view::GetPageViewOutput;
 use deepwell::services::{RenderService, RequestContext};
 use deepwell::types::{PageId, Reference};
 use ftml::data::{PageInfo, ScoreValue};
@@ -334,6 +335,226 @@ async fn current_ftml_pin_preserves_promoted_image_dom() {
         .expect("promoted image syntax should render through the current FTML pin");
 
         assert_eq!(preview.html_output.body, expected, "{case_id}");
+    }
+}
+
+#[tokio::test]
+async fn image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page() {
+    struct Case {
+        case_id: &'static str,
+        source: &'static str,
+        expected: &'static str,
+        expected_image_container: Option<&'static str>,
+        expected_literal_href: Option<&'static str>,
+    }
+
+    const PLAIN_IMAGE: &str = concat!(
+        r#"<div class="image-container">"#,
+        r#"<img src="https://example.com/a.png" width="100px" class="image" alt="a.png">"#,
+        "</div>",
+    );
+    const CENTERED_IMAGE: &str = concat!(
+        r#"<div class="image-container aligncenter">"#,
+        r#"<img src="https://example.com/a.png" width="100px" class="image" alt="a.png">"#,
+        "</div>",
+    );
+    let cases = [
+        Case {
+            case_id: "m776-space-one",
+            source: r#"[[f=image https://example.com/a.png width="100px"]]"#,
+            expected: PLAIN_IMAGE,
+            expected_image_container: Some("image-container"),
+            expected_literal_href: None,
+        },
+        Case {
+            case_id: "m776-space-two",
+            source: r#"[[f=image  https://example.com/a.png  width="100px"]]"#,
+            expected: PLAIN_IMAGE,
+            expected_image_container: Some("image-container"),
+            expected_literal_href: None,
+        },
+        Case {
+            case_id: "m776-tab",
+            source: "[[f=image\thttps://example.com/a.png\twidth=\"100px\"]]",
+            expected: PLAIN_IMAGE,
+            expected_image_container: Some("image-container"),
+            expected_literal_href: None,
+        },
+        Case {
+            case_id: "m776-nbsp",
+            source: "[[f=image\u{00a0}https://example.com/a.png\u{00a0}width=\"100px\"]]",
+            expected: concat!(
+                "<p>[[f=image\u{00a0}",
+                r#"<a href="https://example.com/a.png%C2%A0width=">"#,
+                "https://example.com/a.png\u{00a0}width=</a>",
+                "&quot;100px&quot;]]</p>",
+            ),
+            expected_image_container: None,
+            expected_literal_href: Some("https://example.com/a.png%C2%A0width="),
+        },
+        Case {
+            case_id: "m776-float-lookalike",
+            source: r#"[[ff=image https://example.com/a.png width="100px"]]"#,
+            expected: concat!(
+                r#"<p>[[ff=image <a href="https://example.com/a.png">"#,
+                "https://example.com/a.png</a> width=&quot;100px&quot;]]</p>",
+            ),
+            expected_image_container: None,
+            expected_literal_href: Some("https://example.com/a.png"),
+        },
+        Case {
+            case_id: "m806-space-one",
+            source: r#"[[=image https://example.com/a.png width="100px"]]"#,
+            expected: CENTERED_IMAGE,
+            expected_image_container: Some("image-container aligncenter"),
+            expected_literal_href: None,
+        },
+        Case {
+            case_id: "m806-space-two",
+            source: r#"[[=image  https://example.com/a.png  width="100px"]]"#,
+            expected: CENTERED_IMAGE,
+            expected_image_container: Some("image-container aligncenter"),
+            expected_literal_href: None,
+        },
+        Case {
+            case_id: "m806-tab",
+            source: "[[=image\thttps://example.com/a.png\twidth=\"100px\"]]",
+            expected: CENTERED_IMAGE,
+            expected_image_container: Some("image-container aligncenter"),
+            expected_literal_href: None,
+        },
+        Case {
+            case_id: "m806-nbsp",
+            source: "[[=image\u{00a0}https://example.com/a.png\u{00a0}width=\"100px\"]]",
+            expected: concat!(
+                "<p>[[=image\u{00a0}",
+                r#"<a href="https://example.com/a.png%C2%A0width=">"#,
+                "https://example.com/a.png\u{00a0}width=</a>",
+                "&quot;100px&quot;]]</p>",
+            ),
+            expected_image_container: None,
+            expected_literal_href: Some("https://example.com/a.png%C2%A0width="),
+        },
+        Case {
+            case_id: "m806-lookalike",
+            source: r#"[[==image https://example.com/a.png width="100px"]]"#,
+            expected: concat!(
+                r#"<p>[[==image <a href="https://example.com/a.png">"#,
+                "https://example.com/a.png</a> width=&quot;100px&quot;]]</p>",
+            ),
+            expected_image_container: None,
+            expected_literal_href: Some("https://example.com/a.png"),
+        },
+    ];
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for case in cases {
+        runner.set_request_context(RequestContext {
+            site_id: Some(site_id),
+            ..Default::default()
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case.case_id,
+                "wikitext": case.source,
+            }),
+        );
+        assert_eq!(preview.body, case.expected, "{} preview", case.case_id);
+        assert!(preview.styles.is_empty(), "{} preview", case.case_id);
+        assert!(
+            preview.legacy_actions.is_empty(),
+            "{} preview",
+            case.case_id,
+        );
+
+        let slug = format!("fixture-{}", case.case_id);
+        runner.set_request_context(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(Cow::Owned(slug.clone()))),
+            ..Default::default()
+        });
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": case.source,
+                "title": case.case_id,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "Open43 image whitespace boundary fixture",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+
+        runner.set_request_context(RequestContext {
+            site_id: Some(site_id),
+            ..Default::default()
+        });
+        let saved = run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        let saved_body = match saved {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("{} saved page should exist: {other:?}", case.case_id),
+        };
+        assert_eq!(saved_body, case.expected, "{} saved page", case.case_id);
+
+        for (surface, body) in [("preview", preview.body), ("saved page", saved_body)] {
+            assert!(
+                !body.contains("wj-") && !body.contains(".wjfiles.com"),
+                "{} {surface} leaked Wikijump-owned image identity: {body}",
+                case.case_id,
+            );
+            match (case.expected_image_container, case.expected_literal_href) {
+                (Some(container), None) => {
+                    assert!(
+                        body.starts_with(&format!(r#"<div class="{container}">"#)),
+                        "{} {surface}: {body}",
+                        case.case_id,
+                    );
+                    assert!(
+                        body.contains(r#"<img src="https://example.com/a.png""#),
+                        "{} {surface}: {body}",
+                        case.case_id,
+                    );
+                    assert!(!body.contains("<a "), "{} {surface}: {body}", case.case_id);
+                }
+                (None, Some(href)) => {
+                    assert!(
+                        !body.contains("<img "),
+                        "{} {surface}: {body}",
+                        case.case_id
+                    );
+                    assert!(
+                        body.contains(&format!(r#"<a href="{href}">"#)),
+                        "{} {surface}: {body}",
+                        case.case_id,
+                    );
+                }
+                _ => unreachable!("every evidence case has exactly one owner"),
+            }
+        }
     }
 }
 
