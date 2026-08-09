@@ -120,6 +120,7 @@ fn dropping_prepared_wikitext_without_restoration_is_rejected() {
         super::ExpandedRenderWikitext {
             wikitext: source.to_owned(),
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html: CompatHtmlFragments::new(source),
             wikidot_compat_text: CompatTextFragments::new(source),
@@ -393,6 +394,7 @@ fn render_wikidot_conditionals_with_tags(wikitext: &str, tags: &[&str]) -> Strin
             wikidot_compat_text: CompatTextFragments::new(wikitext),
             wikitext: wikitext.to_owned(),
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
         },
         &page_info,
@@ -4032,6 +4034,7 @@ fn protects_css_before_list_pages_and_rejoins_the_outer_pipeline() {
             wikidot_compat_text: CompatTextFragments::new(&source),
             wikitext: source,
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
         },
         &page_info,
@@ -4679,6 +4682,7 @@ fn render_list_pages_title_variables_through_outer_pipeline(
         super::ExpandedRenderWikitext {
             wikitext: substituted,
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             wikidot_compat_html: compat_html,
             wikidot_compat_text: compat_text,
             url_offset_list_pages_content_bytes: 0,
@@ -10186,6 +10190,7 @@ fn render_native_list_page_for_regression(
             wikidot_compat_text: CompatTextFragments::new(source),
             wikitext: source.to_owned(),
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
         },
         &page_info,
@@ -11476,6 +11481,7 @@ fn render_preparation_resolves_generated_simple_if_with_link_branch() {
             )
             .to_owned(),
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html: CompatHtmlFragments::new(""),
             wikidot_compat_text: CompatTextFragments::new(""),
@@ -12089,6 +12095,7 @@ fn prepares_wikidot_unicode_iftags_component_with_cross_closed_collapsible() {
             wikidot_compat_text: CompatTextFragments::new(&source),
             wikitext: source,
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
         },
         &page_info,
@@ -12284,6 +12291,7 @@ fn repeated_render_preparation_preserves_nested_iftags_for_ftml() {
         super::ExpandedRenderWikitext {
             wikitext,
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html: CompatHtmlFragments::new(""),
             wikidot_compat_text,
@@ -12335,6 +12343,7 @@ fn malformed_iftags_remain_literal_after_ftml_recovery() {
         super::ExpandedRenderWikitext {
             wikitext,
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html: CompatHtmlFragments::new(""),
             wikidot_compat_text,
