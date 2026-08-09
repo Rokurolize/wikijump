@@ -1,12 +1,12 @@
 {
   "schema": "wikijump.open43_concurrency_ledger.v1",
   "campaign": "open43-pr2",
-  "updated_at": "2026-08-09T19:10:00+09:00",
+  "updated_at": "2026-08-09T19:40:00+09:00",
   "integration_branch": {
     "repository": "Rokurolize/wikijump",
     "branch": "fix/open87-pr2-modules-actions-media-settings",
     "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
-    "reconciled_head": "05aa358c08a3b06c63ff95c0953580d6a7101f66"
+    "reconciled_head": "f25e6168b6e4266fd554f1d625ae0ec9e71463b7"
   },
   "limits": {
     "configured_threads": 13,
@@ -107,8 +107,11 @@
       "branch": "agent/open87-pr2/m-media-closure-g3",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-media-closure-g3",
       "base": "99c946782936923ff902cf95045a4cab2dd16577",
-      "head": null,
-      "status": "running",
+      "head": "9c90066242b205cf7717df9921ca96996880d4f9",
+      "status": "integrated",
+      "integration_commits": [
+        "f25e6168b6e4266fd554f1d625ae0ec9e71463b7"
+      ],
       "may_run_cargo": false,
       "may_mutate_runtime": false
     },
@@ -119,6 +122,18 @@
       "branch": "agent/open87-pr2/q-page-query-closure-g1",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/q-page-query-closure-g1",
       "base": "99c946782936923ff902cf95045a4cab2dd16577",
+      "head": null,
+      "status": "running",
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "q-search-users-closure-g4",
+      "agent": "/root/a_membership_residual",
+      "issue_numbers": [748, 807, 810, 1026, 1032, 1036],
+      "branch": "agent/open87-pr2/q-search-users-closure-g4",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/q-search-users-closure-g4",
+      "base": "ebe0721ce28bdad176abc8a8559bd30fa8cba905",
       "head": null,
       "status": "running",
       "may_run_cargo": false,
