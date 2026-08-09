@@ -4888,11 +4888,9 @@ async fn listpages_default_rows_expand_secondary_page_body_modules() {
                 "This tool is for use by the administrators of this site",
             )
             && preview.contains("No sites provided.")
-            && preview.contains(r#"<div class="featured-site-box">"#)
-            && preview.contains(r#"href="http://scp-wiki.wikidot.com""#)
-            && preview.contains("SCP Foundation")
-            && preview.contains("Contributions last month: 0")
-            && preview.contains("Contributors: 1"),
+            && preview.contains("[[module <em>FeaturedSite</em>]] No such module")
+            && !preview.contains("thumbnails.wdfiles.com")
+            && !preview.contains("OZONE.dialog.hovertip"),
         "selected page content should use the same secondary runtime-module handlers as a page view:\n{preview}",
     );
     for module in [

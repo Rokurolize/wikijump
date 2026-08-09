@@ -4974,6 +4974,49 @@ async fn adsenseunit_module_matches_live_deprecated_empty_output() {
 }
 
 #[tokio::test]
+async fn featuredsite_fails_closed_without_a_local_featured_site_authority() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "FeaturedSite unavailable policy",
+            "wikitext": "FEATURED_START\n[[module FeaturedSite]]\nFEATURED_END",
+        }),
+    );
+    let html = preview.body;
+
+    assert!(
+        html.contains(
+            r#"[[module <em>FeaturedSite</em>]] No such module, please <a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a> and fix this page."#,
+        ),
+        "a module backed only by Wikidot's global rotation must use the established unavailable-module result:\n{html}",
+    );
+    for forbidden in [
+        "featured-site-box",
+        "thumbnails.wdfiles.com",
+        "OZONE.dialog.hovertip",
+        "scp-wiki.wikidot.com",
+        "<script",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "FeaturedSite fail-closed output must not fabricate a card or browser authority ({forbidden}):\n{html}",
+        );
+    }
+}
+
+#[tokio::test]
 async fn static_account_modules_match_live_preview_and_page_view_basics() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
