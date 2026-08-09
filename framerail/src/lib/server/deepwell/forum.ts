@@ -5,9 +5,10 @@ import type { RequestContext } from "../request-context"
 export interface WikidotForumModuleOutput {
   status: string
   body: string
+  js_include: string[]
 }
 
-export function wikidotForumModule(
+export async function wikidotForumModule(
   siteId: number,
   moduleName: string,
   parameters: Record<string, string>,

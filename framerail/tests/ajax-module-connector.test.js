@@ -57,14 +57,28 @@ test("dispatches ListPages forms and returns the Wikidot JSON envelope", async (
 
 test("dispatches the sealed read-only forum modules with Wikidot metadata", async () => {
   const cases = [
+    ["forum/ForumStartModule", {}, []],
     ["forum/ForumStartModule", { hidden: "true" }],
     ["forum/ForumViewCategoryModule", { c: "8503559", p: "1" }],
-    ["forum/ForumViewThreadModule", { t: "18029831" }],
-    ["forum/ForumViewThreadPostsModule", { t: "18029831", pageNo: "1" }],
+    [
+      "forum/ForumViewThreadModule",
+      { t: "18029831" },
+      [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadModule.js"
+      ]
+    ],
+    [
+      "forum/ForumViewThreadPostsModule",
+      { t: "18029831", pageNo: "1" },
+      [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js"
+      ]
+    ],
     ["forum/ForumRecentPostsListModule", { page: "1", categoryId: "8503559" }]
   ]
 
-  for (const [moduleName, parameters] of cases) {
+  for (const [moduleName, parameters, jsInclude = []] of cases) {
     let received
     const response = await handleAjaxModuleConnectorRequest(
       request({
@@ -78,7 +92,11 @@ test("dispatches the sealed read-only forum modules with Wikidot metadata", asyn
         renderListPages: async () => assert.fail("must not render ListPages"),
         renderForumModule: async (input) => {
           received = input
-          return { status: "ok", body: `<div>${moduleName}</div>` }
+          return {
+            status: "ok",
+            body: `<div>${moduleName}</div>`,
+            js_include: jsInclude
+          }
         }
       }
     )
@@ -89,7 +107,7 @@ test("dispatches the sealed read-only forum modules with Wikidot metadata", asyn
     assert.equal(body.callbackIndex, "3")
     assert.equal(typeof body.CURRENT_TIMESTAMP, "number")
     assert.deepEqual(body.cssInclude, [])
-    assert.deepEqual(body.jsInclude, [])
+    assert.deepEqual(body.jsInclude, jsInclude)
     assert.deepEqual(received, { siteId: 6000006, moduleName, parameters })
   }
 })
@@ -122,7 +140,10 @@ test("passes read-only forum missing states through and rejects unsealed shapes"
   for (const form of [
     { moduleName: "forum/ForumCommentsListModule", t: "18029831" },
     { moduleName: "forum/ForumNewThreadModule", c: "8503559" },
-    { moduleName: "forum/ForumViewThreadModule", t: "18029831", write: "1" }
+    { moduleName: "forum/ForumViewThreadModule", t: "18029831", write: "1" },
+    { moduleName: "forum/ForumViewCategoryModule", c: "8503559" },
+    { moduleName: "forum/ForumViewThreadPostsModule", t: "18029831" },
+    { moduleName: "forum/ForumRecentPostsListModule", page: "1" }
   ]) {
     const response = await handleAjaxModuleConnectorRequest(request(form), {
       siteId: 6000006,

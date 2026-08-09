@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ForumModuleBody from "$lib/ForumModuleBody.svelte"
+
   import type { PageData } from "./$types"
 
   interface Props {
@@ -8,4 +10,4 @@
   let { data }: Props = $props()
 </script>
 
-{@html data.body}
+<ForumModuleBody body={data.body} />
