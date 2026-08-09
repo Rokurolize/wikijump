@@ -27,9 +27,11 @@
     "listpages-live-fixture-classification": "node scripts/classify-listpages-live-fixtures.mjs",
     "listpages-feed-endpoint": "node scripts/capture-listpages-feed-endpoint.mjs",
     "runtime-differential": "node scripts/run-generic-runtime-differential.mjs",
-    "runtime-differential-stack": "node scripts/run-generic-runtime-differential-stack.mjs"
+    "runtime-differential-stack": "node scripts/run-generic-runtime-differential-stack.mjs",
+    "candidate-cases": "node scripts/run-candidate-cases.mjs"
   },
   "dependencies": {
+    "devalue": "5.9.0",
     "parse5": "^8.0.1",
     "pg": "^8.22.0"
   },

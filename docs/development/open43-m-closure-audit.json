@@ -379,13 +379,17 @@
       "exists_now": true
     },
     "C_MEDIA_RUNTIME_CANDIDATE": {
-      "command": "node install/local/wikidot-verification/scripts/run-open43-media-files-candidate.mjs --manifest docs/development/open43-m-closure-audit.json --runtime-identity /home/roku/wjlab/evidence/open43-final/media/runtime-identity.json --output /home/roku/wjlab/evidence/open43-final/media/runtime-verdict.json",
+      "command": "pnpm --dir install/local/wikidot-verification candidate-cases -- --case-set open43-media-files --candidate-identity /home/roku/wjlab/evidence/open43-final/media/candidate-parity-identity.json --private-input /home/roku/wjlab/private/open43-media-candidate.json --output-dir /home/roku/wjlab/evidence/open43-final/media/candidate-cases",
       "phase": "final_candidate",
-      "exists_now": false,
-      "candidate_readiness": "candidate_required_missing_generic_file_action_adapter",
-      "replacement_owner": "install/local/wikidot-verification/scripts/run-generic-runtime-differential.mjs",
+      "exists_now": true,
+      "candidate_readiness": "candidate_ready_shared_candidate_case_runner",
+      "replacement_owner": "install/local/wikidot-verification/src/candidate-case-runner.mjs",
       "dedicated_media_runner_allowed": false,
-      "required_before_run": "Extend the existing generic runtime differential with the narrow generic file-action adapter described in candidate_harness_gap.review.runtime_file_action_adapter_gap, then replace this rejected dedicated-runner placeholder with an exact generic-runner command. The adapter must collect behavior evidence only from public Framerail, Deepwell, and WWS HTTP seams; use the standard Docker runtime-identity helper only for pre-run and post-run infrastructure identity; reconcile all four scoped cases exactly once; prove cleanup; and publish through the existing no-replace primitive."
+      "implemented_by": [
+        "install/local/wikidot-verification/src/candidate-case-runner.mjs",
+        "install/local/wikidot-verification/src/open43-media-candidate-case-set.mjs",
+        "install/local/wikidot-verification/scripts/run-candidate-cases.mjs"
+      ]
     },
     "C_MEDIA_BROWSER_CANDIDATE": {
       "command": "pnpm --dir framerail exec playwright test --config playwright.candidate.config.ts tests/open43-media-files-candidate.spec.ts",
@@ -396,7 +400,7 @@
   },
   "candidate_harness_gap": {
     "classification": "needs_source",
-    "reason": "Four runtime-only media cases need one narrow file-action adapter in the existing generic candidate controller. Browser-only media cases separately need a candidate browser executor. A dedicated media runtime runner would duplicate existing identity, lifecycle, cleanup, and no-replace owners and is not an accepted solution.",
+    "reason": "The four runtime-only media cases now have one shared CandidateCaseRunner and one source-owned Media CandidateCaseSet. The top-level gap remains needs_source only because browser-only media cases still need a candidate browser executor.",
     "required_commands": [
       "C_MEDIA_RUNTIME_CANDIDATE",
       "C_MEDIA_BROWSER_CANDIDATE"
@@ -408,11 +412,13 @@
       "a successful HTTP status without blob and actor identity"
     ],
     "review": {
-      "reviewed_base_commit": "89b4735e817a3e770b3e5028aafaaff350a1b506",
-      "reviewed_base_tree": "68106b53d66d2c77ea4e3ffb4789a285eaf04f04",
+      "reviewed_base_commit": "08714d0780680f8547b067700abc0017c23b39e3",
+      "reviewed_base_tree": "7c0cb3c1324a63d933381cf001e971b814712b10",
       "issue_subrow_classifications_changed": false,
       "named_targets_present": {
-        "install/local/wikidot-verification/scripts/run-open43-media-files-candidate.mjs": false,
+        "install/local/wikidot-verification/scripts/run-candidate-cases.mjs": true,
+        "install/local/wikidot-verification/src/candidate-case-runner.mjs": true,
+        "install/local/wikidot-verification/src/open43-media-candidate-case-set.mjs": true,
         "framerail/playwright.candidate.config.ts": false,
         "framerail/tests/open43-media-files-candidate.spec.ts": false
       },
@@ -420,7 +426,32 @@
         {
           "path": "install/local/wikidot-verification/src/generic-runtime-differential.mjs",
           "sha256": "e968ceaa63d1661f9ed0b928269cf69674bbf0260fd81f3b46c2ede8396e946e",
-          "reuse": "Keep the source-bound input identities, run-owned page lifecycle, exact reconciliation, and cleanup control in the existing generic runtime owner. Add only a file-action adapter; do not create a media-specific controller."
+          "reuse": "Retain its distinct disposable-stack syntax differential responsibility. CandidateCaseRunner is a separate external-candidate lifecycle owner and does not wrap or replace this product path."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/candidate-case-runner.mjs",
+          "sha256": "f42dc99bb8ce61870f1f7f90eddcbce2f3e252fa8f29832903a7b9e860e9feb7",
+          "reuse": "Own sealed external-candidate attachment, exact denominator reconciliation, cleanup gating, stable runtime identity, and no-replace terminal receipts for every source-owned CandidateCaseSet."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/candidate-case-http.mjs",
+          "sha256": "1ad706e64c287bf973c73d9074e6028a89858e397df1bfbf4139a03c31d21267",
+          "reuse": "Issue candidate-bound Framerail, Deepwell, WWS, and presigned object-store requests without publishing tokens, sessions, CA bytes, or presigned URLs."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/open43-media-candidate-case-set.mjs",
+          "sha256": "10f8a02cf3e63af38343e599755ec8b2d00cf2edc43eea63c280bd7507699a1c",
+          "reuse": "Own the fixed four-case media denominator, public operations, run-owned page and pending-blob cleanup, and raw public observations."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/open43-media-candidate-contract.mjs",
+          "sha256": "ec8f06368a8cdfea3f8ceabd62e16629078217b5fd0fe5f4d3df99974a77c7a4",
+          "reuse": "Independently verify exact action bytes, file inventories, original and resized identities, public absence, and adapter-issued request order."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/candidate-source-execution-identity.mjs",
+          "sha256": "db0dc9d83038bb49d244faa465a2917966fff74ffee286bad6a3e5b94a6ebc59",
+          "reuse": "Bind a clean candidate source revision to the exact source manifest supplied by the active runner without claiming unrelated browser modules."
         },
         {
           "path": "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",
@@ -429,23 +460,8 @@
         },
         {
           "path": "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
-          "sha256": "c1aa93d9874b98ea7d11c05e80ab8b8db7c2accd21cc8ec888dddbf6603e0f5b",
-          "reuse": "Observe every declared candidate service before and after capture and reject container, image, label, health, mount, network, port, or effective-configuration drift."
-        },
-        {
-          "path": "install/local/wikidot-verification/src/standing-browser-parity-runner.mjs",
-          "sha256": "ca84a947a1e3ba1254a22ba8c333d0ded5e2887fa2b678b7b5bec0674635518c",
-          "reuse": "Reuse candidate attachment, clean-source execution identity, request gating, pre/post runtime stability, and sealed terminal receipt patterns without reusing the fixed standing-canary case set."
-        },
-        {
-          "path": "install/local/wikidot-verification/src/standing-browser-parity-observation.mjs",
-          "sha256": "f973093eaf9ad7a207e1c553a998b3de366a08a91afac0181f27de2131dc5e23",
-          "reuse": "Reuse the distinct DOMContentLoaded-immediate and settled capture ordering, resource completion, request-failure collection, and screenshot artifact identities."
-        },
-        {
-          "path": "install/local/wikidot-verification/src/standing-browser-parity-browser-session.mjs",
-          "sha256": "984c9e1d6882245d6361df7efb3acee2df3be67e8f7b2a953f2d53b219a511e1",
-          "reuse": "Reuse the isolated browser context, non-standing local endpoint, request gate, proxy, service-worker block, and close-all-resources behavior."
+          "sha256": "73360aaf4ff403c6999140b57ca29711e766d6528d4e6ad67dfc2f590712b536",
+          "reuse": "Observe every declared candidate service before and after execution, bind required private loopback publications to exact Compose roles, and reject infrastructure drift."
         },
         {
           "path": "install/local/wikidot-verification/src/atomic-no-replace.mjs",
@@ -466,16 +482,16 @@
         }
       ],
       "runtime_file_action_adapter_gap": {
-        "status": "candidate_required_missing_generic_file_action_adapter",
+        "status": "candidate_ready_shared_candidate_case_runner",
         "scope_case_ids": [
           "M1039_MUTATION_TO_NEXT_READ",
           "M1043_RESIZED_BLOB_IDENTITY",
           "M1062_SERIALIZABLE_ACTION_RESPONSE",
           "M1062_UPLOAD_TRANSACTION_ORDER"
         ],
-        "existing_owner": "install/local/wikidot-verification/src/generic-runtime-differential.mjs",
-        "missing_generic_seam": {
-          "purpose": "Let the existing generic candidate controller drive one run-owned page and its files without taking over candidate-stack lifecycle or adding a media-specific runner.",
+        "existing_owner": "install/local/wikidot-verification/src/candidate-case-runner.mjs",
+        "implemented_shared_seam": {
+          "purpose": "Let one shared external-candidate lifecycle owner drive a source-owned page and file case set without taking over candidate-stack lifecycle or adding a media-specific runner.",
           "fixed_inputs": [
             "one independently fixed upload byte sequence and SHA-256",
             "run-owned page and file names",
@@ -495,8 +511,8 @@
             "WWS GET and HEAD status, headers, and body SHA-256",
             "the external request events issued and observed by the adapter; no inference about server-internal order"
           ],
-          "supplemental_state_role": "Database and files inspection may prepare and clean the run-owned fixture and seal pre-run and post-run identity, but it cannot decide a case verdict.",
-          "cleanup": "Record every run-owned page, file, revision, and pending blob before use; remove or cancel them in normal, error, and signal paths; and prove their absence before terminal publication."
+          "supplemental_state_role": "Docker inspection binds candidate infrastructure before and after execution but cannot decide a behavior verdict. Database and filesystem reads are not used.",
+          "cleanup": "Record cleanup-addressable page and pending blob identities before use, remove or cancel them through public Deepwell requests in normal, error, and signal paths, and prove page plus file-route absence through public reads before terminal publication."
         },
         "standard_candidate_infrastructure_identity": {
           "path": "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
@@ -520,11 +536,6 @@
       },
       "missing_contracts": [
         {
-          "id": "generic_file_action_adapter",
-          "blocks": ["C_MEDIA_RUNTIME_CANDIDATE"],
-          "reason": "The existing generic runtime owner has no file-action adapter for the four scoped runtime cases. This one adapter integration must bind the fixed byte and actor plan, task-owned fixture identity, run-owned page and file lifecycle, Framerail multipart serialization, Deepwell file actions and next reads, WWS original and resized GET or HEAD observations, external request events, cleanup absence, exact reconciliation, stable standard infrastructure identity, and no-replace publication. Direct DB or files access is permitted only for fixture setup, cleanup, and identity support, never as the pass oracle."
-        },
-        {
           "id": "candidate_browser_fixture_and_executor",
           "blocks": ["C_MEDIA_BROWSER_CANDIDATE"],
           "reason": "The candidate-only Playwright config and test do not exist. This separate browser owner still needs a source-owned plan for exact candidate URLs, media inputs, actor IDs, private storage-state hashes, run-owned browser state, and finally or signal cleanup. The standing canary runner captures fixed read-only pages and cannot substitute for icon transitions, media frames, Gallery viewer actions, or multipart upload workflows."
@@ -542,11 +553,11 @@
       ],
       "required_ownership_boundary": {
         "candidate_stack": "external owner named by the sealed candidate identity; harness observes but does not build, start, stop, replace, or remove it",
-        "run_owned_state": "generic file-action adapter; every created page, revision, file, and pending blob is recorded before use and removed or cancelled in normal, error, and signal paths",
-        "terminal_evidence": "existing generic candidate controller; no-replace publication only after exact case reconciliation, cleanup absence, and stable post-run candidate observation",
-        "secrets": "private operator inputs only; receipts contain actor and storage-state hashes but no credentials, session cookies, presigned URLs, or tokens"
+        "run_owned_state": "source-owned CandidateCaseSet through the shared in-memory resource record; each cleanup-addressable page and pending blob identity is recorded before use and released only with public cleanup proof",
+        "terminal_evidence": "CandidateCaseRunner; no-replace publication only after exact case reconciliation, cleanup absence, and stable post-run candidate observation",
+        "secrets": "private operator inputs only; receipts contain token, session, and CA hashes but no credentials, session cookies, presigned URLs, or tokens"
       },
-      "readiness_rule": "Keep C_MEDIA_RUNTIME_CANDIDATE exists_now=false until the existing generic runtime differential owns the narrow file-action adapter, source-blind tests reject wrong bytes, wrong external request order, stale next reads, missing cleanup, identity drift, duplicate cases, and skipped cases, and the command targets that generic owner rather than a dedicated media runner. Keep C_MEDIA_BROWSER_CANDIDATE false until its separate browser contracts exist. A producer-authored pass value is never sufficient."
+      "readiness_rule": "C_MEDIA_RUNTIME_CANDIDATE is executable but remains candidate_required until an exact candidate run publishes evidence. Source-blind tests reject wrong bytes, wrong external request order, premature public state, missing cleanup, identity drift, duplicate cases, skipped cases, and producer-authored verdicts. Keep C_MEDIA_BROWSER_CANDIDATE false until its separate browser contracts exist."
     }
   },
   "issues": [
@@ -1060,8 +1071,8 @@
           "case_id": "M1039_MUTATION_TO_NEXT_READ",
           "acceptance": "Prove upload, delete, rename, and revision changes produce the next authorized file inventory and exact blob bytes without stale counts, rows, validators, or cache entries.",
           "classification": "candidate_required",
-          "candidate_readiness": "candidate_required_missing_generic_file_action_adapter",
-          "reason": "Mutation services and serving seams exist. The remaining acceptance evidence is one public-HTTP candidate sequence through the missing generic file-action adapter: mutate, read the authorized inventory, GET exact bytes, and prove no stale row, validator, or cache projection.",
+          "candidate_readiness": "candidate_ready_shared_candidate_case_runner",
+          "reason": "CandidateCaseRunner and the Media CandidateCaseSet now execute the public mutation, next-inventory, and exact-byte sequence. The row remains candidate_required until that command publishes evidence from the exact sealed candidate.",
           "source_paths": [
             "deepwell/src/services/file",
             "deepwell/src/services/file_revision",
@@ -1255,8 +1266,8 @@
           "case_id": "M1043_RESIZED_BLOB_IDENTITY",
           "acceptance": "Use exact revision-bound original and resized blob identities and invalidate both after upload, delete, rename, or revision.",
           "classification": "candidate_required",
-          "candidate_readiness": "candidate_required_missing_generic_file_action_adapter",
-          "reason": "Source separates Gallery's original href from its resized img route, and public Router tests prove revision ETags, cheap 304 and HEAD, revision byte changes, and rename or delete denial. The remaining candidate sequence needs the generic file-action adapter to upload fixed bytes, observe original and resized identities through WWS, then replace, rename, and delete through public actions.",
+          "candidate_readiness": "candidate_ready_shared_candidate_case_runner",
+          "reason": "CandidateCaseRunner and the Media CandidateCaseSet now upload fixed bytes and observe original and resized GET and HEAD identities across rename, replacement, and deletion. The row remains candidate_required until that command publishes evidence from the exact sealed candidate.",
           "source_paths": [
             "deepwell/src/services/render/compat/wikidot_gallery.rs",
             "deepwell/tests/page.rs",
@@ -1349,8 +1360,8 @@
           "case_id": "M1062_SERIALIZABLE_ACTION_RESPONSE",
           "acceptance": "Return successful and failed multipart actions without an arbitrary File object in SvelteKit's serialized payload.",
           "classification": "candidate_required",
-          "candidate_readiness": "candidate_required_missing_generic_file_action_adapter",
-          "reason": "Source returns withFiles({ form, res }), which addresses the historical cause. The remaining candidate evidence needs the generic file-action adapter to submit the real public Framerail multipart action and verify its exact successful and failed serialized responses without using an internal object as the oracle.",
+          "candidate_readiness": "candidate_ready_shared_candidate_case_runner",
+          "reason": "CandidateCaseRunner and the Media CandidateCaseSet now submit the real public Framerail multipart action and independently parse exact successful and failed serialized response bytes. The row remains candidate_required until that command publishes evidence from the exact sealed candidate.",
           "source_paths": [
             "framerail/src/lib/server/load/page/page-file-actions.ts"
           ],
@@ -1362,11 +1373,11 @@
           "case_id": "M1062_UPLOAD_TRANSACTION_ORDER",
           "acceptance": "Check Page:Edit, then blob_upload, presigned PUT, and file_create in order, and expose the created file only after relation commit.",
           "classification": "candidate_required",
-          "candidate_readiness": "candidate_required_missing_generic_file_action_adapter",
-          "reason": "The Framerail lifecycle test owns the internal Page:Edit, blob_upload, PUT, and file_create caller order; the candidate must not infer those internal calls. The remaining candidate evidence needs the generic file-action adapter to submit the public action, record only external requests it issues and observes, and prove the public next read exposes the file only after the action commits while failed actions expose no file.",
+          "candidate_readiness": "candidate_ready_shared_candidate_case_runner",
+          "reason": "The Framerail lifecycle test still owns internal Page:Edit, blob_upload, PUT, and file_create order. CandidateCaseRunner and the Media CandidateCaseSet now submit the public action, record only adapter-issued external requests, and prove visibility only on the next public read. The row remains candidate_required until that command publishes evidence from the exact sealed candidate.",
           "evidence_partition": {
             "source_owned": "framerail/tests/page-file-upload-lifecycle.test.js records the internal Deepwell caller order, and framerail/tests/presigned-upload.test.js proves file commit cannot run before an accepted PUT.",
-            "candidate_owned": "The generic file-action adapter submits the public Framerail action and verifies its response plus the next public Deepwell inventory and WWS bytes. It records only its own external request events and does not claim visibility into Framerail-to-Deepwell internal traffic."
+            "candidate_owned": "CandidateCaseRunner and the Media CandidateCaseSet submit the public Framerail action and verify its response plus the next public Deepwell inventory and WWS bytes. They record only adapter-issued external request events and do not claim visibility into Framerail-to-Deepwell internal traffic."
           },
           "source_paths": [
             "framerail/src/lib/server/deepwell/page-file.ts",

@@ -189,6 +189,22 @@ pnpm runtime-differential-stack \
 
 Run-owned Wikidot mutations remain a separate path. `capture_wikidot_saved_pages.py` permits only `sandbox-for-codex`, only slugs matching `run-owned:ftml-diff-YYYYMMDD-NNN`, and create-only operation followed by identity-checked cleanup. It refuses sources above 160,000 characters or 500,000 bytes, existing slugs, changed cleanup targets, and insecure authenticated transport outside that exact site. Real EN and JP sites remain read-only.
 
+## External candidate cases
+
+`scripts/run-candidate-cases.mjs` attaches one source-owned CandidateCaseSet to an externally owned, sealed, unexpired, non-standing production candidate. CandidateCaseRunner owns pre-run and post-cleanup Docker identity, exact denominator reconciliation, append-only resource registration, normal, error, and signal cleanup, and no-replace per-case and aggregate receipts. It does not build, start, stop, replace, or remove the candidate stack.
+
+The `open43-media-files` CaseSet fixes four runtime cases and the editable `scpaiueouiuiuiui` site. It submits the public Framerail multipart action, drives file mutation through public Deepwell JSON-RPC, and observes original and resized identities through public WWS GET and HEAD. Database and filesystem reads are not verdict inputs. The existing generic runtime differential and its disposable-stack controller remain a separate syntax product path.
+
+```sh
+pnpm --dir install/local/wikidot-verification candidate-cases -- \
+  --case-set open43-media-files \
+  --candidate-identity /absolute/evidence/path/candidate-parity-identity.json \
+  --private-input /absolute/private/path/candidate-cases.json \
+  --output-dir /absolute/evidence/path/open43-media-candidate
+```
+
+The candidate identity must seal `scpaiueouiuiuiui.wikijump.localhost` and its matching files origin at one non-443 loopback endpoint. The private JSON names `deepwell_rpc_url`, `deepwell_rpc_token`, `object_store_origin`, `presigned_origin`, `tls_ca_pem`, and `actors.editor.user_id` plus `actors.editor.session_token`. Its Deepwell and object-store URLs must be explicit loopback publications of the sealed candidate Compose services. The private input must be one regular file with no group or other permissions, and the output directory must not already exist. Receipts record the input file SHA-256 and hashes of its token, session, and CA values, never the raw values or a presigned URL.
+
 The 2026-07-26 benchmark streamed 10,000 frozen matching cases through one debug FTML renderer process and completed the local render and comparison in 1.72 seconds with 302,324 KiB maximum RSS. Treat this as a throughput baseline, not a fixed performance gate.
 
 ## Python environment

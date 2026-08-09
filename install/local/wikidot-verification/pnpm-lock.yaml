@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      devalue:
+        specifier: 5.9.0
+        version: 5.9.0
       parse5:
         specifier: ^8.0.1
         version: 8.0.1
@@ -26,6 +29,9 @@ importers:
         version: 16.5.0
 
 packages:
+
+  devalue@5.9.0:
+    resolution: {integrity: sha512-RWrqdArjvPbsATEhOPUo6Wndc/iWnkWKlhIrdlF3zMMYo/c3CVtoaVAyLtWxz5h8nSlkHzxnzV2uLydPXmtF+A==}
 
   '@eslint-community/eslint-utils@4.10.0':
     resolution: {integrity: sha512-rd6n9Sefya1R1Vd594TRwzeHq2VnmICbvh3jebyt1Hs/6OoCSYNVpjGRRsKSTwAq3SKl09w0AfRCU57hoDLmxg==}
@@ -434,6 +440,8 @@ packages:
     engines: {node: '>=10'}
 
 snapshots:
+
+  devalue@5.9.0: {}
 
   '@eslint-community/eslint-utils@4.10.0(eslint@9.39.5)':
     dependencies:
