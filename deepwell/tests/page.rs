@@ -1735,7 +1735,7 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v3")
+            .ends_with("; deepwell-render/v4")
     );
 }
 
@@ -1860,7 +1860,7 @@ async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page(
 async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     const SLUG: &str = "renderer-epoch-cache-fixture";
     const CURRENT_BODY: &str = "renderer epoch current body";
-    const STALE_BODY: &str = "stale deepwell-render/v2 body";
+    const STALE_BODY: &str = "stale deepwell-render/v3 body";
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
@@ -1915,12 +1915,12 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         .article_page_cache_key
         .expect("imported static page should have an anonymous cache key");
     assert!(
-        current_key.starts_with("deepwell:article-view:page:v3:"),
+        current_key.starts_with("deepwell:article-view:page:v4:"),
         "source-freeze cache key must carry the final renderer epoch: {current_key}",
     );
     let stale_key = current_key.replacen(
+        "deepwell:article-view:page:v4:",
         "deepwell:article-view:page:v3:",
-        "deepwell:article-view:page:v2:",
         1,
     );
     assert_ne!(stale_key, current_key);
@@ -1930,7 +1930,7 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     redis
         .set::<_, _, ()>(&stale_key, stale_json)
         .await
-        .expect("stale v2 page should be inserted into the test cache");
+        .expect("stale v3 page should be inserted into the test cache");
     drop(redis);
 
     let view = run_endpoint!(runner, article_view, input);

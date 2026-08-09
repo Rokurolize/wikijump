@@ -694,5 +694,5 @@ async fn embedvideo_preview_and_saved_page_share_render_identity() {
         Some(preview.html_output.body.as_str()),
     );
     assert_eq!(saved.compiled_generator, preview.compiled_generator);
-    assert!(saved.compiled_generator.ends_with("; deepwell-render/v3"));
+    assert!(saved.compiled_generator.ends_with("; deepwell-render/v4"));
 }
