@@ -60,6 +60,9 @@ case "$1" in
     printf '%s\\n' "$3"
     ;;
   diff)
+    if [[ "$PREFLIGHT_GIT_DIFF_FAIL" == true ]]; then
+      exit 5
+    fi
     if [[ "$#" -eq 6 ]]; then
       if [[ "$5" == "$PREFLIGHT_REMOTE_OID" ]]; then
         emit_scope "$PREFLIGHT_REMOTE_SCOPE"
@@ -101,6 +104,7 @@ fi
     PREFLIGHT_COMMAND_LOG: commandLog,
     PREFLIGHT_FAKE_ROOT: root,
     PREFLIGHT_FALLBACK_SCOPE: "all",
+    PREFLIGHT_GIT_DIFF_FAIL: "false",
     PREFLIGHT_HEAD_OID: headOid,
     PREFLIGHT_PATH_LOG: pathLog,
     PREFLIGHT_REAL_NODE: process.execPath,
@@ -159,6 +163,17 @@ test("preflight preserves changed path boundaries", (t) => {
   assert.deepEqual(harness.commands(), [
     "cargo fmt --manifest-path deepwell/Cargo.toml --check"
   ])
+})
+
+test("preflight fails closed when changed path collection fails", (t) => {
+  const harness = createHarness(t)
+  const result = harness.runPreflight(["--base", remoteOid], {
+    PREFLIGHT_GIT_DIFF_FAIL: "true"
+  })
+
+  assert.equal(result.status, 2)
+  assert.match(result.stderr, /failed to collect changed paths/)
+  assert.deepEqual(harness.commands(), [])
 })
 
 test("final preflight is the single explicit full-check barrier", (t) => {

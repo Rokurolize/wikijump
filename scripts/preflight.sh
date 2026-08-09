@@ -46,13 +46,20 @@ fi
 MERGE_BASE="$(git merge-base HEAD "${BASE}")"
 
 # Uncommitted work counts: this runs before you push, not after you commit.
-mapfile -d '' -t CHANGED_PATHS < <(
-  {
-    git diff --no-renames --name-only -z "${MERGE_BASE}" HEAD
-    git diff --no-renames --name-only -z HEAD
+CHANGED_PATHS_FILE="$(mktemp)" || {
+  echo "preflight: failed to create changed path receipt" >&2
+  exit 2
+}
+trap 'rm -f -- "${CHANGED_PATHS_FILE}"' EXIT
+if ! {
+  git diff --no-renames --name-only -z "${MERGE_BASE}" HEAD &&
+    git diff --no-renames --name-only -z HEAD &&
     git diff --no-renames --name-only -z --cached
-  } | sort -zu
-)
+} | sort -zu > "${CHANGED_PATHS_FILE}"; then
+  echo "preflight: failed to collect changed paths" >&2
+  exit 2
+fi
+mapfile -d '' -t CHANGED_PATHS < "${CHANGED_PATHS_FILE}"
 
 if [[ ${#CHANGED_PATHS[@]} -eq 0 ]]; then
   echo "preflight: no changes against ${BASE}; nothing to check"
