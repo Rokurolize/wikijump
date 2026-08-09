@@ -292,6 +292,20 @@ impl<'txn> ServiceContext<'txn> {
         let mut actions = self.post_commit_actions.lock().map_err(|_| {
             Error::new("failed to queue page rerender", ErrorType::Page).raise()
         })?;
+        if actions.iter().any(|action| {
+            matches!(
+                action,
+                PostCommitAction::RerenderPage {
+                    id: queued_id,
+                    depth: queued_depth,
+                } if queued_id.site_id == id.site_id
+                    && queued_id.category_id == id.category_id
+                    && queued_id.page_id == id.page_id
+                    && *queued_depth == depth
+            )
+        }) {
+            return Ok(());
+        }
         actions.push(PostCommitAction::RerenderPage { id, depth });
         Ok(())
     }

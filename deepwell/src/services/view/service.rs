@@ -1215,6 +1215,7 @@ impl ViewService {
             source_fullname: String,
             title_shown: Option<String>,
             page_category_id: Option<i64>,
+            incomplete: bool,
         }
 
         let txn = ctx.transaction();
@@ -1223,8 +1224,13 @@ impl ViewService {
             format!(
                 r#"
 WITH RECURSIVE
-breadcrumb_chain(depth, page_id, source_site, source_fullname, title_shown, parent_fullname) AS (
-  SELECT 0, page_id, source_site, source_fullname, title_shown, parent_fullname
+breadcrumb_chain(
+  depth, page_id, source_site, source_fullname, title_shown,
+  parent_fullname, visited_page_ids, cycle_detected
+) AS (
+  SELECT
+    0, page_id, source_site, source_fullname, title_shown,
+    parent_fullname, ARRAY[page_id], false
   FROM wikidot_page_snapshot
   WHERE page_id = {page_id}
   UNION ALL
@@ -1234,18 +1240,25 @@ breadcrumb_chain(depth, page_id, source_site, source_fullname, title_shown, pare
     parent.source_site,
     parent.source_fullname,
     parent.title_shown,
-    parent.parent_fullname
+    parent.parent_fullname,
+    breadcrumb_chain.visited_page_ids || parent.page_id,
+    parent.page_id = ANY(breadcrumb_chain.visited_page_ids)
   FROM breadcrumb_chain
   JOIN wikidot_page_snapshot parent
     ON parent.source_site = breadcrumb_chain.source_site
    AND parent.source_fullname = breadcrumb_chain.parent_fullname
   WHERE breadcrumb_chain.parent_fullname IS NOT NULL
     AND breadcrumb_chain.depth < 12
+    AND NOT breadcrumb_chain.cycle_detected
 )
 SELECT
   breadcrumb_chain.source_fullname,
   breadcrumb_chain.title_shown,
-  page.page_category_id
+  page.page_category_id,
+  breadcrumb_chain.cycle_detected OR (
+    breadcrumb_chain.depth = 12
+    AND breadcrumb_chain.parent_fullname IS NOT NULL
+  ) AS incomplete
 FROM breadcrumb_chain
 LEFT JOIN page
   ON page.page_id = breadcrumb_chain.page_id
@@ -1265,11 +1278,16 @@ ORDER BY breadcrumb_chain.depth ASC
                 )
             })?;
 
+        if rows.iter().any(|row| row.incomplete) {
+            return Ok(Vec::new());
+        }
+
         let mut breadcrumbs = Vec::new();
         for WikidotBreadcrumbRow {
             source_fullname,
             title_shown,
             page_category_id,
+            incomplete: _,
         } in rows
         {
             let Some(page_category_id) = page_category_id else {

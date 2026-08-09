@@ -49,7 +49,7 @@ const BUCKET_REQUEST_TIMEOUT: Duration = Duration::from_millis(500);
 pub use crate::runtime::ServerState;
 
 pub async fn build_server_state(config: Config, secrets: Secrets) -> Result<ServerState> {
-    build_server_state_inner(config, secrets, true).await
+    build_server_state_inner(config, secrets, true, None).await
 }
 
 /// Build state for a bounded runtime action that must not consume background jobs.
@@ -62,7 +62,20 @@ pub async fn build_server_state_without_workers(
     config: Config,
     secrets: Secrets,
 ) -> Result<ServerState> {
-    build_server_state_inner(config, secrets, false).await
+    build_server_state_inner(config, secrets, false, None).await
+}
+
+/// Build workerless state with a task-owned Redis job queue.
+///
+/// This is an integration-test boundary for transaction and worker behavior.
+/// Production state always uses the fixed runtime namespace.
+#[doc(hidden)]
+pub async fn build_server_state_without_workers_with_job_queue_namespace(
+    config: Config,
+    secrets: Secrets,
+    job_queue_namespace: &str,
+) -> Result<ServerState> {
+    build_server_state_inner(config, secrets, false, Some(job_queue_namespace)).await
 }
 
 async fn build_server_state_inner(
@@ -79,6 +92,7 @@ async fn build_server_state_inner(
         mailcheck_api_key,
     }: Secrets,
     start_workers: bool,
+    job_queue_namespace: Option<&str>,
 ) -> Result<ServerState> {
     let make_error =
         || Error::new("failed to build server state", ErrorType::ServerSetup);
@@ -90,7 +104,11 @@ async fn build_server_state_inner(
         .or_raise(make_error)?;
 
     info!("Connecting to Redis");
-    let (redis, rsmq) = redis_db::connect(&redis_url).await.or_raise(make_error)?;
+    let (redis, rsmq) = match job_queue_namespace {
+        Some(namespace) => redis_db::connect_with_namespace(&redis_url, namespace).await,
+        None => redis_db::connect(&redis_url).await,
+    }
+    .or_raise(make_error)?;
 
     // Load localization data
     info!("Loading localization data");

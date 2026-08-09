@@ -1,0 +1,135 @@
+// @ts-nocheck
+import { strict as assert } from "node:assert"
+import { fileURLToPath } from "node:url"
+import test from "node:test"
+
+import { createServer } from "vite"
+
+const root = fileURLToPath(new URL("..", import.meta.url))
+const vite = await createServer({
+  root,
+  appType: "custom",
+  logLevel: "silent",
+  server: { middlewareMode: true }
+})
+const { client } = await vite.ssrLoadModule("/src/lib/server/deepwell/index.ts")
+const { loadUserSettings, userDisplaySettingsAction } = await vite.ssrLoadModule(
+  "/src/lib/server/load/user-settings.ts"
+)
+
+const requestEvent = ({ locales, sessionToken, submittedUser } = {}) => {
+  const data = new FormData()
+  if (locales !== undefined) data.set("locales", locales)
+  if (submittedUser !== undefined) data.set("user", String(submittedUser))
+
+  return {
+    request: new Request("https://wikijump.test/-/settings?/display", {
+      method: "POST",
+      body: data
+    }),
+    cookies: {
+      get(name) {
+        assert.equal(name, "wikijump_token")
+        return sessionToken
+      }
+    },
+    getClientAddress: () => "192.0.2.63",
+    locals: {
+      requestContext: {
+        sessionToken,
+        siteId: 17
+      }
+    }
+  }
+}
+
+test("user settings bind persistence to the server session actor", async (t) => {
+  const originalRequest = client.request
+  t.after(async () => {
+    client.request = originalRequest
+    await vite.close()
+  })
+
+  const calls = []
+  let persistedLocales = ["en-US"]
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "session_get") {
+      return {
+        session_token: "issue-1063-session",
+        user_id: 41,
+        created_at: "2026-08-09T00:00:00Z",
+        expires_at: "2026-08-10T00:00:00Z",
+        ip_address: "192.0.2.63",
+        user_agent: "issue 1063 test",
+        restricted: false
+      }
+    }
+    if (method === "user_edit") {
+      persistedLocales = params.locales
+      return { user_id: params.user, locales: params.locales }
+    }
+    if (method === "translate") {
+      return {
+        settings: "Settings",
+        save: "Save",
+        cancel: "Cancel",
+        "user-profile-info.locales": "Display languages"
+      }
+    }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  await assert.rejects(
+    loadUserSettings(async () => ({ user_session: null })),
+    (error) => error?.status === 303 && error?.location === "/-/login"
+  )
+
+  const invalid = await userDisplaySettingsAction(requestEvent())
+  assert.equal(invalid.status, 400)
+  assert.equal(calls.length, 0)
+
+  const missingSession = await userDisplaySettingsAction(
+    requestEvent({ locales: "en-US" })
+  )
+  assert.equal(missingSession.status, 401)
+  assert.equal(calls.length, 0)
+
+  const saved = await userDisplaySettingsAction(
+    requestEvent({
+      locales: "ja_JP, en-US ja_JP",
+      sessionToken: "issue-1063-session",
+      submittedUser: 999
+    })
+  )
+  assert.equal(saved.form.valid, true)
+  assert.deepEqual(
+    calls.map(({ method }) => method),
+    ["session_get", "user_edit"]
+  )
+  assert.deepEqual(calls[0].params, ["issue-1063-session"])
+  assert.deepEqual(calls[1], {
+    method: "user_edit",
+    params: {
+      user: 41,
+      ip_address: "192.0.2.63",
+      bypass_filter: false,
+      locales: ["ja-JP", "en-US"]
+    },
+    context: {
+      sessionToken: "issue-1063-session",
+      siteId: 17
+    }
+  })
+
+  const reloaded = await loadUserSettings(async () => ({
+    locales: ["en-US", "en"],
+    user_session: {
+      user: {
+        user_id: 41,
+        locales: persistedLocales
+      }
+    }
+  }))
+  assert.equal(reloaded.displaySettingsForm.data.locales, "ja-JP en-US")
+})

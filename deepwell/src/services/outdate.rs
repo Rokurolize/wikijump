@@ -23,7 +23,7 @@ use crate::futures::StreamExt;
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::{self, Entity as PageCategory};
 use crate::services::ServiceContext;
-use crate::services::{JobService, LinkService, PageService, SiteService};
+use crate::services::{LinkService, PageService, SiteService};
 use crate::types::{ConnectionType, PageId, PageOrder, Reference, RerenderDepth};
 use crate::utils::split_category_name;
 use sea_orm::{
@@ -143,7 +143,7 @@ impl OutdateService {
         Ok(())
     }
 
-    /// Queues the given pages for re-rendering.
+    /// Defers the given page for re-rendering after the transaction commits.
     pub async fn outdate(
         ctx: &ServiceContext<'_>,
         page_id: i64,
@@ -170,9 +170,7 @@ impl OutdateService {
             return Ok(());
         };
 
-        let id = PageId::from_page_model(&page);
-        JobService::queue_rerender_page(ctx, id, depth.plus_one())
-            .await
+        ctx.defer_rerender_page(PageId::from_page_model(&page), depth.plus_one())
             .or_raise(make_error)?;
 
         Ok(())
