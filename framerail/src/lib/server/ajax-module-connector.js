@@ -12,14 +12,25 @@ const CONTROL_FIELDS = new Set([
 ])
 const FORUM_READ_MODULE_PARAMETERS = new Map([
   ["forum/ForumStartModule", [new Set(), new Set(["hidden"])]],
-  [
-    "forum/ForumCommentsListModule",
-    [new Set(["pageId"]), new Set(["pageId", "order"])]
-  ],
+  ["forum/ForumCommentsListModule", [new Set(["pageId"]), new Set(["pageId", "order"])]],
   ["forum/ForumViewCategoryModule", [new Set(["c", "p"])]],
   ["forum/ForumViewThreadModule", [new Set(["t"])]],
   ["forum/ForumViewThreadPostsModule", [new Set(["t", "pageNo"])]],
   ["forum/ForumRecentPostsListModule", [new Set(["page", "categoryId"])]]
+])
+const SITE_CHANGES_MODULE = "changes/SiteChangesListModule"
+const SITE_CHANGES_READ_FIELDS = new Set([
+  "page",
+  "perpage",
+  "pageId",
+  "categoryId",
+  "options"
+])
+const SITE_CHANGES_OPTIONS = new Set([
+  "{}",
+  '{"all":true}',
+  '{"source":true}',
+  '{"files":true}'
 ])
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
@@ -62,17 +73,28 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *
  * @typedef {{
  *   siteId: number
+ *   pageId: string
+ *   page: string
+ *   perpage: string
+ *   categoryId: string
+ *   options: string
+ * }} SiteChangesRenderInput
+ *
+ *
+ * @typedef {{
+ *   siteId: number
  *   renderListPages: (
  *     input: ListPagesRenderInput
  *   ) => Promise<{ body: string }>
- *   renderForumModule?: (
- *     input: ForumModuleRenderInput
- *   ) => Promise<{
+ *   renderForumModule?: (input: ForumModuleRenderInput) => Promise<{
  *     status: string
  *     body: string
  *     thread_id?: number
  *     js_include?: string[]
  *   }>
+ *   renderSiteChangesModule?: (
+ *     input: SiteChangesRenderInput
+ *   ) => Promise<{ status: string; body: string }>
  *   createNewPage?: (input: NewPageCreateInput) => Promise<void>
  *   canCreateNewPage?: boolean | (() => boolean | Promise<boolean>)
  *   pageExists?: (slug: string) => boolean | Promise<boolean>
@@ -160,6 +182,12 @@ const readUrlEncodedForm = async (request) => {
  * @param {string} name
  */
 const fieldValue = (fields, name) => fields.get(name) ?? ""
+
+/** @param {string} value */
+const isPositiveSafeDecimal = (value) => {
+  if (!/^[1-9]\d*$/u.test(value)) return false
+  return Number.isSafeInteger(Number.parseInt(value, 10))
+}
 
 /** @param {string} tags */
 const splitNewPageTags = (tags) => tags.split(/\s+/u).filter((tag) => tag.length > 0)
@@ -415,6 +443,7 @@ export const handleAjaxModuleConnectorRequest = async (
     siteId,
     renderListPages,
     renderForumModule,
+    renderSiteChangesModule,
     createNewPage,
     canCreateNewPage = true,
     pageExists,
@@ -517,6 +546,82 @@ export const handleAjaxModuleConnectorRequest = async (
   }
 
   const moduleName = fields.get("moduleName")
+  if (moduleName === SITE_CHANGES_MODULE) {
+    if (!renderSiteChangesModule) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module: ${moduleName}`
+      })
+    }
+
+    /** @type {Record<string, string>} */
+    const parameters = {}
+    for (const [key, value] of fields) {
+      if (CONTROL_FIELDS.has(key)) {
+        if (key === "module_body") {
+          return jsonResponse({
+            status: "not_ok",
+            message: `Unsupported AJAX module shape: ${moduleName}`
+          })
+        }
+        continue
+      }
+      if (!SITE_CHANGES_READ_FIELDS.has(key)) {
+        return jsonResponse({
+          status: "not_ok",
+          message: `Unsupported AJAX module shape: ${moduleName}`
+        })
+      }
+      parameters[key] = value
+    }
+    if (
+      Object.keys(parameters).length !== SITE_CHANGES_READ_FIELDS.size ||
+      ![...SITE_CHANGES_READ_FIELDS].every((name) => Object.hasOwn(parameters, name)) ||
+      !isPositiveSafeDecimal(parameters.page) ||
+      parameters.perpage !== "20" ||
+      !isPositiveSafeDecimal(parameters.pageId) ||
+      !(parameters.categoryId === "" || isPositiveSafeDecimal(parameters.categoryId)) ||
+      !SITE_CHANGES_OPTIONS.has(parameters.options)
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+
+    const callbackIndex = fields.has("callbackIndex")
+      ? fieldValue(fields, "callbackIndex")
+      : null
+    const responseMetadata = () => ({
+      callbackIndex,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+      cssInclude: [],
+      jsInclude: []
+    })
+    try {
+      const output = await renderSiteChangesModule({
+        siteId,
+        pageId: parameters.pageId,
+        page: parameters.page,
+        perpage: parameters.perpage,
+        categoryId: parameters.categoryId,
+        options: parameters.options
+      })
+      return jsonResponse({
+        status: output.status,
+        body: output.body,
+        ...responseMetadata()
+      })
+    } catch (error) {
+      console.error("AJAX SiteChanges rendering failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        body: "",
+        ...responseMetadata()
+      })
+    }
+  }
+
   const forumParameterShapes = moduleName
     ? FORUM_READ_MODULE_PARAMETERS.get(moduleName)
     : undefined

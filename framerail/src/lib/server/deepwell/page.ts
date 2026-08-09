@@ -144,6 +144,38 @@ export async function pageViewPermission(
   )
 }
 
+export interface WikidotSiteChangesModuleInput {
+  pageId: string
+  page: string
+  perpage: string
+  categoryId: string
+  options: string
+}
+
+export interface WikidotSiteChangesModuleOutput {
+  status: string
+  body: string
+}
+
+export async function wikidotSiteChangesModule(
+  siteId: number,
+  input: WikidotSiteChangesModuleInput,
+  requestContext: RequestContext = {}
+): Promise<WikidotSiteChangesModuleOutput> {
+  return client.request(
+    "wikidot_site_changes_module",
+    {
+      site_id: siteId,
+      page_id: input.pageId,
+      page: input.page,
+      perpage: input.perpage,
+      category_id: input.categoryId,
+      options: input.options
+    },
+    requestContext
+  )
+}
+
 export async function pageEditPermission(
   requestContext: RequestContext = {}
 ): Promise<{ can_edit: boolean }> {

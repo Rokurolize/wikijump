@@ -36,8 +36,10 @@ use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::render::{
-    LegacyActionRegistry, LegacyBrowserAction, WikidotForumModuleRequest,
-    WikidotForumModuleResponse, WikidotListPagesFeedInput, WikidotListPagesFeedOutput,
+    LegacyActionRegistry, LegacyBrowserAction, SiteChangesLoad,
+    WikidotForumModuleRequest, WikidotForumModuleResponse, WikidotListPagesFeedInput,
+    WikidotListPagesFeedOutput, WikidotSiteChangesFilter,
+    WikidotSiteChangesModuleRequest, WikidotSiteChangesModuleResponse,
 };
 use crate::services::{MutationAuthorization, SettingsService, TextService};
 use crate::types::{
@@ -71,6 +73,17 @@ struct WikidotForumModuleInput {
     site_id: i64,
     module_name: String,
     parameters: BTreeMap<String, String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct WikidotSiteChangesModuleInput {
+    site_id: i64,
+    page_id: String,
+    page: String,
+    perpage: String,
+    category_id: String,
+    options: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -287,6 +300,120 @@ pub async fn wikidot_list_pages_module(
             &normalize_wikidot_list_pages_set_pairs(&output.html_output.body),
         ),
     })
+}
+
+pub async fn wikidot_site_changes_module(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotSiteChangesModuleResponse> {
+    let input: WikidotSiteChangesModuleInput = parse!(params, Page);
+    let not_ok = || WikidotSiteChangesModuleResponse {
+        status: "not_ok".to_owned(),
+        body: String::new(),
+    };
+    if ctx
+        .request()
+        .site_id
+        .is_some_and(|request_site_id| request_site_id != input.site_id)
+    {
+        return Err(Error::new(
+            "SiteChanges module site does not match the request context",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+
+    let Some(page_id) = wikidot_positive_decimal::<i64>(&input.page_id) else {
+        return Ok(not_ok());
+    };
+    let Some(page) = wikidot_positive_decimal::<u32>(&input.page) else {
+        return Ok(not_ok());
+    };
+    if input.perpage != "20" {
+        return Ok(not_ok());
+    }
+    let category_id = if input.category_id.is_empty() {
+        None
+    } else {
+        let Some(category_id) = wikidot_positive_decimal::<i64>(&input.category_id)
+        else {
+            return Ok(not_ok());
+        };
+        Some(category_id)
+    };
+    let Some(filter) = WikidotSiteChangesFilter::from_options(&input.options) else {
+        return Ok(not_ok());
+    };
+
+    let Some(host_page) =
+        PageService::get_optional(ctx, input.site_id, Reference::Id(page_id))
+            .await
+            .or_raise(|| {
+                Error::new("failed to resolve SiteChanges host page", ErrorType::Page)
+            })?
+    else {
+        return Ok(not_ok());
+    };
+    let can_view_host = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id: input.site_id,
+            page_reference: Some(Reference::Id(host_page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(host_page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to check SiteChanges host page visibility",
+            ErrorType::Permission,
+        )
+    })?;
+    if !can_view_host {
+        return Ok(not_ok());
+    }
+
+    let outcome = RenderService::render_wikidot_site_changes_module(
+        ctx,
+        input.site_id,
+        WikidotSiteChangesModuleRequest {
+            page,
+            category_id,
+            filter,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            format!(
+                "failed to render Wikidot SiteChanges module in site ID {}",
+                input.site_id,
+            ),
+            ErrorType::Page,
+        )
+    })?;
+    match outcome {
+        SiteChangesLoad::Complete(response) => Ok(response),
+        SiteChangesLoad::Saturated => Ok(not_ok()),
+    }
+}
+
+fn wikidot_positive_decimal<T>(value: &str) -> Option<T>
+where
+    T: std::str::FromStr,
+{
+    let mut bytes = value.bytes();
+    if !matches!(bytes.next(), Some(b'1'..=b'9'))
+        || !bytes.all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+    value.parse().ok()
 }
 
 pub async fn wikidot_forum_module(

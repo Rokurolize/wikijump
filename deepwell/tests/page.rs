@@ -6747,6 +6747,319 @@ async fn sitechanges_default_snapshot_filters_before_the_initial_page_limit() {
 }
 
 #[tokio::test]
+async fn sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads()
+{
+    const PRIVATE_CATEGORY: &str = "fixture-sitechanges-ajax-private";
+    const PRIVATE_PAGE: &str = "fixture-sitechanges-ajax-private-page";
+    const PRIVATE_TITLE: &str = "Fixture SiteChanges Ajax Private Page";
+    const PUBLIC_PAGE: &str = "fixture-sitechanges-ajax-public-page";
+    const PUBLIC_TITLE: &str = "Fixture SiteChanges Ajax Public Page";
+    const HOLDER: &str = "fixture-sitechanges-ajax-holder";
+
+    async fn insert_source_revisions(
+        runner: &TestRunner,
+        initial_revision_id: i64,
+        count: i32,
+        revision_number_offset: i32,
+        time_offset_seconds: i32,
+    ) {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page_revision (",
+                    "revision_type, created_at, updated_at, revision_number, page_id, ",
+                    "site_id, user_id, from_wikidot, changes, wikitext_hash, ",
+                    "compiled_body_html_hash, compiled_body_styles_hash, ",
+                    "compiled_top_bar_html_hash, compiled_side_bar_html_hash, ",
+                    "compiled_at, compiled_generator, comments, hidden, title, ",
+                    "alt_title, slug, tags",
+                    ") SELECT ",
+                    "'regular', NOW() + make_interval(secs => ",
+                    "($4 + fixture.sequence)::DOUBLE PRECISION), ",
+                    "source.updated_at, $3 + fixture.sequence, source.page_id, ",
+                    "source.site_id, source.user_id, source.from_wikidot, ",
+                    "ARRAY['wikitext']::TEXT[], source.wikitext_hash, ",
+                    "source.compiled_body_html_hash, source.compiled_body_styles_hash, ",
+                    "source.compiled_top_bar_html_hash, source.compiled_side_bar_html_hash, ",
+                    "source.compiled_at, source.compiled_generator, ",
+                    "'source fixture ' || ($3 + fixture.sequence), source.hidden, ",
+                    "source.title, source.alt_title, source.slug, source.tags ",
+                    "FROM page_revision source ",
+                    "CROSS JOIN generate_series(1, $2::INTEGER) fixture(sequence) ",
+                    "WHERE source.revision_id = $1",
+                ),
+                [
+                    Value::from(initial_revision_id),
+                    Value::from(count),
+                    Value::from(revision_number_offset),
+                    Value::from(time_offset_seconds),
+                ],
+            ))
+            .await
+            .expect("SiteChanges source fixtures should be inserted");
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    let public_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE,
+        PUBLIC_TITLE,
+        "public SiteChanges Ajax fixture",
+    )
+    .await;
+    let private_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE,
+        PRIVATE_TITLE,
+        "private SiteChanges Ajax fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_PAGE, PRIVATE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER,
+        "Fixture SiteChanges Ajax Holder",
+        "[[module SiteChanges]]",
+    )
+    .await;
+
+    insert_source_revisions(&runner, public_revision_id, 105, 0, 100).await;
+    insert_source_revisions(&runner, private_revision_id, 25, 0, 1_000).await;
+
+    let holder = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": HOLDER}),
+    )
+    .expect("SiteChanges Ajax holder should exist");
+    let public_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": PUBLIC_PAGE}),
+    )
+    .expect("SiteChanges Ajax public page should exist");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(
+            "fixture-sitechanges-unrelated-request-page",
+        ))),
+        ..Default::default()
+    });
+
+    let mut page_bodies = Vec::new();
+    for page in ["1", "2", "3"] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_site_changes_module,
+            json!({
+                "site_id": site_id,
+                "page_id": holder.page_id.to_string(),
+                "page": page,
+                "perpage": "20",
+                "category_id": "",
+                "options": "{\"all\":true}",
+            }),
+        );
+        assert_eq!(output.status, "ok");
+        assert!(
+            !output.body.contains(PRIVATE_TITLE),
+            "private revisions must be filtered before page selection:\n{}",
+            output.body,
+        );
+        page_bodies.push(output.body);
+    }
+
+    for (body, first_revision, last_revision, outside_revision) in [
+        (&page_bodies[0], 105, 86, 85),
+        (&page_bodies[1], 85, 66, 65),
+        (&page_bodies[2], 65, 46, 45),
+    ] {
+        assert!(body.contains(PUBLIC_TITLE));
+        assert!(body.contains(&format!("(rev. {first_revision})")), "{body}");
+        assert!(body.contains(&format!("(rev. {last_revision})")), "{body}");
+        assert!(
+            !body.contains(&format!("(rev. {outside_revision})")),
+            "adjacent-page revision leaked across the page boundary: {body}",
+        );
+    }
+    assert!(
+        page_bodies[0].contains(r#">page 1</span>"#)
+            && page_bodies[0].contains("updateList(3)")
+            && page_bodies[0].contains("next &raquo;"),
+        "page one should preserve the sealed pager shape: {}",
+        page_bodies[0],
+    );
+    assert!(
+        page_bodies[1].contains(r#">page 2</span>"#)
+            && page_bodies[1].contains("&laquo; previous")
+            && page_bodies[1].contains("updateList(4)"),
+        "page two should preserve the sealed pager shape: {}",
+        page_bodies[1],
+    );
+    assert!(
+        page_bodies[2].contains(r#">page 3</span>"#)
+            && page_bodies[2].contains("updateList(5)")
+            && page_bodies[2].contains(r#"<span class="dots">...</span>"#),
+        "page three should preserve the sealed pager shape: {}",
+        page_bodies[2],
+    );
+
+    create_empty_file_fixture(
+        &runner,
+        site_id,
+        public_page.page_id,
+        "sitechanges-ajax-file.txt",
+    )
+    .await;
+    let files = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page_id": holder.page_id.to_string(),
+            "page": "1",
+            "perpage": "20",
+            "category_id": "",
+            "options": "{\"files\":true}",
+        }),
+    );
+    assert_eq!(files.status, "ok");
+    assert!(
+        files.body.contains(PUBLIC_TITLE)
+            && files.body.contains("file/attachment action\">F")
+            && files.body.contains("create file fixture")
+            && !files.body.contains("source fixture"),
+        "files filter should select only stored file activity:\n{}",
+        files.body,
+    );
+
+    for options in ["{\"source\":true}", "{}"] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_site_changes_module,
+            json!({
+                "site_id": site_id,
+                "page_id": holder.page_id.to_string(),
+                "page": "1",
+                "perpage": "20",
+                "category_id": "",
+                "options": options,
+            }),
+        );
+        assert_eq!(output.status, "ok");
+        assert!(
+            output.body.contains("source fixture 105"),
+            "{}",
+            output.body
+        );
+        if options.contains("source") {
+            assert!(!output.body.contains("file/attachment action"));
+        }
+    }
+
+    for (page, category_id) in [("999999", ""), ("1", "999999999")] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_site_changes_module,
+            json!({
+                "site_id": site_id,
+                "page_id": holder.page_id.to_string(),
+                "page": page,
+                "perpage": "20",
+                "category_id": category_id,
+                "options": "{\"all\":true}",
+            }),
+        );
+        assert_eq!(output.status, "ok");
+        assert_eq!(output.body, "Sorry, no revisions matching your criteria.");
+    }
+
+    for invalid in [
+        json!({"page_id": "0", "page": "1", "perpage": "20", "category_id": "", "options": "{\"all\":true}"}),
+        json!({"page_id": holder.page_id.to_string(), "page": "0", "perpage": "20", "category_id": "", "options": "{\"all\":true}"}),
+        json!({"page_id": holder.page_id.to_string(), "page": "1", "perpage": "10", "category_id": "", "options": "{\"all\":true}"}),
+        json!({"page_id": holder.page_id.to_string(), "page": "1", "perpage": "20", "category_id": "missing", "options": "{\"all\":true}"}),
+        json!({"page_id": holder.page_id.to_string(), "page": "1", "perpage": "20", "category_id": "", "options": "{\"all\":false}"}),
+    ] {
+        let mut input = invalid;
+        input["site_id"] = json!(site_id);
+        let output = run_endpoint!(runner, wikidot_site_changes_module, input);
+        assert_eq!(output.status, "not_ok");
+        assert!(output.body.is_empty());
+    }
+
+    run_endpoint_err!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page_id": holder.page_id.to_string(),
+            "page": "1",
+            "perpage": "20",
+            "category_id": "",
+            "options": "{\"all\":true}",
+            "unknown": "value",
+        }),
+    );
+
+    insert_source_revisions(&runner, private_revision_id, 5_000, 25, 10_000).await;
+    let saturated_ajax = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page_id": holder.page_id.to_string(),
+            "page": "1",
+            "perpage": "20",
+            "category_id": "",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(saturated_ajax.status, "not_ok");
+    assert!(
+        saturated_ajax.body.is_empty(),
+        "raw-scan saturation must not expose partial rows:\n{}",
+        saturated_ajax.body,
+    );
+
+    let saturated_snapshot = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "SiteChanges saturated anonymous preview",
+            "wikitext": "[[module SiteChanges]]",
+        }),
+    );
+    assert!(
+        saturated_snapshot
+            .body
+            .contains(r#"[[module <em>SiteChanges</em>]] No such module"#,),
+        "a saturated initial snapshot should follow the literal fail-closed path:\n{}",
+        saturated_snapshot.body,
+    );
+    for forbidden in [PUBLIC_TITLE, PRIVATE_TITLE, r#"class="changes-list""#] {
+        assert!(
+            !saturated_snapshot.body.contains(forbidden),
+            "a saturated initial snapshot must not expose partial row {forbidden:?}:\n{}",
+            saturated_snapshot.body,
+        );
+    }
+}
+
+#[tokio::test]
 async fn loginstatus_page_source_matches_live_unavailable_module() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

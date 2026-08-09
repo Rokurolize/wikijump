@@ -108,6 +108,11 @@ pub use self::service::RenderService;
 pub(crate) use self::service::{
     CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,
 };
+pub(crate) use self::site_changes::SiteChangesLoad;
+pub use self::site_changes::{
+    WikidotSiteChangesFilter, WikidotSiteChangesModuleRequest,
+    WikidotSiteChangesModuleResponse,
+};
 pub use self::structs::{
     RenderOutput, RenderPageOutput, WikidotListPagesFeedInput, WikidotListPagesFeedItem,
     WikidotListPagesFeedOutput,

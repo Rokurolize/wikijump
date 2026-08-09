@@ -24,23 +24,24 @@ use super::categories::wikidot_category_sort_key;
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
 use super::service::{
-    escape_list_pages_html_attr, escape_list_pages_html_text,
+    RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
     format_wikidot_list_pages_date,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{CategoryService, ServiceContext};
-use crate::types::{Action, PageRevisionType, Permission, Reference, Resource};
+use crate::types::{Action, Permission, Reference, Resource};
 use ftml::settings::WikitextSettings;
 use regex::Regex;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement};
+use serde::Serialize;
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
 const SITE_CHANGES_ROWS_PER_PAGE: usize = 20;
-const SITE_CHANGES_VISIBLE_ROW_TARGET: usize = SITE_CHANGES_ROWS_PER_PAGE * 3 + 1;
 const SITE_CHANGES_QUERY_BATCH: usize = 250;
 const SITE_CHANGES_MAX_RAW_SCAN: usize = 5_000;
+const SITE_CHANGES_EMPTY: &str = "Sorry, no revisions matching your criteria.";
 
 pub(super) static SITE_CHANGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?m)^[\t ]*\[\[module[\t ]+SiteChanges[\t ]*\]\][\t ]*$")
@@ -49,8 +50,8 @@ pub(super) static SITE_CHANGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 
 #[derive(Debug, FromQueryResult)]
 struct SiteChangesRevisionRow {
-    revision_id: i64,
-    revision_type: PageRevisionType,
+    is_new_page: bool,
+    is_file: bool,
     created_at: time::OffsetDateTime,
     revision_number: i32,
     page_id: i64,
@@ -75,7 +76,61 @@ struct SiteChangesCategory {
 #[derive(Debug)]
 struct SiteChangesSnapshot {
     categories: Vec<SiteChangesCategory>,
+    list: SiteChangesList,
+}
+
+#[derive(Debug)]
+struct SiteChangesList {
+    page: u32,
+    last_link_page: u32,
+    has_next: bool,
+    has_dots: bool,
     revisions: Vec<SiteChangesRevisionRow>,
+}
+
+#[derive(Debug)]
+pub(crate) enum SiteChangesLoad<T> {
+    Complete(T),
+    Saturated,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WikidotSiteChangesFilter {
+    All,
+    Source,
+    Files,
+}
+
+impl WikidotSiteChangesFilter {
+    pub fn from_options(options: &str) -> Option<Self> {
+        match options {
+            "{}" | "{\"all\":true}" => Some(Self::All),
+            "{\"source\":true}" => Some(Self::Source),
+            "{\"files\":true}" => Some(Self::Files),
+            _ => None,
+        }
+    }
+
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::All => "all",
+            Self::Source => "source",
+            Self::Files => "files",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct WikidotSiteChangesModuleRequest {
+    pub page: u32,
+    pub category_id: Option<i64>,
+    pub filter: WikidotSiteChangesFilter,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotSiteChangesModuleResponse {
+    pub status: String,
+    pub body: String,
 }
 
 pub(super) async fn expand_site_changes_modules(
@@ -92,8 +147,21 @@ pub(super) async fn expand_site_changes_modules(
     let Some(current_site_id) = current_site_id else {
         return Ok(wikitext);
     };
-    let snapshot =
-        load_site_changes_snapshot(ctx, current_site_id, viewer_user_id).await?;
+    let snapshot = match load_site_changes_snapshot(
+        ctx,
+        current_site_id,
+        viewer_user_id,
+        WikidotSiteChangesModuleRequest {
+            page: 1,
+            category_id: None,
+            filter: WikidotSiteChangesFilter::All,
+        },
+    )
+    .await?
+    {
+        SiteChangesLoad::Complete(snapshot) => snapshot,
+        SiteChangesLoad::Saturated => return Ok(wikitext),
+    };
 
     let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
     let mut output = String::with_capacity(wikitext.len());
@@ -119,48 +187,126 @@ async fn load_site_changes_snapshot(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     viewer_user_id: Option<i64>,
-) -> Result<SiteChangesSnapshot> {
+    request: WikidotSiteChangesModuleRequest,
+) -> Result<SiteChangesLoad<SiteChangesSnapshot>> {
+    let list = match load_site_changes_list(ctx, site_id, viewer_user_id, request).await?
+    {
+        SiteChangesLoad::Complete(list) => list,
+        SiteChangesLoad::Saturated => return Ok(SiteChangesLoad::Saturated),
+    };
+    let categories = load_site_changes_categories(ctx, site_id, viewer_user_id).await?;
+    Ok(SiteChangesLoad::Complete(SiteChangesSnapshot {
+        categories,
+        list,
+    }))
+}
+
+async fn load_site_changes_list(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    viewer_user_id: Option<i64>,
+    request: WikidotSiteChangesModuleRequest,
+) -> Result<SiteChangesLoad<SiteChangesList>> {
     let make_error = || {
         Error::new(
             format!("failed to load SiteChanges rows for site ID {site_id}"),
             ErrorType::Render,
         )
     };
+    let page_start = usize::try_from(request.page.saturating_sub(1))
+        .ok()
+        .and_then(|page| page.checked_mul(SITE_CHANGES_ROWS_PER_PAGE))
+        .unwrap_or(SITE_CHANGES_MAX_RAW_SCAN);
+    if page_start >= SITE_CHANGES_MAX_RAW_SCAN {
+        return Ok(SiteChangesLoad::Complete(SiteChangesList {
+            page: request.page,
+            last_link_page: request.page,
+            has_next: false,
+            has_dots: false,
+            revisions: Vec::new(),
+        }));
+    }
+    let last_candidate_page = request.page.saturating_add(2);
+    let visible_row_target = usize::try_from(last_candidate_page)
+        .ok()
+        .and_then(|page| page.checked_mul(SITE_CHANGES_ROWS_PER_PAGE))
+        .and_then(|rows| rows.checked_add(1))
+        .unwrap_or(SITE_CHANGES_MAX_RAW_SCAN)
+        .min(SITE_CHANGES_MAX_RAW_SCAN);
     let txn = ctx.transaction();
     let mut raw_offset = 0usize;
-    let mut revisions = Vec::with_capacity(SITE_CHANGES_VISIBLE_ROW_TARGET);
+    let mut revisions = Vec::with_capacity(visible_row_target);
     let mut permission_cache = BTreeMap::<i64, bool>::new();
+    let mut naturally_exhausted = false;
 
-    while revisions.len() < SITE_CHANGES_VISIBLE_ROW_TARGET
-        && raw_offset < SITE_CHANGES_MAX_RAW_SCAN
-    {
+    while revisions.len() < visible_row_target && raw_offset < SITE_CHANGES_MAX_RAW_SCAN {
         let batch_size = SITE_CHANGES_QUERY_BATCH
             .min(SITE_CHANGES_MAX_RAW_SCAN.saturating_sub(raw_offset));
         let rows =
             SiteChangesRevisionRow::find_by_statement(Statement::from_sql_and_values(
                 txn.get_database_backend(),
                 format!(
-                    "SELECT pr.revision_id, pr.revision_type, pr.created_at, \
-                            pr.revision_number, pr.page_id, p.page_category_id, \
-                            pc.slug AS category_slug, pr.slug, pr.title, pr.changes, \
-                            pr.comments, pr.user_id, \
-                            wu.name AS wikidot_user_name, wu.slug AS wikidot_user_slug, \
-                            local_user.name AS local_user_name \
-                     FROM page_revision pr \
-                     JOIN page p ON p.page_id = pr.page_id \
-                                AND p.site_id = pr.site_id \
-                                AND p.deleted_at IS NULL \
-                     JOIN page_category pc ON pc.category_id = p.page_category_id \
-                     LEFT JOIN wikidot_user wu \
-                       ON wu.user_id = pr.user_id AND wu.is_deleted = FALSE \
-                     LEFT JOIN \"user\" local_user \
-                       ON local_user.user_id = pr.user_id \
-                      AND local_user.deleted_at IS NULL \
-                     WHERE pr.site_id = $1 \
-                     ORDER BY pr.created_at DESC, pr.revision_id DESC \
+                    "SELECT revision_id, is_new_page, is_file, created_at, \
+                            revision_number, page_id, page_category_id, category_slug, \
+                            slug, title, changes, comments, user_id, \
+                            wikidot_user_name, wikidot_user_slug, local_user_name \
+                     FROM ( \
+                       SELECT pr.revision_id, 0::SMALLINT AS activity_kind, \
+                              pr.revision_type = 'create' AS is_new_page, \
+                              FALSE AS is_file, pr.created_at, pr.revision_number, \
+                              pr.page_id, p.page_category_id, pc.slug AS category_slug, \
+                              pr.slug, pr.title, pr.changes, pr.comments, pr.user_id, \
+                              wu.name AS wikidot_user_name, \
+                              wu.slug AS wikidot_user_slug, \
+                              local_user.name AS local_user_name \
+                       FROM page_revision pr \
+                       JOIN page p ON p.page_id = pr.page_id \
+                                  AND p.site_id = pr.site_id \
+                                  AND p.deleted_at IS NULL \
+                       JOIN page_category pc ON pc.category_id = p.page_category_id \
+                       LEFT JOIN wikidot_user wu \
+                         ON wu.user_id = pr.user_id AND wu.is_deleted = FALSE \
+                       LEFT JOIN \"user\" local_user \
+                         ON local_user.user_id = pr.user_id \
+                        AND local_user.deleted_at IS NULL \
+                       WHERE pr.site_id = $1 \
+                         AND $2 IN ('all', 'source') \
+                         AND pr.revision_type NOT IN ('delete', 'undelete') \
+                         AND ($2 <> 'source' OR pr.changes @> ARRAY['wikitext']::TEXT[]) \
+                         AND ($3::BIGINT IS NULL OR p.page_category_id = $3) \
+                       UNION ALL \
+                       SELECT fr.revision_id, 1::SMALLINT AS activity_kind, \
+                              FALSE AS is_new_page, TRUE AS is_file, fr.created_at, \
+                              fr.revision_number, fr.page_id, p.page_category_id, \
+                              pc.slug AS category_slug, current_pr.slug, current_pr.title, \
+                              fr.changes, fr.comments, fr.user_id, \
+                              wu.name AS wikidot_user_name, \
+                              wu.slug AS wikidot_user_slug, \
+                              local_user.name AS local_user_name \
+                       FROM file_revision fr \
+                       JOIN page p ON p.page_id = fr.page_id \
+                                  AND p.site_id = fr.site_id \
+                                  AND p.deleted_at IS NULL \
+                       JOIN page_revision current_pr \
+                         ON current_pr.revision_id = p.latest_revision_id \
+                       JOIN page_category pc ON pc.category_id = p.page_category_id \
+                       LEFT JOIN wikidot_user wu \
+                         ON wu.user_id = fr.user_id AND wu.is_deleted = FALSE \
+                       LEFT JOIN \"user\" local_user \
+                         ON local_user.user_id = fr.user_id \
+                        AND local_user.deleted_at IS NULL \
+                       WHERE fr.site_id = $1 \
+                         AND $2 IN ('all', 'files') \
+                         AND ($3::BIGINT IS NULL OR p.page_category_id = $3) \
+                     ) activity \
+                     ORDER BY created_at DESC, activity_kind, revision_id DESC \
                      LIMIT {batch_size} OFFSET {raw_offset}",
                 ),
-                [site_id.into()],
+                [
+                    site_id.into(),
+                    request.filter.as_str().to_owned().into(),
+                    request.category_id.into(),
+                ],
             ))
             .all(txn)
             .await
@@ -169,12 +315,6 @@ async fn load_site_changes_snapshot(
         raw_offset = raw_offset.saturating_add(row_count);
 
         for row in rows {
-            if matches!(
-                row.revision_type,
-                PageRevisionType::Delete | PageRevisionType::Undelete
-            ) {
-                continue;
-            }
             let can_view = if let Some(can_view) = permission_cache.get(&row.page_id) {
                 *can_view
             } else {
@@ -198,24 +338,62 @@ async fn load_site_changes_snapshot(
             };
             if can_view {
                 revisions.push(row);
-                if revisions.len() == SITE_CHANGES_VISIBLE_ROW_TARGET {
+                if revisions.len() == visible_row_target {
                     break;
                 }
             }
         }
 
         if row_count < batch_size {
+            naturally_exhausted = true;
             break;
         }
     }
 
-    revisions.sort_by(|left, right| {
-        right
-            .created_at
-            .cmp(&left.created_at)
-            .then_with(|| right.revision_id.cmp(&left.revision_id))
-    });
+    if revisions.len() < visible_row_target && !naturally_exhausted {
+        return Ok(SiteChangesLoad::Saturated);
+    }
 
+    let available_pages = revisions
+        .len()
+        .div_ceil(SITE_CHANGES_ROWS_PER_PAGE)
+        .try_into()
+        .unwrap_or(u32::MAX);
+    let last_link_page = available_pages.min(last_candidate_page).max(request.page);
+    let has_next = revisions.len()
+        > usize::try_from(request.page)
+            .unwrap_or(usize::MAX)
+            .saturating_mul(SITE_CHANGES_ROWS_PER_PAGE);
+    let has_dots = revisions.len()
+        > usize::try_from(last_candidate_page)
+            .unwrap_or(usize::MAX)
+            .saturating_mul(SITE_CHANGES_ROWS_PER_PAGE);
+    let revisions = revisions
+        .into_iter()
+        .skip(page_start)
+        .take(SITE_CHANGES_ROWS_PER_PAGE)
+        .collect();
+
+    Ok(SiteChangesLoad::Complete(SiteChangesList {
+        page: request.page,
+        last_link_page,
+        has_next,
+        has_dots,
+        revisions,
+    }))
+}
+
+async fn load_site_changes_categories(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    viewer_user_id: Option<i64>,
+) -> Result<Vec<SiteChangesCategory>> {
+    let make_error = || {
+        Error::new(
+            format!("failed to load SiteChanges categories for site ID {site_id}"),
+            ErrorType::Render,
+        )
+    };
     let categories = CategoryService::get_all_active(ctx, site_id)
         .await?
         .into_iter();
@@ -245,11 +423,29 @@ async fn load_site_changes_snapshot(
     }
     visible_categories
         .sort_by_cached_key(|category| wikidot_category_sort_key(&category.slug));
+    Ok(visible_categories)
+}
 
-    Ok(SiteChangesSnapshot {
-        categories: visible_categories,
-        revisions,
-    })
+impl RenderService {
+    pub(crate) async fn render_wikidot_site_changes_module(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        request: WikidotSiteChangesModuleRequest,
+    ) -> Result<SiteChangesLoad<WikidotSiteChangesModuleResponse>> {
+        let list =
+            match load_site_changes_list(ctx, site_id, ctx.request().user_id, request)
+                .await?
+            {
+                SiteChangesLoad::Complete(list) => list,
+                SiteChangesLoad::Saturated => return Ok(SiteChangesLoad::Saturated),
+            };
+        Ok(SiteChangesLoad::Complete(
+            WikidotSiteChangesModuleResponse {
+                status: "ok".to_owned(),
+                body: render_site_changes_list(&list),
+            },
+        ))
+    }
 }
 
 fn render_site_changes_snapshot(snapshot: &SiteChangesSnapshot) -> String {
@@ -306,36 +502,63 @@ fn render_site_changes_snapshot(snapshot: &SiteChangesSnapshot) -> String {
         "\n",
     ));
 
-    if snapshot.revisions.len() > SITE_CHANGES_ROWS_PER_PAGE {
-        push_site_changes_pager(&mut output, snapshot.revisions.len());
-    }
-    for revision in snapshot.revisions.iter().take(SITE_CHANGES_ROWS_PER_PAGE) {
-        push_site_changes_revision(&mut output, revision);
-    }
-    if snapshot.revisions.len() > SITE_CHANGES_ROWS_PER_PAGE {
-        push_site_changes_pager(&mut output, snapshot.revisions.len());
-    }
+    output.push_str(&render_site_changes_list(&snapshot.list));
     output.push_str("\n</div>\n</div>");
     output
 }
 
-fn push_site_changes_pager(output: &mut String, visible_rows: usize) {
-    output.push_str(concat!(
-        r#"<div class="pager"><span class="pager-no">page 1</span>"#,
-        r#"<span class="current">1</span>"#,
-        r#"<span class="target"><a href="javascript:;" onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(2)">2</a></span>"#,
-    ));
-    if visible_rows > SITE_CHANGES_ROWS_PER_PAGE * 2 {
-        output.push_str(
-            r#"<span class="target"><a href="javascript:;" onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(3)">3</a></span>"#,
-        );
+fn render_site_changes_list(list: &SiteChangesList) -> String {
+    if list.revisions.is_empty() {
+        return SITE_CHANGES_EMPTY.to_owned();
     }
-    if visible_rows > SITE_CHANGES_ROWS_PER_PAGE * 3 {
+
+    let mut output = String::new();
+    let has_pager = list.page > 1 || list.has_next;
+    if has_pager {
+        push_site_changes_pager(&mut output, list);
+    }
+    for revision in &list.revisions {
+        push_site_changes_revision(&mut output, revision);
+    }
+    if has_pager {
+        push_site_changes_pager(&mut output, list);
+    }
+    output
+}
+
+fn push_site_changes_pager(output: &mut String, list: &SiteChangesList) {
+    output.push_str(r#"<div class="pager"><span class="pager-no">page "#);
+    output.push_str(&list.page.to_string());
+    output.push_str("</span>");
+    if list.page > 1 {
+        push_site_changes_pager_target(output, list.page - 1, "&laquo; previous");
+    }
+    for page in 1..=list.last_link_page {
+        if page == list.page {
+            output.push_str(r#"<span class="current">"#);
+            output.push_str(&page.to_string());
+            output.push_str("</span>");
+        } else {
+            push_site_changes_pager_target(output, page, &page.to_string());
+        }
+    }
+    if list.has_dots {
         output.push_str(r#"<span class="dots">...</span>"#);
     }
+    if list.has_next {
+        push_site_changes_pager_target(output, list.page + 1, "next &raquo;");
+    }
+    output.push_str("</div>");
+}
+
+fn push_site_changes_pager_target(output: &mut String, page: u32, label: &str) {
     output.push_str(
-        r#"<span class="target"><a href="javascript:;" onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(2)">next &raquo;</a></span></div>"#,
+        r#"<span class="target"><a href="javascript:;" onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList("#,
     );
+    output.push_str(&page.to_string());
+    output.push_str(")\">");
+    output.push_str(label);
+    output.push_str("</a></span>");
 }
 
 fn push_site_changes_revision(output: &mut String, revision: &SiteChangesRevisionRow) {
@@ -360,7 +583,7 @@ fn push_site_changes_revision(output: &mut String, revision: &SiteChangesRevisio
         "%e %b %Y %H:%M",
     ));
     output.push_str("</span></td><td class=\"revision-no\">");
-    if revision.revision_type == PageRevisionType::Create {
+    if revision.is_new_page {
         output.push_str("(new)");
     } else {
         output.push_str("(rev. ");
@@ -379,7 +602,12 @@ fn push_site_changes_revision(output: &mut String, revision: &SiteChangesRevisio
 }
 
 fn push_site_changes_flags(output: &mut String, revision: &SiteChangesRevisionRow) {
-    if revision.revision_type == PageRevisionType::Create {
+    if revision.is_file {
+        output
+            .push_str(r#"<span class="spantip" title="file/attachment action">F</span>"#);
+        return;
+    }
+    if revision.is_new_page {
         output.push_str(r#"<span class="spantip" title="new page created">N</span>"#);
         return;
     }
@@ -433,18 +661,19 @@ fn push_site_changes_user(output: &mut String, revision: &SiteChangesRevisionRow
 #[cfg(test)]
 mod tests {
     use super::{
-        SITE_CHANGES_MODULE_REGEX, SiteChangesRevisionRow, push_site_changes_flags,
+        SITE_CHANGES_MODULE_REGEX, SiteChangesRevisionRow, WikidotSiteChangesFilter,
+        push_site_changes_flags,
     };
-    use crate::types::PageRevisionType;
     use time::OffsetDateTime;
 
     fn revision(
-        revision_type: PageRevisionType,
+        is_new_page: bool,
+        is_file: bool,
         changes: &[&str],
     ) -> SiteChangesRevisionRow {
         SiteChangesRevisionRow {
-            revision_id: 1,
-            revision_type,
+            is_new_page,
+            is_file,
             created_at: OffsetDateTime::UNIX_EPOCH,
             revision_number: 1,
             page_id: 2,
@@ -478,10 +707,7 @@ mod tests {
         let mut output = String::new();
         push_site_changes_flags(
             &mut output,
-            &revision(
-                PageRevisionType::Regular,
-                &["wikitext", "title", "slug", "tags"],
-            ),
+            &revision(false, false, &["wikitext", "title", "slug", "tags"]),
         );
         assert!(output.contains("content source text changed\">S"));
         assert!(output.contains("title changed\">T"));
@@ -489,16 +715,46 @@ mod tests {
         assert!(output.contains("tags changed\">A"));
 
         output.clear();
-        push_site_changes_flags(
-            &mut output,
-            &revision(
-                PageRevisionType::Create,
-                &["wikitext", "title", "slug", "tags"],
-            ),
-        );
+        push_site_changes_flags(&mut output, &revision(true, false, &[]));
         assert_eq!(
             output,
             r#"<span class="spantip" title="new page created">N</span>"#
         );
+
+        output.clear();
+        push_site_changes_flags(&mut output, &revision(false, true, &[]));
+        assert_eq!(
+            output,
+            r#"<span class="spantip" title="file/attachment action">F</span>"#
+        );
+    }
+
+    #[test]
+    fn site_changes_options_accept_only_the_observed_read_filters() {
+        assert_eq!(
+            WikidotSiteChangesFilter::from_options("{}"),
+            Some(WikidotSiteChangesFilter::All),
+        );
+        assert_eq!(
+            WikidotSiteChangesFilter::from_options("{\"all\":true}"),
+            Some(WikidotSiteChangesFilter::All),
+        );
+        assert_eq!(
+            WikidotSiteChangesFilter::from_options("{\"source\":true}"),
+            Some(WikidotSiteChangesFilter::Source),
+        );
+        assert_eq!(
+            WikidotSiteChangesFilter::from_options("{\"files\":true}"),
+            Some(WikidotSiteChangesFilter::Files),
+        );
+        for unsupported in [
+            "",
+            "{ \"all\": true }",
+            "{\"all\":false}",
+            "{\"source\":true,\"files\":true}",
+            "{\"unknown\":true}",
+        ] {
+            assert_eq!(WikidotSiteChangesFilter::from_options(unsupported), None);
+        }
     }
 }

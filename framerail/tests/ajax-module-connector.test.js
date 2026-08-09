@@ -230,6 +230,132 @@ test("passes read-only forum missing states through and rejects unsealed shapes"
   assert.equal(calls, 1)
 })
 
+test("dispatches the sealed SiteChanges read matrix with Wikidot metadata", async () => {
+  const cases = [
+    { page: "1", categoryId: "", options: '{"all":true}' },
+    { page: "2", categoryId: "", options: '{"all":true}' },
+    { page: "3", categoryId: "", options: '{"all":true}' },
+    { page: "999999", categoryId: "", options: '{"all":true}' },
+    { page: "1", categoryId: "", options: '{"source":true}' },
+    { page: "1", categoryId: "", options: '{"files":true}' },
+    { page: "1", categoryId: "", options: "{}" },
+    { page: "1", categoryId: "999999999", options: '{"all":true}' }
+  ]
+
+  for (const { page, categoryId, options } of cases) {
+    let received
+    const response = await handleAjaxModuleConnectorRequest(
+      request({
+        moduleName: "changes/SiteChangesListModule",
+        page,
+        perpage: "20",
+        pageId: "74503778",
+        categoryId,
+        options,
+        callbackIndex: "5",
+        wikidot_token7: "client-token"
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderSiteChangesModule: async (input) => {
+          received = input
+          return {
+            status: "ok",
+            body:
+              page === "999999" || categoryId === "999999999"
+                ? "Sorry, no revisions matching your criteria."
+                : `<div class="pager">page ${page}</div>`
+          }
+        }
+      }
+    )
+
+    const body = await response.json()
+    assert.equal(body.status, "ok")
+    assert.equal(
+      body.body,
+      page === "999999" || categoryId === "999999999"
+        ? "Sorry, no revisions matching your criteria."
+        : `<div class="pager">page ${page}</div>`
+    )
+    assert.equal(body.callbackIndex, "5")
+    assert.equal(typeof body.CURRENT_TIMESTAMP, "number")
+    assert.deepEqual(body.cssInclude, [])
+    assert.deepEqual(body.jsInclude, [])
+    assert.deepEqual(received, {
+      siteId: 6000006,
+      pageId: "74503778",
+      page,
+      perpage: "20",
+      categoryId,
+      options
+    })
+  }
+})
+
+test("fails closed for unobserved SiteChanges shapes before Deepwell", async () => {
+  const forms = [
+    {},
+    { page: "0" },
+    { page: "-1" },
+    { page: "1.0" },
+    { page: "9007199254740993" },
+    { perpage: "10" },
+    { pageId: "" },
+    { pageId: "-1" },
+    { pageId: "9007199254740993" },
+    { categoryId: "missing" },
+    { options: '{"all":false}' },
+    { options: '{"source":true,"files":true}' },
+    { options: '{ "all": true }' },
+    { unknown: "value" },
+    { module_body: "" }
+  ]
+  let calls = 0
+  const valid = {
+    moduleName: "changes/SiteChangesListModule",
+    page: "1",
+    perpage: "20",
+    pageId: "74503778",
+    categoryId: "",
+    options: '{"all":true}'
+  }
+
+  for (const override of forms) {
+    const form = { ...valid, ...override }
+    if (Object.keys(override).length === 0) delete form.options
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderSiteChangesModule: async () => {
+        calls += 1
+        assert.fail("unobserved SiteChanges shape must fail before Deepwell")
+      }
+    })
+    assert.equal((await response.json()).status, "not_ok")
+  }
+
+  const duplicate = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(valid).toString() + "&page=2"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderSiteChangesModule: async () => {
+        calls += 1
+        assert.fail("duplicate SiteChanges field must fail before Deepwell")
+      }
+    }
+  )
+  assert.equal(duplicate.status, 400)
+  assert.equal((await duplicate.json()).status, "not_ok")
+  assert.equal(calls, 0)
+})
+
 test("fails closed for unsupported modules and duplicate fields", async () => {
   const unsupported = await handleAjaxModuleConnectorRequest(
     request({ moduleName: "forum/ForumStartModule", module_body: "" }),
