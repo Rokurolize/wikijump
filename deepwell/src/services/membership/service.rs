@@ -13,6 +13,7 @@
 use super::structs::{
     JoinActorState, JoinModuleState, MembershipJoinOutcome, MembershipPolicy,
 };
+use crate::constants::ADMIN_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::models::site::{Entity as Site, Model as SiteModel};
 use crate::services::relation::{
@@ -62,6 +63,9 @@ impl MembershipService {
         let Some(user_id) = user_id else {
             return Ok(JoinActorState::Anonymous);
         };
+        if user_id == ADMIN_USER_ID {
+            return Ok(JoinActorState::Admin);
+        }
         if RelationService::active_site_ban_exists(ctx, GetSiteBan { site_id, user_id })
             .await?
         {
