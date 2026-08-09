@@ -31,6 +31,8 @@ use deepwell::services::role::{
     GetUserRolesInput, GrantUserRoleInput, InternalCreateRoleInput, RoleService,
     UpdateRolePermissionsInput,
 };
+use deepwell::services::session::CreateSession;
+use deepwell::services::view::GetPageViewOutput;
 use deepwell::utils::now;
 use std::sync::atomic::{AtomicU64, Ordering};
 use str_macro::str;
@@ -41,6 +43,7 @@ use deepwell::constants::SYSTEM_USER_ID;
 use deepwell::error::prelude::*;
 use deepwell::license::License;
 use deepwell::models::role::Model as RoleModel;
+use deepwell::services::SessionService;
 use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::types::{Action, Permission, Reference, RelationType, Resource, UserType};
@@ -62,6 +65,17 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     let user_id = create_test_user(&runner, n, "self-join").await;
     let pending_user_id = create_test_user(&runner, n, "pending").await;
     let banned_user_id = create_test_user(&runner, n, "banned").await;
+    let user_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "editable-site membership vertical slice".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("ordinary user session should be created");
     RelationService::create(
         runner.context(),
         RelationType::SiteApplication,
@@ -85,6 +99,35 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     )
     .await
     .expect("banned actor should have a ban relation");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(editable.site_id),
+        ..Default::default()
+    });
+    let join_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": editable.site_id,
+            "session_token": user_session_token.clone(),
+            "route": {"slug": "system:join", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html,
+        membership_actions,
+        ..
+    } = join_view
+    else {
+        panic!("editable site should serve its seeded self-join route");
+    };
+    assert!(compiled_body_html.contains("WIKIDOT.page.listeners.join"));
+    assert_eq!(
+        serde_json::to_value(membership_actions).unwrap(),
+        json!([{"type": "join"}]),
+    );
 
     for (actor, expected) in [
         (None, JoinActorState::Anonymous),
@@ -180,6 +223,32 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
         }),
     );
     assert!(created.page_id > 0);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(editable.site_id),
+        ..Default::default()
+    });
+    let joined_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": editable.site_id,
+            "session_token": user_session_token,
+            "route": {"slug": "system:join", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html,
+        membership_actions,
+        ..
+    } = joined_view
+    else {
+        panic!("joined user should still be able to view the self-join route");
+    };
+    assert!(!compiled_body_html.contains("WIKIDOT.page.listeners.join"));
+    assert!(membership_actions.is_empty());
 
     runner.set_request_context(RequestContext {
         user_id: Some(user_id),
