@@ -9814,6 +9814,274 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         "{front_forum_missing}",
     );
 
+    for (case_id, categories) in [
+        (
+            "front-forum populated-empty categories",
+            format!(
+                "{};{}",
+                primary_category.forum_category_id, empty_category.forum_category_id,
+            ),
+        ),
+        (
+            "front-forum empty-populated categories",
+            format!(
+                "{};{}",
+                empty_category.forum_category_id, primary_category.forum_category_id,
+            ),
+        ),
+    ] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": format!(
+                    r#"[[module FrontForum category="{categories}" limit="2"]]"#,
+                ),
+            }),
+        )
+        .body;
+        assert!(
+            output.matches(r#"<h1><span><a href="/forum/t-"#).count() == 2
+                && output.contains("Public Page Discussion Marker")
+                && output.contains("Read Model Visible Thread")
+                && !output.contains("Private Page Discussion Marker"),
+            "{case_id}: {output}",
+        );
+        let newest = output
+            .find("Public Page Discussion Marker")
+            .expect("newest permitted category item should render");
+        let next = output
+            .find("Read Model Visible Thread")
+            .expect("next permitted category item should render");
+        assert!(newest < next, "{case_id}: {output}");
+    }
+
+    let front_forum_global = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum global category order",
+            "wikitext": format!(
+                r#"[[module FrontForum category="{};{}" limit="3"]]"#,
+                primary_category.forum_category_id,
+                pagination_category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    let public_position = front_forum_global
+        .find("Public Page Discussion Marker")
+        .expect("newest permitted thread should render");
+    let visible_position = front_forum_global
+        .find("Read Model Visible Thread")
+        .expect("second newest permitted thread should render");
+    let pagination_position = front_forum_global
+        .find("Pagination Thread 20")
+        .expect("newest thread from the second category should render");
+    assert!(
+        public_position < visible_position
+            && visible_position < pagination_position
+            && front_forum_global.contains(&format!(
+                r#"href="/forum/c-{}/read-model-primary">Read Model Visible Group / Read Model: Primary</a>"#,
+                primary_category.forum_category_id,
+            ))
+            && front_forum_global.contains(&format!(
+                r#"href="/forum/c-{}/read-model-pagination">Read Model Visible Group / Read Model Pagination</a>"#,
+                pagination_category.forum_category_id,
+            )),
+        "{front_forum_global}",
+    );
+
+    let front_forum_missing_list = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum all categories missing",
+            "wikitext": r#"[[module FrontForum category="9223372036854775806;9223372036854775807" limit="2"]]"#,
+        }),
+    )
+    .body;
+    assert!(
+        front_forum_missing_list.contains(
+            r#"<div class="error-block">Requested forum category does not exist.</div>"#
+        ) && !front_forum_missing_list.contains("front-forum-box"),
+        "{front_forum_missing_list}",
+    );
+
+    let front_forum_malformed = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum malformed category list",
+            "wikitext": format!(
+                r#"[[module FrontForum category="{};bad" limit="2"]]"#,
+                primary_category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        front_forum_malformed.contains(
+            r#"<div class="error-block">Problem parsing attribute "category".</div>"#
+        ) && !front_forum_malformed.contains("front-forum-box")
+            && !front_forum_malformed.contains("[[module"),
+        "{front_forum_malformed}",
+    );
+
+    for (case_id, offset) in [
+        ("front-forum explicit zero offset", "0"),
+        ("front-forum invalid offset defaults", "bad"),
+    ] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": format!(
+                    r#"[[module FrontForum category="{}" limit="2" offset="{offset}"]]"#,
+                    primary_category.forum_category_id,
+                ),
+            }),
+        )
+        .body;
+        assert!(
+            output.matches(r#"<h1><span><a href="/forum/t-"#).count() == 2
+                && output.contains("Public Page Discussion Marker")
+                && output.contains("Read Model Visible Thread")
+                && !output.contains("Private Page Discussion Marker"),
+            "{case_id}: {output}",
+        );
+    }
+
+    let front_forum_offset_one = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum offset one",
+            "wikitext": format!(
+                r#"[[module FrontForum category="{}" limit="1" offset="1"]]"#,
+                primary_category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        front_forum_offset_one.contains("Read Model Visible Thread")
+            && !front_forum_offset_one.contains("Public Page Discussion Marker")
+            && !front_forum_offset_one.contains("Private Page Discussion Marker")
+            && front_forum_offset_one
+                .matches(r#"<h1><span><a href="/forum/t-"#)
+                .count()
+                == 1,
+        "{front_forum_offset_one}",
+    );
+
+    let front_forum_large_offset = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum large offset",
+            "wikitext": format!(
+                r#"[[module FrontForum category="{}" limit="2" offset="999"]]"#,
+                primary_category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        front_forum_large_offset.contains(r#"<div class="front-forum-box"></div>"#)
+            && !front_forum_large_offset.contains(r#"<h1><span><a href="/forum/t-"#),
+        "{front_forum_large_offset}",
+    );
+
+    let saved_multi_source = format!(
+        r#"[[module FrontForum category="{};{}" limit="3"]]"#,
+        primary_category.forum_category_id, pagination_category.forum_category_id,
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-front-forum-multiple-categories",
+        "Fixture FrontForum Multiple Categories",
+        &saved_multi_source,
+    )
+    .await;
+    let saved_offset_source = format!(
+        r#"[[module FrontForum category="{}" limit="1" offset="1"]]"#,
+        primary_category.forum_category_id,
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-front-forum-offset",
+        "Fixture FrontForum Offset",
+        &saved_offset_source,
+    )
+    .await;
+    let saved_malformed_source = format!(
+        r#"[[module FrontForum category="{};bad" limit="2"]]"#,
+        primary_category.forum_category_id,
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-front-forum-malformed-category",
+        "Fixture FrontForum Malformed Category",
+        &saved_malformed_source,
+    )
+    .await;
+    runner.set_request_context(RequestContext::default());
+
+    let saved_multi = page_view_html(
+        &runner,
+        site_id,
+        "fixture-front-forum-multiple-categories",
+        "",
+    )
+    .await;
+    assert!(
+        saved_multi.matches(r#"<h1><span><a href="/forum/t-"#).count() == 3
+            && saved_multi.contains("Public Page Discussion Marker")
+            && saved_multi.contains("Read Model Visible Thread")
+            && saved_multi.contains("Pagination Thread 20")
+            && saved_multi.contains(&format!(
+                r#"href="/forum/c-{}/read-model-pagination">Read Model Visible Group / Read Model Pagination</a>"#,
+                pagination_category.forum_category_id,
+            ))
+            && !saved_multi.contains("Private Page Discussion Marker"),
+        "{saved_multi}",
+    );
+    let saved_offset =
+        page_view_html(&runner, site_id, "fixture-front-forum-offset", "").await;
+    assert!(
+        saved_offset.contains("Read Model Visible Thread")
+            && !saved_offset.contains("Public Page Discussion Marker")
+            && !saved_offset.contains("Private Page Discussion Marker"),
+        "{saved_offset}",
+    );
+    let saved_malformed = page_view_html(
+        &runner,
+        site_id,
+        "fixture-front-forum-malformed-category",
+        "",
+    )
+    .await;
+    assert!(
+        saved_malformed.contains(
+            r#"<div class="error-block">Problem parsing attribute "category".</div>"#
+        ) && !saved_malformed.contains("front-forum-box")
+            && !saved_malformed.contains("[[module"),
+        "{saved_malformed}",
+    );
+
     let forum_start_ajax = run_endpoint!(
         runner,
         wikidot_forum_module,
