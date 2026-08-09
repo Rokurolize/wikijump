@@ -55,17 +55,14 @@ const bodyOr = (result, fallback) => ({
  * @param {ForumRouteEvent} event @param {ForumRouteDependencies}
  *   dependencies
  */
-export const loadForumStartRoute = async (
-  event,
-  { loadSiteInfo, wikidotForumModule }
-) => {
+export const loadForumStartRoute = async (event, dependencies) => {
   const hidden = event.params.extra === "hidden/show"
   if (event.params.extra && !hidden) {
     error(404)
   }
 
-  const context = requestContext(event, loadSiteInfo)
-  const result = await wikidotForumModule(
+  const context = requestContext(event, (headers) => dependencies.loadSiteInfo(headers))
+  const result = await dependencies.wikidotForumModule(
     context.siteId,
     "forum/ForumStartModule",
     hidden ? { hidden: "true" } : {},
@@ -78,10 +75,7 @@ export const loadForumStartRoute = async (
  * @param {ForumRouteEvent} event @param {ForumRouteDependencies}
  *   dependencies
  */
-export const loadForumCategoryRoute = async (
-  event,
-  { loadSiteInfo, wikidotForumModule }
-) => {
+export const loadForumCategoryRoute = async (event, dependencies) => {
   const category = event.params.category
   if (!category) {
     error(404)
@@ -96,8 +90,8 @@ export const loadForumCategoryRoute = async (
     page = match[1]
   }
 
-  const context = requestContext(event, loadSiteInfo)
-  const result = await wikidotForumModule(
+  const context = requestContext(event, (headers) => dependencies.loadSiteInfo(headers))
+  const result = await dependencies.wikidotForumModule(
     context.siteId,
     "forum/ForumViewCategoryModule",
     { c: category, p: page },
@@ -110,10 +104,7 @@ export const loadForumCategoryRoute = async (
  * @param {ForumRouteEvent} event @param {ForumRouteDependencies}
  *   dependencies
  */
-export const loadForumThreadRoute = async (
-  event,
-  { loadSiteInfo, wikidotForumModule }
-) => {
+export const loadForumThreadRoute = async (event, dependencies) => {
   const thread = event.params.thread
   if (!thread) {
     error(404)
@@ -122,8 +113,8 @@ export const loadForumThreadRoute = async (
     error(404)
   }
 
-  const context = requestContext(event, loadSiteInfo)
-  const result = await wikidotForumModule(
+  const context = requestContext(event, (headers) => dependencies.loadSiteInfo(headers))
+  const result = await dependencies.wikidotForumModule(
     context.siteId,
     "forum/ForumViewThreadModule",
     { t: thread },
