@@ -294,6 +294,17 @@ pub async fn wikidot_forum_module(
     params: Params<'static>,
 ) -> Result<WikidotForumModuleResponse> {
     let input: WikidotForumModuleInput = parse!(params, Page);
+    if ctx
+        .request()
+        .site_id
+        .is_some_and(|request_site_id| request_site_id != input.site_id)
+    {
+        return Err(Error::new(
+            "forum module site does not match the request context",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
     RenderService::render_wikidot_forum_module(
         ctx,
         input.site_id,

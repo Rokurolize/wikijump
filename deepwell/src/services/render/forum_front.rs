@@ -2,6 +2,7 @@
 
 use std::fmt::Write as _;
 
+use sea_orm::sea_query::ArrayType;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 
 use super::forum_modules::{forum_user, render_forum_date, render_forum_user};
@@ -35,8 +36,6 @@ pub(super) enum FrontForumLoad {
 struct FrontForumCandidate {
     forum_thread_id: i64,
     title: String,
-    page_id: Option<i64>,
-    page_category_id: Option<i64>,
     user_id: i64,
     created_at: time::OffsetDateTime,
     post_count: i64,
@@ -103,6 +102,10 @@ pub(super) async fn load(
     arguments: FrontForumArguments,
 ) -> Result<FrontForumLoad> {
     let make_error = || Error::new("failed to load FrontForum", ErrorType::Render);
+    let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
+    if !visibility.site_is_viewable(site_id).await? {
+        return Ok(FrontForumLoad::ScanLimit);
+    }
     let category_exists = ForumService::get_category_optional(
         ctx,
         GetForumCategory {
@@ -117,13 +120,26 @@ pub(super) async fn load(
     if !category_exists {
         return Ok(FrontForumLoad::MissingCategory);
     }
+    let Some(visible_thread_ids) = visibility
+        .visible_thread_ids(site_id, Some(arguments.category_id), None, true)
+        .await?
+    else {
+        return Ok(FrontForumLoad::ScanLimit);
+    };
+    if visible_thread_ids.is_empty() {
+        return Ok(FrontForumLoad::Items(Vec::new()));
+    }
+    let visible_thread_ids = visible_thread_ids
+        .into_iter()
+        .map(Value::from)
+        .collect::<Vec<_>>();
 
     let candidates = FrontForumCandidate::find_by_statement(
         Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
             format!(
                 concat!(
-                    "SELECT t.forum_thread_id, t.title, t.page_id, p.page_category_id, ",
+                    "SELECT t.forum_thread_id, t.title, ",
                     "root_post.user_id, root_post.created_at, counts.post_count, ",
                     "root_revision.compiled_html_hash, g.name AS group_name, ",
                     "c.name AS category_name, wu.name AS wikidot_user_name, ",
@@ -151,12 +167,17 @@ pub(super) async fn load(
                     "LEFT JOIN \"user\" local_user ON local_user.user_id = root_post.user_id ",
                     " AND local_user.deleted_at IS NULL ",
                     "WHERE t.site_id = $1 AND t.forum_category_id = $2 ",
+                    " AND t.forum_thread_id = ANY($3::BIGINT[]) ",
                     " AND t.deleted_at IS NULL AND (t.page_id IS NULL OR p.page_id IS NOT NULL) ",
                     "ORDER BY t.created_at DESC, t.forum_thread_id DESC ",
                     "LIMIT {CANDIDATE_LIMIT}",
                 ),
             ),
-            [Value::from(site_id), Value::from(arguments.category_id)],
+            [
+                Value::from(site_id),
+                Value::from(arguments.category_id),
+                Value::Array(ArrayType::BigInt, Some(Box::new(visible_thread_ids))),
+            ],
         ),
     )
     .all(ctx.transaction())
@@ -167,15 +188,8 @@ pub(super) async fn load(
         return Ok(FrontForumLoad::ScanLimit);
     }
 
-    let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
     let mut items = Vec::with_capacity(arguments.limit);
     for candidate in candidates {
-        if !visibility
-            .page_is_viewable(site_id, candidate.page_id, candidate.page_category_id)
-            .await?
-        {
-            continue;
-        }
         let compiled_html = TextService::get(ctx, &candidate.compiled_html_hash)
             .await
             .or_raise(make_error)?;

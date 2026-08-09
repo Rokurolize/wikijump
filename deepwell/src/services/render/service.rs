@@ -45,6 +45,7 @@ use super::diagnostics::{
     CorpusRenderDimension, CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace,
     StageGuard,
 };
+use super::forum_modules::resolve_typed_root_recent_threads_runtime_modules;
 use super::ftml_page_existence::{
     FtmlRenderOutput, InnerPreparedRenderWikitext, ParsedFtmlRender,
     WikidotCompatLinkTitleMap, native_list_page_link_ref,
@@ -2242,6 +2243,7 @@ impl RenderService {
                 trace,
             );
             resolve_typed_root_site_grid_runtime_modules(&mut parsed.tree);
+            resolve_typed_root_recent_threads_runtime_modules(&mut parsed.tree);
             parsed
         });
         let parsed = timeout(render_timeout, parse_task)

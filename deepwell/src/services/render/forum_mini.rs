@@ -15,6 +15,7 @@
 use std::sync::LazyLock;
 
 use regex::Regex;
+use sea_orm::sea_query::ArrayType;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 
 use super::compat::CompatHtmlFragments;
@@ -56,8 +57,6 @@ enum ForumMiniModuleKind {
 #[derive(Debug, FromQueryResult)]
 struct ForumMiniThreadCandidate {
     forum_thread_id: i64,
-    page_id: Option<i64>,
-    page_category_id: Option<i64>,
     title: String,
     created_at: time::OffsetDateTime,
     post_count: i64,
@@ -76,8 +75,6 @@ struct ForumMiniPostCandidate {
     forum_post_id: i64,
     forum_thread_id: i64,
     thread_title: String,
-    page_id: Option<i64>,
-    page_category_id: Option<i64>,
     page_slug: Option<String>,
     user_id: i64,
     created_at: time::OffsetDateTime,
@@ -234,6 +231,23 @@ async fn load_forum_mini_threads(
 ) -> Result<Option<Vec<ForumMiniThread>>> {
     let make_error =
         || Error::new("failed to load mini forum threads", ErrorType::Render);
+    let mut visibility = ForumPageVisibility::new(ctx, ctx.request().user_id);
+    if !visibility.site_is_viewable(site_id).await? {
+        return Ok(None);
+    }
+    let Some(visible_thread_ids) = visibility
+        .visible_thread_ids(site_id, None, None, true)
+        .await?
+    else {
+        return Ok(None);
+    };
+    if visible_thread_ids.is_empty() {
+        return Ok(Some(Vec::new()));
+    }
+    let visible_thread_ids = visible_thread_ids
+        .into_iter()
+        .map(Value::from)
+        .collect::<Vec<_>>();
     let order = match kind {
         ForumMiniModuleKind::RecentThreads => {
             "thread_created_at DESC, forum_thread_id DESC"
@@ -253,7 +267,7 @@ async fn load_forum_mini_threads(
     };
     let sql = format!(
         "WITH activity AS (\
-         SELECT t.forum_thread_id, t.page_id, p.page_category_id, t.title, \
+         SELECT t.forum_thread_id, t.title, \
                 t.created_at AS thread_created_at, \
                 COALESCE(t.updated_at, t.created_at) AS activity_at, \
                 COUNT(fp.forum_post_id) FILTER (\
@@ -278,11 +292,12 @@ async fn load_forum_mini_threads(
                                 AND fp.site_id = t.site_id \
                                 AND fp.deleted_at IS NULL \
          WHERE t.site_id = $1 \
+           AND t.forum_thread_id = ANY($2::BIGINT[]) \
            AND t.deleted_at IS NULL \
            AND (t.page_id IS NULL OR p.page_id IS NOT NULL) \
          GROUP BY t.forum_thread_id, p.page_category_id\
          ) \
-         SELECT forum_thread_id, page_id, page_category_id, title, \
+         SELECT forum_thread_id, title, \
                 thread_created_at AS created_at, post_count \
          FROM activity {active_filter} \
          ORDER BY {order} \
@@ -292,21 +307,17 @@ async fn load_forum_mini_threads(
         ForumMiniThreadCandidate::find_by_statement(Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
             sql,
-            [Value::from(site_id)],
+            [
+                Value::from(site_id),
+                Value::Array(ArrayType::BigInt, Some(Box::new(visible_thread_ids))),
+            ],
         ))
         .all(ctx.transaction())
         .await
         .or_raise(make_error)?;
     let scan_exhausted = candidates.len() == FORUM_MINI_CANDIDATE_LIMIT;
-    let mut visibility = ForumPageVisibility::new(ctx, ctx.request().user_id);
     let mut threads = Vec::with_capacity(limit);
     for candidate in candidates {
-        if !visibility
-            .page_is_viewable(site_id, candidate.page_id, candidate.page_category_id)
-            .await?
-        {
-            continue;
-        }
         threads.push(ForumMiniThread {
             forum_thread_id: candidate.forum_thread_id,
             title: candidate.title,
@@ -329,9 +340,26 @@ async fn load_forum_mini_posts(
     limit: usize,
 ) -> Result<Option<Vec<ForumMiniPost>>> {
     let make_error = || Error::new("failed to load mini forum posts", ErrorType::Render);
+    let mut visibility = ForumPageVisibility::new(ctx, ctx.request().user_id);
+    if !visibility.site_is_viewable(site_id).await? {
+        return Ok(None);
+    }
+    let Some(visible_thread_ids) = visibility
+        .visible_thread_ids(site_id, None, None, true)
+        .await?
+    else {
+        return Ok(None);
+    };
+    if visible_thread_ids.is_empty() {
+        return Ok(Some(Vec::new()));
+    }
+    let visible_thread_ids = visible_thread_ids
+        .into_iter()
+        .map(Value::from)
+        .collect::<Vec<_>>();
     let sql = format!(
         "SELECT fp.forum_post_id, fp.forum_thread_id, t.title AS thread_title, \
-                t.page_id, p.page_category_id, p.slug AS page_slug, fp.user_id, \
+                p.slug AS page_slug, fp.user_id, \
                 fp.created_at, fpr.title, fpr.wikitext_hash, \
                 counts.post_count, wu.name AS wikidot_user_name, \
                 wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, \
@@ -366,6 +394,7 @@ async fn load_forum_mini_posts(
                AND fp0.deleted_at IS NULL\
          ) counts ON TRUE \
          WHERE fp.site_id = $1 \
+           AND t.forum_thread_id = ANY($2::BIGINT[]) \
            AND fp.deleted_at IS NULL \
            AND (t.page_id IS NULL OR p.page_id IS NOT NULL) \
            AND (t.page_id IS NOT NULL OR fp.parent_post_id IS NOT NULL) \
@@ -376,21 +405,17 @@ async fn load_forum_mini_posts(
         ForumMiniPostCandidate::find_by_statement(Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
             sql,
-            [Value::from(site_id)],
+            [
+                Value::from(site_id),
+                Value::Array(ArrayType::BigInt, Some(Box::new(visible_thread_ids))),
+            ],
         ))
         .all(ctx.transaction())
         .await
         .or_raise(make_error)?;
     let scan_exhausted = candidates.len() == FORUM_MINI_CANDIDATE_LIMIT;
-    let mut visibility = ForumPageVisibility::new(ctx, ctx.request().user_id);
     let mut posts = Vec::with_capacity(limit);
     for candidate in candidates {
-        if !visibility
-            .page_is_viewable(site_id, candidate.page_id, candidate.page_category_id)
-            .await?
-        {
-            continue;
-        }
         let wikitext = TextService::get(ctx, &candidate.wikitext_hash)
             .await
             .or_raise(make_error)?;

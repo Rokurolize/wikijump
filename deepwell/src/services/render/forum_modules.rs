@@ -12,11 +12,13 @@
 
 //! Permission-aware Wikidot forum index and recent-post modules.
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::sync::LazyLock;
 
 use regex::Regex;
+use sea_orm::sea_query::ArrayType;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 
 use super::compat::CompatHtmlFragments;
@@ -35,9 +37,11 @@ use crate::services::forum::{ForumGroupStructure, GetForumStructure};
 use crate::services::text::TextService;
 use crate::utils::{normalize_page_slug, normalize_slug_without_category_separator};
 use ftml::settings::WikitextSettings;
+use ftml::tree::{Element, Module, SyntaxTree};
 
 const RECENT_POSTS_PER_PAGE: usize = 20;
 const RECENT_POSTS_CANDIDATE_LIMIT: usize = 1_001;
+const FORUM_START_CANDIDATE_LIMIT: usize = 1_001;
 const MAX_RECENT_POSTS_PAGE: u32 = 50;
 const MAX_FORUM_MODULES_PER_RENDER: usize = 32;
 
@@ -51,13 +55,9 @@ pub(super) static FORUM_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     .expect("forum module expression is valid")
 });
 
-static MODULE_CLOSE_LINE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?im)^[\t ]*\[\[/module\]\][\t ]*$")
-        .expect("module close expression is valid")
-});
-
-static MODULE_CLOSE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)\[\[/module\]\]").expect("module closing expression is valid")
+static MODULE_BOUNDARY_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?im)^[\t ]*\[\[(?P<close>/)?module\b")
+        .expect("module boundary expression is valid")
 });
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -99,8 +99,6 @@ pub(super) struct ForumCategoryActivity {
 struct ForumStartThreadCandidate {
     forum_thread_id: i64,
     forum_category_id: i64,
-    page_id: Option<i64>,
-    page_category_id: Option<i64>,
     post_count: i64,
     last_forum_post_id: Option<i64>,
     last_user_id: Option<i64>,
@@ -119,8 +117,6 @@ struct RecentPostCandidate {
     group_name: String,
     category_name: String,
     thread_title: String,
-    page_id: Option<i64>,
-    page_category_id: Option<i64>,
     page_slug: Option<String>,
     page_title: Option<String>,
     user_id: i64,
@@ -177,14 +173,23 @@ fn module_kind(name: &str) -> ForumModuleKind {
     }
 }
 
-fn recent_threads_replacement_end(wikitext: &str, opener_end: usize) -> usize {
-    MODULE_CLOSE_LINE_REGEX
-        .find(&wikitext[opener_end..])
-        .map_or(opener_end, |closing| opener_end + closing.end())
+fn next_module_boundary_is_closer(wikitext: &str, opener_end: usize) -> bool {
+    MODULE_BOUNDARY_REGEX
+        .captures(&wikitext[opener_end..])
+        .is_some_and(|captures| captures.name("close").is_some())
 }
 
-fn opens_module_body(wikitext: &str, opener_end: usize) -> bool {
-    MODULE_CLOSE_REGEX.is_match(&wikitext[opener_end..])
+pub(super) fn resolve_typed_root_recent_threads_runtime_modules(
+    tree: &mut SyntaxTree<'_>,
+) {
+    for element in &mut tree.elements {
+        let Element::Module(Module::Runtime { name, .. }) = element else {
+            continue;
+        };
+        if name.eq_ignore_ascii_case("RecentThreads") {
+            *element = Element::Text(Cow::Borrowed(RECENT_THREADS_PLACEHOLDER));
+        }
+    }
 }
 
 pub(super) fn forum_user(
@@ -244,6 +249,23 @@ pub(super) fn render_forum_user(
     )
 }
 
+pub(super) fn render_forum_user_without_avatar(user: &ForumUserDisplay) -> String {
+    let name = escape_list_pages_html_text(&user.name);
+    let Some(slug) = user.slug.as_deref().filter(|_| user.wikidot_profile) else {
+        return format!(r#"<span class="printuser">{name}</span>"#);
+    };
+    let slug = escape_list_pages_html_attr(slug);
+    format!(
+        concat!(
+            r#"<span class="printuser"><a href="http://www.wikidot.com/user:info/{slug}" "#,
+            r#"onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;" >{name}</a></span>"#,
+        ),
+        slug = slug,
+        user_id = user.user_id,
+        name = name,
+    )
+}
+
 pub(super) fn render_forum_date(
     created_at: time::OffsetDateTime,
     format_class: &str,
@@ -262,14 +284,31 @@ pub(super) async fn load_forum_start_activity(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     viewer_user_id: Option<i64>,
-) -> Result<BTreeMap<i64, ForumCategoryActivity>> {
+    include_hidden: bool,
+) -> Result<Option<BTreeMap<i64, ForumCategoryActivity>>> {
     let make_error = || Error::new("failed to load forum index", ErrorType::Render);
+    let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
+    if !visibility.site_is_viewable(site_id).await? {
+        return Ok(None);
+    }
+    let Some(visible_thread_ids) = visibility
+        .visible_thread_ids(site_id, None, None, !include_hidden)
+        .await?
+    else {
+        return Ok(None);
+    };
+    if visible_thread_ids.is_empty() {
+        return Ok(Some(BTreeMap::new()));
+    }
+    let visible_thread_ids = visible_thread_ids
+        .into_iter()
+        .map(Value::from)
+        .collect::<Vec<_>>();
     let candidates = ForumStartThreadCandidate::find_by_statement(
         Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
             concat!(
-                "SELECT t.forum_thread_id, t.forum_category_id, t.page_id, ",
-                "p.page_category_id, counts.post_count, ",
+                "SELECT t.forum_thread_id, t.forum_category_id, counts.post_count, ",
                 "last_post.forum_post_id AS last_forum_post_id, ",
                 "last_post.user_id AS last_user_id, ",
                 "last_post.created_at AS last_created_at, ",
@@ -293,26 +332,28 @@ pub(super) async fn load_forum_start_activity(
                 "LEFT JOIN \"user\" local_user ON local_user.user_id = last_post.user_id ",
                 " AND local_user.deleted_at IS NULL ",
                 "WHERE t.site_id = $1 AND t.deleted_at IS NULL ",
+                " AND ($2::BOOLEAN OR g.visible = TRUE) ",
+                " AND t.forum_thread_id = ANY($3::BIGINT[]) ",
                 " AND (t.page_id IS NULL OR p.page_id IS NOT NULL) ",
                 "ORDER BY g.sort_index, g.forum_group_id, c.sort_index, ",
-                "c.forum_category_id, t.forum_thread_id",
+                "c.forum_category_id, t.forum_thread_id LIMIT 1001",
             ),
-            [Value::from(site_id)],
+            [
+                Value::from(site_id),
+                Value::from(include_hidden),
+                Value::Array(ArrayType::BigInt, Some(Box::new(visible_thread_ids))),
+            ],
         ),
     )
     .all(ctx.transaction())
     .await
     .or_raise(make_error)?;
 
-    let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
+    if candidates.len() == FORUM_START_CANDIDATE_LIMIT {
+        return Ok(None);
+    }
     let mut activity = BTreeMap::<i64, ForumCategoryActivity>::new();
     for candidate in candidates {
-        if !visibility
-            .page_is_viewable(site_id, candidate.page_id, candidate.page_category_id)
-            .await?
-        {
-            continue;
-        }
         let category = activity.entry(candidate.forum_category_id).or_default();
         category.thread_count += 1;
         category.post_count += candidate.post_count.max(0);
@@ -341,7 +382,7 @@ pub(super) async fn load_forum_start_activity(
             created_at,
         });
     }
-    Ok(activity)
+    Ok(Some(activity))
 }
 
 pub(super) fn render_forum_start(
@@ -418,10 +459,36 @@ pub(super) async fn load_recent_posts_page(
     }
     let make_error =
         || Error::new("failed to load recent forum posts", ErrorType::Render);
+    let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
+    if !visibility.site_is_viewable(site_id).await? {
+        return Ok(None);
+    }
+    let Some(visible_thread_ids) = visibility
+        .visible_thread_ids(site_id, category_id, None, true)
+        .await?
+    else {
+        return Ok(None);
+    };
+    if visible_thread_ids.is_empty() {
+        return if page == 1 {
+            Ok(Some(RecentPostsPage {
+                posts: Vec::new(),
+                page,
+                known_page_count: 0,
+                page_count_is_lower_bound: false,
+            }))
+        } else {
+            Ok(None)
+        };
+    }
+    let visible_thread_ids = visible_thread_ids
+        .into_iter()
+        .map(Value::from)
+        .collect::<Vec<_>>();
     let sql = format!(
         "SELECT fp.forum_post_id, fp.forum_thread_id, fp.forum_category_id, \
                 g.name AS group_name, c.name AS category_name, t.title AS thread_title, \
-                t.page_id, p.page_category_id, p.slug AS page_slug, \
+                p.slug AS page_slug, \
                 pr.title AS page_title, fp.user_id, fp.created_at, fpr.title, \
                 fpr.compiled_html_hash, wu.name AS wikidot_user_name, \
                 wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, \
@@ -444,6 +511,7 @@ pub(super) async fn load_recent_posts_page(
                                       AND local_user.deleted_at IS NULL \
          WHERE fp.site_id = $1 AND fp.deleted_at IS NULL \
            AND ($2::BIGINT IS NULL OR fp.forum_category_id = $2) \
+           AND t.forum_thread_id = ANY($3::BIGINT[]) \
            AND (t.page_id IS NULL OR p.page_id IS NOT NULL) \
          ORDER BY fp.created_at DESC, fp.forum_post_id DESC \
          LIMIT {RECENT_POSTS_CANDIDATE_LIMIT}",
@@ -452,22 +520,17 @@ pub(super) async fn load_recent_posts_page(
         RecentPostCandidate::find_by_statement(Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
             sql,
-            [Value::from(site_id), Value::BigInt(category_id)],
+            [
+                Value::from(site_id),
+                Value::BigInt(category_id),
+                Value::Array(ArrayType::BigInt, Some(Box::new(visible_thread_ids))),
+            ],
         ))
         .all(ctx.transaction())
         .await
         .or_raise(make_error)?;
     let page_count_is_lower_bound = candidates.len() == RECENT_POSTS_CANDIDATE_LIMIT;
-    let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
-    let mut visible = Vec::with_capacity(candidates.len());
-    for candidate in candidates {
-        if visibility
-            .page_is_viewable(site_id, candidate.page_id, candidate.page_category_id)
-            .await?
-        {
-            visible.push(candidate);
-        }
-    }
+    let mut visible = candidates;
 
     let start = (page as usize - 1) * RECENT_POSTS_PER_PAGE;
     if start >= visible.len() && page_count_is_lower_bound {
@@ -682,7 +745,7 @@ impl RenderService {
         let mut cursor = 0;
         let mut expanded_count = 0;
         let mut structure_cache = None;
-        let mut forum_start_cache = None;
+        let mut forum_start_cache = None::<Option<String>>;
         let mut recent_posts_cache = BTreeMap::<u32, Option<String>>::new();
         for captures in FORUM_MODULE_REGEX.captures_iter(&wikitext) {
             let matched = captures
@@ -700,28 +763,27 @@ impl RenderService {
                 .as_str();
             let kind = module_kind(name);
             let head = captures.name("head").map_or("", |head| head.as_str());
-            let front_forum = if kind == ForumModuleKind::FrontForum
-                && !head.trim().is_empty()
-                && !opens_module_body(&wikitext, matched.end())
-            {
-                let Some(arguments) = forum_front::parse_arguments(head) else {
-                    continue;
+            let typed_body_owned =
+                next_module_boundary_is_closer(&wikitext, matched.end());
+            if typed_body_owned {
+                continue;
+            }
+            let front_forum =
+                if kind == ForumModuleKind::FrontForum && !head.trim().is_empty() {
+                    let Some(arguments) = forum_front::parse_arguments(head) else {
+                        continue;
+                    };
+                    Some(arguments)
+                } else {
+                    None
                 };
-                Some(arguments)
-            } else {
-                None
-            };
             if kind != ForumModuleKind::RecentThreads
                 && kind != ForumModuleKind::FrontForum
                 && !head.trim().is_empty()
             {
                 continue;
             }
-            let replacement_end = if kind == ForumModuleKind::RecentThreads {
-                recent_threads_replacement_end(&wikitext, matched.end())
-            } else {
-                matched.end()
-            };
+            let replacement_end = matched.end();
             let rendered = if kind == ForumModuleKind::Comments {
                 current_page_id
                     .is_none()
@@ -751,6 +813,10 @@ impl RenderService {
                 let Some(site_id) = current_site_id else {
                     continue;
                 };
+                let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
+                if !visibility.site_is_viewable(site_id).await? {
+                    continue;
+                }
                 if structure_cache.is_none() {
                     structure_cache = Some(
                         ForumService::get_structure(
@@ -775,13 +841,20 @@ impl RenderService {
                 match kind {
                     ForumModuleKind::ForumStart => {
                         if forum_start_cache.is_none() {
-                            let activity =
-                                load_forum_start_activity(ctx, site_id, viewer_user_id)
-                                    .await?;
-                            forum_start_cache =
-                                Some(render_forum_start(structure, &activity, false));
+                            forum_start_cache = Some(
+                                load_forum_start_activity(
+                                    ctx,
+                                    site_id,
+                                    viewer_user_id,
+                                    false,
+                                )
+                                .await?
+                                .map(|activity| {
+                                    render_forum_start(structure, &activity, false)
+                                }),
+                            );
                         }
-                        forum_start_cache.clone()
+                        forum_start_cache.clone().flatten()
                     }
                     ForumModuleKind::RecentPosts => {
                         let page = url.page.unwrap_or(1);

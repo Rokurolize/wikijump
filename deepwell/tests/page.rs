@@ -43,7 +43,9 @@ use deepwell::services::blob::{EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
 use deepwell::services::category::CategoryService;
 use deepwell::services::file_revision::CreateFirstFileRevision;
 use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
-use deepwell::services::forum_post::CreateForumPost;
+use deepwell::services::forum_post::{
+    CreateForumPost, UpdateForumPost, UpdateForumPostBody,
+};
 use deepwell::services::forum_thread::CreateForumThread;
 use deepwell::services::page::CreatePage;
 use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
@@ -8096,6 +8098,35 @@ async fn recent_threads_matches_live_placeholder_and_owner_boundaries() {
         "{}",
         lookalike.body,
     );
+
+    let unrelated_closer = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "recentthreads-unrelated-module-closer",
+            "wikitext": concat!(
+                "[[module RecentThreads]]\n",
+                "RECENT_THREADS_BOUNDARY_BEFORE\n",
+                "[[module FrontForum]]\n",
+                "UNRELATED_FRONT_FORUM_BODY\n",
+                "[[/module]]\n",
+                "RECENT_THREADS_BOUNDARY_AFTER",
+            ),
+        }),
+    );
+    assert!(
+        unrelated_closer.body.contains("later.")
+            && unrelated_closer
+                .body
+                .contains("RECENT_THREADS_BOUNDARY_BEFORE")
+            && unrelated_closer
+                .body
+                .contains("RECENT_THREADS_BOUNDARY_AFTER")
+            && unrelated_closer.body.contains("No such module"),
+        "RecentThreads must not consume a later module's body closer: {}",
+        unrelated_closer.body,
+    );
 }
 
 #[tokio::test]
@@ -8203,7 +8234,7 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
     )
     .await
     .expect("primary forum read-model category should be created");
-    let _empty_category = ForumService::create_category(
+    let empty_category = ForumService::create_category(
         runner.context(),
         CreateForumCategory {
             forum_group_id: visible_group.forum_group_id,
@@ -8309,6 +8340,23 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
     )
     .await;
     let root_id = create_post(&runner, visible_thread, None, "Visible Post 00").await;
+    ForumPostService::update(
+        runner.context(),
+        UpdateForumPost {
+            forum_post_id: root_id,
+            user_id: SAMPLE_USER_ID,
+            comments: "edit forum read-model fixture".to_owned(),
+            body: UpdateForumPostBody {
+                title: Maybe::Set("Visible Post 00 edited".to_owned()),
+                wikitext: Maybe::Set(
+                    "Visible Post 00 edited body <observable>".to_owned(),
+                ),
+            },
+        },
+    )
+    .await
+    .expect("forum read-model fixture post edit should succeed")
+    .expect("forum read-model fixture post edit should create a revision");
     let mut visible_post_ids = vec![root_id];
     for number in 1..22 {
         visible_post_ids.push(
@@ -8545,6 +8593,41 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
     );
     assert_eq!(missing_category_ajax.status, "no_category");
     assert!(missing_category_ajax.body.is_empty());
+    let empty_second_page = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": empty_category.forum_category_id.to_string(),
+                "p": "2",
+            },
+        }),
+    );
+    assert_eq!(empty_second_page.status, "not_ok");
+    assert!(empty_second_page.body.is_empty());
+
+    let hidden_category_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": hidden_category.forum_category_id.to_string(),
+                "p": "1",
+            },
+        }),
+    );
+    assert_eq!(hidden_category_ajax.status, "ok");
+    assert!(
+        hidden_category_ajax
+            .body
+            .contains("Read Model Hidden Category"),
+        "a hidden group remains directly addressable by its observed category route: {}",
+        hidden_category_ajax.body,
+    );
 
     let paginated_category_ajax = run_endpoint!(
         runner,
@@ -8574,11 +8657,16 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
                 .contains("Pagination Thread 20")
             && !paginated_category_ajax
                 .body
-                .contains("Pagination Thread 00"),
+                .contains("Pagination Thread 00")
+            && paginated_category_ajax
+                .body
+                .matches(r#"<div class="pager">"#)
+                .count()
+                == 2,
         "{}",
         paginated_category_ajax.body,
     );
-    let unsupported_category_page = run_endpoint!(
+    let second_category_page = run_endpoint!(
         runner,
         wikidot_forum_module,
         json!({
@@ -8590,7 +8678,25 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
             },
         }),
     );
-    assert_eq!(unsupported_category_page.status, "not_ok");
+    assert_eq!(second_category_page.status, "ok");
+    assert!(
+        second_category_page.body.contains("Pagination Thread 00")
+            && !second_category_page.body.contains("Pagination Thread 20")
+            && second_category_page
+                .body
+                .contains(r#"<span class="pager-no">page 2 of 2</span>"#)
+            && second_category_page.body.contains(&format!(
+                r#"href="/forum/c-{}/p/1">&laquo; previous</a>"#,
+                pagination_category.forum_category_id,
+            ))
+            && second_category_page
+                .body
+                .matches(r#"<div class="pager">"#)
+                .count()
+                == 1,
+        "{}",
+        second_category_page.body,
+    );
 
     let thread_ajax = run_endpoint!(
         runner,
@@ -8605,13 +8711,38 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
     assert!(
         thread_ajax
             .body
-            .contains(r#"<div class="forum-thread-box">"#)
+            .contains(r#"<div class="forum-thread-box ">"#)
             && thread_ajax.body.contains("Read Model Visible Thread")
             && thread_ajax.body.contains("Number of posts: 22")
-            && !thread_ajax.body.contains("New Post")
-            && !thread_ajax.body.contains("Edit Title"),
+            && thread_ajax
+                .body
+                .contains(r#"<div id="thread-container" class="thread-container">"#)
+            && thread_ajax
+                .body
+                .contains(r#"<div id="thread-container-posts" style="display: none">"#,)
+            && thread_ajax.body.contains(&format!(
+                r#"<div class="post-container" id="fpc-{root_id}">"#,
+            ))
+            && thread_ajax.body.contains("Visible Post 00 edited")
+            && thread_ajax.body.contains(r#"<div class="changes">"#)
+            && thread_ajax.body.contains("Last edited on")
+            && thread_ajax
+                .body
+                .contains(r#"<div class="revisions" style="display: none"></div>"#)
+            && thread_ajax.body.contains("Show more")
+            && thread_ajax.body.contains("Unfold All")
+            && thread_ajax.body.contains("Edit Title &amp; Description")
+            && thread_ajax.body.contains("New Post")
+            && thread_ajax.body.contains(r#"id="post-options-template""#),
         "{}",
         thread_ajax.body,
+    );
+    assert_eq!(thread_ajax.js_include.len(), 2);
+    assert!(
+        thread_ajax.js_include[0].ends_with("/ForumViewThreadPostsModule.js")
+            && thread_ajax.js_include[1].ends_with("/ForumViewThreadModule.js"),
+        "{:?}",
+        thread_ajax.js_include,
     );
     let thread_posts_ajax = run_endpoint!(
         runner,
@@ -8624,17 +8755,27 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
     );
     assert_eq!(thread_posts_ajax.status, "ok");
     assert!(
-        thread_posts_ajax
+        thread_posts_ajax.body.starts_with(&format!(
+            r#"<div class="post-container" id="fpc-{root_id}">"#,
+        )) && !thread_posts_ajax
             .body
-            .contains(r#"<div id="thread-container-posts" class="thread-container">"#)
+            .contains(r#"id="thread-container-posts""#)
             && thread_posts_ajax.body.contains("Visible Post 00")
             && thread_posts_ajax.body.contains("Visible Post 19")
             && !thread_posts_ajax.body.contains("Visible Post 20")
             && !thread_posts_ajax.body.contains("Private Newest Post")
+            && thread_posts_ajax.body.contains("Visible Post 00 edited")
+            && thread_posts_ajax.body.contains("Last edited on")
             && !thread_posts_ajax.body.contains("Edit")
             && !thread_posts_ajax.body.contains("Delete"),
         "{}",
         thread_posts_ajax.body,
+    );
+    assert_eq!(thread_posts_ajax.js_include.len(), 1);
+    assert!(
+        thread_posts_ajax.js_include[0].ends_with("/ForumViewThreadPostsModule.js"),
+        "{:?}",
+        thread_posts_ajax.js_include,
     );
     let private_thread_ajax = run_endpoint!(
         runner,
@@ -8646,6 +8787,32 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         }),
     );
     assert_eq!(private_thread_ajax.status, "no_thread");
+
+    for (module_name, parameters) in [
+        (
+            "forum/ForumViewCategoryModule",
+            json!({"c": primary_category.forum_category_id.to_string()}),
+        ),
+        (
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": visible_thread.to_string()}),
+        ),
+        ("forum/ForumRecentPostsListModule", json!({"page": "1"})),
+    ] {
+        let widened = run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": module_name,
+                "parameters": parameters,
+            }),
+        );
+        assert_eq!(
+            widened.status, "not_ok",
+            "{module_name} must require its exact observed parameter set",
+        );
+    }
 
     let recent_posts_ajax = run_endpoint!(
         runner,
@@ -8732,6 +8899,52 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
             && second_page.contains("updateList(1)"),
         "{second_page}",
     );
+
+    let guest_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("guest")),
+    )
+    .await
+    .expect("guest role should exist");
+    RolePermissionTable::delete_many()
+        .filter(role_permission::Column::RoleId.eq(guest_role.role_id))
+        .filter(role_permission::Column::SiteId.eq(site_id))
+        .filter(role_permission::Column::ResourceType.eq(Resource::Site))
+        .filter(role_permission::Column::ResourceCategoryId.is_null())
+        .filter(role_permission::Column::Action.eq(Action::View))
+        .exec(runner.context().transaction())
+        .await
+        .expect("guest site view permission should be revoked");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("permission cache invalidation should run");
+    let denied = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadModule",
+            "parameters": {"t": visible_thread.to_string()},
+        }),
+    );
+    assert_eq!(denied.status, "not_ok");
+    assert!(denied.body.is_empty());
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id + 1),
+        ..Default::default()
+    });
+    let mismatched_site = run_endpoint_err!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumStartModule",
+            "parameters": {},
+        }),
+    );
+    assert_contains_error!(mismatched_site, ErrorType::PermissionDenied);
 }
 
 #[tokio::test]

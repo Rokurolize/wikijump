@@ -3,12 +3,14 @@
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
+use sea_orm::sea_query::ArrayType;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 use serde::Serialize;
 
 use super::forum_modules::{
     ForumLastPost, forum_user, load_forum_start_activity, load_recent_posts_page,
-    render_forum_date, render_forum_start, render_forum_user, render_recent_posts_list,
+    render_forum_date, render_forum_start, render_forum_user,
+    render_forum_user_without_avatar, render_recent_posts_list,
 };
 use super::forum_visibility::ForumPageVisibility;
 use super::service::{
@@ -23,6 +25,9 @@ use crate::utils::{normalize_page_slug, normalize_slug_without_category_separato
 const THREADS_PER_PAGE: usize = 20;
 const THREAD_POSTS_PER_PAGE: usize = 20;
 const THREAD_CANDIDATE_LIMIT: usize = 1_001;
+const MAX_CATEGORY_PAGE: u32 = 50;
+const THREAD_POSTS_SCRIPT: &str = "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js";
+const THREAD_SCRIPT: &str = "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadModule.js";
 
 #[derive(Clone, Debug)]
 pub struct WikidotForumModuleRequest {
@@ -34,6 +39,7 @@ pub struct WikidotForumModuleRequest {
 pub struct WikidotForumModuleResponse {
     pub status: String,
     pub body: String,
+    pub js_include: Vec<String>,
 }
 
 #[derive(Debug, FromQueryResult)]
@@ -44,8 +50,6 @@ struct ForumThreadCandidate {
     category_name: String,
     title: String,
     description: String,
-    page_id: Option<i64>,
-    page_category_id: Option<i64>,
     created_at: time::OffsetDateTime,
     post_count: i64,
     last_forum_post_id: Option<i64>,
@@ -81,12 +85,25 @@ struct ForumThreadPostCandidate {
     forum_post_id: i64,
     user_id: i64,
     created_at: time::OffsetDateTime,
+    revision_number: i32,
+    revision_created_at: time::OffsetDateTime,
+    revision_user_id: i64,
     title: String,
     compiled_html_hash: Vec<u8>,
     wikidot_user_name: Option<String>,
     wikidot_user_slug: Option<String>,
     local_user_name: Option<String>,
     local_user_slug: Option<String>,
+    revision_wikidot_user_name: Option<String>,
+    revision_wikidot_user_slug: Option<String>,
+    revision_local_user_name: Option<String>,
+    revision_local_user_slug: Option<String>,
+}
+
+#[derive(Debug)]
+struct ForumPostEditView {
+    user: super::forum_modules::ForumUserDisplay,
+    created_at: time::OffsetDateTime,
 }
 
 #[derive(Debug)]
@@ -96,6 +113,7 @@ struct ForumThreadPostView {
     created_at: time::OffsetDateTime,
     title: String,
     compiled_html: String,
+    edit: Option<ForumPostEditView>,
 }
 
 async fn load_forum_threads(
@@ -106,13 +124,30 @@ async fn load_forum_threads(
     thread_id: Option<i64>,
 ) -> Result<Option<Vec<ForumThreadView>>> {
     let make_error = || Error::new("failed to load forum threads", ErrorType::Render);
+    let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
+    if !visibility.site_is_viewable(site_id).await? {
+        return Ok(None);
+    }
+    let Some(visible_thread_ids) = visibility
+        .visible_thread_ids(site_id, category_id, thread_id, false)
+        .await?
+    else {
+        return Ok(None);
+    };
+    if visible_thread_ids.is_empty() {
+        return Ok(Some(Vec::new()));
+    }
+    let visible_thread_ids = visible_thread_ids
+        .into_iter()
+        .map(Value::from)
+        .collect::<Vec<_>>();
     let candidates = ForumThreadCandidate::find_by_statement(
         Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
             concat!(
                 "SELECT t.forum_thread_id, t.forum_category_id, g.name AS group_name, ",
                 "c.name AS category_name, ",
-                "t.title, t.description, t.page_id, p.page_category_id, t.created_at, ",
+                "t.title, t.description, t.created_at, ",
                 "counts.post_count, last_post.forum_post_id AS last_forum_post_id, ",
                 "last_post.created_at AS last_created_at, t.created_by AS creator_user_id, ",
                 "creator_wu.name AS creator_wikidot_name, ",
@@ -147,6 +182,7 @@ async fn load_forum_threads(
                 "WHERE t.site_id = $1 AND t.deleted_at IS NULL ",
                 " AND ($2::BIGINT IS NULL OR t.forum_category_id = $2) ",
                 " AND ($3::BIGINT IS NULL OR t.forum_thread_id = $3) ",
+                " AND t.forum_thread_id = ANY($4::BIGINT[]) ",
                 " AND (t.page_id IS NULL OR p.page_id IS NOT NULL) ",
                 "ORDER BY t.sticky DESC, COALESCE(last_post.created_at, t.created_at) DESC, ",
                 "t.created_at DESC, t.forum_thread_id DESC LIMIT 1001",
@@ -155,6 +191,7 @@ async fn load_forum_threads(
                 Value::from(site_id),
                 Value::BigInt(category_id),
                 Value::BigInt(thread_id),
+                Value::Array(ArrayType::BigInt, Some(Box::new(visible_thread_ids))),
             ],
         ),
     )
@@ -166,15 +203,8 @@ async fn load_forum_threads(
         return Ok(None);
     }
 
-    let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
     let mut threads = Vec::with_capacity(candidates.len());
     for candidate in candidates {
-        if !visibility
-            .page_is_viewable(site_id, candidate.page_id, candidate.page_category_id)
-            .await?
-        {
-            continue;
-        }
         let last_post = match (
             candidate.last_forum_post_id,
             candidate.last_user_id,
@@ -224,9 +254,14 @@ fn render_forum_category(
     category_name: &str,
     category_description: &str,
     threads: &[ForumThreadView],
+    page: u32,
 ) -> String {
     let thread_count = threads.len();
     let post_count: i64 = threads.iter().map(|thread| thread.post_count.max(0)).sum();
+    let page_count = thread_count.div_ceil(THREADS_PER_PAGE);
+    let page_start = (page as usize - 1).saturating_mul(THREADS_PER_PAGE);
+    let page_end = (page_start + THREADS_PER_PAGE).min(thread_count);
+    let page_threads = threads.get(page_start..page_end).unwrap_or_default();
     let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut output = String::from(
         "<div class=\"forum-category-box\"><div class=\"forum-breadcrumbs\"><a href=\"/forum/start\">Forum</a> &raquo; ",
@@ -236,11 +271,13 @@ fn render_forum_category(
     output.push_str(&escape_list_pages_html_text(category_name));
     write!(
         &mut output,
-        "</div><div class=\"description-block well\"><div class=\"statistics\">Number of threads: {thread_count}<br/>Number of posts: {post_count}<br/><span class=\"rss-icon\"><img src=\"http://www.wikidot.com/common--theme/base/images/feed/feed-icon-14x14.png\" alt=\"rss icon\"/></span> RSS: <a href=\"/feed/forum/ct-{category_id}.xml\">New threads</a> | <a href=\"/feed/forum/cp-{category_id}.xml\">New posts</a></div>{}</div><table style=\"width: 98%\" class=\"table\"><tr class=\"head\"><td>Thread name</td><td>Started</td><td>Posts</td><td>Recent post</td></tr>",
+        "</div><div class=\"description-block well\"><div class=\"statistics\">Number of threads: {thread_count}<br/>Number of posts: {post_count}<br/><span class=\"rss-icon\"><img src=\"http://www.wikidot.com/common--theme/base/images/feed/feed-icon-14x14.png\" alt=\"rss icon\"/></span> RSS: <a href=\"/feed/forum/ct-{category_id}.xml\">New threads</a> | <a href=\"/feed/forum/cp-{category_id}.xml\">New posts</a></div>{}</div>",
         escape_list_pages_html_text(category_description),
     )
     .expect("writing to a String cannot fail");
-    for thread in threads.iter().take(THREADS_PER_PAGE) {
+    push_forum_category_pager(&mut output, category_id, page, page_count);
+    output.push_str("<table style=\"width: 98%\" class=\"table\"><tr class=\"head\"><td>Thread name</td><td>Started</td><td>Posts</td><td>Recent post</td></tr>");
+    for thread in page_threads {
         let thread_slug = normalize_slug_without_category_separator(&thread.title);
         write!(
             &mut output,
@@ -280,16 +317,83 @@ fn render_forum_category(
         }
         output.push_str("</td></tr>");
     }
-    output.push_str("</table></div>");
+    output.push_str("</table>");
+    if page_threads.len() == THREADS_PER_PAGE {
+        push_forum_category_pager(&mut output, category_id, page, page_count);
+    }
+    output.push_str("</div>");
     output
 }
 
-fn render_forum_thread(thread: &ForumThreadView) -> String {
+fn push_forum_category_pager(
+    output: &mut String,
+    category_id: i64,
+    page: u32,
+    page_count: usize,
+) {
+    if page_count <= 1 && page == 1 {
+        return;
+    }
+    write!(
+        output,
+        "<div class=\"pager\"><span class=\"pager-no\">page {page} of {page_count}</span>",
+    )
+    .expect("writing to a String cannot fail");
+    if page > 1 {
+        write!(
+            output,
+            "<span class=\"target\"><a href=\"/forum/c-{category_id}/p/{}\">&laquo; previous</a></span>",
+            page - 1,
+        )
+        .expect("writing to a String cannot fail");
+    }
+
+    let page_count = page_count as u32;
+    let upper = page_count.max(page);
+    let mut pages = Vec::with_capacity(9);
+    pages.extend(1..=2.min(upper));
+    pages.extend(page.saturating_sub(2).max(1)..=(page + 2).min(upper));
+    pages.extend(page_count.saturating_sub(1).max(1)..=page_count);
+    pages.sort_unstable();
+    pages.dedup();
+    let mut previous = 0;
+    for number in pages {
+        if number == 0 {
+            continue;
+        }
+        if previous > 0 && number > previous + 1 {
+            output.push_str("<span class=\"dots\">...</span>");
+        }
+        if number == page {
+            write!(output, "<span class=\"current\">{number}</span>")
+                .expect("writing to a String cannot fail");
+        } else {
+            write!(
+                output,
+                "<span class=\"target\"><a href=\"/forum/c-{category_id}/p/{number}\">{number}</a></span>",
+            )
+            .expect("writing to a String cannot fail");
+        }
+        previous = number;
+    }
+    if page_count > 0 && page != page_count {
+        write!(
+            output,
+            "<span class=\"target\"><a href=\"/forum/c-{category_id}/p/{}\">next &raquo;</a></span>",
+            page + 1,
+        )
+        .expect("writing to a String cannot fail");
+    }
+    output.push_str("</div>");
+}
+
+fn render_forum_thread(thread: &ForumThreadView, posts: &str) -> String {
     let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
     let category_slug = normalize_page_slug(thread.category_name.clone());
+    let thread_slug = normalize_page_slug(thread.title.clone());
     format!(
         concat!(
-            "<div class=\"forum-thread-box\"><div class=\"forum-breadcrumbs\">",
+            "<div class=\"forum-thread-box \"><div class=\"forum-breadcrumbs\">",
             "<a href=\"/forum/start\">Forum</a> &raquo; ",
             "<a href=\"/forum/c-{category_id}/{category_slug}\">{group_name} / {category_name}</a>",
             " &raquo; {title}</div><div class=\"description-block well\">",
@@ -297,10 +401,28 @@ fn render_forum_thread(thread: &ForumThreadView) -> String {
             "Number of posts: {post_count}<br/><span class=\"rss-icon\">",
             "<img src=\"http://www.wikidot.com/common--theme/base/images/feed/feed-icon-14x14.png\" alt=\"rss icon\"/>",
             "</span> RSS: <a href=\"/feed/forum/t-{thread_id}.xml\">New posts</a></div>",
-            "<div class=\"head\">Summary:</div>{description}</div></div>",
+            "<div class=\"head\">Summary:</div>{description}</div>",
+            "<div class=\"options\"><a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.unfoldAll(event)\" class=\"btn btn-default btn-small btn-sm\">Unfold All</a> ",
+            "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.foldAll(event)\" class=\"btn btn-default btn-small btn-sm\">Fold All</a> ",
+            "<a href=\"javascript:;\" id=\"thread-toggle-options\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.toggleThreadOptions(event)\" class=\"btn btn-default btn-small btn-sm\"><i class=\"icon-plus\"></i> More Options</a></div>",
+            "<div id=\"thread-options-2\" class=\"options\" style=\"display: none\"><a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.editThreadMeta(event)\" class=\"btn btn-default btn-small btn-sm\">Edit Title &amp; Description</a> ",
+            "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.editThreadStickiness(event)\" class=\"btn btn-default btn-small btn-sm\">Stickness</a> ",
+            "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.editThreadBlock(event)\" class=\"btn btn-default btn-small btn-sm\">Lock Thread</a> ",
+            "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.moveThread(event)\" class=\"btn btn-default btn-small btn-sm\">Move Thread</a></div>",
+            "<div id=\"thread-action-area\" class=\"action-area well\" style=\"display: none\"></div>",
+            "<div id=\"thread-container\" class=\"thread-container\">",
+            "<div id=\"thread-container-posts\" style=\"display: none\">{posts}</div>",
+            "</div><div class=\"new-post\"><a href=\"javascript:;\" id=\"new-post-button\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.newPost(event,null)\" class=\"btn btn-default\">New Post</a></div>",
+            "<div style=\"display:none\" id=\"post-options-template\"><a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.showPermalink(event,'%POST_ID%')\" class=\"btn btn-default btn-small btn-sm\">Permanent Link</a> ",
+            "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.editPost(event,'%POST_ID%')\" class=\"btn btn-default btn-small btn-sm\">Edit</a> ",
+            "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.deletePost(event,'%POST_ID%')\" class=\"btn btn-danger btn-small btn-sm\">Delete</a></div>",
+            "<div style=\"display:none\" id=\"post-options-permalink-template\">/forum/t-{thread_id}/{thread_slug}#post-</div>",
+            "</div><script type=\"text/javascript\">",
+            "WIKIDOT.forumThreadId = {thread_id};</script>",
         ),
         category_id = thread.forum_category_id,
         category_slug = escape_list_pages_html_attr(&category_slug),
+        thread_slug = escape_list_pages_html_text(&thread_slug),
         group_name = escape_list_pages_html_text(&thread.group_name),
         category_name = escape_list_pages_html_text(&thread.category_name),
         title = escape_list_pages_html_text(&thread.title),
@@ -313,6 +435,7 @@ fn render_forum_thread(thread: &ForumThreadView) -> String {
         post_count = thread.post_count,
         thread_id = thread.forum_thread_id,
         description = escape_list_pages_html_text(&thread.description),
+        posts = posts,
     )
 }
 
@@ -327,16 +450,26 @@ async fn load_forum_thread_posts(
         Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
             concat!(
-                "SELECT fp.forum_post_id, fp.user_id, fp.created_at, revision.title, ",
+                "SELECT fp.forum_post_id, fp.user_id, fp.created_at, ",
+                "revision.revision_number, revision.created_at AS revision_created_at, ",
+                "revision.user_id AS revision_user_id, revision.title, ",
                 "revision.compiled_html_hash, wu.name AS wikidot_user_name, ",
                 "wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, ",
-                "local_user.slug AS local_user_slug FROM forum_post fp ",
+                "local_user.slug AS local_user_slug, ",
+                "revision_wu.name AS revision_wikidot_user_name, ",
+                "revision_wu.slug AS revision_wikidot_user_slug, ",
+                "revision_local.name AS revision_local_user_name, ",
+                "revision_local.slug AS revision_local_user_slug FROM forum_post fp ",
                 "JOIN forum_post_revision revision ",
                 " ON revision.forum_post_revision_id = fp.latest_revision_id ",
                 " AND revision.site_id = fp.site_id ",
                 "LEFT JOIN wikidot_user wu ON wu.user_id = fp.user_id AND wu.is_deleted = FALSE ",
                 "LEFT JOIN \"user\" local_user ON local_user.user_id = fp.user_id ",
                 " AND local_user.deleted_at IS NULL ",
+                "LEFT JOIN wikidot_user revision_wu ON revision_wu.user_id = revision.user_id ",
+                " AND revision_wu.is_deleted = FALSE ",
+                "LEFT JOIN \"user\" revision_local ON revision_local.user_id = revision.user_id ",
+                " AND revision_local.deleted_at IS NULL ",
                 "WHERE fp.site_id = $1 AND fp.forum_thread_id = $2 ",
                 " AND fp.deleted_at IS NULL ORDER BY fp.created_at, fp.forum_post_id LIMIT 20",
             ),
@@ -363,6 +496,16 @@ async fn load_forum_thread_posts(
             created_at: candidate.created_at,
             title: candidate.title,
             compiled_html,
+            edit: (candidate.revision_number > 0).then(|| ForumPostEditView {
+                user: forum_user(
+                    candidate.revision_user_id,
+                    candidate.revision_wikidot_user_name,
+                    candidate.revision_wikidot_user_slug,
+                    candidate.revision_local_user_name,
+                    candidate.revision_local_user_slug,
+                ),
+                created_at: candidate.revision_created_at,
+            }),
         });
     }
     Ok(posts)
@@ -370,8 +513,7 @@ async fn load_forum_thread_posts(
 
 fn render_forum_thread_posts(posts: &[ForumThreadPostView]) -> String {
     let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
-    let mut output =
-        String::from("<div id=\"thread-container-posts\" class=\"thread-container\">");
+    let mut output = String::new();
     for post in posts {
         let user = render_forum_user(&post.user, avatar_timestamp);
         let date = render_forum_date(
@@ -379,9 +521,27 @@ fn render_forum_thread_posts(posts: &[ForumThreadPostView]) -> String {
             "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover",
             "%e %b %Y %H:%M",
         );
+        let changes = post.edit.as_ref().map_or_else(String::new, |edit| {
+            format!(
+                concat!(
+                    "<div class=\"changes\">Last edited on {date} by {user} ",
+                    "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.showHistory(event,{post_id})\"><i class=\"icon-plus\"></i> Show more</a></div>",
+                    "<div class=\"revisions\" style=\"display: none\"></div>",
+                ),
+                date = render_forum_date(
+                    edit.created_at,
+                    "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover",
+                    "%e %b %Y %H:%M",
+                ),
+                user = render_forum_user_without_avatar(&edit.user),
+                post_id = post.forum_post_id,
+            )
+        });
         write!(
             &mut output,
-            "<div class=\"post\" id=\"post-{}\"><div class=\"long\"><div class=\"head\"><div class=\"title\" id=\"post-title-{}\">{}</div><div class=\"info\">{} {}</div></div><div class=\"content\" id=\"post-content-{}\">{}</div><div class=\"options\"></div><div id=\"post-options-{}\" class=\"options\" style=\"display: none\"></div></div><div class=\"short\"><a class=\"title\" href=\"javascript:;\">{}</a> by {}, {}</div></div>",
+            "<div class=\"post-container\" id=\"fpc-{}\"><div class=\"post\" id=\"post-{}\"><div class=\"long\"><div class=\"head\"><div class=\"options\"><a href=\"javascript:;\" onclick=\"togglePostFold(event,{})\" class=\"btn btn-default btn-small btn-sm\">Fold</a></div><div class=\"title\" id=\"post-title-{}\">{}</div><div class=\"info\">{} {}</div></div><div class=\"content\" id=\"post-content-{}\">{}</div>{}<div class=\"options\"><a href=\"javascript:;\" onclick=\"togglePostOptions(event,{})\" class=\"btn btn-default btn-small btn-sm\">Options</a></div><div id=\"post-options-{}\" class=\"options\" style=\"display: none\"></div></div><div class=\"short\"><a class=\"options btn btn-default btn-mini btn-xs\" href=\"javascript:;\" onclick=\"togglePostFold(event,{})\">Unfold</a><a class=\"title\" href=\"javascript:;\" onclick=\"togglePostFold(event,{})\">{}</a> by {}, {}</div></div></div>",
+            post.forum_post_id,
+            post.forum_post_id,
             post.forum_post_id,
             post.forum_post_id,
             escape_list_pages_html_text(&post.title),
@@ -389,6 +549,10 @@ fn render_forum_thread_posts(posts: &[ForumThreadPostView]) -> String {
             date,
             post.forum_post_id,
             post.compiled_html,
+            changes,
+            post.forum_post_id,
+            post.forum_post_id,
+            post.forum_post_id,
             post.forum_post_id,
             escape_list_pages_html_text(&post.title),
             user,
@@ -396,7 +560,6 @@ fn render_forum_thread_posts(posts: &[ForumThreadPostView]) -> String {
         )
         .expect("writing to a String cannot fail");
     }
-    output.push_str("</div>");
     output
 }
 
@@ -404,13 +567,27 @@ fn response(status: &str, body: String) -> WikidotForumModuleResponse {
     WikidotForumModuleResponse {
         status: status.to_owned(),
         body,
+        js_include: Vec::new(),
     }
 }
 
-fn parameters_are(parameters: &BTreeMap<String, String>, allowed: &[&str]) -> bool {
-    parameters
-        .keys()
-        .all(|parameter| allowed.contains(&parameter.as_str()))
+fn response_with_scripts(
+    status: &str,
+    body: String,
+    scripts: &[&str],
+) -> WikidotForumModuleResponse {
+    WikidotForumModuleResponse {
+        status: status.to_owned(),
+        body,
+        js_include: scripts.iter().map(|script| (*script).to_owned()).collect(),
+    }
+}
+
+fn parameters_are(parameters: &BTreeMap<String, String>, required: &[&str]) -> bool {
+    parameters.len() == required.len()
+        && parameters
+            .keys()
+            .all(|parameter| required.contains(&parameter.as_str()))
 }
 
 fn positive_i64(parameters: &BTreeMap<String, String>, name: &str) -> Option<i64> {
@@ -421,14 +598,10 @@ fn positive_i64(parameters: &BTreeMap<String, String>, name: &str) -> Option<i64
         .filter(|value| *value > 0)
 }
 
-fn positive_u32_or(
-    parameters: &BTreeMap<String, String>,
-    name: &str,
-    fallback: u32,
-) -> Option<u32> {
+fn positive_u32(parameters: &BTreeMap<String, String>, name: &str) -> Option<u32> {
     parameters
         .get(name)
-        .map_or(Some(fallback), |value| value.parse::<u32>().ok())
+        .and_then(|value| value.parse::<u32>().ok())
         .filter(|value| *value > 0)
 }
 
@@ -466,9 +639,14 @@ impl RenderService {
         request: WikidotForumModuleRequest,
     ) -> Result<WikidotForumModuleResponse> {
         let viewer_user_id = ctx.request().user_id().ok();
+        let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
+        if !visibility.site_is_viewable(site_id).await? {
+            return Ok(response("not_ok", String::new()));
+        }
         match request.module_name.as_str() {
             "forum/ForumStartModule"
-                if parameters_are(&request.parameters, &["hidden"]) =>
+                if request.parameters.is_empty()
+                    || parameters_are(&request.parameters, &["hidden"]) =>
             {
                 let show_hidden = request
                     .parameters
@@ -477,6 +655,12 @@ impl RenderService {
                 if request.parameters.contains_key("hidden") && !show_hidden {
                     return Ok(response("not_ok", String::new()));
                 }
+                let Some(activity) =
+                    load_forum_start_activity(ctx, site_id, viewer_user_id, show_hidden)
+                        .await?
+                else {
+                    return Ok(response("not_ok", String::new()));
+                };
                 let structure = ForumService::get_structure(
                     ctx,
                     GetForumStructure {
@@ -488,8 +672,6 @@ impl RenderService {
                 .or_raise(|| {
                     Error::new("failed to load forum structure", ErrorType::Render)
                 })?;
-                let activity =
-                    load_forum_start_activity(ctx, site_id, viewer_user_id).await?;
                 Ok(response(
                     "ok",
                     render_forum_start(&structure, &activity, show_hidden),
@@ -501,7 +683,10 @@ impl RenderService {
                 let Some(category_id) = positive_i64(&request.parameters, "c") else {
                     return Ok(response("no_category", String::new()));
                 };
-                if positive_u32_or(&request.parameters, "p", 1) != Some(1) {
+                let Some(page) = positive_u32(&request.parameters, "p") else {
+                    return Ok(response("not_ok", String::new()));
+                };
+                if page > MAX_CATEGORY_PAGE {
                     return Ok(response("not_ok", String::new()));
                 }
                 let Some((group_name, category_name, category_description)) =
@@ -520,6 +705,9 @@ impl RenderService {
                 else {
                     return Ok(response("not_ok", String::new()));
                 };
+                if threads.is_empty() && page > 1 {
+                    return Ok(response("not_ok", String::new()));
+                }
                 Ok(response(
                     "ok",
                     render_forum_category(
@@ -528,6 +716,7 @@ impl RenderService {
                         &category_name,
                         &category_description,
                         &threads,
+                        page,
                     ),
                 ))
             }
@@ -551,7 +740,13 @@ impl RenderService {
                 let Some(thread) = threads.pop() else {
                     return Ok(response("no_thread", String::new()));
                 };
-                Ok(response("ok", render_forum_thread(&thread)))
+                let posts = load_forum_thread_posts(ctx, site_id, thread_id).await?;
+                let posts = render_forum_thread_posts(&posts);
+                Ok(response_with_scripts(
+                    "ok",
+                    render_forum_thread(&thread, &posts),
+                    &[THREAD_POSTS_SCRIPT, THREAD_SCRIPT],
+                ))
             }
             "forum/ForumViewThreadPostsModule"
                 if parameters_are(&request.parameters, &["t", "pageNo"]) =>
@@ -559,7 +754,7 @@ impl RenderService {
                 let Some(thread_id) = positive_i64(&request.parameters, "t") else {
                     return Ok(response("no_thread", String::new()));
                 };
-                if positive_u32_or(&request.parameters, "pageNo", 1) != Some(1) {
+                if positive_u32(&request.parameters, "pageNo") != Some(1) {
                     return Ok(response("not_ok", String::new()));
                 }
                 let Some(threads) = load_forum_threads(
@@ -577,13 +772,16 @@ impl RenderService {
                     return Ok(response("no_thread", String::new()));
                 }
                 let posts = load_forum_thread_posts(ctx, site_id, thread_id).await?;
-                Ok(response("ok", render_forum_thread_posts(&posts)))
+                Ok(response_with_scripts(
+                    "ok",
+                    render_forum_thread_posts(&posts),
+                    &[THREAD_POSTS_SCRIPT],
+                ))
             }
             "forum/ForumRecentPostsListModule"
                 if parameters_are(&request.parameters, &["page", "categoryId"]) =>
             {
-                let Some(page_number) = positive_u32_or(&request.parameters, "page", 1)
-                else {
+                let Some(page_number) = positive_u32(&request.parameters, "page") else {
                     return Ok(response("not_ok", String::new()));
                 };
                 if page_number != 1 {
@@ -616,5 +814,59 @@ impl RenderService {
             }
             _ => Ok(response("not_ok", String::new())),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::push_forum_category_pager;
+
+    fn pager(page: u32) -> String {
+        let mut output = String::new();
+        push_forum_category_pager(&mut output, 1_113_520, page, 11);
+        output
+    }
+
+    #[test]
+    fn category_pager_matches_the_four_sealed_live_sequences() {
+        assert_eq!(
+            pager(1),
+            concat!(
+                r#"<div class="pager"><span class="pager-no">page 1 of 11</span>"#,
+                r#"<span class="current">1</span><span class="target"><a href="/forum/c-1113520/p/2">2</a></span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/3">3</a></span><span class="dots">...</span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/10">10</a></span><span class="target"><a href="/forum/c-1113520/p/11">11</a></span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/2">next &raquo;</a></span></div>"#,
+            ),
+        );
+        assert_eq!(
+            pager(2),
+            concat!(
+                r#"<div class="pager"><span class="pager-no">page 2 of 11</span><span class="target"><a href="/forum/c-1113520/p/1">&laquo; previous</a></span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/1">1</a></span><span class="current">2</span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/3">3</a></span><span class="target"><a href="/forum/c-1113520/p/4">4</a></span>"#,
+                r#"<span class="dots">...</span><span class="target"><a href="/forum/c-1113520/p/10">10</a></span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/11">11</a></span><span class="target"><a href="/forum/c-1113520/p/3">next &raquo;</a></span></div>"#,
+            ),
+        );
+        assert_eq!(
+            pager(11),
+            concat!(
+                r#"<div class="pager"><span class="pager-no">page 11 of 11</span><span class="target"><a href="/forum/c-1113520/p/10">&laquo; previous</a></span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/1">1</a></span><span class="target"><a href="/forum/c-1113520/p/2">2</a></span>"#,
+                r#"<span class="dots">...</span><span class="target"><a href="/forum/c-1113520/p/9">9</a></span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/10">10</a></span><span class="current">11</span></div>"#,
+            ),
+        );
+        assert_eq!(
+            pager(12),
+            concat!(
+                r#"<div class="pager"><span class="pager-no">page 12 of 11</span><span class="target"><a href="/forum/c-1113520/p/11">&laquo; previous</a></span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/1">1</a></span><span class="target"><a href="/forum/c-1113520/p/2">2</a></span>"#,
+                r#"<span class="dots">...</span><span class="target"><a href="/forum/c-1113520/p/10">10</a></span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/11">11</a></span><span class="current">12</span>"#,
+                r#"<span class="target"><a href="/forum/c-1113520/p/13">next &raquo;</a></span></div>"#,
+            ),
+        );
     }
 }
