@@ -4,7 +4,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { runCandidateCaseSet } from "./candidate-case-runner.mjs";
-import { createOpen43MediaCandidateCaseSet } from "./open43-media-candidate-case-set.mjs";
 import {
   canonicalJson,
   readJsonObject,
@@ -15,7 +14,7 @@ import {
 const OPTIONS = ["case-set", "candidate-identity", "private-input", "output-dir"];
 
 export function candidateCaseUsage() {
-  return `Usage: run-candidate-cases.mjs --case-set open43-media-files --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
+  return `Usage: run-candidate-cases.mjs --case-set open43-media-files|open43-settings-browser --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
 
 Attaches to one sealed external non-standing candidate without owning its stack. PRIVATE.json must be a private regular file with no group or other permissions. Receipts retain only its SHA-256 and secret hashes.`;
 }
@@ -57,8 +56,15 @@ export async function readPrivateCandidateCaseInput(filePath) {
   return { value, sha256: createHash("sha256").update(bytes).digest("hex") };
 }
 
-function caseSet(name) {
-  if (name === "open43-media-files") return createOpen43MediaCandidateCaseSet();
+export async function candidateCaseSet(name) {
+  if (name === "open43-media-files") {
+    const { createOpen43MediaCandidateCaseSet } = await import("./open43-media-candidate-case-set.mjs");
+    return createOpen43MediaCandidateCaseSet();
+  }
+  if (name === "open43-settings-browser") {
+    const { createOpen43SettingsBrowserCandidateCaseSet } = await import("./open43-settings-browser-candidate-case-set.mjs");
+    return createOpen43SettingsBrowserCandidateCaseSet();
+  }
   throw new Error(`unknown source-owned candidate case set: ${name}`);
 }
 
@@ -73,10 +79,11 @@ function interruption() {
 }
 
 export async function runCandidateCaseCommand(args) {
-  const [identity, identitySha256, privateInput] = await Promise.all([
+  const [identity, identitySha256, privateInput, selectedCaseSet] = await Promise.all([
     readJsonObject(args["candidate-identity"], "candidate identity"),
     sha256File(args["candidate-identity"]),
     readPrivateCandidateCaseInput(args["private-input"]),
+    candidateCaseSet(args["case-set"]),
   ]);
   const outputDir = path.resolve(args["output-dir"]);
   await fs.mkdir(path.dirname(outputDir), { recursive: true, mode: 0o700 });
@@ -88,7 +95,7 @@ export async function runCandidateCaseCommand(args) {
       privateInput: privateInput.value,
       privateInputSha256: privateInput.sha256,
       outputDir,
-      caseSet: caseSet(args["case-set"]),
+      caseSet: selectedCaseSet,
       signal: signals.signal,
     });
   } finally {

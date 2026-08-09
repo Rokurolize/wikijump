@@ -5,9 +5,17 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  candidateCaseSet,
   parseCandidateCaseArgs,
   readPrivateCandidateCaseInput,
 } from "../src/candidate-case-command.mjs";
+
+test("candidate case registry exposes the real Open43 settings browser adapter", async () => {
+  const caseSet = await candidateCaseSet("open43-settings-browser");
+  assert.equal(caseSet.id, "open43-settings-browser");
+  assert.equal(caseSet.caseIds.length, 9);
+  assert.equal(typeof caseSet.prepareRun, "function");
+});
 
 test("candidate case command accepts only the fixed explicit attachment options", () => {
   assert.deepEqual(

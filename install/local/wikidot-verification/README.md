@@ -241,6 +241,8 @@ Run-owned Wikidot mutations remain a separate path. `capture_wikidot_saved_pages
 
 The `open43-media-files` CaseSet fixes four runtime cases and the editable `scpaiueouiuiuiui` site. It submits the public Framerail multipart action, drives file mutation through public Deepwell JSON-RPC, and observes original and resized identities through public WWS GET and HEAD. Database and filesystem reads are not verdict inputs. The existing generic runtime differential and its disposable-stack controller remain a separate syntax product path.
 
+The `open43-settings-browser` CaseSet fixes nine reversible settings cases in their audited order. It uses the editable `scpaiueouiuiuiui` origin, public Framerail admin actions, public Deepwell JSON-RPC reads, and runner-owned authenticated browser contexts. It records distinct immediate DOMContentLoaded and settled artifacts, including both sides of the category-theme transition, and drives the general settings stale error and successful save through the public browser form. Cleanup restores the pre-run public settings values; it does not create pages or use database or filesystem state as a verdict or cleanup seam. The two #758 create cases remain blocked because their monotonic allocator requires a disposable candidate owner or a public category lifecycle authority.
+
 ```sh
 pnpm --dir install/local/wikidot-verification candidate-cases -- \
   --case-set open43-media-files \
@@ -249,7 +251,9 @@ pnpm --dir install/local/wikidot-verification candidate-cases -- \
   --output-dir /absolute/evidence/path/open43-media-candidate
 ```
 
-The candidate identity must seal `scpaiueouiuiuiui.wikijump.localhost` and its matching files origin at one non-443 loopback endpoint. The private JSON names `deepwell_rpc_url`, `deepwell_rpc_token`, `object_store_origin`, `presigned_origin`, `tls_ca_pem`, and `actors.editor.user_id` plus `actors.editor.session_token`. Its Deepwell and object-store URLs must be explicit loopback publications of the sealed candidate Compose services. The private input must be one regular file with no group or other permissions, and the output directory must not already exist. Receipts record the input file SHA-256 and hashes of its token, session, and CA values, never the raw values or a presigned URL.
+For the settings run, use the same command with `--case-set open43-settings-browser`. Its private input names `deepwell_rpc_url`, `deepwell_rpc_token`, `tls_ca_pem`, and `actors.administrator`, `actors.non_admin`, and `actors.expired`, each with `user_id` and `session_token`. It also names `fixture.site_id`, a `fixture.cross_site_sentinel_id` that a public preflight proves does not resolve, and `fixture.default_category` and `fixture.transition_category`; each category supplies `category_id`, `slug`, `page_id`, and `page_slug` for the public category-transition check. The throttle receipt binds only hashes of that private identity and never stores a cookie or storage state.
+
+The candidate identity must seal `scpaiueouiuiuiui.wikijump.localhost` and its matching files origin at one non-443 loopback endpoint. For the media run, the private JSON names `deepwell_rpc_url`, `deepwell_rpc_token`, `object_store_origin`, `presigned_origin`, `tls_ca_pem`, and `actors.editor.user_id` plus `actors.editor.session_token`. Its Deepwell and object-store URLs must be explicit loopback publications of the sealed candidate Compose services. The private input must be one regular file with no group or other permissions, and the output directory must not already exist. Receipts record the input file SHA-256 and hashes of its token, session, and CA values, never the raw values or a presigned URL.
 
 The 2026-07-26 benchmark streamed 10,000 frozen matching cases through one debug FTML renderer process and completed the local render and comparison in 1.72 seconds with 302,324 KiB maximum RSS. Treat this as a throughput baseline, not a fixed performance gate.
 

@@ -94,7 +94,11 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.deepEqual(audit.reconciliation.classification_counts, classificationCounts);
   assert.equal(classificationCounts.needs_source, 0);
   assert.equal(audit.reconciliation.issue_owned_needs_source_count, 0);
+  assert.equal(audit.candidate_harness_gap.classification, "needs_source");
   assert.equal(audit.candidate_harness_gap.outside_source_residual_scope, true);
+  assert.equal(audit.candidate_harness_gap.blocker_kind, "blocked_missing_disposable_autonumber_allocator_owner");
+  assert.deepEqual(audit.candidate_harness_gap.case_ids, ["S758_CREATE_INITIAL", "S758_CREATE_SETTLED"]);
+  assert.deepEqual(audit.candidate_harness_gap.required_commands, []);
 
   const rowsByCaseId = new Map(rows.map((row) => [row.case_id, row]));
   const fragmentHref = rowsByCaseId.get(
@@ -111,6 +115,42 @@ test("settings and browser closure audit is complete without promoting candidate
     /wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page/u,
   );
   assert.equal("C_SETTINGS_IMPORT_EXPORT" in audit.central_commands, false);
+  assert.equal("C_SETTINGS_BROWSER_CANDIDATE" in audit.central_commands, false);
+  assert.equal(audit.central_commands.C_SETTINGS_CANDIDATE.exists_now, true);
+  assert.match(
+    audit.central_commands.C_SETTINGS_CANDIDATE.command,
+    /candidate-cases -- --case-set open43-settings-browser/u,
+  );
+  assert.equal(
+    audit.central_commands.C_SETTINGS_CANDIDATE.requirements.includes(
+      "sealed exact non-443 scpaiueouiuiuiui.wikijump.localhost candidate",
+    ),
+    true,
+  );
+  const reversibleSettingsCases = [
+    "S754_ANALYTICS_INITIAL",
+    "S754_ANALYTICS_SETTLED",
+    "S755_THEME_INITIAL",
+    "S755_THEME_SETTLED",
+    "S757_TOOLBAR_INITIAL",
+    "S757_TOOLBAR_SETTLED",
+    "S1046_ADMIN_INITIAL",
+    "S1046_ADMIN_SETTLED",
+    "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
+  ];
+  assert.deepEqual(audit.central_commands.C_SETTINGS_CANDIDATE.coverage_case_ids, reversibleSettingsCases);
+  assert.deepEqual(rows.filter(({ next_command_ids: ids = [] }) => ids.includes("C_SETTINGS_CANDIDATE")).map(({ case_id }) => case_id), reversibleSettingsCases);
+  for (const caseId of ["S758_CREATE_INITIAL", "S758_CREATE_SETTLED"]) {
+    const row = rowsByCaseId.get(caseId);
+    assert.equal(row.classification, "candidate_required");
+    assert.equal(row.blocker_kind, "blocked_missing_disposable_autonumber_allocator_owner");
+    assert.deepEqual(row.next_command_ids, []);
+  }
+
+  const adminSettled = rowsByCaseId.get("S1046_ADMIN_SETTLED");
+  const autocomplete = rowsByCaseId.get("S1046_AUTOCOMPLETE_AND_INTERMEDIATE_FRAMES");
+  assert.equal(adminSettled.acceptance.includes("cancel"), false);
+  assert.equal(autocomplete.acceptance.includes("cancel"), true);
 
   for (const caseId of [
     "S754_IMPORT_EXPORT_REPRESENTATION",
