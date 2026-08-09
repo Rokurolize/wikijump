@@ -28,7 +28,8 @@ use deepwell::services::membership::{
 use deepwell::services::permission::PermissionService;
 use deepwell::services::relation::{RelationObject, RelationService, SiteBanData};
 use deepwell::services::role::{
-    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+    GetUserRolesInput, GrantUserRoleInput, InternalCreateRoleInput, RoleService,
+    UpdateRolePermissionsInput,
 };
 use deepwell::utils::now;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -140,6 +141,21 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     );
     let repeated = run_endpoint!(runner, membership_join, json!({}),);
     assert_eq!(repeated, MembershipJoinOutcome::AlreadyMember);
+    let role_names = RoleService::get_all_roles_for_user_and_site(
+        runner.context(),
+        GetUserRolesInput {
+            site_id: editable.site_id,
+            user_id: Some(user_id),
+            page_reference: None,
+        },
+    )
+    .await
+    .expect("joined actor roles should resolve")
+    .into_iter()
+    .map(|role| role.name)
+    .collect::<Vec<_>>();
+    assert!(role_names.iter().any(|name| name == "member"));
+    assert!(!role_names.iter().any(|name| name == "admin"));
 
     let page_slug = format!("component:membership-vertical-{n}");
     runner.set_request_context(RequestContext {
