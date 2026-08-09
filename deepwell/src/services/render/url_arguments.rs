@@ -91,21 +91,26 @@ impl<'a> UrlArguments<'a> {
         argument_name: &str,
     ) -> Option<&'a str> {
         let key = list_pages_argument_key(prefix, argument_name);
+        let unprefixed_tag_alias =
+            prefix.is_none() && matches!(argument_name, "tag" | "tags");
         let path_value = self
             .path_arguments
             .iter()
-            .rfind(|argument| argument.name.eq_ignore_ascii_case(key.as_ref()))
+            .rfind(|argument| {
+                argument.name == key
+                    || unprefixed_tag_alias
+                        && matches!(argument.name.as_str(), "tag" | "tags")
+            })
             .and_then(|argument| argument.value.as_deref())
             .filter(|value| !value.is_empty());
-        if path_value.is_some()
-            || prefix
-                .map(str::trim)
-                .is_some_and(|prefix| !prefix.is_empty())
-        {
+        if path_value.is_some() || prefix.is_some_and(|prefix| !prefix.is_empty()) {
             return path_value;
         }
+        if !self.path_arguments.is_empty() {
+            return None;
+        }
 
-        match argument_name.to_ascii_lowercase().as_str() {
+        match argument_name {
             "tag" | "tags" => self.tag.filter(|value| !value.is_empty()),
             "category" | "categories" => self.category.filter(|value| !value.is_empty()),
             _ => None,
@@ -120,7 +125,7 @@ impl<'a> UrlArguments<'a> {
         let page = self
             .path_arguments
             .iter()
-            .filter(|argument| argument.name.eq_ignore_ascii_case(key.as_ref()))
+            .filter(|argument| argument.name == key)
             .filter_map(|argument| argument.value.as_deref())
             .filter_map(|value| value.parse::<u32>().ok())
             .rfind(|page| *page > 0);
@@ -138,7 +143,7 @@ fn list_pages_argument_key<'a>(
     prefix: Option<&str>,
     argument_name: &'a str,
 ) -> Cow<'a, str> {
-    match prefix.map(str::trim).filter(|prefix| !prefix.is_empty()) {
+    match prefix.filter(|prefix| !prefix.is_empty()) {
         Some(prefix) => Cow::Owned(format!("{prefix}_{argument_name}")),
         None => Cow::Borrowed(argument_name),
     }
@@ -369,8 +374,21 @@ mod tests {
                 name: "PAGE2_LIMIT".to_owned(),
                 value: Some("2".to_owned()),
             },
+            UrlArgumentPair {
+                name: "tags".to_owned(),
+                value: Some("first".to_owned()),
+            },
+            UrlArgumentPair {
+                name: "tag".to_owned(),
+                value: Some("second".to_owned()),
+            },
+            UrlArgumentPair {
+                name: "TAG".to_owned(),
+                value: Some("inert".to_owned()),
+            },
         ];
         let url = UrlArguments {
+            tag: Some("case-folded-typed-value-must-not-win"),
             path_arguments: &path_arguments,
             ..UrlArguments::default()
         };
@@ -378,11 +396,34 @@ mod tests {
         assert_eq!(url.value_for_list_pages_argument(None, "limit"), Some("9"),);
         assert_eq!(
             url.value_for_list_pages_argument(Some("page2"), "limit"),
-            Some("2"),
+            Some("1"),
         );
         assert_eq!(
             url.value_for_list_pages_argument(Some("page3"), "limit"),
             None,
         );
+        assert_eq!(
+            url.value_for_list_pages_argument(None, "tags"),
+            Some("second"),
+        );
+        assert_eq!(
+            url.value_for_list_pages_argument(Some("page2"), "LIMIT"),
+            None,
+        );
+        assert_eq!(
+            url.value_for_list_pages_argument(Some("PAGE2"), "LIMIT"),
+            Some("2"),
+        );
+
+        let upper_only = [UrlArgumentPair {
+            name: "TAG".to_owned(),
+            value: Some("inert".to_owned()),
+        }];
+        let url = UrlArguments {
+            tag: Some("case-folded-typed-value-must-not-win"),
+            path_arguments: &upper_only,
+            ..UrlArguments::default()
+        };
+        assert_eq!(url.value_for_list_pages_argument(None, "tags"), None);
     }
 }

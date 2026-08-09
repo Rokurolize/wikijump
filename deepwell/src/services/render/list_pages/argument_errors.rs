@@ -142,8 +142,12 @@ pub(in crate::services::render) fn list_pages_range_argument_error(
     let head_arguments = wikidot_list_pages_arguments(head);
     let url_attr_prefix = head_arguments
         .iter()
-        .filter(|argument| argument.key.eq_ignore_ascii_case("urlattrprefix"))
-        .map(|argument| argument.value.trim())
+        .filter(|argument| {
+            argument.key == "urlAttrPrefix"
+                && argument.op == "="
+                && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
+        })
+        .map(|argument| argument.value)
         .rfind(|prefix| !prefix.is_empty());
 
     let argument = head_arguments.into_iter().rev().find(|argument| {

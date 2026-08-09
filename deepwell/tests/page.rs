@@ -11357,7 +11357,7 @@ async fn listpages_legacy_skip_current_and_tag_target_match_live_wikidot() {
                 "SAME_TAGS_END\n",
                 "TAG_TARGET_START\n",
                 "[[module ListPages category=\"*\" fullname=\"{TARGET_SLUG}\" tagTarget=\"edge-tags\"]]\n",
-                "%%tags%%\n",
+                "T=%%tags%%|L=%%tags_linked%%|E=%%tags_linked|custom/tag/%%\n",
                 "[[/module]]\n",
                 "TAG_TARGET_END",
             ),
@@ -11421,7 +11421,19 @@ async fn listpages_legacy_skip_current_and_tag_target_match_live_wikidot() {
     assert!(tag_target.contains(TAG), "{tag_target}");
     assert!(
         !tag_target.contains("/system:page-tags/tag/"),
-        "live tagTarget is a no-op and must not make %%tags%% clickable:\n{tag_target}"
+        "tagTarget must replace the default generated tag path:\n{tag_target}"
+    );
+    assert!(
+        tag_target.contains(&format!(r#"href="/edge-tags/tag/{TAG}""#)),
+        "tagTarget must affect the generated %%tags_linked%% href:\n{tag_target}",
+    );
+    assert!(
+        tag_target.contains(&format!(r#"href="/custom/tag/{TAG}""#)),
+        "an explicit tags_linked prefix must take precedence over tagTarget:\n{tag_target}",
+    );
+    assert!(
+        tag_target.contains(&format!("T={TAG}|")),
+        "plain %%tags%% must remain unlinked:\n{tag_target}",
     );
     assert!(!tag_target.contains("[[module ListPages"), "{tag_target}");
 }

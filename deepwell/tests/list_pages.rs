@@ -2361,6 +2361,146 @@ async fn preview_link_to_dot_drops_the_selector_without_a_current_page_identity(
 }
 
 #[tokio::test]
+async fn preview_link_to_uses_direct_links_and_reports_a_missing_target() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let html = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages direct-link boundary preview",
+        concat!(
+            "[[module ListPages category=\"*\" name=\"scp-002\" link_to=\"component:license-box\" separate=\"no\" wrapper=\"no\"]]\n",
+            "DIRECT|%%fullname%%|\n",
+            "[[/module]]\n",
+            "[[module ListPages category=\"*\" name=\"scp-002\" link_to=\"component:image-block\" separate=\"no\" wrapper=\"no\"]]\n",
+            "INCLUDE|%%fullname%%|\n",
+            "[[/module]]\n",
+            "[[module ListPages category=\"*\" name=\"scp-002\" link_to=\"scp-002\" separate=\"no\" wrapper=\"no\"]]\n",
+            "SELF|%%fullname%%|\n",
+            "[[/module]]\n",
+            "[[module ListPages category=\"*\" name=\"scp-002\" link_to=\"definitely-missing-link-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "MISSING|%%fullname%%|\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("the direct-link compatibility matrix should render")
+    .html_output
+    .body;
+
+    assert!(
+        html.contains("DIRECT|scp-002|"),
+        "a direct page link must satisfy link_to:\n{html}",
+    );
+    assert!(
+        !html.contains("INCLUDE|scp-002|"),
+        "an include-only dependency must not satisfy link_to:\n{html}",
+    );
+    assert!(
+        !html.contains("SELF|scp-002|"),
+        "a current-page self-reference must not satisfy link_to:\n{html}",
+    );
+    assert!(
+        html.contains(
+            r#"<div class="error-block">Linked page definitely-missing-link-target does not exist</div>"#,
+        ),
+        "a missing link target must produce Wikidot's exact error:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn preview_unknown_bare_and_valueless_head_tokens_remain_inert() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for token in [
+        "unknown",
+        "unknown=",
+        "site",
+        "site=",
+        "camelCase",
+        "UPPER=",
+        "a_b",
+        "a-b=",
+        "unknown= name=\"component:image-block\"",
+        "name=\"component:image-block\" unknown=",
+    ] {
+        let source = format!(
+            concat!(
+                "[[module ListPages category=\"*\" name=\"component:image-block\" ",
+                "separate=\"no\" wrapper=\"no\" {}]]\n",
+                "BEGIN|%%fullname%%|END\n",
+                "[[/module]]",
+            ),
+            token
+        );
+        let html = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "ListPages inert unknown head token",
+            source,
+        )
+        .await
+        .unwrap_or_else(|error| panic!("unknown token {token:?} should render: {error}"))
+        .html_output
+        .body;
+
+        assert!(
+            html.contains("BEGIN|component:image-block|END")
+                && !html.contains("TODO: module ListPages")
+                && !html.contains("[[module ListPages"),
+            "unknown token {token:?} must remain inert without rolling back the module:\n{html}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn preview_parent_modes_do_not_invent_a_current_page_relation() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let html = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages parent modes without a current page",
+        concat!(
+            "[[module ListPages category=\"*\" name=\"component:image-block\" parent=\"-=\" separate=\"no\" wrapper=\"no\"]]\n",
+            "DIFFERENT|%%fullname%%|\n",
+            "[[/module]]\n",
+            "[[module ListPages category=\"*\" name=\"component:image-block\" parent=\"=\" separate=\"no\" wrapper=\"no\"]]\n",
+            "SAME|%%fullname%%|\n",
+            "[[/module]]\n",
+            "[[module ListPages category=\"*\" name=\"component:image-block\" parent=\"@URL|-=\" separate=\"no\" wrapper=\"no\"]]\n",
+            "FALLBACK|%%fullname%%|\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("parent modes without a current page should render")
+    .html_output
+    .body;
+
+    assert!(
+        html.contains("DIFFERENT|component:image-block|")
+            && html.contains("FALLBACK|component:image-block|"),
+        "parent=\"-=\" must be a no-op without a current page, including URL fallback:\n{html}",
+    );
+    assert!(
+        !html.contains("SAME|component:image-block|"),
+        "parent=\"=\" must not invent a current-parent relation:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_total_counts_matches_beyond_the_rendered_page() {
     // Deliberately outside the selector glob below; a source page that matched
     // its own query would be counted among the results.

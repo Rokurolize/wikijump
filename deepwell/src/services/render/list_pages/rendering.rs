@@ -1485,6 +1485,7 @@ impl RenderService {
             count_pages_explicit_limit: _,
             count_pages_per_page,
             url_attr_prefix,
+            tag_target,
             offset,
             offset_origin: _,
             offset_beyond_render_window,
@@ -1607,6 +1608,30 @@ impl RenderService {
         } else {
             let target_pages =
                 PageService::get_pages(ctx, current_site_id, &link_to_references).await?;
+            if target_pages.is_empty()
+                && let Some(target) = link_to.iter().find(|slug| slug.as_ref() != ".")
+            {
+                let html = format!(
+                    r#"<div class="error-block">Linked page {} does not exist</div>"#,
+                    escape_html_text(target),
+                );
+                if !expansion_budget.try_consume_generated_output_bytes(html.len()) {
+                    return Ok(ListPagesBlockRenderResult::PreserveOriginal(
+                        "missing link target error exceeds generated-output budget",
+                    ));
+                }
+                let output = compat_html.push_block_html(html);
+                return Ok(ListPagesBlockRenderResult::Expanded(
+                    ListPagesRenderedBlock {
+                        expansion: IncludeExpansion {
+                            wikitext: output,
+                            included_pages: Vec::new(),
+                            expanded_include_count: 0,
+                        },
+                        pending_delayed: None,
+                    },
+                ));
+            }
             let mut viewable_target_ids = Vec::new();
             for target in target_pages {
                 let can_view = PermissionService::check_user_can(
@@ -2556,6 +2581,7 @@ impl RenderService {
                     .and_then(|category_id| category_slugs.get(&category_id))
                     .map(String::as_str)
                     .unwrap_or_default(),
+                tag_target: tag_target.as_deref(),
                 user_displays,
                 snapshot_displays,
                 runtime_displays,

@@ -1553,6 +1553,254 @@ mod tests {
     }
 
     #[test]
+    fn link_to_uses_exact_canonical_grammar_and_last_occurrence() {
+        for head in [
+            r#"linkTo="target""#,
+            r#"linkto="target""#,
+            r#"LINK_TO="target""#,
+            r#"Link_To="target""#,
+            r#"link_To="target""#,
+            r#"link_to=target"#,
+            r#"link_to='target'"#,
+            r#"link_to="""#,
+            r#"link_to=" ""#,
+        ] {
+            let arguments = parse_list_pages_arguments(head)
+                .unwrap_or_else(|| panic!("inert link_to form must not abort {head:?}"));
+            assert!(arguments.link_to.is_empty(), "{head}");
+        }
+
+        let arguments = parse_list_pages_arguments(
+            r#"link_to="first" link_to="second" linkTo="third""#,
+        )
+        .expect("canonical link_to duplicates should parse");
+        assert_eq!(arguments.link_to, vec![Cow::Borrowed("second")]);
+
+        let arguments =
+            parse_list_pages_arguments(r#"link_to="first" linkTo="third" link_to="""#)
+                .expect(
+                    "an empty canonical link_to should be an omitted last occurrence",
+                );
+        assert!(arguments.link_to.is_empty());
+    }
+
+    #[test]
+    fn skip_current_uses_exact_canonical_grammar_and_last_occurrence() {
+        for head in [
+            r#"skipcurrent="yes""#,
+            r#"skip_current="yes""#,
+            r#"SKIPCURRENT="yes""#,
+            r#"SkipCurrent="yes""#,
+            "skipCurrent=yes",
+            "skipCurrent='yes'",
+        ] {
+            let arguments = parse_list_pages_arguments(head)
+                .unwrap_or_else(|| panic!("inert skipCurrent form must parse {head:?}"));
+            assert!(!arguments.exclude_current_page, "{head}");
+        }
+
+        for head in [
+            r#"skipCurrent="yes" skipCurrent="no""#,
+            r#"skipCurrent="true" skipCurrent="false""#,
+            r#"skip_current="yes" skipCurrent="no""#,
+        ] {
+            let arguments = parse_list_pages_arguments(head).unwrap_or_else(|| {
+                panic!("canonical skipCurrent reset must parse {head:?}")
+            });
+            assert!(!arguments.exclude_current_page, "{head}");
+        }
+
+        let arguments =
+            parse_list_pages_arguments(r#"skipCurrent="no" skipCurrent="yes""#)
+                .expect("the last canonical skipCurrent value should win");
+        assert!(arguments.exclude_current_page);
+
+        let arguments = parse_list_pages_arguments(r#"skipCurrent="@URL|yes""#)
+            .expect("skipCurrent should resolve its URL fallback before boolean parsing");
+        assert!(arguments.exclude_current_page);
+    }
+
+    #[test]
+    fn order_uses_exact_canonical_grammar_and_empty_reset() {
+        for head in [
+            r#"ORDER="name""#,
+            r#"Order="name""#,
+            r#"oRdEr="name""#,
+            "order=name",
+            "order='name'",
+        ] {
+            let arguments = parse_list_pages_arguments(head)
+                .unwrap_or_else(|| panic!("inert order form must parse {head:?}"));
+            assert_eq!(arguments.order, None, "{head}");
+        }
+
+        let arguments = parse_list_pages_arguments(r#"order="name" order="""#)
+            .expect("an empty canonical order should reset the prior state");
+        assert_eq!(arguments.order, None);
+
+        for value in ["fullslug", "full_slug", "createdat", "updatedat"] {
+            let head = format!(r#"order="{value}""#);
+            let arguments = parse_list_pages_arguments(&head)
+                .unwrap_or_else(|| panic!("unsupported order alias must parse {value}"));
+            assert_eq!(arguments.order, Some(OrderBySelector::default()), "{value}",);
+        }
+    }
+
+    #[test]
+    fn data_form_selector_uses_evidenced_quote_and_empty_grammar() {
+        for head in [r#"_missing="""#, "_missing=x", "_missing='x'"] {
+            let arguments = parse_list_pages_arguments(head)
+                .unwrap_or_else(|| panic!("inert data-form form must parse {head:?}"));
+            assert!(arguments.data_form_fields.is_empty(), "{head}");
+        }
+
+        let whitespace = parse_list_pages_arguments(r#"_missing=" ""#)
+            .expect("a whitespace-only quoted data-form selector is active");
+        assert_eq!(whitespace.data_form_fields.len(), 1);
+        assert_eq!(whitespace.data_form_fields[0].field.as_ref(), "missing");
+        assert_eq!(whitespace.data_form_fields[0].value.as_ref(), "");
+
+        let empty_field = parse_list_pages_arguments(r#"_="x""#)
+            .expect("the evidenced empty data-form field name should remain active");
+        assert_eq!(empty_field.data_form_fields.len(), 1);
+        assert_eq!(empty_field.data_form_fields[0].field.as_ref(), "");
+        assert_eq!(empty_field.data_form_fields[0].value.as_ref(), "x");
+    }
+
+    #[test]
+    fn url_attr_prefix_uses_exact_source_grammar_and_preserves_value_bytes() {
+        for head in [
+            r#"urlattrprefix="x""#,
+            r#"URLATTRPREFIX="x""#,
+            r#"UrlAttrPrefix="x""#,
+            "urlAttrPrefix=x",
+            "urlAttrPrefix='x'",
+        ] {
+            let arguments = parse_list_pages_arguments(head).unwrap_or_else(|| {
+                panic!("inert urlAttrPrefix form must parse {head:?}")
+            });
+            assert_eq!(arguments.url_attr_prefix, None, "{head}");
+        }
+
+        let arguments = parse_list_pages_arguments(
+            r#"urlAttrPrefix="a" urlattrprefix="ignored" urlAttrPrefix="  x/y  ""#,
+        )
+        .expect("canonical urlAttrPrefix duplicates should parse");
+        assert_eq!(arguments.url_attr_prefix.as_deref(), Some("  x/y  "));
+    }
+
+    #[test]
+    fn parent_uses_exact_canonical_grammar_and_last_occurrence() {
+        for head in [
+            r#"PARENT="=""#,
+            r#"Parent="=""#,
+            "parent==",
+            "parent='='",
+            "parent=-=",
+            "parent='-='",
+            "parent=.",
+            "parent='.'",
+        ] {
+            let arguments = parse_list_pages_arguments(head)
+                .unwrap_or_else(|| panic!("inert parent form must parse {head:?}"));
+            assert_eq!(arguments.page_parent, PageParentSelector::All, "{head}");
+            assert_eq!(arguments.static_parent_fullname, None, "{head}");
+        }
+
+        let arguments =
+            parse_list_pages_arguments(r#"parent="system:start" parent="=" parent="-=""#)
+                .expect("canonical parent duplicates should parse");
+        assert_eq!(arguments.page_parent, PageParentSelector::DifferentParents,);
+        assert_eq!(arguments.static_parent_fullname, None);
+
+        let arguments =
+            parse_list_pages_arguments(r#"parent="=" PARENT="." parent="system:start""#)
+                .expect("inert aliases must not participate in parent precedence");
+        assert_eq!(arguments.page_parent, PageParentSelector::All);
+        assert_eq!(
+            arguments.static_parent_fullname.as_deref(),
+            Some("system:start"),
+        );
+
+        let arguments = parse_list_pages_arguments(r#"parent="@URL|-=""#)
+            .expect("parent should resolve its URL fallback before mode selection");
+        assert_eq!(arguments.page_parent, PageParentSelector::DifferentParents,);
+    }
+
+    #[test]
+    fn tag_target_uses_exact_canonical_grammar_and_last_occurrence() {
+        for head in [
+            r#"tagtarget="landing""#,
+            r#"TAGTARGET="landing""#,
+            r#"TagTarget="landing""#,
+            r#"tag_target="landing""#,
+            "tagTarget=landing",
+            "tagTarget='landing'",
+        ] {
+            let arguments = parse_list_pages_arguments(head)
+                .unwrap_or_else(|| panic!("inert tagTarget form must parse {head:?}"));
+            assert_eq!(arguments.tag_target, None, "{head}");
+        }
+
+        let arguments = parse_list_pages_arguments(
+            r#"tagTarget="first" tagtarget="ignored" tagTarget="landing""#,
+        )
+        .expect("canonical tagTarget duplicates should parse");
+        assert_eq!(arguments.tag_target.as_deref(), Some("landing"));
+
+        let arguments = parse_list_pages_arguments(r#"tagTarget="landing" tagTarget="""#)
+            .expect("an empty canonical tagTarget should clear the prior state");
+        assert_eq!(arguments.tag_target, None);
+    }
+
+    #[test]
+    fn url_selectors_use_exact_authored_path_key_identity() {
+        use crate::services::render::{UrlArgumentPair, UrlArguments};
+
+        let path_arguments = vec![
+            UrlArgumentPair {
+                name: "tags".to_owned(),
+                value: Some("+component".to_owned()),
+            },
+            UrlArgumentPair {
+                name: "_Missing".to_owned(),
+                value: Some("x".to_owned()),
+            },
+            UrlArgumentPair {
+                name: "pFx__Missing".to_owned(),
+                value: Some("prefixed".to_owned()),
+            },
+        ];
+        let url = UrlArguments {
+            path_arguments: &path_arguments,
+            ..UrlArguments::default()
+        };
+
+        let tags = parse_list_pages_arguments_with_url(r#"tags="@URL|fallback""#, url)
+            .expect("unprefixed tags should accept the exact tag/tags alias set");
+        assert_eq!(tags.all_tags, vec![Cow::Borrowed("component")]);
+
+        let field = parse_list_pages_arguments_with_url(r#"_Missing="@URL""#, url)
+            .expect("an exact data-form URL key should resolve");
+        assert_eq!(field.data_form_fields.len(), 1);
+        assert_eq!(field.data_form_fields[0].field.as_ref(), "Missing");
+        assert_eq!(field.data_form_fields[0].value.as_ref(), "x");
+
+        let prefixed = parse_list_pages_arguments_with_url(
+            r#"urlAttrPrefix="pFx" _Missing="@URL""#,
+            url,
+        )
+        .expect("a prefixed data-form URL key should retain its double underscore");
+        assert_eq!(prefixed.data_form_fields.len(), 1);
+        assert_eq!(prefixed.data_form_fields[0].field.as_ref(), "Missing");
+        assert_eq!(prefixed.data_form_fields[0].value.as_ref(), "prefixed");
+
+        let absent = parse_list_pages_arguments_with_url(r#"_missing="@URL""#, url)
+            .expect("an absent exact data-form URL key should drop the selector");
+        assert!(absent.data_form_fields.is_empty());
+    }
+
+    #[test]
     fn later_range_replaces_the_prior_range_owned_limit() {
         for (
             head,

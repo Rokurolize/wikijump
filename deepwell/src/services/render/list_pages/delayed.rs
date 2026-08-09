@@ -1753,6 +1753,7 @@ mod tests {
             site: "sandbox-for-codex",
             site_title: "Sandbox",
             category: "",
+            tag_target: None,
             user_displays,
             snapshot_displays,
             runtime_displays,

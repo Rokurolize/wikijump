@@ -182,6 +182,7 @@ fn list_pages_substitution_context_with_mode<'a>(
         site: "scp-wiki",
         site_title: "SCP Wiki",
         category: "",
+        tag_target: None,
         user_displays,
         snapshot_displays,
         runtime_displays: empty_list_pages_runtime_displays(),
@@ -1623,10 +1624,10 @@ fn parses_static_data_form_selectors() {
             },
         ],
     );
-    assert!(
-        parse_list_pages_arguments(r#" _status="@URL""#).is_none(),
-        "dynamic data-form selectors should remain unsupported instead of being dropped"
-    );
+    let unresolved = parse_list_pages_arguments(r#" _status="@URL""#)
+        .expect("an unresolved URL data-form selector should drop only that field");
+    assert!(unresolved.data_form_fields.is_empty());
+    assert!(unresolved.unsupported_count_pages_filter);
 }
 
 #[test]
