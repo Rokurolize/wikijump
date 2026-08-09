@@ -32,6 +32,8 @@ use deepwell::license::License;
 use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
 use deepwell::models::blob_pending::{self, Entity as BlobPendingTable};
 use deepwell::models::file;
+use deepwell::models::forum_post::{self, Entity as ForumPostTable};
+use deepwell::models::forum_thread::{self, Entity as ForumThreadTable};
 use deepwell::models::page::{self, Entity as PageTable};
 use deepwell::models::page_category::{self, Entity as PageCategoryTable};
 use deepwell::models::page_revision::Entity as PageRevisionTable;
@@ -84,7 +86,7 @@ use deepwell::types::{
 use futures::FutureExt;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel,
-    PaginatorTrait, QueryFilter, Set, Statement, TransactionTrait, Value,
+    PaginatorTrait, QueryFilter, QueryOrder, Set, Statement, TransactionTrait, Value,
 };
 use serde_json::json;
 use std::borrow::Cow;
@@ -8129,6 +8131,404 @@ async fn recent_threads_matches_live_placeholder_and_owner_boundaries() {
         "RecentThreads must not consume a later module's body closer: {}",
         unrelated_closer.body,
     );
+}
+
+#[tokio::test]
+async fn forum_comments_list_resolves_only_visible_page_discussions() {
+    async fn create_comment(
+        runner: &TestRunner,
+        forum_thread_id: i64,
+        parent_post_id: Option<i64>,
+        number: usize,
+    ) -> i64 {
+        ForumPostService::create(
+            runner.context(),
+            CreateForumPost {
+                forum_thread_id,
+                parent_post_id,
+                user_id: SAMPLE_USER_ID,
+                title: format!("Page Comment {number:02}"),
+                wikitext: format!("Page comment {number:02} body <observable>"),
+                comments: "create page comments read-model fixture".to_owned(),
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("page comment fixture should be created")
+        .forum_post_id
+    }
+
+    async fn point_page_at_discussion(
+        runner: &TestRunner,
+        page_id: i64,
+        forum_thread_id: i64,
+    ) {
+        let page = PageTable::find_by_id(page_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("page discussion fixture lookup should succeed")
+            .expect("page discussion fixture should exist");
+        let mut page = page.into_active_model();
+        page.discussion_thread_id = Set(Some(forum_thread_id));
+        page.update(runner.context().transaction())
+            .await
+            .expect("page discussion fixture should be linked");
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Page Comments Read Model Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: Some(20_000),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("page comments forum group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Page Comments Read Model".to_owned(),
+            description: String::new(),
+            sort_index: Some(10),
+            max_nest_level: Some(2),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("page comments forum category should be created");
+
+    const PUBLIC_PAGE: &str = "fixture-forum-comments-public";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE,
+        "Public Page Comments Fixture",
+        "[[module Comments]]",
+    )
+    .await;
+    let public_page_id = listpages_test_page_id(&runner, site_id, PUBLIC_PAGE).await;
+    let public_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: SAMPLE_USER_ID,
+            associated_page_id: Some(public_page_id),
+            title: "Public Page Comments Thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("public page discussion should be created");
+    point_page_at_discussion(&runner, public_page_id, public_thread.forum_thread_id)
+        .await;
+    let mut root_comment_ids = Vec::new();
+    for number in 0..12 {
+        root_comment_ids.push(
+            create_comment(&runner, public_thread.forum_thread_id, None, number).await,
+        );
+    }
+    let early_reply = create_comment(
+        &runner,
+        public_thread.forum_thread_id,
+        Some(root_comment_ids[0]),
+        100,
+    )
+    .await;
+    create_comment(
+        &runner,
+        public_thread.forum_thread_id,
+        Some(early_reply),
+        101,
+    )
+    .await;
+    create_comment(
+        &runner,
+        public_thread.forum_thread_id,
+        Some(root_comment_ids[11]),
+        200,
+    )
+    .await;
+
+    const PRIVATE_CATEGORY: &str = "forum-comments-private";
+    const PRIVATE_PAGE: &str = "fixture-forum-comments-private";
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE,
+        "Private Page Comments Fixture",
+        "private page comments fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_PAGE, PRIVATE_CATEGORY)
+        .await;
+    let private_page_id = listpages_test_page_id(&runner, site_id, PRIVATE_PAGE).await;
+    let private_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(private_page_id),
+            title: "Private Page Comments Thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private page discussion should be created");
+    point_page_at_discussion(&runner, private_page_id, private_thread.forum_thread_id)
+        .await;
+    create_comment(&runner, private_thread.forum_thread_id, None, 99).await;
+
+    let foreign_site = run_endpoint!(runner, site_get, json!({"site": "scp-jp"}))
+        .expect("seeded SCP-JP site should exist");
+    let foreign_page_id =
+        listpages_test_page_id(&runner, foreign_site.site.site_id, "boundary-check")
+            .await;
+    runner.set_request_context(RequestContext::default());
+
+    let public_page_before = PageTable::find_by_id(public_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("public comments page snapshot should load")
+        .expect("public comments page should exist");
+    let public_thread_before =
+        ForumThreadTable::find_by_id(public_thread.forum_thread_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("public comments thread snapshot should load")
+            .expect("public comments thread should exist");
+    let public_posts_before = ForumPostTable::find()
+        .filter(forum_post::Column::ForumThreadId.eq(public_thread.forum_thread_id))
+        .order_by_asc(forum_post::Column::ForumPostId)
+        .all(runner.context().transaction())
+        .await
+        .expect("public comments post snapshot should load");
+
+    let saved_page = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PUBLIC_PAGE, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let saved_body = match saved_page {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found Comments page view, got {other:?}"),
+    };
+    assert!(
+        saved_body.contains(r#"<div class="comments-box">"#)
+            && saved_body.contains(r#"id="comments-options-hidden""#)
+            && saved_body.contains(r#"id="thread-container""#)
+            && !saved_body.contains("[[module Comments]]"),
+        "saved page_view should expose the inert Comments shell:\n{saved_body}",
+    );
+
+    let forward = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {"pageId": public_page_id.to_string()},
+        }),
+    );
+    assert_eq!(forward.status, "ok");
+    assert_eq!(forward.thread_id, Some(public_thread.forum_thread_id));
+    assert!(
+        forward
+            .body
+            .contains(r#"<div class="options" id="comments-options-shown">"#)
+            && forward
+                .body
+                .contains(r#"<div id="thread-container-posts" style="display: none">"#)
+            && forward
+                .body
+                .contains(r#"<span class="pager-no">page 1 of 2</span>"#)
+            && forward
+                .body
+                .matches(r#"<div class="post-container" id="fpc-"#)
+                .count()
+                == 12
+            && forward.body.contains("Page Comment 00")
+            && forward.body.contains("Page Comment 09")
+            && forward.body.contains("Page Comment 100")
+            && forward.body.contains("Page Comment 101")
+            && !forward.body.contains(r#">Page Comment 10</div>"#)
+            && !forward.body.contains(r#">Page Comment 11</div>"#)
+            && !forward.body.contains("Page Comment 200"),
+        "{}",
+        forward.body,
+    );
+    assert!(
+        forward.body.find("Page Comment 00") < forward.body.find("Page Comment 100")
+            && forward.body.find("Page Comment 100")
+                < forward.body.find("Page Comment 101")
+            && forward.body.find("Page Comment 101")
+                < forward.body.find("Page Comment 01"),
+        "{}",
+        forward.body,
+    );
+    assert!(
+        forward.body.find("comments-options-shown")
+            < forward.body.find("new-post-button"),
+        "{}",
+        forward.body,
+    );
+    assert_eq!(forward.js_include.len(), 3);
+    assert!(
+        forward.js_include[0].ends_with("/ForumViewThreadModule.js")
+            && forward.js_include[1].ends_with("/ForumViewThreadPostsModule.js")
+            && forward.js_include[2].ends_with("/ForumNewPostFormModule.js"),
+        "{:?}",
+        forward.js_include,
+    );
+
+    let reverse = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {
+                "pageId": public_page_id.to_string(),
+                "order": "reverse",
+            },
+        }),
+    );
+    assert_eq!(reverse.status, "ok");
+    assert_eq!(reverse.thread_id, Some(public_thread.forum_thread_id));
+    assert!(
+        reverse.body.contains(r#">Page Comment 11</div>"#)
+            && reverse.body.contains(r#">Page Comment 02</div>"#)
+            && reverse.body.contains("Page Comment 200")
+            && !reverse.body.contains(r#">Page Comment 00</div>"#)
+            && !reverse.body.contains(r#">Page Comment 01</div>"#)
+            && !reverse.body.contains("Page Comment 100")
+            && !reverse.body.contains("Page Comment 101")
+            && reverse
+                .body
+                .matches(r#"<div class="post-container" id="fpc-"#)
+                .count()
+                == 11
+            && reverse.body.find("Page Comment 11")
+                < reverse.body.find("Page Comment 200")
+            && reverse.body.find("Page Comment 200")
+                < reverse.body.find("Page Comment 10")
+            && reverse.body.find("Page Comment 10")
+                < reverse.body.find("Page Comment 09")
+            && reverse.body.find("new-post-button")
+                < reverse.body.find("comments-options-shown"),
+        "{}",
+        reverse.body,
+    );
+    assert_eq!(reverse.js_include.len(), 3);
+    assert!(
+        reverse.js_include[0].ends_with("/ForumViewThreadModule.js")
+            && reverse.js_include[1].ends_with("/ForumNewPostFormModule.js")
+            && reverse.js_include[2].ends_with("/ForumViewThreadPostsModule.js"),
+        "{:?}",
+        reverse.js_include,
+    );
+
+    let mut hidden_results = Vec::new();
+    for page_id in [i64::MAX, private_page_id, foreign_page_id] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": "forum/ForumCommentsListModule",
+                "parameters": {"pageId": page_id.to_string()},
+            }),
+        );
+        hidden_results.push((
+            output.status,
+            output.body,
+            output.thread_id,
+            output.js_include,
+        ));
+    }
+    assert!(
+        hidden_results
+            .iter()
+            .all(|result| result == &hidden_results[0])
+    );
+    assert_eq!(hidden_results[0].0, "no_page");
+    assert!(hidden_results[0].1.is_empty());
+    assert_eq!(hidden_results[0].2, None);
+    assert!(hidden_results[0].3.is_empty());
+
+    let unobserved_order = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {
+                "pageId": public_page_id.to_string(),
+                "order": "forwards",
+            },
+        }),
+    );
+    assert_eq!(unobserved_order.status, "not_ok");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(foreign_site.site.site_id),
+        ..Default::default()
+    });
+    let mismatched_site = run_endpoint_err!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {"pageId": public_page_id.to_string()},
+        }),
+    );
+    assert_contains_error!(mismatched_site, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext::default());
+    let public_page_after = PageTable::find_by_id(public_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("public comments page snapshot should reload")
+        .expect("public comments page should still exist");
+    let public_thread_after = ForumThreadTable::find_by_id(public_thread.forum_thread_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("public comments thread snapshot should reload")
+        .expect("public comments thread should still exist");
+    let public_posts_after = ForumPostTable::find()
+        .filter(forum_post::Column::ForumThreadId.eq(public_thread.forum_thread_id))
+        .order_by_asc(forum_post::Column::ForumPostId)
+        .all(runner.context().transaction())
+        .await
+        .expect("public comments post snapshot should reload");
+    assert_eq!(public_page_after, public_page_before);
+    assert_eq!(public_thread_after, public_thread_before);
+    assert_eq!(public_posts_after, public_posts_before);
 }
 
 #[tokio::test]

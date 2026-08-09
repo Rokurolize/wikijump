@@ -12,6 +12,10 @@ const CONTROL_FIELDS = new Set([
 ])
 const FORUM_READ_MODULE_PARAMETERS = new Map([
   ["forum/ForumStartModule", [new Set(), new Set(["hidden"])]],
+  [
+    "forum/ForumCommentsListModule",
+    [new Set(["pageId"]), new Set(["pageId", "order"])]
+  ],
   ["forum/ForumViewCategoryModule", [new Set(["c", "p"])]],
   ["forum/ForumViewThreadModule", [new Set(["t"])]],
   ["forum/ForumViewThreadPostsModule", [new Set(["t", "pageNo"])]],
@@ -63,7 +67,12 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *   ) => Promise<{ body: string }>
  *   renderForumModule?: (
  *     input: ForumModuleRenderInput
- *   ) => Promise<{ status: string; body: string; js_include?: string[] }>
+ *   ) => Promise<{
+ *     status: string
+ *     body: string
+ *     thread_id?: number
+ *     js_include?: string[]
+ *   }>
  *   createNewPage?: (input: NewPageCreateInput) => Promise<void>
  *   canCreateNewPage?: boolean | (() => boolean | Promise<boolean>)
  *   pageExists?: (slug: string) => boolean | Promise<boolean>
@@ -551,6 +560,16 @@ export const handleAjaxModuleConnectorRequest = async (
         message: `Unsupported AJAX module shape: ${moduleName}`
       })
     }
+    if (
+      moduleName === "forum/ForumCommentsListModule" &&
+      parameters.order !== undefined &&
+      parameters.order !== "reverse"
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
     const callbackIndex = fields.has("callbackIndex")
       ? fieldValue(fields, "callbackIndex")
       : null
@@ -562,12 +581,14 @@ export const handleAjaxModuleConnectorRequest = async (
     })
     try {
       const output = await renderForumModule({ siteId, moduleName, parameters })
-      return jsonResponse({
+      const body = {
         status: output.status,
         body: output.body,
         ...responseMetadata(),
-        jsInclude: output.js_include ?? []
-      })
+        jsInclude: output.js_include ?? [],
+        ...(output.thread_id === undefined ? {} : { threadId: output.thread_id })
+      }
+      return jsonResponse(body)
     } catch (error) {
       console.error("AJAX forum rendering failed", error)
       return jsonResponse({

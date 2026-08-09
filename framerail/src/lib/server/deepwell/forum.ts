@@ -5,6 +5,7 @@ import type { RequestContext } from "../request-context"
 export interface WikidotForumModuleOutput {
   status: string
   body: string
+  thread_id?: number
   js_include: string[]
 }
 

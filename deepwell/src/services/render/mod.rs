@@ -26,6 +26,7 @@ mod compat;
 mod corpus;
 mod diagnostics;
 mod file_modules;
+mod forum_comments;
 mod forum_front;
 mod forum_mini;
 mod forum_modules;

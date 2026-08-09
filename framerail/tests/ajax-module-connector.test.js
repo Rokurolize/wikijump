@@ -112,6 +112,65 @@ test("dispatches the sealed read-only forum modules with Wikidot metadata", asyn
   }
 })
 
+test("dispatches the sealed page comments reads without adding mutation authority", async () => {
+  const cases = [
+    {
+      parameters: { pageId: "1927127" },
+      jsInclude: [
+        "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadModule.js",
+        "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js",
+        "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/sub/ForumNewPostFormModule.js"
+      ]
+    },
+    {
+      parameters: { pageId: "1927127", order: "reverse" },
+      jsInclude: [
+        "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadModule.js",
+        "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/sub/ForumNewPostFormModule.js",
+        "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js"
+      ]
+    }
+  ]
+
+  for (const { parameters, jsInclude } of cases) {
+    let received
+    const response = await handleAjaxModuleConnectorRequest(
+      request({
+        moduleName: "forum/ForumCommentsListModule",
+        ...parameters,
+        callbackIndex: "7",
+        wikidot_token7: "client-token"
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderForumModule: async (input) => {
+          received = input
+          return {
+            status: "ok",
+            body: '<div id="thread-container-posts">comments</div>',
+            thread_id: 76632,
+            js_include: jsInclude
+          }
+        }
+      }
+    )
+
+    const body = await response.json()
+    assert.equal(body.status, "ok")
+    assert.equal(body.threadId, 76632)
+    assert.equal(body.callbackIndex, "7")
+    assert.equal(typeof body.CURRENT_TIMESTAMP, "number")
+    assert.deepEqual(body.cssInclude, [])
+    assert.deepEqual(body.jsInclude, jsInclude)
+    assert.deepEqual(received, {
+      siteId: 6000006,
+      moduleName: "forum/ForumCommentsListModule",
+      parameters
+    })
+  }
+})
+
 test("passes read-only forum missing states through and rejects unsealed shapes", async () => {
   let calls = 0
   const missing = await handleAjaxModuleConnectorRequest(
@@ -139,6 +198,11 @@ test("passes read-only forum missing states through and rejects unsealed shapes"
 
   for (const form of [
     { moduleName: "forum/ForumCommentsListModule", t: "18029831" },
+    {
+      moduleName: "forum/ForumCommentsListModule",
+      pageId: "1927127",
+      order: "forwards"
+    },
     { moduleName: "forum/ForumNewThreadModule", c: "8503559" },
     { moduleName: "forum/ForumViewThreadModule", t: "18029831", write: "1" },
     { moduleName: "forum/ForumViewCategoryModule", c: "8503559" },

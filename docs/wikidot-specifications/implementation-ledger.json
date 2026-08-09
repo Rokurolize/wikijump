@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
-  "updated_at": "2026-08-09",
-  "catalog_sha256": "ba6dfa1d11de881bb718502be4a6c46a929c114082c418c7238eca3013b87ef7",
+  "updated_at": "2026-08-10",
+  "catalog_sha256": "a711b4fc7f78bbc4cc50d8a45206e8fd63bf25f0596648a905f55c1695f7f554",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -1231,27 +1231,48 @@
       "status": "in_progress",
       "confirmed_public_seams": [
         "Anonymous live Wikidot edit/PagePreviewModule",
-        "Deepwell public wikidot_page_preview rendering"
+        "Deepwell public wikidot_page_preview rendering",
+        "Deepwell public saved page_view rendering",
+        "Deepwell public wikidot_forum_module page-discussion read interface",
+        "Framerail public POST /ajax-module-connector.php"
       ],
       "tests": [
         {
           "path": "deepwell/tests/page.rs",
           "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
           "scope": "exact no-context comments wrapper and source-owner behavior"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_comments_list_resolves_only_visible_page_discussions",
+          "scope": "public saved-page shell, page-to-discussion resolution, forward and reverse ten-root first-page trees, exact wrapper and response metadata, indistinguishable missing, private, and cross-site states, and read-only side effects"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches the sealed page comments reads without adding mutation authority",
+          "scope": "exact pageId and pageId plus reverse allowlist, threadId and jsInclude wire envelope, and fail-closed unobserved order"
         }
       ],
       "implementation_files": [
         "deepwell/src/services/render/forum_modules.rs",
-        "deepwell/src/services/render/runtime_modules.rs"
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/forum_comments.rs",
+        "deepwell/src/services/render/forum_read_routes.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/deepwell/forum.ts"
       ],
       "documentation_evidence": [
         "specifications/module/module-comments.md"
       ],
       "live_oracle_evidence": [
-        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-comments"
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-comments",
+        "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-forward",
+        "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-reverse",
+        "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-missing-page"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Saved-page populated discussions, title/hide/hideForm/order attributes, actor states, forms, mutations, and browser interaction remain unimplemented."
+        "The title, hide, hideForm, and explicit forwards attributes remain unimplemented.",
+        "Later comment pages, non-anonymous actor states, forms, mutations, and browser interaction remain unobserved or unimplemented."
       ]
     },
     "module-countpages": {

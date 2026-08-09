@@ -1523,7 +1523,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809"
+      ]
     },
     {
       "id": "module-countpages",

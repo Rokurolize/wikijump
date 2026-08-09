@@ -7,6 +7,7 @@ use sea_orm::sea_query::ArrayType;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 use serde::Serialize;
 
+use super::forum_comments::{self, ForumCommentsLoad, ForumCommentsOrder};
 use super::forum_modules::{
     ForumLastPost, forum_user, load_forum_start_activity, load_recent_posts_page,
     render_forum_date, render_forum_start, render_forum_user,
@@ -23,7 +24,6 @@ use crate::services::{ForumService, ServiceContext};
 use crate::utils::{normalize_page_slug, normalize_slug_without_category_separator};
 
 const THREADS_PER_PAGE: usize = 20;
-const THREAD_POSTS_PER_PAGE: usize = 20;
 const THREAD_CANDIDATE_LIMIT: usize = 1_001;
 const MAX_CATEGORY_PAGE: u32 = 50;
 const THREAD_POSTS_SCRIPT: &str = "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js";
@@ -39,6 +39,8 @@ pub struct WikidotForumModuleRequest {
 pub struct WikidotForumModuleResponse {
     pub status: String,
     pub body: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread_id: Option<i64>,
     pub js_include: Vec<String>,
 }
 
@@ -81,23 +83,24 @@ struct ForumThreadView {
 }
 
 #[derive(Debug, FromQueryResult)]
-struct ForumThreadPostCandidate {
-    forum_post_id: i64,
-    user_id: i64,
-    created_at: time::OffsetDateTime,
-    revision_number: i32,
-    revision_created_at: time::OffsetDateTime,
-    revision_user_id: i64,
-    title: String,
-    compiled_html_hash: Vec<u8>,
-    wikidot_user_name: Option<String>,
-    wikidot_user_slug: Option<String>,
-    local_user_name: Option<String>,
-    local_user_slug: Option<String>,
-    revision_wikidot_user_name: Option<String>,
-    revision_wikidot_user_slug: Option<String>,
-    revision_local_user_name: Option<String>,
-    revision_local_user_slug: Option<String>,
+pub(super) struct ForumThreadPostCandidate {
+    pub(super) forum_post_id: i64,
+    pub(super) parent_post_id: Option<i64>,
+    pub(super) user_id: i64,
+    pub(super) created_at: time::OffsetDateTime,
+    pub(super) revision_number: i32,
+    pub(super) revision_created_at: time::OffsetDateTime,
+    pub(super) revision_user_id: i64,
+    pub(super) title: String,
+    pub(super) compiled_html_hash: Vec<u8>,
+    pub(super) wikidot_user_name: Option<String>,
+    pub(super) wikidot_user_slug: Option<String>,
+    pub(super) local_user_name: Option<String>,
+    pub(super) local_user_slug: Option<String>,
+    pub(super) revision_wikidot_user_name: Option<String>,
+    pub(super) revision_wikidot_user_slug: Option<String>,
+    pub(super) revision_local_user_name: Option<String>,
+    pub(super) revision_local_user_slug: Option<String>,
 }
 
 #[derive(Debug)]
@@ -107,10 +110,11 @@ struct ForumPostEditView {
 }
 
 #[derive(Debug)]
-struct ForumThreadPostView {
-    forum_post_id: i64,
+pub(super) struct ForumThreadPostView {
+    pub(super) forum_post_id: i64,
+    pub(super) parent_post_id: Option<i64>,
     user: super::forum_modules::ForumUserDisplay,
-    created_at: time::OffsetDateTime,
+    pub(super) created_at: time::OffsetDateTime,
     title: String,
     compiled_html: String,
     edit: Option<ForumPostEditView>,
@@ -446,11 +450,14 @@ async fn load_forum_thread_posts(
 ) -> Result<Vec<ForumThreadPostView>> {
     let make_error =
         || Error::new("failed to load forum thread posts", ErrorType::Render);
+    let order_clause = "ORDER BY fp.created_at ASC, fp.forum_post_id ASC LIMIT 20";
     let candidates = ForumThreadPostCandidate::find_by_statement(
         Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
-            concat!(
-                "SELECT fp.forum_post_id, fp.user_id, fp.created_at, ",
+            format!(
+                "{} {order_clause}",
+                concat!(
+                "SELECT fp.forum_post_id, fp.parent_post_id, fp.user_id, fp.created_at, ",
                 "revision.revision_number, revision.created_at AS revision_created_at, ",
                 "revision.user_id AS revision_user_id, revision.title, ",
                 "revision.compiled_html_hash, wu.name AS wikidot_user_name, ",
@@ -471,7 +478,8 @@ async fn load_forum_thread_posts(
                 "LEFT JOIN \"user\" revision_local ON revision_local.user_id = revision.user_id ",
                 " AND revision_local.deleted_at IS NULL ",
                 "WHERE fp.site_id = $1 AND fp.forum_thread_id = $2 ",
-                " AND fp.deleted_at IS NULL ORDER BY fp.created_at, fp.forum_post_id LIMIT 20",
+                " AND fp.deleted_at IS NULL",
+                ),
             ),
             [Value::from(site_id), Value::from(forum_thread_id)],
         ),
@@ -479,13 +487,24 @@ async fn load_forum_thread_posts(
     .all(ctx.transaction())
     .await
     .or_raise(make_error)?;
+
+    hydrate_forum_posts(ctx, candidates).await
+}
+
+pub(super) async fn hydrate_forum_posts(
+    ctx: &ServiceContext<'_>,
+    candidates: Vec<ForumThreadPostCandidate>,
+) -> Result<Vec<ForumThreadPostView>> {
+    let make_error =
+        || Error::new("failed to load forum thread posts", ErrorType::Render);
     let mut posts = Vec::with_capacity(candidates.len());
-    for candidate in candidates.into_iter().take(THREAD_POSTS_PER_PAGE) {
+    for candidate in candidates {
         let compiled_html = TextService::get(ctx, &candidate.compiled_html_hash)
             .await
             .or_raise(make_error)?;
         posts.push(ForumThreadPostView {
             forum_post_id: candidate.forum_post_id,
+            parent_post_id: candidate.parent_post_id,
             user: forum_user(
                 candidate.user_id,
                 candidate.wikidot_user_name,
@@ -515,58 +534,59 @@ fn render_forum_thread_posts(posts: &[ForumThreadPostView]) -> String {
     let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut output = String::new();
     for post in posts {
-        let user = render_forum_user(&post.user, avatar_timestamp);
-        let date = render_forum_date(
-            post.created_at,
-            "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover",
-            "%e %b %Y %H:%M",
-        );
-        let changes = post.edit.as_ref().map_or_else(String::new, |edit| {
-            format!(
-                concat!(
-                    "<div class=\"changes\">Last edited on {date} by {user} ",
-                    "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.showHistory(event,{post_id})\"><i class=\"icon-plus\"></i> Show more</a></div>",
-                    "<div class=\"revisions\" style=\"display: none\"></div>",
-                ),
-                date = render_forum_date(
-                    edit.created_at,
-                    "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover",
-                    "%e %b %Y %H:%M",
-                ),
-                user = render_forum_user_without_avatar(&edit.user),
-                post_id = post.forum_post_id,
-            )
-        });
-        write!(
-            &mut output,
-            "<div class=\"post-container\" id=\"fpc-{}\"><div class=\"post\" id=\"post-{}\"><div class=\"long\"><div class=\"head\"><div class=\"options\"><a href=\"javascript:;\" onclick=\"togglePostFold(event,{})\" class=\"btn btn-default btn-small btn-sm\">Fold</a></div><div class=\"title\" id=\"post-title-{}\">{}</div><div class=\"info\">{} {}</div></div><div class=\"content\" id=\"post-content-{}\">{}</div>{}<div class=\"options\"><a href=\"javascript:;\" onclick=\"togglePostOptions(event,{})\" class=\"btn btn-default btn-small btn-sm\">Options</a></div><div id=\"post-options-{}\" class=\"options\" style=\"display: none\"></div></div><div class=\"short\"><a class=\"options btn btn-default btn-mini btn-xs\" href=\"javascript:;\" onclick=\"togglePostFold(event,{})\">Unfold</a><a class=\"title\" href=\"javascript:;\" onclick=\"togglePostFold(event,{})\">{}</a> by {}, {}</div></div></div>",
-            post.forum_post_id,
-            post.forum_post_id,
-            post.forum_post_id,
-            post.forum_post_id,
-            escape_list_pages_html_text(&post.title),
-            user,
-            date,
-            post.forum_post_id,
-            post.compiled_html,
-            changes,
-            post.forum_post_id,
-            post.forum_post_id,
-            post.forum_post_id,
-            post.forum_post_id,
-            escape_list_pages_html_text(&post.title),
-            user,
-            date,
-        )
-        .expect("writing to a String cannot fail");
+        output.push_str(&render_forum_thread_post(post, "", avatar_timestamp, false));
     }
     output
+}
+
+pub(super) fn render_forum_thread_post(
+    post: &ForumThreadPostView,
+    replies: &str,
+    avatar_timestamp: i64,
+    include_reply: bool,
+) -> String {
+    let user = render_forum_user(&post.user, avatar_timestamp);
+    let date = render_forum_date(
+        post.created_at,
+        "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover",
+        "%e %b %Y %H:%M",
+    );
+    let changes = post.edit.as_ref().map_or_else(String::new, |edit| {
+        format!(
+            concat!(
+                "<div class=\"changes\">Last edited on {date} by {user} ",
+                "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.showHistory(event,{post_id})\"><i class=\"icon-plus\"></i> Show more</a></div>",
+                "<div class=\"revisions\" style=\"display: none\"></div>",
+            ),
+            date = render_forum_date(
+                edit.created_at,
+                "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover",
+                "%e %b %Y %H:%M",
+            ),
+            user = render_forum_user_without_avatar(&edit.user),
+            post_id = post.forum_post_id,
+        )
+    });
+    let reply = include_reply.then(|| {
+        format!(
+            "<strong><a href=\"javascript:;\" onclick=\"postReply(event,{})\" class=\"btn btn-primary btn-small btn-sm\">Reply</a></strong> ",
+            post.forum_post_id,
+        )
+    });
+    format!(
+        "<div class=\"post-container\" id=\"fpc-{post_id}\"><div class=\"post\" id=\"post-{post_id}\"><div class=\"long\"><div class=\"head\"><div class=\"options\"><a href=\"javascript:;\" onclick=\"togglePostFold(event,{post_id})\" class=\"btn btn-default btn-small btn-sm\">Fold</a></div><div class=\"title\" id=\"post-title-{post_id}\">{title}</div><div class=\"info\">{user} {date}</div></div><div class=\"content\" id=\"post-content-{post_id}\">{compiled_html}</div>{changes}<div class=\"options\">{reply}<a href=\"javascript:;\" onclick=\"togglePostOptions(event,{post_id})\" class=\"btn btn-default btn-small btn-sm\">Options</a></div><div id=\"post-options-{post_id}\" class=\"options\" style=\"display: none\"></div></div><div class=\"short\"><a class=\"options btn btn-default btn-mini btn-xs\" href=\"javascript:;\" onclick=\"togglePostFold(event,{post_id})\">Unfold</a><a class=\"title\" href=\"javascript:;\" onclick=\"togglePostFold(event,{post_id})\">{title}</a> by {user}, {date}</div></div>{replies}</div>",
+        post_id = post.forum_post_id,
+        title = escape_list_pages_html_text(&post.title),
+        compiled_html = post.compiled_html.as_str(),
+        reply = reply.as_deref().unwrap_or_default(),
+    )
 }
 
 fn response(status: &str, body: String) -> WikidotForumModuleResponse {
     WikidotForumModuleResponse {
         status: status.to_owned(),
         body,
+        thread_id: None,
         js_include: Vec::new(),
     }
 }
@@ -579,6 +599,20 @@ fn response_with_scripts(
     WikidotForumModuleResponse {
         status: status.to_owned(),
         body,
+        thread_id: None,
+        js_include: scripts.iter().map(|script| (*script).to_owned()).collect(),
+    }
+}
+
+fn comments_response(
+    forum_thread_id: i64,
+    body: String,
+    scripts: &[&str],
+) -> WikidotForumModuleResponse {
+    WikidotForumModuleResponse {
+        status: "ok".to_owned(),
+        body,
+        thread_id: Some(forum_thread_id),
         js_include: scripts.iter().map(|script| (*script).to_owned()).collect(),
     }
 }
@@ -678,6 +712,30 @@ impl RenderService {
                     "ok",
                     render_forum_start(&structure, &activity, show_hidden),
                 ))
+            }
+            "forum/ForumCommentsListModule"
+                if parameters_are(&request.parameters, &["pageId"])
+                    || parameters_are(&request.parameters, &["pageId", "order"]) =>
+            {
+                let Some(page_id) = positive_i64(&request.parameters, "pageId") else {
+                    return Ok(response("no_page", String::new()));
+                };
+                let order = match request.parameters.get("order").map(String::as_str) {
+                    None => ForumCommentsOrder::Forward,
+                    Some("reverse") => ForumCommentsOrder::Reverse,
+                    Some(_) => return Ok(response("not_ok", String::new())),
+                };
+                match forum_comments::load(ctx, site_id, &mut visibility, page_id, order)
+                    .await?
+                {
+                    ForumCommentsLoad::Found(output) => Ok(comments_response(
+                        output.thread_id,
+                        output.body,
+                        &output.scripts,
+                    )),
+                    ForumCommentsLoad::NoPage => Ok(response("no_page", String::new())),
+                    ForumCommentsLoad::Saturated => Ok(response("not_ok", String::new())),
+                }
             }
             "forum/ForumViewCategoryModule"
                 if parameters_are(&request.parameters, &["c", "p"]) =>

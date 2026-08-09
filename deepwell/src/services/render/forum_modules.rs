@@ -731,7 +731,7 @@ impl RenderService {
         wikitext: String,
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
-        current_page_id: Option<i64>,
+        _current_page_id: Option<i64>,
         viewer_user_id: Option<i64>,
         url: UrlArguments<'_>,
         compat_html: &mut CompatHtmlFragments,
@@ -785,9 +785,7 @@ impl RenderService {
             }
             let replacement_end = matched.end();
             let rendered = if kind == ForumModuleKind::Comments {
-                current_page_id
-                    .is_none()
-                    .then(|| COMMENTS_NO_CONTEXT.to_owned())
+                Some(COMMENTS_NO_CONTEXT.to_owned())
             } else if let Some(arguments) = front_forum {
                 let Some(site_id) = current_site_id else {
                     continue;
