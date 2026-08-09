@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import net from "node:net";
 import { promisify } from "node:util";
 
 import {
@@ -138,33 +139,102 @@ function requireRunning(inspect, role) {
   });
 }
 
+function exactPublishedBinding(inspect, binding, message) {
+  const ports = requirePlainObject(inspect?.NetworkSettings?.Ports, `candidate ${binding.role} container NetworkSettings.Ports`);
+  const published = ports[binding.container_port];
+  const matching = Array.isArray(published)
+    ? published.filter((candidate) => isPlainObject(candidate) && candidate.HostIp === binding.host_address && candidate.HostPort === String(binding.host_port))
+    : [];
+  if (matching.length !== 1 || published.length !== 1) throw new Error(message);
+  return Object.freeze({ container_port: binding.container_port, host_address: binding.host_address, host_port: binding.host_port });
+}
+
 function exactLoopbackBinding(inspect, identity) {
-  const ports = requirePlainObject(
-    inspect?.NetworkSettings?.Ports,
-    "candidate caddy container NetworkSettings.Ports",
-  );
-  const bindings = ports["443/tcp"];
-  if (!Array.isArray(bindings) || bindings.length === 0) {
-    throw new Error("candidate caddy container does not publish HTTPS");
-  }
-  const expectedPort = String(identity.candidate.endpoint.port);
-  const expectedAddress = identity.candidate.endpoint.local_connect_address;
-  const matching = bindings.filter(
-    (binding) =>
-      isPlainObject(binding) &&
-      binding.HostIp === expectedAddress &&
-      binding.HostPort === expectedPort,
-  );
-  if (matching.length !== 1 || bindings.length !== 1) {
-    throw new Error(
-      "candidate caddy HTTPS publication does not exactly bind the non-443 loopback endpoint",
-    );
-  }
-  return Object.freeze({
+  return exactPublishedBinding(inspect, {
+    role: "caddy",
     container_port: "443/tcp",
-    host_address: expectedAddress,
-    host_port: Number(expectedPort),
+    host_address: identity.candidate.endpoint.local_connect_address,
+    host_port: identity.candidate.endpoint.port,
+  }, "candidate caddy HTTPS publication does not exactly bind the non-443 loopback endpoint");
+}
+
+function normalizeRequiredServiceBindings(value, identity) {
+  if (!Array.isArray(value)) {
+    throw new Error("required service bindings must be an array");
+  }
+  const bindings = value.map((rawBinding, index) => {
+    const binding = requirePlainObject(
+      rawBinding,
+      `required service binding ${index}`,
+    );
+    const role = requireNonEmptyString(
+      binding.role,
+      `required service binding ${index} role`,
+    );
+    if (!Object.hasOwn(identity.candidate.images, role)) {
+      throw new Error(`required service binding has unknown role ${role}`);
+    }
+    const containerPort = requireNonEmptyString(
+      binding.container_port,
+      `required service binding ${index} container port`,
+    );
+    if (!/^[1-9][0-9]{0,4}\/(?:tcp|udp)$/u.test(containerPort)) {
+      throw new Error("required service binding container port is invalid");
+    }
+    const hostAddress = requireNonEmptyString(
+      binding.host_address,
+      `required service binding ${index} host address`,
+    );
+    const family = net.isIP(hostAddress);
+    if (
+      !(
+        (family === 4 && hostAddress.startsWith("127.")) ||
+        (family === 6 && hostAddress === "::1")
+      )
+    ) {
+      throw new Error("required service binding host must be loopback");
+    }
+    if (
+      !Number.isInteger(binding.host_port) ||
+      binding.host_port <= 0 ||
+      binding.host_port > 65_535
+    ) {
+      throw new Error("required service binding host port is invalid");
+    }
+    return Object.freeze({
+      role,
+      container_port: containerPort,
+      host_address: hostAddress,
+      host_port: binding.host_port,
+    });
   });
+  bindings.sort((left, right) =>
+    `${left.role}\0${left.container_port}`.localeCompare(
+      `${right.role}\0${right.container_port}`,
+    ),
+  );
+  if (
+    new Set(
+      bindings.map((binding) => `${binding.role}\0${binding.container_port}`),
+    ).size !== bindings.length
+  ) {
+    throw new Error("required service bindings contain a duplicate");
+  }
+  return Object.freeze(bindings);
+}
+
+function exactRequiredServiceBinding(inspect, binding) {
+  return exactPublishedBinding(inspect, binding, `candidate ${binding.role} required service publication does not exactly bind ${binding.container_port} to its private loopback endpoint`);
+}
+
+function bindingsForRole(bindings, role) {
+  return bindings.filter((binding) => binding.role === role);
+}
+
+function normalizeRecordedRequiredBindings(service, bindings) {
+  const expected = bindings.map(({ container_port, host_address, host_port }) => ({ container_port, host_address, host_port }));
+  if (sha256Value(service.required_bindings) !== sha256Value(expected)) throw new Error(`candidate ${service.role} required service bindings do not match the requested private endpoints`);
+  return Object.freeze(expected);
 }
 
 function safeRuntimeValue(value) {
@@ -371,7 +441,11 @@ export function effectiveRuntimeServicesSha256(inspections) {
   return sha256Value(effectiveRuntimeServiceConfigurations(inspections));
 }
 
-function normalizedServices(identity, inspections) {
+function normalizedServices(identity, inspections, requiredServiceBindings = []) {
+  const requiredBindings = normalizeRequiredServiceBindings(
+    requiredServiceBindings,
+    identity,
+  );
   const expectedRoles = Object.keys(identity.candidate.images).sort();
   const services = [];
   const seenRoles = new Set();
@@ -403,6 +477,7 @@ function normalizedServices(identity, inspections) {
         `candidate ${role} image does not bind the sealed candidate identity`,
       );
     }
+    const roleBindings = bindingsForRole(requiredBindings, role);
     services.push({
       role,
       container_id: inspectContainerId(inspect, role),
@@ -412,6 +487,7 @@ function normalizedServices(identity, inspections) {
       ...(role === "caddy"
         ? { https_binding: exactLoopbackBinding(inspect, identity) }
         : {}),
+      ...(roleBindings.length === 0 ? {} : { required_bindings: roleBindings.map((binding) => exactRequiredServiceBinding(inspect, binding)) }),
     });
   }
   if (JSON.stringify([...seenRoles].sort()) !== JSON.stringify(expectedRoles)) {
@@ -442,7 +518,15 @@ function normalizedServices(identity, inspections) {
   );
 }
 
-function normalizeRecordedServices(identity, recordedServices) {
+function normalizeRecordedServices(
+  identity,
+  recordedServices,
+  requiredServiceBindings = [],
+) {
+  const requiredBindings = normalizeRequiredServiceBindings(
+    requiredServiceBindings,
+    identity,
+  );
   if (!Array.isArray(recordedServices) || recordedServices.length === 0) {
     throw new Error("candidate runtime observation lacks services");
   }
@@ -479,20 +563,9 @@ function normalizeRecordedServices(identity, recordedServices) {
           ? {}
           : { Health: { Status: service.state.health } }),
       },
-      ...(role === "caddy"
-        ? {
-            NetworkSettings: {
-              Ports: {
-                "443/tcp": [
-                  {
-                    HostIp: service.https_binding?.host_address,
-                    HostPort: String(service.https_binding?.host_port),
-                  },
-                ],
-              },
-            },
-          }
-        : {}),
+      ...(role === "caddy" ? {
+        NetworkSettings: { Ports: { "443/tcp": [{ HostIp: service.https_binding?.host_address, HostPort: String(service.https_binding?.host_port) }] } },
+      } : {}),
     };
     const labels = requireMatchingLabels(
       inspectLabels(inspection, role),
@@ -505,6 +578,7 @@ function normalizeRecordedServices(identity, recordedServices) {
         `candidate ${role} image does not bind the sealed candidate identity`,
       );
     }
+    const roleBindings = bindingsForRole(requiredBindings, role);
     services.push({
       role,
       container_id: inspectContainerId(inspection, role),
@@ -518,6 +592,7 @@ function normalizeRecordedServices(identity, recordedServices) {
       ...(role === "caddy"
         ? { https_binding: exactLoopbackBinding(inspection, identity) }
         : {}),
+      ...(roleBindings.length === 0 ? {} : { required_bindings: normalizeRecordedRequiredBindings(service, roleBindings) }),
     });
   }
   if (
@@ -584,7 +659,7 @@ async function dockerInspectContainer(containerId) {
 export function validateCandidateRuntimeObservation(
   value,
   identity,
-  { identitySha256 = null } = {},
+  { identitySha256 = null, requiredServiceBindings = [] } = {},
 ) {
   const observation = requirePlainObject(
     value,
@@ -659,7 +734,11 @@ export function validateCandidateRuntimeObservation(
     candidate.effective_runtime_services_sha256,
     "candidate runtime observation effective services SHA-256",
   );
-  const services = normalizeRecordedServices(identity, observation.services);
+  const services = normalizeRecordedServices(
+    identity,
+    observation.services,
+    requiredServiceBindings,
+  );
   return Object.freeze({
     schema: STANDING_CANDIDATE_RUNTIME_OBSERVATION_SCHEMA,
     status: "bound",
@@ -683,6 +762,7 @@ export function validateCandidateRuntimeObservation(
 export async function observeCandidateRuntimeIdentity({
   identity,
   identitySha256,
+  requiredServiceBindings = [],
   listContainers = dockerListContainers,
   inspectContainer = dockerInspectContainer,
   now = () => new Date().toISOString(),
@@ -720,7 +800,7 @@ export async function observeCandidateRuntimeIdentity({
       effective_runtime_services_sha256:
         identity.candidate.config.effective_runtime_services_sha256,
     },
-    services: normalizedServices(identity, inspections),
+    services: normalizedServices(identity, inspections, requiredServiceBindings),
   };
   return Object.freeze({
     ...observation,
@@ -732,13 +812,15 @@ export function assertStableCandidateRuntimeIdentity(
   before,
   after,
   identity,
-  { identitySha256 = null } = {},
+  { identitySha256 = null, requiredServiceBindings = [] } = {},
 ) {
   const stableBefore = validateCandidateRuntimeObservation(before, identity, {
     identitySha256,
+    requiredServiceBindings,
   });
   const stableAfter = validateCandidateRuntimeObservation(after, identity, {
     identitySha256,
+    requiredServiceBindings,
   });
   const comparable = (observation) => ({
     ...observation,
