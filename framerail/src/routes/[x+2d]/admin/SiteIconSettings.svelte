@@ -15,7 +15,8 @@
       onSubmit: async ({ jsonData }) => {
         jsonData({
           ...$form,
-          siteId: data.site.site_id
+          siteId: data.site.site_id,
+          expectedSettingsRevision: data.site.settings_revision
         })
       },
       onResult: async ({ result }) => {
@@ -35,6 +36,7 @@
 
   $effect(() => {
     $form.siteId = data.site.site_id
+    $form.expectedSettingsRevision = data.site.settings_revision
     $form.faviconSource = data.site.favicon_source ?? ""
     $form.iosIconSource = data.site.ios_icon_source ?? ""
     $form.windowsTileSource = data.site.windows_tile_source ?? ""

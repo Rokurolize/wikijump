@@ -2,16 +2,21 @@ import defaults from "$lib/defaults"
 import { discussionUpdateValue } from "$lib/admin-forum.js"
 import { licenseUpdateValue } from "$lib/admin/admin-license.js"
 import { navigationUpdateValues } from "$lib/admin/admin-navigation.js"
+import { isWikidotSiteLanguage } from "$lib/admin/wikidot-site-languages.js"
 
 import { authGetSession } from "$lib/server/auth/get-session"
 import {
   categoryLicenseUpdate,
   categoryNavigationUpdate,
   categoryDiscussionUpdate,
+  categoryAutonumberUpdate,
   categoryRatingUpdate,
   categoryTemplateUpdate,
+  categoryThemeUpdate,
+  siteAnalyticsUpdate,
   siteForumNestingUpdate,
   siteIconsUpdate,
+  siteToolbarsUpdate,
   siteUpdate
 } from "$lib/server/deepwell/admin"
 import { translate } from "$lib/server/deepwell/translate"
@@ -27,6 +32,7 @@ import { fail, superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
 import {
   boolean,
+  custom,
   literal,
   integer,
   maxValue,
@@ -41,7 +47,7 @@ import {
   enum as vEnum
 } from "valibot"
 
-import type { TranslateKeys } from "$lib/types"
+import type { ThemeSetting, TranslateKeys } from "$lib/types"
 import type { Cookies, RequestEvent } from "@sveltejs/kit"
 
 export async function loadAdminPage(
@@ -112,6 +118,11 @@ export async function loadAdminPage(
   const siteIconsForm = await superValidate(request, valibot(siteIconsSchema))
   const forumNestingForm = await superValidate(request, valibot(forumNestingSchema))
   const discussionForm = await superValidate(request, valibot(discussionSchema))
+  const analyticsForm = await superValidate(request, valibot(analyticsSchema))
+  const toolbarForm = await superValidate(request, valibot(toolbarSchema))
+  const themeForm = await superValidate(request, valibot(themeSchema))
+  const autonumberForm = await superValidate(request, valibot(autonumberSchema))
+  const layoutForm = await superValidate(request, valibot(layoutSchema))
 
   const viewData = {
     view: response.type,
@@ -125,6 +136,11 @@ export async function loadAdminPage(
     siteIconsForm,
     forumNestingForm,
     discussionForm,
+    analyticsForm,
+    toolbarForm,
+    themeForm,
+    autonumberForm,
+    layoutForm,
     categories: response.type === "site_found" ? response.data.categories : [],
     pageTemplates: response.type === "site_found" ? response.data.page_templates : []
   }
@@ -158,6 +174,7 @@ export async function siteIconsAction({
   try {
     const res = await siteIconsUpdate(
       form.data.siteId,
+      form.data.expectedSettingsRevision,
       session.user_id,
       getClientAddress(),
       {
@@ -208,6 +225,7 @@ export async function forumNestingAction({
   try {
     const res = await siteForumNestingUpdate(
       form.data.siteId,
+      form.data.expectedSettingsRevision,
       session.user_id,
       getClientAddress(),
       form.data.maxNestLevel,
@@ -426,6 +444,162 @@ export async function navigationAction({
   }
 }
 
+export async function analyticsAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(analyticsSchema))
+  if (!form.valid) return fail(400, { form })
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, { form, message: "user does not have permission to edit analytics" })
+  }
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    const session = await authGetSession(sessionToken)
+    const res = await siteAnalyticsUpdate(
+      siteId,
+      form.data.expectedSettingsRevision,
+      session.user_id,
+      getClientAddress(),
+      form.data.enabled,
+      form.data.profile,
+      { sessionToken, siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export async function toolbarAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(toolbarSchema))
+  if (!form.valid) return fail(400, { form })
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, { form, message: "user does not have permission to edit toolbars" })
+  }
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    const session = await authGetSession(sessionToken)
+    const res = await siteToolbarsUpdate(
+      siteId,
+      form.data.expectedSettingsRevision,
+      session.user_id,
+      getClientAddress(),
+      form.data.top,
+      form.data.bottom,
+      { sessionToken, siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export async function themeAction({ request, getClientAddress, cookies }: RequestEvent) {
+  const form = await superValidate(request, valibot(themeSchema))
+  if (!form.valid) return fail(400, { form })
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, { form, message: "user does not have permission to edit themes" })
+  }
+  const theme: ThemeSetting =
+    form.data.themeType === "built_in"
+      ? { type: "built_in", id: form.data.builtinId }
+      : form.data.themeType === "external"
+        ? { type: "external", url: form.data.externalUrl }
+        : form.data.themeType === "custom"
+          ? { type: "custom", css: form.data.customCss }
+          : { type: "inherit" }
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    const session = await authGetSession(sessionToken)
+    const res = await categoryThemeUpdate(
+      siteId,
+      form.data.categoryId,
+      form.data.expectedSettingsRevision,
+      session.user_id,
+      getClientAddress(),
+      theme,
+      { sessionToken, siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export async function autonumberAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(autonumberSchema))
+  if (!form.valid) return fail(400, { form })
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to edit autonumbering"
+    })
+  }
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    const session = await authGetSession(sessionToken)
+    const res = await categoryAutonumberUpdate(
+      siteId,
+      form.data.categoryId,
+      form.data.expectedSettingsRevision,
+      session.user_id,
+      getClientAddress(),
+      form.data.enabled,
+      { sessionToken, siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export async function layoutAction({ request, getClientAddress, cookies }: RequestEvent) {
+  const form = await superValidate(request, valibot(layoutSchema))
+  if (!form.valid) return fail(400, { form })
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, { form, message: "user does not have permission to edit layout" })
+  }
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    const session = await authGetSession(sessionToken)
+    const res = await siteUpdate(
+      {
+        siteId,
+        expectedSettingsRevision: form.data.expectedSettingsRevision,
+        userId: session.user_id,
+        userIpAddr: getClientAddress(),
+        name: undefined,
+        slug: undefined,
+        tagline: undefined,
+        description: undefined,
+        defaultPage: undefined,
+        welcomePage: undefined,
+        locale: undefined,
+        layout: form.data.layout
+      },
+      { sessionToken, siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
 export async function adminAction({ request, getClientAddress, cookies }: RequestEvent) {
   const form = await superValidate(request, valibot(adminSchema))
 
@@ -446,13 +620,23 @@ export async function adminAction({ request, getClientAddress, cookies }: Reques
       }
       const session = await authGetSession(sessionToken)
 
-      const { name, slug, tagline, description, defaultPage, locale, layout, siteId } =
-        form.data
+      const {
+        name,
+        slug,
+        tagline,
+        description,
+        defaultPage,
+        welcomePage,
+        locale,
+        siteId,
+        expectedSettingsRevision
+      } = form.data
       const trustedSiteId = loadTrustedAdminSiteId(request, siteId)
 
       const res = await siteUpdate(
         {
           siteId: trustedSiteId,
+          expectedSettingsRevision,
           userId: session.user_id,
           userIpAddr: ipAddress,
           name,
@@ -460,8 +644,9 @@ export async function adminAction({ request, getClientAddress, cookies }: Reques
           tagline,
           description,
           defaultPage,
+          welcomePage,
           locale,
-          layout
+          layout: undefined
         },
         { sessionToken, siteId: trustedSiteId }
       )
@@ -489,10 +674,56 @@ const adminSchema = object({
   tagline: string(),
   description: string(),
   defaultPage: string(),
-  locale: string(),
-  layout: vEnum(Layout),
+  welcomePage: string(),
+  locale: pipe(string(), custom(isWikidotSiteLanguage, "Unsupported site language")),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   siteId: number(),
   action: optional(nullable(literal("edit")))
+})
+
+const layoutSchema = object({
+  siteId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
+  layout: nullable(vEnum(Layout))
+})
+
+const analyticsSchema = object({
+  siteId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
+  enabled: boolean(),
+  profile: pipe(
+    string(),
+    custom((value) => /^UA-[0-9]+-[0-9]+$/u.test(value), "Wrong analytics key")
+  )
+})
+
+const toolbarSchema = object({
+  siteId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
+  top: boolean(),
+  bottom: boolean()
+})
+
+const themeSchema = object({
+  siteId: number(),
+  categoryId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
+  themeType: vEnum({
+    INHERIT: "inherit",
+    BUILT_IN: "built_in",
+    EXTERNAL: "external",
+    CUSTOM: "custom"
+  }),
+  builtinId: pipe(number(), integer(), minValue(1)),
+  externalUrl: string(),
+  customCss: pipe(string(), maxLength(65_535))
+})
+
+const autonumberSchema = object({
+  siteId: number(),
+  categoryId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
+  enabled: boolean()
 })
 
 const navigationSchema = object({
@@ -531,6 +762,7 @@ const ratingSchema = object({
 // records the source; an empty field clears the slot.
 const siteIconsSchema = object({
   siteId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   faviconSource: optional(string(), ""),
   iosIconSource: optional(string(), ""),
   windowsTileSource: optional(string(), "")
@@ -538,6 +770,7 @@ const siteIconsSchema = object({
 
 const forumNestingSchema = object({
   siteId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   maxNestLevel: pipe(number(), integer(), minValue(0), maxValue(10))
 })
 

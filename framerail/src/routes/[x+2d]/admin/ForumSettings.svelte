@@ -16,7 +16,8 @@
       onSubmit: async ({ jsonData }) => {
         jsonData({
           ...$forumNestingFormData,
-          siteId: data.site.site_id
+          siteId: data.site.site_id,
+          expectedSettingsRevision: data.site.settings_revision
         })
       },
       onResult: async ({ result }) => {
@@ -80,6 +81,7 @@
 
   $effect(() => {
     $forumNestingFormData.siteId = data.site.site_id
+    $forumNestingFormData.expectedSettingsRevision = data.site.settings_revision
     $forumNestingFormData.maxNestLevel = data.site.forum_max_nest_level
   })
 

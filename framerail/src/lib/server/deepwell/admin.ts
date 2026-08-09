@@ -8,7 +8,8 @@ import type {
   PageRatingPermission,
   PageRatingType,
   PageRatingVisibility,
-  SiteModel
+  SiteModel,
+  ThemeSetting
 } from "$lib/types"
 
 type SiteUpdateRequestContext = {
@@ -159,6 +160,7 @@ export async function categoryDiscussionUpdate(
 
 export async function siteForumNestingUpdate(
   siteId: number,
+  expectedSettingsRevision: number,
   userId: number,
   userIpAddr: string,
   maxNestLevel: number,
@@ -168,6 +170,7 @@ export async function siteForumNestingUpdate(
     "site_update",
     {
       site: siteId,
+      expected_settings_revision: expectedSettingsRevision,
       user_id: userId,
       forum_max_nest_level: maxNestLevel,
       ip_address: userIpAddr
@@ -178,6 +181,7 @@ export async function siteForumNestingUpdate(
 
 export async function siteIconsUpdate(
   siteId: number,
+  expectedSettingsRevision: number,
   userId: number,
   userIpAddr: string,
   icons: {
@@ -191,6 +195,7 @@ export async function siteIconsUpdate(
     "site_update",
     {
       site: siteId,
+      expected_settings_revision: expectedSettingsRevision,
       user_id: userId,
       favicon_source: icons.faviconSource,
       ios_icon_source: icons.iosIconSource,
@@ -210,8 +215,10 @@ interface SiteUpdateInput {
   tagline: Optional<string>
   description: Optional<string>
   defaultPage: Optional<string>
+  welcomePage: Optional<string>
   locale: Optional<string>
   layout: Optional<Nullable<Layout>>
+  expectedSettingsRevision: number
 }
 
 export async function siteUpdate(
@@ -224,8 +231,10 @@ export async function siteUpdate(
     tagline,
     description,
     defaultPage,
+    welcomePage,
     locale,
-    layout
+    layout,
+    expectedSettingsRevision
   }: SiteUpdateInput,
   requestContext: SiteUpdateRequestContext
 ): Promise<SiteModel> {
@@ -233,17 +242,109 @@ export async function siteUpdate(
     "site_update",
     {
       site: siteId,
+      expected_settings_revision: expectedSettingsRevision,
       user_id: userId,
       name,
       slug,
       tagline,
       description,
       default_page: defaultPage,
+      welcome_page: welcomePage,
       locale,
       layout:
         layout !== undefined
           ? (Layout[layout?.toUpperCase() as keyof typeof Layout] ?? null)
           : undefined,
+      ip_address: userIpAddr
+    },
+    requestContext
+  )
+}
+
+export async function siteAnalyticsUpdate(
+  siteId: number,
+  expectedSettingsRevision: number,
+  userId: number,
+  userIpAddr: string,
+  enabled: boolean,
+  profile: string,
+  requestContext: SiteUpdateRequestContext
+): Promise<SiteModel> {
+  return client.request(
+    "site_update",
+    {
+      site: siteId,
+      expected_settings_revision: expectedSettingsRevision,
+      user_id: userId,
+      google_analytics: { enabled, profile },
+      ip_address: userIpAddr
+    },
+    requestContext
+  )
+}
+
+export async function siteToolbarsUpdate(
+  siteId: number,
+  expectedSettingsRevision: number,
+  userId: number,
+  userIpAddr: string,
+  top: boolean,
+  bottom: boolean,
+  requestContext: SiteUpdateRequestContext
+): Promise<SiteModel> {
+  return client.request(
+    "site_update",
+    {
+      site: siteId,
+      expected_settings_revision: expectedSettingsRevision,
+      user_id: userId,
+      toolbars: { top, bottom },
+      ip_address: userIpAddr
+    },
+    requestContext
+  )
+}
+
+export async function categoryThemeUpdate(
+  siteId: number,
+  categoryId: number,
+  expectedSettingsRevision: number,
+  userId: number,
+  userIpAddr: string,
+  theme: ThemeSetting,
+  requestContext: SiteUpdateRequestContext
+): Promise<PageCategoryModel> {
+  return client.request(
+    "category_update",
+    {
+      site: siteId,
+      category: categoryId,
+      expected_settings_revision: expectedSettingsRevision,
+      user_id: userId,
+      theme,
+      ip_address: userIpAddr
+    },
+    requestContext
+  )
+}
+
+export async function categoryAutonumberUpdate(
+  siteId: number,
+  categoryId: number,
+  expectedSettingsRevision: number,
+  userId: number,
+  userIpAddr: string,
+  enabled: boolean,
+  requestContext: SiteUpdateRequestContext
+): Promise<PageCategoryModel> {
+  return client.request(
+    "category_update",
+    {
+      site: siteId,
+      category: categoryId,
+      expected_settings_revision: expectedSettingsRevision,
+      user_id: userId,
+      autonumber_enabled: enabled,
       ip_address: userIpAddr
     },
     requestContext
