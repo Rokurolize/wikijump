@@ -8455,6 +8455,26 @@ async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
         unsupported.body,
     );
 
+    let unsupported_malformed_category = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum-unobserved-arguments-with-malformed-category",
+            "wikitext": r#"[[module FrontForum category="bad" feed="news"]]"#,
+        }),
+    );
+    assert!(
+        unsupported_malformed_category
+            .body
+            .contains("No such module")
+            && !unsupported_malformed_category
+                .body
+                .contains("Problem parsing attribute"),
+        "an unobserved FrontForum argument must take precedence over scalar parsing: {}",
+        unsupported_malformed_category.body,
+    );
+
     let custom_body = run_endpoint!(
         runner,
         wikidot_page_preview,

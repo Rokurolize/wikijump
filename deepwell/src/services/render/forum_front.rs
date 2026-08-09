@@ -72,6 +72,7 @@ pub(super) struct FrontForumItem {
 pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
     let arguments = wikidot_module_arguments(head)?;
     let mut category_ids = None;
+    let mut category_error = false;
     let mut limit = DEFAULT_LIMIT;
     let mut offset = 0;
     for argument in arguments {
@@ -89,7 +90,8 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
                         .ok()
                         .filter(|category_id| *category_id > 0)
                     else {
-                        return Some(FrontForumArgumentsParse::CategoryError);
+                        category_error = true;
+                        break;
                     };
                     if !parsed.contains(&category_id) {
                         parsed.push(category_id);
@@ -109,6 +111,9 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
             }
             _ => return None,
         }
+    }
+    if category_error {
+        return Some(FrontForumArgumentsParse::CategoryError);
     }
     Some(FrontForumArgumentsParse::Arguments(FrontForumArguments {
         category_ids: category_ids?,
