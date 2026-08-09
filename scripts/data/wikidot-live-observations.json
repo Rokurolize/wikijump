@@ -4,6 +4,38 @@
   "authority": "Reproducible live Wikidot behavior is canonical and overrides conflicting or incomplete documentation-derived claims.",
   "observations": [
     {
+      "id": "forum-q1034-readonly-surfaces-20260809",
+      "title": "RecentThreads currently renders one site-independent placeholder",
+      "feature_ids": [
+        "module-recentthreads"
+      ],
+      "classification": "live-clarification",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous PagePreviewModule probes on sandbox-for-codex, scp-wiki, and community establish that RecentThreads currently renders one site-independent placeholder and preserves own-line and literal-owner boundaries. The same artifact also records nonterminal read-only observations for adjacent issue 1034 surfaces, but those do not define a complete implementation contract and do not authorize forum mutations.",
+      "normative_behavior": [
+        "A recognized own-line RecentThreads invocation currently renders the exact visible text later. on all three observed sites. The observed limit and unknown attributes do not change it, and module-name matching is ASCII-case-insensitive.",
+        "RecentThreads consumes an observed closing module body. Inline and raw-owned invocations remain literal, and the RecentThreadsX lookalike remains unknown."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json",
+          "sha256": "a9e1663f70894965aa055448c8887043a461977de5d6494bc2ffcbd5cecd5aaa",
+          "case_ids": [
+            "recentthreads-sandbox-bare",
+            "recentthreads-sandbox-limit",
+            "recentthreads-sandbox-unknown",
+            "recentthreads-sandbox-mixed-case",
+            "recentthreads-sandbox-body",
+            "recentthreads-sandbox-inline",
+            "recentthreads-sandbox-raw",
+            "recentthreads-sandbox-lookalike",
+            "recentthreads-scp-bare",
+            "recentthreads-community-bare"
+          ]
+        }
+      ]
+    },
+    {
       "id": "forum-mini-current-preview-and-workbench-20260809",
       "title": "Forum mini modules share own-line, limit, activity, route, and literal-owner contracts",
       "feature_ids": [

@@ -44,10 +44,15 @@ pub(super) static FORUM_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         r#"(?im)^[\t ]*\[\[module\s+"#,
         r#"(?P<name>Comments|FrontForum|ForumCategory|ForumNewThread|"#,
-        r#"ForumStart|ForumThread|RecentPosts)\b"#,
+        r#"ForumStart|ForumThread|RecentPosts|RecentThreads)\b"#,
         r#"(?P<head>(?:[^\]"]+|"[^"]*")*)\]\][\t ]*$"#,
     ))
     .expect("forum module expression is valid")
+});
+
+static MODULE_CLOSE_LINE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?im)^[\t ]*\[\[/module\]\][\t ]*$")
+        .expect("module close expression is valid")
 });
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -59,6 +64,7 @@ enum ForumModuleKind {
     ForumStart,
     ForumThread,
     RecentPosts,
+    RecentThreads,
 }
 
 #[derive(Clone, Debug)]
@@ -159,9 +165,17 @@ fn module_kind(name: &str) -> ForumModuleKind {
         ForumModuleKind::ForumStart
     } else if name.eq_ignore_ascii_case("ForumThread") {
         ForumModuleKind::ForumThread
-    } else {
+    } else if name.eq_ignore_ascii_case("RecentPosts") {
         ForumModuleKind::RecentPosts
+    } else {
+        ForumModuleKind::RecentThreads
     }
+}
+
+fn recent_threads_replacement_end(wikitext: &str, opener_end: usize) -> usize {
+    MODULE_CLOSE_LINE_REGEX
+        .find(&wikitext[opener_end..])
+        .map_or(opener_end, |closing| opener_end + closing.end())
 }
 
 fn forum_user(
@@ -599,6 +613,8 @@ const COMMENTS_NO_CONTEXT: &str = concat!(
     "</div><div id=\"thread-container\" class=\"thread-container\" style=\"margin-top: 1em\"></div></div>",
 );
 
+const RECENT_THREADS_PLACEHOLDER: &str = "later.";
+
 fn missing_context_html(kind: ForumModuleKind) -> Option<&'static str> {
     match kind {
         ForumModuleKind::FrontForum => Some(concat!(
@@ -642,13 +658,10 @@ impl RenderService {
             let matched = captures
                 .get(0)
                 .expect("a forum module capture has a complete match");
-            if literal_regions.contains(matched.start())
+            if matched.start() < cursor
+                || literal_regions.contains(matched.start())
                 || expanded_count == MAX_FORUM_MODULES_PER_RENDER
             {
-                continue;
-            }
-            let head = captures.name("head").map_or("", |head| head.as_str());
-            if !head.trim().is_empty() {
                 continue;
             }
             let name = captures
@@ -656,10 +669,21 @@ impl RenderService {
                 .expect("a forum module capture has a name")
                 .as_str();
             let kind = module_kind(name);
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            if kind != ForumModuleKind::RecentThreads && !head.trim().is_empty() {
+                continue;
+            }
+            let replacement_end = if kind == ForumModuleKind::RecentThreads {
+                recent_threads_replacement_end(&wikitext, matched.end())
+            } else {
+                matched.end()
+            };
             let rendered = if kind == ForumModuleKind::Comments {
                 current_page_id
                     .is_none()
                     .then(|| COMMENTS_NO_CONTEXT.to_owned())
+            } else if kind == ForumModuleKind::RecentThreads {
+                Some(RECENT_THREADS_PLACEHOLDER.to_owned())
             } else if let Some(html) = missing_context_html(kind) {
                 Some(html.to_owned())
             } else {
@@ -721,7 +745,7 @@ impl RenderService {
             };
             output.push_str(&wikitext[cursor..matched.start()]);
             output.push_str(&compat_html.push_block_html(rendered));
-            cursor = matched.end();
+            cursor = replacement_end;
             expanded_count += 1;
         }
         if cursor == 0 {

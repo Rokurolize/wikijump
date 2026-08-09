@@ -79,7 +79,7 @@ static FORUM_RECENT_POSTS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 static FORUM_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         r#"(?im)^[\t ]*\[\[module\s+(?:comments|frontforum|forumcategory|"#,
-        r#"forumnewthread|forumstart|forumthread|recentposts)\b"#,
+        r#"forumnewthread|forumstart|forumthread|recentposts|recentthreads)\b"#,
         r#"(?:[^\]"]+|"[^"]*")*\]\][\t ]*$"#,
     ))
     .unwrap()
@@ -366,6 +366,7 @@ mod tests {
             "[[module ForumNewThread]]",
             "[[module ForumStart]]",
             "[[module ForumThread]]",
+            "[[module RecentThreads]]",
         ] {
             assert!(wikitext_requires_runtime_render(source));
             assert!(!wikitext_reads_url_arguments(source));

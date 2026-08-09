@@ -7994,6 +7994,94 @@ async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
 }
 
 #[tokio::test]
+async fn recent_threads_matches_live_placeholder_and_owner_boundaries() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (case_id, source) in [
+        ("recentthreads-bare", "[[module RecentThreads]]"),
+        (
+            "recentthreads-limit",
+            r#"[[module RecentThreads limit="5"]]"#,
+        ),
+        (
+            "recentthreads-unknown-argument",
+            r#"[[module RecentThreads unknown="x"]]"#,
+        ),
+        ("recentthreads-mixed-case", "[[MoDuLe rEcEnTtHrEaDs]]"),
+        (
+            "recentthreads-body",
+            "[[module RecentThreads]]\nRECENT_THREADS_BODY_MUST_BE_CONSUMED\n[[/module]]",
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert_eq!(
+            preview.body.matches("later.").count(),
+            1,
+            "{case_id}: {}",
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains("[[module")
+                && !preview.body.contains("No such module")
+                && !preview
+                    .body
+                    .contains("RECENT_THREADS_BODY_MUST_BE_CONSUMED"),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    for (case_id, source) in [
+        (
+            "recentthreads-inline",
+            "before [[module RecentThreads]] after",
+        ),
+        ("recentthreads-raw-owner", "@@[[module RecentThreads]]@@"),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains("[[module") && !preview.body.contains("later."),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    let lookalike = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "recentthreads-lookalike",
+            "wikitext": "[[module RecentThreadsX]]",
+        }),
+    );
+    assert!(
+        lookalike.body.contains("No such module") && !lookalike.body.contains("later."),
+        "{}",
+        lookalike.body,
+    );
+}
+
+#[tokio::test]
 async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination() {
     async fn create_thread(
         runner: &TestRunner,
