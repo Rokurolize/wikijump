@@ -411,7 +411,7 @@
         {data.internationalization?.["wiki-page-revision-diff.from"]}
       </label>
       <select id="revision-diff-from" bind:value={fromRevisionNumber}>
-        {#each [...revisionMap.keys()].sort((a, b) => a - b) as revisionNumber}
+        {#each [...revisionMap.keys()].sort((a, b) => a - b) as revisionNumber (revisionNumber)}
           <option value={revisionNumber}>{revisionNumber}</option>
         {/each}
       </select>
@@ -419,7 +419,7 @@
         {data.internationalization?.["wiki-page-revision-diff.to"]}
       </label>
       <select id="revision-diff-to" bind:value={toRevisionNumber}>
-        {#each [...revisionMap.keys()].sort((a, b) => a - b) as revisionNumber}
+        {#each [...revisionMap.keys()].sort((a, b) => a - b) as revisionNumber (revisionNumber)}
           <option value={revisionNumber}>{revisionNumber}</option>
         {/each}
       </select>
@@ -443,7 +443,7 @@
       {:else}
         <pre
           class="revision-diff"
-          aria-live="polite">{#each revisionDiff.lines as line}<span
+          aria-live="polite">{#each revisionDiff.lines as line, lineIndex (lineIndex)}<span
               class:added={line.kind === "added"}
               class:removed={line.kind === "removed"}
               class:unchanged={line.kind === "unchanged"}
