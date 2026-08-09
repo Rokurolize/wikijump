@@ -1,12 +1,12 @@
 {
   "schema": "wikijump.open43_concurrency_ledger.v1",
   "campaign": "open43-pr2",
-  "updated_at": "2026-08-09T21:00:20+09:00",
+  "updated_at": "2026-08-09T21:34:13+09:00",
   "integration_branch": {
     "repository": "Rokurolize/wikijump",
     "branch": "fix/open87-pr2-modules-actions-media-settings",
     "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
-    "reconciled_head": "77f053557339d2c4a10a4a81949d29d0e94ca54f"
+    "reconciled_head": "7cec2150eee35a49e57a927835988d03bc8e36aa"
   },
   "limits": {
     "configured_threads": 13,
@@ -17,7 +17,12 @@
   "brokers": {
     "build": {
       "owner": "/root",
-      "target_dir_pattern": "/home/roku/wjlab/targets/wikijump-<pushed-short-sha>-dev"
+      "target_dir_pattern": "/home/roku/wjlab/targets/wikijump-<pushed-short-sha>-dev",
+      "wws_lock": {
+        "integration_commit": "fa9fa5f360c1a2da5d57cfa0b8de1060cd153989",
+        "sha256": "b2dd93e9ccd13b40cad1c99bf97dd79ca1d773839074adbd2b4c553c1988252e",
+        "validation_pending": true
+      }
     },
     "runtime": {
       "owner": "/root",
@@ -27,7 +32,14 @@
         "task-files",
         "candidate-process",
         "browser-profile"
-      ]
+      ],
+      "fixture": {
+        "state": "prepared",
+        "receipt_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-fixture-20260809/fixture-copy-receipt.json",
+        "receipt_sha256": "e13dc369f278df3259ff2588a758fefbb47cc6ab358b3577fa7cb2be9f56064e",
+        "standing_mutated": false,
+        "protected_volumes_touched": false
+      }
     },
     "standing": {
       "owner": "/root",
@@ -359,8 +371,27 @@
       "branch": "agent/open87-pr2/a-authoring-source-g9",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/a-authoring-source-g9",
       "base": "b21a91941fc13ec4a5a722c6cb51f06c5e6c9472",
-      "head": null,
-      "status": "running",
+      "head": "c4892b27da22e3fa4e6c068b36b8e2ecfd42c793",
+      "status": "integrated",
+      "integration_commits": [
+        "4d156c267351628b732ab136a3231f7f73d670da",
+        "3501e22f018f386c26540af7521b5d0251e1225e"
+      ],
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "a-authoring-harness-cwd-g10",
+      "agent": "/root",
+      "issue_numbers": [1063],
+      "branch": "fix/open87-pr2-modules-actions-media-settings",
+      "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
+      "base": "3501e22f018f386c26540af7521b5d0251e1225e",
+      "head": "7cec2150eee35a49e57a927835988d03bc8e36aa",
+      "status": "integrated",
+      "integration_commits": [
+        "7cec2150eee35a49e57a927835988d03bc8e36aa"
+      ],
       "may_run_cargo": false,
       "may_mutate_runtime": false
     },
