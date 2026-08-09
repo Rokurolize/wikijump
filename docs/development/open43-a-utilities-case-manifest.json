@@ -80,9 +80,9 @@
     {
       "case_id": "A1038_LITERAL_AND_BODY_OWNERSHIP",
       "issue": 1038,
-      "status": "implemented_unverified",
-      "public_test": "deepwell/tests/page.rs::site_utility_modules_preserve_literal_body_and_argument_boundaries",
-      "result": "The consumer uses the existing literal-region owner index. SiteGrid with an owned block body is left for a future typed consumer instead of deleting its authored site list, and unsupported attribute shapes remain fail closed."
+      "status": "partial",
+      "public_test": "deepwell/tests/page.rs::site_utility_modules_preserve_literal_and_reject_unsupported_shapes",
+      "result": "The consumer uses the existing literal-region owner index, and unsupported attribute or body-bearing shapes cannot enter the evidenced anonymous consumer. Central execution found that pinned FTML still collapses a body-bearing unknown SiteGrid block, so exact authored-body preservation remains actionable until FTML exposes a typed delayed module node."
     },
     {
       "case_id": "A1038_AUTHENTICATED_ACTOR_MATRIX",
@@ -118,7 +118,7 @@
   "central_commands": [
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
     "cargo test --manifest-path deepwell/Cargo.toml --test page anonymous_page_and_site_utility_modules_match_frozen_safe_states -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page site_utility_modules_preserve_literal_body_and_argument_boundaries -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page site_utility_modules_preserve_literal_and_reject_unsupported_shapes -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page simpletodo_and_sendinvitations_modules_match_live_preview_basics -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page imported_redirect_noredirect_renders_live_error_block -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page newpage_module_resolves_existing_templates_in_rendered_pages -- --exact --nocapture",
@@ -147,6 +147,7 @@
         "authenticated actor matrix",
         "local Clone action contract",
         "populated SiteGrid and active ThemePreviewer evidence",
+        "FTML typed delayed ownership for body-bearing SiteGrid",
         "served browser lifecycle evidence"
       ]
     }

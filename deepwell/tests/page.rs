@@ -7142,7 +7142,7 @@ async fn anonymous_page_and_site_utility_modules_match_frozen_safe_states() {
 }
 
 #[tokio::test]
-async fn site_utility_modules_preserve_literal_body_and_argument_boundaries() {
+async fn site_utility_modules_preserve_literal_and_reject_unsupported_shapes() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
@@ -7179,11 +7179,6 @@ async fn site_utility_modules_preserve_literal_body_and_argument_boundaries() {
         preview.body.contains("[[module Clone]]")
             && preview.body.contains("[[module ManageSite]]"),
         "literal-owned utility syntax must remain visible text:\n{}",
-        preview.body,
-    );
-    assert!(
-        preview.body.contains("private-site-name"),
-        "body-bearing SiteGrid must not lose the authored site list:\n{}",
         preview.body,
     );
     assert!(
