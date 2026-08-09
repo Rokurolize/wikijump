@@ -314,21 +314,19 @@ describe("Wikidot site settings public boundaries", () => {
         /google-analytics\.com|document\.createElement|\.src\s*=/u
       )
 
-      const analyticsScript = [
-        ...document.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gu)
-      ].find(
-        ([, , body]) =>
-          body.includes("userTracker._setAccount") &&
-          body.includes("userTracker._trackPageview")
-      )
-      assert.ok(analyticsScript)
-      const analyticsNonce = /\bnonce="([^"]+)"/u.exec(analyticsScript[1])?.[1]
+      const contentSecurityPolicy = response.headers.get("content-security-policy") ?? ""
+      const analyticsNonce = /'nonce-([^']+)'/u.exec(contentSecurityPolicy)?.[1]
       assert.ok(analyticsNonce)
       assert.notEqual(analyticsNonce, "%sveltekit.nonce%")
-      assert.ok(
-        (response.headers.get("content-security-policy") ?? "").includes(
-          `'nonce-${analyticsNonce}'`
-        )
+      const analyticsBodyIndex = document.indexOf("const analyticsProfile")
+      assert.notEqual(analyticsBodyIndex, -1)
+      const analyticsScriptIndex = document.lastIndexOf("<script", analyticsBodyIndex)
+      assert.notEqual(analyticsScriptIndex, -1)
+      const analyticsOpeningTagEnd = document.indexOf(">", analyticsScriptIndex)
+      assert.notEqual(analyticsOpeningTagEnd, -1)
+      assert.equal(
+        document.slice(analyticsScriptIndex, analyticsOpeningTagEnd + 1),
+        `<script nonce="${analyticsNonce}">`
       )
     } finally {
       await new Promise((resolve, reject) => {
