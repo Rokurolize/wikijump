@@ -66,7 +66,7 @@ describe("Wikidot site settings foundation", () => {
       ""
     )
     const head = googleAnalyticsHeadHtml({ enabled: true, profile: "UA-1-2" })
-    assert.match(head, /^<script>/u)
+    assert.equal(head.startsWith("<script>"), true)
     assert.doesNotMatch(head, /https?:|\.src\s*=|google-analytics\.com/u)
   })
 
