@@ -1,12 +1,12 @@
 {
   "schema": "wikijump.open43_concurrency_ledger.v1",
   "campaign": "open43-pr2",
-  "updated_at": "2026-08-09T20:15:27+09:00",
+  "updated_at": "2026-08-09T20:20:43+09:00",
   "integration_branch": {
     "repository": "Rokurolize/wikijump",
     "branch": "fix/open87-pr2-modules-actions-media-settings",
     "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
-    "reconciled_head": "2b93a9cc6f9942641c830e203fc0ad2b6b403039"
+    "reconciled_head": "0bd1a845dd2ad2d6dc011698c4e31b64f18db5d4"
   },
   "limits": {
     "configured_threads": 13,
@@ -264,8 +264,13 @@
       "branch": "agent/open87-pr2/m-resized-assets-g6",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-resized-assets-g6",
       "base": "757a87285350a132f947fd6e3042c492e53c3717",
-      "head": null,
-      "status": "running",
+      "head": "0b5f3e2dc51b261162d77db9b408a59b9e592de1",
+      "status": "integrated",
+      "integration_commits": [
+        "6ff869fe7937c1f02b7cb685968a008470ac95ff",
+        "2073c33d60e37250388ce0a8fade2edabc2f2fe0",
+        "0bd1a845dd2ad2d6dc011698c4e31b64f18db5d4"
+      ],
       "may_run_cargo": false,
       "may_mutate_runtime": false
     },
@@ -291,6 +296,18 @@
       "branch": "agent/open87-pr2/m-media-candidate-harness-g7",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-media-candidate-harness-g7",
       "base": "2b93a9cc6f9942641c830e203fc0ad2b6b403039",
+      "head": null,
+      "status": "running",
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "m-gallery-options-g7",
+      "agent": "/root/a_rate",
+      "issue_numbers": [1043],
+      "branch": "agent/open87-pr2/m-gallery-options-g7",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-gallery-options-g7",
+      "base": "0bd1a845dd2ad2d6dc011698c4e31b64f18db5d4",
       "head": null,
       "status": "running",
       "may_run_cargo": false,
