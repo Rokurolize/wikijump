@@ -208,6 +208,7 @@ impl RenderService {
             wikitext,
             settings,
             current_site_id,
+            viewer_user_id,
             compat_html,
         )
         .await?;

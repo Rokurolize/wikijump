@@ -5388,26 +5388,82 @@ async fn listdrafts_module_matches_live_empty_draft_state() {
         site_id: Some(site_id),
         page_reference: None,
     });
-    let preview = run_endpoint!(
-        runner,
-        wikidot_page_preview,
-        json!({
-            "site_id": site_id,
-            "title": "ListDrafts empty preview",
-            "wikitext": source,
-        }),
-    );
-    assert!(
-        preview.body.contains(r#"<div class="list-drafts-box">"#),
-        "ListDrafts should render Wikidot's empty draft-list wrapper:\n{}",
-        preview.body,
-    );
-    assert!(
-        !preview.body.contains("[[module ListDrafts")
-            && !preview.body.contains("list-drafts-item"),
-        "empty ListDrafts should not leak raw source or render draft items:\n{}",
-        preview.body,
-    );
+    for (case_id, source, closing_is_literal) in [
+        (
+            "exact-existing-page-filter",
+            r#"[[module ListDrafts pageType="exists"]]"#,
+            false,
+        ),
+        ("omitted-filter", "[[module ListDrafts]]", false),
+        (
+            "exact-missing-page-filter",
+            r#"[[module ListDrafts pageType="notexists"]]"#,
+            false,
+        ),
+        (
+            "unsupported-filter-is-omitted",
+            r#"[[module ListDrafts pageType="other"]]"#,
+            false,
+        ),
+        (
+            "empty-filter-is-omitted",
+            r#"[[module ListDrafts pageType=""]]"#,
+            false,
+        ),
+        (
+            "single-quoted-filter-is-omitted",
+            "[[module ListDrafts pageType='exists']]",
+            false,
+        ),
+        (
+            "bare-filter-is-omitted",
+            "[[module ListDrafts pageType=exists]]",
+            false,
+        ),
+        (
+            "module-name-is-case-insensitive",
+            r#"[[module LISTDRAFTS pageType="exists"]]"#,
+            false,
+        ),
+        (
+            "argument-name-is-case-sensitive",
+            r#"[[module ListDrafts PAGETYPE="exists"]]"#,
+            false,
+        ),
+        (
+            "standalone-opener-leaves-closing-marker-literal",
+            "[[module ListDrafts pageType=\"exists\"]]\n[[/module]]",
+            true,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("ListDrafts empty preview: {case_id}"),
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(r#"<div class="list-drafts-box">"#),
+            "{case_id}: ListDrafts should render Wikidot's empty draft-list wrapper:\n{}",
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains("[[module ListDrafts")
+                && !preview.body.contains("[[module LISTDRAFTS")
+                && !preview.body.contains("list-drafts-item"),
+            "{case_id}: empty ListDrafts should not leak its opener or render draft items:\n{}",
+            preview.body,
+        );
+        assert_eq!(
+            preview.body.contains("[[/module]]"),
+            closing_is_literal,
+            "{case_id}: standalone closing-marker behavior should match the live preview:\n{}",
+            preview.body,
+        );
+    }
 
     create_listpages_test_page(
         &mut runner,
@@ -5443,6 +5499,247 @@ async fn listdrafts_module_matches_live_empty_draft_state() {
     assert!(
         !body.contains("[[module ListDrafts") && !body.contains("list-drafts-item"),
         "saved page view should not leak raw ListDrafts source or render nonexistent drafts:\n{body}",
+    );
+}
+
+#[tokio::test]
+async fn categories_runtime_inventory_is_scoped_to_the_request_actor() {
+    const PRIVATE_CATEGORY: &str = "fixture-categories-private-runtime";
+    const PRIVATE_PAGE: &str = "fixture-categories-private-runtime-page";
+    const PUBLIC_PAGE: &str = "fixture-categories-public-runtime-page";
+    const HOLDER: &str = "fixture-categories-runtime-holder";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE,
+        "Fixture Categories Public Runtime Page",
+        "public Categories runtime fixture",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE,
+        "Fixture Categories Private Runtime Page",
+        "private Categories runtime fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_PAGE, PRIVATE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER,
+        "Fixture Categories Runtime Holder",
+        "CATEGORIES_RUNTIME_START\n[[module Categories includeHidden=\"true\"]]\nCATEGORIES_RUNTIME_END",
+    )
+    .await;
+
+    let admin_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "Categories actor runtime test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+
+    let body = |view| match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found Categories page view, got {other:?}"),
+    };
+
+    let anonymous = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    assert!(
+        anonymous.contains("CATEGORIES_RUNTIME_START")
+            && anonymous.contains("CATEGORIES_RUNTIME_END")
+            && anonymous.contains("<h3>_default</h3>"),
+        "anonymous page_view should runtime-render the public category inventory:\n{anonymous}",
+    );
+    assert!(
+        !anonymous.contains(PRIVATE_CATEGORY),
+        "anonymous Categories output must not reveal an inaccessible category:\n{anonymous}",
+    );
+
+    let admin = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": admin_session_token,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    assert!(
+        admin.contains(&format!("<h3>{PRIVATE_CATEGORY}</h3>")),
+        "an authorized actor should receive the private category in the same public page_view seam:\n{admin}",
+    );
+}
+
+#[tokio::test]
+async fn sitechanges_default_snapshot_filters_before_the_initial_page_limit() {
+    const PRIVATE_CATEGORY: &str = "fixture-sitechanges-private";
+    const PRIVATE_PAGE: &str = "fixture-sitechanges-private-page";
+    const PUBLIC_PAGE: &str = "fixture-sitechanges-public-page";
+    const PUBLIC_TITLE: &str = "Fixture SiteChanges Public Page";
+    const PRIVATE_TITLE: &str = "Fixture SiteChanges Private Page";
+    const HOLDER: &str = "fixture-sitechanges-holder";
+    const SOURCE: &str = "SITECHANGES_START\n[[module SiteChanges]]\nSITECHANGES_END";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE,
+        PUBLIC_TITLE,
+        "public SiteChanges fixture",
+    )
+    .await;
+    let mut private_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE,
+        PRIVATE_TITLE,
+        "private SiteChanges fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_PAGE, PRIVATE_CATEGORY)
+        .await;
+    for index in 0..22 {
+        let tag = format!("sitechanges-private-{index}");
+        private_revision_id = set_listpages_test_tags(
+            &mut runner,
+            site_id,
+            PRIVATE_PAGE,
+            private_revision_id,
+            &[&tag],
+        )
+        .await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER,
+        "Fixture SiteChanges Holder",
+        SOURCE,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "SiteChanges anonymous preview",
+            "wikitext": SOURCE,
+        }),
+    );
+    for expected in [
+        r#"<div class="site-changes-box">"#,
+        "Revision types:",
+        r#"id="rev-type-all" checked="checked""#,
+        r#"id="rev-category""#,
+        r#"id="rev-perpage""#,
+        r#"class="changes-list" id="site-changes-list""#,
+        PUBLIC_TITLE,
+    ] {
+        assert!(
+            preview.body.contains(expected),
+            "anonymous preview should contain {expected:?}:\n{}",
+            preview.body,
+        );
+    }
+    for forbidden in [PRIVATE_TITLE, PRIVATE_CATEGORY, "[[module SiteChanges"] {
+        assert!(
+            !preview.body.contains(forbidden),
+            "anonymous preview must not contain {forbidden:?}:\n{}",
+            preview.body,
+        );
+    }
+
+    let anonymous_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let anonymous_body = match anonymous_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found SiteChanges page view, got {other:?}"),
+    };
+    assert!(
+        anonymous_body.contains(PUBLIC_TITLE) && !anonymous_body.contains(PRIVATE_TITLE),
+        "saved anonymous page_view must filter hidden revisions before selecting its first 20 rows:\n{anonymous_body}",
+    );
+
+    let admin_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "SiteChanges actor runtime test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let admin_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": admin_session_token,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let admin_body = match admin_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found admin SiteChanges page view, got {other:?}"),
+    };
+    assert!(
+        admin_body.contains(PRIVATE_TITLE)
+            && admin_body.contains(&format!(">{PRIVATE_CATEGORY}</option>"))
+            && admin_body.contains(r#"<div class="pager">"#),
+        "an authorized actor should receive private changes, the category selector, and a pager:\n{admin_body}",
     );
 }
 

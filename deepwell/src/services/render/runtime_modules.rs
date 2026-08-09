@@ -39,6 +39,7 @@ use super::service::{
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
     escape_list_pages_html_attr, escape_list_pages_html_text, render_clone_module,
 };
+use super::site_changes::expand_site_changes_modules;
 use super::site_utility_modules::expand_site_utility_modules;
 use super::url_arguments::UrlArguments;
 use super::user_directory::render_members_module;
@@ -2099,6 +2100,16 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = Self::expand_list_drafts_modules(wikitext, settings, compat_html);
+        wikitext = expand_site_changes_modules(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            options.viewer_user_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext = Self::expand_forum_mini_modules(
             ctx,
             wikitext,

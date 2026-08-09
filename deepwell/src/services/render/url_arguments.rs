@@ -53,6 +53,11 @@ static LIST_USERS_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listusers\b").unwrap());
 static LIST_DRAFTS_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listdrafts\b").unwrap());
+static ACTOR_SENSITIVE_CATEGORIES_MODULE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+categories\b").unwrap());
+static ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?m)^[\t ]*\[\[module[\t ]+SiteChanges[\t ]*\]\][\t ]*$").unwrap()
+});
 static MEMBERSHIP_BY_PASSWORD_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+membershipbypassword\b").unwrap());
 static MEMBERSHIP_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -214,6 +219,8 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || PAGE_CALENDAR_MODULE_REGEX.is_match(wikitext)
         || LIST_USERS_MODULE_REGEX.is_match(wikitext)
         || LIST_DRAFTS_MODULE_REGEX.is_match(wikitext)
+        || ACTOR_SENSITIVE_CATEGORIES_MODULE_REGEX.is_match(wikitext)
+        || ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_BY_PASSWORD_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_MODULE_REGEX.is_match(wikitext)
         || FORUM_MINI_MODULE_REGEX.is_match(wikitext)
@@ -385,6 +392,21 @@ mod tests {
             assert!(wikitext_requires_runtime_render(source));
             assert!(!wikitext_reads_url_arguments(source));
         }
+    }
+
+    #[test]
+    fn actor_sensitive_page_graph_modules_require_runtime_rendering() {
+        for source in [
+            "[[module Categories]]",
+            "before [[module categories]] after",
+            "[[module SiteChanges]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source));
+            assert!(!wikitext_reads_url_arguments(source));
+        }
+        assert!(!wikitext_requires_runtime_render(
+            "before [[module SiteChanges]] after"
+        ));
     }
 
     #[test]

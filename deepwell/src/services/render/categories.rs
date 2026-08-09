@@ -24,7 +24,9 @@ use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
 use super::service::{RenderService, escape_list_pages_html_text};
 use crate::error::prelude::Result;
+use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{CategoryService, ServiceContext};
+use crate::types::{Action, Permission, Reference, Resource};
 use ftml::settings::WikitextSettings;
 use regex::Regex;
 use std::sync::LazyLock;
@@ -44,7 +46,7 @@ fn category_is_visible(slug: &str, include_hidden: bool) -> bool {
     slug == "_default" || include_hidden || !slug.starts_with('_')
 }
 
-fn wikidot_category_sort_key(slug: &str) -> (String, String) {
+pub(super) fn wikidot_category_sort_key(slug: &str) -> (String, String) {
     (slug.replace('-', ""), slug.to_owned())
 }
 
@@ -91,6 +93,7 @@ impl RenderService {
         wikitext: String,
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
+        viewer_user_id: Option<i64>,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         if !settings.enable_page_syntax || !CATEGORIES_MODULE_REGEX.is_match(&wikitext) {
@@ -101,8 +104,28 @@ impl RenderService {
             return Ok(wikitext);
         };
 
-        let mut categories =
-            CategoryService::get_all_active(ctx, current_site_id).await?;
+        let categories = CategoryService::get_all_active(ctx, current_site_id).await?;
+        let mut visible_categories = Vec::with_capacity(categories.len());
+        for category in categories {
+            let can_view = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: viewer_user_id,
+                    site_id: current_site_id,
+                    page_reference: None,
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: Some(Reference::Id(category.category_id)),
+                    action: Action::View,
+                },
+            )
+            .await?;
+            if can_view {
+                visible_categories.push(category);
+            }
+        }
+        let mut categories = visible_categories;
         categories
             .sort_by_cached_key(|category| wikidot_category_sort_key(&category.slug));
         let category_refs = categories

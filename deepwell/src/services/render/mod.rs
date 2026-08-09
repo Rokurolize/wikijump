@@ -66,6 +66,7 @@ mod runtime_modules;
 mod runtime_page_queries;
 mod search_feed;
 mod service;
+mod site_changes;
 mod site_utility_modules;
 mod structs;
 mod url_arguments;
