@@ -261,7 +261,11 @@
           "t": 18029831
         },
         "status": "ok",
-        "body_sha256": "bccc876678f985685e35b7e74b0567aaf8e0ec41f1167becc80e0680fa13080c"
+        "body_sha256": "bccc876678f985685e35b7e74b0567aaf8e0ec41f1167becc80e0680fa13080c",
+        "js_include": [
+          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js",
+          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadModule.js"
+        ]
       },
       {
         "case_id": "sandbox-thread-posts-populated",
@@ -271,7 +275,10 @@
           "pageNo": "1"
         },
         "status": "ok",
-        "body_sha256": "dc1da37bb160720abd6df90bf4738df6b28ea73dd628163efc1d596ab1c5c45b"
+        "body_sha256": "dc1da37bb160720abd6df90bf4738df6b28ea73dd628163efc1d596ab1c5c45b",
+        "js_include": [
+          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js"
+        ]
       },
       {
         "case_id": "sandbox-thread-missing",
@@ -332,6 +339,12 @@
         "status": "ok",
         "body_sha256": "06aae7320f25163e1ea9558eac4219eb7be59681d671d870ea0089c8611939f4"
       }
+    ],
+    "thread_contract": [
+      "ForumViewThreadModule owns the forum-thread-box, options, hidden thread-container-posts, both first-page post-container roots, post templates, and the sibling thread-id script.",
+      "ForumViewThreadPostsModule returns sibling post-container roots without an invented thread-container wrapper.",
+      "An edited post carries changes and hidden revisions metadata; an unedited post omits both.",
+      "The thread envelope lists ForumViewThreadPostsModule.js before ForumViewThreadModule.js; the posts envelope lists only ForumViewThreadPostsModule.js. These observations establish response metadata, not authority to execute the remote scripts."
     ]
   },
   "routes": {
@@ -347,17 +360,19 @@
     ],
     "contracts": [
       "The forum start, category, and thread URLs return HTTP 200 and place the compatibility result inside forum-start-box, forum-category-box, or forum-thread-box respectively.",
+      "The served populated thread route nests forum-thread-box under page-content and does not fetch a second PostsModule body for composition.",
       "A missing category renders Requested forum category does not exist. and a missing thread renders The thread you're trying to show seems to have been deleted.",
       "The anonymous new-thread URL renders a permission error and does not expose a mutation form."
     ]
   },
   "implementation_disposition": {
     "source_ready": [
-      "RecentThreads own-line, argument-insensitive placeholder, body-consumption, case, inline, raw-owner, and lookalike boundaries."
+      "RecentThreads own-line, argument-insensitive placeholder, typed body ownership, case, inline, raw-owner, unrelated-closer, and lookalike boundaries.",
+      "FrontForum baseline populated selection and invalid-category output.",
+      "Read-only ForumStart, category, thread, first thread-post page, and RecentPosts first-page Ajax modules.",
+      "Served ForumStart, category, and thread routes with exact observed suffix boundaries."
     ],
     "actionable_but_not_implemented": [
-      "FrontForum baseline populated selection and invalid-category output.",
-      "Read-only forum category and thread routes and their Ajax module names.",
       "Comments forward and reverse read models through ForumCommentsListModule."
     ],
     "blocked": [

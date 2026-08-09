@@ -39,7 +39,7 @@ Normative behavior:
 
 Evidence:
 
-- `install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json` (SHA-256 `a9e1663f70894965aa055448c8887043a461977de5d6494bc2ffcbd5cecd5aaa`), cases: `recentthreads-sandbox-bare`, `recentthreads-sandbox-limit`, `recentthreads-sandbox-unknown`, `recentthreads-sandbox-mixed-case`, `recentthreads-sandbox-body`, `recentthreads-sandbox-inline`, `recentthreads-sandbox-raw`, `recentthreads-sandbox-lookalike`, `recentthreads-scp-bare`, `recentthreads-community-bare`
+- `install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json` (SHA-256 `0a188e7960890a0ad05fbb7733671072abc1f08156e0d2df7e70b523e3405fd4`), cases: `recentthreads-sandbox-bare`, `recentthreads-sandbox-limit`, `recentthreads-sandbox-unknown`, `recentthreads-sandbox-mixed-case`, `recentthreads-sandbox-body`, `recentthreads-sandbox-inline`, `recentthreads-sandbox-raw`, `recentthreads-sandbox-lookalike`, `recentthreads-scp-bare`, `recentthreads-community-bare`
 
 
 
