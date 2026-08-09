@@ -2015,7 +2015,8 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = Self::expand_list_drafts_modules(wikitext, settings, compat_html);
-        wikitext = expand_search_feed_modules(wikitext, settings, compat_html);
+        wikitext =
+            expand_search_feed_modules(wikitext, settings, options.url, compat_html);
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_static_account_modules(wikitext, settings, compat_html);

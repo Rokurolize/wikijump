@@ -42,7 +42,10 @@
     hasIosIcons
   } from "$lib/site-icons"
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
-  import { wikidotSearchPath } from "$lib/wikidot/wikidot-search.js"
+  import {
+    installWikidotSearchAll,
+    wikidotSearchPath
+  } from "$lib/wikidot/wikidot-search.js"
 
   let { children } = $props()
 
@@ -125,6 +128,7 @@
   onMount(() => {
     let disposed = false
     let stop: (() => void) | undefined
+    const uninstallSearchAll = installWikidotSearchAll(window)
     installWikidotNewPageHelper(window)
     void import("$lib/wikidot/wikidot-code-highlighting").then((module) => {
       if (!disposed) stop = module.observeWikidotCodeBlocks(document)
@@ -132,6 +136,7 @@
     return () => {
       disposed = true
       stop?.()
+      uninstallSearchAll()
     }
   })
 

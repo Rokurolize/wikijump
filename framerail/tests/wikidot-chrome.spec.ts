@@ -32,3 +32,21 @@ test("Wikidot-compatible search chrome preserves its two inputs and focus behavi
   await form.locator('input[type="submit"]').click({ force: true })
   await expect(page).toHaveURL(/\/search:site\/q\/codex%20search%20probe$/u)
 })
+
+test("SearchAll module submits the selected live area route", async ({ page }) => {
+  await page.setExtraHTTPHeaders({
+    "X-Wikijump-Site-Id": "6000005",
+    "X-Wikijump-Site-Slug": "scp-wiki"
+  })
+
+  await page.goto("/search:all")
+
+  const form = page.locator("#search-form-all")
+  await expect(form).toHaveCount(1)
+  await expect(form.locator('input[name="area"]:checked')).toHaveValue("pf")
+  await form.locator("#search-form-all-input").fill("  a/b? c  ")
+  await form.locator("#search-all-f").check()
+  await form.locator('input[type="submit"]').click()
+
+  await expect(page).toHaveURL(/\/search:all\/a\/f\/q\/%20%20a%2Fb%3F%20c%20%20$/u)
+})

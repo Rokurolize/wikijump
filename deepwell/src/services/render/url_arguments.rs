@@ -54,6 +54,10 @@ static LIST_DRAFTS_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listdrafts\b").unwrap());
 static MEMBERSHIP_BY_PASSWORD_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+membershipbypassword\b").unwrap());
+static SEARCH_ALL_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?im)^[\t ]*\[\[module\s+searchall\b(?:[^\]"]+|"[^"]*")*\]\][\t ]*$"#)
+        .unwrap()
+});
 
 /// One raw URL path argument addressed to a page module.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -171,6 +175,7 @@ pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
         || LIST_PAGES_URL_SELECTOR_REGEX.is_match(wikitext)
         || NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(wikitext)
         || LIST_PAGES_MODULE_REGEX.is_match(wikitext)
+        || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
 }
 
 /// Whether a page view must render from source even without URL arguments.
@@ -187,6 +192,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || LIST_USERS_MODULE_REGEX.is_match(wikitext)
         || LIST_DRAFTS_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_BY_PASSWORD_MODULE_REGEX.is_match(wikitext)
+        || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
         || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)
         || wikitext_has_random_list_pages_module(wikitext)
@@ -284,6 +290,15 @@ mod tests {
         ));
         assert!(wikitext_requires_runtime_render(
             r#"[[module PageCalendar category="news"]]"#
+        ));
+    }
+
+    #[test]
+    fn search_all_reads_url_arguments_and_requires_runtime_rendering() {
+        assert!(wikitext_reads_url_arguments("[[module SearchAll]]"));
+        assert!(wikitext_requires_runtime_render("[[module SearchAll]]"));
+        assert!(!wikitext_reads_url_arguments(
+            "before [[module SearchAll]] after"
         ));
     }
 

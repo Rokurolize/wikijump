@@ -3781,6 +3781,139 @@ async fn search_and_feed_modules_match_live_preview_and_page_view_boundaries() {
 }
 
 #[tokio::test]
+async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let form_markers = [
+        r#"<div class="search-box">"#,
+        r#"<div class="query-area">"#,
+        r#"<form action="dummy" id="search-form-all">"#,
+        r#"<input class="text" type="text" size="30" name="query" id="search-form-all-input" value=""/>"#,
+        r#"<input class="button" type="submit" value="Search"/>"#,
+        r#"<input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"/>"#,
+        r#"<label for="search-all-pf">pages and forums</label>"#,
+        r#"<input id="search-all-p" class="radio" type="radio" name="area" value="p"/>"#,
+        r#"<label for="search-all-p">pages only</label>"#,
+        r#"<input id="search-all-f" class="radio" type="radio" name="area" value="f"/>"#,
+        r#"<label for="search-all-f">forums only</label>"#,
+        r#"<div class="search-results">"#,
+    ];
+
+    for (case_id, source) in [
+        ("searchall-bare", "[[module SearchAll]]"),
+        ("searchall-uppercase-name", "[[module SEARCHALL]]"),
+        (
+            "searchall-unknown-argument",
+            "[[module SearchAll unknown=\"x\"]]",
+        ),
+        (
+            "searchall-single-quoted-argument",
+            "[[module SearchAll unknown='x']]",
+        ),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        for marker in form_markers {
+            assert!(
+                preview.body.contains(marker),
+                "{case_id} should render the frozen SearchAll form marker {marker}:\n{}",
+                preview.body,
+            );
+        }
+        assert!(
+            !preview.body.contains("[[module"),
+            "{case_id} should consume the SearchAll module:\n{}",
+            preview.body,
+        );
+    }
+
+    for (case_id, source, expected) in [
+        (
+            "searchall-inline",
+            "before [[module SearchAll]] after",
+            "before [[module SearchAll]] after",
+        ),
+        (
+            "searchall-literal",
+            "@@[[module SearchAll]]@@",
+            "[[module SearchAll]]",
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(expected) && !preview.body.contains("No such module"),
+            "{case_id} should preserve the live literal owner boundary:\n{}",
+            preview.body,
+        );
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-searchall-boundary",
+        "Fixture SearchAll Boundary",
+        "[[module SearchAll]]",
+    )
+    .await;
+    let view = async |extra: &str| match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-searchall-boundary", "extra": extra},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found SearchAll page view for {extra}, got {other:?}"),
+    };
+
+    let bare = view("").await;
+    assert!(
+        bare.contains(r#"<form action="dummy" id="search-form-all">"#),
+        "bare SearchAll view should render its form:\n{bare}",
+    );
+    let empty_query = view("/a/pf/q/").await;
+    assert!(
+        empty_query.contains(r#"<form action="dummy" id="search-form-all">"#),
+        "empty SearchAll query should render its form:\n{empty_query}",
+    );
+    let queried = view("/a/pf/q/wikidot").await;
+    assert!(
+        queried.contains(
+            r#"<div class="error-block">Couldnt connect to host, ElasticSearch down?</div>"#
+        ) && !queried.contains("search-form-all"),
+        "non-empty SearchAll query should render the current live backend failure:\n{queried}",
+    );
+}
+
+#[tokio::test]
 async fn membership_by_password_module_matches_live_anonymous_and_member_output() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

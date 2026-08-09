@@ -1,1 +1,18 @@
 export const wikidotSearchPath = (query) => `/search:site/q/${encodeURIComponent(query)}`
+
+export const wikidotSearchAllPath = (query, area) =>
+  `/search:all/a/${area}/q/${encodeURIComponent(query)}`
+
+export const installWikidotSearchAll = (windowObject) => {
+  const submit = (event) => {
+    const form = event.target
+    if (form?.id !== "search-form-all") return
+    event.preventDefault()
+    const query = form.elements.namedItem("query").value
+    const area = form.elements.namedItem("area").value
+    windowObject.location.href = wikidotSearchAllPath(query, area)
+  }
+
+  windowObject.document.addEventListener("submit", submit)
+  return () => windowObject.document.removeEventListener("submit", submit)
+}

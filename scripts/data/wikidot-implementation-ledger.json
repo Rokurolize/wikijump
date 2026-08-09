@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-08-09",
-  "catalog_sha256": "c01ac55c811bcfa67a94b65802e42cdef8c2c4c17f68b18aa2b8669325a7ee46",
+  "catalog_sha256": "fb6422a8276360e50fbe75c7294d809dd9812a7ac25b0de2dbe000e2f1c18850",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -2419,15 +2419,45 @@
       ]
     },
     "module-searchall": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule and saved search:all route oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering",
+        "Framerail rendered-module submit and browser navigation boundary"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "searchall_module_matches_live_form_and_unavailable_route_contract",
+          "scope": "public preview grammar and ownership matrix plus saved-page empty and non-empty query routes"
+        },
+        {
+          "path": "framerail/tests/wikidot-search.test.js",
+          "name": "Wikidot SearchAll preserves its area and path-encodes the submitted query; Wikidot SearchAll submit listener navigates rendered module forms",
+          "scope": "pf, p, and f path generation, untrimmed encoding, and delegated form submission"
+        },
+        {
+          "path": "framerail/tests/wikidot-chrome.spec.ts",
+          "name": "SearchAll module submits the selected live area route",
+          "scope": "browser DOM defaults, interaction, and navigation"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/search_feed.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "framerail/src/lib/wikidot/wikidot-search.js",
+        "framerail/src/routes/+layout.svelte"
+      ],
       "documentation_evidence": [
         "specifications/module/module-searchall.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/searchall-live-preview-routes-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Current live SearchAll reports ElasticSearch down for non-empty queries, so successful global result DOM, ranking, pagination, highlighting, and permission filtering remain unobservable and unimplemented."
+      ]
     },
     "module-searchusers": {
       "status": "implemented",
