@@ -90,6 +90,7 @@ use time::{Duration, OffsetDateTime};
 use ftml::data::{PageInfo, ScoreValue};
 use ftml::layout::Layout;
 use ftml::settings::{WikitextMode, WikitextSettings};
+use redis::AsyncCommands;
 
 #[tokio::test]
 async fn public_membership_module_states_are_distinct_and_opaque() {
@@ -1725,7 +1726,7 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v2")
+            .ends_with("; deepwell-render/v3")
     );
 }
 
@@ -1844,6 +1845,99 @@ async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page(
         !side_bar.contains("All wikis") && !side_bar.contains(r#"href="/&#35;&#35;""#),
         "page_view reused stale navigation or rewrote the href:\n{side_bar}",
     );
+}
+
+#[tokio::test]
+async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
+    const SLUG: &str = "renderer-epoch-cache-fixture";
+    const CURRENT_BODY: &str = "renderer epoch current body";
+    const STALE_BODY: &str = "stale deepwell-render/v2 body";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SLUG,
+        "Renderer epoch cache fixture",
+        CURRENT_BODY,
+    )
+    .await;
+
+    let page = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("renderer epoch page lookup should not fail")
+        .expect("renderer epoch page should exist");
+    let mut page = page.into_active_model();
+    page.from_wikidot = Set(true);
+    page.update(runner.context().transaction())
+        .await
+        .expect("renderer epoch page should be marked imported");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let input = json!({
+        "site_id": site_id,
+        "session_token": null,
+        "route": {"slug": SLUG, "extra": ""},
+        "locales": ["en-US", "en"],
+    });
+    let mut stale_page = run_endpoint!(runner, page_view, input.clone());
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = &mut stale_page
+    else {
+        panic!("renderer epoch fixture should have a public page view");
+    };
+    *compiled_body_html = STALE_BODY.to_owned();
+
+    let metadata = run_endpoint!(runner, article_view_cache_metadata, input.clone());
+    let current_key = metadata
+        .article_page_cache_key
+        .expect("imported static page should have an anonymous cache key");
+    assert!(
+        current_key.starts_with("deepwell:article-view:page:v3:"),
+        "source-freeze cache key must carry the final renderer epoch: {current_key}",
+    );
+    let stale_key = current_key.replacen(
+        "deepwell:article-view:page:v3:",
+        "deepwell:article-view:page:v2:",
+        1,
+    );
+    assert_ne!(stale_key, current_key);
+    let stale_json =
+        serde_json::to_string(&stale_page).expect("stale page should serialize");
+    let mut redis = runner.context().redis();
+    redis
+        .set::<_, _, ()>(&stale_key, stale_json)
+        .await
+        .expect("stale v2 page should be inserted into the test cache");
+    drop(redis);
+
+    let view = run_endpoint!(runner, article_view, input);
+    let GetArticleViewOutput {
+        page: GetPageViewOutput::Found {
+            compiled_body_html, ..
+        },
+        article_page_cache_key: Some(served_key),
+        ..
+    } = view
+    else {
+        panic!("renderer epoch fixture should return an article view");
+    };
+    assert_eq!(served_key, current_key);
+    assert!(compiled_body_html.contains(CURRENT_BODY));
+    assert!(!compiled_body_html.contains(STALE_BODY));
 }
 
 #[tokio::test]

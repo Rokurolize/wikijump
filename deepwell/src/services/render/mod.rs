@@ -83,6 +83,7 @@ pub(crate) use self::diagnostics::{
     CorpusRenderStage, CorpusRenderTrace, CorpusRenderTraceSnapshot, StageGuard,
     is_corpus_render_timing,
 };
+pub(crate) use self::generator::DEEPWELL_RENDERER_EPOCH;
 pub use self::legacy_actions::{
     LegacyActionDescriptor, LegacyActionRegistry, LegacyBrowserAction,
 };

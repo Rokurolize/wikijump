@@ -27,7 +27,8 @@ use crate::services::blueprint::compose_template;
 use crate::services::permission::PermissionCache;
 use crate::services::public_cache::PublicContentCache;
 use crate::services::render::{
-    RenderDependencyClass, classify_render_dependencies, wikitext_requires_runtime_render,
+    DEEPWELL_RENDERER_EPOCH, RenderDependencyClass, classify_render_dependencies,
+    wikitext_requires_runtime_render,
 };
 use crate::utils::split_category;
 use redis::AsyncCommands;
@@ -35,7 +36,7 @@ use sea_orm::{DatabaseBackend, FromQueryResult, Statement, Value};
 use sha2::{Digest, Sha256};
 use time::OffsetDateTime;
 
-const ARTICLE_VIEW_PAGE_CACHE_PREFIX: &str = "deepwell:article-view:page:v2";
+const ARTICLE_VIEW_PAGE_CACHE_PREFIX: &str = "deepwell:article-view:page";
 
 pub(super) struct ArticlePageCache;
 
@@ -250,7 +251,7 @@ fn format_article_page_cache_key(parts: ArticlePageCacheKeyParts<'_>) -> String 
     let template_hash = optional_hash_hex(parts.template_source_hash);
 
     format!(
-        "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:site={}:page={}:rev={}:updated={}:permission={}:template={}:body={}:styles={}:top={}:side={}:slug={}:extra={}:locales={}",
+        "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:v{DEEPWELL_RENDERER_EPOCH}:site={}:page={}:rev={}:updated={}:permission={}:template={}:body={}:styles={}:top={}:side={}:slug={}:extra={}:locales={}",
         parts.site_id,
         parts.page_id,
         parts.latest_revision_id,
@@ -323,7 +324,7 @@ mod tests {
 
         assert_eq!(
             key,
-            "deepwell:article-view:page:v2:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:template=89ab:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
+            "deepwell:article-view:page:v3:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:template=89ab:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
         );
     }
 
@@ -383,7 +384,7 @@ mod tests {
             assert_eq!(
                 key.as_deref(),
                 Some(
-                    "deepwell:article-view:page:v2:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:template=:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
+                    "deepwell:article-view:page:v3:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:template=:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
                 ),
                 "{source}",
             );
