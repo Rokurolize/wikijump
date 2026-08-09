@@ -304,3 +304,118 @@ test("CandidateCaseSet prepareRun cannot register a resource before execution", 
   };
   await assert.rejects(runOne(t, caseSet), /prepareRun must be side-effect-free/u);
 });
+
+test("CandidateCaseRunner owns and closes its lazy browser contexts", async (t) => {
+  const events = [];
+  const candidateBrowserContexts = {
+    setActiveFixture(fixtureId) {
+      events.push(`browser-fixture:${fixtureId}`);
+    },
+    async newCandidateContext() {
+      events.push("browser-context");
+      return { context: {}, environment: {} };
+    },
+    async captureCandidateObservation(options) {
+      events.push(`browser-capture:${options.label}`);
+      return { label: options.label };
+    },
+    async close() {
+      events.push("browser-close");
+    },
+  };
+  const caseSet = oneCaseSet(events);
+  const prepareRun = caseSet.prepareRun;
+  caseSet.prepareRun = (args) => {
+    assert.equal(typeof args.candidateBrowserContexts.newCandidateContext, "function");
+    assert.throws(
+      () => args.candidateBrowserContexts.newCandidateContext(),
+      /unavailable during prepareRun/u,
+    );
+    const run = prepareRun(args);
+    const execute = run.execute;
+    const cleanup = run.cleanup;
+    run.execute = async () => {
+      await args.candidateBrowserContexts.setActiveFixture(
+        "M1062_SERIALIZABLE_ACTION_RESPONSE",
+      );
+      await args.candidateBrowserContexts.captureCandidateObservation({
+        label: "settings",
+      });
+      return await execute();
+    };
+    run.cleanup = async () => {
+      assert.throws(
+        () => args.candidateBrowserContexts.newCandidateContext(),
+        /unavailable during prepareRun/u,
+      );
+      return await cleanup();
+    };
+    return run;
+  };
+
+  await runOne(t, caseSet, {
+    dependencies: {
+      ...fixtureDependencies(),
+      createBrowserContexts(options) {
+        assert.equal(options.outputDir.endsWith("evidence"), true);
+        assert.equal(options.candidateIdentity.candidate.endpoint.port, 18443);
+        assert.equal(options.credentialPolicy, "none");
+        return candidateBrowserContexts;
+      },
+    },
+  });
+
+  assert.deepEqual(events, [
+    "browser-fixture:M1062_SERIALIZABLE_ACTION_RESPONSE",
+    "browser-capture:settings",
+    "registered",
+    "executed",
+    "browser-close",
+    "cleanup",
+  ]);
+});
+
+test("CandidateCaseRunner still performs public cleanup when browser close fails", async (t) => {
+  const events = [];
+  const caseSet = oneCaseSet(events);
+  const prepareRun = caseSet.prepareRun;
+  caseSet.prepareRun = (args) => {
+    const run = prepareRun(args);
+    const execute = run.execute;
+    run.execute = async () => {
+      await args.candidateBrowserContexts.newCandidateContext();
+      return await execute();
+    };
+    return run;
+  };
+  await assert.rejects(
+    runOne(t, caseSet, {
+      dependencies: {
+        ...fixtureDependencies(),
+        createBrowserContexts() {
+          return {
+            async newCandidateContext() { return { context: {}, environment: {} }; },
+            async close() { events.push("browser-close"); throw new Error("browser close failed"); },
+          };
+        },
+      },
+    }),
+    aggregateHas(/browser close failed/u),
+  );
+  assert.deepEqual(events, ["registered", "executed", "browser-close", "cleanup"]);
+});
+
+test("CandidateCaseRunner leaves its browser graph unloaded when a case set never uses it", async (t) => {
+  let browserOwnerCreations = 0;
+  const result = await runOne(t, oneCaseSet([]), {
+    dependencies: {
+      ...fixtureDependencies(),
+      createBrowserContexts() {
+        browserOwnerCreations += 1;
+        throw new Error("unused browser owner must not be created");
+      },
+    },
+  });
+  assert.equal(browserOwnerCreations, 0);
+  assert.equal(result.browser_cleanup, null);
+});

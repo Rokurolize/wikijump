@@ -422,7 +422,7 @@ async function capturedScreenshot(filePath, fullPage) {
   };
 }
 
-async function waitForSettledResources(page, timeoutMs) {
+export async function waitForBrowserParitySettledResources(page, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   const remaining = (label) => {
     const value = deadline - Date.now();
@@ -519,7 +519,15 @@ export async function captureBrowserParityObservation({
   viewport,
   timeoutMs,
   settleMs,
+  onPhase = null,
+  navigate = null,
 }) {
+  if (onPhase !== null && typeof onPhase !== "function") {
+    throw new Error("browser observation phase callback must be a function");
+  }
+  if (navigate !== null && typeof navigate !== "function") {
+    throw new Error("browser observation navigation callback must be a function");
+  }
   const page = suppliedPage ?? (await context.newPage());
   const ownsPage = suppliedPage === null;
   const failures = [];
@@ -544,7 +552,7 @@ export async function captureBrowserParityObservation({
   page.on("requestfailed", onRequestFailed);
   page.on("response", onResponse);
   const capturedAt = new Date().toISOString();
-  let response = null;
+  let navigationStatus = 0;
   let firstDocument = null;
   let document = null;
   const firstPath = path.join(
@@ -565,10 +573,11 @@ export async function captureBrowserParityObservation({
     observationArtifactName({ label, index, url, phase: "settled-full-page" }),
   );
   try {
-    response = await page.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: timeoutMs,
-    });
+    await onPhase?.("domcontentloaded_immediate_observation");
+    const navigation = navigate === null
+      ? await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs })
+      : await navigate({ page, url, timeoutMs });
+    navigationStatus = typeof navigation?.status === "function" ? navigation.status() : navigation?.status ?? 0;
     // This is a deterministic immediate DOMContentLoaded observation, not a
     // compositor-filmstrip sample. Keep document and screenshot collection
     // sequential so the receipt records one unambiguous observation order.
@@ -578,7 +587,8 @@ export async function captureBrowserParityObservation({
       viewport,
     });
     await capturePng(page, firstPath);
-    const resourceCompletion = await waitForSettledResources(page, timeoutMs);
+    await onPhase?.("settled");
+    const resourceCompletion = await waitForBrowserParitySettledResources(page, timeoutMs);
     if (settleMs > 0) await page.waitForTimeout(settleMs);
     document = await captureDocumentObservation(page, {
       contract,
@@ -596,7 +606,7 @@ export async function captureBrowserParityObservation({
       captured_at: capturedAt,
       input_url: url,
       final_url: page.url(),
-      navigation_status: response?.status() ?? 0,
+      navigation_status: navigationStatus,
       canary: contract
         ? { slug: contract.slug, theme_family: contract.theme_family }
         : null,
@@ -639,7 +649,7 @@ export async function captureBrowserParityObservation({
       captured_at: capturedAt,
       input_url: url,
       final_url: page.url() || null,
-      navigation_status: response?.status() ?? 0,
+      navigation_status: navigationStatus,
       canary: contract
         ? { slug: contract.slug, theme_family: contract.theme_family }
         : null,

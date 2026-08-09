@@ -31,6 +31,9 @@ function validatePreparedRun(value) {
   if (!Array.isArray(run.sourceFiles) || run.sourceFiles.some((file) => typeof file !== "string" || path.isAbsolute(file)) || new Set(run.sourceFiles).size !== run.sourceFiles.length) throw new Error("prepared run sourceFiles must be unique repository-relative paths");
   if (!Array.isArray(run.runtimeBindings)) throw new Error("prepared run runtimeBindings must be an array");
   requirePlainObject(run.privateInputIdentity, "prepared run privateInputIdentity");
+  if (run.browserCredentialPolicy !== undefined && run.browserCredentialPolicy !== "none") {
+    requirePlainObject(run.browserCredentialPolicy, "prepared run browserCredentialPolicy");
+  }
   requirePlainObject(run.plan, "prepared run plan");
   for (const method of ["execute", "cleanup", "verifyCase", "verifyCleanup"]) if (typeof run[method] !== "function") throw new Error(`prepared run ${method} must be a function`);
   return run;
@@ -89,6 +92,10 @@ function defaultDependencies() {
     collectExecutionIdentity: collectCandidateSourceExecutionIdentity,
     observeRuntimeIdentity: observeCandidateRuntimeIdentity,
     assertStableRuntimeIdentity: assertStableCandidateRuntimeIdentity,
+    async createBrowserContexts(options) {
+      const { createCandidateBrowserContexts } = await import("./candidate-browser-contexts.mjs");
+      return createCandidateBrowserContexts(options);
+    },
     runId: () => `candidate-case-${randomUUID().replaceAll("-", "").slice(0, 12)}`,
     now: () => new Date().toISOString(),
   };
@@ -108,8 +115,37 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   const caseDirectory = path.join(output, "cases");
   await fs.mkdir(caseDirectory, { mode: 0o700 });
   const resources = new RunResources();
-  const run = validatePreparedRun(await caseSet.prepareRun({ runId, candidateIdentity: identity, candidateIdentitySha256, privateInput, privateInputSha256, signal, resources }));
+  let browserOwnerPromise = null;
+  let browserOwnerOptions = null;
+  let browserActive = false;
+  const browserOwner = async () => {
+    browserOwnerPromise ??= Promise.resolve(
+      dependencies.createBrowserContexts(browserOwnerOptions),
+    );
+    return await browserOwnerPromise;
+  };
+  const candidateBrowserContexts = Object.freeze({
+    setActiveFixture(fixtureId) {
+      if (!browserActive) throw new Error("candidate browser contexts are unavailable during prepareRun");
+      return browserOwner().then((owner) => owner.setActiveFixture(fixtureId));
+    },
+    newCandidateContext(options) {
+      if (!browserActive) throw new Error("candidate browser contexts are unavailable during prepareRun");
+      return browserOwner().then((owner) => owner.newCandidateContext(options));
+    },
+    captureCandidateObservation(options) {
+      if (!browserActive) throw new Error("candidate browser contexts are unavailable during prepareRun");
+      return browserOwner().then((owner) => owner.captureCandidateObservation(options));
+    },
+  });
+  const run = validatePreparedRun(await caseSet.prepareRun({ runId, candidateIdentity: identity, candidateIdentitySha256, privateInput, privateInputSha256, signal, resources, candidateBrowserContexts }));
   if (resources.snapshot().length !== 0) throw new Error("CandidateCaseSet prepareRun must be side-effect-free");
+  browserOwnerOptions = {
+    candidateIdentity: identity,
+    outputDir: output,
+    signal,
+    credentialPolicy: run.browserCredentialPolicy ?? "none",
+  };
   const executionIdentity = await dependencies.collectExecutionIdentity(identity, run.sourceFiles);
   const denominator = { count: caseSet.caseIds.length, case_ids: [...caseSet.caseIds], sha256: sha256Value(caseSet.caseIds) };
   const plan = {
@@ -131,12 +167,21 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   let cleanupProof = null;
   let operationError = null;
   let cleanupError = null;
+  let browserCleanup = null;
+  let browserCleanupError = null;
   try {
+    browserActive = true;
     if (signal?.aborted) throw signal.reason ?? new Error("candidate case run was aborted");
     rawCases = await run.execute();
   } catch (error) {
     operationError = error;
   } finally {
+    browserActive = false;
+    try {
+      browserCleanup = browserOwnerPromise === null
+        ? null
+        : (await (await browserOwnerPromise).close()) ?? null;
+    } catch (error) { browserCleanupError = error; }
     try { cleanupProof = await run.cleanup(); } catch (error) { cleanupError = error; }
   }
 
@@ -158,7 +203,7 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     runtimeAfter = await dependencies.observeRuntimeIdentity(runtimeOptions);
     dependencies.assertStableRuntimeIdentity(runtimeBefore, runtimeAfter, identity, { identitySha256: candidateIdentitySha256, requiredServiceBindings: run.runtimeBindings });
   } catch (error) { runtimeError = error; }
-  const failures = [operationError, cleanupError, cleanupVerificationError, runtimeError].filter(Boolean);
+  const failures = [operationError, cleanupError, cleanupVerificationError, browserCleanupError, runtimeError].filter(Boolean);
   if (failures.length) throw new AggregateError(failures, cleanupError || cleanupVerificationError ? "candidate case execution or cleanup failed" : "candidate case execution failed");
 
   const observations = reconcile(caseSet.caseIds, rawCases);
@@ -201,6 +246,7 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     execution_identity: executionIdentity,
     runtime_identity: { before: runtimeBefore, after: runtimeAfter, stable: true },
     cleanup: verifiedCleanup,
+    browser_cleanup: browserCleanup,
     resources: resourceSnapshot,
     cases,
   };
