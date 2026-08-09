@@ -89,18 +89,17 @@ fi
 
 if group_selected deepwell; then
   run "deepwell fmt" cargo fmt --manifest-path deepwell/Cargo.toml --check
-  run "deepwell clippy" env RUSTFLAGS=-D\ warnings \
-    cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps
-  run "deepwell unit tests" cargo test --manifest-path deepwell/Cargo.toml --lib
+  run "deepwell clippy" cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings
   if "${FULL}"; then
-    run "deepwell integration tests" cargo test --manifest-path deepwell/Cargo.toml
+    run "deepwell full tests" cargo test --manifest-path deepwell/Cargo.toml
+  else
+    run "deepwell unit tests" cargo test --manifest-path deepwell/Cargo.toml --lib
   fi
 fi
 
 if group_selected wws; then
   run "wws fmt" cargo fmt --manifest-path wws/Cargo.toml --check
-  run "wws clippy" env RUSTFLAGS=-D\ warnings \
-    cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps
+  run "wws clippy" cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings
   run "wws unit tests" cargo test --manifest-path wws/Cargo.toml
 fi
 
@@ -115,8 +114,8 @@ fi
 if group_selected locales; then
   run "locales" bash -c 'cd locales/validator \
     && cargo fmt --all -- --check \
-    && RUSTFLAGS="-A unused -D warnings" cargo clippy --locked --tests --no-deps \
-    && RUSTFLAGS="-A unused -D warnings" cargo run --locked'
+    && cargo clippy --locked --tests --no-deps -- -A unused -D warnings \
+    && cargo run --locked'
 fi
 
 if "${LIST}"; then

@@ -16,9 +16,10 @@ which is why an unrelated change does not pay for the whole matrix. Its jobs:
 - Workflow policy: `actionlint` plus `.github/tests/`, which assert the CI
   structure itself, including that third-party actions are pinned to full
   commit SHAs and that the Framerail unit and browser suites stay separate.
-- Deepwell fast checks: dependency hygiene and formatting without compiling the
-  service. Clippy and unit tests run in the authoritative local pre-push preflight.
-- WWS, Framerail, Locales: the per-area equivalents.
+- Deepwell fast checks: dependency hygiene and formatting without compiling the service. Clippy and unit tests run in the authoritative local pre-push preflight.
+- WWS: dependency hygiene and formatting for drafts, with Clippy and the full test suite added for candidate and non-draft runs.
+- Framerail: lint and unit tests for drafts, with the production build added for candidate and non-draft runs.
+- Locales: formatting, Clippy, and the validator run.
 - CI / gate: the single aggregate status for the rest. Branch protection does
   not require it; merge readiness comes from the recorded local validation.
   Only a run that checks the classifier and every selected job publishes this name.
@@ -51,10 +52,7 @@ all delegating to `docker-build-template.yaml` so the build logic exists once.
 
 ## Narrowly scoped
 
-`wikidot-verification.yaml` runs the verification tooling's own tests, filtered
-to `install/local/wikidot-verification/**` and `install/standing/**`. It does
-not attempt live Wikidot capture: that needs credentials and mutates a sandbox,
-so it stays a local operation with human authorization.
+`wikidot-verification.yaml` runs the verification tooling's own tests for changes to the tooling, standing promotion checks, verification artifacts, the generated Wikidot data and its generators, or `docs/wikidot-specifications/**`. It does not attempt live Wikidot capture: that needs credentials and mutates a sandbox, so it stays a local operation with human authorization. Pull request runs use PR-scoped concurrency so a newer push cancels the obsolete run.
 
 `codex-cloud.yaml` validates the Codex cloud environment scripts, path-filtered
 to those scripts and their documentation.

@@ -18,6 +18,16 @@ const metadataOnly = (file) =>
   file.startsWith("docs/") ||
   ["AGENTS.md", "CLAUDE.md", "CODEOWNERS", "LICENSE.md", "README.md", "SECURITY.md"].includes(file)
 
+const verificationOnly = (file) =>
+  file.startsWith("install/local/wikidot-verification/artifacts/") ||
+  [
+    "scripts/data/wikidot-implementation-ledger.json",
+    "scripts/data/wikidot-live-observations.json",
+    "scripts/generate-wikidot-specifications.mjs",
+    "scripts/initialize-wikidot-implementation-ledger.mjs",
+    "scripts/lib/wikidot-implementation-ledger.mjs"
+  ].includes(file)
+
 export function classifyChanges(paths, all = false) {
   const selected = Object.fromEntries(GROUPS.map((group) => [group, false]))
 
@@ -38,7 +48,7 @@ export function classifyChanges(paths, all = false) {
       continue
     }
 
-    if (metadataOnly(file)) continue
+    if (metadataOnly(file) || verificationOnly(file)) continue
 
     let matched = false
 

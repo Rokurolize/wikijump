@@ -118,7 +118,7 @@ jobs:
           cargo fmt --manifest-path deepwell/Cargo.toml --all -- --check
 
   wws:
-    name: WWS lint and unit tests
+    name: WWS checks
     needs: classify
     if: needs.classify.outputs.wws == 'true'
     runs-on: ubuntu-latest
@@ -150,17 +150,22 @@ jobs:
       - name: Install cargo-machete
         run: cargo install cargo-machete --version 0.9.1 --locked
 
-      - name: Validate
+      - name: Validate draft
         run: |
           cargo machete wws
           cd wws
           cargo fmt --all -- --check
+
+      - name: Validate candidate
+        if: ${{ needs.classify.outputs.candidate == 'true' }}
+        run: |
+          cd wws
           cargo clippy --locked --tests --no-deps
           cargo test --locked --all-features -- --nocapture --test-threads 1
           node --test tests/resize-iframe.test.mjs
 
   framerail:
-    name: Framerail lint, build, and unit tests
+    name: Framerail checks
     needs: classify
     if: needs.classify.outputs.framerail == 'true'
     runs-on: ubuntu-latest
@@ -185,11 +190,14 @@ jobs:
       - name: Install dependencies
         run: pnpm --dir framerail install --frozen-lockfile
 
-      - name: Validate
+      - name: Validate draft
         run: |
-          pnpm --dir framerail build
           pnpm --dir framerail test:unit
           pnpm --dir framerail lint
+
+      - name: Build candidate
+        if: ${{ needs.classify.outputs.candidate == 'true' }}
+        run: pnpm --dir framerail build
 
   locales:
     name: Locales lint and validator run
