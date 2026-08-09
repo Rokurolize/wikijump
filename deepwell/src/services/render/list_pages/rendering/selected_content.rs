@@ -71,6 +71,19 @@ static LISTPAGES_CONTENT_CONTEXT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|
         .expect("ListPages selected-content module expression is valid")
 });
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum SelectedContentIncludeMode {
+    Execute,
+    Preserve,
+}
+
+#[derive(Debug)]
+pub(super) struct RenderedListPagesSource {
+    pub(super) body: String,
+    pub(super) included_pages: Vec<PageRef>,
+    pub(super) expanded_include_count: usize,
+}
+
 #[derive(Clone, Copy)]
 struct WikidotSocialProvider {
     name: &'static str,
@@ -417,7 +430,7 @@ pub(super) async fn render_list_pages_default_summary_source(
     max_include_expansions: usize,
     render_cost_budget: SharedRenderCostBudget,
     url: UrlArguments<'_>,
-) -> Result<String> {
+) -> Result<RenderedListPagesSource> {
     render_cost_budget
         .charge(1, "default-summary render")
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
@@ -449,7 +462,12 @@ pub(super) async fn render_list_pages_default_summary_source(
         },
     ))
     .await?;
-    Ok(rendered.html_output.body)
+    let mut html_output = rendered.html_output;
+    Ok(RenderedListPagesSource {
+        body: html_output.body,
+        included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
+        expanded_include_count: rendered.expanded_include_count,
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -460,10 +478,11 @@ pub(super) async fn render_list_pages_selected_content_source(
     settings: &WikitextSettings,
     current_site_id: i64,
     viewer_user_id: Option<i64>,
+    include_mode: SelectedContentIncludeMode,
     max_include_expansions: usize,
     render_cost_budget: SharedRenderCostBudget,
     url: UrlArguments<'_>,
-) -> Result<String> {
+) -> Result<RenderedListPagesSource> {
     render_cost_budget
         .charge(1, "selected-content render")
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
@@ -488,8 +507,12 @@ pub(super) async fn render_list_pages_selected_content_source(
             .map_or("", |site| site.name.as_str()),
     );
     let mut selected_content_text = CompatTextFragments::new(&wikitext);
-    let wikitext =
-        protect_selected_content_includes(&wikitext, &mut selected_content_text);
+    let wikitext = match include_mode {
+        SelectedContentIncludeMode::Execute => wikitext,
+        SelectedContentIncludeMode::Preserve => {
+            protect_selected_content_includes(&wikitext, &mut selected_content_text)
+        }
+    };
     let wikitext =
         RenderService::suppress_rate_modules_in_list_pages_content(wikitext, settings);
     let mut selected_content_settings = settings.clone();
@@ -511,6 +534,11 @@ pub(super) async fn render_list_pages_selected_content_source(
         },
     ))
     .await?;
-    let rendered_body = selected_content_text.restore(&rendered.html_output.body);
-    Ok(selected_content_fragments.restore(&rendered_body))
+    let mut html_output = rendered.html_output;
+    let rendered_body = selected_content_text.restore(&html_output.body);
+    Ok(RenderedListPagesSource {
+        body: selected_content_fragments.restore(&rendered_body),
+        included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
+        expanded_include_count: rendered.expanded_include_count,
+    })
 }

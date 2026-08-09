@@ -111,6 +111,7 @@ impl RenderService {
             html_output,
             errors,
             compiled_hash,
+            ..
         } = rendered;
 
         Ok(RenderOutput {

@@ -116,7 +116,7 @@ use crate::services::{
     CategoryService, PageQueryService, PageRevisionService, PageService, SiteService,
 };
 use crate::types::{Action, Permission, Reference, Resource};
-use ftml::data::{PageInfo, ScoreValue};
+use ftml::data::{PageInfo, PageRef, ScoreValue};
 use ftml::settings::WikitextSettings;
 use regex::Regex;
 use sea_orm::{
@@ -142,8 +142,8 @@ mod count_block;
 mod selected_content;
 
 use self::selected_content::{
-    render_list_pages_default_summary_source, render_list_pages_selected_content_source,
-    select_list_pages_rows,
+    SelectedContentIncludeMode, render_list_pages_default_summary_source,
+    render_list_pages_selected_content_source, select_list_pages_rows,
 };
 
 impl RenderService {
@@ -1422,7 +1422,7 @@ impl RenderService {
         settings: &WikitextSettings,
         arguments: ListPagesArguments,
         template: &ListPagesTemplatePlan,
-        include_budget: IncludeExpansionBudget,
+        mut include_budget: IncludeExpansionBudget,
         render_cost_budget: &SharedRenderCostBudget,
         mut prefetched_pages: Option<FoundPages>,
         prefetched_displays: Option<&ListPagesBatchDisplays>,
@@ -2300,7 +2300,7 @@ impl RenderService {
                 ));
             }
         }
-        let included_pages = Vec::new();
+        let mut included_pages = Vec::new();
         let mut delayed_occurrences = Vec::new();
         let mut delayed_runtime_text_ranges = Vec::new();
         let mut delayed_html_fragments = Vec::new();
@@ -2457,20 +2457,22 @@ impl RenderService {
                             .and_then(|per_row| per_row.checked_div(render_passes.max(1)))
                             .unwrap_or(0);
                         let rendered_content = if wants_rendered_content {
-                            Some(
-                                render_list_pages_selected_content_source(
-                                    ctx,
-                                    wikitext,
-                                    &selected_page_info,
-                                    settings,
-                                    current_site_id,
-                                    viewer_user_id,
-                                    max_include_expansions,
-                                    render_cost_budget.clone(),
-                                    url,
-                                )
-                                .await?,
+                            let rendered = render_list_pages_selected_content_source(
+                                ctx,
+                                wikitext,
+                                &selected_page_info,
+                                settings,
+                                current_site_id,
+                                viewer_user_id,
+                                SelectedContentIncludeMode::Execute,
+                                max_include_expansions,
+                                render_cost_budget.clone(),
+                                url,
                             )
+                            .await?;
+                            include_budget.consume(rendered.expanded_include_count);
+                            included_pages.extend(rendered.included_pages);
+                            Some(rendered.body)
                         } else {
                             None
                         };
@@ -2487,12 +2489,12 @@ impl RenderService {
                         let rendered_summary = if let Some(summary) =
                             summary_source.as_deref()
                         {
-                            Some(if wants_full_default_summary {
+                            let rendered = if wants_full_default_summary {
                                 let category_id = page.page_category_id.ok_or_else(|| {
-                                        Error::new(
-                                            "default ListPages summary page category unavailable",
-                                            ErrorType::Render,
-                                        )
+                                    Error::new(
+                                        "default ListPages summary page category unavailable",
+                                        ErrorType::Render,
+                                    )
                                     })?;
                                 render_list_pages_default_summary_source(
                                     ctx,
@@ -2521,12 +2523,16 @@ impl RenderService {
                                     settings,
                                     current_site_id,
                                     viewer_user_id,
+                                    SelectedContentIncludeMode::Preserve,
                                     max_include_expansions,
                                     render_cost_budget.clone(),
                                     url,
                                 )
                                 .await?
-                            })
+                            };
+                            include_budget.consume(rendered.expanded_include_count);
+                            included_pages.extend(rendered.included_pages);
+                            Some(rendered.body)
                         } else {
                             None
                         };
@@ -2545,20 +2551,22 @@ impl RenderService {
                             {
                                 rendered_summary.clone()
                             } else {
-                                Some(
-                                    render_list_pages_selected_content_source(
-                                        ctx,
-                                        first_paragraph,
-                                        &selected_page_info,
-                                        settings,
-                                        current_site_id,
-                                        viewer_user_id,
-                                        max_include_expansions,
-                                        render_cost_budget.clone(),
-                                        url,
-                                    )
-                                    .await?,
+                                let rendered = render_list_pages_selected_content_source(
+                                    ctx,
+                                    first_paragraph,
+                                    &selected_page_info,
+                                    settings,
+                                    current_site_id,
+                                    viewer_user_id,
+                                    SelectedContentIncludeMode::Preserve,
+                                    max_include_expansions,
+                                    render_cost_budget.clone(),
+                                    url,
                                 )
+                                .await?;
+                                include_budget.consume(rendered.expanded_include_count);
+                                included_pages.extend(rendered.included_pages);
+                                Some(rendered.body)
                             }
                         } else {
                             None

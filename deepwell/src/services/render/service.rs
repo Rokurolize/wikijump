@@ -256,6 +256,7 @@ pub(super) struct ProtectedWikidotCompatLink {
 struct ExpandedRenderWikitext {
     wikitext: String,
     included_pages: Vec<PageRef>,
+    expanded_include_count: usize,
     url_offset_list_pages_content_bytes: usize,
     wikidot_compat_html: CompatHtmlFragments,
     wikidot_compat_text: CompatTextFragments,
@@ -717,6 +718,7 @@ impl RenderService {
             html_output,
             errors,
             compiled_hash,
+            ..
         } = Box::pin(Self::render_inner(
             ctx,
             wikitext,
@@ -762,6 +764,7 @@ impl RenderService {
             html_output,
             errors,
             compiled_hash,
+            ..
         } = Box::pin(Self::render_inner(
             ctx,
             wikitext,
@@ -823,6 +826,7 @@ impl RenderService {
             html_output,
             errors,
             compiled_hash,
+            ..
         } = Box::pin(Self::render_inner(
             ctx,
             wikitext,
@@ -1061,6 +1065,7 @@ impl RenderService {
             mut html_output,
             errors,
             compiled_hash: compiled_body_html_hash,
+            ..
         } = Self::render_inner(
             ctx,
             wikitext,
@@ -1258,6 +1263,7 @@ impl RenderService {
         let expanded = ExpandedRenderWikitext {
             wikitext,
             included_pages,
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html,
             wikidot_compat_text,
@@ -1346,6 +1352,7 @@ impl RenderService {
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
         let mut include_budget = IncludeExpansionBudget::new(max_include_expansions);
+        let initial_include_expansions = include_budget.remaining;
         let mut include_source_cache = IncludeSourceCache::default();
         let metacomponent_context = if page_info
             .tags
@@ -1431,8 +1438,8 @@ impl RenderService {
         let ListPagesExpansion {
             wikitext: expanded_wikitext,
             included_pages: list_pages_included_pages,
+            expanded_include_count: list_pages_expanded_include_count,
             url_offset_content_bytes,
-            ..
         } = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::ListPages);
             let protected_css =
@@ -1466,6 +1473,7 @@ impl RenderService {
         };
         wikitext = expanded_wikitext;
         included_pages.extend(list_pages_included_pages);
+        include_budget.consume(list_pages_expanded_include_count);
         wikitext = Box::pin(Self::expand_secondary_runtime_modules(
             ctx,
             wikitext,
@@ -1639,6 +1647,8 @@ impl RenderService {
         Ok(ExpandedRenderWikitext {
             wikitext,
             included_pages,
+            expanded_include_count: initial_include_expansions
+                .saturating_sub(include_budget.remaining),
             url_offset_list_pages_content_bytes: url_offset_content_bytes,
             wikidot_compat_html,
             wikidot_compat_text,
@@ -1931,6 +1941,7 @@ impl RenderService {
                 wikidot_compat_text: CompatTextFragments::new(&wikitext),
                 wikitext,
                 included_pages: Vec::new(),
+                expanded_include_count: 0,
                 url_offset_list_pages_content_bytes: 0,
             },
             page_info,
@@ -1965,6 +1976,7 @@ impl RenderService {
         let config = ctx.config();
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
+        let expanded_include_count = expanded.expanded_include_count;
         let mut expanded = expanded;
         if !allow_wikidot_styleframe {
             Self::neutralize_untrusted_wikidot_styleframe_embeds(&mut expanded.wikitext);
@@ -2211,6 +2223,7 @@ impl RenderService {
                 html_output,
                 errors: Vec::new(),
                 compiled_hash,
+                expanded_include_count,
             });
         }
         let render_page_info = Self::owned_page_info(page_info);
@@ -2570,6 +2583,7 @@ impl RenderService {
             html_output,
             errors,
             compiled_hash,
+            expanded_include_count,
         })
     }
 
@@ -5417,6 +5431,7 @@ pub(super) struct RenderInnerOutput {
     pub(super) html_output: HtmlOutput,
     pub(super) errors: Vec<ParseError>,
     pub(super) compiled_hash: TextHash,
+    pub(super) expanded_include_count: usize,
 }
 
 #[derive(Debug)]
