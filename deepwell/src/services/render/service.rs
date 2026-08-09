@@ -5357,6 +5357,7 @@ pub(super) fn render_clone_module(head: &str) -> String {
     )
 }
 
+#[cfg(test)]
 fn escape_javascript_single_quoted(value: &str) -> String {
     value
         .replace('\\', r"\\")

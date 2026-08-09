@@ -4116,18 +4116,21 @@ async fn wikidot_user_blocks_resolve_extant_numeric_and_missing_identities() {
         .await
         .expect("user-block Wikidot fixtures should be inserted");
 
-    let source = format!(concat!(
-        "NAME=[[user Extant User]]\n",
-        "ID=[[*user {EXTANT_USER_ID}]]\n",
-        "DELETED=[[user Deleted User]]\n",
-        "A=[[user v7ws=\"alpha\tbeta\u{00a0}gamma\"]]\n",
-        "B=[[user v7ser=\"serialized body\"]]\n",
-        "C=[[user v7text=\"visible text\"]]\n",
-        "D=[[user v7arg=\"one\" v7arg=\"two\"]]\n",
-        "E=[[user v7arg=\"\"]]\n",
-        "F=[[user v7UnknownArgument=\"x\"]]\n",
-        "G=[[user v7arg='single quoted' data-v7=unquoted]]",
-    ),);
+    let source = format!(
+        concat!(
+            "NAME=[[user Extant User]]\n",
+            "ID=[[*user {EXTANT_USER_ID}]]\n",
+            "DELETED=[[user Deleted User]]\n",
+            "A=[[user v7ws=\"alpha\tbeta\u{00a0}gamma\"]]\n",
+            "B=[[user v7ser=\"serialized body\"]]\n",
+            "C=[[user v7text=\"visible text\"]]\n",
+            "D=[[user v7arg=\"one\" v7arg=\"two\"]]\n",
+            "E=[[user v7arg=\"\"]]\n",
+            "F=[[user v7UnknownArgument=\"x\"]]\n",
+            "G=[[user v7arg='single quoted' data-v7=unquoted]]",
+        ),
+        EXTANT_USER_ID = EXTANT_USER_ID,
+    );
     runner.set_request_context(RequestContext {
         session: None,
         user_id: None,
