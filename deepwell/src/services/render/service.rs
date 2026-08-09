@@ -612,24 +612,6 @@ pub(super) static WIKIDOT_COMPAT_STYLE_BLOCK_REGEX: LazyLock<Regex> =
         Regex::new(r#"(?is)<style\b[^>]*\btype\s*=\s*["']text/css["'][^>]*>.*?</style>"#)
             .unwrap()
     });
-pub(super) static WIKIDOT_RENDERED_MAILFORM_REGEX: LazyLock<Regex> = LazyLock::new(
-    || {
-        Regex::new(
-        r#"(?is)<p>\[\[module\s+MailForm(?P<head>[^\]]*)\]\]</p>(?P<body>.*?)<p>\[\[/module\]\]</p>"#,
-    )
-    .unwrap()
-    },
-);
-pub(super) static WIKIDOT_RENDERED_MAILFORM_FIELD_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"(?is)<ol>\s*<li>(?P<name>[^<]+)</li>"#).unwrap());
-pub(super) static WIKIDOT_RENDERED_MAILFORM_DEFAULT_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| {
-        Regex::new(r#"(?is)<li>default:\s*(?P<default>[^<]*)</li>"#).unwrap()
-    });
-pub(super) static WIKIDOT_RENDERED_MAILFORM_MAX_LENGTH_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| {
-        Regex::new(r#"(?is)<li>maxLength:\s*(?P<max>[0-9]+)</li>"#).unwrap()
-    });
 pub(super) static WIKIJUMP_INLINE_MATH_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"(?is)<span class="wj-math wj-math-inline"><code class="wj-math-source wj-hidden"[^>]*>(?P<source>.*?)</code><wj-math-ml class="wj-math-ml">.*?</wj-math-ml></span>"#,
@@ -5692,17 +5674,6 @@ fn preferred_domain_matches_wikidot_slug(
     };
 
     wikidot_slug.eq_ignore_ascii_case(site_slug)
-}
-
-pub(super) fn rendered_wikidot_mailform_attribute(
-    head: &str,
-    name: &str,
-) -> Option<String> {
-    let prefix = format!("{name}=&quot;");
-    let start = head.find(&prefix)? + prefix.len();
-    let rest = &head[start..];
-    let end = rest.find("&quot;")?;
-    Some(rest[..end].to_owned())
 }
 
 #[cfg(test)]

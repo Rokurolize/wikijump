@@ -7622,6 +7622,101 @@ async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
 }
 
 #[tokio::test]
+async fn mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views()
+ {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = concat!(
+        "BEFORE\n",
+        "[[module MailForm to=\"dummy\" button=\"Send\"]]\n",
+        "* first-field\n",
+        " * title: First field\n",
+        " * default: harmless\n",
+        " * type: text\n",
+        "* second-field\n",
+        " * title: Second field\n",
+        " * type: textarea\n",
+        "[[/module]]\n",
+        "AFTER",
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "MailForm fail-closed preview",
+            "wikitext": source,
+        }),
+    );
+    assert_mailform_is_literal_and_inert(&preview.body);
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-mailform-fail-closed",
+        "Fixture MailForm Fail Closed",
+        source,
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-mailform-fail-closed", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found MailForm view, got {other:?}"),
+    };
+    assert_mailform_is_literal_and_inert(&body);
+}
+
+fn assert_mailform_is_literal_and_inert(body: &str) {
+    assert!(
+        body.contains("BEFORE")
+            && body.contains("[[module MailForm")
+            && body.contains("first-field")
+            && body.contains("second-field")
+            && body.contains("[[/module]]")
+            && body.contains("AFTER"),
+        "MailForm without a trusted action contract must preserve all authored source as inert output:\n{body}",
+    );
+    for forbidden in [
+        r#"<div class="mailform-box""#,
+        "<form",
+        "javascript:",
+        "mailformdef-",
+        "MailFormModule.listeners",
+    ] {
+        assert!(
+            !body.contains(forbidden),
+            "fail-closed MailForm output must not expose active control {forbidden:?}:\n{body}",
+        );
+    }
+}
+
+#[tokio::test]
 async fn anonymous_page_and_site_utility_modules_match_frozen_safe_states() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

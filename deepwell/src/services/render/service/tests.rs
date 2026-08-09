@@ -11501,36 +11501,6 @@ fn render_preparation_resolves_generated_simple_if_with_link_branch() {
 }
 
 #[test]
-fn restores_rendered_wikidot_mailform_blocks_after_render() {
-    let html = concat!(
-        r#"<div class="fakeprot">"#,
-        r#"<p>[[module MailForm to=&quot;dummy&quot; button=&quot;Go&quot;]]</p>"#,
-        "<ol><li>name</li><ul>",
-        "<li>title: ID</li>",
-        "<li>default: Site:8192 Director Y.Gineri</li>",
-        "<li>type: text</li>",
-        "<li>rules:</li><ul><li>required: true</li><li>maxLength:10</li></ul>",
-        "</ul></ol>",
-        r#"<p>[[/module]]</p>"#,
-        "</div>",
-    );
-
-    let restored = RenderService::restore_wikidot_mailform_compatibility(html);
-
-    assert!(restored.contains(r#"<div class="mailform-box">"#));
-    assert!(restored.contains(r#"<form class="form" action="javascript:;">"#));
-    assert!(restored.contains(
-        r#"<input class="text" type="text" name="name" value="Site:8192 Director Y.Gineri" maxlength="10" size="30">"#,
-    ));
-    assert!(restored.contains(r#"<div class="field-error-message"></div>"#));
-    assert!(
-        restored
-            .contains(r#"<div class="buttons"><input type="submit" value="Go"></div>"#)
-    );
-    assert!(!restored.contains("[[module MailForm"));
-}
-
-#[test]
 fn removes_wikijump_table_body_wrappers_after_render() {
     let html = "<table><tbody><tr><td>cell</td></tr></tbody></table>";
 
