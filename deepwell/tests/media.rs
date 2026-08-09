@@ -253,8 +253,8 @@ async fn literal_and_generated_owners_never_activate_embedvideo() {
         page_create,
         json!({
             "site_id": site_id,
-            "wikitext": format!("[[embedvideo]]\n{iframe}\n[[/embedvideo]]"),
-            "title": "EmbedVideo generated owner target",
+            "wikitext": "EmbedVideo generated owner target",
+            "title": iframe,
             "alt_title": null,
             "slug": GENERATED_TARGET,
             "layout": "wikidot",
@@ -269,7 +269,7 @@ async fn literal_and_generated_owners_never_activate_embedvideo() {
         site_id,
         "open43-m-media-generated-owner",
         format!(
-            "[[module ListPages fullname=\"{GENERATED_TARGET}\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]%%content%%[[/module]]"
+            "[[module ListPages fullname=\"{GENERATED_TARGET}\" limit=\"1\" separate=\"no\" wrapper=\"no\"]][[embedvideo]]%%title%%[[/embedvideo]][[/module]]"
         ),
     )
     .await
