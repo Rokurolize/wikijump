@@ -100,6 +100,13 @@ if group_selected workflow; then
   run "workflow policy" bash -c 'node --test .github/tests/*.test.mjs'
 fi
 
+if group_selected verification && [[ "${MODE}" == "final" ]]; then
+  run "wikidot verification tests" pnpm --dir install/local/wikidot-verification test
+  run "standing promotion precondition" node --test install/standing/tests/verify-promotion-precondition.test.mjs
+  run "wikidot specification generator" node scripts/generate-wikidot-specifications.mjs --check
+  run "wikidot implementation ledger" node scripts/initialize-wikidot-implementation-ledger.mjs --check
+fi
+
 if group_selected deepwell; then
   run "deepwell fmt" cargo fmt --manifest-path deepwell/Cargo.toml --check
   if [[ "${MODE}" == "final" ]]; then
@@ -114,7 +121,8 @@ if group_selected wws; then
   if [[ "${MODE}" == "final" ]]; then
     run "wws dependencies" cargo machete wws
     run "wws clippy" cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings
-    run "wws unit tests" cargo test --manifest-path wws/Cargo.toml
+    run "wws full tests" cargo test --manifest-path wws/Cargo.toml --locked --all-features -- --nocapture --test-threads 1
+    run "wws resize iframe tests" node --test wws/tests/resize-iframe.test.mjs
   fi
 fi
 

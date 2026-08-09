@@ -198,6 +198,7 @@ test("Wikidot verification inputs select only the dedicated workflow", () => {
     "install/local/wikidot-verification/src/generic-runtime-differential.mjs",
     "install/local/wikidot-verification/tests/generic-runtime-differential.test.mjs",
     "install/local/wikidot-verification/package.json",
+    "install/standing/tests/verify-promotion-precondition.test.mjs",
     "scripts/data/wikidot-implementation-ledger.json",
     "scripts/data/wikidot-live-observations.json",
     "scripts/generate-wikidot-specifications.mjs",
@@ -207,6 +208,14 @@ test("Wikidot verification inputs select only the dedicated workflow", () => {
   ]) {
     const selected = classifyChanges([file])
     for (const group of GROUPS) assert.equal(selected[group], false, `${file}: ${group}`)
+    assert.equal(selected.verification, true, `${file}: verification`)
+  }
+
+  const workflowSelected = classifyChanges([".github/workflows/wikidot-verification.yaml"])
+  assert.equal(workflowSelected.verification, true)
+  assert.equal(workflowSelected.workflow, true)
+  for (const group of ["deepwell", "wws", "framerail", "locales"]) {
+    assert.equal(workflowSelected[group], false, group)
   }
 
   const source = workflow("wikidot-verification.yaml")

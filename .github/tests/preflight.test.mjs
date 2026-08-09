@@ -42,6 +42,13 @@ emit_scope() {
     deepwell) printf '%s\\0' deepwell/src/lib.rs ;;
     deepwell_space) printf '%s\\0' 'deepwell/src/file with space.rs' ;;
     docs) printf '%s\\0' docs/development.md ;;
+    specification) printf '%s\\0' docs/wikidot-specifications/specifications/module/example.md ;;
+    verification) printf '%s\\0' install/local/wikidot-verification/src/example.mjs ;;
+    verification_and_specification)
+      printf '%s\\0' \
+        install/local/wikidot-verification/src/example.mjs \
+        docs/wikidot-specifications/specifications/module/example.md
+      ;;
     *) echo "unexpected fake scope: $1" >&2; exit 4 ;;
   esac
 }
@@ -98,7 +105,11 @@ if [[ "\${1:-}" == .github/scripts/classify-changes.mjs ]]; then
   fi
   tee "$PREFLIGHT_PATH_LOG" | "$PREFLIGHT_REAL_NODE" "$@"
 else
-  exec "$PREFLIGHT_REAL_NODE" "$@"
+  {
+    printf 'node'
+    printf ' %s' "$@"
+    printf '\n'
+  } >> "$PREFLIGHT_COMMAND_LOG"
 fi
 `)
 
@@ -205,7 +216,8 @@ test("final preflight is the single explicit full-check barrier", (t) => {
     "cargo fmt --manifest-path wws/Cargo.toml --check",
     "cargo machete wws",
     "cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings",
-    "cargo test --manifest-path wws/Cargo.toml",
+    "cargo test --manifest-path wws/Cargo.toml --locked --all-features -- --nocapture --test-threads 1",
+    "node --test wws/tests/resize-iframe.test.mjs",
     "pnpm --dir framerail lint",
     "pnpm --dir framerail test:unit",
     "pnpm --dir framerail build",
@@ -221,6 +233,33 @@ test("final preflight is the single explicit full-check barrier", (t) => {
   assert.doesNotMatch(help.stdout, /--full/)
   assert.doesNotMatch(help.stdout, /set -uo pipefail/)
   assert.equal(harness.runPreflight(["--full"]).status, 2)
+})
+
+test("verification and specification inputs run only the final verification barrier", async (t) => {
+  const expected = [
+    "pnpm --dir install/local/wikidot-verification test",
+    "node --test install/standing/tests/verify-promotion-precondition.test.mjs",
+    "node scripts/generate-wikidot-specifications.mjs --check",
+    "node scripts/initialize-wikidot-implementation-ledger.mjs --check"
+  ]
+
+  for (const scope of ["verification", "specification", "verification_and_specification"]) {
+    await t.test(scope, (t) => {
+      const checkpoint = createHarness(t)
+      const checkpointResult = checkpoint.runPreflight(["--base", remoteOid], {
+        PREFLIGHT_REMOTE_SCOPE: scope
+      })
+      assert.equal(checkpointResult.status, 0, checkpointResult.stderr)
+      assert.deepEqual(checkpoint.commands(), [])
+
+      const final = createHarness(t)
+      const finalResult = final.runPreflight(["--base", remoteOid, "--final"], {
+        PREFLIGHT_REMOTE_SCOPE: scope
+      })
+      assert.equal(finalResult.status, 0, finalResult.stderr)
+      assert.deepEqual(final.commands(), expected)
+    })
+  }
 })
 
 test("pre-push checkpoints only the existing HEAD branch update", (t) => {

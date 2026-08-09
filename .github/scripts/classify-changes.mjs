@@ -18,9 +18,12 @@ const metadataOnly = (file) =>
   file.startsWith("docs/") ||
   ["AGENTS.md", "CLAUDE.md", "CODEOWNERS", "LICENSE.md", "README.md", "SECURITY.md"].includes(file)
 
-const verificationOnly = (file) =>
+const verificationInput = (file) =>
   file.startsWith("install/local/wikidot-verification/") ||
+  file.startsWith("install/standing/") ||
+  file.startsWith("docs/wikidot-specifications/") ||
   [
+    ".github/workflows/wikidot-verification.yaml",
     "scripts/data/wikidot-implementation-ledger.json",
     "scripts/data/wikidot-live-observations.json",
     "scripts/generate-wikidot-specifications.mjs",
@@ -28,16 +31,25 @@ const verificationOnly = (file) =>
     "scripts/lib/wikidot-implementation-ledger.mjs"
   ].includes(file)
 
+const verificationOnly = (file) =>
+  verificationInput(file) && file !== ".github/workflows/wikidot-verification.yaml"
+
 export function classifyChanges(paths, all = false) {
-  const selected = Object.fromEntries(GROUPS.map((group) => [group, false]))
+  const selected = {
+    ...Object.fromEntries(GROUPS.map((group) => [group, false])),
+    verification: false
+  }
 
   if (all) {
     selectAll(selected)
+    selected.verification = true
     return selected
   }
 
   for (const file of paths) {
     if (!file) continue
+
+    if (verificationInput(file)) selected.verification = true
 
     if (
       file === ".github/workflows/ci-gate.yaml" ||
@@ -94,6 +106,7 @@ export function classifyChanges(paths, all = false) {
 
 function emitOutputs(selected) {
   for (const group of GROUPS) console.log(`${group}=${selected[group]}`)
+  console.log(`verification=${selected.verification}`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

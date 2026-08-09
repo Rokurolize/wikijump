@@ -26,7 +26,7 @@ which is why an unrelated change does not pay for the whole matrix. Its jobs:
 
 The local pre-push hook runs the checkpoint mode. For a single update of the current HEAD branch, it classifies only the commits since that branch's advertised remote tip. Multiple refs, deleted refs, new branches, and non-HEAD refs fall back to the complete branch diff against `origin/develop`. The checkpoint runs Cargo formatting plus workflow policy, Framerail lint, and Framerail unit tests without dependency hygiene, Clippy, Cargo tests, validators, or production builds.
 
-Run `scripts/preflight.sh --final` before declaring a candidate ready. This is the one local final barrier and adds dependency hygiene, every selected Clippy pass, full test suite, validator, and the Framerail production build. `WIKIJUMP_SKIP_PREFLIGHT=1` remains the deliberate checkpoint-push escape hatch; it does not replace the final barrier.
+Run `scripts/preflight.sh --final` before declaring a candidate ready. This is the one local final barrier and adds dependency hygiene, every selected Clippy pass, full test suite, validator, and the Framerail production build. Its WWS portion uses the same locked, all-features, serialized Cargo test and resize-iframe Node test as candidate CI. Verification tooling and Wikidot specification inputs select the verifier package tests, standing promotion precondition, specification generator check, and implementation-ledger check without selecting a Rust component. `WIKIJUMP_SKIP_PREFLIGHT=1` remains the deliberate checkpoint-push escape hatch; it does not replace the final barrier.
 
 The gate also listens for `merge_group`, so a merge queue gets the same
 aggregate `CI / gate` context as a pull request. External actions in all
