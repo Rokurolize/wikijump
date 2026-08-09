@@ -409,6 +409,25 @@ fn render_wikidot_conditionals_with_tags(wikitext: &str, tags: &[&str]) -> Strin
         .restore(|protection| protection.compat_text().restore(&html))
 }
 
+#[test]
+fn compatibility_protection_preserves_ftml_lexical_ownership() {
+    for (source, expected) in [
+        ("##|A##", "<p>##|A##</p>"),
+        ("##red|A", "<p>##red|A</p>"),
+        (
+            "##url(javascript:alert(1))|A##",
+            "<p>##url(javascript:alert(1))|A##</p>",
+        ),
+        ("{{$x}}", "<p><tt>$x</tt></p>"),
+    ] {
+        assert_eq!(
+            render_wikidot_conditionals_with_tags(source, &[]),
+            expected,
+            "{source:?}",
+        );
+    }
+}
+
 fn render_wikidot_fallback_after_generated_compat_restore(wikitext: &str) -> String {
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut wikitext = wikitext.to_owned();
@@ -4071,9 +4090,9 @@ fn protects_css_before_list_pages_and_rejoins_the_outer_pipeline() {
     assert_eq!(
         css_modules,
         [
-            ".early { content: \"&#35;&#35;\"; }",
-            ".generated { content: \"&#35;&#35;\"; }",
-            ".late { content: \"&#35;&#35;\"; }",
+            ".early { content: \"##\"; }",
+            ".generated { content: \"##\"; }",
+            ".late { content: \"##\"; }",
         ]
     );
 }
@@ -4241,7 +4260,12 @@ fn protects_nested_bold_underline_closers_without_crossing_table_cells() {
     let inline_spans =
         RenderService::protect_wikidot_inline_html_spans(&mut source, &settings);
     let color_spans = RenderService::protect_wikidot_color_spans(&mut source, &settings);
-    source = RenderService::escape_unrendered_wikidot_color_markers(source, &settings);
+    let mut compat_text = CompatTextFragments::new(&source);
+    source = RenderService::protect_unrendered_wikidot_color_markers(
+        source,
+        &settings,
+        &mut compat_text,
+    );
 
     assert_eq!(inline_spans.len(), ROW_COUNT * 2);
     assert_eq!(color_spans.len(), ROW_COUNT);
@@ -4346,19 +4370,23 @@ fn protects_wikidot_color_spans_before_ftml_parsing() {
             .to_owned() + "\n",
     );
 
-    let escaped = RenderService::escape_unrendered_wikidot_color_markers(
+    let mut compat_text = CompatTextFragments::new("");
+    let protected = RenderService::protect_unrendered_wikidot_color_markers(
         "####blue|leftover##".to_owned(),
         &settings,
+        &mut compat_text,
     );
-    assert_eq!(escaped, "&#35;&#35;&#35;&#35;blue|leftover&#35;&#35;");
+    assert_eq!(compat_text.restore(&protected), "####blue|leftover##");
 
-    let escaped = RenderService::escape_unrendered_wikidot_color_markers(
+    let mut compat_text = CompatTextFragments::new("");
+    let protected = RenderService::protect_unrendered_wikidot_color_markers(
         "[[[home###|Home]]] [[[MAIN/##/page#toc1|Hash routing]]] leftover##".to_owned(),
         &settings,
+        &mut compat_text,
     );
     assert_eq!(
-        escaped,
-        "[[[home###|Home]]] [[[MAIN/##/page#toc1|Hash routing]]] leftover&#35;&#35;",
+        compat_text.restore(&protected),
+        "[[[home###|Home]]] [[[MAIN/##/page#toc1|Hash routing]]] leftover##",
     );
 }
 
@@ -4427,8 +4455,12 @@ fn restores_color_inside_inline_monospace_from_ralliston_authorpage() {
         RenderService::protect_wikidot_inline_html_spans(&mut wikitext, &settings);
     let color_spans =
         RenderService::protect_wikidot_color_spans(&mut wikitext, &settings);
-    wikitext =
-        RenderService::escape_unrendered_wikidot_color_markers(wikitext, &settings);
+    let mut compat_text = CompatTextFragments::new(&wikitext);
+    wikitext = RenderService::protect_unrendered_wikidot_color_markers(
+        wikitext,
+        &settings,
+        &mut compat_text,
+    );
     ftml::preprocess_for_layout(&mut wikitext, settings.layout);
     let tokens = ftml::tokenize(&wikitext);
     let result = ftml::parse(&tokens, &page_info, &settings);
@@ -4440,6 +4472,7 @@ fn restores_color_inside_inline_monospace_from_ralliston_authorpage() {
         RenderService::restore_protected_wikidot_color_spans(rendered, &color_spans);
     let rendered =
         RenderService::restore_protected_wikidot_inline_html(rendered, &inline_spans);
+    let rendered = compat_text.restore(&rendered);
 
     assert!(rendered.contains(
         r#"<em><strong><tt><span style="color: #f24">the fun never ends.</span></tt></strong></em>"#,
@@ -4469,8 +4502,12 @@ fn protects_wikidot_hash_prefixed_hex_colors_without_shifted_matches() {
     assert_eq!(inline_spans.len(), 2);
     assert_eq!(color_spans.len(), 1);
 
-    wikitext =
-        RenderService::escape_unrendered_wikidot_color_markers(wikitext, &settings);
+    let mut compat_text = CompatTextFragments::new(&wikitext);
+    wikitext = RenderService::protect_unrendered_wikidot_color_markers(
+        wikitext,
+        &settings,
+        &mut compat_text,
+    );
     ftml::preprocess_for_layout(&mut wikitext, settings.layout);
     let tokens = ftml::tokenize(&wikitext);
     let result = ftml::parse(&tokens, &page_info, &settings);
@@ -4482,6 +4519,7 @@ fn protects_wikidot_hash_prefixed_hex_colors_without_shifted_matches() {
         RenderService::restore_protected_wikidot_color_spans(rendered, &color_spans);
     let rendered =
         RenderService::restore_protected_wikidot_inline_html(rendered, &inline_spans);
+    let rendered = compat_text.restore(&rendered);
 
     assert!(rendered.contains(r#"<span style="color: #880808">plain</span>"#));
     assert!(
@@ -4542,8 +4580,12 @@ fn renders_protected_wikidot_color_spans_as_html_after_ftml_parsing() {
     .to_owned();
 
     let spans = RenderService::protect_wikidot_color_spans(&mut wikitext, &settings);
-    wikitext =
-        RenderService::escape_unrendered_wikidot_color_markers(wikitext, &settings);
+    let mut compat_text = CompatTextFragments::new(&wikitext);
+    wikitext = RenderService::protect_unrendered_wikidot_color_markers(
+        wikitext,
+        &settings,
+        &mut compat_text,
+    );
     ftml::preprocess_for_layout(&mut wikitext, settings.layout);
     let tokens = ftml::tokenize(&wikitext);
     let result = ftml::parse(&tokens, &page_info, &settings);
@@ -4552,6 +4594,7 @@ fn renders_protected_wikidot_color_spans_as_html_after_ftml_parsing() {
 
     let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
     let rendered = RenderService::restore_protected_wikidot_color_spans(rendered, &spans);
+    let rendered = compat_text.restore(&rendered);
 
     assert!(
         rendered.contains(
@@ -9828,25 +9871,21 @@ fn protects_wikidot_current_page_links_inside_inline_code() {
 }
 
 #[test]
-fn protects_wikidot_named_anchor_markers_without_visible_brackets() {
+fn ftml_renders_valid_wikidot_named_anchor_markers_without_visible_brackets() {
     let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut wikitext = "[[# tabanchor]]\nVisible text".to_owned();
 
     let links = RenderService::protect_wikidot_compat_links(&mut wikitext, &settings);
 
-    assert_eq!(links.len(), 1);
-    assert!(wikitext.contains(WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX));
-    assert!(!wikitext.contains("[# tabanchor]"));
+    assert!(links.is_empty());
+    assert!(wikitext.contains("[[# tabanchor]]"));
 
     ftml::preprocess_for_layout(&mut wikitext, settings.layout);
     let tokens = ftml::tokenize(&wikitext);
     let result = ftml::parse(&tokens, &page_info, &settings);
     let (tree, _) = result.into();
-    let rendered = RenderService::restore_protected_wikidot_compat_links(
-        HtmlRender.render(&tree, &page_info, &settings).body,
-        &links,
-    );
+    let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
 
     assert!(rendered.contains(r#"<a name="tabanchor"></a>"#));
     assert!(rendered.contains("Visible text"));
@@ -9855,11 +9894,33 @@ fn protects_wikidot_named_anchor_markers_without_visible_brackets() {
 }
 
 #[test]
-fn wikidot_named_anchor_markers_do_not_restore_predictable_literal_sentinels() {
+fn named_anchor_candidates_reach_ftml_without_deepwell_preprotection() {
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+
+    for source in [
+        "[[# tabanchor]]",
+        "[[# alpha beta]]",
+        "[[# symbol$%_foo]]",
+        "[[# 日本語🙂]]",
+        "[[[scp-002|[[# alpha]]]]]",
+        "[https://example.com [[# alpha]]]",
+        "[[span title=\"[[# alpha]]\"]]X[[/span]]",
+    ] {
+        let mut protected = source.to_owned();
+        let links =
+            RenderService::protect_wikidot_compat_links(&mut protected, &settings);
+
+        assert!(links.is_empty(), "{source:?}");
+        assert_eq!(protected, source, "{source:?}");
+    }
+}
+
+#[test]
+fn compat_link_markers_do_not_restore_predictable_literal_sentinels() {
     let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut wikitext = concat!(
-        "[[# x onmouseover=alert(1) y]]\n",
+        "[# safe label]\n",
         "[[span class=\"WIKIJUMPWIKIDOTCOMPATLINK0X\"]]hover[[/span]]",
     )
     .to_owned();
@@ -9880,7 +9941,7 @@ fn wikidot_named_anchor_markers_do_not_restore_predictable_literal_sentinels() {
         &links,
     );
 
-    assert!(rendered.contains(r#"<a name="x onmouseover=alert(1) y"></a>"#));
+    assert!(rendered.contains(r#"<a href="javascript:;">safe label</a>"#));
     assert!(
         rendered.contains(r#"<span class="WIKIJUMPWIKIDOTCOMPATLINK0X">hover</span>"#)
     );
@@ -9888,7 +9949,7 @@ fn wikidot_named_anchor_markers_do_not_restore_predictable_literal_sentinels() {
 }
 
 #[test]
-fn wikidot_named_anchor_markers_do_not_restore_markers_inside_attributes() {
+fn named_anchor_candidates_inside_attributes_never_issue_compat_markers() {
     let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut wikitext = concat!(
@@ -9900,24 +9961,18 @@ fn wikidot_named_anchor_markers_do_not_restore_markers_inside_attributes() {
 
     let links = RenderService::protect_wikidot_compat_links(&mut wikitext, &settings);
 
-    assert_eq!(links.len(), 1);
-    assert!(wikitext.contains(&links[0].marker));
+    assert!(links.is_empty());
+    assert!(wikitext.contains("[[# x onmouseover=alert(1) y]]"));
 
     ftml::preprocess_for_layout(&mut wikitext, settings.layout);
     let tokens = ftml::tokenize(&wikitext);
     let result = ftml::parse(&tokens, &page_info, &settings);
     let (tree, _) = result.into();
-    let rendered = RenderService::restore_protected_wikidot_compat_links(
-        HtmlRender.render(&tree, &page_info, &settings).body,
-        &links,
-    );
+    let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
 
-    assert!(rendered.contains(&format!(
-        r#"<span class="{}">hover</span>"#,
-        links[0].marker,
-    )));
+    assert!(rendered.contains("hover"), "{rendered}");
     assert!(!rendered.contains("onmouseover"));
-    assert!(!rendered.contains(r#"<span class="<a name="#));
+    assert!(!rendered.contains(WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX));
 }
 
 #[test]
@@ -11336,6 +11391,34 @@ fn parser_functions_apply_first_closer_before_include_collection() {
             "[[include component:hidden-ifexpr]] ]]\n",
         ),
     );
+}
+
+#[test]
+fn include_argument_pipes_are_collected_before_parser_function_evaluation() {
+    let mut source =
+        "[[include component:conditional |x=[[#if 1 | 1 | 0 ]]|n=1]]".to_owned();
+    let page_info = fallback_test_page_info("conditional", "Conditional");
+
+    prepare_test_wikidot_conditionals_before_include_expansion(&mut source, &page_info);
+
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut includes = Vec::new();
+    ftml::include(
+        &source,
+        &settings,
+        CollectingIncluder {
+            includes: &mut includes,
+        },
+        include_error,
+    )
+    .expect("include argument grammar should run before parser functions");
+
+    assert_eq!(includes.len(), 1);
+    assert_eq!(
+        includes[0].variables().get("x").map(Cow::as_ref),
+        Some("[[#if 1 "),
+    );
+    assert_eq!(includes[0].variables().get("n").map(Cow::as_ref), Some("1"),);
 }
 
 #[test]

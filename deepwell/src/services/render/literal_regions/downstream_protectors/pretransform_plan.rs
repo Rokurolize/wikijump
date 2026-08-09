@@ -57,9 +57,7 @@ impl DownstreamPretransformStage {
     pub(super) const fn effect(self) -> DownstreamPretransformEffect {
         match self {
             Self::RuntimeModuleHead => DownstreamPretransformEffect::Replace("x"),
-            Self::UnrenderedColorMarker => {
-                DownstreamPretransformEffect::Replace("&#35;&#35;")
-            }
+            Self::UnrenderedColorMarker => DownstreamPretransformEffect::Replace("x"),
             Self::CssModule => DownstreamPretransformEffect::Remove,
             Self::InlineEscapedNbsp
             | Self::InlineBoldOuterColor

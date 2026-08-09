@@ -39,6 +39,7 @@ use self::list_pages_protection::{
     collect_already_projected_list_pages_literal_ranges,
     collect_list_pages_downstream_css_ranges, collect_list_pages_literal_ranges,
 };
+use self::text_owners::collect_monospace_owner_ranges;
 pub(super) use self::token_boundaries::{
     TextTokenCursor, WikidotArgumentValueKind, WikidotTagArgumentScan, WikidotTagScan,
     WikidotWholeHeadScan, left_block_start_in_run, right_bracket_token,
@@ -87,6 +88,12 @@ impl LiteralRegionIndex {
 
     pub(super) fn new_wikidot_syntax(source: &str) -> Self {
         Self::build(source, false)
+    }
+
+    pub(super) fn new_wikidot_monospace_syntax(source: &str) -> Self {
+        Self {
+            ranges: collect_monospace_owner_ranges(source),
+        }
     }
 
     /// Literal regions used while pairing Wikidot conditional boundaries.

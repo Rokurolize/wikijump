@@ -338,6 +338,13 @@ fn directive_heads(
     heads
 }
 
+pub(super) fn wikidot_include_directive_ranges(source: &str) -> Vec<Range<usize>> {
+    directive_heads(source, &INCLUDE_OPEN, true)
+        .into_iter()
+        .map(|head| head.whole)
+        .collect()
+}
+
 pub(super) fn find_wikidot_directive_end(
     source: &str,
     mut offset: usize,

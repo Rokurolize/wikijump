@@ -350,37 +350,100 @@ After"#;
 }
 
 #[tokio::test]
-async fn escaped_registered_listpages_openers_remain_literal_in_preview() {
-    let runner = TestRunner::setup().await;
+async fn literal_owned_registered_listpages_openers_remain_literal() {
+    let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
 
-    for source in [
-        "\\[[module ListPages limit=\"1\"]]body[[/module]]",
-        "BEFORE\n\\[[module ListPages limit=\"1\"]]body[[/module]]\nAFTER",
+    for (case_id, slug, source, expected_open, expected_close) in [
+        (
+            "escaped-inline",
+            "literal-listpages-escaped-inline",
+            "\\[[module ListPages limit=\"1\"]]body[[/module]]",
+            r#"\[[module ListPages limit=&quot;1&quot;]]"#,
+            "[[/module]]",
+        ),
+        (
+            "escaped-own-line",
+            "literal-listpages-escaped-own-line",
+            "BEFORE\n\\[[module ListPages limit=\"1\"]]body[[/module]]\nAFTER",
+            r#"\[[module ListPages limit=&quot;1&quot;]]"#,
+            "[[/module]]",
+        ),
+        (
+            "inline-raw",
+            "literal-listpages-inline-raw",
+            "@@[[module ListPages limit=\"1\"]]\n[[/module]]@@",
+            r#"@@[[module ListPages limit=&quot;1&quot;]]"#,
+            "[[/module]]@@",
+        ),
     ] {
         let preview = RenderService::render_wikidot_page_preview(
             runner.context(),
             site_id,
-            "Escaped ListPages preview",
+            case_id,
             source.to_owned(),
         )
         .await
-        .expect("escaped ListPages source should render")
+        .expect("literal-owned ListPages source should render in preview")
         .html_output
         .body;
 
         assert!(
-            preview
-                .contains(r#"\[[module ListPages limit=&quot;1&quot;]]body[[/module]]"#),
-            "the single-backslash source must remain visible: {preview}",
+            preview.contains(expected_open) && preview.contains(expected_close),
+            "{case_id} source must remain visible in preview: {preview}",
         );
         assert!(
             !preview.contains("list-pages-box")
                 && !preview.contains("list-pages-item")
                 && !preview.contains("TODO: module ListPages"),
-            "escaped source must not dispatch ListPages: {preview}",
+            "{case_id} must not dispatch ListPages in preview: {preview}",
+        );
+
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(slug.into())),
+        });
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": source,
+                "title": case_id,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "literal-owner ListPages regression",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        let saved = run_endpoint!(
+            runner,
+            page_get,
+            json!({
+                "site_id": site_id,
+                "page": slug,
+                "details": {"compiled": true},
+            }),
+        )
+        .expect("saved literal-owner page should exist")
+        .compiled_body_html
+        .expect("saved literal-owner page should have compiled HTML");
+        assert!(
+            saved.contains(expected_open) && saved.contains(expected_close),
+            "{case_id} source must remain visible after save: {saved}",
+        );
+        assert!(
+            !saved.contains("list-pages-box")
+                && !saved.contains("list-pages-item")
+                && !saved.contains("TODO: module ListPages"),
+            "{case_id} must not dispatch ListPages after save: {saved}",
         );
     }
 

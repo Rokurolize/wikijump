@@ -404,7 +404,10 @@ impl CompatHtmlFragments {
                             trim_preceding_space: true,
                             ..
                         }
-                    ) && output.ends_with(' ')
+                    ) && output
+                        .as_bytes()
+                        .last()
+                        .is_some_and(u8::is_ascii_whitespace)
                     {
                         output.pop();
                         parent_stack.truncate_trailing_ascii_whitespace(output.len());
@@ -423,6 +426,13 @@ impl CompatHtmlFragments {
                             ..
                         },
                     );
+                    let trim_preceding_space = matches!(
+                        &self.fragments[index],
+                        CompatFragment::BlockHtml {
+                            trim_preceding_space: true,
+                            ..
+                        },
+                    );
                     let restored_fragment_start = if unwrap_block_paragraphs
                         && matches!(
                             &self.fragments[index],
@@ -435,7 +445,10 @@ impl CompatHtmlFragments {
                             fragment,
                             &mut cursor,
                             &mut parent_stack,
-                            unwrap_residual_div_paragraph_prefix,
+                            BlockParagraphRestoreOptions {
+                                unwrap_residual_div_paragraph_prefix,
+                                trim_preceding_space,
+                            },
                         ) {
                             Some(fragment_start)
                         } else {
@@ -497,6 +510,12 @@ impl CompatHtmlFragments {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+struct BlockParagraphRestoreOptions {
+    unwrap_residual_div_paragraph_prefix: bool,
+    trim_preceding_space: bool,
+}
+
 /// Restores a trusted block marker without ever nesting block HTML in the
 /// paragraph FTML created for marker text. Splitting is intentionally limited
 /// to a plain-text paragraph; inline element balancing belongs to the renderer,
@@ -508,7 +527,7 @@ fn restore_block_html_from_paragraph(
     fragment: &str,
     cursor: &mut usize,
     parent_stack: &mut IncrementalHtmlElementStack,
-    unwrap_residual_div_paragraph_prefix: bool,
+    options: BlockParagraphRestoreOptions,
 ) -> Option<usize> {
     let paragraph_start = output.rfind("<p>")?;
     let leading = &output[paragraph_start + 3..];
@@ -527,7 +546,7 @@ fn restore_block_html_from_paragraph(
 
     let leading_end = trailing_break_start(leading).unwrap_or(leading.len());
     let trailing_start = leading_break_end(trailing).unwrap_or(0);
-    let unwrap_leading = unwrap_residual_div_paragraph_prefix
+    let unwrap_leading = options.unwrap_residual_div_paragraph_prefix
         && starts_with_unmatched_residual_wikidot_div(&leading[..leading_end]);
     output.truncate(paragraph_start + 3 + leading_end);
     let leading_is_empty = output[paragraph_start + 3..].trim().is_empty();
@@ -543,6 +562,15 @@ fn restore_block_html_from_paragraph(
         output.replace_range(paragraph_start..paragraph_start + 3, flow_break);
     } else {
         output.push_str("</p>");
+    }
+    if options.trim_preceding_space
+        && output
+            .as_bytes()
+            .last()
+            .is_some_and(u8::is_ascii_whitespace)
+    {
+        output.pop();
+        parent_stack.truncate_trailing_ascii_whitespace(output.len());
     }
     let fragment_start = output.len();
     output.push_str(fragment);
@@ -1141,7 +1169,7 @@ mod tests {
 
         assert_eq!(
             fragments.restore(&format!(
-                "<p>{row_open}</p><div class=\"summary-owner\">FIRST</div><p>{row_close}</p>",
+                "<p>{row_open}</p><div class=\"summary-owner\">FIRST</div>\n<p>{row_close}</p>",
             )),
             concat!(
                 r#"<div class="list-pages-item">"#,
