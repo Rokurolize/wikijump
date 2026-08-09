@@ -54,18 +54,21 @@ use crate::services::data_form::{
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{
-    GetPageAttributions, GetSiteBan, PageAttribution, RelationService,
+    GetPageAttributions, GetSiteBan, GetSiteMember, PageAttribution, RelationService,
 };
 use crate::services::render::{
     LegacyActionRegistry, MembershipActionRegistry, RenderOutput, RenderService,
 };
-use crate::services::settings::{NavigationPageHtml, SettingsService};
+use crate::services::settings::{
+    NavigationPageHtml, PageRatingPermission, PageRatingSettings, SettingsService,
+};
 use crate::services::user::User;
 use crate::services::view::ViewType;
+use crate::services::vote::GetVote;
 use crate::services::{
     BlueprintPageService, CategoryService, DataFormEditor, DomainService,
-    PageRevisionService, PageService, SessionService, SiteService, TextService,
-    UserService,
+    PageLockService, PageRevisionService, PageService, SessionService, SiteService,
+    TextService, UserService, VoteService,
 };
 use crate::types::Reference;
 use crate::types::{Action, PageId, PageOrder, Permission, RerenderDepth, Resource};
@@ -80,6 +83,63 @@ use std::collections::BTreeMap;
 use time::OffsetDateTime;
 use unic_langid::LanguageIdentifier;
 use wikidot_normalize::normalize;
+
+async fn rate_browser_actions_for_page(
+    ctx: &ServiceContext<'_>,
+    page: &PageModel,
+    page_revision: &PageRevisionModel,
+    wikitext: &str,
+    compiled_body_html: &str,
+    page_rating: PageRatingSettings,
+    viewer_user_id: Option<i64>,
+) -> Result<Option<crate::services::render::RateBrowserActionRegistry>> {
+    if !page_rating.enabled {
+        return Ok(None);
+    }
+    let Some(user_id) = viewer_user_id else {
+        return Ok(None);
+    };
+    let registry = RenderService::rate_action_registry_from_wikidot_source(
+        wikitext,
+        page_rating.rating_type,
+    );
+    if registry.is_empty()
+        || PageLockService::active_lock_exists(ctx, page.page_id).await?
+    {
+        return Ok(None);
+    }
+    if page_rating.permission == PageRatingPermission::Members
+        && RelationService::get_optional_site_member(
+            ctx,
+            GetSiteMember {
+                site_id: page.site_id,
+                user_id,
+            },
+        )
+        .await?
+        .is_none()
+    {
+        return Ok(None);
+    }
+
+    let current_value = VoteService::get_optional(
+        ctx,
+        GetVote {
+            page_id: page.page_id,
+            user_id,
+        },
+        page_rating.rating_type.vote_store_key(),
+    )
+    .await?
+    .map(|vote| vote.value);
+    Ok(registry.browser_registry_for_wikidot_html(
+        compiled_body_html,
+        page.site_id,
+        page.page_id,
+        page_revision.revision_id,
+        current_value,
+    ))
+}
 
 fn wikidot_redirect_module_allowed(
     page: &PageModel,
@@ -973,6 +1033,17 @@ impl ViewService {
                 )
                 .await
                 .or_raise(make_error)?;
+                let rate_actions = rate_browser_actions_for_page(
+                    ctx,
+                    &page,
+                    &page_revision,
+                    &wikitext,
+                    &compiled_body_html,
+                    page_rating,
+                    user_session.as_ref().map(|session| session.user.user_id),
+                )
+                .await
+                .or_raise(make_error)?;
                 let page_discussion = SettingsService::get_page_discussion_settings(
                     ctx,
                     page.site_id,
@@ -991,6 +1062,7 @@ impl ViewService {
                     page_discussion,
                     data_form,
                     legacy_actions,
+                    rate_actions,
                     membership_actions,
                     redirect_page,
                     redirect_kind,

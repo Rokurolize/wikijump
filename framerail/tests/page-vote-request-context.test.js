@@ -67,6 +67,28 @@ test("vote mutation RPCs derive actor and site from request context", async () =
   }
 })
 
+test("legacy Rate actions submit only a revision-bound server registry selector", async () => {
+  const actionSource = await readFile(pageActionsSourceUrl, "utf8")
+  const action = exportedFunction(
+    actionSource,
+    "wikidotLegacyRateAction",
+    "wikidotLegacySetTagsAction"
+  )
+  assert.match(action, /session: "required"/u)
+  assert.match(action, /context\.requestContext/u)
+  assert.doesNotMatch(action, /\bvalue\b|userId|siteId|score|voteCount/u)
+
+  const rpcSource = await readFile(pageRpcSourceUrl, "utf8")
+  const rpc = exportedFunction(rpcSource, "wikidotLegacyRate", "pageRerender")
+  assert.match(rpc, /"wikidot_legacy_rate"/u)
+  assert.match(rpc, /page_id: pageId/u)
+  assert.match(rpc, /last_revision_id: lastRevisionId/u)
+  assert.match(rpc, /action_index: actionIndex/u)
+  assert.match(rpc, /action_fingerprint: actionFingerprint/u)
+  assert.match(rpc, /requestContext/u)
+  assert.doesNotMatch(rpc, /\bvalue\b|userId|siteId|score|voteCount/u)
+})
+
 test("page score RPCs derive the target from request context", async () => {
   const source = await readFile(pageRpcSourceUrl, "utf8")
   const start = source.indexOf("export async function pageScore(")

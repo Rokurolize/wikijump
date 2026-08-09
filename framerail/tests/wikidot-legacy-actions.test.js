@@ -4,6 +4,7 @@ import test from "node:test"
 
 import {
   performWikidotLegacyAction,
+  planWikidotRateActionBindings,
   planWikidotStandaloneActionBindings,
   wikidotLegacyActions
 } from "../src/lib/wikidot/wikidot-legacy-actions.js"
@@ -63,21 +64,71 @@ test("typed standalone actions call only their fixed browser behavior", async ()
 test("Rate actions pass only registry-owned vote values", async () => {
   const calls = []
   const runtime = {
-    rate: (value) => calls.push(["rate", value]),
-    cancelRate: () => calls.push(["cancel-rate"])
+    rate: (index, fingerprint, value) => calls.push(["rate", index, fingerprint, value]),
+    cancelRate: (index, fingerprint) => calls.push(["cancel-rate", index, fingerprint])
   }
   const element = actionElement()
+  const fingerprint = "0123456789abcdef0123456789abcdef"
 
   for (const action of [
-    { type: "rate", value: 1 },
-    { type: "rate", value: -1 },
-    { type: "rate", value: 4 },
-    { type: "rate-cancel" }
+    { type: "rate", index: 0, fingerprint, value: 1 },
+    { type: "rate", index: 1, fingerprint, value: -1 },
+    { type: "rate", index: 2, fingerprint, value: 4 },
+    { type: "rate-cancel", index: 3, fingerprint }
   ]) {
     await performWikidotLegacyAction(element, action, runtime)
   }
 
-  assert.deepEqual(calls, [["rate", 1], ["rate", -1], ["rate", 4], ["cancel-rate"]])
+  assert.deepEqual(calls, [
+    ["rate", 0, fingerprint, 1],
+    ["rate", 1, fingerprint, -1],
+    ["rate", 2, fingerprint, 4],
+    ["cancel-rate", 3, fingerprint]
+  ])
+})
+
+test("Rate sidecars bind only the exact renderer-owned control sequence", () => {
+  const controls = [actionElement(), actionElement(), actionElement()]
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  const actions = [
+    { type: "rate", index: 0, fingerprint, value: 1 },
+    { type: "rate", index: 1, fingerprint, value: -1 },
+    { type: "rate-cancel", index: 2, fingerprint }
+  ]
+
+  assert.deepEqual(planWikidotRateActionBindings(controls, [], actions), [
+    [controls[0], actions[0]],
+    [controls[1], actions[1]],
+    [controls[2], actions[2]]
+  ])
+  assert.deepEqual(
+    planWikidotRateActionBindings([...controls, actionElement()], [], actions),
+    []
+  )
+  assert.deepEqual(
+    planWikidotRateActionBindings(
+      controls,
+      [],
+      [actions[0], { type: "rate", index: 1, fingerprint, value: 0 }, actions[2]]
+    ),
+    []
+  )
+
+  const starControls = Array.from({ length: 5 }, actionElement)
+  const starActions = Array.from({ length: 5 }, (_, index) => ({
+    type: "rate",
+    index,
+    fingerprint,
+    value: index + 1
+  }))
+  assert.deepEqual(
+    planWikidotRateActionBindings([], [starControls], starActions),
+    starControls.map((control, index) => [control, starActions[index]])
+  )
+  assert.deepEqual(
+    planWikidotRateActionBindings([], [starControls, starControls], starActions),
+    []
+  )
 })
 
 test("unsupported sidecar actions fail closed without calling authored names", async () => {
@@ -119,6 +170,38 @@ test("an action stays busy until its observable operation settles", async () => 
   release()
   assert.equal(await first, true)
   assert.equal(element.getAttribute("aria-busy"), null)
+})
+
+test("Rate controls share one busy boundary across the page runtime", async () => {
+  const first = actionElement()
+  const second = actionElement()
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  let release
+  const calls = []
+  const runtime = {
+    rate: (index) => {
+      calls.push(index)
+      return new Promise((resolve) => (release = resolve))
+    }
+  }
+
+  const pending = performWikidotLegacyAction(
+    first,
+    { type: "rate", index: 0, fingerprint, value: 1 },
+    runtime
+  )
+  assert.equal(
+    await performWikidotLegacyAction(
+      second,
+      { type: "rate", index: 1, fingerprint, value: -1 },
+      runtime
+    ),
+    false
+  )
+  assert.deepEqual(calls, [0])
+
+  release()
+  assert.equal(await pending, true)
 })
 
 test("sidecar binding preserves exact DOM and fails closed on a count mismatch", () => {

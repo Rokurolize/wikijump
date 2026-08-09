@@ -95,6 +95,18 @@ export type LegacyBrowserAction =
   | { type: "print" }
   | { type: "set-tags"; index: number; fingerprint: string }
 
+export type RateBrowserAction =
+  | { type: "rate"; index: number; fingerprint: string; value: -1 | 1 | 2 | 3 | 4 | 5 }
+  | { type: "rate-cancel"; index: number; fingerprint: string }
+
+export interface RateBrowserActionRegistry {
+  site_id: number
+  page_id: number
+  revision_id: number
+  current_value: Nullable<number>
+  actions: RateBrowserAction[]
+}
+
 export type MembershipBrowserAction = { type: "join" }
 
 interface PageViewFound {
@@ -109,6 +121,7 @@ interface PageViewFound {
     page_discussion: PageDiscussionSettings
     data_form: Nullable<DataFormEditor>
     legacy_actions: LegacyBrowserAction[]
+    rate_actions: Nullable<RateBrowserActionRegistry>
     membership_actions: MembershipBrowserAction[]
   }
 }

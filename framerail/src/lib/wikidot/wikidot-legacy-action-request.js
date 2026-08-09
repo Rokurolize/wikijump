@@ -50,22 +50,42 @@ export const requestLegacySetTags = (runtime, input) => {
   })
 }
 
-/** Bridge a fixed registry vote value to the existing vote mutation route. */
 /**
- * @param {LegacyRequestRuntime} runtime @param {{pageId: number, value:
- *   number}} input
+ * Submit one server-issued Rate action without a client-selected vote
+ * value.
+ *
+ * @param {LegacyRequestRuntime} runtime
+ * @param {{
+ *   pageId: number
+ *   lastRevisionId: number
+ *   actionIndex: number
+ *   actionFingerprint: string
+ * }} input
  */
 export const requestLegacyRate = (runtime, input) => {
-  return submit(runtime, "voteCast", {
-    pageId: input.pageId,
-    value: input.value
-  })
+  return /** @type {Promise<{ score: number } | undefined>} */ (
+    submit(runtime, "legacyRate", {
+      actionFingerprint: input.actionFingerprint,
+      actionIndex: input.actionIndex,
+      lastRevisionId: input.lastRevisionId,
+      pageId: input.pageId
+    })
+  )
 }
 
-/** Bridge cancellation to the existing vote mutation route. */
-/** @param {LegacyRequestRuntime} runtime @param {{pageId: number}} input */
+/**
+ * Submit one server-issued Rate cancellation descriptor.
+ *
+ * @param {LegacyRequestRuntime} runtime
+ * @param {{
+ *   pageId: number
+ *   lastRevisionId: number
+ *   actionIndex: number
+ *   actionFingerprint: string
+ * }} input
+ */
 export const requestLegacyRateCancel = (runtime, input) => {
-  return submit(runtime, "voteCancel", { pageId: input.pageId })
+  return requestLegacyRate(runtime, input)
 }
 
 /** Read the authoritative score for the route page after a vote mutation. */

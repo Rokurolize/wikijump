@@ -69,6 +69,49 @@ fn rate_module_is_inside_footnote_scope(
 }
 
 impl RenderService {
+    /// Reconstruct the typed Rate action order using the same recognition
+    /// boundaries as the runtime renderer. The saved HTML cardinality is
+    /// checked separately before this registry is exposed to a browser.
+    pub(crate) fn rate_action_registry_from_wikidot_source(
+        source: &str,
+        rating_type: PageRatingType,
+    ) -> RateActionRegistry {
+        if !RATE_MODULE_REGEX.is_match(source) {
+            return RateActionRegistry::for_rendered_modules(0, rating_type);
+        }
+
+        let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(source);
+        let footnote_ranges = rate_module_footnote_scope_ends(source, &literal_regions);
+        let mut cursor = 0;
+        let mut module_count = 0;
+        for matched in RATE_MODULE_REGEX.find_iter(source) {
+            if matched.start() < cursor || literal_regions.contains(matched.start()) {
+                continue;
+            }
+            let line_start = source[..matched.start()]
+                .rfind('\n')
+                .map_or(0, |index| index + 1);
+            if source[line_start..matched.start()]
+                .trim_start()
+                .starts_with('>')
+            {
+                continue;
+            }
+            let (occurrence_end, _) = rate_module_occurrence_body(source, matched.end());
+            cursor = occurrence_end;
+            if rate_module_is_inside_footnote_scope(
+                &footnote_ranges,
+                matched.start(),
+                occurrence_end,
+            ) {
+                continue;
+            }
+            module_count += 1;
+        }
+
+        RateActionRegistry::for_rendered_modules(module_count, rating_type)
+    }
+
     pub(in crate::services::render) fn suppress_rate_modules_in_list_pages_content(
         wikitext: String,
         settings: &WikitextSettings,

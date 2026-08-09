@@ -21,7 +21,6 @@
   import {
     requestLegacyRate,
     requestLegacyRateCancel,
-    requestLegacyScore,
     requestLegacySetTags
   } from "$lib/wikidot/wikidot-legacy-action-request"
   import { wikidotMembershipActions } from "$lib/wikidot/wikidot-membership-actions"
@@ -165,6 +164,18 @@
 
   const legacyRequestRuntime = { fetch, deserialize }
 
+  function currentRateRegistry() {
+    const registry = data.rate_actions
+    return registry &&
+      data.page &&
+      data.page_revision &&
+      registry.site_id === data.site.site_id &&
+      registry.page_id === data.page.page_id &&
+      registry.revision_id === data.page_revision.revision_id
+      ? registry
+      : null
+  }
+
   async function setLegacyTags(actionIndex: number, actionFingerprint: string) {
     if (!data.page || !data.page_revision || showRevision) {
       throw new Error("This set-tags action is not available for the displayed revision.")
@@ -178,22 +189,36 @@
     window.location.reload()
   }
 
-  async function rateFromLegacyWidget(value: number, element: HTMLElement) {
-    if (!data.page) throw new Error("This page cannot be rated.")
-    await requestLegacyRate(legacyRequestRuntime, {
-      pageId: data.page.page_id,
-      value
+  async function rateFromLegacyWidget(
+    actionIndex: number,
+    actionFingerprint: string,
+    _value: number,
+    element: HTMLElement
+  ) {
+    const registry = currentRateRegistry()
+    if (!registry) throw new Error("This page cannot be rated.")
+    const score = await requestLegacyRate(legacyRequestRuntime, {
+      pageId: registry.page_id,
+      lastRevisionId: registry.revision_id,
+      actionIndex,
+      actionFingerprint
     })
-    const score = await requestLegacyScore(legacyRequestRuntime)
     updateWikidotRateWidget(element, score?.score)
   }
 
-  async function cancelLegacyRating(element: HTMLElement) {
-    if (!data.page) throw new Error("This page cannot be rated.")
-    await requestLegacyRateCancel(legacyRequestRuntime, {
-      pageId: data.page.page_id
+  async function cancelLegacyRating(
+    actionIndex: number,
+    actionFingerprint: string,
+    element: HTMLElement
+  ) {
+    const registry = currentRateRegistry()
+    if (!registry) throw new Error("This page cannot be rated.")
+    const score = await requestLegacyRateCancel(legacyRequestRuntime, {
+      pageId: registry.page_id,
+      lastRevisionId: registry.revision_id,
+      actionIndex,
+      actionFingerprint
     })
-    const score = await requestLegacyScore(legacyRequestRuntime)
     updateWikidotRateWidget(element, score?.score)
   }
 
@@ -225,6 +250,7 @@
 
   let legacyActionParameters = $derived({
     actions: showRevision ? [] : (data.legacy_actions ?? []),
+    rateActions: showRevision ? [] : (currentRateRegistry()?.actions ?? []),
     runtime: legacyActionRuntime
   })
   let membershipActionParameters = $derived({

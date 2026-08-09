@@ -5,6 +5,7 @@ import {
   pageVoteCast,
   pageVoteList,
   pageVoteRemove,
+  wikidotLegacyRate,
   wikidotLegacySetTags
 } from "$lib/server/deepwell/page"
 import { pageFileList } from "$lib/server/deepwell/page-file"
@@ -145,6 +146,31 @@ const wikidotLegacySetTagsSchema = object({
   actionIndex: pipe(number(), integer(), minValue(0)),
   actionFingerprint: string()
 })
+
+const wikidotLegacyRateSchema = object({
+  pageId: number(),
+  lastRevisionId: number(),
+  actionIndex: pipe(number(), integer(), minValue(0)),
+  actionFingerprint: string()
+})
+
+export async function wikidotLegacyRateAction(event: RequestEvent) {
+  const { request } = event
+  return executePageAction(async () => {
+    const { pageId, lastRevisionId, actionIndex, actionFingerprint } =
+      await readActionJson(request, wikidotLegacyRateSchema)
+    const context = await resolvePageActionRequestContext(event, {
+      session: "required"
+    })
+    return wikidotLegacyRate(
+      pageId,
+      lastRevisionId,
+      actionIndex,
+      actionFingerprint,
+      context.requestContext
+    )
+  }, failForActionError)
+}
 
 export async function wikidotLegacySetTagsAction(event: RequestEvent) {
   const { request, getClientAddress } = event

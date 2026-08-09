@@ -42,6 +42,7 @@ use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
 use deepwell::services::forum_post::CreateForumPost;
 use deepwell::services::forum_thread::CreateForumThread;
 use deepwell::services::page::CreatePage;
+use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DataFormSelector,
     DateSelector, FoundPageFields, IncludedCategories, OrderBySelector, OrderProperty,
@@ -69,8 +70,8 @@ use deepwell::services::{
     SessionService, SettingsService, SiteService, TextService, ThemeSetting,
 };
 use deepwell::types::{
-    Action, ConnectionType, Maybe, PageId, PageRevisionType, Permission, Reference,
-    RerenderDepth, Resource, TextBlockType,
+    Action, ConnectionType, Maybe, PageId, PageLockType, PageRevisionType,
+    Permission, Reference, RerenderDepth, Resource, TextBlockType,
 };
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel,
@@ -179,6 +180,26 @@ fn set_mutation_request_context(
         site_id: Some(site_id),
         page_reference: Some(page_reference),
     });
+}
+
+async fn set_page_rating_policy(
+    runner: &TestRunner,
+    category_id: i64,
+    enabled: bool,
+    permission: &str,
+) {
+    let category = PageCategoryTable::find_by_id(category_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Rate policy category lookup should succeed")
+        .expect("Rate policy category should exist");
+    let mut category = category.into_active_model();
+    category.rating_enabled = Set(Some(enabled));
+    category.rating_permission = Set(Some(permission.to_owned()));
+    category
+        .update(runner.context().transaction())
+        .await
+        .expect("Rate policy category update should succeed");
 }
 
 #[tokio::test]
@@ -4326,21 +4347,268 @@ async fn page_render_emits_wikidot_rate_widget_structure() {
         "<div style=\"text-align: center;\"><div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:\u{a0}<span class=\"number prw54353\">+396</span></span>",
     ), "rate widget must be a direct child of its alignment container:\n{html}");
     assert!(html.contains(
-        r#"<span class="rateup btn btn-default"><a href="javascript:;" title="I like it">+</a></span>"#,
+        r#"<span class="rateup btn btn-default"><a href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)" title="I like it">+</a></span>"#,
     ));
     assert!(html.contains(
-        r#"<span class="ratedown btn btn-default"><a href="javascript:;" title="I don't like it">–</a></span>"#,
+        r#"<span class="ratedown btn btn-default"><a href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)" title="I don't like it">–</a></span>"#,
     ));
     assert!(html.contains(
-        r#"<span class="cancel btn btn-default"><a href="javascript:;" title="Cancel my vote">x</a></span>"#,
+        r#"<span class="cancel btn btn-default"><a href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)" title="Cancel my vote">x</a></span>"#,
     ));
-    assert!(!html.contains("onclick"));
     assert!(!html.contains("data-wikijump"));
     assert!(!html.contains(r#"<div class="page-rate-widget-box"><p>"#));
     assert!(!html.contains(r#"<p><div class="page-rate-widget-box">"#));
     assert!(!html.contains(r#"<a href="javascript:;"><span class="rateup"#));
     assert_eq!(html.matches(r#"class="rate-points""#).count(), 1);
     assert!(!html.contains("WIKIJUMPWIKIDOTCOMPATHTML"));
+}
+
+#[tokio::test]
+async fn saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently() {
+    const SLUG: &str = "fixture-rate-action-sidecar";
+    const SOURCE: &str = "[[module Rate]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SLUG,
+        "Fixture Rate Action Sidecar",
+        SOURCE,
+    )
+    .await;
+    let page =
+        run_endpoint!(runner, page_get, json!({"site_id": site_id, "page": SLUG}),)
+            .expect("Rate sidecar page should exist");
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "Rate action sidecar test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("Rate action actor session should be created");
+
+    let anonymous = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(matches!(
+        anonymous,
+        GetPageViewOutput::Found {
+            rate_actions: None,
+            ..
+        }
+    ));
+
+    let authenticated = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token.clone(),
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let registry = match authenticated {
+        GetPageViewOutput::Found {
+            rate_actions: Some(registry),
+            ..
+        } => registry,
+        other => panic!("expected authenticated Rate sidecar, got {other:?}"),
+    };
+    assert_eq!(registry.site_id, site_id);
+    assert_eq!(registry.page_id, page.page_id);
+    assert_eq!(registry.revision_id, revision_id);
+    assert_eq!(registry.current_value, None);
+    let actions = serde_json::to_value(&registry.actions).unwrap();
+    assert_eq!(actions[0]["type"], "rate");
+    assert_eq!(actions[1]["type"], "rate");
+    assert_eq!(actions[2]["type"], "rate-cancel");
+    assert_eq!(actions[0]["value"], 1);
+    assert_eq!(actions[1]["value"], -1);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SLUG)),
+    );
+    let activate = |action: &serde_json::Value| {
+        json!({
+            "page_id": registry.page_id,
+            "last_revision_id": registry.revision_id,
+            "action_index": action["index"],
+            "action_fingerprint": action["fingerprint"],
+            "value": 5,
+            "score": 500,
+            "user_id": SAMPLE_USER_ID,
+            "site_id": -1,
+        })
+    };
+
+    let first = run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[0]));
+    assert_eq!(first.score, ScoreValue::Integer(1));
+    let repeated = run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[0]));
+    assert_eq!(repeated.score, ScoreValue::Integer(1));
+    let changed = run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[1]));
+    assert_eq!(changed.score, ScoreValue::Integer(-1));
+    let canceled = run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[2]));
+    assert_eq!(canceled.score, ScoreValue::Integer(0));
+    let repeated_cancel =
+        run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[2]));
+    assert_eq!(repeated_cancel.score, ScoreValue::Integer(0));
+
+    let forged = run_endpoint_err!(
+        runner,
+        wikidot_legacy_rate,
+        json!({
+            "page_id": registry.page_id,
+            "last_revision_id": registry.revision_id,
+            "action_index": 0,
+            "action_fingerprint": "00000000000000000000000000000000",
+        }),
+    );
+    assert_contains_error!(forged, ErrorType::PermissionDenied);
+    let stale = run_endpoint_err!(
+        runner,
+        wikidot_legacy_rate,
+        json!({
+            "page_id": registry.page_id,
+            "last_revision_id": registry.revision_id - 1,
+            "action_index": actions[0]["index"],
+            "action_fingerprint": actions[0]["fingerprint"],
+        }),
+    );
+    assert_contains_error!(stale, ErrorType::NotLatestRevisionId);
+
+    set_page_rating_policy(&runner, page.page_category_id, false, "registered").await;
+    let disabled_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token.clone(),
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(matches!(
+        disabled_view,
+        GetPageViewOutput::Found {
+            rate_actions: None,
+            ..
+        }
+    ));
+    let disabled = run_endpoint_err!(runner, wikidot_legacy_rate, activate(&actions[0]),);
+    assert_contains_error!(disabled, ErrorType::PermissionDenied);
+
+    set_page_rating_policy(&runner, page.page_category_id, true, "members").await;
+    set_mutation_request_context(
+        &mut runner,
+        SAMPLE_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SLUG)),
+    );
+    let non_member =
+        run_endpoint_err!(runner, wikidot_legacy_rate, activate(&actions[0]),);
+    assert_contains_error!(non_member, ErrorType::PermissionDenied);
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("Rate policy fixture actor should become a member");
+    let member = run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[0]));
+    assert_eq!(member.score, ScoreValue::Integer(1));
+
+    set_page_rating_policy(&runner, page.page_category_id, true, "registered").await;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SLUG)),
+    );
+    PageLockService::create(
+        runner.context(),
+        site_id,
+        ADMIN_USER_ID,
+        Reference::Id(page.page_id),
+        CreatePageLockInput {
+            page: Reference::Id(page.page_id),
+            expires_at: None,
+            from_wikidot: false,
+            lock_type: PageLockType::PermissionOnly,
+            reason: Some("Rate policy fixture".to_owned()),
+            override_existing: false,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Rate policy fixture lock should be created");
+    let locked_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(matches!(
+        locked_view,
+        GetPageViewOutput::Found {
+            rate_actions: None,
+            ..
+        }
+    ));
+    let locked = run_endpoint_err!(runner, wikidot_legacy_rate, activate(&actions[0]),);
+    assert_contains_error!(locked, ErrorType::PermissionDenied);
+    PageLockService::remove(
+        runner.context(),
+        site_id,
+        ADMIN_USER_ID,
+        Reference::Id(page.page_id),
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("Rate policy fixture lock removal should succeed")
+    .expect("Rate policy fixture lock should remain active until removal");
+
+    let stored_page = PageTable::find_by_id(page.page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Rate deletion fixture lookup should succeed")
+        .expect("Rate deletion fixture page should exist");
+    let mut stored_page = stored_page.into_active_model();
+    stored_page.deleted_at = Set(Some(OffsetDateTime::now_utc()));
+    stored_page
+        .update(runner.context().transaction())
+        .await
+        .expect("Rate deletion fixture should be soft deleted");
+    let deleted = run_endpoint_err!(runner, wikidot_legacy_rate, activate(&actions[0]),);
+    assert_contains_error!(deleted, ErrorType::PageVote);
 }
 
 #[tokio::test]

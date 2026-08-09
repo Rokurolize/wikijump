@@ -427,6 +427,26 @@ export async function pageVoteRemove(
   return client.request("vote_remove", { page_id: pageId }, requestContext)
 }
 
+/* ----- Renderer-bound Wikidot Rate action ----- */
+export async function wikidotLegacyRate(
+  pageId: number,
+  lastRevisionId: number,
+  actionIndex: number,
+  actionFingerprint: string,
+  requestContext: RequestContext
+): Promise<PageScore> {
+  return client.request(
+    "wikidot_legacy_rate",
+    {
+      page_id: pageId,
+      last_revision_id: lastRevisionId,
+      action_index: actionIndex,
+      action_fingerprint: actionFingerprint
+    },
+    requestContext
+  )
+}
+
 /* ----- Page Rerender ----- */
 // Not used for now
 export async function pageRerender(siteId: number, pageId: number): Promise<void> {

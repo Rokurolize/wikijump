@@ -531,6 +531,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("vote_action", vote_action);
     register!("vote_list", vote_list_get);
     register!("vote_list_count", vote_list_count);
+    register!("wikidot_legacy_rate", wikidot_legacy_rate);
 
     // Wikidot data import
     register!("import_wikidot_user", import_wikidot_user);

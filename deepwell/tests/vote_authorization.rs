@@ -138,6 +138,17 @@ async fn vote_mutations_require_route_target_view_permission() {
         }),
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
+    let error = run_endpoint_err!(
+        runner,
+        wikidot_legacy_rate,
+        json!({
+            "page_id": private_page,
+            "last_revision_id": 0,
+            "action_index": 0,
+            "action_fingerprint": "00000000000000000000000000000000",
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
 
     let route_page = create_page(&mut runner, site_id, ROUTE_SLUG).await;
     let other_page = create_page(&mut runner, site_id, OTHER_SLUG).await;
@@ -163,6 +174,35 @@ async fn vote_mutations_require_route_target_view_permission() {
         json!({
             "page_id": other_page,
             "user_id": ADMIN_USER_ID,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    let error = run_endpoint_err!(
+        runner,
+        wikidot_legacy_rate,
+        json!({
+            "page_id": other_page,
+            "last_revision_id": 0,
+            "action_index": 0,
+            "action_fingerprint": "00000000000000000000000000000000",
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(route_page)),
+    });
+    let error = run_endpoint_err!(
+        runner,
+        wikidot_legacy_rate,
+        json!({
+            "page_id": route_page,
+            "last_revision_id": 0,
+            "action_index": 0,
+            "action_fingerprint": "00000000000000000000000000000000",
         }),
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);

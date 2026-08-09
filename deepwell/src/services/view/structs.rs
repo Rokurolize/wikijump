@@ -28,7 +28,7 @@ use crate::models::user::Model as WikijumpUserModel;
 use crate::services::DataFormEditor;
 use crate::services::membership::MembershipBrowserAction;
 use crate::services::relation::PageAttribution;
-use crate::services::render::LegacyBrowserAction;
+use crate::services::render::{LegacyBrowserAction, RateBrowserActionRegistry};
 use crate::services::settings::{
     PageDiscussionSettings, PageRatingSettings, ThemeSetting,
 };
@@ -122,6 +122,8 @@ pub enum GetPageViewOutput {
         data_form: Option<DataFormEditor>,
         #[serde(default)]
         legacy_actions: Vec<LegacyBrowserAction>,
+        #[serde(default)]
+        rate_actions: Option<RateBrowserActionRegistry>,
         #[serde(default)]
         membership_actions: Vec<MembershipBrowserAction>,
         redirect_page: Option<String>,

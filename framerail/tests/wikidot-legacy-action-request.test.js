@@ -48,10 +48,14 @@ test("set-tags submits only the server registry index and revision binding", asy
   })
 })
 
-test("Rate requests never submit score, count, revision, actor, or site", async () => {
+test("Rate requests submit only the server registry binding", async () => {
   const recorder = requestRecorder(success({ page_vote_id: 5 }))
+  const fingerprint = "0123456789abcdef0123456789abcdef"
   await requestLegacyRate(recorder, {
     pageId: 42,
+    lastRevisionId: 90,
+    actionIndex: 3,
+    actionFingerprint: fingerprint,
     value: -1,
     score: 500,
     count: 80,
@@ -59,14 +63,36 @@ test("Rate requests never submit score, count, revision, actor, or site", async 
     userId: 7,
     siteId: 2
   })
-  await requestLegacyRateCancel(recorder, { pageId: 42, score: 500 })
+  await requestLegacyRateCancel(recorder, {
+    pageId: 42,
+    lastRevisionId: 90,
+    actionIndex: 4,
+    actionFingerprint: fingerprint,
+    score: 500
+  })
   await requestLegacyScore(recorder)
 
   assert.deepEqual(
     recorder.requests.map(({ url, init }) => [url, init.body && JSON.parse(init.body)]),
     [
-      ["?/voteCast", { pageId: 42, value: -1 }],
-      ["?/voteCancel", { pageId: 42 }],
+      [
+        "?/legacyRate",
+        {
+          actionFingerprint: fingerprint,
+          actionIndex: 3,
+          lastRevisionId: 90,
+          pageId: 42
+        }
+      ],
+      [
+        "?/legacyRate",
+        {
+          actionFingerprint: fingerprint,
+          actionIndex: 4,
+          lastRevisionId: 90,
+          pageId: 42
+        }
+      ],
       ["?/score", undefined]
     ]
   )
@@ -79,7 +105,12 @@ test("server action failures remain observable to the action state machine", asy
   })
 
   await assert.rejects(
-    requestLegacyRate(recorder, { pageId: 42, value: 1 }),
+    requestLegacyRate(recorder, {
+      pageId: 42,
+      lastRevisionId: 90,
+      actionIndex: 0,
+      actionFingerprint: "0123456789abcdef0123456789abcdef"
+    }),
     /Permission denied\./u
   )
 })

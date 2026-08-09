@@ -3,10 +3,15 @@
  *   | { type: "set-tags"; index: number; fingerprint: string }} LegacyBrowserAction
  */
 /**
- * @typedef {LegacyBrowserAction
- *   | { type: "rate"; value: -1 | 1 | 2 | 3 | 4 | 5 }
- *   | { type: "rate-cancel" }} BoundAction
+ * @typedef {{
+ *       type: "rate"
+ *       index: number
+ *       fingerprint: string
+ *       value: -1 | 1 | 2 | 3 | 4 | 5
+ *     }
+ *   | { type: "rate-cancel"; index: number; fingerprint: string }} RateBrowserAction
  */
+/** @typedef {LegacyBrowserAction | RateBrowserAction} BoundAction */
 /**
  * @typedef {{
  *   edit?: () => unknown
@@ -14,14 +19,24 @@
  *   source?: () => unknown
  *   print?: () => unknown
  *   setTags?: (index: number, fingerprint: string) => unknown
- *   rate?: (value: number, element: HTMLElement) => unknown
- *   cancelRate?: (element: HTMLElement) => unknown
+ *   rate?: (
+ *     index: number,
+ *     fingerprint: string,
+ *     value: number,
+ *     element: HTMLElement
+ *   ) => unknown
+ *   cancelRate?: (
+ *     index: number,
+ *     fingerprint: string,
+ *     element: HTMLElement
+ *   ) => unknown
  *   error?: (error: unknown) => unknown
  * }} LegacyActionRuntime
  */
 /**
  * @typedef {{
  *   actions: LegacyBrowserAction[]
+ *   rateActions?: RateBrowserAction[]
  *   runtime: LegacyActionRuntime
  * }} LegacyActionParameters
  */
@@ -35,7 +50,7 @@
 
 /** @type {WeakMap<ActionControl, BoundAction>} */
 const boundActions = new WeakMap()
-/** @type {WeakSet<ActionControl>} */
+/** @type {WeakSet<object>} */
 const busyActions = new WeakSet()
 
 /**
@@ -61,16 +76,52 @@ const operationFor = (element, action, runtime) => {
         ? () => runtime.setTags?.(action.index, action.fingerprint)
         : undefined
     case "rate":
-      return runtime.rate
-        ? () => runtime.rate?.(action.value, /** @type {HTMLElement} */ (element))
+      return validRegistryAction(action) && runtime.rate
+        ? () =>
+            runtime.rate?.(
+              action.index,
+              action.fingerprint,
+              action.value,
+              /** @type {HTMLElement} */ (element)
+            )
         : undefined
     case "rate-cancel":
-      return runtime.cancelRate
-        ? () => runtime.cancelRate?.(/** @type {HTMLElement} */ (element))
+      return validRegistryAction(action) && runtime.cancelRate
+        ? () =>
+            runtime.cancelRate?.(
+              action.index,
+              action.fingerprint,
+              /** @type {HTMLElement} */ (element)
+            )
         : undefined
     default:
       return undefined
   }
+}
+
+/** @param {{ index?: unknown; fingerprint?: unknown }} action */
+const validRegistryAction = (action) =>
+  Number.isSafeInteger(action.index) &&
+  Number(action.index) >= 0 &&
+  typeof action.fingerprint === "string" &&
+  /^[0-9a-f]{32}$/u.test(action.fingerprint)
+
+/** @param {unknown} action */
+const validRateAction = (action) => {
+  if (!action || typeof action !== "object") return false
+  if (
+    !validRegistryAction(
+      /** @type {{ index?: unknown; fingerprint?: unknown }} */ (action)
+    )
+  ) {
+    return false
+  }
+  const typed = /** @type {{ type?: unknown; value?: unknown }} */ (action)
+  if (typed.type === "rate-cancel") return true
+  return (
+    typed.type === "rate" &&
+    [-1, 1, 2, 3, 4, 5].includes(/** @type {number} */ (typed.value))
+  )
 }
 
 /**
@@ -84,12 +135,13 @@ const operationFor = (element, action, runtime) => {
  * @returns {Promise<boolean>}
  */
 export const performWikidotLegacyAction = async (element, action, runtime) => {
-  if (busyActions.has(element)) return false
+  const busyKey = action.type === "rate" || action.type === "rate-cancel" ? runtime : element
+  if (busyActions.has(busyKey)) return false
 
   const operation = operationFor(element, action, runtime)
   if (!operation) return false
 
-  busyActions.add(element)
+  busyActions.add(busyKey)
   element.setAttribute("aria-busy", "true")
   try {
     await operation()
@@ -98,7 +150,7 @@ export const performWikidotLegacyAction = async (element, action, runtime) => {
     runtime.error?.(error)
     return false
   } finally {
-    busyActions.delete(element)
+    busyActions.delete(busyKey)
     element.removeAttribute("aria-busy")
   }
 }
@@ -170,24 +222,14 @@ export const planWikidotStandaloneActionBindings = (candidates, actions) => {
   return actions.map((action, index) => [candidates[index], action])
 }
 
-/** @param {HTMLElement} root @param {Set<ActionControl>} elements */
-const interceptRateControls = (root, elements) => {
-  for (const element of root.querySelectorAll(
-    '.page-rate-widget-box > .rateup > a[href="javascript:;"]'
-  )) {
-    elements.add(element)
-  }
-  for (const element of root.querySelectorAll(
-    '.page-rate-widget-box > .ratedown > a[href="javascript:;"]'
-  )) {
-    elements.add(element)
-  }
-  for (const element of root.querySelectorAll(
-    '.page-rate-widget-box > .cancel > a[href="javascript:;"]'
-  )) {
-    elements.add(element)
-  }
-}
+/** @param {HTMLElement} root */
+const wikidotPointRateControls = (root) => [
+  ...root.querySelectorAll(
+    '.page-rate-widget-box > .rateup > a[href="javascript:;"], ' +
+      '.page-rate-widget-box > .ratedown > a[href="javascript:;"], ' +
+      '.page-rate-widget-box > .cancel > a[href="javascript:;"]'
+  )
+]
 
 /**
  * Initialize the browser-only children present in live five-star widgets.
@@ -196,19 +238,27 @@ const interceptRateControls = (root, elements) => {
  * @param {Set<ActionControl>} elements
  */
 const initializeWikidotRateWidgets = (root, elements) => {
+  const groups = []
   for (const widget of /** @type {NodeListOf<HTMLElement>} */ (
     root.querySelectorAll(".page-rate-widget-start")
   )) {
-    if (widget.querySelector("img")) continue
+    if (widget.querySelector("img")) {
+      const existing = [...widget.querySelectorAll("img")]
+      for (const image of existing) elements.add(image)
+      groups.push(existing)
+      continue
+    }
     const rating = Number.parseFloat(widget.dataset.rating ?? "0") || 0
     widget.style.cursor = "pointer"
     widget.style.width = "100px"
+    const images = []
     for (let index = 0; index < STAR_TITLES.length; index += 1) {
       const image = widget.ownerDocument.createElement("img")
       image.alt = `${index + 1}`
       image.title = STAR_TITLES[index]
       image.src = starAsset(rating, index)
       elements.add(image)
+      images.push(image)
       widget.append(image)
       if (index < STAR_TITLES.length - 1) widget.append("\u00a0")
     }
@@ -216,7 +266,49 @@ const initializeWikidotRateWidgets = (root, elements) => {
     score.name = "score"
     score.type = "hidden"
     widget.append(score)
+    groups.push(images)
   }
+  return groups
+}
+
+/**
+ * Pair renderer-owned Rate controls with server-issued descriptors. Point
+ * controls and star controls are mutually exclusive for one page category.
+ * Any cardinality, shape, or value mismatch disables the whole Rate
+ * surface.
+ *
+ * @param {ActionControl[]} pointControls
+ * @param {ActionControl[][]} starControlGroups
+ * @param {RateBrowserAction[]} actions
+ * @returns {[ActionControl, RateBrowserAction][]}
+ */
+export const planWikidotRateActionBindings = (
+  pointControls,
+  starControlGroups,
+  actions
+) => {
+  if (actions.some((action) => !validRateAction(action))) return []
+  if (pointControls.length > 0 && starControlGroups.length > 0) return []
+  if (pointControls.length > 0) {
+    if (pointControls.length !== actions.length) return []
+    return actions.map((action, index) => [pointControls[index], action])
+  }
+  const starControls = starControlGroups.flat()
+  if (
+    starControls.length !== actions.length ||
+    starControlGroups.some((group) => group.length !== 5)
+  ) {
+    return []
+  }
+  for (let offset = 0; offset < actions.length; offset += 5) {
+    const group = actions.slice(offset, offset + 5)
+    if (
+      group.some((action, index) => action.type !== "rate" || action.value !== index + 1)
+    ) {
+      return []
+    }
+  }
+  return actions.map((action, index) => [starControls[index], action])
 }
 
 /**
@@ -263,8 +355,18 @@ export const wikidotLegacyActions = (root, parameters) => {
     for (const element of elements) boundActions.delete(element)
     elements.clear()
     bindStandaloneActions(root, actions, elements)
-    interceptRateControls(root, elements)
-    initializeWikidotRateWidgets(root, elements)
+    const pointControls = /** @type {ActionControl[]} */ (wikidotPointRateControls(root))
+    for (const control of pointControls) elements.add(control)
+    const starControlGroups = /** @type {ActionControl[][]} */ (
+      initializeWikidotRateWidgets(root, elements)
+    )
+    for (const [element, action] of planWikidotRateActionBindings(
+      pointControls,
+      starControlGroups,
+      parameters.rateActions ?? []
+    )) {
+      bind(elements, element, action)
+    }
   }
   refresh(parameters.actions)
 
@@ -304,6 +406,7 @@ export const wikidotLegacyActions = (root, parameters) => {
     /** @param {LegacyActionParameters} nextParameters */
     update(nextParameters) {
       runtime = nextParameters.runtime
+      parameters = nextParameters
       refresh(nextParameters.actions)
     }
   }

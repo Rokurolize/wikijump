@@ -55,6 +55,7 @@ mod page_tree;
 mod pages;
 mod pages_by_tag;
 mod percent_encoding;
+mod rate_actions;
 mod rate_module;
 mod render_budget;
 mod render_dependency;
@@ -86,6 +87,9 @@ pub use self::legacy_actions::{
 };
 pub(crate) use self::literal_regions::LiteralRegionIndex;
 pub use self::membership_actions::MembershipActionRegistry;
+pub use self::rate_actions::{
+    RateActionRegistry, RateBrowserAction, RateBrowserActionRegistry,
+};
 pub use self::render_dependency::{
     RenderDependencyClass, RenderDependencyClasses, classify_render_dependencies,
 };

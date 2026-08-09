@@ -28,6 +28,7 @@ use super::new_page_module::{
     new_page_template_names, render_new_page_module,
 };
 use super::percent_encoding::percent_encode_path_segment;
+use super::rate_actions::RateActionRegistry;
 use super::rate_module::{
     render_read_only_rate_module, render_read_only_star_rate_module,
 };
