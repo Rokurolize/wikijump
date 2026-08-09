@@ -16,6 +16,20 @@
     "referent_table_sha256": "7285dd05fcf92ca8ecc2a4e519e5c83927e88ddbf0596ca71942b6e90cae798e",
     "audited_at": "2026-08-09"
   },
+  "amendments": [
+    {
+      "scope": "Issue 1034 populated forum, dedicated route and Ajax, and RecentThreads needs-source rows",
+      "integration_base": "b21a91941fc13ec4a5a722c6cb51f06c5e6c9472",
+      "integration_base_tree": "e67cd23a0469c9d849ac6ec34c3a1154bd17f156",
+      "branch": "agent/open87-pr2/q-forum-evidence-g9",
+      "source_commit": "11e5ad92a4544d4647d6868d8e5aa92f98670faa",
+      "source_tree": "15f550e0b21ed82b5d2e698ad323fb304a3dc502",
+      "live_observations_sha256": "2c8dc8c01fae023fc0764b42f164a2430fe4fbc86482d55de6373b2184e14b18",
+      "implementation_ledger_sha256": "31a5ef2658648ca0e133c9a2f4af7e85193547c979a308cbaa9828af61c661da",
+      "catalog_sha256": "29b7dd89226b06029ec1af200066d6fa1bf822d76862072b73e2b49c857c038f",
+      "audited_at": "2026-08-09"
+    }
+  ],
   "method": {
     "public_deepwell_seams": [
       "wikidot_page_preview",
@@ -31,7 +45,7 @@
       "Do not treat page-discussion thread provisioning as authority to create a forum post or a standalone forum thread."
     ],
     "tracker_read_canonicalization": "gh issue view <issue> --repo Rokurolize/wikijump --json number,title,state,updatedAt,body,comments,url | jq -cS .",
-    "source_change_disposition": "Current production source already covers every forum-mini behavior established by the sealed 24-case PagePreview matrix. This lane adds the missing public case bindings and no production behavior. The remaining issue 1034 source gaps lack a complete observed contract or a safe mutation boundary, so this lane leaves them explicit instead of inventing forms, routes, or actions."
+    "source_change_disposition": "The original lane established the forum-mini behavior and public case bindings. This amendment implements only the newly observed current RecentThreads placeholder contract. It also seals anonymous read-only FrontForum, Comments, forum route, and Ajax evidence, but leaves those broader production slices actionable because the evidence does not define their full selection, actor, browser lifecycle, or mutation contracts."
   },
   "tracker_reads": [
     {
@@ -67,6 +81,18 @@
       "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
       "sha256": "686f9fd383f51b5fe393b5f98b2a7e499010bfb691a39086309170a29982a783",
       "authority": "Frozen anonymous own-line module outputs for Comments, FrontForum, ForumCategory, ForumNewThread, ForumStart, ForumThread, RecentPosts, and the site-specific RecentThreads observation."
+    },
+    {
+      "evidence_id": "FORUM_Q1034_READONLY_LIVE_20260809",
+      "path": "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json",
+      "sha256": "a9e1663f70894965aa055448c8887043a461977de5d6494bc2ffcbd5cecd5aaa",
+      "external_manifest_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9/manifest.json",
+      "external_manifest_sha256": "10bd8aca6854fd54db4659b6c449548fad7ec730779fca70e3a495b59a0d97f5",
+      "external_sha256s_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9/SHA256SUMS",
+      "external_sha256s_sha256": "a9f5453a596371509e9aa5e9a7f2cc45f68ee839f3a447a750c49f954510f909",
+      "actor": "anonymous",
+      "mutation": false,
+      "authority": "Anonymous PagePreview, served GET, and read-only Ajax observations for the exact current RecentThreads placeholder and nonterminal FrontForum, Comments, category, thread, and recent-post surfaces."
     }
   ],
   "mutation_boundary_audit": {
@@ -208,29 +234,36 @@
             "framerail/tests/ajax-module-connector.test.js#fails closed for unsupported modules and duplicate fields"
           ],
           "result": "Framerail returns a stable not_ok envelope for forum/ForumStartModule instead of routing the request to ListPages or a mutation helper."
+        },
+        {
+          "case_id": "Q1034_RECENTTHREADS_GENERAL_READ_MODEL",
+          "status": "implemented_unverified",
+          "evidence_id": "FORUM_Q1034_READONLY_LIVE_20260809",
+          "public_tests": [
+            "deepwell/tests/page.rs#recent_threads_matches_live_placeholder_and_owner_boundaries",
+            "deepwell/src/services/render/url_arguments.rs#forum_modules_require_runtime_rendering_and_only_recent_posts_reads_page"
+          ],
+          "result": "Anonymous PagePreview on sandbox-for-codex, scp-wiki, and community returns the exact current text later. The implementation and public test cover own-line recognition, observed argument insensitivity, ASCII-case-insensitive module names, closing-body consumption, inline and raw ownership, and the RecentThreadsX lookalike boundary."
         }
       ],
       "needs_source": [
         {
           "case_id": "Q1034_POPULATED_FORUM_SURFACES",
-          "missing_source": "Comments, FrontForum, ForumCategory, ForumNewThread, and ForumThread implement only their observed no-context branches.",
+          "missing_source": "Comments, FrontForum, ForumCategory, ForumNewThread, and ForumThread still implement only their observed no-context branches. The anonymous baseline now establishes FrontForum populated and invalid-category output, Comments forward and reverse reads, and populated, empty, and missing category and thread reads, but it does not establish complete selection, pagination, actor, or mutation behavior.",
+          "evidence_id": "FORUM_Q1034_READONLY_LIVE_20260809",
+          "actionable_readonly_slice": "Implement the observed FrontForum single-category limit, Comments page-thread read, and forum category and thread read models through public Deepwell seams without exposing mutation controls.",
           "blocked_by": [
-            "Q1034_POPULATED_LIVE_CONTRACTS",
+            "Q1034_POPULATED_READ_MODEL_COVERAGE",
             "Q1034_FORUM_MUTATION_AUTHORITY"
           ]
         },
         {
           "case_id": "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX",
-          "missing_source": "The category and thread routes render untranslated placeholders, /forum/start reaches the invalid-route fallback, and forum Ajax modules remain unsupported.",
+          "missing_source": "The category and thread routes render untranslated placeholders, /forum/start reaches the invalid-route fallback, and the observed read-only forum Ajax modules remain unsupported. The exact public URL, moduleName, parameter, success, no_category, no_thread, and no_page wire shapes are now sealed and actionable.",
+          "evidence_id": "FORUM_Q1034_READONLY_LIVE_20260809",
+          "actionable_readonly_slice": "Implement ForumStartModule, ForumViewCategoryModule, ForumViewThreadModule, ForumViewThreadPostsModule, ForumCommentsListModule, and ForumRecentPostsListModule read paths plus their observed public routes. Keep all write modules unsupported.",
           "blocked_by": [
-            "Q1034_ROUTE_AND_AJAX_WIRE_CONTRACT"
-          ]
-        },
-        {
-          "case_id": "Q1034_RECENTTHREADS_GENERAL_READ_MODEL",
-          "missing_source": "RecentThreads has no runtime implementation or public test.",
-          "blocked_by": [
-            "Q1034_RECENTTHREADS_GENERAL_CONTRACT"
+            "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE"
           ]
         }
       ],
@@ -242,13 +275,17 @@
         {
           "case_id": "Q1034_EXACT_CANDIDATE_FORUM_AJAX_FAIL_CLOSED",
           "requires": "Run the focused Ajax connector Node test and one exact-candidate HTTP request. Confirm that unsupported forum modules cannot reach ListPages, page creation, or page-discussion mutation."
+        },
+        {
+          "case_id": "Q1034_EXACT_CANDIDATE_RECENTTHREADS",
+          "requires": "Run recent_threads_matches_live_placeholder_and_owner_boundaries and the ten sealed RecentThreads cases against the exact merged candidate. Bind the receipt to source, FTML, lock, fixture, actor, and runtime identities."
         }
       ],
       "blocked_evidence": [
         {
-          "case_id": "Q1034_POPULATED_LIVE_CONTRACTS",
-          "missing": "The frozen evidence does not define populated Comments, FrontForum, ForumCategory, ForumNewThread, or ForumThread selection, DOM, pagination, and actor states.",
-          "forbidden_inference": "Do not generalize the no-context error into a populated renderer or copy one captured page shape."
+          "case_id": "Q1034_POPULATED_READ_MODEL_COVERAGE",
+          "missing": "The sealed anonymous baseline does not define FrontForum feeds, offsets, multiple categories, custom templates, relative-link rewriting, all pagination boundaries, private visibility, deletion, or complete Comments and ForumNewThread states.",
+          "forbidden_inference": "Do not recognize captured page data, treat one category as the general selector contract, or infer actor and mutation behavior from anonymous reads."
         },
         {
           "case_id": "Q1034_FORUM_MUTATION_AUTHORITY",
@@ -256,14 +293,9 @@
           "forbidden_inference": "Do not expose ForumPostService fixture methods, reuse anonymous page-discussion provisioning, or render a form that has no safe action."
         },
         {
-          "case_id": "Q1034_ROUTE_AND_AJAX_WIRE_CONTRACT",
-          "missing": "No sealed browser or connector request and response contract covers forum start, category, thread, recent-post category changes, pagination, history, focus, failed requests, or intermediate paint.",
-          "forbidden_inference": "Do not replace placeholders with a route guessed from module HTML or widen an unsupported Ajax request to an unrelated renderer."
-        },
-        {
-          "case_id": "Q1034_RECENTTHREADS_GENERAL_CONTRACT",
-          "missing": "The only frozen RecentThreads output is site-authored text. It does not establish empty, populated, order, count, pagination, permission, or DOM behavior.",
-          "forbidden_inference": "Do not implement a generic RecentThreads module from the site-specific text output."
+          "case_id": "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE",
+          "missing": "The HTTP and connector wire contract is sealed, but no browser evidence covers category changes, pagination, history, focus, failed requests, intermediate paint, and settled output on the exact candidate.",
+          "forbidden_inference": "Do not claim browser parity from a final Ajax body or conceal loading and failure differences through normalization."
         },
         {
           "case_id": "Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX",
@@ -285,7 +317,7 @@
       {
         "feature": "module-recentthreads",
         "ledger_status": "pending",
-        "audit_disposition": "No general source-ready contract exists. The site-specific frozen text is not implementation authority."
+        "audit_disposition": "The exact current placeholder contract is source-ready and implemented, but it remains pending until central tests and an exact-candidate replay bind the ten sealed live cases to the delivered runtime."
       }
     ],
     "rule": "Do not mark a forum feature implemented or close its issue until every source-ready row has an exact candidate receipt, every needs-source row is implemented through a public seam, and every blocked-evidence row is resolved by authoritative evidence and matching local authority."
@@ -297,7 +329,22 @@
     },
     "direct_rustfmt": {
       "status": "pass",
-      "command": "rustfmt --edition 2024 deepwell/tests/page.rs"
+      "command": "rustfmt --edition 2024 deepwell/src/services/render/forum_modules.rs deepwell/src/services/render/url_arguments.rs deepwell/tests/page.rs"
+    },
+    "q1034_readonly_evidence": {
+      "status": "pass",
+      "actor": "anonymous",
+      "mutation": false,
+      "repository_artifact_case_count": 30,
+      "repository_artifact_sha256": "a9e1663f70894965aa055448c8887043a461977de5d6494bc2ffcbd5cecd5aaa",
+      "external_manifest_sha256": "10bd8aca6854fd54db4659b6c449548fad7ec730779fca70e3a495b59a0d97f5",
+      "external_sha256s_sha256": "a9f5453a596371509e9aa5e9a7f2cc45f68ee839f3a447a750c49f954510f909",
+      "external_sha256_check": "pass",
+      "resolved_source_case": "Q1034_RECENTTHREADS_GENERAL_READ_MODEL",
+      "actionable_source_cases": [
+        "Q1034_POPULATED_FORUM_SURFACES",
+        "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX"
+      ]
     },
     "sealed_case_id_reconciliation": {
       "status": "pass",
@@ -353,6 +400,7 @@
     "cargo test --manifest-path deepwell/Cargo.toml --test page forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page forum_modules_match_live_missing_context_and_owner_boundaries -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page forum_start_and_recent_posts_filter_before_counts_order_and_pagination -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page recent_threads_matches_live_placeholder_and_owner_boundaries -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml services::render::url_arguments::tests::forum_modules_require_runtime_rendering_and_only_recent_posts_reads_page -- --exact --nocapture",
     "node --test framerail/tests/ajax-module-connector.test.js",
     "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
@@ -361,5 +409,5 @@
     "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/forum-mini-live-reference.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
     "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scp-wiki --rpc-url http://127.0.0.1:2747/jsonrpc"
   ],
-  "closure_rule": "This lane does not close either issue. Source-ready rows need central Rust or Node validation and exact-candidate receipts. Needs-source rows remain open. Blocked-evidence rows remain unimplemented until new authoritative evidence and a matching local authority define a safe vertical slice."
+  "closure_rule": "This lane does not close either issue. RecentThreads is source-ready but still needs central Rust validation and an exact-candidate receipt. The populated forum and dedicated route and Ajax rows remain actionable source work with explicit residual evidence blockers. Mutation, actor, and browser lifecycle rows remain unimplemented until authoritative evidence and matching local authority define a safe vertical slice."
 }
