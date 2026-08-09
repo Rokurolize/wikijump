@@ -15715,6 +15715,287 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
 }
 
 #[tokio::test]
+async fn page_tree_resource_bounds_fail_closed_without_partial_visible_rows() {
+    const ROOT: &str = "fixture-pagetree-bound-root";
+    const TEMPLATE: &str = "fixture-pagetree-bound-template";
+    const NODE_PREFIX: &str = "fixture-pagetree-bound-node";
+    const PRIVATE_CATEGORY: &str = "fixture-pagetree-bound-private";
+    const PRIVATE_NODE: &str = "fixture-pagetree-bound-node-225";
+    const LAST_UNDER_BOUND_NODE: &str = "fixture-pagetree-bound-node-224";
+    const FIRST_OVER_BOUND_NODE: &str = "fixture-pagetree-bound-node-226";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        ROOT,
+        "PageTree resource-bound root",
+        "BOUND_START\n[[module PageTree]]\nBOUND_END",
+    )
+    .await;
+    let template_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATE,
+        "PageTree bounded node",
+        "PageTree resource-bound fixture",
+    )
+    .await;
+    let root = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": ROOT,
+        }),
+    )
+    .expect("PageTree resource-bound root should exist");
+    let private_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, PRIVATE_CATEGORY)
+            .await
+            .expect("PageTree resource-bound private category should exist")
+            .category_id;
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page (",
+                    "site_id, latest_revision_id, page_category_id, slug, layout",
+                    ") SELECT $1, $2, $3, $4 || '-' || lpad(sequence::TEXT, 3, '0'), 'wikidot' ",
+                    "FROM generate_series(1, 225) AS sequence",
+                ),
+                [
+                    Value::from(site_id),
+                    Value::from(template_revision_id),
+                    Value::from(root.page_category_id),
+                    Value::from(NODE_PREFIX),
+                ],
+            ))
+            .await
+            .expect("PageTree bounded node fixtures should be inserted");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                "UPDATE page SET page_category_id = $1 WHERE site_id = $2 AND slug = $3",
+                [
+                    Value::from(private_category_id),
+                    Value::from(site_id),
+                    Value::from(PRIVATE_NODE),
+                ],
+            ))
+            .await
+            .expect(
+                "PageTree private node fixture should be hidden from anonymous viewers",
+            );
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page_parent (parent_page_id, child_page_id, created_at) ",
+                    "SELECT parent.page_id, child.page_id, ",
+                    "TIMESTAMPTZ '2030-01-01 00:00:00+00' ",
+                    "FROM page AS parent CROSS JOIN page AS child ",
+                    "WHERE parent.site_id = $1 AND child.site_id = $1 ",
+                    "AND parent.slug LIKE $2 || '-%' AND child.slug LIKE $2 || '-%' ",
+                    "AND parent.page_id <> child.page_id",
+                ),
+                [Value::from(site_id), Value::from(NODE_PREFIX)],
+            ))
+            .await
+            .expect("PageTree bounded relation fixtures should be inserted");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page_parent (parent_page_id, child_page_id) ",
+                    "SELECT $1, page_id FROM page WHERE site_id = $2 AND slug = $3",
+                ),
+                [
+                    Value::from(root.page_id),
+                    Value::from(site_id),
+                    Value::from(format!("{NODE_PREFIX}-001")),
+                ],
+            ))
+            .await
+            .expect("PageTree root relation fixture should be inserted");
+    }
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let under_bound = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": ROOT, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let under_bound = match under_bound {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found bounded PageTree view, got {other:?}"),
+    };
+    let under_bound = under_bound
+        .split_once("BOUND_START")
+        .and_then(|(_, tail)| tail.split_once("BOUND_END"))
+        .map(|(section, _)| section)
+        .expect("bounded PageTree markers should render");
+    assert!(
+        under_bound.contains(LAST_UNDER_BOUND_NODE)
+            && !under_bound.contains(PRIVATE_NODE),
+        "PageTree should apply anonymous visibility before its relation bound:\n{under_bound}",
+    );
+
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page (",
+                    "site_id, latest_revision_id, page_category_id, slug, layout",
+                    ") VALUES ($1, $2, $3, $4, 'wikidot')",
+                ),
+                [
+                    Value::from(site_id),
+                    Value::from(template_revision_id),
+                    Value::from(root.page_category_id),
+                    Value::from(FIRST_OVER_BOUND_NODE),
+                ],
+            ))
+            .await
+            .expect("PageTree first over-bound node should be inserted");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page_parent (parent_page_id, child_page_id, created_at) ",
+                    "SELECT added.page_id, existing.page_id, ",
+                    "TIMESTAMPTZ '2030-01-02 00:00:00+00' ",
+                    "FROM page AS added CROSS JOIN page AS existing ",
+                    "WHERE added.site_id = $1 AND added.slug = $2 ",
+                    "AND existing.site_id = $1 AND existing.slug LIKE $3 || '-%' ",
+                    "AND added.page_id <> existing.page_id ",
+                    "UNION ALL ",
+                    "SELECT existing.page_id, added.page_id, ",
+                    "TIMESTAMPTZ '2030-01-02 00:00:00+00' ",
+                    "FROM page AS added CROSS JOIN page AS existing ",
+                    "WHERE added.site_id = $1 AND added.slug = $2 ",
+                    "AND existing.site_id = $1 AND existing.slug LIKE $3 || '-%' ",
+                    "AND added.page_id <> existing.page_id",
+                ),
+                [
+                    Value::from(site_id),
+                    Value::from(FIRST_OVER_BOUND_NODE),
+                    Value::from(NODE_PREFIX),
+                ],
+            ))
+            .await
+            .expect("PageTree over-bound relation fixtures should be inserted");
+    }
+
+    let relation_saturated = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": ROOT, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let relation_saturated = match relation_saturated {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => {
+            panic!("expected a found relation-saturated PageTree view, got {other:?}")
+        }
+    };
+    let relation_saturated = relation_saturated
+        .split_once("BOUND_START")
+        .and_then(|(_, tail)| tail.split_once("BOUND_END"))
+        .map(|(section, _)| section)
+        .expect("relation-saturated PageTree markers should render");
+    assert!(
+        !relation_saturated.contains(NODE_PREFIX) && !relation_saturated.contains("<ul>"),
+        "an exhausted PageTree relation bound must not return a partial visible tree:\n{relation_saturated}",
+    );
+
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "DELETE FROM page_parent AS relation USING page AS parent, page AS child ",
+                    "WHERE relation.parent_page_id = parent.page_id ",
+                    "AND relation.child_page_id = child.page_id ",
+                    "AND (parent.slug LIKE $1 || '-%' OR child.slug LIKE $1 || '-%') ",
+                    "AND NOT (relation.parent_page_id = $2 AND child.slug = $3)",
+                ),
+                [
+                    Value::from(NODE_PREFIX),
+                    Value::from(root.page_id),
+                    Value::from(format!("{NODE_PREFIX}-001")),
+                ],
+            ))
+            .await
+            .expect("PageTree relation fixtures should be reduced to one visible edge");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page (site_id, page_category_id, slug) ",
+                    "SELECT $1, $2, 'fixture-pagetree-bound-unrelated-' || sequence ",
+                    "FROM generate_series(1, 50001) AS sequence",
+                ),
+                [Value::from(site_id), Value::from(root.page_category_id)],
+            ))
+            .await
+            .expect("PageTree over-bound page candidates should be inserted");
+    }
+
+    let page_saturated = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": ROOT, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let page_saturated = match page_saturated {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found page-saturated PageTree view, got {other:?}"),
+    };
+    let page_saturated = page_saturated
+        .split_once("BOUND_START")
+        .and_then(|(_, tail)| tail.split_once("BOUND_END"))
+        .map(|(section, _)| section)
+        .expect("page-saturated PageTree markers should render");
+    assert!(
+        !page_saturated.contains(NODE_PREFIX) && !page_saturated.contains("<ul>"),
+        "an exhausted PageTree candidate bound must not return a partial visible tree:\n{page_saturated}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_parent_selectors_match_the_saved_page_live_fixture() {
     const PREFIX: &str = "fixture-listpages-parent";
     const ROOT: &str = "fixture-listpages-parent-root";
