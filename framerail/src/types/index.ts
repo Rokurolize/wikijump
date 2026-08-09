@@ -340,6 +340,13 @@ export interface Locales {
   "wiki-page-source": string
   "wiki-page-view-source": string
   "wiki-page-revision-history": string
+  "wiki-page-revision-diff": string
+  "wiki-page-revision-diff.from": string
+  "wiki-page-revision-diff.to": string
+  "wiki-page-revision-diff.compare": string
+  "wiki-page-revision-diff.swap": string
+  "wiki-page-revision-diff.loading": string
+  "wiki-page-revision-diff.no-changes": string
   "wiki-page-revision-number": string
   "wiki-page-revision-created-at": string
   "wiki-page-revision-user": string

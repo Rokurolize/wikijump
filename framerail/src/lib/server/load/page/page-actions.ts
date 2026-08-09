@@ -29,6 +29,7 @@ import {
   pageHistoryAction,
   pageRestoreAction,
   pageRevisionAction,
+  pageRevisionDiffAction,
   pageRollbackAction
 } from "$lib/server/load/page/page-revision-actions"
 import {
@@ -55,6 +56,7 @@ export const pageActions = {
   lockHistory: pageLockHistoryAction,
   lockRemove: pageLockRemoveAction,
   revision: pageRevisionAction,
+  revisionDiff: pageRevisionDiffAction,
   rollback: pageRollbackAction,
   layout: pageLayoutAction,
   move: pageMoveAction,

@@ -310,6 +310,40 @@ export async function pageRevision(
   )
 }
 
+export type PageRevisionDiffLineKind = "added" | "removed" | "unchanged"
+
+export interface PageRevisionDiffLine {
+  kind: PageRevisionDiffLineKind
+  text: string
+}
+
+export interface PageRevisionDiffOutput {
+  site_id: number
+  page_id: number
+  from_revision_number: number
+  to_revision_number: number
+  lines: PageRevisionDiffLine[]
+}
+
+export async function pageRevisionDiff(
+  siteId: number,
+  pageId: number,
+  fromRevisionNumber: number,
+  toRevisionNumber: number,
+  requestContext: RequestContext = {}
+): Promise<Nullable<PageRevisionDiffOutput>> {
+  return client.request(
+    "page_revision_diff",
+    {
+      site_id: siteId,
+      page_id: pageId,
+      from_revision_number: fromRevisionNumber,
+      to_revision_number: toRevisionNumber
+    },
+    requestContext
+  )
+}
+
 /* ----- Page Rollback ----- */
 export interface PageRollbackInput {
   siteId: number

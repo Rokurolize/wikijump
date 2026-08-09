@@ -10,7 +10,8 @@
   import type { PageProps } from "./$types"
   import type {
     PageRevisionModelFiltered,
-    CreatePageRevisionOutput
+    CreatePageRevisionOutput,
+    PageRevisionDiffOutput
   } from "$lib/server/deepwell/page"
   import type { Optional } from "$lib/types"
 
@@ -26,6 +27,10 @@
   let revisionMap = new SvelteMap<number, PageRevisionModelFiltered>()
   let revision = $state<Optional<PageRevisionModelFiltered>>(undefined)
   let showRevisionSource = $state<boolean>(false)
+  let fromRevisionNumber = $state<Optional<number>>(undefined)
+  let toRevisionNumber = $state<Optional<number>>(undefined)
+  let revisionDiff = $state<Optional<PageRevisionDiffOutput>>(undefined)
+  let revisionDiffLoading = $state(false)
 
   async function fetchHistory() {
     const res = await fetch("?/history", {
@@ -52,7 +57,57 @@
       result.data.res.forEach((rev) => {
         revisionMap.set(rev.revision_number, rev)
       })
+      const revisionNumbers = result.data.res
+        .map((rev) => rev.revision_number)
+        .sort((a, b) => a - b)
+      if (fromRevisionNumber === undefined) {
+        fromRevisionNumber = revisionNumbers.at(-2)
+      }
+      if (toRevisionNumber === undefined) {
+        toRevisionNumber = revisionNumbers.at(-1)
+      }
     }
+  }
+
+  async function fetchRevisionDiff() {
+    if (fromRevisionNumber === undefined || toRevisionNumber === undefined) return
+
+    revisionDiffLoading = true
+    try {
+      const res = await fetch("?/revisionDiff", {
+        method: "POST",
+        body: JSON.stringify({
+          siteId: data.site.site_id,
+          pageId: data.page?.page_id,
+          fromRevisionNumber,
+          toRevisionNumber
+        })
+      }).then((response) => response.text())
+
+      const result = deserialize<
+        { res: Optional<PageRevisionDiffOutput> },
+        { message: string; code: string; data: Record<string, unknown> }
+      >(res)
+
+      if (result.type === "failure" && result.data?.message) {
+        errorPopupState.current = {
+          state: true,
+          message: result.data.message,
+          data: result.data
+        }
+      } else if (result.type === "success") {
+        revisionDiff = result.data?.res
+      }
+    } finally {
+      revisionDiffLoading = false
+    }
+  }
+
+  function swapRevisionDiff() {
+    const previousFrom = fromRevisionNumber
+    fromRevisionNumber = toRevisionNumber
+    toRevisionNumber = previousFrom
+    revisionDiff = undefined
   }
 
   async function getRevision(
@@ -346,6 +401,64 @@
   {/if}
 {/if}
 
+{#if revisionMap.size >= 2}
+  <section class="revision-diff-panel" aria-labelledby="revision-diff-heading">
+    <h2 id="revision-diff-heading">
+      {data.internationalization?.["wiki-page-revision-diff"]}
+    </h2>
+    <div class="revision-diff-controls">
+      <label for="revision-diff-from">
+        {data.internationalization?.["wiki-page-revision-diff.from"]}
+      </label>
+      <select id="revision-diff-from" bind:value={fromRevisionNumber}>
+        {#each [...revisionMap.keys()].sort((a, b) => a - b) as revisionNumber}
+          <option value={revisionNumber}>{revisionNumber}</option>
+        {/each}
+      </select>
+      <label for="revision-diff-to">
+        {data.internationalization?.["wiki-page-revision-diff.to"]}
+      </label>
+      <select id="revision-diff-to" bind:value={toRevisionNumber}>
+        {#each [...revisionMap.keys()].sort((a, b) => a - b) as revisionNumber}
+          <option value={revisionNumber}>{revisionNumber}</option>
+        {/each}
+      </select>
+      <button class="action-button clickable" onclick={swapRevisionDiff} type="button">
+        {data.internationalization?.["wiki-page-revision-diff.swap"]}
+      </button>
+      <button
+        class="action-button clickable"
+        disabled={revisionDiffLoading}
+        onclick={fetchRevisionDiff}
+        type="button"
+      >
+        {revisionDiffLoading
+          ? data.internationalization?.["wiki-page-revision-diff.loading"]
+          : data.internationalization?.["wiki-page-revision-diff.compare"]}
+      </button>
+    </div>
+    {#if revisionDiff}
+      {#if revisionDiff.lines.length === 0}
+        <p>{data.internationalization?.["wiki-page-revision-diff.no-changes"]}</p>
+      {:else}
+        <pre
+          class="revision-diff"
+          aria-live="polite">{#each revisionDiff.lines as line}<span
+              class:added={line.kind === "added"}
+              class:removed={line.kind === "removed"}
+              class:unchanged={line.kind === "unchanged"}
+              class="revision-diff-line"
+              >{line.kind === "added"
+                ? "+"
+                : line.kind === "removed"
+                  ? "-"
+                  : " "}{line.text}{"\n"}</span
+            >{/each}</pre>
+      {/if}
+    {/if}
+  </section>
+{/if}
+
 <style lang="scss">
   textarea.revision-source {
     width: 100%;
@@ -363,6 +476,36 @@
       .revision-attribute {
         display: table-cell;
       }
+    }
+  }
+
+  .revision-diff-panel {
+    margin-top: 1rem;
+  }
+
+  .revision-diff-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .revision-diff {
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+    overflow: auto;
+    white-space: pre-wrap;
+
+    .revision-diff-line {
+      display: block;
+    }
+
+    .added {
+      background: rgb(220 255 220);
+    }
+
+    .removed {
+      background: rgb(255 225 225);
     }
   }
 </style>

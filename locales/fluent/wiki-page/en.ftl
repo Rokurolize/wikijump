@@ -16,6 +16,14 @@ wiki-page-view-source = View Source
 
 wiki-page-revision-history = Page revision history
 
+wiki-page-revision-diff = Compare revisions
+  .from = From revision
+  .to = To revision
+  .compare = Compare
+  .swap = Swap
+  .loading = Loading comparison…
+  .no-changes = No differences.
+
 wiki-page-revision-number = Revision #
 
 wiki-page-revision-created-at = Edit time

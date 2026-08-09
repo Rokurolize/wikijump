@@ -3,6 +3,7 @@ import {
   pageHistory,
   pageRestore,
   pageRevision,
+  pageRevisionDiff,
   pageRollback
 } from "$lib/server/deepwell/page"
 import {
@@ -73,6 +74,33 @@ const pageRevisionSchema = object({
   revisionNumber: number(),
   compiledHtml: optional(boolean()),
   wikitext: optional(boolean())
+})
+
+export async function pageRevisionDiffAction(event: RequestEvent) {
+  const { request } = event
+  try {
+    const requestData = await readActionJson(request, pageRevisionDiffSchema)
+    const { siteId, pageId, fromRevisionNumber, toRevisionNumber } = requestData
+    const context = await resolvePageActionRequestContext(event, {
+      submittedSiteId: siteId
+    })
+    const res = await pageRevisionDiff(
+      siteId,
+      pageId,
+      fromRevisionNumber,
+      toRevisionNumber,
+      context.requestContext
+    )
+    return { res }
+  } catch (error) {
+    return failForActionError(error)
+  }
+}
+
+const pageRevisionDiffSchema = object({
+  ...pageActionBaseSchema,
+  fromRevisionNumber: number(),
+  toRevisionNumber: number()
 })
 
 export async function pageRollbackAction(event: RequestEvent) {

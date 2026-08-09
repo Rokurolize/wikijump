@@ -73,6 +73,13 @@ const foundPageTranslateKeys = (
       days: daysDiff
     },
     "wiki-page-revision-history": {},
+    "wiki-page-revision-diff": {},
+    "wiki-page-revision-diff.from": {},
+    "wiki-page-revision-diff.to": {},
+    "wiki-page-revision-diff.compare": {},
+    "wiki-page-revision-diff.swap": {},
+    "wiki-page-revision-diff.loading": {},
+    "wiki-page-revision-diff.no-changes": {},
     "wiki-page-revision-number": {},
     "wiki-page-revision-created-at": {},
     "wiki-page-revision-user": {},
