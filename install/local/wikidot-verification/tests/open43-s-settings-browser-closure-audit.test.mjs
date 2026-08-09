@@ -116,6 +116,7 @@ test("settings and browser closure audit is complete without promoting candidate
   );
   assert.equal("C_SETTINGS_IMPORT_EXPORT" in audit.central_commands, false);
   assert.equal("C_SETTINGS_BROWSER_CANDIDATE" in audit.central_commands, false);
+  assert.equal("C_LEGACY_ADMIN_ROUTE" in audit.central_commands, false);
   assert.equal(audit.central_commands.C_SETTINGS_CANDIDATE.exists_now, true);
   assert.match(
     audit.central_commands.C_SETTINGS_CANDIDATE.command,
@@ -139,7 +140,9 @@ test("settings and browser closure audit is complete without promoting candidate
     "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
   ];
   assert.deepEqual(audit.central_commands.C_SETTINGS_CANDIDATE.coverage_case_ids, reversibleSettingsCases);
-  assert.deepEqual(rows.filter(({ next_command_ids: ids = [] }) => ids.includes("C_SETTINGS_CANDIDATE")).map(({ case_id }) => case_id), reversibleSettingsCases);
+  const sharedSettingsRows = [...reversibleSettingsCases.slice(0, 6), "S1046_LEGACY_ADMIN_ROUTE", ...reversibleSettingsCases.slice(6)];
+  assert.deepEqual(rows.filter(({ next_command_ids: ids = [] }) => ids.includes("C_SETTINGS_CANDIDATE")).map(({ case_id }) => case_id), sharedSettingsRows);
+  assert.deepEqual(rowsByCaseId.get("S1046_LEGACY_ADMIN_ROUTE").next_command_ids, ["C_NODE_SETTINGS", "C_SETTINGS_CANDIDATE"]);
   for (const caseId of ["S758_CREATE_INITIAL", "S758_CREATE_SETTLED"]) {
     const row = rowsByCaseId.get(caseId);
     assert.equal(row.classification, "candidate_required");
@@ -178,4 +181,13 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.equal(audit.reconciliation.duplicate_case_ids, 0);
   assert.equal(audit.reconciliation.unknown_classifications, 0);
   assert.equal(audit.reconciliation.closure_claims, 0);
+  assert.equal("renderer_epoch_coordination" in audit, false);
+  assert.equal(audit.renderer_epoch_finalization.classification, "source_ready");
+  assert.equal(audit.renderer_epoch_finalization.current_epoch, 6);
+  assert.equal(audit.renderer_epoch_finalization.epoch_source, "deepwell/src/services/render/generator.rs");
+  assert.equal(audit.renderer_epoch_finalization.required_bump_count, 1);
+  assert.equal(audit.renderer_epoch_finalization.completed_bump_count, 1);
+  assert.equal(audit.renderer_epoch_finalization.finalized_by.source_commit, "28728b2ea0ff9047d8e7c8e7dd698dc7bc16df79");
+  assert.equal(audit.renderer_epoch_finalization.finalized_by.source_tree, "dabc3ab9295438a2e7300feb6f47d7628f317faf");
+  assert.equal(audit.renderer_epoch_finalization.finalized_by.integration_commit_reconciliation_required, false);
 });

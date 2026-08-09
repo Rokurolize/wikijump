@@ -212,7 +212,7 @@
   },
   "classification_contract": {
     "referent_table_path": "docs/development/referent-table-open43-s-settings-browser-closure-audit.md",
-    "referent_table_sha256": "7eb1d1c498fd9259ad1068124d8b6f0b85543a9ca7ae8a23cef6427827df3043",
+    "referent_table_sha256": "09e38600ce47840c92031c521c8d55c14408cb522a6a5c46bc12c4749d38a5f9",
     "allowed": ["source_ready", "needs_source", "candidate_required", "blocked_evidence"],
     "source_ready_is_not_pass": true,
     "candidate_required_is_not_pass": true,
@@ -910,7 +910,7 @@
           "existing_tests": ["framerail/tests/site-settings-foundation.test.js::serves the observed legacy admin path through the same SSR and action seam"],
           "evidence_ids": ["E_GENERAL_PANEL"],
           "implementation_commits": ["69111a70c6684eab1193b2f706445e27d6960345"],
-          "next_command_ids": ["C_NODE_SETTINGS", "C_LEGACY_ADMIN_ROUTE"]
+          "next_command_ids": ["C_NODE_SETTINGS", "C_SETTINGS_CANDIDATE"]
         },
         {
           "case_id": "S1046_IMPORT_EXPORT_REPRESENTATION",
@@ -1080,12 +1080,6 @@
       "phase": "final_candidate",
       "exists_now": true
     },
-    "C_LEGACY_ADMIN_ROUTE": {
-      "command": "pnpm --dir framerail exec playwright test --config playwright.candidate.config.ts tests/wikidot-legacy-admin-route.spec.ts",
-      "phase": "final_candidate",
-      "exists_now": false,
-      "required_before_run": "Add the identity-consuming candidate Playwright contract for administrator and denied actors. The /_admin source route already reuses the normal load/action boundary; the test must not substitute the ordinary seeded page, /-/admin, or a mock-only fixture."
-    },
     "C_BROWSER_PARITY_CANDIDATE": {
       "command": "node install/local/wikidot-verification/scripts/run-standing-browser-parity.mjs --mode candidate --output-dir /home/roku/wjlab/evidence/open43-final/settings-browser/browser --live-completion-policy /home/roku/wjlab/evidence/open43-final/settings-browser/sealed-live-completion-policy.json --candidate-identity /home/roku/wjlab/evidence/open43-final/settings-browser/sealed-candidate-parity-identity.json --live-reference-ledger /home/roku/wjlab/evidence/open43-final/settings-browser/standing-browser-live-reference.json --live-reference-sha256 <sealed-reference-sha256> --browser-root framerail --browser-executable /usr/bin/google-chrome",
       "phase": "final_candidate",
@@ -1154,15 +1148,21 @@
       }
     }
   },
-  "renderer_epoch_coordination": {
-    "current_epoch": 2,
+  "renderer_epoch_finalization": {
+    "classification": "source_ready",
+    "current_epoch": 6,
+    "epoch_source": "deepwell/src/services/render/generator.rs",
+    "owner": "root integration after all render-affecting lanes are source-frozen",
+    "required_bump_count": 1,
+    "completed_bump_count": 1,
     "lane_must_not_bump": true,
-    "owner": "root integration after every render-affecting lane is source-frozen",
-    "relevant_post_v2_commit": {
-      "commit": "2edfc82b19d6198b0a3173985bf0f315df863134",
-      "subject": "fix(listpages): execute includes in plain selected content"
-    },
-    "requirement": "The root must include this commit in the final post-v2 reconciliation, bump the renderer epoch exactly once, and prove that old v2 compiled artifacts and cache keys are not reused before #690 candidate capture."
+    "finalized_by": {
+      "source_commit": "28728b2ea0ff9047d8e7c8e7dd698dc7bc16df79",
+      "source_tree": "dabc3ab9295438a2e7300feb6f47d7628f317faf",
+      "subject": "render: finalize renderer epoch v6",
+      "integration_commit_reconciliation_required": false,
+      "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
+    }
   },
   "reconciliation": {
     "issue_count": 9,
