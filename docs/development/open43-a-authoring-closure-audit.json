@@ -381,38 +381,82 @@
       "limitation": "The Node server-action regression passed locally. The Rust integration binary and exact combined candidate identity remain central-owned. Browser cancel, origin/CSRF, focus, paint, and exact legacy presentation remain separate candidate rows."
     }
   ],
+  "candidate_harness_gap": {
+    "reviewed_at": "2026-08-09",
+    "review_base": "89b4735e817a3e770b3e5028aafaaff350a1b506",
+    "candidate_identity": {
+      "exists_now": false,
+      "required_identity": "A sealed production-build candidate for the final integration commit, exact FTML pin, immutable image IDs, isolated configuration, healthy externally owned compose project, and explicit non-443 HTTPS scpaiueouiuiuiui.wikijump.localhost endpoint.",
+      "forbidden_substitute": "Standing, debug servers, unsealed local stacks, and receipts from another source revision cannot satisfy these rows."
+    },
+    "existing_infrastructure_owner": {
+      "identity": "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs and standing-browser-runtime-identity.mjs",
+      "external_browser_attachment": "install/local/wikidot-verification/src/standing-browser-parity-browser-session.mjs",
+      "interval_capture": "install/local/wikidot-verification/src/standing-browser-parity-observation.mjs",
+      "immutable_publication": "install/local/wikidot-verification/src/standing-browser-parity-util.mjs#sealJsonNoReplace",
+      "boundary": "Authoring must reuse these infrastructure proofs. It must not add a second identity, browser-session, capture, or no-replace owner."
+    },
+    "missing_shared_seam": {
+      "exists_now": false,
+      "required_before_run": "Expose one small candidate case adapter from the existing parity owner. The adapter must accept case-specific public setup, assertion, and cleanup callbacks while retaining the existing candidate identity, external browser, request gate, DOMContentLoaded and settled capture, runtime stability, and no-replace publication lifecycle.",
+      "rejected_design": "A separate authoring contract, JSON-RPC lifecycle owner, browser runner, identity wrapper, and verdict schema duplicated the standing infrastructure for three workflows and was removed before commit."
+    },
+    "executable_rows_after_shared_seam": [
+      {
+        "case_id": "A1061_FIRST_RELOAD_INTERVALS",
+        "public_setup": "Create one run-owned component: page and dependent page in scpaiueouiuiuiui, save red to blue through authenticated page_edit, and clean both through authenticated page_delete.",
+        "observable_assertion": "The first dependent navigation after save records blue and no red computed color at DOMContentLoaded and settled, without dependent page_edit or manual rerender."
+      },
+      {
+        "case_id": "A1063_DIFF_BROWSER_WORKFLOW",
+        "public_setup": "Create one run-owned page with three revisions through page_create and page_edit, then clean it through page_delete.",
+        "observable_assertion": "The served HistoryPane records loading, escaped typed lines, swap, empty, fail-closed, back, forward, and focus states without disclosing source in a denied response."
+      },
+      {
+        "case_id": "A1063_SETTINGS_BROWSER_WORKFLOW",
+        "public_setup": "Read and later restore the session actor locales through user_get and authenticated user_edit; no client-selected user becomes authority.",
+        "observable_assertion": "The served settings route records anonymous redirect, invalid input, self-only save, cancel, fresh reload persistence, CSRF rejection, cross-actor inertness, and restored cleanup state."
+      }
+    ],
+    "blocked_row": {
+      "case_id": "A1063_BREADCRUMB_SERVED_CANDIDATE",
+      "status": "blocked_missing_public_fixture_producer",
+      "missing": "No supported public request creates provenance-backed wikidot_page_snapshot ancestry for parent-none, chain, private, missing, deleted, and renamed imported-page states.",
+      "forbidden_inference": "Do not use ordinary parent_set relations as imported snapshot ancestry, mutate a mirror, or publish a self-reported passing receipt. Exact cycle semantics also remain blocked by missing authoritative evidence."
+    }
+  },
   "browser_commands": [
     {
       "case_ids": [
         "A1061_FIRST_RELOAD_INTERVALS"
       ],
-      "command": "pnpm --dir framerail test tests/page-workflows.spec.ts --grep 'component CSS save changes the dependent article on the first reload'",
-      "status": "candidate_test_missing",
-      "prerequisite": "Add the named exact-runtime Playwright case. The existing fixture-server suite cannot prove the real rerender worker or initial stale paint."
+      "command": null,
+      "status": "blocked_missing_shared_candidate_case_adapter",
+      "prerequisite": "Add this case through candidate_harness_gap.missing_shared_seam. The existing fixture-server suite cannot prove the real rerender worker or initial stale paint."
     },
     {
       "case_ids": [
         "A1063_DIFF_BROWSER_WORKFLOW"
       ],
-      "command": "pnpm --dir framerail test tests/page-workflows.spec.ts --grep 'revision diff is escaped and preserves loading error swap navigation and focus'",
-      "status": "candidate_test_missing",
-      "prerequisite": "Add the named served History workflow case with an actor-aware Deepwell fixture."
+      "command": null,
+      "status": "blocked_missing_shared_candidate_case_adapter",
+      "prerequisite": "Add the served History workflow through candidate_harness_gap.missing_shared_seam with a public actor-aware fixture."
     },
     {
       "case_ids": [
         "A1063_BREADCRUMB_SERVED_CANDIDATE"
       ],
-      "command": "pnpm --dir framerail test tests/page-workflows.spec.ts --grep 'breadcrumbs render permission-filtered ancestors'",
-      "status": "candidate_test_missing",
-      "prerequisite": "Add the named served DOM case for every relation state before running this command."
+      "command": null,
+      "status": "blocked_missing_public_fixture_producer",
+      "prerequisite": "Establish a provenance-backed read-only imported-page fixture set or a supported public snapshot-ancestry producer before adding a browser case."
     },
     {
       "case_ids": [
         "A1063_SETTINGS_BROWSER_WORKFLOW"
       ],
-      "command": "pnpm --dir framerail test tests/page-workflows.spec.ts --grep 'user settings redirect anonymous actors and persist self locale preferences'",
-      "status": "candidate_test_missing",
-      "prerequisite": "Add the named authenticated browser case with session, CSRF, save, cancel, and reload controls."
+      "command": null,
+      "status": "blocked_missing_shared_candidate_case_adapter",
+      "prerequisite": "Add the authenticated settings workflow through candidate_harness_gap.missing_shared_seam with session, CSRF, save, cancel, reload, and public cleanup controls."
     }
   ],
   "lane_validation": {
