@@ -8,6 +8,7 @@ import {
   requestLegacyScore,
   requestLegacySetTags
 } from "../src/lib/wikidot/wikidot-legacy-action-request.js"
+import { requestMembershipJoin } from "../src/lib/wikidot/wikidot-membership-action-request.js"
 
 const success = (res) => ({ type: "success", data: { res } })
 
@@ -80,5 +81,21 @@ test("server action failures remain observable to the action state machine", asy
   await assert.rejects(
     requestLegacyRate(recorder, { pageId: 42, value: 1 }),
     /Permission denied\./u
+  )
+})
+
+test("Join submits no client actor, site, policy, membership, or token state", async () => {
+  const recorder = requestRecorder(success({ outcome: "joined" }))
+  await requestMembershipJoin(recorder, {
+    userId: 91,
+    siteId: 42,
+    policy: "open",
+    policyRevision: 7,
+    invitationToken: "secret"
+  })
+
+  assert.deepEqual(
+    recorder.requests.map(({ url, init }) => [url, init.method, init.body]),
+    [["?/membershipJoin", "POST", undefined]]
   )
 })

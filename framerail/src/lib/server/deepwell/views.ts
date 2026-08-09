@@ -95,6 +95,8 @@ export type LegacyBrowserAction =
   | { type: "print" }
   | { type: "set-tags"; index: number; fingerprint: string }
 
+export type MembershipBrowserAction = { type: "join" }
+
 interface PageViewFound {
   type: "found"
   data: PageViewDataBase & {
@@ -107,6 +109,7 @@ interface PageViewFound {
     page_discussion: PageDiscussionSettings
     data_form: Nullable<DataFormEditor>
     legacy_actions: LegacyBrowserAction[]
+    membership_actions: MembershipBrowserAction[]
   }
 }
 

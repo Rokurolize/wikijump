@@ -6,6 +6,11 @@ import {
   performWikidotLegacyAction,
   planWikidotStandaloneActionBindings
 } from "../src/lib/wikidot/wikidot-legacy-actions.js"
+import {
+  performWikidotMembershipAction,
+  planWikidotJoinActionBindings,
+  wikidotMembershipActions
+} from "../src/lib/wikidot/wikidot-membership-actions.js"
 
 const actionElement = () => {
   const attributes = new Map()
@@ -152,4 +157,89 @@ test("sidecar binding preserves exact DOM and fails closed on a count mismatch",
     assert.equal(control.getAttribute("data-wikijump-legacy-action"), null)
     assert.equal(control.getAttribute("onclick"), null)
   }
+})
+
+test("Join binds exact renderer DOM out of band and remains busy through reload", async () => {
+  const exact = actionElement()
+  exact.matches = (selector) =>
+    selector ===
+    `div > a[href="javascript:;"][onclick="WIKIDOT.page.listeners.join(event, 'unified')"]`
+  const custom = actionElement()
+  custom.matches = () => false
+  const actions = [{ type: "join" }]
+
+  assert.deepEqual(planWikidotJoinActionBindings([exact], actions), [[exact, actions[0]]])
+  assert.deepEqual(planWikidotJoinActionBindings([exact, custom], actions), [])
+  assert.equal(exact.getAttribute("data-wikijump-membership-action"), null)
+
+  let release
+  let reloads = 0
+  const joining = performWikidotMembershipAction(exact, actions[0], {
+    join: () => new Promise((resolve) => (release = resolve)),
+    reload: () => {
+      reloads += 1
+    }
+  })
+  assert.equal(exact.getAttribute("aria-busy"), "true")
+  assert.equal(
+    await performWikidotMembershipAction(exact, actions[0], {
+      join: () => {
+        throw new Error("repeated Join must not execute")
+      }
+    }),
+    false
+  )
+  release()
+  assert.equal(await joining, true)
+  assert.equal(exact.getAttribute("aria-busy"), null)
+  assert.equal(reloads, 1)
+})
+
+test("unsupported membership descriptors and authored lookalikes fail closed", async () => {
+  const lookalike = actionElement()
+  lookalike.matches = () => false
+  let joined = false
+
+  assert.deepEqual(planWikidotJoinActionBindings([lookalike], [{ type: "join" }]), [])
+  assert.equal(
+    await performWikidotMembershipAction(
+      lookalike,
+      { type: "author-script", onclick: "alert(1)" },
+      { join: () => (joined = true) }
+    ),
+    false
+  )
+  assert.equal(joined, false)
+})
+
+test("a sidecar mismatch intercepts the exact legacy onclick without joining", () => {
+  const first = actionElement()
+  const second = actionElement()
+  first.matches = () => true
+  second.matches = () => true
+  const listeners = new Map()
+  const root = {
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: () => {},
+    querySelectorAll: () => [first, second]
+  }
+  first.parentElement = root
+  second.parentElement = root
+  let joined = false
+  wikidotMembershipActions(root, {
+    actions: [{ type: "join" }],
+    runtime: { join: () => (joined = true) }
+  })
+  let prevented = false
+  let stopped = false
+
+  listeners.get("click")({
+    target: first,
+    preventDefault: () => (prevented = true),
+    stopPropagation: () => (stopped = true)
+  })
+
+  assert.equal(prevented, true)
+  assert.equal(stopped, true)
+  assert.equal(joined, false)
 })

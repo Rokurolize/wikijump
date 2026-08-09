@@ -36,6 +36,7 @@ import {
   pageLockHistoryAction,
   pageLockRemoveAction
 } from "$lib/server/load/page/page-lock-actions"
+import { membershipJoinAction } from "$lib/server/load/page/page-membership-actions"
 
 export const pageActions = {
   delete: pageDeleteAction,
@@ -64,6 +65,7 @@ export const pageActions = {
   voteCancel: pageVoteRemoveAction,
   score: pageScoreAction,
   legacySetTags: wikidotLegacySetTagsAction,
+  membershipJoin: membershipJoinAction,
   deletedGet: pageDeletedGetAction,
   restore: pageRestoreAction
 }

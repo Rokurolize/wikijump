@@ -24,6 +24,8 @@
     requestLegacyScore,
     requestLegacySetTags
   } from "$lib/wikidot/wikidot-legacy-action-request"
+  import { wikidotMembershipActions } from "$lib/wikidot/wikidot-membership-actions"
+  import { requestMembershipJoin } from "$lib/wikidot/wikidot-membership-action-request"
   import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
   import { resolveWikidotHashMagicPagePane } from "$lib/wikidot/wikidot-hash-magic"
   import { onMount } from "svelte"
@@ -215,9 +217,19 @@
     }
   }
 
+  const membershipActionRuntime = {
+    join: () => requestMembershipJoin(legacyRequestRuntime),
+    reload: () => window.location.reload(),
+    error: legacyActionRuntime.error
+  }
+
   let legacyActionParameters = $derived({
     actions: showRevision ? [] : (data.legacy_actions ?? []),
     runtime: legacyActionRuntime
+  })
+  let membershipActionParameters = $derived({
+    actions: showRevision ? [] : (data.membership_actions ?? []),
+    runtime: membershipActionRuntime
   })
 
   onMount(() => {
@@ -300,6 +312,7 @@
       id="page-content"
       class:hidden={dataFormEditing}
       use:wikidotLegacyActions={legacyActionParameters}
+      use:wikidotMembershipActions={membershipActionParameters}
       use:wikidotTabviews
     >
       {@html showRevision ? revision?.compiled_body_html : data.compiled_body_html}
