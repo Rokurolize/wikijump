@@ -140,6 +140,10 @@
     }
   ],
   "evidence_registry": {
+    "E_OPEN43_READONLY_LIVE_20260810": {
+      "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+      "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410"
+    },
     "E_ICON_SCOPE": {
       "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/icon-setting-v1/scoping-verdict.json",
       "sha256": "bb73af6a64011df8d87b0766032ae63c2cbdee4e0cb845b62bdb2e2bea38cd15"
@@ -683,9 +687,9 @@
           "reason": "The issue comment proposes these red cases, but the required two positive and two negative live boundary observations are not frozen for each widened grammar rule.",
           "source_paths": [],
           "existing_tests": [],
-          "evidence_ids": ["E_G06", "E_V7_CORPUS"],
+          "evidence_ids": ["E_G06", "E_V7_CORPUS", "E_OPEN43_READONLY_LIVE_20260810"],
           "missing_evidence": [
-            "live grammar boundary matrix for every widened token form"
+            "two stopping controls for every remaining width, size, quote, and float token rule"
           ],
           "next_command_ids": []
         },
@@ -761,9 +765,9 @@
           "reason": "Only the one-space and multiple-space G61 source forms are sealed; the proposed wider grammar lacks the required live boundary controls.",
           "source_paths": [],
           "existing_tests": [],
-          "evidence_ids": ["E_G61", "E_V7_CORPUS"],
+          "evidence_ids": ["E_G61", "E_V7_CORPUS", "E_OPEN43_READONLY_LIVE_20260810"],
           "missing_evidence": [
-            "live grammar boundary matrix for every widened token form"
+            "two stopping controls for every remaining width, size, quote, and centered token rule"
           ],
           "next_command_ids": []
         },
@@ -820,14 +824,13 @@
           "case_id": "M1039_FILES_NONEMPTY_ROWS",
           "acceptance": "Render 1/N file rows with exact name, href, size, type, date, user, order, pagination, duplicate-looking name, Unicode, deleted, and revision behavior.",
           "classification": "blocked_evidence",
-          "reason": "No frozen nonempty Files row DOM or ordering/pagination contract was found. The current renderer deliberately leaves HasFiles unsupported instead of fabricating empty output.",
+          "reason": "The new public matrix freezes nonempty and empty row DOM on three pages each, but it does not establish pagination, duplicate-looking or Unicode names, deletion, or revision presentation. The current renderer remains unsupported beyond the evidenced slice.",
           "source_paths": ["deepwell/src/services/render/file_modules.rs"],
           "existing_tests": [],
-          "evidence_ids": ["E_MODULE_PREVIEW_CORPUS", "E_FILES_SAVED_EMPTY"],
+          "evidence_ids": ["E_MODULE_PREVIEW_CORPUS", "E_FILES_SAVED_EMPTY", "E_OPEN43_READONLY_LIVE_20260810"],
           "missing_evidence": [
-            "nonempty row DOM",
-            "row ordering",
             "pagination",
+            "duplicate-looking and Unicode names",
             "deleted and revision presentation"
           ],
           "next_command_ids": []

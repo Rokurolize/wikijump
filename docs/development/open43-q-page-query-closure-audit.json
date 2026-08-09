@@ -131,6 +131,12 @@
       "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
       "sha256": "b133f02d624e9257c7ee0e79df1e86b93b2423c2813a9fed31d770273fc6a1cc",
       "issues": [1028, 1035]
+    },
+    {
+      "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+      "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+      "issues": [1035],
+      "evidence_ids": ["E_OPEN43_SITECHANGES_AMC_20260810"]
     }
   ],
   "issues": [
@@ -357,7 +363,13 @@
       "subrows": [
         {"case_id": "Q1035_SITECHANGES_DEFAULT_INITIAL_SNAPSHOT", "status": "source_ready"},
         {"case_id": "Q1035_SITECHANGES_PERMISSION_BEFORE_LIMIT", "status": "source_ready"},
-        {"case_id": "Q1035_SITECHANGES_FILTER_AND_AJAX_PAGER", "status": "blocked_evidence"},
+        {
+          "case_id": "Q1035_SITECHANGES_FILTER_AND_AJAX_PAGER",
+          "status": "blocked_evidence",
+          "evidence_ids": ["E_OPEN43_SITECHANGES_AMC_20260810"],
+          "observed": "Exact read-only AMC request bodies and responses now cover pages 1 through 3, out-of-range, source and files filters, empty options, and a missing category.",
+          "missing": "Per-page selection and the browser loading, failure, replacement, history, and focus lifecycle remain unobserved."
+        },
         {"case_id": "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE", "status": "blocked_evidence"},
         {"case_id": "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX", "status": "source_ready"},
         {"case_id": "Q1035_LISTDRAFTS_NONEMPTY_QUERY", "status": "blocked_evidence"}

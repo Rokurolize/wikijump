@@ -148,6 +148,10 @@
     }
   ],
   "evidence_registry": {
+    "E_OPEN43_READONLY_LIVE_20260810": {
+      "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+      "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410"
+    },
     "E_ANALYTICS_PANEL": {
       "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/admin-panels-v2/sm-ganalytics.html",
       "sha256": "5fc9ef7a511e3d0bb1db2805e6ebaaef3c526397e3bfc80b9efb3c5ddb7fed34"
@@ -649,7 +653,7 @@
           "reason": "The panel proves IDs and source groups but not the served asset URLs for each ID. Current source intentionally serves only the established Base assets.",
           "source_paths": ["framerail/src/routes/+layout.svelte"],
           "existing_tests": [],
-          "evidence_ids": ["E_THEME_PANEL", "E_THEME_SCOPE"],
+          "evidence_ids": ["E_THEME_PANEL", "E_THEME_SCOPE", "E_OPEN43_READONLY_LIVE_20260810"],
           "missing_evidence": ["built-in ID to asset mapping", "asset order and version", "missing-resource fallback"],
           "next_command_ids": []
         },
@@ -931,11 +935,12 @@
           "case_id": "S1046_AUTOCOMPLETE_AND_INTERMEDIATE_FRAMES",
           "acceptance": "Match default/welcome autocomplete request, results, keyboard, focus, loading, save error, success, cancel, reload, and client-navigation frames.",
           "classification": "blocked_evidence",
-          "reason": "The settled panel capture proves field and container identities but not interaction requests or intermediate frames. A plausible local autocomplete must not be invented.",
+          "reason": "The settled panel and new read-only lookup matrix prove the field, container, request, and JSON response shapes, but not keyboard, focus, loading, save, cancel, or navigation frames.",
           "source_paths": ["framerail/src/routes/[x+2d]/admin/SiteSettings.svelte"],
           "existing_tests": [],
-          "evidence_ids": ["E_GENERAL_PANEL"],
-          "missing_evidence": ["autocomplete request/response", "keyboard/focus", "loading/error/success/cancel transitions"],
+          "evidence_ids": ["E_GENERAL_PANEL", "E_OPEN43_READONLY_LIVE_20260810"],
+          "observed": "PageLookupQModule requests for home, system, a one-character query, and a missing query returned exact JSON result shapes.",
+          "missing_evidence": ["keyboard/focus", "loading/error/success/cancel transitions"],
           "next_command_ids": []
         },
         {

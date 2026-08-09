@@ -155,6 +155,14 @@
       "actor": "anonymous",
       "mutation": false,
       "authority": "Anonymous read-only Ajax observations on a 201-thread category establish the 20-thread page size, duplicate versus single pager placement, exact page 1, 2, 11, and 12 sequences, /forum/c-1113520/p/<page> hrefs, and the unclamped page 12 of 11 quirk."
+    },
+    {
+      "evidence_id": "OPEN43_READONLY_LIVE_20260810",
+      "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+      "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+      "actor": "anonymous",
+      "mutation": false,
+      "authority": "FrontForum offset, multiple-category, custom-template, feed-argument, and relative-link-switch observations over existing sandbox data."
     }
   ],
   "mutation_boundary_audit": {
@@ -380,7 +388,9 @@
       "blocked_evidence": [
         {
           "case_id": "Q1034_POPULATED_READ_MODEL_COVERAGE",
-          "missing": "The default anonymous FrontForum and core forum reads are implemented. The sealed baseline still does not define FrontForum feeds, offsets, multiple categories, custom templates, relative-link rewriting, private visibility, deletion, or complete ForumNewThread states.",
+          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810"],
+          "observed": "The sealed baseline now defines offset rows, populated-plus-empty category lists in either order, all-missing and malformed category errors, and documented versus unknown custom-template variables.",
+          "missing": "FrontForum feed delivery and head metadata, effective relative-link rewriting, private visibility, deletion, and complete ForumNewThread states remain undefined.",
           "forbidden_inference": "Do not recognize captured page data, treat one category as the general selector contract, or infer actor and mutation behavior from anonymous reads."
         },
         {

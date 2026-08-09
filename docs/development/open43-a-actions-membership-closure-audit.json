@@ -122,6 +122,11 @@
       {
         "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
         "sha256": "686f9fd383f51b5fe393b5f98b2a7e499010bfb691a39086309170a29982a783"
+      },
+      {
+        "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+        "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+        "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"]
       }
     ],
     "inherited_manifests": [
@@ -564,7 +569,12 @@
       "needs_source": [],
       "candidate_required": [],
       "blocked_evidence": [
-        {"case_id": "A1038_AUTHENTICATED_ACTOR_MATRIX"},
+        {
+          "case_id": "A1038_AUTHENTICATED_ACTOR_MATRIX",
+          "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"],
+          "observed": "The existing administrator receives populated ManageSite, General Settings, Themes, and PetitionAdmin output while B and C receive administrator or permission errors.",
+          "missing": "Dashboard produced Not allowed for all three actors and Clone produced Site cannot be found for all three, so their positive actor states remain unavailable."
+        },
         {"case_id": "A1038_CLONE_ACTION"},
         {"case_id": "A1038_SITEGRID_POPULATED"},
         {"case_id": "A1038_THEMEPREVIEWER_ACTIVE"},

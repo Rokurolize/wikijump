@@ -119,6 +119,12 @@
       "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
       "sha256": "686f9fd383f51b5fe393b5f98b2a7e499010bfb691a39086309170a29982a783",
       "authority": "frozen anonymous own-line module references including FeaturedSite and Members"
+    },
+    {
+      "evidence_id": "OPEN43_READONLY_LIVE_20260810",
+      "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+      "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+      "authority": "bounded anonymous and authenticated read-only Members and UserInfo observations"
     }
   ],
   "issues": [
@@ -318,7 +324,9 @@
       "blocked_evidence": [
         {
           "case_id": "Q1032_REMAINING_DIRECTORY_RUNTIME",
-          "missing": "Live-backed AMC page requests and responses beyond the first Members page, populated target UserInfo, populated Watchers and WhoInvited results, full role/privacy actor matrices, and rename/delete/import invalidation are not fully evidenced or modeled.",
+          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_USERINFO_EXISTENCE_20260810"],
+          "observed": "Anonymous Members pages 1 through 3, two populated and two missing UserInfo routes, and sandbox A/B/C empty Members page controls are now sealed.",
+          "missing": "Populated Watchers and WhoInvited results, full role/privacy actor matrices, and rename/delete/import invalidation remain unevidenced or unmodeled.",
           "forbidden_inference": "Do not broaden first-page data into an invented Ajax endpoint, expose deleted identities, or perform permission filtering after counts or pagination."
         }
       ],
