@@ -53,8 +53,11 @@
       "manifest_path": "wws/Cargo.toml",
       "lock_path": "wws/Cargo.lock",
       "lock_sha256_before": "b08563c1fb7d21a82170ee7da499a52b8a8a703da466db60232e9212cca43521",
+      "lock_sha256_after": "b2dd93e9ccd13b40cad1c99bf97dd79ca1d773839074adbd2b4c553c1988252e",
       "lock_update_owner": "root Cargo broker",
-      "lock_update_pending": true,
+      "lock_resolution_command": "cargo metadata --manifest-path wws/Cargo.toml --format-version 1",
+      "lock_update_pending": false,
+      "lock_validation_pending": true,
       "lock_update_command_id": "C_WWS_LOCK_AND_CHECK"
     },
     "public_boundary": "Deepwell emits original and resized typed identities; WWS freshly resolves page identity and actor-bound file_get before MIME, size, ETag, S3, or decode decisions.",
@@ -261,10 +264,11 @@
       "exists_now": true
     },
     "C_WWS_LOCK_AND_CHECK": {
-      "command": "cargo check --manifest-path wws/Cargo.toml --tests",
+      "command": "cargo check --locked --manifest-path wws/Cargo.toml --tests",
       "phase": "dependency_lock_barrier",
       "exists_now": true,
-      "expected_mutation": "Update wws/Cargo.lock from its recorded pre-lane SHA only for the new image dependency graph; root must review the lock diff before accepting it."
+      "expected_mutation": "none",
+      "precondition": "wws/Cargo.lock has the reviewed image 0.25.10 graph and SHA-256 b2dd93e9ccd13b40cad1c99bf97dd79ca1d773839074adbd2b4c553c1988252e."
     },
     "C_WWS_RESIZED": {
       "command": "cargo test --manifest-path wws/Cargo.toml handler::resized_image::tests -- --nocapture",
