@@ -115,7 +115,7 @@ export class Open43SettingsBrowserAdapter {
     const page = await (await this.#context("administrator")).newPage();
     const consoleErrors = [];
     const analyticsRequests = [];
-    const policies = [];
+    let initialNavigationCspHeader = null;
     const onConsole = (message) => {
       if (message.type() === "error") consoleErrors.push(sha256(message.text()));
     };
@@ -123,13 +123,9 @@ export class Open43SettingsBrowserAdapter {
     const onRequest = (request) => {
       if (/google-analytics|googletagmanager/u.test(new URL(request.url()).hostname)) analyticsRequests.push(sha256(request.url()));
     };
-    const onResponse = (response) => {
-      if (response.request().resourceType() === "document") policies.push(response.headers()["content-security-policy"] ?? "");
-    };
     page.on("console", onConsole);
     page.on("pageerror", onPageError);
     page.on("request", onRequest);
-    page.on("response", onResponse);
     try {
       await page.setViewportSize(viewport);
       await page.addInitScript({ content: INITIAL_PROBE });
@@ -138,6 +134,11 @@ export class Open43SettingsBrowserAdapter {
         context: await this.#context("administrator"), page, url,
         label: "settings",
         index, contract, viewport, timeoutMs: CAPTURE_TIMEOUT_MS, settleMs: 0,
+        navigate: async ({ page: targetPage, url: targetUrl, timeoutMs }) => {
+          const response = await targetPage.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+          initialNavigationCspHeader = response?.headers()["content-security-policy"] || null;
+          return response;
+        },
         onPhase: async (phase) => {
           await this.#browserContexts.setActiveFixture(phase === "settled" ? `${label}_SETTLED` : `${label}_INITIAL`);
         },
@@ -232,16 +233,16 @@ export class Open43SettingsBrowserAdapter {
         console_errors: [...new Set(consoleErrors)].sort(),
         remote_analytics_request_count: analyticsRequests.length,
         toolbar_interactions: toolbarInteractions,
-        csp_nonce_matches_header:
+        initial_navigation_csp_header_sha256:
+          initialNavigationCspHeader === null ? null : sha256(initialNavigationCspHeader),
+        csp_nonce_matches_initial_navigation_header:
           initial.analytics.nonce.length > 0 &&
-          policies.some((policy) => policy.includes(`'nonce-${initial.analytics.nonce}'`)),
-        csp_header_present: policies.some((policy) => policy.length > 0),
+          initialNavigationCspHeader?.includes(`'nonce-${initial.analytics.nonce}'`) === true,
       };
     } finally {
       page.off("console", onConsole);
       page.off("pageerror", onPageError);
       page.off("request", onRequest);
-      page.off("response", onResponse);
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
   }

@@ -94,6 +94,8 @@ function fakePublicBoundary(events) {
     pageOrigin: PAGE_ORIGIN,
     fixtureIdentity: FIXTURE,
     privateInputIdentity: {
+      administrator_user_id: 41,
+      non_admin_user_id: 42,
       administrator_session_sha256: sha256Value(ADMIN_TOKEN),
       non_admin_session_sha256: sha256Value(NON_ADMIN_TOKEN),
       expired_session_sha256: sha256Value(EXPIRED_TOKEN),
@@ -109,10 +111,21 @@ function fakePublicBoundary(events) {
     },
     async rpc(method, params, options) {
       events.push({ seam: "rpc", method, target: params.site ?? params.page ?? null, cleanup: options.cleanup === true });
+      if (method === "session_get") {
+        if (params[0] === ADMIN_TOKEN) return { user_id: 41, session_token: "not-retained" };
+        if (params[0] === NON_ADMIN_TOKEN) return { user_id: 42, session_token: "not-retained" };
+        if (params[0] === EXPIRED_TOKEN) return null;
+      }
       if (method === "site_get") return params.site === FIXTURE.cross_site_sentinel_id ? null : clone(state.site);
       if (method === "category_get") return clone(state.categories.get(params.category) ?? null);
       if (method === "page_get") return clone(state.pages.get(params.page) ?? null);
       throw new Error(`unexpected fake RPC method: ${method}`);
+    },
+    async verifyActorSessions() {
+      const administrator = await this.rpc("session_get", [ADMIN_TOKEN], { actor: "anonymous", cleanup: false });
+      const nonAdmin = await this.rpc("session_get", [NON_ADMIN_TOKEN], { actor: "anonymous", cleanup: false });
+      const expired = await this.rpc("session_get", [EXPIRED_TOKEN], { actor: "anonymous", cleanup: false });
+      return { administrator_user_id: administrator.user_id, non_admin_user_id: nonAdmin.user_id, expired_session: expired };
     },
     async action(name, fields, options = {}) {
       events.push({ seam: "action", name, siteId: fields.siteId, actor: options.actor ?? "administrator", origin: options.origin ?? PAGE_ORIGIN, cleanup: options.cleanup === true });
@@ -184,7 +197,7 @@ function semantic(state, rawUrl = PAGE_ORIGIN) {
   };
 }
 
-function fakeBrowserAdapter({ browserContexts, storageState }, state, events) {
+function fakeBrowserAdapter({ browserContexts, storageState }, state, events, { directThemeFailure = false, directThemeStale = false, clientThemeStale = false } = {}) {
   const contexts = new Map();
   const ensureContext = async (actor = "administrator") => {
     if (!contexts.has(actor)) contexts.set(actor, browserContexts.newCandidateContext({ storageState: storageState(actor) }).then(({ context }) => context));
@@ -202,13 +215,16 @@ function fakeBrowserAdapter({ browserContexts, storageState }, state, events) {
         return value;
       };
       const initial = atViewport(semantic(state, url));
+      if (directThemeStale && label === "S755_THEME" && navigationFromUrl !== null) initial.theme.marker = "stale-direct-target";
       await browserContexts.setActiveFixture(`${label}_SETTLED`);
       const settled = atViewport(semantic(state, url));
+      if (directThemeStale && label === "S755_THEME" && navigationFromUrl !== null) settled.theme.marker = "stale-direct-target";
       const reload = atViewport(semantic(state, url));
       const navigationSource = navigationFromUrl === null ? null : semantic(state, navigationFromUrl);
       if (beforeClientNavigation !== null) await beforeClientNavigation();
       await browserContexts.setActiveFixture(`${label}_INITIAL`);
       const clientInitial = atViewport(semantic(state, url));
+      if (clientThemeStale && label === "S755_THEME" && navigationFromUrl !== null) clientInitial.theme.marker = "stale-client-transition";
       await browserContexts.setActiveFixture(`${label}_SETTLED`);
       const artifact = (phase) => ({ path: `${label}-${index}-${phase}.png`, sha256: sha256Value(`${label}:${index}:${phase}`) });
       events.push({ seam: "browser-adapter", label, index, navigationFromUrl });
@@ -217,7 +233,7 @@ function fakeBrowserAdapter({ browserContexts, storageState }, state, events) {
           input_url: url,
           final_url: url,
           navigation_status: 200,
-          failures: [],
+          failures: directThemeFailure && label === "S755_THEME" && navigationFromUrl !== null ? [{ kind: "http_error", status: 500 }] : [],
           first_paint: { document: { phase: "domcontentloaded_immediate_observation" }, screenshot: artifact("initial") },
           document: { phase: "settled", resource_completion: { status: "complete" } },
           settled_viewport_screenshot: artifact("settled"),
@@ -236,13 +252,17 @@ function fakeBrowserAdapter({ browserContexts, storageState }, state, events) {
         reload,
         reload_url: url,
         client_initial: clientInitial,
-        client: atViewport(semantic(state, url)),
+        client: (() => {
+          const value = atViewport(semantic(state, url));
+          if (clientThemeStale && label === "S755_THEME" && navigationFromUrl !== null) value.theme.marker = "stale-client-transition";
+          return value;
+        })(),
         navigation_from_url: navigationFromUrl,
         navigation_source: navigationSource,
         console_errors: [],
         remote_analytics_request_count: 0,
-        csp_nonce_matches_header: true,
-        csp_header_present: true,
+        initial_navigation_csp_header_sha256: sha256Value("fixture-csp-policy"),
+        csp_nonce_matches_initial_navigation_header: true,
         client_navigation_preserved_document: true,
         client_resource_completion: "complete",
         toolbar_interactions: { visible_after_scroll: true, focusable_link: true, client_navigation_preserved: true },
@@ -386,6 +406,12 @@ test("the real Settings CandidateCaseSet runs all nine reversible public cases e
   assert.equal(events.some(({ seam, name, siteId }) => seam === "action" && name === "site" && siteId === FIXTURE.cross_site_sentinel_id), true);
   assert.equal(events.some(({ seam, operation }) => seam === "browser-adapter" && operation === "general-form-save"), true);
   assert.equal(events.some(({ seam, label, navigationFromUrl }) => seam === "browser-adapter" && label === "S755_THEME" && navigationFromUrl === `${PAGE_ORIGIN}/${FIXTURE.default_category.page_slug}`), true);
+  const firstMutation = events.findIndex(({ seam }) => seam === "action");
+  const firstSettingsRead = events.findIndex(({ seam, method }) => seam === "rpc" && method !== "session_get");
+  const actorSessionReads = events.filter(({ seam, method }) => seam === "rpc" && method === "session_get");
+  assert.equal(actorSessionReads.length, 3);
+  assert.equal(events.indexOf(actorSessionReads.at(-1)) < firstSettingsRead, true);
+  assert.equal(events.indexOf(actorSessionReads.at(-1)) < firstMutation, true);
 
   const requiredSources = [
     "candidate-browser-contexts.mjs",
@@ -410,6 +436,7 @@ test("the real Settings CandidateCaseSet runs all nine reversible public cases e
   for (const secret of [ADMIN_TOKEN, NON_ADMIN_TOKEN, EXPIRED_TOKEN, RPC_TOKEN, TLS_CA]) assert.equal(published.includes(secret), false);
   assert.equal(published.includes("fixture-csp-nonce"), false);
   assert.equal(published.includes("wikijump_token"), false);
+  assert.equal(published.includes("expired_user_id"), false);
   for (const caseId of OPEN43_SETTINGS_BROWSER_CASE_IDS.slice(0, 8)) {
     const row = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", `${caseId}.json`), "utf8"));
     const temporalValues = [...(row.observations.disabled_captures ?? []), ...(row.observations.captures ?? [])].map(({ temporal }) => temporal);
@@ -422,6 +449,12 @@ test("the real Settings CandidateCaseSet runs all nine reversible public cases e
   const analyticsSettled = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", "S754_ANALYTICS_SETTLED.json"), "utf8"));
   assert.notEqual(analyticsInitial.observations.enabled_temporal.artifact.path, analyticsSettled.observations.temporal.artifact.path);
   assert.equal(analyticsSettled.observations.analytics.client_navigation_preserved_document, true);
+  assert.equal(analyticsInitial.observations.enabled.initial_navigation_csp_header_sha256, sha256Value("fixture-csp-policy"));
+  const themeInitial = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", "S755_THEME_INITIAL.json"), "utf8"));
+  assert.equal(themeInitial.observations.transition_theme.computed_marker, "open43-corpus-0123456789ab");
+  assert.equal(themeInitial.observations.category_transition_theme.computed_marker, "open43-corpus-0123456789ab");
+  assert.deepEqual(themeInitial.observations.transition_theme.capture_failures, []);
+  assert.deepEqual(themeInitial.observations.category_transition_theme.capture_failures, []);
   const adminSettled = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", "S1046_ADMIN_SETTLED.json"), "utf8"));
   assert.equal(adminSettled.observations.lifecycle.invalidation_status, 200);
   assert.equal(adminSettled.observations.lifecycle.fresh_revision_confirmation_status, 200);
@@ -434,6 +467,28 @@ test("the real Settings CandidateCaseSet runs all nine reversible public cases e
   assert.equal(toolbarSettled.observations.setting_transition.client_immediate_top_toolbar_count, 1);
   assert.equal(toolbarSettled.observations.setting_transition.client_settled_top_toolbar_count, 1);
   assert.notEqual(toolbarSettled.observations.setting_transition.initial_temporal.artifact.path, toolbarSettled.observations.setting_transition.settled_temporal.artifact.path);
+});
+
+test("the real Settings CaseSet verifies direct and client theme evidence independently", async (t) => {
+  for (const [fault, pattern] of [
+    [{ directThemeFailure: true }, /direct target theme capture/u],
+    [{ directThemeStale: true }, /theme observation is stale/u],
+    [{ clientThemeStale: true }, /client transition theme/u],
+  ]) {
+    const events = [];
+    const { state, session } = fakePublicBoundary(events);
+    const caseSet = createOpen43SettingsBrowserCandidateCaseSet({
+      sessionFactory: () => session,
+      browserAdapterFactory: (options) => fakeBrowserAdapter(options, state, events, fault),
+    });
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-settings-theme-failure-"));
+    t.after(() => fs.rm(root, { recursive: true, force: true }));
+    const identity = candidateIdentity();
+    await assert.rejects(
+      runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, dependencies: dependencies(events, []) }),
+      pattern,
+    );
+  }
 });
 
 test("Settings rejects any sealed candidate identity outside the exact editable origin", async (t) => {

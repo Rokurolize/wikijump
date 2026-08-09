@@ -2,7 +2,7 @@
 
 Referent table: `referent-table-open43-settings-browser-candidate-cases.md`
 
-Referent table SHA-256: `92202328f55fd51b9b8bc0f2c9fcf78b1fe8abbce2e31d687dd7296c1502a1d4`
+Referent table SHA-256: `027a9bb979a791f2b6cf145a1e8780a175b03d91a75cbe01466626e41cf8ddd4`
 
 ## User-visible goal
 
@@ -16,7 +16,7 @@ Launch or access: `pnpm --dir install/local/wikidot-verification candidate-cases
 
 Allowed target: the sealed non-443 `https://scpaiueouiuiuiui.wikijump.localhost:<candidate-port>` origin and its sealed services.
 
-Allowed private fixture: one mode-0600 JSON file that contains the administrator and non-administrator browser storage states or sessions, the expired session, the Deepwell token and endpoint, the TLS CA, the task-owned site, category, and existing-page identities used for the category transition, and a cross-site sentinel ID that a public preflight proves does not resolve. Receipts may contain only stable hashes or non-secret actor and fixture IDs derived from that file.
+Allowed private fixture: one mode-0600 JSON file that contains the administrator and non-administrator browser storage states or sessions and expected user IDs, the expired session, the Deepwell token and endpoint, the TLS CA, the task-owned site, category, and existing-page identities used for the category transition, and a cross-site sentinel ID that a public preflight proves does not resolve. Before any settings read or mutation, public `session_get` calls must return the exact two active user IDs and null for the expired token. Receipts may contain only stable hashes or non-secret active actor and fixture IDs derived from that file; they must not contain an expired user ID.
 
 ## User tasks
 
@@ -34,9 +34,9 @@ The denominator contains exactly these case IDs in this order: `S754_ANALYTICS_I
 
 Each temporal pair has two distinct observations. The first phase is `domcontentloaded_immediate_observation`. The second phase is `settled` and records successful resource completion.
 
-Analytics observations prove both disabled and enabled server-rendered head states, the exact enabled/profile value, queue order and cardinality, CSP materialization, the visible stale-save error's public code and message hash, the successful admin save, and zero remote analytics requests.
+Analytics observations prove both disabled and enabled server-rendered head states, the exact enabled/profile value, queue order and cardinality, CSP materialization, the visible stale-save error's public code and message hash, the successful admin save, and zero remote analytics requests. The CSP header hash and nonce relationship come only from the exact initial main-document navigation response. A header from reload, client navigation, or another document response cannot repair a missing or mismatched initial response header.
 
-Theme observations prove the expected base/site/page cascade and computed font, background, and foreground values on first paint and after settle. A same-document public navigation from the fixed default-category page to the fixed transition-category page has separate client-immediate and client-settled artifacts. Both must use the target category theme without one frame of the previous theme.
+Theme observations prove the expected base/site/page cascade and computed font, background, and foreground values on first paint and after settle. The direct main-document load of the transition-category target emits its own immediate and settled semantic snapshots and capture failures. A same-document public navigation from the fixed default-category page to that target emits separate client-immediate and client-settled semantic snapshots, artifacts, and capture failures. The verifier evaluates both routes independently, and both must use the target category theme without one frame of the previous theme.
 
 Toolbar observations prove that both disabled and enabled stored states control the server-rendered DOM on the fixed desktop, 767 px, and 479 px viewports. The desktop disabled document remains alive across the public toolbar mutation and then records separate client-immediate and client-settled enabled toolbar counts. The case also binds settled geometry, hit targets, scroll, and focus without a stale toolbar frame.
 
@@ -50,9 +50,11 @@ The runner closes every browser context and the browser before cleanup begins. C
 
 Reverse or duplicate an initial/settled phase and require rejection.
 
-Omit the disabled analytics or toolbar state, the analytics save/error identity, the immediate or settled category transition, computed theme styles, the mutation-crossing client-immediate toolbar state, toolbar geometry or setting change, or the public general-form stale-error identity and fresh-revision confirmation and require rejection.
+Omit the disabled analytics or toolbar state, the analytics save/error identity, either direct-target theme interval, either same-document category-transition interval, either route's failures, computed theme styles, the mutation-crossing client-immediate toolbar state, toolbar geometry or setting change, or the public general-form stale-error identity and fresh-revision confirmation and require rejection.
 
-Return stale analytics, theme, toolbar, or general settings from a fake public boundary and require rejection. Replace the category client transition with a full document load, return stale initial computed styles, or return a reload URL that differs from the independently planned public URL and require rejection.
+Return stale analytics, direct-target theme, client-transition theme, toolbar, or general settings from a fake public boundary and require rejection. Replace the category client transition with a full document load, return stale initial computed styles, return a reload URL that differs from the independently planned public URL, or supply the required CSP header only on a later document response and require rejection.
+
+Return the wrong administrator or non-administrator ID from public `session_get`, return a live session for the expired token, or retain an expired user ID in any receipt and require rejection.
 
 Return a successful denied-actor mutation, advance only its revision, change the wrong field for the administrator, return an expired-session 500, or return a successful wrong-origin request and require rejection.
 

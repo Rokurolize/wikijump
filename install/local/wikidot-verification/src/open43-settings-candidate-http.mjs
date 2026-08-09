@@ -10,6 +10,7 @@ import {
 } from "./standing-browser-parity-util.mjs";
 
 const ACTORS = Object.freeze(["administrator", "non_admin", "expired"]);
+const ACTIVE_ACTORS = Object.freeze(["administrator", "non_admin"]);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
 function loopbackRpcUrl(value) {
@@ -90,10 +91,11 @@ export class Open43SettingsCandidateSession {
       deepwell_rpc_token_sha256: sha256(this.#rpcToken),
       tls_ca_sha256: sha256(this.#tlsCa),
       fixture_identity_sha256: sha256(JSON.stringify(this.#fixture)),
-      ...Object.fromEntries(ACTORS.flatMap((name) => [
+      ...Object.fromEntries(ACTIVE_ACTORS.flatMap((name) => [
         [`${name}_user_id`, this.#actors[name].userId],
         [`${name}_session_sha256`, sha256(this.#actors[name].sessionToken)],
       ])),
+      expired_session_sha256: sha256(this.#actors.expired.sessionToken),
     };
   }
   get requiredServiceBindings() {
@@ -107,6 +109,24 @@ export class Open43SettingsCandidateSession {
     return {
       cookies: [{ name: "wikijump_token", value: selected.sessionToken, url: this.pageOrigin, httpOnly: true, secure: true, sameSite: "Lax" }],
       origins: [],
+    };
+  }
+
+  async verifyActorSessions() {
+    const sessions = {};
+    for (const name of ACTORS) {
+      sessions[name] = await this.rpc("session_get", [this.#actors[name].sessionToken], { actor: "anonymous" });
+    }
+    for (const name of ACTIVE_ACTORS) {
+      if (sessions[name]?.user_id !== this.#actors[name].userId) {
+        throw new Error(`${name} session_get user ID does not match private input`);
+      }
+    }
+    if (sessions.expired !== null) throw new Error("expired session_get result must be null");
+    return {
+      administrator_user_id: sessions.administrator.user_id,
+      non_admin_user_id: sessions.non_admin.user_id,
+      expired_session: null,
     };
   }
 

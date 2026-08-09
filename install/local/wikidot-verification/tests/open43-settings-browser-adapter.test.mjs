@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
 
 import { stringify as stringifyDevalue } from "devalue";
@@ -15,17 +16,33 @@ const semantic = {
   admin: { controls: [], general_values: {} },
 };
 
-function fakePage(initialUrl, events, { replaceDocumentOnNavigation = false } = {}) {
+function fakePage(initialUrl, events, { replaceDocumentOnNavigation = false, documentPolicies = [] } = {}) {
   let documentIdentity = "document-1";
   let clientHref = null;
   let url = initialUrl;
+  const listeners = new Map();
+  const documentResponse = (responseUrl) => {
+    const policy = documentPolicies.shift();
+    const response = {
+      url: () => responseUrl,
+      status: () => 200,
+      headers: () => ({ ...(policy === undefined ? {} : { "content-security-policy": policy }) }),
+      request: () => ({ resourceType: () => "document" }),
+    };
+    for (const listener of listeners.get("response") ?? []) listener(response);
+    return response;
+  };
   return {
-    on() {},
-    off() {},
+    on(name, listener) {
+      const values = listeners.get(name) ?? new Set();
+      values.add(listener);
+      listeners.set(name, values);
+    },
+    off(name, listener) { listeners.get(name)?.delete(listener); },
     async setViewportSize() {},
     async addInitScript() {},
-    async goto(nextUrl) { url = nextUrl; events.push(`goto:${new URL(nextUrl).pathname}`); return { status: () => 200 }; },
-    async reload() { events.push(`reload:${new URL(url).pathname}`); },
+    async goto(nextUrl) { url = nextUrl; events.push(`goto:${new URL(nextUrl).pathname}`); return documentResponse(nextUrl); },
+    async reload() { events.push(`reload:${new URL(url).pathname}`); return documentResponse(url); },
     async waitForLoadState() {},
     async waitForURL() {},
     url: () => url,
@@ -106,6 +123,43 @@ test("the settings adapter changes gate attribution between immediate and settle
   assert.notEqual(pair.capture.first_paint.screenshot.sha256, pair.capture.settled_viewport_screenshot.sha256);
 });
 
+test("the settings adapter cannot repair a missing initial CSP header with a later response", async () => {
+  const events = [];
+  const url = "https://scpaiueouiuiuiui.wikijump.localhost:18443/boundary-check";
+  const page = fakePage(url, events, { documentPolicies: [undefined, "script-src 'nonce-nonce'"] });
+  const browserContexts = (ownedPage) => ({
+    async newCandidateContext() { return { context: { async newPage() { return ownedPage; } }, environment: {} }; },
+    async setActiveFixture() {},
+    async captureCandidateObservation(options) {
+      await options.onPhase("domcontentloaded_immediate_observation");
+      const navigation = await options.navigate({ page: ownedPage, url: options.url, timeoutMs: 300_000 });
+      await options.onPhase("settled");
+      return {
+        input_url: url,
+        final_url: url,
+        navigation_status: navigation.status(),
+        failures: [],
+        first_paint: { document: { phase: "domcontentloaded_immediate_observation" }, screenshot: { path: "initial.png", sha256: "a".repeat(64) } },
+        document: { phase: "settled", resource_completion: { status: "complete" } },
+        settled_viewport_screenshot: { path: "settled.png", sha256: "b".repeat(64) },
+      };
+    },
+  });
+  const adapter = new Open43SettingsBrowserAdapter({ browserContexts: browserContexts(page), pageOrigin: new URL(url).origin, storageState: () => ({ cookies: [], origins: [] }) });
+  const pair = await adapter.capturePagePair({ url, label: "S754_ANALYTICS", index: 0 });
+  assert.equal(pair.initial_navigation_csp_header_sha256, null);
+  assert.equal(pair.csp_nonce_matches_initial_navigation_header, false);
+  assert.equal(events.includes("reload:/boundary-check"), true);
+
+  const policy = "default-src 'self'; script-src 'nonce-nonce'";
+  const validPage = fakePage(url, [], { documentPolicies: [policy] });
+  const validAdapter = new Open43SettingsBrowserAdapter({ browserContexts: browserContexts(validPage), pageOrigin: new URL(url).origin, storageState: () => ({ cookies: [], origins: [] }) });
+  const valid = await validAdapter.capturePagePair({ url, label: "S754_ANALYTICS", index: 1 });
+  assert.equal(valid.initial_navigation_csp_header_sha256, createHash("sha256").update(policy).digest("hex"));
+  assert.equal(valid.csp_nonce_matches_initial_navigation_header, true);
+  assert.equal(JSON.stringify(valid).includes(policy), false);
+});
+
 test("the settings adapter rejects a client navigation that replaces the document", async () => {
   const events = [];
   const url = "https://scpaiueouiuiuiui.wikijump.localhost:18443/104";
@@ -145,10 +199,10 @@ test("the settings adapter keeps a disabled document across a public mutation be
     async newCandidateContext() { return { context, environment: {} }; },
     async setActiveFixture(fixtureId) { events.push(`fixture:${fixtureId}`); },
     async captureCandidateObservation(options) {
-      events.push(`capture:${options.navigate ? "transition" : "full"}`);
+      const transition = options.label === "settings-client-transition";
+      events.push(`capture:${transition ? "transition" : "full"}`);
       await options.onPhase("domcontentloaded_immediate_observation");
-      if (options.navigate) await options.navigate();
-      else await page.goto(options.url);
+      await options.navigate({ page, url: options.url, timeoutMs: 300_000 });
       await options.onPhase("settled");
       return {
         input_url: options.url,

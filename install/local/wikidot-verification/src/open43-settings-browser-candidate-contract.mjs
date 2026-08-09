@@ -52,6 +52,8 @@ function verifyAnalyticsInitial(observations, plan) {
   const disabled = requirePlainObject(observations.disabled, "disabled analytics initial state");
   const analytics = requirePlainObject(observations.enabled, "enabled analytics initial state");
   const expectedQueue = [["_setAccount", plan.analytics_profile], ["_trackPageview"]];
+  requireSha256(disabled.initial_navigation_csp_header_sha256, "disabled initial navigation CSP header SHA-256");
+  requireSha256(analytics.initial_navigation_csp_header_sha256, "enabled initial navigation CSP header SHA-256");
   if (
     observations.disabled_temporal.artifact.path === observations.enabled_temporal.artifact.path ||
     disabled.enabled !== false ||
@@ -60,15 +62,13 @@ function verifyAnalyticsInitial(observations, plan) {
     disabled.script_count !== 1 ||
     JSON.stringify(disabled.queue) !== "[]" ||
     disabled.remote_request_count !== 0 ||
-    disabled.csp_header_present !== true ||
     analytics.enabled !== true ||
     analytics.meta_present !== true ||
     analytics.script_count !== 1 ||
     analytics.profile !== plan.analytics_profile ||
     JSON.stringify(analytics.queue) !== JSON.stringify(expectedQueue) ||
     analytics.remote_request_count !== 0 ||
-    analytics.csp_header_present !== true ||
-    analytics.csp_nonce_matches_header !== true
+    analytics.csp_nonce_matches_initial_navigation_header !== true
   ) {
     throw new Error("analytics initial state is stale or widened");
   }
@@ -91,6 +91,7 @@ function verifyAnalyticsSettled(observations, plan) {
   const analytics = requirePlainObject(observations.analytics, "analytics settled state");
   const lifecycle = requirePlainObject(observations.admin_lifecycle, "analytics admin lifecycle");
   const queue = [["_setAccount", plan.analytics_profile], ["_trackPageview"]];
+  requireSha256(analytics.initial_navigation_csp_header_sha256, "analytics initial navigation CSP header SHA-256");
   if (
     analytics.profile !== plan.analytics_profile ||
     JSON.stringify(analytics.queue) !== JSON.stringify(queue) ||
@@ -99,8 +100,7 @@ function verifyAnalyticsSettled(observations, plan) {
     analytics.client_navigation_preserved_document !== true ||
     analytics.client_resource_completion !== "complete" ||
     analytics.remote_request_count !== 0 ||
-    analytics.csp_header_present !== true ||
-    analytics.csp_nonce_matches_header !== true ||
+    analytics.csp_nonce_matches_initial_navigation_header !== true ||
     analytics.reload_url !== plan.default_page_url ||
     !Array.isArray(analytics.console_errors) ||
     analytics.console_errors.length !== 0 ||
@@ -128,7 +128,8 @@ function verifyTheme(observations, plan, settled) {
   const transitionTemporal = requireTemporal(observations.transition_temporal, phase, sequence, `transition theme ${settled ? "settled" : "initial"}`);
   const categoryTransitionTemporal = requireTemporal(observations.category_transition_temporal, settled ? "client_navigation_settled" : "client_navigation_immediate_observation", sequence, `client transition ${settled ? "settled" : "initial"}`);
   const defaultTheme = requirePlainObject(observations.default_theme, "default theme observation");
-  const transitionTheme = requirePlainObject(observations.transition_theme, "transition theme observation");
+  const transitionTheme = requirePlainObject(observations.transition_theme, "direct target theme observation");
+  const categoryTransitionTheme = requirePlainObject(observations.category_transition_theme, "client transition theme observation");
   if (
     defaultTemporal.input_url !== plan.default_page_url ||
     transitionTemporal.input_url !== plan.transition_page_url ||
@@ -141,35 +142,41 @@ function verifyTheme(observations, plan, settled) {
     transitionTheme.expected_marker !== plan.transition_theme_marker ||
     transitionTheme.computed_marker !== plan.transition_theme_marker ||
     JSON.stringify(transitionTheme.stylesheet_order) !== JSON.stringify(["base", "site", "page"]) ||
-    transitionTheme.stale_previous_theme_present !== false ||
-    transitionTheme.navigation_source_marker !== plan.theme_marker ||
-    transitionTheme.navigation_from_url !== plan.default_page_url
+    transitionTheme.stale_previous_theme_present !== false
   ) {
     throw new Error("theme observation is stale or has the wrong cascade");
   }
+  if (
+    categoryTransitionTheme.expected_marker !== plan.transition_theme_marker ||
+    categoryTransitionTheme.computed_marker !== plan.transition_theme_marker ||
+    JSON.stringify(categoryTransitionTheme.stylesheet_order) !== JSON.stringify(["base", "site", "page"]) ||
+    categoryTransitionTheme.stale_previous_theme_present !== false ||
+    categoryTransitionTheme.navigation_source_marker !== plan.theme_marker ||
+    categoryTransitionTheme.navigation_from_url !== plan.default_page_url
+  ) throw new Error("client transition theme observation is stale or has the wrong cascade");
   if (
     defaultTheme.body_font_family !== plan.theme_body_font_family ||
     defaultTheme.body_background_color !== plan.theme_body_background_color ||
     defaultTheme.body_color !== plan.theme_body_color ||
     transitionTheme.body_font_family !== plan.theme_body_font_family ||
     transitionTheme.body_background_color !== plan.transition_body_background_color ||
-    transitionTheme.body_color !== plan.theme_body_color
+    transitionTheme.body_color !== plan.theme_body_color ||
+    categoryTransitionTheme.body_font_family !== plan.theme_body_font_family ||
+    categoryTransitionTheme.body_background_color !== plan.transition_body_background_color ||
+    categoryTransitionTheme.body_color !== plan.theme_body_color
   ) {
     throw new Error("theme computed style is wrong");
   }
+  requireSha256(defaultTheme.initial_navigation_csp_header_sha256, "default initial navigation CSP header SHA-256");
+  requireSha256(transitionTheme.initial_navigation_csp_header_sha256, "direct target initial navigation CSP header SHA-256");
+  if (!Array.isArray(defaultTheme.capture_failures) || defaultTheme.capture_failures.length !== 0) throw new Error("default theme capture has public failures");
+  if (!Array.isArray(transitionTheme.capture_failures) || transitionTheme.capture_failures.length !== 0) throw new Error("direct target theme capture has public failures");
+  if (!Array.isArray(categoryTransitionTheme.capture_failures) || categoryTransitionTheme.capture_failures.length !== 0) throw new Error("client transition theme capture has public failures");
   if (settled && (defaultTemporal.resource_completion !== "complete" || transitionTemporal.resource_completion !== "complete" || categoryTransitionTemporal.resource_completion !== "complete")) {
     throw new Error("theme settled resources are incomplete");
   }
   if (settled) {
     if (defaultTheme.reload_url !== plan.default_page_url || transitionTheme.reload_url !== plan.transition_page_url) throw new Error("theme reload URL differs from the independently planned page URL");
-    if (
-      defaultTheme.csp_header_present !== true ||
-      transitionTheme.csp_header_present !== true ||
-      !Array.isArray(defaultTheme.resource_failures) ||
-      defaultTheme.resource_failures.length !== 0 ||
-      !Array.isArray(transitionTheme.resource_failures) ||
-      transitionTheme.resource_failures.length !== 0
-    ) throw new Error("theme settled computed style or cache identity is wrong");
     const changes = requirePlainObject(observations.setting_changes, "theme setting changes");
     for (const role of ["default", "transition"]) {
       const change = requirePlainObject(changes[role], `${role} theme setting change`);
@@ -183,6 +190,7 @@ function verifyTheme(observations, plan, settled) {
     phase,
     default_artifact_sha256: defaultTemporal.artifact.sha256,
     transition_artifact_sha256: transitionTemporal.artifact.sha256,
+    category_transition_artifact_sha256: categoryTransitionTemporal.artifact.sha256,
   };
 }
 
@@ -358,9 +366,22 @@ function verifyAdminSettled(observations, plan) {
 }
 
 function verifyPermissionMatrix(observations, plan) {
-  if (!Number.isSafeInteger(plan.matrix_site_id) || !Number.isSafeInteger(plan.matrix_before_revision) || plan.matrix_admin_after_revision !== plan.matrix_before_revision + 1) {
+  if (
+    !Number.isSafeInteger(plan.matrix_site_id) ||
+    !Number.isSafeInteger(plan.matrix_before_revision) ||
+    plan.matrix_admin_after_revision !== plan.matrix_before_revision + 1 ||
+    !Number.isSafeInteger(plan.administrator_user_id) ||
+    !Number.isSafeInteger(plan.non_admin_user_id)
+  ) {
     throw new Error("permission matrix site or revision plan is invalid");
   }
+  const actorSessions = requirePlainObject(observations.actor_sessions, "actor session identity");
+  if (
+    JSON.stringify(Object.keys(actorSessions).sort()) !== JSON.stringify(["administrator_user_id", "expired_session", "non_admin_user_id"]) ||
+    actorSessions.administrator_user_id !== plan.administrator_user_id ||
+    actorSessions.non_admin_user_id !== plan.non_admin_user_id ||
+    actorSessions.expired_session !== null
+  ) throw new Error("actor session identity differs from public session_get");
   const expected = [
     ["anonymous", 401, false, plan.matrix_before_sha256, plan.matrix_before_revision],
     ["non_admin", 403, false, plan.matrix_before_sha256, plan.matrix_before_revision],

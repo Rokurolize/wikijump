@@ -46,14 +46,14 @@ test("settings browser contract fixes the exact denominator and initial observat
     profile: "UA-754-1",
     queue: [["_setAccount", "UA-754-1"], ["_trackPageview"]],
     remote_request_count: 0,
-    csp_header_present: true,
+    initial_navigation_csp_header_sha256: hash("c"),
     csp_nonce_sha256: hash("a"),
-    csp_nonce_matches_header: true,
+    csp_nonce_matches_initial_navigation_header: true,
   };
   const observations = {
     disabled_temporal: { ...temporal("domcontentloaded_immediate_observation", 1), artifact: { path: "analytics-disabled.png", sha256: hash("1") } },
     enabled_temporal: temporal("domcontentloaded_immediate_observation", 1),
-    disabled: { enabled: false, meta_present: false, script_count: 1, profile: null, queue: [], remote_request_count: 0, csp_header_present: true },
+    disabled: { enabled: false, meta_present: false, script_count: 1, profile: null, queue: [], remote_request_count: 0, initial_navigation_csp_header_sha256: hash("d") },
     enabled,
   };
   const verification = verifyOpen43SettingsBrowserCase(
@@ -90,6 +90,10 @@ test("settings browser contract fixes the exact denominator and initial observat
       ),
     /reused one artifact/u,
   );
+  assert.throws(
+    () => verifyOpen43SettingsBrowserCase("S754_ANALYTICS_INITIAL", { ...observations, enabled: { ...enabled, initial_navigation_csp_header_sha256: null, csp_nonce_matches_initial_navigation_header: false } }, plan),
+    /initial navigation CSP/u,
+  );
 });
 
 test("analytics settled observation rejects duplicate order and stale queues", () => {
@@ -112,8 +116,8 @@ test("analytics settled observation rejects duplicate order and stale queues", (
       client_navigation_preserved_document: true,
       client_resource_completion: "complete",
       remote_request_count: 0,
-      csp_header_present: true,
-      csp_nonce_matches_header: true,
+      initial_navigation_csp_header_sha256: hash("c"),
+      csp_nonce_matches_initial_navigation_header: true,
       console_errors: [],
       reload_url: plan.default_page_url,
     },
@@ -214,6 +218,8 @@ test("theme observations reject stale category transitions and computed styles",
       body_font_family: "Arial, sans-serif",
       body_background_color: "rgb(17, 34, 51)",
       body_color: "rgb(238, 238, 238)",
+      initial_navigation_csp_header_sha256: hash("e"),
+      capture_failures: [],
     },
     transition_theme: {
       expected_marker: "candidate-case-corpus-theme",
@@ -225,7 +231,13 @@ test("theme observations reject stale category transitions and computed styles",
       body_font_family: "Arial, sans-serif",
       body_background_color: "rgb(68, 85, 102)",
       body_color: "rgb(238, 238, 238)",
+      initial_navigation_csp_header_sha256: hash("f"),
+      capture_failures: [],
     },
+  };
+  initial.category_transition_theme = {
+    ...initial.transition_theme,
+    capture_failures: [],
   };
   const settled = {
     default_temporal: { ...temporal("settled", 2), input_url: plan.default_page_url, final_url: plan.default_page_url, resource_completion: "complete" },
@@ -249,8 +261,8 @@ test("theme observations reject stale category transitions and computed styles",
       body_background_color: "rgb(17, 34, 51)",
       body_color: "rgb(238, 238, 238)",
       reload_url: plan.default_page_url,
-      csp_header_present: true,
-      resource_failures: [],
+      initial_navigation_csp_header_sha256: hash("e"),
+      capture_failures: [],
     },
     transition_theme: {
       ...initial.transition_theme,
@@ -258,8 +270,13 @@ test("theme observations reject stale category transitions and computed styles",
       body_background_color: "rgb(68, 85, 102)",
       body_color: "rgb(238, 238, 238)",
       reload_url: plan.transition_page_url,
-      csp_header_present: true,
-      resource_failures: [],
+      initial_navigation_csp_header_sha256: hash("f"),
+      capture_failures: [],
+    },
+    category_transition_theme: {
+      ...initial.category_transition_theme,
+      reload_url: plan.transition_page_url,
+      capture_failures: [],
     },
     setting_changes: {
       default: { before_sha256: hash("a"), after_sha256: hash("b") },
@@ -299,8 +316,8 @@ test("theme observations reject stale category transitions and computed styles",
     /theme observation is stale/u,
   );
   assert.throws(
-    () => verifyOpen43SettingsBrowserCase("S755_THEME_INITIAL", { ...initial, transition_theme: { ...initial.transition_theme, navigation_source_marker: "previous-theme" } }, plan),
-    /theme observation is stale/u,
+    () => verifyOpen43SettingsBrowserCase("S755_THEME_INITIAL", { ...initial, category_transition_theme: { ...initial.category_transition_theme, navigation_source_marker: "previous-theme" } }, plan),
+    /client transition theme/u,
   );
   assert.throws(
     () => verifyOpen43SettingsBrowserCase("S755_THEME_INITIAL", { ...initial, category_transition_temporal: { ...initial.category_transition_temporal, phase: "domcontentloaded_immediate_observation" } }, plan),
@@ -321,6 +338,18 @@ test("theme observations reject stale category transitions and computed styles",
   assert.throws(
     () => verifyOpen43SettingsBrowserCase("S755_THEME_SETTLED", { ...settled, default_theme: { ...settled.default_theme, reload_url: plan.transition_page_url } }, plan),
     /reload URL/u,
+  );
+  assert.throws(
+    () => verifyOpen43SettingsBrowserCase("S755_THEME_INITIAL", { ...initial, category_transition_theme: { ...initial.category_transition_theme, computed_marker: "previous-theme" } }, plan),
+    /client transition theme/u,
+  );
+  assert.throws(
+    () => verifyOpen43SettingsBrowserCase("S755_THEME_INITIAL", { ...initial, transition_theme: { ...initial.transition_theme, capture_failures: [{ kind: "http_error" }] } }, plan),
+    /direct target theme capture/u,
+  );
+  assert.throws(
+    () => verifyOpen43SettingsBrowserCase("S755_THEME_SETTLED", { ...settled, category_transition_theme: { ...settled.category_transition_theme, capture_failures: [{ kind: "request_failed" }] } }, plan),
+    /client transition theme capture/u,
   );
 });
 
@@ -597,7 +626,10 @@ test("permission matrix rejects actor mutation, expired-session 500, and CSRF wi
     matrix_site_id: 17,
     matrix_before_revision: 30,
     matrix_admin_after_revision: 31,
+    administrator_user_id: 41,
+    non_admin_user_id: 42,
   };
+  const actorSessions = { administrator_user_id: 41, non_admin_user_id: 42, expired_session: null };
   const outcomes = [
     ["anonymous", 401, false, hash("1")],
     ["non_admin", 403, false, hash("1")],
@@ -617,7 +649,7 @@ test("permission matrix rejects actor mutation, expired-session 500, and CSRF wi
   assert.equal(
     verifyOpen43SettingsBrowserCase(
       "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
-      { outcomes },
+      { actor_sessions: actorSessions, outcomes },
       plan,
     ).verified,
     true,
@@ -632,6 +664,7 @@ test("permission matrix rejects actor mutation, expired-session 500, and CSRF wi
         verifyOpen43SettingsBrowserCase(
           "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
           {
+            actor_sessions: actorSessions,
             outcomes: outcomes.map((outcome) =>
               outcome.case === caseName ? { ...outcome, ...patch } : outcome,
             ),
@@ -644,10 +677,26 @@ test("permission matrix rejects actor mutation, expired-session 500, and CSRF wi
   assert.throws(
     () => verifyOpen43SettingsBrowserCase(
       "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
-      { outcomes: outcomes.map((outcome) => outcome.case === "non_admin" ? { ...outcome, settings_revision: 31 } : outcome) },
+      { actor_sessions: actorSessions, outcomes: outcomes.map((outcome) => outcome.case === "non_admin" ? { ...outcome, settings_revision: 31 } : outcome) },
       plan,
     ),
     /permission outcome or next public read changed/u,
+  );
+  assert.throws(
+    () => verifyOpen43SettingsBrowserCase(
+      "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
+      { actor_sessions: { ...actorSessions, administrator_user_id: 99 }, outcomes },
+      plan,
+    ),
+    /actor session identity/u,
+  );
+  assert.throws(
+    () => verifyOpen43SettingsBrowserCase(
+      "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
+      { actor_sessions: { ...actorSessions, expired_session: { user_id: 43 }, expired_user_id: 43 }, outcomes },
+      plan,
+    ),
+    /actor session identity/u,
   );
 });
 
