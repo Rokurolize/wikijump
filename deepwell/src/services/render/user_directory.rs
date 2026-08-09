@@ -358,6 +358,8 @@ fn render_directory(
                     "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29\">",
                     "{date}</span></td>",
                 ),
+                unix = unix,
+                date = date,
             )
             .expect("writing a member date to a String cannot fail");
         }
@@ -379,6 +381,8 @@ fn render_directory(
             "\t\t\t}});\n",
             "\t\t}}\n\t</script>",
         ),
+        function_name = function_name,
+        container_id = container_id,
         group = arguments.group.wikidot_value(),
         order = arguments.order.wikidot_value(),
     )
@@ -415,6 +419,11 @@ fn render_directory_identity(
                     "</a><a href=\"{profile}\" onclick=\"WIKIDOT.page.listeners.userInfo({user_id}); return false;\">",
                     "{name_text}</a></span>",
                 ),
+                profile = profile,
+                user_id = user_id,
+                avatar_timestamp = avatar_timestamp,
+                name_attr = name_attr,
+                name_text = name_text,
             )
             .expect("writing a Wikidot printuser to a String cannot fail");
         }

@@ -54,7 +54,8 @@ use crate::services::score::ScoreValue;
 use crate::services::settings::PageRatingType;
 use crate::services::user::User;
 use crate::services::{
-    PageRevisionService, PageService, RelationService, ServiceContext, UserService,
+    PageRevisionService, PageService, RelationService, ServiceContext, SiteService,
+    UserService,
 };
 use crate::types::Reference;
 use crate::types::{Action, Permission, Resource};
