@@ -10607,6 +10607,112 @@ async fn authenticated_site_utility_preview_denies_only_non_administrators() {
 }
 
 #[tokio::test]
+async fn saved_site_utility_modules_recheck_the_session_actor() {
+    const HOLDER: &str = "fixture-site-utility-actor-boundary";
+    const SOURCE: &str = concat!(
+        "MANAGE_START\n",
+        "[[module ManageSite]]\n",
+        "MANAGE_END\n",
+        "PETITION_START\n",
+        "[[module PetitionAdmin]]\n",
+        "PETITION_END",
+    );
+    const MANAGE_SITE_NON_ADMIN_HTML: &str = concat!(
+        r#"<div class="row-fluid">"#,
+        "\n\t",
+        r#"<div class="span3 offset1">"#,
+        "\n\t\t",
+        r#"<div class="homer">"#,
+        "\n\t\t",
+        r#"<img src="/common--images/404_homer.png">"#,
+        "\n\t\t</div>\n\t</div>\n\t",
+        r#"<div class="span7">"#,
+        "\n\t\t<h1>Doh!</h1>\n",
+        "\t\t<h3>You're not signed in or you are not an administrator of this Wiki.</h3>\n",
+        "\t\t\t</div>\n</div>",
+    );
+    const PETITION_ADMIN_DENIAL_HTML: &str = r#"<div class="error-block"><div class="title">Permission error</div>This tool is for use by the administrators of this site</div>"#;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER,
+        "Fixture Site Utility Actor Boundary",
+        SOURCE,
+    )
+    .await;
+
+    let non_admin_session = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: SAMPLE_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "site utility non-admin boundary".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("non-admin session should be created");
+    let administrator_session = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "site utility administrator residual".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("administrator session should be created");
+
+    let body = |view| match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found site utility page, got {other:?}"),
+    };
+    let non_admin = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": non_admin_session,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    assert!(
+        non_admin.contains(MANAGE_SITE_NON_ADMIN_HTML)
+            && non_admin.contains(PETITION_ADMIN_DENIAL_HTML)
+            && !non_admin.contains(">Sign in</a>"),
+        "saved non-admin view must use the two exact authenticated denial states:\n{non_admin}",
+    );
+
+    let administrator = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": administrator_session,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    assert!(
+        administrator.contains("No such module, please")
+            && administrator.contains("<em>ManageSite</em>")
+            && administrator.contains("<em>PetitionAdmin</em>")
+            && !administrator.contains(MANAGE_SITE_NON_ADMIN_HTML)
+            && !administrator.contains(PETITION_ADMIN_DENIAL_HTML),
+        "saved administrator view must remain generic fail-closed and never reuse non-admin denial DOM:\n{administrator}",
+    );
+}
+
+#[tokio::test]
 async fn typed_sitegrid_empty_body_matches_frozen_preview_and_saved_state() {
     const EMPTY_HTML: &str = r#"<div class="error-block">No sites provided.</div>"#;
     const SAVED_SOURCE: &str = "[[module SiteGrid]]\n \t\n[[/module]]";
