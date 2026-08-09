@@ -22,8 +22,9 @@ use super::prelude::*;
 use crate::models::page_revision::Model as PageRevisionModel;
 use crate::services::page::{GetPageReference, PageService};
 use crate::services::page_revision::{
-    CountPageRevisions, GetPageRevisionDetails, GetPageRevisionRangeDetails,
-    PageRevisionCountOutput, PageRevisionModelFiltered, UpdatePageRevisionDetails,
+    CountPageRevisions, GetPageRevisionDetails, GetPageRevisionDiff,
+    GetPageRevisionRangeDetails, PageRevisionCountOutput, PageRevisionDiffOutput,
+    PageRevisionModelFiltered, UpdatePageRevisionDetails,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{MutationAuthorization, TextService};
@@ -156,6 +157,23 @@ pub async fn page_revision_range(
         .or_raise(make_error)?;
 
     filter_and_populate_revisions(ctx, revisions, details)
+        .await
+        .or_raise(make_error)
+}
+
+pub async fn page_revision_diff(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<PageRevisionDiffOutput>> {
+    let input: GetPageRevisionDiff = parse!(params, PageRevision);
+    let make_error =
+        || Error::new("failed to compare page revisions", ErrorType::PageRevision);
+
+    ensure_page_view_permission(ctx, input.site_id, Reference::Id(input.page_id))
+        .await
+        .or_raise(make_error)?;
+
+    PageRevisionService::get_diff(ctx, input)
         .await
         .or_raise(make_error)
 }

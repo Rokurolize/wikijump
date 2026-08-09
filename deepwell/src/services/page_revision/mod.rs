@@ -27,6 +27,8 @@ pub use self::structs::{
     CountPageRevisions, CreateFirstPageRevision, CreateFirstPageRevisionOutput,
     CreatePageRevision, CreatePageRevisionBody, CreatePageRevisionOutput,
     CreateResurrectionPageRevision, CreateTombstonePageRevision, GetPageRevision,
-    GetPageRevisionDetails, GetPageRevisionRangeDetails, PageRevisionCountOutput,
-    PageRevisionModelFiltered, RerenderType, UpdatePageRevisionDetails,
+    GetPageRevisionDetails, GetPageRevisionDiff, GetPageRevisionRangeDetails,
+    PageRevisionCountOutput, PageRevisionDiffLine, PageRevisionDiffLineKind,
+    PageRevisionDiffOutput, PageRevisionModelFiltered, RerenderType,
+    UpdatePageRevisionDetails,
 };

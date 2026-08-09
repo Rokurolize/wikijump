@@ -104,6 +104,37 @@ pub struct GetPageRevision {
     pub revision_number: i32,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct GetPageRevisionDiff {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub from_revision_number: i32,
+    pub to_revision_number: i32,
+}
+
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PageRevisionDiffLineKind {
+    Added,
+    Removed,
+    Unchanged,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct PageRevisionDiffLine {
+    pub kind: PageRevisionDiffLineKind,
+    pub text: String,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct PageRevisionDiffOutput {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub from_revision_number: i32,
+    pub to_revision_number: i32,
+    pub lines: Vec<PageRevisionDiffLine>,
+}
+
 #[derive(Debug, Clone)]
 pub struct CountPageRevisions {
     pub site_id: i64,

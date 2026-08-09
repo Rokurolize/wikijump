@@ -1144,6 +1144,7 @@ dependencies = [
  "color-backtrace",
  "cuid2",
  "data-encoding",
+ "diff",
  "dotenvy",
  "exn",
  "femme",

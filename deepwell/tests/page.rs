@@ -48,6 +48,7 @@ use deepwell::services::page_query::{
     PageParentSelector, PageQuery, PageQueryService, PageTypeSelector,
     PaginationSelector, RangeSelector, ScoreSelector, TagCondition,
 };
+use deepwell::services::page_revision::{PageRevisionService, RerenderType};
 use deepwell::services::permission::{
     CheckPermissionContext, PermissionCache, PermissionService,
 };
@@ -69,7 +70,7 @@ use deepwell::services::{
 };
 use deepwell::types::{
     Action, ConnectionType, Maybe, PageId, PageRevisionType, Permission, Reference,
-    Resource, TextBlockType,
+    RerenderDepth, Resource, TextBlockType,
 };
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel,
@@ -178,6 +179,379 @@ fn set_mutation_request_context(
         site_id: Some(site_id),
         page_reference: Some(page_reference),
     });
+}
+
+#[tokio::test]
+async fn component_css_edit_refreshes_only_the_recorded_dependent_page() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const COMPONENT_SLUG: &str = "component:authoring-css-invalidation";
+    const DEPENDENT_SLUG: &str = "authoring-css-dependent";
+    const UNRELATED_SLUG: &str = "authoring-css-unrelated";
+    const RED_CSS: &str = "[[module CSS]]\n.authoring-color { color: red; }\n[[/module]]";
+    const BLUE_CSS: &str =
+        "[[module CSS]]\n.authoring-color { color: blue; }\n[[/module]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    let site_id = site.site_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(COMPONENT_SLUG)),
+    );
+    let component = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": RED_CSS,
+            "title": "Authoring CSS component",
+            "alt_title": null,
+            "slug": COMPONENT_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create authoring CSS component",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(DEPENDENT_SLUG)),
+    );
+    let dependent = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("[[include {COMPONENT_SLUG}]]\nDependent body"),
+            "title": "Authoring CSS dependent",
+            "alt_title": null,
+            "slug": DEPENDENT_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create CSS dependent",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(UNRELATED_SLUG)),
+    );
+    let unrelated = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Unrelated body",
+            "title": "Authoring CSS unrelated",
+            "alt_title": null,
+            "slug": UNRELATED_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create unrelated page",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let before_dependent = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": dependent.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("dependent page should exist before the component edit");
+    let before_unrelated = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": unrelated.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("unrelated page should exist before the component edit");
+    assert!(
+        before_dependent
+            .compiled_body_styles
+            .as_ref()
+            .is_some_and(|styles| styles
+                .iter()
+                .any(|style| style.contains("color: red"))),
+        "the dependent page should initially carry the component's red CSS",
+    );
+
+    let dependencies = LinkService::get_to(
+        runner.context(),
+        component.page_id,
+        Some(&[
+            ConnectionType::IncludeMessy,
+            ConnectionType::IncludeElements,
+            ConnectionType::Component,
+        ]),
+    )
+    .await
+    .expect("component dependents should be readable");
+    assert_eq!(
+        dependencies
+            .connections
+            .iter()
+            .filter(|connection| connection.from_page_id == dependent.page_id)
+            .count(),
+        1,
+        "the component should record the dependent page exactly once",
+    );
+    assert!(
+        dependencies
+            .connections
+            .iter()
+            .all(|connection| connection.from_page_id != unrelated.page_id),
+        "the unrelated page must not enter the component dependency graph",
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(component.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": component.page_id,
+            "last_revision_id": component.revision_id,
+            "revision_comments": "change authoring CSS to blue",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": BLUE_CSS,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("component CSS edit should create a revision");
+
+    let dependent_page =
+        PageService::get(runner.context(), site_id, Reference::Id(dependent.page_id))
+            .await
+            .expect("dependent page identity should remain available");
+    PageRevisionService::rerender(
+        runner.context(),
+        PageId::from_page_model(&dependent_page),
+        RerenderDepth::default(),
+        RerenderType::Full,
+    )
+    .await
+    .expect("the queued dependent rerender should succeed");
+
+    let served_dependent = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": DEPENDENT_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetArticleViewOutput {
+        page:
+            GetPageViewOutput::Found {
+                compiled_body_styles: served_styles,
+                ..
+            },
+        ..
+    } = served_dependent
+    else {
+        panic!("the dependent article should be served after its queued rerender");
+    };
+    assert!(
+        served_styles
+            .iter()
+            .any(|style| style.contains("color: blue")),
+        "the dependent article's next public read should serve the updated CSS",
+    );
+    assert!(
+        served_styles
+            .iter()
+            .all(|style| !style.contains("color: red")),
+        "the dependent article's next public read must not reuse stale CSS",
+    );
+
+    let after_dependent = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": dependent.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("dependent page should remain readable after the component edit");
+    let after_unrelated = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": unrelated.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("unrelated page should remain readable after the component edit");
+    let after_styles = after_dependent
+        .compiled_body_styles
+        .as_ref()
+        .expect("dependent compiled styles should be populated");
+    assert!(
+        after_styles
+            .iter()
+            .any(|style| style.contains("color: blue"))
+    );
+    assert!(
+        after_styles
+            .iter()
+            .all(|style| !style.contains("color: red"))
+    );
+    assert_ne!(
+        after_dependent.compiled_at, before_dependent.compiled_at,
+        "the dependent revision should be recompiled",
+    );
+    assert_eq!(after_dependent.revision_id, before_dependent.revision_id);
+    assert_eq!(
+        after_unrelated.compiled_body_styles, before_unrelated.compiled_body_styles,
+        "the unrelated page's compiled styles must remain untouched",
+    );
+    assert_eq!(
+        after_unrelated.compiled_at, before_unrelated.compiled_at,
+        "the unrelated page must not be recompiled",
+    );
+    assert_eq!(after_unrelated.revision_id, before_unrelated.revision_id);
+}
+
+#[tokio::test]
+async fn revision_diff_returns_typed_lines_without_exposing_hidden_source() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-revision-diff";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    let site_id = site.site_id;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "alpha\nold <script>alert(1)</script>\nomega",
+            "title": "Authoring revision diff",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create revision diff fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let edited = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "edit revision diff fixture",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "alpha\nnew & safe\nomega",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("revision diff fixture edit should create a revision");
+
+    let diff = run_endpoint!(
+        runner,
+        page_revision_diff,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "from_revision_number": 0,
+            "to_revision_number": 1,
+        }),
+    )
+    .expect("two visible revisions should produce a diff");
+    assert_eq!(
+        serde_json::to_value(diff).expect("revision diff should serialize"),
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "from_revision_number": 0,
+            "to_revision_number": 1,
+            "lines": [
+                {"kind": "unchanged", "text": "alpha"},
+                {"kind": "removed", "text": "old <script>alert(1)</script>"},
+                {"kind": "added", "text": "new & safe"},
+                {"kind": "unchanged", "text": "omega"},
+            ],
+        }),
+    );
+
+    let missing = run_endpoint!(
+        runner,
+        page_revision_diff,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "from_revision_number": 0,
+            "to_revision_number": 99,
+        }),
+    );
+    assert!(
+        missing.is_none(),
+        "a missing revision must not widen to another source"
+    );
+
+    run_endpoint!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "hidden": ["wikitext"],
+        }),
+    );
+    let hidden = run_endpoint!(
+        runner,
+        page_revision_diff,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "from_revision_number": 0,
+            "to_revision_number": edited.revision_number,
+        }),
+    );
+    assert!(
+        hidden.is_none(),
+        "a hidden source revision must make the entire pair unavailable",
+    );
 }
 
 #[tokio::test]
