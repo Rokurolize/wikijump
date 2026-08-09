@@ -38,8 +38,10 @@ use std::sync::{Arc, LazyLock};
 
 /// The most rows one site-level link module render will load.
 pub(super) const MAX_LINK_LISTING_MODULE_ROWS: usize = 2_000;
+const LINK_LISTING_MODULE_QUERY_LIMIT: usize = MAX_LINK_LISTING_MODULE_ROWS + 1;
 const WANTED_PAGES_PER_PAGE: usize = 50;
 const MAX_WANTED_PAGES_MODULE_SOURCE_ROWS: usize = 10_000;
+const WANTED_PAGES_MODULE_QUERY_LIMIT: usize = MAX_WANTED_PAGES_MODULE_SOURCE_ROWS + 1;
 
 pub(super) static ORPHANED_PAGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+OrphanedPages(?P<head>[^\]]*)\]\]").unwrap()
@@ -73,7 +75,9 @@ struct WantedPagesModuleTarget {
 
 #[derive(Default)]
 struct LinkModulePagesCache {
+    orphaned_initialized: bool,
     orphaned: Option<Arc<Vec<LinkModulePage>>>,
+    wanted_initialized: bool,
     wanted: Option<Arc<Vec<WantedPagesModuleTarget>>>,
 }
 
@@ -81,36 +85,50 @@ impl LinkModulePagesCache {
     async fn get_or_init_orphaned<F, Fut>(
         &mut self,
         load: F,
-    ) -> Result<Arc<Vec<LinkModulePage>>>
+    ) -> Result<Option<Arc<Vec<LinkModulePage>>>>
     where
         F: FnOnce() -> Fut,
-        Fut: Future<Output = Result<Vec<LinkModulePage>>>,
+        Fut: Future<Output = Result<Option<Vec<LinkModulePage>>>>,
     {
-        if let Some(pages) = &self.orphaned {
-            return Ok(Arc::clone(pages));
+        if self.orphaned_initialized {
+            return Ok(self.orphaned.as_ref().map(Arc::clone));
         }
 
-        let pages = Arc::new(load().await?);
-        self.orphaned = Some(Arc::clone(&pages));
-        Ok(pages)
+        let pages = load().await?;
+        self.orphaned_initialized = true;
+        if let Some(pages) = pages {
+            self.orphaned = Some(Arc::new(pages));
+        }
+        Ok(self.orphaned.as_ref().map(Arc::clone))
     }
 
     async fn get_or_init_wanted<F, Fut>(
         &mut self,
         load: F,
-    ) -> Result<Arc<Vec<WantedPagesModuleTarget>>>
+    ) -> Result<Option<Arc<Vec<WantedPagesModuleTarget>>>>
     where
         F: FnOnce() -> Fut,
-        Fut: Future<Output = Result<Vec<WantedPagesModuleTarget>>>,
+        Fut: Future<Output = Result<Option<Vec<WantedPagesModuleTarget>>>>,
     {
-        if let Some(targets) = &self.wanted {
-            return Ok(Arc::clone(targets));
+        if self.wanted_initialized {
+            return Ok(self.wanted.as_ref().map(Arc::clone));
         }
 
-        let targets = Arc::new(load().await?);
-        self.wanted = Some(Arc::clone(&targets));
-        Ok(targets)
+        let targets = load().await?;
+        self.wanted_initialized = true;
+        if let Some(targets) = targets {
+            self.wanted = Some(Arc::new(targets));
+        }
+        Ok(self.wanted.as_ref().map(Arc::clone))
     }
+}
+
+fn link_listing_scan_exceeded(row_count: usize) -> bool {
+    row_count > MAX_LINK_LISTING_MODULE_ROWS
+}
+
+fn wanted_pages_scan_exceeded(row_count: usize) -> bool {
+    row_count > MAX_WANTED_PAGES_MODULE_SOURCE_ROWS
 }
 
 fn render_orphaned_pages_module_box(pages: &[LinkModulePage]) -> String {
@@ -272,11 +290,16 @@ impl RenderService {
                 continue;
             }
 
-            let pages = pages_cache
+            let Some(pages) = pages_cache
                 .get_or_init_orphaned(|| {
                     Self::load_orphaned_pages_module_pages(ctx, current_site_id)
                 })
-                .await?;
+                .await?
+            else {
+                expanded.push_str(mtch.as_str());
+                cursor = mtch.end();
+                continue;
+            };
             expanded.push_str(
                 &compat_html
                     .push_block_html(render_orphaned_pages_module_box(pages.as_ref())),
@@ -311,11 +334,16 @@ impl RenderService {
                 continue;
             }
 
-            let targets = pages_cache
+            let Some(targets) = pages_cache
                 .get_or_init_wanted(|| {
                     Self::load_wanted_pages_module_targets(ctx, current_site_id)
                 })
-                .await?;
+                .await?
+            else {
+                expanded.push_str(mtch.as_str());
+                cursor = mtch.end();
+                continue;
+            };
             expanded.push_str(
                 &compat_html
                     .push_block_html(render_wanted_pages_module_box(targets.as_ref())),
@@ -330,7 +358,7 @@ impl RenderService {
     async fn load_orphaned_pages_module_pages(
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
-    ) -> Result<Vec<LinkModulePage>> {
+    ) -> Result<Option<Vec<LinkModulePage>>> {
         let make_error = || {
             Error::new(
                 format!(
@@ -357,7 +385,7 @@ impl RenderService {
                        AND pc.connection_type = 'link' \
                    ) \
                  ORDER BY lower(pr.title), p.slug \
-                 LIMIT {MAX_LINK_LISTING_MODULE_ROWS}",
+                 LIMIT {LINK_LISTING_MODULE_QUERY_LIMIT}",
             ),
         );
 
@@ -365,6 +393,9 @@ impl RenderService {
             .all(txn)
             .await
             .or_raise(make_error)?;
+        if link_listing_scan_exceeded(rows.len()) {
+            return Ok(None);
+        }
 
         let mut viewable = Vec::with_capacity(rows.len());
         for row in rows {
@@ -389,13 +420,13 @@ impl RenderService {
             }
         }
 
-        Ok(viewable)
+        Ok(Some(viewable))
     }
 
     async fn load_wanted_pages_module_targets(
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
-    ) -> Result<Vec<WantedPagesModuleTarget>> {
+    ) -> Result<Option<Vec<WantedPagesModuleTarget>>> {
         let make_error = || {
             Error::new(
                 format!(
@@ -425,7 +456,7 @@ impl RenderService {
                        AND existing_page.deleted_at IS NULL \
                    ) \
                  ORDER BY lower(pcm.to_page_slug), pcm.to_page_slug, lower(pr.title), p.slug \
-                 LIMIT {MAX_WANTED_PAGES_MODULE_SOURCE_ROWS}",
+                 LIMIT {WANTED_PAGES_MODULE_QUERY_LIMIT}",
             ),
         );
 
@@ -433,6 +464,9 @@ impl RenderService {
             .all(txn)
             .await
             .or_raise(make_error)?;
+        if wanted_pages_scan_exceeded(rows.len()) {
+            return Ok(None);
+        }
 
         let mut permission_cache = HashMap::new();
         let mut grouped: BTreeMap<String, Vec<LinkModulePage>> = BTreeMap::new();
@@ -481,7 +515,7 @@ impl RenderService {
             })
             .collect::<Vec<_>>();
         targets.sort_by(|left, right| compare_case_folded(&left.slug, &right.slug));
-        Ok(targets)
+        Ok(Some(targets))
     }
 }
 
@@ -502,8 +536,10 @@ fn compare_case_folded(left: &str, right: &str) -> Ordering {
 #[cfg(test)]
 mod tests {
     use super::{
-        LinkModulePage, LinkModulePagesCache, WantedPagesModuleTarget,
-        render_orphaned_pages_module_box, render_wanted_pages_module_box,
+        LinkModulePage, LinkModulePagesCache, MAX_LINK_LISTING_MODULE_ROWS,
+        MAX_WANTED_PAGES_MODULE_SOURCE_ROWS, WantedPagesModuleTarget,
+        link_listing_scan_exceeded, render_orphaned_pages_module_box,
+        render_wanted_pages_module_box, wanted_pages_scan_exceeded,
     };
 
     #[test]
@@ -553,19 +589,33 @@ mod tests {
         let mut cache = LinkModulePagesCache::default();
 
         let first = cache
-            .get_or_init_orphaned(|| async { Ok(Vec::new()) })
+            .get_or_init_orphaned(|| async { Ok(Some(Vec::new())) })
             .await
-            .expect("the first orphaned-pages load should succeed");
+            .expect("the first orphaned-pages load should succeed")
+            .expect("the first bounded scan should be complete");
         let second = cache
             .get_or_init_orphaned(|| async {
                 panic!("a cached orphaned-pages result must not query again");
                 #[allow(unreachable_code)]
-                Ok(Vec::new())
+                Ok(Some(Vec::new()))
             })
             .await
-            .expect("the cached orphaned-pages load should succeed");
+            .expect("the cached orphaned-pages load should succeed")
+            .expect("the cached bounded scan should be complete");
 
         assert!(first.is_empty());
         assert!(second.is_empty());
+    }
+
+    #[test]
+    fn link_modules_require_complete_bounded_scans_before_acl_and_paging() {
+        assert!(!link_listing_scan_exceeded(MAX_LINK_LISTING_MODULE_ROWS));
+        assert!(link_listing_scan_exceeded(MAX_LINK_LISTING_MODULE_ROWS + 1));
+        assert!(!wanted_pages_scan_exceeded(
+            MAX_WANTED_PAGES_MODULE_SOURCE_ROWS
+        ));
+        assert!(wanted_pages_scan_exceeded(
+            MAX_WANTED_PAGES_MODULE_SOURCE_ROWS + 1
+        ));
     }
 }
