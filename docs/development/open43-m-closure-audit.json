@@ -277,7 +277,7 @@
       "exists_now": true
     },
     "C_FRAMERAIL_MEDIA_UNIT": {
-      "command": "node --test framerail/tests/site-icon-source.test.js framerail/tests/site-icons.test.js framerail/tests/page-file-client-ip.test.js framerail/tests/presigned-upload.test.js framerail/tests/page-file-upload-lifecycle.test.js",
+      "command": "node --test framerail/tests/site-icon-source.test.js framerail/tests/site-icons.test.js framerail/tests/page-file-client-ip.test.js framerail/tests/presigned-upload.test.js framerail/tests/page-file-upload-lifecycle.test.js framerail/tests/xmlrpc-file-upload-lifecycle.test.js",
       "phase": "source_barrier",
       "exists_now": true
     },
@@ -1217,22 +1217,34 @@
           "case_id": "M1062_FAILURE_CLEANUP",
           "acceptance": "On presign, PUT, timeout, or file_create failure, create no file relation, leave no public route, cancel pending state, and preserve list/cache state.",
           "classification": "source_ready",
-          "reason": "The real page file create and replacement flows now share a pending upload lifecycle that calls blob_cancel in a separate JSON-RPC request after PUT, file_create, or file_edit failure and preserves the original error. Focused Node cases prove call order, exactly one cleanup, trusted context forwarding, and no cancel after success; the Deepwell ownership case proves failed commits expose no file relation and owner cancellation removes pending state and its temporary object while permanent content-addressed objects retain their existing semantics. A task-owned runtime candidate still must prove transport timeout, cache, and object-store behavior.",
+          "reason": "Every page-scoped upload caller now owns the same failure boundary: the Framerail form flow and XML-RPC bridge share a pending upload lifecycle, while the corpus importer applies the same sequence at its process boundary. After pending allocation, PUT, file_create, or file_edit failure triggers exactly one separate blob_cancel request with the original actor, site, and page context; cleanup failure is suppressed so the original failure remains authoritative, and successful commits are not cancelled. Focused Node cases prove order, context, exactly-once cleanup, original-error preservation, and success behavior. The XML-RPC fixture independently requires exact page-scoped params plus session/site/page headers. The Deepwell public ownership case proves failed commits expose no file relation and now guarantees global pending-row and DB/S3 fixture cleanup after an assertion or teardown panic; direct DB/S3 access remains test-only setup and cleanup. A task-owned runtime candidate still must prove transport timeout, cache, and object-store behavior.",
           "source_paths": [
             "framerail/src/lib/server/deepwell/file.ts",
             "framerail/src/lib/server/deepwell/page-file.ts",
             "framerail/src/lib/server/deepwell/pending-blob-upload.ts",
+            "framerail/src/lib/server/xmlrpc/resource-methods.ts",
             "framerail/tests/page-file-upload-lifecycle.test.js",
+            "framerail/tests/xmlrpc-file-upload-lifecycle.test.js",
+            "framerail/tests/xmlrpc-api.spec.ts",
+            "framerail/tests/xmlrpc-deepwell-fixture/file-read-handler.js",
+            "install/local/wikidot-verification/src/corpus-import-attachments.mjs",
+            "install/local/wikidot-verification/tests/corpus-import-attachments.test.mjs",
+            "deepwell/src/services/blob/service.rs",
             "deepwell/tests/page.rs"
           ],
           "existing_tests": [
             "framerail/tests/presigned-upload.test.js",
             "framerail/tests/page-file-upload-lifecycle.test.js",
+            "framerail/tests/xmlrpc-file-upload-lifecycle.test.js::XML-RPC file save preserves its commit fault when pending cleanup also fails",
+            "framerail/tests/xmlrpc-api.spec.ts::XML-RPC endpoint saves and reads small page attachments",
+            "install/local/wikidot-verification/tests/corpus-import-attachments.test.mjs::materializeCorpusRowAttachments cancels once after a presigned PUT failure",
+            "install/local/wikidot-verification/tests/corpus-import-attachments.test.mjs::materializeCorpusRowAttachments preserves file_create failure when cleanup fails",
             "deepwell/tests/page.rs::file_create_commits_only_its_actor_and_route_owned_pending_blob"
           ],
           "evidence_ids": ["E_UPLOAD_HISTORICAL_FAILURE"],
           "next_command_ids": [
             "C_FRAMERAIL_MEDIA_UNIT",
+            "C_CORPUS_ATTACHMENT_UNIT",
             "C_DEEPWELL_UPLOAD_OWNERSHIP",
             "C_MEDIA_RUNTIME_CANDIDATE"
           ]
