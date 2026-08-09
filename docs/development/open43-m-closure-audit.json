@@ -28,7 +28,7 @@
     "framerail_pnpm_lock_sha256": "3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406",
     "framerail_package_sha256": "930b902b4ebed09c4114f6b8db87311a639e612183a4371ca19884dac8349082",
     "framerail_svelte_config_sha256": "52b02a44f682cd0bb12b8b968e4a0dc5f84eda1b76c2201aee9566bc236fbcbc",
-    "observed_integration_head": "e86d75fad1a39093c649c56177c040656fd5c133",
+    "observed_integration_head": "f781226ff522c426149b11e2cdcec8f875696139",
     "observed_integration_head_is_dynamic": true,
     "final_source_freeze_reconciliation_required": true,
     "standing_is_acceptance_evidence": false
@@ -68,13 +68,13 @@
     ],
     "base_commit": "e9f2634dc9fcca0d7f910c5d408df7b56869a6f9",
     "base_tree": "78eeede1b23b1f1264924db7481e912b5e6becb3",
-    "source_commit": "41c0e93953da5564d83699ba1632c9f0942aa6f8",
-    "source_tree": "933413c4d093e3439fe1d156848bdcf3696f424c",
+    "source_commit": "716cefe5d7f75edd141821e127a28669e937779e",
+    "source_tree": "985d480eef4f6adad5cbbe07879fb95dba2aad97",
     "previous_epoch": 2,
     "final_epoch": 3,
     "bump_count": 1,
     "public_boundary": "A public article_view computes a cache namespace from the same renderer epoch as compiled_generator and ignores a valid serialized page stored only under the v2 namespace.",
-    "integration_commit_reconciliation_required": true,
+    "integration_commit_reconciliation_required": false,
     "source_ready_is_not_pass": true
   },
   "github_issue_inputs": [
@@ -1165,6 +1165,7 @@
     "lane_must_not_bump": true,
     "finalized_by": {
       "lane_commit": "41c0e93953da5564d83699ba1632c9f0942aa6f8",
+      "integration_commit": "716cefe5d7f75edd141821e127a28669e937779e",
       "subject": "render: freeze compiled artifact identity",
       "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
     },
@@ -1288,6 +1289,10 @@
       {
         "commit": "2073c33d60e37250388ce0a8fade2edabc2f2fe0",
         "subject": "feat: serve permission-bound resized attachments"
+      },
+      {
+        "commit": "716cefe5d7f75edd141821e127a28669e937779e",
+        "subject": "render: freeze compiled artifact identity"
       }
     ],
     "source_freeze_actions": [
