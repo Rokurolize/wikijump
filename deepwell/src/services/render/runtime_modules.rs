@@ -31,6 +31,7 @@ use super::rate_module::{
     render_read_only_rate_module, render_read_only_star_rate_module,
 };
 use super::runtime_page_queries::find_viewable_list_pages_rows_with_batch_floor;
+use super::search_feed::expand_search_feed_modules;
 use super::service::{
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PAGECALENDAR_MODULE_REGEX, RATE_MODULE_REGEX,
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
@@ -2014,6 +2015,7 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = Self::expand_list_drafts_modules(wikitext, settings, compat_html);
+        wikitext = expand_search_feed_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_static_account_modules(wikitext, settings, compat_html);

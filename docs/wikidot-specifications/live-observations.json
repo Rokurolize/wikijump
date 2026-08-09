@@ -1,8 +1,46 @@
 {
   "schema": "wikijump.wikidot_live_observations.v1",
-  "generated_date": "2026-07-28",
+  "generated_date": "2026-08-09",
   "authority": "Reproducible live Wikidot behavior is canonical and overrides conflicting or incomplete documentation-derived claims.",
   "observations": [
+    {
+      "id": "search-feed-current-unavailable-boundaries-20260809",
+      "title": "Search is currently unavailable and Feed source recognition remains source-sensitive",
+      "feature_ids": [
+        "module-search",
+        "module-feed"
+      ],
+      "classification": "live-correction",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous PagePreviewModule probes show that current Wikidot recognizes Search but renders one unavailable notice across the documented and malformed heads. Feed retains a narrower parser boundary: only a non-empty lowercase src assignment in double quotes is recognized in the observed matrix; missing, empty, single-quoted, and uppercase-key forms all render the missing-source error. A recognized but inaccessible source renders a separate processing error.",
+      "normative_behavior": [
+        "Search renders the current temporary-unavailable error for the observed bare, documented, unknown-argument, single-quoted, and uppercase-module-name forms.",
+        "Feed without a recognized source renders the exact missing-src error.",
+        "In the observed Feed matrix, src is recognized only when the key is lowercase, the value is double-quoted, and the value is non-empty.",
+        "A recognized source that cannot be read renders the exact processing error with the escaped source URL.",
+        "Active Search results and successful remote Feed item rendering remain unimplemented until a reproducible live contract and a safe runtime adapter are available."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/search-feed-live-preview-20260809.json",
+          "sha256": "b8642635e71c02bb9e798af5740be5de3c259fef13f000dc6f0bd0fe28946565",
+          "case_ids": [
+            "search-bare",
+            "search-mini-true",
+            "search-area-pages",
+            "search-unknown-argument",
+            "search-single-quoted-mini",
+            "search-uppercase-name",
+            "feed-bare",
+            "feed-empty-src",
+            "feed-missing-src-with-limit",
+            "feed-single-quoted-src",
+            "feed-uppercase-src",
+            "feed-valid-src"
+          ]
+        }
+      ]
+    },
     {
       "id": "listpages-invalid-numeric-fallbacks",
       "title": "Invalid and extreme numeric arguments use compatibility fallbacks",

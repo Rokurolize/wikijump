@@ -111,7 +111,10 @@ test("the Wikidot shell preserves the legacy two-input search chrome", async () 
   )
 
   assert.match(layout, /<div id="search-top-box">/u)
-  assert.match(layout, /<form id="search-top-box-form" action="dummy">/u)
+  assert.match(
+    layout,
+    /<form(?=[^>]*id="search-top-box-form")(?=[^>]*action="dummy")[^>]*>/u
+  )
   assert.match(layout, /id="search-top-box-input"[\s\S]*?type="text"/u)
   assert.match(
     layout,

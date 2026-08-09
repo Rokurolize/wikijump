@@ -1,0 +1,88 @@
+{
+  "schema": "wikijump_search_feed_live_preview.v1",
+  "captured_at": "2026-08-09T02:56:19.113882+00:00",
+  "provenance": {
+    "site": "sandbox-for-codex",
+    "site_domain": "sandbox-for-codex.wikidot.com",
+    "module": "edit/PagePreviewModule",
+    "authenticated": false,
+    "mutated": false,
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "2434bf77744488cb2095327c9e0e4450add78df3",
+    "requirements_sha256": "45717e5351f7eb1c46431dd44bf15db9777dbbc4fa40026931bd2e6458b2fcc9"
+  },
+  "cases": [
+    {
+      "case_id": "search-bare",
+      "source": "[[module Search]]",
+      "raw_html": "\n\n<div class=\"error-block\">Search is temporarily unavailable, we are working to bring it online!</div>",
+      "raw_html_sha256": "224665638822097dfb2f8bc2ecdbe07ba4680b5d7cdcb39391259f3704e2177f"
+    },
+    {
+      "case_id": "search-mini-true",
+      "source": "[[module Search mini=\"true\"]]",
+      "raw_html": "\n\n<div class=\"error-block\">Search is temporarily unavailable, we are working to bring it online!</div>",
+      "raw_html_sha256": "224665638822097dfb2f8bc2ecdbe07ba4680b5d7cdcb39391259f3704e2177f"
+    },
+    {
+      "case_id": "search-area-pages",
+      "source": "[[module Search a=\"p\"]]",
+      "raw_html": "\n\n<div class=\"error-block\">Search is temporarily unavailable, we are working to bring it online!</div>",
+      "raw_html_sha256": "224665638822097dfb2f8bc2ecdbe07ba4680b5d7cdcb39391259f3704e2177f"
+    },
+    {
+      "case_id": "search-unknown-argument",
+      "source": "[[module Search unknown=\"x\"]]",
+      "raw_html": "\n\n<div class=\"error-block\">Search is temporarily unavailable, we are working to bring it online!</div>",
+      "raw_html_sha256": "224665638822097dfb2f8bc2ecdbe07ba4680b5d7cdcb39391259f3704e2177f"
+    },
+    {
+      "case_id": "search-single-quoted-mini",
+      "source": "[[module Search mini='true']]",
+      "raw_html": "\n\n<div class=\"error-block\">Search is temporarily unavailable, we are working to bring it online!</div>",
+      "raw_html_sha256": "224665638822097dfb2f8bc2ecdbe07ba4680b5d7cdcb39391259f3704e2177f"
+    },
+    {
+      "case_id": "search-uppercase-name",
+      "source": "[[module SEARCH]]",
+      "raw_html": "\n\n<div class=\"error-block\">Search is temporarily unavailable, we are working to bring it online!</div>",
+      "raw_html_sha256": "224665638822097dfb2f8bc2ecdbe07ba4680b5d7cdcb39391259f3704e2177f"
+    },
+    {
+      "case_id": "feed-bare",
+      "source": "[[module Feed]]",
+      "raw_html": "\n\n<div class=\"error-block\">No feed source specified (\"src\" element missing).</div>",
+      "raw_html_sha256": "df2d4f26a8aaa487390c0617b6cc2007f2fa72b97a6a429bc3007e7d5d04bdf9"
+    },
+    {
+      "case_id": "feed-empty-src",
+      "source": "[[module Feed src=\"\"]]",
+      "raw_html": "\n\n<div class=\"error-block\">No feed source specified (\"src\" element missing).</div>",
+      "raw_html_sha256": "df2d4f26a8aaa487390c0617b6cc2007f2fa72b97a6a429bc3007e7d5d04bdf9"
+    },
+    {
+      "case_id": "feed-missing-src-with-limit",
+      "source": "[[module Feed limit=\"1\"]]",
+      "raw_html": "\n\n<div class=\"error-block\">No feed source specified (\"src\" element missing).</div>",
+      "raw_html_sha256": "df2d4f26a8aaa487390c0617b6cc2007f2fa72b97a6a429bc3007e7d5d04bdf9"
+    },
+    {
+      "case_id": "feed-single-quoted-src",
+      "source": "[[module Feed src='https://example.com/feed.xml']]",
+      "raw_html": "\n\n<div class=\"error-block\">No feed source specified (\"src\" element missing).</div>",
+      "raw_html_sha256": "df2d4f26a8aaa487390c0617b6cc2007f2fa72b97a6a429bc3007e7d5d04bdf9"
+    },
+    {
+      "case_id": "feed-uppercase-src",
+      "source": "[[module Feed SRC=\"https://example.com/feed.xml\"]]",
+      "raw_html": "\n\n<div class=\"error-block\">No feed source specified (\"src\" element missing).</div>",
+      "raw_html_sha256": "df2d4f26a8aaa487390c0617b6cc2007f2fa72b97a6a429bc3007e7d5d04bdf9"
+    },
+    {
+      "case_id": "feed-valid-src",
+      "source": "[[module Feed src=\"https://example.com/feed.xml\"]]",
+      "raw_html": "\n\n<div class=\"error-block\">Error processing the feed \"https://example.com/feed.xml\". The feed can not be accessed or contains errors. </div>",
+      "raw_html_sha256": "e4d79212898919213623dc859485e736773d47629f2bf19e2766dd621fe0b60e"
+    }
+  ]
+}

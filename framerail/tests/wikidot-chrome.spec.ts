@@ -27,4 +27,8 @@ test("Wikidot-compatible search chrome preserves its two inputs and focus behavi
   expect(pageErrors).toEqual([])
   await expect(query).toHaveValue("")
   await expect(query).not.toHaveClass(/\bempty\b/u)
+
+  await query.fill("codex search probe")
+  await form.locator('input[type="submit"]').click({ force: true })
+  await expect(page).toHaveURL(/\/search:site\/q\/codex%20search%20probe$/u)
 })

@@ -57,6 +57,7 @@ mod replay;
 mod runtime;
 mod runtime_modules;
 mod runtime_page_queries;
+mod search_feed;
 mod service;
 mod structs;
 mod url_arguments;

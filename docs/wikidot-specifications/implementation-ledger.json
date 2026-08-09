@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
-  "updated_at": "2026-08-06",
-  "catalog_sha256": "5af7164f21add6d7c178acf81dbeee9d65bb468f6ac16bcef8a2c21a16d40124",
+  "updated_at": "2026-08-09",
+  "catalog_sha256": "c01ac55c811bcfa67a94b65802e42cdef8c2c4c17f68b18aa2b8669325a7ee46",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -1352,15 +1352,36 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-feed": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/render/search_feed.rs",
+          "name": "distinguishes_feed_source_recognition_from_missing_source; leaves_search_and_feed_literal_inside_literal_regions",
+          "scope": "unit matrix for exact src spelling, quote kind, empty value, inaccessible-source error, and literal ownership"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "search_and_feed_modules_match_live_preview_and_page_view_boundaries",
+          "scope": "public preview matrix and saved-page lifecycle for the frozen missing and inaccessible Feed states"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/search_feed.rs",
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-feed.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/search-feed-live-preview-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Successful remote RSS or Atom acquisition, limit and offset behavior, custom templates, variables, sanitization, caching, redirect policy, response budgets, and browser lifecycle remain to be observed and implemented through a safe adapter."
+      ]
     },
     "module-files": {
       "status": "pending",
@@ -2358,15 +2379,44 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-search": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering",
+        "Framerail top-bar search route"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/render/search_feed.rs",
+          "name": "renders_the_live_search_unavailable_contract; leaves_search_and_feed_literal_inside_literal_regions",
+          "scope": "unit matrix for current unavailable output, permissive observed module heads, and literal ownership"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "search_and_feed_modules_match_live_preview_and_page_view_boundaries",
+          "scope": "public preview matrix and saved-page lifecycle for the frozen Search unavailable state"
+        },
+        {
+          "path": "framerail/tests/wikidot-search.test.js; framerail/tests/wikidot-chrome.spec.ts",
+          "name": "top search path encoding and browser submission",
+          "scope": "exact search:site route, untrimmed query encoding, and browser navigation"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/search_feed.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "framerail/src/lib/wikidot/wikidot-search.js",
+        "framerail/src/routes/+layout.svelte"
+      ],
       "documentation_evidence": [
         "specifications/module/module-search.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/search-feed-live-preview-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Current live Search is unavailable, so result selection, private-page filtering, forum scope, ranking, pagination, highlighting, and successful-result DOM remain unobservable and unimplemented."
+      ]
     },
     "module-searchall": {
       "status": "pending",

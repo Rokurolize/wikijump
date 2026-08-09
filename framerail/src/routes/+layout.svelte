@@ -42,6 +42,7 @@
     hasIosIcons
   } from "$lib/site-icons"
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
+  import { wikidotSearchPath } from "$lib/wikidot/wikidot-search.js"
 
   let { children } = $props()
 
@@ -59,6 +60,15 @@
       input.classList.remove("empty")
       input.value = ""
     }
+  }
+
+  function submitWikidotSearch(event: SubmitEvent) {
+    event.preventDefault()
+    const form = event.currentTarget
+    if (!(form instanceof HTMLFormElement)) return
+    const input = form.elements.namedItem("query")
+    if (!(input instanceof HTMLInputElement)) return
+    window.location.href = wikidotSearchPath(input.value)
   }
 
   function resolveCurrentLayout() {
@@ -208,7 +218,7 @@
         </h2>
       {/if}
       <div id="search-top-box">
-        <form id="search-top-box-form" action="dummy">
+        <form id="search-top-box-form" action="dummy" onsubmit={submitWikidotSearch}>
           <input
             id="search-top-box-input"
             name="query"

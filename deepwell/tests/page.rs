@@ -3661,6 +3661,126 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
 }
 
 #[tokio::test]
+async fn search_and_feed_modules_match_live_preview_and_page_view_boundaries() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let search_error = r#"<div class="error-block">Search is temporarily unavailable, we are working to bring it online!</div>"#;
+    let feed_missing = r#"<div class="error-block">No feed source specified ("src" element missing).</div>"#;
+    let feed_unavailable = r#"<div class="error-block">Error processing the feed "https://example.com/feed.xml". The feed can not be accessed or contains errors. </div>"#;
+    let cases = [
+        ("search-bare", "[[module Search]]", search_error),
+        (
+            "search-mini-true",
+            "[[module Search mini=\"true\"]]",
+            search_error,
+        ),
+        (
+            "search-unknown-argument",
+            "[[module Search unknown=\"x\"]]",
+            search_error,
+        ),
+        (
+            "search-single-quoted-mini",
+            "[[module Search mini='true']]",
+            search_error,
+        ),
+        ("search-uppercase-name", "[[module SEARCH]]", search_error),
+        ("feed-bare", "[[module Feed]]", feed_missing),
+        ("feed-empty-src", "[[module Feed src=\"\"]]", feed_missing),
+        (
+            "feed-missing-src-with-limit",
+            "[[module Feed limit=\"1\"]]",
+            feed_missing,
+        ),
+        (
+            "feed-single-quoted-src",
+            "[[module Feed src='https://example.com/feed.xml']]",
+            feed_missing,
+        ),
+        (
+            "feed-uppercase-src",
+            "[[module Feed SRC=\"https://example.com/feed.xml\"]]",
+            feed_missing,
+        ),
+        (
+            "feed-valid-unavailable-src",
+            "[[module Feed src=\"https://example.com/feed.xml\"]]",
+            feed_unavailable,
+        ),
+    ];
+
+    for (case_id, source, expected) in cases {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(expected),
+            "{case_id} should render the frozen live boundary:\n{}",
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains("[[module"),
+            "{case_id} should consume the runtime module:\n{}",
+            preview.body,
+        );
+    }
+
+    let saved_source = concat!(
+        "SEARCH_START\n[[module Search]]\nSEARCH_END\n",
+        "FEED_START\n[[module Feed]]\nFEED_END",
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-search-feed-boundary",
+        "Fixture Search Feed Boundary",
+        saved_source,
+    )
+    .await;
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-search-feed-boundary", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found Search and Feed view, got {other:?}"),
+    };
+    assert!(
+        body.contains("SEARCH_START")
+            && body.contains(search_error)
+            && body.contains("SEARCH_END")
+            && body.contains("FEED_START")
+            && body.contains(feed_missing)
+            && body.contains("FEED_END")
+            && !body.contains("[[module"),
+        "saved page view should preserve both live module boundaries:\n{body}",
+    );
+}
+
+#[tokio::test]
 async fn membership_by_password_module_matches_live_anonymous_and_member_output() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
