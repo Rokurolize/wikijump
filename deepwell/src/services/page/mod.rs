@@ -23,9 +23,9 @@ mod structs;
 
 pub use self::service::PageService;
 pub use self::structs::{
-    CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
-    GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
-    GetPageReferenceDetails, GetPageScoreOutput, GetPageSlug, MovePage, MovePageOutput,
-    PageEditPermissionOutput, RestorePage, RestorePageOutput, RollbackPage,
-    SetPageLayout,
+    CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageBody,
+    EditPageOutput, GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput,
+    GetPageReference, GetPageReferenceDetails, GetPageScoreOutput, GetPageSlug, MovePage,
+    MovePageOutput, PageEditPermissionOutput, RestorePage, RestorePageOutput,
+    RollbackPage, SetPageLayout,
 };

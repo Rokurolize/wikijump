@@ -20,7 +20,7 @@
 
 use super::structs::{CreateSite, CreateSiteOutput, SiteForumSettings, UpdateSiteBody};
 use crate::constants::SYSTEM_USER_ID;
-use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::models::site::{self, Entity as Site, Model as SiteModel};
 use crate::services::PageService;
 use crate::services::ServiceContext;

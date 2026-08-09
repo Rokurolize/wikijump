@@ -10,7 +10,7 @@
  * (at your option) any later version.
  */
 
-use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::services::page::{EditPage, EditPageBody, EditPageOutput};
 use crate::services::render::LegacyActionRegistry;
 use crate::services::{PageRevisionService, PageService, ServiceContext, TextService};

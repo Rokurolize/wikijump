@@ -79,11 +79,12 @@ impl PageService {
         // Ensure slug is normalized
         normalize(&mut slug);
 
+        let requested_slug = slug.clone();
         let make_error = || {
             Error::new(
                 format!(
                     "failed to create page '{}' in site ID {}, performed by user ID {}",
-                    slug, site_id, user_id,
+                    requested_slug, site_id, user_id,
                 ),
                 ErrorType::Page,
             )
