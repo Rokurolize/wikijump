@@ -22,4 +22,4 @@ mod service;
 mod structs;
 
 pub use self::service::CategoryService;
-pub use self::structs::{GetCategory, UpdateCategory};
+pub use self::structs::{GetCategory, UpdateCategory, UpdateCategoryBody};
