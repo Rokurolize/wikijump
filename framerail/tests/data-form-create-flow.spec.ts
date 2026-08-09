@@ -48,6 +48,8 @@ test("data-form create flow renders controls and stores Wikidot source", async (
   await page.locator("input[name='field-choice'][value='a']").check()
   await page.locator("#edit-save-button").click()
 
+  await expect(page).toHaveURL(/data-form-create-flow:104$/u)
+
   await expect
     .poll(async () => {
       const writes = await request

@@ -153,7 +153,11 @@ export async function pageEditAction(event: RequestEvent) {
       context.requestContext
     )
     if (!pageId && parent) {
-      await pageParentUpdate(siteId, slug, userId, [parent], [], context.requestContext)
+      if (!res.slug) throw new Error("Page creation did not return its assigned slug.")
+      await pageParentUpdate(siteId, res.slug, userId, [parent], [], {
+        ...context.requestContext,
+        page: res.slug
+      })
     }
 
     return { form, res }

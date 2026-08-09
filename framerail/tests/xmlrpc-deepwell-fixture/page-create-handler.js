@@ -36,7 +36,13 @@ export const handlePageCreateRpc = ({ rpcRequest, request }) => {
     headers: requestContextHeaders(request),
     params: rpcRequest.params
   })
-  const slug = rpcRequest.params.slug
+  const requestedSlug = rpcRequest.params.slug
+  const slug =
+    requestedSlug === "autonumber-requested"
+      ? "104"
+      : requestedSlug === "data-form-create-flow:example"
+        ? "data-form-create-flow:104"
+        : requestedSlug
   const revisionId = counters.nextRevisionId++
   pages[slug] = {
     page_id: counters.nextPageId++,

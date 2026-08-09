@@ -6,6 +6,7 @@
   import { Layout } from "$lib/types"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { getPageLayoutContext } from "$lib/layout/page-layout-context"
+  import { pageMutationDestinationSlug } from "$lib/page-mutation-destination"
   import { superForm } from "sveltekit-superforms"
   import { untrack } from "svelte"
 
@@ -48,7 +49,7 @@
       onSubmit: async ({ jsonData }) => {
         const submitForm = {
           ...$editForm,
-          siteId: page.data.site.site_id,
+          siteId: errorData.site.site_id,
           slug: page.params.slug ?? page.error?.site.default_page
         }
         jsonData(submitForm)
@@ -56,7 +57,20 @@
       onResult: async ({ result, cancel }) => {
         if (result.type === "success" && result.data) {
           cancel()
-          goto(resolve(`/${page.params.slug ?? page.data.site.default_page}`, {}), {
+          const destinationSlug = pageMutationDestinationSlug({
+            creating: true,
+            requestedSlug: missingPageSlug,
+            responseSlug: result.data.res?.slug
+          })
+          if (!destinationSlug) {
+            errorPopupState.current = {
+              state: true,
+              message: "Page creation did not return its assigned slug.",
+              data: {}
+            }
+            return
+          }
+          goto(resolve(`/${destinationSlug}`, {}), {
             noScroll: true
           })
         }

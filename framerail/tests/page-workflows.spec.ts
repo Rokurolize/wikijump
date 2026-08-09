@@ -207,3 +207,16 @@ test("article routes carry load and mutation context through Deepwell", async ({
     })
   )
 })
+
+test("autonumbered page creation follows the assigned slug", async ({ page }) => {
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/autonumber-requested/edit/true")
+
+  await page.locator("input[name='title']").fill("Autonumber browser test")
+  await page.locator("textarea[name='wikitext']").fill("Assigned page body")
+  await page.locator("textarea[name='comments']").fill("create")
+  await page.getByRole("button", { name: "save", exact: true }).click()
+
+  await expect(page).toHaveURL(/\/104$/u)
+  await expect(page.locator("#page-content")).toContainText("Assigned page body")
+})
