@@ -8093,7 +8093,7 @@ async fn backlinks_module_renders_current_page_incoming_links() {
 
     for expected in [
         "BF_DEFAULT_START",
-        r#"<div class="backlinks-module-box" data-wikijump-compat-backlinks="1">"#,
+        r#"<div class="backlinks-module-box"><ul>"#,
         r#"<a href="/fixture-backlinks-linker-alpha">Fixture Backlinks Linker Alpha</a>"#,
         r#"<a href="/fixture-backlinks-linker-beta">Fixture Backlinks Linker Beta</a>"#,
         "BF_DEFAULT_END",
@@ -8107,6 +8107,7 @@ async fn backlinks_module_renders_current_page_incoming_links() {
     for forbidden in [
         "TODO: module Backlinks",
         "[[module Backlinks",
+        "data-wikijump-compat-backlinks",
         "Fixture Backlinks Excluded",
         "fixture-backlinks-excluded",
     ] {
