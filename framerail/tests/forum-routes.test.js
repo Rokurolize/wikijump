@@ -11,7 +11,7 @@ import {
 } from "../src/lib/server/forum-routes.js"
 
 /** @param {Record<string, string | undefined>} params */
-const event = (params) => ({
+const routeEvent = (params) => ({
   params,
   request: new Request("http://scp-wiki.local/forum/start", {
     headers: {
@@ -45,16 +45,16 @@ test("forum route loads use the exact sealed read-only module requests", async (
   const calls = []
 
   assert.deepEqual(
-    await loadForumStartRoute(event({ extra: undefined }), dependencies(calls)),
+    await loadForumStartRoute(routeEvent({ extra: undefined }), dependencies(calls)),
     { body: "<div>forum</div>" }
   )
   assert.deepEqual(
-    await loadForumStartRoute(event({ extra: "hidden/show" }), dependencies(calls)),
+    await loadForumStartRoute(routeEvent({ extra: "hidden/show" }), dependencies(calls)),
     { body: "<div>forum</div>" }
   )
   assert.deepEqual(
     await loadForumCategoryRoute(
-      event({ category: "8503559", name: "open-topic" }),
+      routeEvent({ category: "8503559", name: "open-topic" }),
       dependencies(calls)
     ),
     { body: "<div>forum</div>" }
@@ -63,7 +63,7 @@ test("forum route loads use the exact sealed read-only module requests", async (
   const jsInclude = ["https://static.example/ForumViewThreadModule.js"]
   assert.deepEqual(
     await loadForumThreadRoute(
-      event({ thread: "18029831", name: "codex-smoke-thread" }),
+      routeEvent({ thread: "18029831", name: "codex-smoke-thread" }),
       dependencies(calls, {
         status: "ok",
         body: '<div class="forum-thread-box">complete</div>',
@@ -89,15 +89,15 @@ test("unobserved forum suffixes terminate at the public 404 boundary", async () 
   const calls = []
   const deps = dependencies(calls)
   for (const run of [
-    () => loadForumStartRoute(event({ extra: "hidden" }), deps),
+    () => loadForumStartRoute(routeEvent({ extra: "hidden" }), deps),
     () =>
       loadForumCategoryRoute(
-        event({ category: "8503559", name: "open-topic/sort/start" }),
+        routeEvent({ category: "8503559", name: "open-topic/sort/start" }),
         deps
       ),
     () =>
       loadForumThreadRoute(
-        event({ thread: "18029831", name: "codex-smoke-thread/extra" }),
+        routeEvent({ thread: "18029831", name: "codex-smoke-thread/extra" }),
         deps
       )
   ]) {
@@ -116,7 +116,7 @@ test("the observed category pager suffix reaches the exact AMC page", async () =
   /** @type {ForumCall[]} */
   const calls = []
   await loadForumCategoryRoute(
-    event({ category: "1113520", name: "p/12" }),
+    routeEvent({ category: "1113520", name: "p/12" }),
     dependencies(calls)
   )
   assert.deepEqual(
