@@ -325,13 +325,13 @@
       "command": "node install/local/wikidot-verification/scripts/run-open43-media-files-candidate.mjs --manifest docs/development/open43-m-closure-audit.json --runtime-identity /home/roku/wjlab/evidence/open43-final/media/runtime-identity.json --output /home/roku/wjlab/evidence/open43-final/media/runtime-verdict.json",
       "phase": "final_candidate",
       "exists_now": false,
-      "required_before_run": "Add the source-owned one-stack media/files candidate controller and unit tests; it must bind source, FTML, locks, images, DB, files, actor, browser, initial paint, settled state, and cleanup."
+      "required_before_run": "Add a source-owned public-observable media/files case producer plus a no-replace verdict sealer. The current placeholder command is insufficient because one runtime-identity input cannot bind the sealed candidate identity, the source-owned run plan, distinct pre/post runtime observations, DB/files fixture seals, actor matrix, case artifacts, and verified cleanup."
     },
     "C_MEDIA_BROWSER_CANDIDATE": {
       "command": "pnpm --dir framerail exec playwright test --config playwright.candidate.config.ts tests/open43-media-files-candidate.spec.ts",
       "phase": "final_candidate",
       "exists_now": false,
-      "required_before_run": "Add the named candidate-only Playwright config and contract; they must consume the sealed candidate identity and must not start the mock-only Framerail fixture."
+      "required_before_run": "Add the named candidate-only Playwright config and source-owned case producer, then amend this placeholder command to pass the sealed candidate identity, sealed run plan, private actor state, and no-replace output root explicitly. They must attach to the existing non-443 candidate, must not start the mock-only Framerail fixture, and must record separate DOMContentLoaded-immediate and settled artifacts with network, console, page-error, CSP-header, CSP-violation, focus, and cleanup observations."
     }
   },
   "candidate_harness_gap": {
@@ -346,7 +346,124 @@
       "the current standing runtime",
       "the mock-only default Framerail Playwright fixture",
       "a successful HTTP status without blob and actor identity"
-    ]
+    ],
+    "review": {
+      "reviewed_base_commit": "2b93a9cc6f9942641c830e203fc0ad2b6b403039",
+      "reviewed_base_tree": "0eb4079b99a0b35effb151fed2b9e622d52a2ca3",
+      "issue_subrow_classifications_changed": false,
+      "named_targets_present": {
+        "install/local/wikidot-verification/scripts/run-open43-media-files-candidate.mjs": false,
+        "framerail/playwright.candidate.config.ts": false,
+        "framerail/tests/open43-media-files-candidate.spec.ts": false
+      },
+      "reusable_source": [
+        {
+          "path": "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",
+          "sha256": "a0e0a90d68a046b04f78f1698e3d53e9992bf79b134d51078d6373d445263fa9",
+          "reuse": "Validate a sealed, fresh, non-standing production candidate identity and its immutable image, source, FTML, configuration, endpoint, and evidence bindings."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
+          "sha256": "c1aa93d9874b98ea7d11c05e80ab8b8db7c2accd21cc8ec888dddbf6603e0f5b",
+          "reuse": "Observe every declared candidate service before and after capture and reject container, image, label, health, mount, network, port, or effective-configuration drift."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/standing-browser-parity-runner.mjs",
+          "sha256": "ca84a947a1e3ba1254a22ba8c333d0ded5e2887fa2b678b7b5bec0674635518c",
+          "reuse": "Reuse candidate attachment, clean-source execution identity, request gating, pre/post runtime stability, and sealed terminal receipt patterns without reusing the fixed standing-canary case set."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/standing-browser-parity-observation.mjs",
+          "sha256": "f973093eaf9ad7a207e1c553a998b3de366a08a91afac0181f27de2131dc5e23",
+          "reuse": "Reuse the distinct DOMContentLoaded-immediate and settled capture ordering, resource completion, request-failure collection, and screenshot artifact identities."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/standing-browser-parity-browser-session.mjs",
+          "sha256": "984c9e1d6882245d6361df7efb3acee2df3be67e8f7b2a953f2d53b219a511e1",
+          "reuse": "Reuse the isolated browser context, non-standing local endpoint, request gate, proxy, service-worker block, and close-all-resources behavior."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/atomic-no-replace.mjs",
+          "sha256": "f0b06e8a8badc1539810b663e9b0884c98d0677106a3723d9de1b6e9ce7b6848",
+          "reuse": "Publish terminal plan, case, cleanup, and verdict artifacts without replacing an earlier candidate result."
+        }
+      ],
+      "do_not_reuse_as_acceptance": [
+        {
+          "path": "framerail/playwright.config.ts",
+          "sha256": "6ae435ee5e0ac42e538d2e5c96e6cfa4bb303aa15100ec486f66c21e03c59bf4",
+          "reason": "It starts a mock XML-RPC fixture and a development Framerail preview instead of attaching to the sealed production candidate."
+        },
+        {
+          "path": "install/local/wikidot-verification/src/completion-controller.mjs",
+          "sha256": "d4baa86423253496011097635905aec3dffccc3b6b6a1e3763ad3abc49755fc5",
+          "reason": "It may coordinate disposable stages, but its mutable state and summary files are not a no-replace terminal acceptance receipt and its generic command plan does not prove media behavior."
+        }
+      ],
+      "missing_contracts": [
+        {
+          "id": "source_owned_case_fixture_producer",
+          "blocks": [
+            "C_MEDIA_RUNTIME_CANDIDATE",
+            "C_MEDIA_BROWSER_CANDIDATE"
+          ],
+          "reason": "No source-owned fixture plan creates and independently freezes the exact candidate URLs, page and revision identities, file names, expected byte hashes, icon values, media sources, gallery rows, and actor permissions for the ten candidate_required case IDs. A private manifest cannot supply both the observation and its expected value."
+        },
+        {
+          "id": "database_and_files_state_identity",
+          "blocks": ["C_MEDIA_RUNTIME_CANDIDATE"],
+          "reason": "The sealed standing candidate identity binds images and effective service configuration, including mount configuration, but it does not identify the contents of the task-owned database and files fixtures. The final plan needs independently sealed DB and files identities plus an allowed run-owned mutation delta."
+        },
+        {
+          "id": "actor_matrix_identity",
+          "blocks": [
+            "C_MEDIA_RUNTIME_CANDIDATE",
+            "C_MEDIA_BROWSER_CANDIDATE"
+          ],
+          "reason": "No secret-free source contract identifies the anonymous, authorized editor, and forbidden actor rows or binds a private browser storage-state file by hash. Credentials must remain outside receipts while actor IDs and permissions remain auditable."
+        },
+        {
+          "id": "public_runtime_case_executor",
+          "blocks": ["C_MEDIA_RUNTIME_CANDIDATE"],
+          "reason": "No source-owned executor currently drives the public Framerail, Deepwell, and WWS seams for local icon bytes, upload-delete-rename-revision next reads, multipart serialization, upload transaction order, exact download bytes, and fail-closed route absence. Direct DB access is permitted only for fixture setup and supplemental cleanup/identity assertions, not as the pass oracle."
+        },
+        {
+          "id": "candidate_browser_case_executor",
+          "blocks": ["C_MEDIA_BROWSER_CANDIDATE"],
+          "reason": "The candidate-only Playwright config and test do not exist. The standing canary runner captures fixed read-only pages and cannot substitute for icon transitions, media frames, Gallery viewer actions, or multipart upload workflows."
+        },
+        {
+          "id": "browser_security_and_failure_observation",
+          "blocks": ["C_MEDIA_BROWSER_CANDIDATE"],
+          "reason": "The reusable standing observation records request failures and HTTP error responses, but the media contract also requires console errors, page errors, the main response CSP header, securitypolicyviolation events, iframe request attempts, and fail-closed no-request intervals. These fields need a source-owned media observation contract rather than an assumed empty array."
+        },
+        {
+          "id": "run_owned_cleanup_executor",
+          "blocks": [
+            "C_MEDIA_RUNTIME_CANDIDATE",
+            "C_MEDIA_BROWSER_CANDIDATE"
+          ],
+          "reason": "No creation ledger and finally/signal cleanup executor records ownership of candidate-created pages, revisions, files, pending blobs, and settings, then proves their absence after success or failure. The controller must never stop, remove, or recreate the externally owned candidate stack, DB, cache, or files volumes."
+        },
+        {
+          "id": "no_replace_terminal_verdict",
+          "blocks": ["C_MEDIA_RUNTIME_CANDIDATE"],
+          "reason": "No terminal verifier currently reconciles every candidate_required case exactly once against one sealed plan and the same pre/post runtime identity, rejects skipped or self-reported cases, and publishes case receipts plus the aggregate verdict through the existing no-replace primitive."
+        },
+        {
+          "id": "configured_icon_transition_prerequisite",
+          "blocks": ["M756_BROWSER_CACHE_TRANSITIONS"],
+          "reason": "The browser case requires an observed before/after icon-setting change, while M756_UPLOAD_MATERIALIZATION remains blocked_evidence for upload/download transaction, replacement, deletion, MIME, size, SVG/script, and failure semantics. The harness must not invent a mutation solely to make the browser row executable."
+        }
+      ],
+      "required_ownership_boundary": {
+        "candidate_stack": "external owner named by the sealed candidate identity; harness observes but does not build, start, stop, replace, or remove it",
+        "run_owned_state": "source-owned case producer; every created page, revision, setting delta, file, and pending blob is recorded before use and removed or restored in finally and signal paths",
+        "terminal_evidence": "media candidate harness; no-replace publication only after case reconciliation, cleanup absence, and stable post-run candidate observation",
+        "secrets": "private operator inputs only; receipts contain actor and storage-state hashes but no credentials, session cookies, presigned URLs, or tokens"
+      },
+      "readiness_rule": "Keep both target commands exists_now=false until the named source/config/test files exist, source-blind unit and CLI tests cover every missing contract, and one black-box candidate run proves all ten candidate_required rows without skips. A verifier that only accepts producer-authored pass receipts is not sufficient."
+    }
   },
   "issues": [
     {
