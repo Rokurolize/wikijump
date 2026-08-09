@@ -74,7 +74,9 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
     let mut category_ids = None;
     let mut category_error = false;
     let mut limit = DEFAULT_LIMIT;
+    let mut limit_seen = false;
     let mut offset = 0;
+    let mut offset_seen = false;
     for argument in arguments {
         if argument.op != "="
             || argument.value_kind != WikidotModuleArgumentValueKind::DoubleQuoted
@@ -99,14 +101,16 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
                 }
                 category_ids = Some(parsed);
             }
-            "limit" => {
+            "limit" if !limit_seen => {
+                limit_seen = true;
                 limit = argument
                     .value
                     .parse::<usize>()
                     .ok()
                     .filter(|limit| (1..=MAX_LIMIT).contains(limit))?;
             }
-            "offset" => {
+            "offset" if !offset_seen => {
+                offset_seen = true;
                 offset = argument.value.parse::<usize>().unwrap_or_default();
             }
             _ => return None,

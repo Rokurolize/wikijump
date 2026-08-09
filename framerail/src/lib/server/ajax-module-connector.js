@@ -18,6 +18,7 @@ const FORUM_READ_MODULE_PARAMETERS = new Map([
   ["forum/ForumViewThreadPostsModule", [new Set(["t", "pageNo"])]],
   ["forum/ForumRecentPostsListModule", [new Set(["page", "categoryId"])]]
 ])
+const FORUM_POSITIVE_DECIMAL_FIELDS = new Set(["pageId", "c", "p", "t", "pageNo", "page"])
 const SITE_CHANGES_MODULE = "changes/SiteChangesListModule"
 const SITE_CHANGES_READ_FIELDS = new Set([
   "page",
@@ -195,9 +196,26 @@ const readUrlEncodedForm = async (request) => {
 const fieldValue = (fields, name) => fields.get(name) ?? ""
 
 /** @param {string} value */
+const isCanonicalPositiveDecimal = (value) => /^[1-9][0-9]*$/u.test(value)
+
+/** @param {string} value */
 const isPositiveSafeDecimal = (value) => {
-  if (!/^[1-9]\d*$/u.test(value)) return false
+  if (!isCanonicalPositiveDecimal(value)) return false
   return Number.isSafeInteger(Number.parseInt(value, 10))
+}
+
+/** @param {Record<string, string>} parameters */
+const forumNumericParametersAreCanonical = (parameters) => {
+  for (const field of FORUM_POSITIVE_DECIMAL_FIELDS) {
+    const value = parameters[field]
+    if (value !== undefined && !isCanonicalPositiveDecimal(value)) return false
+  }
+  const categoryId = parameters.categoryId
+  return (
+    categoryId === undefined ||
+    categoryId === "" ||
+    isCanonicalPositiveDecimal(categoryId)
+  )
 }
 
 /** @param {string} tags */
@@ -742,6 +760,12 @@ export const handleAjaxModuleConnectorRequest = async (
       parameters.order !== "reverse" &&
       parameters.order !== "forwards"
     ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+    if (!forumNumericParametersAreCanonical(parameters)) {
       return jsonResponse({
         status: "not_ok",
         message: `Unsupported AJAX module shape: ${moduleName}`

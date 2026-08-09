@@ -660,19 +660,29 @@ fn parameters_are(parameters: &BTreeMap<String, String>, required: &[&str]) -> b
             .all(|parameter| required.contains(&parameter.as_str()))
 }
 
-fn positive_i64(parameters: &BTreeMap<String, String>, name: &str) -> Option<i64> {
-    parameters
-        .get(name)?
-        .parse::<i64>()
-        .ok()
-        .filter(|value| *value > 0)
+fn wikidot_positive_decimal<T>(value: &str) -> Option<T>
+where
+    T: std::str::FromStr,
+{
+    let mut bytes = value.bytes();
+    if !matches!(bytes.next(), Some(b'1'..=b'9'))
+        || !bytes.all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+    value.parse().ok()
 }
 
-fn positive_u32(parameters: &BTreeMap<String, String>, name: &str) -> Option<u32> {
+fn positive_decimal_parameter<T>(
+    parameters: &BTreeMap<String, String>,
+    name: &str,
+) -> Option<T>
+where
+    T: std::str::FromStr,
+{
     parameters
         .get(name)
-        .and_then(|value| value.parse::<u32>().ok())
-        .filter(|value| *value > 0)
+        .and_then(|value| wikidot_positive_decimal(value))
 }
 
 async fn load_category_context(
@@ -753,7 +763,9 @@ impl RenderService {
                 if parameters_are(&request.parameters, &["pageId"])
                     || parameters_are(&request.parameters, &["pageId", "order"]) =>
             {
-                let Some(page_id) = positive_i64(&request.parameters, "pageId") else {
+                let Some(page_id) =
+                    positive_decimal_parameter::<i64>(&request.parameters, "pageId")
+                else {
                     return Ok(response("no_page", String::new()));
                 };
                 let order = match request.parameters.get("order").map(String::as_str) {
@@ -776,10 +788,14 @@ impl RenderService {
             "forum/ForumViewCategoryModule"
                 if parameters_are(&request.parameters, &["c", "p"]) =>
             {
-                let Some(category_id) = positive_i64(&request.parameters, "c") else {
+                let Some(category_id) =
+                    positive_decimal_parameter::<i64>(&request.parameters, "c")
+                else {
                     return Ok(response("no_category", String::new()));
                 };
-                let Some(page) = positive_u32(&request.parameters, "p") else {
+                let Some(page) =
+                    positive_decimal_parameter::<u32>(&request.parameters, "p")
+                else {
                     return Ok(response("not_ok", String::new()));
                 };
                 if page > MAX_CATEGORY_PAGE {
@@ -819,7 +835,9 @@ impl RenderService {
             "forum/ForumViewThreadModule"
                 if parameters_are(&request.parameters, &["t"]) =>
             {
-                let Some(thread_id) = positive_i64(&request.parameters, "t") else {
+                let Some(thread_id) =
+                    positive_decimal_parameter::<i64>(&request.parameters, "t")
+                else {
                     return Ok(response("no_thread", String::new()));
                 };
                 let Some(mut threads) = load_forum_threads(
@@ -847,10 +865,14 @@ impl RenderService {
             "forum/ForumViewThreadPostsModule"
                 if parameters_are(&request.parameters, &["t", "pageNo"]) =>
             {
-                let Some(thread_id) = positive_i64(&request.parameters, "t") else {
+                let Some(thread_id) =
+                    positive_decimal_parameter::<i64>(&request.parameters, "t")
+                else {
                     return Ok(response("no_thread", String::new()));
                 };
-                if positive_u32(&request.parameters, "pageNo") != Some(1) {
+                if positive_decimal_parameter::<u32>(&request.parameters, "pageNo")
+                    != Some(1)
+                {
                     return Ok(response("not_ok", String::new()));
                 }
                 let Some(threads) = load_forum_threads(
@@ -877,7 +899,9 @@ impl RenderService {
             "forum/ForumRecentPostsListModule"
                 if parameters_are(&request.parameters, &["page", "categoryId"]) =>
             {
-                let Some(page_number) = positive_u32(&request.parameters, "page") else {
+                let Some(page_number) =
+                    positive_decimal_parameter::<u32>(&request.parameters, "page")
+                else {
                     return Ok(response("not_ok", String::new()));
                 };
                 if page_number != 1 {
@@ -886,14 +910,12 @@ impl RenderService {
                 let category_id = match request.parameters.get("categoryId") {
                     None => None,
                     Some(category_id) if category_id.is_empty() => None,
-                    Some(category_id) => match category_id
-                        .parse::<i64>()
-                        .ok()
-                        .filter(|category_id| *category_id > 0)
-                    {
-                        Some(category_id) => Some(category_id),
-                        None => return Ok(response("not_ok", String::new())),
-                    },
+                    Some(category_id) => {
+                        match wikidot_positive_decimal::<i64>(category_id) {
+                            Some(category_id) => Some(category_id),
+                            None => return Ok(response("not_ok", String::new())),
+                        }
+                    }
                 };
                 let Some(page) = load_recent_posts_page(
                     ctx,
