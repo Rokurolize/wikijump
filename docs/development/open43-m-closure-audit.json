@@ -216,6 +216,11 @@
       "phase": "source_barrier",
       "exists_now": true
     },
+    "C_M_CLOSURE_AUDIT": {
+      "command": "jq -e '([.issues[].subrows[]] | length) == .reconciliation.subrow_count and ([.issues[].subrows[].case_id] | length == (unique | length)) and ([.issues[].subrows[] | select(.classification == \"source_ready\")] | length) == .reconciliation.classification_counts.source_ready and ([.issues[].subrows[] | select(.classification == \"needs_source\")] | length) == .reconciliation.classification_counts.needs_source and ([.issues[].subrows[] | select(.classification == \"candidate_required\")] | length) == .reconciliation.classification_counts.candidate_required and ([.issues[].subrows[] | select(.classification == \"blocked_evidence\")] | length) == .reconciliation.classification_counts.blocked_evidence and ([.issues[].subrows[] | select(.case_id == \"M756_WINDOWS_TILE_DECLARATION\" and .classification == \"blocked_evidence\" and .read_only_public_probe.mutations_performed == false and .read_only_public_probe.configured_positive_shape_observed == false and (.next_command_ids | length) == 0)] | length) == 1' docs/development/open43-m-closure-audit.json",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
     "C_FRAMERAIL_CSP_UNIT": {
       "command": "node --test framerail/tests/wikidot-csp-config.test.js",
       "phase": "source_barrier",
@@ -317,8 +322,8 @@
         {
           "case_id": "M756_WINDOWS_TILE_DECLARATION",
           "acceptance": "Project the configured Windows 8 tile through the exact live head declaration and local route instead of storing an unused setting.",
-          "classification": "needs_source",
-          "reason": "The settings model and admin field exist, but +layout.svelte and site-icons.ts consume only favicon_source and ios_icon_source; no Windows tile head declaration, route, or focused test exists.",
+          "classification": "blocked_evidence",
+          "reason": "The settings model and admin field prove that a Windows tile slot exists, but the frozen evidence and read-only public probes do not show a configured positive public-head shape or its site-local route. A source or test change would have to invent the meta declaration or pathname.",
           "source_paths": [
             "framerail/src/routes/+layout.svelte",
             "framerail/src/lib/site-icons.ts",
@@ -326,12 +331,36 @@
           ],
           "existing_tests": [],
           "evidence_ids": ["E_ICON_PANEL", "E_ICON_OBSERVATIONS"],
-          "missing_source": [
-            "Windows tile head projection",
-            "site-owned Windows tile route",
-            "focused declaration and route test"
+          "seam_map": {
+            "path": "docs/development/open43-m-windows-tile-seam-map.md",
+            "sha256": "8f8767ce0a5ff0ab2b4acd18529c32f4bcd305a45dbeb0ed0bcda9664b2f68a7",
+            "referent_table_path": "docs/development/referent-table-open43-m-windows-tile-seam-map.md",
+            "referent_table_sha256": "86cc554e415f27a4c67602786fe1a2a9fac64fceb4f6e7bcb2a8859a372e9ae1"
+          },
+          "read_only_public_probe": {
+            "observed_on": "2026-08-09",
+            "routes": [
+              "http://sandbox-for-codex.wikidot.com/",
+              "https://scp-wiki.wikidot.com/scp-9506",
+              "http://community.wikidot.com/"
+            ],
+            "mutations_performed": false,
+            "configured_positive_shape_observed": false,
+            "acceptance_authority": false
+          },
+          "not_inferred": [
+            "meta name and attribute set",
+            "site-local route prefix and filename",
+            "Windows tile background color",
+            "generic modern web manifest"
           ],
-          "next_command_ids": ["C_FRAMERAIL_MEDIA_UNIT"]
+          "missing_evidence": [
+            "configured live public-page head declaration",
+            "the declaration's exact site-local route",
+            "GET and HEAD behavior for that route",
+            "same-site unconfigured negative control bound to the positive capture"
+          ],
+          "next_command_ids": []
         },
         {
           "case_id": "M756_UPLOAD_MATERIALIZATION",
@@ -1123,9 +1152,9 @@
     "subrow_count": 43,
     "classification_counts": {
       "source_ready": 15,
-      "needs_source": 10,
+      "needs_source": 9,
       "candidate_required": 10,
-      "blocked_evidence": 8
+      "blocked_evidence": 9
     },
     "duplicate_case_ids": 0,
     "unknown_classifications": 0,
