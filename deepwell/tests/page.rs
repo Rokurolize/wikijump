@@ -16383,7 +16383,7 @@ async fn listpages_fragment_content_skips_hidden_pages_by_default() {
 }
 
 #[tokio::test]
-async fn listpages_fragment_content_preserves_child_includes_literally() {
+async fn listpages_fragment_content_executes_child_includes() {
     const INDEX_SLUG: &str = "fixture-listpages-fragment-include-index";
     const FRAGMENT_SLUG: &str = "fixture-listpages-fragment-include-child";
     const INCLUDE_SLUG: &str = "fixture-listpages-fragment-include-target";
@@ -16500,14 +16500,14 @@ async fn listpages_fragment_content_preserves_child_includes_literally() {
         );
     }
     assert!(
-        html.contains(&format!("[[include {INCLUDE_SLUG}]]"))
-            && !html.contains(INCLUDE_MARKER),
-        "fragment ListPages content must keep child includes at the authored insertion phase:\n{html}"
+        html.contains(INCLUDE_MARKER)
+            && !html.contains(&format!("[[include {INCLUDE_SLUG}]]")),
+        "plain fragment content must execute child includes:\n{html}"
     );
 }
 
 #[tokio::test]
-async fn listpages_content_keeps_selected_page_attachment_syntax_literal() {
+async fn listpages_content_executes_attachment_syntax_with_selected_page_owner() {
     const INDEX_SLUG: &str = "fixture-listpages-attachment-owner-index";
     const FRAGMENT_SLUG: &str = "fragment:fixture-listpages-attachment-owner-row";
     const FILE_NAME: &str = "2117.png";
@@ -16585,14 +16585,17 @@ async fn listpages_content_keeps_selected_page_attachment_syntax_literal() {
     assert_eq!(
         html.matches(&format!("/local--files/{FRAGMENT_SLUG}/{FILE_NAME}"))
             .count(),
-        1,
-        "the authored include URL must survive without being executed: {html}",
+        2,
+        "the component image link and image must retain the selected page owner: {html}",
     );
     assert!(
-        html.contains("[[include component:image-block ")
-            && html.contains("[[image direct-row.png link=direct-row-full.png]]")
-            && !html.contains(&format!("/local--files/{FRAGMENT_SLUG}/direct-row.png")),
-        "selected-page attachment directives must remain authored text: {html}",
+        !html.contains("[[include component:image-block ")
+            && !html.contains("[[image direct-row.png link=direct-row-full.png]]")
+            && html.contains(&format!("/local--files/{FRAGMENT_SLUG}/direct-row.png"))
+            && html.contains(&format!(
+                "/local--resized-images/{FRAGMENT_SLUG}/direct-row.png/medium.jpg"
+            )),
+        "plain selected content must render attachment syntax with row ownership: {html}",
     );
     for forbidden_owner in [
         INDEX_SLUG,
@@ -16613,7 +16616,7 @@ async fn listpages_content_keeps_selected_page_attachment_syntax_literal() {
 }
 
 #[tokio::test]
-async fn listpages_content_keeps_same_named_attachment_directives_literal_per_row() {
+async fn listpages_content_keeps_same_named_attachment_owners_per_row() {
     const INDEX_SLUG: &str = "fixture-listpages-two-row-attachment-owner-index";
     const FIRST_FRAGMENT: &str =
         "fragment:fixture-listpages-two-row-attachment-owner-first";
@@ -16700,13 +16703,15 @@ async fn listpages_content_keeps_same_named_attachment_directives_literal_per_ro
             "[[include component:image-block name=shared-row.png|link=shared-row.png]]",
         )
         .count(),
-        2,
-        "each selected row must retain its authored attachment directive: {html}",
+        0,
+        "plain selected rows must execute their attachment directives: {html}",
     );
     for fragment in [FIRST_FRAGMENT, SECOND_FRAGMENT] {
-        assert!(
-            !html.contains(&format!("/local--files/{fragment}/{FILE_NAME}")),
-            "literal selected-page directives must not create attachment URLs: {html}",
+        assert_eq!(
+            html.matches(&format!("/local--files/{fragment}/{FILE_NAME}"))
+                .count(),
+            1,
+            "each rendered attachment must retain its selected row owner: {html}",
         );
     }
     for forbidden_owner in [
@@ -19940,7 +19945,7 @@ async fn create_listpages_test_page(
 }
 
 #[tokio::test]
-async fn listpages_content_cannot_consume_the_outer_include_budget() {
+async fn listpages_plain_content_shares_the_outer_include_budget() {
     const COMPONENT_SLUG: &str = "component:listpages-include-budget-cell";
     const INDEX_SLUG: &str = "fixture-listpages-include-budget-index";
     const SAME_ROW_CHILD_SLUG: &str = "fixture-listpages-include-budget-same-row-child";
@@ -20186,11 +20191,11 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("full content and a section in one row must remain non-recursive");
+    .expect("plain content may use the final include slot while a numbered section stays literal");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        255,
-        "only direct outer includes may execute",
+        256,
+        "plain selected content must execute within the caller's final include slot",
     );
     assert_eq!(
         output
@@ -20200,8 +20205,8 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        255,
-        "selected child includes must not create backlinks",
+        256,
+        "the selected child include must contribute its dependency backlink",
     );
     assert_eq!(
         output
@@ -20209,8 +20214,8 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
             .body
             .matches(&format!("[[include {COMPONENT_SLUG}]]"))
             .count(),
-        2,
-        "full content and section one must each preserve the authored include token",
+        1,
+        "only numbered section content may preserve the authored include token",
     );
 
     let direct_includes =
@@ -20231,15 +20236,15 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("selected child includes must not consume the public include limit");
+    .expect("selected child includes within the shared public limit should render");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "only direct outer includes may execute",
+        256,
+        "direct and selected child includes must share the public include limit",
     );
 
     let repeated_child = format!("{direct_includes}{}{}", list_pages(1), list_pages(1),);
-    let output = RenderService::render_page(
+    let error = RenderService::render_page(
         runner.context(),
         repeated_child.clone(),
         &page_info,
@@ -20248,11 +20253,13 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("repeated selected child content must remain non-recursive");
-    assert_eq!(
-        output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "only direct outer includes may execute",
+    .expect_err(
+        "repeated selected child includes must fail closed when the shared limit is exhausted",
+    );
+    assert!(
+        format!("{error:?}")
+            .contains("include expansion exceeded maximum total includes"),
+        "the public failure must identify the include ceiling: {error:?}",
     );
     let output = RenderService::render_corpus_page(
         runner.context(),
@@ -20262,11 +20269,11 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         page_id,
     )
     .await
-    .expect("corpus rendering must preserve the same selected-content phase");
+    .expect("the trusted corpus include budget should cover both selected rows");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "corpus rendering must not execute selected child includes",
+        384,
+        "corpus rendering must execute direct and selected child includes",
     );
     assert_eq!(
         output
@@ -20276,12 +20283,12 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        128,
-        "only direct outer includes may create backlinks",
+        384,
+        "every executed direct and selected include must create a backlink",
     );
 
     let over_budget = format!("{direct_includes}{}", list_pages(2));
-    let output = RenderService::render_page(
+    let error = RenderService::render_page(
         runner.context(),
         over_budget.clone(),
         &page_info,
@@ -20290,11 +20297,13 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("selected child content must not consume the public include budget");
-    assert_eq!(
-        output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "only direct outer includes may execute",
+    .expect_err(
+        "two selected include-heavy rows must fail closed when their partition exceeds the public budget",
+    );
+    assert!(
+        format!("{error:?}")
+            .contains("include expansion exceeded maximum total includes"),
+        "the public failure must identify the include ceiling: {error:?}",
     );
 
     let output = RenderService::render_corpus_page(
@@ -20305,11 +20314,13 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         page_id,
     )
     .await
-    .expect("trusted corpus rendering must keep selected content non-recursive");
+    .expect(
+        "trusted corpus rendering should execute both selected rows within its budget",
+    );
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "the corpus render must execute only direct outer includes",
+        384,
+        "the corpus render must execute direct and selected child includes",
     );
     assert_eq!(
         output
@@ -20319,8 +20330,8 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        128,
-        "selected child includes must not create backlinks",
+        384,
+        "selected child includes must contribute dependency backlinks",
     );
 }
 
@@ -21430,7 +21441,7 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         "[[/module]]",
     )
     .to_owned();
-    let public_list_pages_output = RenderService::render_page(
+    let public_list_pages_error = RenderService::render_page(
         runner.context(),
         list_pages_wikitext.clone(),
         &page_info,
@@ -21439,23 +21450,11 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         UrlArguments::default(),
     )
     .await
-    .expect("ordinary ListPages content must not recursively execute selected includes");
-    assert_eq!(
-        public_list_pages_output
-            .html_output
-            .body
-            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
-            .count(),
-        INCLUDE_COUNT,
-        "ordinary ListPages content must preserve every selected include literally",
-    );
-    assert_eq!(
-        public_list_pages_output
-            .html_output
-            .body
-            .matches(MARKER)
-            .count(),
-        0
+    .expect_err("ordinary ListPages content must enforce the public include ceiling");
+    assert!(
+        format!("{public_list_pages_error:?}")
+            .contains("include expansion exceeded maximum total includes 256"),
+        "the public ListPages failure must identify the ordinary include ceiling: {public_list_pages_error:?}",
     );
 
     let list_pages_output = RenderService::render_corpus_page(
@@ -21466,19 +21465,20 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         page_id,
     )
     .await
-    .expect("trusted ListPages content must preserve the same insertion phase");
+    .expect("trusted ListPages content should execute the evidenced dense include shape");
     assert_eq!(
         list_pages_output
             .html_output
             .body
             .matches(&format!("[[include {COMPONENT_SLUG}]]"))
             .count(),
-        INCLUDE_COUNT,
-        "corpus rendering must not grant ListPages child content recursive authority",
+        0,
+        "trusted plain content must not expose authored include tokens",
     );
     assert_eq!(
         list_pages_output.html_output.body.matches(MARKER).count(),
-        0
+        INCLUDE_COUNT,
+        "trusted plain content must execute every selected include within its corpus budget",
     );
 }
 
