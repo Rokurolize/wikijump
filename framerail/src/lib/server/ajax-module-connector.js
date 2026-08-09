@@ -563,7 +563,8 @@ export const handleAjaxModuleConnectorRequest = async (
     if (
       moduleName === "forum/ForumCommentsListModule" &&
       parameters.order !== undefined &&
-      parameters.order !== "reverse"
+      parameters.order !== "reverse" &&
+      parameters.order !== "forwards"
     ) {
       return jsonResponse({
         status: "not_ok",

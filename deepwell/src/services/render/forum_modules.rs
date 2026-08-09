@@ -22,9 +22,11 @@ use sea_orm::sea_query::ArrayType;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 
 use super::compat::CompatHtmlFragments;
+use super::forum_comments::{self, ForumCommentsLoad, ForumCommentsOrder};
 use super::forum_front::{self, FrontForumLoad};
 use super::forum_visibility::ForumPageVisibility;
 use super::literal_regions::LiteralRegionIndex;
+use super::module_arguments::{WikidotModuleArgumentValueKind, wikidot_module_arguments};
 use super::service::{
     RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
     format_wikidot_list_pages_date,
@@ -70,6 +72,77 @@ enum ForumModuleKind {
     ForumThread,
     RecentPosts,
     RecentThreads,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct CommentsArguments<'a> {
+    title: Option<&'a str>,
+    hide: bool,
+    order: ForumCommentsOrder,
+    query_safe: bool,
+}
+
+impl Default for CommentsArguments<'_> {
+    fn default() -> Self {
+        Self {
+            title: None,
+            hide: false,
+            order: ForumCommentsOrder::Forward,
+            query_safe: true,
+        }
+    }
+}
+
+fn comments_arguments(head: &str) -> CommentsArguments<'_> {
+    if head.trim().is_empty() {
+        return CommentsArguments::default();
+    }
+    let Some(arguments) = wikidot_module_arguments(head) else {
+        return CommentsArguments {
+            query_safe: false,
+            ..CommentsArguments::default()
+        };
+    };
+    let mut output = CommentsArguments::default();
+    let mut title_seen = false;
+    let mut hide_seen = false;
+    let mut order_seen = false;
+    for argument in arguments {
+        if argument.op != "="
+            || argument.value_kind != WikidotModuleArgumentValueKind::DoubleQuoted
+        {
+            output.query_safe = false;
+            continue;
+        }
+        match argument.key {
+            "title" if !title_seen && !argument.value.is_empty() => {
+                title_seen = true;
+                output.title = Some(argument.value);
+            }
+            "hide" if !hide_seen && matches!(argument.value, "true" | "false") => {
+                hide_seen = true;
+                output.hide = argument.value == "true";
+            }
+            "order"
+                if !order_seen && matches!(argument.value, "forwards" | "reverse") =>
+            {
+                order_seen = true;
+                output.order = if argument.value == "reverse" {
+                    ForumCommentsOrder::Reverse
+                } else {
+                    ForumCommentsOrder::Forward
+                };
+            }
+            _ => output.query_safe = false,
+        }
+    }
+    if !output.query_safe {
+        return CommentsArguments {
+            query_safe: false,
+            ..CommentsArguments::default()
+        };
+    }
+    output
 }
 
 #[derive(Clone, Debug)]
@@ -725,11 +798,32 @@ pub(super) fn render_recent_posts_list(page: &RecentPostsPage) -> String {
     output
 }
 
-const COMMENTS_NO_CONTEXT: &str = concat!(
-    "<div class=\"comments-box\"><div class=\"options\" id=\"comments-options-hidden\" >",
-    "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumCommentsModule.listeners.showComments(event)\">Show Comments</a>",
-    "</div><div id=\"thread-container\" class=\"thread-container\" style=\"margin-top: 1em\"></div></div>",
-);
+fn render_comments_shell(arguments: CommentsArguments<'_>, body: Option<&str>) -> String {
+    let mut output = String::from("<div class=\"comments-box\">");
+    if let Some(title) = arguments.title {
+        output.push_str("<h1>");
+        output.push_str(&escape_list_pages_html_text(title));
+        output.push_str("</h1>");
+    }
+    output.push_str("<div class=\"options\" id=\"comments-options-hidden\"");
+    if body.is_some() {
+        output.push_str(" style=\"display: none\"");
+    }
+    output.push_str(concat!(
+        " >",
+        "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumCommentsModule.listeners.showComments(event)\">Show Comments</a>",
+        "</div><div id=\"thread-container\" class=\"thread-container",
+    ));
+    if arguments.order == ForumCommentsOrder::Reverse {
+        output.push_str(" reverse");
+    }
+    output.push_str("\" style=\"margin-top: 1em\">");
+    if let Some(body) = body {
+        output.push_str(body);
+    }
+    output.push_str("</div></div>");
+    output
+}
 
 const RECENT_THREADS_PLACEHOLDER: &str = "later.";
 
@@ -756,7 +850,7 @@ impl RenderService {
         wikitext: String,
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
-        _current_page_id: Option<i64>,
+        current_page_id: Option<i64>,
         viewer_user_id: Option<i64>,
         url: UrlArguments<'_>,
         compat_html: &mut CompatHtmlFragments,
@@ -793,6 +887,8 @@ impl RenderService {
             if typed_body_owned {
                 continue;
             }
+            let comments =
+                (kind == ForumModuleKind::Comments).then(|| comments_arguments(head));
             let front_forum =
                 if kind == ForumModuleKind::FrontForum && !head.trim().is_empty() {
                     let Some(arguments) = forum_front::parse_arguments(head) else {
@@ -802,15 +898,44 @@ impl RenderService {
                 } else {
                     None
                 };
-            if kind != ForumModuleKind::RecentThreads
+            if kind != ForumModuleKind::Comments
+                && kind != ForumModuleKind::RecentThreads
                 && kind != ForumModuleKind::FrontForum
                 && !head.trim().is_empty()
             {
                 continue;
             }
             let replacement_end = matched.end();
-            let rendered = if kind == ForumModuleKind::Comments {
-                Some(COMMENTS_NO_CONTEXT.to_owned())
+            let rendered = if let Some(arguments) = comments {
+                let body = if arguments.query_safe && !arguments.hide {
+                    match (current_site_id, current_page_id) {
+                        (Some(site_id), Some(page_id)) => {
+                            let mut visibility =
+                                ForumPageVisibility::new(ctx, viewer_user_id);
+                            if !visibility.site_is_viewable(site_id).await? {
+                                None
+                            } else {
+                                match forum_comments::load(
+                                    ctx,
+                                    site_id,
+                                    &mut visibility,
+                                    page_id,
+                                    arguments.order,
+                                )
+                                .await?
+                                {
+                                    ForumCommentsLoad::Found(output) => Some(output.body),
+                                    ForumCommentsLoad::NoPage
+                                    | ForumCommentsLoad::Saturated => None,
+                                }
+                            }
+                        }
+                        _ => None,
+                    }
+                } else {
+                    None
+                };
+                Some(render_comments_shell(arguments, body.as_deref()))
             } else if let Some(arguments) = front_forum {
                 let Some(site_id) = current_site_id else {
                     continue;

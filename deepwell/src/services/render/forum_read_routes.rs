@@ -757,7 +757,7 @@ impl RenderService {
                     return Ok(response("no_page", String::new()));
                 };
                 let order = match request.parameters.get("order").map(String::as_str) {
-                    None => ForumCommentsOrder::Forward,
+                    None | Some("forwards") => ForumCommentsOrder::Forward,
                     Some("reverse") => ForumCommentsOrder::Reverse,
                     Some(_) => return Ok(response("not_ok", String::new())),
                 };
