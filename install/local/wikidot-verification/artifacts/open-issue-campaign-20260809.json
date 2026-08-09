@@ -120,13 +120,31 @@
       "batch_name": "read-only-modules",
       "landing": "PR2",
       "goal": "permission-first read models",
-      "status": "planned",
-      "implementation_commits": [],
-      "unit_cases": [],
+      "status": "in_progress",
+      "implementation_commits": [
+        "2a259a86aa11b8e4f3ca00d8d88aa2ff5e0588cf"
+      ],
+      "unit_cases": [
+        "framerail/tests/wikidot-search.test.js::Wikidot top search preserves and path-encodes the submitted query"
+      ],
       "integration_cases": [],
       "runtime_cases": [],
-      "browser_cases": [],
-      "artifacts": []
+      "browser_cases": [
+        "framerail/tests/wikidot-chrome.spec.ts::Wikidot-compatible search chrome preserves its two inputs and focus behavior"
+      ],
+      "required_case_kinds": [
+        "unit",
+        "runtime",
+        "browser"
+      ],
+      "candidate_identity": null,
+      "artifacts": [
+        {
+          "kind": "live-oracle",
+          "path": "install/local/wikidot-verification/artifacts/search-feed-live-preview-20260809.json",
+          "sha256": "b8642635e71c02bb9e798af5740be5de3c259fef13f000dc6f0bd0fe28946565"
+        }
+      ]
     },
     {
       "number": 754,
@@ -264,13 +282,31 @@
       "batch_name": "read-only-modules",
       "landing": "PR2",
       "goal": "permission-first read models",
-      "status": "planned",
-      "implementation_commits": [],
-      "unit_cases": [],
-      "integration_cases": [],
+      "status": "in_progress",
+      "implementation_commits": [
+        "b21f8279b5b896bc78d061be9adce1c220010652"
+      ],
+      "unit_cases": [
+        "deepwell/src/services/render/url_arguments.rs::forum_mini_modules_require_runtime_rendering_only_on_their_own_line"
+      ],
+      "integration_cases": [
+        "deepwell/tests/page.rs::forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+      ],
       "runtime_cases": [],
       "browser_cases": [],
-      "artifacts": []
+      "required_case_kinds": [
+        "unit",
+        "integration",
+        "runtime"
+      ],
+      "candidate_identity": null,
+      "artifacts": [
+        {
+          "kind": "live-oracle",
+          "path": "install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json",
+          "sha256": "ff093dc2d48fc197828f11271689cb1254057d28e5e9614ccac7f7e8b0a1aee8"
+        }
+      ]
     },
     {
       "number": 779,
@@ -312,13 +348,35 @@
       "batch_name": "read-only-modules",
       "landing": "PR2",
       "goal": "permission-first read models",
-      "status": "planned",
-      "implementation_commits": [],
-      "unit_cases": [],
-      "integration_cases": [],
+      "status": "in_progress",
+      "implementation_commits": [
+        "568b1c262ed54ee9487019eeb87da0b4a06218bf"
+      ],
+      "unit_cases": [
+        "framerail/tests/wikidot-search.test.js::Wikidot SearchAll preserves its area and path-encodes the submitted query",
+        "framerail/tests/wikidot-search.test.js::Wikidot SearchAll submit listener navigates rendered module forms"
+      ],
+      "integration_cases": [
+        "deepwell/tests/page.rs::searchall_module_matches_live_form_and_unavailable_route_contract"
+      ],
       "runtime_cases": [],
-      "browser_cases": [],
-      "artifacts": []
+      "browser_cases": [
+        "framerail/tests/wikidot-chrome.spec.ts::SearchAll module submits the selected live area route"
+      ],
+      "required_case_kinds": [
+        "unit",
+        "integration",
+        "runtime",
+        "browser"
+      ],
+      "candidate_identity": null,
+      "artifacts": [
+        {
+          "kind": "live-oracle",
+          "path": "install/local/wikidot-verification/artifacts/searchall-live-preview-routes-20260809.json",
+          "sha256": "378ddb0e93d5d20709f857d17dc7cb538f6e393f68c0f68016bb370ff60c4c67"
+        }
+      ]
     },
     {
       "number": 809,
@@ -1112,13 +1170,28 @@
       "batch_name": "read-only-modules",
       "landing": "PR2",
       "goal": "permission-first read models",
-      "status": "planned",
-      "implementation_commits": [],
+      "status": "in_progress",
+      "implementation_commits": [
+        "b21f8279b5b896bc78d061be9adce1c220010652"
+      ],
       "unit_cases": [],
-      "integration_cases": [],
+      "integration_cases": [
+        "deepwell/tests/page.rs::forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+      ],
       "runtime_cases": [],
       "browser_cases": [],
-      "artifacts": []
+      "required_case_kinds": [
+        "integration",
+        "runtime"
+      ],
+      "candidate_identity": null,
+      "artifacts": [
+        {
+          "kind": "live-oracle",
+          "path": "install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json",
+          "sha256": "ff093dc2d48fc197828f11271689cb1254057d28e5e9614ccac7f7e8b0a1aee8"
+        }
+      ]
     },
     {
       "number": 1035,
@@ -1144,13 +1217,28 @@
       "batch_name": "read-only-modules",
       "landing": "PR2",
       "goal": "permission-first read models",
-      "status": "planned",
-      "implementation_commits": [],
+      "status": "in_progress",
+      "implementation_commits": [
+        "2a259a86aa11b8e4f3ca00d8d88aa2ff5e0588cf"
+      ],
       "unit_cases": [],
-      "integration_cases": [],
+      "integration_cases": [
+        "deepwell/tests/page.rs::search_and_feed_modules_match_live_preview_and_page_view_boundaries"
+      ],
       "runtime_cases": [],
       "browser_cases": [],
-      "artifacts": []
+      "required_case_kinds": [
+        "integration",
+        "runtime"
+      ],
+      "candidate_identity": null,
+      "artifacts": [
+        {
+          "kind": "live-oracle",
+          "path": "install/local/wikidot-verification/artifacts/search-feed-live-preview-20260809.json",
+          "sha256": "b8642635e71c02bb9e798af5740be5de3c259fef13f000dc6f0bd0fe28946565"
+        }
+      ]
     },
     {
       "number": 1037,
