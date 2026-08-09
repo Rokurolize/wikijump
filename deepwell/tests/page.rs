@@ -9858,6 +9858,37 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         assert!(newest < next, "{case_id}: {output}");
     }
 
+    for (case_id, categories) in [
+        (
+            "front-forum populated-missing categories",
+            format!("{};9223372036854775807", primary_category.forum_category_id,),
+        ),
+        (
+            "front-forum missing-populated categories",
+            format!("9223372036854775807;{}", primary_category.forum_category_id,),
+        ),
+    ] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": format!(
+                    r#"[[module FrontForum category="{categories}" limit="2"]]"#,
+                ),
+            }),
+        )
+        .body;
+        assert!(
+            output.matches(r#"<h1><span><a href="/forum/t-"#).count() == 2
+                && output.contains("Public Page Discussion Marker")
+                && output.contains("Read Model Visible Thread")
+                && !output.contains("Requested forum category does not exist."),
+            "{case_id}: {output}",
+        );
+    }
+
     let front_forum_global = run_endpoint!(
         runner,
         wikidot_page_preview,
