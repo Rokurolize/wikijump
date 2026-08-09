@@ -25,6 +25,7 @@ mod child_pages;
 mod compat;
 mod corpus;
 mod diagnostics;
+mod forum_mini;
 mod ftml_page_existence;
 mod ftml_user_info;
 mod generator;

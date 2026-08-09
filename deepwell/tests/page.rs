@@ -3914,6 +3914,428 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
 }
 
 #[tokio::test]
+async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries() {
+    async fn load_forum_mini_page_view(
+        runner: &TestRunner,
+        site_id: i64,
+        slug: &str,
+    ) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => {
+                panic!("expected found forum mini page view for {slug}, got {other:?}")
+            }
+        }
+    }
+
+    async fn create_thread_with_replies(
+        runner: &TestRunner,
+        category_id: i64,
+        title: &str,
+        root_title: &str,
+        reply_titles: &[&str],
+    ) -> (i64, Vec<i64>) {
+        let thread = ForumThreadService::create(
+            runner.context(),
+            CreateForumThread {
+                forum_category_id: category_id,
+                user_id: SAMPLE_USER_ID,
+                associated_page_id: None,
+                title: title.to_owned(),
+                description: String::new(),
+                sticky: false,
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("forum mini fixture thread should be created");
+        let root = ForumPostService::create(
+            runner.context(),
+            CreateForumPost {
+                forum_thread_id: thread.forum_thread_id,
+                parent_post_id: None,
+                user_id: SAMPLE_USER_ID,
+                title: root_title.to_owned(),
+                wikitext: format!("{root_title} body"),
+                comments: "create forum mini root fixture".to_owned(),
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("forum mini fixture root should be created");
+        let mut reply_ids = Vec::with_capacity(reply_titles.len());
+        for reply_title in reply_titles {
+            let reply = ForumPostService::create(
+                runner.context(),
+                CreateForumPost {
+                    forum_thread_id: thread.forum_thread_id,
+                    parent_post_id: Some(root.forum_post_id),
+                    user_id: SAMPLE_USER_ID,
+                    title: (*reply_title).to_owned(),
+                    wikitext: format!("{reply_title} body <unsafe>"),
+                    comments: "create forum mini reply fixture".to_owned(),
+                    from_wikidot: false,
+                },
+            )
+            .await
+            .expect("forum mini fixture reply should be created");
+            reply_ids.push(reply.forum_post_id);
+        }
+        (thread.forum_thread_id, reply_ids)
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let visible_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Forum mini visible group".to_owned(),
+            description: "Visible forum mini fixture".to_owned(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("visible forum mini group should be created");
+    let visible_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: visible_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Forum mini visible category".to_owned(),
+            description: "Visible forum mini category fixture".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("visible forum mini category should be created");
+
+    for (case_id, source) in [
+        ("mini-recent-threads-empty", "[[module MiniRecentThreads]]"),
+        ("mini-active-threads-empty", "[[module MiniActiveThreads]]"),
+        ("mini-recent-posts-empty", "[[module MiniRecentPosts]]"),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(r#"<div class="forum-mini-stat""#)
+                && preview.body.matches(r#"<div class="item""#).count() == 0,
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    let (high_thread_id, high_reply_ids) = create_thread_with_replies(
+        &runner,
+        visible_category.forum_category_id,
+        "High Activity Thread",
+        "High Root",
+        &["High Reply One", "High Reply Two", "High Reply Three"],
+    )
+    .await;
+
+    for (slug, title, source) in [
+        (
+            "fixture-mini-recent-threads",
+            "Fixture Mini Recent Threads",
+            "[[module MiniRecentThreads limit=\"2\"]]",
+        ),
+        (
+            "fixture-mini-active-threads",
+            "Fixture Mini Active Threads",
+            "[[module MiniActiveThreads limit=\"2\"]]",
+        ),
+        (
+            "fixture-mini-recent-posts",
+            "Fixture Mini Recent Posts",
+            "[[module MiniRecentPosts limit=\"3\"]]",
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, source).await;
+    }
+
+    let (low_thread_id, low_reply_ids) = create_thread_with_replies(
+        &runner,
+        visible_category.forum_category_id,
+        "Low Recent Thread",
+        "Low Root",
+        &["Low Newest Reply"],
+    )
+    .await;
+
+    const PRIVATE_PAGE_SLUG: &str = "fixture-forum-mini-private-page";
+    const PRIVATE_PAGE_CATEGORY: &str = "fixture-forum-mini-private-category";
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_PAGE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        "Forum Mini Private Page",
+        "private forum mini page fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        PRIVATE_PAGE_CATEGORY,
+    )
+    .await;
+    let private_page_id =
+        listpages_test_page_id(&runner, site_id, PRIVATE_PAGE_SLUG).await;
+    let private_page_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: visible_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(private_page_id),
+            title: "Private Page Activity Marker".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private-page forum mini thread should be created");
+    let private_page_post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: private_page_thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Private Page Post Marker".to_owned(),
+            wikitext: "private page post marker body".to_owned(),
+            comments: "create private-page forum mini fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private-page forum mini post should be created");
+    ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: private_page_thread.forum_thread_id,
+            parent_post_id: Some(private_page_post.forum_post_id),
+            user_id: ADMIN_USER_ID,
+            title: "Private Page Reply Marker".to_owned(),
+            wikitext: "private page reply marker body".to_owned(),
+            comments: "create private-page forum mini reply fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private-page forum mini reply should be created");
+
+    let hidden_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Forum mini hidden group".to_owned(),
+            description: "Hidden forum mini fixture".to_owned(),
+            visible: false,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden forum mini group should be created");
+    let hidden_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: hidden_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Forum mini hidden category".to_owned(),
+            description: "Hidden forum mini category fixture".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden forum mini category should be created");
+    create_thread_with_replies(
+        &runner,
+        hidden_category.forum_category_id,
+        "Hidden Newest Thread",
+        "Hidden Root",
+        &[
+            "Hidden Reply One",
+            "Hidden Reply Two",
+            "Hidden Reply Three",
+            "Hidden Reply Four",
+        ],
+    )
+    .await;
+
+    runner.set_request_context(RequestContext::default());
+
+    let recent_threads =
+        load_forum_mini_page_view(&runner, site_id, "fixture-mini-recent-threads").await;
+    let low_recent_position = recent_threads
+        .find("Low Recent Thread")
+        .expect("newer visible thread should render");
+    let high_recent_position = recent_threads
+        .find("High Activity Thread")
+        .expect("older visible thread should render");
+    assert!(
+        low_recent_position < high_recent_position,
+        "{recent_threads}"
+    );
+    assert!(
+        recent_threads.contains(&format!(
+            r#"href="/forum/t-{low_thread_id}/low-recent-thread""#
+        )) && recent_threads.contains("Posts: 1"),
+        "{recent_threads}",
+    );
+    assert!(
+        !recent_threads.contains("Hidden Newest Thread")
+            && !recent_threads.contains("Private Page Activity Marker")
+            && recent_threads.contains("class=\"odate time_")
+            && recent_threads.contains("format_%25O%20ago"),
+        "{recent_threads}",
+    );
+
+    let active_threads =
+        load_forum_mini_page_view(&runner, site_id, "fixture-mini-active-threads").await;
+    let high_active_position = active_threads
+        .find("High Activity Thread")
+        .expect("more active visible thread should render");
+    let low_active_position = active_threads
+        .find("Low Recent Thread")
+        .expect("less active visible thread should render");
+    assert!(
+        high_active_position < low_active_position,
+        "{active_threads}"
+    );
+    assert!(
+        active_threads.contains(&format!(
+            r#"href="/forum/t-{high_thread_id}/high-activity-thread""#
+        )) && active_threads.contains("Posts: 3")
+            && !active_threads.contains("Hidden Newest Thread")
+            && !active_threads.contains("Private Page Activity Marker"),
+        "{active_threads}",
+    );
+
+    let recent_posts =
+        load_forum_mini_page_view(&runner, site_id, "fixture-mini-recent-posts").await;
+    let low_reply_id = low_reply_ids[0];
+    assert!(
+        recent_posts.contains(&format!(
+            r#"href="/forum/t-{low_thread_id}/low-recent-thread#post-{low_reply_id}""#
+        )) && recent_posts.contains("Low Newest Reply")
+            && recent_posts.contains("Low Newest Reply body &lt;unsafe&gt;")
+            && recent_posts.contains("class=\"printuser\""),
+        "{recent_posts}",
+    );
+    assert!(
+        !recent_posts.contains("Low Root")
+            && !recent_posts.contains("High Root")
+            && !recent_posts.contains("Hidden Reply")
+            && !recent_posts.contains("Private Page Reply Marker")
+            && recent_posts.contains(&format!("#post-{}", high_reply_ids[2])),
+        "{recent_posts}",
+    );
+
+    for (case_id, source, expected_items) in [
+        (
+            "mini-recent-threads-limit-one",
+            "[[module MiniRecentThreads limit=\"1\"]]",
+            1usize,
+        ),
+        (
+            "mini-recent-threads-invalid-default",
+            "[[module MiniRecentThreads limit=\"0\" unknown=\"x\"]]",
+            2usize,
+        ),
+        (
+            "mini-active-threads-limit-one",
+            "[[module MiniActiveThreads limit=\"1\"]]",
+            1usize,
+        ),
+        (
+            "mini-recent-posts-limit-one",
+            "[[module MiniRecentPosts limit=\"1\"]]",
+            1usize,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert_eq!(
+            preview.body.matches(r#"<div class="item""#).count(),
+            expected_items,
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    for (case_id, source) in [
+        (
+            "mini-recent-threads-inline",
+            "before [[module MiniRecentThreads limit=\"1\"]] after",
+        ),
+        (
+            "mini-recent-posts-literal",
+            "@@[[module MiniRecentPosts limit=\"1\"]]@@",
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains("[[module")
+                && !preview.body.contains("forum-mini-stat")
+                && !preview.body.contains("No such module"),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
 async fn membership_by_password_module_matches_live_anonymous_and_member_output() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

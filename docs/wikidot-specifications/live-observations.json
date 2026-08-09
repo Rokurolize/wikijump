@@ -4,6 +4,59 @@
   "authority": "Reproducible live Wikidot behavior is canonical and overrides conflicting or incomplete documentation-derived claims.",
   "observations": [
     {
+      "id": "forum-mini-current-preview-and-workbench-20260809",
+      "title": "Forum mini modules share own-line, limit, activity, route, and literal-owner contracts",
+      "feature_ids": [
+        "module-minirecentthreads",
+        "module-miniactivethreads",
+        "module-minirecentposts"
+      ],
+      "classification": "live-clarification",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous PagePreviewModule probes establish the own-line invocation, invalid-limit fallback, empty wrapper, and literal-owner boundaries for all three mini modules. A fresh anonymous read of the public sandbox workbench establishes populated compact rows and routes without mutating Wikidot. The populated values are point-in-time evidence, not repository fixtures.",
+      "normative_behavior": [
+        "Each recognized own-line module renders a forum-mini-stat wrapper; an empty result keeps the wrapper and renders no item rows.",
+        "The default limit is 5. A positive limit constrains rows. Zero, negative, nonnumeric, and unknown attributes preserve the default in the observed matrix.",
+        "Inline module text and a module opener owned by a raw span remain literal.",
+        "MiniRecentThreads orders by newest thread and renders thread routes, started dates, and reply counts.",
+        "MiniActiveThreads renders recently active threads using the documented last-seven-days window and the compact thread row contract.",
+        "MiniRecentPosts orders replies by recency and renders a post anchor, excerpt, printuser identity, date, and thread reply count. Standalone thread roots are absent from the observed saved-page output.",
+        "Live private-content actor matrices, rich-markup excerpt reduction, no-title text, exact truncation, tie-breaking, and mutation-driven cache behavior remain nonterminal gaps."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json",
+          "sha256": "ff093dc2d48fc197828f11271689cb1254057d28e5e9614ccac7f7e8b0a1aee8",
+          "case_ids": [
+            "mini-recent-threads-bare",
+            "mini-recent-threads-limit-one",
+            "mini-recent-threads-limit-zero",
+            "mini-recent-threads-limit-negative",
+            "mini-recent-threads-limit-text",
+            "mini-recent-threads-unknown-argument",
+            "mini-recent-threads-inline",
+            "mini-recent-threads-literal",
+            "mini-active-threads-bare",
+            "mini-active-threads-limit-one",
+            "mini-active-threads-limit-zero",
+            "mini-active-threads-limit-negative",
+            "mini-active-threads-limit-text",
+            "mini-active-threads-unknown-argument",
+            "mini-active-threads-inline",
+            "mini-active-threads-literal",
+            "mini-recent-posts-bare",
+            "mini-recent-posts-limit-one",
+            "mini-recent-posts-limit-zero",
+            "mini-recent-posts-limit-negative",
+            "mini-recent-posts-limit-text",
+            "mini-recent-posts-unknown-argument",
+            "mini-recent-posts-inline",
+            "mini-recent-posts-literal"
+          ]
+        }
+      ]
+    },
+    {
       "id": "search-feed-current-unavailable-boundaries-20260809",
       "title": "Search is currently unavailable and Feed source recognition remains source-sensitive",
       "feature_ids": [

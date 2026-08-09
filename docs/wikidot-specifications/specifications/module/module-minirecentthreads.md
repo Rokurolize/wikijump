@@ -20,6 +20,33 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Forum mini modules share own-line, limit, activity, route, and literal-owner contracts
+
+- Observation ID: `forum-mini-current-preview-and-workbench-20260809`
+- Classification: `live-clarification`
+- Observed at: `2026-08-09`
+- Analysis: Anonymous PagePreviewModule probes establish the own-line invocation, invalid-limit fallback, empty wrapper, and literal-owner boundaries for all three mini modules. A fresh anonymous read of the public sandbox workbench establishes populated compact rows and routes without mutating Wikidot. The populated values are point-in-time evidence, not repository fixtures.
+
+Normative behavior:
+
+- Each recognized own-line module renders a forum-mini-stat wrapper; an empty result keeps the wrapper and renders no item rows.
+- The default limit is 5. A positive limit constrains rows. Zero, negative, nonnumeric, and unknown attributes preserve the default in the observed matrix.
+- Inline module text and a module opener owned by a raw span remain literal.
+- MiniRecentThreads orders by newest thread and renders thread routes, started dates, and reply counts.
+- MiniActiveThreads renders recently active threads using the documented last-seven-days window and the compact thread row contract.
+- MiniRecentPosts orders replies by recency and renders a post anchor, excerpt, printuser identity, date, and thread reply count. Standalone thread roots are absent from the observed saved-page output.
+- Live private-content actor matrices, rich-markup excerpt reduction, no-title text, exact truncation, tie-breaking, and mutation-driven cache behavior remain nonterminal gaps.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json` (SHA-256 `ff093dc2d48fc197828f11271689cb1254057d28e5e9614ccac7f7e8b0a1aee8`), cases: `mini-recent-threads-bare`, `mini-recent-threads-limit-one`, `mini-recent-threads-limit-zero`, `mini-recent-threads-limit-negative`, `mini-recent-threads-limit-text`, `mini-recent-threads-unknown-argument`, `mini-recent-threads-inline`, `mini-recent-threads-literal`, `mini-active-threads-bare`, `mini-active-threads-limit-one`, `mini-active-threads-limit-zero`, `mini-active-threads-limit-negative`, `mini-active-threads-limit-text`, `mini-active-threads-unknown-argument`, `mini-active-threads-inline`, `mini-active-threads-literal`, `mini-recent-posts-bare`, `mini-recent-posts-limit-one`, `mini-recent-posts-limit-zero`, `mini-recent-posts-limit-negative`, `mini-recent-posts-limit-text`, `mini-recent-posts-unknown-argument`, `mini-recent-posts-inline`, `mini-recent-posts-literal`
+
+
 
 ## Suggested public TDD seams
 

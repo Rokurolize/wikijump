@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-08-09",
-  "catalog_sha256": "fb6422a8276360e50fbe75c7294d809dd9812a7ac25b0de2dbe000e2f1c18850",
+  "catalog_sha256": "36366e21ae86b59a6a2cc241b22db2da198483128d61602cbf85614e02e776d9",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -1906,37 +1906,88 @@
       ]
     },
     "module-miniactivethreads": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule and saved public page oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "scope": "public preview and saved-page active ordering, limit, visibility, empty, and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_mini.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-miniactivethreads.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The anonymous behavior sandbox currently has no active rows. A populated public page and documentation establish the current read-model slice, but controlled live time-window boundaries, tie-breaking, full actor visibility, and mutation-driven refresh remain unobserved."
+      ]
     },
     "module-minirecentposts": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule and saved public page oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "scope": "public preview and saved-page post ordering, routes, author identity, escaping, limit, visibility, root exclusion, and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_mini.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-minirecentposts.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Plain-text excerpts, routes, identities, counts, and root exclusion are covered. Rich-markup excerpt reduction, no-title text, exact truncation, tie-breaking, full actor visibility, and mutation-driven refresh remain unobserved."
+      ]
     },
     "module-minirecentthreads": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule and saved public page oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "scope": "public preview and saved-page recent ordering, routes, counts, limit, visibility, refresh, and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_mini.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-minirecentthreads.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Public recent ordering, routes, counts, limits, and saved-page runtime refresh are covered. Timestamp tie-breaking, full actor visibility, deleted-state transitions, and mutation-driven refresh remain incompletely observed."
+      ]
     },
     "module-navibar": {
       "status": "blocked",

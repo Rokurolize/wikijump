@@ -1,0 +1,102 @@
+{
+  "schema": "wikijump_forum_mini_live_preview_and_workbench.v1",
+  "captured_at": "2026-08-09T04:06:37+00:00",
+  "preview_provenance": {
+    "site": "sandbox-for-codex",
+    "site_domain": "sandbox-for-codex.wikidot.com",
+    "module": "edit/PagePreviewModule",
+    "authenticated": false,
+    "mutated": false,
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "2434bf77744488cb2095327c9e0e4450add78df3",
+    "requirements_sha256": "45717e5351f7eb1c46431dd44bf15db9777dbbc4fa40026931bd2e6458b2fcc9",
+    "cases_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/forum-mini-live-cases.jsonl",
+    "cases_sha256": "a853eac8f59b50fd5c50537fbddf95778aa03bbab5d407e868a7ccfdea60cc3b",
+    "references_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/forum-mini-live-reference.jsonl",
+    "references_sha256": "07eb935ab031b4400b44a6434c38ee10a78db05f9658261417be328fa937557b"
+  },
+  "saved_page_provenance": {
+    "site": "sandbox-for-codex",
+    "page": "workbench:flops",
+    "authenticated": false,
+    "mutated": false,
+    "transport": "HTTPS GET",
+    "http_status": 200,
+    "http_date": "Sun, 09 Aug 2026 04:06:37 GMT",
+    "headers_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/forum-mini-workbench-20260809.headers.txt",
+    "headers_sha256": "723289234096ddd5c39b623f3f0e12a40912abe05c2c9988d7c3e4c1f868bf96",
+    "html_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/forum-mini-workbench-20260809.html",
+    "html_sha256": "bdf4ce9bb98a7e2777d47f9ba3080f6b2afba989b09ca1f9569153218f889ae3"
+  },
+  "cases": [
+    { "case_id": "mini-recent-threads-bare" },
+    { "case_id": "mini-recent-threads-limit-one" },
+    { "case_id": "mini-recent-threads-limit-zero" },
+    { "case_id": "mini-recent-threads-limit-negative" },
+    { "case_id": "mini-recent-threads-limit-text" },
+    { "case_id": "mini-recent-threads-unknown-argument" },
+    { "case_id": "mini-recent-threads-inline" },
+    { "case_id": "mini-recent-threads-literal" },
+    { "case_id": "mini-active-threads-bare" },
+    { "case_id": "mini-active-threads-limit-one" },
+    { "case_id": "mini-active-threads-limit-zero" },
+    { "case_id": "mini-active-threads-limit-negative" },
+    { "case_id": "mini-active-threads-limit-text" },
+    { "case_id": "mini-active-threads-unknown-argument" },
+    { "case_id": "mini-active-threads-inline" },
+    { "case_id": "mini-active-threads-literal" },
+    { "case_id": "mini-recent-posts-bare" },
+    { "case_id": "mini-recent-posts-limit-one" },
+    { "case_id": "mini-recent-posts-limit-zero" },
+    { "case_id": "mini-recent-posts-limit-negative" },
+    { "case_id": "mini-recent-posts-limit-text" },
+    { "case_id": "mini-recent-posts-unknown-argument" },
+    { "case_id": "mini-recent-posts-inline" },
+    { "case_id": "mini-recent-posts-literal" }
+  ],
+  "case_ids": {
+    "module_minirecentthreads": [
+      "mini-recent-threads-bare",
+      "mini-recent-threads-limit-one",
+      "mini-recent-threads-limit-zero",
+      "mini-recent-threads-limit-negative",
+      "mini-recent-threads-limit-text",
+      "mini-recent-threads-unknown-argument",
+      "mini-recent-threads-inline",
+      "mini-recent-threads-literal"
+    ],
+    "module_miniactivethreads": [
+      "mini-active-threads-bare",
+      "mini-active-threads-limit-one",
+      "mini-active-threads-limit-zero",
+      "mini-active-threads-limit-negative",
+      "mini-active-threads-limit-text",
+      "mini-active-threads-unknown-argument",
+      "mini-active-threads-inline",
+      "mini-active-threads-literal"
+    ],
+    "module_minirecentposts": [
+      "mini-recent-posts-bare",
+      "mini-recent-posts-limit-one",
+      "mini-recent-posts-limit-zero",
+      "mini-recent-posts-limit-negative",
+      "mini-recent-posts-limit-text",
+      "mini-recent-posts-unknown-argument",
+      "mini-recent-posts-inline",
+      "mini-recent-posts-literal"
+    ]
+  },
+  "observed_behavior": [
+    "Each recognized own-line module renders a forum-mini-stat wrapper; an empty result keeps the wrapper and renders no item rows.",
+    "The default limit is 5. A positive limit constrains rows. Zero, negative, nonnumeric, and unknown attributes preserve the default in the observed matrix.",
+    "Inline module text and a module opener owned by a raw span remain literal.",
+    "MiniRecentThreads orders by newest thread and renders thread routes, started dates, and reply counts.",
+    "MiniActiveThreads renders threads active within the documented last-seven-days window, with the same compact thread row contract.",
+    "MiniRecentPosts orders replies by recency, renders thread or page-comment post anchors, an excerpt, printuser identity, date, and thread reply count; standalone thread roots are not shown in the observed saved page."
+  ],
+  "blockers": [
+    "The anonymous behavior sandbox has no populated MiniActiveThreads rows, so its populated ordering is supported by the current public workbench page and documentation rather than a run-owned timestamp-controlled live fixture.",
+    "Live private, hidden, deleted, member, moderator, and administrator matrices have not been captured safely.",
+    "Rich-markup excerpt reduction, no-title text, exact truncation, tie-breaking, and mutation-driven cache invalidation still require bounded live observations before issue 778 can be terminal."
+  ]
+}
