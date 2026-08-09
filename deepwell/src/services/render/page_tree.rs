@@ -25,14 +25,15 @@ use std::num::NonZeroU32;
 use std::sync::LazyLock;
 
 use regex::Regex;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 
 use super::AuthorizedPageSelector;
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{module_arguments_are_complete, wikidot_module_arguments};
 use super::service::{
-    RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
+    MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService, escape_list_pages_html_attr,
+    escape_list_pages_html_text,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::{self, Entity as Page};
@@ -60,6 +61,15 @@ struct PageTree {
     page_ids_by_slug: HashMap<String, i64>,
     child_ids_by_parent: HashMap<i64, Vec<i64>>,
 }
+
+#[derive(Debug)]
+enum PageTreeLoad {
+    Complete(PageTree),
+    Saturated,
+}
+
+const MAX_PAGE_TREE_ROWS: usize = MAX_LISTPAGES_RENDER_SCAN_ROWS as usize;
+const PAGE_TREE_QUERY_LIMIT: u64 = MAX_PAGE_TREE_ROWS as u64 + 1;
 
 #[derive(Debug, PartialEq, Eq)]
 struct PageTreeArguments<'a> {
@@ -245,7 +255,11 @@ impl RenderService {
             return Ok(wikitext);
         };
 
-        let tree = Self::load_page_tree(ctx, current_site_id, viewer_user_id).await?;
+        let tree =
+            match Self::load_page_tree(ctx, current_site_id, viewer_user_id).await? {
+                PageTreeLoad::Complete(tree) => tree,
+                PageTreeLoad::Saturated => return Ok(wikitext),
+            };
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
@@ -295,16 +309,20 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
         viewer_user_id: Option<i64>,
-    ) -> Result<PageTree> {
+    ) -> Result<PageTreeLoad> {
         let make_error =
             || Error::new("failed to render PageTree module", ErrorType::Render);
         let txn = ctx.transaction();
         let pages = Page::find()
             .filter(page::Column::SiteId.eq(current_site_id))
             .filter(page::Column::DeletedAt.is_null())
+            .limit(PAGE_TREE_QUERY_LIMIT)
             .all(txn)
             .await
             .or_raise(make_error)?;
+        if pages.len() > MAX_PAGE_TREE_ROWS {
+            return Ok(PageTreeLoad::Saturated);
+        }
         let mut authorized_selector = AuthorizedPageSelector::new(ctx, viewer_user_id);
         let pages = authorized_selector.filter_models(pages).await?;
         let revision_ids = pages
@@ -346,9 +364,13 @@ impl RenderService {
             .filter(page_parent::Column::ChildPageId.is_in(page_ids))
             .order_by_asc(page_parent::Column::CreatedAt)
             .order_by_asc(page_parent::Column::ChildPageId)
+            .limit(PAGE_TREE_QUERY_LIMIT)
             .all(txn)
             .await
             .or_raise(make_error)?;
+        if relationships.len() > MAX_PAGE_TREE_ROWS {
+            return Ok(PageTreeLoad::Saturated);
+        }
         let mut child_ids_by_parent = HashMap::<i64, Vec<i64>>::new();
         for relationship in relationships {
             child_ids_by_parent
@@ -357,11 +379,11 @@ impl RenderService {
                 .push(relationship.child_page_id);
         }
 
-        Ok(PageTree {
+        Ok(PageTreeLoad::Complete(PageTree {
             nodes,
             page_ids_by_slug,
             child_ids_by_parent,
-        })
+        }))
     }
 }
 
