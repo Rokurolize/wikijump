@@ -8,6 +8,7 @@ import { createHttpObjectStoreClient } from '../src/corpus-attachment-object-sto
 import {
   buildFileDescriptorCompletionSql,
   buildFileDescriptorInventorySql,
+  hashCurrentFileDescriptorPlan,
   hashFileDescriptorInventory,
   inspectCorpusFileDescriptorSnapshots,
   parseFileDescriptorCompletion,
@@ -23,14 +24,22 @@ import {
 } from '../src/corpus-attachment-staging-sql.mjs';
 import { createSqlExecutor } from '../src/corpus-import-sql.mjs';
 import { deepwellRpcAuthorization } from '../src/deepwell-rpc-auth.mjs';
+import {
+  assertFileDescriptorRuntimeBinding,
+  observeFileDescriptorRuntimeBinding,
+  readFileDescriptorRuntimeIdentity,
+} from '../src/corpus-file-descriptor-runtime-identity.mjs';
 
-const DEFAULT_API_URL = 'http://localhost:2747/jsonrpc';
-const DEFAULT_DB_CONTAINER = 'local-database-1';
+const DEFAULT_API_URL = 'http://127.0.0.1:12747/jsonrpc';
+const DEFAULT_DB_CONTAINER = 'wikijump-standing-database-1';
+const DEFAULT_S3_ENDPOINT = 'http://127.0.0.1:19000';
 const DEFAULT_SITE_ID = 6000006;
 const DEFAULT_SITE_SLUG = 'scp-wiki';
 const DEFAULT_BATCH_SIZE = 200;
 const DEFAULT_CONCURRENCY = 16;
 const DEFAULT_RPC_TIMEOUT_MS = 120_000;
+const DEFAULT_DEEPWELL_CONTAINER = 'wikijump-standing-deepwell-1';
+const DEFAULT_FILES_CONTAINER = 'wikijump-standing-files-1';
 const REVISION_COMMENTS = 'provenance-backed Wikidot file content descriptor backfill';
 
 function envString(name) {
@@ -45,21 +54,24 @@ function parseBoolean(value, label) {
 }
 
 export function usage() {
-  return 'Usage: backfill-corpus-file-descriptors.mjs --corpus-root <path> [--branch en] [--site-id 6000006] [--site-slug scp-wiki] [--db-url <postgres-url> | --db-container <container>] [--api-url <loopback-jsonrpc>] [--attachment-s3-endpoint <url>] [--attachment-s3-bucket <bucket>] [--attachment-s3-access-key-id <key>] [--attachment-s3-region <region>] [--attachment-s3-path-style true|false] [--batch-size 200] [--concurrency 16] --receipt <path> [--dry-run]';
+  return 'Usage: backfill-corpus-file-descriptors.mjs --corpus-root <path> --runtime-identity <path> [--branch en] [--site-id 6000006] [--site-slug scp-wiki] [--db-container <container>] [--deepwell-container <container>] [--files-container <container>] [--api-url <loopback-jsonrpc>] [--attachment-s3-endpoint <loopback-url>] [--attachment-s3-bucket <bucket>] [--attachment-s3-access-key-id <key>] [--attachment-s3-region <region>] [--attachment-s3-path-style true|false] [--batch-size 200] [--concurrency 16] --receipt <path> [--dry-run]';
 }
 
 export function parseArgs(argv) {
   const args = {
     corpusRoot: null,
+    runtimeIdentity: null,
     branch: 'en',
     siteId: DEFAULT_SITE_ID,
     siteSlug: DEFAULT_SITE_SLUG,
     userId: -1,
     dbUrl: process.env.DEEPWELL_VERIFY_DB_URL ?? null,
     dbContainer: DEFAULT_DB_CONTAINER,
+    deepwellContainer: DEFAULT_DEEPWELL_CONTAINER,
+    filesContainer: DEFAULT_FILES_CONTAINER,
     apiUrl: DEFAULT_API_URL,
     rpcTimeoutMs: DEFAULT_RPC_TIMEOUT_MS,
-    s3Endpoint: envString('S3_CUSTOM_ENDPOINT'),
+    s3Endpoint: envString('S3_CUSTOM_ENDPOINT') ?? DEFAULT_S3_ENDPOINT,
     s3Bucket: envString('S3_FILES_BUCKET'),
     s3AccessKeyId: envString('S3_ACCESS_KEY_ID'),
     s3SecretAccessKey: envString('S3_SECRET_ACCESS_KEY'),
@@ -80,12 +92,14 @@ export function parseArgs(argv) {
       return argv[index];
     };
     if (arg === '--corpus-root') args.corpusRoot = next();
+    else if (arg === '--runtime-identity') args.runtimeIdentity = next();
     else if (arg === '--branch') args.branch = next();
     else if (arg === '--site-id') args.siteId = Number.parseInt(next(), 10);
     else if (arg === '--site-slug') args.siteSlug = next();
     else if (arg === '--user-id') args.userId = Number.parseInt(next(), 10);
-    else if (arg === '--db-url') args.dbUrl = next();
     else if (arg === '--db-container') args.dbContainer = next();
+    else if (arg === '--deepwell-container') args.deepwellContainer = next();
+    else if (arg === '--files-container') args.filesContainer = next();
     else if (arg === '--api-url') args.apiUrl = next();
     else if (arg === '--rpc-timeout-ms') args.rpcTimeoutMs = Number.parseInt(next(), 10);
     else if (arg === '--attachment-s3-endpoint') args.s3Endpoint = next();
@@ -102,6 +116,7 @@ export function parseArgs(argv) {
   }
 
   if (args.corpusRoot === null) throw new Error('--corpus-root is required');
+  if (args.runtimeIdentity === null) throw new Error('--runtime-identity is required');
   if (!args.dryRun && args.receipt === null) {
     throw new Error('--receipt is required for a resumable backfill');
   }
@@ -123,6 +138,7 @@ export function parseArgs(argv) {
     throw new Error('--api-url must use a loopback host');
   }
   if (args.receipt !== null) args.receipt = path.resolve(args.receipt);
+  args.runtimeIdentity = path.resolve(args.runtimeIdentity);
   return args;
 }
 
@@ -227,9 +243,9 @@ function writeReceipt(receiptPath, receipt) {
   }
 }
 
-function initialCheckpoint(args, indexSha256, snapshotDenominator) {
+function initialCheckpoint(args, indexSha256, snapshotDenominator, runtime) {
   return {
-    schema: 'wikijump-corpus-file-descriptor-backfill-v2',
+    schema: 'wikijump-corpus-file-descriptor-backfill-v3',
     status: 'in_progress',
     phase: 'metadata_preflight',
     site_id: args.siteId,
@@ -240,6 +256,7 @@ function initialCheckpoint(args, indexSha256, snapshotDenominator) {
       index_sha256: indexSha256,
       snapshot_denominator: snapshotDenominator,
     },
+    runtime,
     batch_size: args.batchSize,
     cursor: null,
     preflight: {
@@ -265,12 +282,12 @@ function initialCheckpoint(args, indexSha256, snapshotDenominator) {
   };
 }
 
-function loadCheckpoint(args, indexSha256, snapshotDenominator) {
+function loadCheckpoint(args, indexSha256, snapshotDenominator, runtime) {
   if (args.dryRun || args.receipt === null || !fs.existsSync(args.receipt)) {
-    return initialCheckpoint(args, indexSha256, snapshotDenominator);
+    return initialCheckpoint(args, indexSha256, snapshotDenominator, runtime);
   }
   const checkpoint = JSON.parse(fs.readFileSync(args.receipt, 'utf8'));
-  const expected = initialCheckpoint(args, indexSha256, snapshotDenominator);
+  const expected = initialCheckpoint(args, indexSha256, snapshotDenominator, runtime);
   if (
     checkpoint.schema !== expected.schema
     || checkpoint.site_id !== expected.site_id
@@ -280,9 +297,12 @@ function loadCheckpoint(args, indexSha256, snapshotDenominator) {
     || checkpoint.corpus?.index_sha256 !== expected.corpus.index_sha256
     || JSON.stringify(checkpoint.corpus?.snapshot_denominator) !== JSON.stringify(expected.corpus.snapshot_denominator)
     || checkpoint.batch_size !== expected.batch_size
+    || checkpoint.runtime?.identity?.sha256 !== expected.runtime.identity.sha256
+    || JSON.stringify(checkpoint.runtime?.identity?.identity) !== JSON.stringify(expected.runtime.identity.identity)
   ) {
     throw new Error(`${args.receipt}: checkpoint identity does not match this backfill invocation`);
   }
+  assertFileDescriptorRuntimeBinding(checkpoint.runtime?.binding, runtime.binding);
   if (!['in_progress', 'blocked', 'done'].includes(checkpoint.status)) {
     throw new Error(`${args.receipt}: checkpoint status is invalid`);
   }
@@ -361,6 +381,10 @@ function loadCheckpoint(args, indexSha256, snapshotDenominator) {
       || batch.rows <= 0
       || typeof batch.inventory_sha256 !== 'string'
       || !/^[0-9a-f]{64}$/u.test(batch.inventory_sha256)
+      || !(
+        batch.descriptor_plan_sha256 === null
+        || /^[0-9a-f]{64}$/u.test(batch.descriptor_plan_sha256)
+      )
       || !validCursor(batch.end_cursor)
     ) {
       throw new Error(`${args.receipt}: checkpoint preflight batch identity is invalid`);
@@ -389,7 +413,10 @@ function completionFailures(completion, checkpoint) {
     || checkpoint.batches_completed !== checkpoint.preflight.batches.length
     || checkpoint.rows_completed !== completion.active_files
     || checkpoint.authority.corpus_provenance !== completion.active_files
-    || checkpoint.staging.total !== completion.active_files;
+    || checkpoint.staging.total !== completion.active_files
+    || checkpoint.completion_inventory?.rows_verified !== completion.active_files
+    || checkpoint.completion_inventory?.batches_verified !== checkpoint.preflight.batches.length
+    || checkpoint.completion_inventory?.descriptor_plans_verified !== checkpoint.preflight.batches.length;
 }
 
 function validCursor(cursor) {
@@ -420,6 +447,7 @@ function inventoryBatchIdentity(inventory) {
   return {
     rows: inventory.length,
     inventory_sha256: hashFileDescriptorInventory(inventory),
+    descriptor_plan_sha256: null,
     end_cursor: inventoryCursor(inventory),
   };
 }
@@ -436,6 +464,48 @@ function requirePreflightBatchIdentity(checkpoint, batchIndex, inventory) {
     throw new Error(`active file inventory changed after sealed preflight batch ${batchIndex}`);
   }
   return actual.end_cursor;
+}
+
+function requirePreflightDescriptorPlan(checkpoint, batchIndex, actualSha256) {
+  const expected = checkpoint.preflight.batches[batchIndex]?.descriptor_plan_sha256;
+  if (typeof expected !== 'string' || expected !== actualSha256) {
+    throw new Error(`active file descriptors do not match sealed corpus plan batch ${batchIndex}`);
+  }
+}
+
+async function verifyCompletionInventory(checkpoint, loadInventory) {
+  let cursor = null;
+  let batchIndex = 0;
+  let rowsVerified = 0;
+  while (true) {
+    const inventory = await loadInventory(cursor);
+    if (inventory.length === 0) break;
+    const nextCursor = requirePreflightBatchIdentity(checkpoint, batchIndex, inventory);
+    requirePreflightDescriptorPlan(
+      checkpoint,
+      batchIndex,
+      hashCurrentFileDescriptorPlan(inventory),
+    );
+    rowsVerified += inventory.length;
+    batchIndex += 1;
+    cursor = nextCursor;
+  }
+  if (
+    batchIndex !== checkpoint.preflight.batches.length
+    || rowsVerified !== checkpoint.preflight.rows_scanned
+  ) {
+    throw new Error('completion inventory ended before every sealed active latest revision and descriptor plan was verified');
+  }
+  const planSetHash = crypto.createHash('sha256');
+  for (const batch of checkpoint.preflight.batches) {
+    planSetHash.update(`${batch.inventory_sha256}\0${batch.descriptor_plan_sha256}\n`);
+  }
+  return {
+    batches_verified: batchIndex,
+    rows_verified: rowsVerified,
+    descriptor_plans_verified: batchIndex,
+    sealed_plan_set_sha256: planSetHash.digest('hex'),
+  };
 }
 
 function addCoverage(target, summary, prefix = '') {
@@ -458,7 +528,27 @@ export async function main(argv) {
     console.log(usage());
     return 0;
   }
-  const sqlExecutor = createSqlExecutor({ dbUrl: args.dbUrl, dbContainer: args.dbContainer });
+  if (args.dbUrl !== null) {
+    throw new Error('sealed standing descriptor backfill does not accept DEEPWELL_VERIFY_DB_URL');
+  }
+  const runtimeIdentity = readFileDescriptorRuntimeIdentity(args.runtimeIdentity);
+  const observeRuntimeBinding = () => observeFileDescriptorRuntimeBinding({
+    runtimeIdentity: runtimeIdentity.identity,
+    databaseContainer: args.dbContainer,
+    deepwellContainer: args.deepwellContainer,
+    filesContainer: args.filesContainer,
+    apiUrl: args.apiUrl,
+    s3Endpoint: args.s3Endpoint,
+  });
+  const runtimeBinding = await observeRuntimeBinding();
+  const runtime = {
+    identity: runtimeIdentity,
+    binding: runtimeBinding,
+  };
+  const sqlExecutor = createSqlExecutor({
+    dbUrl: null,
+    dbContainer: runtimeBinding.services.database.container_id,
+  });
   try {
     const indexPath = path.resolve(args.corpusRoot, args.branch, 'index.json');
     const indexSha256 = await fileSha256(indexPath);
@@ -466,22 +556,7 @@ export async function main(argv) {
       corpusRoot: args.corpusRoot,
       branch: args.branch,
     });
-    const checkpoint = loadCheckpoint(args, indexSha256, inspectedCorpus.denominator);
-    if (checkpoint.status === 'done' && !args.dryRun) {
-      const completion = parseFileDescriptorCompletion(await sqlExecutor.runSql(
-        buildFileDescriptorCompletionSql(args.siteId, args.siteSlug),
-        { capture: true },
-      ));
-      if (completionFailures(completion, checkpoint)) {
-        throw new Error(`completed checkpoint no longer passes completion proof: ${JSON.stringify(completion)}`);
-      }
-      console.log(JSON.stringify(checkpoint, null, 2));
-      return 0;
-    }
-    checkpoint.status = 'in_progress';
-    delete checkpoint.blocker;
-    if (!args.dryRun) writeReceipt(args.receipt, checkpoint);
-
+    const checkpoint = loadCheckpoint(args, indexSha256, inspectedCorpus.denominator, runtime);
     const block = (error, provenanceBlockers = checkpoint.provenance_blockers) => {
       checkpoint.status = 'blocked';
       checkpoint.blocker = error.message;
@@ -550,6 +625,26 @@ export async function main(argv) {
         public_rerenders: 0,
       }, null, 2));
     };
+
+    if (checkpoint.status === 'done' && !args.dryRun) {
+      const completionInventory = await verifyCompletionInventory(checkpoint, loadInventory);
+      if (JSON.stringify(completionInventory) !== JSON.stringify(checkpoint.completion_inventory)) {
+        throw new Error('completed checkpoint inventory proof no longer matches its sealed receipt');
+      }
+      const completion = await loadCompletion();
+      if (completionFailures(completion, checkpoint)) {
+        throw new Error(`completed checkpoint no longer passes completion proof: ${JSON.stringify(completion)}`);
+      }
+      assertFileDescriptorRuntimeBinding(
+        checkpoint.runtime.binding,
+        await observeRuntimeBinding(),
+      );
+      console.log(JSON.stringify(checkpoint, null, 2));
+      return 0;
+    }
+    checkpoint.status = 'in_progress';
+    delete checkpoint.blocker;
+    if (!args.dryRun) writeReceipt(args.receipt, checkpoint);
 
     if (checkpoint.phase === 'metadata_preflight') {
       const currentCompletion = await loadCompletion();
@@ -657,6 +752,9 @@ export async function main(argv) {
         } catch (error) {
           throw block(error);
         }
+        checkpoint.preflight.batches[
+          checkpoint.preflight.byte_batches_completed
+        ].descriptor_plan_sha256 = summary.descriptor_plan_sha256;
         checkpoint.preflight.byte_batches_completed += 1;
         addCoverage(checkpoint.preflight, summary, 'byte_');
         checkpoint.cursor = nextCursor;
@@ -706,6 +804,11 @@ export async function main(argv) {
         plan = await planCorpusFileDescriptorBackfill(
           exactBatchInput(inventory, objectStore),
         );
+        requirePreflightDescriptorPlan(
+          checkpoint,
+          checkpoint.batches_completed,
+          plan.descriptor_plan_sha256,
+        );
       } catch (error) {
         const blockers = Number.isSafeInteger(error.fileDescriptorProvenanceBlockers)
           ? error.fileDescriptorProvenanceBlockers
@@ -735,6 +838,14 @@ export async function main(argv) {
       writeReceipt(args.receipt, checkpoint);
       cursor = nextCursor;
     }
+    try {
+      checkpoint.completion_inventory = await verifyCompletionInventory(
+        checkpoint,
+        loadInventory,
+      );
+    } catch (error) {
+      throw block(error);
+    }
     checkpoint.completion = parseFileDescriptorCompletion(await sqlExecutor.runSql(
       buildFileDescriptorCompletionSql(args.siteId, args.siteSlug),
       { capture: true },
@@ -744,6 +855,14 @@ export async function main(argv) {
       checkpoint.blocker = `file descriptor completion proof failed: ${JSON.stringify(checkpoint.completion)}`;
       writeReceipt(args.receipt, checkpoint);
       throw new Error(checkpoint.blocker);
+    }
+    try {
+      assertFileDescriptorRuntimeBinding(
+        checkpoint.runtime.binding,
+        await observeRuntimeBinding(),
+      );
+    } catch (error) {
+      throw block(error);
     }
     checkpoint.status = 'done';
     checkpoint.phase = 'done';

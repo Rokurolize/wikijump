@@ -162,7 +162,9 @@ SELECT json_build_object(
   'revision_id', latest.revision_id,
   'filename', f.name,
   'size', latest.size,
-  's3_key_hex', encode(latest.s3_hash, 'hex')
+  's3_key_hex', encode(latest.s3_hash, 'hex'),
+  'content_type_label', latest.content_type_label,
+  'content_type_description', latest.content_type_description
 )::text
 FROM file f
 JOIN page p
@@ -170,7 +172,8 @@ JOIN page p
  AND p.site_id = f.site_id
  AND p.deleted_at IS NULL
 JOIN LATERAL (
-  SELECT fr.revision_id, fr.size, fr.s3_hash
+  SELECT fr.revision_id, fr.size, fr.s3_hash,
+    fr.content_type_label, fr.content_type_description
   FROM file_revision fr
   WHERE fr.site_id = f.site_id
     AND fr.page_id = f.page_id
@@ -292,6 +295,15 @@ export function parseFileDescriptorInventory(output) {
     if (typeof row.s3_key_hex !== 'string' || !SHA512_RE.test(row.s3_key_hex)) {
       throw new Error(`line ${lineNumber}: s3_key_hex must be lowercase sha512 hex`);
     }
+    for (const field of ['content_type_label', 'content_type_description']) {
+      if (row[field] !== null && (
+        typeof row[field] !== 'string'
+        || row[field].length === 0
+        || /[\r\n\0]/u.test(row[field])
+      )) {
+        throw new Error(`line ${lineNumber}: ${field} must be null or a non-empty single-line string`);
+      }
+    }
     rows.push(row);
   }
   return rows;
@@ -313,6 +325,39 @@ export function hashFileDescriptorInventory(inventory) {
     ])}\n`);
   }
   return hash.digest('hex');
+}
+
+function hashDescriptorPlan(rows) {
+  if (!Array.isArray(rows)) throw new Error('descriptor plan must be an array');
+  const hash = crypto.createHash('sha256');
+  for (const row of rows) {
+    hash.update(`${JSON.stringify([
+      row.page_id,
+      row.page_category_id,
+      row.fullname,
+      row.file_id,
+      row.revision_id,
+      row.filename,
+      row.size,
+      row.s3_key_hex,
+      row.content_type_label,
+      row.content_type_description,
+    ])}\n`);
+  }
+  return hash.digest('hex');
+}
+
+export function hashCurrentFileDescriptorPlan(inventory) {
+  return hashDescriptorPlan(inventory);
+}
+
+function resolvedDescriptorPlanSha256(resolutions) {
+  if (resolutions.some((resolution) => !resolution.matched)) return null;
+  return hashDescriptorPlan(resolutions.map(({ row, descriptor }) => ({
+    ...row,
+    content_type_label: descriptor.label,
+    content_type_description: descriptor.description,
+  })));
 }
 
 function provenanceKey(fullname, filename, sha256) {
@@ -516,6 +561,7 @@ export async function preflightCorpusFileDescriptorBatch(input) {
     bytes,
     provenance_matched: provenanceMatched,
     provenance_missing: provenanceMissing,
+    descriptor_plan_sha256: resolvedDescriptorPlanSha256(resolutions),
   };
 }
 
@@ -540,7 +586,11 @@ export async function planCorpusFileDescriptorBackfill(input) {
     const sha256 = object.sha256;
     authority.corpus_provenance += 1;
     attachments.push({
+      page_id: row.page_id,
+      page_category_id: row.page_category_id,
       fullname: row.fullname,
+      file_id: row.file_id,
+      revision_id: row.revision_id,
       filename: row.filename,
       sha256,
       size: row.size,
@@ -569,5 +619,6 @@ export async function planCorpusFileDescriptorBackfill(input) {
     pages: [...pages.values()],
     unique_objects: objects.size,
     authority,
+    descriptor_plan_sha256: resolvedDescriptorPlanSha256(resolutions),
   };
 }

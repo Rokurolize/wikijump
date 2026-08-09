@@ -9,6 +9,7 @@ import {
   buildFileDescriptorInventorySql,
   buildFileDescriptorCompletionSql,
   hashFileDescriptorInventory,
+  hashCurrentFileDescriptorPlan,
   inspectCorpusFileDescriptorSnapshots,
   parseFileDescriptorCompletion,
   parseFileDescriptorInventory,
@@ -117,6 +118,25 @@ test('standing descriptor backfill binds stored bytes to exact corpus provenance
   assert.equal(plan.attachments[0].replace_existing_descriptor, true);
   assert.equal(plan.pages.length, 2);
   assert.deepEqual(plan.authority, { corpus_provenance: 2 });
+  assert.match(plan.descriptor_plan_sha256, /^[0-9a-f]{64}$/u);
+  assert.equal(
+    hashCurrentFileDescriptorPlan(inventory.map((row, index) => ({
+      ...row,
+      content_type_label: plan.attachments[index].content_type_label,
+      content_type_description: plan.attachments[index].content_type_description,
+    }))),
+    plan.descriptor_plan_sha256,
+  );
+  assert.notEqual(
+    hashCurrentFileDescriptorPlan(inventory.map((row, index) => ({
+      ...row,
+      content_type_label: plan.attachments[index].content_type_label,
+      content_type_description: index === 0
+        ? 'JPEG image data, drifted descriptor'
+        : plan.attachments[index].content_type_description,
+    }))),
+    plan.descriptor_plan_sha256,
+  );
 });
 
 test('standing descriptor preflight counts exact matches and binds the corpus snapshot denominator', async () => {
@@ -175,6 +195,7 @@ test('standing descriptor preflight counts exact matches and binds the corpus sn
     bytes: matchedBytes.byteLength + missingBytes.byteLength,
     provenance_matched: 1,
     provenance_missing: 1,
+    descriptor_plan_sha256: null,
   });
 });
 
@@ -213,7 +234,8 @@ test('standing descriptor inventory is a bounded public-page identity query', ()
   assert.match(sql, /WHERE f\.site_id = 6000006::bigint/u);
   assert.match(sql, /JOIN LATERAL/u);
   assert.doesNotMatch(sql, /from_wikidot|imported_revision|local scp-wiki mirror attachment import/u);
-  assert.doesNotMatch(sql, /latest\.content_type_label|latest\.content_type_description/u);
+  assert.match(sql, /'content_type_label', latest\.content_type_label/u);
+  assert.match(sql, /'content_type_description', latest\.content_type_description/u);
   assert.match(sql, /ORDER BY p\.slug, f\.file_id, latest\.revision_id/u);
   assert.match(sql, /LIMIT 200/u);
 
@@ -234,6 +256,8 @@ test('standing descriptor inventory is a bounded public-page identity query', ()
     filename: '049D.jpg',
     size: 180296,
     s3_key_hex: 'a'.repeat(128),
+    content_type_label: 'JPEG image data',
+    content_type_description: 'JPEG image data, EXIF standard',
   })}\n`);
   assert.equal(parsed.length, 1);
   assert.equal(parsed[0].revision_id, 4902);
