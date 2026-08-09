@@ -1,0 +1,415 @@
+{
+  "schema": "wikijump.open43.q_search_users_closure_audit.v1",
+  "scope": [
+    748,
+    807,
+    810,
+    1026,
+    1032,
+    1036
+  ],
+  "audit_identity": {
+    "integration_base": "ebe0721ce28bdad176abc8a8559bd30fa8cba905",
+    "integration_base_tree": "fbc6db6db7ef965d63575ffe8e31aac9a7190094",
+    "branch": "agent/open87-pr2/q-search-users-closure-g4",
+    "ftml_pin": "62ebba4efda1f10e82363c23c925061fbe939e49",
+    "deepwell_cargo_lock_sha256": "a3c857b33911bd3420f773057fa08e8693170fd3047e6ea7ff3e127b77bb4dd9",
+    "live_observations_sha256": "edf1a1773f1e436403fa9bb95ec7f11d72627ed044d0e21f0f9c92edd4106613",
+    "implementation_ledger_sha256": "fb11c187deab22534122fff1069b01e9b1140a76c7b29ece956faa8544162b18",
+    "prior_user_manifest_sha256": "8e4fbf70bdac247469c6365f67706ab0fe463ee4029a61c1412299cecb707ca5",
+    "audited_at": "2026-08-09"
+  },
+  "method": {
+    "public_deepwell_seams": [
+      "wikidot_page_preview",
+      "page_view"
+    ],
+    "public_framerail_seams": [
+      "wikidotSearchPath",
+      "wikidotSearchAllPath",
+      "delegated SearchAll form submission",
+      "legacy top-bar form submission"
+    ],
+    "ordering_rules": [
+      "Apply site, actor, membership, deletion, and privacy authority before sorting, counts, limits, or pagination.",
+      "Resolve imported user identity from typed local records, never from a profile URL.",
+      "Keep unsupported module heads, argument shapes, and unavailable external services fail closed.",
+      "Do not treat a route builder or rendered form as proof that an active search backend exists."
+    ],
+    "tracker_read_canonicalization": "gh issue view <issue> --repo Rokurolize/wikijump --json number,title,body,comments,url | jq -c .",
+    "source_change_disposition": "No production source residual is both missing and established by the audited evidence. Existing public tests already bind every observed source-ready row. Adding a backend, global FeaturedSite authority, private identity policy, or account action in this lane would invent an unobserved contract."
+  },
+  "tracker_reads": [
+    {
+      "issue": 748,
+      "url": "https://github.com/Rokurolize/wikijump/issues/748",
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:43:01Z",
+      "canonical_read_payload_sha256": "1c1fe784ef2bd20bc01119235b88612618ea577353afa8f7cb0735f4ec0c2ca7"
+    },
+    {
+      "issue": 807,
+      "url": "https://github.com/Rokurolize/wikijump/issues/807",
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:43:23Z",
+      "canonical_read_payload_sha256": "6a9abeaffbe776dc5bf4cf83f2fecf1ba7a38fdbb9e1f3878145a288a802acfe"
+    },
+    {
+      "issue": 810,
+      "url": "https://github.com/Rokurolize/wikijump/issues/810",
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:43:26Z",
+      "canonical_read_payload_sha256": "394bfe8fd9da6db2b6b7430a28539e30bee953d04e8677e690e4715a8186ae3d"
+    },
+    {
+      "issue": 1026,
+      "url": "https://github.com/Rokurolize/wikijump/issues/1026",
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:44:25Z",
+      "canonical_read_payload_sha256": "4205f0594c8ddf752f0d5a03a6b1eeef8cf4350d217fb36063a765ba79757774"
+    },
+    {
+      "issue": 1032,
+      "url": "https://github.com/Rokurolize/wikijump/issues/1032",
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:44:33Z",
+      "canonical_read_payload_sha256": "d3b7babfb80221ef466b78314bc16ebffa3c12de67c43c7afb7874a1c0264d02"
+    },
+    {
+      "issue": 1036,
+      "url": "https://github.com/Rokurolize/wikijump/issues/1036",
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:44:38Z",
+      "canonical_read_payload_sha256": "df9d46290cc68c218783a6bbd2a3eadbfd85417fe1b88afd5006024e2e89ed3b"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "SEARCH_FEED_CURRENT_UNAVAILABLE_20260809",
+      "path": "install/local/wikidot-verification/artifacts/search-feed-live-preview-20260809.json",
+      "sha256": "b8642635e71c02bb9e798af5740be5de3c259fef13f000dc6f0bd0fe28946565",
+      "authority": "anonymous live PagePreview for current Search unavailable and Feed source-recognition boundaries"
+    },
+    {
+      "evidence_id": "SEARCHALL_FORM_ROUTES_CURRENT_UNAVAILABLE_20260809",
+      "path": "install/local/wikidot-verification/artifacts/searchall-live-preview-routes-20260809.json",
+      "sha256": "378ddb0e93d5d20709f857d17dc7cb538f6e393f68c0f68016bb370ff60c4c67",
+      "authority": "anonymous live PagePreview and browser route observations for SearchAll form, area routes, whitespace preservation, and current ElasticSearch failure"
+    },
+    {
+      "evidence_id": "LISTUSERS_CURRENT_VIEWER_20260729",
+      "path": "install/local/wikidot-verification/artifacts/listusers-module-live-preview.json",
+      "sha256": "f20910497a983e6cb4e6be7688420d028bfbba7f16a514ed0eb263f538e37ffe",
+      "authority": "anonymous and authenticated live PagePreview for the users current-viewer contract"
+    },
+    {
+      "evidence_id": "STATIC_ACCOUNT_MODULES_20260729",
+      "path": "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json",
+      "sha256": "bde2f0e6ef4daf8fe9f52134aec967a24f9187503f066338b5365439b3dac628",
+      "authority": "anonymous and account-A live PagePreview plus anonymous saved-page output for static account module branches"
+    },
+    {
+      "evidence_id": "V7_USER_POSITIONAL_LOOKUP",
+      "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/comparison.json",
+      "sha256": "87e8ae77db8cfe526fcd46fb13e2843968fcc80d9e6bebdc0692bd636f57ff76",
+      "authority": "sealed anonymous live user-block positional and missing-user fragments"
+    },
+    {
+      "evidence_id": "MODULE_OWN_LINE_LIVE_REFERENCES",
+      "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
+      "sha256": "686f9fd383f51b5fe393b5f98b2a7e499010bfb691a39086309170a29982a783",
+      "authority": "frozen anonymous own-line module references including FeaturedSite and Members"
+    }
+  ],
+  "issues": [
+    {
+      "issue": 748,
+      "source_ready": [
+        {
+          "case_id": "Q748_LEGACY_FORM_AND_LOCAL_ROUTE_BUILDER",
+          "status": "implemented_not_acceptance_ready",
+          "source": [
+            "framerail/src/routes/+layout.svelte",
+            "framerail/src/lib/wikidot/wikidot-search.js"
+          ],
+          "public_tests": [
+            "framerail/tests/wikidot-search.test.js#Wikidot top search preserves and path-encodes the submitted query",
+            "framerail/tests/wikidot-chrome.spec.ts#Wikidot-compatible search chrome preserves its two inputs and focus behavior"
+          ],
+          "result": "The legacy action=dummy DOM is preserved and a local submit handler builds /search:site/q/<encoded-query> without trimming. This proves only the local source seam. It is not acceptance evidence for the live method, route, redirect, result DOM, ranking, or permission behavior."
+        }
+      ],
+      "needs_source": [],
+      "candidate_required": [
+        {
+          "case_id": "Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT",
+          "requires": "A fresh anonymous live browser capture of Enter and button submission for normal, empty, Unicode, and reserved-character queries, including event count, method, redirect chain, final URL, failed requests, and result container DOM."
+        },
+        {
+          "case_id": "Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION",
+          "requires": "Replay the sealed live submission against the exact merged candidate and prove that it does not navigate to /dummy."
+        }
+      ],
+      "blocked_evidence": [
+        {
+          "case_id": "Q748_PERMISSION_FILTERED_RESULTS",
+          "missing": "No sealed successful top-bar result contract, local active search service, ranking contract, loading/error contract, or actor-visible public/private result matrix exists.",
+          "forbidden_inference": "Do not treat the existing path builder as proof of Wikidot's endpoint and do not add an all-pages fallback."
+        }
+      ],
+      "closure_verdict": "not_ready"
+    },
+    {
+      "issue": 807,
+      "source_ready": [
+        {
+          "case_id": "Q807_CURRENT_SEARCHALL_FORM_AND_ROUTES",
+          "status": "implemented_unverified",
+          "evidence_id": "SEARCHALL_FORM_ROUTES_CURRENT_UNAVAILABLE_20260809",
+          "public_tests": [
+            "deepwell/tests/page.rs#searchall_module_matches_live_form_and_unavailable_route_contract",
+            "framerail/tests/wikidot-search.test.js#Wikidot SearchAll preserves its area and path-encodes the submitted query",
+            "framerail/tests/wikidot-search.test.js#Wikidot SearchAll submit listener navigates rendered module forms"
+          ],
+          "result": "The public preview and saved-page seam covers the exact standalone form, permissive observed module heads, literal ownership, empty query form, all observed area routes, query whitespace preservation, and current ElasticSearch unavailable output."
+        }
+      ],
+      "needs_source": [],
+      "candidate_required": [
+        {
+          "case_id": "Q807_EXACT_CANDIDATE_FORM_ROUTE_BROWSER",
+          "requires": "Run the SearchAll browser form for pf, p, and f against the exact candidate, verify one navigation, encoded untrimmed query, selected area, form defaults, focus, and no failed local assets."
+        }
+      ],
+      "blocked_evidence": [
+        {
+          "case_id": "Q807_SUCCESSFUL_SEARCH_RESULTS",
+          "missing": "Current live Wikidot returns its ElasticSearch unavailable error for every observed non-empty route. Successful result DOM, ranking, no-result, pagination, forum/page union, and privacy behavior are therefore not observable.",
+          "forbidden_inference": "Do not invent a local active backend or call the rendered form proof of successful search."
+        }
+      ],
+      "closure_verdict": "candidate_and_evidence_required"
+    },
+    {
+      "issue": 810,
+      "source_ready": [
+        {
+          "case_id": "Q810_FAIL_CLOSED_WITHOUT_GLOBAL_AUTHORITY",
+          "status": "implemented_unverified",
+          "evidence_id": "MODULE_OWN_LINE_LIVE_REFERENCES",
+          "public_tests": [
+            "deepwell/tests/page.rs#featuredsite_fails_closed_without_a_local_featured_site_authority",
+            "deepwell/tests/list_pages.rs#listpages_default_rows_expand_secondary_page_body_modules"
+          ],
+          "result": "The runtime uses the established unavailable-module output and rejects a fabricated local card, external HTTP thumbnail, inline script, or captured site identity."
+        }
+      ],
+      "needs_source": [],
+      "candidate_required": [
+        {
+          "case_id": "Q810_CANDIDATE_FAIL_CLOSED_NETWORK",
+          "requires": "Verify PagePreview, saved page, and nested generated rendering on the exact candidate, with no Wikidot fetch, remote script, mixed-content thumbnail, or local-site substitution request."
+        }
+      ],
+      "blocked_evidence": [
+        {
+          "case_id": "Q810_ACTIVE_GLOBAL_ROTATION",
+          "missing": "No deterministic local FeaturedSite authority, authorized global data source, refresh policy, safe thumbnail descriptor, or interaction contract exists.",
+          "forbidden_inference": "Do not hard-code the captured remote card, select an arbitrary local site, fetch Wikidot during rendering, or execute authored remote JavaScript."
+        }
+      ],
+      "closure_verdict": "candidate_and_authority_required"
+    },
+    {
+      "issue": 1026,
+      "source_ready": [
+        {
+          "case_id": "Q1026_V7_POSITIONAL_LOOKUP",
+          "status": "implemented_unverified",
+          "evidence_id": "V7_USER_POSITIONAL_LOOKUP",
+          "public_tests": [
+            "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries"
+          ],
+          "result": "FTML 62ebba4e owns the seven sealed assignment-shaped positional inputs, missing-user error DOM, tab normalization, and NBSP preservation through public preview and saved-page rendering."
+        },
+        {
+          "case_id": "Q1026_TYPED_NUMERIC_AND_DELETED_IDENTITY",
+          "status": "implemented_unverified",
+          "public_tests": [
+            "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
+            "deepwell/src/services/render/ftml_user_info.rs#tests"
+          ],
+          "result": "Digit-only keys use the user-ID namespace, slug lookup remains separate, deleted imported identities fail closed before profile links are rendered, and profile URLs are generated from typed identity rather than parsed as authority."
+        }
+      ],
+      "needs_source": [],
+      "candidate_required": [
+        {
+          "case_id": "Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY",
+          "requires": "Run the sealed V7 matrix plus extant numeric and deleted imported identities through public preview and saved page on the exact FTML-pinned candidate."
+        },
+        {
+          "case_id": "Q1026_BROWSER_PRINTUSER_INTERVALS",
+          "requires": "Verify link, avatar, hover, focus, network, initial paint, and settled printuser DOM against a sealed live identity matrix."
+        }
+      ],
+      "blocked_evidence": [
+        {
+          "case_id": "Q1026_FULL_ACTOR_GENERATED_CACHE_MATRIX",
+          "missing": "Independent live evidence and local authority are incomplete for system and anonymous special identities, private actor differences, generated-name forgery resistance, rename/delete/import invalidation, and hover/avatar behavior.",
+          "forbidden_inference": "Do not derive a missing or deleted identity from a profile URL and do not invent a privacy policy absent from the local model."
+        }
+      ],
+      "closure_verdict": "candidate_and_evidence_required"
+    },
+    {
+      "issue": 1032,
+      "source_ready": [
+        {
+          "case_id": "Q1032_LISTUSERS_CURRENT_VIEWER",
+          "status": "implemented_unverified",
+          "evidence_id": "LISTUSERS_CURRENT_VIEWER_20260729",
+          "public_tests": [
+            "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer"
+          ],
+          "result": "users=\".\" resolves from the current request actor at read time, anonymous output stays empty, unsupported shapes fail closed, and read-only views do not persist actor-specific compiled text blocks."
+        },
+        {
+          "case_id": "Q1032_STATIC_USER_MODULE_BASELINES",
+          "status": "implemented_unverified",
+          "evidence_id": "STATIC_ACCOUNT_MODULES_20260729",
+          "public_tests": [
+            "deepwell/tests/page.rs#static_account_modules_match_live_preview_and_page_view_basics"
+          ],
+          "result": "UserInfo no-user, SearchUsers disabled, and WhoInvited initial-form states use exact live-backed static branches through preview and saved page."
+        },
+        {
+          "case_id": "Q1032_WATCHERS_EMPTY_OWN_LINE",
+          "status": "implemented_unverified",
+          "evidence_id": "MODULE_OWN_LINE_LIVE_REFERENCES",
+          "evidence_case_id": "module-own-line-watchers",
+          "public_tests": [
+            "deepwell/tests/page.rs#static_account_modules_match_live_preview_and_page_view_basics"
+          ],
+          "result": "The exact own-line Watchers invocation consumes its source and preserves Wikidot's observed five-newline empty block through public preview and saved-page rendering. This audit adds the missing public regression without changing production code."
+        },
+        {
+          "case_id": "Q1032_MEMBERS_SITE_SCOPED_FIRST_PAGE",
+          "status": "implemented_unverified",
+          "evidence_id": "MODULE_OWN_LINE_LIVE_REFERENCES",
+          "public_tests": [
+            "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
+            "deepwell/src/services/render/user_directory.rs#tests"
+          ],
+          "result": "The initial Members page restricts relations and roles to the current site, removes inactive, missing, and deleted identities before ordering, count, and the 50-row page limit, and rejects unsupported arguments."
+        }
+      ],
+      "needs_source": [],
+      "candidate_required": [
+        {
+          "case_id": "Q1032_EXACT_CANDIDATE_DIRECTORY_MATRIX",
+          "requires": "Run anonymous, non-member, member, moderator, and administrator preview and saved-page cases against the exact candidate, including cross-site and deleted identity controls and read-only side-effect snapshots."
+        },
+        {
+          "case_id": "Q1032_BROWSER_DIRECTORY_ACTIONS",
+          "requires": "Verify the initial Members pager shell, SearchUsers disabled state, WhoInvited form shell, and printuser browser intervals without claiming unimplemented actions."
+        }
+      ],
+      "blocked_evidence": [
+        {
+          "case_id": "Q1032_REMAINING_DIRECTORY_RUNTIME",
+          "missing": "Live-backed AMC page requests and responses beyond the first Members page, populated target UserInfo, populated Watchers and WhoInvited results, full role/privacy actor matrices, and rename/delete/import invalidation are not fully evidenced or modeled.",
+          "forbidden_inference": "Do not broaden first-page data into an invented Ajax endpoint, expose deleted identities, or perform permission filtering after counts or pagination."
+        }
+      ],
+      "closure_verdict": "candidate_and_evidence_required"
+    },
+    {
+      "issue": 1036,
+      "source_ready": [
+        {
+          "case_id": "Q1036_CURRENT_SEARCH_UNAVAILABLE",
+          "status": "implemented_unverified",
+          "evidence_id": "SEARCH_FEED_CURRENT_UNAVAILABLE_20260809",
+          "public_tests": [
+            "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries",
+            "deepwell/src/services/render/search_feed.rs#tests"
+          ],
+          "result": "Search consumes every observed standalone head and renders the exact current unavailable error while literal-owned source remains literal."
+        },
+        {
+          "case_id": "Q1036_CURRENT_FEED_SOURCE_BOUNDARY",
+          "status": "implemented_unverified",
+          "evidence_id": "SEARCH_FEED_CURRENT_UNAVAILABLE_20260809",
+          "public_tests": [
+            "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries",
+            "deepwell/src/services/render/search_feed.rs#tests"
+          ],
+          "result": "Feed recognizes only the evidenced lowercase, double-quoted, nonempty src shape, distinguishes missing source from inaccessible source, escapes the reflected URL, performs no external fetch, and preserves literal ownership."
+        }
+      ],
+      "needs_source": [],
+      "candidate_required": [
+        {
+          "case_id": "Q1036_EXACT_CANDIDATE_PREVIEW_SAVED_BOUNDARIES",
+          "requires": "Replay all sealed Search and Feed PagePreview cases and the saved-page lifecycle on the exact candidate, including a read-only side-effect snapshot."
+        }
+      ],
+      "blocked_evidence": [
+        {
+          "case_id": "Q1036_ACTIVE_SEARCH_BACKEND",
+          "missing": "Current live Search is unavailable and no local permission-aware active search contract, ranking, count, pagination, or error transition is established.",
+          "forbidden_inference": "Do not substitute an unrestricted all-pages query or infer SearchAll success from its form."
+        },
+        {
+          "case_id": "Q1036_SUCCESSFUL_FEED_ADAPTER",
+          "missing": "No safe provider policy, SSRF boundary, response budget, cache policy, successful live feed DOM, or deterministic local adapter contract is established.",
+          "forbidden_inference": "Do not fetch arbitrary authored URLs from the renderer or hard-code the captured inaccessible-source result as a successful feed."
+        }
+      ],
+      "closure_verdict": "candidate_and_evidence_required"
+    }
+  ],
+  "ledger_reconciliation": {
+    "global_ledger_is_not_a_closure_receipt": true,
+    "observed_stale_or_coarse_statuses": [
+      {
+        "feature": "module-featuredsite",
+        "ledger_status": "pending",
+        "audit_disposition": "fail-closed source slice exists; active global authority remains unimplemented"
+      },
+      {
+        "feature": "syntax-users",
+        "ledger_status": "pending",
+        "audit_disposition": "sealed positional, numeric, and deleted identity slices exist; full actor and browser matrix remains open"
+      },
+      {
+        "feature": "module-members",
+        "ledger_status": "pending",
+        "audit_disposition": "site-scoped first page exists; AMC pagination and broader runtime remain open"
+      }
+    ],
+    "rule": "Do not change a feature to implemented or close its issue until every candidate_required row has an exact candidate receipt and every blocked_evidence row is either implemented from new evidence or explicitly accepted as the product's fail-closed contract."
+  },
+  "central_commands": [
+    "cargo fmt --manifest-path deepwell/Cargo.toml --check",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page search_and_feed_modules_match_live_preview_and_page_view_boundaries -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page searchall_module_matches_live_form_and_unavailable_route_contract -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page featuredsite_fails_closed_without_a_local_featured_site_authority -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page listusers_module_matches_live_preview_and_runtime_viewer -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page members_module_queries_only_visible_site_members_and_roles -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page static_account_modules_match_live_preview_and_page_view_basics -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml services::render::search_feed::tests -- --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml services::render::user_directory::tests -- --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml services::render::ftml_user_info::tests -- --nocapture",
+    "node --test framerail/tests/wikidot-search.test.js",
+    "pnpm --dir framerail test tests/wikidot-chrome.spec.ts --grep 'Wikidot-compatible search chrome|SearchAll module submits'",
+    "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
+    "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
+    "node scripts/generate-wikidot-specifications.mjs --check",
+    "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
+    "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scp-wiki --rpc-url http://127.0.0.1:2747/jsonrpc"
+  ],
+  "closure_rule": "This lane does not close any issue by itself. Source-ready rows require central Rust and exact-candidate validation. Candidate-required rows require receipts bound to the merged source, FTML pin, locks, fixture, runtime, and browser identities. Blocked-evidence rows must remain open unless new authoritative evidence and a matching local authority establish a safe vertical slice."
+}

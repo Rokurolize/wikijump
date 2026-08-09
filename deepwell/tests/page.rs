@@ -6034,6 +6034,9 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
         "SEARCHUSERS_START\n",
         "[[module SearchUsers]]\n",
         "SEARCHUSERS_END\n",
+        "WATCHERS_START\n",
+        "[[module Watchers]]\n",
+        "WATCHERS_END\n",
         "MBE_START\n",
         "[[module MembershipEmailInvitation]]\n",
         "MBE_END\n",
@@ -6076,6 +6079,12 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
             "{label} should render SearchUsers' live disabled notice:\n{html}",
         );
         assert!(
+            html.contains("WATCHERS_START")
+                && html.contains("<p>\n\n\n\n\n</p>")
+                && html.contains("WATCHERS_END"),
+            "{label} should preserve Wikidot's observed empty Watchers block boundary:\n{html}",
+        );
+        assert!(
             html.contains(r#"<div id="membership-email-invitation-box">"#)
                 && html.contains("Sorry, the invitation could not be found.")
                 && html.contains("aleady\n\t\t\tused by someone"),
@@ -6091,6 +6100,7 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
             "AnonymousNotificationsUnsubscribe",
             "UserInfo",
             "SearchUsers",
+            "Watchers",
             "MembershipEmailInvitation",
             "WhoInvited",
         ] {
@@ -6150,6 +6160,12 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
         "saved page view should preserve SearchUsers markers around the live disabled notice:\n{body}",
     );
     assert!(
+        body.contains("WATCHERS_START")
+            && body.contains("<p>\n\n\n\n\n</p>")
+            && body.contains("WATCHERS_END"),
+        "saved page view should preserve Wikidot's observed empty Watchers block boundary:\n{body}",
+    );
+    assert!(
         body.contains("MBE_START")
             && body.contains(r#"<div id="membership-email-invitation-box">"#)
             && body.contains("Sorry, the invitation could not be found.")
@@ -6167,6 +6183,7 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
         !body.contains("[[module AnonymousNotificationsUnsubscribe")
             && !body.contains("[[module UserInfo")
             && !body.contains("[[module SearchUsers")
+            && !body.contains("[[module Watchers")
             && !body.contains("[[module MembershipEmailInvitation")
             && !body.contains("[[module WhoInvited"),
         "saved page view should consume all covered modules:\n{body}",
