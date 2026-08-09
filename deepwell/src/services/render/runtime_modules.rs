@@ -2239,7 +2239,10 @@ impl RenderService {
             let matched = captures
                 .get(0)
                 .expect("a RatedPages capture always has a complete match");
-            if literal_regions.contains(matched.start()) {
+            let module = captures
+                .name("module")
+                .expect("a RatedPages capture always has a module invocation");
+            if literal_regions.contains(module.start()) {
                 continue;
             }
             let head = captures.name("head").map_or("", |head| head.as_str());

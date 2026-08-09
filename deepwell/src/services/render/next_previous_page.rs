@@ -57,13 +57,15 @@ use crate::services::{PageService, ServiceContext};
 
 pub(super) static NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX: LazyLock<Regex> =
     LazyLock::new(|| {
-        Regex::new(r"(?is)\[\[module\s+(?:NextPage|PreviousPage)(?:\s+[^\]]*)?\]\]")
-            .expect("NextPreviousPage module-opening regular expression should compile")
+        Regex::new(
+            r"(?im)^\[\[module[\t ]+(?:NextPage|PreviousPage)(?:[\t ]+[^\]\r\n]*)?\]\]",
+        )
+        .expect("NextPreviousPage module-opening regular expression should compile")
     });
 
 static NEXT_PREVIOUS_PAGE_OPEN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"(?is)\[\[module\s+(?P<name>NextPage|PreviousPage)(?P<head>(?:\s+[^\]]*)?)\]\]",
+        r"(?im)^\[\[module[\t ]+(?P<name>NextPage|PreviousPage)(?P<head>(?:[\t ]+[^\]\r\n]*)?)\]\]",
     )
     .expect("NextPreviousPage module regular expression should compile")
 });
@@ -791,7 +793,8 @@ fn next_previous_row_title(row: &FoundPageRow) -> &str {
 mod tests {
     use super::{
         MAX_NEXT_PREVIOUS_PAGE_MODULES_PER_RENDER,
-        MAX_NEXT_PREVIOUS_PAGE_QUERIES_PER_RENDER, NextPreviousOrder,
+        MAX_NEXT_PREVIOUS_PAGE_QUERIES_PER_RENDER, NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX,
+        NextPreviousOrder, find_next_previous_page_occurrences,
         next_previous_page_module_budget_exceeded,
         next_previous_page_query_budget_exceeded, parse_next_previous_page_arguments,
     };
@@ -828,6 +831,27 @@ mod tests {
         assert_eq!(parsed.all_tags[0].as_ref(), "required");
         assert_eq!(parsed.any_tags[0].as_ref(), "shared");
         assert_eq!(parsed.no_tags[0].as_ref(), "blocked");
+    }
+
+    #[test]
+    fn next_previous_recognition_requires_an_own_line_invocation() {
+        assert!(NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match("[[module NextPage]]"));
+        assert!(NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match("[[module PreviousPage]]"));
+        assert!(
+            !NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX
+                .is_match("start-[[module NextPage]]-middle")
+        );
+        assert!(
+            !NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(" [[module PreviousPage]]")
+        );
+        assert_eq!(
+            find_next_previous_page_occurrences(concat!(
+                "start-[[module NextPage]]-middle\n",
+                "[[module PreviousPage]]",
+            ))
+            .len(),
+            1,
+        );
     }
 
     #[test]

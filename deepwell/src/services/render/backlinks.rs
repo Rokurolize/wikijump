@@ -43,7 +43,10 @@ pub(super) const MAX_BACKLINKS_MODULE_ROWS: usize = 500;
 const BACKLINKS_MODULE_QUERY_LIMIT: usize = MAX_BACKLINKS_MODULE_ROWS + 1;
 
 pub(super) static BACKLINKS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)\[\[module\s+Backlinks(?P<head>(?:\s+[^\]]*)?)\]\]").unwrap()
+    Regex::new(
+        r"(?im)^(?P<module>\[\[module[\t ]+Backlinks(?P<head>(?:[\t ]+[^\]\r\n]*)?)\]\])[\t ]*\r?$",
+    )
+    .unwrap()
 });
 
 #[derive(Debug, FromQueryResult)]
@@ -101,9 +104,12 @@ impl RenderService {
 
         for captures in BACKLINKS_MODULE_REGEX.captures_iter(&wikitext) {
             let mtch = captures.get(0).unwrap();
+            let module = captures
+                .name("module")
+                .expect("a Backlinks capture always has a module invocation");
             expanded.push_str(&wikitext[cursor..mtch.start()]);
 
-            if Self::is_inside_wikidot_literal_region(&wikitext, mtch.start()) {
+            if Self::is_inside_wikidot_literal_region(&wikitext, module.start()) {
                 expanded.push_str(mtch.as_str());
                 cursor = mtch.end();
                 continue;
@@ -205,6 +211,8 @@ mod tests {
         assert!(BACKLINKS_MODULE_REGEX.is_match("[[module Backlinks]]"));
         assert!(BACKLINKS_MODULE_REGEX.is_match(r#"[[module backlinks foo="bar"]]"#));
         assert!(!BACKLINKS_MODULE_REGEX.is_match("[[module BacklinksExtra]]"));
+        assert!(!BACKLINKS_MODULE_REGEX.is_match("start-[[module Backlinks]]-middle"));
+        assert!(!BACKLINKS_MODULE_REGEX.is_match(" [[module Backlinks]]"));
     }
 
     #[test]

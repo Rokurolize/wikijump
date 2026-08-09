@@ -9042,6 +9042,10 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             "TAG_EQUALS=%%linked_title%%|%%fullname%%\n",
             "[[/module]]\n",
             "TAG_EQUALS_END\n\n",
+            "INLINE_START\n",
+            "start-[[module NextPage]]-middle\n",
+            "start-[[module PreviousPage]]-middle\n",
+            "INLINE_END\n\n",
             "NEXTPREV_END",
         ),
         category = category,
@@ -9162,6 +9166,14 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             && tag_equals.contains("/fixture-nextpreviouspage:delta"),
         "NextPreviousPage tag selectors should filter candidates while using the current page as the position anchor:\n{html}",
     );
+    let inline = section(&html, "INLINE_START", "INLINE_END");
+    assert!(
+        inline.contains("start-[[module NextPage]]-middle")
+            && inline.contains("start-[[module PreviousPage]]-middle"),
+        "inline NextPage and PreviousPage invocations must remain literal:\n{inline}",
+    );
+    assert_eq!(html.matches("[[module NextPage]]").count(), 1);
+    assert_eq!(html.matches("[[module PreviousPage]]").count(), 1);
 
     let last = run_endpoint!(
         runner,
@@ -10811,7 +10823,10 @@ async fn backlinks_module_renders_current_page_incoming_links() {
         site_id,
         target_slug,
         "Fixture Backlinks Current Target",
-        "BF_DEFAULT_START\n[[module Backlinks]]\nBF_DEFAULT_END",
+        concat!(
+            "BF_DEFAULT_START\n[[module Backlinks]]\nBF_DEFAULT_END\n",
+            "BF_INLINE_START\nstart-[[module Backlinks]]-middle\nBF_INLINE_END",
+        ),
     )
     .await;
     create_listpages_test_page(
@@ -10880,6 +10895,9 @@ async fn backlinks_module_renders_current_page_incoming_links() {
         r#"<a href="/fixture-backlinks-linker-alpha">Fixture Backlinks Linker Alpha</a>"#,
         r#"<a href="/fixture-backlinks-linker-beta">Fixture Backlinks Linker Beta</a>"#,
         "BF_DEFAULT_END",
+        "BF_INLINE_START",
+        "start-[[module Backlinks]]-middle",
+        "BF_INLINE_END",
     ] {
         assert!(
             html.contains(expected),
@@ -10889,7 +10907,6 @@ async fn backlinks_module_renders_current_page_incoming_links() {
 
     for forbidden in [
         "TODO: module Backlinks",
-        "[[module Backlinks",
         "data-wikijump-compat-backlinks",
         "Fixture Backlinks Excluded",
         "fixture-backlinks-excluded",
@@ -10910,6 +10927,41 @@ async fn backlinks_module_renders_current_page_incoming_links() {
         alpha < beta,
         "Backlinks should render in title order:\n{html}"
     );
+    assert_eq!(
+        html.matches("[[module Backlinks]]").count(),
+        1,
+        "only the live inline literal should retain a Backlinks opener:\n{html}",
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-linker-gamma",
+        "Fixture Backlinks Linker Gamma",
+        &format!("[[[{target_slug}|gamma target link]]]"),
+    )
+    .await;
+    let runtime_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": target_slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let runtime_html = match runtime_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found Backlinks page view, got {other:?}"),
+    };
+    assert!(
+        runtime_html.contains("Fixture Backlinks Linker Gamma"),
+        "Backlinks must query the current link graph on the next page view:\n{runtime_html}",
+    );
+    assert!(runtime_html.contains("start-[[module Backlinks]]-middle"));
 }
 
 #[tokio::test]
@@ -11623,6 +11675,7 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
     const GRANDCHILD: &str = "fixture-pagetree-grandchild";
     const GREAT_GRANDCHILD: &str = "fixture-pagetree-great-grandchild";
     const PRIVATE_CHILD: &str = "fixture-pagetree-private-child";
+    const RUNTIME_CHILD: &str = "fixture-pagetree-runtime-child";
     const PRIVATE_CATEGORY: &str = "fixture-pagetree-private";
 
     let mut runner = TestRunner::setup().await;
@@ -11639,7 +11692,8 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
         concat!(
             "PT_DEFAULT_START\n[[module PageTree depth=\"2\"]]\nPT_DEFAULT_END\n",
             "PT_SHOW_START\n[[module PageTree showRoot=\"true\" depth=\"1\"]]\nPT_SHOW_END\n",
-            "PT_CASE_START\n[[module PageTree Showroot=\"true\" Depth=\"1\"]]\nPT_CASE_END",
+            "PT_CASE_START\n[[module PageTree Showroot=\"true\" Depth=\"1\"]]\nPT_CASE_END\n",
+            "PT_INLINE_START\nstart-[[module PageTree]]-middle\nPT_INLINE_END",
         ),
     )
     .await;
@@ -11742,8 +11796,46 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
             "PageTree DOM must remain plain ul, li, and a elements:\n{case_variant}"
         );
     }
-    assert!(!html.contains("[[module PageTree"));
+    let inline = section("PT_INLINE_START", "PT_INLINE_END");
+    assert!(
+        inline.contains("start-[[module PageTree]]-middle"),
+        "{inline}"
+    );
+    assert_eq!(html.matches("[[module PageTree]]").count(), 1);
     assert!(!html.contains("TODO: module PageTree"));
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        RUNTIME_CHILD,
+        "Runtime Child",
+        "PageTree runtime fixture",
+    )
+    .await;
+    set_listpages_test_parent(&mut runner, site_id, RUNTIME_CHILD, ROOT).await;
+    let runtime_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": ROOT, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let runtime_html = match runtime_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found PageTree page view, got {other:?}"),
+    };
+    let runtime_default = section("PT_DEFAULT_START", "PT_DEFAULT_END");
+    assert!(
+        runtime_html
+            .contains(&format!(r#"<a href="/{RUNTIME_CHILD}">Runtime Child</a>"#))
+            && !runtime_default.contains(RUNTIME_CHILD),
+        "PageTree must query current parent state on the next page view:\n{runtime_html}",
+    );
 }
 
 #[tokio::test]

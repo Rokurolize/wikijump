@@ -466,7 +466,10 @@ pub(super) static TAGCLOUD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+TagCloud(?P<head>[^\]]*)\]\]").unwrap()
 });
 pub(super) static RATEDPAGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)\[\[module\s+RatedPages(?P<head>(?:\s[^\]]*)?)\]\]").unwrap()
+    Regex::new(
+        r"(?im)^(?P<module>\[\[module[\t ]+RatedPages(?P<head>(?:[\t ]+[^\]\r\n]*)?)\]\])[\t ]*\r?$",
+    )
+    .unwrap()
 });
 pub(super) static PAGECALENDAR_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+PageCalendar(?P<head>[^\]]*)\]\]").unwrap()

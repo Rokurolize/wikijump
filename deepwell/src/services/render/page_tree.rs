@@ -41,8 +41,11 @@ use crate::models::page_revision::{self, Entity as PageRevision};
 use crate::services::ServiceContext;
 use ftml::settings::WikitextSettings;
 
-static PAGE_TREE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)\[\[module\s+PageTree(?P<head>(?:\s+[^\]]*)?)\]\]").unwrap()
+pub(super) static PAGE_TREE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?im)^(?P<module>\[\[module[\t ]+PageTree(?P<head>(?:[\t ]+[^\]\r\n]*)?)\]\])[\t ]*\r?$",
+    )
+    .unwrap()
 });
 
 #[derive(Debug)]
@@ -252,7 +255,10 @@ impl RenderService {
             let matched = captures
                 .get(0)
                 .expect("a PageTree capture always has a complete match");
-            if literal_regions.contains(matched.start()) {
+            let module = captures
+                .name("module")
+                .expect("a PageTree capture always has a module invocation");
+            if literal_regions.contains(module.start()) {
                 continue;
             }
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
@@ -364,8 +370,8 @@ mod tests {
     use std::num::NonZeroU32;
 
     use super::{
-        PageTree, PageTreeArguments, PageTreeNode, parse_page_tree_arguments,
-        render_page_tree, root_is_supported,
+        PAGE_TREE_MODULE_REGEX, PageTree, PageTreeArguments, PageTreeNode,
+        parse_page_tree_arguments, render_page_tree, root_is_supported,
     };
     use std::collections::HashMap;
 
@@ -430,6 +436,13 @@ mod tests {
             );
         }
         assert_eq!(parse_page_tree_arguments(r#" root="x" garbage"#), None);
+    }
+
+    #[test]
+    fn page_tree_recognition_requires_an_own_line_invocation() {
+        assert!(PAGE_TREE_MODULE_REGEX.is_match("[[module PageTree]]"));
+        assert!(!PAGE_TREE_MODULE_REGEX.is_match("start-[[module PageTree]]-middle"));
+        assert!(!PAGE_TREE_MODULE_REGEX.is_match(" [[module PageTree]]"));
     }
 
     #[test]

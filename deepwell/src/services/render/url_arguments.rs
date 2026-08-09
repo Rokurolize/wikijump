@@ -24,6 +24,7 @@
 //! path arguments is only answered correctly if the view re-renders. This
 //! module decides when that is necessary.
 
+use super::backlinks::BACKLINKS_MODULE_REGEX;
 use super::child_pages::CHILD_PAGES_MODULE_REGEX;
 use super::link_modules::{ORPHANED_PAGES_MODULE_REGEX, WANTED_PAGES_MODULE_REGEX};
 use super::list_pages::{
@@ -31,8 +32,10 @@ use super::list_pages::{
     scanner::{find_list_pages_module_matches, list_pages_runtime_head_can_execute},
 };
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
+use super::page_tree::PAGE_TREE_MODULE_REGEX;
 use super::pages::PAGES_MODULE_REGEX;
 use super::pages_by_tag::PAGES_BY_TAG_MODULE_REGEX;
+use super::service::RATEDPAGES_MODULE_REGEX;
 use super::site_utility_modules::wikitext_requires_site_utility_runtime_render;
 use crate::services::page_query::OrderProperty;
 use regex::Regex;
@@ -215,6 +218,9 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
     wikitext_has_bare_pages_module(wikitext)
         || wikitext_has_executable_list_pages_module(wikitext)
         || CHILD_PAGES_MODULE_REGEX.is_match(wikitext)
+        || BACKLINKS_MODULE_REGEX.is_match(wikitext)
+        || PAGE_TREE_MODULE_REGEX.is_match(wikitext)
+        || RATEDPAGES_MODULE_REGEX.is_match(wikitext)
         || NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(wikitext)
         || PAGE_CALENDAR_MODULE_REGEX.is_match(wikitext)
         || LIST_USERS_MODULE_REGEX.is_match(wikitext)
@@ -407,6 +413,25 @@ mod tests {
         assert!(!wikitext_requires_runtime_render(
             "before [[module SiteChanges]] after"
         ));
+    }
+
+    #[test]
+    fn read_only_page_query_modules_require_runtime_rendering_on_their_own_line() {
+        for source in [
+            "[[module Backlinks]]",
+            "[[module PageTree]]",
+            "[[module RatedPages]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source));
+            assert!(!wikitext_reads_url_arguments(source));
+        }
+        for source in [
+            "before [[module Backlinks]] after",
+            "before [[module PageTree]] after",
+            "before [[module RatedPages]] after",
+        ] {
+            assert!(!wikitext_requires_runtime_render(source));
+        }
     }
 
     #[test]
