@@ -20,6 +20,32 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### SiteChanges read pagination and filters use one exact Ajax contract
+
+- Observation ID: `sitechanges-readonly-ajax-contract-20260810`
+- Classification: `documentation-omission`
+- Observed at: `2026-08-10`
+- Analysis: Eight anonymous changes/SiteChangesListModule captures establish one read-only request and response slice: pages 1 through 3, an out-of-range page, source and files filters, empty options, and a missing category. They do not establish alternative per-page values, browser transition behavior, or any mutation.
+
+Normative behavior:
+
+- The observed request uses moduleName changes/SiteChangesListModule with page, perpage, pageId, categoryId, and options form fields. Only perpage 20 is established by this evidence.
+- The exact options values {}, {"all":true}, {"source":true}, and {"files":true} select the observed all, source, and file read rows. Other option shapes are not established.
+- Pages 1 through 3 return distinct ordered revision rows and their observed pager states. An out-of-range page and a nonexistent category return Sorry, no revisions matching your criteria.
+- The observed response has status ok, a replacement body, a current timestamp, and empty callbackIndex, cssInclude, and jsInclude fields.
+- The capture uses one pageId host and does not establish that pageId equals another request-context page identity. Host-page visibility is a Wikijump safety boundary, not a claimed live equality rule.
+- Per-page alternatives, malformed or duplicate fields, unknown options, file and metadata mutation, delete or restore mutation, loading, failure, focus, history, keyboard, and temporal browser behavior remain unestablished.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json` (SHA-256 `9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410`), cases: `q1035-sitechanges-page-one`, `q1035-sitechanges-page-two`, `q1035-sitechanges-page-three`, `q1035-sitechanges-page-out`, `q1035-sitechanges-source`, `q1035-sitechanges-files`, `q1035-sitechanges-empty-options`, `q1035-sitechanges-missing-category`
+
+
 
 ## Suggested public TDD seams
 

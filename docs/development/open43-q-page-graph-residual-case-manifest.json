@@ -7,7 +7,8 @@
     "deepwell_cargo_lock_sha256": "54eb9700fa098bdfefee66d863a520adf80261a770e0a20564b592dc4ce067d8",
     "candidate_identity": null,
     "implementation_commits": [
-      "726264199ebcd9ccfa2fa43edb1527e8c5c69d29"
+      "726264199ebcd9ccfa2fa43edb1527e8c5c69d29",
+      "8d347148ff025da4d229dba9d5524fa9d036fd4d"
     ]
   },
   "evidence": [
@@ -28,7 +29,13 @@
     },
     {
       "path": "docs/wikidot-specifications/specifications/module/module-sitechanges.md",
-      "sha256": "1e91c82ac785a0d3b12cb0aa7bd2cd6636ff396e760c47ef2f6eb82e7c18f627",
+      "sha256": "50ffe33a21fff5af0485d4ea480e1260153c632b7bfd0e63a4d14c7afa719182",
+      "issues": [1035]
+    },
+    {
+      "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+      "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+      "evidence_ids": ["E_OPEN43_SITECHANGES_AMC_20260810"],
       "issues": [1035]
     },
     {
@@ -98,16 +105,24 @@
       "issue": 1035,
       "status": "implemented_unverified",
       "owner": "deepwell",
-      "test": "deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit",
-      "result": "The query scans a bounded candidate window, caches only per-page decisions, filters every revision with the request actor and page/category authority, and only then selects the first visible 20 and derives pager availability. A fixture places 23 private revisions ahead of a public revision to catch limit-before-permission leaks. If the raw scan bound is reached, only the authorized rows established inside that bound are rendered; hidden rows never determine an exposed count or pager."
+      "tests": [
+        "deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit",
+        "deepwell/tests/page.rs::sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads"
+      ],
+      "result": "The query scans a bounded candidate window, caches only per-page decisions, filters every revision with the request actor and page/category authority, and only then selects the visible page and derives pager availability. Public fixtures place private revisions before public rows and separately saturate the exact 5000-row bound with private revisions. Saturation produces no partial Ajax body or initial snapshot; hidden rows never determine an exposed count or pager. Central Rust execution remains outstanding."
     },
     {
       "case_id": "Q1035_SITECHANGES_FILTER_AND_AJAX_PAGER",
       "issue": 1035,
-      "status": "unimplemented",
+      "status": "implemented_unverified",
       "owner": "deepwell-framerail",
-      "test": null,
-      "result": "Revision-type checkboxes, category selection, per-page selection, page 2+, Ajax replacement, loading, failure, history, and focus behavior have no captured local request contract in the frozen evidence. The initial fixed Wikidot controls are preserved but are not claimed interactive."
+      "tests": [
+        "deepwell/tests/page.rs::sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads",
+        "framerail/tests/ajax-module-connector.test.js::dispatches the sealed SiteChanges read matrix with Wikidot metadata",
+        "framerail/tests/ajax-module-connector.test.js::fails closed for unobserved SiteChanges shapes before Deepwell"
+      ],
+      "evidence_ids": ["E_OPEN43_SITECHANGES_AMC_20260810"],
+      "result": "The public Deepwell endpoint and Framerail Ajax connector implement only the observed pages 1 through 3, out-of-range, source and files filters, empty options, and missing-category reads at perpage 20. Permission filtering precedes order and page selection, pageId is resolved as an independently viewable host page, and unknown, malformed, duplicate, or unobserved request shapes fail closed. Alternative per-page selection and browser loading, failure, history, focus, keyboard, and temporal behavior remain unimplemented because the evidence does not establish them. Central Rust execution remains outstanding."
     },
     {
       "case_id": "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE",
@@ -115,7 +130,7 @@
       "status": "unimplemented",
       "owner": "deepwell",
       "test": null,
-      "result": "File revisions, parent metadata changes, delete, undelete, and exact move/comment variants are not unified in the current initial page-revision slice and remain actionable. The renderer does not fabricate flags that are absent from local authority."
+      "result": "Stored file revisions now participate in the observed read-only files filter and render the F flag. Exact file revision numbering and generated comments, parent metadata changes, page delete and restore rows, file or metadata mutation, and exact move/comment variants remain actionable. The renderer does not fabricate flags that are absent from local authority."
     },
     {
       "case_id": "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX",
@@ -144,6 +159,11 @@
       "status": "pass"
     },
     {
+      "command": "node --test framerail/tests/ajax-module-connector.test.js",
+      "status": "pass",
+      "result": "22 tests passed."
+    },
+    {
       "command": "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
       "status": "pass",
       "result": "Validated 210 implementation ledger entries."
@@ -166,13 +186,15 @@
     "cargo test --manifest-path deepwell/Cargo.toml --test page categories_module_lists_active_categories_and_honors_include_hidden -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page categories_runtime_inventory_is_scoped_to_the_request_actor -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page sitechanges_default_snapshot_filters_before_the_initial_page_limit -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page listdrafts_module_matches_live_empty_draft_state -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml services::render::site_changes::tests -- --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::site_changes::tests -- --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml services::render::categories::tests -- --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml services::render::url_arguments::tests::actor_sensitive_page_graph_modules_require_runtime_rendering -- --exact --nocapture",
     "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
     "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
     "node scripts/generate-wikidot-specifications.mjs --check",
+    "node --test framerail/tests/ajax-module-connector.test.js",
     "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
     "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scp-wiki --rpc-url http://127.0.0.1:2747/jsonrpc"
   ],

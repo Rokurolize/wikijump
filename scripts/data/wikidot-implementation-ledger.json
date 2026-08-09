@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-08-10",
-  "catalog_sha256": "f2b29ef57bc94ce70ee47791277d73edb8932273eb425c6b209ee8674f992c9c",
+  "catalog_sha256": "235903d37f90db93b28b1cc045cb0e45f7a9090502f98da46cc3710c368105be",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -2817,30 +2817,43 @@
       "status": "in_progress",
       "confirmed_public_seams": [
         "Live anonymous Wikidot edit/PagePreviewModule capture for the standalone default module form, category selector, initial revision rows, flags, dates, users, comments, and pager DOM",
-        "Deepwell wikidot_page_preview and request-time page_view rendering against the real revision, category, user, and permission services"
+        "Deepwell wikidot_page_preview and request-time page_view rendering against the real revision, category, user, and permission services",
+        "Deepwell wikidot_site_changes_module read endpoint with request-context actor and host-page visibility enforcement",
+        "Framerail POST /ajax-module-connector.php for the exact changes/SiteChangesListModule read form"
       ],
       "tests": [
         "deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit",
+        "deepwell/tests/page.rs::sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads",
         "deepwell/src/services/render/site_changes.rs::tests::site_changes_accepts_only_the_evidenced_standalone_default_shape",
         "deepwell/src/services/render/site_changes.rs::tests::site_changes_flags_derive_from_revision_authority",
-        "deepwell/src/services/render/url_arguments.rs::tests::actor_sensitive_page_graph_modules_require_runtime_rendering"
+        "deepwell/src/services/render/site_changes.rs::tests::site_changes_options_accept_only_the_observed_read_filters",
+        "deepwell/src/services/render/url_arguments.rs::tests::actor_sensitive_page_graph_modules_require_runtime_rendering",
+        "framerail/tests/ajax-module-connector.test.js::dispatches the sealed SiteChanges read matrix with Wikidot metadata",
+        "framerail/tests/ajax-module-connector.test.js::fails closed for unobserved SiteChanges shapes before Deepwell"
       ],
       "implementation_files": [
+        "deepwell/src/api.rs",
+        "deepwell/src/endpoints/page.rs",
         "deepwell/src/services/render/site_changes.rs",
         "deepwell/src/services/render/runtime_modules.rs",
         "deepwell/src/services/render/url_arguments.rs",
-        "deepwell/tests/page.rs"
+        "deepwell/tests/page.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/deepwell/page.ts",
+        "framerail/src/routes/ajax-module-connector.php/+server.ts"
       ],
       "documentation_evidence": [
         "specifications/module/module-sitechanges.md"
       ],
       "live_oracle_evidence": [
-        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl::module-own-line-sitechanges"
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl::module-own-line-sitechanges",
+        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_SITECHANGES_AMC_20260810"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Only the initial no-argument snapshot is implemented. Revision-type, category, per-page, and page-number Ajax behavior remains unimplemented because the frozen evidence does not establish the request and replacement contract.",
-        "File revisions, parent metadata changes, delete, undelete, exact move variants, mutation convergence, and browser intermediate states remain unimplemented or unproved.",
-        "The permission-first initial query renders only authorized rows established within its bounded raw scan; large-site completeness beyond that bound remains unproved, and hidden rows never determine an exposed count or pager."
+        "The observed read-only Ajax slice implements pages 1 through 3, an out-of-range empty result, source and files filters, empty options, and a missing category at the exact perpage 20 boundary. Other per-page values and option shapes fail closed because live evidence does not establish them.",
+        "Stored file revisions now participate in the observed files read filter with the F flag. Exact file revision numbering and generated comments, parent metadata changes, page delete and restore rows, mutation convergence, and browser intermediate states remain unimplemented or unproved.",
+        "The captured Ajax response establishes the replacement body and metadata but not loading, failure, history, focus, keyboard, or temporal browser behavior.",
+        "The permission-first query renders only authorized rows and hidden rows never determine an exposed count or pager. If the bounded raw scan saturates before the requested visible window is established, the Ajax endpoint returns not_ok and the initial snapshot remains unexpanded rather than exposing partial rows; large-site completeness beyond that local safety bound remains unproved."
       ]
     },
     "module-sitegrid": {
