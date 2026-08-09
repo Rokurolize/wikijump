@@ -1,12 +1,12 @@
 {
   "schema": "wikijump.open43_concurrency_ledger.v1",
   "campaign": "open43-pr2",
-  "updated_at": "2026-08-09T20:33:37+09:00",
+  "updated_at": "2026-08-09T21:00:20+09:00",
   "integration_branch": {
     "repository": "Rokurolize/wikijump",
     "branch": "fix/open87-pr2-modules-actions-media-settings",
     "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
-    "reconciled_head": "2a6fe8251f9a6fd249652e4d0ef01a603e5dbaa6"
+    "reconciled_head": "77f053557339d2c4a10a4a81949d29d0e94ca54f"
   },
   "limits": {
     "configured_threads": 13,
@@ -333,6 +333,88 @@
         "716cefe5d7f75edd141821e127a28669e937779e",
         "f781226ff522c426149b11e2cdcec8f875696139"
       ],
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "m-upload-cleanup-review-fix-g8",
+      "agent": "/root/a_rate",
+      "issue_numbers": [1062],
+      "branch": "agent/open87-pr2/m-upload-cleanup-review-fix-g8",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-upload-cleanup-review-fix-g8",
+      "base": "b21a91941fc13ec4a5a722c6cb51f06c5e6c9472",
+      "head": "9fc6ed37388aa7e5b07b56572a1030aae69f0257",
+      "status": "integrated",
+      "integration_commits": [
+        "bedf121d2bf6938a9c171684937d4b41bf1c8f9a",
+        "77f053557339d2c4a10a4a81949d29d0e94ca54f"
+      ],
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "a-authoring-source-g9",
+      "agent": "/root/a_membership_residual",
+      "issue_numbers": [1061, 1063],
+      "branch": "agent/open87-pr2/a-authoring-source-g9",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/a-authoring-source-g9",
+      "base": "b21a91941fc13ec4a5a722c6cb51f06c5e6c9472",
+      "head": null,
+      "status": "running",
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "q-forum-evidence-g9",
+      "agent": "/root/q_forum_evidence_g9",
+      "issue_numbers": [1034],
+      "branch": "agent/open87-pr2/q-forum-evidence-g9",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/q-forum-evidence-g9",
+      "base": "b21a91941fc13ec4a5a722c6cb51f06c5e6c9472",
+      "head": null,
+      "status": "running",
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "issue-ledger-validator-g9",
+      "agent": "/root",
+      "issue_numbers": [],
+      "branch": "fix/open87-pr2-modules-actions-media-settings",
+      "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
+      "base": "b21a91941fc13ec4a5a722c6cb51f06c5e6c9472",
+      "head": "fdc36a2e30e3b20e753f43104ded6a3c2541bae6",
+      "status": "integrated",
+      "integration_commits": [
+        "fdc36a2e30e3b20e753f43104ded6a3c2541bae6"
+      ],
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "pr1-ledger-reconciliation-g9",
+      "agent": "/root",
+      "issue_numbers": [983, 985, 986, 988, 989, 990, 991, 992, 993, 994, 995, 996, 997, 998, 999, 1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1014, 1015, 1016, 1017, 1018, 1019, 1021, 1022, 1023, 1024, 1025, 1031, 1044, 1045, 1047, 1048, 1070, 1071],
+      "branch": "fix/open87-pr2-modules-actions-media-settings",
+      "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
+      "base": "fdc36a2e30e3b20e753f43104ded6a3c2541bae6",
+      "head": "00fe5cf78af0e4d6c9a0a6e356574b7fa24ea58e",
+      "status": "integrated",
+      "integration_commits": [
+        "00fe5cf78af0e4d6c9a0a6e356574b7fa24ea58e"
+      ],
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "m-media-runtime-harness-g10",
+      "agent": "/root/a_rate",
+      "issue_numbers": [1039, 1043, 1062],
+      "branch": "agent/open87-pr2/m-media-runtime-harness-g10",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-media-runtime-harness-g10",
+      "base": "77f053557339d2c4a10a4a81949d29d0e94ca54f",
+      "head": null,
+      "status": "running",
       "may_run_cargo": false,
       "may_mutate_runtime": false
     }
