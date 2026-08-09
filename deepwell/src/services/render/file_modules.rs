@@ -179,26 +179,30 @@ async fn load_files_module_state(
 fn render_empty_files_module(page_id: Option<i64>) -> String {
     let suffix = page_id.map(|id| id.to_string()).unwrap_or_default();
     let page_id = page_id.map(|id| id.to_string()).unwrap_or_default();
-    format!(concat!(
-        r#"<div id="files-{suffix}">"#,
-        "\n<p>\n\t\tNo files attached to this page.\t\t\n\t</p>",
-        "\n<script type=\"text/javascript\">",
-        "\n\t\tfunction updateFileSimpleList{suffix}(pageNo){{",
-        "\n\t\t\tvar p = {{}};",
-        "\n\t\t\tp.page_id={page_id};",
-        "\n\t\t\tvar containerElId = 'files-{suffix}';",
-        "\n\t\t\tp.page = pageNo;",
-        "\n\t\t\tOZONE.ajax.requestModule(\"files/PageFilesSimpleModule\", p, function(r){{",
-        "\n\t\t\t\tif(!WIKIDOT.utils.handleError(r)) {{return;}}",
-        "\n\t\t\t\tjQuery('#'+containerElId).replaceWith(r.body);",
-        "\n\t\t\t}});",
-        "\n\t\t}}",
-        "\n\t</script>",
-        "\n<p class=\"manage-attachments-link\" style=\"text-align: center;\">",
-        "\n<a href=\"javascript:;\" onclick=\"WIKIDOT.page.listeners.filesClick(null)\">Manage attachments</a>",
-        "\n</p>",
-        "\n</div>",
-    ),)
+    format!(
+        concat!(
+            r#"<div id="files-{suffix}">"#,
+            "\n<p>\n\t\tNo files attached to this page.\t\t\n\t</p>",
+            "\n<script type=\"text/javascript\">",
+            "\n\t\tfunction updateFileSimpleList{suffix}(pageNo){{",
+            "\n\t\t\tvar p = {{}};",
+            "\n\t\t\tp.page_id={page_id};",
+            "\n\t\t\tvar containerElId = 'files-{suffix}';",
+            "\n\t\t\tp.page = pageNo;",
+            "\n\t\t\tOZONE.ajax.requestModule(\"files/PageFilesSimpleModule\", p, function(r){{",
+            "\n\t\t\t\tif(!WIKIDOT.utils.handleError(r)) {{return;}}",
+            "\n\t\t\t\tjQuery('#'+containerElId).replaceWith(r.body);",
+            "\n\t\t\t}});",
+            "\n\t\t}}",
+            "\n\t</script>",
+            "\n<p class=\"manage-attachments-link\" style=\"text-align: center;\">",
+            "\n<a href=\"javascript:;\" onclick=\"WIKIDOT.page.listeners.filesClick(null)\">Manage attachments</a>",
+            "\n</p>",
+            "\n</div>",
+        ),
+        suffix = suffix,
+        page_id = page_id,
+    )
 }
 
 fn expand_flickr_gallery_preview_modules(
