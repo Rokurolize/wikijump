@@ -47,6 +47,7 @@ use deepwell::services::page_query::{
     PageParentSelector, PageQuery, PageQueryService, PageTypeSelector,
     PaginationSelector, RangeSelector, ScoreSelector, TagCondition,
 };
+use deepwell::services::page::CreatePage;
 use deepwell::services::permission::{
     CheckPermissionContext, PermissionCache, PermissionService,
 };
@@ -63,8 +64,8 @@ use deepwell::services::site::UpdateSiteBody;
 use deepwell::services::view::{GetArticleViewOutput, GetPageViewOutput};
 use deepwell::services::{
     FileRevisionService, ForumPostService, ForumService, ForumThreadService, LinkService,
-    PageService, RelationService, RenderService, RequestContext, SessionService,
-    SettingsService, SiteService, TextService,
+    PageService, RelationService, RenderService, RequestContext, ServiceContext,
+    SessionService, SettingsService, SiteService, TextService, ThemeSetting,
 };
 use deepwell::types::{
     Action, ConnectionType, Maybe, PageId, PageRevisionType, Permission, Reference,
@@ -72,11 +73,12 @@ use deepwell::types::{
 };
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel,
-    PaginatorTrait, QueryFilter, Set, Statement, Value,
+    PaginatorTrait, QueryFilter, Set, Statement, TransactionTrait, Value,
 };
 use serde_json::json;
 use std::borrow::Cow;
 use std::collections::BTreeSet;
+use std::time::Duration as StdDuration;
 use time::{Duration, OffsetDateTime};
 
 use ftml::data::{PageInfo, ScoreValue};
@@ -95,6 +97,397 @@ fn set_mutation_request_context(
         site_id: Some(site_id),
         page_reference: Some(page_reference),
     });
+}
+
+#[tokio::test]
+async fn normal_page_create_allocates_category_numbers_without_consuming_conflicts() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site;
+    let category =
+        CategoryService::get_or_create(runner.context(), site.site_id, "issue")
+            .await
+            .expect("issue category should exist");
+    CategoryService::update(
+        runner.context(),
+        site.site_id,
+        Reference::Id(category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            autonumber_enabled: Maybe::Set(true),
+            ..Default::default()
+        },
+        Some(category.settings_revision),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("autonumber should be enabled");
+
+    let explicit_category =
+        CategoryService::get_or_create(runner.context(), site.site_id, "notes")
+            .await
+            .expect("notes category should exist");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed("notes:explicit")),
+    );
+    let explicit = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "Explicit page",
+            "title": "Explicit page",
+            "alt_title": null,
+            "slug": "notes:explicit",
+            "layout": "wikidot",
+            "revision_comments": "create explicit page",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(explicit.slug, "notes:explicit");
+    let explicit_category = CategoryService::get(
+        runner.context(),
+        site.site_id,
+        Reference::Id(explicit_category.category_id),
+    )
+    .await
+    .expect("notes category should remain available");
+    assert_eq!(explicit_category.autonumber_next, 1);
+    let themed_category = CategoryService::update(
+        runner.context(),
+        site.site_id,
+        Reference::Id(explicit_category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            theme: Maybe::Set(ThemeSetting::External {
+                url: String::from("https://themes.example/notes.css"),
+            }),
+            ..Default::default()
+        },
+        Some(explicit_category.settings_revision),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("external theme should be stored");
+    assert_eq!(themed_category.settings_revision, 1);
+    let stale_theme = CategoryService::update(
+        runner.context(),
+        site.site_id,
+        Reference::Id(themed_category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            theme: Maybe::Set(ThemeSetting::BuiltIn { id: 1 }),
+            ..Default::default()
+        },
+        Some(0),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect_err("stale category revision should be rejected");
+    assert_contains_error!(stale_theme, ErrorType::BadRequest);
+    let themed = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": { "slug": "notes:explicit", "extra": "" },
+            "locales": ["en"],
+        }),
+    );
+    assert!(matches!(
+        themed.page,
+        GetPageViewOutput::Found {
+            theme: ThemeSetting::External { ref url },
+            ..
+        } if url == "https://themes.example/notes.css"
+    ));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed("issue:new-issue")),
+    );
+    let first = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "First numbered issue",
+            "title": "First numbered issue",
+            "alt_title": null,
+            "slug": "issue:new-issue",
+            "layout": "wikidot",
+            "revision_comments": "create first numbered issue",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(first.slug, "issue:1");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed("issue:another-suggestion")),
+    );
+    let second = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "Second numbered issue",
+            "title": "Second numbered issue",
+            "alt_title": null,
+            "slug": "issue:another-suggestion",
+            "layout": "wikidot",
+            "revision_comments": "create second numbered issue",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(second.slug, "issue:2");
+
+    let default_category =
+        CategoryService::get_or_create(runner.context(), site.site_id, "_default")
+            .await
+            .expect("default category should exist");
+    CategoryService::update(
+        runner.context(),
+        site.site_id,
+        Reference::Id(default_category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            theme: Maybe::Set(ThemeSetting::External {
+                url: String::from("https://themes.example/default.css"),
+            }),
+            ..Default::default()
+        },
+        Some(default_category.settings_revision),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("default category theme should be stored");
+    let inherited = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": { "slug": "issue:1", "extra": "" },
+            "locales": ["en"],
+        }),
+    );
+    assert!(matches!(
+        inherited.page,
+        GetPageViewOutput::Found {
+            theme: ThemeSetting::External { ref url },
+            ..
+        } if url == "https://themes.example/default.css"
+    ));
+
+    let current = CategoryService::get(
+        runner.context(),
+        site.site_id,
+        Reference::Id(category.category_id),
+    )
+    .await
+    .expect("issue category should remain available");
+    assert_eq!(current.autonumber_next, 3);
+
+    let mut stale_allocator = current.into_active_model();
+    stale_allocator.autonumber_next = Set(2);
+    stale_allocator
+        .update(runner.context().transaction())
+        .await
+        .expect("stale allocator fixture should be installed");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed("issue:conflicting-suggestion")),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "Conflicting numbered issue",
+            "title": "Conflicting numbered issue",
+            "alt_title": null,
+            "slug": "issue:conflicting-suggestion",
+            "layout": "wikidot",
+            "revision_comments": "attempt conflicting numbered issue",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PageExists);
+    let after_conflict = CategoryService::get(
+        runner.context(),
+        site.site_id,
+        Reference::Id(category.category_id),
+    )
+    .await
+    .expect("issue category should remain available");
+    assert_eq!(after_conflict.autonumber_next, 2);
+}
+
+#[tokio::test]
+async fn autonumber_allocator_holds_the_category_lock_until_request_completion() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site;
+    let category = CategoryService::get(
+        runner.context(),
+        site.site_id,
+        Reference::from("_default"),
+    )
+    .await
+    .expect("seeded default category should exist");
+    let state = runner.state().clone();
+
+    let first_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("first allocator transaction should start");
+    let first_context = ServiceContext::new(&state, &first_transaction);
+    CategoryService::get_for_update(
+        &first_context,
+        site.site_id,
+        Reference::Id(category.category_id),
+    )
+    .await
+    .expect("first allocator should lock the category");
+
+    let second_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("competing allocator transaction should start");
+    let second_context = ServiceContext::new(&state, &second_transaction);
+    let mut second_lock = Box::pin(CategoryService::get_for_update(
+        &second_context,
+        site.site_id,
+        Reference::Id(category.category_id),
+    ));
+    assert!(
+        tokio::time::timeout(StdDuration::from_millis(100), second_lock.as_mut())
+            .await
+            .is_err(),
+        "a concurrent page create must wait for the category allocator lock",
+    );
+
+    drop(first_context);
+    first_transaction
+        .rollback()
+        .await
+        .expect("first allocator transaction should roll back");
+    let locked_category = tokio::time::timeout(
+        StdDuration::from_secs(2),
+        second_lock.as_mut(),
+    )
+    .await
+    .expect("competing allocator should proceed after the first request ends")
+    .expect("competing allocator lock should succeed");
+    assert_eq!(locked_category.category_id, category.category_id);
+    drop(second_lock);
+    drop(second_context);
+    second_transaction
+        .rollback()
+        .await
+        .expect("competing allocator transaction should roll back");
+}
+
+#[tokio::test]
+async fn failed_page_create_rolls_back_its_allocated_number() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site;
+    let original = CategoryService::get(
+        runner.context(),
+        site.site_id,
+        Reference::from("_default"),
+    )
+    .await
+    .expect("seeded default category should exist");
+    let state = runner.state().clone();
+
+    let transaction = state
+        .database
+        .begin()
+        .await
+        .expect("failed-create transaction should start");
+    let context = ServiceContext::new(&state, &transaction);
+    let category = CategoryService::get(
+        &context,
+        site.site_id,
+        Reference::Id(original.category_id),
+    )
+    .await
+    .expect("default category should be available in the request transaction");
+    let mut category = category.into_active_model();
+    category.autonumber_enabled = Set(true);
+    category.autonumber_next = Set(8_000_000_000_000_000_000);
+    category
+        .update(&transaction)
+        .await
+        .expect("autonumber failure fixture should be installed");
+
+    PageService::create(
+        &context,
+        CreatePage {
+            site_id: site.site_id,
+            wikitext: String::from("This request must roll back."),
+            title: String::from("Failed autonumber request"),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: String::from("suggested-page-name"),
+            layout: Some(Layout::Wikidot),
+            revision_comments: String::from("exercise failed allocator rollback"),
+            user_id: i64::MAX,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect_err("the unknown revision author should fail after number allocation");
+
+    drop(context);
+    transaction
+        .rollback()
+        .await
+        .expect("failed page-create transaction should roll back");
+
+    let assertion_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("allocator assertion transaction should start");
+    let assertion_context = ServiceContext::new(&state, &assertion_transaction);
+    let after_failure = CategoryService::get(
+        &assertion_context,
+        site.site_id,
+        Reference::Id(original.category_id),
+    )
+    .await
+    .expect("default category should remain available after rollback");
+    assert_eq!(after_failure.autonumber_enabled, original.autonumber_enabled);
+    assert_eq!(after_failure.autonumber_next, original.autonumber_next);
+    drop(assertion_context);
+    assertion_transaction
+        .rollback()
+        .await
+        .expect("allocator assertion transaction should roll back");
 }
 
 async fn set_stored_point_vote(runner: &TestRunner, page_id: i64, value: i16) {
@@ -672,6 +1065,7 @@ async fn article_view_uses_effective_page_discussion_policy_and_stored_nesting()
             forum_max_nest_level: Maybe::Set(3),
             ..Default::default()
         },
+        None,
         ADMIN_USER_ID,
         common::IP_ADDRESS,
     )
@@ -691,6 +1085,7 @@ async fn article_view_uses_effective_page_discussion_policy_and_stored_nesting()
             forum_max_nest_level: Maybe::Set(11),
             ..Default::default()
         },
+        None,
         ADMIN_USER_ID,
         common::IP_ADDRESS,
     )

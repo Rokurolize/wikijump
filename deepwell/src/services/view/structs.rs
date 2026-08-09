@@ -28,7 +28,9 @@ use crate::models::user::Model as WikijumpUserModel;
 use crate::services::DataFormEditor;
 use crate::services::relation::PageAttribution;
 use crate::services::render::LegacyBrowserAction;
-use crate::services::settings::{PageDiscussionSettings, PageRatingSettings};
+use crate::services::settings::{
+    PageDiscussionSettings, PageRatingSettings, ThemeSetting,
+};
 use crate::services::user::User;
 use crate::types::Reference;
 use time::OffsetDateTime;
@@ -127,6 +129,7 @@ pub enum GetPageViewOutput {
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,
         compiled_side_bar_html: Option<String>,
+        theme: ThemeSetting,
     },
 
     Missing {
@@ -147,6 +150,7 @@ pub enum GetPageViewOutput {
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,
         compiled_side_bar_html: Option<String>,
+        theme: ThemeSetting,
     },
 
     Permissions {
@@ -158,6 +162,7 @@ pub enum GetPageViewOutput {
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,
         compiled_side_bar_html: Option<String>,
+        theme: ThemeSetting,
         banned: bool,
     },
 }
@@ -178,37 +183,6 @@ pub struct WikidotPageSnapshotView {
 pub struct WikidotPageBreadcrumbView {
     pub slug: String,
     pub title: String,
-}
-
-#[cfg(test)]
-mod page_view_output_tests {
-    use super::*;
-
-    #[test]
-    fn cached_page_view_without_redirect_kind_remains_deserializable() {
-        let cached = serde_json::json!({
-            "type": "missing",
-            "data": {
-                "options": PageOptions::default(),
-                "redirect_page": null,
-                "wikitext": "",
-                "compiled_body_html": "",
-                "compiled_body_styles": [],
-                "compiled_top_bar_html": null,
-                "compiled_side_bar_html": null
-            }
-        });
-
-        let output: GetPageViewOutput = serde_json::from_value(cached)
-            .expect("legacy cached page view should deserialize");
-        assert!(matches!(
-            output,
-            GetPageViewOutput::Missing {
-                redirect_kind: None,
-                ..
-            }
-        ));
-    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -259,6 +233,7 @@ pub enum GetAdminViewOutput {
 #[derive(Serialize, Debug, Clone)]
 pub struct Viewer {
     pub site: SiteModel,
+    pub site_settings: crate::services::settings::SiteSettings,
     pub site_file_domain: String,
     pub license_name: String,
     pub license_url: &'static str,

@@ -85,6 +85,7 @@ pub async fn category_update(
         site,
         category,
         user_id: _submitted_user_id,
+        expected_settings_revision,
         body,
         ip_address,
     } = parse!(params, PageCategory);
@@ -135,9 +136,15 @@ pub async fn category_update(
         .into());
     }
 
-    CategoryService::update(ctx, site_id, category, body, actor_user_id, ip_address)
-        .await
-        .or_raise(|| {
-            Error::new("failed to update page category", ErrorType::PageCategory)
-        })
+    CategoryService::update(
+        ctx,
+        site_id,
+        category,
+        body,
+        expected_settings_revision,
+        actor_user_id,
+        ip_address,
+    )
+    .await
+    .or_raise(|| Error::new("failed to update page category", ErrorType::PageCategory))
 }

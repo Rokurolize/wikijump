@@ -23,10 +23,144 @@ use unic_langid::LanguageIdentifier;
 
 const WIKIDOT_JAPANESE_CORRECTIONS_LOCALE: &str = "ja-corrections";
 
+pub const WIKIDOT_SITE_LANGUAGES: &[&str] = &[
+    "en",
+    "en-au-mate",
+    "en-corrections",
+    "en-pirate",
+    "cn",
+    "cn-tr",
+    "da",
+    "de",
+    "es",
+    "fr",
+    "it",
+    "ko",
+    "pl",
+    "pl-cyr",
+    "ru",
+    "sr",
+    "ab",
+    "af",
+    "am",
+    "ar",
+    "au",
+    "az",
+    "be",
+    "bg",
+    "bk",
+    "bn",
+    "br",
+    "bw",
+    "ca",
+    "cg",
+    "co",
+    "cs",
+    "cu",
+    "cy",
+    "dd",
+    "dn",
+    "du",
+    "el",
+    "em",
+    "eo",
+    "et",
+    "fa",
+    "fi",
+    "fy",
+    "ga",
+    "gf",
+    "gl",
+    "hb",
+    "he",
+    "hi",
+    "hu",
+    "hy",
+    "id",
+    "io",
+    "is",
+    "ja",
+    "ja-corrections",
+    "jc",
+    "ka",
+    "kb",
+    "kf",
+    "kk",
+    "kn",
+    "la",
+    "lb",
+    "lt",
+    "mn",
+    "mn-trad",
+    "mr",
+    "ms",
+    "mt",
+    "mx",
+    "nb",
+    "nl",
+    "nr",
+    "ns",
+    "nt",
+    "pg",
+    "ph",
+    "pt",
+    "pt-br",
+    "qa",
+    "ql",
+    "ro",
+    "sh",
+    "si",
+    "sk",
+    "ss",
+    "st",
+    "sv",
+    "sw",
+    "ta",
+    "th",
+    "tn",
+    "tp",
+    "tr",
+    "ts",
+    "tt",
+    "tw",
+    "uh",
+    "uk",
+    "vc",
+    "ve",
+    "vi",
+    "vn",
+    "xd",
+    "xh",
+    "za",
+    "zh",
+    "zh-joke",
+    "zh-lan-br",
+    "zh-new",
+    "zh-note",
+    "zh-sb",
+    "zh-yue-hant-hk",
+    "zu",
+    "zy",
+    "zy-cl",
+    "zy-fq-cl",
+    "zy-fq-cl-sp",
+    "zy-tr",
+];
+
 /// Map Wikidot locale identifiers to the language identifiers accepted by FTML.
 pub fn locale_for_ftml(locale_str: &str) -> &str {
     match locale_str {
+        "en-au-mate" | "en-corrections" | "en-pirate" => "en",
+        "cn" | "cn-tr" | "co" | "hb" | "jc" | "tw" | "zh-joke" | "zh-lan-br"
+        | "zh-new" | "zh-note" | "zh-sb" | "zh-yue-hant-hk" | "zy" | "zy-cl"
+        | "zy-fq-cl" | "zy-fq-cl-sp" | "zy-tr" => "zh",
+        "pl-cyr" => "pl",
         WIKIDOT_JAPANESE_CORRECTIONS_LOCALE => "ja",
+        "au" => "en-AU",
+        "mn-trad" => "mn",
+        "ph" => "tl",
+        "pt-br" => "pt-BR",
+        "vn" => "vi",
         _ => locale_str,
     }
 }
@@ -46,6 +180,20 @@ pub fn validate_locale(locale_str: &str) -> Result<LanguageIdentifier> {
             },
         )
     })
+}
+
+pub fn validate_wikidot_site_language(locale_str: &str) -> Result<LanguageIdentifier> {
+    if WIKIDOT_SITE_LANGUAGES.contains(&locale_str) {
+        validate_locale(locale_str)
+    } else {
+        Err(Error::new(
+            format!("'{locale_str}' is not available in Wikidot site settings"),
+            ErrorType::LocaleInvalid {
+                locale: str!(locale_str),
+            },
+        )
+        .into())
+    }
 }
 
 /// Helper function to convert an array of strings to a list of locales.
@@ -127,4 +275,13 @@ fn parse_locales_rejects_invalid_locale() {
     let error = parse_locales(&["en-US", "not a locale"]).unwrap_err();
 
     assert!(error.to_string().contains("failed to parse locale"));
+}
+
+#[test]
+fn wikidot_site_language_allowlist_accepts_captured_values_only() {
+    for locale in WIKIDOT_SITE_LANGUAGES {
+        validate_wikidot_site_language(locale)
+            .unwrap_or_else(|error| panic!("captured locale {locale} failed: {error}"));
+    }
+    assert!(validate_wikidot_site_language("en-US").is_err());
 }

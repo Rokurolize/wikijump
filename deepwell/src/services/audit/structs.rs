@@ -882,6 +882,8 @@ pub struct SiteFields<'a> {
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub default_page: Maybe<&'a str>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub welcome_page: Maybe<&'a str>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub top_bar_page: Maybe<&'a str>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub side_bar_page: Maybe<&'a str>,
@@ -891,6 +893,14 @@ pub struct SiteFields<'a> {
     pub layout: Maybe<Option<Layout>>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub forum_max_nest_level: Maybe<i16>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub google_analytics_enabled: Maybe<bool>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub google_analytics_profile: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub show_top_toolbar: Maybe<bool>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub show_bottom_toolbar: Maybe<bool>,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -916,6 +926,16 @@ pub struct PageCategoryFields<'a> {
     pub rating_type: Maybe<Option<&'a str>>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub per_page_discussion: Maybe<Option<bool>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub theme_kind: Maybe<&'a str>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub theme_builtin_id: Maybe<Option<i64>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub theme_external_url: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub theme_custom_css: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub autonumber_enabled: Maybe<bool>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

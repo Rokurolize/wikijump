@@ -19,12 +19,15 @@
  */
 
 use super::structs::{
-    ForumStructureSettings, NavigationPage, NavigationPageHtml, NavigationPageSlugs,
-    NavigationPageWikitext, PageDiscussionSettings, PageRatingPermission,
-    PageRatingSettings, PageRatingType, PageRatingVisibility,
+    ForumStructureSettings, GoogleAnalyticsSettings, NavigationPage, NavigationPageHtml,
+    NavigationPageSlugs, NavigationPageWikitext, PageDiscussionSettings,
+    PageRatingPermission, PageRatingSettings, PageRatingType, PageRatingVisibility,
+    SiteSettings, ThemeSetting, ToolbarSettings,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::license::WikidotLicense;
+use crate::models::page_category::Model as PageCategoryModel;
+use crate::models::site::Model as SiteModel;
 use crate::services::ServiceContext;
 use crate::services::forum::GetForumCategory;
 use crate::services::{
@@ -39,6 +42,77 @@ use std::borrow::Cow;
 pub struct SettingsService;
 
 impl SettingsService {
+    pub fn site_settings(site: &SiteModel) -> SiteSettings {
+        SiteSettings {
+            revision: site.settings_revision,
+            welcome_page: site.welcome_page.clone(),
+            google_analytics: GoogleAnalyticsSettings {
+                enabled: site.google_analytics_enabled,
+                profile: site.google_analytics_profile.clone(),
+            },
+            toolbars: ToolbarSettings {
+                top: site.show_top_toolbar,
+                bottom: site.show_bottom_toolbar,
+            },
+        }
+    }
+
+    pub async fn get_site_settings(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+    ) -> Result<SiteSettings> {
+        let site = SiteService::get(ctx, Reference::Id(site_id)).await?;
+        Ok(Self::site_settings(&site))
+    }
+
+    pub async fn get_theme(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        category_id: Option<i64>,
+    ) -> Result<ThemeSetting> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to resolve theme for site ID {site_id}, category ID {category_id:?}"
+                ),
+                ErrorType::SiteSettings,
+            )
+        };
+        let category = match category_id {
+            Some(category_id) => Some(
+                CategoryService::get(ctx, site_id, Reference::Id(category_id))
+                    .await
+                    .or_raise(make_error)?,
+            ),
+            None => None,
+        };
+        if let Some(category) = category.as_ref() {
+            let theme = theme_from_storage(category).or_raise(make_error)?;
+            if !matches!(theme, ThemeSetting::Inherit) {
+                return Ok(theme);
+            }
+        }
+
+        let default_category = match category.as_ref() {
+            Some(category) if category.slug == "_default" => None,
+            _ => CategoryService::get_optional(
+                ctx,
+                site_id,
+                Reference::Slug(Cow::Borrowed("_default")),
+            )
+            .await
+            .or_raise(make_error)?,
+        };
+        if let Some(default_category) = default_category.as_ref() {
+            let theme = theme_from_storage(default_category).or_raise(make_error)?;
+            if !matches!(theme, ThemeSetting::Inherit) {
+                return Ok(theme);
+            }
+        }
+
+        Ok(ThemeSetting::default())
+    }
+
     pub async fn get_page_discussion_settings(
         ctx: &ServiceContext<'_>,
         site_id: i64,
@@ -586,6 +660,34 @@ impl SettingsService {
         let settings = Self::get_forum_settings(ctx, site_id, forum_category_id).await?;
         Ok(settings.max_nest_level)
     }
+}
+
+fn theme_from_storage(category: &PageCategoryModel) -> Result<ThemeSetting> {
+    let theme = match category.theme_kind.as_str() {
+        "inherit" => ThemeSetting::Inherit,
+        "built_in" => ThemeSetting::BuiltIn {
+            id: category.theme_builtin_id.ok_or_else(|| {
+                Error::new("built-in theme is missing its ID", ErrorType::SiteSettings)
+            })?,
+        },
+        "external" => ThemeSetting::External {
+            url: category.theme_external_url.clone().ok_or_else(|| {
+                Error::new("external theme is missing its URL", ErrorType::SiteSettings)
+            })?,
+        },
+        "custom" => ThemeSetting::Custom {
+            css: category.theme_custom_css.clone().ok_or_else(|| {
+                Error::new("custom theme is missing its CSS", ErrorType::SiteSettings)
+            })?,
+        },
+        _ => {
+            return Err(
+                Error::new("unknown stored theme kind", ErrorType::SiteSettings).into(),
+            );
+        }
+    };
+    theme.validate()?;
+    Ok(theme)
 }
 
 fn default_page_layout_for_provenance(

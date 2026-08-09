@@ -948,6 +948,9 @@ impl ViewService {
             (None, None)
         };
 
+        let theme = SettingsService::get_theme(ctx, site_id, category_id)
+            .await
+            .or_raise(make_error)?;
         let output = match page_status {
             PageStatus::Found {
                 page,
@@ -990,6 +993,7 @@ impl ViewService {
                     compiled_body_styles,
                     compiled_top_bar_html,
                     compiled_side_bar_html,
+                    theme,
                 }
             }
             PageStatus::Missing => GetPageViewOutput::Missing {
@@ -1005,6 +1009,7 @@ impl ViewService {
                 compiled_body_styles,
                 compiled_top_bar_html,
                 compiled_side_bar_html,
+                theme,
             },
             PageStatus::Private => GetPageViewOutput::Permissions {
                 options,
@@ -1014,6 +1019,7 @@ impl ViewService {
                 compiled_body_styles,
                 compiled_top_bar_html,
                 compiled_side_bar_html,
+                theme,
                 banned: false,
             },
             PageStatus::Banned => GetPageViewOutput::Permissions {
@@ -1024,6 +1030,7 @@ impl ViewService {
                 compiled_body_styles,
                 compiled_top_bar_html,
                 compiled_side_bar_html,
+                theme,
                 banned: true,
             },
         };
@@ -1488,10 +1495,12 @@ ORDER BY breadcrumb_chain.depth ASC
         let site_file_domain = DomainService::get_files(config, &site.slug);
         let license_name = site.license.translate(ctx.localization(), &locales)?;
         let license_url = site.license.url();
+        let site_settings = SettingsService::site_settings(&site);
 
         // Return
         Ok(Viewer {
             site,
+            site_settings,
             site_file_domain,
             license_name,
             license_url,

@@ -48,8 +48,8 @@ use paste::paste;
 use ref_map::OptionRefMap;
 use sea_orm::ActiveValue;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder,
-    QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter,
+    QueryOrder, QuerySelect, Set,
 };
 use std::net::IpAddr;
 use wikidot_normalize::normalize;
@@ -89,11 +89,6 @@ impl PageService {
             )
         };
 
-        // Ensure row consistency
-        Self::check_conflicts(ctx, site_id, &slug, "create")
-            .await
-            .or_raise(make_error)?;
-
         // Perform filter validation
         if !bypass_filter {
             Self::run_filter(
@@ -109,11 +104,41 @@ impl PageService {
             .or_raise(make_error)?;
         }
 
-        // Create category if not already present
-        let PageCategoryModel { category_id, .. } =
-            CategoryService::get_or_create(ctx, site_id, get_category_name(&slug))
+        // Resolve and lock category settings before choosing the final slug. This row
+        // lock serializes category-scoped autonumber allocation inside the same
+        // transaction as page and revision creation. A later failure rolls back both.
+        let category_slug = str!(get_category_name(&slug));
+        let category = CategoryService::get_or_create(ctx, site_id, &category_slug)
+            .await
+            .or_raise(make_error)?;
+        let category = CategoryService::get_for_update(
+            ctx,
+            site_id,
+            Reference::Id(category.category_id),
+        )
+        .await
+        .or_raise(make_error)?;
+        let category_id = category.category_id;
+        if category.autonumber_enabled {
+            slug = if category.slug == "_default" {
+                category.autonumber_next.to_string()
+            } else {
+                format!("{}:{}", category.slug, category.autonumber_next)
+            };
+            Self::check_conflicts(ctx, site_id, &slug, "create")
                 .await
                 .or_raise(make_error)?;
+            let next = category.autonumber_next.checked_add(1).ok_or_else(|| {
+                Error::new("page autonumber allocator exhausted", ErrorType::Page)
+            })?;
+            let mut category = category.into_active_model();
+            category.autonumber_next = Set(next);
+            category.update(txn).await.or_raise(make_error)?;
+        } else {
+            Self::check_conflicts(ctx, site_id, &slug, "create")
+                .await
+                .or_raise(make_error)?;
+        }
 
         // Insert page
         let model = page::ActiveModel {

@@ -223,6 +223,7 @@ impl CategoryService {
         site_id: i64,
         reference: Reference<'_>,
         input: UpdateCategoryBody,
+        expected_settings_revision: Option<i64>,
         updating_user_id: i64,
         ip_address: IpAddr,
     ) -> Result<PageCategoryModel> {
@@ -235,9 +236,31 @@ impl CategoryService {
             )
         };
 
-        let category = Self::get(ctx, site_id, reference.clone())
+        let category = Self::get_for_update(ctx, site_id, reference.clone())
             .await
             .or_raise(make_error)?;
+        if let Some(expected) = expected_settings_revision
+            && expected != category.settings_revision
+        {
+            bail!(Error::new(
+                format!(
+                    "category settings changed since revision {expected}; current revision is {}",
+                    category.settings_revision,
+                ),
+                ErrorType::BadRequest,
+            ));
+        }
+        if (input.theme.to_option().is_some() || input.autonumber_enabled.to_option().is_some())
+            && expected_settings_revision.is_none()
+        {
+            bail!(Error::new(
+                "theme and autonumber updates require expected_settings_revision",
+                ErrorType::BadRequest,
+            ));
+        }
+        if let Maybe::Set(theme) = &input.theme {
+            theme.validate()?;
+        }
         if let Maybe::Set(Some(template_page_id)) = &input.template_page_id {
             let template = page::Entity::find_by_id(*template_page_id)
                 .filter(page::Column::SiteId.eq(site_id))
@@ -334,7 +357,28 @@ impl CategoryService {
                 Maybe::Set(_) => Maybe::Set(category.per_page_discussion),
                 Maybe::Unset => Maybe::Unset,
             },
+            theme_kind: match &input.theme {
+                Maybe::Set(_) => Maybe::Set(category.theme_kind.as_str()),
+                Maybe::Unset => Maybe::Unset,
+            },
+            theme_builtin_id: match &input.theme {
+                Maybe::Set(_) => Maybe::Set(category.theme_builtin_id),
+                Maybe::Unset => Maybe::Unset,
+            },
+            theme_external_url: match &input.theme {
+                Maybe::Set(_) => Maybe::Set(category.theme_external_url.as_deref()),
+                Maybe::Unset => Maybe::Unset,
+            },
+            theme_custom_css: match &input.theme {
+                Maybe::Set(_) => Maybe::Set(category.theme_custom_css.as_deref()),
+                Maybe::Unset => Maybe::Unset,
+            },
+            autonumber_enabled: match &input.autonumber_enabled {
+                Maybe::Set(_) => Maybe::Set(category.autonumber_enabled),
+                Maybe::Unset => Maybe::Unset,
+            },
         };
+        let theme_storage = input.theme.to_option().map(|theme| theme.to_storage());
         let changed_fields = PageCategoryFields {
             top_bar_page: match &input.top_bar_page {
                 Maybe::Set(value) => Maybe::Set(value.as_deref()),
@@ -367,6 +411,19 @@ impl CategoryService {
                 Maybe::Unset => Maybe::Unset,
             },
             per_page_discussion: input.per_page_discussion.clone(),
+            theme_kind: theme_storage
+                .as_ref()
+                .map_or(Maybe::Unset, |theme| Maybe::Set(theme.kind)),
+            theme_builtin_id: theme_storage
+                .as_ref()
+                .map_or(Maybe::Unset, |theme| Maybe::Set(theme.builtin_id)),
+            theme_external_url: theme_storage
+                .as_ref()
+                .map_or(Maybe::Unset, |theme| Maybe::Set(theme.external_url)),
+            theme_custom_css: theme_storage
+                .as_ref()
+                .map_or(Maybe::Unset, |theme| Maybe::Set(theme.custom_css)),
+            autonumber_enabled: input.autonumber_enabled.clone(),
         };
 
         AuditService::log(
@@ -384,6 +441,7 @@ impl CategoryService {
         .or_raise(make_error)?;
 
         let category_id = category.category_id;
+        let next_settings_revision = category.settings_revision + 1;
         let mut model = category.into_active_model();
         if let Maybe::Set(top_bar_page) = input.top_bar_page {
             model.top_bar_page = Set(top_bar_page);
@@ -415,6 +473,17 @@ impl CategoryService {
         if let Maybe::Set(per_page_discussion) = input.per_page_discussion {
             model.per_page_discussion = Set(per_page_discussion);
         }
+        if let Maybe::Set(theme) = input.theme {
+            let storage = theme.to_storage();
+            model.theme_kind = Set(str!(storage.kind));
+            model.theme_builtin_id = Set(storage.builtin_id);
+            model.theme_external_url = Set(storage.external_url.map(ToOwned::to_owned));
+            model.theme_custom_css = Set(storage.custom_css.map(ToOwned::to_owned));
+        }
+        if let Maybe::Set(autonumber_enabled) = input.autonumber_enabled {
+            model.autonumber_enabled = Set(autonumber_enabled);
+        }
+        model.settings_revision = Set(next_settings_revision);
         model.updated_at = Set(Some(now()));
 
         ctx.defer_public_content_cache_invalidate_site(site_id)

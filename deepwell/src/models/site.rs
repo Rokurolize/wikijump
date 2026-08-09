@@ -44,6 +44,14 @@ pub struct Model {
     pub ios_icon_source: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub windows_tile_source: Option<String>,
+    pub settings_revision: i64,
+    #[sea_orm(column_type = "Text")]
+    pub welcome_page: String,
+    pub google_analytics_enabled: bool,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub google_analytics_profile: Option<String>,
+    pub show_top_toolbar: bool,
+    pub show_bottom_toolbar: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
