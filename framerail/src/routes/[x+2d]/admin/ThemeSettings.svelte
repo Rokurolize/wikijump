@@ -86,8 +86,8 @@
         <label for="sm-appearance-built-in-id">Built-in theme ID</label>
         <input
           id="sm-appearance-built-in-id"
-          type="number"
           min="1"
+          type="number"
           bind:value={$form.builtinId}
         />
       {:else if $form.themeType === "external"}

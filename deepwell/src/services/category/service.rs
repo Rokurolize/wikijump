@@ -250,7 +250,8 @@ impl CategoryService {
                 ErrorType::BadRequest,
             ));
         }
-        if (input.theme.to_option().is_some() || input.autonumber_enabled.to_option().is_some())
+        if (input.theme.to_option().is_some()
+            || input.autonumber_enabled.to_option().is_some())
             && expected_settings_revision.is_none()
         {
             bail!(Error::new(

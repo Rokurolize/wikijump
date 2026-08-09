@@ -101,7 +101,7 @@
   <div class="control-group">
     <label class="control-label" for="sm-general-language">Language</label>
     <div class="controls">
-      <select name="language" id="sm-general-language" bind:value={$form.locale}>
+      <select id="sm-general-language" name="language" bind:value={$form.locale}>
         {#each ["Stable", "Experimental"] as group (group)}
           <optgroup label={group}>
             {#each WIKIDOT_SITE_LANGUAGES.filter((entry) => entry.group === group) as entry (entry.value)}
@@ -117,8 +117,8 @@
     <label class="control-label" for="site-description-field">Description</label>
     <div class="controls">
       <textarea
-        name="description"
         id="site-description-field"
+        name="description"
         cols="40"
         rows="3"
         bind:value={$form.description}></textarea>

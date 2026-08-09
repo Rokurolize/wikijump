@@ -41,13 +41,13 @@ use deepwell::services::file_revision::CreateFirstFileRevision;
 use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
 use deepwell::services::forum_post::CreateForumPost;
 use deepwell::services::forum_thread::CreateForumThread;
+use deepwell::services::page::CreatePage;
 use deepwell::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DataFormSelector,
     DateSelector, FoundPageFields, IncludedCategories, OrderBySelector, OrderProperty,
     PageParentSelector, PageQuery, PageQueryService, PageTypeSelector,
     PaginationSelector, RangeSelector, ScoreSelector, TagCondition,
 };
-use deepwell::services::page::CreatePage;
 use deepwell::services::permission::{
     CheckPermissionContext, PermissionCache, PermissionService,
 };
@@ -345,13 +345,10 @@ async fn autonumber_allocator_holds_the_category_lock_until_request_completion()
     let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
         .expect("seeded test site should exist")
         .site;
-    let category = CategoryService::get(
-        runner.context(),
-        site.site_id,
-        Reference::from("_default"),
-    )
-    .await
-    .expect("seeded default category should exist");
+    let category =
+        CategoryService::get(runner.context(), site.site_id, Reference::from("_default"))
+            .await
+            .expect("seeded default category should exist");
     let state = runner.state().clone();
 
     let first_transaction = state
@@ -391,13 +388,11 @@ async fn autonumber_allocator_holds_the_category_lock_until_request_completion()
         .rollback()
         .await
         .expect("first allocator transaction should roll back");
-    let locked_category = tokio::time::timeout(
-        StdDuration::from_secs(2),
-        second_lock.as_mut(),
-    )
-    .await
-    .expect("competing allocator should proceed after the first request ends")
-    .expect("competing allocator lock should succeed");
+    let locked_category =
+        tokio::time::timeout(StdDuration::from_secs(2), second_lock.as_mut())
+            .await
+            .expect("competing allocator should proceed after the first request ends")
+            .expect("competing allocator lock should succeed");
     assert_eq!(locked_category.category_id, category.category_id);
     drop(second_lock);
     drop(second_context);
@@ -413,13 +408,10 @@ async fn failed_page_create_rolls_back_its_allocated_number() {
     let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
         .expect("seeded test site should exist")
         .site;
-    let original = CategoryService::get(
-        runner.context(),
-        site.site_id,
-        Reference::from("_default"),
-    )
-    .await
-    .expect("seeded default category should exist");
+    let original =
+        CategoryService::get(runner.context(), site.site_id, Reference::from("_default"))
+            .await
+            .expect("seeded default category should exist");
     let state = runner.state().clone();
 
     let transaction = state
@@ -428,13 +420,10 @@ async fn failed_page_create_rolls_back_its_allocated_number() {
         .await
         .expect("failed-create transaction should start");
     let context = ServiceContext::new(&state, &transaction);
-    let category = CategoryService::get(
-        &context,
-        site.site_id,
-        Reference::Id(original.category_id),
-    )
-    .await
-    .expect("default category should be available in the request transaction");
+    let category =
+        CategoryService::get(&context, site.site_id, Reference::Id(original.category_id))
+            .await
+            .expect("default category should be available in the request transaction");
     let mut category = category.into_active_model();
     category.autonumber_enabled = Set(true);
     category.autonumber_next = Set(8_000_000_000_000_000_000);
@@ -481,7 +470,10 @@ async fn failed_page_create_rolls_back_its_allocated_number() {
     )
     .await
     .expect("default category should remain available after rollback");
-    assert_eq!(after_failure.autonumber_enabled, original.autonumber_enabled);
+    assert_eq!(
+        after_failure.autonumber_enabled,
+        original.autonumber_enabled
+    );
     assert_eq!(after_failure.autonumber_next, original.autonumber_next);
     drop(assertion_context);
     assertion_transaction

@@ -75,7 +75,7 @@
         >Promote this site on other sites</label
       >
       <div class="controls">
-        <input id="sm-promote" name="promote" class="checkbox" type="checkbox" disabled />
+        <input id="sm-promote" name="promote" class="checkbox" disabled type="checkbox" />
       </div>
     </div>
     <button class="btn btn-primary" type="submit">Save changes</button>
