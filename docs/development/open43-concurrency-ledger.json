@@ -1,12 +1,12 @@
 {
   "schema": "wikijump.open43_concurrency_ledger.v1",
   "campaign": "open43-pr2",
-  "updated_at": "2026-08-09T18:50:00+09:00",
+  "updated_at": "2026-08-09T19:10:00+09:00",
   "integration_branch": {
     "repository": "Rokurolize/wikijump",
     "branch": "fix/open87-pr2-modules-actions-media-settings",
     "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
-    "reconciled_head": "6cb3fc4c5275b200b8538e6303b1d6d3c650d62c"
+    "reconciled_head": "05aa358c08a3b06c63ff95c0953580d6a7101f66"
   },
   "limits": {
     "configured_threads": 13,
@@ -91,6 +91,34 @@
       "branch": "agent/open87-pr2/a-forms-residual-g3",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/a-forms-residual-g3",
       "base": "986fe9d7838ce7dfcc565982d849e2617ba15e5c",
+      "head": "3dd8d00cab7913fe85baf1e71d80964127034119",
+      "status": "integrated",
+      "integration_commits": [
+        "a06583d25364de84c46d627f702a98cc8c99eb50",
+        "05aa358c08a3b06c63ff95c0953580d6a7101f66"
+      ],
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "m-media-closure-g3",
+      "agent": "/root/s_browser",
+      "issue_numbers": [756, 776, 806, 1039, 1042, 1043, 1062],
+      "branch": "agent/open87-pr2/m-media-closure-g3",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-media-closure-g3",
+      "base": "99c946782936923ff902cf95045a4cab2dd16577",
+      "head": null,
+      "status": "running",
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "q-page-query-closure-g1",
+      "agent": "/root/a_rate",
+      "issue_numbers": [779, 809, 811, 1027, 1040],
+      "branch": "agent/open87-pr2/q-page-query-closure-g1",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/q-page-query-closure-g1",
+      "base": "99c946782936923ff902cf95045a4cab2dd16577",
       "head": null,
       "status": "running",
       "may_run_cargo": false,
