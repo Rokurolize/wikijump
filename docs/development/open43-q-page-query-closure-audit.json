@@ -1,6 +1,6 @@
 {
   "schema": "wikijump.open43.q_page_query_closure_audit.v1",
-  "scope": [779, 809, 811, 1027, 1040],
+  "scope": [779, 809, 811, 1027, 1028, 1035, 1040],
   "source": {
     "wikijump_base": "99c946782936923ff902cf95045a4cab2dd16577",
     "wikijump_base_tree": "c5528ab49da3e67baa01c99b01302ded5651cc53",
@@ -37,6 +37,18 @@
         "number": 1027,
         "title": "Implement Wikidot Backlinks module empty and populated contracts",
         "state": "OPEN"
+      },
+      {
+        "number": 1028,
+        "title": "Implement Wikidot Categories module ordering, hidden state, and DOM",
+        "state": "OPEN",
+        "authority": "docs/development/open43-q-page-graph-residual-case-manifest.json"
+      },
+      {
+        "number": 1035,
+        "title": "Match Wikidot page index, graph, calendar, tag, and draft module queries",
+        "state": "OPEN",
+        "authority": "docs/development/open43-q-page-graph-residual-case-manifest.json"
       },
       {
         "number": 1040,
@@ -114,6 +126,11 @@
       "path": "ftml@62ebba4efda1f10e82363c23c925061fbe939e49:tests/wikidot_line_ownership.rs",
       "sha256": "cab504cc10d4b39ef55fd20f23a37f381ae39a993d991dfeea83f5899fc7f140",
       "issues": [779, 809, 811, 1027, 1040]
+    },
+    {
+      "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
+      "sha256": "b133f02d624e9257c7ee0e79df1e86b93b2423c2813a9fed31d770273fc6a1cc",
+      "issues": [1028, 1035]
     }
   ],
   "issues": [
@@ -315,6 +332,38 @@
       ]
     },
     {
+      "issue": 1028,
+      "feature_id": "module-categories",
+      "module": "Categories",
+      "authoritative_manifest": {
+        "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
+        "sha256": "b133f02d624e9257c7ee0e79df1e86b93b2423c2813a9fed31d770273fc6a1cc"
+      },
+      "subrows": [
+        {"case_id": "Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS", "status": "source_ready"},
+        {"case_id": "Q1028_ACTOR_SCOPED_RUNTIME_INVENTORY", "status": "source_ready"},
+        {"case_id": "Q1028_EXPAND_LIST_ACTION", "status": "blocked_evidence"},
+        {"case_id": "Q1028_CATEGORY_LIFECYCLE_AND_CACHE", "status": "candidate_required"}
+      ]
+    },
+    {
+      "issue": 1035,
+      "feature_id": "module-sitechanges-and-listdrafts",
+      "module": "SiteChanges and ListDrafts",
+      "authoritative_manifest": {
+        "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
+        "sha256": "b133f02d624e9257c7ee0e79df1e86b93b2423c2813a9fed31d770273fc6a1cc"
+      },
+      "subrows": [
+        {"case_id": "Q1035_SITECHANGES_DEFAULT_INITIAL_SNAPSHOT", "status": "source_ready"},
+        {"case_id": "Q1035_SITECHANGES_PERMISSION_BEFORE_LIMIT", "status": "source_ready"},
+        {"case_id": "Q1035_SITECHANGES_FILTER_AND_AJAX_PAGER", "status": "blocked_evidence"},
+        {"case_id": "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE", "status": "blocked_evidence"},
+        {"case_id": "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX", "status": "source_ready"},
+        {"case_id": "Q1035_LISTDRAFTS_NONEMPTY_QUERY", "status": "blocked_evidence"}
+      ]
+    },
+    {
       "issue": 1040,
       "feature_id": "module-nextpreviouspage",
       "module": "NextPage",
@@ -367,6 +416,19 @@
       ]
     }
   ],
+  "reconciliation": {
+    "issue_count": 7,
+    "subrow_count": 33,
+    "classification_counts": {
+      "source_ready": 17,
+      "needs_source": 0,
+      "candidate_required": 7,
+      "blocked_evidence": 9
+    },
+    "duplicate_issue_numbers": 0,
+    "duplicate_case_ids": 0,
+    "closure_claims": 0
+  },
   "source_residuals_remaining": 0,
   "local_validation": [
     {
@@ -407,7 +469,7 @@
     {
       "command": "jq structural closure-audit assertions docs/development/open43-q-page-query-closure-audit.json",
       "status": "pass",
-      "result": "Exactly five issues and 23 unique case IDs: source_ready 12, candidate_required 6, blocked_evidence 5, needs_source 0."
+      "result": "Exactly seven issues and 33 unique case IDs: source_ready 17, candidate_required 7, blocked_evidence 9, needs_source 0."
     }
   ],
   "central_commands": [

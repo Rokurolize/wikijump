@@ -1,6 +1,6 @@
 {
   "schema": "wikijump.open43.a_actions_membership_closure_audit.v1",
-  "scope": [775, 777, 1029, 1030, 1033, 1041, 1060],
+  "scope": [775, 777, 1029, 1030, 1033, 1037, 1038, 1041, 1060],
   "classification": {
     "source_ready": "The current source has a public observable seam and a focused case. Rust cases still require the central Cargo broker unless a local result is recorded.",
     "needs_source": "The acceptance requirement has sufficient authority, but focused source or test coverage is still missing.",
@@ -132,6 +132,14 @@
       {
         "path": "docs/development/open43-a-membership-case-manifest.json",
         "sha256": "de5fd9103495c6fa40e58c4819df81fcac88858dea64225a0f7d108fc67603da"
+      },
+      {
+        "path": "docs/development/open43-a-utilities-case-manifest.json",
+        "sha256": "57bcf3cdf87631b2a60ba562a2a0bb791ee18e0d479c683c84cf1a9b8e265f72"
+      },
+      {
+        "path": "docs/development/open43-a-forms-residual-case-manifest.json",
+        "sha256": "d436874d0fe892a88039b0018ffbd1cdaff7846fb299774386c440b78cfc80ff"
       }
     ]
   },
@@ -509,6 +517,62 @@
       ]
     },
     {
+      "number": 1037,
+      "title": "Complete Wikidot page form, redirect, mail, and todo module contracts",
+      "authoritative_manifests": [
+        {
+          "path": "docs/development/open43-a-forms-residual-case-manifest.json",
+          "sha256": "d436874d0fe892a88039b0018ffbd1cdaff7846fb299774386c440b78cfc80ff",
+          "case_inventory": true
+        },
+        {
+          "path": "docs/development/open43-a-utilities-case-manifest.json",
+          "sha256": "57bcf3cdf87631b2a60ba562a2a0bb791ee18e0d479c683c84cf1a9b8e265f72",
+          "case_inventory": false
+        }
+      ],
+      "source_ready": [
+        {"case_id": "A1037_REDIRECT_POLICY"},
+        {"case_id": "A1037_NEWPAGE_PAGE_FORM"},
+        {"case_id": "A1037_MAILFORM_READ_ONLY_FAIL_CLOSED"},
+        {"case_id": "A1037_SIMPLETODO_INITIAL_READ_ONLY"}
+      ],
+      "needs_source": [],
+      "candidate_required": [
+        {"case_id": "A1037_MAILFORM_FAIL_CLOSED_SERVED"},
+        {"case_id": "A1037_REDIRECT_EXACT_CANDIDATE"},
+        {"case_id": "A1037_NEWPAGE_EXACT_CANDIDATE"}
+      ],
+      "blocked_evidence": [
+        {"case_id": "A1037_MAILFORM_INITIAL_DOM_AND_SUBMIT"},
+        {"case_id": "A1037_SIMPLETODO_MUTATION"},
+        {"case_id": "A1037_BROWSER_LIFECYCLE"}
+      ],
+      "exact_commands": []
+    },
+    {
+      "number": 1038,
+      "title": "Complete Wikidot site administration and cross-site utility modules",
+      "authoritative_manifest": {
+        "path": "docs/development/open43-a-utilities-case-manifest.json",
+        "sha256": "57bcf3cdf87631b2a60ba562a2a0bb791ee18e0d479c683c84cf1a9b8e265f72"
+      },
+      "source_ready": [
+        {"case_id": "A1038_ANONYMOUS_SAFE_STATES"},
+        {"case_id": "A1038_LITERAL_AND_BODY_OWNERSHIP"}
+      ],
+      "needs_source": [],
+      "candidate_required": [],
+      "blocked_evidence": [
+        {"case_id": "A1038_AUTHENTICATED_ACTOR_MATRIX"},
+        {"case_id": "A1038_CLONE_ACTION"},
+        {"case_id": "A1038_SITEGRID_POPULATED"},
+        {"case_id": "A1038_THEMEPREVIEWER_ACTIVE"},
+        {"case_id": "A1038_BROWSER_LIFECYCLE"}
+      ],
+      "exact_commands": []
+    },
+    {
       "number": 1041,
       "title": "Complete Wikidot standalone button action registry and browser behavior",
       "source_ready": [
@@ -645,6 +709,19 @@
       ]
     }
   ],
+  "reconciliation": {
+    "issue_count": 9,
+    "case_count": 61,
+    "classification_counts": {
+      "source_ready": 25,
+      "needs_source": 0,
+      "candidate_required": 18,
+      "blocked_evidence": 18
+    },
+    "duplicate_issue_numbers": 0,
+    "duplicate_case_ids": 0,
+    "closure_claims": 0
+  },
   "local_validation": [
     {
       "command": "rustfmt --edition 2024 --check deepwell/src/endpoints/page.rs deepwell/src/endpoints/site_member.rs deepwell/src/services/membership/mod.rs deepwell/src/services/membership/service.rs deepwell/src/services/membership/structs.rs deepwell/src/services/render/membership_actions.rs deepwell/src/services/view/service.rs deepwell/tests/page.rs deepwell/tests/role.rs",
@@ -702,6 +779,11 @@
       "command": "/home/roku/.agents/skills/autoreview/scripts/autoreview --mode local --prompt <A1041-set-tags-denial-scope-baseline>",
       "status": "pass",
       "result": "Source review was clean with no accepted/actionable findings and overall patch correct 0.97. Audit-amendment review was clean with no accepted/actionable findings and overall patch correct 0.98."
+    },
+    {
+      "command": "jq structural closure-audit assertions docs/development/open43-a-actions-membership-closure-audit.json",
+      "status": "pass",
+      "result": "Exactly nine issues and 61 unique case IDs: source_ready 25, candidate_required 18, blocked_evidence 18, needs_source 0."
     },
     {
       "command": "cargo test",
