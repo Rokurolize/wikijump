@@ -22,13 +22,15 @@
   "method": {
     "public_deepwell_seams": [
       "wikidot_page_preview",
-      "page_view"
+      "page_view",
+      "wikidot_members_list_module"
     ],
     "public_framerail_seams": [
       "wikidotSearchPath",
       "wikidotSearchAllPath",
       "delegated SearchAll form submission",
-      "legacy top-bar form submission"
+      "legacy top-bar form submission",
+      "POST /ajax-module-connector.php membership/MembersListModule"
     ],
     "ordering_rules": [
       "Apply site, actor, membership, deletion, and privacy authority before sorting, counts, limits, or pagination.",
@@ -37,7 +39,7 @@
       "Do not treat a route builder or rendered form as proof that an active search backend exists."
     ],
     "tracker_read_canonicalization": "gh issue view <issue> --repo Rokurolize/wikijump --json number,title,body,comments,url | jq -c .",
-    "source_change_disposition": "No production source residual is both missing and established by the audited evidence. Existing public tests already bind every observed source-ready row. Adding a backend, global FeaturedSite authority, private identity policy, or account action in this lane would invent an unobserved contract."
+    "source_change_disposition": "The frozen Members Ajax evidence establishes one additional source slice. The local Deepwell endpoint and Framerail dispatcher implement that exact group, order, page, pagination, empty-state, and envelope contract. A backend outside this slice, a global FeaturedSite authority, a broader private identity policy, or an account mutation would still invent an unobserved contract."
   },
   "tracker_reads": [
     {
@@ -125,6 +127,12 @@
       "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
       "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
       "authority": "bounded anonymous and authenticated read-only Members and UserInfo observations"
+    },
+    {
+      "evidence_id": "MEMBERS_LIST_AMC_20260810",
+      "path": "install/local/wikidot-verification/artifacts/members-list-amc-live-20260810.json",
+      "sha256": "6f7be3f18a5e21397affbc33f3419ec67d3deca3648a524c76c42e4e9b16e3e7",
+      "authority": "frozen anonymous Members pages 0 through 3, authenticated sandbox empty actor matrix, blocked high-page captures, and exact external raw paths and hashes"
     }
   ],
   "issues": [
@@ -308,6 +316,17 @@
             "deepwell/src/services/render/user_directory.rs#tests"
           ],
           "result": "The initial Members page restricts relations and roles to the current site, removes inactive, missing, and deleted identities before ordering, count, and the 50-row page limit, and rejects unsupported arguments."
+        },
+        {
+          "case_id": "Q1032_MEMBERS_AJAX_PAGINATION",
+          "status": "implemented_unverified",
+          "evidence_id": "MEMBERS_LIST_AMC_20260810",
+          "public_tests": [
+            "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities",
+            "framerail/tests/ajax-module-connector.test.js#dispatches only the observed MembersListModule read shape",
+            "framerail/tests/ajax-module-connector.test.js#fails closed before Deepwell for unobserved MembersListModule shapes"
+          ],
+          "result": "The public Deepwell read endpoint and Framerail Ajax route implement the captured empty-group, joined-order pages as a separate 100-row contract. Site permission runs first. One SQL read filters active identity existence, counts the filtered rows, orders by join time and user ID, and selects at most 100 IDs before the typed identity loader runs. The route preserves the observed pager and response envelope and rejects unobserved shapes."
         }
       ],
       "needs_source": [],
@@ -319,15 +338,19 @@
         {
           "case_id": "Q1032_BROWSER_DIRECTORY_ACTIONS",
           "requires": "Verify the initial Members pager shell, SearchUsers disabled state, WhoInvited form shell, and printuser browser intervals without claiming unimplemented actions."
+        },
+        {
+          "case_id": "Q1032_MEMBERS_AJAX_EXACT_CANDIDATE",
+          "requires": "Run the public Deepwell pages 0, 1, 2, and out-of-range cases, the A/B/C empty actor matrix, the private-site and missing-identity boundaries, and the Framerail HTTP envelope against one exact candidate. Bind the receipt to source, FTML, locks, fixture, request actor, and read-only side-effect identities."
         }
       ],
       "blocked_evidence": [
         {
           "case_id": "Q1032_REMAINING_DIRECTORY_RUNTIME",
-          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_USERINFO_EXISTENCE_20260810"],
-          "observed": "Anonymous Members pages 1 through 3, two populated and two missing UserInfo routes, and sandbox A/B/C empty Members page controls are now sealed.",
+          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_USERINFO_EXISTENCE_20260810", "MEMBERS_LIST_AMC_20260810"],
+          "observed": "Anonymous Members pages 0 through 3, their 100-row paging and envelope contract, two populated and two missing UserInfo routes, and sandbox A/B/C empty Members page controls are sealed. The matching Members Ajax source slice exists but still awaits central candidate execution.",
           "missing": "Populated Watchers and WhoInvited results, full role/privacy actor matrices, and rename/delete/import invalidation remain unevidenced or unmodeled.",
-          "forbidden_inference": "Do not broaden first-page data into an invented Ajax endpoint, expose deleted identities, or perform permission filtering after counts or pagination."
+          "forbidden_inference": "Do not treat the blocked SCP page 1467 and 1468 captures as response-body authority, broaden the observed empty group and joined order into other groups or orders, expose deleted identities, or filter permissions after counts or pagination."
         }
       ],
       "closure_verdict": "candidate_and_evidence_required"
@@ -393,8 +416,8 @@
       },
       {
         "feature": "module-members",
-        "ledger_status": "pending",
-        "audit_disposition": "site-scoped first page exists; AMC pagination and broader runtime remain open"
+        "ledger_status": "in_progress",
+        "audit_disposition": "site-scoped initial page and the observed Members Ajax pagination source slice exist; exact-candidate validation and broader runtime remain open"
       }
     ],
     "rule": "Do not change a feature to implemented or close its issue until every candidate_required row has an exact candidate receipt and every blocked_evidence row is either implemented from new evidence or explicitly accepted as the product's fail-closed contract."
@@ -407,11 +430,13 @@
     "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page listusers_module_matches_live_preview_and_runtime_viewer -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page members_module_queries_only_visible_site_members_and_roles -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page members_list_ajax_paginates_only_filtered_site_identities -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page static_account_modules_match_live_preview_and_page_view_basics -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml services::render::search_feed::tests -- --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml services::render::user_directory::tests -- --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml services::render::ftml_user_info::tests -- --nocapture",
     "node --test framerail/tests/wikidot-search.test.js",
+    "node --test --test-name-pattern='MembersListModule' framerail/tests/ajax-module-connector.test.js",
     "pnpm --dir framerail test tests/wikidot-chrome.spec.ts --grep 'Wikidot-compatible search chrome|SearchAll module submits'",
     "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
     "node scripts/initialize-wikidot-implementation-ledger.mjs --check",

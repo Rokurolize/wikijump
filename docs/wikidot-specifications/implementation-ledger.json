@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-08-10",
-  "catalog_sha256": "6c7e7542be58bb8a77f2bccbabcbcf50e592191426d7a9ea42081a618494fced",
+  "catalog_sha256": "69f10ebc44bd4e927ee60d715f7c4a272ef23b7242c60a6fb817e8910ee9d1ce",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -2029,15 +2029,57 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-members": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/module/module-members.md"
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous and authenticated live Wikidot membership/MembersListModule responses",
+        "Deepwell public wikidot_page_preview and saved page_view rendering",
+        "Deepwell public wikidot_members_list_module read interface",
+        "Framerail public POST /ajax-module-connector.php"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "members_module_queries_only_visible_site_members_and_roles",
+          "scope": "site-scoped initial 50-row Members page, active identities, role intersection, ordering, and fail-closed source arguments"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "members_list_ajax_paginates_only_filtered_site_identities",
+          "scope": "public SQL-backed 100-row Ajax pages, page 0 alias, identity existence filtering before count and pagination, exact empty actor states, private-site denial, pager, malformed parameter rejection, and request-site binding"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches only the observed MembersListModule read shape",
+          "scope": "exact Members Ajax dispatch and successful or fail-closed Wikidot response envelope"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "fails closed before Deepwell for unobserved MembersListModule shapes",
+          "scope": "unknown, missing, duplicate, malformed, and unobserved parameter rejection at the public HTTP seam"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/api.rs",
+        "deepwell/src/endpoints/page.rs",
+        "deepwell/src/services/render/user_directory.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/deepwell/membership.ts",
+        "framerail/src/routes/ajax-module-connector.php/+server.ts"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-members.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-members",
+        "live-observations.json::members-list-amc-pagination-20260809",
+        "install/local/wikidot-verification/artifacts/members-list-amc-live-20260810.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Populated Watchers and WhoInvited results remain unobserved and unimplemented.",
+        "Admin and moderator Ajax groups, other order values, broader role and privacy states, mutations, cache invalidation, and browser transitions remain unobserved or unimplemented.",
+        "The exact candidate still requires central Rust execution and runtime validation before the observed Members Ajax slice can be marked verified."
+      ]
     },
     "module-membershipapply": {
       "status": "pending",

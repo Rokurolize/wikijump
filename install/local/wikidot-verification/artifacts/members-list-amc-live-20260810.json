@@ -1,0 +1,111 @@
+{
+  "schema": "wikijump.members_list_amc_live_evidence.v1",
+  "captured_at": "2026-08-09",
+  "mutated": false,
+  "external_evidence_root": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809",
+  "external_sha256s": {
+    "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/SHA256SUMS",
+    "sha256": "225897681df10c1e8c307053056849990fc32ebe10e47f2ab9012685bda709ff"
+  },
+  "external_indices": [
+    {
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/anonymous-index.json",
+      "sha256": "65b89a3fb1758a80dd20766be15d183e94e5afa9a5e0a4f3405630cd5682fa36"
+    },
+    {
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/authenticated-index.json",
+      "sha256": "0ee1786699c88fe36908aa46d8347c38519e4270be638041b82e477a9426e435"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "q1032-members-zero",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-zero.json",
+      "sha256": "cb03c630c2cd2e7b16531b468a9d291019c0da3b6182ec854168850c69d44e85",
+      "disposition": "observed"
+    },
+    {
+      "case_id": "q1032-members-one",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-one.json",
+      "sha256": "73b7b0dd16357432772e49fa713c9a7cba5a6e97d6710c81bc987fce08352b91",
+      "disposition": "observed"
+    },
+    {
+      "case_id": "q1032-members-two",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-two.json",
+      "sha256": "9bb0e7518ff82f2390907249505194d6461a079f8bac35546fb2b38d2c5f6ac0",
+      "disposition": "observed"
+    },
+    {
+      "case_id": "q1032-members-three",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-three.json",
+      "sha256": "0ce336d09b055f557c3424c9cc1976e95b7b6b7e03b24c2cbfa396539af54cee",
+      "disposition": "observed"
+    },
+    {
+      "case_id": "q1032-members-last",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-last.json",
+      "sha256": "e889f97e0973a4c0141f3f5663f08a9c9b4feb6e3b8b147bae51832b06981693",
+      "disposition": "blocked_without_response_body"
+    },
+    {
+      "case_id": "q1032-members-out",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-out.json",
+      "sha256": "70f03aada422d15b900e57745f6953ad5aafe3dd7fcbebf598aa3a83eaeb02ca",
+      "disposition": "blocked_without_response_body"
+    },
+    {
+      "case_id": "q1032-members-page-two-actor-a",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-page-two-actor-a.json",
+      "sha256": "5c72dc347adb4976bd61b64c0c5cb730d8e1c8758d47828b750af32e5db65408",
+      "disposition": "observed"
+    },
+    {
+      "case_id": "q1032-members-page-two-actor-b",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-page-two-actor-b.json",
+      "sha256": "8430c5a3075b813bac56643ba7663fbd2b406af066433fe3eb251c9e474d6f14",
+      "disposition": "observed"
+    },
+    {
+      "case_id": "q1032-members-page-two-actor-c",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-page-two-actor-c.json",
+      "sha256": "91ad4d6485d9743e9cb78f3255df1e80744ed35ec7a5a441da497e7d4a163fb7",
+      "disposition": "observed"
+    },
+    {
+      "case_id": "q1032-members-page-out-actor-a",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-page-out-actor-a.json",
+      "sha256": "3ef2b8a034c558ea784c72c7d8a5f89650ae9946a7c99608042e515a10f4e535",
+      "disposition": "observed"
+    },
+    {
+      "case_id": "q1032-members-page-out-actor-b",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-page-out-actor-b.json",
+      "sha256": "6672ebef5e699eaf6fa0a1c4978a7febb33939de7d9368bcd64832a512b41578",
+      "disposition": "observed"
+    },
+    {
+      "case_id": "q1032-members-page-out-actor-c",
+      "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1032-members-page-out-actor-c.json",
+      "sha256": "d92f65cd9e185a043037dacb58b20316e3f679b1e0be473863b302bde3117cad",
+      "disposition": "observed"
+    }
+  ],
+  "observed_contract": [
+    "The only captured request shape uses moduleName=membership/MembersListModule, group as the empty string, order=joined, and an integer page value.",
+    "Anonymous SCP Wiki pages 0 and 1 each return the same first 100 ordered member rows. Page 0 uses the page 1 pager state.",
+    "Anonymous SCP Wiki pages 2 and 3 each return 100 ordered rows that differ from the preceding page.",
+    "The observed pager for pages 1 through 3 uses the current page, previous and next targets where applicable, the nearby page window, an ellipsis, and final pages 1470 and 1471.",
+    "Each successful response has status ok, an integer CURRENT_TIMESTAMP, body, empty jsInclude and cssInclude arrays, and callbackIndex null.",
+    "For the three captured sandbox actor classes, page 2 and page 1468 return status ok and the same empty No users body without a table, member script, or pager."
+  ],
+  "blocked_or_unobserved": [
+    "The SCP Wiki page 1467 and 1468 acquisition records contain not_ok exceptions but no response body. They do not establish a high-page body or envelope.",
+    "The evidence does not establish admins, moderators, other order values, unknown fields, malformed fields, duplicate fields, role-private rows, mutations, cache invalidation, or browser transitions.",
+    "Failing closed for request shapes outside the captured group, order, and page fields is a local safety boundary. It is not described as an observed Wikidot response."
+  ],
+  "referent_table": {
+    "path": "install/local/wikidot-verification/artifacts/referent-table-members-list-amc-live-20260810.md",
+    "sha256": "863ebd30d28ccee58146178561462d258df3c0e9332b84e76b4fa8f5c9d50391"
+  }
+}

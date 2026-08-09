@@ -77,12 +77,22 @@
       "result": "The focused parser accepts only documented exact double-quoted group, order, and showSince shapes. Unsupported keys, values, quote kinds, case variants, and duplicates fail closed. All six documented orders and the observed pager target order have unit cases. Central Rust execution remains outstanding."
     },
     {
+      "case_id": "Q1032_MEMBERS_AJAX_PAGINATION",
+      "issue": 1032,
+      "status": "implemented_unverified",
+      "evidence_path": "install/local/wikidot-verification/artifacts/members-list-amc-live-20260810.json",
+      "evidence_sha256": "6f7be3f18a5e21397affbc33f3419ec67d3deca3648a524c76c42e4e9b16e3e7",
+      "source_commit": "6141a288b",
+      "test": "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities; framerail/tests/ajax-module-connector.test.js#MembersListModule",
+      "result": "Deepwell exposes the observed MembersListModule read through a site-bound endpoint. Site permission runs before one SQL page read that filters active imported or local identity existence, counts filtered rows with COUNT(*) OVER(), orders by joined_at and user_id, and applies LIMIT 100 and OFFSET. Only the selected IDs reach the typed identity loader. Framerail accepts the exact empty-group, joined-order, canonical-page shape and returns the observed Ajax envelope. Central Rust and exact-candidate runtime execution remain outstanding."
+    },
+    {
       "case_id": "Q1032_REMAINING_DIRECTORY_RUNTIME",
       "issue": 1032,
       "status": "unimplemented",
       "evidence_path": "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/analysis.json",
-      "evidence_identity": "Issue #1032 requires target-user UserInfo, populated Watchers and WhoInvited results, broader role and privacy matrices, AMC pagination, mutations, and browser behavior.",
-      "result": "The generated Members script preserves the observed AMC route but this lane does not implement the MembersListModule page endpoint, pages beyond the first, loading/error/focus/history behavior, private identity policy not represented in the current schema, or join/leave/role/rename/delete/import invalidation cases."
+      "evidence_identity": "Issue #1032 still requires target-user UserInfo, populated Watchers and WhoInvited results, broader role and privacy matrices, mutations, invalidation, and browser behavior outside the sealed Members Ajax read.",
+      "result": "The observed empty-group, joined-order Members Ajax read is now an implemented but unverified source slice. This lane does not claim other groups or orders, populated actor differences, loading/error/focus/history behavior, private identity policy not represented in the current schema, or join/leave/role/rename/delete/import invalidation cases."
     },
     {
       "case_id": "Q810_FAIL_CLOSED_WITHOUT_GLOBAL_AUTHORITY",
