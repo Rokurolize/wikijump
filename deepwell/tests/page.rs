@@ -5115,10 +5115,6 @@ async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
             "before [[module ForumStart]] after",
         ),
         ("recent-posts-raw-owner", "@@[[module RecentPosts]]@@"),
-        (
-            "front-forum-unobserved-arguments",
-            r#"[[module FrontForum category="1"]]"#,
-        ),
     ] {
         let preview = run_endpoint!(
             runner,
@@ -5138,6 +5134,23 @@ async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
             preview.body,
         );
     }
+
+    let unsupported = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum-unobserved-arguments",
+            "wikitext": r#"[[module FrontForum category="1"]]"#,
+        }),
+    );
+    assert!(
+        unsupported.body.contains("No such module")
+            && !unsupported.body.contains("forum-start-box")
+            && !unsupported.body.contains("forum-recent-posts-box"),
+        "an unobserved FrontForum query must fail closed: {}",
+        unsupported.body,
+    );
 }
 
 #[tokio::test]
