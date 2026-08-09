@@ -46,6 +46,11 @@
     installWikidotSearchAll,
     wikidotSearchPath
   } from "$lib/wikidot/wikidot-search.js"
+  import {
+    customThemeHeadHtml,
+    normalizeGoogleAnalyticsSettings,
+    normalizeThemeSetting
+  } from "$lib/site-settings.js"
 
   let { children } = $props()
 
@@ -104,6 +109,19 @@
     shouldUseWikidotLicenseHtml(isImportedWikidotLayout, canonicalView.licenseKind)
   )
   const useSandboxWikidotChrome = $derived(shouldUseSandboxWikidotChrome(viewData))
+  const showTopToolbar = $derived(
+    currentLayout === Layout.WIKIDOT && viewData?.site_settings?.toolbars?.top === true
+  )
+  const analyticsSettings = $derived(
+    currentLayout === Layout.WIKIDOT
+      ? normalizeGoogleAnalyticsSettings(viewData?.site_settings?.google_analytics)
+      : normalizeGoogleAnalyticsSettings(undefined)
+  )
+  const analyticsProfile = $derived(
+    analyticsSettings.enabled ? analyticsSettings.profile : null
+  )
+  const effectiveTheme = $derived(normalizeThemeSetting(viewData?.theme))
+  const customThemeHtml = $derived(customThemeHeadHtml(effectiveTheme))
   const wikidotSiteTitle = $derived(resolveWikidotSiteTitle(viewData))
   const siteFavicon = $derived(faviconDeclaration(viewData?.site ?? null))
   const siteHasIosIcons = $derived(hasIosIcons(viewData?.site ?? null))
@@ -154,6 +172,9 @@
 
 <svelte:head>
   <title>{viewData?.site?.name}</title>
+  {#if analyticsProfile}
+    <meta name="wikidot-site-analytics-profile" content={analyticsProfile} />
+  {/if}
   {#if siteFavicon}
     <link href={siteFavicon.href} rel="shortcut icon" />
     <link href={siteFavicon.href} rel="icon" type={siteFavicon.type} />
@@ -173,6 +194,11 @@
     <link href="/wikidot/styles/wikidot-base-165bc434fd1d.css" rel="stylesheet" />
     <link href="/wikidot/styles/pagerate-db0bffe086ed.css" rel="stylesheet" />
     <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
+    {#if effectiveTheme.type === "external"}
+      <link data-wikidot-site-theme href={effectiveTheme.url} rel="stylesheet" />
+    {:else if effectiveTheme.type === "custom"}
+      {@html customThemeHtml}
+    {/if}
     {#each styleFrameDeclarations as declaration, index (`${declaration.priority}:${declaration.kind}:${declaration.order}:${index}`)}
       {#if declaration.kind === "theme"}
         <link
@@ -189,7 +215,7 @@
 </svelte:head>
 
 {#if currentLayout === Layout.WIKIDOT}
-  {#if useSandboxWikidotChrome}
+  {#if showTopToolbar}
     <div id="navi-bar">
       <a href="http://www.wikidot.com"><span>Wikidot.com</span></a>
       <div class="new-site">

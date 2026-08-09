@@ -10,11 +10,14 @@ import type {
   PageRevisionModel,
   SessionModel,
   SiteModel,
+  SiteSettings,
+  ThemeSetting,
   UserModel
 } from "$lib/types"
 
 export interface Viewer {
   site: SiteModel
+  site_settings: SiteSettings
   site_file_domain: string
   license_name: string
   license_url: string
@@ -56,6 +59,7 @@ export interface ClientUserSession {
 
 export interface PreloadData {
   site: Viewer["site"]
+  site_settings: Viewer["site_settings"]
   site_file_domain: Viewer["site_file_domain"]
   license_name: Viewer["license_name"]
   license_url: Viewer["license_url"]
@@ -81,6 +85,7 @@ interface PageViewDataBase {
   compiled_body_styles: string[]
   compiled_top_bar_html: Optional<string>
   compiled_side_bar_html: Optional<string>
+  theme: ThemeSetting
 }
 
 export type LegacyBrowserAction =
