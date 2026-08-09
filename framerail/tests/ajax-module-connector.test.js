@@ -214,6 +214,46 @@ test("dispatches the sealed read-only forum modules with Wikidot metadata", asyn
   }
 })
 
+test("rejects noncanonical forum numeric scalars before Deepwell", async () => {
+  const categoryId = "8503559"
+  const pageId = "1927127"
+  const threadId = "18029831"
+  const cases = [
+    ["forum/ForumCommentsListModule", "pageId", pageId, { pageId }],
+    ["forum/ForumViewCategoryModule", "c", categoryId, { c: categoryId, p: "1" }],
+    ["forum/ForumViewCategoryModule", "p", "1", { c: categoryId, p: "1" }],
+    ["forum/ForumViewThreadModule", "t", threadId, { t: threadId }],
+    ["forum/ForumViewThreadPostsModule", "t", threadId, { t: threadId, pageNo: "1" }],
+    ["forum/ForumViewThreadPostsModule", "pageNo", "1", { t: threadId, pageNo: "1" }],
+    ["forum/ForumRecentPostsListModule", "page", "1", { page: "1", categoryId }],
+    [
+      "forum/ForumRecentPostsListModule",
+      "categoryId",
+      categoryId,
+      { page: "1", categoryId }
+    ]
+  ]
+
+  let calls = 0
+  for (const [moduleName, field, value, parameters] of cases) {
+    for (const noncanonical of [`+${value}`, `0${value}`]) {
+      const response = await handleAjaxModuleConnectorRequest(
+        request({ moduleName, ...parameters, [field]: noncanonical }),
+        {
+          siteId: 6000006,
+          renderListPages: async () => assert.fail("must not render ListPages"),
+          renderForumModule: async () => {
+            calls += 1
+            assert.fail("noncanonical numeric scalars must fail before Deepwell")
+          }
+        }
+      )
+      assert.equal((await response.json()).status, "not_ok", `${moduleName} ${field}`)
+    }
+  }
+  assert.equal(calls, 0)
+})
+
 test("dispatches the sealed page comments reads without adding mutation authority", async () => {
   const cases = [
     {

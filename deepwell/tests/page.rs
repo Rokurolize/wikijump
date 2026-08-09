@@ -9572,6 +9572,22 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
         explicit_forwards.body,
     );
 
+    for page_id in [format!("+{public_page_id}"), format!("0{public_page_id}")] {
+        let noncanonical = run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": "forum/ForumCommentsListModule",
+                "parameters": {"pageId": page_id},
+            }),
+        );
+        assert_eq!(noncanonical.status, "no_page");
+        assert!(noncanonical.body.is_empty());
+        assert_eq!(noncanonical.thread_id, None);
+        assert!(noncanonical.js_include.is_empty());
+    }
+
     for order in [
         "forward",
         "REVERSE",
@@ -10292,6 +10308,41 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         "{front_forum_large_offset}",
     );
 
+    for (case_id, wikitext) in [
+        (
+            "front-forum duplicate limit",
+            format!(
+                r#"[[module FrontForum category="{}" limit="1" limit="2"]]"#,
+                primary_category.forum_category_id,
+            ),
+        ),
+        (
+            "front-forum duplicate offset",
+            format!(
+                r#"[[module FrontForum category="{}" limit="1" offset="1" offset="0"]]"#,
+                primary_category.forum_category_id,
+            ),
+        ),
+    ] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": wikitext,
+            }),
+        )
+        .body;
+        assert!(
+            output.contains("No such module")
+                && !output.contains("front-forum-box")
+                && !output.contains("Public Page Discussion Marker")
+                && !output.contains("Read Model Visible Thread"),
+            "{case_id}: {output}",
+        );
+    }
+
     let saved_multi_source = format!(
         r#"[[module FrontForum category="{};{}" limit="3"]]"#,
         primary_category.forum_category_id, pagination_category.forum_category_id,
@@ -10328,6 +10379,26 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         &saved_malformed_source,
     )
     .await;
+    for (slug, title, source) in [
+        (
+            "fixture-front-forum-duplicate-limit",
+            "Fixture FrontForum Duplicate Limit",
+            format!(
+                r#"[[module FrontForum category="{}" limit="1" limit="2"]]"#,
+                primary_category.forum_category_id,
+            ),
+        ),
+        (
+            "fixture-front-forum-duplicate-offset",
+            "Fixture FrontForum Duplicate Offset",
+            format!(
+                r#"[[module FrontForum category="{}" limit="1" offset="1" offset="0"]]"#,
+                primary_category.forum_category_id,
+            ),
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, &source).await;
+    }
     runner.set_request_context(RequestContext::default());
 
     let saved_multi = page_view_html(
@@ -10371,6 +10442,19 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
             && !saved_malformed.contains("[[module"),
         "{saved_malformed}",
     );
+    for slug in [
+        "fixture-front-forum-duplicate-limit",
+        "fixture-front-forum-duplicate-offset",
+    ] {
+        let output = page_view_html(&runner, site_id, slug, "").await;
+        assert!(
+            output.contains("No such module")
+                && !output.contains("front-forum-box")
+                && !output.contains("Public Page Discussion Marker")
+                && !output.contains("Read Model Visible Thread"),
+            "{slug}: {output}",
+        );
+    }
 
     let forum_start_ajax = run_endpoint!(
         runner,
@@ -10674,6 +10758,104 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         "{}",
         recent_posts_ajax.body,
     );
+
+    let invalid_numeric_requests = [
+        (
+            "forum/ForumViewCategoryModule",
+            json!({
+                "c": format!("+{}", primary_category.forum_category_id),
+                "p": "1",
+            }),
+            "no_category",
+        ),
+        (
+            "forum/ForumViewCategoryModule",
+            json!({
+                "c": format!("0{}", primary_category.forum_category_id),
+                "p": "1",
+            }),
+            "no_category",
+        ),
+        (
+            "forum/ForumViewCategoryModule",
+            json!({"c": primary_category.forum_category_id.to_string(), "p": "+1"}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumViewCategoryModule",
+            json!({"c": primary_category.forum_category_id.to_string(), "p": "01"}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumViewThreadModule",
+            json!({"t": format!("+{visible_thread}")}),
+            "no_thread",
+        ),
+        (
+            "forum/ForumViewThreadModule",
+            json!({"t": format!("0{visible_thread}")}),
+            "no_thread",
+        ),
+        (
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": format!("+{visible_thread}"), "pageNo": "1"}),
+            "no_thread",
+        ),
+        (
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": format!("0{visible_thread}"), "pageNo": "1"}),
+            "no_thread",
+        ),
+        (
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": visible_thread.to_string(), "pageNo": "+1"}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": visible_thread.to_string(), "pageNo": "01"}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumRecentPostsListModule",
+            json!({"page": "+1", "categoryId": primary_category.forum_category_id.to_string()}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumRecentPostsListModule",
+            json!({"page": "01", "categoryId": primary_category.forum_category_id.to_string()}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumRecentPostsListModule",
+            json!({"page": "1", "categoryId": format!("+{}", primary_category.forum_category_id)}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumRecentPostsListModule",
+            json!({"page": "1", "categoryId": format!("0{}", primary_category.forum_category_id)}),
+            "not_ok",
+        ),
+    ];
+    for (module_name, parameters, expected_status) in invalid_numeric_requests {
+        let noncanonical = run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": module_name,
+                "parameters": parameters,
+            }),
+        );
+        assert_eq!(
+            noncanonical.status, expected_status,
+            "{module_name} must reject noncanonical numeric scalars",
+        );
+        assert!(noncanonical.body.is_empty(), "{module_name}");
+        assert_eq!(noncanonical.thread_id, None, "{module_name}");
+        assert!(noncanonical.js_include.is_empty(), "{module_name}");
+    }
+
     let unsupported_recent_posts_page = run_endpoint!(
         runner,
         wikidot_forum_module,
