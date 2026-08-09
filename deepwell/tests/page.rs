@@ -4726,9 +4726,10 @@ async fn page_render_star_rate_module_consumes_body_and_substitutes_live_variabl
 }
 
 #[tokio::test]
-async fn wikidot_user_blocks_resolve_extant_numeric_and_fail_closed_missing_identities() {
+async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries() {
     const EXTANT_USER_ID: i64 = 19_102_600;
     const DELETED_USER_ID: i64 = 19_102_601;
+    const PAGE_SLUG: &str = "fixture-wikidot-user-identity-matrix";
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -4790,6 +4791,31 @@ async fn wikidot_user_blocks_resolve_extant_numeric_and_fail_closed_missing_iden
     );
     let html = preview.body;
 
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Fixture Wikidot User Identity Matrix",
+        &source,
+    )
+    .await;
+    let saved_page = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let saved_html = match saved_page {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved Wikidot user matrix, got {other:?}"),
+    };
+
     assert!(
         html.contains("http://www.wikidot.com/user:info/extant-user")
             && html.contains(&format!(
@@ -4806,16 +4832,61 @@ async fn wikidot_user_blocks_resolve_extant_numeric_and_fail_closed_missing_iden
         3,
         "a plain user has one profile link and a starred user has avatar and name links:\n{html}",
     );
-    assert_eq!(
-        html.matches("does not match any existing user name")
-            .count(),
-        8,
-        "deleted and unknown lookup keys must fail closed instead of producing links:\n{html}",
-    );
-    assert!(
-        !html.contains("user:info/deleted-user"),
-        "deleted identity must not become a profile existence side channel:\n{html}",
-    );
+    // Sealed anonymous PagePreview cases 1421 and 1423-1428 in
+    // /mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/comparison.json
+    // (SHA-256 87e8ae77db8cfe526fcd46fb13e2843968fcc80d9e6bebdc0692bd636f57ff76).
+    let live_missing_user_fragments = [
+        concat!(
+            r#"<span class="error-inline"><em>v7ws=&quot;alpha beta&nbsp;gamma&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7ser=&quot;serialized body&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7text=&quot;visible text&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7arg=&quot;one&quot; v7arg=&quot;two&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7arg=&quot;&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7UnknownArgument=&quot;x&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7arg='single quoted' data-v7=unquoted</em>"#,
+            " does not match any existing user name</span>",
+        ),
+    ];
+    for (label, output) in [
+        ("preview", html.as_str()),
+        ("saved page", saved_html.as_str()),
+    ] {
+        for expected in live_missing_user_fragments {
+            assert!(
+                output.contains(expected),
+                "{label} must keep the exact live missing-user text inside span.error-inline:\n{output}",
+            );
+        }
+        assert_eq!(
+            output
+                .matches("does not match any existing user name")
+                .count(),
+            8,
+            "{label} must fail closed for the deleted identity and seven unknown lookup keys:\n{output}",
+        );
+        assert!(
+            !output.contains("user:info/deleted-user"),
+            "{label} must not expose a profile URL for the deleted identity:\n{output}",
+        );
+    }
 }
 
 #[tokio::test]

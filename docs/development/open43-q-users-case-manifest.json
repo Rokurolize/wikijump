@@ -1,16 +1,32 @@
 {
   "schema": "wikijump.open43.q_users_case_manifest.v1",
-  "base_commit": "6c657690b97fbdb9cf2c9a565371bcac9841d8c0",
-  "ftml_commit": "902e72a2ff261b7af42402734b2f8b659e6a294a",
+  "base_commit": "78d83cb920a7ea72626f2bcfc747f1493686900b",
+  "ftml_commit": "62ebba4efda1f10e82363c23c925061fbe939e49",
   "scope": [810, 1026, 1032],
   "cases": [
     {
       "case_id": "Q1026_V7_POSITIONAL_LOOKUP",
       "issue": 1026,
-      "status": "partial",
+      "status": "implemented_unverified",
       "evidence_path": "/mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/comparison.json",
+      "evidence_sha256": "87e8ae77db8cfe526fcd46fb13e2843968fcc80d9e6bebdc0692bd636f57ff76",
       "evidence_identity": "Issue #1026 records renderer SHA-256 c2b4ee78c5b37e7c8eb1c5800426ed0249b3346347c0d05007b6ecff0df6ee11 and seven anonymous PagePreview rows.",
-      "result": "The public PagePreview case submits all seven assignment-shaped positional keys. Deepwell resolves only active imported identities and all deleted or unknown keys fail closed without links. Central execution found that pinned FTML still places the missing-user suffix outside span.error-inline and does not match live tab/NBSP serialization, so exact missing-user DOM remains actionable for the single aggregated FTML amendment."
+      "test": "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
+      "observed_boundary": {
+        "covered": [
+          "unstarred positional user blocks without leading block-head whitespace",
+          "the seven sealed assignment-shaped lookup keys",
+          "one authored tab normalized to one parser-space in case 1421",
+          "NBSP preserved as &nbsp; in case 1421",
+          "missing-user suffix owned by span.error-inline"
+        ],
+        "not_claimed": [
+          "starred user-block tab normalization",
+          "leading block-head whitespace",
+          "unobserved whitespace and control characters"
+        ]
+      },
+      "result": "Merged FTML 62ebba4efda1f10e82363c23c925061fbe939e49 owns the observed missing-user DOM and tab/NBSP syntax boundary. The public Deepwell regression requires the exact seven sealed non-link fragments in anonymous PagePreview output and carries the same renderer result through an anonymous saved-page view. Deepwell's existing typed snapshot remains the runtime identity authority and needs no production change. Central Rust execution remains outstanding."
     },
     {
       "case_id": "Q1026_NUMERIC_AND_DELETED_IDENTITY",
@@ -26,7 +42,7 @@
       "status": "unimplemented",
       "evidence_path": "/mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/SHA256SUMS",
       "evidence_identity": "The issue requests anonymous, member, admin, saved-page, include/ListPages, mutation, and browser intervals beyond the seven anonymous preview rows.",
-      "result": "This lane does not claim private actor differences, system and anonymous special identities, generated-name forgery resistance, rename/delete/import invalidation, saved-page parity, or hover/avatar browser behavior."
+      "result": "This lane does not claim private actor differences, system and anonymous special identities, generated-name forgery resistance, rename/delete/import invalidation, an independently observed live saved-page matrix, or hover/avatar browser behavior. The new anonymous saved-page test proves only that the sealed PagePreview-owned renderer fragments survive the local save/view lifecycle."
     },
     {
       "case_id": "Q1032_STATIC_USER_MODULE_BASELINE",
