@@ -2149,11 +2149,15 @@ impl RenderService {
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_static_account_modules(wikitext, settings, compat_html);
         wikitext = expand_site_utility_modules(
+            ctx,
             wikitext,
             settings,
+            options.current_site_id,
             options.viewer_user_id,
             compat_html,
-        );
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext = Self::expand_membership_by_password_modules(
             ctx,
             wikitext,
