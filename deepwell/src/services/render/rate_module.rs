@@ -75,12 +75,17 @@ fn render_rate_control(
     title: &str,
     label: &str,
 ) -> String {
-    assert!(matches!(
-        action,
-        LegacyActionDescriptor::Rate(-1 | 1) | LegacyActionDescriptor::CancelRate
-    ));
+    let onclick = match action {
+        LegacyActionDescriptor::Rate(value @ (-1 | 1)) => {
+            format!("WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, {value})")
+        }
+        LegacyActionDescriptor::CancelRate => {
+            "WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)".to_owned()
+        }
+        _ => unreachable!("Rate controls use only fixed rate descriptors"),
+    };
     format!(
-        r#"<span class="{class} btn btn-default"><a href="javascript:;" title="{title}">{label}</a></span>"#,
+        r#"<span class="{class} btn btn-default"><a href="javascript:;" onclick="{onclick}" title="{title}">{label}</a></span>"#,
         title = escape_list_pages_html_attr(title),
         label = escape_list_pages_html_text(label),
     )

@@ -4,7 +4,8 @@ import test from "node:test"
 
 import {
   performWikidotLegacyAction,
-  planWikidotStandaloneActionBindings
+  planWikidotStandaloneActionBindings,
+  wikidotLegacyActions
 } from "../src/lib/wikidot/wikidot-legacy-actions.js"
 import {
   performWikidotMembershipAction,
@@ -157,6 +158,34 @@ test("sidecar binding preserves exact DOM and fails closed on a count mismatch",
     assert.equal(control.getAttribute("data-wikijump-legacy-action"), null)
     assert.equal(control.getAttribute("onclick"), null)
   }
+})
+
+test("Rate DOM is intercepted but remains inert without a typed sidecar", () => {
+  const rate = actionElement()
+  const listeners = new Map()
+  const root = {
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: () => {},
+    querySelectorAll: (selector) => (selector.includes(".rateup") ? [rate] : [])
+  }
+  rate.parentElement = root
+  let votes = 0
+  wikidotLegacyActions(root, {
+    actions: [],
+    runtime: { rate: () => (votes += 1) }
+  })
+  let prevented = false
+  let stopped = false
+
+  listeners.get("click")({
+    target: rate,
+    preventDefault: () => (prevented = true),
+    stopPropagation: () => (stopped = true)
+  })
+
+  assert.equal(prevented, true)
+  assert.equal(stopped, true)
+  assert.equal(votes, 0)
 })
 
 test("Join binds exact renderer DOM out of band and remains busy through reload", async () => {

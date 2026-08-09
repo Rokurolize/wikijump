@@ -171,21 +171,21 @@ export const planWikidotStandaloneActionBindings = (candidates, actions) => {
 }
 
 /** @param {HTMLElement} root @param {Set<ActionControl>} elements */
-const bindRateControls = (root, elements) => {
+const interceptRateControls = (root, elements) => {
   for (const element of root.querySelectorAll(
     '.page-rate-widget-box > .rateup > a[href="javascript:;"]'
   )) {
-    bind(elements, element, { type: "rate", value: 1 })
+    elements.add(element)
   }
   for (const element of root.querySelectorAll(
     '.page-rate-widget-box > .ratedown > a[href="javascript:;"]'
   )) {
-    bind(elements, element, { type: "rate", value: -1 })
+    elements.add(element)
   }
   for (const element of root.querySelectorAll(
     '.page-rate-widget-box > .cancel > a[href="javascript:;"]'
   )) {
-    bind(elements, element, { type: "rate-cancel" })
+    elements.add(element)
   }
 }
 
@@ -208,10 +208,7 @@ const initializeWikidotRateWidgets = (root, elements) => {
       image.alt = `${index + 1}`
       image.title = STAR_TITLES[index]
       image.src = starAsset(rating, index)
-      bind(elements, image, {
-        type: "rate",
-        value: /** @type {1 | 2 | 3 | 4 | 5} */ (index + 1)
-      })
+      elements.add(image)
       widget.append(image)
       if (index < STAR_TITLES.length - 1) widget.append("\u00a0")
     }
@@ -266,7 +263,7 @@ export const wikidotLegacyActions = (root, parameters) => {
     for (const element of elements) boundActions.delete(element)
     elements.clear()
     bindStandaloneActions(root, actions, elements)
-    bindRateControls(root, elements)
+    interceptRateControls(root, elements)
     initializeWikidotRateWidgets(root, elements)
   }
   refresh(parameters.actions)
@@ -275,7 +272,7 @@ export const wikidotLegacyActions = (root, parameters) => {
   const actionElement = (event) => {
     let element = /** @type {ActionControl | null} */ (event.target)
     while (element && element !== root) {
-      if (boundActions.has(element)) return element
+      if (elements.has(element)) return element
       element = element.parentElement
     }
     return undefined
@@ -285,8 +282,9 @@ export const wikidotLegacyActions = (root, parameters) => {
     const element = actionElement(event)
     if (!element) return undefined
     const action = boundActions.get(element)
-    if (!action) return undefined
     event.preventDefault()
+    event.stopPropagation()
+    if (!action) return undefined
     return performWikidotLegacyAction(element, action, runtime)
   }
   /** @param {KeyboardEvent} event */
@@ -295,13 +293,13 @@ export const wikidotLegacyActions = (root, parameters) => {
     return activate(event)
   }
 
-  root.addEventListener("click", activate)
-  root.addEventListener("keydown", keydown)
+  root.addEventListener("click", activate, true)
+  root.addEventListener("keydown", keydown, true)
   return {
     destroy() {
       for (const element of elements) boundActions.delete(element)
-      root.removeEventListener("click", activate)
-      root.removeEventListener("keydown", keydown)
+      root.removeEventListener("click", activate, true)
+      root.removeEventListener("keydown", keydown, true)
     },
     /** @param {LegacyActionParameters} nextParameters */
     update(nextParameters) {
