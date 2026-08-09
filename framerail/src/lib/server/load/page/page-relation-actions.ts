@@ -4,7 +4,8 @@ import {
   pageScore,
   pageVoteCast,
   pageVoteList,
-  pageVoteRemove
+  pageVoteRemove,
+  wikidotLegacySetTags
 } from "$lib/server/deepwell/page"
 import { pageFileList } from "$lib/server/deepwell/page-file"
 import {
@@ -17,7 +18,7 @@ import { executePageAction } from "$lib/server/load/page/page-action-execution"
 import { resolvePageActionRequestContext } from "$lib/server/load/page/page-action-context"
 import { fail, superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
-import { array, number, object, optional, string } from "valibot"
+import { array, integer, minValue, number, object, optional, pipe, string } from "valibot"
 
 import type { RequestEvent } from "@sveltejs/kit"
 
@@ -137,3 +138,30 @@ const pageVoteCastSchema = object({
 const pageVoteRemoveSchema = object({
   pageId: number()
 })
+
+const wikidotLegacySetTagsSchema = object({
+  pageId: number(),
+  lastRevisionId: number(),
+  actionIndex: pipe(number(), integer(), minValue(0)),
+  actionFingerprint: string()
+})
+
+export async function wikidotLegacySetTagsAction(event: RequestEvent) {
+  const { request, getClientAddress } = event
+  return executePageAction(async () => {
+    const { pageId, lastRevisionId, actionIndex, actionFingerprint } =
+      await readActionJson(request, wikidotLegacySetTagsSchema)
+    const context = await resolvePageActionRequestContext(event, {
+      session: "required"
+    })
+    return wikidotLegacySetTags(
+      pageId,
+      lastRevisionId,
+      actionIndex,
+      actionFingerprint,
+      context.sessionUserId,
+      getClientAddress(),
+      context.requestContext
+    )
+  }, failForActionError)
+}

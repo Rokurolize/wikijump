@@ -150,6 +150,29 @@ export async function pageEditPermission(
   return client.request("page_edit_permission", {}, requestContext)
 }
 
+export async function wikidotLegacySetTags(
+  pageId: number,
+  lastRevisionId: number,
+  actionIndex: number,
+  actionFingerprint: string,
+  userId: number,
+  ipAddress: string,
+  requestContext: RequestContext
+): Promise<Optional<CreatePageRevisionOutput>> {
+  return client.request(
+    "wikidot_legacy_set_tags",
+    {
+      page_id: pageId,
+      last_revision_id: lastRevisionId,
+      action_index: actionIndex,
+      action_fingerprint: actionFingerprint,
+      user_id: userId,
+      ip_address: ipAddress
+    },
+    requestContext
+  )
+}
+
 export interface WikidotPageDiscussionOutput {
   thread_id: number
   thread_unix_title: string

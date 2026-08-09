@@ -111,3 +111,33 @@ test("page score pane sends no client-selected target", async () => {
   assert.match(body, /method: "POST"/u)
   assert.doesNotMatch(body, /siteId|pageId|body:/u)
 })
+
+test("set-tags resolves the actor and alterations behind the trusted route", async () => {
+  const actionSource = await readFile(pageActionsSourceUrl, "utf8")
+  const actionStart = actionSource.indexOf(
+    "export async function wikidotLegacySetTagsAction("
+  )
+  const actionEnd = actionSource.length
+  assert.notEqual(actionStart, -1)
+  const action = actionSource.slice(actionStart, actionEnd)
+  assert.match(action, /session: "required"/u)
+  assert.match(action, /context\.sessionUserId/u)
+  assert.match(action, /getClientAddress\(\)/u)
+  assert.doesNotMatch(action, /submittedSiteId|tags|alterations/u)
+
+  const rpcSource = await readFile(pageRpcSourceUrl, "utf8")
+  const rpcStart = rpcSource.indexOf("export async function wikidotLegacySetTags(")
+  const rpcEnd = rpcSource.indexOf(
+    "\nexport interface WikidotPageDiscussionOutput",
+    rpcStart
+  )
+  assert.notEqual(rpcStart, -1)
+  assert.notEqual(rpcEnd, -1)
+  const rpc = rpcSource.slice(rpcStart, rpcEnd)
+  assert.match(rpc, /"wikidot_legacy_set_tags"/u)
+  assert.match(rpc, /action_index: actionIndex/u)
+  assert.match(rpc, /action_fingerprint: actionFingerprint/u)
+  assert.match(rpc, /last_revision_id: lastRevisionId/u)
+  assert.match(rpc, /requestContext/u)
+  assert.doesNotMatch(rpc, /\btags\s*:|alterations|site_id/u)
+})

@@ -21,7 +21,8 @@ import {
   pageScoreAction,
   pageVoteCastAction,
   pageVoteListAction,
-  pageVoteRemoveAction
+  pageVoteRemoveAction,
+  wikidotLegacySetTagsAction
 } from "$lib/server/load/page/page-relation-actions"
 import {
   pageDeletedGetAction,
@@ -62,6 +63,7 @@ export const pageActions = {
   voteCast: pageVoteCastAction,
   voteCancel: pageVoteRemoveAction,
   score: pageScoreAction,
+  legacySetTags: wikidotLegacySetTagsAction,
   deletedGet: pageDeletedGetAction,
   restore: pageRestoreAction
 }

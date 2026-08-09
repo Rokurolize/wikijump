@@ -14,6 +14,16 @@
     buildWikidotDiscussButtonHtml,
     isWikidotFragmentPage
   } from "$lib/wikidot/wikidot-page-actions"
+  import {
+    updateWikidotRateWidget,
+    wikidotLegacyActions
+  } from "$lib/wikidot/wikidot-legacy-actions"
+  import {
+    requestLegacyRate,
+    requestLegacyRateCancel,
+    requestLegacyScore,
+    requestLegacySetTags
+  } from "$lib/wikidot/wikidot-legacy-action-request"
   import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
   import { resolveWikidotHashMagicPagePane } from "$lib/wikidot/wikidot-hash-magic"
   import { onMount } from "svelte"
@@ -151,6 +161,65 @@
     pagePaneState = pane
   }
 
+  const legacyRequestRuntime = { fetch, deserialize }
+
+  async function setLegacyTags(actionIndex: number, actionFingerprint: string) {
+    if (!data.page || !data.page_revision || showRevision) {
+      throw new Error("This set-tags action is not available for the displayed revision.")
+    }
+    await requestLegacySetTags(legacyRequestRuntime, {
+      pageId: data.page.page_id,
+      lastRevisionId: data.page_revision.revision_id,
+      actionIndex,
+      actionFingerprint
+    })
+    window.location.reload()
+  }
+
+  async function rateFromLegacyWidget(value: number, element: HTMLElement) {
+    if (!data.page) throw new Error("This page cannot be rated.")
+    await requestLegacyRate(legacyRequestRuntime, {
+      pageId: data.page.page_id,
+      value
+    })
+    const score = await requestLegacyScore(legacyRequestRuntime)
+    updateWikidotRateWidget(element, score?.score)
+  }
+
+  async function cancelLegacyRating(element: HTMLElement) {
+    if (!data.page) throw new Error("This page cannot be rated.")
+    await requestLegacyRateCancel(legacyRequestRuntime, {
+      pageId: data.page.page_id
+    })
+    const score = await requestLegacyScore(legacyRequestRuntime)
+    updateWikidotRateWidget(element, score?.score)
+  }
+
+  const legacyActionRuntime = {
+    edit: navigateEdit,
+    history: () => activatePagePane(PagePane.History),
+    source: () => {
+      showSource = true
+      pagePaneState = PagePane.None
+    },
+    print: () => window.print(),
+    setTags: setLegacyTags,
+    rate: rateFromLegacyWidget,
+    cancelRate: cancelLegacyRating,
+    error: (error: unknown) => {
+      errorPopupState.current = {
+        state: true,
+        message: error instanceof Error ? error.message : "Legacy page action failed.",
+        data: null
+      }
+    }
+  }
+
+  let legacyActionParameters = $derived({
+    actions: showRevision ? [] : (data.legacy_actions ?? []),
+    runtime: legacyActionRuntime
+  })
+
   onMount(() => {
     if (pageLayoutContext.current !== Layout.WIKIDOT || data.options?.edit) return
 
@@ -227,7 +296,12 @@
       <textarea class="page-source" readonly={true}>{data.wikitext}</textarea>
     </div>
   {:else}
-    <div id="page-content" class:hidden={dataFormEditing} use:wikidotTabviews>
+    <div
+      id="page-content"
+      class:hidden={dataFormEditing}
+      use:wikidotLegacyActions={legacyActionParameters}
+      use:wikidotTabviews
+    >
       {@html showRevision ? revision?.compiled_body_html : data.compiled_body_html}
     </div>
   {/if}

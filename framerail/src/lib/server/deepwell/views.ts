@@ -83,6 +83,13 @@ interface PageViewDataBase {
   compiled_side_bar_html: Optional<string>
 }
 
+export type LegacyBrowserAction =
+  | { type: "edit" }
+  | { type: "history" }
+  | { type: "source" }
+  | { type: "print" }
+  | { type: "set-tags"; index: number; fingerprint: string }
+
 interface PageViewFound {
   type: "found"
   data: PageViewDataBase & {
@@ -94,6 +101,7 @@ interface PageViewFound {
     page_rating: PageRatingSettings
     page_discussion: PageDiscussionSettings
     data_form: Nullable<DataFormEditor>
+    legacy_actions: LegacyBrowserAction[]
   }
 }
 
