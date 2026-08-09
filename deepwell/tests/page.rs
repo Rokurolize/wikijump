@@ -6092,6 +6092,65 @@ async fn childpages_module_renders_live_child_list_and_empty_state() {
     );
 }
 
+/// Live anonymous PagePreview capture (2026-07-31), case IDs
+/// `module-own-line-nextpage` and `module-own-line-previouspage`: without a
+/// current page, both modules emit `<div class="error-block">Invalid range
+/// argument.</div>`.
+#[tokio::test]
+async fn nextpreviouspage_preview_without_page_context_renders_live_range_error() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "NextPreviousPage no-context preview",
+            "wikitext": concat!(
+                "NEXT_START\n[[module NextPage]]\nNEXT_END\n",
+                "PREVIOUS_START\n[[module PreviousPage]]\nPREVIOUS_END",
+            ),
+        }),
+    );
+
+    assert_eq!(
+        preview.body.matches("Invalid range argument.").count(),
+        2,
+        "live PagePreview returns the same range error for NextPage and PreviousPage without a current page:\n{}",
+        preview.body,
+    );
+    assert_eq!(
+        preview.body.matches(r#"<div class="error-block">"#).count(),
+        2,
+        "each no-context module should render one live error block:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("NEXT_START")
+            && preview.body.contains("NEXT_END")
+            && preview.body.contains("PREVIOUS_START")
+            && preview.body.contains("PREVIOUS_END"),
+        "range errors should remain in authored source order:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("No such module")
+            && !preview.body.contains("[[module NextPage")
+            && !preview.body.contains("[[module PreviousPage"),
+        "recognized no-context modules must not fall through to unknown-module output:\n{}",
+        preview.body,
+    );
+}
+
 /// Live capture (sandbox-for-codex, 2026-07-28): `NextPage` and
 /// `PreviousPage` use the ListPages wrapper and template variables, default
 /// to creation-date adjacency, and have a legacy title-mode quirk where
