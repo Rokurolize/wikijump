@@ -338,6 +338,7 @@ async fn resized_file_fetch_error(
 
 #[cfg(test)]
 mod tests {
+    use super::RESIZED_IMAGE_MAX_DIMENSION;
     use crate::config::{RpcToken, Secrets};
     use crate::handler::HEADER_SITE_ID;
     use crate::route::build_router;
@@ -345,8 +346,8 @@ mod tests {
     use axum::Router;
     use axum::body::{Body, Bytes};
     use axum::extract::{Path, State};
+    use axum::http::StatusCode;
     use axum::http::header::{CONTENT_LENGTH, CONTENT_TYPE, ETAG, IF_NONE_MATCH, RANGE};
-    use axum::http::{HeaderMap, StatusCode};
     use axum::response::Response;
     use axum::routing::{get, post};
     use image::{DynamicImage, GenericImageView, ImageBuffer, ImageFormat, Rgb};

@@ -54,7 +54,6 @@ pub async fn build_server_state(
         redis_url,
         s3_files_bucket,
         s3_tblocks_bucket,
-        resized_image_jobs: Semaphore::new(RESIZED_IMAGE_MAX_CONCURRENT_JOBS),
         s3_region,
         s3_credentials,
         s3_path_style,
@@ -92,6 +91,7 @@ pub async fn build_server_state(
         cache,
         s3_files_bucket,
         s3_tblocks_bucket,
+        resized_image_jobs: Semaphore::new(RESIZED_IMAGE_MAX_CONCURRENT_JOBS),
     }))
 }
 
