@@ -1148,13 +1148,15 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-categories": {
-      "status": "implemented",
+      "status": "in_progress",
       "confirmed_public_seams": [
         "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, category service, and page-view interface",
-        "RenderService Categories module rendering for hidden-category filtering and generated toggler DOM"
+        "RenderService Categories module rendering for hidden-category filtering and generated toggler DOM",
+        "Deepwell page_view request-time rendering with actor-scoped category inventory"
       ],
       "tests": [
         "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden",
+        "deepwell/tests/page.rs::categories_runtime_inventory_is_scoped_to_the_request_actor",
         "deepwell/src/services/render/categories.rs::tests::categories_name_must_end_before_arguments",
         "deepwell/src/services/render/categories.rs::tests::include_hidden_matches_live_exact_quoted_argument",
         "deepwell/src/services/render/categories.rs::tests::default_category_is_visible_even_when_hidden_categories_are_not",
@@ -1166,6 +1168,7 @@
         "deepwell/src/services/render/categories.rs",
         "deepwell/src/services/render/page_tree.rs",
         "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/url_arguments.rs",
         "deepwell/tests/page.rs"
       ],
       "documentation_evidence": [
@@ -1175,7 +1178,10 @@
         "live-observations.json::navigation-list-modules-live-dom-and-argument-quirks",
         "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json"
       ],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "The frozen live evidence establishes initial toggler DOM but not the click request, response rows, count text, collapse label, loading, focus, or failure contract. Browser expand/list behavior remains unimplemented rather than inferred.",
+        "Category create/delete/rename, page moves, templates, many-category bounds, cache convergence, and served-browser actor isolation remain unproved."
+      ]
     },
     "module-childpages": {
       "status": "implemented",
@@ -1623,7 +1629,7 @@
         "install/local/wikidot-verification/artifacts/listdrafts-module-live-preview.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Deepwell currently has no persisted page-draft model corresponding to Wikidot page edit drafts. The implemented compatibility surface recognizes ListDrafts and renders the live empty wrapper for no-draft state, but non-empty draft enumeration and pageType exists/notexists filtering remain blocked until page draft state exists or imported Wikidot draft provenance is made available."
+        "Deepwell currently has no persisted page-draft model corresponding to Wikidot page edit drafts. The implemented compatibility surface recognizes ListDrafts and renders the live empty wrapper for the full observed argument and standalone-closing-marker matrix, but non-empty draft enumeration and pageType exists/notexists filtering remain blocked until page draft state exists or imported Wikidot draft provenance is made available."
       ]
     },
     "module-listpages": {
@@ -2695,15 +2701,34 @@
       ]
     },
     "module-sitechanges": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live anonymous Wikidot edit/PagePreviewModule capture for the standalone default module form, category selector, initial revision rows, flags, dates, users, comments, and pager DOM",
+        "Deepwell wikidot_page_preview and request-time page_view rendering against the real revision, category, user, and permission services"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit",
+        "deepwell/src/services/render/site_changes.rs::tests::site_changes_accepts_only_the_evidenced_standalone_default_shape",
+        "deepwell/src/services/render/site_changes.rs::tests::site_changes_flags_derive_from_revision_authority",
+        "deepwell/src/services/render/url_arguments.rs::tests::actor_sensitive_page_graph_modules_require_runtime_rendering"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/site_changes.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/tests/page.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-sitechanges.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl::module-own-line-sitechanges"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Only the initial no-argument snapshot is implemented. Revision-type, category, per-page, and page-number Ajax behavior remains unimplemented because the frozen evidence does not establish the request and replacement contract.",
+        "File revisions, parent metadata changes, delete, undelete, exact move variants, mutation convergence, and browser intermediate states remain unimplemented or unproved.",
+        "The permission-first initial query renders only authorized rows established within its bounded raw scan; large-site completeness beyond that bound remains unproved, and hidden rows never determine an exposed count or pager."
+      ]
     },
     "module-sitegrid": {
       "status": "pending",

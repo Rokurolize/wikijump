@@ -1,0 +1,199 @@
+{
+  "schema": "wikijump.open43.q_page_graph_residual_case_manifest.v1",
+  "scope": [1028, 1035],
+  "source": {
+    "wikijump_base": "eaa6675f0162dbe22ee7eb315aab83a0a04c0bb7",
+    "wikijump_base_tree": "9d40e06ee92bfe5f672317e722b6d6cdb2555741",
+    "deepwell_cargo_lock_sha256": "54eb9700fa098bdfefee66d863a520adf80261a770e0a20564b592dc4ce067d8",
+    "candidate_identity": null,
+    "implementation_commits": [
+      "726264199ebcd9ccfa2fa43edb1527e8c5c69d29"
+    ]
+  },
+  "evidence": [
+    {
+      "path": "docs/wikidot-specifications/IMPLEMENTATION_PROMPT.md",
+      "sha256": "5ff59cde684b2dd53200156514180dda6f8c7e0cb539ea0b1653c0a7fa835c19",
+      "issues": [1028, 1035]
+    },
+    {
+      "path": "docs/wikidot-specifications/specifications/module/module-categories.md",
+      "sha256": "ad032973b5bfa57dee9adda13caf6b82d391ed98104096911c4ec250d22cba13",
+      "issues": [1028]
+    },
+    {
+      "path": "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json",
+      "sha256": "07228f5618e06dba6cf90779bcd0bd2bcd834c1bc4a3a141f4528135fe4da5b1",
+      "issues": [1028]
+    },
+    {
+      "path": "docs/wikidot-specifications/specifications/module/module-sitechanges.md",
+      "sha256": "1e91c82ac785a0d3b12cb0aa7bd2cd6636ff396e760c47ef2f6eb82e7c18f627",
+      "issues": [1035]
+    },
+    {
+      "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
+      "sha256": "686f9fd383f51b5fe393b5f98b2a7e499010bfb691a39086309170a29982a783",
+      "raw_html_sha256": "9d345a34d6da89ba59e919e30e2f61efefc54682c144d5a075678d453405cc2c",
+      "case": "module-own-line-sitechanges",
+      "issues": [1035]
+    },
+    {
+      "path": "docs/wikidot-specifications/specifications/module/module-listdrafts.md",
+      "sha256": "5a89b947fd02fb991c802648ea129cf44dfc49076350e93f82c83dbfcecd320d",
+      "issues": [1035]
+    },
+    {
+      "path": "install/local/wikidot-verification/artifacts/listdrafts-module-live-preview.json",
+      "sha256": "67a6233f996f2429a30b7dff4b329a0a37bcb016dbc2d22f83b068be63ca43f6",
+      "issues": [1035]
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS",
+      "issue": 1028,
+      "status": "implemented_unverified",
+      "owner": "deepwell",
+      "tests": [
+        "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden",
+        "deepwell/src/services/render/categories.rs::tests"
+      ],
+      "result": "The integration base already renders the live initial category sections, category IDs, hidden options marker, canonical ordering, case-insensitive module name, and exact includeHidden argument quirks. This lane preserves that recognition surface and adds actor-safe request-time rendering. Central Rust execution remains outstanding."
+    },
+    {
+      "case_id": "Q1028_ACTOR_SCOPED_RUNTIME_INVENTORY",
+      "issue": 1028,
+      "status": "implemented_unverified",
+      "owner": "deepwell",
+      "test": "deepwell/tests/page.rs::categories_runtime_inventory_is_scoped_to_the_request_actor",
+      "result": "Categories now requires request-time rendering, applies category-scoped Page View authority before category names and controls are emitted, and distinguishes anonymous and authorized page_view output without persisting actor-specific HTML. Central Rust execution remains outstanding."
+    },
+    {
+      "case_id": "Q1028_EXPAND_LIST_ACTION",
+      "issue": 1028,
+      "status": "unimplemented",
+      "owner": "framerail-deepwell",
+      "test": null,
+      "result": "The frozen live artifact proves only the initial toggler DOM. It does not capture the click request, response rows, count text, collapse label, loading state, focus, or failure behavior. This lane does not invent an Ajax contract or bind an inert local-only toggle."
+    },
+    {
+      "case_id": "Q1028_CATEGORY_LIFECYCLE_AND_CACHE",
+      "issue": 1028,
+      "status": "unproved",
+      "owner": "deepwell-runtime",
+      "test": null,
+      "result": "Category create, delete, rename, page moves, templates, many-category bounds, cache convergence, and served browser intervals remain for the central runtime and browser barriers."
+    },
+    {
+      "case_id": "Q1035_SITECHANGES_DEFAULT_INITIAL_SNAPSHOT",
+      "issue": 1035,
+      "status": "implemented_unverified",
+      "owner": "deepwell",
+      "test": "deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit",
+      "result": "The exact evidenced standalone [[module SiteChanges]] shape now renders the initial filter form, authorized category selector, first 20 page revisions, page/title/category links, revision-derived N/S/T/M/A flags, dates, revision numbers, users, comments, and initial pager shape through PagePreview and saved page_view. Other module heads are not consumed by this renderer. Central Rust execution remains outstanding."
+    },
+    {
+      "case_id": "Q1035_SITECHANGES_PERMISSION_BEFORE_LIMIT",
+      "issue": 1035,
+      "status": "implemented_unverified",
+      "owner": "deepwell",
+      "test": "deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit",
+      "result": "The query scans a bounded candidate window, caches only per-page decisions, filters every revision with the request actor and page/category authority, and only then selects the first visible 20 and derives pager availability. A fixture places 23 private revisions ahead of a public revision to catch limit-before-permission leaks. If the raw scan bound is reached, only the authorized rows established inside that bound are rendered; hidden rows never determine an exposed count or pager."
+    },
+    {
+      "case_id": "Q1035_SITECHANGES_FILTER_AND_AJAX_PAGER",
+      "issue": 1035,
+      "status": "unimplemented",
+      "owner": "deepwell-framerail",
+      "test": null,
+      "result": "Revision-type checkboxes, category selection, per-page selection, page 2+, Ajax replacement, loading, failure, history, and focus behavior have no captured local request contract in the frozen evidence. The initial fixed Wikidot controls are preserved but are not claimed interactive."
+    },
+    {
+      "case_id": "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE",
+      "issue": 1035,
+      "status": "unimplemented",
+      "owner": "deepwell",
+      "test": null,
+      "result": "File revisions, parent metadata changes, delete, undelete, and exact move/comment variants are not unified in the current initial page-revision slice and remain actionable. The renderer does not fabricate flags that are absent from local authority."
+    },
+    {
+      "case_id": "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX",
+      "issue": 1035,
+      "status": "implemented_unverified",
+      "owner": "deepwell",
+      "test": "deepwell/tests/page.rs::listdrafts_module_matches_live_empty_draft_state",
+      "result": "The public preview matrix covers exact exists and notexists values, omission, unsupported and empty values, single-quoted and bare values, module-name case, argument-name case, and literal standalone closing marker behavior. Saved anonymous page_view retains the empty wrapper. Central Rust execution remains outstanding."
+    },
+    {
+      "case_id": "Q1035_LISTDRAFTS_NONEMPTY_QUERY",
+      "issue": 1035,
+      "status": "blocked",
+      "owner": "domain-model",
+      "test": null,
+      "result": "Deepwell has no persisted Wikidot page-edit draft model. Non-empty exists/notexists enumeration, draft actor visibility, draft mutation, expiration, rename/delete effects, and cache convergence cannot be implemented without first establishing that state authority. The live row is not hard-coded and no page-revision substitute is used."
+    }
+  ],
+  "local_validation": [
+    {
+      "command": "rustfmt --edition 2024 <changed Rust files>",
+      "status": "pass"
+    },
+    {
+      "command": "git diff --check",
+      "status": "pass"
+    },
+    {
+      "command": "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
+      "status": "pass",
+      "result": "Validated 210 implementation ledger entries."
+    },
+    {
+      "command": "node scripts/generate-wikidot-specifications.mjs --check",
+      "status": "pass"
+    },
+    {
+      "command": "jq empty docs/development/open43-q-page-graph-residual-case-manifest.json docs/wikidot-specifications/implementation-ledger.json scripts/data/wikidot-implementation-ledger.json",
+      "status": "pass"
+    },
+    {
+      "command": "cmp docs/wikidot-specifications/implementation-ledger.json scripts/data/wikidot-implementation-ledger.json",
+      "status": "pass"
+    }
+  ],
+  "central_commands": [
+    "cargo fmt --manifest-path deepwell/Cargo.toml --check",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page categories_module_lists_active_categories_and_honors_include_hidden -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page categories_runtime_inventory_is_scoped_to_the_request_actor -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page sitechanges_default_snapshot_filters_before_the_initial_page_limit -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page listdrafts_module_matches_live_empty_draft_state -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml services::render::site_changes::tests -- --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml services::render::categories::tests -- --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml services::render::url_arguments::tests::actor_sensitive_page_graph_modules_require_runtime_rendering -- --exact --nocapture",
+    "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
+    "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
+    "node scripts/generate-wikidot-specifications.mjs --check",
+    "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
+    "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scp-wiki --rpc-url http://127.0.0.1:2747/jsonrpc"
+  ],
+  "central_runtime_handoff": [
+    {
+      "case_id": "Q1028_SERVED_ACTOR_MATRIX",
+      "surface": "saved page containing [[module Categories]]",
+      "assert": "anonymous and authorized requests receive different category inventories from the exact candidate without actor-specific cache reuse",
+      "status": "unproved"
+    },
+    {
+      "case_id": "Q1035_SERVED_INITIAL_SNAPSHOT",
+      "surface": "saved page containing [[module SiteChanges]]",
+      "assert": "the exact candidate serves the actor-filtered first revision page with no private category, title, count, or pager leak",
+      "status": "unproved"
+    },
+    {
+      "case_id": "Q1028_Q1035_BROWSER_ACTIONS",
+      "surface": "Categories toggler and SiteChanges controls",
+      "assert": "capture the live request and intermediate-state contracts before implementing browser actions; do not close either interactive subrow from initial DOM alone",
+      "status": "unimplemented"
+    }
+  ]
+}
