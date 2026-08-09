@@ -163,9 +163,7 @@ impl RenderService {
                 included_pages: Vec::new(),
             });
         }
-        let (Some(current_site_id), Some(current_page_id)) =
-            (current_site_id, current_page_id)
-        else {
+        let Some(current_site_id) = current_site_id else {
             return Ok(NextPreviousPageExpansion {
                 wikitext,
                 included_pages: Vec::new(),
@@ -181,6 +179,17 @@ impl RenderService {
                 included_pages: Vec::new(),
             });
         }
+        let Some(current_page_id) = current_page_id else {
+            return Ok(NextPreviousPageExpansion {
+                wikitext: expand_next_previous_page_without_current_page(
+                    &wikitext,
+                    occurrences,
+                    &literal_regions,
+                    compat_html,
+                ),
+                included_pages: Vec::new(),
+            });
+        };
 
         let current_key =
             load_current_next_previous_sort_key(ctx, current_page_id, page_info).await?;
@@ -336,6 +345,34 @@ impl RenderService {
             included_pages,
         })
     }
+}
+
+fn expand_next_previous_page_without_current_page(
+    wikitext: &str,
+    occurrences: Vec<NextPreviousOccurrence<'_>>,
+    literal_regions: &LiteralRegionIndex,
+    compat_html: &mut CompatHtmlFragments,
+) -> String {
+    let mut expanded = String::with_capacity(wikitext.len());
+    let mut cursor = 0;
+
+    for occurrence in occurrences {
+        if literal_regions.contains(occurrence.start) {
+            continue;
+        }
+
+        expanded.push_str(&wikitext[cursor..occurrence.start]);
+        expanded.push_str(&compat_html.push_block_html(
+            "\n<div class=\"error-block\">Invalid range argument.</div>\n".to_owned(),
+        ));
+        cursor = occurrence.end;
+    }
+
+    if cursor == 0 {
+        return wikitext.to_owned();
+    }
+    expanded.push_str(&wikitext[cursor..]);
+    expanded
 }
 
 fn find_next_previous_page_occurrences(source: &str) -> Vec<NextPreviousOccurrence<'_>> {
