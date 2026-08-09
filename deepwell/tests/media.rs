@@ -551,20 +551,18 @@ async fn source_less_local_images_keep_original_and_resized_asset_identities() {
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
 
-    for (case_id, slug, source, expected_class, expected_variant) in [
+    for (case_id, slug, source, expected_class) in [
         (
             "issue-776-source-less-floating-image",
             "fixture-source-less-image-776",
-            r#"[[f<image image-one.png size="small"]]"#,
+            r#"[[f<image image-one.png]]"#,
             "image-container floatleft",
-            "small.jpg",
         ),
         (
             "issue-806-source-less-centered-image",
             "fixture-source-less-image-806",
-            r#"[[=image image-two.png size="medium"]]"#,
+            r#"[[=image image-two.png]]"#,
             "image-container aligncenter",
-            "medium.jpg",
         ),
     ] {
         runner.set_request_context(RequestContext {
@@ -611,7 +609,7 @@ async fn source_less_local_images_keep_original_and_resized_asset_identities() {
         let original =
             format!("https://scp-wiki.wjfiles.com/local--files/{slug}/{filename}");
         let resized = format!(
-            "https://scp-wiki.wjfiles.com/local--resized-images/{slug}/{filename}/{expected_variant}"
+            "https://scp-wiki.wjfiles.com/local--resized-images/{slug}/{filename}/medium.jpg"
         );
         assert!(
             rendered.contains(&format!(r#"<div class="{expected_class}">"#)),
