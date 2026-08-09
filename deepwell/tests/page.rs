@@ -4298,6 +4298,11 @@ async fn search_and_feed_modules_match_live_preview_and_page_view_boundaries() {
             search_error,
         ),
         (
+            "search-area-pages",
+            "[[module Search a=\"p\"]]",
+            search_error,
+        ),
+        (
             "search-unknown-argument",
             "[[module Search unknown=\"x\"]]",
             search_error,
@@ -4524,13 +4529,21 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
         empty_query.contains(r#"<form action="dummy" id="search-form-all">"#),
         "empty SearchAll query should render its form:\n{empty_query}",
     );
-    let queried = view("/a/pf/q/wikidot").await;
-    assert!(
-        queried.contains(
-            r#"<div class="error-block">Couldnt connect to host, ElasticSearch down?</div>"#
-        ) && !queried.contains("search-form-all"),
-        "non-empty SearchAll query should render the current live backend failure:\n{queried}",
-    );
+    for (case_id, extra) in [
+        ("searchall-route-pf-query", "/a/pf/q/wikidot"),
+        ("searchall-route-p-query", "/a/p/q/wikidot"),
+        ("searchall-route-f-query", "/a/f/q/wikidot"),
+        ("searchall-route-unknown-area-query", "/a/x/q/wikidot"),
+        ("searchall-route-query-without-area", "/q/wikidot"),
+    ] {
+        let queried = view(extra).await;
+        assert!(
+            queried.contains(
+                r#"<div class="error-block">Couldnt connect to host, ElasticSearch down?</div>"#
+            ) && !queried.contains("search-form-all"),
+            "{case_id} should render the current live backend failure:\n{queried}",
+        );
+    }
 }
 
 #[tokio::test]

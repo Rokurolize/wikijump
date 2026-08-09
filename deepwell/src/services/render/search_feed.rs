@@ -34,9 +34,11 @@ const SEARCH_ALL_FORM_HTML: &str = r#"<div class="search-box">
 </div>
 </div>"#;
 
+// The frozen live contract covers standalone module lines. Inline calls are
+// deliberately left to the ordinary literal or unknown-module path.
 static SEARCH_FEED_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)\[\[module\s+(?P<name>Search|Feed)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
+        r#"(?im)^[\t ]*\[\[module\s+(?P<name>Search|Feed)\b(?P<head>(?:[^\]\r\n"]+|"[^"\r\n]*")*)\]\][\t ]*$"#,
     )
     .expect("Search and Feed module expression is valid")
 });
@@ -178,6 +180,7 @@ mod tests {
         for source in [
             "[[module Search]]",
             "[[module Search mini=\"true\"]]",
+            "[[module Search a=\"p\"]]",
             "[[module Search unknown=\"x\"]]",
             "[[module Search mini='true']]",
             "[[module SEARCH]]",
@@ -210,6 +213,14 @@ mod tests {
         assert_eq!(
             expand("@@[[module Search]]@@\n@@[[module Feed]]@@"),
             "@@[[module Search]]@@\n@@[[module Feed]]@@",
+        );
+    }
+
+    #[test]
+    fn leaves_unobserved_inline_search_and_feed_modules_literal() {
+        assert_eq!(
+            expand("before [[module Search]] after\nbefore [[module Feed]] after"),
+            "before [[module Search]] after\nbefore [[module Feed]] after",
         );
     }
 }
