@@ -1,25 +1,29 @@
 //! Sealed read-only forum route and Ajax surfaces observed on Wikidot.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
 use sea_orm::sea_query::ArrayType;
-use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
+use sea_orm::{
+    ColumnTrait, ConnectionTrait, EntityTrait, FromQueryResult, QueryFilter, Statement,
+    Value,
+};
 use serde::Serialize;
 
 use super::forum_comments::{self, ForumCommentsLoad, ForumCommentsOrder};
 use super::forum_modules::{
-    ForumLastPost, forum_user, load_forum_start_activity, load_recent_posts_page,
-    render_forum_date, render_forum_start, render_forum_user,
-    render_forum_user_without_avatar, render_recent_posts_list,
+    ForumLastPost, ForumUserResourceScheme, forum_user, load_forum_start_activity,
+    load_recent_posts_page, render_forum_date, render_forum_start, render_forum_user,
+    render_forum_user_with_scheme, render_forum_user_without_avatar,
+    render_recent_posts_list,
 };
 use super::forum_visibility::ForumPageVisibility;
 use super::service::{
     RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::models::text;
 use crate::services::forum::GetForumStructure;
-use crate::services::text::TextService;
 use crate::services::{ForumService, ServiceContext};
 use crate::utils::{normalize_page_slug, normalize_slug_without_category_separator};
 
@@ -86,6 +90,7 @@ struct ForumThreadView {
 pub(super) struct ForumThreadPostCandidate {
     pub(super) forum_post_id: i64,
     pub(super) parent_post_id: Option<i64>,
+    pub(super) tree_depth: i64,
     pub(super) user_id: i64,
     pub(super) created_at: time::OffsetDateTime,
     pub(super) revision_number: i32,
@@ -457,7 +462,7 @@ async fn load_forum_thread_posts(
             format!(
                 "{} {order_clause}",
                 concat!(
-                "SELECT fp.forum_post_id, fp.parent_post_id, fp.user_id, fp.created_at, ",
+                "SELECT fp.forum_post_id, fp.parent_post_id, 0::BIGINT AS tree_depth, fp.user_id, fp.created_at, ",
                 "revision.revision_number, revision.created_at AS revision_created_at, ",
                 "revision.user_id AS revision_user_id, revision.title, ",
                 "revision.compiled_html_hash, wu.name AS wikidot_user_name, ",
@@ -497,11 +502,34 @@ pub(super) async fn hydrate_forum_posts(
 ) -> Result<Vec<ForumThreadPostView>> {
     let make_error =
         || Error::new("failed to load forum thread posts", ErrorType::Render);
+    let hashes = candidates
+        .iter()
+        .map(|candidate| candidate.compiled_html_hash.clone())
+        .collect::<BTreeSet<_>>();
+    let compiled_html_by_hash = if hashes.is_empty() {
+        BTreeMap::new()
+    } else {
+        text::Entity::find()
+            .filter(text::Column::Hash.is_in(hashes.iter().cloned()))
+            .all(ctx.transaction())
+            .await
+            .or_raise(make_error)?
+            .into_iter()
+            .map(|text| (text.hash, text.contents))
+            .collect::<BTreeMap<_, _>>()
+    };
+    if compiled_html_by_hash.len() != hashes.len() {
+        return Err(make_error());
+    }
+
     let mut posts = Vec::with_capacity(candidates.len());
     for candidate in candidates {
-        let compiled_html = TextService::get(ctx, &candidate.compiled_html_hash)
-            .await
-            .or_raise(make_error)?;
+        let Some(compiled_html) = compiled_html_by_hash
+            .get(&candidate.compiled_html_hash)
+            .cloned()
+        else {
+            return Err(make_error());
+        };
         posts.push(ForumThreadPostView {
             forum_post_id: candidate.forum_post_id,
             parent_post_id: candidate.parent_post_id,
@@ -534,7 +562,13 @@ fn render_forum_thread_posts(posts: &[ForumThreadPostView]) -> String {
     let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut output = String::new();
     for post in posts {
-        output.push_str(&render_forum_thread_post(post, "", avatar_timestamp, false));
+        output.push_str(&render_forum_thread_post(
+            post,
+            "",
+            avatar_timestamp,
+            false,
+            ForumUserResourceScheme::Http,
+        ));
     }
     output
 }
@@ -544,8 +578,10 @@ pub(super) fn render_forum_thread_post(
     replies: &str,
     avatar_timestamp: i64,
     include_reply: bool,
+    resource_scheme: ForumUserResourceScheme,
 ) -> String {
-    let user = render_forum_user(&post.user, avatar_timestamp);
+    let user =
+        render_forum_user_with_scheme(&post.user, avatar_timestamp, resource_scheme);
     let date = render_forum_date(
         post.created_at,
         "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover",

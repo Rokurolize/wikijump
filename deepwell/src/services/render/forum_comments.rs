@@ -8,13 +8,14 @@ use sea_orm::{
     Value,
 };
 
+use super::forum_modules::ForumUserResourceScheme;
 use super::forum_read_routes::{
     ForumThreadPostCandidate, ForumThreadPostView, hydrate_forum_posts,
     render_forum_thread_post,
 };
 use super::forum_visibility::ForumPageVisibility;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::models::{forum_post, forum_thread, page};
+use crate::models::{forum_category, forum_group, forum_post, forum_thread, page};
 use crate::services::ServiceContext;
 
 const ROOTS_PER_PAGE: usize = 10;
@@ -112,11 +113,31 @@ async fn resolve_page_discussion_thread(
     if let Some(thread_id) = page.discussion_thread_id {
         query = query.filter(forum_thread::Column::ForumThreadId.eq(thread_id));
     }
-    Ok(query
+    let Some(thread) = query.one(ctx.transaction()).await.or_raise(make_error)? else {
+        return Ok(None);
+    };
+    let category_exists = forum_category::Entity::find_by_id(thread.forum_category_id)
+        .filter(forum_category::Column::SiteId.eq(site_id))
+        .filter(forum_category::Column::ForumGroupId.eq(thread.forum_group_id))
+        .filter(forum_category::Column::DeletedAt.is_null())
         .one(ctx.transaction())
         .await
         .or_raise(make_error)?
-        .map(|thread| thread.forum_thread_id))
+        .is_some();
+    if !category_exists {
+        return Ok(None);
+    }
+    let group_exists = forum_group::Entity::find_by_id(thread.forum_group_id)
+        .filter(forum_group::Column::SiteId.eq(site_id))
+        .filter(forum_group::Column::DeletedAt.is_null())
+        .one(ctx.transaction())
+        .await
+        .or_raise(make_error)?
+        .is_some();
+    if !group_exists {
+        return Ok(None);
+    }
+    Ok(Some(thread.forum_thread_id))
 }
 
 async fn count_comment_roots(
@@ -159,8 +180,8 @@ async fn load_comment_nodes(
                     "FROM forum_post child JOIN selected_posts parent ",
                     " ON child.parent_post_id = parent.forum_post_id ",
                     "WHERE child.site_id = $1 AND child.forum_thread_id = $2 ",
-                    " AND child.deleted_at IS NULL AND parent.tree_depth < {max_depth}) ",
-                    "SELECT fp.forum_post_id, fp.parent_post_id, fp.user_id, fp.created_at, ",
+                    " AND child.deleted_at IS NULL AND parent.tree_depth < {overflow_depth}) ",
+                    "SELECT fp.forum_post_id, fp.parent_post_id, fp.tree_depth, fp.user_id, fp.created_at, ",
                     "revision.revision_number, revision.created_at AS revision_created_at, ",
                     "revision.user_id AS revision_user_id, revision.title, ",
                     "revision.compiled_html_hash, wu.name AS wikidot_user_name, ",
@@ -182,7 +203,7 @@ async fn load_comment_nodes(
                     " AND revision_local.deleted_at IS NULL LIMIT {candidate_limit}",
                 ),
                 root_limit = ROOTS_PER_PAGE,
-                max_depth = MAX_COMMENT_DEPTH,
+                overflow_depth = MAX_COMMENT_DEPTH + 1,
                 candidate_limit = POST_CANDIDATE_LIMIT,
             ),
             [Value::from(site_id), Value::from(thread_id)],
@@ -191,7 +212,11 @@ async fn load_comment_nodes(
     .all(ctx.transaction())
     .await
     .or_raise(make_error)?;
-    if candidates.len() == POST_CANDIDATE_LIMIT {
+    if candidates.len() == POST_CANDIDATE_LIMIT
+        || candidates
+            .iter()
+            .any(|candidate| candidate.tree_depth > MAX_COMMENT_DEPTH as i64)
+    {
         return Ok(None);
     }
 
@@ -284,6 +309,7 @@ fn render_comment_nodes(nodes: &[ForumCommentNode]) -> String {
                 &replies,
                 avatar_timestamp,
                 true,
+                ForumUserResourceScheme::Https,
             ));
         }
         output

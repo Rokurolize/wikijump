@@ -80,6 +80,21 @@ pub(super) struct ForumUserDisplay {
     wikidot_profile: bool,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum ForumUserResourceScheme {
+    Http,
+    Https,
+}
+
+impl ForumUserResourceScheme {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Http => "http",
+            Self::Https => "https",
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(super) struct ForumLastPost {
     pub(super) forum_post_id: i64,
@@ -227,20 +242,30 @@ pub(super) fn render_forum_user(
     user: &ForumUserDisplay,
     avatar_timestamp: i64,
 ) -> String {
+    render_forum_user_with_scheme(user, avatar_timestamp, ForumUserResourceScheme::Http)
+}
+
+pub(super) fn render_forum_user_with_scheme(
+    user: &ForumUserDisplay,
+    avatar_timestamp: i64,
+    resource_scheme: ForumUserResourceScheme,
+) -> String {
     let name = escape_list_pages_html_text(&user.name);
     let Some(slug) = user.slug.as_deref().filter(|_| user.wikidot_profile) else {
         return format!(r#"<span class="printuser">{name}</span>"#);
     };
     let slug = escape_list_pages_html_attr(slug);
     let name_attr = escape_list_pages_html_attr(&user.name);
+    let resource_scheme = resource_scheme.as_str();
     format!(
         concat!(
             r#"<span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/{slug}" "#,
             r#"onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;"  >"#,
-            r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
-            r#"alt="{name_attr}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})"/></a>"#,
+            r#"<img class="small" src="{resource_scheme}://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
+            r#"alt="{name_attr}" style="background-image:url({resource_scheme}://www.wikidot.com/userkarma.php?u={user_id})"/></a>"#,
             r#"<a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;" >{name}</a></span>"#,
         ),
+        resource_scheme = resource_scheme,
         slug = slug,
         user_id = user.user_id,
         avatar_timestamp = avatar_timestamp,
