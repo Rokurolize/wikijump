@@ -75,10 +75,7 @@ const WIKIDOT_FONT_SOURCES = [
   "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
 ]
 /** @type {CspSources} */
-const WIKIDOT_MEDIA_FRAME_SOURCES = [
-  "https://www.youtube.com",
-  "https://embed.acast.com"
-]
+const WIKIDOT_MEDIA_FRAME_SOURCES = ["https://www.youtube.com", "https://embed.acast.com"]
 
 const deploymentEnvironment = parseDeploymentEnvironment()
 

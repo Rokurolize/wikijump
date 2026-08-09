@@ -135,7 +135,8 @@ const validRateAction = (action) => {
  * @returns {Promise<boolean>}
  */
 export const performWikidotLegacyAction = async (element, action, runtime) => {
-  const busyKey = action.type === "rate" || action.type === "rate-cancel" ? runtime : element
+  const busyKey =
+    action.type === "rate" || action.type === "rate-cancel" ? runtime : element
   if (busyActions.has(busyKey)) return false
 
   const operation = operationFor(element, action, runtime)
