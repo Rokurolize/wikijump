@@ -51,6 +51,9 @@ use crate::services::data_form::{
     load_data_form_definitions, parse_observed_wikidot_data_form_values,
     render_wikidot_data_form_table_with_wiki_html,
 };
+use crate::services::membership::{
+    JoinActorState, MembershipBrowserAction, MembershipPolicy, MembershipService,
+};
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{
@@ -139,6 +142,33 @@ async fn rate_browser_actions_for_page(
         page_revision.revision_id,
         current_value,
     ))
+}
+
+async fn membership_browser_actions_for_page(
+    ctx: &ServiceContext<'_>,
+    page: &PageModel,
+    page_revision: &PageRevisionModel,
+    wikitext: &str,
+    compiled_body_html: &str,
+    viewer_user_id: Option<i64>,
+) -> Result<Vec<MembershipBrowserAction>> {
+    let Some(user_id) = viewer_user_id else {
+        return Ok(Vec::new());
+    };
+    let site = SiteService::get(ctx, Reference::Id(page.site_id)).await?;
+    if MembershipService::policy(&site) != MembershipPolicy::Open
+        || MembershipService::actor_state(ctx, page.site_id, Some(user_id)).await?
+            != JoinActorState::Eligible
+    {
+        return Ok(Vec::new());
+    }
+
+    Ok(MembershipActionRegistry::from_wikidot_source(wikitext)
+        .browser_actions_for_saved_wikidot_html(
+            compiled_body_html,
+            page.page_id,
+            page_revision.revision_id,
+        ))
 }
 
 fn wikidot_redirect_module_allowed(
@@ -1023,9 +1053,16 @@ impl ViewService {
             } => {
                 let legacy_actions = LegacyActionRegistry::from_wikidot_source(&wikitext)
                     .browser_actions_for_wikidot_html(&compiled_body_html);
-                let membership_actions =
-                    MembershipActionRegistry::from_wikidot_source(&wikitext)
-                        .browser_actions_for_wikidot_html(&compiled_body_html);
+                let membership_actions = membership_browser_actions_for_page(
+                    ctx,
+                    &page,
+                    &page_revision,
+                    &wikitext,
+                    &compiled_body_html,
+                    user_session.as_ref().map(|session| session.user.user_id),
+                )
+                .await
+                .or_raise(make_error)?;
                 let page_rating = SettingsService::get_page_rating_settings(
                     ctx,
                     page.site_id,

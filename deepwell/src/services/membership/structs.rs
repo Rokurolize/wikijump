@@ -17,14 +17,28 @@ pub enum MembershipJoinOutcome {
     AlreadyMember,
 }
 
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct JoinMembership {
+    pub page_id: i64,
+    pub last_revision_id: i64,
+    pub action_index: usize,
+    pub action_fingerprint: String,
+}
+
 /// One closed browser action emitted beside a renderer-owned Join control.
 ///
 /// It intentionally contains no site, actor, policy, token, URL, or authored
-/// JavaScript. The mutation binds all of those values from server context.
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+/// JavaScript. Page and revision identify the immutable renderer output; the
+/// mutation re-resolves them and every mutable authority from server state.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case", tag = "type")]
 pub enum MembershipBrowserAction {
-    Join,
+    Join {
+        page_id: i64,
+        revision_id: i64,
+        index: usize,
+        fingerprint: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

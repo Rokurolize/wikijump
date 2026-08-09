@@ -242,8 +242,31 @@
     }
   }
 
+  function joinFromLegacyControl(
+    pageId: number,
+    revisionId: number,
+    actionIndex: number,
+    actionFingerprint: string
+  ) {
+    if (
+      !data.page ||
+      !data.page_revision ||
+      showRevision ||
+      data.page.page_id !== pageId ||
+      data.page_revision.revision_id !== revisionId
+    ) {
+      throw new Error("This Join action is not available for the displayed revision.")
+    }
+    return requestMembershipJoin(legacyRequestRuntime, {
+      pageId,
+      lastRevisionId: revisionId,
+      actionIndex,
+      actionFingerprint
+    })
+  }
+
   const membershipActionRuntime = {
-    join: () => requestMembershipJoin(legacyRequestRuntime),
+    join: joinFromLegacyControl,
     reload: () => window.location.reload(),
     error: legacyActionRuntime.error
   }

@@ -140,10 +140,9 @@ async fn public_membership_module_states_are_distinct_and_opaque() {
             anonymous.body,
         );
     }
-    assert_eq!(
-        serde_json::to_value(&anonymous.membership_actions).unwrap(),
-        json!([{"type": "join"}, {"type": "join"}, {"type": "join"}]),
-        "the typed sidecar should bind each rendered Join module in source order",
+    assert!(
+        anonymous.membership_actions.is_empty(),
+        "PagePreview must render exact Join DOM without issuing a saved-page mutation binding",
     );
 
     runner.set_request_context(RequestContext {

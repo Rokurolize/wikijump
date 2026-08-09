@@ -115,9 +115,14 @@ test("server action failures remain observable to the action state machine", asy
   )
 })
 
-test("Join submits no client actor, site, policy, membership, or token state", async () => {
+test("Join submits only the server registry and revision binding", async () => {
   const recorder = requestRecorder(success({ outcome: "joined" }))
+  const fingerprint = "0123456789abcdef0123456789abcdef"
   await requestMembershipJoin(recorder, {
+    pageId: 42,
+    lastRevisionId: 90,
+    actionIndex: 3,
+    actionFingerprint: fingerprint,
     userId: 91,
     siteId: 42,
     policy: "open",
@@ -126,7 +131,18 @@ test("Join submits no client actor, site, policy, membership, or token state", a
   })
 
   assert.deepEqual(
-    recorder.requests.map(({ url, init }) => [url, init.method, init.body]),
-    [["?/membershipJoin", "POST", undefined]]
+    recorder.requests.map(({ url, init }) => [url, init.method, JSON.parse(init.body)]),
+    [
+      [
+        "?/membershipJoin",
+        "POST",
+        {
+          actionFingerprint: fingerprint,
+          actionIndex: 3,
+          lastRevisionId: 90,
+          pageId: 42
+        }
+      ]
+    ]
   )
 })

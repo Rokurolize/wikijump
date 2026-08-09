@@ -13,11 +13,23 @@
  *     data?: { res?: unknown; message?: string }
  *   }
  * }} runtime
+ * @param {{
+ *   pageId: number
+ *   lastRevisionId: number
+ *   actionIndex: number
+ *   actionFingerprint: string
+ * }} input
  */
-export const requestMembershipJoin = async (runtime) => {
+export const requestMembershipJoin = async (runtime, input) => {
   const response = await runtime.fetch("?/membershipJoin", {
     method: "POST",
-    credentials: "same-origin"
+    credentials: "same-origin",
+    body: JSON.stringify({
+      actionFingerprint: input.actionFingerprint,
+      actionIndex: input.actionIndex,
+      lastRevisionId: input.lastRevisionId,
+      pageId: input.pageId
+    })
   })
   const result = runtime.deserialize(await response.text())
   if (result.type === "failure") {

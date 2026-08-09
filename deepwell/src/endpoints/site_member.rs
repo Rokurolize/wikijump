@@ -20,16 +20,18 @@
 
 use super::prelude::*;
 use crate::models::relation::Model as RelationModel;
-use crate::services::membership::{MembershipJoinOutcome, MembershipService};
+use crate::services::membership::{
+    JoinMembership, MembershipJoinOutcome, MembershipService,
+};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{CreateSiteMember, GetSiteMember, RemoveSiteMember};
 use crate::types::{Action, Permission, Resource};
 
 pub async fn membership_join(
     ctx: &ServiceContext<'_>,
-    _params: Params<'static>,
+    params: Params<'static>,
 ) -> Result<MembershipJoinOutcome> {
-    MembershipService::join(ctx).await
+    MembershipService::join(ctx, parse!(params, SiteMembership)).await
 }
 
 async fn require_role_assign_permission(

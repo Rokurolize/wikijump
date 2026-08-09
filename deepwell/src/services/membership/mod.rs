@@ -15,6 +15,6 @@ mod structs;
 
 pub use self::service::MembershipService;
 pub use self::structs::{
-    JoinActorState, JoinModuleState, MembershipBrowserAction, MembershipJoinOutcome,
-    MembershipPolicy,
+    JoinActorState, JoinMembership, JoinModuleState, MembershipBrowserAction,
+    MembershipJoinOutcome, MembershipPolicy,
 };

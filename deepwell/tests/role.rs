@@ -116,6 +116,8 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
         }),
     );
     let GetPageViewOutput::Found {
+        page: join_page,
+        page_revision: join_revision,
         compiled_body_html,
         membership_actions,
         ..
@@ -124,9 +126,41 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
         panic!("editable site should serve its seeded self-join route");
     };
     assert!(compiled_body_html.contains("WIKIDOT.page.listeners.join"));
+    let membership_actions = serde_json::to_value(membership_actions).unwrap();
+    assert_eq!(membership_actions.as_array().unwrap().len(), 1);
+    let join_action = &membership_actions[0];
+    assert_eq!(join_action["type"], "join");
+    assert_eq!(join_action["page_id"], join_page.page_id);
+    assert_eq!(join_action["revision_id"], join_revision.revision_id);
+    assert_eq!(join_action["index"], 0);
     assert_eq!(
-        serde_json::to_value(membership_actions).unwrap(),
-        json!([{"type": "join"}]),
+        join_action["fingerprint"].as_str().unwrap().len(),
+        32,
+        "saved Join actions must carry only an opaque server registry binding",
+    );
+
+    let anonymous_join_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": editable.site_id,
+            "session_token": null,
+            "route": {"slug": "system:join", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html,
+        membership_actions,
+        ..
+    } = anonymous_join_view
+    else {
+        panic!("anonymous viewer should receive the public self-join page");
+    };
+    assert!(compiled_body_html.contains("WIKIDOT.page.listeners.join"));
+    assert!(
+        membership_actions.is_empty(),
+        "anonymous Join DOM must remain inert until an authenticated actor has a bound action",
     );
 
     for (actor, expected) in [
@@ -163,14 +197,40 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
             ),
             "Join visibility should match actor state {expected:?}",
         );
+        assert!(
+            preview.membership_actions.is_empty(),
+            "PagePreview must never issue a saved-page Join action binding",
+        );
     }
 
     runner.set_request_context(RequestContext {
         user_id: Some(user_id),
         site_id: Some(editable.site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed("system:join"))),
         ..Default::default()
     });
-    let joined = run_endpoint!(runner, membership_join, json!({}),);
+    let join_request = json!({
+        "page_id": join_action["page_id"],
+        "last_revision_id": join_action["revision_id"],
+        "action_index": join_action["index"],
+        "action_fingerprint": join_action["fingerprint"],
+        "actor": SYSTEM_USER_ID,
+        "site_id": mirror.site_id,
+        "policy": "closed",
+        "token": "not-authority",
+    });
+    let forged = run_endpoint_err!(
+        runner,
+        membership_join,
+        json!({
+            "page_id": join_action["page_id"],
+            "last_revision_id": join_action["revision_id"],
+            "action_index": join_action["index"],
+            "action_fingerprint": "00000000000000000000000000000000",
+        }),
+    );
+    assert_contains_error!(forged, ErrorType::PermissionDenied);
+    let joined = run_endpoint!(runner, membership_join, join_request.clone(),);
     assert_eq!(joined, MembershipJoinOutcome::Joined);
     assert_eq!(
         MembershipService::actor_state(
@@ -182,7 +242,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
         .expect("joined actor state should resolve"),
         JoinActorState::Member,
     );
-    let repeated = run_endpoint!(runner, membership_join, json!({}),);
+    let repeated = run_endpoint!(runner, membership_join, join_request.clone(),);
     assert_eq!(repeated, MembershipJoinOutcome::AlreadyMember);
     let role_names = RoleService::get_all_roles_for_user_and_site(
         runner.context(),
@@ -253,9 +313,10 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     runner.set_request_context(RequestContext {
         user_id: Some(user_id),
         site_id: Some(mirror.site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed("system:join"))),
         ..Default::default()
     });
-    let mirror_error = run_endpoint_err!(runner, membership_join, json!({}),);
+    let mirror_error = run_endpoint_err!(runner, membership_join, join_request,);
     assert_contains_error!(mirror_error, ErrorType::PermissionDenied);
 }
 

@@ -1,7 +1,20 @@
-/** @typedef {{ type: "join" }} MembershipBrowserAction */
 /**
  * @typedef {{
- *   join?: () => unknown
+ *   type: "join"
+ *   page_id: number
+ *   revision_id: number
+ *   index: number
+ *   fingerprint: string
+ * }} MembershipBrowserAction
+ */
+/**
+ * @typedef {{
+ *   join?: (
+ *     pageId: number,
+ *     revisionId: number,
+ *     index: number,
+ *     fingerprint: string
+ *   ) => unknown
  *   reload?: () => unknown
  *   error?: (error: unknown) => unknown
  * }} MembershipActionRuntime
@@ -14,6 +27,17 @@ const boundActions = new WeakMap()
 /** @type {WeakSet<HTMLElement>} */
 const busyActions = new WeakSet()
 
+/** @param {MembershipBrowserAction} action */
+const validJoinAction = (action) =>
+  action.type === "join" &&
+  Number.isSafeInteger(action.page_id) &&
+  action.page_id > 0 &&
+  Number.isSafeInteger(action.revision_id) &&
+  action.revision_id > 0 &&
+  Number.isSafeInteger(action.index) &&
+  action.index >= 0 &&
+  /^[0-9a-f]{32}$/u.test(action.fingerprint)
+
 /**
  * Zip exact renderer-owned Join controls to the closed sidecar. Any count,
  * descriptor, or DOM mismatch disables the complete surface.
@@ -25,7 +49,7 @@ const busyActions = new WeakSet()
 export const planWikidotJoinActionBindings = (candidates, actions) => {
   if (
     candidates.length !== actions.length ||
-    actions.some((action) => action.type !== "join") ||
+    actions.some((action) => !validJoinAction(action)) ||
     candidates.some((candidate) => !candidate.matches(JOIN_SELECTOR))
   ) {
     return []
@@ -42,12 +66,17 @@ export const planWikidotJoinActionBindings = (candidates, actions) => {
  * @param {MembershipActionRuntime} runtime
  */
 export const performWikidotMembershipAction = async (element, action, runtime) => {
-  if (busyActions.has(element) || action.type !== "join" || !runtime.join) return false
+  if (busyActions.has(element) || !validJoinAction(action) || !runtime.join) return false
 
   busyActions.add(element)
   element.setAttribute("aria-busy", "true")
   try {
-    await runtime.join()
+    await runtime.join(
+      action.page_id,
+      action.revision_id,
+      action.index,
+      action.fingerprint
+    )
     runtime.reload?.()
     return true
   } catch (error) {

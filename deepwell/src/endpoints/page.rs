@@ -36,8 +36,8 @@ use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::render::{
-    LegacyActionRegistry, LegacyBrowserAction, MembershipActionRegistry,
-    WikidotListPagesFeedInput, WikidotListPagesFeedOutput,
+    LegacyActionRegistry, LegacyBrowserAction, WikidotListPagesFeedInput,
+    WikidotListPagesFeedOutput,
 };
 use crate::services::{MutationAuthorization, SettingsService, TextService};
 use crate::types::{
@@ -115,7 +115,6 @@ pub async fn wikidot_page_preview(
     params: Params<'static>,
 ) -> Result<WikidotPagePreviewOutput> {
     let input: WikidotPagePreviewInput = parse!(params, Page);
-    let source = input.wikitext.clone();
     let output = if input.syntax_only {
         RenderService::render_wikidot_syntax_preview(
             ctx,
@@ -148,8 +147,9 @@ pub async fn wikidot_page_preview(
             &output.html_output.resource_requirements,
         )
         .browser_actions_for_wikidot_html(&output.html_output.body),
-        membership_actions: MembershipActionRegistry::from_wikidot_source(&source)
-            .browser_actions_for_wikidot_html(&output.html_output.body),
+        // Preview reproduces the exact control DOM but has no immutable saved
+        // page revision to authorize a membership transition against.
+        membership_actions: Vec::new(),
         body: output.html_output.body,
         styles: output.html_output.styles,
     })

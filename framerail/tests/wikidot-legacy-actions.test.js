@@ -278,7 +278,16 @@ test("Join binds exact renderer DOM out of band and remains busy through reload"
     `div > a[href="javascript:;"][onclick="WIKIDOT.page.listeners.join(event, 'unified')"]`
   const custom = actionElement()
   custom.matches = () => false
-  const actions = [{ type: "join" }]
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  const actions = [
+    {
+      type: "join",
+      page_id: 42,
+      revision_id: 90,
+      index: 0,
+      fingerprint
+    }
+  ]
 
   assert.deepEqual(planWikidotJoinActionBindings([exact], actions), [[exact, actions[0]]])
   assert.deepEqual(planWikidotJoinActionBindings([exact, custom], actions), [])
@@ -286,8 +295,12 @@ test("Join binds exact renderer DOM out of band and remains busy through reload"
 
   let release
   let reloads = 0
+  const calls = []
   const joining = performWikidotMembershipAction(exact, actions[0], {
-    join: () => new Promise((resolve) => (release = resolve)),
+    join: (pageId, revisionId, index, selectedFingerprint) => {
+      calls.push([pageId, revisionId, index, selectedFingerprint])
+      return new Promise((resolve) => (release = resolve))
+    },
     reload: () => {
       reloads += 1
     }
@@ -303,6 +316,7 @@ test("Join binds exact renderer DOM out of band and remains busy through reload"
   )
   release()
   assert.equal(await joining, true)
+  assert.deepEqual(calls, [[42, 90, 0, fingerprint]])
   assert.equal(exact.getAttribute("aria-busy"), null)
   assert.equal(reloads, 1)
 })
@@ -312,7 +326,36 @@ test("unsupported membership descriptors and authored lookalikes fail closed", a
   lookalike.matches = () => false
   let joined = false
 
-  assert.deepEqual(planWikidotJoinActionBindings([lookalike], [{ type: "join" }]), [])
+  assert.deepEqual(
+    planWikidotJoinActionBindings(
+      [lookalike],
+      [
+        {
+          type: "join",
+          page_id: 42,
+          revision_id: 90,
+          index: 0,
+          fingerprint: "0123456789abcdef0123456789abcdef"
+        }
+      ]
+    ),
+    []
+  )
+  assert.deepEqual(
+    planWikidotJoinActionBindings(
+      [lookalike],
+      [
+        {
+          type: "join",
+          page_id: 42,
+          revision_id: 90,
+          index: 0,
+          fingerprint: "forged"
+        }
+      ]
+    ),
+    []
+  )
   assert.equal(
     await performWikidotMembershipAction(
       lookalike,
@@ -339,7 +382,15 @@ test("a sidecar mismatch intercepts the exact legacy onclick without joining", (
   second.parentElement = root
   let joined = false
   wikidotMembershipActions(root, {
-    actions: [{ type: "join" }],
+    actions: [
+      {
+        type: "join",
+        page_id: 42,
+        revision_id: 90,
+        index: 0,
+        fingerprint: "0123456789abcdef0123456789abcdef"
+      }
+    ],
     runtime: { join: () => (joined = true) }
   })
   let prevented = false

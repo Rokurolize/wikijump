@@ -11,7 +11,8 @@
  */
 
 use super::structs::{
-    JoinActorState, JoinModuleState, MembershipJoinOutcome, MembershipPolicy,
+    JoinActorState, JoinMembership, JoinModuleState, MembershipJoinOutcome,
+    MembershipPolicy,
 };
 use crate::constants::ADMIN_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -19,8 +20,12 @@ use crate::models::site::{Entity as Site, Model as SiteModel};
 use crate::services::relation::{
     CreateSiteMember, GetSiteBan, GetSiteMember, SiteMemberAccepted, SiteMemberData,
 };
-use crate::services::{RelationService, ServiceContext};
-use crate::types::RelationType;
+use crate::services::render::MembershipActionRegistry;
+use crate::services::{
+    MutationAuthorization, PageRevisionService, PageService, RelationService,
+    ServiceContext, TextService,
+};
+use crate::types::{Action, Permission, Reference, RelationType, Resource};
 use sea_orm::{EntityTrait, QuerySelect};
 
 const EDITABLE_LOCAL_SITE_SLUG: &str = "scpaiueouiuiuiui";
@@ -98,9 +103,35 @@ impl MembershipService {
     /// transition. The relation table's current-row unique index is the final
     /// concurrent duplicate guard. Unsupported policies and actor states all
     /// use the same outward permission failure.
-    pub async fn join(ctx: &ServiceContext<'_>) -> Result<MembershipJoinOutcome> {
-        let actor_user_id = ctx.request().user_id().or_raise(Self::denied)?;
+    pub async fn join(
+        ctx: &ServiceContext<'_>,
+        input: JoinMembership,
+    ) -> Result<MembershipJoinOutcome> {
         let site_id = ctx.request().site_id().or_raise(Self::denied)?;
+        let route_page_reference = ctx
+            .request()
+            .page_reference()
+            .or_raise(Self::denied)?
+            .clone();
+        let route_page = PageService::get(ctx, site_id, route_page_reference)
+            .await
+            .or_raise(Self::denied)?;
+        let actor_user_id = MutationAuthorization::require_permission(
+            ctx,
+            site_id,
+            Some(Reference::Id(route_page.page_id)),
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(route_page.page_category_id)),
+                action: Action::View,
+            },
+            "join this site",
+        )
+        .await
+        .or_raise(Self::denied)?;
+        if route_page.page_id != input.page_id {
+            return Err(Self::denied().into());
+        }
 
         let site = Site::find_by_id(site_id)
             .lock_exclusive()
@@ -109,6 +140,34 @@ impl MembershipService {
             .or_raise(Self::denied)?
             .ok_or_raise(Self::denied)?;
         if Self::policy(&site) != MembershipPolicy::Open {
+            return Err(Self::denied().into());
+        }
+
+        let Some(page) =
+            PageService::get_direct_optional_for_update(ctx, input.page_id, false)
+                .await
+                .or_raise(Self::denied)?
+        else {
+            return Err(Self::denied().into());
+        };
+        if page.site_id != site_id
+            || page.page_id != route_page.page_id
+            || page.latest_revision_id != Some(input.last_revision_id)
+        {
+            return Err(Self::denied().into());
+        }
+        let revision = PageRevisionService::get_latest(ctx, site_id, page.page_id)
+            .await
+            .or_raise(Self::denied)?;
+        if revision.revision_id != input.last_revision_id {
+            return Err(Self::denied().into());
+        }
+        let source = TextService::get(ctx, &revision.wikitext_hash)
+            .await
+            .or_raise(Self::denied)?;
+        if !MembershipActionRegistry::from_wikidot_source(&source)
+            .resolve(input.action_index, &input.action_fingerprint)
+        {
             return Err(Self::denied().into());
         }
 
