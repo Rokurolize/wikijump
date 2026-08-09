@@ -1,12 +1,12 @@
 {
   "schema": "wikijump.open43_concurrency_ledger.v1",
   "campaign": "open43-pr2",
-  "updated_at": "2026-08-09T20:20:00+09:00",
+  "updated_at": "2026-08-09T20:30:00+09:00",
   "integration_branch": {
     "repository": "Rokurolize/wikijump",
     "branch": "fix/open87-pr2-modules-actions-media-settings",
     "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
-    "reconciled_head": "4287bef4af085c81fa6dbc8874796224f454545c"
+    "reconciled_head": "99214f3617ce6ca849ce44e4885dd5594c0e8626"
   },
   "limits": {
     "configured_threads": 13,
@@ -107,8 +107,11 @@
       "branch": "agent/open87-pr2/m-media-closure-g3",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-media-closure-g3",
       "base": "99c946782936923ff902cf95045a4cab2dd16577",
-      "head": null,
-      "status": "running",
+      "head": "0dc36a04bc794d7caf5c221a0b90ce43e2f09a47",
+      "status": "integrated",
+      "integration_commits": [
+        "99214f3617ce6ca849ce44e4885dd5594c0e8626"
+      ],
       "may_run_cargo": false,
       "may_mutate_runtime": false
     },
