@@ -22,7 +22,11 @@
 mod common;
 
 use deepwell::services::RequestContext;
+use deepwell::services::membership::{
+    JoinActorState, MembershipJoinOutcome, MembershipService,
+};
 use deepwell::services::permission::PermissionService;
+use deepwell::services::relation::{RelationObject, RelationService, SiteBanData};
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
@@ -38,10 +42,137 @@ use deepwell::license::License;
 use deepwell::models::role::Model as RoleModel;
 use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::user::{CreateUser, UserService};
-use deepwell::types::{Action, Permission, Reference, Resource, UserType};
+use deepwell::types::{Action, Permission, Reference, RelationType, Resource, UserType};
 use serde_json::json;
+use std::borrow::Cow;
 
 static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+#[tokio::test]
+async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
+    let mut runner = TestRunner::setup().await;
+    let editable = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
+        .expect("seeded editable site should exist")
+        .site;
+    let mirror = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded mirror site should exist")
+        .site;
+    let n = next_n();
+    let user_id = create_test_user(&runner, n, "self-join").await;
+    let pending_user_id = create_test_user(&runner, n, "pending").await;
+    let banned_user_id = create_test_user(&runner, n, "banned").await;
+    RelationService::create(
+        runner.context(),
+        RelationType::SiteApplication,
+        RelationObject::Site(editable.site_id),
+        RelationObject::User(pending_user_id),
+        pending_user_id,
+        &json!({}),
+    )
+    .await
+    .expect("pending actor should have an application relation");
+    RelationService::create(
+        runner.context(),
+        RelationType::SiteBan,
+        RelationObject::Site(editable.site_id),
+        RelationObject::User(banned_user_id),
+        SYSTEM_USER_ID,
+        &SiteBanData {
+            banned_until: None,
+            reason: "membership actor matrix".to_owned(),
+        },
+    )
+    .await
+    .expect("banned actor should have a ban relation");
+
+    for (actor, expected) in [
+        (None, JoinActorState::Anonymous),
+        (Some(user_id), JoinActorState::Eligible),
+        (Some(pending_user_id), JoinActorState::Pending),
+        (Some(banned_user_id), JoinActorState::Banned),
+    ] {
+        runner.set_request_context(RequestContext {
+            user_id: actor,
+            site_id: Some(editable.site_id),
+            ..Default::default()
+        });
+        assert_eq!(
+            MembershipService::actor_state(runner.context(), editable.site_id, actor,)
+                .await
+                .expect("membership actor state should resolve"),
+            expected,
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": editable.site_id,
+                "title": "Membership actor state",
+                "wikitext": "[[module Join]]",
+            }),
+        );
+        assert_eq!(
+            preview.body.contains("WIKIDOT.page.listeners.join"),
+            matches!(
+                expected,
+                JoinActorState::Anonymous | JoinActorState::Eligible
+            ),
+            "Join visibility should match actor state {expected:?}",
+        );
+    }
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(editable.site_id),
+        ..Default::default()
+    });
+    let joined = run_endpoint!(runner, membership_join, json!({}),);
+    assert_eq!(joined, MembershipJoinOutcome::Joined);
+    assert_eq!(
+        MembershipService::actor_state(
+            runner.context(),
+            editable.site_id,
+            Some(user_id),
+        )
+        .await
+        .expect("joined actor state should resolve"),
+        JoinActorState::Member,
+    );
+    let repeated = run_endpoint!(runner, membership_join, json!({}),);
+    assert_eq!(repeated, MembershipJoinOutcome::AlreadyMember);
+
+    let page_slug = format!("component:membership-vertical-{n}");
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(editable.site_id),
+        page_reference: Some(Reference::Slug(Cow::Owned(page_slug.clone()))),
+        ..Default::default()
+    });
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": editable.site_id,
+            "wikitext": "Membership vertical slice",
+            "title": "Membership vertical slice",
+            "alt_title": null,
+            "slug": page_slug,
+            "layout": "wikidot",
+            "revision_comments": "membership vertical slice",
+            "user_id": user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(created.page_id > 0);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(mirror.site_id),
+        ..Default::default()
+    });
+    let mirror_error = run_endpoint_err!(runner, membership_join, json!({}),);
+    assert_contains_error!(mirror_error, ErrorType::PermissionDenied);
+}
 
 fn next_n() -> u64 {
     FIXTURE_COUNTER.fetch_add(1, Ordering::Relaxed)

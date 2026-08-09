@@ -85,6 +85,87 @@ use ftml::data::{PageInfo, ScoreValue};
 use ftml::layout::Layout;
 use ftml::settings::{WikitextMode, WikitextSettings};
 
+#[tokio::test]
+async fn public_membership_module_states_are_distinct_and_opaque() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded mirror site should exist")
+        .site;
+    let source = concat!(
+        "[[module Join button=\"one\" button=\"two\" class=\"membership-join-fixture\"]]\n",
+        "[[module JOIN BUTTON='single-quoted-is-ignored']]\n",
+        "[[module Join button=\"\"]]\n",
+        "[[module MembershipApply]]\n",
+        "[[module MembershipByPassword]]\n",
+        "[[module MembershipEmailInvitation token=\"invitation-secret\"]]\n",
+        "[[module AnonymousNotificationsUnsubscribe token=\"unsubscribe-secret\"]]\n",
+        "[[module SendInvitations]]",
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+    let anonymous = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Membership public states",
+            "wikitext": source,
+        }),
+    );
+
+    for expected in [
+        r#"<div class="membership-join-fixture"><a href="javascript:;" onclick="WIKIDOT.page.listeners.join(event, 'unified')">two</a></div>"#,
+        r#"<div class="join-box"><a href="javascript:;" onclick="WIKIDOT.page.listeners.join(event, 'unified')">Join</a></div>"#,
+        "You need to have a Wikidot.com account and be signed to apply for membership.",
+        "Membership via password is not enabled for this site.",
+        "Sorry, the invitation could not be found.",
+        "Invalid indentification token.",
+        "Inviting users has been disabled due to severe abuse.",
+    ] {
+        assert!(
+            anonymous.body.contains(expected),
+            "anonymous preview should contain {expected:?}:\n{}",
+            anonymous.body,
+        );
+    }
+    for secret in ["invitation-secret", "unsubscribe-secret"] {
+        assert!(
+            !anonymous.body.contains(secret),
+            "opaque token failures must not reflect {secret:?}:\n{}",
+            anonymous.body,
+        );
+    }
+    assert_eq!(
+        serde_json::to_value(&anonymous.membership_actions).unwrap(),
+        json!([{"type": "join"}, {"type": "join"}, {"type": "join"}]),
+        "the typed sidecar should bind each rendered Join module in source order",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+    let member = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Membership member states",
+            "wikitext": source,
+        }),
+    );
+    assert!(
+        !member.body.contains("membership-join-fixture"),
+        "a current site member must not see Join:\n{}",
+        member.body,
+    );
+    assert!(member.membership_actions.is_empty());
+}
+
 fn set_mutation_request_context(
     runner: &mut TestRunner,
     user_id: i64,
@@ -4997,15 +5078,8 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
             .contains(r#"<div id="membership-by-password-box">"#)
             && anonymous_preview
                 .body
-                .contains("Please create an account and/or sign in first.")
-            && anonymous_preview
-                .body
-                .contains("WIKIDOT.page.listeners.loginClick(event)")
-            && anonymous_preview
-                .body
-                .contains("WIKIREQUEST.createAccountSkipCongrats=true; WIKIDOT.page.listeners.createAccount(event)")
-            && anonymous_preview.body.contains("Create a new account"),
-        "anonymous MembershipByPassword should render the live sign-in/create-account prompt:\n{}",
+                .contains("Membership via password is not enabled for this site."),
+        "anonymous MembershipByPassword should render the current disabled state:\n{}",
         anonymous_preview.body,
     );
     assert!(
@@ -5053,8 +5127,8 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
             && member_preview.body.contains("You can not apply.<br/>")
             && member_preview
                 .body
-                .contains("It seems you already are a member of this site."),
-        "member MembershipByPassword should render the live already-member error:\n{}",
+                .contains("Membership via password is not enabled for this site."),
+        "member MembershipByPassword should render the current disabled state:\n{}",
         member_preview.body,
     );
     assert!(
@@ -5095,9 +5169,10 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
     assert!(
         anonymous_body.contains("MBP_START")
             && anonymous_body.contains(r#"<div id="membership-by-password-box">"#)
-            && anonymous_body.contains("Please create an account and/or sign in first.")
+            && anonymous_body
+                .contains("Membership via password is not enabled for this site.")
             && anonymous_body.contains("MBP_END"),
-        "saved anonymous page view should render the live sign-in/create-account prompt:\n{anonymous_body}",
+        "saved anonymous page view should render the current disabled state:\n{anonymous_body}",
     );
 
     let sample_session_token = SessionService::create(
@@ -5131,9 +5206,10 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
         member_body.contains("MBP_START")
             && member_body.contains(r#"<div id="membership-by-password-box">"#)
             && member_body.contains("You can not apply.<br/>")
-            && member_body.contains("It seems you already are a member of this site.")
+            && member_body
+                .contains("Membership via password is not enabled for this site.")
             && member_body.contains("MBP_END"),
-        "saved member page view should render the live already-member error:\n{member_body}",
+        "saved member page view should render the current disabled state:\n{member_body}",
     );
     assert!(
         !anonymous_body.contains("[[module MembershipByPassword")

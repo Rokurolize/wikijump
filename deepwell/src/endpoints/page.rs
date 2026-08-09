@@ -24,6 +24,7 @@ use crate::models::page::Model as PageModel;
 use crate::services::file::{GetFileOutput, GetPageFiles};
 use crate::services::forum_thread::ForumThreadService;
 use crate::services::legacy_action::{LegacyActionService, SetLegacyActionTags};
+use crate::services::membership::MembershipBrowserAction;
 use crate::services::page::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
     GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
@@ -35,8 +36,8 @@ use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::render::{
-    LegacyActionRegistry, LegacyBrowserAction, WikidotListPagesFeedInput,
-    WikidotListPagesFeedOutput,
+    LegacyActionRegistry, LegacyBrowserAction, MembershipActionRegistry,
+    WikidotListPagesFeedInput, WikidotListPagesFeedOutput,
 };
 use crate::services::{MutationAuthorization, SettingsService, TextService};
 use crate::types::{
@@ -96,6 +97,7 @@ pub struct WikidotPagePreviewOutput {
     pub body: String,
     pub styles: Vec<String>,
     pub legacy_actions: Vec<LegacyBrowserAction>,
+    pub membership_actions: Vec<MembershipBrowserAction>,
 }
 
 #[derive(Deserialize)]
@@ -113,6 +115,7 @@ pub async fn wikidot_page_preview(
     params: Params<'static>,
 ) -> Result<WikidotPagePreviewOutput> {
     let input: WikidotPagePreviewInput = parse!(params, Page);
+    let source = input.wikitext.clone();
     let output = if input.syntax_only {
         RenderService::render_wikidot_syntax_preview(
             ctx,
@@ -145,6 +148,8 @@ pub async fn wikidot_page_preview(
             &output.html_output.resource_requirements,
         )
         .browser_actions_for_wikidot_html(&output.html_output.body),
+        membership_actions: MembershipActionRegistry::from_wikidot_source(&source)
+            .browser_actions_for_wikidot_html(&output.html_output.body),
         body: output.html_output.body,
         styles: output.html_output.styles,
     })

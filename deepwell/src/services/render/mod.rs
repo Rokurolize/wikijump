@@ -41,6 +41,7 @@ mod link_modules;
 #[allow(dead_code)]
 mod list_pages;
 mod literal_regions;
+mod membership_actions;
 mod metacomponent;
 mod module_arguments;
 mod native_list_context;
@@ -79,6 +80,7 @@ pub use self::legacy_actions::{
     LegacyActionDescriptor, LegacyActionRegistry, LegacyBrowserAction,
 };
 pub(crate) use self::literal_regions::LiteralRegionIndex;
+pub use self::membership_actions::MembershipActionRegistry;
 pub use self::render_dependency::{
     RenderDependencyClass, RenderDependencyClasses, classify_render_dependencies,
 };

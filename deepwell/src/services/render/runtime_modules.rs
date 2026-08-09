@@ -18,7 +18,7 @@ use super::diagnostics::{
 use super::list_pages::{CountPagesExpansionOptions, ListPagesRuntimeDisplay};
 use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{
-    wikidot_module_argument, wikidot_module_arguments,
+    WikidotModuleArgumentValueKind, wikidot_module_argument, wikidot_module_arguments,
     wikidot_module_arguments_ignoring_bare_flags,
 };
 use super::native_list_context::collect_unproven_scope_ranges;
@@ -40,6 +40,7 @@ use super::service::{
 };
 use super::url_arguments::UrlArguments;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::services::membership::{JoinModuleState, MembershipService};
 use crate::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DateSelector,
     FoundPageFields, IncludedCategories, OrderBySelector, OrderProperty,
@@ -143,6 +144,24 @@ const MEMBERSHIP_BY_PASSWORD_MEMBER_HTML: &str = concat!(
     r#"<div class="error-block">"#,
     "\n\t\t\tYou can not apply.<br/>\n\t\t\t\t\t\t\t\t\t\tIt seems you already are a member of this site.\t\t\t\t\t\t\t\t</div>\n\t\n</div>",
 );
+const MEMBERSHIP_BY_PASSWORD_DISABLED_HTML: &str = concat!(
+    r#"<div id="membership-by-password-box">"#,
+    "\n\t\t\t",
+    r#"<div class="error-block">"#,
+    "\n\t\t\tYou can not apply.<br/>\n\t\t\tMembership via password is not enabled for this site.\n\t\t</div>\n\t\n</div>",
+);
+const MEMBERSHIP_APPLY_ANONYMOUS_HTML: &str = concat!(
+    r#"<div id="membership-apply-box">"#,
+    "\n\t<p>You need to have a Wikidot.com account and be signed to apply for membership.</p>",
+    r#"<table style="margin: 1em auto"><tr>"#,
+    r#"<td style="text-align: center; padding: 1em"><div style="font-size: 180%; font-weight: bold;">"#,
+    r#"<a href="javascript:;" onclick="WIKIDOT.page.listeners.loginClick(event)">Sign in</a>"#,
+    "</div><p>if you already have a Wikidot.com account</p></td>",
+    r#"<td style="padding: 1em; font-size: 140%">or</td>"#,
+    r#"<td style="text-align: center; padding: 1em"><div style="font-size: 180%; font-weight: bold;">"#,
+    r#"<a href="javascript:;" onclick="WIKIREQUEST.createAccountSkipCongrats=true; WIKIDOT.page.listeners.createAccount(event)">Create a new account</a>"#,
+    "</div><p>it is worth it and is free</p></td></tr></table>\n</div>",
+);
 
 static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListUsers(?P<head>(?:[^\]"]+|"[^"]*")*)\]\](?P<body>.*?)\[\[/module\]\]"#)
@@ -171,6 +190,10 @@ static MEMBERSHIPBYPASSWORD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         r#"(?is)\[\[module\s+MembershipByPassword\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
     )
     .expect("MembershipByPassword module expression is valid")
+});
+static MEMBERSHIPAPPLY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+MembershipApply\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("MembershipApply module expression is valid")
 });
 static AD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+Ad\b(?:[^\]"]+|"[^"]*")*\]\]"#)
@@ -413,10 +436,10 @@ async fn resolve_list_users_viewer(
 }
 
 fn render_join_module(head: &str) -> String {
-    let button = wikidot_module_argument(head, "button")
+    let button = wikidot_join_argument(head, "button")
         .filter(|value| !value.trim().is_empty())
         .unwrap_or("Join");
-    let class = wikidot_module_argument(head, "class")
+    let class = wikidot_join_argument(head, "class")
         .filter(|value| !value.trim().is_empty())
         .unwrap_or("join-box");
     format!(
@@ -428,6 +451,34 @@ fn render_join_module(head: &str) -> String {
         class = escape_list_pages_html_attr(class),
         button = escape_list_pages_html_text(button),
     )
+}
+
+fn wikidot_join_argument<'a>(head: &'a str, name: &str) -> Option<&'a str> {
+    wikidot_module_arguments(head)?
+        .into_iter()
+        .rev()
+        .find(|argument| {
+            argument.key.eq_ignore_ascii_case(name)
+                && argument.op == "="
+                && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
+        })
+        .map(|argument| argument.value)
+}
+
+pub(crate) fn join_module_action_count(wikitext: &str) -> usize {
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    REGISTRY_MODULE_REGEX
+        .captures_iter(wikitext)
+        .filter(|captures| {
+            let matched = captures
+                .get(0)
+                .expect("a registry module capture always has a complete match");
+            !literal_regions.contains(matched.start())
+                && captures
+                    .name("name")
+                    .is_some_and(|name| name.as_str().eq_ignore_ascii_case("Join"))
+        })
+        .count()
 }
 
 fn render_featured_site_module(
@@ -1428,7 +1479,7 @@ impl RenderService {
         // out of this context-free fallback is what lets that pass preserve
         // over-budget or otherwise unsupported modules literally.
         Self::expand_registry_modules_matching(wikitext, settings, compat_html, |name| {
-            !name.eq_ignore_ascii_case("NewPage")
+            !name.eq_ignore_ascii_case("NewPage") && !name.eq_ignore_ascii_case("Join")
         })
     }
 
@@ -1594,6 +1645,92 @@ impl RenderService {
             |name| name.eq_ignore_ascii_case("Join"),
         );
         fragments.restore(&protected)
+    }
+
+    async fn expand_join_modules_for_view(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        settings: &WikitextSettings,
+        current_site_id: Option<i64>,
+        viewer_user_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> Result<String> {
+        if !settings.enable_page_syntax {
+            return Ok(wikitext);
+        }
+        let Some(site_id) = current_site_id else {
+            return Ok(wikitext);
+        };
+        let actor_state =
+            MembershipService::actor_state(ctx, site_id, viewer_user_id).await?;
+        let show =
+            MembershipService::join_module_state(actor_state) == JoinModuleState::Show;
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in REGISTRY_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a registry module capture always has a complete match");
+            let is_join = captures
+                .name("name")
+                .is_some_and(|name| name.as_str().eq_ignore_ascii_case("Join"));
+            if !is_join || literal_regions.contains(matched.start()) {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            if show {
+                let head = captures.name("head").map_or("", |head| head.as_str());
+                output.push_str(&compat_html.push_block_html(render_join_module(head)));
+            }
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return Ok(wikitext);
+        }
+        output.push_str(&wikitext[cursor..]);
+        Ok(output)
+    }
+
+    fn expand_membership_apply_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        viewer_user_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
+        if !settings.enable_page_syntax
+            || viewer_user_id.is_some()
+            || !MEMBERSHIPAPPLY_MODULE_REGEX.is_match(&wikitext)
+        {
+            return wikitext;
+        }
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in MEMBERSHIPAPPLY_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a MembershipApply capture always has a complete match");
+            if literal_regions.contains(matched.start())
+                || captures
+                    .name("head")
+                    .is_some_and(|head| !head.as_str().trim().is_empty())
+            {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(
+                &compat_html.push_block_html(MEMBERSHIP_APPLY_ANONYMOUS_HTML.to_owned()),
+            );
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
     }
 
     async fn expand_list_users_modules(
@@ -1785,14 +1922,17 @@ impl RenderService {
             if literal_regions.contains(matched.start()) {
                 continue;
             }
-            let head = captures.name("head").map_or("", |head| head.as_str());
-            if !head.trim().is_empty() {
-                continue;
-            }
             let name = captures
                 .name("name")
                 .expect("a static account module capture always has a name")
                 .as_str();
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            let opaque_token_surface = name
+                .eq_ignore_ascii_case("AnonymousNotificationsUnsubscribe")
+                || name.eq_ignore_ascii_case("MembershipEmailInvitation");
+            if !head.trim().is_empty() && !opaque_token_surface {
+                continue;
+            }
             output.push_str(&wikitext[cursor..matched.start()]);
             let rendered = Self::render_static_account_module(name);
             if rendered.is_empty() && name.eq_ignore_ascii_case("Watchers") {
@@ -1821,11 +1961,15 @@ impl RenderService {
         current_site_id: Option<i64>,
         viewer_user_id: Option<i64>,
     ) -> Result<Option<&'static str>> {
-        let Some(viewer_user_id) = viewer_user_id else {
-            return Ok(Some(MEMBERSHIP_BY_PASSWORD_ANONYMOUS_HTML));
-        };
         let Some(current_site_id) = current_site_id else {
             return Ok(None);
+        };
+        let site = SiteService::get(ctx, Reference::Id(current_site_id)).await?;
+        if matches!(site.slug.as_str(), "scp-wiki" | "scp-jp") {
+            return Ok(Some(MEMBERSHIP_BY_PASSWORD_DISABLED_HTML));
+        }
+        let Some(viewer_user_id) = viewer_user_id else {
+            return Ok(Some(MEMBERSHIP_BY_PASSWORD_ANONYMOUS_HTML));
         };
         let membership = RelationService::get_optional_site_member(
             ctx,
@@ -2005,6 +2149,22 @@ impl RenderService {
             .await
             .or_raise(make_error)?
         };
+        wikitext = Self::expand_join_modules_for_view(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            options.viewer_user_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
+        wikitext = Self::expand_membership_apply_modules(
+            wikitext,
+            settings,
+            options.viewer_user_id,
+            compat_html,
+        );
         wikitext = Self::expand_list_users_modules(
             ctx,
             wikitext,

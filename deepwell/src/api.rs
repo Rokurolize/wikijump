@@ -392,6 +392,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("member_set", membership_set);
     register!("member_get", membership_get);
     register!("member_remove", membership_remove);
+    register!("membership_join", membership_join);
 
     // Category
     register!("category_get", category_get);

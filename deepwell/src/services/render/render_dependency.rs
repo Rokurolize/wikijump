@@ -72,6 +72,8 @@ const MODULE_VIEWER_NAMES: &[&str] = &[
     "members",
     "newpage",
     "clone",
+    "join",
+    "membershipapply",
     "membershipbypassword",
 ];
 const MODULE_STATIC_NAMES: &[&str] = &["css"];
@@ -297,6 +299,8 @@ mod tests {
             "[[module Members]]",
             "[[module NewPage]]",
             "[[module Clone]]",
+            "[[module Join]]",
+            "[[module MembershipApply]]",
             "[[module MembershipByPassword]]",
         ] {
             let classes = classify_render_dependencies(source);

@@ -54,6 +54,9 @@ static LIST_DRAFTS_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listdrafts\b").unwrap());
 static MEMBERSHIP_BY_PASSWORD_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+membershipbypassword\b").unwrap());
+static MEMBERSHIP_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)\[\[\s*module\s+(?:join|membershipapply)\b").unwrap()
+});
 static FORUM_MINI_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?im)^[\t ]*\[\[module\s+mini(?:recentthreads|activethreads|recentposts)\b",
@@ -198,6 +201,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || LIST_USERS_MODULE_REGEX.is_match(wikitext)
         || LIST_DRAFTS_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_BY_PASSWORD_MODULE_REGEX.is_match(wikitext)
+        || MEMBERSHIP_MODULE_REGEX.is_match(wikitext)
         || FORUM_MINI_MODULE_REGEX.is_match(wikitext)
         || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
