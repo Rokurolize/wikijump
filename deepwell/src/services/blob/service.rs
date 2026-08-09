@@ -194,7 +194,7 @@ impl BlobService {
         })
     }
 
-    async fn get_pending_blob_path(
+    async fn require_owned_pending_blob(
         ctx: &ServiceContext<'_>,
         user_id: i64,
         pending_blob_id: &str,
@@ -203,7 +203,7 @@ impl BlobService {
         let txn = ctx.transaction();
 
         let make_error =
-            || Error::new("failed to get pending blob path", ErrorType::Blob);
+            || Error::new("failed to require owned pending blob", ErrorType::Blob);
 
         let row = BlobPending::find_by_id(pending_blob_id)
             .one(txn)
@@ -257,7 +257,7 @@ impl BlobService {
         let make_error = || Error::new("failed to cancel pending blob", ErrorType::Blob);
 
         let PendingBlob { s3_path, .. } =
-            Self::get_pending_blob_path(ctx, user_id, pending_blob_id, None)
+            Self::require_owned_pending_blob(ctx, user_id, pending_blob_id, None)
                 .await
                 .or_raise(make_error)?;
 
@@ -512,7 +512,7 @@ impl BlobService {
             s3_path,
             expected_length,
             moved_hash,
-        } = Self::get_pending_blob_path(
+        } = Self::require_owned_pending_blob(
             ctx,
             user_id,
             pending_blob_id,

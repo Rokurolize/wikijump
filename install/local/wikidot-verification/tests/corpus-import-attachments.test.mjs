@@ -118,3 +118,122 @@ test('materializeCorpusRowAttachments binds pending uploads to the trusted page 
   assert.equal(calls[1].method, 'file_create');
   assert.deepEqual(calls[1].requestContext, { siteId: 17, pageRef: 23 });
 });
+
+test('materializeCorpusRowAttachments cancels once after a presigned PUT failure', async (t) => {
+  const fixture = attachmentFixture();
+  t.after(() => fixture.cleanup());
+
+  const server = http.createServer((request, response) => {
+    request.resume();
+    request.on('end', () => response.writeHead(503).end());
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const address = server.address();
+  assert.equal(typeof address, 'object');
+
+  const calls = [];
+  const rpc = async (_args, method, params, requestContext) => {
+    calls.push({ method, params, requestContext });
+    if (method === 'blob_upload') {
+      return {
+        pending_blob_id: 'issue-1062-put-failure',
+        presign_url: `http://127.0.0.1:${address.port}/pending`,
+      };
+    }
+    if (method === 'blob_cancel') return null;
+    assert.fail(`unexpected RPC method ${method}`);
+  };
+
+  await assert.rejects(
+    materializeCorpusRowAttachments({
+      args: {
+        sessionToken: 'issue-1062-session',
+        siteId: 17,
+        userId: 29,
+        ipAddress: '192.0.2.62',
+        rpcTimeoutMs: 1_000,
+      },
+      row: { ...fixture.row, attachments: [fixture.attachment] },
+      pageId: 23,
+      getFile: async () => null,
+      rpc,
+    }),
+    /presigned PUT failed with status 503/,
+  );
+
+  assert.deepEqual(calls, [
+    {
+      method: 'blob_upload',
+      params: { user_id: 29, blob_size: 18, scope: 'page' },
+      requestContext: { siteId: 17, pageRef: 23 },
+    },
+    {
+      method: 'blob_cancel',
+      params: { user_id: 29, pending_blob_id: 'issue-1062-put-failure' },
+      requestContext: { siteId: 17, pageRef: 23 },
+    },
+  ]);
+});
+
+test('materializeCorpusRowAttachments preserves file_create failure when cleanup fails', async (t) => {
+  const fixture = attachmentFixture();
+  t.after(() => fixture.cleanup());
+
+  const server = http.createServer((request, response) => {
+    request.resume();
+    request.on('end', () => response.writeHead(200).end());
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const address = server.address();
+  assert.equal(typeof address, 'object');
+
+  const commitError = new Error('file_create commit sentinel');
+  const cancelError = new Error('blob_cancel cleanup sentinel');
+  const calls = [];
+  let cancelCount = 0;
+  const rpc = async (_args, method, params, requestContext) => {
+    calls.push({ method, params, requestContext });
+    if (method === 'blob_upload') {
+      return {
+        pending_blob_id: 'issue-1062-commit-failure',
+        presign_url: `http://127.0.0.1:${address.port}/pending`,
+      };
+    }
+    if (method === 'file_create') throw commitError;
+    if (method === 'blob_cancel') {
+      cancelCount += 1;
+      throw cancelError;
+    }
+    assert.fail(`unexpected RPC method ${method}`);
+  };
+
+  await assert.rejects(
+    materializeCorpusRowAttachments({
+      args: {
+        sessionToken: 'issue-1062-session',
+        siteId: 17,
+        userId: 29,
+        ipAddress: '192.0.2.62',
+        rpcTimeoutMs: 1_000,
+      },
+      row: { ...fixture.row, attachments: [fixture.attachment] },
+      pageId: 23,
+      getFile: async () => null,
+      rpc,
+    }),
+    (error) => error === commitError,
+  );
+
+  assert.equal(cancelCount, 1);
+  assert.deepEqual(
+    calls.map(({ method }) => method),
+    ['blob_upload', 'file_create', 'blob_cancel'],
+  );
+  assert.deepEqual(calls[2], {
+    method: 'blob_cancel',
+    params: { user_id: 29, pending_blob_id: 'issue-1062-commit-failure' },
+    requestContext: { siteId: 17, pageRef: 23 },
+  });
+});

@@ -1573,6 +1573,20 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   expect(fileLog.fileCreate).toHaveLength(1)
   expect(fileLog.fileEdit).toHaveLength(1)
   expect(fileLog.pageGetFiles).toHaveLength(1)
+  expect(fileLog.blobUpload).toEqual(
+    [initialText, updatedText].map((content) => ({
+      params: {
+        blob_size: Buffer.byteLength(content),
+        scope: "page",
+        user_id: 123
+      },
+      headers: {
+        page: pageSlug,
+        sessionToken: "fixture-session-token",
+        siteId: "6000005"
+      }
+    }))
+  )
   expect(fileLog.fileCreate[0].params).toMatchObject({
     bypass_filter: true,
     name: fileName,

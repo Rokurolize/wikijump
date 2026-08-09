@@ -32,6 +32,7 @@ import {
   type XmlRpcCall,
   type XmlRpcValue
 } from "$lib/server/xmlrpc/protocol"
+import { commitPendingBlobUpload } from "$lib/server/deepwell/pending-blob-upload"
 import {
   getOptionalStructString,
   getOptionalStructStringArray,
@@ -418,40 +419,38 @@ export async function saveFileOne(
 
   const writeContext = await getXmlRpcWriteContext(siteId, page.slug, requestIp)
   const contentBytes = decodeXmlRpcBase64(content)
-  const pendingBlobId = await uploadXmlRpcFileContent(contentBytes, writeContext)
-
-  if (existing) {
-    await requestDeepwell(
-      "file_edit",
-      {
-        site_id: siteId,
-        page_id: pageId,
-        file_id: existing.file_id,
-        last_revision_id: existing.revision_id,
-        uploaded_blob_id: pendingBlobId,
-        revision_comments: revisionComment,
-        user_id: writeContext.userId,
-        ip_address: writeContext.ipAddress,
-        bypass_filter: true
-      },
-      writeContext
-    )
-  } else {
-    await requestDeepwell(
-      "file_create",
-      {
-        site_id: siteId,
-        page_id: pageId,
-        name: fileName,
-        uploaded_blob_id: pendingBlobId,
-        revision_comments: revisionComment,
-        user_id: writeContext.userId,
-        ip_address: writeContext.ipAddress,
-        bypass_filter: true
-      },
-      writeContext
-    )
-  }
+  await commitXmlRpcFileContent(contentBytes, writeContext, (pendingBlobId) =>
+    existing
+      ? requestDeepwell(
+          "file_edit",
+          {
+            site_id: siteId,
+            page_id: pageId,
+            file_id: existing.file_id,
+            last_revision_id: existing.revision_id,
+            uploaded_blob_id: pendingBlobId,
+            revision_comments: revisionComment,
+            user_id: writeContext.userId,
+            ip_address: writeContext.ipAddress,
+            bypass_filter: true
+          },
+          writeContext
+        )
+      : requestDeepwell(
+          "file_create",
+          {
+            site_id: siteId,
+            page_id: pageId,
+            name: fileName,
+            uploaded_blob_id: pendingBlobId,
+            revision_comments: revisionComment,
+            user_id: writeContext.userId,
+            ip_address: writeContext.ipAddress,
+            bypass_filter: true
+          },
+          writeContext
+        )
+  )
 
   const saved = await getDeepwellFile(siteId, pageId, fileName, false)
   if (!saved) {
@@ -530,25 +529,40 @@ function decodeXmlRpcBase64(content: string): Buffer {
   return Buffer.from(normalized, "base64")
 }
 
-async function uploadXmlRpcFileContent(
+async function commitXmlRpcFileContent(
   content: Buffer,
-  context: XmlRpcWriteContext
-): Promise<string> {
-  const upload = await requestDeepwell(
-    "blob_upload",
-    {
-      user_id: context.userId,
-      blob_size: content.length,
-      scope: "page"
+  context: XmlRpcWriteContext,
+  commit: (pendingBlobId: string) => Promise<unknown>
+): Promise<void> {
+  await commitPendingBlobUpload({
+    start: async () => {
+      const upload = await requestDeepwell(
+        "blob_upload",
+        {
+          user_id: context.userId,
+          blob_size: content.length,
+          scope: "page"
+        },
+        context
+      )
+      if (!isDeepwellBlobUpload(upload)) {
+        throw new XmlRpcFault(-32603, "Malformed Deepwell response: blob_upload")
+      }
+      return upload
     },
-    context
-  )
-  if (!isDeepwellBlobUpload(upload)) {
-    throw new XmlRpcFault(-32603, "Malformed Deepwell response: blob_upload")
-  }
-
-  await putPresignedBlob(upload.presign_url, content)
-  return upload.pending_blob_id
+    upload: (presignUrl) => putPresignedBlob(presignUrl, content),
+    commit,
+    cancel: async (pendingBlobId) => {
+      await requestDeepwell(
+        "blob_cancel",
+        {
+          user_id: context.userId,
+          pending_blob_id: pendingBlobId
+        },
+        context
+      )
+    }
+  })
 }
 
 async function putPresignedBlob(url: string, content: Buffer): Promise<void> {

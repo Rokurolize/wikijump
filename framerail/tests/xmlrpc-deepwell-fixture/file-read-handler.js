@@ -5,6 +5,7 @@ import {
   toFileResult,
   toFileResultWithoutData
 } from "./context.js"
+import { pages } from "./data.js"
 
 /**
  * @param {{
@@ -54,7 +55,9 @@ export const handleFileReadRpc = ({ rpcRequest, request, port }) => {
     typeof rpcRequest.params.blob_size === "number" &&
     rpcRequest.params.scope === "page" &&
     request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
-    request.headers["x-deepwell-site-id"] === "6000005"
+    request.headers["x-deepwell-site-id"] === "6000005" &&
+    typeof request.headers["x-deepwell-page"] === "string" &&
+    Object.hasOwn(pages, request.headers["x-deepwell-page"])
   ) {
     fileRequests.blobUpload.push({
       headers: requestContextHeaders(request),

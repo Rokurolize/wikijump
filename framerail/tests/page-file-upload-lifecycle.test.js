@@ -86,6 +86,53 @@ test("page file create cancels its page-scoped pending blob when commit fails", 
   assert.deepEqual(calls[3].context, requestContext)
 })
 
+test("page file create preserves the commit error when pending cleanup also fails", async (t) => {
+  const calls = []
+  const commitError = new Error("file_create commit sentinel")
+  const cancelError = new Error("blob_cancel cleanup sentinel")
+  let cancelCount = 0
+  const request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "page_edit_permission") return { can_edit: true }
+    if (method === "blob_upload") {
+      return {
+        pending_blob_id: "pending-double-failure",
+        presign_url: "https://uploads.example.test/pending-double-failure"
+      }
+    }
+    if (method === "file_create") throw commitError
+    if (method === "blob_cancel") {
+      cancelCount += 1
+      throw cancelError
+    }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  await assert.rejects(
+    withUploadBoundaries(
+      t,
+      request,
+      async () => new Response(null, { status: 200 }),
+      () => pageFileCreate(createInput(), requestContext)
+    ),
+    (error) => error === commitError
+  )
+
+  assert.equal(cancelCount, 1)
+  assert.deepEqual(
+    calls.map(({ method }) => method),
+    ["page_edit_permission", "blob_upload", "file_create", "blob_cancel"]
+  )
+  assert.deepEqual(calls[3], {
+    method: "blob_cancel",
+    params: {
+      user_id: 29,
+      pending_blob_id: "pending-double-failure"
+    },
+    context: requestContext
+  })
+})
+
 test("page file create cancels after PUT failure but not before pending creation", async (t) => {
   const calls = []
   const request = async (method, params, context) => {

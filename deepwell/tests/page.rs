@@ -77,6 +77,7 @@ use deepwell::types::{
     Action, ConnectionType, Maybe, PageId, PageLockType, PageRevisionType, Permission,
     Reference, RerenderDepth, Resource, TextBlockType,
 };
+use futures::FutureExt;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel,
     PaginatorTrait, QueryFilter, Set, Statement, TransactionTrait, Value,
@@ -84,6 +85,7 @@ use sea_orm::{
 use serde_json::json;
 use std::borrow::Cow;
 use std::collections::BTreeSet;
+use std::panic::{AssertUnwindSafe, resume_unwind};
 use std::time::Duration as StdDuration;
 use time::{Duration, OffsetDateTime};
 
@@ -21124,8 +21126,14 @@ async fn create_committed_page_pending_blob_fixture(
         .put_object(&s3_path, &data)
         .await
         .expect("pending blob fixture should be uploaded");
-    assert_eq!(response.status_code(), 200);
-    page_pending_blob_model(
+    if response.status_code() != 200 {
+        let cleanup = runner.state().s3_files_bucket.delete_object(&s3_path).await;
+        panic!(
+            "pending blob fixture upload returned HTTP {}; temporary cleanup: {cleanup:?}",
+            response.status_code()
+        );
+    }
+    let inserted = page_pending_blob_model(
         pending_blob_id.clone(),
         s3_path.clone(),
         user_id,
@@ -21134,8 +21142,13 @@ async fn create_committed_page_pending_blob_fixture(
         data.len(),
     )
     .insert(&runner.state().database)
-    .await
-    .expect("committed pending blob fixture should be inserted");
+    .await;
+    if let Err(error) = inserted {
+        let cleanup = runner.state().s3_files_bucket.delete_object(&s3_path).await;
+        panic!(
+            "committed pending blob fixture should be inserted: {error:?}; temporary cleanup: {cleanup:?}"
+        );
+    }
     (
         PagePendingBlobFixture {
             pending_blob_id,
@@ -21143,6 +21156,40 @@ async fn create_committed_page_pending_blob_fixture(
         },
         data,
     )
+}
+
+async fn cleanup_committed_page_pending_blob_fixture(
+    state: &deepwell::api::ServerState,
+    fixture: &PagePendingBlobFixture,
+    data: &[u8],
+) -> std::result::Result<(), String> {
+    let mut failures = Vec::new();
+    if let Err(error) = BlobPendingTable::delete_by_id(&fixture.pending_blob_id)
+        .exec(&state.database)
+        .await
+    {
+        failures.push(format!("pending row cleanup failed: {error:?}"));
+    }
+    for (label, path) in [
+        ("temporary", fixture.s3_path.clone()),
+        ("permanent", blob_hash_to_hex(&sha512_hash(data))),
+    ] {
+        match state.s3_files_bucket.delete_object(&path).await {
+            Ok(response) if response.status_code() == 204 => {}
+            Ok(response) => failures.push(format!(
+                "{label} object cleanup returned HTTP {}",
+                response.status_code()
+            )),
+            Err(error) => {
+                failures.push(format!("{label} object cleanup failed: {error:?}"))
+            }
+        }
+    }
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(failures.join("; "))
+    }
 }
 
 async fn assert_page_file_absent(
@@ -21301,239 +21348,235 @@ async fn file_create_commits_only_its_actor_and_route_owned_pending_blob() {
         page.page_id,
     )
     .await;
-    let owned_name = format!("{}.txt", owned.pending_blob_id);
-    set_mutation_request_context(
-        &mut runner,
-        ADMIN_USER_ID,
-        site.site_id,
-        Reference::Id(page.page_id),
-    );
-    let created = run_endpoint!(
-        runner,
-        file_create,
-        json!({
-            "site_id": site.site_id,
-            "page_id": page.page_id,
-            "name": owned_name,
-            "uploaded_blob_id": owned.pending_blob_id,
-            "revision_comments": "issue 1062 owned upload",
-            "user_id": ADMIN_USER_ID,
-            "ip_address": common::IP_ADDRESS,
-        }),
-    );
-    assert!(created.file_id > 0);
-    let files = run_endpoint!(
-        runner,
-        page_get_files,
-        json!({
-            "site_id": site.site_id,
-            "page_id": page.page_id,
-            "deleted": false,
-        }),
-    );
-    let listed = files
-        .iter()
-        .find(|file| file.file_id == created.file_id)
-        .expect("page_get_files should expose the committed file relation");
-    assert_eq!(listed.name, owned_name);
-    assert_eq!(listed.page_id, page.page_id);
-    assert_eq!(listed.size, expected_data.len() as i64);
-    let viewed = run_endpoint!(
-        runner,
-        file_get,
-        json!({
-            "site_id": site.site_id,
-            "page_id": page.page_id,
-            "file": created.file_id,
-            "details": {"data": true},
-        }),
-    )
-    .expect("file_get should expose the committed file");
-    assert_eq!(viewed.file_id, created.file_id);
-    assert_eq!(
-        viewed.data.as_ref().map(|data| data.as_ref()),
-        Some(expected_data.as_slice())
-    );
-
-    let other_actor = create_request_pending_blob_fixture(
-        &runner,
-        SAMPLE_USER_ID,
-        Some(site.site_id),
-        Some(page.page_id),
-    )
-    .await;
-    let other_actor_name = "issue-1062-other-actor.txt";
-    set_mutation_request_context(
-        &mut runner,
-        ADMIN_USER_ID,
-        site.site_id,
-        Reference::Id(page.page_id),
-    );
-    let error = run_endpoint_err!(
-        runner,
-        file_create,
-        json!({
-            "site_id": site.site_id,
-            "page_id": page.page_id,
-            "name": other_actor_name,
-            "uploaded_blob_id": other_actor.pending_blob_id,
-            "revision_comments": "reject another actor pending upload",
-            "user_id": ADMIN_USER_ID,
-            "ip_address": common::IP_ADDRESS,
-        }),
-    );
-    assert_contains_error!(error, ErrorType::BlobNotFound);
-    assert!(
-        !format!("{error:?}").contains(&other_actor.pending_blob_id),
-        "ownership rejection must not reflect the pending blob token"
-    );
-    assert_page_file_absent(
-        &mut runner,
-        ADMIN_USER_ID,
-        site.site_id,
-        page.page_id,
-        &other_actor_name,
-    )
-    .await;
-    cancel_request_pending_blob_fixture(&mut runner, SAMPLE_USER_ID, &other_actor).await;
-
-    for (target_site_id, target_page_id, label) in [
-        (site.site_id, other_page.page_id, "cross-page"),
-        (other_site.site_id, other_site_page.page_id, "cross-site"),
-    ] {
-        let misplaced = create_request_pending_blob_fixture(
-            &runner,
+    let verification = AssertUnwindSafe(async {
+        let owned_name = format!("{}.txt", owned.pending_blob_id);
+        set_mutation_request_context(
+            &mut runner,
             ADMIN_USER_ID,
+            site.site_id,
+            Reference::Id(page.page_id),
+        );
+        let created = run_endpoint!(
+            runner,
+            file_create,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "name": owned_name,
+                "uploaded_blob_id": owned.pending_blob_id,
+                "revision_comments": "issue 1062 owned upload",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert!(created.file_id > 0);
+        let files = run_endpoint!(
+            runner,
+            page_get_files,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "deleted": false,
+            }),
+        );
+        let listed = files
+            .iter()
+            .find(|file| file.file_id == created.file_id)
+            .expect("page_get_files should expose the committed file relation");
+        assert_eq!(listed.name, owned_name);
+        assert_eq!(listed.page_id, page.page_id);
+        assert_eq!(listed.size, expected_data.len() as i64);
+        let viewed = run_endpoint!(
+            runner,
+            file_get,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "file": created.file_id,
+                "details": {"data": true},
+            }),
+        )
+        .expect("file_get should expose the committed file");
+        assert_eq!(viewed.file_id, created.file_id);
+        assert_eq!(
+            viewed.data.as_ref().map(|data| data.as_ref()),
+            Some(expected_data.as_slice())
+        );
+
+        let other_actor = create_request_pending_blob_fixture(
+            &runner,
+            SAMPLE_USER_ID,
             Some(site.site_id),
             Some(page.page_id),
         )
         .await;
-        let name = format!("issue-1062-{label}.txt");
+        let other_actor_name = "issue-1062-other-actor.txt";
         set_mutation_request_context(
             &mut runner,
             ADMIN_USER_ID,
-            target_site_id,
-            Reference::Id(target_page_id),
+            site.site_id,
+            Reference::Id(page.page_id),
         );
         let error = run_endpoint_err!(
             runner,
             file_create,
             json!({
-                "site_id": target_site_id,
-                "page_id": target_page_id,
-                "name": name,
-                "uploaded_blob_id": misplaced.pending_blob_id,
-                "revision_comments": format!("reject {label} pending upload"),
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "name": other_actor_name,
+                "uploaded_blob_id": other_actor.pending_blob_id,
+                "revision_comments": "reject another actor pending upload",
                 "user_id": ADMIN_USER_ID,
                 "ip_address": common::IP_ADDRESS,
             }),
         );
         assert_contains_error!(error, ErrorType::BlobNotFound);
         assert!(
-            !format!("{error:?}").contains(&misplaced.pending_blob_id),
-            "scope rejection must not reflect the pending blob token"
+            !format!("{error:?}").contains(&other_actor.pending_blob_id),
+            "ownership rejection must not reflect the pending blob token"
         );
         assert_page_file_absent(
             &mut runner,
             ADMIN_USER_ID,
-            target_site_id,
-            target_page_id,
-            &name,
+            site.site_id,
+            page.page_id,
+            &other_actor_name,
         )
         .await;
-        cancel_request_pending_blob_fixture(&mut runner, ADMIN_USER_ID, &misplaced).await;
-    }
+        cancel_request_pending_blob_fixture(&mut runner, SAMPLE_USER_ID, &other_actor)
+            .await;
 
-    let generic =
-        create_request_pending_blob_fixture(&runner, ADMIN_USER_ID, None, None).await;
-    let generic_name = "issue-1062-unscoped.txt";
-    set_mutation_request_context(
-        &mut runner,
-        ADMIN_USER_ID,
-        site.site_id,
-        Reference::Id(page.page_id),
-    );
-    let error = run_endpoint_err!(
-        runner,
-        file_create,
-        json!({
-            "site_id": site.site_id,
-            "page_id": page.page_id,
-            "name": generic_name,
-            "uploaded_blob_id": generic.pending_blob_id,
-            "revision_comments": "reject unscoped pending upload",
-            "user_id": ADMIN_USER_ID,
-            "ip_address": common::IP_ADDRESS,
-        }),
-    );
-    assert_contains_error!(error, ErrorType::BlobNotFound);
-    assert!(
-        !format!("{error:?}").contains(&generic.pending_blob_id),
-        "unscoped rejection must not reflect the pending blob token"
-    );
-    assert_page_file_absent(
-        &mut runner,
-        ADMIN_USER_ID,
-        site.site_id,
-        page.page_id,
-        &generic_name,
-    )
+        for (target_site_id, target_page_id, label) in [
+            (site.site_id, other_page.page_id, "cross-page"),
+            (other_site.site_id, other_site_page.page_id, "cross-site"),
+        ] {
+            let misplaced = create_request_pending_blob_fixture(
+                &runner,
+                ADMIN_USER_ID,
+                Some(site.site_id),
+                Some(page.page_id),
+            )
+            .await;
+            let name = format!("issue-1062-{label}.txt");
+            set_mutation_request_context(
+                &mut runner,
+                ADMIN_USER_ID,
+                target_site_id,
+                Reference::Id(target_page_id),
+            );
+            let error = run_endpoint_err!(
+                runner,
+                file_create,
+                json!({
+                    "site_id": target_site_id,
+                    "page_id": target_page_id,
+                    "name": name,
+                    "uploaded_blob_id": misplaced.pending_blob_id,
+                    "revision_comments": format!("reject {label} pending upload"),
+                    "user_id": ADMIN_USER_ID,
+                    "ip_address": common::IP_ADDRESS,
+                }),
+            );
+            assert_contains_error!(error, ErrorType::BlobNotFound);
+            assert!(
+                !format!("{error:?}").contains(&misplaced.pending_blob_id),
+                "scope rejection must not reflect the pending blob token"
+            );
+            assert_page_file_absent(
+                &mut runner,
+                ADMIN_USER_ID,
+                target_site_id,
+                target_page_id,
+                &name,
+            )
+            .await;
+            cancel_request_pending_blob_fixture(&mut runner, ADMIN_USER_ID, &misplaced)
+                .await;
+        }
+
+        let generic =
+            create_request_pending_blob_fixture(&runner, ADMIN_USER_ID, None, None).await;
+        let generic_name = "issue-1062-unscoped.txt";
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site.site_id,
+            Reference::Id(page.page_id),
+        );
+        let error = run_endpoint_err!(
+            runner,
+            file_create,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "name": generic_name,
+                "uploaded_blob_id": generic.pending_blob_id,
+                "revision_comments": "reject unscoped pending upload",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::BlobNotFound);
+        assert!(
+            !format!("{error:?}").contains(&generic.pending_blob_id),
+            "unscoped rejection must not reflect the pending blob token"
+        );
+        assert_page_file_absent(
+            &mut runner,
+            ADMIN_USER_ID,
+            site.site_id,
+            page.page_id,
+            &generic_name,
+        )
+        .await;
+        cancel_request_pending_blob_fixture(&mut runner, ADMIN_USER_ID, &generic).await;
+
+        cancel_request_pending_blob(&mut runner, ADMIN_USER_ID, &owned.pending_blob_id)
+            .await;
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site.site_id,
+            Reference::Id(page.page_id),
+        );
+        let viewed_after_cancel = run_endpoint!(
+            runner,
+            file_get,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "file": created.file_id,
+                "details": {"data": true},
+            }),
+        )
+        .expect("blob_cancel must not remove permanent content-addressed file bytes");
+        assert_eq!(
+            viewed_after_cancel.data.as_ref().map(|data| data.as_ref()),
+            Some(expected_data.as_slice())
+        );
+    })
+    .catch_unwind()
     .await;
-    cancel_request_pending_blob_fixture(&mut runner, ADMIN_USER_ID, &generic).await;
-
-    cancel_request_pending_blob(&mut runner, ADMIN_USER_ID, &owned.pending_blob_id).await;
-    set_mutation_request_context(
-        &mut runner,
-        ADMIN_USER_ID,
-        site.site_id,
-        Reference::Id(page.page_id),
-    );
-    let viewed_after_cancel = run_endpoint!(
-        runner,
-        file_get,
-        json!({
-            "site_id": site.site_id,
-            "page_id": page.page_id,
-            "file": created.file_id,
-            "details": {"data": true},
-        }),
-    )
-    .expect("blob_cancel must not remove permanent content-addressed file bytes");
-    assert_eq!(
-        viewed_after_cancel.data.as_ref().map(|data| data.as_ref()),
-        Some(expected_data.as_slice())
-    );
 
     let state = runner.state().clone();
-    runner.teardown().await;
-    BlobPendingTable::delete_by_id(&owned.pending_blob_id)
-        .exec(&state.database)
-        .await
-        .expect("committed pending fixture cleanup should succeed");
-    let permanent = state
-        .s3_files_bucket
-        .delete_object(blob_hash_to_hex(&sha512_hash(&expected_data)))
-        .await
-        .expect("committed blob fixture cleanup should succeed");
-    assert_eq!(permanent.status_code(), 204);
-    assert!(
-        BlobPendingTable::find_by_id(&owned.pending_blob_id)
-            .one(&state.database)
-            .await
-            .expect("committed pending cleanup lookup should succeed")
-            .is_none(),
-        "cleanup should remove the committed pending row"
-    );
-    let temporary = state
-        .s3_files_bucket
-        .get_object(&owned.s3_path)
-        .await
-        .expect("temporary upload lookup should succeed");
-    assert_eq!(
-        temporary.status_code(),
-        404,
-        "successful finalization should remove the temporary upload"
-    );
+    let teardown = AssertUnwindSafe(runner.teardown()).catch_unwind().await;
+    let cleanup =
+        cleanup_committed_page_pending_blob_fixture(&state, &owned, &expected_data).await;
+    if let Err(payload) = verification {
+        if let Err(error) = &cleanup {
+            eprintln!("committed pending fixture cleanup after panic failed: {error}");
+        }
+        resume_unwind(payload);
+    }
+    if let Err(payload) = teardown {
+        if let Err(error) = &cleanup {
+            eprintln!(
+                "committed pending fixture cleanup after teardown panic failed: {error}"
+            );
+        }
+        resume_unwind(payload);
+    }
+    cleanup.expect("committed pending fixture cleanup should succeed");
 }
 
 #[tokio::test]

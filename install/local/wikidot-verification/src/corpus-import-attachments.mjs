@@ -84,18 +84,39 @@ function putPresignedBytes(args, presignUrl, bytes, attachment) {
   });
 }
 
-async function uploadBlob({ args, pageId, attachment, bytes, actorUserId, rpc }) {
+async function uploadAndCreateFile({ args, pageId, attachment, bytes, actorUserId, rpc }) {
   const upload = await rpc(
     args,
     'blob_upload',
     { user_id: actorUserId, blob_size: bytes.byteLength, scope: 'page' },
     { siteId: args.siteId, pageRef: pageId },
   );
-  const { statusCode } = await putPresignedBytes(args, upload.presign_url, bytes, attachment);
-  if (statusCode < 200 || statusCode >= 300) {
-    throw new Error(`${attachment.filename}: presigned PUT failed with status ${statusCode}`);
+  try {
+    const { statusCode } = await putPresignedBytes(args, upload.presign_url, bytes, attachment);
+    if (statusCode < 200 || statusCode >= 300) {
+      throw new Error(`${attachment.filename}: presigned PUT failed with status ${statusCode}`);
+    }
+    return await createFile({
+      args,
+      pageId,
+      attachment,
+      pendingBlobId: upload.pending_blob_id,
+      actorUserId,
+      rpc,
+    });
+  } catch (error) {
+    try {
+      await rpc(
+        args,
+        'blob_cancel',
+        { user_id: actorUserId, pending_blob_id: upload.pending_blob_id },
+        { siteId: args.siteId, pageRef: pageId },
+      );
+    } catch {
+      console.error(`${attachment.filename}: unable to cancel failed pending blob upload`);
+    }
+    throw error;
   }
-  return upload.pending_blob_id;
 }
 
 async function createFile({ args, pageId, attachment, pendingBlobId, actorUserId, rpc }) {
@@ -137,8 +158,7 @@ export async function materializeCorpusRowAttachments({ args, row, pageId, getFi
       skippedExisting += 1;
       continue;
     }
-    const pendingBlobId = await uploadBlob({ args, pageId, attachment, bytes, actorUserId, rpc });
-    await createFile({ args, pageId, attachment, pendingBlobId, actorUserId, rpc });
+    await uploadAndCreateFile({ args, pageId, attachment, bytes, actorUserId, rpc });
     uploaded += 1;
   }
   return { attachments_requested: attachments.length, attachments_uploaded: uploaded, attachments_skipped_existing: skippedExisting };
