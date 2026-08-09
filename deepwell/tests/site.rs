@@ -310,6 +310,26 @@ async fn site_settings_update_round_trips_and_rejects_stale_revision() {
     assert!(fetched.settings.toolbars.top);
     assert!(!fetched.settings.toolbars.bottom);
 
+    let disabled = run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 1,
+            "google_analytics": {
+                "enabled": false,
+                "profile": ""
+            },
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(disabled.settings_revision, 2);
+    let fetched = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("updated site should exist");
+    assert!(!fetched.settings.google_analytics.enabled);
+    assert_eq!(fetched.settings.google_analytics.profile, None);
+
     let stale = run_endpoint_err!(
         runner,
         site_update,

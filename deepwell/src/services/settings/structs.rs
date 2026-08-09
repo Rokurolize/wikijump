@@ -33,7 +33,11 @@ pub struct UpdateGoogleAnalyticsSettings {
 }
 
 impl UpdateGoogleAnalyticsSettings {
-    pub fn validate(&self) -> Result<()> {
+    pub fn profile(&self) -> Result<Option<&str>> {
+        if !self.enabled && self.profile.is_empty() {
+            return Ok(None);
+        }
+
         let valid = self
             .profile
             .strip_prefix("UA-")
@@ -45,7 +49,7 @@ impl UpdateGoogleAnalyticsSettings {
                     && property.bytes().all(|byte| byte.is_ascii_digit())
             });
         if valid {
-            Ok(())
+            Ok(Some(&self.profile))
         } else {
             Err(Error::new(
                 "Google Analytics profile must use the UA-<account>-<property> format",
@@ -53,6 +57,11 @@ impl UpdateGoogleAnalyticsSettings {
             )
             .into())
         }
+    }
+
+    pub fn validate(&self) -> Result<()> {
+        self.profile()?;
+        Ok(())
     }
 }
 

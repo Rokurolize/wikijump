@@ -693,7 +693,10 @@ const analyticsSchema = object({
   enabled: boolean(),
   profile: pipe(
     string(),
-    custom((value) => /^UA-[0-9]+-[0-9]+$/u.test(value), "Wrong analytics key")
+    custom(
+      (value) => value === "" || /^UA-[0-9]+-[0-9]+$/u.test(value),
+      "Wrong analytics key"
+    )
   )
 })
 
