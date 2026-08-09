@@ -327,6 +327,7 @@ pub struct PageData {
 #[derive(Deserialize, Debug, Clone)]
 pub struct FileData {
     pub file_id: i64,
+    pub revision_id: i64,
     pub mime: String,
     pub size: i64,
     pub s3_hash: String,
@@ -399,6 +400,7 @@ mod tests {
             "page_get" => json!({ "page_id": 123 }),
             "file_get" => json!({
                 "file_id": 7,
+                "revision_id": 17,
                 "mime": "text/plain",
                 "size": 42,
                 "s3_hash": "abc123",

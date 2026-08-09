@@ -10,6 +10,332 @@
  * (at your option) any later version.
  */
 
+use super::get_site_id;
+use crate::deepwell::FileData;
+use crate::error::{BasicError, build_basic_error_response};
+use crate::fetch::fetch_fresh_file_info;
+use crate::state::ServerState;
+use axum::body::Body;
+use axum::extract::{Path, State};
+use axum::http::header::{self, HeaderMap};
+use axum::http::{Method, StatusCode};
+use axum::response::{IntoResponse, Response};
+use image::codecs::jpeg::JpegEncoder;
+use image::imageops::FilterType;
+use image::{ImageEncoder, ImageFormat, ImageReader, Limits};
+use std::io::Cursor;
+
+const RESIZED_IMAGE_ENCODER_EPOCH: &str = "jpeg-v1";
+const RESIZED_IMAGE_JPEG_QUALITY: u8 = 85;
+const RESIZED_IMAGE_MAX_SOURCE_BYTES: i64 = 16 * 1024 * 1024;
+const RESIZED_IMAGE_MAX_DIMENSION: u32 = 4096;
+const RESIZED_IMAGE_MAX_DECODE_ALLOC: u64 = 64 * 1024 * 1024;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ResizeVariant {
+    Square,
+    Thumbnail,
+    Small,
+    Medium,
+}
+
+impl ResizeVariant {
+    fn from_filename(value: &str) -> Option<Self> {
+        match value {
+            "square.jpg" => Some(Self::Square),
+            "thumbnail.jpg" => Some(Self::Thumbnail),
+            "small.jpg" => Some(Self::Small),
+            "medium.jpg" => Some(Self::Medium),
+            _ => None,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::Square => "square",
+            Self::Thumbnail => "thumbnail",
+            Self::Small => "small",
+            Self::Medium => "medium",
+        }
+    }
+
+    fn longest_side(self) -> u32 {
+        match self {
+            Self::Square => 75,
+            Self::Thumbnail => 100,
+            Self::Small => 240,
+            Self::Medium => 500,
+        }
+    }
+}
+
+#[derive(Debug)]
+enum ResizeError {
+    FormatMismatch,
+    Image(image::ImageError),
+}
+
+impl From<image::ImageError> for ResizeError {
+    fn from(error: image::ImageError) -> Self {
+        Self::Image(error)
+    }
+}
+
+impl From<std::io::Error> for ResizeError {
+    fn from(error: std::io::Error) -> Self {
+        Self::Image(error.into())
+    }
+}
+
+pub async fn handle_resized_image(
+    State(state): State<ServerState>,
+    method: Method,
+    Path((mut page_slug, filename, variant_filename)): Path<(String, String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let site_id = get_site_id(&headers);
+    let Some(variant) = ResizeVariant::from_filename(&variant_filename) else {
+        return resized_not_found(&state, &headers, site_id, &page_slug, &filename).await;
+    };
+    let file_info =
+        match fetch_fresh_file_info(&state, &headers, site_id, &mut page_slug, &filename)
+            .await
+        {
+            Ok(file_info) => file_info,
+            Err(response) => return response,
+        };
+    let etag = resized_etag(&file_info, variant);
+
+    let Some(format) = source_format(&file_info) else {
+        return resized_not_found(&state, &headers, site_id, &page_slug, &filename).await;
+    };
+    if file_info.size <= 0 || file_info.size > RESIZED_IMAGE_MAX_SOURCE_BYTES {
+        return resized_not_found(&state, &headers, site_id, &page_slug, &filename).await;
+    }
+    if if_none_match(&headers, &etag) {
+        return resized_headers(StatusCode::NOT_MODIFIED, &etag)
+            .body(Body::empty())
+            .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+    }
+    if headers.contains_key(header::RANGE) {
+        return Response::builder()
+            .status(StatusCode::RANGE_NOT_SATISFIABLE)
+            .header(header::ETAG, etag)
+            .header(header::ACCEPT_RANGES, "none")
+            .body(Body::empty())
+            .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+    }
+    if method == Method::HEAD {
+        return resized_headers(StatusCode::OK, &etag)
+            .body(Body::empty())
+            .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+    }
+
+    let Ok(_job) = state.resized_image_jobs.try_acquire() else {
+        return StatusCode::SERVICE_UNAVAILABLE.into_response();
+    };
+    let source = match state.s3_files_bucket.get_object(&file_info.s3_hash).await {
+        Ok(response) if response.status_code() == StatusCode::OK => response.to_vec(),
+        Ok(response) => {
+            error!(
+                site_id,
+                page_slug,
+                filename,
+                revision_id = file_info.revision_id,
+                s3_hash = %file_info.s3_hash,
+                status_code = response.status_code(),
+                "Resized image source returned an unexpected S3 status",
+            );
+            return resized_file_fetch_error(
+                &state, &headers, site_id, &page_slug, &filename,
+            )
+            .await;
+        }
+        Err(error) => {
+            error!(
+                site_id,
+                page_slug,
+                filename,
+                revision_id = file_info.revision_id,
+                s3_hash = %file_info.s3_hash,
+                "Cannot fetch resized image source: {error}",
+            );
+            return resized_file_fetch_error(
+                &state, &headers, site_id, &page_slug, &filename,
+            )
+            .await;
+        }
+    };
+    if source.len() > RESIZED_IMAGE_MAX_SOURCE_BYTES as usize
+        || source.len() != file_info.size as usize
+    {
+        error!(
+            site_id,
+            page_slug,
+            filename,
+            revision_id = file_info.revision_id,
+            expected_size = file_info.size,
+            actual_size = source.len(),
+            "Resized image source does not match its file revision metadata",
+        );
+        return resized_file_fetch_error(
+            &state, &headers, site_id, &page_slug, &filename,
+        )
+        .await;
+    }
+
+    let resized =
+        tokio::task::spawn_blocking(move || resize_image(source, format, variant)).await;
+    let bytes = match resized {
+        Ok(Ok(bytes)) => bytes,
+        Ok(Err(error)) => {
+            match error {
+                ResizeError::FormatMismatch => warn!(
+                    site_id,
+                    page_slug,
+                    filename,
+                    "Resized image source format did not match its authorized MIME",
+                ),
+                ResizeError::Image(ref image_error) => warn!(
+                    site_id,
+                    page_slug,
+                    filename,
+                    error = %image_error,
+                    "Authorized resized image source could not be decoded",
+                ),
+            }
+            return resized_not_found(&state, &headers, site_id, &page_slug, &filename)
+                .await;
+        }
+        Err(error) => {
+            error!(
+                site_id,
+                page_slug, filename, "Resized image worker failed: {error}",
+            );
+            return resized_file_fetch_error(
+                &state, &headers, site_id, &page_slug, &filename,
+            )
+            .await;
+        }
+    };
+
+    resized_headers(StatusCode::OK, &etag)
+        .header(header::CONTENT_LENGTH, bytes.len())
+        .body(Body::from(bytes))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+fn source_format(file_info: &FileData) -> Option<ImageFormat> {
+    match file_info.mime.as_str() {
+        "image/gif" => Some(ImageFormat::Gif),
+        "image/jpeg" => Some(ImageFormat::Jpeg),
+        "image/png" => Some(ImageFormat::Png),
+        "image/webp" => Some(ImageFormat::WebP),
+        _ => None,
+    }
+}
+
+fn resized_etag(file_info: &FileData, variant: ResizeVariant) -> String {
+    format!(
+        "\"wikijump-{RESIZED_IMAGE_ENCODER_EPOCH}-{}-{}-{}\"",
+        file_info.revision_id,
+        file_info.s3_hash,
+        variant.name(),
+    )
+}
+
+fn if_none_match(headers: &HeaderMap, etag: &str) -> bool {
+    headers.get_all(header::IF_NONE_MATCH).iter().any(|value| {
+        value.to_str().is_ok_and(|value| {
+            value.split(',').any(|candidate| {
+                let candidate = candidate.trim();
+                candidate == "*"
+                    || candidate == etag
+                    || candidate.strip_prefix("W/") == Some(etag)
+            })
+        })
+    })
+}
+
+fn resized_headers(status: StatusCode, etag: &str) -> axum::http::response::Builder {
+    Response::builder()
+        .status(status)
+        .header(header::CONTENT_TYPE, "image/jpeg")
+        .header(header::ETAG, etag)
+        .header(header::ACCEPT_RANGES, "none")
+        .header(header::CACHE_CONTROL, "private, no-cache")
+}
+
+fn resize_image(
+    source: Vec<u8>,
+    expected_format: ImageFormat,
+    variant: ResizeVariant,
+) -> Result<Vec<u8>, ResizeError> {
+    let mut reader = ImageReader::new(Cursor::new(source)).with_guessed_format()?;
+    if reader.format() != Some(expected_format) {
+        return Err(ResizeError::FormatMismatch);
+    }
+    let mut limits = Limits::default();
+    limits.max_image_width = Some(RESIZED_IMAGE_MAX_DIMENSION);
+    limits.max_image_height = Some(RESIZED_IMAGE_MAX_DIMENSION);
+    limits.max_alloc = Some(RESIZED_IMAGE_MAX_DECODE_ALLOC);
+    reader.limits(limits);
+    let image = reader.decode()?;
+    let side = variant.longest_side();
+    let resized = match variant {
+        ResizeVariant::Square => image.resize_to_fill(side, side, FilterType::Lanczos3),
+        _ => image.resize(side, side, FilterType::Lanczos3),
+    };
+    let rgb = resized.to_rgb8();
+    let (width, height) = rgb.dimensions();
+    let mut output = Vec::new();
+    JpegEncoder::new_with_quality(&mut output, RESIZED_IMAGE_JPEG_QUALITY).write_image(
+        rgb.as_raw(),
+        width,
+        height,
+        image::ExtendedColorType::Rgb8,
+    )?;
+    Ok(output)
+}
+
+async fn resized_not_found(
+    state: &ServerState,
+    headers: &HeaderMap,
+    site_id: i64,
+    page_slug: &str,
+    filename: &str,
+) -> Response {
+    build_basic_error_response(
+        state,
+        headers,
+        BasicError::FileName {
+            site_id,
+            page_slug,
+            filename,
+        },
+    )
+    .await
+}
+
+async fn resized_file_fetch_error(
+    state: &ServerState,
+    headers: &HeaderMap,
+    site_id: i64,
+    page_slug: &str,
+    filename: &str,
+) -> Response {
+    build_basic_error_response(
+        state,
+        headers,
+        BasicError::FileFetch {
+            site_id,
+            page_slug,
+            filename,
+        },
+    )
+    .await
+}
+
 #[cfg(test)]
 mod tests {
     use crate::config::{RpcToken, Secrets};
@@ -31,6 +357,7 @@ mod tests {
     use std::io::Cursor;
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
+    use std::time::Duration;
     use tokio::net::TcpListener;
     use tokio::sync::Semaphore;
     use tokio::task::JoinHandle;
@@ -218,6 +545,16 @@ mod tests {
             "basic_error_missing_file_name" => json!({
                 "jsonrpc": "2.0",
                 "result": {"title": "missing", "body": "not found"},
+                "id": id,
+            }),
+            "basic_error_file_fetch" => json!({
+                "jsonrpc": "2.0",
+                "result": {"title": "fetch error", "body": "file unavailable"},
+                "id": id,
+            }),
+            "basic_error_missing_page_slug" => json!({
+                "jsonrpc": "2.0",
+                "result": {"title": "missing page", "body": "not found"},
                 "id": id,
             }),
             "basic_error_page_fetch" => json!({
@@ -431,6 +768,22 @@ mod tests {
             .unwrap();
         assert_eq!(malformed.status(), StatusCode::NOT_FOUND);
 
+        let over_dimension = png(RESIZED_IMAGE_MAX_DIMENSION + 1, 1, 23);
+        app.mock
+            .insert_blob("over-dimension", over_dimension.clone());
+        app.mock.set_file_reply(FileReply::Found {
+            revision_id: 13,
+            mime: "image/png",
+            size: over_dimension.len() as i64,
+            s3_hash: "over-dimension",
+        });
+        let over_dimension = app
+            .request(reqwest::Method::GET, "thumbnail")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(over_dimension.status(), StatusCode::NOT_FOUND);
+
         let unsupported_variant = app
             .request(reqwest::Method::GET, "giant")
             .send()
@@ -478,15 +831,21 @@ mod tests {
                     .unwrap()
             })
         };
-        while app.mock.s3_requests.load(Ordering::SeqCst) < 2 {
-            tokio::task::yield_now().await;
-        }
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while app.mock.s3_requests.load(Ordering::SeqCst) < 2 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .expect("two resize jobs should reach the blocked source fetch");
 
-        let saturated = app
-            .request(reqwest::Method::GET, "thumbnail")
-            .send()
-            .await
-            .unwrap();
+        let saturated = tokio::time::timeout(
+            Duration::from_secs(2),
+            app.request(reqwest::Method::GET, "thumbnail").send(),
+        )
+        .await
+        .expect("a saturated resize job must fail without queueing")
+        .unwrap();
         assert_eq!(saturated.status(), StatusCode::SERVICE_UNAVAILABLE);
         assert_eq!(app.mock.s3_requests.load(Ordering::SeqCst), 2);
 

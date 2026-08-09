@@ -477,6 +477,7 @@ mod tests {
     fn file_data(size: i64) -> FileData {
         FileData {
             file_id: 1,
+            revision_id: 17,
             mime: str!("text/plain"),
             size,
             s3_hash: str!("sha512-hash"),

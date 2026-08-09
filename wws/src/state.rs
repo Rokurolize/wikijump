@@ -30,8 +30,10 @@ use axum::response::IntoResponse;
 use s3::bucket::Bucket;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Semaphore;
 
 const BUCKET_REQUEST_TIMEOUT: Duration = Duration::from_millis(200);
+pub const RESIZED_IMAGE_MAX_CONCURRENT_JOBS: usize = 2;
 
 pub type ServerState = Arc<ServerStateInner>;
 
@@ -41,6 +43,7 @@ pub struct ServerStateInner {
     pub cache: Cache,
     pub s3_files_bucket: Box<Bucket>,
     pub s3_tblocks_bucket: Box<Bucket>,
+    pub resized_image_jobs: Semaphore,
 }
 
 pub async fn build_server_state(
@@ -51,6 +54,7 @@ pub async fn build_server_state(
         redis_url,
         s3_files_bucket,
         s3_tblocks_bucket,
+        resized_image_jobs: Semaphore::new(RESIZED_IMAGE_MAX_CONCURRENT_JOBS),
         s3_region,
         s3_credentials,
         s3_path_style,
@@ -178,6 +182,43 @@ impl ServerStateInner {
                 .await;
 
                 Err(response)
+            }
+        }
+    }
+
+    pub async fn get_page_fresh_or_response(
+        &self,
+        headers: &HeaderMap,
+        site_id: i64,
+        page_slug: &str,
+    ) -> ResponseResult<i64> {
+        match self.deepwell.get_page(site_id, page_slug).await {
+            Ok(Some(PageData { page_id, .. })) => Ok(page_id),
+            Ok(None) => {
+                error!(
+                    site_id = site_id,
+                    page_slug = page_slug,
+                    "Cannot complete request, no such page",
+                );
+                Err(build_basic_error_response(
+                    self,
+                    headers,
+                    BasicError::PageSlug { site_id, page_slug },
+                )
+                .await)
+            }
+            Err(error) => {
+                error!(
+                    site_id = site_id,
+                    page_slug = page_slug,
+                    "Cannot freshly resolve page info: {error}",
+                );
+                Err(build_basic_error_response(
+                    self,
+                    headers,
+                    BasicError::PageFetch { site_id, page_slug },
+                )
+                .await)
             }
         }
     }
@@ -314,6 +355,7 @@ mod tests {
                 "jsonrpc": "2.0",
                 "result": {
                     "file_id": 7,
+                    "revision_id": 17,
                     "mime": "text/plain",
                     "size": 42,
                     "s3_hash": "private-blob"

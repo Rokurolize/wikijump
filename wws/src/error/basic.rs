@@ -307,6 +307,9 @@ mod tests {
             cache: Cache::connect("redis://127.0.0.1/").unwrap(),
             s3_files_bucket: test_bucket("files"),
             s3_tblocks_bucket: test_bucket("text-blocks"),
+            resized_image_jobs: tokio::sync::Semaphore::new(
+                crate::state::RESIZED_IMAGE_MAX_CONCURRENT_JOBS,
+            ),
         }
     }
 

@@ -73,7 +73,8 @@ struct GalleryOptions {
 #[derive(Clone, Debug)]
 struct VisibleGalleryFile {
     name: String,
-    url: String,
+    original_url: String,
+    resized_url_prefix: String,
     created_at: time::OffsetDateTime,
 }
 
@@ -85,7 +86,8 @@ struct VisiblePageFiles {
 #[derive(Clone, Debug)]
 struct ResolvedGalleryImage {
     alt: String,
-    url: String,
+    original_url: String,
+    resized_url_prefix: String,
 }
 
 enum GalleryResolution {
@@ -194,11 +196,17 @@ impl<'a, 'ctx> VisibleFileLoader<'a, 'ctx> {
             }
             visible.push(VisibleGalleryFile {
                 name: file.name.clone(),
-                url: format!(
+                original_url: format!(
                     "https://{}{}{}",
                     self.site_slug,
                     self.files_domain,
                     owned_file_path(&page.slug, &file.name),
+                ),
+                resized_url_prefix: format!(
+                    "https://{}{}{}",
+                    self.site_slug,
+                    self.files_domain,
+                    owned_resized_file_path_prefix(&page.slug, &file.name),
                 ),
                 created_at: file.created_at,
             });
@@ -329,7 +337,8 @@ async fn resolve_current_page_gallery(
             .into_iter()
             .map(|file| ResolvedGalleryImage {
                 alt: String::new(),
-                url: file.url,
+                original_url: file.original_url,
+                resized_url_prefix: file.resized_url_prefix,
             })
             .collect(),
     ))
@@ -383,7 +392,8 @@ async fn resolve_explicit_gallery(
             alt: gallery_argument(entry.arguments(), "alt")
                 .unwrap_or_default()
                 .to_owned(),
-            url: file.url,
+            original_url: file.original_url,
+            resized_url_prefix: file.resized_url_prefix,
         });
     }
     Ok(if images.is_empty() {
@@ -442,6 +452,14 @@ fn unquote_gallery_token(value: &str) -> &str {
 fn owned_file_path(page_slug: &str, file_name: &str) -> String {
     format!(
         "/local--files/{}/{}",
+        percent_encode_path_segment(page_slug),
+        percent_encode_path_segment(file_name),
+    )
+}
+
+fn owned_resized_file_path_prefix(page_slug: &str, file_name: &str) -> String {
+    format!(
+        "/local--resized-images/{}/{}/",
         percent_encode_path_segment(page_slug),
         percent_encode_path_segment(file_name),
     )
@@ -522,18 +540,22 @@ fn render_gallery_dom(
     let size = options.size.css_value();
     let mut output = format!(r#"<div class="gallery-box" id="gallery-box-{box_id}">"#,);
     for image in images {
-        let url = escape_list_pages_html_attr(&image.url);
+        let original_url = escape_list_pages_html_attr(&image.original_url);
+        let resized_url = escape_list_pages_html_attr(&format!(
+            "{}{size}.jpg",
+            image.resized_url_prefix,
+        ));
         let alt = escape_list_pages_html_attr(&image.alt);
         output.push_str("\n<div class=\"gallery-item ");
         output.push_str(size);
         output.push_str("\">\n<table>\n<tr>\n<td>");
         if options.viewer {
             output.push_str("<a href=\"");
-            output.push_str(&url);
+            output.push_str(&original_url);
             output.push_str("\" class=\"with-lb\">");
         }
         output.push_str("<img src=\"");
-        output.push_str(&url);
+        output.push_str(&resized_url);
         output.push_str("\" alt=\"");
         output.push_str(&alt);
         output.push_str("\" class=\"gallery-image-size-");
@@ -557,7 +579,11 @@ mod tests {
         let html = render_gallery_dom(
             &[ResolvedGalleryImage {
                 alt: "A <caption>".to_owned(),
-                url: "https://site.wjfiles.test/local--files/page/image.png".to_owned(),
+                original_url: "https://site.wjfiles.test/local--files/page/image.png"
+                    .to_owned(),
+                resized_url_prefix:
+                    "https://site.wjfiles.test/local--resized-images/page/image.png/"
+                        .to_owned(),
             }],
             GalleryOptions {
                 size: GallerySize::Thumbnail,
@@ -587,6 +613,10 @@ mod tests {
         assert_eq!(
             owned_file_path("category:page", "資料 1/2.png"),
             "/local--files/category%3Apage/%E8%B3%87%E6%96%99%201%2F2.png",
+        );
+        assert_eq!(
+            owned_resized_file_path_prefix("category:page", "資料 1/2.png"),
+            "/local--resized-images/category%3Apage/%E8%B3%87%E6%96%99%201%2F2.png/",
         );
     }
 }
