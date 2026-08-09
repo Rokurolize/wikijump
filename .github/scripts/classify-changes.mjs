@@ -19,7 +19,7 @@ const metadataOnly = (file) =>
   ["AGENTS.md", "CLAUDE.md", "CODEOWNERS", "LICENSE.md", "README.md", "SECURITY.md"].includes(file)
 
 const verificationOnly = (file) =>
-  file.startsWith("install/local/wikidot-verification/artifacts/") ||
+  file.startsWith("install/local/wikidot-verification/") ||
   [
     "scripts/data/wikidot-implementation-ledger.json",
     "scripts/data/wikidot-live-observations.json",

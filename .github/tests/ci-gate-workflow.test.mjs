@@ -194,6 +194,10 @@ test("documentation is cheap and unknown paths fail closed", () => {
 test("Wikidot verification inputs select only the dedicated workflow", () => {
   for (const file of [
     "install/local/wikidot-verification/artifacts/example.json",
+    "install/local/wikidot-verification/scripts/run-generic-runtime-differential.mjs",
+    "install/local/wikidot-verification/src/generic-runtime-differential.mjs",
+    "install/local/wikidot-verification/tests/generic-runtime-differential.test.mjs",
+    "install/local/wikidot-verification/package.json",
     "scripts/data/wikidot-implementation-ledger.json",
     "scripts/data/wikidot-live-observations.json",
     "scripts/generate-wikidot-specifications.mjs",
