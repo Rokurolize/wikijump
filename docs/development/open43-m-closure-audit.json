@@ -60,6 +60,23 @@
     "public_boundary": "Deepwell emits original and resized typed identities; WWS freshly resolves page identity and actor-bound file_get before MIME, size, ETag, S3, or decode decisions.",
     "source_ready_is_not_pass": true
   },
+  "renderer_epoch_lane_amendment": {
+    "scope_case_ids": [
+      "M1039_RENDER_CACHE_IDENTITY",
+      "M1042_RENDER_CACHE_IDENTITY",
+      "M1043_RENDER_CACHE_IDENTITY"
+    ],
+    "base_commit": "e9f2634dc9fcca0d7f910c5d408df7b56869a6f9",
+    "base_tree": "78eeede1b23b1f1264924db7481e912b5e6becb3",
+    "source_commit": "41c0e93953da5564d83699ba1632c9f0942aa6f8",
+    "source_tree": "933413c4d093e3439fe1d156848bdcf3696f424c",
+    "previous_epoch": 2,
+    "final_epoch": 3,
+    "bump_count": 1,
+    "public_boundary": "A public article_view computes a cache namespace from the same renderer epoch as compiled_generator and ignores a valid serialized page stored only under the v2 namespace.",
+    "integration_commit_reconciliation_required": true,
+    "source_ready_is_not_pass": true
+  },
   "github_issue_inputs": [
     {
       "issue": 756,
@@ -231,8 +248,7 @@
     "C_RENDER_EPOCH": {
       "command": "cargo test --manifest-path deepwell/Cargo.toml renderer_epoch_invalidates_pre_freeze_compiled_artifacts -- --nocapture",
       "phase": "source_freeze",
-      "exists_now": false,
-      "required_before_run": "Add one public cache-identity test that proves an artifact compiled under deepwell-render/v2 is not reused after the final epoch bump."
+      "exists_now": true
     },
     "C_DEEPWELL_CLIPPY": {
       "command": "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
@@ -754,18 +770,18 @@
         {
           "case_id": "M1039_RENDER_CACHE_IDENTITY",
           "acceptance": "Invalidate compiled output from before the Files renderer landed and rerender it under the final source-frozen renderer identity.",
-          "classification": "needs_source",
-          "reason": "Files rendering landed after deepwell-render/v2, but the renderer epoch is still v2.",
+          "classification": "source_ready",
+          "reason": "The final renderer epoch is v3, the anonymous article cache namespace derives from that same epoch, and the public article_view regression proves a stored v2 cache entry is ignored.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
-            "deepwell/src/services/render/file_modules.rs"
+            "deepwell/src/services/render/file_modules.rs",
+            "deepwell/src/services/view/article_cache.rs",
+            "deepwell/tests/page.rs"
           ],
-          "existing_tests": [],
+          "existing_tests": [
+            "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
+          ],
           "evidence_ids": ["E_FILES_SAVED_EMPTY"],
-          "missing_source": [
-            "one final renderer epoch bump",
-            "observable old-artifact non-reuse test"
-          ],
           "next_command_ids": ["C_RENDER_EPOCH"]
         }
       ]
@@ -817,21 +833,19 @@
         {
           "case_id": "M1042_RENDER_CACHE_IDENTITY",
           "acceptance": "Bind saved output to the final provider policy and renderer semantics so pre-policy compiled output is not reused.",
-          "classification": "needs_source",
-          "reason": "The existing preview/saved test asserts deepwell-render/v2, while later provider and other renderer changes remain under the same epoch.",
+          "classification": "source_ready",
+          "reason": "Preview and saved output now assert deepwell-render/v3, while the shared article cache namespace and public regression reject an otherwise valid v2 artifact.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
-            "deepwell/tests/media.rs"
+            "deepwell/src/services/view/article_cache.rs",
+            "deepwell/tests/media.rs",
+            "deepwell/tests/page.rs"
           ],
           "existing_tests": [
-            "deepwell/tests/media.rs::embedvideo_preview_and_saved_page_share_render_identity"
+            "deepwell/tests/media.rs::embedvideo_preview_and_saved_page_share_render_identity",
+            "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
           ],
           "evidence_ids": ["E_EMBED_ANALYSIS"],
-          "missing_source": [
-            "one final renderer epoch bump",
-            "observable old-artifact non-reuse test",
-            "remove the hard-coded v2 expectation"
-          ],
           "next_command_ids": ["C_RENDER_EPOCH", "C_DEEPWELL_MEDIA"]
         },
         {
@@ -981,18 +995,18 @@
         {
           "case_id": "M1043_RENDER_CACHE_IDENTITY",
           "acceptance": "Invalidate compiled output from before Gallery resolution landed and bind the next read to the final renderer epoch and exact file revision.",
-          "classification": "needs_source",
-          "reason": "Gallery rendering landed after deepwell-render/v2, but the epoch remains v2 and no test proves old compiled output is rejected.",
+          "classification": "source_ready",
+          "reason": "Gallery is covered by the final v3 compiled generator, and the v3 article cache namespace plus public article_view regression prevents reuse of a v2 artifact even when its stored page identity remains otherwise valid.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
-            "deepwell/src/services/render/compat/wikidot_gallery.rs"
+            "deepwell/src/services/render/compat/wikidot_gallery.rs",
+            "deepwell/src/services/view/article_cache.rs",
+            "deepwell/tests/page.rs"
           ],
-          "existing_tests": [],
+          "existing_tests": [
+            "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
+          ],
           "evidence_ids": ["E_GALLERY_EMPTY"],
-          "missing_source": [
-            "one final renderer epoch bump",
-            "observable old-artifact non-reuse test"
-          ],
           "next_command_ids": ["C_RENDER_EPOCH"]
         },
         {
@@ -1142,12 +1156,18 @@
     }
   ],
   "renderer_epoch_finalization": {
-    "classification": "needs_source",
-    "current_epoch": 2,
+    "classification": "source_ready",
+    "current_epoch": 3,
     "epoch_source": "deepwell/src/services/render/generator.rs",
     "owner": "root integration after all render-affecting lanes are source-frozen",
     "required_bump_count": 1,
+    "completed_bump_count": 1,
     "lane_must_not_bump": true,
+    "finalized_by": {
+      "lane_commit": "41c0e93953da5564d83699ba1632c9f0942aa6f8",
+      "subject": "render: freeze compiled artifact identity",
+      "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
+    },
     "epoch_v2_introduced_by": {
       "commit": "e4e0db58c9828684d8bacf4d4020b19da6b8d180",
       "subject": "feat(render): resolve typed Wikidot media embeds"
@@ -1248,22 +1268,42 @@
       {
         "commit": "a06583d25364de84c46d627f702a98cc8c99eb50",
         "subject": "fix(deepwell): fail closed for unsupported MailForm actions"
+      },
+      {
+        "commit": "08a01d9dd94a40f7323ecacf34441b2a037ceaad",
+        "subject": "feat(deepwell): persist site settings foundation"
+      },
+      {
+        "commit": "766562090f71dd45cd6e22ce7bfa0f8e7a40054b",
+        "subject": "fix(query): preserve live page query boundaries"
+      },
+      {
+        "commit": "e49b78eaa671660d4c5bc8eb205e1edcf4a39583",
+        "subject": "membership: bind join to saved renderer actions"
+      },
+      {
+        "commit": "6ff869fe7937c1f02b7cb685968a008470ac95ff",
+        "subject": "test: specify resized attachment asset boundary"
+      },
+      {
+        "commit": "2073c33d60e37250388ce0a8fade2edabc2f2fe0",
+        "subject": "feat: serve permission-bound resized attachments"
       }
     ],
     "source_freeze_actions": [
-      "Recompute the commit list from e4e0db58c9828684d8bacf4d4020b19da6b8d180 through the final integration head.",
-      "Bump DEEPWELL_RENDERER_EPOCH exactly once after every renderer lane is committed.",
-      "Replace tests that hard-code deepwell-render/v2 with the final identity.",
-      "Add and run C_RENDER_EPOCH before the expensive runtime candidate.",
-      "Require an observable cache miss or rerender: an old v2 compiled artifact or cache key must not be reused even when its final HTML happens to equal the new output."
+      "The renderer commit inventory was reconciled through the source-freeze parent.",
+      "DEEPWELL_RENDERER_EPOCH was bumped exactly once from v2 to v3 after the renderer lanes were integrated.",
+      "Saved-output tests now assert the final v3 identity.",
+      "C_RENDER_EPOCH exists and remains mandatory before the expensive runtime candidate.",
+      "The public article_view regression inserts an otherwise valid v2 cache entry and proves the v3 request does not reuse it."
     ]
   },
   "reconciliation": {
     "issue_count": 7,
     "subrow_count": 43,
     "classification_counts": {
-      "source_ready": 20,
-      "needs_source": 3,
+      "source_ready": 23,
+      "needs_source": 0,
       "candidate_required": 11,
       "blocked_evidence": 9
     },
