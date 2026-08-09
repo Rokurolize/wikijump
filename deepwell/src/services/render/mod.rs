@@ -26,6 +26,8 @@ mod compat;
 mod corpus;
 mod diagnostics;
 mod forum_mini;
+mod forum_modules;
+mod forum_visibility;
 mod ftml_page_existence;
 mod ftml_user_info;
 mod generator;

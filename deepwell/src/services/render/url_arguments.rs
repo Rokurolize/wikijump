@@ -63,6 +63,18 @@ static FORUM_MINI_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     )
     .unwrap()
 });
+static FORUM_RECENT_POSTS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?im)^[\t ]*\[\[module\s+recentposts\b(?:[^\]"]+|"[^"]*")*\]\][\t ]*$"#)
+        .unwrap()
+});
+static FORUM_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(concat!(
+        r#"(?im)^[\t ]*\[\[module\s+(?:comments|frontforum|forumcategory|"#,
+        r#"forumnewthread|forumstart|forumthread|recentposts)\b"#,
+        r#"(?:[^\]"]+|"[^"]*")*\]\][\t ]*$"#,
+    ))
+    .unwrap()
+});
 static SEARCH_ALL_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?im)^[\t ]*\[\[module\s+searchall\b(?:[^\]"]+|"[^"]*")*\]\][\t ]*$"#)
         .unwrap()
@@ -185,6 +197,7 @@ pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
         || NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(wikitext)
         || LIST_PAGES_MODULE_REGEX.is_match(wikitext)
         || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
+        || FORUM_RECENT_POSTS_MODULE_REGEX.is_match(wikitext)
 }
 
 /// Whether a page view must render from source even without URL arguments.
@@ -203,6 +216,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || MEMBERSHIP_BY_PASSWORD_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_MODULE_REGEX.is_match(wikitext)
         || FORUM_MINI_MODULE_REGEX.is_match(wikitext)
+        || FORUM_MODULE_REGEX.is_match(wikitext)
         || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
         || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)
@@ -325,6 +339,29 @@ mod tests {
         }
         assert!(!wikitext_requires_runtime_render(
             "before [[module MiniRecentThreads]] after",
+        ));
+    }
+
+    #[test]
+    fn forum_modules_require_runtime_rendering_and_only_recent_posts_reads_page() {
+        for source in [
+            "[[module Comments]]",
+            "[[module FrontForum]]",
+            "[[module ForumCategory]]",
+            "[[module ForumNewThread]]",
+            "[[module ForumStart]]",
+            "[[module ForumThread]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source));
+            assert!(!wikitext_reads_url_arguments(source));
+        }
+        assert!(wikitext_requires_runtime_render("[[module RecentPosts]]"));
+        assert!(wikitext_reads_url_arguments("[[module RecentPosts]]"));
+        assert!(!wikitext_requires_runtime_render(
+            "before [[module ForumStart]] after",
+        ));
+        assert!(!wikitext_reads_url_arguments(
+            "before [[module RecentPosts]] after",
         ));
     }
 

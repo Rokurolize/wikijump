@@ -5050,6 +5050,461 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
 }
 
 #[tokio::test]
+async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (case_id, source, expected) in [
+        (
+            "forum-comments-no-context",
+            "[[module Comments]]",
+            concat!(
+                r#"<div class="comments-box"><div class="options" id="comments-options-hidden" >"#,
+                r#"<a href="javascript:;" onclick="WIKIDOT.modules.ForumCommentsModule.listeners.showComments(event)">Show Comments</a>"#,
+                r#"</div><div id="thread-container" class="thread-container" style="margin-top: 1em"></div></div>"#,
+            ),
+        ),
+        (
+            "forum-front-no-category",
+            "[[module FrontForum]]",
+            concat!(
+                r#"<div class="error-block">No forum category has been specified. "#,
+                r#"Please use attribute category="id" where id is the index number of the category.</div>"#,
+            ),
+        ),
+        (
+            "forum-category-no-context",
+            "[[module ForumCategory]]",
+            r#"<div class="error-block">No forum category has been specified.</div>"#,
+        ),
+        (
+            "forum-new-thread-no-context",
+            "[[module ForumNewThread]]",
+            r#"<div class="error-block">No forum category has been specified.</div>"#,
+        ),
+        (
+            "forum-thread-no-context",
+            "[[module ForumThread]]",
+            concat!(
+                r#"<div class="error-block">No thread to show - click Back once or twice "#,
+                r#"and try again</div>"#,
+            ),
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(expected) && !preview.body.contains("[[module"),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    for (case_id, source) in [
+        (
+            "forum-start-inline-owner",
+            "before [[module ForumStart]] after",
+        ),
+        ("recent-posts-raw-owner", "@@[[module RecentPosts]]@@"),
+        (
+            "front-forum-unobserved-arguments",
+            r#"[[module FrontForum category="1"]]"#,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains("[[module")
+                && !preview.body.contains("forum-start-box")
+                && !preview.body.contains("forum-recent-posts-box")
+                && !preview.body.contains("error-block"),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
+async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination() {
+    async fn create_thread(
+        runner: &TestRunner,
+        category_id: i64,
+        title: &str,
+        associated_page_id: Option<i64>,
+    ) -> i64 {
+        ForumThreadService::create(
+            runner.context(),
+            CreateForumThread {
+                forum_category_id: category_id,
+                user_id: SAMPLE_USER_ID,
+                associated_page_id,
+                title: title.to_owned(),
+                description: String::new(),
+                sticky: false,
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("forum read-model fixture thread should be created")
+        .forum_thread_id
+    }
+
+    async fn create_post(
+        runner: &TestRunner,
+        thread_id: i64,
+        parent_post_id: Option<i64>,
+        title: &str,
+    ) -> i64 {
+        ForumPostService::create(
+            runner.context(),
+            CreateForumPost {
+                forum_thread_id: thread_id,
+                parent_post_id,
+                user_id: SAMPLE_USER_ID,
+                title: title.to_owned(),
+                wikitext: format!("{title} body <observable>"),
+                comments: "create forum read-model fixture".to_owned(),
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("forum read-model fixture post should be created")
+        .forum_post_id
+    }
+
+    async fn page_view_html(
+        runner: &TestRunner,
+        site_id: i64,
+        slug: &str,
+        extra: &str,
+    ) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": extra},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found forum read-model page view, got {other:?}"),
+        }
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let visible_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model Visible Group".to_owned(),
+            description: "Visible <group> description".to_owned(),
+            visible: true,
+            sort_index: Some(10_000),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("visible forum read-model group should be created");
+    let primary_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: visible_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model: Primary".to_owned(),
+            description: "Primary <category> description".to_owned(),
+            sort_index: Some(10),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("primary forum read-model category should be created");
+    let _empty_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: visible_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model Empty".to_owned(),
+            description: "Empty category".to_owned(),
+            sort_index: Some(20),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("empty forum read-model category should be created");
+    let hidden_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model Hidden Group".to_owned(),
+            description: "Hidden forum read-model fixture".to_owned(),
+            visible: false,
+            sort_index: Some(10_001),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden forum read-model group should be created");
+    let hidden_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: hidden_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model Hidden Category".to_owned(),
+            description: "Hidden category".to_owned(),
+            sort_index: Some(10),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden forum read-model category should be created");
+
+    let empty_recent_posts = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "recent-posts empty fixture",
+            "wikitext": "[[module RecentPosts]]",
+        }),
+    )
+    .body;
+    assert!(
+        empty_recent_posts.contains(r#"<div class="forum-recent-posts-box" >"#)
+            && empty_recent_posts.contains(r#"<div class="thread-container"></div>"#)
+            && !empty_recent_posts.contains(r#"<div class="post" id="post-"#)
+            && !empty_recent_posts.contains(r#"<div class="pager">"#),
+        "{empty_recent_posts}",
+    );
+
+    let visible_thread = create_thread(
+        &runner,
+        primary_category.forum_category_id,
+        "Read Model Visible Thread",
+        None,
+    )
+    .await;
+    let root_id = create_post(&runner, visible_thread, None, "Visible Post 00").await;
+    let mut visible_post_ids = vec![root_id];
+    for number in 1..22 {
+        visible_post_ids.push(
+            create_post(
+                &runner,
+                visible_thread,
+                Some(root_id),
+                &format!("Visible Post {number:02}"),
+            )
+            .await,
+        );
+    }
+
+    const PUBLIC_PAGE_SLUG: &str = "fixture-forum-read-model-public";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE_SLUG,
+        "Public Forum Read Model Page",
+        "public forum read-model page",
+    )
+    .await;
+    let public_page_id = listpages_test_page_id(&runner, site_id, PUBLIC_PAGE_SLUG).await;
+    let public_page_thread = create_thread(
+        &runner,
+        primary_category.forum_category_id,
+        "Public Page Discussion Marker",
+        Some(public_page_id),
+    )
+    .await;
+    let public_page_post_id =
+        create_post(&runner, public_page_thread, None, "Public Page Comment").await;
+
+    let hidden_thread = create_thread(
+        &runner,
+        hidden_category.forum_category_id,
+        "Read Model Hidden Thread",
+        None,
+    )
+    .await;
+    create_post(&runner, hidden_thread, None, "Hidden Newest Post").await;
+
+    const PRIVATE_PAGE_CATEGORY: &str = "forum-read-model-private";
+    const PRIVATE_PAGE_SLUG: &str = "fixture-forum-read-model-private";
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_PAGE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        "Private Forum Read Model Page",
+        "private forum read-model page",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        PRIVATE_PAGE_CATEGORY,
+    )
+    .await;
+    let private_page_id =
+        listpages_test_page_id(&runner, site_id, PRIVATE_PAGE_SLUG).await;
+    let private_thread = create_thread(
+        &runner,
+        primary_category.forum_category_id,
+        "Private Page Discussion Marker",
+        Some(private_page_id),
+    )
+    .await;
+    create_post(&runner, private_thread, None, "Private Newest Post").await;
+
+    const RECENT_POSTS_PAGE: &str = "fixture-forum-recent-posts";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        RECENT_POSTS_PAGE,
+        "Fixture Forum Recent Posts",
+        "[[module RecentPosts]]",
+    )
+    .await;
+    runner.set_request_context(RequestContext::default());
+
+    let forum_start = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "forum-start permission-first fixture",
+            "wikitext": "[[module ForumStart]]",
+        }),
+    )
+    .body;
+    assert!(
+        forum_start.contains(r#"<div class="forum-start-box">"#)
+            && forum_start.contains("Visible &lt;group&gt; description")
+            && forum_start.contains("Primary &lt;category&gt; description")
+            && forum_start.contains(&format!(
+                r#"href="/forum/c-{}/{}""#,
+                primary_category.forum_category_id,
+                deepwell::utils::normalize_page_slug("Read Model: Primary"),
+            ))
+            && !forum_start.contains("Read Model Hidden Group")
+            && !forum_start.contains("Private Page Discussion Marker"),
+        "{forum_start}",
+    );
+    let primary_row_start = forum_start
+        .find("Read Model: Primary")
+        .expect("primary category should render");
+    let primary_row = &forum_start[primary_row_start..];
+    assert!(
+        primary_row.contains(
+            r#"</div></td><td class="threads">2</td><td class="posts">23</td>"#,
+        ),
+        "private page activity must be filtered before category counts: {primary_row}",
+    );
+    let empty_row_start = forum_start
+        .find("Read Model Empty")
+        .expect("empty category should render");
+    let empty_row = &forum_start[empty_row_start..];
+    assert!(
+        empty_row.contains(
+            r#"</div></td><td class="threads">0</td><td class="posts">0</td>"#,
+        ),
+        "{empty_row}",
+    );
+    assert!(primary_row_start < empty_row_start, "{forum_start}");
+    assert!(
+        forum_start.contains(&format!(
+            r#"href="/forum/t-{public_page_thread}#post-{public_page_post_id}">Jump!</a>"#,
+        )),
+        "{forum_start}",
+    );
+
+    let first_page = page_view_html(&runner, site_id, RECENT_POSTS_PAGE, "").await;
+    assert!(
+        first_page.contains(r#"<div class="forum-recent-posts-box" >"#)
+            && first_page.contains(r#"id="recent-posts-category""#)
+            && first_page.contains("Read Model Visible Group: Read Model: Primary")
+            && !first_page.contains("Read Model Hidden Group")
+            && !first_page.contains("Hidden Newest Post")
+            && !first_page.contains("Private Newest Post")
+            && first_page.matches(r#"<div class="post" id="post-"#).count() == 20
+            && first_page.contains("Public Page Comment")
+            && first_page.contains(&format!(
+                r#"href="/{PUBLIC_PAGE_SLUG}/comments/show#post-{public_page_post_id}""#,
+            ))
+            && first_page.contains(&format!(
+                r#"href="/forum/t-{visible_thread}/read-model-visible-thread#post-{}""#,
+                visible_post_ids[21],
+            ))
+            && first_page.contains("Visible Post 21")
+            && !first_page.contains("Visible Post 00")
+            && first_page.contains("updateList(2)")
+            && first_page.contains("class=\"odate time_")
+            && first_page
+                .contains("format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover")
+            && first_page.contains("Visible Post 21 body &lt;observable&gt;"),
+        "{first_page}",
+    );
+    let post_21 = first_page
+        .find("Visible Post 21")
+        .expect("newest visible post should render");
+    let post_20 = first_page
+        .find("Visible Post 20")
+        .expect("next visible post should render");
+    assert!(post_21 < post_20, "{first_page}");
+
+    let second_page = page_view_html(&runner, site_id, RECENT_POSTS_PAGE, "/p/2").await;
+    assert!(
+        second_page
+            .matches(r#"<div class="post" id="post-"#)
+            .count()
+            == 3
+            && second_page.contains("Visible Post 02")
+            && second_page.contains("Visible Post 01")
+            && second_page.contains("Visible Post 00")
+            && !second_page.contains("Visible Post 03")
+            && !second_page.contains("Hidden Newest Post")
+            && !second_page.contains("Private Newest Post")
+            && second_page.contains(r#"<span class="pager-no">page 2</span>"#)
+            && second_page.contains("updateList(1)"),
+        "{second_page}",
+    );
+}
+
+#[tokio::test]
 async fn membership_by_password_module_matches_live_anonymous_and_member_output() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

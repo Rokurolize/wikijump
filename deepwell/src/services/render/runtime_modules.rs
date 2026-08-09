@@ -2184,6 +2184,18 @@ impl RenderService {
         )
         .await
         .or_raise(make_error)?;
+        wikitext = Self::expand_forum_modules(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            options.current_page_id,
+            options.viewer_user_id,
+            options.url,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext =
             expand_search_feed_modules(wikitext, settings, options.url, compat_html);
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);

@@ -12,13 +12,13 @@
 
 //! Permission-aware Wikidot mini forum activity modules.
 
-use std::collections::HashMap;
 use std::sync::LazyLock;
 
 use regex::Regex;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 
 use super::compat::CompatHtmlFragments;
+use super::forum_visibility::ForumPageVisibility;
 use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::wikidot_module_arguments;
 use super::service::{
@@ -27,9 +27,7 @@ use super::service::{
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::ServiceContext;
-use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::text::TextService;
-use crate::types::{Action, Permission, Reference, Resource};
 use crate::utils::normalize_slug_without_category_separator;
 use ftml::settings::WikitextSettings;
 
@@ -228,38 +226,6 @@ fn forum_post_excerpt(wikitext: &str) -> String {
     excerpt
 }
 
-async fn page_is_viewable(
-    ctx: &ServiceContext<'_>,
-    site_id: i64,
-    page_id: Option<i64>,
-    page_category_id: Option<i64>,
-    permission_cache: &mut HashMap<i64, bool>,
-) -> Result<bool> {
-    let (Some(page_id), Some(page_category_id)) = (page_id, page_category_id) else {
-        return Ok(page_id.is_none());
-    };
-    if let Some(can_view) = permission_cache.get(&page_category_id) {
-        return Ok(*can_view);
-    }
-    let can_view = PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .or_raise(|| Error::new("failed to check forum activity page", ErrorType::Render))?;
-    permission_cache.insert(page_category_id, can_view);
-    Ok(can_view)
-}
-
 async fn load_forum_mini_threads(
     ctx: &ServiceContext<'_>,
     site_id: i64,
@@ -332,17 +298,12 @@ async fn load_forum_mini_threads(
         .await
         .or_raise(make_error)?;
     let scan_exhausted = candidates.len() == FORUM_MINI_CANDIDATE_LIMIT;
-    let mut permission_cache = HashMap::new();
+    let mut visibility = ForumPageVisibility::new(ctx, ctx.request().user_id);
     let mut threads = Vec::with_capacity(limit);
     for candidate in candidates {
-        if !page_is_viewable(
-            ctx,
-            site_id,
-            candidate.page_id,
-            candidate.page_category_id,
-            &mut permission_cache,
-        )
-        .await?
+        if !visibility
+            .page_is_viewable(site_id, candidate.page_id, candidate.page_category_id)
+            .await?
         {
             continue;
         }
@@ -421,17 +382,12 @@ async fn load_forum_mini_posts(
         .await
         .or_raise(make_error)?;
     let scan_exhausted = candidates.len() == FORUM_MINI_CANDIDATE_LIMIT;
-    let mut permission_cache = HashMap::new();
+    let mut visibility = ForumPageVisibility::new(ctx, ctx.request().user_id);
     let mut posts = Vec::with_capacity(limit);
     for candidate in candidates {
-        if !page_is_viewable(
-            ctx,
-            site_id,
-            candidate.page_id,
-            candidate.page_category_id,
-            &mut permission_cache,
-        )
-        .await?
+        if !visibility
+            .page_is_viewable(site_id, candidate.page_id, candidate.page_category_id)
+            .await?
         {
             continue;
         }
