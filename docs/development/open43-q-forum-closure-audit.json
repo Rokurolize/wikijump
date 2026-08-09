@@ -367,10 +367,18 @@
             "scp-comments-reverse",
             "scp-comments-missing-page"
           ],
-          "result": "Saved page_view renders the inert Comments shell. The public forum endpoint applies request-site binding, Site:View, and linked Page:View before resolving the page discussion, then returns the observed forward or reverse first page of ten root comment trees with threadId and exact jsInclude order. Missing, private, and cross-site page identities return the same no_page response, and the public reads leave page, thread, and post rows unchanged."
+          "result": "Saved page_view renders the inert Comments shell. The public forum endpoint applies request-site binding, Site:View, linked Page:View, and same-site nondeleted forum category and group checks before resolving the page discussion, then returns the observed forward or reverse first page of ten root comment trees with threadId and exact jsInclude order. Missing, private, cross-site, deleted-category, and deleted-group page identities return the same no_page response. A descendant beyond the bounded tree depth returns not_ok instead of a truncated tree. Distinct compiled text hashes are loaded once and mapped back in post order, Comments uses the observed HTTPS avatar and karma resources, and the other sealed forum surfaces retain HTTP. The public reads leave page, thread, and post rows unchanged."
         }
       ],
-      "needs_source": [],
+      "needs_source": [
+        {
+          "case_id": "Q1034_COMMENTS_DOCUMENTED_ATTRIBUTES",
+          "specification": "docs/wikidot-specifications/specifications/module/module-comments.md",
+          "missing": "The documented title, hide=true, hideForm=true or yes, and explicit order=forwards Comments behaviors do not have public saved-page, Ajax, or browser implementations and regressions. The current source-ready slice covers only the default shell and the observed forward or reverse first Ajax page.",
+          "requires": "Implement each documented attribute as a separate public vertical slice, preserving the documented defaults and accepted values. Acquire live evidence wherever the documentation does not determine exact DOM, Ajax parameters, permission-dependent form state, or browser transitions.",
+          "forbidden_inference": "Do not treat the default Comments shell, order=reverse Ajax observation, or visible mutation controls as evidence for title markup, hidden-state lifecycle, form authority, or the forwards spelling."
+        }
+      ],
       "candidate_required": [
         {
           "case_id": "Q1034_EXACT_CANDIDATE_PUBLIC_READ_MODELS",
@@ -409,7 +417,7 @@
           "forbidden_inference": "Do not infer private visibility, deleted identity, mutation authority behind the observed anonymous controls, or cache behavior from the anonymous read-only fixture."
         }
       ],
-      "closure_verdict": "candidate_and_evidence_required"
+      "closure_verdict": "source_candidate_and_evidence_required"
     }
   ],
   "ledger_reconciliation": {
@@ -435,7 +443,7 @@
     },
     "direct_rustfmt": {
       "status": "pass",
-      "command": "rustfmt --edition 2024 --check deepwell/src/api.rs deepwell/src/endpoints/page.rs deepwell/src/services/render/forum_front.rs deepwell/src/services/render/forum_modules.rs deepwell/src/services/render/forum_read_routes.rs deepwell/src/services/render/mod.rs deepwell/src/services/render/url_arguments.rs deepwell/tests/page.rs"
+      "command": "rustfmt --edition 2024 --check deepwell/src/api.rs deepwell/src/endpoints/page.rs deepwell/src/services/render/forum_comments.rs deepwell/src/services/render/forum_front.rs deepwell/src/services/render/forum_modules.rs deepwell/src/services/render/forum_read_routes.rs deepwell/src/services/render/mod.rs deepwell/src/services/render/url_arguments.rs deepwell/tests/page.rs"
     },
     "q1034_readonly_evidence": {
       "status": "pass",
@@ -453,7 +461,9 @@
         "Q1034_FORUM_LATER_PAGE_AND_PAGER_READ_MODEL",
         "Q1034_COMMENTS_PAGE_THREAD_READ_MODEL"
       ],
-      "actionable_source_cases": []
+      "actionable_source_cases": [
+        "Q1034_COMMENTS_DOCUMENTED_ATTRIBUTES"
+      ]
     },
     "q1034_category_pagination_evidence": {
       "status": "pass",
