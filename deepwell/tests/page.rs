@@ -7956,6 +7956,149 @@ async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
         );
     }
 
+    for (case_id, source, expected_heading, reverse) in [
+        (
+            "comments-title",
+            r#"[[module Comments title="Alpha Heading"]]"#,
+            Some("<h1>Alpha Heading</h1>"),
+            false,
+        ),
+        (
+            "comments-escaped-title",
+            r#"[[module Comments title="<Tag & Text>"]]"#,
+            Some("<h1>&lt;Tag &amp; Text&gt;</h1>"),
+            false,
+        ),
+        (
+            "comments-mixed-module-case",
+            r#"[[MoDuLe cOmMeNtS title="Mixed Module"]]"#,
+            Some("<h1>Mixed Module</h1>"),
+            false,
+        ),
+        (
+            "comments-reverse",
+            r#"[[module Comments order="reverse"]]"#,
+            None,
+            true,
+        ),
+        (
+            "comments-reverse-with-title",
+            r#"[[module Comments title="Reverse Two" order="reverse"]]"#,
+            Some("<h1>Reverse Two</h1>"),
+            true,
+        ),
+        (
+            "comments-forwards",
+            r#"[[module Comments order="forwards"]]"#,
+            None,
+            false,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(r#"<div class="comments-box">"#)
+                && preview.body.contains(r#"id="comments-options-hidden""#)
+                && preview.body.contains(r#"id="thread-container""#)
+                && !preview.body.contains("comments-options-shown")
+                && !preview.body.contains("thread-container-posts")
+                && !preview.body.contains("[[module"),
+            "{case_id}: {}",
+            preview.body,
+        );
+        assert_eq!(
+            preview.body.contains(r#"class="thread-container reverse""#),
+            reverse,
+            "{case_id}: {}",
+            preview.body,
+        );
+        match expected_heading {
+            Some(heading) => assert!(
+                preview.body.contains(heading),
+                "{case_id}: {}",
+                preview.body,
+            ),
+            None => assert!(
+                !preview.body.contains("<h1>"),
+                "{case_id}: {}",
+                preview.body,
+            ),
+        }
+    }
+
+    for (case_id, source) in [
+        ("comments-title-empty", r#"[[module Comments title=""]]"#),
+        (
+            "comments-title-single-quoted",
+            "[[module Comments title='Alpha Heading']]",
+        ),
+        ("comments-title-bare", "[[module Comments title=Alpha]]"),
+        (
+            "comments-title-key-case",
+            r#"[[module Comments Title="Alpha Heading"]]"#,
+        ),
+        (
+            "comments-order-forward-singular",
+            r#"[[module Comments order="forward"]]"#,
+        ),
+        (
+            "comments-order-uppercase",
+            r#"[[module Comments order="REVERSE"]]"#,
+        ),
+        ("comments-order-empty", r#"[[module Comments order=""]]"#),
+        (
+            "comments-order-single-quoted",
+            "[[module Comments order='reverse']]",
+        ),
+        ("comments-order-bare", "[[module Comments order=reverse]]"),
+        (
+            "comments-order-key-case",
+            r#"[[module Comments Order="reverse"]]"#,
+        ),
+        (
+            "comments-hide-single-quoted",
+            "[[module Comments hide='true']]",
+        ),
+        ("comments-hide-bare", "[[module Comments hide=true]]"),
+        ("comments-hide-empty", r#"[[module Comments hide=""]]"#),
+        (
+            "comments-hide-key-case",
+            r#"[[module Comments Hide="true"]]"#,
+        ),
+        (
+            "comments-unknown-attribute",
+            r#"[[module Comments unknown="x"]]"#,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(r#"<div class="comments-box">"#)
+                && preview.body.contains(r#"class="thread-container""#)
+                && !preview.body.contains(r#"class="thread-container reverse""#)
+                && !preview.body.contains("<h1>")
+                && !preview.body.contains("comments-options-shown")
+                && !preview.body.contains("thread-container-posts")
+                && !preview.body.contains("[[module"),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
     for (case_id, source) in [
         (
             "forum-start-inline-owner",
@@ -8182,9 +8325,9 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
         forum_category_id: i64,
         slug: &str,
         title: &str,
+        source: &str,
     ) -> (i64, i64) {
-        create_listpages_test_page(runner, site_id, slug, title, "[[module Comments]]")
-            .await;
+        create_listpages_test_page(runner, site_id, slug, title, source).await;
         let page_id = listpages_test_page_id(runner, site_id, slug).await;
         let thread = ForumThreadService::create(
             runner.context(),
@@ -8202,6 +8345,31 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
         .expect("page discussion fixture thread should be created");
         point_page_at_discussion(runner, page_id, thread.forum_thread_id).await;
         (page_id, thread.forum_thread_id)
+    }
+
+    async fn saved_comments_body(
+        runner: &TestRunner,
+        site_id: i64,
+        slug: &str,
+    ) -> String {
+        let saved_page = run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        match saved_page {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => {
+                panic!("expected a found Comments attribute page view, got {other:?}")
+            }
+        }
     }
 
     let mut runner = TestRunner::setup().await;
@@ -8309,12 +8477,58 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     )
     .await;
 
+    let (_, forwards_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-forwards-attributes",
+        "Page Comments Forwards Attributes",
+        r#"[[module Comments title="<Attribute & Forward>" hide="false" order="forwards"]]"#,
+    )
+    .await;
+    create_comment(&runner, forwards_thread_id, None, 400).await;
+
+    let (_, reverse_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-reverse-attributes",
+        "Page Comments Reverse Attributes",
+        r#"[[module Comments title="Reverse Saved" order="reverse"]]"#,
+    )
+    .await;
+    create_comment(&runner, reverse_thread_id, None, 410).await;
+    create_comment(&runner, reverse_thread_id, None, 411).await;
+
+    let (_, hidden_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-hidden",
+        "Page Comments Hidden",
+        r#"[[module Comments hide="true"]]"#,
+    )
+    .await;
+    create_comment(&runner, hidden_thread_id, None, 420).await;
+
+    let (_, invalid_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-invalid-attributes",
+        "Page Comments Invalid Attributes",
+        "[[module Comments title='Invalid Heading' hide='true' order=reverse]]",
+    )
+    .await;
+    create_comment(&runner, invalid_thread_id, None, 430).await;
+
     let (deep_page_id, deep_thread_id) = create_discussion_page(
         &mut runner,
         site_id,
         category.forum_category_id,
         "fixture-forum-comments-depth-overflow",
         "Page Comments Depth Overflow",
+        "[[module Comments]]",
     )
     .await;
     let mut parent_post_id = create_comment(&runner, deep_thread_id, None, 300).await;
@@ -8345,6 +8559,7 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
         deleted_category.forum_category_id,
         "fixture-forum-comments-deleted-category",
         "Deleted Category Page Comments",
+        "[[module Comments]]",
     )
     .await;
     ForumService::delete_category(
@@ -8393,6 +8608,7 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
         deleted_group_category.forum_category_id,
         "fixture-forum-comments-deleted-group",
         "Deleted Group Page Comments",
+        "[[module Comments]]",
     )
     .await;
     ForumService::delete_group(
@@ -8482,8 +8698,72 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
         saved_body.contains(r#"<div class="comments-box">"#)
             && saved_body.contains(r#"id="comments-options-hidden""#)
             && saved_body.contains(r#"id="thread-container""#)
+            && saved_body.contains(r#"id="comments-options-shown""#)
+            && saved_body.contains("Page Comment 00")
+            && saved_body.contains("Page Comment 09")
+            && !saved_body.contains(r#">Page Comment 10</div>"#)
             && !saved_body.contains("[[module Comments]]"),
-        "saved page_view should expose the inert Comments shell:\n{saved_body}",
+        "saved page_view should embed the permission-filtered first Comments page:\n{saved_body}",
+    );
+
+    let forwards_body = saved_comments_body(
+        &runner,
+        site_id,
+        "fixture-forum-comments-forwards-attributes",
+    )
+    .await;
+    assert!(
+        forwards_body.contains("<h1>&lt;Attribute &amp; Forward&gt;</h1>")
+            && forwards_body
+                .contains(r#"id="comments-options-hidden" style="display: none""#)
+            && forwards_body.contains(r#"class="thread-container""#)
+            && !forwards_body.contains(r#"class="thread-container reverse""#)
+            && forwards_body.contains("Page Comment 400"),
+        "exact hide=false and order=forwards should embed the forward page:\n{forwards_body}",
+    );
+
+    let reverse_body = saved_comments_body(
+        &runner,
+        site_id,
+        "fixture-forum-comments-reverse-attributes",
+    )
+    .await;
+    assert!(
+        reverse_body.contains("<h1>Reverse Saved</h1>")
+            && reverse_body.contains(r#"class="thread-container reverse""#)
+            && reverse_body.find("Page Comment 411")
+                < reverse_body.find("Page Comment 410")
+            && reverse_body.find("new-post-button")
+                < reverse_body.find("comments-options-shown"),
+        "exact order=reverse should embed the reverse page:\n{reverse_body}",
+    );
+
+    let hidden_body =
+        saved_comments_body(&runner, site_id, "fixture-forum-comments-hidden").await;
+    assert!(
+        hidden_body.contains(r#"id="comments-options-hidden""#)
+            && hidden_body.contains(r#"id="thread-container""#)
+            && !hidden_body.contains("comments-options-shown")
+            && !hidden_body.contains("thread-container-posts")
+            && !hidden_body.contains("Page Comment 420"),
+        "exact hide=true should keep the saved Comments shell inert:\n{hidden_body}",
+    );
+
+    let invalid_body = saved_comments_body(
+        &runner,
+        site_id,
+        "fixture-forum-comments-invalid-attributes",
+    )
+    .await;
+    assert!(
+        invalid_body.contains(r#"<div class="comments-box">"#)
+            && invalid_body.contains(r#"class="thread-container""#)
+            && !invalid_body.contains(r#"class="thread-container reverse""#)
+            && !invalid_body.contains("<h1>")
+            && !invalid_body.contains("comments-options-shown")
+            && !invalid_body.contains("thread-container-posts")
+            && !invalid_body.contains("Page Comment 430"),
+        "unobserved saved attribute forms must fail closed without querying:\n{invalid_body}",
     );
 
     let forward = run_endpoint!(
@@ -8691,7 +8971,7 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     assert_eq!(hidden_results[0].2, None);
     assert!(hidden_results[0].3.is_empty());
 
-    let unobserved_order = run_endpoint!(
+    let explicit_forwards = run_endpoint!(
         runner,
         wikidot_forum_module,
         json!({
@@ -8703,7 +8983,46 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
             },
         }),
     );
-    assert_eq!(unobserved_order.status, "not_ok");
+    assert_eq!(explicit_forwards.status, "ok");
+    assert_eq!(
+        explicit_forwards.thread_id,
+        Some(public_thread.forum_thread_id)
+    );
+    assert!(
+        explicit_forwards.body.contains("Page Comment 00")
+            && explicit_forwards.body.contains("Page Comment 09")
+            && !explicit_forwards.body.contains(r#">Page Comment 10</div>"#)
+            && explicit_forwards.js_include[0].ends_with("/ForumViewThreadModule.js")
+            && explicit_forwards.js_include[1]
+                .ends_with("/ForumViewThreadPostsModule.js")
+            && explicit_forwards.js_include[2].ends_with("/ForumNewPostFormModule.js"),
+        "exact order=forwards should select the forward first page:\n{}",
+        explicit_forwards.body,
+    );
+
+    for order in [
+        "forward",
+        "REVERSE",
+        "FORWARDS",
+        "",
+        "yes",
+        "true",
+        " reverse ",
+    ] {
+        let unsupported = run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": "forum/ForumCommentsListModule",
+                "parameters": {
+                    "pageId": public_page_id.to_string(),
+                    "order": order,
+                },
+            }),
+        );
+        assert_eq!(unsupported.status, "not_ok", "order={order:?}");
+    }
 
     runner.set_request_context(RequestContext {
         site_id: Some(foreign_site.site.site_id),

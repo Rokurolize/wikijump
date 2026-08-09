@@ -129,6 +129,14 @@ test("dispatches the sealed page comments reads without adding mutation authorit
         "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/sub/ForumNewPostFormModule.js",
         "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js"
       ]
+    },
+    {
+      parameters: { pageId: "1927127", order: "forwards" },
+      jsInclude: [
+        "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadModule.js",
+        "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js",
+        "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/sub/ForumNewPostFormModule.js"
+      ]
     }
   ]
 
@@ -201,7 +209,7 @@ test("passes read-only forum missing states through and rejects unsealed shapes"
     {
       moduleName: "forum/ForumCommentsListModule",
       pageId: "1927127",
-      order: "forwards"
+      order: "forward"
     },
     { moduleName: "forum/ForumNewThreadModule", c: "8503559" },
     { moduleName: "forum/ForumViewThreadModule", t: "18029831", write: "1" },
