@@ -22,6 +22,10 @@ pub struct Model {
     pub presign_url: String,
     pub site_id: Option<i64>,
     pub page_id: Option<i64>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub content_type_label: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub content_type_description: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -97,6 +97,8 @@ async fn prepare_blacklisted_upload(runner: &TestRunner) -> (String, String, Blo
         presign_url: Set("not-used-in-test".to_owned()),
         site_id: Set(None),
         page_id: Set(None),
+        content_type_label: Set(None),
+        content_type_description: Set(None),
     }
     .insert(&runner.state().database)
     .await

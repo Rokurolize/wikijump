@@ -12,10 +12,10 @@
 
 //! Runtime-backed Wikidot file module states.
 //!
-//! File inventory remains deliberately separate from FTML syntax. This first
-//! layer renders only the frozen empty contracts. A page that has files stays
-//! on the established unsupported-module path until its row DOM is backed by
-//! live evidence, rather than being shown a fabricated empty list.
+//! File inventory remains deliberately separate from FTML syntax. Saved pages
+//! render only an authorized, bounded inventory whose latest revisions carry
+//! immutable byte-derived content descriptors. PagePreview has no saved page
+//! identity, so it retains the frozen empty contract.
 
 use std::sync::LazyLock;
 
@@ -26,10 +26,15 @@ use regex::Regex;
 use super::AuthorizedPageSelector;
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
-use super::service::escape_list_pages_html_text;
+use super::percent_encoding::percent_encode_path_segment;
+use super::service::{escape_list_pages_html_attr, escape_list_pages_html_text};
 use crate::error::Result;
+use crate::services::file::VisibleFileRow;
 use crate::services::{FileService, PageService, ServiceContext};
-use crate::types::{FileOrder, Reference};
+use crate::types::Reference;
+
+const MAX_VISIBLE_FILE_ROWS: u64 = 15;
+const MIN_EVIDENCED_FILE_SIZE: i64 = 1024;
 
 static FILES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
@@ -45,11 +50,17 @@ static FLICKR_GALLERY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     .expect("FlickrGallery module expression is valid")
 });
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 enum FilesModuleState {
-    Empty,
-    HasFiles,
-    Unavailable,
+    Empty {
+        page_id: Option<i64>,
+    },
+    Rows {
+        page_id: i64,
+        page_slug: String,
+        rows: Vec<VisibleFileRow>,
+    },
+    Unsupported,
 }
 
 pub(super) async fn expand_file_modules(
@@ -114,33 +125,33 @@ async fn expand_files_modules(
             continue;
         }
 
-        let state = match page_state {
-            Some(state) => state,
-            None => {
-                let state = match current_page_id {
-                    None => FilesModuleState::Empty,
-                    Some(page_id) => {
-                        load_files_module_state(ctx, site_id, page_id, viewer_user_id)
-                            .await?
-                    }
-                };
-                page_state = Some(state);
-                state
-            }
-        };
-        if state == FilesModuleState::HasFiles {
+        if page_state.is_none() {
+            let state = match current_page_id {
+                None => FilesModuleState::Empty { page_id: None },
+                Some(page_id) => {
+                    load_files_module_state(ctx, site_id, page_id, viewer_user_id).await?
+                }
+            };
+            page_state = Some(state);
+        }
+        let state = page_state
+            .as_ref()
+            .expect("Files module state is initialized before rendering");
+        if matches!(state, FilesModuleState::Unsupported) {
             continue;
         }
 
         output.push_str(&wikitext[cursor..matched.start()]);
-        let visible_page_id = match state {
-            FilesModuleState::Empty => current_page_id,
-            FilesModuleState::Unavailable => None,
-            FilesModuleState::HasFiles => unreachable!("handled above"),
+        let html = match state {
+            FilesModuleState::Empty { page_id } => render_empty_files_module(*page_id),
+            FilesModuleState::Rows {
+                page_id,
+                page_slug,
+                rows,
+            } => render_files_module(*page_id, page_slug, rows),
+            FilesModuleState::Unsupported => unreachable!("handled above"),
         };
-        output.push_str(
-            &compat_html.push_block_html(render_empty_files_module(visible_page_id)),
-        );
+        output.push_str(&compat_html.push_block_html(html));
         cursor = matched.end();
     }
     if cursor == 0 {
@@ -159,20 +170,32 @@ async fn load_files_module_state(
     let Some(page) =
         PageService::get_optional(ctx, site_id, Reference::Id(page_id)).await?
     else {
-        return Ok(FilesModuleState::Unavailable);
+        return Ok(FilesModuleState::Empty { page_id: None });
     };
     let mut authorized = AuthorizedPageSelector::new(ctx, viewer_user_id);
     if !authorized.page_is_viewable(&page).await? {
-        return Ok(FilesModuleState::Unavailable);
+        return Ok(FilesModuleState::Empty { page_id: None });
     }
 
-    let files =
-        FileService::get_all(ctx, site_id, page_id, Some(false), FileOrder::default())
-            .await?;
-    Ok(if files.is_empty() {
-        FilesModuleState::Empty
+    let Some(rows) =
+        FileService::get_visible_rows(ctx, site_id, page_id, MAX_VISIBLE_FILE_ROWS)
+            .await?
+    else {
+        return Ok(FilesModuleState::Unsupported);
+    };
+    if rows.iter().any(|row| row.size < MIN_EVIDENCED_FILE_SIZE) {
+        return Ok(FilesModuleState::Unsupported);
+    }
+    Ok(if rows.is_empty() {
+        FilesModuleState::Empty {
+            page_id: Some(page_id),
+        }
     } else {
-        FilesModuleState::HasFiles
+        FilesModuleState::Rows {
+            page_id,
+            page_slug: page.slug,
+            rows,
+        }
     })
 }
 
@@ -203,6 +226,78 @@ fn render_empty_files_module(page_id: Option<i64>) -> String {
         suffix = suffix,
         page_id = page_id,
     )
+}
+
+fn render_files_module(page_id: i64, page_slug: &str, rows: &[VisibleFileRow]) -> String {
+    let mut output = format!(concat!(
+        r#"<div id="files-{page_id}">"#,
+        "\n<table class=\"page-files\"><tr><th>File name</th><th>File type</th><th>Size</th><th></th></tr>",
+    ),);
+    let page_slug = percent_encode_path_segment(page_slug);
+    for row in rows {
+        let href = format!(
+            "/local--files/{}/{}",
+            page_slug,
+            percent_encode_path_segment(&row.name),
+        );
+        output.push_str(&format!(
+            concat!(
+                r#"<tr><td><a href="{href}">{name}</a></td>"#,
+                r#"<td><span title="{description}">{label}</span></td>"#,
+                r#"<td>{size}</td><td><a href="javascript:;" onclick="WIKIDOT.modules.PageFilesModule.listeners.fileMoreInfo(event,{file_id})">Info</a></td></tr>"#,
+            ),
+            href = escape_list_pages_html_attr(&href),
+            name = escape_list_pages_html_text(&row.name),
+            description = escape_list_pages_html_attr(
+                &row.content_type.description,
+            ),
+            label = escape_list_pages_html_text(&row.content_type.label),
+            size = format_file_size(row.size),
+            file_id = row.file_id,
+        ));
+    }
+    output.push_str(&format!(
+        concat!(
+            "</table>",
+            "\n<div style=\"text-align: center\">\n\n</div>",
+            "\n<script type=\"text/javascript\">",
+            "\n\t\tfunction updateFileSimpleList{page_id}(pageNo){{",
+            "\n\t\t\tvar p = {{}};",
+            "\n\t\t\t",
+            "\n\t\t\tp.page_id={page_id};",
+            "\n\t\t\tvar containerElId = 'files-{page_id}';",
+            "\n\t\t\t",
+            "\n\t\t\tp.page = pageNo;",
+            "\n\t\t\tOZONE.ajax.requestModule(\"files/PageFilesSimpleModule\", p, function(r){{",
+            "\n\t\t\t\tif(!WIKIDOT.utils.handleError(r)) {{return;}}",
+            "\n\t\t\t\t//alert(r.body);",
+            "\n\t\t\t\tjQuery('#'+containerElId).replaceWith(r.body);",
+            "\n\t\t\t}});",
+            "\n\t\t}}",
+            "\n\t</script>",
+            "\n<p style=\"text-align: center;\" class=\"manage-attachments-link\">",
+            "\n\t<a href=\"javascript:;\" onclick=\"WIKIDOT.page.listeners.filesClick(null)\">Manage attachments</a>",
+            "\n</p>",
+            "\n</div>",
+        ),
+    ));
+    output
+}
+
+fn format_file_size(size: i64) -> String {
+    const KIB: i64 = 1024;
+    const MIB: i64 = 1024 * KIB;
+
+    debug_assert!(size >= MIN_EVIDENCED_FILE_SIZE);
+    let (divisor, unit) = if size < MIB { (KIB, "kB") } else { (MIB, "MB") };
+    let mut number = format!("{:.2}", size as f64 / divisor as f64);
+    while number.ends_with('0') {
+        number.pop();
+    }
+    if number.ends_with('.') {
+        number.pop();
+    }
+    format!("{number} {unit}")
 }
 
 fn expand_flickr_gallery_preview_modules(

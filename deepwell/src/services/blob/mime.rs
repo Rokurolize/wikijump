@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! Evaluates MIME types using libmagic.
+//! Evaluates MIME types and byte-derived content descriptors using libmagic.
 //!
 //! Because it is a binding to a C library, it cannot be shared among threads.
 //! So we cannot use `LazyLock` and we can't have it in a coroutine.
@@ -27,13 +27,14 @@
 //!
 //! Instead we have it in a thread and ferry requests and responses back and forth.
 
+use super::structs::{ContentAnalysis, ContentTypeDescriptor};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt, StdResult};
 use filemagic::{FileMagicError, Flags as MagicFlags, Magic};
 use std::thread;
 use tokio::sync::{mpsc, oneshot};
 
 type RequestPayload = (Vec<u8>, ResponseSender);
-type ResponsePayload = StdResult<String, FileMagicError>;
+type ResponsePayload = StdResult<(String, String), FileMagicError>;
 
 type RequestSender = mpsc::Sender<RequestPayload>;
 type RequestReceiver = mpsc::Receiver<RequestPayload>;
@@ -62,22 +63,24 @@ impl MimeAnalyzer {
         let (sink, source) = mpsc::channel(64);
 
         thread::spawn(|| {
-            let magic = Self::load_magic().expect("Unable to load magic database");
-            Self::main_loop(magic, source);
+            let mime_magic = Self::load_magic(MagicFlags::MIME)
+                .expect("Unable to load MIME magic database");
+            let descriptor_magic = Self::load_magic(MagicFlags::NONE)
+                .expect("Unable to load descriptor magic database");
+            Self::main_loop(mime_magic, descriptor_magic, source);
         });
 
         MimeAnalyzer { sink }
     }
 
     /// Loads the libmagic database from file, failing if it was invalid or missing.
-    fn load_magic() -> Result<Magic> {
-        const MAGIC_FLAGS: MagicFlags = MagicFlags::MIME;
+    fn load_magic(flags: MagicFlags) -> Result<Magic> {
         const MAGIC_PATHS: &[&str] = &[]; // Empty indicates using the default magic database
 
         let make_error = || Error::new("failed to open magic database", ErrorType::Blob);
 
         info!("Loading magic database data");
-        let magic = Magic::open(MAGIC_FLAGS).or_raise(make_error)?;
+        let magic = Magic::open(flags).or_raise(make_error)?;
         magic.load(MAGIC_PATHS).or_raise(make_error)?;
         Ok(magic)
     }
@@ -90,22 +93,30 @@ impl MimeAnalyzer {
     /// When this loop ends, it means the channel has closed.
     /// This should only happen when the application as a whole is shutting
     /// down (whether from crash or normal exit).
-    fn main_loop(magic: Magic, mut source: RequestReceiver) {
+    fn main_loop(
+        mime_magic: Magic,
+        descriptor_magic: Magic,
+        mut source: RequestReceiver,
+    ) {
         while let Some((bytes, sender)) = source.blocking_recv() {
-            debug!("Received MIME request ({} bytes)", bytes.len());
-            let result = magic.buffer(&bytes);
+            debug!("Received content analysis request ({} bytes)", bytes.len());
+            let result = mime_magic.buffer(&bytes).and_then(|mime| {
+                descriptor_magic
+                    .buffer(&bytes)
+                    .map(|description| (mime, description))
+            });
             sender.send(result).expect("Response channel is closed");
         }
     }
 
-    /// Requests that libmagic analyze the buffer to determine its MIME type.
+    /// Requests that libmagic determine the buffer's MIME type and textual descriptor.
     ///
     /// Because all requests involve sending an item over the channel,
     /// and then waiting for the response, we need to send both the input
     /// and a oneshot channel to get the response.
-    pub async fn get_mime_type(&self, buffer: Vec<u8>) -> Result<String> {
+    pub(crate) async fn analyze(&self, buffer: Vec<u8>) -> Result<ContentAnalysis> {
         let buffer_len = buffer.len();
-        info!("Sending MIME request ({} bytes)", buffer_len);
+        info!("Sending content analysis request ({} bytes)", buffer_len);
 
         // Channel for getting the result
         let (resp_send, resp_recv): (ResponseSender, ResponseReceiver) =
@@ -121,17 +132,35 @@ impl MimeAnalyzer {
         //
         // Two layers of result for channel failure and MIME request failure
         let resp = resp_recv.await.expect("Response channel is closed");
-        let mime = resp.or_raise(|| {
+        let (mime, description) = resp.or_raise(|| {
             Error::new(
-                format!(
-                    "failed to get MIME type from buffer of length {}",
-                    buffer_len,
-                ),
+                format!("failed to analyze buffer of length {}", buffer_len,),
                 ErrorType::Blob,
             )
         })?;
 
-        Ok(mime)
+        let label = description
+            .split_once(',')
+            .map_or(description.as_str(), |(label, _)| label)
+            .trim();
+        if label.is_empty()
+            || description.is_empty()
+            || label.chars().any(|c| matches!(c, '\r' | '\n' | '\0'))
+            || description.chars().any(|c| matches!(c, '\r' | '\n' | '\0'))
+        {
+            bail!(Error::new(
+                "libmagic returned an invalid content descriptor",
+                ErrorType::Blob,
+            ));
+        }
+
+        Ok(ContentAnalysis {
+            mime,
+            content_type: ContentTypeDescriptor {
+                label: label.to_owned(),
+                description,
+            },
+        })
     }
 }
 
@@ -141,12 +170,12 @@ async fn mime_request() {
     const TAR_GZIP: &[u8] =
         b"\x1f\x8b\x08\x08\xb1\xb7\x8f\x62\x00\x03\x78\x00\x03\x00\x00\x00\x00";
 
-    let mime = MimeAnalyzer::spawn();
+    let analyzer = MimeAnalyzer::spawn();
 
     macro_rules! check {
         ($bytes:expr, $expected:expr $(,)?) => {{
-            let future = mime.get_mime_type($bytes.to_vec());
-            let actual = future.await.expect("Unable to get MIME type");
+            let future = analyzer.analyze($bytes.to_vec());
+            let actual = future.await.expect("Unable to analyze content").mime;
 
             assert_eq!(actual, $expected, "Actual MIME type doesn't match expected");
         }};
@@ -156,4 +185,16 @@ async fn mime_request() {
     check!(b"Apple banana", "text/plain; charset=us-ascii");
     check!(PNG, "image/png; charset=binary");
     check!(TAR_GZIP, "application/gzip; charset=binary");
+
+    let png = analyzer
+        .analyze(PNG.to_vec())
+        .await
+        .expect("Unable to analyze PNG content");
+    assert_eq!(
+        png.content_type,
+        ContentTypeDescriptor {
+            label: str!("PNG image data"),
+            description: str!("PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced"),
+        },
+    );
 }

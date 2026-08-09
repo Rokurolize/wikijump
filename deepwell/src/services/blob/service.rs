@@ -19,8 +19,8 @@
  */
 
 use super::structs::{
-    BlobMetadata, FinalizeBlobUploadOutput, HardDelete, HardDeleteOutput,
-    PendingBlobOwner, StartBlobUploadOutput,
+    BlobMetadata, ContentAnalysis, ContentTypeDescriptor, FinalizeBlobUploadOutput,
+    HardDelete, HardDeleteOutput, PendingBlobOwner, StartBlobUploadOutput,
 };
 use crate::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -213,6 +213,8 @@ impl BlobService {
         let BlobPendingModel {
             s3_path,
             s3_hash,
+            content_type_label,
+            content_type_description,
             created_by,
             expected_length,
             site_id,
@@ -243,6 +245,8 @@ impl BlobService {
             s3_path,
             expected_length,
             moved_hash: s3_hash,
+            content_type_label,
+            content_type_description,
         })
     }
 
@@ -369,10 +373,17 @@ impl BlobService {
         // Special handling for empty blobs
         if data.is_empty() {
             debug!("File being created is empty, special case");
+            let content_type = ctx
+                .mime()
+                .analyze(Vec::new())
+                .await
+                .or_raise(make_error)?
+                .content_type;
             return Ok(FinalizeBlobUploadOutput {
                 s3_hash: EMPTY_BLOB_HASH,
                 mime: str!(EMPTY_BLOB_MIME),
                 size: 0,
+                content_type,
                 created: false,
             });
         }
@@ -416,6 +427,8 @@ impl BlobService {
         let model = blob_pending::ActiveModel {
             external_id: Set(str!(pending_blob_id)),
             s3_hash: Set(Some(result.s3_hash.to_vec())),
+            content_type_label: Set(Some(result.content_type.label.clone())),
+            content_type_description: Set(Some(result.content_type.description.clone())),
             ..Default::default()
         };
         model.update(txn).await.or_raise(make_error)?;
@@ -446,6 +459,18 @@ impl BlobService {
         // Convert size to correct integer type
         let size = data.len().try_into_i64().or_raise(make_error)?;
 
+        // Analyze the bytes even when their content-addressed object already exists.
+        // S3 stores only the transport MIME type; the Wikidot file type row requires
+        // the textual libmagic descriptor produced from this immutable byte stream.
+        let ContentAnalysis {
+            mime: analyzed_mime,
+            content_type,
+        } = ctx
+            .mime()
+            .analyze(data.clone())
+            .await
+            .or_raise(make_error)?;
+
         match Self::head(ctx, &hex_hash).await.or_raise(make_error)? {
             Some(result) => {
                 debug!("Blob with hash {hex_hash} already exists");
@@ -465,18 +490,14 @@ impl BlobService {
                     s3_hash,
                     mime,
                     size,
+                    content_type,
                     created: false,
                 })
             }
             None => {
                 debug!("Blob with hash {hex_hash} to be created");
 
-                // Determine MIME type for the new blob
-                let mime = ctx
-                    .mime()
-                    .get_mime_type(data.clone())
-                    .await
-                    .or_raise(make_error)?;
+                let mime = analyzed_mime;
 
                 // Upload S3 object
                 let response = bucket
@@ -490,6 +511,7 @@ impl BlobService {
                         s3_hash,
                         mime,
                         size,
+                        content_type,
                         created: true,
                     }),
                     _ => bail!(s3_error(&response, "creating finalized S3 blob")),
@@ -512,6 +534,8 @@ impl BlobService {
             s3_path,
             expected_length,
             moved_hash,
+            content_type_label,
+            content_type_description,
         } = Self::require_owned_pending_blob(
             ctx,
             user_id,
@@ -543,6 +567,15 @@ impl BlobService {
                 let BlobMetadata { mime, size, .. } = Self::get_metadata(ctx, &hash_vec)
                     .await
                     .or_raise(make_error)?;
+                let content_type = match (content_type_label, content_type_description) {
+                    (Some(label), Some(description)) => {
+                        ContentTypeDescriptor { label, description }
+                    }
+                    _ => bail!(Error::new(
+                        "moved pending blob has no content descriptor",
+                        ErrorType::Blob,
+                    )),
+                };
 
                 debug_assert_eq!(expected_length, size);
 
@@ -550,6 +583,7 @@ impl BlobService {
                     s3_hash: slice_to_blob_hash(&hash_vec),
                     mime,
                     size,
+                    content_type,
                     created: false,
                 }
             }
@@ -1282,6 +1316,8 @@ struct PendingBlob {
     s3_path: String,
     expected_length: i64,
     moved_hash: Option<Vec<u8>>,
+    content_type_label: Option<String>,
+    content_type_description: Option<String>,
 }
 
 /// Helper struct to produce a count of items and a sample list.

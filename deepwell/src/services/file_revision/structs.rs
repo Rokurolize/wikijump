@@ -19,6 +19,7 @@
  */
 
 use crate::hash::BlobHash;
+use crate::services::blob::ContentTypeDescriptor;
 use crate::services::page_revision::PageRevisionCountOutput;
 use crate::types::Maybe;
 use crate::types::{FetchDirection, FileRevisionType};
@@ -47,6 +48,7 @@ pub struct FileBlob {
     pub s3_hash: BlobHash,
     pub size: i64,
     pub mime: String,
+    pub content_type: Option<ContentTypeDescriptor>,
     pub blob_created: bool,
 }
 
@@ -69,6 +71,7 @@ pub struct CreateFirstFileRevision {
     pub s3_hash: BlobHash,
     pub size: i64,
     pub mime: String,
+    pub content_type: Option<ContentTypeDescriptor>,
     pub blob_created: bool,
     pub revision_comments: String,
 }

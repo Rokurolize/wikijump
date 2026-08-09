@@ -41,7 +41,7 @@ use deepwell::models::role_permission::{self, Entity as RolePermissionTable};
 use deepwell::models::text;
 use deepwell::models::text_block;
 use deepwell::models::user::Entity as UserTable;
-use deepwell::services::blob::{EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
+use deepwell::services::blob::{ContentTypeDescriptor, EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
 use deepwell::services::category::CategoryService;
 use deepwell::services::file_revision::CreateFirstFileRevision;
 use deepwell::services::forum::{
@@ -4629,14 +4629,24 @@ async fn wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts() {
     let page_id = listpages_test_page_id(&runner, site.site_id, FILES_SLUG).await;
     let saved =
         load_listpages_test_compiled_html(&runner, site.site_id, FILES_SLUG).await;
+    let saved_suffix = files_module_container_suffix(&saved);
     assert!(
-        saved.contains(&format!(r#"<div id="files-{page_id}">"#)),
-        "saved Files output must bind its page identity:\n{saved}",
+        !saved_suffix.is_empty(),
+        "saved Files output must use one non-empty container suffix:\n{saved}",
     );
     assert!(
         saved.contains(&format!("p.page_id={page_id};")),
-        "saved Files refresh contract must bind the same page identity:\n{saved}",
+        "saved Files refresh contract must bind the saved page identity:\n{saved}",
     );
+    for expected in [
+        format!("function updateFileSimpleList{saved_suffix}(pageNo)"),
+        format!("var containerElId = 'files-{saved_suffix}';"),
+    ] {
+        assert!(
+            saved.contains(&expected),
+            "the local container suffix must remain internally consistent without claiming Wikidot suffix parity:\n{saved}",
+        );
+    }
     assert!(saved.contains("No files attached to this page."), "{saved}");
     assert!(saved.contains("Manage attachments"), "{saved}");
     assert!(!saved.contains("No such module"), "{saved}");
@@ -4732,6 +4742,357 @@ async fn wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts() {
         );
     }
     assert!(!flickr.body.contains("No such module"), "{}", flickr.body);
+}
+
+#[tokio::test]
+async fn wikidot_files_saved_view_renders_only_authoritative_bounded_rows() {
+    const ROW_SLUG: &str = "fixture-files-module-row";
+    const MISSING_DESCRIPTOR_SLUG: &str = "fixture-files-module-missing-descriptor";
+    const MISSING_REVISION_SLUG: &str = "fixture-files-module-missing-revision";
+    const SMALL_SIZE_SLUG: &str = "fixture-files-module-small-size";
+    const OVERFLOW_SLUG: &str = "fixture-files-module-overflow";
+    const FILE_NAME: &str = "that man&\".jpg";
+    const TYPE_LABEL: &str = "JPEG image data";
+    const TYPE_DESCRIPTION: &str = "JPEG image data, EXIF standard";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        ROW_SLUG,
+        "Files module row fixture",
+        "FILES_BEFORE\n[[module Files]]\nFILES_AFTER",
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site.site_id, ROW_SLUG).await;
+    let file_id = create_file_fixture_with_descriptor(
+        &runner,
+        site.site_id,
+        page_id,
+        FILE_NAME,
+        180_296,
+        Some(ContentTypeDescriptor {
+            label: TYPE_LABEL.to_owned(),
+            description: TYPE_DESCRIPTION.to_owned(),
+        }),
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Files preview has no saved page identity",
+            "wikitext": "[[module Files]]",
+        }),
+    );
+    assert!(preview.body.contains(r#"<div id="files-">"#));
+    assert!(preview.body.contains("No files attached to this page."));
+    assert!(!preview.body.contains(FILE_NAME));
+
+    let view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": ROW_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = view.page
+    else {
+        panic!("saved Files row fixture should be publicly viewable");
+    };
+    let expected_row = format!(concat!(
+        r#"<tr><td><a href="/local--files/fixture-files-module-row/that%20man%26%22.jpg">that man&amp;".jpg</a></td>"#,
+        r#"<td><span title="JPEG image data, EXIF standard">JPEG image data</span></td>"#,
+        r#"<td>176.07 kB</td><td><a href="javascript:;" onclick="WIKIDOT.modules.PageFilesModule.listeners.fileMoreInfo(event,{file_id})">Info</a></td></tr>"#,
+    ),);
+    assert!(
+        compiled_body_html.contains(&expected_row),
+        "saved Files output must expose the exact authoritative row:\n{compiled_body_html}",
+    );
+    let row_suffix = files_module_container_suffix(&compiled_body_html);
+    assert!(!row_suffix.is_empty(), "{compiled_body_html}");
+    for expected in [
+        "<table class=\"page-files\"><tr><th>File name</th><th>File type</th><th>Size</th><th></th></tr>".to_owned(),
+        format!("function updateFileSimpleList{row_suffix}(pageNo)"),
+        format!("var containerElId = 'files-{row_suffix}';"),
+        format!("p.page_id={page_id};"),
+        "Manage attachments".to_owned(),
+    ] {
+        assert!(
+            compiled_body_html.contains(&expected),
+            "saved Files output should contain {expected:?}:\n{compiled_body_html}",
+        );
+    }
+    assert!(!compiled_body_html.contains("<th>Date</th>"));
+    assert!(!compiled_body_html.contains("<th>User</th>"));
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        MISSING_DESCRIPTOR_SLUG,
+        "Files module missing descriptor fixture",
+        "[[module Files]]",
+    )
+    .await;
+    let missing_page_id =
+        listpages_test_page_id(&runner, site.site_id, MISSING_DESCRIPTOR_SLUG).await;
+    create_file_fixture_with_descriptor(
+        &runner,
+        site.site_id,
+        missing_page_id,
+        "must-not-leak.bin",
+        12_345,
+        None,
+    )
+    .await;
+    let missing_view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": MISSING_DESCRIPTOR_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html: missing_html,
+        ..
+    } = missing_view.page
+    else {
+        panic!("missing-descriptor Files fixture should still serve its page");
+    };
+    assert!(
+        !missing_html.contains("must-not-leak.bin"),
+        "{missing_html}"
+    );
+    assert!(!missing_html.contains("page-files"), "{missing_html}");
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        MISSING_REVISION_SLUG,
+        "Files module missing revision fixture",
+        "[[module Files]]",
+    )
+    .await;
+    let missing_revision_page_id =
+        listpages_test_page_id(&runner, site.site_id, MISSING_REVISION_SLUG).await;
+    file::ActiveModel {
+        name: Set("orphan-must-not-leak.bin".to_owned()),
+        site_id: Set(site.site_id),
+        page_id: Set(missing_revision_page_id),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("orphan file fixture should be inserted");
+    rerender_file_fixture_page(&runner, missing_revision_page_id).await;
+    let missing_revision_view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": MISSING_REVISION_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html: missing_revision_html,
+        ..
+    } = missing_revision_view.page
+    else {
+        panic!("missing-revision Files fixture should still serve its page");
+    };
+    assert!(
+        !missing_revision_html.contains("orphan-must-not-leak.bin"),
+        "{missing_revision_html}"
+    );
+    assert!(
+        !missing_revision_html.contains("page-files"),
+        "{missing_revision_html}"
+    );
+
+    for (slug, hidden_field) in [
+        ("fixture-files-module-hidden-name", "name"),
+        ("fixture-files-module-hidden-s3-hash", "s3_hash"),
+        ("fixture-files-module-hidden-mime", "mime"),
+        ("fixture-files-module-hidden-size", "size"),
+        (
+            "fixture-files-module-unknown-hidden",
+            "future-private-field",
+        ),
+    ] {
+        create_listpages_test_page(
+            &mut runner,
+            site.site_id,
+            slug,
+            "Files module moderated revision fixture",
+            "[[module Files]]",
+        )
+        .await;
+        let moderated_page_id = listpages_test_page_id(&runner, site.site_id, slug).await;
+        let moderated_file_id = create_file_fixture_with_descriptor(
+            &runner,
+            site.site_id,
+            moderated_page_id,
+            "moderated-must-not-leak.bin",
+            4096,
+            Some(ContentTypeDescriptor {
+                label: "data".to_owned(),
+                description: "data".to_owned(),
+            }),
+        )
+        .await;
+        let revision = FileRevisionService::get_latest(
+            runner.context(),
+            site.site_id,
+            moderated_page_id,
+            moderated_file_id,
+        )
+        .await
+        .expect("moderated file revision fixture should be readable");
+        let mut revision = revision.into_active_model();
+        revision.hidden = Set(vec![hidden_field.to_owned()]);
+        revision
+            .update(runner.context().transaction())
+            .await
+            .expect("moderated file revision fixture should be updated");
+        rerender_file_fixture_page(&runner, moderated_page_id).await;
+
+        let moderated_view = run_endpoint!(
+            runner,
+            article_view,
+            json!({
+                "site_id": site.site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        let GetPageViewOutput::Found {
+            compiled_body_html: moderated_html,
+            ..
+        } = moderated_view.page
+        else {
+            panic!("moderated Files fixture should still serve its page");
+        };
+        assert!(
+            !moderated_html.contains("moderated-must-not-leak.bin"),
+            "hidden field {hidden_field} leaked a moderated row: {moderated_html}",
+        );
+        assert!(
+            !moderated_html.contains("page-files"),
+            "hidden field {hidden_field} exposed a partial table: {moderated_html}",
+        );
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        SMALL_SIZE_SLUG,
+        "Files module unobserved small-size fixture",
+        "[[module Files]]",
+    )
+    .await;
+    let small_page_id =
+        listpages_test_page_id(&runner, site.site_id, SMALL_SIZE_SLUG).await;
+    create_file_fixture_with_descriptor(
+        &runner,
+        site.site_id,
+        small_page_id,
+        "unobserved-small.bin",
+        1023,
+        Some(ContentTypeDescriptor {
+            label: "data".to_owned(),
+            description: "data".to_owned(),
+        }),
+    )
+    .await;
+    let small_view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": SMALL_SIZE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html: small_html,
+        ..
+    } = small_view.page
+    else {
+        panic!("small-size Files fixture should still serve its page");
+    };
+    assert!(!small_html.contains("unobserved-small.bin"), "{small_html}");
+    assert!(!small_html.contains("page-files"), "{small_html}");
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        OVERFLOW_SLUG,
+        "Files module overflow fixture",
+        "[[module Files]]",
+    )
+    .await;
+    let overflow_page_id =
+        listpages_test_page_id(&runner, site.site_id, OVERFLOW_SLUG).await;
+    for index in 0_i64..16 {
+        insert_file_fixture_with_descriptor(
+            &runner,
+            site.site_id,
+            overflow_page_id,
+            &format!("overflow-{index:02}.png"),
+            1024 + index,
+            Some(ContentTypeDescriptor {
+                label: "PNG image data".to_owned(),
+                description: "PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced"
+                    .to_owned(),
+            }),
+        )
+        .await;
+    }
+    rerender_file_fixture_page(&runner, overflow_page_id).await;
+    let overflow_view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": OVERFLOW_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html: overflow_html,
+        ..
+    } = overflow_view.page
+    else {
+        panic!("overflow Files fixture should still serve its page");
+    };
+    assert!(
+        !overflow_html.contains("overflow-00.png"),
+        "{overflow_html}"
+    );
+    assert!(!overflow_html.contains("page-files"), "{overflow_html}");
 }
 
 #[tokio::test]
@@ -24221,6 +24582,8 @@ fn page_pending_blob_model(
         presign_url: Set("https://uploads.example.test/issue-1062".to_owned()),
         site_id: Set(site_id),
         page_id: Set(page_id),
+        content_type_label: Set(None),
+        content_type_description: Set(None),
     }
 }
 
@@ -24516,6 +24879,35 @@ async fn file_create_commits_only_its_actor_and_route_owned_pending_blob() {
             }),
         );
         assert!(created.file_id > 0);
+        let moved_pending = BlobPendingTable::find_by_id(&owned.pending_blob_id)
+            .one(&runner.state().database)
+            .await
+            .expect("moved pending descriptor lookup should succeed")
+            .expect("moved pending blob should remain available for retry");
+        assert_eq!(
+            moved_pending.content_type_label.as_deref(),
+            Some("ASCII text")
+        );
+        assert_eq!(
+            moved_pending.content_type_description.as_deref(),
+            Some("ASCII text, with no line terminators")
+        );
+        let created_revision = FileRevisionService::get_latest(
+            runner.context(),
+            site.site_id,
+            page.page_id,
+            created.file_id,
+        )
+        .await
+        .expect("created file revision should be readable");
+        assert_eq!(
+            created_revision.content_type_label.as_deref(),
+            Some("ASCII text")
+        );
+        assert_eq!(
+            created_revision.content_type_description.as_deref(),
+            Some("ASCII text, with no line terminators")
+        );
         let files = run_endpoint!(
             runner,
             page_get_files,
@@ -25086,6 +25478,7 @@ async fn create_file_fixture_with_mime(
             s3_hash: EMPTY_BLOB_HASH,
             size: 0,
             mime: mime.to_owned(),
+            content_type: None,
             blob_created: false,
             revision_comments: "create file fixture".to_owned(),
         },
@@ -25094,6 +25487,89 @@ async fn create_file_fixture_with_mime(
     .expect("file revision fixture should be created");
 
     file.file_id
+}
+
+async fn create_file_fixture_with_descriptor(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    name: &str,
+    size: i64,
+    content_type: Option<ContentTypeDescriptor>,
+) -> i64 {
+    let file_id = insert_file_fixture_with_descriptor(
+        runner,
+        site_id,
+        page_id,
+        name,
+        size,
+        content_type,
+    )
+    .await;
+    rerender_file_fixture_page(runner, page_id).await;
+    file_id
+}
+
+async fn insert_file_fixture_with_descriptor(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    name: &str,
+    size: i64,
+    content_type: Option<ContentTypeDescriptor>,
+) -> i64 {
+    let file = file::ActiveModel {
+        name: Set(name.to_owned()),
+        site_id: Set(site_id),
+        page_id: Set(page_id),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("descriptor file fixture should be inserted");
+    FileRevisionService::create_first(
+        runner.context(),
+        CreateFirstFileRevision {
+            site_id,
+            page_id,
+            file_id: file.file_id,
+            user_id: ADMIN_USER_ID,
+            name: name.to_owned(),
+            s3_hash: EMPTY_BLOB_HASH,
+            size,
+            mime: "image/jpeg".to_owned(),
+            content_type,
+            blob_created: false,
+            revision_comments: "create descriptor file fixture".to_owned(),
+        },
+    )
+    .await
+    .expect("descriptor file revision fixture should be created");
+
+    file.file_id
+}
+
+async fn rerender_file_fixture_page(runner: &TestRunner, page_id: i64) {
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("descriptor page fixture lookup should succeed")
+        .expect("descriptor page fixture should exist");
+    PageRevisionService::rerender(
+        runner.context(),
+        PageId::from_page_model(&page),
+        RerenderDepth::default(),
+        RerenderType::Full,
+    )
+    .await
+    .expect("descriptor page fixture should rerender after its file revision");
+}
+
+fn files_module_container_suffix(html: &str) -> &str {
+    html.split_once(r#"<div id="files-"#)
+        .and_then(|(_, tail)| tail.split_once(r#"">"#))
+        .map(|(suffix, _)| suffix)
+        .expect("Files module output should contain a container ID")
 }
 
 async fn create_text_block_fixture(

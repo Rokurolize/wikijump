@@ -24,6 +24,10 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub mime: String,
     pub size: i64,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub content_type_label: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub content_type_description: Option<String>,
     pub changes: Vec<String>,
     #[sea_orm(column_type = "Text")]
     pub comments: String,
