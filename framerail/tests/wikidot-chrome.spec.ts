@@ -1,15 +1,49 @@
 import { expect, test } from "@playwright/test"
 
+const headers = {
+  "X-Wikijump-Site-Id": "6000005",
+  "X-Wikijump-Site-Slug": "scp-wiki"
+}
+
+test("Wikidot header extension hooks exist at the initial no-script paint", async ({
+  browser
+}) => {
+  const context = await browser.newContext({
+    extraHTTPHeaders: headers,
+    javaScriptEnabled: false
+  })
+  const page = await context.newPage()
+  try {
+    await page.goto(
+      `http://localhost:${process.env.PLAYWRIGHT_APP_PORT ?? "4173"}/wikidot-tabview`,
+      { waitUntil: "domcontentloaded" }
+    )
+    await expect
+      .poll(() =>
+        page
+          .locator("#header")
+          .evaluate((header) =>
+            [...header.children]
+              .map((child) => child.id)
+              .filter((id) => id.startsWith("header-extra-div-"))
+          )
+      )
+      .toEqual(["header-extra-div-1", "header-extra-div-2", "header-extra-div-3"])
+    await expect(page.locator("#header > [id^='header-extra-div-'] > span")).toHaveCount(
+      3
+    )
+  } finally {
+    await context.close()
+  }
+})
+
 test("Wikidot-compatible search chrome preserves its two inputs and focus behavior", async ({
   page
 }) => {
   const pageErrors: string[] = []
   page.on("pageerror", (error) => pageErrors.push(error.message))
 
-  await page.setExtraHTTPHeaders({
-    "X-Wikijump-Site-Id": "6000005",
-    "X-Wikijump-Site-Slug": "scp-wiki"
-  })
+  await page.setExtraHTTPHeaders(headers)
 
   await page.goto("/wikidot-tabview")
 
@@ -34,10 +68,7 @@ test("Wikidot-compatible search chrome preserves its two inputs and focus behavi
 })
 
 test("SearchAll module submits the selected live area route", async ({ page }) => {
-  await page.setExtraHTTPHeaders({
-    "X-Wikijump-Site-Id": "6000005",
-    "X-Wikijump-Site-Slug": "scp-wiki"
-  })
+  await page.setExtraHTTPHeaders(headers)
 
   await page.goto("/search:all")
 
