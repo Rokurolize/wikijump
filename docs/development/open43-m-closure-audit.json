@@ -103,10 +103,11 @@
       "runbook": "install/local/wikidot-verification/README.md#standing-file-descriptor-backfill",
       "script": "install/local/wikidot-verification/scripts/backfill-corpus-file-descriptors.mjs",
       "target_identity": "Every inventory and completion transaction requires the exact active pair site_id 6000006 and site slug scp-wiki; site_id 6000005 is template-en and must fail the guard.",
+      "runtime_identity_binding": "The command requires the sealed runtime-differential identity from the activated standing refresh and records immutable database, Deepwell, and Files container and image IDs, a secret-free effective configuration digest, exact API and object-store loopback publications, the Deepwell config mount, and the protected database and Files volume mounts. It executes SQL through the sealed database container ID and revalidates the binding on start, resume, and completion.",
       "single_authority": "Every active target-site file requires exact fullname, filename, and stored-byte SHA-256 corpus mime_description provenance. The command has no system file fallback and does not interpret file.from_wikidot or revision comments as import authority.",
       "legacy_fixture_fact": "The task-owned wj-open43-pr2-db clone has 31 active files and 36 revisions, all file.from_wikidot false and all revision comments empty; missing exact corpus provenance therefore blocks rather than selecting a local fallback.",
       "predeploy_requirement": "Quiesce file mutations and require zero pre-migration blob_pending rows with s3_hash IS NOT NULL, because the old binary could not persist their descriptor authority.",
-      "phase_contract": "A metadata-only preflight seals baseline completion, deterministic keyset inventory batches, corpus denominator, and provenance_matched/provenance_missing before any S3 read. Any orphan latest revision, moved pending descriptor gap, inventory count mismatch, ambiguous candidate, or missing provenance blocks with staging and rerender counts both zero. Byte verification of every sealed batch precedes the first materialization batch.",
+      "phase_contract": "A metadata-only preflight seals baseline completion, deterministic keyset inventory batches, corpus denominator, and provenance_matched/provenance_missing before any S3 read. Any orphan latest revision, moved pending descriptor gap, inventory count mismatch, ambiguous candidate, or missing provenance blocks with staging and rerender counts both zero. Byte verification seals each batch's exact corpus descriptor plan before the first materialization batch. Completion resets the cursor, rescans every active latest revision, and requires every current descriptor to equal the sealed corpus plan.",
       "current_preflight_observation": {
         "status": "blocked_external_provenance",
         "standing_active_latest_files": 50301,
@@ -117,7 +118,7 @@
         "corpus_snapshot_file_set_sha256": "329988eba0e750d33e4ea7ac3556a6e152416089d753286495b20992c85b67f9",
         "claim": "pre-run diagnostic only; standing materialization remains pending until the missing corpus provenance is acquired"
       },
-      "completion_requirement": "The future resumable receipt must be done with zero provenance blockers, zero active missing or invalid descriptors, zero moved pending blobs missing descriptors, and metadata, byte-preflight, rows-completed, corpus-authority, and staging counts each equal to the final active-file count after every changed saved page has publicly rerendered."
+      "completion_requirement": "The future resumable receipt must be done with a stable sealed runtime binding, a complete all-active-latest inventory and descriptor-plan rescan, zero provenance blockers, zero active missing or invalid descriptors, zero moved pending blobs missing descriptors, and metadata, byte-preflight, completion-rescan, rows-completed, corpus-authority, and staging counts each equal to the final active-file count after every changed saved page has publicly rerendered. The current external corpus-provenance gap remains blocked and is not a pass claim."
     },
     "source_ready_is_not_pass": true
   },
@@ -352,10 +353,10 @@
       "exists_now": true
     },
     "C_STANDING_FILE_DESCRIPTOR_BACKFILL": {
-      "command": "node install/local/wikidot-verification/scripts/backfill-corpus-file-descriptors.mjs --corpus-root /home/roku/src/Rokurolize/scp-wiki-translation/corpus --branch en --site-id 6000006 --site-slug scp-wiki --db-container wikijump-standing-database-1 --api-url http://127.0.0.1:12747/jsonrpc --batch-size 200 --concurrency 16 --receipt /absolute/evidence/path/scp-wiki-file-descriptor-backfill.json",
+      "command": "node install/local/wikidot-verification/scripts/backfill-corpus-file-descriptors.mjs --corpus-root /home/roku/src/Rokurolize/scp-wiki-translation/corpus --runtime-identity /home/roku/wjlab/runtime/wikijump-standing/runtime-differential-identity.json --branch en --site-id 6000006 --site-slug scp-wiki --db-container wikijump-standing-database-1 --deepwell-container wikijump-standing-deepwell-1 --files-container wikijump-standing-files-1 --api-url http://127.0.0.1:12747/jsonrpc --attachment-s3-endpoint http://127.0.0.1:19000 --batch-size 200 --concurrency 16 --receipt /absolute/evidence/path/scp-wiki-file-descriptor-backfill.json",
       "phase": "standing_cutover",
       "exists_now": true,
-      "required_environment": "Quiesced file mutations, migrated exact wikijump-standing-database-1 target, and the site_id 6000006 plus scp-wiki slug guard. S3 credentials and the exact activated Deepwell plus DEEPWELL_RPC_TOKEN are required only after metadata coverage reaches 100 percent and byte_preflight begins.",
+      "required_environment": "Quiesced file mutations, the sealed runtime-differential identity from the exact activated standing refresh, migrated exact wikijump-standing-database-1 target, its protected runtime50x-postgres-data and runtime50x-files-data mounts, and the site_id 6000006 plus scp-wiki slug guard. S3 credentials and DEEPWELL_RPC_TOKEN are required only after metadata coverage reaches 100 percent and byte_preflight begins. DEEPWELL_VERIFY_DB_URL is unsupported because SQL executes through the sealed database container ID.",
       "current_blocker": "The pre-run denominator is 50,301 active latest standing files versus 24,454 descriptor-bearing corpus snapshots; metadata_preflight must return blocked with zero staging and zero rerenders until provenance is repaired."
     },
     "C_DEEPWELL_SITE_ICONS": {
@@ -1068,7 +1069,7 @@
             "reason": "The local producer is byte-derived, but current-host libmagic descriptions differ from byte-matched Wikidot corpus descriptions on 14 of 29 available comparison objects. No source-ready claim covers exact Wikidot descriptor text for new local uploads.",
             "missing_evidence": "Live sandbox upload observations and boundary controls for each descriptor family, bound to exact uploaded bytes and Wikidot output."
           },
-          "standing_prerequisite": "Before promotion, quiesce file mutations, require zero pre-migration moved blob_pending rows, apply the migration chain, run the metadata preflight against exact site_id 6000006, site slug scp-wiki, and standing database container identity, acquire the currently missing corpus provenance, require zero metadata and byte provenance blockers plus the terminal all-active-row completion proof, and verify the rerendered public page on the exact activated runtime. The observed 24,454-of-50,301 coverage is a blocker, not completion.",
+          "standing_prerequisite": "Before promotion, quiesce file mutations, require zero pre-migration moved blob_pending rows, apply the migration chain, run the metadata preflight against exact site_id 6000006, site slug scp-wiki, and the sealed activated standing runtime identity and resource binding, acquire the currently missing corpus provenance, require zero metadata and byte provenance blockers plus the terminal all-active-latest descriptor-plan rescan, and verify the rerendered public page on the exact activated runtime. The observed 24,454-of-50,301 coverage is a blocker, not completion.",
           "source_paths": [
             "deepwell/migrations/20260810010000_file_content_type_descriptor.sql",
             "deepwell/src/models/file_revision.rs",
@@ -1080,6 +1081,7 @@
             "install/local/wikidot-verification/src/corpus-attachment-staging-sql.mjs",
             "install/local/wikidot-verification/scripts/apply-corpus-import-manifest.mjs",
             "install/local/wikidot-verification/src/corpus-file-descriptor-backfill.mjs",
+            "install/local/wikidot-verification/src/corpus-file-descriptor-runtime-identity.mjs",
             "install/local/wikidot-verification/scripts/backfill-corpus-file-descriptors.mjs",
             "install/local/wikidot-verification/README.md"
           ],
@@ -1094,6 +1096,9 @@
             "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill.test.mjs::standing descriptor backfill binds stored bytes to exact corpus provenance",
             "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill.test.mjs::standing clone legacy flags do not authorize fallback for its 31 active files and 36 revisions",
             "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill.test.mjs::standing descriptor inventory is a bounded public-page identity query",
+            "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill-cli.test.mjs::standing descriptor backfill rejects a live Deepwell image outside the sealed runtime identity before SQL",
+            "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill-cli.test.mjs::standing descriptor backfill revalidates its sealed runtime binding before accepting a completed receipt",
+            "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill-cli.test.mjs::standing descriptor backfill rescans every descriptor and active latest revision before completion",
             "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill-cli.test.mjs::standing descriptor backfill blocks all writes before materialization when metadata provenance is incomplete",
             "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill-cli.test.mjs::standing descriptor backfill blocks an active orphan before inventory or materialization"
           ],
