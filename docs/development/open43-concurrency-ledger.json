@@ -1,0 +1,96 @@
+{
+  "schema": "wikijump.open43_concurrency_ledger.v1",
+  "campaign": "open43-pr2",
+  "updated_at": "2026-08-09T18:40:00+09:00",
+  "integration_branch": {
+    "repository": "Rokurolize/wikijump",
+    "branch": "fix/open87-pr2-modules-actions-media-settings",
+    "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
+    "reconciled_head": "3514152f1a061de92400c724aae2009ad217643c"
+  },
+  "limits": {
+    "configured_threads": 13,
+    "coordinator_threads": 1,
+    "writer_threads": 12,
+    "available_threads": 4
+  },
+  "brokers": {
+    "build": {
+      "owner": "/root",
+      "target_dir_pattern": "/home/roku/wjlab/targets/wikijump-<pushed-short-sha>-dev"
+    },
+    "runtime": {
+      "owner": "/root",
+      "resources": [
+        "task-db",
+        "task-cache",
+        "task-files",
+        "candidate-process",
+        "browser-profile"
+      ]
+    },
+    "standing": {
+      "owner": "/root",
+      "state": "frozen",
+      "served_wikijump_revision": "ed5c5b353b8f93ad6fc2c7b7c4ffd677717098cf",
+      "recovery_receipt": "/home/roku/wjlab/runtime/wikijump-standing/open43-standing-recovery-ed5c5b353b8f.json"
+    }
+  },
+  "lanes": [
+    {
+      "id": "q-users-ftml-pin-g2",
+      "agent": "/root/a_rate",
+      "issue_numbers": [1026],
+      "branch": "agent/open87-pr2/q-users-ftml-pin-g2",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/q-users-ftml-pin-g2",
+      "base": "78d83cb920a7ea72626f2bcfc747f1493686900b",
+      "head": "4b0ce829ae67526d013501b73113137b2a5ea6e4",
+      "status": "integrated",
+      "integration_commits": [
+        "3514152f1a061de92400c724aae2009ad217643c"
+      ],
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "page-graph-residual-g2",
+      "agent": "/root/a_membership_residual",
+      "issue_numbers": [1028, 1035],
+      "branch": "agent/open87-pr2/page-graph-residual-g2",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/page-graph-residual-g2",
+      "base": "eaa6675f0162dbe22ee7eb315aab83a0a04c0bb7",
+      "head": "0da6a2ebe8e84724d0b1845fb247df4fa8294f3a",
+      "status": "integrated",
+      "integration_commits": [
+        "4f08bf6adef436224c7207882d29534ab9b2fa6b",
+        "986fe9d7838ce7dfcc565982d849e2617ba15e5c"
+      ],
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "a-utilities-sitegrid-g2",
+      "agent": "/root/s_browser",
+      "issue_numbers": [1038],
+      "branch": "agent/open87-pr2/a-utilities-sitegrid-g2",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/a-utilities-sitegrid-g2",
+      "base": "78d83cb920a7ea72626f2bcfc747f1493686900b",
+      "head": null,
+      "status": "running",
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "a-forms-residual-g3",
+      "agent": "/root/a_membership_residual",
+      "issue_numbers": [1037],
+      "branch": "agent/open87-pr2/a-forms-residual-g3",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/a-forms-residual-g3",
+      "base": "986fe9d7838ce7dfcc565982d849e2617ba15e5c",
+      "head": null,
+      "status": "running",
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    }
+  ]
+}
