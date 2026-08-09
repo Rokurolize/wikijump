@@ -1,9 +1,6 @@
 # What each workflow is for
 
-Every workflow here costs wall-clock time on a pull request, so each one needs
-a reason to exist and a trigger narrow enough that it only runs when it can
-actually say something. This file records both. `scripts/preflight.sh` runs the
-local half of the same checks, so most failures can be found before pushing.
+Every workflow here costs wall-clock time on a pull request, so each one needs a reason to exist and a trigger narrow enough that it only runs when it can actually say something. This file records both. `scripts/preflight.sh` owns the corresponding local checkpoint and final barrier.
 
 ## Pull-request validation
 
@@ -16,16 +13,20 @@ which is why an unrelated change does not pay for the whole matrix. Its jobs:
 - Workflow policy: `actionlint` plus `.github/tests/`, which assert the CI
   structure itself, including that third-party actions are pinned to full
   commit SHAs and that the Framerail unit and browser suites stay separate.
-- Deepwell fast checks: dependency hygiene and formatting without compiling the service. Clippy and unit tests run in the authoritative local pre-push preflight.
+- Deepwell fast checks: dependency hygiene and formatting without compiling the service. Clippy and full tests run in the explicit local final barrier.
 - WWS: dependency hygiene and formatting for drafts, with Clippy and the full test suite added for candidate and non-draft runs.
 - Framerail: lint and unit tests for drafts, with the production build added for candidate and non-draft runs.
-- Locales: formatting, Clippy, and the validator run.
+- Locales: formatting for drafts, with Clippy and the validator run added for candidate and non-draft runs.
 - CI / gate: the single aggregate status for the rest. Branch protection does
   not require it; merge readiness comes from the recorded local validation.
   Only a run that checks the classifier and every selected job publishes this name.
   A title, body, or other metadata-only pull-request edit publishes the
   distinct `CI / metadata edit` check instead, so it cannot replace a useful
   aggregate result for the same head commit.
+
+The local pre-push hook runs the checkpoint mode. For a single update of the current HEAD branch, it classifies only the commits since that branch's advertised remote tip. Multiple refs, deleted refs, new branches, and non-HEAD refs fall back to the complete branch diff against `origin/develop`. The checkpoint runs Cargo formatting plus workflow policy, Framerail lint, and Framerail unit tests without dependency hygiene, Clippy, Cargo tests, validators, or production builds.
+
+Run `scripts/preflight.sh --final` before declaring a candidate ready. This is the one local final barrier and adds dependency hygiene, every selected Clippy pass, full test suite, validator, and the Framerail production build. `WIKIJUMP_SKIP_PREFLIGHT=1` remains the deliberate checkpoint-push escape hatch; it does not replace the final barrier.
 
 The gate also listens for `merge_group`, so a merge queue gets the same
 aggregate `CI / gate` context as a pull request. External actions in all

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #
-# Run the checks CI would run for the paths you actually changed.
+# Run path-focused local validation for the files you actually changed. The
+# default checkpoint does not compile Cargo targets; --final adds the complete
+# candidate barrier.
 #
 # The point is to fail here rather than eight minutes into a CI run. Which
 # checks apply is decided by .github/scripts/classify-changes.mjs, the same
@@ -8,11 +10,11 @@
 # change touches.
 #
 # Usage:
-#   scripts/preflight.sh [--base <ref>] [--full] [--list]
+#   scripts/preflight.sh [--base <ref>] [--final] [--list]
 #
 #   --base <ref>  Compare against this ref instead of origin/develop.
-#   --full        Also run the slow checks: deepwell integration tests, which
-#                 need a database, and the framerail build.
+#   --final       Run the complete candidate barrier, including Clippy, full
+#                 tests, validators, and the Framerail production build.
 #   --list        Print the selected groups and the checks, then exit.
 #
 # Exit code is non-zero if any check fails.
@@ -20,18 +22,18 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "${REPO_ROOT}"
+cd "${REPO_ROOT}" || exit 1
 
 BASE="origin/develop"
-FULL=false
+MODE="checkpoint"
 LIST=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --base) BASE="$2"; shift 2 ;;
-    --full) FULL=true; shift ;;
+    --final) MODE="final"; shift ;;
     --list) LIST=true; shift ;;
-    -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \?//'; exit 0 ;;
+    -h|--help) sed -n '2,/^# Exit code/p' "${BASH_SOURCE[0]}" | sed 's/^# \?//'; exit 0 ;;
     *) echo "preflight: unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -44,24 +46,25 @@ fi
 MERGE_BASE="$(git merge-base HEAD "${BASE}")"
 
 # Uncommitted work counts: this runs before you push, not after you commit.
-CHANGED="$(
+mapfile -d '' -t CHANGED_PATHS < <(
   {
     git diff --no-renames --name-only -z "${MERGE_BASE}" HEAD
     git diff --no-renames --name-only -z HEAD
     git diff --no-renames --name-only -z --cached
-  } | tr '\0' '\n' | sed '/^$/d' | sort -u
-)"
+  } | sort -zu
+)
 
-if [[ -z "${CHANGED}" ]]; then
+if [[ ${#CHANGED_PATHS[@]} -eq 0 ]]; then
   echo "preflight: no changes against ${BASE}; nothing to check"
   exit 0
 fi
 
-SELECTED="$(printf '%s\0' ${CHANGED} | node .github/scripts/classify-changes.mjs)"
+SELECTED="$(printf '%s\0' "${CHANGED_PATHS[@]}" | node .github/scripts/classify-changes.mjs)"
 group_selected() { grep -qx "$1=true" <<<"${SELECTED}"; }
 
 echo "preflight: ${BASE}...HEAD"
-echo "preflight: $(wc -l <<<"${CHANGED}") changed path(s)"
+echo "preflight: mode: ${MODE}"
+echo "preflight: ${#CHANGED_PATHS[@]} changed path(s)"
 echo "preflight: groups: $(tr '\n' ' ' <<<"${SELECTED}")"
 
 FAILED=()
@@ -89,33 +92,36 @@ fi
 
 if group_selected deepwell; then
   run "deepwell fmt" cargo fmt --manifest-path deepwell/Cargo.toml --check
-  run "deepwell clippy" cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings
-  if "${FULL}"; then
+  if [[ "${MODE}" == "final" ]]; then
+    run "deepwell dependencies" cargo machete deepwell
+    run "deepwell clippy" cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings
     run "deepwell full tests" cargo test --manifest-path deepwell/Cargo.toml
-  else
-    run "deepwell unit tests" cargo test --manifest-path deepwell/Cargo.toml --lib
   fi
 fi
 
 if group_selected wws; then
   run "wws fmt" cargo fmt --manifest-path wws/Cargo.toml --check
-  run "wws clippy" cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings
-  run "wws unit tests" cargo test --manifest-path wws/Cargo.toml
+  if [[ "${MODE}" == "final" ]]; then
+    run "wws dependencies" cargo machete wws
+    run "wws clippy" cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings
+    run "wws unit tests" cargo test --manifest-path wws/Cargo.toml
+  fi
 fi
 
 if group_selected framerail; then
   run "framerail lint" pnpm --dir framerail lint
   run "framerail unit tests" pnpm --dir framerail test:unit
-  if "${FULL}"; then
+  if [[ "${MODE}" == "final" ]]; then
     run "framerail build" pnpm --dir framerail build
   fi
 fi
 
 if group_selected locales; then
-  run "locales" bash -c 'cd locales/validator \
-    && cargo fmt --all -- --check \
-    && cargo clippy --locked --tests --no-deps -- -A unused -D warnings \
-    && cargo run --locked'
+  run "locales fmt" cargo fmt --manifest-path locales/validator/Cargo.toml --all -- --check
+  if [[ "${MODE}" == "final" ]]; then
+    run "locales clippy" cargo clippy --manifest-path locales/validator/Cargo.toml --locked --tests --no-deps -- -A unused -D warnings
+    run "locales validator" cargo run --manifest-path locales/validator/Cargo.toml --locked
+  fi
 fi
 
 if "${LIST}"; then

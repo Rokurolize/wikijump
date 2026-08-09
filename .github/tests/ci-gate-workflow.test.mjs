@@ -258,6 +258,9 @@ test("draft CI stays lightweight while candidate CI adds compiled checks", () =>
   const framerail = jobBlock(source, "framerail")
   const framerailDraft = stepBlock(framerail, "Validate draft")
   const framerailCandidate = stepBlock(framerail, "Build candidate")
+  const locales = jobBlock(source, "locales")
+  const localesDraft = stepBlock(locales, "Validate draft")
+  const localesCandidate = stepBlock(locales, "Validate candidate")
 
   for (const command of ["cargo machete wws", "cargo fmt --all -- --check"]) {
     assert.ok(wwsDraft.join("\n").includes(command), command)
@@ -283,26 +286,17 @@ test("draft CI stays lightweight while candidate CI adds compiled checks", () =>
     "${{ needs.classify.outputs.candidate == 'true' }}"
   )
   assert.match(framerailCandidate.join("\n"), /pnpm --dir framerail build/)
-})
 
-test("preflight keeps Cargo flags stable and selects one Deepwell test suite", () => {
-  const source = read("scripts/preflight.sh")
-
+  assert.match(localesDraft.join("\n"), /cargo fmt --all -- --check/)
+  assert.doesNotMatch(localesDraft.join("\n"), /cargo (?:clippy|run)/)
+  assert.equal(
+    yamlScalar(localesCandidate, 8, "if"),
+    "${{ needs.classify.outputs.candidate == 'true' }}"
+  )
   for (const command of [
-    "cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings",
-    "cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings",
-    "cargo clippy --locked --tests --no-deps -- -A unused -D warnings"
-  ]) assert.ok(source.includes(command), command)
-  assert.doesNotMatch(source, /RUSTFLAGS=[^\n]*(?:\\\n\s*)?cargo clippy/)
-
-  const deepwell = source.slice(
-    source.indexOf("if group_selected deepwell; then"),
-    source.indexOf("if group_selected wws; then")
-  )
-  assert.match(
-    deepwell,
-    /if "\$\{FULL\}"; then\n\s+run "deepwell full tests" cargo test --manifest-path deepwell\/Cargo\.toml\n\s+else\n\s+run "deepwell unit tests" cargo test --manifest-path deepwell\/Cargo\.toml --lib\n\s+fi/
-  )
+    "cargo clippy --locked --tests --no-deps",
+    "cargo run --locked"
+  ]) assert.ok(localesCandidate.join("\n").includes(command), command)
 })
 
 test("optional Browser CI contains only browser validation", () => {
