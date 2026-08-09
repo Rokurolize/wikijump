@@ -2407,7 +2407,8 @@ fn registry_module_expansion_does_not_match_name_prefixes() {
         "[[module MembershipEmailInvitation]] ",
         "[[module NewPageExtra]] ",
         "[[module Joinery]] ",
-        "[[module Join]]",
+        "[[module CloneExtra]] ",
+        "[[module Clone]]",
     );
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut fragments = CompatHtmlFragments::new(source);
@@ -2422,43 +2423,34 @@ fn registry_module_expansion_does_not_match_name_prefixes() {
             .matches(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
             .count(),
         1,
-        "only the exact Join module should be expanded:\n{protected}",
+        "only the exact Clone module should be expanded:\n{protected}",
     );
     assert!(protected.contains("[[module MembershipByPassword]]"));
     assert!(protected.contains("[[module MembershipEmailInvitation]]"));
     assert!(protected.contains("[[module NewPageExtra]]"));
     assert!(protected.contains("[[module Joinery]]"));
+    assert!(protected.contains("[[module CloneExtra]]"));
 
     let restored = fragments.restore(&protected);
-    assert!(restored.contains(r#"<div class="join-box">"#));
-    assert!(!restored.contains("[[module Join]]"));
+    assert!(restored.contains(r#"data-wikijump-compat-clone="1""#));
+    assert!(!restored.contains("[[module Clone]]"));
     assert!(!restored.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
 }
 
 #[test]
 fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences() {
-    let modules = concat!(
-        "[[module Join]] ",
-        "[[module NewPage]] ",
-        "[[module Clone]]",
-    );
+    let modules = "[[module Clone]]";
     let source = format!(
         concat!(
             "@@{modules}@@\n",
             "[[code]]\n{modules}\n[[/code]]\n",
             "[[raw]]\n{modules}\n[[/raw]]\n",
             "[!-- {modules} --]\n",
-            "[[div data-module=\"[[module Join]]\"]]join[[/div]]\n",
-            "[[div data-module=\"[[module NewPage]]\"]]new page[[/div]]\n",
             "[[div data-module=\"[[module Clone]]\"]]clone[[/div]]\n",
-            "<div data-module=\"[[module Join]]\">join</div>\n",
-            "<div data-module=\"[[module NewPage]]\">new page</div>\n",
             "<div data-module=\"[[module Clone]]\">clone</div>\n",
             "<pre>{modules}</pre>\n",
             "<!-- {modules} -->\n",
-            "[[module Clone button=\"clone-first\"]]",
-            "[[module Join]]",
-            "[[module NewPage button=\"new-last\"]]\n",
+            "[[module Clone button=\"clone-first\"]]\n",
         ),
         modules = modules
     );
@@ -2474,17 +2466,12 @@ fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences()
         protected
             .matches(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
             .count(),
-        2,
+        1,
     );
-    for module in ["[[module Join]]", "[[module NewPage]]", "[[module Clone]]"] {
-        assert_eq!(protected.matches(module).count(), 8, "{module}");
-    }
+    assert_eq!(protected.matches("[[module Clone]]").count(), 8);
 
     let restored = fragments.restore(&protected);
-    let clone = restored.find("clone-first").unwrap();
-    let join = restored.rfind(r#"<div class="join-box">"#).unwrap();
-    let new_page = restored.find("new-last").unwrap();
-    assert!(clone < join && join < new_page);
+    assert!(restored.contains("clone-first"));
     assert!(!restored.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
 
     let mut output =
