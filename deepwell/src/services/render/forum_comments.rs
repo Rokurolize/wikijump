@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use sea_orm::{
-    ColumnTrait, EntityTrait, FromQueryResult, PaginatorTrait, QueryFilter, Statement,
-    Value,
+    ColumnTrait, ConnectionTrait, EntityTrait, FromQueryResult, PaginatorTrait,
+    QueryFilter, Statement, Value,
 };
 
 use super::forum_modules::ForumUserResourceScheme;
@@ -202,6 +202,7 @@ async fn load_comment_nodes(
                     "LEFT JOIN \"user\" revision_local ON revision_local.user_id = revision.user_id ",
                     " AND revision_local.deleted_at IS NULL LIMIT {candidate_limit}",
                 ),
+                root_order = root_order,
                 root_limit = ROOTS_PER_PAGE,
                 overflow_depth = MAX_COMMENT_DEPTH + 1,
                 candidate_limit = POST_CANDIDATE_LIMIT,
@@ -328,6 +329,7 @@ fn push_pager(output: &mut String, page_count: u64) {
             "<div class=\"pager\"><span class=\"pager-no\">page 1 of {page_count}</span>",
             "<span class=\"current\">1</span>",
         ),
+        page_count = page_count,
     )
     .expect("writing to a String cannot fail");
     for page in 2..=page_count.min(3) {
@@ -337,6 +339,7 @@ fn push_pager(output: &mut String, page_count: u64) {
                 "<span class=\"target\"><a href=\"javascript:;\" ",
                 "onclick=\"WIKIDOT.modules.ForumViewThreadPostsModule.listeners.updateList({page})\">{page}</a></span>",
             ),
+            page = page,
         )
         .expect("writing to a String cannot fail");
     }
@@ -351,6 +354,7 @@ fn push_pager(output: &mut String, page_count: u64) {
                 "<span class=\"target\"><a href=\"javascript:;\" ",
                 "onclick=\"WIKIDOT.modules.ForumViewThreadPostsModule.listeners.updateList({page})\">{page}</a></span>",
             ),
+            page = page,
         )
         .expect("writing to a String cannot fail");
     }

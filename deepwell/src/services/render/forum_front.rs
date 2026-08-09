@@ -215,8 +215,9 @@ pub(super) async fn load(
                     " AND t.forum_thread_id = ANY($3::BIGINT[]) ",
                     " AND t.deleted_at IS NULL AND (t.page_id IS NULL OR p.page_id IS NOT NULL) ",
                     "ORDER BY t.created_at DESC, t.forum_thread_id DESC ",
-                    "LIMIT {CANDIDATE_LIMIT}",
+                    "LIMIT {candidate_limit}",
                 ),
+                candidate_limit = CANDIDATE_LIMIT,
             ),
             [
                 Value::from(site_id),

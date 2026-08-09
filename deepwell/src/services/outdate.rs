@@ -23,7 +23,7 @@ use crate::futures::StreamExt;
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::{self, Entity as PageCategory};
 use crate::services::ServiceContext;
-use crate::services::{LinkService, PageService, SiteService};
+use crate::services::{JobService, LinkService, PageService, SiteService};
 use crate::types::{ConnectionType, PageId, PageOrder, Reference, RerenderDepth};
 use crate::utils::split_category_name;
 use sea_orm::{

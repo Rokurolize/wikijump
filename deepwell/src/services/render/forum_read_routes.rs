@@ -519,7 +519,7 @@ pub(super) async fn hydrate_forum_posts(
             .collect::<BTreeMap<_, _>>()
     };
     if compiled_html_by_hash.len() != hashes.len() {
-        return Err(make_error());
+        return Err(make_error().into());
     }
 
     let mut posts = Vec::with_capacity(candidates.len());
@@ -528,7 +528,7 @@ pub(super) async fn hydrate_forum_posts(
             .get(&candidate.compiled_html_hash)
             .cloned()
         else {
-            return Err(make_error());
+            return Err(make_error().into());
         };
         posts.push(ForumThreadPostView {
             forum_post_id: candidate.forum_post_id,

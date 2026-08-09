@@ -20,9 +20,7 @@
 
 use super::prelude::*;
 use crate::models::relation::Model as RelationModel;
-use crate::services::membership::{
-    JoinMembership, MembershipJoinOutcome, MembershipService,
-};
+use crate::services::membership::{MembershipJoinOutcome, MembershipService};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{CreateSiteMember, GetSiteMember, RemoveSiteMember};
 use crate::types::{Action, Permission, Resource};
