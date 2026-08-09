@@ -8,7 +8,7 @@ import { limitLocalePreferences } from "./locales.js"
  * @param {string} input
  * @returns {string[]}
  */
-export function parseUserLocalePreferences(input) {
+export const parseUserLocalePreferences = (input) => {
   return limitLocalePreferences(
     input.replaceAll("_", "-").replaceAll(",", " ").split(/\s+/u)
   )
