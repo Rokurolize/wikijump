@@ -615,6 +615,7 @@ async fn load_category_context(
         GetForumStructure {
             site_id,
             include_deleted: false,
+            visible_groups_only: false,
         },
     )
     .await
@@ -666,6 +667,7 @@ impl RenderService {
                     GetForumStructure {
                         site_id,
                         include_deleted: false,
+                        visible_groups_only: !show_hidden,
                     },
                 )
                 .await

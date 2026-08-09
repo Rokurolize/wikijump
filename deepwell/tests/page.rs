@@ -42,7 +42,9 @@ use deepwell::models::user::Entity as UserTable;
 use deepwell::services::blob::{EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
 use deepwell::services::category::CategoryService;
 use deepwell::services::file_revision::CreateFirstFileRevision;
-use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
+use deepwell::services::forum::{
+    CreateForumCategory, CreateForumGroup, GetForumStructure,
+};
 use deepwell::services::forum_post::{
     CreateForumPost, UpdateForumPost, UpdateForumPostBody,
 };
@@ -8296,6 +8298,39 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
     )
     .await
     .expect("hidden forum read-model category should be created");
+
+    let visible_structure = ForumService::get_structure(
+        runner.context(),
+        GetForumStructure {
+            site_id,
+            include_deleted: false,
+            visible_groups_only: true,
+        },
+    )
+    .await
+    .expect("public forum structure should load");
+    assert!(
+        visible_structure
+            .iter()
+            .all(|group| group.group.forum_group_id != hidden_group.forum_group_id),
+        "normal forum structure must exclude hidden groups before rendering",
+    );
+    let complete_structure = ForumService::get_structure(
+        runner.context(),
+        GetForumStructure {
+            site_id,
+            include_deleted: false,
+            visible_groups_only: false,
+        },
+    )
+    .await
+    .expect("complete forum structure should load");
+    assert!(
+        complete_structure
+            .iter()
+            .any(|group| group.group.forum_group_id == hidden_group.forum_group_id),
+        "direct hidden forum routes need the complete structure",
+    );
 
     let empty_recent_posts = run_endpoint!(
         runner,

@@ -824,6 +824,7 @@ impl RenderService {
                             GetForumStructure {
                                 site_id,
                                 include_deleted: false,
+                                visible_groups_only: true,
                             },
                         )
                         .await
