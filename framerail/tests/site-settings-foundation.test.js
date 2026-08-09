@@ -169,4 +169,32 @@ describe("Wikidot site settings foundation", () => {
     assert.match(client, /toolbars: \{ top, bottom \}/u)
     assert.match(client, /autonumber_enabled: enabled/u)
   })
+
+  it("serves the observed legacy admin path through the same SSR and action seam", async () => {
+    const server = await readFile(
+      new URL("../src/routes/_admin/+page.server.ts", import.meta.url),
+      "utf8"
+    )
+    assert.match(
+      server,
+      /export \{ actions, load \} from "\.\.\/\[x\+2d\]\/admin\/\+page\.server"/u
+    )
+
+    const page = await readFile(
+      new URL("../src/routes/_admin/+page.svelte", import.meta.url),
+      "utf8"
+    )
+    assert.match(page, /import AdminPage from "\.\.\/\[x\+2d\]\/admin\/\+page\.svelte"/u)
+    assert.match(page, /<AdminPage \{data\} \{form\} \{params\} \/>/u)
+
+    const errorPage = await readFile(
+      new URL("../src/routes/_admin/+error.svelte", import.meta.url),
+      "utf8"
+    )
+    assert.match(
+      errorPage,
+      /import AdminError from "\.\.\/\[x\+2d\]\/admin\/\+error\.svelte"/u
+    )
+    assert.match(errorPage, /<AdminError \/>/u)
+  })
 })
