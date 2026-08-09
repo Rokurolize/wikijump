@@ -15,6 +15,7 @@ use super::compat::text_fragments::CompatTextFragments;
 use super::diagnostics::{
     CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, StageGuard,
 };
+use super::file_modules::expand_file_modules;
 use super::list_pages::{CountPagesExpansionOptions, ListPagesRuntimeDisplay};
 use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{
@@ -2192,6 +2193,18 @@ impl RenderService {
             options.current_page_id,
             options.viewer_user_id,
             options.url,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
+        wikitext = expand_file_modules(
+            ctx,
+            wikitext,
+            page_info,
+            settings,
+            options.current_site_id,
+            options.current_page_id,
+            options.viewer_user_id,
             compat_html,
         )
         .await

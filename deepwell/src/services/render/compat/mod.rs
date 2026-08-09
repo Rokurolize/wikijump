@@ -9,6 +9,7 @@ pub(super) mod text_fragments;
 pub(super) mod wikidot_compat_restore;
 pub(super) mod wikidot_embed;
 pub(super) mod wikidot_embed_video;
+pub(super) mod wikidot_gallery;
 pub(super) mod wikidot_inline_markers;
 pub(super) mod wikidot_link_protection;
 pub(super) mod wikidot_residual_markers;

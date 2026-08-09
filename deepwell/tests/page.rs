@@ -3230,6 +3230,475 @@ async fn direct_message_render_leaves_image_block_include_literal() {
 }
 
 #[tokio::test]
+async fn wikidot_gallery_preview_uses_the_typed_no_page_error_boundary() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Gallery no-page fixture",
+            "wikitext": concat!(
+                "GALLERY_BEFORE\n",
+                "[[gallery]]\n",
+                "[[code]]\n[[gallery]]\n[[/code]]\n",
+                "A[[gallery]]B\n",
+                "GALLERY_AFTER",
+            ),
+        }),
+    );
+
+    assert_eq!(
+        preview
+            .body
+            .matches(r#"<div class="error-block">Error selecting page.</div>"#)
+            .count(),
+        1,
+        "only the authored own-line Gallery should execute:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("<pre><code>[[gallery]]</code></pre>"),
+        "Gallery inside code must remain literal:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("A[[gallery]]B"),
+        "Gallery in prose must remain literal:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("wj-gallery"),
+        "FTML Gallery requirement IDs must not reach served HTML:\n{}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
+async fn wikidot_gallery_selects_authorized_current_page_images_after_page_acl() {
+    const PAGE_SLUG: &str = "fixture-gallery-current-page";
+    const PRIVATE_PAGE_SLUG: &str = "fixture-gallery-private:current-page";
+    const PRIVATE_CATEGORY: &str = "fixture-gallery-private";
+    const SOURCE: &str = "[[gallery size=\"thumbnail\"]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    let site_id = site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Gallery current page fixture",
+        SOURCE,
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site_id, PAGE_SLUG).await;
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Gallery page lookup should succeed")
+        .expect("Gallery page should exist");
+
+    let empty_html = load_listpages_test_compiled_html(&runner, site_id, PAGE_SLUG).await;
+    assert!(
+        empty_html.contains(
+            r#"<div class="error-block">Sorry, we couldn't find any images attached to this page.</div>"#,
+        ),
+        "a saved empty Gallery must match the frozen Wikidot error contract:\n{empty_html}",
+    );
+
+    create_file_fixture_with_mime(&runner, site_id, page_id, "image-b.png", "image/png")
+        .await;
+    create_file_fixture_with_mime(&runner, site_id, page_id, "notes.txt", "text/plain")
+        .await;
+    create_file_fixture_with_mime(&runner, site_id, page_id, "image-a.png", "image/png")
+        .await;
+
+    let page_info = PageInfo {
+        page: Cow::Borrowed(PAGE_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Gallery current page fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let rendered = RenderService::render_page_for_viewer(
+        runner.context(),
+        SOURCE.to_owned(),
+        &page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: page.page_category_id,
+            page_id,
+        },
+        Some(ADMIN_USER_ID),
+        UrlArguments::default(),
+    )
+    .await
+    .expect("authorized current-page Gallery should render")
+    .html_output
+    .body;
+
+    let first = rendered
+        .find("image-a.png")
+        .expect("name-ordered Gallery should contain image-a.png");
+    let second = rendered
+        .find("image-b.png")
+        .expect("name-ordered Gallery should contain image-b.png");
+    assert!(
+        first < second,
+        "Gallery files should use name order:\n{rendered}"
+    );
+    assert!(
+        rendered.contains(r#"<div class="gallery-box" id="gallery-box-1">"#),
+        "Gallery must expose the frozen Wikidot wrapper:\n{rendered}",
+    );
+    assert!(
+        rendered.contains(r#"class="gallery-image-size-thumbnail""#),
+        "Gallery must expose the frozen thumbnail class:\n{rendered}",
+    );
+    assert!(
+        rendered.contains(
+            "https://scp-wiki.wjfiles.com/local--files/fixture-gallery-current-page/image-a.png",
+        ),
+        "Gallery URLs must retain local site/page/file ownership:\n{rendered}",
+    );
+    assert!(!rendered.contains("notes.txt"), "{rendered}");
+    assert!(!rendered.contains("wj-gallery"), "{rendered}");
+
+    let explicit = RenderService::render_page_for_viewer(
+        runner.context(),
+        "[[gallery size=\"thumbnail\"]]\n: image-b.png\n: notes.txt\n[[/gallery]]"
+            .to_owned(),
+        &page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: page.page_category_id,
+            page_id,
+        },
+        Some(ADMIN_USER_ID),
+        UrlArguments::default(),
+    )
+    .await
+    .expect("explicit current-page Gallery files should render")
+    .html_output
+    .body;
+    assert_eq!(
+        explicit.matches("gallery-item thumbnail").count(),
+        1,
+        "explicit Gallery selection should retain authored order and skip non-images:\n{explicit}",
+    );
+    assert!(explicit.contains("image-b.png"), "{explicit}");
+    assert!(!explicit.contains("image-a.png"), "{explicit}");
+    assert!(!explicit.contains("notes.txt"), "{explicit}");
+
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        "Private Gallery current page fixture",
+        SOURCE,
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    let private_page_id =
+        listpages_test_page_id(&runner, site_id, PRIVATE_PAGE_SLUG).await;
+    let private_page = PageTable::find_by_id(private_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("private Gallery page lookup should succeed")
+        .expect("private Gallery page should exist");
+    create_file_fixture_with_mime(
+        &runner,
+        site_id,
+        private_page_id,
+        "private-gallery-image.png",
+        "image/png",
+    )
+    .await;
+    let private_page_info = PageInfo {
+        page: Cow::Borrowed(PRIVATE_PAGE_SLUG),
+        category: Some(Cow::Borrowed(PRIVATE_CATEGORY)),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Private Gallery current page fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let anonymous = RenderService::render_page_for_viewer(
+        runner.context(),
+        SOURCE.to_owned(),
+        &private_page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: private_page.page_category_id,
+            page_id: private_page_id,
+        },
+        None,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("private Gallery should fail closed for an anonymous renderer")
+    .html_output
+    .body;
+    assert!(anonymous.contains("Error selecting page."), "{anonymous}");
+    assert!(
+        !anonymous.contains("private-gallery-image.png"),
+        "{anonymous}"
+    );
+    assert!(!anonymous.contains("wjfiles"), "{anonymous}");
+}
+
+#[tokio::test]
+async fn wikidot_gallery_explicit_entries_resolve_only_owned_visible_files() {
+    const TARGET_SLUG: &str = "fixture-gallery-explicit-target";
+    const FILE_NAME: &str = "gallery image.png";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Gallery explicit target",
+        "Gallery target page.",
+    )
+    .await;
+    let target_page_id = listpages_test_page_id(&runner, site.site_id, TARGET_SLUG).await;
+    create_file_fixture_with_mime(
+        &runner,
+        site.site_id,
+        target_page_id,
+        FILE_NAME,
+        "image/png",
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+
+    let source = concat!(
+        "[[gallery size=\"thumbnail\"]]\n",
+        ": https://scp-wiki.wikidot.com/local--files/fixture-gallery-explicit-target/gallery%20image.png\n",
+        ": https://example.invalid/local--files/fixture-gallery-explicit-target/gallery%20image.png\n",
+        ": https://scp-jp.wikidot.com/local--files/fixture-gallery-explicit-target/gallery%20image.png\n",
+        "[[/gallery]]",
+    );
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Gallery explicit entries",
+            "wikitext": source,
+        }),
+    );
+
+    assert_eq!(
+        preview.body.matches("gallery-item thumbnail").count(),
+        1,
+        "only the exact site-owned file may become a Gallery row:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains(
+            "https://scp-wiki.wjfiles.com/local--files/fixture-gallery-explicit-target/gallery%20image.png",
+        ),
+        "the resolved entry must use the local owned-file route:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("example.invalid"),
+        "{}",
+        preview.body
+    );
+    assert!(!preview.body.contains("scp-jp"), "{}", preview.body);
+    assert!(!preview.body.contains("wj-gallery"), "{}", preview.body);
+}
+
+#[tokio::test]
+async fn wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts() {
+    const FILES_SLUG: &str = "fixture-files-module-empty";
+    const PRIVATE_FILES_SLUG: &str = "fixture-files-private:module-empty";
+    const PRIVATE_FILES_CATEGORY: &str = "fixture-files-private";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Files preview fixture",
+            "wikitext": "FILES_BEFORE\n[[module Files]]\nFILES_AFTER",
+        }),
+    );
+    assert!(
+        preview.body.contains(r#"<div id="files-">"#),
+        "Files PagePreview must retain the evidenced empty-id state:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("No files attached to this page."),
+        "{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("Manage attachments"),
+        "{}",
+        preview.body,
+    );
+    assert!(!preview.body.contains("No such module"), "{}", preview.body);
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        FILES_SLUG,
+        "Files module empty fixture",
+        "FILES_BEFORE\n[[module Files]]\nFILES_AFTER",
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site.site_id, FILES_SLUG).await;
+    let saved =
+        load_listpages_test_compiled_html(&runner, site.site_id, FILES_SLUG).await;
+    assert!(
+        saved.contains(&format!(r#"<div id="files-{page_id}">"#)),
+        "saved Files output must bind its page identity:\n{saved}",
+    );
+    assert!(
+        saved.contains(&format!("p.page_id={page_id};")),
+        "saved Files refresh contract must bind the same page identity:\n{saved}",
+    );
+    assert!(saved.contains("No files attached to this page."), "{saved}");
+    assert!(saved.contains("Manage attachments"), "{saved}");
+    assert!(!saved.contains("No such module"), "{saved}");
+
+    make_listpages_test_category_admin_only(
+        &runner,
+        site.site_id,
+        PRIVATE_FILES_CATEGORY,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        PRIVATE_FILES_SLUG,
+        "Private Files module fixture",
+        "[[module Files]]",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site.site_id,
+        PRIVATE_FILES_SLUG,
+        PRIVATE_FILES_CATEGORY,
+    )
+    .await;
+    let private_page_id =
+        listpages_test_page_id(&runner, site.site_id, PRIVATE_FILES_SLUG).await;
+    let private_page = PageTable::find_by_id(private_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("private Files page lookup should succeed")
+        .expect("private Files page should exist");
+    create_file_fixture_with_mime(
+        &runner,
+        site.site_id,
+        private_page_id,
+        "private-file-name.png",
+        "image/png",
+    )
+    .await;
+    let private_page_info = PageInfo {
+        page: Cow::Borrowed(PRIVATE_FILES_SLUG),
+        category: Some(Cow::Borrowed(PRIVATE_FILES_CATEGORY)),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Private Files module fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let denied = RenderService::render_page_for_viewer(
+        runner.context(),
+        "[[module Files]]".to_owned(),
+        &private_page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id: site.site_id,
+            category_id: private_page.page_category_id,
+            page_id: private_page_id,
+        },
+        None,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("a denied Files module should fail closed")
+    .html_output
+    .body;
+    assert!(denied.contains(r#"<div id="files-">"#), "{denied}");
+    assert!(!denied.contains(&private_page_id.to_string()), "{denied}");
+    assert!(!denied.contains("private-file-name.png"), "{denied}");
+
+    let flickr = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Flickr preview fixture",
+            "wikitext": "FLICKR_BEFORE\n[[module FlickrGallery]]\nFLICKR_AFTER",
+        }),
+    );
+    for expected in [
+        r#"<div class="flickr-gallery-box makeHoverTitles">"#,
+        "Sorry, no photos.",
+        "moduleName ::: edit/PagePreviewModule",
+        "mode ::: page",
+        "source ::: [[module FlickrGallery]]",
+        "title ::: Flickr preview fixture",
+    ] {
+        assert!(
+            flickr.body.contains(expected),
+            "Flickr PagePreview should contain {expected:?}:\n{}",
+            flickr.body,
+        );
+    }
+    assert!(!flickr.body.contains("No such module"), "{}", flickr.body);
+}
+
+#[tokio::test]
 async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() {
     const SLUG: &str = "legacy-action-render-fixture";
     const SOURCE: &str = concat!(
@@ -17954,6 +18423,16 @@ async fn create_empty_file_fixture(
     page_id: i64,
     name: &str,
 ) -> i64 {
+    create_file_fixture_with_mime(runner, site_id, page_id, name, EMPTY_BLOB_MIME).await
+}
+
+async fn create_file_fixture_with_mime(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    name: &str,
+    mime: &str,
+) -> i64 {
     let file = file::ActiveModel {
         name: Set(name.to_owned()),
         site_id: Set(site_id),
@@ -17973,7 +18452,7 @@ async fn create_empty_file_fixture(
             name: name.to_owned(),
             s3_hash: EMPTY_BLOB_HASH,
             size: 0,
-            mime: EMPTY_BLOB_MIME.to_owned(),
+            mime: mime.to_owned(),
             blob_created: false,
             revision_comments: "create file fixture".to_owned(),
         },

@@ -25,6 +25,7 @@ mod child_pages;
 mod compat;
 mod corpus;
 mod diagnostics;
+mod file_modules;
 mod forum_mini;
 mod forum_modules;
 mod forum_visibility;

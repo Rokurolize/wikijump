@@ -1904,6 +1904,7 @@ impl RenderService {
             page_info,
             settings,
             current_site_id,
+            current_page_id,
             viewer_user_id,
             text_block_page_id,
             allow_wikidot_styleframe,
@@ -1935,6 +1936,7 @@ impl RenderService {
             page_info,
             settings,
             Some(current_site_id),
+            None,
             viewer_user_id,
             None,
             true,
@@ -1952,6 +1954,7 @@ impl RenderService {
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
+        current_page_id: Option<i64>,
         viewer_user_id: Option<i64>,
         text_block_page_id: Option<i64>,
         allow_wikidot_styleframe: bool,
@@ -2118,6 +2121,22 @@ impl RenderService {
             if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
                 return Err(Error::new(
                     "failed to resolve typed Wikidot embedvideo requirements",
+                    ErrorType::Render,
+                )
+                .into());
+            }
+            if !Self::resolve_wikidot_gallery_requirements(
+                ctx,
+                &mut html_output,
+                current_site_id,
+                current_page_id,
+                viewer_user_id,
+                current_site.as_ref(),
+            )
+            .await?
+            {
+                return Err(Error::new(
+                    "failed to resolve typed Wikidot gallery requirements",
                     ErrorType::Render,
                 )
                 .into());
@@ -2432,6 +2451,22 @@ impl RenderService {
         if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
             return Err(Error::new(
                 "failed to resolve typed Wikidot embedvideo requirements",
+                ErrorType::Render,
+            )
+            .into());
+        }
+        if !Self::resolve_wikidot_gallery_requirements(
+            ctx,
+            &mut html_output,
+            current_site_id,
+            current_page_id,
+            viewer_user_id,
+            current_site.as_ref(),
+        )
+        .await?
+        {
+            return Err(Error::new(
+                "failed to resolve typed Wikidot gallery requirements",
                 ErrorType::Render,
             )
             .into());
