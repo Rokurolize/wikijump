@@ -10456,6 +10456,157 @@ async fn anonymous_page_and_site_utility_modules_match_frozen_safe_states() {
 }
 
 #[tokio::test]
+async fn authenticated_site_utility_preview_denies_only_non_administrators() {
+    const MANAGE_SITE_SOURCE: &str = "[[module ManageSite]]";
+    const PETITION_ADMIN_SOURCE: &str = "[[module PetitionAdmin]]";
+    const MANAGE_SITE_ANONYMOUS_HTML: &str = concat!(
+        r#"<div class="row-fluid">"#,
+        "\n\t",
+        r#"<div class="span3 offset1">"#,
+        "\n\t\t",
+        r#"<div class="homer">"#,
+        "\n\t\t",
+        r#"<img src="/common--images/404_homer.png">"#,
+        "\n\t\t</div>\n\t</div>\n\t",
+        r#"<div class="span7">"#,
+        "\n\t\t<h1>Doh!</h1>\n",
+        "\t\t<h3>You're not signed in or you are not an administrator of this Wiki.</h3>\n",
+        "\t\t\t\t",
+        r#"<div class="form-actions">"#,
+        "\n\t\t\t",
+        r#"<a href="javascript:;" class="btn btn-primary btn-large" onclick="WIKIDOT.page.listeners.loginClick(event)">Sign in</a>"#,
+        "\n\t\t</div>\n\t\t\t</div>\n</div>",
+    );
+    const MANAGE_SITE_NON_ADMIN_HTML: &str = concat!(
+        r#"<div class="row-fluid">"#,
+        "\n\t",
+        r#"<div class="span3 offset1">"#,
+        "\n\t\t",
+        r#"<div class="homer">"#,
+        "\n\t\t",
+        r#"<img src="/common--images/404_homer.png">"#,
+        "\n\t\t</div>\n\t</div>\n\t",
+        r#"<div class="span7">"#,
+        "\n\t\t<h1>Doh!</h1>\n",
+        "\t\t<h3>You're not signed in or you are not an administrator of this Wiki.</h3>\n",
+        "\t\t\t</div>\n</div>",
+    );
+    const PETITION_ADMIN_DENIAL_HTML: &str = r#"<div class="error-block"><div class="title">Permission error</div>This tool is for use by the administrators of this site</div>"#;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous_manage_site = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ManageSite anonymous actor boundary",
+            "wikitext": MANAGE_SITE_SOURCE,
+        }),
+    );
+    let anonymous_petition_admin = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "PetitionAdmin anonymous actor boundary",
+            "wikitext": PETITION_ADMIN_SOURCE,
+        }),
+    );
+    assert_eq!(
+        anonymous_manage_site.body.trim(),
+        MANAGE_SITE_ANONYMOUS_HTML,
+        "anonymous ManageSite must retain its login-capable live DOM",
+    );
+    assert_eq!(
+        anonymous_petition_admin.body.trim(),
+        PETITION_ADMIN_DENIAL_HTML,
+        "anonymous PetitionAdmin must retain its existing permission error",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let non_admin_manage_site = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ManageSite authenticated non-admin boundary",
+            "wikitext": MANAGE_SITE_SOURCE,
+        }),
+    );
+    let non_admin_petition_admin = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "PetitionAdmin authenticated non-admin boundary",
+            "wikitext": PETITION_ADMIN_SOURCE,
+        }),
+    );
+    assert_eq!(
+        non_admin_manage_site.body.trim(),
+        MANAGE_SITE_NON_ADMIN_HTML,
+        "an authenticated non-admin must receive the live ManageSite denial without a sign-in action",
+    );
+    assert_eq!(
+        non_admin_petition_admin.body.trim(),
+        PETITION_ADMIN_DENIAL_HTML,
+        "an authenticated non-admin must receive the live PetitionAdmin denial",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let admin_manage_site = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ManageSite administrator residual",
+            "wikitext": MANAGE_SITE_SOURCE,
+        }),
+    );
+    let admin_petition_admin = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "PetitionAdmin administrator residual",
+            "wikitext": PETITION_ADMIN_SOURCE,
+        }),
+    );
+    assert!(
+        admin_manage_site.body.contains("No such module, please")
+            && admin_manage_site.body.contains("<em>ManageSite</em>")
+            && !admin_manage_site.body.contains(MANAGE_SITE_NON_ADMIN_HTML),
+        "administrator ManageSite must remain fail-closed without being misclassified as a non-admin:\n{}",
+        admin_manage_site.body,
+    );
+    assert!(
+        admin_petition_admin.body.contains("No such module, please")
+            && admin_petition_admin.body.contains("<em>PetitionAdmin</em>")
+            && !admin_petition_admin
+                .body
+                .contains(PETITION_ADMIN_DENIAL_HTML),
+        "administrator PetitionAdmin must remain fail-closed without being misclassified as a non-admin:\n{}",
+        admin_petition_admin.body,
+    );
+}
+
+#[tokio::test]
 async fn typed_sitegrid_empty_body_matches_frozen_preview_and_saved_state() {
     const EMPTY_HTML: &str = r#"<div class="error-block">No sites provided.</div>"#;
     const SAVED_SOURCE: &str = "[[module SiteGrid]]\n \t\n[[/module]]";
