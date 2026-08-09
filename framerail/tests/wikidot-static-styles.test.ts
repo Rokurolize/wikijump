@@ -108,17 +108,16 @@ test("the modern page-tag layout cannot override imported Wikidot theme CSS", as
     from: "page.scss",
     parser: scss
   }).root
-  const owners: Array<{ properties: string[]; selector: string }> = []
+  const owners: { properties: string[]; selector: string }[] = []
   root.walkRules((rule) => {
     for (const selector of rule.selectors.filter((candidate) =>
       candidate.includes(".page-tags")
     )) {
-      const properties = rule.nodes
-        .filter(
-          (node) =>
-            node.type === "decl" && ["display", "justify-content"].includes(node.prop)
-        )
-        .map((node) => node.prop)
+      const properties = rule.nodes.flatMap((node) =>
+        node.type === "decl" && ["display", "justify-content"].includes(node.prop)
+          ? [node.prop]
+          : []
+      )
       if (properties.length > 0) owners.push({ selector, properties })
     }
   })
