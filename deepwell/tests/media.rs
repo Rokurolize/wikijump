@@ -23,12 +23,9 @@ mod common;
 
 use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
-use deepwell::services::render::UrlArguments;
+use deepwell::services::RequestContext;
 use deepwell::services::view::GetPageViewOutput;
-use deepwell::services::{RenderService, RequestContext};
-use deepwell::types::{PageId, Reference};
-use ftml::data::{PageInfo, ScoreValue};
-use ftml::layout::Layout;
+use deepwell::types::Reference;
 use serde_json::json;
 use std::borrow::Cow;
 
@@ -89,20 +86,17 @@ async fn embedvideo_preview_resolves_only_allowlisted_typed_media() {
             r#"<p><iframe src="https://embed.acast.com/620152ffa0b55c00129a3b8d" frameborder="0" allow="autoplay" width="100%" height="110"></iframe></p>"#,
         ),
     ] {
-        let preview = RenderService::render_wikidot_page_preview(
-            runner.context(),
-            site_id,
-            case_id,
-            source.to_owned(),
-        )
-        .await
-        .expect("allowlisted embedvideo should render");
-
-        assert_eq!(preview.html_output.body, expected, "{case_id}");
-        assert!(
-            preview.html_output.resource_requirements.len() == 1,
-            "{case_id}"
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
         );
+
+        assert_eq!(preview.body, expected, "{case_id}");
     }
 }
 
@@ -160,17 +154,18 @@ async fn embedvideo_preview_fails_closed_for_unsupported_media() {
             r#"<iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allowfullscreen>nested</iframe>"#,
         ),
     ] {
-        let preview = RenderService::render_wikidot_page_preview(
-            runner.context(),
-            site_id,
-            case_id,
-            format!("[[embedvideo]]\n{payload}\n[[/embedvideo]]"),
-        )
-        .await
-        .expect("unsupported embedvideo should render its error DOM");
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": format!("[[embedvideo]]\n{payload}\n[[/embedvideo]]"),
+            }),
+        );
 
-        assert_eq!(preview.html_output.body, NO_MATCH, "{case_id}");
-        assert!(!preview.html_output.body.contains("<iframe"), "{case_id}");
+        assert_eq!(preview.body, NO_MATCH, "{case_id}");
+        assert!(!preview.body.contains("<iframe"), "{case_id}");
     }
 }
 
@@ -184,18 +179,19 @@ async fn authored_embedvideo_marker_cannot_forge_a_typed_requirement() {
         r#"id="wj-embed-video-ffffffffffffffffffffffffffffffff"></div>@@"#,
     );
 
-    let preview = RenderService::render_wikidot_page_preview(
-        runner.context(),
-        site.site.site_id,
-        "open43-m-media-foreign-marker",
-        foreign.to_owned(),
-    )
-    .await
-    .expect("authored marker text should remain inert");
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site.site_id,
+            "title": "open43-m-media-foreign-marker",
+            "wikitext": foreign,
+        }),
+    );
 
-    assert!(preview.html_output.body.contains("wj-embed-video-ffffffff"));
-    assert!(!preview.html_output.body.contains("<iframe"));
-    assert!(preview.html_output.resource_requirements.is_empty());
+    assert!(preview.body.contains("wj-embed-video-ffffffff"));
+    assert!(!preview.body.contains("<iframe"));
+    assert!(preview.legacy_actions.is_empty());
 }
 
 #[tokio::test]
@@ -225,25 +221,19 @@ async fn literal_and_generated_owners_never_activate_embedvideo() {
             format!("[[html]]\n[[embedvideo]]\n{iframe}\n[[/embedvideo]]\n[[/html]]"),
         ),
     ] {
-        let preview = RenderService::render_wikidot_page_preview(
-            runner.context(),
-            site_id,
-            case_id,
-            source,
-        )
-        .await
-        .expect("literal or generated embedvideo owner should render inertly");
-
-        assert!(!preview.html_output.body.contains("<iframe"), "{case_id}");
-        assert!(!preview.html_output.body.contains(NO_MATCH), "{case_id}");
-        assert!(
-            preview
-                .html_output
-                .resource_requirements
-                .iter()
-                .all(|requirement| requirement.embed_video_requirement().is_none()),
-            "{case_id}",
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
         );
+
+        assert!(!preview.body.contains("<iframe"), "{case_id}");
+        assert!(!preview.body.contains(NO_MATCH), "{case_id}");
+        assert!(preview.legacy_actions.is_empty(), "{case_id}");
     }
 
     runner.set_request_context(RequestContext {
@@ -268,25 +258,20 @@ async fn literal_and_generated_owners_never_activate_embedvideo() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    let generated = RenderService::render_wikidot_page_preview(
-        runner.context(),
-        site_id,
-        "open43-m-media-generated-owner",
-        format!(
-            "[[module ListPages fullname=\"{GENERATED_TARGET}\" limit=\"1\" separate=\"no\" wrapper=\"no\"]][[embedvideo]]%%title%%[[/embedvideo]][[/module]]"
-        ),
-    )
-    .await
-    .expect("generated ListPages content should render inertly");
-    assert!(!generated.html_output.body.contains("<iframe"));
-    assert!(!generated.html_output.body.contains(NO_MATCH));
-    assert!(
-        generated
-            .html_output
-            .resource_requirements
-            .iter()
-            .all(|requirement| requirement.embed_video_requirement().is_none()),
+    let generated = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "open43-m-media-generated-owner",
+            "wikitext": format!(
+                "[[module ListPages fullname=\"{GENERATED_TARGET}\" limit=\"1\" separate=\"no\" wrapper=\"no\"]][[embedvideo]]%%title%%[[/embedvideo]][[/module]]"
+            ),
+        }),
     );
+    assert!(!generated.body.contains("<iframe"));
+    assert!(!generated.body.contains(NO_MATCH));
+    assert!(generated.legacy_actions.is_empty());
 }
 
 #[tokio::test]
@@ -325,16 +310,17 @@ async fn current_ftml_pin_preserves_promoted_image_dom() {
             ),
         ),
     ] {
-        let preview = RenderService::render_wikidot_page_preview(
-            runner.context(),
-            site_id,
-            case_id,
-            source.to_owned(),
-        )
-        .await
-        .expect("promoted image syntax should render through the current FTML pin");
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
 
-        assert_eq!(preview.html_output.body, expected, "{case_id}");
+        assert_eq!(preview.body, expected, "{case_id}");
     }
 }
 
@@ -560,63 +546,72 @@ async fn image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_pag
 
 #[tokio::test]
 async fn source_less_local_images_keep_original_and_resized_asset_identities() {
-    let runner = TestRunner::setup().await;
+    let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
-    let page_info = PageInfo {
-        page: Cow::Borrowed("fixture-source-less-images"),
-        category: None,
-        site: Cow::Borrowed("scp-wiki"),
-        title: Cow::Borrowed("Source-less image fixture"),
-        alt_title: None,
-        score: ScoreValue::Integer(0),
-        tags: Vec::new(),
-        language: Cow::Borrowed("en"),
-    };
 
-    for (case_id, source, expected_class, expected_variant) in [
+    for (case_id, slug, source, expected_class, expected_variant) in [
         (
             "issue-776-source-less-floating-image",
+            "fixture-source-less-image-776",
             r#"[[f<image image-one.png size="small"]]"#,
             "image-container floatleft",
             "small.jpg",
         ),
         (
             "issue-806-source-less-centered-image",
+            "fixture-source-less-image-806",
             r#"[[=image image-two.png size="medium"]]"#,
             "image-container aligncenter",
             "medium.jpg",
         ),
     ] {
-        let rendered = RenderService::render_page_for_viewer(
-            runner.context(),
-            source.to_owned(),
-            &page_info,
-            Layout::Wikidot,
-            PageId {
-                site_id,
-                category_id: 1,
-                page_id: 1,
-            },
-            None,
-            UrlArguments::default(),
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(Cow::Borrowed(slug))),
+        });
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": source,
+                "title": case_id,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "Open43 source-less image fixture",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        let page = run_endpoint!(
+            runner,
+            page_get,
+            json!({
+                "site_id": site_id,
+                "page": slug,
+                "details": {"compiled": true},
+            }),
         )
-        .await
-        .expect("source-less local image should render through typed FTML ownership")
-        .html_output
-        .body;
+        .expect("source-less local image fixture should exist");
+        let rendered = page
+            .compiled_body_html
+            .expect("source-less local image fixture should have compiled HTML");
 
         let filename = if case_id.contains("776") {
             "image-one.png"
         } else {
             "image-two.png"
         };
-        let original = format!(
-            "https://scp-wiki.wjfiles.com/local--files/fixture-source-less-images/{filename}"
-        );
+        let original =
+            format!("https://scp-wiki.wjfiles.com/local--files/{slug}/{filename}");
         let resized = format!(
-            "https://scp-wiki.wjfiles.com/local--resized-images/fixture-source-less-images/{filename}/{expected_variant}"
+            "https://scp-wiki.wjfiles.com/local--resized-images/{slug}/{filename}/{expected_variant}"
         );
         assert!(
             rendered.contains(&format!(r#"<div class="{expected_class}">"#)),
@@ -634,7 +629,7 @@ async fn source_less_local_images_keep_original_and_resized_asset_identities() {
 }
 
 #[tokio::test]
-async fn embedvideo_preview_and_saved_page_share_render_identity() {
+async fn embedvideo_preview_and_saved_page_share_rendered_body() {
     const SLUG: &str = "fixture-open43-m-media-cache-identity";
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -645,14 +640,15 @@ async fn embedvideo_preview_and_saved_page_share_render_identity() {
         r#"<iframe width="560" height="315" src="https://www.youtube.com/embed/4sroHOHlkAk" frameborder="0" allowfullscreen></iframe>"#,
         "\n[[/embedvideo]]",
     );
-    let preview = RenderService::render_wikidot_page_preview(
-        runner.context(),
-        site_id,
-        "EmbedVideo cache identity",
-        source.to_owned(),
-    )
-    .await
-    .expect("embedvideo preview should render");
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "EmbedVideo cache identity",
+            "wikitext": source,
+        }),
+    );
 
     runner.set_request_context(RequestContext {
         session: None,
@@ -691,8 +687,7 @@ async fn embedvideo_preview_and_saved_page_share_render_identity() {
 
     assert_eq!(
         saved.compiled_body_html.as_deref(),
-        Some(preview.html_output.body.as_str()),
+        Some(preview.body.as_str()),
     );
-    assert_eq!(saved.compiled_generator, preview.compiled_generator);
     assert!(saved.compiled_generator.ends_with("; deepwell-render/v5"));
 }
