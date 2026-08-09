@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import {
   validateWikidotImplementationLedger,
 } from "./lib/wikidot-implementation-ledger.mjs";
+import { escapeMarkdownTableCell } from "./lib/markdown.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, "..");
@@ -1520,7 +1521,7 @@ const coverage = {
 const catalogRows = features
   .map(
     (feature) =>
-      `| \`${feature.id}\` | ${feature.title.replace(/\|/g, "\\|")} | \`${feature.documentation_status}\` | [specification](${specificationPath(feature)}) |`,
+      `| \`${feature.id}\` | ${escapeMarkdownTableCell(feature.title)} | \`${feature.documentation_status}\` | [specification](${specificationPath(feature)}) |`,
   )
   .join("\n");
 const categorySummary = Object.entries(catalog.categories)
