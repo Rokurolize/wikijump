@@ -23,7 +23,7 @@ use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 
 use super::compat::CompatHtmlFragments;
 use super::forum_comments::{self, ForumCommentsLoad, ForumCommentsOrder};
-use super::forum_front::{self, FrontForumLoad};
+use super::forum_front::{self, FrontForumArgumentsParse, FrontForumLoad};
 use super::forum_visibility::ForumPageVisibility;
 use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{WikidotModuleArgumentValueKind, wikidot_module_arguments};
@@ -940,18 +940,31 @@ impl RenderService {
                 let Some(site_id) = current_site_id else {
                     continue;
                 };
-                match forum_front::load(ctx, site_id, viewer_user_id, arguments).await? {
-                    FrontForumLoad::Items(items) => {
-                        Some(forum_front::render(&items, arguments.category_id))
+                match arguments {
+                    FrontForumArgumentsParse::Arguments(arguments) => {
+                        match forum_front::load(ctx, site_id, viewer_user_id, &arguments)
+                            .await?
+                        {
+                            FrontForumLoad::Items(items) => {
+                                Some(forum_front::render(&items))
+                            }
+                            FrontForumLoad::MissingCategory => Some(
+                                concat!(
+                                    "<div class=\"error-block\">",
+                                    "Requested forum category does not exist.</div>",
+                                )
+                                .to_owned(),
+                            ),
+                            FrontForumLoad::ScanLimit => None,
+                        }
                     }
-                    FrontForumLoad::MissingCategory => Some(
+                    FrontForumArgumentsParse::CategoryError => Some(
                         concat!(
                             "<div class=\"error-block\">",
-                            "Requested forum category does not exist.</div>",
+                            "Problem parsing attribute \"category\".</div>",
                         )
                         .to_owned(),
                     ),
-                    FrontForumLoad::ScanLimit => None,
                 }
             } else if kind == ForumModuleKind::RecentThreads {
                 Some(RECENT_THREADS_PLACEHOLDER.to_owned())

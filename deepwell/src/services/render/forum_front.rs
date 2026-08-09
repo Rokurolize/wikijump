@@ -19,10 +19,17 @@ const DEFAULT_LIMIT: usize = 20;
 const MAX_LIMIT: usize = 100;
 const CANDIDATE_LIMIT: usize = 1_001;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 pub(super) struct FrontForumArguments {
-    pub(super) category_id: i64,
+    category_ids: Vec<i64>,
     limit: usize,
+    offset: usize,
+}
+
+#[derive(Debug)]
+pub(super) enum FrontForumArgumentsParse {
+    Arguments(FrontForumArguments),
+    CategoryError,
 }
 
 #[derive(Debug)]
@@ -35,6 +42,7 @@ pub(super) enum FrontForumLoad {
 #[derive(Debug, FromQueryResult)]
 struct FrontForumCandidate {
     forum_thread_id: i64,
+    forum_category_id: i64,
     title: String,
     user_id: i64,
     created_at: time::OffsetDateTime,
@@ -51,6 +59,7 @@ struct FrontForumCandidate {
 #[derive(Debug)]
 pub(super) struct FrontForumItem {
     forum_thread_id: i64,
+    forum_category_id: i64,
     title: String,
     user: super::forum_modules::ForumUserDisplay,
     created_at: time::OffsetDateTime,
@@ -60,10 +69,11 @@ pub(super) struct FrontForumItem {
     category_name: String,
 }
 
-pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArguments> {
+pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
     let arguments = wikidot_module_arguments(head)?;
-    let mut category_id = None;
+    let mut category_ids = None;
     let mut limit = DEFAULT_LIMIT;
+    let mut offset = 0;
     for argument in arguments {
         if argument.op != "="
             || argument.value_kind != WikidotModuleArgumentValueKind::DoubleQuoted
@@ -71,13 +81,21 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArguments> {
             return None;
         }
         match argument.key {
-            "category" if category_id.is_none() => {
-                category_id = argument
-                    .value
-                    .parse::<i64>()
-                    .ok()
-                    .filter(|category_id| *category_id > 0);
-                category_id?;
+            "category" if category_ids.is_none() => {
+                let mut parsed = Vec::new();
+                for value in argument.value.split(';') {
+                    let Some(category_id) = value
+                        .parse::<i64>()
+                        .ok()
+                        .filter(|category_id| *category_id > 0)
+                    else {
+                        return Some(FrontForumArgumentsParse::CategoryError);
+                    };
+                    if !parsed.contains(&category_id) {
+                        parsed.push(category_id);
+                    }
+                }
+                category_ids = Some(parsed);
             }
             "limit" => {
                 limit = argument
@@ -86,50 +104,68 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArguments> {
                     .ok()
                     .filter(|limit| (1..=MAX_LIMIT).contains(limit))?;
             }
+            "offset" => {
+                offset = argument.value.parse::<usize>().unwrap_or_default();
+            }
             _ => return None,
         }
     }
-    Some(FrontForumArguments {
-        category_id: category_id?,
+    Some(FrontForumArgumentsParse::Arguments(FrontForumArguments {
+        category_ids: category_ids?,
         limit,
-    })
+        offset,
+    }))
 }
 
 pub(super) async fn load(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     viewer_user_id: Option<i64>,
-    arguments: FrontForumArguments,
+    arguments: &FrontForumArguments,
 ) -> Result<FrontForumLoad> {
     let make_error = || Error::new("failed to load FrontForum", ErrorType::Render);
     let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
     if !visibility.site_is_viewable(site_id).await? {
         return Ok(FrontForumLoad::ScanLimit);
     }
-    let category_exists = ForumService::get_category_optional(
-        ctx,
-        GetForumCategory {
-            site_id,
-            forum_category_id: arguments.category_id,
-            include_deleted: false,
-        },
-    )
-    .await
-    .or_raise(make_error)?
-    .is_some();
-    if !category_exists {
+    let mut category_ids = Vec::with_capacity(arguments.category_ids.len());
+    for &category_id in &arguments.category_ids {
+        let category_exists = ForumService::get_category_optional(
+            ctx,
+            GetForumCategory {
+                site_id,
+                forum_category_id: category_id,
+                include_deleted: false,
+            },
+        )
+        .await
+        .or_raise(make_error)?
+        .is_some();
+        if category_exists {
+            category_ids.push(category_id);
+        }
+    }
+    if category_ids.is_empty() {
         return Ok(FrontForumLoad::MissingCategory);
     }
-    let Some(visible_thread_ids) = visibility
-        .visible_thread_ids(site_id, Some(arguments.category_id), None, true)
-        .await?
-    else {
-        return Ok(FrontForumLoad::ScanLimit);
-    };
+    let mut visible_thread_ids = Vec::new();
+    for &category_id in &category_ids {
+        let Some(category_thread_ids) = visibility
+            .visible_thread_ids(site_id, Some(category_id), None, true)
+            .await?
+        else {
+            return Ok(FrontForumLoad::ScanLimit);
+        };
+        visible_thread_ids.extend(category_thread_ids);
+    }
     if visible_thread_ids.is_empty() {
         return Ok(FrontForumLoad::Items(Vec::new()));
     }
     let visible_thread_ids = visible_thread_ids
+        .into_iter()
+        .map(Value::from)
+        .collect::<Vec<_>>();
+    let category_ids = category_ids
         .into_iter()
         .map(Value::from)
         .collect::<Vec<_>>();
@@ -139,7 +175,7 @@ pub(super) async fn load(
             ctx.transaction().get_database_backend(),
             format!(
                 concat!(
-                    "SELECT t.forum_thread_id, t.title, ",
+                    "SELECT t.forum_thread_id, t.forum_category_id, t.title, ",
                     "root_post.user_id, root_post.created_at, counts.post_count, ",
                     "root_revision.compiled_html_hash, g.name AS group_name, ",
                     "c.name AS category_name, wu.name AS wikidot_user_name, ",
@@ -166,7 +202,7 @@ pub(super) async fn load(
                     " AND wu.is_deleted = FALSE ",
                     "LEFT JOIN \"user\" local_user ON local_user.user_id = root_post.user_id ",
                     " AND local_user.deleted_at IS NULL ",
-                    "WHERE t.site_id = $1 AND t.forum_category_id = $2 ",
+                    "WHERE t.site_id = $1 AND t.forum_category_id = ANY($2::BIGINT[]) ",
                     " AND t.forum_thread_id = ANY($3::BIGINT[]) ",
                     " AND t.deleted_at IS NULL AND (t.page_id IS NULL OR p.page_id IS NOT NULL) ",
                     "ORDER BY t.created_at DESC, t.forum_thread_id DESC ",
@@ -175,7 +211,7 @@ pub(super) async fn load(
             ),
             [
                 Value::from(site_id),
-                Value::from(arguments.category_id),
+                Value::Array(ArrayType::BigInt, Some(Box::new(category_ids))),
                 Value::Array(ArrayType::BigInt, Some(Box::new(visible_thread_ids))),
             ],
         ),
@@ -189,12 +225,17 @@ pub(super) async fn load(
     }
 
     let mut items = Vec::with_capacity(arguments.limit);
-    for candidate in candidates {
+    for candidate in candidates
+        .into_iter()
+        .skip(arguments.offset)
+        .take(arguments.limit)
+    {
         let compiled_html = TextService::get(ctx, &candidate.compiled_html_hash)
             .await
             .or_raise(make_error)?;
         items.push(FrontForumItem {
             forum_thread_id: candidate.forum_thread_id,
+            forum_category_id: candidate.forum_category_id,
             title: candidate.title,
             user: forum_user(
                 candidate.user_id,
@@ -209,14 +250,11 @@ pub(super) async fn load(
             group_name: candidate.group_name,
             category_name: candidate.category_name,
         });
-        if items.len() == arguments.limit {
-            break;
-        }
     }
     Ok(FrontForumLoad::Items(items))
 }
 
-pub(super) fn render(items: &[FrontForumItem], category_id: i64) -> String {
+pub(super) fn render(items: &[FrontForumItem]) -> String {
     let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut output = String::from("<div class=\"front-forum-box\">");
     for item in items {
@@ -238,7 +276,7 @@ pub(super) fn render(items: &[FrontForumItem], category_id: i64) -> String {
             item.forum_thread_id,
             escape_list_pages_html_attr(&thread_slug),
             item.post_count.saturating_sub(1),
-            category_id,
+            item.forum_category_id,
             escape_list_pages_html_attr(&category_slug),
             escape_list_pages_html_text(&item.group_name),
             escape_list_pages_html_text(&item.category_name),
