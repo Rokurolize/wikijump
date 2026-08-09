@@ -1727,6 +1727,123 @@ async fn rerender_uses_latest_navigation_page_revision() {
 }
 
 #[tokio::test]
+async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page() {
+    const SOURCE: &str = r###"[[a href="##"]]Issue 610 fragment closer[[/a]]"###;
+    const EXPECTED_ANCHOR: &str = r###"<a href="##">Issue 610 fragment closer</a>"###;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Issue 610 fragment preview",
+            "wikitext": SOURCE,
+        }),
+    );
+    assert!(
+        preview.body.contains(EXPECTED_ANCHOR),
+        "PagePreview must preserve the exact fragment-only href:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains(r#"href="/&#35;&#35;""#),
+        "PagePreview rewrote the fragment-only href as a path:\n{}",
+        preview.body,
+    );
+
+    let nav_side = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "nav:side",
+        }),
+    )
+    .expect("seeded nav:side should exist");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(nav_side.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": nav_side.page_id,
+            "last_revision_id": nav_side.revision_id,
+            "revision_comments": "replace sidebar with Issue 610 fragment fixture",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": SOURCE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("editing nav:side should create a revision");
+
+    let home = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "home",
+        }),
+    )
+    .expect("seeded home page should exist");
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": home.page_category_id,
+            "page_id": home.page_id,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "home",
+                "extra": "",
+            },
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let side_bar = match view {
+        GetPageViewOutput::Found {
+            compiled_side_bar_html,
+            ..
+        } => compiled_side_bar_html.expect("side bar should be compiled"),
+        other => panic!("expected found page view, got {other:?}"),
+    };
+    assert!(
+        side_bar.contains(EXPECTED_ANCHOR),
+        "saved navigation rerender must preserve the exact fragment-only href:\n{side_bar}",
+    );
+    assert!(
+        !side_bar.contains("All wikis") && !side_bar.contains(r#"href="/&#35;&#35;""#),
+        "page_view reused stale navigation or rewrote the href:\n{side_bar}",
+    );
+}
+
+#[tokio::test]
 async fn article_view_cache_respects_anonymous_permission_revocation() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
