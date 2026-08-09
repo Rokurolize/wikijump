@@ -45,7 +45,8 @@ use deepwell::services::blob::{EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
 use deepwell::services::category::CategoryService;
 use deepwell::services::file_revision::CreateFirstFileRevision;
 use deepwell::services::forum::{
-    CreateForumCategory, CreateForumGroup, GetForumStructure,
+    CreateForumCategory, CreateForumGroup, DeleteForumCategory, DeleteForumGroup,
+    GetForumStructure,
 };
 use deepwell::services::forum_post::{
     CreateForumPost, UpdateForumPost, UpdateForumPostBody,
@@ -8148,7 +8149,7 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
                 parent_post_id,
                 user_id: SAMPLE_USER_ID,
                 title: format!("Page Comment {number:02}"),
-                wikitext: format!("Page comment {number:02} body <observable>"),
+                wikitext: "Shared page comment body <observable>".to_owned(),
                 comments: "create page comments read-model fixture".to_owned(),
                 from_wikidot: false,
             },
@@ -8175,10 +8176,54 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
             .expect("page discussion fixture should be linked");
     }
 
+    async fn create_discussion_page(
+        runner: &mut TestRunner,
+        site_id: i64,
+        forum_category_id: i64,
+        slug: &str,
+        title: &str,
+    ) -> (i64, i64) {
+        create_listpages_test_page(runner, site_id, slug, title, "[[module Comments]]")
+            .await;
+        let page_id = listpages_test_page_id(runner, site_id, slug).await;
+        let thread = ForumThreadService::create(
+            runner.context(),
+            CreateForumThread {
+                forum_category_id,
+                user_id: SAMPLE_USER_ID,
+                associated_page_id: Some(page_id),
+                title: format!("{title} Thread"),
+                description: String::new(),
+                sticky: false,
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("page discussion fixture thread should be created");
+        point_page_at_discussion(runner, page_id, thread.forum_thread_id).await;
+        (page_id, thread.forum_thread_id)
+    }
+
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") VALUES ($1, NOW() - INTERVAL '1 second', NOW(), FALSE, ",
+                "'Comments Imported User', 'comments-imported-user', 3, FALSE) ",
+                "ON CONFLICT (user_id) DO UPDATE SET is_deleted = FALSE, ",
+                "name = EXCLUDED.name, slug = EXCLUDED.slug, karma = EXCLUDED.karma",
+            ),
+            [Value::from(SAMPLE_USER_ID)],
+        ))
+        .await
+        .expect("page comments Wikidot user fixture should be inserted");
     let group = ForumService::create_group(
         runner.context(),
         CreateForumGroup {
@@ -8263,6 +8308,102 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
         200,
     )
     .await;
+
+    let (deep_page_id, deep_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-depth-overflow",
+        "Page Comments Depth Overflow",
+    )
+    .await;
+    let mut parent_post_id = create_comment(&runner, deep_thread_id, None, 300).await;
+    for number in 301..=429 {
+        parent_post_id =
+            create_comment(&runner, deep_thread_id, Some(parent_post_id), number).await;
+    }
+
+    let deleted_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Deleted Page Comments Category".to_owned(),
+            description: String::new(),
+            sort_index: Some(11),
+            max_nest_level: Some(2),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("deleted page comments category should be created");
+    let (deleted_category_page_id, _) = create_discussion_page(
+        &mut runner,
+        site_id,
+        deleted_category.forum_category_id,
+        "fixture-forum-comments-deleted-category",
+        "Deleted Category Page Comments",
+    )
+    .await;
+    ForumService::delete_category(
+        runner.context(),
+        DeleteForumCategory {
+            forum_category_id: deleted_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("page comments category fixture should be deleted");
+
+    let deleted_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Deleted Page Comments Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: Some(20_001),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("deleted page comments group should be created");
+    let deleted_group_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: deleted_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Deleted Group Page Comments Category".to_owned(),
+            description: String::new(),
+            sort_index: Some(10),
+            max_nest_level: Some(2),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("deleted-group page comments category should be created");
+    let (deleted_group_page_id, _) = create_discussion_page(
+        &mut runner,
+        site_id,
+        deleted_group_category.forum_category_id,
+        "fixture-forum-comments-deleted-group",
+        "Deleted Group Page Comments",
+    )
+    .await;
+    ForumService::delete_group(
+        runner.context(),
+        DeleteForumGroup {
+            forum_group_id: deleted_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("page comments group fixture should be deleted");
 
     const PRIVATE_CATEGORY: &str = "forum-comments-private";
     const PRIVATE_PAGE: &str = "fixture-forum-comments-private";
@@ -8375,10 +8516,38 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
             && forward.body.contains("Page Comment 09")
             && forward.body.contains("Page Comment 100")
             && forward.body.contains("Page Comment 101")
+            && forward
+                .body
+                .matches("Shared page comment body &lt;observable&gt;")
+                .count()
+                == 12
             && !forward.body.contains(r#">Page Comment 10</div>"#)
             && !forward.body.contains(r#">Page Comment 11</div>"#)
             && !forward.body.contains("Page Comment 200"),
         "{}",
+        forward.body,
+    );
+    for expected in [
+        format!(
+            "https://www.wikidot.com/avatar.php?userid={SAMPLE_USER_ID}&amp;amp;size=small&amp;amp;timestamp="
+        ),
+        format!(
+            "background-image:url(https://www.wikidot.com/userkarma.php?u={SAMPLE_USER_ID})"
+        ),
+    ] {
+        assert!(
+            forward.body.contains(&expected),
+            "Comments must use the sealed HTTPS Wikidot user resources ({expected}):\n{}",
+            forward.body,
+        );
+    }
+    assert!(
+        !forward.body.contains(&format!(
+            "http://www.wikidot.com/avatar.php?userid={SAMPLE_USER_ID}"
+        )) && !forward.body.contains(&format!(
+            "background-image:url(http://www.wikidot.com/userkarma.php?u={SAMPLE_USER_ID})"
+        )),
+        "Comments must not downgrade imported Wikidot user resources:\n{}",
         forward.body,
     );
     assert!(
@@ -8452,8 +8621,50 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
         reverse.js_include,
     );
 
+    let ordinary_thread = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadModule",
+            "parameters": {"t": public_thread.forum_thread_id.to_string()},
+        }),
+    );
+    assert_eq!(ordinary_thread.status, "ok");
+    assert!(
+        ordinary_thread.body.contains(&format!(
+            "http://www.wikidot.com/avatar.php?userid={SAMPLE_USER_ID}&amp;amp;size=small&amp;amp;timestamp="
+        )) && ordinary_thread.body.contains(&format!(
+            "background-image:url(http://www.wikidot.com/userkarma.php?u={SAMPLE_USER_ID})"
+        )) && !ordinary_thread.body.contains(&format!(
+            "https://www.wikidot.com/avatar.php?userid={SAMPLE_USER_ID}"
+        )),
+        "non-Comments forum surfaces must retain their sealed HTTP resource scheme:\n{}",
+        ordinary_thread.body,
+    );
+
+    let depth_overflow = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {"pageId": deep_page_id.to_string()},
+        }),
+    );
+    assert_eq!(depth_overflow.status, "not_ok");
+    assert!(depth_overflow.body.is_empty());
+    assert_eq!(depth_overflow.thread_id, None);
+    assert!(depth_overflow.js_include.is_empty());
+
     let mut hidden_results = Vec::new();
-    for page_id in [i64::MAX, private_page_id, foreign_page_id] {
+    for page_id in [
+        i64::MAX,
+        private_page_id,
+        foreign_page_id,
+        deleted_category_page_id,
+        deleted_group_page_id,
+    ] {
         let output = run_endpoint!(
             runner,
             wikidot_forum_module,
