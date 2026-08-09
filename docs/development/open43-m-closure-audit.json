@@ -69,24 +69,24 @@
       "M1042_RENDER_CACHE_IDENTITY",
       "M1043_RENDER_CACHE_IDENTITY"
     ],
-    "base_commit": "d78c08c5e56fbf85024ae101ac170cf9e242277c",
-    "base_tree": "941f5314f234a6ae3a44511fc770bd2e6a459051",
-    "source_commit": "5f521d201373faf0ad6ea7e5d23e45fded6f2887",
-    "source_tree": "bc4decd723c819fe9a654ce202f22f8c4a2ef4c6",
-    "previous_epoch": 3,
-    "final_epoch": 4,
+    "base_commit": "5a0b9a2eb0ee1b9f99df678b0071b1b966cd103f",
+    "base_tree": "a30a648aaf725cd5059f697c80e73c46960bb5ce",
+    "source_commit": "e94d7c72da7bbfaefb816cf9a8c94dcd2ac19294",
+    "source_tree": "e5f0ff88a395f83991a84b39b7040f1bceeea89d",
+    "previous_epoch": 4,
+    "final_epoch": 5,
     "bump_count": 1,
-    "public_boundary": "A public article_view computes a cache namespace from the same renderer epoch as compiled_generator and ignores a valid serialized page stored only under the v3 namespace.",
+    "public_boundary": "A public article_view computes a cache namespace from the same renderer epoch as compiled_generator and ignores a valid serialized page stored only under the v4 namespace.",
     "prior_epoch_bump": {
-      "base_commit": "e9f2634dc9fcca0d7f910c5d408df7b56869a6f9",
-      "base_tree": "78eeede1b23b1f1264924db7481e912b5e6becb3",
-      "source_commit": "716cefe5d7f75edd141821e127a28669e937779e",
-      "source_tree": "985d480eef4f6adad5cbbe07879fb95dba2aad97",
-      "previous_epoch": 2,
-      "final_epoch": 3,
+      "base_commit": "d78c08c5e56fbf85024ae101ac170cf9e242277c",
+      "base_tree": "941f5314f234a6ae3a44511fc770bd2e6a459051",
+      "source_commit": "5f521d201373faf0ad6ea7e5d23e45fded6f2887",
+      "source_tree": "bc4decd723c819fe9a654ce202f22f8c4a2ef4c6",
+      "previous_epoch": 3,
+      "final_epoch": 4,
       "bump_count": 1
     },
-    "integration_commit_reconciliation_required": false,
+    "integration_commit_reconciliation_required": true,
     "source_ready_is_not_pass": true
   },
   "github_issue_inputs": [
@@ -1082,7 +1082,7 @@
           "case_id": "M1039_RENDER_CACHE_IDENTITY",
           "acceptance": "Invalidate compiled output from before the Files renderer landed and rerender it under the final source-frozen renderer identity.",
           "classification": "source_ready",
-          "reason": "The final renderer epoch is v4, the anonymous article cache namespace derives from that same epoch, and the public article_view regression proves a stored v3 cache entry is ignored.",
+          "reason": "The final renderer epoch is v5, the anonymous article cache namespace derives from that same epoch, and the public article_view regression proves a stored v4 cache entry is ignored.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/render/file_modules.rs",
@@ -1145,7 +1145,7 @@
           "case_id": "M1042_RENDER_CACHE_IDENTITY",
           "acceptance": "Bind saved output to the final provider policy and renderer semantics so pre-policy compiled output is not reused.",
           "classification": "source_ready",
-          "reason": "Preview and saved output now assert deepwell-render/v4, while the shared article cache namespace and public regression reject an otherwise valid v3 artifact.",
+          "reason": "Preview and saved output now assert deepwell-render/v5, while the shared article cache namespace and public regression reject an otherwise valid v4 artifact.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/view/article_cache.rs",
@@ -1308,7 +1308,7 @@
           "case_id": "M1043_RENDER_CACHE_IDENTITY",
           "acceptance": "Invalidate compiled output from before Gallery resolution landed and bind the next read to the final renderer epoch and exact file revision.",
           "classification": "source_ready",
-          "reason": "Gallery is covered by the final v4 compiled generator, and the v4 article cache namespace plus public article_view regression prevents reuse of a v3 artifact even when its stored page identity remains otherwise valid.",
+          "reason": "Gallery is covered by the final v5 compiled generator, and the v5 article cache namespace plus public article_view regression prevents reuse of a v4 artifact even when its stored page identity remains otherwise valid.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/render/compat/wikidot_gallery.rs",
@@ -1488,13 +1488,20 @@
   ],
   "renderer_epoch_finalization": {
     "classification": "source_ready",
-    "current_epoch": 4,
+    "current_epoch": 5,
     "epoch_source": "deepwell/src/services/render/generator.rs",
     "owner": "root integration after all render-affecting lanes are source-frozen",
     "required_bump_count": 1,
     "completed_bump_count": 1,
     "lane_must_not_bump": true,
     "finalized_by": {
+      "source_commit": "e94d7c72da7bbfaefb816cf9a8c94dcd2ac19294",
+      "source_tree": "e5f0ff88a395f83991a84b39b7040f1bceeea89d",
+      "subject": "render: advance final Open43 cache identity",
+      "integration_commit_reconciliation_required": true,
+      "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
+    },
+    "prior_epoch_v4_finalization": {
       "integration_commit": "5f521d201373faf0ad6ea7e5d23e45fded6f2887",
       "integration_tree": "bc4decd723c819fe9a654ce202f22f8c4a2ef4c6",
       "subject": "render: freeze final Open43 cache identity",
@@ -1632,7 +1639,7 @@
         "subject": "render: freeze compiled artifact identity"
       }
     ],
-    "production_renderer_commits_after_v3_through_final_integration_head": [
+    "production_renderer_commits_after_v3_through_epoch_v4": [
       {
         "commit": "cd18c9e7b166fda509b3be1e9b2b9e114233c9a8",
         "subject": "render: match current RecentThreads placeholder"
@@ -1686,13 +1693,26 @@
         "subject": "render: freeze final Open43 cache identity"
       }
     ],
+    "production_renderer_commits_after_v4_through_epoch_v5": [
+      {
+        "commit": "74d49dc0ab7064e45648448846e6caa2f4af2bc8",
+        "tree": "2a0c19167da9c91531b6e2787139d0b9f9cb70c2",
+        "subject": "forum: fail closed on unsealed scalar shapes"
+      },
+      {
+        "commit": "b142825098309f8b4d5b329d9ab94fadd640617e",
+        "tree": "dcb8e7aa82cd238bcbcd5639197b9f264a4d592b",
+        "subject": "fix(pagetree): bound authorized tree loading"
+      }
+    ],
     "source_freeze_actions": [
-      "The renderer commit inventory is reconciled through the final integration head.",
+      "The renderer commit inventory records the exact post-v4 forum scalar and PageTree resource-bound integration commits.",
       "The earlier source freeze bumped DEEPWELL_RENDERER_EPOCH once from v2 to v3 before the late renderer lanes landed.",
-      "The final correction bumped DEEPWELL_RENDERER_EPOCH once from v3 to v4 after every late renderer lane landed.",
-      "Saved-output tests now assert the final v4 identity.",
+      "The prior correction bumped DEEPWELL_RENDERER_EPOCH once from v3 to v4.",
+      "The final correction bumped DEEPWELL_RENDERER_EPOCH once from v4 to v5 after the two post-v4 semantic renderer commits landed.",
+      "Saved-output tests now assert the final v5 identity.",
       "C_RENDER_EPOCH exists and remains mandatory before the expensive runtime candidate.",
-      "The public article_view regression inserts an otherwise valid v3 cache entry and proves the v4 request does not reuse it."
+      "The public article_view regression inserts an otherwise valid v4 cache entry and proves the v5 request does not reuse it."
     ]
   },
   "reconciliation": {
