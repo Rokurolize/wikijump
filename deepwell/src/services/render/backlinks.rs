@@ -58,9 +58,7 @@ pub(super) fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> Stri
         return "\n<div class=\"backlinks-module-box\">\n</div>\n".to_owned();
     }
 
-    let mut output = String::from(
-        "\n<div class=\"backlinks-module-box\" data-wikijump-compat-backlinks=\"1\"><ul>",
-    );
+    let mut output = String::from("\n<div class=\"backlinks-module-box\"><ul>");
 
     for page in pages {
         output.push_str(r#"<li><a href="/"#);
