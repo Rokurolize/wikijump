@@ -64,6 +64,7 @@ function mismatchCase(caseId, liveHtml, localHtml) {
     status: "mismatch",
     live: { visible_text: visibleText(liveHtml) },
     local: {
+      raw_html: localHtml,
       visible_text: visibleText(localHtml),
       html_sha256: sha256(localHtml),
     },
@@ -78,6 +79,134 @@ function mismatchCase(caseId, liveHtml, localHtml) {
     },
   };
 }
+
+test("preview classifier limits PagePreview transport whitespace to the exact outer envelope", async () => {
+  const source = [
+    '[[module ListPages name="target" separate="no"]]',
+    'BEGIN|[[image https://example.com/x.png alt="%%tags_linked%%"]]|END',
+    "[[/module]]",
+  ].join("\n");
+  const localHtml = [
+    "\n\nBEGIN|",
+    '<img src="https://example.com/x.png" class="image" alt="tag">',
+    "|END",
+  ].join("");
+  const liveHtml = [
+    "\n\n    \n\nBEGIN|",
+    '<img src="https://example.com/x.png" alt="tag" class="image" />',
+    "|END\n    \n    \n    \n    ",
+  ].join("");
+  const rows = [
+    {
+      id: "exact-page-preview-envelope",
+      live: liveHtml,
+      local: localHtml,
+      expected: ["page-preview-transport-whitespace", "none"],
+    },
+    {
+      id: "changed-page-preview-envelope",
+      live: liveHtml.replace("\n    \n    \n    \n    ", "\n    \n    \n   \n    "),
+      local: localHtml,
+      expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"],
+    },
+    {
+      id: "changed-internal-dom",
+      live: liveHtml,
+      local: localHtml.replace('alt="tag"', 'alt="changed"'),
+      expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"],
+    },
+  ];
+  const references = rows.map(({ id, live }) => reference(id, source, live));
+  const { referencesPath, verdictPath } = await writeIdentityFixture({
+    references,
+    cases: rows.map(({ id, live, local }) => mismatchCase(id, live, local)),
+  });
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((row) => [
+      row.case_id,
+      row.classification,
+      row.disposition,
+    ]),
+    rows.map(({ id, expected }) => [id, ...expected]),
+  );
+});
+
+test("preview classifier separates exact bare-default fixture state from its structural contract", async () => {
+  const source = "[[module ListPages]]";
+  const row = (index, timestamp) => [
+    '<div class="list-pages-item">',
+    `<h1><span><a href="/page-${index}">Page ${index}</a></span></h1>`,
+    '<p>by <span class="printuser"><a href="/user">User</a></span> ',
+    `<span class="odate time_${timestamp}">date</span></p>`,
+    `<p>Summary ${index}</p>`,
+    "</div>",
+  ].join("");
+  const wrapper = (rows, pager = "") =>
+    `<div class="list-pages-box">${rows.join("")}${pager}</div>`;
+  const liveRows = Array.from(
+    { length: 20 },
+    (_, index) => row(index, 2000 - index),
+  );
+  const localRows = [row(30, 1000), row(31, 999)];
+  const pager = [
+    '<div class="pager"><span class="pager-no">page 1 of 2</span>',
+    '<span class="target"><a href="/ajax-module-connector.php/p/2">next »</a></span></div>',
+  ].join("");
+  const liveHtml = wrapper(liveRows, pager);
+  const rows = [
+    {
+      id: "exact-bare-default-fixture-state",
+      source,
+      local: wrapper(localRows),
+      expected: ["inconclusive-fixture-data-state", "replay-synchronized-fixture"],
+    },
+    {
+      id: "nested-bare-default-row",
+      source,
+      local: wrapper([
+        localRows[0].replace("</div>", `${localRows[1]}</div>`),
+      ]),
+      expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"],
+    },
+    {
+      id: "unordered-bare-default-rows",
+      source,
+      local: wrapper([row(30, 999), row(31, 1000)]),
+      expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"],
+    },
+    {
+      id: "non-bare-default-source",
+      source: '[[module ListPages category="*"]] ',
+      local: wrapper(localRows),
+      expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"],
+    },
+  ];
+  const references = rows.map(({ id, source: caseSource }) =>
+    reference(id, caseSource, liveHtml)
+  );
+  const { referencesPath, verdictPath } = await writeIdentityFixture({
+    references,
+    cases: rows.map(({ id, local }) => mismatchCase(id, liveHtml, local)),
+  });
+
+  const result = await classifyListPagesPreviewDifferential({
+    verdictPath,
+    referencesPath,
+  });
+  assert.deepEqual(
+    result.cases.map((entry) => [
+      entry.case_id,
+      entry.classification,
+      entry.disposition,
+    ]),
+    rows.map(({ id, expected }) => [id, ...expected]),
+  );
+});
 
 async function liveArtifactReference(fileName, caseId) {
   const text = await fs.readFile(
