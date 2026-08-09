@@ -6986,6 +6986,223 @@ async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
 }
 
 #[tokio::test]
+async fn anonymous_page_and_site_utility_modules_match_frozen_safe_states() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let cases = [
+        (
+            "module-own-line-redirect",
+            "[[module Redirect]]",
+            r#"<div class="error-block">No redirection destination specified. Please use the destination="page-name" or destination="url" attribute.</div>"#,
+        ),
+        (
+            "module-own-line-themepreviewer",
+            "[[module ThemePreviewer]]",
+            r#"<div class="error-block">Preview mode error: please contact Wikidot.com for a better error message</div>"#,
+        ),
+        (
+            "module-own-line-managesite",
+            "[[module ManageSite]]",
+            concat!(
+                r#"<div class="row-fluid">"#,
+                "\n\t",
+                r#"<div class="span3 offset1">"#,
+                "\n\t\t",
+                r#"<div class="homer">"#,
+                "\n\t\t",
+                r#"<img src="/common--images/404_homer.png">"#,
+                "\n\t\t</div>\n\t</div>\n\t",
+                r#"<div class="span7">"#,
+                "\n\t\t<h1>Doh!</h1>\n",
+                "\t\t<h3>You're not signed in or you are not an administrator of this Wiki.</h3>\n",
+                "\t\t\t\t",
+                r#"<div class="form-actions">"#,
+                "\n\t\t\t",
+                r#"<a href="javascript:;" class="btn btn-primary btn-large" onclick="WIKIDOT.page.listeners.loginClick(event)">Sign in</a>"#,
+                "\n\t\t</div>\n\t\t\t</div>\n</div>",
+            ),
+        ),
+        (
+            "module-own-line-clone",
+            "[[module Clone]]",
+            r#"<div class="error-block">You should be logged in to clone a site.</div>"#,
+        ),
+        (
+            "module-own-line-dashboard",
+            "[[module Dashboard]]",
+            r#"<div class="error-block">Not allowed. Error.</div>"#,
+        ),
+        (
+            "module-own-line-petitionadmin",
+            "[[module PetitionAdmin]]",
+            r#"<div class="error-block"><div class="title">Permission error</div>This tool is for use by the administrators of this site</div>"#,
+        ),
+        (
+            "module-own-line-sitegrid",
+            "[[module SiteGrid]]",
+            r#"<div class="error-block">No sites provided.</div>"#,
+        ),
+    ];
+
+    for (case_id, module_source, expected) in cases {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": module_source,
+            }),
+        );
+        assert_eq!(
+            preview.body.trim(),
+            expected,
+            "{case_id} should match the frozen anonymous PagePreview output",
+        );
+        assert!(
+            !preview.body.contains(module_source)
+                && !preview.body.contains("No such module, please"),
+            "{case_id} should consume the evidenced module without the generic fallback:\n{}",
+            preview.body,
+        );
+    }
+
+    let source = concat!(
+        "REDIRECT\n",
+        "[[module Redirect]]\n",
+        "THEME\n",
+        "[[module ThemePreviewer]]\n",
+        "MANAGE\n",
+        "[[module ManageSite]]\n",
+        "CLONE\n",
+        "[[module Clone]]\n",
+        "DASHBOARD\n",
+        "[[module Dashboard]]\n",
+        "PETITION\n",
+        "[[module PetitionAdmin]]\n",
+        "SITEGRID\n",
+        "[[module SiteGrid]]\n",
+        "END",
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-anonymous-site-utility-modules",
+        "Fixture Anonymous Site Utility Modules",
+        source,
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-anonymous-site-utility-modules", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found site utility module view, got {other:?}"),
+    };
+    for expected in [
+        "You're not signed in or you are not an administrator of this Wiki.",
+        "You should be logged in to clone a site.",
+        "This tool is for use by the administrators of this site",
+        "No sites provided.",
+    ] {
+        assert!(
+            body.contains(expected),
+            "saved anonymous utility view should contain {expected:?}:\n{body}",
+        );
+    }
+    assert!(
+        !body.contains("No such module, please")
+            && !body.contains("data-wikijump-compat-clone"),
+        "saved anonymous utility view must not reuse the authoring actor's compiled branch:\n{body}",
+    );
+}
+
+#[tokio::test]
+async fn site_utility_modules_preserve_literal_body_and_argument_boundaries() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = concat!(
+        "LITERAL\n",
+        "@@[[module Clone]][[module ManageSite]]@@\n",
+        "BODY\n",
+        "[[module SiteGrid]]\n",
+        "private-site-name\n",
+        "[[/module]]\n",
+        "ARGUMENT\n",
+        "[[module ManageSite unexpected=\"x\"]]\n",
+        "END",
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Site utility ownership boundaries",
+            "wikitext": source,
+        }),
+    );
+
+    assert!(
+        preview.body.contains("[[module Clone]]")
+            && preview.body.contains("[[module ManageSite]]"),
+        "literal-owned utility syntax must remain visible text:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("private-site-name"),
+        "body-bearing SiteGrid must not lose the authored site list:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview
+            .body
+            .contains("You should be logged in to clone a site.")
+            && !preview.body.contains("No sites provided.")
+            && !preview.body.contains("404_homer.png"),
+        "literal, body-bearing, and unsupported-argument shapes must not enter the evidenced anonymous consumers:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("No such module, please"),
+        "unsupported utility arguments should retain the established fail-closed output:\n{}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
 async fn wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

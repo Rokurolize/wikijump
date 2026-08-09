@@ -75,6 +75,8 @@ const MODULE_VIEWER_NAMES: &[&str] = &[
     "join",
     "membershipapply",
     "membershipbypassword",
+    "managesite",
+    "petitionadmin",
 ];
 const MODULE_STATIC_NAMES: &[&str] = &["css"];
 
@@ -302,6 +304,8 @@ mod tests {
             "[[module Join]]",
             "[[module MembershipApply]]",
             "[[module MembershipByPassword]]",
+            "[[module ManageSite]]",
+            "[[module PetitionAdmin]]",
         ] {
             let classes = classify_render_dependencies(source);
 

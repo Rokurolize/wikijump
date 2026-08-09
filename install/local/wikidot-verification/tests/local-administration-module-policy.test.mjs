@@ -9,26 +9,16 @@ const repositoryRoot = path.resolve(
   "../../../..",
 );
 
-function files(root) {
-  const output = [];
-  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
-    const file = path.join(root, entry.name);
-    if (entry.isDirectory()) output.push(...files(file));
-    else if (entry.name.endsWith(".rs")) output.push(file);
-  }
-  return output;
-}
-
-test("cross-site administration modules ship no remote mutation URL", () => {
-  const relevant = files(path.join(repositoryRoot, "deepwell/src")).filter((file) =>
-    /clone|site_grid|runtime_module|module/i.test(file),
+test("site utility module consumer has no remote mutation transport", () => {
+  const source = fs.readFileSync(
+    path.join(
+      repositoryRoot,
+      "deepwell/src/services/render/site_utility_modules.rs",
+    ),
+    "utf8",
   );
-  const source = relevant.map((file) => fs.readFileSync(file, "utf8")).join("\n");
   for (const module of ["Clone", "PetitionAdmin", "SiteGrid"]) {
-    if (!source.includes(module)) continue;
-    assert.doesNotMatch(
-      source,
-      new RegExp(`${module}[\\s\\S]{0,1600}https?://(?:www\\.)?wikidot\\.com`, "i"),
-    );
+    assert.match(source, new RegExp(`\\b${module}\\b`));
   }
+  assert.doesNotMatch(source, /reqwest|hyper::|ureq|ajax-module-connector|wikidot\.com/i);
 });

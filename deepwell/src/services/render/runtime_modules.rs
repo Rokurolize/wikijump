@@ -38,6 +38,7 @@ use super::service::{
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
     escape_list_pages_html_attr, escape_list_pages_html_text, render_clone_module,
 };
+use super::site_utility_modules::expand_site_utility_modules;
 use super::url_arguments::UrlArguments;
 use super::user_directory::render_members_module;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -76,6 +77,7 @@ const LISTUSERS_UNSUPPORTED_USERS_ERROR: &str =
 const LISTDRAFTS_EMPTY_HTML: &str = r#"<div class="list-drafts-box">
             </div>"#;
 const SIMPLETODO_MISSING_ID_ERROR: &str = "The SimpleTodo module must have an id.";
+const REDIRECT_MISSING_DESTINATION_HTML: &str = r#"<div class="error-block">No redirection destination specified. Please use the destination="page-name" or destination="url" attribute.</div>"#;
 const SENDINVITATIONS_DISABLED_ERROR_HTML: &str = r#"<div class="error-block">Inviting users has been disabled due to severe abuse. Admins can still send email invitations via <a href="/_admin">site admin dashboard</a>.</div>"#;
 const ANONYMOUS_NOTIFICATIONS_UNSUBSCRIBE_INVALID_TOKEN_HTML: &str =
     r#"<div class="error-block">Invalid indentification token.</div>"#;
@@ -1381,7 +1383,11 @@ impl RenderService {
                 .expect("a residual module capture always has a name")
                 .as_str();
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
-            let replacement = if is_literal_runtime_module_residual(name) {
+            let replacement = if name.eq_ignore_ascii_case("Redirect")
+                && head.trim().is_empty()
+            {
+                compat_html.push_block_html(REDIRECT_MISSING_DESTINATION_HTML.to_owned())
+            } else if is_literal_runtime_module_residual(name) {
                 compat_text.push_escaped_html_text(matched.as_str())
             } else if head.trim().is_empty() {
                 compat_html.push_block_html(render_unavailable_page_module(name))
@@ -2130,6 +2136,12 @@ impl RenderService {
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_static_account_modules(wikitext, settings, compat_html);
+        wikitext = expand_site_utility_modules(
+            wikitext,
+            settings,
+            options.viewer_user_id,
+            compat_html,
+        );
         wikitext = Self::expand_membership_by_password_modules(
             ctx,
             wikitext,

@@ -33,6 +33,7 @@ use super::list_pages::{
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
 use super::pages::PAGES_MODULE_REGEX;
 use super::pages_by_tag::PAGES_BY_TAG_MODULE_REGEX;
+use super::site_utility_modules::wikitext_requires_site_utility_runtime_render;
 use crate::services::page_query::OrderProperty;
 use regex::Regex;
 use std::borrow::Cow;
@@ -218,6 +219,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || FORUM_MINI_MODULE_REGEX.is_match(wikitext)
         || FORUM_MODULE_REGEX.is_match(wikitext)
         || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
+        || wikitext_requires_site_utility_runtime_render(wikitext)
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
         || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)
         || wikitext_has_random_list_pages_module(wikitext)
@@ -363,6 +365,18 @@ mod tests {
         assert!(!wikitext_reads_url_arguments(
             "before [[module RecentPosts]] after",
         ));
+    }
+
+    #[test]
+    fn actor_sensitive_site_utility_modules_require_runtime_rendering() {
+        for source in [
+            "[[module Clone]]",
+            "[[module ManageSite]]",
+            "[[module PetitionAdmin]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source));
+            assert!(!wikitext_reads_url_arguments(source));
+        }
     }
 
     #[test]
