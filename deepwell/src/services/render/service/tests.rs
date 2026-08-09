@@ -7809,6 +7809,14 @@ fn typed_embedvideo_markers_must_match_requirements_exactly_once() {
     let marker = format!(r#"<div class="wj-embed-video" id="{id}"></div>"#);
     assert_eq!(output.body, marker);
 
+    let mut authored_text = output.clone();
+    authored_text.resource_requirements.clear();
+    authored_text.body =
+        "<p>The text wj-embed-video names no typed marker.</p>".to_owned();
+    assert!(RenderService::resolve_wikidot_embed_video_requirements(
+        &mut authored_text
+    ));
+
     let mut missing = output.clone();
     missing.body.clear();
     assert!(!RenderService::resolve_wikidot_embed_video_requirements(

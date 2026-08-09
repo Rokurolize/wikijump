@@ -66,7 +66,9 @@ impl RenderService {
         for (marker, replacement) in replacements {
             resolved = resolved.replacen(&marker, &replacement, 1);
         }
-        if resolved.contains(WIKIDOT_EMBED_VIDEO_MARKER) {
+        let unresolved_marker_prefix =
+            format!(r#"<div class="{WIKIDOT_EMBED_VIDEO_MARKER}""#);
+        if resolved.contains(&unresolved_marker_prefix) {
             return false;
         }
 
