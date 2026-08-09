@@ -109,9 +109,15 @@ impl FileService {
         } = match direct_upload {
             None => {
                 // Normal path, finish upload of blob from user
-                BlobService::finish_upload(ctx, user_id, &uploaded_blob_id)
-                    .await
-                    .or_raise(make_error)?
+                BlobService::finish_page_upload(
+                    ctx,
+                    user_id,
+                    site_id,
+                    page_id,
+                    &uploaded_blob_id,
+                )
+                .await
+                .or_raise(make_error)?
             }
             Some(data) => {
                 // Special path, used only internally to directly upload a blob,
@@ -233,9 +239,11 @@ impl FileService {
                 } = match direct_upload {
                     Maybe::Unset => {
                         // Normal path, finish upload of blob from user
-                        BlobService::finish_upload(ctx, user_id, id)
-                            .await
-                            .or_raise(make_error)?
+                        BlobService::finish_page_upload(
+                            ctx, user_id, site_id, page_id, id,
+                        )
+                        .await
+                        .or_raise(make_error)?
                     }
                     Maybe::Set(data) => {
                         // Special path, used only internally to directly upload a blob

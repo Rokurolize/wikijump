@@ -35,5 +35,6 @@ pub use self::service::{
 };
 pub use self::structs::{
     BlobMetadata, CancelBlobUpload, FinalizeBlobUploadOutput, GetBlobOutput, HardDelete,
-    HardDeleteOutput, StartBlobUpload, StartBlobUploadOutput,
+    HardDeleteOutput, PendingBlobOwner, StartBlobUpload, StartBlobUploadOutput,
+    StartBlobUploadScope,
 };

@@ -49,9 +49,10 @@ export const handleFileReadRpc = ({ rpcRequest, request, port }) => {
     result = file ? toFileResult(file, Boolean(rpcRequest.params.details.data)) : null
   } else if (
     rpcRequest.method === "blob_upload" &&
-    hasExactKeys(rpcRequest.params, ["blob_size", "user_id"]) &&
+    hasExactKeys(rpcRequest.params, ["blob_size", "scope", "user_id"]) &&
     rpcRequest.params.user_id === 123 &&
     typeof rpcRequest.params.blob_size === "number" &&
+    rpcRequest.params.scope === "page" &&
     request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
     request.headers["x-deepwell-site-id"] === "6000005"
   ) {

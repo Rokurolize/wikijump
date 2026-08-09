@@ -953,9 +953,13 @@ impl UserService {
                 Some(uploaded_blob_id) => {
                     let config = ctx.config();
                     let FinalizeBlobUploadOutput { s3_hash, size, .. } =
-                        BlobService::finish_upload(ctx, user.user_id, &uploaded_blob_id)
-                            .await
-                            .or_raise(make_error)?;
+                        BlobService::finish_unscoped_upload(
+                            ctx,
+                            user.user_id,
+                            &uploaded_blob_id,
+                        )
+                        .await
+                        .or_raise(make_error)?;
 
                     if size > config.maximum_avatar_size {
                         error!(

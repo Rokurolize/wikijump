@@ -96,7 +96,12 @@ export async function userEdit(
     data.locales = limitLocalePreferences(params.locales)
   }
   if (params.avatar instanceof File && params.avatar.type.startsWith("image/")) {
-    const presign = await startBlobUpload(userId, params.avatar.size)
+    const presign = await startBlobUpload(
+      userId,
+      params.avatar.size,
+      "unscoped",
+      requestContext
+    )
     await uploadToPresignUrl(presign.presign_url, params.avatar)
     data.avatar_uploaded_blob_id = presign.pending_blob_id
   } else if (params.avatar !== undefined && params.avatar === null) data.avatar = null

@@ -84,8 +84,13 @@ function putPresignedBytes(args, presignUrl, bytes, attachment) {
   });
 }
 
-async function uploadBlob({ args, attachment, bytes, actorUserId, rpc }) {
-  const upload = await rpc(args, 'blob_upload', { user_id: actorUserId, blob_size: bytes.byteLength });
+async function uploadBlob({ args, pageId, attachment, bytes, actorUserId, rpc }) {
+  const upload = await rpc(
+    args,
+    'blob_upload',
+    { user_id: actorUserId, blob_size: bytes.byteLength, scope: 'page' },
+    { siteId: args.siteId, pageRef: pageId },
+  );
   const { statusCode } = await putPresignedBytes(args, upload.presign_url, bytes, attachment);
   if (statusCode < 200 || statusCode >= 300) {
     throw new Error(`${attachment.filename}: presigned PUT failed with status ${statusCode}`);
@@ -132,7 +137,7 @@ export async function materializeCorpusRowAttachments({ args, row, pageId, getFi
       skippedExisting += 1;
       continue;
     }
-    const pendingBlobId = await uploadBlob({ args, attachment, bytes, actorUserId, rpc });
+    const pendingBlobId = await uploadBlob({ args, pageId, attachment, bytes, actorUserId, rpc });
     await createFile({ args, pageId, attachment, pendingBlobId, actorUserId, rpc });
     uploaded += 1;
   }

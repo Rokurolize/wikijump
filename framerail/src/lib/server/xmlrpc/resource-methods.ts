@@ -538,7 +538,8 @@ async function uploadXmlRpcFileContent(
     "blob_upload",
     {
       user_id: context.userId,
-      blob_size: content.length
+      blob_size: content.length,
+      scope: "page"
     },
     context
   )

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -56,4 +57,64 @@ test('materializeCorpusRowAttachments defers skipped attachments without RPC wor
     attachments_skipped_existing: 0,
     attachments_deferred: 1,
   });
+});
+
+test('materializeCorpusRowAttachments binds pending uploads to the trusted page context', async (t) => {
+  const fixture = attachmentFixture();
+  t.after(() => fixture.cleanup());
+
+  let uploaded = Buffer.alloc(0);
+  const server = http.createServer((request, response) => {
+    const chunks = [];
+    request.on('data', (chunk) => chunks.push(chunk));
+    request.on('end', () => {
+      uploaded = Buffer.concat(chunks);
+      response.writeHead(200).end();
+    });
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const address = server.address();
+  assert.equal(typeof address, 'object');
+
+  const calls = [];
+  const rpc = async (_args, method, params, requestContext) => {
+    calls.push({ method, params, requestContext });
+    if (method === 'blob_upload') {
+      return {
+        pending_blob_id: 'issue-1062-pending',
+        presign_url: `http://127.0.0.1:${address.port}/pending`,
+      };
+    }
+    if (method === 'file_create') return { file_id: 1062 };
+    assert.fail(`unexpected RPC method ${method}`);
+  };
+
+  const result = await materializeCorpusRowAttachments({
+    args: {
+      sessionToken: 'issue-1062-session',
+      siteId: 17,
+      userId: 29,
+      ipAddress: '192.0.2.62',
+      rpcTimeoutMs: 1_000,
+    },
+    row: { ...fixture.row, attachments: [fixture.attachment] },
+    pageId: 23,
+    getFile: async () => null,
+    rpc,
+  });
+
+  assert.deepEqual(result, {
+    attachments_requested: 1,
+    attachments_uploaded: 1,
+    attachments_skipped_existing: 0,
+  });
+  assert.deepEqual(uploaded, Buffer.from('fixture attachment'));
+  assert.deepEqual(calls[0], {
+    method: 'blob_upload',
+    params: { user_id: 29, blob_size: 18, scope: 'page' },
+    requestContext: { siteId: 17, pageRef: 23 },
+  });
+  assert.equal(calls[1].method, 'file_create');
+  assert.deepEqual(calls[1].requestContext, { siteId: 17, pageRef: 23 });
 });
