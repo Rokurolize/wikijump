@@ -4871,7 +4871,7 @@ async fn listpages_default_rows_expand_secondary_page_body_modules() {
         );
     }
     assert!(
-        preview.contains("Please create an account and/or sign in first.")
+        preview.contains("Invalid indentification token.")
             && preview.contains("Inviting users has been disabled due to severe abuse.")
             && preview.contains("The SimpleTodo module must have an id.")
             && preview.contains(

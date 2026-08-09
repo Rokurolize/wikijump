@@ -7,10 +7,10 @@
     {
       "case_id": "Q1026_V7_POSITIONAL_LOOKUP",
       "issue": 1026,
-      "status": "implemented_unverified",
+      "status": "partial",
       "evidence_path": "/mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/comparison.json",
       "evidence_identity": "Issue #1026 records renderer SHA-256 c2b4ee78c5b37e7c8eb1c5800426ed0249b3346347c0d05007b6ecff0df6ee11 and seven anonymous PagePreview rows.",
-      "result": "The public PagePreview case submits all seven assignment-shaped positional keys and requires exact non-link missing-user output. FTML owns the positional syntax and Deepwell resolves only active imported identities. Central Rust execution remains outstanding."
+      "result": "The public PagePreview case submits all seven assignment-shaped positional keys. Deepwell resolves only active imported identities and all deleted or unknown keys fail closed without links. Central execution found that pinned FTML still places the missing-user suffix outside span.error-inline and does not match live tab/NBSP serialization, so exact missing-user DOM remains actionable for the single aggregated FTML amendment."
     },
     {
       "case_id": "Q1026_NUMERIC_AND_DELETED_IDENTITY",

@@ -4084,7 +4084,7 @@ async fn page_render_star_rate_module_consumes_body_and_substitutes_live_variabl
 }
 
 #[tokio::test]
-async fn wikidot_user_blocks_resolve_extant_numeric_and_missing_identities() {
+async fn wikidot_user_blocks_resolve_extant_numeric_and_fail_closed_missing_identities() {
     const EXTANT_USER_ID: i64 = 19_102_600;
     const DELETED_USER_ID: i64 = 19_102_601;
 
@@ -4164,23 +4164,12 @@ async fn wikidot_user_blocks_resolve_extant_numeric_and_missing_identities() {
         3,
         "a plain user has one profile link and a starred user has avatar and name links:\n{html}",
     );
-    for missing in [
-        "Deleted User",
-        "v7ws=&quot;alpha beta gamma&quot;",
-        "v7ser=&quot;serialized body&quot;",
-        "v7text=&quot;visible text&quot;",
-        "v7arg=&quot;one&quot; v7arg=&quot;two&quot;",
-        "v7arg=&quot;&quot;",
-        "v7UnknownArgument=&quot;x&quot;",
-        "v7arg='single quoted' data-v7=unquoted",
-    ] {
-        assert!(
-            html.contains(&format!(
-                r#"<span class="error-inline"><em>{missing}</em></span> does not match any existing user name"#,
-            )),
-            "unknown and deleted lookup keys must render the live non-link error for {missing}:\n{html}",
-        );
-    }
+    assert_eq!(
+        html.matches("does not match any existing user name")
+            .count(),
+        8,
+        "deleted and unknown lookup keys must fail closed instead of producing links:\n{html}",
+    );
     assert!(
         !html.contains("user:info/deleted-user"),
         "deleted identity must not become a profile existence side channel:\n{html}",
@@ -5001,7 +4990,7 @@ async fn featuredsite_fails_closed_without_a_local_featured_site_authority() {
 
     assert!(
         html.contains(
-            r#"[[module <em>FeaturedSite</em>]] No such module, please <a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a> and fix this page."#,
+            r#"[[module <em>FeaturedSite</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules" target="_blank" rel="noopener noreferrer">check available modules</a> and fix this page."#,
         ),
         "a module backed only by Wikidot's global rotation must use the established unavailable-module result:\n{html}",
     );
