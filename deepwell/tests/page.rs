@@ -6812,13 +6812,38 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
 
     for (case_id, source, expected_items) in [
         (
+            "mini-recent-threads-bare",
+            "[[module MiniRecentThreads]]",
+            2usize,
+        ),
+        (
             "mini-recent-threads-limit-one",
             "[[module MiniRecentThreads limit=\"1\"]]",
             1usize,
         ),
         (
-            "mini-recent-threads-invalid-default",
-            "[[module MiniRecentThreads limit=\"0\" unknown=\"x\"]]",
+            "mini-recent-threads-limit-zero",
+            "[[module MiniRecentThreads limit=\"0\"]]",
+            2usize,
+        ),
+        (
+            "mini-recent-threads-limit-negative",
+            "[[module MiniRecentThreads limit=\"-1\"]]",
+            2usize,
+        ),
+        (
+            "mini-recent-threads-limit-text",
+            "[[module MiniRecentThreads limit=\"abc\"]]",
+            2usize,
+        ),
+        (
+            "mini-recent-threads-unknown-argument",
+            "[[module MiniRecentThreads unknown=\"x\"]]",
+            2usize,
+        ),
+        (
+            "mini-active-threads-bare",
+            "[[module MiniActiveThreads]]",
             2usize,
         ),
         (
@@ -6827,9 +6852,54 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
             1usize,
         ),
         (
+            "mini-active-threads-limit-zero",
+            "[[module MiniActiveThreads limit=\"0\"]]",
+            2usize,
+        ),
+        (
+            "mini-active-threads-limit-negative",
+            "[[module MiniActiveThreads limit=\"-1\"]]",
+            2usize,
+        ),
+        (
+            "mini-active-threads-limit-text",
+            "[[module MiniActiveThreads limit=\"abc\"]]",
+            2usize,
+        ),
+        (
+            "mini-active-threads-unknown-argument",
+            "[[module MiniActiveThreads unknown=\"x\"]]",
+            2usize,
+        ),
+        (
+            "mini-recent-posts-bare",
+            "[[module MiniRecentPosts]]",
+            4usize,
+        ),
+        (
             "mini-recent-posts-limit-one",
             "[[module MiniRecentPosts limit=\"1\"]]",
             1usize,
+        ),
+        (
+            "mini-recent-posts-limit-zero",
+            "[[module MiniRecentPosts limit=\"0\"]]",
+            4usize,
+        ),
+        (
+            "mini-recent-posts-limit-negative",
+            "[[module MiniRecentPosts limit=\"-1\"]]",
+            4usize,
+        ),
+        (
+            "mini-recent-posts-limit-text",
+            "[[module MiniRecentPosts limit=\"abc\"]]",
+            4usize,
+        ),
+        (
+            "mini-recent-posts-unknown-argument",
+            "[[module MiniRecentPosts unknown=\"x\"]]",
+            4usize,
         ),
     ] {
         let preview = run_endpoint!(
@@ -6853,6 +6923,22 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
         (
             "mini-recent-threads-inline",
             "before [[module MiniRecentThreads limit=\"1\"]] after",
+        ),
+        (
+            "mini-recent-threads-literal",
+            "@@[[module MiniRecentThreads limit=\"1\"]]@@",
+        ),
+        (
+            "mini-active-threads-inline",
+            "before [[module MiniActiveThreads limit=\"1\"]] after",
+        ),
+        (
+            "mini-active-threads-literal",
+            "@@[[module MiniActiveThreads limit=\"1\"]]@@",
+        ),
+        (
+            "mini-recent-posts-inline",
+            "before [[module MiniRecentPosts limit=\"1\"]] after",
         ),
         (
             "mini-recent-posts-literal",
