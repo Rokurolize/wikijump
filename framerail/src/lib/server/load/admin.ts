@@ -22,7 +22,8 @@ import {
 import { translate } from "$lib/server/deepwell/translate"
 import {
   failForActionError,
-  PageActionContextMismatchError
+  PageActionContextMismatchError,
+  requireActionSession
 } from "$lib/server/load/action-error"
 import { adminView, type PreloadDataAsync } from "$lib/server/deepwell/views"
 import { loadSiteInfo } from "$lib/server/load/site-info"
@@ -308,7 +309,7 @@ export async function templateAction({
   const { siteId, categoryId, templatePageId } = form.data
   try {
     const trustedSiteId = loadTrustedAdminSiteId(request, siteId)
-    const session = await authGetSession(sessionToken)
+    const session = requireActionSession(await authGetSession(sessionToken))
     const res = await categoryTemplateUpdate(
       {
         siteId: trustedSiteId,
@@ -345,7 +346,7 @@ export async function licenseAction({
   const { license, licenseOther } = licenseUpdateValue(form.data)
   try {
     const trustedSiteId = loadTrustedAdminSiteId(request, siteId)
-    const session = await authGetSession(sessionToken)
+    const session = requireActionSession(await authGetSession(sessionToken))
     const res = await categoryLicenseUpdate(
       {
         siteId: trustedSiteId,
@@ -426,7 +427,7 @@ export async function navigationAction({
   const { topBarPage, sideBarPage } = navigationUpdateValues(form.data)
   try {
     const trustedSiteId = loadTrustedAdminSiteId(request, siteId)
-    const session = await authGetSession(sessionToken)
+    const session = requireActionSession(await authGetSession(sessionToken))
     const res = await categoryNavigationUpdate(
       {
         siteId: trustedSiteId,
@@ -457,7 +458,7 @@ export async function analyticsAction({
   }
   try {
     const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
-    const session = await authGetSession(sessionToken)
+    const session = requireActionSession(await authGetSession(sessionToken))
     const res = await siteAnalyticsUpdate(
       siteId,
       form.data.expectedSettingsRevision,
@@ -486,7 +487,7 @@ export async function toolbarAction({
   }
   try {
     const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
-    const session = await authGetSession(sessionToken)
+    const session = requireActionSession(await authGetSession(sessionToken))
     const res = await siteToolbarsUpdate(
       siteId,
       form.data.expectedSettingsRevision,
@@ -519,7 +520,7 @@ export async function themeAction({ request, getClientAddress, cookies }: Reques
           : { type: "inherit" }
   try {
     const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
-    const session = await authGetSession(sessionToken)
+    const session = requireActionSession(await authGetSession(sessionToken))
     const res = await categoryThemeUpdate(
       siteId,
       form.data.categoryId,
@@ -551,7 +552,7 @@ export async function autonumberAction({
   }
   try {
     const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
-    const session = await authGetSession(sessionToken)
+    const session = requireActionSession(await authGetSession(sessionToken))
     const res = await categoryAutonumberUpdate(
       siteId,
       form.data.categoryId,
@@ -576,7 +577,7 @@ export async function layoutAction({ request, getClientAddress, cookies }: Reque
   }
   try {
     const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
-    const session = await authGetSession(sessionToken)
+    const session = requireActionSession(await authGetSession(sessionToken))
     const res = await siteUpdate(
       {
         siteId,
@@ -618,7 +619,7 @@ export async function adminAction({ request, getClientAddress, cookies }: Reques
           message: "user does not have permission to edit this site"
         })
       }
-      const session = await authGetSession(sessionToken)
+      const session = requireActionSession(await authGetSession(sessionToken))
 
       const {
         name,

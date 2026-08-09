@@ -8,7 +8,7 @@ import {
   clearLoginPassword,
   redactAuthActionPayload
 } from "$lib/server/load/auth-form-redaction.js"
-import { failForActionError } from "$lib/server/load/action-error"
+import { failForActionError, requireActionSession } from "$lib/server/load/action-error"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { fail } from "@sveltejs/kit"
 import { superValidate } from "sveltekit-superforms"
@@ -149,7 +149,7 @@ const loginSchema = object({
 })
 
 async function setSessionCookie(cookies: Cookies, sessionToken: string) {
-  const session = await authGetSession(sessionToken)
+  const session = requireActionSession(await authGetSession(sessionToken))
   cookies.set("wikijump_token", sessionToken, {
     path: "/",
     httpOnly: true,

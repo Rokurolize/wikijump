@@ -426,10 +426,11 @@ describe("Wikidot site settings public boundaries", () => {
     ]
 
     const calls = []
+    let sessionExpired = false
     let mutationFailure = null
     client.request = async (method, params, context) => {
       calls.push({ method, params, context })
-      if (method === "session_get") return { user_id: 41 }
+      if (method === "session_get") return sessionExpired ? null : { user_id: 41 }
       if (mutationFailure) throw mutationFailure
       return { settings_revision: settingsRevision + 1 }
     }
@@ -468,6 +469,25 @@ describe("Wikidot site settings public boundaries", () => {
       )
       assert.equal(denied.status, 403)
       assert.deepEqual(calls, [])
+
+      sessionExpired = true
+      const expired = await canonicalAdminServer.actions.analytics(
+        actionEvent("analytics", {
+          siteId,
+          expectedSettingsRevision: settingsRevision,
+          enabled: true,
+          profile: "UA-1-2"
+        })
+      )
+      assert.equal(expired.status, 401)
+      assert.deepEqual(calls, [
+        {
+          method: "session_get",
+          params: [sessionToken],
+          context: undefined
+        }
+      ])
+      sessionExpired = false
 
       mutationFailure = {
         message: "Site settings changed since revision 4",

@@ -1,7 +1,11 @@
 import { authGetSession } from "$lib/server/auth/get-session"
 import { translate } from "$lib/server/deepwell/translate"
 import { userEdit } from "$lib/server/deepwell/user"
-import { failForActionError, failForMissingSession } from "$lib/server/load/action-error"
+import {
+  failForActionError,
+  failForMissingSession,
+  requireActionSession
+} from "$lib/server/load/action-error"
 import { getRequestContext } from "$lib/server/request-context"
 import { parseUserLocalePreferences } from "$lib/user-settings.js"
 import { fail, redirect } from "@sveltejs/kit"
@@ -52,7 +56,7 @@ export async function userDisplaySettingsAction({
   if (!sessionToken) return failForMissingSession({ form })
 
   try {
-    const session = await authGetSession(sessionToken)
+    const session = requireActionSession(await authGetSession(sessionToken))
     const locales = parseUserLocalePreferences(form.data.locales)
     if (locales.length === 0) {
       return fail(400, { form, message: "At least one display language is required." })
