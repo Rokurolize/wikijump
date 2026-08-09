@@ -50,6 +50,25 @@ Evidence:
 - `install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json` (SHA-256 `0a188e7960890a0ad05fbb7733671072abc1f08156e0d2df7e70b523e3405fd4`), cases: `frontforum-sandbox-limit-one`, `frontforum-sandbox-limit-two`, `frontforum-sandbox-invalid-category`, `frontforum-scp-limit-one`, `sandbox-forum-start-visible`, `sandbox-forum-start-hidden`, `sandbox-category-populated-page-one`, `sandbox-category-empty-page-one`, `sandbox-category-missing`, `sandbox-thread-populated`, `sandbox-thread-missing`, `sandbox-thread-posts-populated`, `sandbox-thread-posts-missing`, `scp-comments-forward`, `scp-comments-reverse`, `scp-comments-missing-page`, `sandbox-recent-posts-all-page-one`, `sandbox-recent-posts-category-page-one`, `sandbox-recent-posts-missing-category`
 - `install/local/wikidot-verification/artifacts/forum-q1034-pagination-live-20260809.json` (SHA-256 `48c014f29e3ffa893073ef90048b353880d929e2bb612d358ee977dafbe679b2`), cases: `scp-category-1113520-page-1`, `scp-category-1113520-page-2`, `scp-category-1113520-page-11`, `scp-category-1113520-page-12`
 
+### Comments title, hide, and order have exact authored scalar boundaries
+
+- Observation ID: `forum-q1034-comments-attributes-anonymous-20260809`
+- Classification: `documentation-clarification`
+- Observed at: `2026-08-09`
+- Analysis: Anonymous PagePreviewModule, existing served pages, and read-only ForumCommentsListModule requests establish the exact source forms and output for title, hide, and order. The evidence does not establish hideForm for a permitted actor, browser transitions, or any comment mutation.
+
+Normative behavior:
+
+- The module name is ASCII-case-insensitive. An exact lowercase title key with a nonempty double-quoted value emits one direct h1 child of comments-box, with HTML-escaped text. Empty, single-quoted, bare, and wrong-case title forms emit no custom heading.
+- Exact hide=true keeps a saved page on the visible Show Comments link and an empty thread-container. Omitted hide and exact hide=false hide comments-options-hidden with display:none and embed the anonymous permission-filtered first comments page. PagePreview has no saved page identity and always keeps the inert shell.
+- Exact order=reverse adds the reverse class to thread-container and selects the newest ten root comment trees. Omitted order and exact order=forwards select the oldest ten. Invalid, empty, single-quoted, bare, uppercase-value, and wrong-case source forms do not establish a reverse or saved-page query.
+- Direct read-only ForumCommentsListModule accepts omitted order, order=forwards, and order=reverse. Other order values remain unsupported.
+- Anonymous output cannot distinguish the documented hideForm setting from actor permission. Rendered controls do not establish a browser handler, CSRF policy, form authority, or mutation authority.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/forum-q1034-comments-attributes-anonymous-20260810.json` (SHA-256 `37c2b8366caf1ebea665b5c958e20c66ac118f8b0cffae5d73bc805f99f61533`), cases: `comments-baseline`, `comments-mixed-module-case`, `title-alpha`, `title-escaped`, `title-empty`, `title-single-quoted`, `title-bare`, `title-key-case`, `order-forwards`, `order-reverse`, `order-reverse-with-title`, `order-forward-singular`, `order-uppercase-reverse`, `order-uppercase-forwards`, `order-empty`, `order-single-quoted`, `order-bare`, `order-key-case`, `ajax-order-omitted`, `ajax-order-forwards`, `ajax-order-reverse`, `hide-true-casos-served`, `hide-true-historias-served`, `default-blog-index-served`, `explicit-false-howto-served`
+
 
 
 ## Suggested public TDD seams

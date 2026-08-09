@@ -1,0 +1,118 @@
+{
+  "schema": "wikijump.forum_q1034_comments_attributes_anonymous.v1",
+  "issue": 1034,
+  "observed_at": "2026-08-09",
+  "actor": "anonymous",
+  "mutation": false,
+  "external_evidence": {
+    "manifest_path": "/home/roku/wjlab/evidence/20260810-open43-q1034-comments-attributes-anonymous/manifest.json",
+    "manifest_sha256": "cea6373f78b72a2c8526aee16a31baca94276309a09a5f4d44f5cb987d10ef4e",
+    "sha256s_path": "/home/roku/wjlab/evidence/20260810-open43-q1034-comments-attributes-anonymous/SHA256SUMS",
+    "sha256s_sha256": "83d2a3cd2bc52810f4c6dc983a2f529e8f891b2f15bd423ef9b7001b265ee0ef",
+    "sha256_check": "pass",
+    "page_preview_cases": 36,
+    "comments_ajax_cases": 10,
+    "served_page_cases": 7,
+    "source_owner_cases": 7,
+    "live_asset_cases": 1
+  },
+  "cases": [
+    {"case_id": "comments-baseline"},
+    {"case_id": "comments-mixed-module-case"},
+    {"case_id": "title-alpha"},
+    {"case_id": "title-escaped"},
+    {"case_id": "title-empty"},
+    {"case_id": "title-single-quoted"},
+    {"case_id": "title-bare"},
+    {"case_id": "title-key-case"},
+    {"case_id": "order-forwards"},
+    {"case_id": "order-reverse"},
+    {"case_id": "order-reverse-with-title"},
+    {"case_id": "order-forward-singular"},
+    {"case_id": "order-uppercase-reverse"},
+    {"case_id": "order-uppercase-forwards"},
+    {"case_id": "order-empty"},
+    {"case_id": "order-single-quoted"},
+    {"case_id": "order-bare"},
+    {"case_id": "order-key-case"},
+    {"case_id": "ajax-order-omitted"},
+    {"case_id": "ajax-order-forwards"},
+    {"case_id": "ajax-order-reverse"},
+    {"case_id": "hide-true-casos-served"},
+    {"case_id": "hide-true-historias-served"},
+    {"case_id": "default-blog-index-served"},
+    {"case_id": "explicit-false-howto-served"}
+  ],
+  "observed_rules": {
+    "title": {
+      "status": "source_ready",
+      "rule": "An exact lowercase title key with a nonempty double-quoted value emits one direct h1 child of comments-box. The heading text is HTML-escaped. Empty, single-quoted, bare, and wrong-case forms emit no custom heading.",
+      "positive_case_ids": [
+        "title-alpha",
+        "title-escaped",
+        "comments-mixed-module-case"
+      ],
+      "negative_case_ids": [
+        "title-empty",
+        "title-single-quoted",
+        "title-bare",
+        "title-key-case"
+      ]
+    },
+    "hide": {
+      "status": "source_ready_for_observed_double_quoted_true_false_boundary",
+      "rule": "Saved pages owned by exact hide=true invocations serve a visible Show Comments link and an empty thread-container. Omitted hide and exact hide=false serve the populated discussion and hide comments-options-hidden with display:none.",
+      "positive_case_ids": [
+        "hide-true-casos-served",
+        "hide-true-historias-served"
+      ],
+      "negative_case_ids": [
+        "default-blog-index-served",
+        "explicit-false-howto-served"
+      ],
+      "remaining_ambiguity": "PagePreview cannot distinguish invalid, wrong-case, single-quoted, bare, or empty hide forms on a saved page. Saved rendering must not query for those forms."
+    },
+    "order": {
+      "status": "source_ready_for_module_syntax_and_read_only_ajax",
+      "rule": "Exact order=reverse marks thread-container with reverse and selects the newest ten root comment trees. Omitted order and exact order=forwards select the oldest ten. Invalid authored forms keep the default shell and do not establish a saved-page query.",
+      "positive_case_ids": [
+        "comments-baseline",
+        "order-forwards",
+        "order-reverse",
+        "order-reverse-with-title",
+        "ajax-order-omitted",
+        "ajax-order-forwards",
+        "ajax-order-reverse"
+      ],
+      "negative_case_ids": [
+        "order-forward-singular",
+        "order-uppercase-reverse",
+        "order-uppercase-forwards",
+        "order-empty",
+        "order-single-quoted",
+        "order-bare",
+        "order-key-case"
+      ]
+    },
+    "hide_form": {
+      "status": "blocked_actor_differential",
+      "rule": "The anonymous actor sees an Add a New Comment link and no open form for exact hideForm=true owners and for omitted or false controls.",
+      "remaining_ambiguity": "The documentation conditions auto-open behavior on actor permission. Anonymous evidence cannot establish the member form state or the accepted yes value."
+    },
+    "controls_and_authority": {
+      "status": "rendered_controls_only_mutation_authority_blocked",
+      "rule": "Captured bodies contain Show Comments, Hide All Comments, Add a New Comment, Edit, and Delete controls. No action request was sent, so the evidence does not authorize a form, browser handler, CSRF policy, or mutation."
+    }
+  },
+  "implemented_public_seams": [
+    "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+    "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
+    "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority"
+  ],
+  "unresolved": [
+    "hideForm=true and hideForm=yes actor-dependent form state",
+    "Show and Hide browser transitions, focus, loading, and failure behavior",
+    "comment form permission, CSRF, validation, rate limit, idempotency, and mutation",
+    "non-anonymous actor matrix and later comment pages"
+  ]
+}

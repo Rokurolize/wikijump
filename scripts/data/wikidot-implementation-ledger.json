@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-08-10",
-  "catalog_sha256": "a3c4349c79615d841dde0c426f29a5151c0e1ad0ad79cf0258a2f2f148bfadd8",
+  "catalog_sha256": "f2b29ef57bc94ce70ee47791277d73edb8932273eb425c6b209ee8674f992c9c",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -1240,17 +1240,17 @@
         {
           "path": "deepwell/tests/page.rs",
           "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
-          "scope": "exact no-context comments wrapper and source-owner behavior"
+          "scope": "exact no-context shell, mixed-case module name, escaped title, reverse class, forwards default, invalid scalar, and source-owner behavior"
         },
         {
           "path": "deepwell/tests/page.rs",
           "name": "forum_comments_list_resolves_only_visible_page_discussions",
-          "scope": "public saved-page shell, page-to-discussion resolution, forward and reverse ten-root first-page trees, exact wrapper and response metadata, indistinguishable missing, private, and cross-site states, and read-only side effects"
+          "scope": "public saved-page title, hide, forwards and reverse shells, permission-filtered first-page embedding, fail-closed invalid attributes, page-to-discussion resolution, exact response metadata, indistinguishable hidden states, and read-only side effects"
         },
         {
           "path": "framerail/tests/ajax-module-connector.test.js",
           "name": "dispatches the sealed page comments reads without adding mutation authority",
-          "scope": "exact pageId and pageId plus reverse allowlist, threadId and jsInclude wire envelope, and fail-closed unobserved order"
+          "scope": "exact pageId with omitted, forwards, or reverse order, threadId and jsInclude wire envelope, and fail-closed unobserved order"
         }
       ],
       "implementation_files": [
@@ -1268,10 +1268,11 @@
         "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-comments",
         "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-forward",
         "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-reverse",
-        "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-missing-page"
+        "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-missing-page",
+        "install/local/wikidot-verification/artifacts/forum-q1034-comments-attributes-anonymous-20260810.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "The title, hide, hideForm, and explicit forwards attributes remain unimplemented.",
+        "The actor-dependent hideForm=true and hideForm=yes behavior remains unobserved and unimplemented.",
         "Later comment pages, non-anonymous actor states, forms, mutations, and browser interaction remain unobserved or unimplemented."
       ]
     },

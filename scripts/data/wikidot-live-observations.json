@@ -135,6 +135,56 @@
       ]
     },
     {
+      "id": "forum-q1034-comments-attributes-anonymous-20260809",
+      "title": "Comments title, hide, and order have exact authored scalar boundaries",
+      "feature_ids": [
+        "module-comments"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous PagePreviewModule, existing served pages, and read-only ForumCommentsListModule requests establish the exact source forms and output for title, hide, and order. The evidence does not establish hideForm for a permitted actor, browser transitions, or any comment mutation.",
+      "normative_behavior": [
+        "The module name is ASCII-case-insensitive. An exact lowercase title key with a nonempty double-quoted value emits one direct h1 child of comments-box, with HTML-escaped text. Empty, single-quoted, bare, and wrong-case title forms emit no custom heading.",
+        "Exact hide=true keeps a saved page on the visible Show Comments link and an empty thread-container. Omitted hide and exact hide=false hide comments-options-hidden with display:none and embed the anonymous permission-filtered first comments page. PagePreview has no saved page identity and always keeps the inert shell.",
+        "Exact order=reverse adds the reverse class to thread-container and selects the newest ten root comment trees. Omitted order and exact order=forwards select the oldest ten. Invalid, empty, single-quoted, bare, uppercase-value, and wrong-case source forms do not establish a reverse or saved-page query.",
+        "Direct read-only ForumCommentsListModule accepts omitted order, order=forwards, and order=reverse. Other order values remain unsupported.",
+        "Anonymous output cannot distinguish the documented hideForm setting from actor permission. Rendered controls do not establish a browser handler, CSRF policy, form authority, or mutation authority."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forum-q1034-comments-attributes-anonymous-20260810.json",
+          "sha256": "37c2b8366caf1ebea665b5c958e20c66ac118f8b0cffae5d73bc805f99f61533",
+          "case_ids": [
+            "comments-baseline",
+            "comments-mixed-module-case",
+            "title-alpha",
+            "title-escaped",
+            "title-empty",
+            "title-single-quoted",
+            "title-bare",
+            "title-key-case",
+            "order-forwards",
+            "order-reverse",
+            "order-reverse-with-title",
+            "order-forward-singular",
+            "order-uppercase-reverse",
+            "order-uppercase-forwards",
+            "order-empty",
+            "order-single-quoted",
+            "order-bare",
+            "order-key-case",
+            "ajax-order-omitted",
+            "ajax-order-forwards",
+            "ajax-order-reverse",
+            "hide-true-casos-served",
+            "hide-true-historias-served",
+            "default-blog-index-served",
+            "explicit-false-howto-served"
+          ]
+        }
+      ]
+    },
+    {
       "id": "forum-mini-current-preview-and-workbench-20260809",
       "title": "Forum mini modules share own-line, limit, activity, route, and literal-owner contracts",
       "feature_ids": [

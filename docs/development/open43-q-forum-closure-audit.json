@@ -74,6 +74,21 @@
       "catalog_sha256": "a711b4fc7f78bbc4cc50d8a45206e8fd63bf25f0596648a905f55c1695f7f554",
       "readonly_artifact_sha256": "0a188e7960890a0ad05fbb7733671072abc1f08156e0d2df7e70b523e3405fd4",
       "audited_at": "2026-08-10"
+    },
+    {
+      "scope": "Issue 1034 anonymous Comments title, hide, and order attributes",
+      "integration_base": "00e37910649454043480fd6957327f7c11a95fd7",
+      "integration_base_tree": "154651282c8e43f08bed0215a15750d2a48ca147",
+      "branch": "agent/open87-pr2/q-comments-attributes-g16",
+      "tests_commit": "3776f21f568310468b5b4fd26cef4dc3a19d6df1",
+      "source_commit": "fedaa1cbcf5985d1527160e14ef4bd2002fa0024",
+      "live_observations_sha256": "d64da3756062f6ff04918d08ea6059c0527b8d97374d45d395d27607027a45a3",
+      "implementation_ledger_sha256": "4a6be4bf41cfcea643d5a281ba9d48df2856ac529a70ab1c12a9b163d3cc2377",
+      "catalog_sha256": "f2b29ef57bc94ce70ee47791277d73edb8932273eb425c6b209ee8674f992c9c",
+      "attribute_artifact_sha256": "37c2b8366caf1ebea665b5c958e20c66ac118f8b0cffae5d73bc805f99f61533",
+      "external_manifest_sha256": "cea6373f78b72a2c8526aee16a31baca94276309a09a5f4d44f5cb987d10ef4e",
+      "external_sha256s_sha256": "83d2a3cd2bc52810f4c6dc983a2f529e8f891b2f15bd423ef9b7001b265ee0ef",
+      "audited_at": "2026-08-10"
     }
   ],
   "method": {
@@ -95,7 +110,7 @@
       "Do not treat page-discussion thread provisioning as authority to create a forum post or a standalone forum thread."
     ],
     "tracker_read_canonicalization": "gh issue view <issue> --repo Rokurolize/wikijump --json number,title,state,updatedAt,body,comments,url | jq -cS .",
-    "source_change_disposition": "The original lane established the forum-mini behavior and public case bindings. The first amendment implements the observed current RecentThreads placeholder contract. The second implements the sealed anonymous read-only default FrontForum, ForumStart, category, thread, thread-post, and RecentPosts first-page contracts. The review amendment moves Site:View and Page:View filtering before count, order, and limit work; excludes hidden ForumStart groups and their categories in the structure queries used by the normal index; completes the observed category pager; preserves the complete thread/posts response envelope; and serves exact read-only routes without granting the observed remote jsInclude values loader authority. The Comments amendment adds the saved-page shell and exact anonymous page-to-discussion forward and reverse ten-root read model. Mutations, non-anonymous actors, and browser lifecycle remain explicit gaps."
+    "source_change_disposition": "The original lane established the forum-mini behavior and public case bindings. The first amendment implements the observed current RecentThreads placeholder contract. The second implements the sealed anonymous read-only default FrontForum, ForumStart, category, thread, thread-post, and RecentPosts first-page contracts. The review amendment moves Site:View and Page:View filtering before count, order, and limit work; excludes hidden ForumStart groups and their categories in the structure queries used by the normal index; completes the observed category pager; preserves the complete thread/posts response envelope; and serves exact read-only routes without granting the observed remote jsInclude values loader authority. The first Comments amendment adds the saved-page shell and exact anonymous page-to-discussion forward and reverse ten-root read model. The attribute amendment adds the evidenced title, hide, forwards, and reverse source forms and keeps invalid or unobserved saved heads query-free. Mutations, hideForm, non-anonymous actors, and browser lifecycle remain explicit gaps."
   },
   "tracker_reads": [
     {
@@ -155,6 +170,18 @@
       "actor": "anonymous",
       "mutation": false,
       "authority": "Anonymous read-only Ajax observations on a 201-thread category establish the 20-thread page size, duplicate versus single pager placement, exact page 1, 2, 11, and 12 sequences, /forum/c-1113520/p/<page> hrefs, and the unclamped page 12 of 11 quirk."
+    },
+    {
+      "evidence_id": "FORUM_Q1034_COMMENTS_ATTRIBUTES_ANONYMOUS_20260809",
+      "path": "install/local/wikidot-verification/artifacts/forum-q1034-comments-attributes-anonymous-20260810.json",
+      "sha256": "37c2b8366caf1ebea665b5c958e20c66ac118f8b0cffae5d73bc805f99f61533",
+      "external_manifest_path": "/home/roku/wjlab/evidence/20260810-open43-q1034-comments-attributes-anonymous/manifest.json",
+      "external_manifest_sha256": "cea6373f78b72a2c8526aee16a31baca94276309a09a5f4d44f5cb987d10ef4e",
+      "external_sha256s_path": "/home/roku/wjlab/evidence/20260810-open43-q1034-comments-attributes-anonymous/SHA256SUMS",
+      "external_sha256s_sha256": "83d2a3cd2bc52810f4c6dc983a2f529e8f891b2f15bd423ef9b7001b265ee0ef",
+      "actor": "anonymous",
+      "mutation": false,
+      "authority": "Anonymous PagePreview, existing served pages, read-only Comments Ajax responses, and the live browser helper establish exact title, hide, and order source boundaries without granting form or mutation authority."
     },
     {
       "evidence_id": "OPEN43_READONLY_LIVE_20260810",
@@ -305,7 +332,7 @@
             "framerail/tests/ajax-module-connector.test.js#passes read-only forum missing states through and rejects unsealed shapes",
             "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority"
           ],
-          "result": "Framerail dispatches only the exact read-only forum module and scalar-parameter allowlist. Comments accepts pageId or pageId with order=reverse; unknown fields, other order values, unsupported modules, and ForumNewThread return a stable not_ok envelope and cannot reach mutation authority."
+          "result": "Framerail dispatches only the exact read-only forum module and scalar-parameter allowlist. Comments accepts pageId with omitted order, order=forwards, or order=reverse. Unknown fields, other order values, unsupported modules, and ForumNewThread return a stable not_ok envelope and cannot reach mutation authority."
         },
         {
           "case_id": "Q1034_RECENTTHREADS_GENERAL_READ_MODEL",
@@ -367,22 +394,33 @@
             "scp-comments-reverse",
             "scp-comments-missing-page"
           ],
-          "result": "Saved page_view renders the inert Comments shell. The public forum endpoint applies request-site binding, Site:View, linked Page:View, and same-site nondeleted forum category and group checks before resolving the page discussion, then returns the observed forward or reverse first page of ten root comment trees with threadId and exact jsInclude order. Missing, private, cross-site, deleted-category, and deleted-group page identities return the same no_page response. A descendant beyond the bounded tree depth returns not_ok instead of a truncated tree. Distinct compiled text hashes are loaded once and mapped back in post order, Comments uses the observed HTTPS avatar and karma resources, and the other sealed forum surfaces retain HTTP. The public reads leave page, thread, and post rows unchanged."
+          "result": "PagePreview renders the inert Comments shell. A saved page with omitted hide or exact hide=false embeds the anonymous permission-filtered first page. The public forum endpoint applies request-site binding, Site:View, linked Page:View, and same-site nondeleted forum category and group checks before resolving the page discussion, then returns the observed forward or reverse first page of ten root comment trees with threadId and exact jsInclude order. Missing, private, cross-site, deleted-category, and deleted-group page identities return the same no_page response. A descendant beyond the bounded tree depth returns not_ok instead of a truncated tree. Distinct compiled text hashes are loaded once and mapped back in post order, Comments uses the observed HTTPS avatar and karma resources, and the other sealed forum surfaces retain HTTP. The public reads leave page, thread, and post rows unchanged."
+        },
+        {
+          "case_id": "Q1034_COMMENTS_TITLE_HIDE_ORDER_ATTRIBUTES",
+          "status": "implemented_unverified",
+          "evidence_id": "FORUM_Q1034_COMMENTS_ATTRIBUTES_ANONYMOUS_20260809",
+          "public_tests": [
+            "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+            "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
+            "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority"
+          ],
+          "result": "The public preview and saved-page seams recognize mixed-case Comments module names. Exact lowercase double-quoted nonempty title emits one escaped direct h1. Exact hide=true keeps the saved shell empty, while omitted hide and exact hide=false embed the first permitted page. Exact order=reverse marks the shell and selects reverse roots; omitted order and exact order=forwards select forward roots. Invalid, empty, single-quoted, bare, uppercase-value, wrong-case, duplicate, and unknown saved heads remain inert and issue no Comments query."
         }
       ],
       "needs_source": [
         {
-          "case_id": "Q1034_COMMENTS_DOCUMENTED_ATTRIBUTES",
+          "case_id": "Q1034_COMMENTS_HIDEFORM_ACTOR_AND_FORM_STATE",
           "specification": "docs/wikidot-specifications/specifications/module/module-comments.md",
-          "missing": "The documented title, hide=true, hideForm=true or yes, and explicit order=forwards Comments behaviors do not have public saved-page, Ajax, or browser implementations and regressions. The current source-ready slice covers only the default shell and the observed forward or reverse first Ajax page.",
-          "requires": "Implement each documented attribute as a separate public vertical slice, preserving the documented defaults and accepted values. Acquire live evidence wherever the documentation does not determine exact DOM, Ajax parameters, permission-dependent form state, or browser transitions.",
-          "forbidden_inference": "Do not treat the default Comments shell, order=reverse Ajax observation, or visible mutation controls as evidence for title markup, hidden-state lifecycle, form authority, or the forwards spelling."
+          "missing": "Anonymous evidence cannot distinguish hideForm from the actor's permission to open a form. It also does not establish the documented yes value, the permitted actor DOM, or form authority.",
+          "requires": "Acquire a non-mutating authenticated actor differential for omitted hideForm, hideForm=false, hideForm=true, and hideForm=yes. Implement the setting only after the evidence identifies the exact permitted-actor form state and browser boundary.",
+          "forbidden_inference": "Do not infer an open form, a safe action, or the yes spelling from anonymous Add a New Comment controls or from documentation alone."
         }
       ],
       "candidate_required": [
         {
           "case_id": "Q1034_EXACT_CANDIDATE_PUBLIC_READ_MODELS",
-          "requires": "Run all public Deepwell forum tests against the exact merged candidate, including saved page_view and wikidot_forum_module. Bind each receipt to the anonymous request actor and fixture identities and prove permission-before-count, permission-before-limit, the 20-row thread-post boundary, and the forward and reverse ten-root Comments boundary."
+          "requires": "Run all public Deepwell forum tests against the exact merged candidate, including saved page_view and wikidot_forum_module. Bind each receipt to the anonymous request actor and fixture identities. Prove permission-before-count, permission-before-limit, the 20-row thread-post boundary, the title and hide shell states, and the omitted, forwards, and reverse ten-root Comments boundaries."
         },
         {
           "case_id": "Q1034_EXACT_CANDIDATE_FORUM_ROUTES_AND_AJAX",
@@ -426,7 +464,7 @@
       {
         "feature": "syntax-comments",
         "ledger_status": "pending",
-        "audit_disposition": "The exact no-context shell and anonymous populated forward, reverse, and no_page read slices are source-ready. Attributes, later pages, forms, actions, non-anonymous actors, and browser behavior remain open."
+        "audit_disposition": "The exact no-context shell, title, hide, forwards, reverse, and no_page read slices are source-ready. hideForm, later pages, forms, actions, non-anonymous actors, and browser behavior remain open."
       },
       {
         "feature": "module-recentthreads",
@@ -462,8 +500,50 @@
         "Q1034_COMMENTS_PAGE_THREAD_READ_MODEL"
       ],
       "actionable_source_cases": [
-        "Q1034_COMMENTS_DOCUMENTED_ATTRIBUTES"
+        "Q1034_COMMENTS_HIDEFORM_ACTOR_AND_FORM_STATE"
       ]
+    },
+    "q1034_comments_attributes_evidence": {
+      "status": "pass",
+      "actor": "anonymous",
+      "mutation": false,
+      "repository_artifact_case_count": 25,
+      "repository_artifact_sha256": "37c2b8366caf1ebea665b5c958e20c66ac118f8b0cffae5d73bc805f99f61533",
+      "external_manifest_sha256": "cea6373f78b72a2c8526aee16a31baca94276309a09a5f4d44f5cb987d10ef4e",
+      "external_sha256s_sha256": "83d2a3cd2bc52810f4c6dc983a2f529e8f891b2f15bd423ef9b7001b265ee0ef",
+      "external_sha256_check": "pass",
+      "resolved_source_cases": [
+        "Q1034_COMMENTS_TITLE_HIDE_ORDER_ATTRIBUTES"
+      ],
+      "actionable_source_cases": [
+        "Q1034_COMMENTS_HIDEFORM_ACTOR_AND_FORM_STATE"
+      ]
+    },
+    "q1034_comments_attributes_source_checks": {
+      "status": "pass",
+      "integration_base": "00e37910649454043480fd6957327f7c11a95fd7",
+      "direct_rustfmt": "rustfmt --edition 2024 --check deepwell/src/services/render/forum_modules.rs deepwell/src/services/render/forum_read_routes.rs deepwell/tests/page.rs",
+      "focused_node": "node --test framerail/tests/ajax-module-connector.test.js",
+      "focused_node_passed": 20,
+      "focused_node_failed": 0,
+      "corpus_pinned_literals": {
+        "status": "pass_with_short_notices",
+        "scanned_production_files": 2,
+        "captured_pages": 101,
+        "findings": 0,
+        "short_notices": 6
+      },
+      "autoreview": {
+        "status": "pass",
+        "mode": "branch",
+        "base": "00e37910649454043480fd6957327f7c11a95fd7",
+        "engine": "codex",
+        "model": "gpt-5.6-sol",
+        "patch_correct_probability": 0.98,
+        "actionable_findings": 0,
+        "secret_scan": "pass"
+      },
+      "cargo_runtime_browser": "not_run_by_delegation"
     },
     "q1034_category_pagination_evidence": {
       "status": "pass",
@@ -580,5 +660,5 @@
     "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/forum-mini-live-reference.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
     "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scp-wiki --rpc-url http://127.0.0.1:2747/jsonrpc"
   ],
-  "closure_rule": "This lane does not close either issue. The anonymous forum read models, including the page Comments forward and reverse first page, are source-ready but still need central Rust, Framerail, exact-candidate HTTP, and browser receipts. Attributes, later comment pages, mutation, non-anonymous actors, and the full browser lifecycle remain evidence or implementation gaps."
+  "closure_rule": "This lane does not close either issue. The anonymous forum read models, including exact Comments title, hide, forwards, and reverse behavior on the first read page, are source-ready but still need central Rust, exact-candidate HTTP, and browser receipts. hideForm, later comment pages, forms, mutation, non-anonymous actors, and the full browser lifecycle remain evidence or implementation gaps."
 }

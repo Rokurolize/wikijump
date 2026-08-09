@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 67,
+    "observation_count": 68,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -1524,7 +1524,8 @@
       ],
       "related_features": [],
       "live_observation_ids": [
-        "forum-q1034-readonly-route-core-20260809"
+        "forum-q1034-readonly-route-core-20260809",
+        "forum-q1034-comments-attributes-anonymous-20260809"
       ]
     },
     {
