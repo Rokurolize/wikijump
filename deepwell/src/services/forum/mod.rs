@@ -23,6 +23,6 @@ mod structs;
 
 pub use self::service::ForumService;
 pub use self::structs::{
-    CreateForumCategory, CreateForumGroup, ForumGroupStructure, GetForumCategory,
-    GetForumStructure,
+    CreateForumCategory, CreateForumGroup, DeleteForumCategory, DeleteForumGroup,
+    ForumGroupStructure, GetForumCategory, GetForumStructure,
 };

@@ -33,7 +33,7 @@ use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTa
 use deepwell::models::blob_pending::{self, Entity as BlobPendingTable};
 use deepwell::models::file;
 use deepwell::models::forum_post::{self, Entity as ForumPostTable};
-use deepwell::models::forum_thread::{self, Entity as ForumThreadTable};
+use deepwell::models::forum_thread::Entity as ForumThreadTable;
 use deepwell::models::page::{self, Entity as PageTable};
 use deepwell::models::page_category::{self, Entity as PageCategoryTable};
 use deepwell::models::page_revision::Entity as PageRevisionTable;
@@ -4815,11 +4815,14 @@ async fn wikidot_files_saved_view_renders_only_authoritative_bounded_rows() {
     else {
         panic!("saved Files row fixture should be publicly viewable");
     };
-    let expected_row = format!(concat!(
-        r#"<tr><td><a href="/local--files/fixture-files-module-row/that%20man%26%22.jpg">that man&amp;".jpg</a></td>"#,
-        r#"<td><span title="JPEG image data, EXIF standard">JPEG image data</span></td>"#,
-        r#"<td>176.07 kB</td><td><a href="javascript:;" onclick="WIKIDOT.modules.PageFilesModule.listeners.fileMoreInfo(event,{file_id})">Info</a></td></tr>"#,
-    ),);
+    let expected_row = format!(
+        concat!(
+            r#"<tr><td><a href="/local--files/fixture-files-module-row/that%20man%26%22.jpg">that man&amp;".jpg</a></td>"#,
+            r#"<td><span title="JPEG image data, EXIF standard">JPEG image data</span></td>"#,
+            r#"<td>176.07 kB</td><td><a href="javascript:;" onclick="WIKIDOT.modules.PageFilesModule.listeners.fileMoreInfo(event,{file_id})">Info</a></td></tr>"#,
+        ),
+        file_id = file_id,
+    );
     assert!(
         compiled_body_html.contains(&expected_row),
         "saved Files output must expose the exact authoritative row:\n{compiled_body_html}",
@@ -24681,7 +24684,10 @@ async fn cleanup_committed_page_pending_blob_fixture(
     }
     for (label, path) in [
         ("temporary", fixture.s3_path.clone()),
-        ("permanent", blob_hash_to_hex(&sha512_hash(data))),
+        (
+            "permanent",
+            blob_hash_to_hex(&sha512_hash(data)).to_string(),
+        ),
     ] {
         match state.s3_files_bucket.delete_object(&path).await {
             Ok(response) if response.status_code() == 204 => {}

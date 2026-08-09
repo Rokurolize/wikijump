@@ -229,10 +229,13 @@ fn render_empty_files_module(page_id: Option<i64>) -> String {
 }
 
 fn render_files_module(page_id: i64, page_slug: &str, rows: &[VisibleFileRow]) -> String {
-    let mut output = format!(concat!(
-        r#"<div id="files-{page_id}">"#,
-        "\n<table class=\"page-files\"><tr><th>File name</th><th>File type</th><th>Size</th><th></th></tr>",
-    ),);
+    let mut output = format!(
+        concat!(
+            r#"<div id="files-{page_id}">"#,
+            "\n<table class=\"page-files\"><tr><th>File name</th><th>File type</th><th>Size</th><th></th></tr>",
+        ),
+        page_id = page_id,
+    );
     let page_slug = percent_encode_path_segment(page_slug);
     for row in rows {
         let href = format!(
@@ -280,6 +283,7 @@ fn render_files_module(page_id: i64, page_slug: &str, rows: &[VisibleFileRow]) -
             "\n</p>",
             "\n</div>",
         ),
+        page_id = page_id,
     ));
     output
 }
