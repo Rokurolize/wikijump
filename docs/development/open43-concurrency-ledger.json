@@ -1,12 +1,12 @@
 {
   "schema": "wikijump.open43_concurrency_ledger.v1",
   "campaign": "open43-pr2",
-  "updated_at": "2026-08-09T20:00:00+09:00",
+  "updated_at": "2026-08-09T20:20:00+09:00",
   "integration_branch": {
     "repository": "Rokurolize/wikijump",
     "branch": "fix/open87-pr2-modules-actions-media-settings",
     "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
-    "reconciled_head": "e814fb3493bd34defd49da2d830a1bf93dc94520"
+    "reconciled_head": "4287bef4af085c81fa6dbc8874796224f454545c"
   },
   "limits": {
     "configured_threads": 13,
@@ -150,6 +150,22 @@
       "branch": "agent/open87-pr2/q-forum-closure-g4",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/q-forum-closure-g4",
       "base": "ff656ba33522acd1deaba6b6d59b0097c639ba49",
+      "head": "2c0947a4882ad2b2dee1f7fc40336d861c67a2e2",
+      "status": "integrated",
+      "integration_commits": [
+        "1b9ce7bfa335914073c4a33a0d847d9758e2a1ff",
+        "4287bef4af085c81fa6dbc8874796224f454545c"
+      ],
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "a-actions-membership-closure-g5",
+      "agent": "/root/a_rate",
+      "issue_numbers": [775, 777, 1029, 1030, 1033, 1041, 1060],
+      "branch": "agent/open87-pr2/a-actions-membership-closure-g5",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/a-actions-membership-closure-g5",
+      "base": "4db51544cddf2e9d9d90ff27180d2f1c7ccc26c4",
       "head": null,
       "status": "running",
       "may_run_cargo": false,
