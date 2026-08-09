@@ -27,6 +27,7 @@ use deepwell::constants::{
 };
 use deepwell::error::prelude::*;
 use deepwell::license::License;
+use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
 use deepwell::models::file;
 use deepwell::models::page::{self, Entity as PageTable};
 use deepwell::models::page_category::{self, Entity as PageCategoryTable};
@@ -4315,6 +4316,297 @@ async fn wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idem
         }),
     );
     assert_contains_error!(stale, ErrorType::Page);
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SetTagsMutationSnapshot {
+    tags: Vec<String>,
+    revision_id: i64,
+    revision_count: i32,
+    updated_at: Option<OffsetDateTime>,
+    deleted_at: Option<OffsetDateTime>,
+    compiled_body_html: Option<String>,
+    page_edit_audit_count: u64,
+}
+
+async fn snapshot_set_tags_mutation_state(
+    runner: &mut TestRunner,
+    site_id: i64,
+    page_id: i64,
+    allow_deleted: bool,
+) -> SetTagsMutationSnapshot {
+    set_mutation_request_context(runner, ADMIN_USER_ID, site_id, Reference::Id(page_id));
+    let page = if allow_deleted {
+        run_endpoint!(
+            runner,
+            page_get_direct,
+            json!({
+                "site_id": site_id,
+                "page_id": page_id,
+                "allow_deleted": true,
+                "details": {"compiled_html": true},
+            }),
+        )
+    } else {
+        run_endpoint!(
+            runner,
+            page_get,
+            json!({
+                "site_id": site_id,
+                "page": page_id,
+                "details": {"compiled_html": true},
+            }),
+        )
+    }
+    .expect("set-tags denial fixture should remain readable by its administrator");
+    let page_edit_audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("page.edit"))
+        .filter(AuditLogColumn::PageId.eq(page_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("set-tags denial audit supplement should be readable");
+
+    SetTagsMutationSnapshot {
+        tags: page.tags,
+        revision_id: page.revision_id,
+        revision_count: page.page_revision_count,
+        updated_at: page.page_updated_at,
+        deleted_at: page.page_deleted_at,
+        compiled_body_html: page.compiled_body_html,
+        page_edit_audit_count,
+    }
+}
+
+#[tokio::test]
+async fn wikidot_set_tags_denials_preserve_public_page_state() {
+    const LOCKED_CATEGORY: &str = "fixture-set-tags-denial-locked-category";
+    const PRIVATE_CATEGORY: &str = "fixture-set-tags-denial-private-category";
+    const LOCKED_SLUG: &str = "fixture-set-tags-denial-locked";
+    const DELETED_SLUG: &str = "fixture-set-tags-denial-deleted";
+    const PRIVATE_SLUG: &str = "fixture-set-tags-denial-private";
+    const ROUTE_TARGET_SLUG: &str = "fixture-set-tags-denial-route-target";
+    const ROUTE_MISMATCH_SLUG: &str = "fixture-set-tags-denial-other-route";
+    const ACTOR_MISMATCH_SLUG: &str = "fixture-set-tags-denial-actor";
+    const CROSS_SITE_TARGET_SLUG: &str = "fixture-set-tags-denial-cross-site-target";
+    const CROSS_SITE_ROUTE_SLUG: &str = "fixture-set-tags-denial-cross-site-route";
+    const SOURCE: &str = "[[button set-tags +favorite text=\"Change tags\"]]";
+
+    #[derive(Debug)]
+    struct DenialCase {
+        name: &'static str,
+        target_page_id: i64,
+        allow_deleted: bool,
+        request_actor_id: i64,
+        request_site_id: i64,
+        route_slug: &'static str,
+        submitted_user_id: i64,
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let cross_site = run_endpoint!(runner, site_get, json!({"site": "scp-jp"}))
+        .expect("seeded SCP-JP site should exist");
+    let cross_site_id = cross_site.site.site_id;
+
+    for (slug, title) in [
+        (LOCKED_SLUG, "Set-tags locked target"),
+        (DELETED_SLUG, "Set-tags deleted target"),
+        (PRIVATE_SLUG, "Set-tags private target"),
+        (ROUTE_TARGET_SLUG, "Set-tags route target"),
+        (ROUTE_MISMATCH_SLUG, "Set-tags mismatched route"),
+        (ACTOR_MISMATCH_SLUG, "Set-tags actor target"),
+        (CROSS_SITE_TARGET_SLUG, "Set-tags cross-site target"),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, SOURCE).await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        cross_site_id,
+        CROSS_SITE_ROUTE_SLUG,
+        "Set-tags cross-site route",
+        SOURCE,
+    )
+    .await;
+
+    let mut pages = Vec::new();
+    for slug in [
+        LOCKED_SLUG,
+        DELETED_SLUG,
+        PRIVATE_SLUG,
+        ROUTE_TARGET_SLUG,
+        ACTOR_MISMATCH_SLUG,
+        CROSS_SITE_TARGET_SLUG,
+    ] {
+        pages.push(
+            run_endpoint!(runner, page_get, json!({"site_id": site_id, "page": slug}),)
+                .expect("set-tags denial target should exist"),
+        );
+    }
+    let locked_page_id = pages[0].page_id;
+    let deleted_page_id = pages[1].page_id;
+    let private_page_id = pages[2].page_id;
+    let route_target_page_id = pages[3].page_id;
+    let actor_mismatch_page_id = pages[4].page_id;
+    let cross_site_target_page_id = pages[5].page_id;
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        LOCKED_CATEGORY,
+        SAMPLE_USER_ID,
+        &[Action::View, Action::Edit],
+        "set-tags-editor",
+    )
+    .await;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    set_listpages_test_category_slug(&runner, site_id, LOCKED_SLUG, LOCKED_CATEGORY)
+        .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_SLUG, PRIVATE_CATEGORY)
+        .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("set-tags denial permission cache should be invalidated");
+    PageLockService::create(
+        runner.context(),
+        site_id,
+        ADMIN_USER_ID,
+        Reference::Id(locked_page_id),
+        CreatePageLockInput {
+            page: Reference::Id(locked_page_id),
+            expires_at: None,
+            from_wikidot: false,
+            lock_type: PageLockType::PermissionOnly,
+            reason: Some("set-tags denial matrix".to_owned()),
+            override_existing: false,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("set-tags denial page lock should be created");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(deleted_page_id),
+    );
+    let deleted_revision_id = pages[1].revision_id;
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": deleted_page_id,
+            "last_revision_id": deleted_revision_id,
+            "revision_comments": "delete set-tags denial target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let fingerprint = LegacyActionRegistry::from_wikidot_source(SOURCE)
+        .fingerprint(0)
+        .expect("set-tags denial fixture should have a registry fingerprint");
+    let cases = [
+        DenialCase {
+            name: "locked",
+            target_page_id: locked_page_id,
+            allow_deleted: false,
+            request_actor_id: SAMPLE_USER_ID,
+            request_site_id: site_id,
+            route_slug: LOCKED_SLUG,
+            submitted_user_id: SAMPLE_USER_ID,
+        },
+        DenialCase {
+            name: "deleted",
+            target_page_id: deleted_page_id,
+            allow_deleted: true,
+            request_actor_id: ADMIN_USER_ID,
+            request_site_id: site_id,
+            route_slug: DELETED_SLUG,
+            submitted_user_id: ADMIN_USER_ID,
+        },
+        DenialCase {
+            name: "private",
+            target_page_id: private_page_id,
+            allow_deleted: false,
+            request_actor_id: SAMPLE_USER_ID,
+            request_site_id: site_id,
+            route_slug: PRIVATE_SLUG,
+            submitted_user_id: SAMPLE_USER_ID,
+        },
+        DenialCase {
+            name: "route mismatch",
+            target_page_id: route_target_page_id,
+            allow_deleted: false,
+            request_actor_id: ADMIN_USER_ID,
+            request_site_id: site_id,
+            route_slug: ROUTE_MISMATCH_SLUG,
+            submitted_user_id: ADMIN_USER_ID,
+        },
+        DenialCase {
+            name: "actor mismatch",
+            target_page_id: actor_mismatch_page_id,
+            allow_deleted: false,
+            request_actor_id: ADMIN_USER_ID,
+            request_site_id: site_id,
+            route_slug: ACTOR_MISMATCH_SLUG,
+            submitted_user_id: SAMPLE_USER_ID,
+        },
+        DenialCase {
+            name: "cross-site",
+            target_page_id: cross_site_target_page_id,
+            allow_deleted: false,
+            request_actor_id: ADMIN_USER_ID,
+            request_site_id: cross_site_id,
+            route_slug: CROSS_SITE_ROUTE_SLUG,
+            submitted_user_id: ADMIN_USER_ID,
+        },
+    ];
+
+    for case in cases {
+        let before = snapshot_set_tags_mutation_state(
+            &mut runner,
+            site_id,
+            case.target_page_id,
+            case.allow_deleted,
+        )
+        .await;
+        set_mutation_request_context(
+            &mut runner,
+            case.request_actor_id,
+            case.request_site_id,
+            Reference::Slug(Cow::Borrowed(case.route_slug)),
+        );
+        let error = run_endpoint_err!(
+            runner,
+            wikidot_legacy_set_tags,
+            json!({
+                "page_id": case.target_page_id,
+                "last_revision_id": before.revision_id,
+                "action_index": 0,
+                "action_fingerprint": fingerprint.clone(),
+                "user_id": case.submitted_user_id,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::Page);
+
+        let after = snapshot_set_tags_mutation_state(
+            &mut runner,
+            site_id,
+            case.target_page_id,
+            case.allow_deleted,
+        )
+        .await;
+        assert_eq!(
+            after, before,
+            "{} set-tags denial must preserve public page and audit state",
+            case.name,
+        );
+    }
 }
 
 #[tokio::test]

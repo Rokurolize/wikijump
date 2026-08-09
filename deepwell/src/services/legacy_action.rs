@@ -13,7 +13,9 @@
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::services::page::{EditPage, EditPageBody, EditPageOutput};
 use crate::services::render::LegacyActionRegistry;
-use crate::services::{PageRevisionService, PageService, ServiceContext, TextService};
+use crate::services::{
+    PageLockService, PageRevisionService, PageService, ServiceContext, TextService,
+};
 use crate::types::{Maybe, Reference};
 use std::net::IpAddr;
 
@@ -79,6 +81,27 @@ impl LegacyActionService {
         if page.site_id != site_id || page.page_id != route_page.page_id {
             return Err(Error::new(
                 "legacy action target does not match the route site",
+                ErrorType::PermissionDenied,
+            )
+            .into());
+        }
+        let lock = PageLockService::can_user_bypass_lock(
+            ctx,
+            site_id,
+            page.page_id,
+            Some(page.page_category_id),
+            input.user_id,
+        )
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to authorize locked legacy action page",
+                ErrorType::PageLock,
+            )
+        })?;
+        if !lock.can_edit {
+            return Err(Error::new(
+                "legacy action page is locked",
                 ErrorType::PermissionDenied,
             )
             .into());
