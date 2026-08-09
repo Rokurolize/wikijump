@@ -33,6 +33,33 @@
     "final_source_freeze_reconciliation_required": true,
     "standing_is_acceptance_evidence": false
   },
+  "resized_asset_lane_amendment": {
+    "scope_case_ids": [
+      "M776_SOURCELESS_ATTACHMENT_AND_RESIZE",
+      "M806_SOURCELESS_ATTACHMENT_AND_RESIZE",
+      "M1043_RESIZED_BLOB_IDENTITY"
+    ],
+    "base_commit": "757a87285350a132f947fd6e3042c492e53c3717",
+    "base_tree": "e13eae04f9504c73760aeb0efb48f0c31709c841",
+    "test_commit": "7d5af9d38aea98c6c13d73e84be4264cd391055a",
+    "source_commit": "538e523735fb21bf5822a7b1d894402a8766741a",
+    "source_tree": "2b668adaaa43e2560bb406c50d6359680d14d8b5",
+    "dependency": {
+      "crate": "image",
+      "version": "0.25.10",
+      "default_features": false,
+      "features": ["gif", "jpeg", "png", "webp"],
+      "selection_authority": "Official image-rs 0.25.10 documentation and installed crate types for ImageReader limits, resize, resize_to_fill, and JpegEncoder.",
+      "manifest_path": "wws/Cargo.toml",
+      "lock_path": "wws/Cargo.lock",
+      "lock_sha256_before": "b08563c1fb7d21a82170ee7da499a52b8a8a703da466db60232e9212cca43521",
+      "lock_update_owner": "root Cargo broker",
+      "lock_update_pending": true,
+      "lock_update_command_id": "C_WWS_LOCK_AND_CHECK"
+    },
+    "public_boundary": "Deepwell emits original and resized typed identities; WWS freshly resolves page identity and actor-bound file_get before MIME, size, ETag, S3, or decode decisions.",
+    "source_ready_is_not_pass": true
+  },
   "github_issue_inputs": [
     {
       "issue": 756,
@@ -214,6 +241,17 @@
     },
     "C_WWS": {
       "command": "cargo test --manifest-path wws/Cargo.toml -- --nocapture",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_WWS_LOCK_AND_CHECK": {
+      "command": "cargo check --manifest-path wws/Cargo.toml --tests",
+      "phase": "dependency_lock_barrier",
+      "exists_now": true,
+      "expected_mutation": "Update wws/Cargo.lock from its recorded pre-lane SHA only for the new image dependency graph; root must review the lock diff before accepting it."
+    },
+    "C_WWS_RESIZED": {
+      "command": "cargo test --manifest-path wws/Cargo.toml handler::resized_image::tests -- --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
@@ -448,20 +486,31 @@
         {
           "case_id": "M776_SOURCELESS_ATTACHMENT_AND_RESIZE",
           "acceptance": "Resolve a source-less current-page attachment after ACL and serve its evidenced original/resized URL and exact blob revision.",
-          "classification": "needs_source",
-          "reason": "FTML exposes an implicit attachment descriptor, but Wikijump has no /local--resized-images WWS route or source test binding latest visible file revision to the served resize.",
+          "classification": "source_ready",
+          "reason": "The public saved-page render preserves FTML's typed current-page original/resized identities, and the public WWS Router resolves fresh page identity plus actor-bound file_get before serving the exact revision-derived resize.",
           "source_paths": [
-            "deepwell/src/services/render/service.rs",
-            "wws/src/route.rs"
+            "deepwell/tests/media.rs",
+            "wws/src/handler/resized_image.rs",
+            "wws/src/fetch.rs",
+            "wws/src/state.rs",
+            "wws/src/deepwell.rs",
+            "wws/src/route.rs",
+            "wws/Cargo.toml"
           ],
-          "existing_tests": [],
+          "existing_tests": [
+            "deepwell/tests/media.rs::source_less_local_images_keep_original_and_resized_asset_identities::issue-776-source-less-floating-image",
+            "wws/src/handler/resized_image.rs::tests::public_router_serves_documented_variants_and_cheap_conditional_head",
+            "wws/src/handler/resized_image.rs::tests::public_route_tracks_latest_revision_and_fails_closed_after_rename_or_delete",
+            "wws/src/handler/resized_image.rs::tests::public_route_checks_acl_before_file_details_and_rejects_unsafe_inputs",
+            "wws/src/handler/resized_image.rs::tests::public_route_caps_concurrent_decode_work"
+          ],
           "evidence_ids": ["E_V7_CORPUS"],
-          "missing_source": [
-            "permission-first implicit attachment resolution matrix",
-            "revision-bound resized asset service and WWS route",
-            "source-level negative controls for missing, deleted, private, cross-site, and traversal targets"
-          ],
-          "next_command_ids": ["C_DEEPWELL_MEDIA", "C_WWS"]
+          "next_command_ids": [
+            "C_DEEPWELL_MEDIA",
+            "C_WWS_LOCK_AND_CHECK",
+            "C_WWS_RESIZED",
+            "C_WWS"
+          ]
         },
         {
           "case_id": "M776_UNFROZEN_ARGUMENT_MATRIX",
@@ -515,19 +564,31 @@
         {
           "case_id": "M806_SOURCELESS_ATTACHMENT_AND_RESIZE",
           "acceptance": "Resolve a source-less centered current-page attachment after ACL and serve the evidenced original/resized blob revision.",
-          "classification": "needs_source",
-          "reason": "The same missing permission-bound resized asset route as #776 remains; centered static DOM alone cannot prove served attachment behavior.",
+          "classification": "source_ready",
+          "reason": "The centered saved-page render binds FTML's typed current-page original/resized identities, and the same public WWS ACL-first route serves only the freshly resolved file revision.",
           "source_paths": [
-            "deepwell/src/services/render/service.rs",
-            "wws/src/route.rs"
+            "deepwell/tests/media.rs",
+            "wws/src/handler/resized_image.rs",
+            "wws/src/fetch.rs",
+            "wws/src/state.rs",
+            "wws/src/deepwell.rs",
+            "wws/src/route.rs",
+            "wws/Cargo.toml"
           ],
-          "existing_tests": [],
+          "existing_tests": [
+            "deepwell/tests/media.rs::source_less_local_images_keep_original_and_resized_asset_identities::issue-806-source-less-centered-image",
+            "wws/src/handler/resized_image.rs::tests::public_router_serves_documented_variants_and_cheap_conditional_head",
+            "wws/src/handler/resized_image.rs::tests::public_route_tracks_latest_revision_and_fails_closed_after_rename_or_delete",
+            "wws/src/handler/resized_image.rs::tests::public_route_checks_acl_before_file_details_and_rejects_unsafe_inputs",
+            "wws/src/handler/resized_image.rs::tests::public_route_caps_concurrent_decode_work"
+          ],
           "evidence_ids": ["E_V7_CORPUS"],
-          "missing_source": [
-            "permission-first implicit attachment resolution matrix",
-            "revision-bound resized asset service and WWS route"
-          ],
-          "next_command_ids": ["C_DEEPWELL_MEDIA", "C_WWS"]
+          "next_command_ids": [
+            "C_DEEPWELL_MEDIA",
+            "C_WWS_LOCK_AND_CHECK",
+            "C_WWS_RESIZED",
+            "C_WWS"
+          ]
         },
         {
           "case_id": "M806_UNFROZEN_ARGUMENT_MATRIX",
@@ -866,20 +927,38 @@
         {
           "case_id": "M1043_RESIZED_BLOB_IDENTITY",
           "acceptance": "Use exact revision-bound original and resized blob identities and invalidate both after upload, delete, rename, or revision.",
-          "classification": "needs_source",
-          "reason": "Gallery currently uses the original local-file URL for both link and image, and WWS exposes no resized-image route.",
+          "classification": "candidate_required",
+          "reason": "Source now separates Gallery's original href from its resized img route and the public Router proves fresh revision ETags, 304/HEAD without blob work, revision byte changes, and rename/delete denial. The actual stateful upload transition remains owned by the upload lane and exact media candidate.",
           "source_paths": [
             "deepwell/src/services/render/compat/wikidot_gallery.rs",
-            "wws/src/route.rs"
+            "deepwell/tests/page.rs",
+            "wws/src/handler/resized_image.rs",
+            "wws/src/fetch.rs",
+            "wws/src/state.rs",
+            "wws/src/deepwell.rs",
+            "wws/src/route.rs",
+            "wws/Cargo.toml"
           ],
-          "existing_tests": [],
+          "existing_tests": [
+            "deepwell/src/services/render/compat/wikidot_gallery.rs::tests::gallery_dom_matches_the_frozen_static_thumbnail_shape_without_scripts",
+            "deepwell/tests/page.rs::wikidot_gallery_selects_authorized_current_page_images_after_page_acl",
+            "wws/src/handler/resized_image.rs::tests::public_router_serves_documented_variants_and_cheap_conditional_head",
+            "wws/src/handler/resized_image.rs::tests::public_route_tracks_latest_revision_and_fails_closed_after_rename_or_delete",
+            "wws/src/handler/resized_image.rs::tests::public_route_checks_acl_before_file_details_and_rejects_unsafe_inputs",
+            "wws/src/handler/resized_image.rs::tests::public_route_caps_concurrent_decode_work"
+          ],
           "evidence_ids": ["E_FOCUSED_CORPUS"],
-          "missing_source": [
-            "resized asset model",
-            "revision-bound WWS route",
-            "mutation invalidation tests"
+          "depends_on": [
+            "M1062_UPLOAD_TRANSACTION_ORDER",
+            "M1043_RENDER_CACHE_IDENTITY"
           ],
-          "next_command_ids": ["C_DEEPWELL_GALLERY", "C_WWS"]
+          "next_command_ids": [
+            "C_DEEPWELL_GALLERY",
+            "C_WWS_LOCK_AND_CHECK",
+            "C_WWS_RESIZED",
+            "C_WWS",
+            "C_MEDIA_RUNTIME_CANDIDATE"
+          ]
         },
         {
           "case_id": "M1043_VIEWER_INTERACTION_CONTRACT",
@@ -1181,9 +1260,9 @@
     "issue_count": 7,
     "subrow_count": 43,
     "classification_counts": {
-      "source_ready": 17,
-      "needs_source": 7,
-      "candidate_required": 10,
+      "source_ready": 19,
+      "needs_source": 4,
+      "candidate_required": 11,
       "blocked_evidence": 9
     },
     "duplicate_case_ids": 0,
