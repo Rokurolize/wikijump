@@ -28,7 +28,7 @@
   "source_residual_lane": {
     "base_commit": "a4d162165a2c369a1d4c6f7738afae21333dd718",
     "base_tree": "e47c1d4da581c171147e411034878ef0e9c12725",
-    "source_commits": ["e9c376428b00737b06a82a627f514fb26e36f51a"],
+    "source_commits": ["89dc1cd7b702915e6d7007bc9e3bee67342d5f28"],
     "referent_table_path": "docs/development/referent-table-open43-s-settings-source-residual-g5.md",
     "referent_table_sha256": "1783c9398f029816b1be878c7a92c19a6d0b2caff60c78bbe12a55025a92cb6d",
     "seam_map_path": "docs/development/open43-s-settings-source-residual-seam-map.md",
@@ -329,7 +329,7 @@
           "source_paths": ["deepwell/src/services/render/service.rs", "deepwell/src/services/render/compat/wikidot_inline_markers.rs", "deepwell/tests/page.rs"],
           "existing_tests": ["deepwell/tests/page.rs::wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page"],
           "evidence_ids": ["E_610_FRAGMENT_METADATA", "E_BROWSER_LIVE_CORRECTIONS"],
-          "implementation_commits": ["e9c376428b00737b06a82a627f514fb26e36f51a"],
+          "implementation_commits": ["89dc1cd7b702915e6d7007bc9e3bee67342d5f28"],
           "next_command_ids": ["C_DEEPWELL_FRAGMENT_HREF"]
         },
         {

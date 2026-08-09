@@ -1,12 +1,12 @@
 {
   "schema": "wikijump.open43_concurrency_ledger.v1",
   "campaign": "open43-pr2",
-  "updated_at": "2026-08-09T19:49:52+09:00",
+  "updated_at": "2026-08-09T19:59:26+09:00",
   "integration_branch": {
     "repository": "Rokurolize/wikijump",
     "branch": "fix/open87-pr2-modules-actions-media-settings",
     "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
-    "reconciled_head": "757a87285350a132f947fd6e3042c492e53c3717"
+    "reconciled_head": "5baf34194a94f1c4bbeeddc2d85e23c581fd3b86"
   },
   "limits": {
     "configured_threads": 13,
@@ -244,8 +244,12 @@
       "branch": "agent/open87-pr2/s-settings-source-residual-g5",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/s-settings-source-residual-g5",
       "base": "a4d162165a2c369a1d4c6f7738afae21333dd718",
-      "head": null,
-      "status": "running",
+      "head": "f0bb3551560e7f4145f362b1fb83a0199cc23c9d",
+      "status": "integrated",
+      "integration_commits": [
+        "89dc1cd7b702915e6d7007bc9e3bee67342d5f28",
+        "5baf34194a94f1c4bbeeddc2d85e23c581fd3b86"
+      ],
       "may_run_cargo": false,
       "may_mutate_runtime": false
     },
@@ -256,6 +260,18 @@
       "branch": "agent/open87-pr2/m-resized-assets-g6",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-resized-assets-g6",
       "base": "757a87285350a132f947fd6e3042c492e53c3717",
+      "head": null,
+      "status": "running",
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "m-windows-tile-g6",
+      "agent": "/root/s_browser",
+      "issue_numbers": [756],
+      "branch": "agent/open87-pr2/m-windows-tile-g6",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-windows-tile-g6",
+      "base": "5baf34194a94f1c4bbeeddc2d85e23c581fd3b86",
       "head": null,
       "status": "running",
       "may_run_cargo": false,

@@ -103,7 +103,7 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.ok(fragmentHref);
   assert.equal(fragmentHref.classification, "source_ready");
   assert.deepEqual(fragmentHref.implementation_commits, [
-    "e9c376428b00737b06a82a627f514fb26e36f51a",
+    "89dc1cd7b702915e6d7007bc9e3bee67342d5f28",
   ]);
   assert.equal(audit.central_commands.C_DEEPWELL_FRAGMENT_HREF.exists_now, true);
   assert.match(
