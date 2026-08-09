@@ -6247,6 +6247,245 @@ async fn members_module_queries_only_visible_site_members_and_roles() {
 }
 
 #[tokio::test]
+async fn members_list_ajax_paginates_only_filtered_site_identities() {
+    const FIXTURE_USER_ID: i64 = 19_103_300;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let other_site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded comparison site should exist")
+        .site
+        .site_id;
+    let transaction = runner.context().transaction();
+
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO known_user (user_id) ",
+                "SELECT $1 + fixture.n::BIGINT FROM generate_series(0, 104) AS fixture(n)",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("Members Ajax known-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") ",
+                "SELECT $1 + fixture.n::BIGINT, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00' + fixture.n * INTERVAL '1 second', ",
+                "TIMESTAMPTZ '2021-01-01 00:00:00+00', fixture.n = 102, ",
+                "'AMC Member ' || lpad(fixture.n::TEXT, 3, '0'), ",
+                "'amc-member-' || lpad(fixture.n::TEXT, 3, '0'), 2, FALSE ",
+                "FROM generate_series(0, 102) AS fixture(n) ",
+                "UNION ALL SELECT $1 + 104, TIMESTAMPTZ '2020-01-01 00:00:00+00', ",
+                "TIMESTAMPTZ '2021-01-01 00:00:00+00', FALSE, ",
+                "'Other Site AMC Member', 'other-site-amc-member', 2, FALSE",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("Members Ajax Wikidot-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO relation (",
+                "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
+                ") ",
+                "SELECT CASE WHEN fixture.n = 101 THEN 'site-member' ELSE 'member' END, ",
+                "'site', $2, 'user', $1 + fixture.n::BIGINT, '{}', $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00' + (fixture.n + 2) * INTERVAL '1 second' ",
+                "FROM generate_series(0, 101) AS fixture(n) ",
+                "UNION ALL SELECT 'member', 'site', $2, 'user', $1 + 102, '{}', $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00' ",
+                "UNION ALL SELECT 'member', 'site', $2, 'user', $1 + 103, '{}', $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:01+00' ",
+                "UNION ALL SELECT 'member', 'site', $4, 'user', $1 + 104, '{}', $3, ",
+                "TIMESTAMPTZ '2019-12-31 23:59:59+00'",
+            ),
+            [
+                Value::from(FIXTURE_USER_ID),
+                Value::from(site_id),
+                Value::from(SYSTEM_USER_ID),
+                Value::from(other_site_id),
+            ],
+        ))
+        .await
+        .expect("Members Ajax relation fixtures should be inserted");
+
+    let request_for = |request_site_id: i64, page: &str| {
+        json!({
+            "site_id": request_site_id,
+            "parameters": {
+                "group": "",
+                "order": "joined",
+                "page": page,
+            },
+        })
+    };
+    let request = |page: &str| request_for(site_id, page);
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let page_one = run_endpoint!(runner, wikidot_members_list_module, request("1"));
+    assert_eq!(page_one.status, "ok");
+    assert_eq!(page_one.body.matches("<tr>").count(), 100);
+    for index in 0..100 {
+        assert!(
+            page_one.body.contains(&format!("AMC Member {index:03}")),
+            "page 1 should contain filtered member {index:03}:\n{}",
+            page_one.body,
+        );
+    }
+    assert!(
+        !page_one.body.contains("AMC Member 100")
+            && !page_one.body.contains("AMC Member 102")
+            && !page_one.body.contains("Other Site AMC Member")
+            && page_one
+                .body
+                .contains(r#"<span class="pager-no">page 1 of 2</span>"#),
+        "page 1 must filter identities before its 100-row slice:\n{}",
+        page_one.body,
+    );
+
+    let page_zero = run_endpoint!(runner, wikidot_members_list_module, request("0"));
+    assert_eq!(page_zero.status, "ok");
+    assert_eq!(page_zero.body.matches("<tr>").count(), 100);
+    for index in 0..100 {
+        assert!(
+            page_zero.body.contains(&format!("AMC Member {index:03}")),
+            "page 0 should alias page 1 member {index:03}:\n{}",
+            page_zero.body,
+        );
+    }
+    assert!(
+        page_zero
+            .body
+            .contains(r#"<span class="pager-no">page 1 of 2</span>"#),
+        "page 0 must use the page 1 pager state:\n{}",
+        page_zero.body,
+    );
+
+    let page_two = run_endpoint!(runner, wikidot_members_list_module, request("2"));
+    assert_eq!(page_two.status, "ok");
+    assert_eq!(page_two.body.matches("<tr>").count(), 2);
+    assert!(
+        page_two.body.find("AMC Member 100") < page_two.body.find("AMC Member 101")
+            && !page_two.body.contains("AMC Member 099")
+            && !page_two.body.contains("AMC Member 102")
+            && page_two
+                .body
+                .contains(r#"<span class="pager-no">page 2 of 2</span>"#)
+            && page_two.body.contains(r#"<span class="current">2</span>"#)
+            && page_two.body.contains("&laquo; previous")
+            && !page_two.body.contains("next &raquo;"),
+        "the filtered second page should retain the observed pager contract:\n{}",
+        page_two.body,
+    );
+
+    for (actor_class, actor) in [
+        ("sandbox-admin", ADMIN_USER_ID),
+        ("sandbox-member", FIXTURE_USER_ID + 104),
+        ("sandbox-moderator-or-nonmember", SAMPLE_USER_ID),
+    ] {
+        runner.set_request_context(RequestContext {
+            user_id: Some(actor),
+            site_id: Some(other_site_id),
+            ..Default::default()
+        });
+        for page in ["2", "1468"] {
+            let empty = run_endpoint!(
+                runner,
+                wikidot_members_list_module,
+                request_for(other_site_id, page),
+            );
+            assert_eq!(empty.status, "ok");
+            let (container, empty_body) = empty
+                .body
+                .split_once("\">")
+                .expect("empty member response should have a container");
+            assert!(
+                container.starts_with("\n<div id=\"ml-")
+                    && container
+                        .trim_start_matches("\n<div id=\"ml-")
+                        .bytes()
+                        .all(|byte| byte.is_ascii_digit())
+                    && empty_body
+                        == "\n\t\tNo users.\t\t<div style=\"text-align: center\">\n\t\t\t\t\n\t</div>\n</div>"
+                    && !empty.body.contains("<table>")
+                    && !empty.body.contains("MembersListModule")
+                    && !empty.body.contains("class=\"pager\""),
+                "{actor_class} page {page} should retain the observed exact empty body:\n{}",
+                empty.body,
+            );
+        }
+    }
+
+    for parameters in [
+        json!({"group": "", "order": "joined"}),
+        json!({"group": "members", "order": "joined", "page": "1"}),
+        json!({"group": "", "order": "name", "page": "1"}),
+        json!({"group": "", "order": "joined", "page": "-1"}),
+        json!({"group": "", "order": "joined", "page": "01"}),
+        json!({"group": "", "order": "joined", "page": "1.0"}),
+        json!({"group": "", "order": "joined", "page": "1", "extra": "1"}),
+        json!({"group": "", "order": "joined", "page": "4294967296"}),
+    ] {
+        let rejected = run_endpoint!(
+            runner,
+            wikidot_members_list_module,
+            json!({"site_id": site_id, "parameters": parameters}),
+        );
+        assert_eq!(rejected.status, "not_ok");
+        assert!(rejected.body.is_empty());
+    }
+
+    let guest_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("guest")),
+    )
+    .await
+    .expect("guest role should exist");
+    RolePermissionTable::delete_many()
+        .filter(role_permission::Column::RoleId.eq(guest_role.role_id))
+        .filter(role_permission::Column::SiteId.eq(site_id))
+        .filter(role_permission::Column::ResourceType.eq(Resource::Site))
+        .filter(role_permission::Column::ResourceCategoryId.is_null())
+        .filter(role_permission::Column::Action.eq(Action::View))
+        .exec(runner.context().transaction())
+        .await
+        .expect("guest site view permission should be revoked");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("member directory permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let private_site = run_endpoint!(runner, wikidot_members_list_module, request("1"));
+    assert_eq!(private_site.status, "not_ok");
+    assert!(private_site.body.is_empty());
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(other_site_id),
+        ..Default::default()
+    });
+    let mismatched_site =
+        run_endpoint_err!(runner, wikidot_members_list_module, request("1"),);
+    assert_contains_error!(mismatched_site, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
 async fn request_argument_page_views_do_not_persist_hosted_text_blocks() {
     fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
         html.split_once(start)

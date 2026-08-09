@@ -55,6 +55,108 @@ test("dispatches ListPages forms and returns the Wikidot JSON envelope", async (
   assert.equal(response.headers.get("cache-control"), "no-store")
 })
 
+test("dispatches only the observed MembersListModule read shape", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "membership/MembersListModule",
+      group: "",
+      order: "joined",
+      page: "0",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderMembersList: async (input) => {
+        received = input
+        return { status: "ok", body: '\n<div id="ml-12345">members</div>' }
+      }
+    }
+  )
+
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.body, '\n<div id="ml-12345">members</div>')
+  assert.equal(body.callbackIndex, null)
+  assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+  assert.deepEqual(body.cssInclude, [])
+  assert.deepEqual(body.jsInclude, [])
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    parameters: { group: "", order: "joined", page: "0" }
+  })
+
+  const failed = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "membership/MembersListModule",
+      group: "",
+      order: "joined",
+      page: "1"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderMembersList: async () => ({ status: "not_ok", body: "" })
+    }
+  )
+  const failedBody = await failed.json()
+  assert.equal(failedBody.status, "not_ok")
+  assert.equal(failedBody.body, "")
+  assert.equal(failedBody.callbackIndex, null)
+  assert.equal(Number.isInteger(failedBody.CURRENT_TIMESTAMP), true)
+  assert.deepEqual(failedBody.cssInclude, [])
+  assert.deepEqual(failedBody.jsInclude, [])
+})
+
+test("fails closed before Deepwell for unobserved MembersListModule shapes", async () => {
+  let calls = 0
+  const invalidForms = [
+    { group: "", order: "joined" },
+    { group: "members", order: "joined", page: "1" },
+    { group: "", order: "name", page: "1" },
+    { group: "", order: "joined", page: "" },
+    { group: "", order: "joined", page: "01" },
+    { group: "", order: "joined", page: "-1" },
+    { group: "", order: "joined", page: "1.0" },
+    { group: "", order: "joined", page: "1", extra: "1" },
+    { group: "", order: "joined", page: "1", module_body: "" },
+    { group: "", order: "joined", page: "1", eventSource: "member-list" }
+  ]
+
+  for (const parameters of invalidForms) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({ moduleName: "membership/MembersListModule", ...parameters }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderMembersList: async () => {
+          calls += 1
+          assert.fail("unobserved MembersListModule shapes must fail before Deepwell")
+        }
+      }
+    )
+    assert.equal((await response.json()).status, "not_ok")
+  }
+  assert.equal(calls, 0)
+
+  const duplicate = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "moduleName=membership%2FMembersListModule&group=&group=&order=joined&page=1"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderMembersList: async () =>
+        assert.fail("duplicate fields must fail before Deepwell")
+    }
+  )
+  assert.equal(duplicate.status, 400)
+  assert.equal((await duplicate.json()).status, "not_ok")
+})
+
 test("dispatches the sealed read-only forum modules with Wikidot metadata", async () => {
   const cases = [
     ["forum/ForumStartModule", {}, []],

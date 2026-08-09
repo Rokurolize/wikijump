@@ -8,12 +8,17 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
 use ftml::data::UserInfo;
-use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
+use rand::RngExt;
+use sea_orm::{
+    ColumnTrait, Condition, ConnectionTrait, EntityTrait, FromQueryResult, QueryFilter,
+    Statement, Value,
+};
+use serde::Serialize;
 
 use super::ftml_user_info::load_wikidot_user_info_by_ids;
 use super::module_arguments::{WikidotModuleArgumentValueKind, wikidot_module_arguments};
 use super::service::{
-    escape_list_pages_html_attr, escape_list_pages_html_text,
+    RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
     format_wikidot_list_pages_date,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -22,11 +27,19 @@ use crate::models::role::{self, Entity as Role};
 use crate::models::user::{self, Entity as WikijumpUser};
 use crate::models::user_role::{self, Entity as UserRole};
 use crate::services::ServiceContext;
+use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::relation_type_condition;
-use crate::types::{RelationObjectType, RelationType};
+use crate::types::{Action, Permission, RelationObjectType, RelationType, Resource};
 use crate::utils::now;
 
 pub(super) const MEMBERS_PAGE_SIZE: usize = 50;
+const MEMBERS_AJAX_PAGE_SIZE: usize = 100;
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotMembersListModuleResponse {
+    pub status: String,
+    pub body: String,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum MembersGroup {
@@ -174,6 +187,13 @@ struct DirectoryRow {
     sort_name: String,
 }
 
+#[derive(Debug, FromQueryResult)]
+struct MembersAjaxCandidate {
+    user_id: i64,
+    joined_at: time::OffsetDateTime,
+    total_count: i64,
+}
+
 pub(super) async fn render_members_module(
     ctx: &ServiceContext<'_>,
     site_id: i64,
@@ -193,6 +213,70 @@ pub(super) async fn render_members_module(
         module_index,
         total_pages,
     )))
+}
+
+impl RenderService {
+    pub async fn render_wikidot_members_list_module(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        parameters: &BTreeMap<String, String>,
+    ) -> Result<WikidotMembersListModuleResponse> {
+        let Some(page) = members_ajax_page(parameters) else {
+            return Ok(members_ajax_response("not_ok", String::new()));
+        };
+        let can_view = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: ctx.request().user_id().ok(),
+                site_id,
+                page_reference: None,
+            },
+            Permission {
+                resource_type: Resource::Site,
+                resource_category: None,
+                action: Action::View,
+            },
+        )
+        .await
+        .or_raise(|| {
+            Error::new("failed to check member directory site", ErrorType::Render)
+        })?;
+        if !can_view {
+            return Ok(members_ajax_response("not_ok", String::new()));
+        }
+
+        let (page_rows, total_pages) = load_members_ajax_page(ctx, site_id, page).await?;
+        let page = usize::try_from(page).expect("u32 page fits the supported targets");
+        let module_index: u32 = rand::rng().random_range(10_000..1_000_000);
+        Ok(members_ajax_response(
+            "ok",
+            render_members_ajax_directory(&page_rows, page, total_pages, module_index),
+        ))
+    }
+}
+
+fn members_ajax_page(parameters: &BTreeMap<String, String>) -> Option<u32> {
+    if parameters.len() != 3
+        || parameters.get("group").map(String::as_str) != Some("")
+        || parameters.get("order").map(String::as_str) != Some("joined")
+    {
+        return None;
+    }
+    let page = parameters.get("page")?;
+    let page_bytes = page.as_bytes();
+    let canonical_page = page_bytes == b"0"
+        || matches!(page_bytes, [b'1'..=b'9', rest @ ..] if rest.iter().all(u8::is_ascii_digit));
+    if !canonical_page {
+        return None;
+    }
+    Some(page.parse::<u32>().ok()?.max(1))
+}
+
+fn members_ajax_response(status: &str, body: String) -> WikidotMembersListModuleResponse {
+    WikidotMembersListModuleResponse {
+        status: status.to_owned(),
+        body,
+    }
 }
 
 async fn load_directory_rows(
@@ -264,14 +348,129 @@ async fn load_directory_rows(
     }
 
     let candidate_ids = joined_at.keys().copied().collect::<BTreeSet<_>>();
-    let mut identities = load_wikidot_user_info_by_ids(ctx, &candidate_ids)
+    let mut identities = load_directory_identities(ctx, site_id, &candidate_ids).await?;
+
+    Ok(joined_at
+        .into_iter()
+        .filter_map(|(user_id, joined_at)| {
+            let identity = identities.remove(&user_id)?;
+            let sort_name = identity.name().to_lowercase();
+            Some(DirectoryRow {
+                identity,
+                joined_at,
+                sort_name,
+            })
+        })
+        .collect())
+}
+
+async fn load_members_ajax_page(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page: u32,
+) -> Result<(Vec<DirectoryRow>, usize)> {
+    let offset = i64::from(page - 1) * MEMBERS_AJAX_PAGE_SIZE as i64;
+    let candidates =
+        MembersAjaxCandidate::find_by_statement(Statement::from_sql_and_values(
+            ctx.transaction().get_database_backend(),
+            concat!(
+                "WITH active_members AS (",
+                "SELECT membership.from_id AS user_id, ",
+                "MIN(membership.created_at) AS joined_at ",
+                "FROM relation membership ",
+                "WHERE membership.relation_type IN ('member', 'site-member') ",
+                "AND membership.dest_type = 'site' ",
+                "AND membership.dest_id = $1 ",
+                "AND membership.from_type = 'user' ",
+                "AND membership.overwritten_at IS NULL ",
+                "AND membership.deleted_at IS NULL ",
+                "AND (",
+                "EXISTS (SELECT 1 FROM wikidot_user imported_user ",
+                "WHERE imported_user.user_id = membership.from_id ",
+                "AND imported_user.is_deleted = FALSE ",
+                "AND imported_user.slug IS NOT NULL) ",
+                "OR EXISTS (SELECT 1 FROM \"user\" local_user ",
+                "WHERE local_user.user_id = membership.from_id ",
+                "AND local_user.deleted_at IS NULL)",
+                ") ",
+                "GROUP BY membership.from_id",
+                ") ",
+                "SELECT user_id, joined_at, COUNT(*) OVER () AS total_count ",
+                "FROM active_members ",
+                "ORDER BY joined_at, user_id ",
+                "LIMIT $2 OFFSET $3",
+            ),
+            [
+                Value::from(site_id),
+                Value::from(MEMBERS_AJAX_PAGE_SIZE as i64),
+                Value::from(offset),
+            ],
+        ))
+        .all(ctx.transaction())
+        .await
+        .or_raise(|| {
+            Error::new(
+                format!("failed to load Members Ajax page for site ID {site_id}"),
+                ErrorType::Render,
+            )
+        })?;
+    let total_count = candidates
+        .first()
+        .map_or(0, |candidate| candidate.total_count);
+    let total_count = usize::try_from(total_count).or_raise(|| {
+        Error::new(
+            "Members Ajax count cannot be represented",
+            ErrorType::Render,
+        )
+    })?;
+    let candidate_ids = candidates
+        .iter()
+        .map(|candidate| candidate.user_id)
+        .collect::<BTreeSet<_>>();
+    let mut identities = load_directory_identities(ctx, site_id, &candidate_ids).await?;
+    let expected_rows = candidates.len();
+    let rows = candidates
+        .into_iter()
+        .filter_map(|candidate| {
+            let identity = identities.remove(&candidate.user_id)?;
+            let sort_name = identity.name().to_lowercase();
+            Some(DirectoryRow {
+                identity,
+                joined_at: candidate.joined_at,
+                sort_name,
+            })
+        })
+        .collect::<Vec<_>>();
+    if rows.len() != expected_rows {
+        return Err(Error::new(
+            "Members Ajax identity snapshot did not match its page query",
+            ErrorType::Render,
+        )
+        .into());
+    }
+    Ok((rows, total_count.div_ceil(MEMBERS_AJAX_PAGE_SIZE)))
+}
+
+async fn load_directory_identities(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    candidate_ids: &BTreeSet<i64>,
+) -> Result<BTreeMap<i64, DirectoryIdentity>> {
+    let make_error = || {
+        Error::new(
+            format!("failed to load member identities for site ID {site_id}"),
+            ErrorType::Render,
+        )
+    };
+    let mut identities = load_wikidot_user_info_by_ids(ctx, candidate_ids)
         .await
         .or_raise(make_error)?
         .into_iter()
         .map(|(user_id, user)| (user_id, DirectoryIdentity::Wikidot(user)))
         .collect::<BTreeMap<_, _>>();
     let missing_ids = candidate_ids
-        .into_iter()
+        .iter()
+        .copied()
         .filter(|user_id| !identities.contains_key(user_id))
         .collect::<Vec<_>>();
     if !missing_ids.is_empty() {
@@ -294,19 +493,7 @@ async fn load_directory_rows(
             )
         }));
     }
-
-    Ok(joined_at
-        .into_iter()
-        .filter_map(|(user_id, joined_at)| {
-            let identity = identities.remove(&user_id)?;
-            let sort_name = identity.name().to_lowercase();
-            Some(DirectoryRow {
-                identity,
-                joined_at,
-                sort_name,
-            })
-        })
-        .collect())
+    Ok(identities)
 }
 
 fn sort_directory_rows(rows: &mut [DirectoryRow], order: MembersOrder) {
@@ -392,6 +579,137 @@ fn render_directory(
     }
     output.push_str("\n</div>");
     output
+}
+
+fn render_members_ajax_directory(
+    rows: &[DirectoryRow],
+    page: usize,
+    total_pages: usize,
+    module_index: u32,
+) -> String {
+    let container_id = format!("ml-{module_index}");
+    if rows.is_empty() {
+        return format!(
+            "\n<div id=\"{container_id}\">\n\t\tNo users.\t\t<div style=\"text-align: center\">\n\t\t\t\t\n\t</div>\n</div>",
+        );
+    }
+
+    let function_name = format!("updateMemberList{module_index}");
+    let avatar_timestamp = now().unix_timestamp();
+    let mut output = format!("\n<div id=\"{container_id}\">\n\t\t<table>");
+    for row in rows {
+        output.push_str("\n\t\t\t<tr>\n\t\t\t\t<td>");
+        render_directory_identity(&mut output, &row.identity, avatar_timestamp);
+        output.push_str("</td>");
+        let unix = row.joined_at.unix_timestamp();
+        let date = format_wikidot_list_pages_date(row.joined_at, "%e %b %Y %H:%M");
+        write!(
+            output,
+            concat!(
+                "\n\t\t\t\t<td style=\"padding-left: 2em\">since ",
+                "<span class=\"odate time_{unix} ",
+                "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29\">",
+                "{date}</span></td>\n\t\t\t</tr>",
+            ),
+            unix = unix,
+            date = date,
+        )
+        .expect("writing a Members Ajax date to a String cannot fail");
+    }
+    write!(
+        output,
+        concat!(
+            "\n\t\t</table>\n\t\n\t<script type=\"text/javascript\">\n",
+            "\t\tfunction {function_name}(pageNo) {{\n",
+            "\t\t\tvar p = {{}};\n\t\t\t\n",
+            "\t\t\tp.group     = '';\n",
+            "\t\t\tp.order     = 'joined';\n\t\t\t\t\t\t\n",
+            "\t\t\tvar containerElId = '{container_id}';\n\t\t\t\n",
+            "\t\t\tp.page = pageNo;\n",
+            "\t\t\tOZONE.ajax.requestModule(\"membership/MembersListModule\", p, function(r){{\n",
+            "\t\t\t\tif (!WIKIDOT.utils.handleError(r)) {{return;}}\n",
+            "\t\t\t\tjQuery('#'+containerElId).replaceWith(r.body);\n",
+            "\t\t\t}});\n\t\t}}\n\t</script>",
+        ),
+        function_name = function_name,
+        container_id = container_id,
+    )
+    .expect("writing a Members Ajax script to a String cannot fail");
+    if total_pages > 1 {
+        render_members_ajax_pager(&mut output, &function_name, page, total_pages);
+    }
+    output.push_str("\n</div>");
+    output
+}
+
+fn render_members_ajax_pager(
+    output: &mut String,
+    function_name: &str,
+    current_page: usize,
+    total_pages: usize,
+) {
+    write!(
+        output,
+        "\n\t\t<div style=\"text-align: center\">\n\t\t\t\t<div class=\"pager\"><span class=\"pager-no\">page {current_page} of {total_pages}</span>",
+    )
+    .expect("writing a Members Ajax pager header to a String cannot fail");
+    if current_page > 1 {
+        render_members_ajax_pager_target(
+            output,
+            function_name,
+            current_page - 1,
+            "&laquo; previous",
+        );
+    }
+
+    let mut pages = BTreeSet::from([1, 2, total_pages.saturating_sub(1), total_pages]);
+    for page in current_page.saturating_sub(2).max(1)
+        ..=current_page.saturating_add(2).min(total_pages)
+    {
+        pages.insert(page);
+    }
+    pages.retain(|page| *page > 0 && *page <= total_pages);
+    let mut previous_page = None;
+    for page in pages {
+        if previous_page.is_some_and(|previous| page > previous + 1) {
+            output.push_str("<span class=\"dots\">...</span>");
+        }
+        if page == current_page {
+            write!(output, "<span class=\"current\">{page}</span>")
+                .expect("writing a Members Ajax current page to a String cannot fail");
+        } else {
+            render_members_ajax_pager_target(
+                output,
+                function_name,
+                page,
+                &page.to_string(),
+            );
+        }
+        previous_page = Some(page);
+    }
+
+    if current_page < total_pages {
+        render_members_ajax_pager_target(
+            output,
+            function_name,
+            current_page + 1,
+            "next &raquo;",
+        );
+    }
+    output.push_str("</div>\n\t</div>");
+}
+
+fn render_members_ajax_pager_target(
+    output: &mut String,
+    function_name: &str,
+    page: usize,
+    label: &str,
+) {
+    write!(
+        output,
+        "<span class=\"target\"><a href=\"javascript:;\" onclick=\"{function_name}({page})\">{label}</a></span>",
+    )
+    .expect("writing a Members Ajax pager target to a String cannot fail");
 }
 
 fn render_directory_identity(

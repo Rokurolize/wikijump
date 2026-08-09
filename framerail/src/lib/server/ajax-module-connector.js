@@ -32,6 +32,8 @@ const SITE_CHANGES_OPTIONS = new Set([
   '{"source":true}',
   '{"files":true}'
 ])
+const MEMBERS_LIST_MODULE = "membership/MembersListModule"
+const MEMBERS_LIST_PARAMETERS = new Set(["group", "order", "page"])
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
 const PAGE_DISCUSSION_ACTION = "ForumAction"
@@ -83,6 +85,12 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *
  * @typedef {{
  *   siteId: number
+ *   parameters: Record<string, string>
+ * }} MembersListRenderInput
+ *
+ *
+ * @typedef {{
+ *   siteId: number
  *   renderListPages: (
  *     input: ListPagesRenderInput
  *   ) => Promise<{ body: string }>
@@ -94,6 +102,9 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *   }>
  *   renderSiteChangesModule?: (
  *     input: SiteChangesRenderInput
+ *   ) => Promise<{ status: string; body: string }>
+ *   renderMembersList?: (
+ *     input: MembersListRenderInput
  *   ) => Promise<{ status: string; body: string }>
  *   createNewPage?: (input: NewPageCreateInput) => Promise<void>
  *   canCreateNewPage?: boolean | (() => boolean | Promise<boolean>)
@@ -444,6 +455,7 @@ export const handleAjaxModuleConnectorRequest = async (
     renderListPages,
     renderForumModule,
     renderSiteChangesModule,
+    renderMembersList,
     createNewPage,
     canCreateNewPage = true,
     pageExists,
@@ -614,6 +626,65 @@ export const handleAjaxModuleConnectorRequest = async (
       })
     } catch (error) {
       console.error("AJAX SiteChanges rendering failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        body: "",
+        ...responseMetadata()
+      })
+    }
+  }
+
+  if (moduleName === MEMBERS_LIST_MODULE) {
+    if (!renderMembersList) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module: ${moduleName}`
+      })
+    }
+
+    /** @type {Record<string, string>} */
+    const parameters = {}
+    for (const [key, value] of fields) {
+      if (MEMBERS_LIST_PARAMETERS.has(key)) {
+        parameters[key] = value
+        continue
+      }
+      if (key !== "moduleName" && key !== "wikidot_token7" && key !== "callbackIndex") {
+        return jsonResponse({
+          status: "not_ok",
+          message: `Unsupported AJAX module shape: ${moduleName}`
+        })
+      }
+    }
+    if (
+      Object.keys(parameters).length !== MEMBERS_LIST_PARAMETERS.size ||
+      parameters.group !== "" ||
+      parameters.order !== "joined" ||
+      !/^(?:0|[1-9]\d*)$/u.test(parameters.page)
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+
+    const responseMetadata = () => ({
+      callbackIndex: fields.has("callbackIndex")
+        ? fieldValue(fields, "callbackIndex")
+        : null,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+      cssInclude: [],
+      jsInclude: []
+    })
+    try {
+      const output = await renderMembersList({ siteId, parameters })
+      return jsonResponse({
+        status: output.status,
+        body: output.body,
+        ...responseMetadata()
+      })
+    } catch (error) {
+      console.error("AJAX MembersListModule rendering failed", error)
       return jsonResponse({
         status: "not_ok",
         body: "",

@@ -121,3 +121,4 @@ pub use self::url_arguments::{
     UrlArgumentPair, UrlArguments, wikitext_reads_url_arguments,
     wikitext_requires_runtime_render,
 };
+pub use self::user_directory::WikidotMembersListModuleResponse;

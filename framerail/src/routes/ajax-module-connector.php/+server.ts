@@ -2,6 +2,7 @@ import { handleAjaxModuleConnectorRequest } from "$lib/server/ajax-module-connec
 import { authGetSession } from "$lib/server/auth/get-session"
 import { client } from "$lib/server/deepwell"
 import { wikidotForumModule } from "$lib/server/deepwell/forum"
+import { wikidotMembersListModule } from "$lib/server/deepwell/membership"
 import {
   pageEdit,
   pageViewPermission,
@@ -153,6 +154,13 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
         siteId,
         { pageId, page, perpage, categoryId, options },
         requestContext
-      )
+      ),
+    renderMembersList: ({
+      siteId,
+      parameters
+    }: {
+      siteId: number
+      parameters: Record<string, string>
+    }) => wikidotMembersListModule(siteId, parameters, requestContext)
   })
 }

@@ -4,6 +4,23 @@ import type { RequestContext } from "$lib/server/request-context"
 
 export type MembershipJoinOutcome = "joined" | "already_member"
 
+export interface WikidotMembersListModuleOutput {
+  status: string
+  body: string
+}
+
+export async function wikidotMembersListModule(
+  siteId: number,
+  parameters: Record<string, string>,
+  context: RequestContext = {}
+): Promise<WikidotMembersListModuleOutput> {
+  return client.request(
+    "wikidot_members_list_module",
+    { site_id: siteId, parameters },
+    context
+  )
+}
+
 /** Call the actor-bound Deepwell self-membership transition. */
 export async function membershipJoin(
   pageId: number,

@@ -38,8 +38,9 @@ use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::render::{
     LegacyActionRegistry, LegacyBrowserAction, SiteChangesLoad,
     WikidotForumModuleRequest, WikidotForumModuleResponse, WikidotListPagesFeedInput,
-    WikidotListPagesFeedOutput, WikidotSiteChangesFilter,
-    WikidotSiteChangesModuleRequest, WikidotSiteChangesModuleResponse,
+    WikidotListPagesFeedOutput, WikidotMembersListModuleResponse,
+    WikidotSiteChangesFilter, WikidotSiteChangesModuleRequest,
+    WikidotSiteChangesModuleResponse,
 };
 use crate::services::{MutationAuthorization, SettingsService, TextService};
 use crate::types::{
@@ -84,6 +85,12 @@ struct WikidotSiteChangesModuleInput {
     perpage: String,
     category_id: String,
     options: String,
+}
+
+#[derive(Deserialize)]
+struct WikidotMembersListModuleInput {
+    site_id: i64,
+    parameters: BTreeMap<String, String>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -445,6 +452,39 @@ pub async fn wikidot_forum_module(
         Error::new(
             format!(
                 "failed to render Wikidot forum module in site ID {}",
+                input.site_id,
+            ),
+            ErrorType::Page,
+        )
+    })
+}
+
+pub async fn wikidot_members_list_module(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotMembersListModuleResponse> {
+    let input: WikidotMembersListModuleInput = parse!(params, Page);
+    if ctx
+        .request()
+        .site_id
+        .is_some_and(|request_site_id| request_site_id != input.site_id)
+    {
+        return Err(Error::new(
+            "members list module site does not match the request context",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+    RenderService::render_wikidot_members_list_module(
+        ctx,
+        input.site_id,
+        &input.parameters,
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            format!(
+                "failed to render Wikidot MembersListModule in site ID {}",
                 input.site_id,
             ),
             ErrorType::Page,
