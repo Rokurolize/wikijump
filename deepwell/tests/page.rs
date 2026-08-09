@@ -4064,6 +4064,418 @@ async fn wikidot_gallery_explicit_entries_resolve_only_owned_visible_files() {
 }
 
 #[tokio::test]
+async fn wikidot_gallery_preview_enforces_size_viewer_and_invalid_option_matrix() {
+    const TARGET_SLUG: &str = "fixture-gallery-options-preview-target";
+    const FILE_NAME: &str = "gallery-options.png";
+    const SELECTION_ERROR: &str =
+        r#"<div class="error-block">Error selecting page.</div>"#;
+
+    struct RenderCase {
+        case_id: &'static str,
+        arguments: &'static str,
+        expected_size: &'static str,
+        viewer: bool,
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Gallery options preview target",
+        "Gallery options target page.",
+    )
+    .await;
+    let target_page_id = listpages_test_page_id(&runner, site.site_id, TARGET_SLUG).await;
+    create_file_fixture_with_mime(
+        &runner,
+        site.site_id,
+        target_page_id,
+        FILE_NAME,
+        "image/png",
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+
+    let valid_cases = [
+        RenderCase {
+            case_id: "M1043_SIZE_DEFAULT",
+            arguments: "",
+            expected_size: "thumbnail",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_SIZE_SQUARE",
+            arguments: r#"size="square""#,
+            expected_size: "square",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_SIZE_THUMBNAIL",
+            arguments: r#"size="thumbnail""#,
+            expected_size: "thumbnail",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_SIZE_SMALL",
+            arguments: r#"size="small""#,
+            expected_size: "small",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_SIZE_MEDIUM",
+            arguments: r#"size="medium""#,
+            expected_size: "medium",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_VIEWER_YES",
+            arguments: r#"viewer="yes""#,
+            expected_size: "thumbnail",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_VIEWER_TRUE",
+            arguments: r#"viewer="true""#,
+            expected_size: "thumbnail",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_VIEWER_NO",
+            arguments: r#"viewer="no""#,
+            expected_size: "thumbnail",
+            viewer: false,
+        },
+        RenderCase {
+            case_id: "M1043_VIEWER_FALSE",
+            arguments: r#"viewer="false""#,
+            expected_size: "thumbnail",
+            viewer: false,
+        },
+    ];
+    for case in valid_cases {
+        let arguments = if case.arguments.is_empty() {
+            String::new()
+        } else {
+            format!(" {}", case.arguments)
+        };
+        let source = format!(
+            "[[gallery{arguments}]]\n: https://scp-wiki.wikidot.com/local--files/{TARGET_SLUG}/{FILE_NAME}\n[[/gallery]]",
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site.site_id,
+                "title": case.case_id,
+                "wikitext": source,
+            }),
+        );
+
+        assert_eq!(
+            preview.body.matches("gallery-item ").count(),
+            1,
+            "{} should render exactly one owned image:\n{}",
+            case.case_id,
+            preview.body,
+        );
+        assert!(
+            preview
+                .body
+                .contains(&format!(r#"class="gallery-item {}""#, case.expected_size)),
+            "{} should use the independent expected item size {}:\n{}",
+            case.case_id,
+            case.expected_size,
+            preview.body,
+        );
+        assert!(
+            preview.body.contains(&format!(
+                r#"class="gallery-image-size-{}""#,
+                case.expected_size,
+            )),
+            "{} should use the independent expected image size {}:\n{}",
+            case.case_id,
+            case.expected_size,
+            preview.body,
+        );
+        assert!(
+            preview.body.contains(&format!(
+                "/local--resized-images/{TARGET_SLUG}/{FILE_NAME}/{}.jpg",
+                case.expected_size,
+            )),
+            "{} should bind the expected resized variant:\n{}",
+            case.case_id,
+            preview.body,
+        );
+        assert_eq!(
+            preview.body.contains(r#"class="with-lb""#),
+            case.viewer,
+            "{} should bind viewer={} without executing authored JavaScript:\n{}",
+            case.case_id,
+            case.viewer,
+            preview.body,
+        );
+    }
+
+    for (case_id, arguments) in [
+        ("M1043_INVALID_SIZE", r#"size="large""#),
+        ("M1043_EMPTY_LAST_SIZE", r#"size="medium" size="""#),
+        ("M1043_INVALID_ORDER", r#"order="score""#),
+        ("M1043_EMPTY_LAST_ORDER", r#"order="name" order="""#),
+        ("M1043_INVALID_VIEWER", r#"viewer="maybe""#),
+        ("M1043_EMPTY_LAST_VIEWER", r#"viewer="yes" viewer="""#),
+    ] {
+        let source = format!(
+            "[[gallery {arguments}]]\n: https://scp-wiki.wikidot.com/local--files/{TARGET_SLUG}/{FILE_NAME}\n[[/gallery]]",
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site.site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+
+        assert_eq!(
+            preview.body, SELECTION_ERROR,
+            "{case_id} must fail closed at the exact public selection-error boundary",
+        );
+    }
+}
+
+#[tokio::test]
+async fn wikidot_gallery_saved_page_view_enforces_order_and_last_occurrence_matrix() {
+    const PAGE_SLUG: &str = "fixture-gallery-options-saved";
+    const ALPHA_NEW: &str = "alpha-new.png";
+    const ZULU_OLD: &str = "zulu-old.png";
+
+    struct OrderCase {
+        case_id: &'static str,
+        arguments: &'static str,
+        first: &'static str,
+        second: &'static str,
+    }
+
+    let cases = [
+        OrderCase {
+            case_id: "M1043_ORDER_DEFAULT",
+            arguments: "",
+            first: ALPHA_NEW,
+            second: ZULU_OLD,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_NAME",
+            arguments: r#"order="name""#,
+            first: ALPHA_NEW,
+            second: ZULU_OLD,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_NAME_DESC",
+            arguments: r#"order="name desc""#,
+            first: ZULU_OLD,
+            second: ALPHA_NEW,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_NAME_DESC_ALIAS",
+            arguments: r#"order="nameDesc""#,
+            first: ZULU_OLD,
+            second: ALPHA_NEW,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_CREATED_AT",
+            arguments: r#"order="created_at""#,
+            first: ZULU_OLD,
+            second: ALPHA_NEW,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_DATE_ADDED_ALIAS",
+            arguments: r#"order="dateAdded""#,
+            first: ZULU_OLD,
+            second: ALPHA_NEW,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_CREATED_AT_DESC",
+            arguments: r#"order="created_at desc""#,
+            first: ALPHA_NEW,
+            second: ZULU_OLD,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_DATE_ADDED_DESC_ALIAS",
+            arguments: r#"order="dateAddedDesc""#,
+            first: ALPHA_NEW,
+            second: ZULU_OLD,
+        },
+        OrderCase {
+            case_id: "M1043_LAST_CANONICAL_OCCURRENCE",
+            arguments: concat!(
+                r#"size="square" size="medium" "#,
+                r#"order="name desc" order="created_at" "#,
+                r#"viewer="no" viewer="yes""#,
+            ),
+            first: ZULU_OLD,
+            second: ALPHA_NEW,
+        },
+    ];
+    let source = cases
+        .iter()
+        .map(|case| {
+            let arguments = if case.arguments.is_empty() {
+                String::new()
+            } else {
+                format!(" {}", case.arguments)
+            };
+            format!(
+                "{}_BEGIN\n[[gallery{arguments}]]\n{}_END",
+                case.case_id, case.case_id,
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        PAGE_SLUG,
+        "Gallery saved options matrix",
+        &source,
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site.site_id, PAGE_SLUG).await;
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Gallery options page lookup should succeed")
+        .expect("Gallery options page should exist");
+    let zulu_file_id = create_file_fixture_with_mime(
+        &runner,
+        site.site_id,
+        page_id,
+        ZULU_OLD,
+        "image/png",
+    )
+    .await;
+    let alpha_file_id = create_file_fixture_with_mime(
+        &runner,
+        site.site_id,
+        page_id,
+        ALPHA_NEW,
+        "image/png",
+    )
+    .await;
+    for (file_id, created_at) in [
+        (
+            zulu_file_id,
+            OffsetDateTime::from_unix_timestamp(1_600_000_000)
+                .expect("old fixture timestamp should be valid"),
+        ),
+        (
+            alpha_file_id,
+            OffsetDateTime::from_unix_timestamp(1_700_000_000)
+                .expect("new fixture timestamp should be valid"),
+        ),
+    ] {
+        let file = file::Entity::find_by_id(file_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("Gallery option file lookup should succeed")
+            .expect("Gallery option file should exist");
+        let mut file = file.into_active_model();
+        file.created_at = Set(created_at);
+        file.update(runner.context().transaction())
+            .await
+            .expect("Gallery option fixture timestamp should update");
+    }
+
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site.site_id,
+            "category_id": page.page_category_id,
+            "page_id": page_id,
+        }),
+    );
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let rendered = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected Gallery options page view, got {other:?}"),
+    };
+
+    for case in cases {
+        let begin = format!("{}_BEGIN", case.case_id);
+        let end = format!("{}_END", case.case_id);
+        let start = rendered.find(&begin).unwrap_or_else(|| {
+            panic!("{} should expose its begin sentinel", case.case_id)
+        });
+        let tail = &rendered[start + begin.len()..];
+        let finish = tail
+            .find(&end)
+            .unwrap_or_else(|| panic!("{} should expose its end sentinel", case.case_id));
+        let fragment = &tail[..finish];
+        let first = fragment.find(case.first).unwrap_or_else(|| {
+            panic!(
+                "{} should contain {}:\n{fragment}",
+                case.case_id, case.first
+            )
+        });
+        let second = fragment.find(case.second).unwrap_or_else(|| {
+            panic!(
+                "{} should contain {}:\n{fragment}",
+                case.case_id, case.second,
+            )
+        });
+        assert!(
+            first < second,
+            "{} should order {} before {} from independent fixture dimensions:\n{}",
+            case.case_id,
+            case.first,
+            case.second,
+            fragment,
+        );
+
+        if case.case_id == "M1043_LAST_CANONICAL_OCCURRENCE" {
+            assert_eq!(
+                fragment.matches(r#"class="gallery-item medium""#).count(),
+                2,
+                "the last canonical size occurrence should replace the earlier size:\n{fragment}",
+            );
+            assert_eq!(
+                fragment.matches(r#"class="with-lb""#).count(),
+                2,
+                "the last canonical viewer occurrence should replace the earlier viewer:\n{fragment}",
+            );
+            assert!(
+                !fragment.contains("gallery-item square"),
+                "the replaced size must not survive:\n{fragment}",
+            );
+        }
+    }
+}
+
+#[tokio::test]
 async fn wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts() {
     const FILES_SLUG: &str = "fixture-files-module-empty";
     const PRIVATE_FILES_SLUG: &str = "fixture-files-private:module-empty";
