@@ -171,7 +171,7 @@ async fn embedvideo_preview_fails_closed_for_unsupported_media() {
 }
 
 #[tokio::test]
-async fn foreign_embedvideo_marker_fails_the_public_render_surface() {
+async fn authored_embedvideo_marker_cannot_forge_a_typed_requirement() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
@@ -180,15 +180,18 @@ async fn foreign_embedvideo_marker_fails_the_public_render_surface() {
         r#"id="wj-embed-video-ffffffffffffffffffffffffffffffff"></div>@@"#,
     );
 
-    let result = RenderService::render_wikidot_page_preview(
+    let preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site.site.site_id,
         "open43-m-media-foreign-marker",
         foreign.to_owned(),
     )
-    .await;
+    .await
+    .expect("authored marker text should remain inert");
 
-    assert!(result.is_err());
+    assert!(preview.html_output.body.contains("wj-embed-video-ffffffff"));
+    assert!(!preview.html_output.body.contains("<iframe"));
+    assert!(preview.html_output.resource_requirements.is_empty());
 }
 
 #[tokio::test]
@@ -207,7 +210,7 @@ async fn literal_and_generated_owners_never_activate_embedvideo() {
         ),
         (
             "open43-m-media-raw-owner",
-            format!("@@[[embedvideo]]\n{iframe}\n[[/embedvideo]]@@"),
+            format!("@@[[embedvideo]]{iframe}[[/embedvideo]]@@"),
         ),
         (
             "open43-m-media-comment-owner",
@@ -295,7 +298,7 @@ async fn current_ftml_pin_preserves_promoted_image_dom() {
             r#"[[f=image https://www.wikidot.com/local--files/files/wikidot_logo_100x30.png width="100px" alt="G06_IMAGE_ALT"]]"#,
             concat!(
                 r#"<div class="image-container">"#,
-                r#"<img src="https://www.wikidot.com/local--files/files/wikidot_logo_100x30.png" width="100px" class="image" alt="G06_IMAGE_ALT">"#,
+                r#"<img src="https://www.wdfiles.com/local--files/files/wikidot_logo_100x30.png" width="100px" class="image" alt="G06_IMAGE_ALT">"#,
                 "</div>",
             ),
         ),
