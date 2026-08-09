@@ -24,6 +24,7 @@ import {
   normalizeAttributeSignatures,
   normalizeDomSignatures,
 } from "./render-compare.mjs";
+import { compareFirstDivergenceTraces } from "./first-divergent-element.mjs";
 
 export const STANDING_BROWSER_CAPTURE_SCHEMA =
   "wikijump_local_lab.standing_browser_parity_capture.v2";
@@ -798,6 +799,24 @@ export function compareCaptures(
       anomalies.push({ code: "settled_probe_divergence", detail: probe });
     }
   }
+  const firstDivergenceOptions = {
+    geometry_position_px: checkedThresholds.geometry_position_px,
+    geometry_size_px: checkedThresholds.geometry_size_px,
+  };
+  const immediateFirstDivergentElement = contract?.first_divergence_trace
+    ? compareFirstDivergenceTraces(
+        local.first_paint?.document?.first_divergence_trace,
+        live.first_paint?.document?.first_divergence_trace,
+        firstDivergenceOptions,
+      )
+    : null;
+  const settledFirstDivergentElement = contract?.first_divergence_trace
+    ? compareFirstDivergenceTraces(
+        local.document?.first_divergence_trace,
+        live.document?.first_divergence_trace,
+        firstDivergenceOptions,
+      )
+    : null;
   return {
     status: anomalies.length === 0 ? "pass" : "fail",
     classified_failures: classifiedFailures,
@@ -823,6 +842,9 @@ export function compareCaptures(
     domcontentloaded_immediate_custom_properties: immediateProperties,
     domcontentloaded_immediate_probes: immediateProbes,
     settled_probes: settledProbes,
+    domcontentloaded_immediate_first_divergent_element:
+      immediateFirstDivergentElement,
+    settled_first_divergent_element: settledFirstDivergentElement,
     anomalies,
   };
 }

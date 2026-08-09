@@ -4,12 +4,32 @@ import path from "node:path";
 
 import { STANDING_BROWSER_CAPTURE_SCHEMA } from "./standing-browser-parity-contract.mjs";
 import { domSignature } from "./oracle-fixtures.mjs";
+import { normalizeText } from "./render-compare.mjs";
 import {
   applyCssBoxFallback,
   capturePseudoLayouts,
 } from "./standing-browser-pseudo-layout.mjs";
 import { capturePng } from "./standing-browser-screenshot.mjs";
 import { sha256File } from "./standing-browser-parity-util.mjs";
+
+const FIRST_DIVERGENCE_STYLE_PROPERTIES = Object.freeze([
+  "display",
+  "position",
+  "margin-top",
+  "margin-right",
+  "margin-bottom",
+  "margin-left",
+  "padding-top",
+  "padding-right",
+  "padding-bottom",
+  "padding-left",
+  "font-family",
+  "font-size",
+  "font-weight",
+  "line-height",
+  "letter-spacing",
+  "white-space",
+]);
 
 function failureKey(failure) {
   return JSON.stringify([
@@ -51,6 +71,7 @@ export async function captureDocumentObservation(
   const customPropertyNames = Object.keys(
     contract?.first_paint_custom_properties ?? {},
   ).sort();
+  const firstDivergenceTrace = contract?.first_divergence_trace ?? null;
   // Synthetic callers may intentionally use a smaller contract.  The
   // standing canary contract carries PAGE_CHROME_SKELETON explicitly; do not
   // silently add it to every ad-hoc observation and turn an unrelated
@@ -65,6 +86,8 @@ export async function captureDocumentObservation(
       presenceProbes: probes,
       customPropertyNames: properties,
       skeletonContract,
+      traceContract,
+      traceStyleProperties,
       phase: capturedPhase,
     }) => {
       const rounded = (value) => Math.round(Number(value) * 100) / 100;
@@ -193,6 +216,80 @@ export async function captureDocumentObservation(
       const pageContentElements = root
         ? [...root.querySelectorAll("*")]
         : [];
+      const traceRoot = traceContract
+        ? document.querySelector(traceContract.root_selector)
+        : null;
+      const tracePath = (element) => {
+        const parts = [];
+        for (
+          let candidate = element;
+          candidate && candidate !== traceRoot;
+          candidate = candidate.parentElement
+        ) {
+          const siblings = candidate.parentElement
+            ? [...candidate.parentElement.children].filter(
+                (sibling) => sibling.localName === candidate.localName,
+              )
+            : [candidate];
+          parts.push(
+            `${candidate.localName}[${siblings.indexOf(candidate) + 1}]`,
+          );
+        }
+        return parts.reverse().join("/");
+      };
+      const traceElements = traceRoot
+        ? [...traceRoot.querySelectorAll("*")].filter(rendered)
+        : [];
+      const traceLimit = Math.max(
+        0,
+        Math.floor(Number(traceContract?.max_elements ?? 0)),
+      );
+      const firstDivergenceTrace = traceContract
+        ? {
+            root_selector: traceContract.root_selector,
+            root_count: document.querySelectorAll(traceContract.root_selector)
+              .length,
+            element_count: traceElements.length,
+            captured_count: Math.min(traceElements.length, traceLimit),
+            truncated: traceElements.length > traceLimit,
+            incomplete_image_count: traceRoot
+              ? [...traceRoot.querySelectorAll("img")].filter(
+                  (image) =>
+                    rendered(image) &&
+                    (!image.complete || image.naturalWidth <= 0),
+                ).length
+              : 0,
+            elements: traceElements.slice(0, traceLimit).map((element) => {
+              const style = getComputedStyle(element);
+              const box = element.getBoundingClientRect();
+              return {
+                path: tracePath(element),
+                tag: element.localName,
+                id: element.id || null,
+                classes: [...element.classList].sort(),
+                child_element_count: element.children.length,
+                direct_text: normalized(
+                  [...element.childNodes]
+                    .filter((node) => node.nodeType === Node.TEXT_NODE)
+                    .map((node) => node.textContent ?? "")
+                    .join(" "),
+                ),
+                rect: {
+                  x: rounded(box.x + window.scrollX),
+                  y: rounded(box.y + window.scrollY),
+                  width: rounded(box.width),
+                  height: rounded(box.height),
+                },
+                style: Object.fromEntries(
+                  traceStyleProperties.map((property) => [
+                    property,
+                    normalized(style.getPropertyValue(property)),
+                  ]),
+                ),
+              };
+            }),
+          }
+        : null;
       return {
         phase: capturedPhase,
         captured_at_epoch_ms: Date.now(),
@@ -262,6 +359,7 @@ export async function captureDocumentObservation(
               }))
           : [],
         page_chrome_skeleton: pageChromeSkeleton,
+        first_divergence_trace: firstDivergenceTrace,
       };
     },
     {
@@ -269,9 +367,22 @@ export async function captureDocumentObservation(
       presenceProbes,
       customPropertyNames,
       skeletonContract: skeleton,
+      traceContract: firstDivergenceTrace,
+      traceStyleProperties: FIRST_DIVERGENCE_STYLE_PROPERTIES,
       phase,
     },
   );
+  for (const element of documentPhase.first_divergence_trace?.elements ?? []) {
+    const normalizedText = normalizeText(element.direct_text).text;
+    element.direct_text_sha256 = createHash("sha256")
+      .update(element.direct_text)
+      .digest("hex");
+    element.normalized_direct_text_sha256 = createHash("sha256")
+      .update(normalizedText)
+      .digest("hex");
+    element.direct_text_normalized = normalizedText !== element.direct_text;
+    delete element.direct_text;
+  }
   if (typeof documentPhase.page_content_html === "string") {
     documentPhase.dom_signature = domSignature(documentPhase.page_content_html);
   } else {

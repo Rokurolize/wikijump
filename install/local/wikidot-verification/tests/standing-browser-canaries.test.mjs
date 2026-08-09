@@ -50,6 +50,22 @@ test("standing canaries cover each production theme family and the owner-observe
       (probe) => probe.selector === ".yui-navset" && probe.require_rendered,
     ),
   );
+  for (const slug of [
+    "scp-744",
+    "scp-2117",
+    "scp-5516",
+    "scp-8980",
+    "theme:basalt",
+  ]) {
+    const canary = STANDING_BROWSER_CANARIES.find(
+      (candidate) => candidate.slug === slug,
+    );
+    assert.deepEqual(canary?.first_divergence_trace, {
+      root_selector: "#page-content",
+      max_elements: 10_000,
+    });
+  }
+  assert.equal(scp9506.first_divergence_trace, undefined);
 });
 
 test("canary URLs bind local and live origins without hidden defaults", () => {
