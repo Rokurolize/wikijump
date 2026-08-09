@@ -1222,15 +1222,31 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-comments": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
+          "scope": "exact no-context comments wrapper and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-comments.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-comments"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Saved-page populated discussions, title/hide/hideForm/order attributes, actor states, forms, mutations, and browser interaction remain unimplemented."
+      ]
     },
     "module-countpages": {
       "status": "implemented",
@@ -1427,59 +1443,140 @@
       ]
     },
     "module-forumcategory": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
+          "scope": "exact missing-category output and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-forumcategory.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumcategory"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Populated category routes, thread selection and pagination, actor visibility, and browser interaction remain unimplemented."
+      ]
     },
     "module-forumnewthread": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
+          "scope": "exact missing-category output and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-forumnewthread.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumnewthread"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Authenticated new-thread form states, validation, CSRF, permissions, mutations, and browser interaction remain unimplemented."
+      ]
     },
     "module-forumstart": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "scope": "visible and empty groups/categories, exact table DOM, escaping, ordering, counts, latest post, hidden groups, and private page discussions"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-forumstart.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumstart"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Dedicated /forum/start browser routing, show-hidden behavior, authenticated actor matrix, imported-user avatar settling, and refresh after mutations remain unverified."
+      ]
     },
     "module-forumthread": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
+          "scope": "exact missing-thread output and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-forumthread.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumthread"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Populated thread routes, nested replies, pagination, actor visibility, post actions, mutations, and browser interaction remain unimplemented."
+      ]
     },
     "module-frontforum": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
+          "scope": "exact missing-category output, unobserved-argument fail-closed behavior, and source ownership"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-frontforum.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-frontforum"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Populated category selection, custom-body variables, feed output, limits, offsets, permission matrix, and relative-link behavior remain unimplemented."
+      ]
     },
     "module-frontspecialmini": {
       "status": "pending",
@@ -1920,6 +2017,7 @@
       ],
       "implementation_files": [
         "deepwell/src/services/render/forum_mini.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
         "deepwell/src/services/render/runtime_modules.rs",
         "deepwell/src/services/render/url_arguments.rs"
       ],
@@ -1948,6 +2046,7 @@
       ],
       "implementation_files": [
         "deepwell/src/services/render/forum_mini.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
         "deepwell/src/services/render/runtime_modules.rs",
         "deepwell/src/services/render/url_arguments.rs"
       ],
@@ -1976,6 +2075,7 @@
       ],
       "implementation_files": [
         "deepwell/src/services/render/forum_mini.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
         "deepwell/src/services/render/runtime_modules.rs",
         "deepwell/src/services/render/url_arguments.rs"
       ],
@@ -2371,15 +2471,33 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-recentposts": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public saved-page page_view rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "scope": "exact container and post DOM, visible category options, compiled content, ordering, 20-row pagination, hidden groups, and private page discussions"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-recentposts.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-recentposts"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The category selector Ajax request, beyond-candidate pagination, dedicated /forum/recent-posts browser route, full actor matrix, exact middle/final pager geometry, signatures, post actions, and mutation-driven refresh remain unimplemented or unverified."
+      ]
     },
     "module-recentthreads": {
       "status": "pending",
@@ -2389,8 +2507,12 @@
       "documentation_evidence": [
         "specifications/module/module-recentthreads.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-recentthreads"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The only frozen output is site-authored text rather than a general module contract. A clean populated, empty, ordering, pagination, and actor matrix is required before implementation."
+      ]
     },
     "module-redirect": {
       "status": "implemented",
