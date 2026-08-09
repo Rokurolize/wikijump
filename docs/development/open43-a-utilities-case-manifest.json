@@ -1,0 +1,154 @@
+{
+  "schema": "wikijump.open43.a_utilities_case_manifest.v1",
+  "source": {
+    "wikijump_base": "8e5cb8863fb19b58df7f30817f41632f721ac74a",
+    "wikijump_base_tree": "188aa8c7c99f2e10aa0ed2eaa8fcb51b7d634e1b",
+    "implementation_commit": "4ab7fdd30641f2f47506a69ef7705ea0390db07a",
+    "implementation_tree": "9a48bc4ea1508cf6c0b341ef21b23cc82452eed7",
+    "ftml_pin": "902e72a2ff261b7af42402734b2f8b659e6a294a",
+    "deepwell_cargo_lock_sha256": "cd18d236a4ca3f82a53f7a1b12dc9ce09e7552e8f5f3dac4dbb30139d42e8154"
+  },
+  "evidence": [
+    {
+      "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
+      "sha256": "686f9fd383f51b5fe393b5f98b2a7e499010bfb691a39086309170a29982a783",
+      "issues": [1037, 1038]
+    },
+    {
+      "path": "install/local/wikidot-verification/artifacts/redirect-module-noredirect-live.json",
+      "sha256": "6a715589a2d503e83a10fa12651d4842a357a5e22591c0b6538b1d28d8222f86",
+      "issues": [1037]
+    },
+    {
+      "path": "install/local/wikidot-verification/artifacts/simpletodo-sendinvitations-live-preview.json",
+      "sha256": "d26c44a0de21437a0c344244f0b7d24778a5e66b5c24bb1839dfe546ec2df095",
+      "issues": [1037]
+    },
+    {
+      "path": "install/local/wikidot-verification/artifacts/newpage-module-live-final-evidence.json",
+      "sha256": "d02e18bc0e36f5ca313d85d0c3faad2a04fa827f5238f90ba79c75af3da08cce",
+      "issues": [1037]
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "A1037_REDIRECT_MISSING_DESTINATION",
+      "issue": 1037,
+      "status": "implemented_unverified",
+      "public_test": "deepwell/tests/page.rs::anonymous_page_and_site_utility_modules_match_frozen_safe_states",
+      "result": "An argument-free Redirect module now renders the frozen missing-destination error instead of generic unknown-module output. Valid imported redirects keep the existing bounded destination resolver and 301/noredirect contract. Unsupported destination shapes remain literal and cannot widen into a redirect."
+    },
+    {
+      "case_id": "A1037_NEWPAGE_RENDER_AND_ACTION",
+      "issue": 1037,
+      "status": "implemented_existing_unverified",
+      "public_test": "deepwell/tests/page.rs::newpage_module_resolves_existing_templates_in_rendered_pages",
+      "result": "The existing typed render, Ajax action, permission gate, bounded format validation, atomic autosave, and browser helper cover the evidence-backed NewPage contract. This lane adds no duplicate action path."
+    },
+    {
+      "case_id": "A1037_SIMPLETODO_INITIAL_READ_ONLY",
+      "issue": 1037,
+      "status": "implemented_existing_unverified",
+      "public_test": "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_basics",
+      "result": "Missing and empty ids render the frozen error. A present id renders the escaped initial read-only shell in preview and saved output without restoring page-authored active content."
+    },
+    {
+      "case_id": "A1037_MAILFORM_INITIAL_AND_SUBMIT",
+      "issue": 1037,
+      "status": "unimplemented",
+      "result": "The frozen form includes a request-bound numeric identity and opaque definition token, but no local authority currently issues or validates that token. The existing post-render form reconstruction is not acceptance evidence and no inert replacement form or fabricated token was added. Recipient resolution, CSRF, rate limiting, header injection defense, delivery, successPage navigation, and repeated-submit behavior remain actionable."
+    },
+    {
+      "case_id": "A1037_SIMPLETODO_MUTATION",
+      "issue": 1037,
+      "status": "unimplemented",
+      "result": "No frozen action surface establishes task creation, editing, checkbox state, ordering, link changes, real-time persistence, replay, or saved-page edit permission. No speculative shared-id data model or mutation endpoint was added."
+    },
+    {
+      "case_id": "A1037_BROWSER_LIFECYCLE",
+      "issue": 1037,
+      "status": "unimplemented",
+      "result": "MailForm and SimpleToDo loading, success, error, focus, keyboard, history, reload, and repeated-submission intervals remain unproved on an exact served candidate."
+    },
+    {
+      "case_id": "A1038_ANONYMOUS_SAFE_STATES",
+      "issue": 1038,
+      "status": "implemented_unverified",
+      "public_test": "deepwell/tests/page.rs::anonymous_page_and_site_utility_modules_match_frozen_safe_states",
+      "result": "ThemePreviewer, ManageSite, Clone, Dashboard, PetitionAdmin, and argument-free SiteGrid now produce their frozen anonymous error or unavailable states through the public page preview seam. The new site-utility consumer is actor-aware for modules where authenticated behavior is not established and never performs a query or mutation."
+    },
+    {
+      "case_id": "A1038_LITERAL_AND_BODY_OWNERSHIP",
+      "issue": 1038,
+      "status": "implemented_unverified",
+      "public_test": "deepwell/tests/page.rs::site_utility_modules_preserve_literal_body_and_argument_boundaries",
+      "result": "The consumer uses the existing literal-region owner index. SiteGrid with an owned block body is left for a future typed consumer instead of deleting its authored site list, and unsupported attribute shapes remain fail closed."
+    },
+    {
+      "case_id": "A1038_AUTHENTICATED_ACTOR_MATRIX",
+      "issue": 1038,
+      "status": "unimplemented",
+      "result": "Exact authenticated non-admin and administrator DOM is not frozen for ManageSite, Dashboard, PetitionAdmin, or Clone. Unobserved states remain on the established fail-closed path rather than granting anonymous or non-admin access."
+    },
+    {
+      "case_id": "A1038_CLONE_ACTION",
+      "issue": 1038,
+      "status": "unimplemented",
+      "result": "No local source and destination selection contract establishes eligibility, collision behavior, CSRF, rate limits, atomic copy, rollback, replay, or navigation. Remote Wikidot cloning remains forbidden and no inert clone action was added."
+    },
+    {
+      "case_id": "A1038_SITEGRID_POPULATED",
+      "issue": 1038,
+      "status": "unimplemented",
+      "result": "The argument-free empty error is frozen, but local or remote site identity resolution, random selection, limit semantics, thumbnail resources, descriptions, private-site non-disclosure, and browser hovertips are not. A body-bearing SiteGrid remains unconsumed."
+    },
+    {
+      "case_id": "A1038_THEMEPREVIEWER_ACTIVE",
+      "issue": 1038,
+      "status": "unimplemented",
+      "result": "The noUi theme_url request contract, scheme and host policy, CSP, size and timeout bounds, applied theme interval, and stale-state cleanup are not frozen. No external stylesheet fetch was added."
+    },
+    {
+      "case_id": "A1038_BROWSER_LIFECYCLE",
+      "issue": 1038,
+      "status": "unimplemented",
+      "result": "Authenticated administration navigation, modal actions, intermediate paints, focus, history, error recovery, and stale-state cleanup require exact candidate browser evidence."
+    }
+  ],
+  "central_commands": [
+    "cargo fmt --manifest-path deepwell/Cargo.toml --check",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page anonymous_page_and_site_utility_modules_match_frozen_safe_states -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page site_utility_modules_preserve_literal_body_and_argument_boundaries -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page simpletodo_and_sendinvitations_modules_match_live_preview_basics -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page imported_redirect_noredirect_renders_live_error_block -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page newpage_module_resolves_existing_templates_in_rendered_pages -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::url_arguments::tests::actor_sensitive_site_utility_modules_require_runtime_rendering -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::render_dependency::tests::render_dependency_viewer_module_is_viewer_dependent -- --exact --nocapture",
+    "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
+    "node --test install/local/wikidot-verification/tests/local-administration-module-policy.test.mjs",
+    "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
+    "node scripts/generate-wikidot-specifications.mjs --check",
+    "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl"
+  ],
+  "issue_status": [
+    {
+      "issue": 1037,
+      "status": "in_progress",
+      "blockers": [
+        "MailForm request token and action contract",
+        "SimpleToDo stateful action and persistence contract",
+        "served browser lifecycle evidence"
+      ]
+    },
+    {
+      "issue": 1038,
+      "status": "in_progress",
+      "blockers": [
+        "authenticated actor matrix",
+        "local Clone action contract",
+        "populated SiteGrid and active ThemePreviewer evidence",
+        "served browser lifecycle evidence"
+      ]
+    }
+  ]
+}
