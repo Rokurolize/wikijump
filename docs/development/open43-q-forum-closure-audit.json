@@ -89,6 +89,26 @@
       "external_manifest_sha256": "cea6373f78b72a2c8526aee16a31baca94276309a09a5f4d44f5cb987d10ef4e",
       "external_sha256s_sha256": "83d2a3cd2bc52810f4c6dc983a2f529e8f891b2f15bd423ef9b7001b265ee0ef",
       "audited_at": "2026-08-10"
+    },
+    {
+      "scope": "Issue 1034 anonymous FrontForum category-list and offset scalar selection",
+      "integration_base": "eee723e8be459cbe890b739b6f833dfde6435c9f",
+      "integration_base_tree": "56d0ee66413c1bd7e4978a03f790aff2ec842d05",
+      "branch": "agent/open87-pr2/q-frontforum-scalar-g18",
+      "tests_commit": "2f9144fbe83b0227f6c11bc40826a7efef0c102e",
+      "tests_tree": "11a428b84f70b88d7b0147802e7ca5a4f5a39f3a",
+      "source_commit": "d75c3a2c8c59cd1ded22ba9f1386b85dbb38576e",
+      "source_tree": "647003b34de5d2eff5c26c040b5736aedf458009",
+      "partial_existence_test_commit": "82906ba7e3c1a3a7a2cc0322378333f9e59b0ea6",
+      "partial_existence_test_tree": "0907a2e338de33c1f75474032694f4252f8c5d52",
+      "unsupported_head_guard_commit": "96ac478adc069606a8d8b36bc377c25046248116",
+      "unsupported_head_guard_tree": "d8c2cf46baa4bb9dd145da9f3ba283352498e3bf",
+      "live_observations_sha256": "299ce6ac53a04f1027a1680caba53aea1fa10a1e0df2aa7c14f27678f0ea983e",
+      "implementation_ledger_sha256": "4a0da115785fff8b13f9772216d2f0d7044d5c98bf59e4235fe10d114d2a0887",
+      "catalog_sha256": "6506a7710947d8e17b2170ce3ab2f720f1b345845bc3ffc789fb366d332a2f77",
+      "readonly_artifact_sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+      "external_sha256s_sha256": "225897681df10c1e8c307053056849990fc32ebe10e47f2ab9012685bda709ff",
+      "audited_at": "2026-08-10"
     }
   ],
   "method": {
@@ -110,7 +130,7 @@
       "Do not treat page-discussion thread provisioning as authority to create a forum post or a standalone forum thread."
     ],
     "tracker_read_canonicalization": "gh issue view <issue> --repo Rokurolize/wikijump --json number,title,state,updatedAt,body,comments,url | jq -cS .",
-    "source_change_disposition": "The original lane established the forum-mini behavior and public case bindings. The first amendment implements the observed current RecentThreads placeholder contract. The second implements the sealed anonymous read-only default FrontForum, ForumStart, category, thread, thread-post, and RecentPosts first-page contracts. The review amendment moves Site:View and Page:View filtering before count, order, and limit work; excludes hidden ForumStart groups and their categories in the structure queries used by the normal index; completes the observed category pager; preserves the complete thread/posts response envelope; and serves exact read-only routes without granting the observed remote jsInclude values loader authority. The first Comments amendment adds the saved-page shell and exact anonymous page-to-discussion forward and reverse ten-root read model. The attribute amendment adds the evidenced title, hide, forwards, and reverse source forms and keeps invalid or unobserved saved heads query-free. Mutations, hideForm, non-anonymous actors, and browser lifecycle remain explicit gaps."
+    "source_change_disposition": "The original lane established the forum-mini behavior and public case bindings. The first amendment implements the observed current RecentThreads placeholder contract. The second implements the sealed anonymous read-only default FrontForum, ForumStart, category, thread, thread-post, and RecentPosts first-page contracts. The review amendment moves Site:View and Page:View filtering before count, order, and limit work; excludes hidden ForumStart groups and their categories in the structure queries used by the normal index; completes the observed category pager; preserves the complete thread/posts response envelope; and serves exact read-only routes without granting the observed remote jsInclude values loader authority. The first Comments amendment adds the saved-page shell and exact anonymous page-to-discussion forward and reverse ten-root read model. The attribute amendment adds the evidenced title, hide, forwards, and reverse source forms and keeps invalid or unobserved saved heads query-free. The FrontForum scalar amendment selects existing categories through one permission-filtered global order, then applies the observed offset and limit while keeping per-item category identity; body-bearing custom formats remain typed-owner residuals. Mutations, hideForm, non-anonymous actors, and browser lifecycle remain explicit gaps."
   },
   "tracker_reads": [
     {
@@ -406,6 +426,15 @@
             "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority"
           ],
           "result": "The public preview and saved-page seams recognize mixed-case Comments module names. Exact lowercase double-quoted nonempty title emits one escaped direct h1. Exact hide=true keeps the saved shell empty, while omitted hide and exact hide=false embed the first permitted page. Exact order=reverse marks the shell and selects reverse roots; omitted order and exact order=forwards select forward roots. Invalid, empty, single-quoted, bare, uppercase-value, wrong-case, duplicate, and unknown saved heads remain inert and issue no Comments query."
+        },
+        {
+          "case_id": "Q1034_FRONTFORUM_CATEGORY_AND_OFFSET_SELECTION",
+          "status": "implemented_unverified",
+          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810"],
+          "public_tests": [
+            "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          ],
+          "result": "Public PagePreview and saved page_view accept the observed double-quoted semicolon category list and offset forms. Existing categories contribute one permission-filtered global newest sequence, empty or missing selected categories cannot suppress an existing category, all-missing and malformed lists render their exact errors, offset is applied after permission filtering, invalid offset defaults to zero, saturated candidate scans fail closed, and each row keeps its own category identity and link."
         }
       ],
       "needs_source": [
@@ -435,9 +464,9 @@
         {
           "case_id": "Q1034_POPULATED_READ_MODEL_COVERAGE",
           "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810"],
-          "observed": "The sealed baseline now defines offset rows, populated-plus-empty category lists in either order, all-missing and malformed category errors, and documented versus unknown custom-template variables.",
-          "missing": "FrontForum feed delivery and head metadata, effective relative-link rewriting, private visibility, deletion, and complete ForumNewThread states remain undefined.",
-          "forbidden_inference": "Do not recognize captured page data, treat one category as the general selector contract, or infer actor and mutation behavior from anonymous reads."
+          "observed": "The sealed category-list, missing-category, malformed-category, and offset scalar behaviors are implemented through public preview and saved-page seams. The baseline also defines documented versus unknown custom-template variables.",
+          "missing": "FrontForum custom-template consumption, feed delivery and head metadata, effective relative-link rewriting, private visibility, deletion, and complete ForumNewThread states remain undefined or unimplemented.",
+          "forbidden_inference": "Do not consume a body-bearing typed Module::Runtime through a raw closer, recognize captured page data, or infer actor and mutation behavior from anonymous reads."
         },
         {
           "case_id": "Q1034_FORUM_MUTATION_AUTHORITY",
@@ -641,6 +670,24 @@
       "patch_correct_probability": 0.97,
       "actionable_findings": 0,
       "secret_scan": "pass"
+    },
+    "frontforum_scalar_source_checks": {
+      "status": "implemented_unverified",
+      "integration_base": "eee723e8be459cbe890b739b6f833dfde6435c9f",
+      "direct_rustfmt": "rustfmt --edition 2024 deepwell/src/services/render/forum_front.rs deepwell/src/services/render/forum_modules.rs deepwell/tests/page.rs",
+      "implementation_ledger_check": "pass: 210 entries",
+      "specification_generation_check": "pass: 210 specifications and 1806 corpus pages",
+      "focused_verifier_tests": "pass: implementation ledger property matrix, open issue campaign ledger, and corpus-pinned scanner unit cases",
+      "corpus_pinned_literals": {
+        "status": "pass_with_short_notices",
+        "scanned_production_files": 2,
+        "captured_pages": 1867,
+        "findings": 0,
+        "short_notices": 11,
+        "disposition": "All notices are established short forum module names or scalar vocabulary; no captured page content was recognized."
+      },
+      "cargo_runtime_browser": "not_run_by_delegation",
+      "central_rust_command": "cargo test --manifest-path deepwell/Cargo.toml --test page forum_start_and_recent_posts_filter_before_counts_order_and_pagination -- --exact --nocapture"
     }
   },
   "central_commands": [
@@ -660,5 +707,5 @@
     "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/forum-mini-live-reference.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
     "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scp-wiki --rpc-url http://127.0.0.1:2747/jsonrpc"
   ],
-  "closure_rule": "This lane does not close either issue. The anonymous forum read models, including exact Comments title, hide, forwards, and reverse behavior on the first read page, are source-ready but still need central Rust, exact-candidate HTTP, and browser receipts. hideForm, later comment pages, forms, mutation, non-anonymous actors, and the full browser lifecycle remain evidence or implementation gaps."
+  "closure_rule": "This lane does not close either issue. The anonymous forum read models, including exact Comments title, hide, forwards, and reverse behavior on the first read page plus FrontForum category-list and offset scalar selection, are source-ready but still need central Rust, exact-candidate HTTP, and browser receipts. FrontForum custom bodies, feeds, head metadata, fixRelativeLinks, hideForm, later comment pages, forms, mutation, non-anonymous actors, and the full browser lifecycle remain evidence or implementation gaps."
 }

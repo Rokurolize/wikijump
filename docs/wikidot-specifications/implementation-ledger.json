@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-08-10",
-  "catalog_sha256": "235903d37f90db93b28b1cc045cb0e45f7a9090502f98da46cc3710c368105be",
+  "catalog_sha256": "6c7e7542be58bb8a77f2bccbabcbcf50e592191426d7a9ea42081a618494fced",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -1523,7 +1523,8 @@
       "status": "in_progress",
       "confirmed_public_seams": [
         "Anonymous live Wikidot edit/PagePreviewModule",
-        "Deepwell public wikidot_page_preview rendering"
+        "Deepwell public wikidot_page_preview rendering",
+        "Deepwell public saved page_view rendering"
       ],
       "tests": [
         {
@@ -1654,7 +1655,7 @@
         {
           "path": "deepwell/tests/page.rs",
           "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
-          "scope": "default item DOM, category and limit selection, permission-before-limit, comments count, and missing category"
+          "scope": "default item DOM, multiple-category global selection, offset defaults and boundaries, per-item category links, permission-before-offset-and-limit, comments count, malformed category error, and saved-page rendering"
         }
       ],
       "implementation_files": [
@@ -1667,10 +1668,11 @@
       ],
       "live_oracle_evidence": [
         "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-frontforum",
-        "live-observations.json::forum-q1034-readonly-route-core-20260809"
+        "live-observations.json::forum-q1034-readonly-route-core-20260809",
+        "live-observations.json::forum-q1034-frontforum-scalar-boundaries-20260810"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Multiple categories, custom-body variables, feed output, offsets, fixRelativeLinks, full actor visibility, deletion, and browser behavior remain unimplemented or unverified."
+        "Custom-body variables, feed output and head metadata, fixRelativeLinks, full actor visibility, deletion, mutation authority, and browser behavior remain unimplemented or unverified."
       ]
     },
     "module-frontspecialmini": {

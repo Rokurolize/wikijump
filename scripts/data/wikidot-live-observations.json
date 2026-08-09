@@ -169,6 +169,62 @@
       ]
     },
     {
+      "id": "forum-q1034-frontforum-scalar-boundaries-20260810",
+      "title": "FrontForum category lists and offsets select one global visible sequence",
+      "feature_ids": [
+        "module-frontforum"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-10",
+      "analysis": "Anonymous PagePreviewModule observations establish the semicolon category-list and offset boundaries over existing forum data. They do not establish custom-format ownership, feed delivery or head metadata, effective relative-link rewriting, non-anonymous visibility, deletion, mutation authority, or browser transitions.",
+      "normative_behavior": [
+        "The exact lowercase category attribute accepts a double-quoted semicolon-separated list of positive numeric category IDs. A list containing a non-numeric element renders Problem parsing attribute category. If every numeric category is missing, the module renders Requested forum category does not exist; if at least one numeric category exists, missing IDs do not suppress rows from the existing categories.",
+        "Existing selected categories contribute one global newest-first thread sequence. An existing empty category contributes no rows regardless of its position in the category list. Site, group, category, and linked-page visibility are resolved before global ordering, offset, and limit, and each rendered item keeps its own category ID and link.",
+        "Omitted offset and exact offset=0 select from the first visible row. Exact offset=1 skips the first visible row, a positive offset beyond the available rows renders an empty front-forum-box, and the observed non-numeric offset=bad falls back to zero.",
+        "All captures are anonymous and read-only. The scalar output does not establish custom body templates, feed or head ownership, link rewriting, post actions, or any mutation authority."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+          "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+          "case_ids": [
+            "q1034-frontforum-multi-populated-empty",
+            "q1034-frontforum-multi-empty-populated",
+            "q1034-frontforum-multi-missing",
+            "q1034-frontforum-multi-malformed"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-zero.json",
+          "sha256": "b658bc9b2f2c08214d64b331ffff35c6e6f8a7e32c9f39750efdfe0ab47b0d27",
+          "case_ids": [
+            "q1034-frontforum-offset-zero"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-one.json",
+          "sha256": "b9910ec2ec7ba5a0fce786b2e4f895dc6fb2411f77f37412dc37282f12afedc4",
+          "case_ids": [
+            "q1034-frontforum-offset-one"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-large.json",
+          "sha256": "f6acea4c49603e657d174e0cf1aa24758198fc84158954ff1383d1b5580ef845",
+          "case_ids": [
+            "q1034-frontforum-offset-large"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-invalid.json",
+          "sha256": "174e0987cc2b54927704ee03253d8fa31295007ee4d67fa13609f1024b3959fb",
+          "case_ids": [
+            "q1034-frontforum-offset-invalid"
+          ]
+        }
+      ]
+    },
+    {
       "id": "forum-q1034-comments-attributes-anonymous-20260809",
       "title": "Comments title, hide, and order have exact authored scalar boundaries",
       "feature_ids": [

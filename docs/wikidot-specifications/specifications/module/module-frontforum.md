@@ -50,6 +50,28 @@ Evidence:
 - `install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json` (SHA-256 `0a188e7960890a0ad05fbb7733671072abc1f08156e0d2df7e70b523e3405fd4`), cases: `frontforum-sandbox-limit-one`, `frontforum-sandbox-limit-two`, `frontforum-sandbox-invalid-category`, `frontforum-scp-limit-one`, `sandbox-forum-start-visible`, `sandbox-forum-start-hidden`, `sandbox-category-populated-page-one`, `sandbox-category-empty-page-one`, `sandbox-category-missing`, `sandbox-thread-populated`, `sandbox-thread-missing`, `sandbox-thread-posts-populated`, `sandbox-thread-posts-missing`, `scp-comments-forward`, `scp-comments-reverse`, `scp-comments-missing-page`, `sandbox-recent-posts-all-page-one`, `sandbox-recent-posts-category-page-one`, `sandbox-recent-posts-missing-category`
 - `install/local/wikidot-verification/artifacts/forum-q1034-pagination-live-20260809.json` (SHA-256 `48c014f29e3ffa893073ef90048b353880d929e2bb612d358ee977dafbe679b2`), cases: `scp-category-1113520-page-1`, `scp-category-1113520-page-2`, `scp-category-1113520-page-11`, `scp-category-1113520-page-12`
 
+### FrontForum category lists and offsets select one global visible sequence
+
+- Observation ID: `forum-q1034-frontforum-scalar-boundaries-20260810`
+- Classification: `documentation-clarification`
+- Observed at: `2026-08-10`
+- Analysis: Anonymous PagePreviewModule observations establish the semicolon category-list and offset boundaries over existing forum data. They do not establish custom-format ownership, feed delivery or head metadata, effective relative-link rewriting, non-anonymous visibility, deletion, mutation authority, or browser transitions.
+
+Normative behavior:
+
+- The exact lowercase category attribute accepts a double-quoted semicolon-separated list of positive numeric category IDs. A list containing a non-numeric element renders Problem parsing attribute category. If every numeric category is missing, the module renders Requested forum category does not exist; if at least one numeric category exists, missing IDs do not suppress rows from the existing categories.
+- Existing selected categories contribute one global newest-first thread sequence. An existing empty category contributes no rows regardless of its position in the category list. Site, group, category, and linked-page visibility are resolved before global ordering, offset, and limit, and each rendered item keeps its own category ID and link.
+- Omitted offset and exact offset=0 select from the first visible row. Exact offset=1 skips the first visible row, a positive offset beyond the available rows renders an empty front-forum-box, and the observed non-numeric offset=bad falls back to zero.
+- All captures are anonymous and read-only. The scalar output does not establish custom body templates, feed or head ownership, link rewriting, post actions, or any mutation authority.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json` (SHA-256 `9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410`), cases: `q1034-frontforum-multi-populated-empty`, `q1034-frontforum-multi-empty-populated`, `q1034-frontforum-multi-missing`, `q1034-frontforum-multi-malformed`
+- `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-zero.json` (SHA-256 `b658bc9b2f2c08214d64b331ffff35c6e6f8a7e32c9f39750efdfe0ab47b0d27`), cases: `q1034-frontforum-offset-zero`
+- `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-one.json` (SHA-256 `b9910ec2ec7ba5a0fce786b2e4f895dc6fb2411f77f37412dc37282f12afedc4`), cases: `q1034-frontforum-offset-one`
+- `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-large.json` (SHA-256 `f6acea4c49603e657d174e0cf1aa24758198fc84158954ff1383d1b5580ef845`), cases: `q1034-frontforum-offset-large`
+- `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-invalid.json` (SHA-256 `174e0987cc2b54927704ee03253d8fa31295007ee4d67fa13609f1024b3959fb`), cases: `q1034-frontforum-offset-invalid`
+
 
 
 ## Suggested public TDD seams
