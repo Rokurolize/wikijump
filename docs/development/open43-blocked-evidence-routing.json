@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.open43.blocked_evidence_routing.v1",
   "audited_at": "2026-08-10",
-  "integration_base": "949d06e7d49fd36d0bb3652b55bee8bfb4b649c2",
+  "integration_base": "cd50c230aad9b1e5e9b65084914cd45faabacdf0",
   "source_audits": [
     "docs/development/open43-q-search-users-closure-audit.json",
     "docs/development/open43-q-forum-closure-audit.json",
@@ -22,12 +22,12 @@
     "missing_security_policy": "The row needs a local security, rate-limit, fetch, or failure policy that Wikidot read-only output cannot safely authorize."
   },
   "counts": {
-    "anonymous_read_only": 7,
-    "authenticated_read_only": 4,
-    "run_owned_mutation": 19,
+    "anonymous_read_only": 5,
+    "authenticated_read_only": 3,
+    "run_owned_mutation": 20,
     "local_candidate": 3,
     "live_browser_only": 11,
-    "missing_public_producer": 10,
+    "missing_public_producer": 12,
     "missing_architecture_domain_authority": 7,
     "missing_security_policy": 6,
     "total": 67
@@ -54,7 +54,6 @@
     {"case_id":"Q811_TIE_ACTOR_AJAX_AND_TIMING_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled adjacent-page tie and private actor pair exists; Ajax timing alone would not answer it."},
     {"case_id":"Q1027_NON_ANONYMOUS_AND_BEYOND_LIMIT_LIVE_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No public private-backlink actor pair or controlled graph beyond 500 rows exists."},
     {"case_id":"Q1028_EXPAND_LIST_ACTION","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"The expand-list action and its observable intervals require browser interaction."},
-    {"case_id":"Q1035_SITECHANGES_FILTER_AND_AJAX_PAGER","route_class":"anonymous_read_only","status":"partial_evidence_acquired","reason":"Exact read-only AMC requests cover pages 1 through 3, out-of-range, source/files filters, empty options, and missing category; browser loading, failure, history, and focus remain."},
     {"case_id":"Q1035_SITECHANGES_FILE_META_DELETE_RESTORE","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Delete, restore, file, move, and metadata transition sequencing needs run-owned state."},
     {"case_id":"Q1035_LISTDRAFTS_NONEMPTY_QUERY","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"Deepwell has no persisted draft producer or visibility/expiration owner."},
     {"case_id":"Q1040_TIE_ACTOR_AJAX_AND_TIMING_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled tie and private adjacent-page actor set exists."},
@@ -71,7 +70,8 @@
     {"case_id":"A1037_MAILFORM_INITIAL_DOM_AND_SUBMIT","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"The acceptance row joins initial DOM to message submission and delivery state."},
     {"case_id":"A1037_SIMPLETODO_MUTATION","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Task create/update/delete is mutating."},
     {"case_id":"A1037_BROWSER_LIFECYCLE","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Focus, navigation, errors, loading, and intermediate paint require a browser."},
-    {"case_id":"A1038_AUTHENTICATED_ACTOR_MATRIX","route_class":"authenticated_read_only","status":"partial_evidence_acquired","reason":"A/B/C PagePreview and direct module reads establish admin-only ManageSite, General, Themes, and PetitionAdmin boundaries; Dashboard and Clone have no positive state."},
+    {"case_id":"A1038_PETITION_ADMIN_ACTIONS","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Administrator read-only evidence exposes the shell but not campaign storage, CSRF, rate limits, export privacy, or atomic create, update, and delete behavior."},
+    {"case_id":"A1038_OTHER_AUTHENTICATED_UTILITY_STATES","route_class":"missing_public_producer","status":"blocked_no_positive_fixture","reason":"All captured actors receive denial or missing-site output for Dashboard and Clone, so no positive state establishes their actor boundary."},
     {"case_id":"A1038_BROWSER_LIFECYCLE","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Admin navigation, modal, focus, history, and recovery are browser-only."},
     {"case_id":"A1038_CLONE_ACTION","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Eligibility, collision, copy, rollback, replay, and navigation require a run-owned destination."},
     {"case_id":"A1038_SITEGRID_POPULATED","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled public populated/private SiteGrid pair supplies selection and disclosure boundaries."},
@@ -88,7 +88,7 @@
     {"case_id":"M756_UPLOAD_MATERIALIZATION","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Upload-to-blob materialization and edge policy require a run-owned file mutation."},
     {"case_id":"M776_UNFROZEN_ARGUMENT_MATRIX","route_class":"anonymous_read_only","status":"partial_evidence_acquired","reason":"ASCII spaces and tab, NBSP rejection, quoted source treatment, width copying, size arguments, and float spellings were captured; not every proposed argument family has two stopping controls."},
     {"case_id":"M806_UNFROZEN_ARGUMENT_MATRIX","route_class":"anonymous_read_only","status":"partial_evidence_acquired","reason":"ASCII spaces and tab, NBSP rejection, quoted source treatment, width copying, size arguments, and centered spelling were captured; not every proposed argument family has two stopping controls."},
-    {"case_id":"M1039_FILES_NONEMPTY_ROWS","route_class":"anonymous_read_only","status":"partial_evidence_acquired","reason":"Three public pages with files and three without establish row and empty DOM; pagination, deletion, duplicate-looking, Unicode, and revision behavior remain."},
+    {"case_id":"M1039_FILES_PAGINATION_AND_HISTORY","route_class":"missing_public_producer","status":"partial_evidence_acquired","reason":"Three populated pages establish up to fifteen active rows, but no public fixture establishes later pages, duplicate-looking or Unicode names, deletion, or historical revisions."},
     {"case_id":"M1039_MANAGE_ATTACHMENTS_INTERACTION","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Panel transition, focus, actor behavior, failures, and intermediate states require a browser."},
     {"case_id":"M1039_FLICKR_ARGUMENTS_AND_PROVIDER","route_class":"anonymous_read_only","status":"blocked_no_provider_success","reason":"One PagePreview matrix captured argument acceptance and photoset failure, but no provider success, network boundary, or settled browser contract appeared."},
     {"case_id":"M1043_VIEWER_INTERACTION_CONTRACT","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"The lightbox timeline, keyboard, focus, history, and resource errors require a browser."},

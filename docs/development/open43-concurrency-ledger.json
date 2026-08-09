@@ -1,12 +1,13 @@
 {
   "schema": "wikijump.open43_concurrency_ledger.v1",
   "campaign": "open43-pr2",
-  "updated_at": "2026-08-09T21:34:13+09:00",
+  "updated_at": "2026-08-10T02:17:23+09:00",
   "integration_branch": {
     "repository": "Rokurolize/wikijump",
     "branch": "fix/open87-pr2-modules-actions-media-settings",
     "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
-    "reconciled_head": "7cec2150eee35a49e57a927835988d03bc8e36aa"
+    "reconciled_head": "cd50c230aad9b1e5e9b65084914cd45faabacdf0",
+    "reconciled_tree": "e9dd8cf01315c903db47812a6e43420117b157a0"
   },
   "limits": {
     "configured_threads": 13,
@@ -402,8 +403,14 @@
       "branch": "agent/open87-pr2/q-forum-evidence-g9",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/q-forum-evidence-g9",
       "base": "b21a91941fc13ec4a5a722c6cb51f06c5e6c9472",
-      "head": null,
-      "status": "running",
+      "head": "c2719a4a6e37b16e6f89be01cddd61acdd2334a0",
+      "status": "integrated",
+      "integration_commits": [
+        "cd18c9e7b166fda509b3be1e9b2b9e114233c9a8",
+        "4b6317b8ca8d69eb18456b576425c49cccf40d31",
+        "b0ae47c066b84db59abede720262f2e2058a3d58",
+        "11f700d35bb96e16d7c2b370095d9905a5302738"
+      ],
       "may_run_cargo": false,
       "may_mutate_runtime": false
     },
@@ -444,10 +451,28 @@
       "branch": "agent/open87-pr2/m-media-runtime-harness-g10",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/m-media-runtime-harness-g10",
       "base": "77f053557339d2c4a10a4a81949d29d0e94ca54f",
-      "head": null,
-      "status": "running",
+      "head": "4c56d415ba123cce5a0bdc692382d6547ea93a68",
+      "status": "completed",
+      "integration_commits": [],
       "may_run_cargo": false,
       "may_mutate_runtime": false
-    }
+    },
+    {"id":"q-forum-review-g9","agent":"/root/q_forum_review_g9","issue_numbers":[1034],"branch":"agent/open87-pr2/q-forum-review-g9","worktree":"/home/roku/wjlab/worktrees/open87-pr2/q-forum-review-g9","base":"11f700d35bb96e16d7c2b370095d9905a5302738","head":"d0db804ee5f667b73ea9a7d1324eba9b99038f01","status":"integrated","integration_commits":["8edf56ca1cca169a2a7fb801e6dd59523fc82d18","a793b52f03a96205def204fffcf96ca96f17e9ca","a7d7374912e100efe0d86f3ac22e674142e43703","949d06e7d49fd36d0bb3652b55bee8bfb4b649c2"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"m-media-runtime-harness-docs-g10","agent":"/root/m_media_runtime_harness_docs_g10","issue_numbers":[1039,1043,1062],"branch":"agent/open87-pr2/m-media-runtime-harness-docs-g10","worktree":"/home/roku/wjlab/worktrees/open87-pr2/m-media-runtime-harness-docs-g10","base":"89b4735e817a3e770b3e5028aafaaff350a1b506","head":"c91cc8ff763aed144750ad1d65eaf5d59f6dbd15","status":"integrated","integration_commits":["9f5b8a52a2c1b6d9f3fdf15afb27e1926091e09e"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"a-authoring-browser-g10","agent":"/root/a_authoring_browser_g10","issue_numbers":[1061,1063],"branch":"agent/open87-pr2/a-authoring-browser-g10","worktree":"/home/roku/wjlab/worktrees/open87-pr2/a-authoring-browser-g10","base":"89b4735e817a3e770b3e5028aafaaff350a1b506","head":"5470f37d54652b510dceb41a8255968c36d8fdba","status":"integrated","integration_commits":["1d38c4a0cffa0247389aaed290b871feb2477f73"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"audit-ownership-reconciliation-g11","agent":"/root/audit_ownership_reconciliation_g11","issue_numbers":[1028,1035,1037,1038],"branch":"agent/open87-pr2/audit-ownership-reconciliation-g11","worktree":"/home/roku/wjlab/worktrees/open87-pr2/audit-ownership-reconciliation-g11","base":"9f5b8a52a2c1b6d9f3fdf15afb27e1926091e09e","head":"5197ebba42d8895880eca5490c3c0c7ec1389aec","status":"integrated","integration_commits":["b0e67f0aa02853563018237a90b038e615609adb"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"q-forum-comments-g12","agent":"/root/q_forum_comments_g12","issue_numbers":[1034],"branch":"agent/open87-pr2/q-forum-comments-g12","worktree":"/home/roku/wjlab/worktrees/open87-pr2/q-forum-comments-g12","base":"949d06e7d49fd36d0bb3652b55bee8bfb4b649c2","head":"e7517949dc7c68f5ca1d9823f0f3811061e3d5e1","status":"integrated","integration_commits":["d1e075c69ebaa0a73ed6666e1bbb48d0bb831fb8","ba466c5400231ecfc0eaa59b47df31c07e3e2bb8"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"blocked-readonly-evidence-g14","agent":"/root/blocked_readonly_evidence_g14","issue_numbers":[],"branch":"agent/open87-pr2/blocked-readonly-evidence-g14","worktree":"/home/roku/wjlab/worktrees/open87-pr2/blocked-readonly-evidence-g14","base":"949d06e7d49fd36d0bb3652b55bee8bfb4b649c2","head":"02cc0f6482f6bdf2034d4fc233a0e2ec13862dee","status":"integrated","integration_commits":["a7c60c2be5a7f54e070f31bdeac0cdcd49810d24"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"q-forum-comments-review-fixes-g15","agent":"/root/q_forum_comments_review_fixes_g15","issue_numbers":[1034],"branch":"agent/open87-pr2/q-forum-comments-review-fixes-g15","worktree":"/home/roku/wjlab/worktrees/open87-pr2/q-forum-comments-review-fixes-g15","base":"a7c60c2be5a7f54e070f31bdeac0cdcd49810d24","head":"1f6ffa8cf34e65015ef54a55e10178a12b7cd3c3","status":"integrated","integration_commits":["a63f646c99d36b2feabf6fc48bbde056fa24ec6d","c49a1be5c63dd5a8a837c8ed0fcf3c043d5f9fbc","2cea276eb86710e62510d491c418db55a424a541"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"m-image-whitespace-regressions-g16","agent":"/root/m_image_whitespace_regressions_g16","issue_numbers":[776,806],"branch":"agent/open87-pr2/m-image-whitespace-regressions-g16","worktree":"/home/roku/wjlab/worktrees/open87-pr2/m-image-whitespace-regressions-g16","base":"2cea276eb86710e62510d491c418db55a424a541","head":"67e56190fe68dec934f28f9831b5b48f17a05af3","status":"integrated","integration_commits":["00e37910649454043480fd6957327f7c11a95fd7"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"q-comments-attributes-g16","agent":"/root/q_comments_attributes_g16","issue_numbers":[1034],"branch":"agent/open87-pr2/q-comments-attributes-g16","worktree":"/home/roku/wjlab/worktrees/open87-pr2/q-comments-attributes-g16","base":"00e37910649454043480fd6957327f7c11a95fd7","head":"d4312702d93a093eddf39f89cc9c7e1194c80ba6","status":"integrated","integration_commits":["4665e6b8e7fec627b3e9809aad45c890e9d81b3b","713e9efa1c89cb5d82f9021308c3cf2ef7427aae","f9115427190e3f98b683cf32be198f7badd8846a"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"m-files-nonempty-rows-audit-g17","agent":"/root/m_files_nonempty_rows_audit_g17","issue_numbers":[1039],"branch":"agent/files-nonempty-rows-audit","worktree":"/home/roku/wjlab/worktrees/open87-pr2/m-files-nonempty-rows-audit-g17","base":"00e37910649454043480fd6957327f7c11a95fd7","head":"ca16d7270834e42eaa62a615d447e2a9b474719c","status":"integrated","integration_commits":["f53ed2cafe351e0d5a36967cf49a9ef70f32a3b3"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"a-admin-denial-g20","agent":"/root/a_admin_denial_g20","issue_numbers":[1038],"branch":"agent/open87-pr2/a-admin-denial-g20","worktree":"/home/roku/wjlab/worktrees/open87-pr2/a-admin-denial-g20","base":"f9115427190e3f98b683cf32be198f7badd8846a","head":"f19e4972e6d444ae88492aad6b49d313d9bdc7f0","status":"integrated","integration_commits":["aa13fd24fbb59f70ce0afc2b1b8c91f2c34336dd","4aa1a1d19f9f847813c2265f69cdc02c089a2c9e","36b7e7e722a403ae4c70f968b0fac1a692b28e96","eee723e8be459cbe890b739b6f833dfde6435c9f"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"q-sitechanges-ajax-g18","agent":"/root/q_sitechanges_ajax_g18","issue_numbers":[1035],"branch":"agent/open87-pr2/q-sitechanges-ajax-g18","worktree":"/home/roku/wjlab/worktrees/open87-pr2/q-sitechanges-ajax-g18","base":"00e37910649454043480fd6957327f7c11a95fd7","head":"c8e1d3b6efcc0375300b6bef4e09399f71dd3a2e","status":"integrated","integration_commits":["2a472660b48a926f6c2147bdba42a0de00ecb39d","14e0f6fde830e9709f46ca55caa023fc89b7d814"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"q-frontforum-scalar-g18","agent":"/root/frontforum_scalar_slice","issue_numbers":[1034],"branch":"agent/open87-pr2/q-frontforum-scalar-g18","worktree":"/home/roku/wjlab/worktrees/open87-pr2/q-frontforum-scalar-g18","base":"eee723e8be459cbe890b739b6f833dfde6435c9f","head":"c5552f94bce9340e6b28f5dca7356ad77a062711","status":"integrated","integration_commits":["08239e95ec15ed7d0c266718fb08d68d02f331c5","fb96c4ddfb97ec923095b13e8dc332e3707c41a4","3b6d5e59c477c017fb7295d6bae478a9561387ec","225c358adb8b47b656d57ac966dc077b57457e00","21b3f7a46ce5bc7117214ab0efc19b60aa48e0e1","4be1acdcddaf9b99269b835d7234c833c7fa6020"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"q-members-ajax-g19","agent":"/root/q_members_ajax_g19","issue_numbers":[1032],"branch":"agent/open87-pr2/q-members-ajax-g19","worktree":"/home/roku/wjlab/worktrees/open87-pr2/q-members-ajax-g19","base":"eee723e8be459cbe890b739b6f833dfde6435c9f","head":"4828abed4a390c1db995f0fb0d65209ecb70b17d","status":"integrated","integration_commits":["fad99ec23aa83b3cdd6e5f633c105442f479fd7f","d78c08c5e56fbf85024ae101ac170cf9e242277c"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"renderer-epoch-finalization-g21","agent":"/root","issue_numbers":[1039,1042,1043],"branch":"fix/open87-pr2-modules-actions-media-settings","worktree":"/home/roku/.devspace/worktrees/wikijump-3af0335e","base":"d78c08c5e56fbf85024ae101ac170cf9e242277c","head":"5f521d201373faf0ad6ea7e5d23e45fded6f2887","status":"integrated","integration_commits":["5f521d201373faf0ad6ea7e5d23e45fded6f2887"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"build-gate-efficiency-g20","agent":"/root/build_gate_efficiency","issue_numbers":[],"branch":"agent/open87-pr2/build-gate-efficiency-g20","worktree":"/home/roku/wjlab/worktrees/open87-pr2/build-gate-efficiency-g20","base":"14e0f6fde830e9709f46ca55caa023fc89b7d814","head":"3f7876bcaf745e9baaf4b142c70b75f61825ecee","status":"integrated","integration_commits":["33f219c670d3abd8fa46a5c274390a79cac90065","cd50c230aad9b1e5e9b65084914cd45faabacdf0"],"may_run_cargo":false,"may_mutate_runtime":false},
+    {"id":"final-audit-reseal-g21","agent":"/root/final_audit_reseal","issue_numbers":[],"branch":"agent/open87-pr2/final-audit-reseal-g21","worktree":"/home/roku/wjlab/worktrees/open87-pr2/final-audit-reseal-g21","base":"cd50c230aad9b1e5e9b65084914cd45faabacdf0","head":null,"status":"running","may_run_cargo":false,"may_mutate_runtime":false}
   ]
 }
