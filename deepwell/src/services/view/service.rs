@@ -56,7 +56,7 @@ use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{
     GetPageAttributions, GetSiteBan, PageAttribution, RelationService,
 };
-use crate::services::render::{RenderOutput, RenderService};
+use crate::services::render::{LegacyActionRegistry, RenderOutput, RenderService};
 use crate::services::settings::{NavigationPageHtml, SettingsService};
 use crate::services::user::User;
 use crate::services::view::ViewType;
@@ -956,6 +956,8 @@ impl ViewService {
                 wikidot_breadcrumbs,
                 attributions,
             } => {
+                let legacy_actions = LegacyActionRegistry::from_wikidot_source(&wikitext)
+                    .browser_actions_for_wikidot_html(&compiled_body_html);
                 let page_rating = SettingsService::get_page_rating_settings(
                     ctx,
                     page.site_id,
@@ -980,6 +982,7 @@ impl ViewService {
                     page_rating,
                     page_discussion,
                     data_form,
+                    legacy_actions,
                     redirect_page,
                     redirect_kind,
                     wikitext,

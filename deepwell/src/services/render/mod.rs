@@ -36,6 +36,7 @@ mod include_comment_branches;
 mod include_missing;
 mod include_variable_iftags;
 mod include_variables;
+mod legacy_actions;
 mod link_modules;
 #[allow(dead_code)]
 mod list_pages;
@@ -73,6 +74,9 @@ pub(crate) use self::diagnostics::{
     CORPUS_RENDER_BUDGET_US, CORPUS_RENDER_DIMENSIONS, CorpusRenderScope,
     CorpusRenderStage, CorpusRenderTrace, CorpusRenderTraceSnapshot, StageGuard,
     is_corpus_render_timing,
+};
+pub use self::legacy_actions::{
+    LegacyActionDescriptor, LegacyActionRegistry, LegacyBrowserAction,
 };
 pub(crate) use self::literal_regions::LiteralRegionIndex;
 pub use self::render_dependency::{

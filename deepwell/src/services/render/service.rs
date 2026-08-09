@@ -81,6 +81,7 @@ use super::include_variables::{
     is_include_variable_name, prepare_include_source_variables_and_comment_branches,
     protect_include_variables, unprotect_include_variables,
 };
+use super::legacy_actions::LegacyActionRegistry;
 #[cfg(test)]
 use super::list_pages::ResolvedListPagesAuthors;
 use super::list_pages::{
@@ -2248,6 +2249,9 @@ impl RenderService {
                 &user_info,
                 trace,
             );
+            let legacy_action_registry = LegacyActionRegistry::from_resource_requirements(
+                &html_output.resource_requirements,
+            );
             let wikidot_tabview_ids: Vec<String> = html_output
                 .resource_requirements
                 .iter()
@@ -2341,6 +2345,10 @@ impl RenderService {
                         );
                     html_output.body =
                         protection.compat_text().restore(&html_output.body);
+                    if render_settings.layout == Layout::Wikidot {
+                        legacy_action_registry
+                            .remove_renderer_ids_from_wikidot_html(&mut html_output.body);
+                    }
                     html_output.backlinks.included_pages.extend(included_pages);
                     let html_block_texts: Vec<String> = tree
                         .html_blocks

@@ -23,6 +23,7 @@ use crate::models::file::Model as FileModel;
 use crate::models::page::Model as PageModel;
 use crate::services::file::{GetFileOutput, GetPageFiles};
 use crate::services::forum_thread::ForumThreadService;
+use crate::services::legacy_action::{LegacyActionService, SetLegacyActionTags};
 use crate::services::page::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
     GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
@@ -33,7 +34,10 @@ use crate::services::page::{
 use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
-use crate::services::render::{WikidotListPagesFeedInput, WikidotListPagesFeedOutput};
+use crate::services::render::{
+    LegacyActionRegistry, LegacyBrowserAction, WikidotListPagesFeedInput,
+    WikidotListPagesFeedOutput,
+};
 use crate::services::{MutationAuthorization, SettingsService, TextService};
 use crate::types::{
     Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
@@ -91,6 +95,17 @@ pub struct WikidotPageDiscussionOutput {
 pub struct WikidotPagePreviewOutput {
     pub body: String,
     pub styles: Vec<String>,
+    pub legacy_actions: Vec<LegacyBrowserAction>,
+}
+
+#[derive(Deserialize)]
+struct WikidotLegacySetTagsInput {
+    page_id: i64,
+    last_revision_id: i64,
+    action_index: usize,
+    action_fingerprint: String,
+    user_id: i64,
+    ip_address: std::net::IpAddr,
 }
 
 pub async fn wikidot_page_preview(
@@ -126,6 +141,10 @@ pub async fn wikidot_page_preview(
     })?;
 
     Ok(WikidotPagePreviewOutput {
+        legacy_actions: LegacyActionRegistry::from_resource_requirements(
+            &output.html_output.resource_requirements,
+        )
+        .browser_actions_for_wikidot_html(&output.html_output.body),
         body: output.html_output.body,
         styles: output.html_output.styles,
     })
@@ -596,6 +615,45 @@ pub async fn page_edit(
     PageService::edit(ctx, input)
         .await
         .or_raise(|| Error::new("failed to edit page", ErrorType::Page))
+}
+
+pub async fn wikidot_legacy_set_tags(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<EditPageOutput>> {
+    let input: WikidotLegacySetTagsInput = parse!(params, Page);
+    let site_id = ctx.request().site_id().or_raise(|| {
+        Error::new(
+            "set-tags requires a site request context",
+            ErrorType::PermissionDenied,
+        )
+    })?;
+    let actor_user_id = require_authenticated_mutation_actor(ctx, input.user_id)
+        .or_raise(|| {
+            Error::new("failed to authenticate set-tags actor", ErrorType::Page)
+        })?;
+    ensure_page_edit_permission(
+        ctx,
+        site_id,
+        Reference::Id(input.page_id),
+        actor_user_id,
+    )
+    .await
+    .or_raise(|| Error::new("failed to check set-tags permission", ErrorType::Page))?;
+
+    LegacyActionService::set_tags(
+        ctx,
+        SetLegacyActionTags {
+            page_id: input.page_id,
+            last_revision_id: input.last_revision_id,
+            action_index: input.action_index,
+            action_fingerprint: input.action_fingerprint,
+            user_id: actor_user_id,
+            ip_address: input.ip_address,
+        },
+    )
+    .await
+    .or_raise(|| Error::new("failed to apply set-tags action", ErrorType::Page))
 }
 
 pub async fn page_edit_permission(

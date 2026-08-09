@@ -53,7 +53,7 @@ use deepwell::services::permission::{
 use deepwell::services::relation::{
     CreateSiteMember, SiteMemberAccepted, SiteMemberData,
 };
-use deepwell::services::render::{UrlArgumentPair, UrlArguments};
+use deepwell::services::render::{LegacyActionRegistry, UrlArgumentPair, UrlArguments};
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
@@ -2762,6 +2762,231 @@ async fn direct_message_render_leaves_image_block_include_literal() {
 }
 
 #[tokio::test]
+async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() {
+    const SLUG: &str = "legacy-action-render-fixture";
+    const SOURCE: &str = concat!(
+        "[[button edit text=\"Edit here\" onclick=\"alert(1)\"]]\n",
+        "[[button history]]\n",
+        "[[button source]]\n",
+        "[[button print style=\"color: #444\"]]\n",
+        "[[button set-tags -* +favorite text=\"Change tags\"]]\n",
+        "[[button unsupported text=\"Never active\"]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": SOURCE,
+            "title": "Legacy action render fixture",
+            "alt_title": null,
+            "slug": SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create legacy action render fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let saved = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": SLUG,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("legacy action page should exist")
+    .compiled_body_html
+    .expect("legacy action page should have compiled HTML");
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let view_actions = match view {
+        GetPageViewOutput::Found { legacy_actions, .. } => legacy_actions,
+        other => panic!("expected found page view, got {other:?}"),
+    };
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Legacy action preview fixture",
+            "wikitext": SOURCE,
+        }),
+    );
+
+    let view_actions = serde_json::to_value(view_actions).unwrap();
+    assert_eq!(
+        &view_actions.as_array().unwrap()[..4],
+        &[
+            json!({"type": "edit"}),
+            json!({"type": "history"}),
+            json!({"type": "source"}),
+            json!({"type": "print"}),
+        ],
+    );
+    assert_eq!(view_actions[4]["type"], "set-tags");
+    assert_eq!(view_actions[4]["index"], 4);
+    assert_eq!(view_actions[4]["fingerprint"].as_str().unwrap().len(), 32);
+    assert_eq!(
+        serde_json::to_value(&preview.legacy_actions).unwrap(),
+        view_actions,
+    );
+
+    for html in [saved, preview.body] {
+        for label in ["Edit here", "history", "source", "print", "Change tags"] {
+            assert!(
+                html.contains(&format!(
+                    r#"<a class="wiki-standalone-button" href="javascript:;"{}>{label}</a>"#,
+                    if label == "print" {
+                        r#" style="color: #444""#
+                    } else {
+                        ""
+                    },
+                )),
+                "standalone action must retain exact Wikidot anchor DOM: {html}",
+            );
+        }
+        assert!(
+            !html.contains("wj-button-"),
+            "internal FTML IDs must not leak: {html}"
+        );
+        assert!(
+            !html.contains("data-wikijump"),
+            "Wikijump hooks must remain outside served Wikidot DOM: {html}"
+        );
+        assert!(
+            !html.contains("onclick"),
+            "authored script must stay inert: {html}"
+        );
+        assert!(
+            !html.contains("alert(1)"),
+            "authored script must stay inert: {html}"
+        );
+        assert!(
+            html.contains(
+                r#"<div class="error-block"><em>unsupported</em> is not a valid button type</div>"#,
+            ),
+            "unsupported actions must fail closed: {html}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent() {
+    const SLUG: &str = "legacy-action-set-tags-fixture";
+    const SOURCE: &str =
+        "[[button set-tags -* +favorite +_book -_movie text=\"Change tags\"]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": SOURCE,
+            "title": "Legacy action set-tags fixture",
+            "alt_title": null,
+            "tags": ["ordinary", "favorite", "_movie", "_kept"],
+            "slug": SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create legacy action set-tags fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let action_fingerprint = LegacyActionRegistry::from_wikidot_source(SOURCE)
+        .fingerprint(0)
+        .expect("set-tags descriptor should have a fingerprint");
+    let mismatched = run_endpoint_err!(
+        runner,
+        wikidot_legacy_set_tags,
+        json!({
+            "page_id": created.page_id,
+            "last_revision_id": created.revision_id,
+            "action_index": 0,
+            "action_fingerprint": "00000000000000000000000000000000",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(mismatched, ErrorType::Page);
+    let changed = run_endpoint!(
+        runner,
+        wikidot_legacy_set_tags,
+        json!({
+            "page_id": created.page_id,
+            "last_revision_id": created.revision_id,
+            "action_index": 0,
+            "action_fingerprint": action_fingerprint.clone(),
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("first set-tags activation should create a revision");
+    let page =
+        run_endpoint!(runner, page_get, json!({"site_id": site_id, "page": SLUG}),)
+            .expect("set-tags page should still exist");
+    assert_eq!(page.tags, ["_kept", "favorite", "_book"]);
+
+    let repeated = run_endpoint!(
+        runner,
+        wikidot_legacy_set_tags,
+        json!({
+            "page_id": created.page_id,
+            "last_revision_id": changed.revision_id,
+            "action_index": 0,
+            "action_fingerprint": action_fingerprint.clone(),
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(repeated.is_none(), "same action should be idempotent");
+
+    let stale = run_endpoint_err!(
+        runner,
+        wikidot_legacy_set_tags,
+        json!({
+            "page_id": created.page_id,
+            "last_revision_id": created.revision_id,
+            "action_index": 0,
+            "action_fingerprint": action_fingerprint,
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(stale, ErrorType::Page);
+}
+
+#[tokio::test]
 async fn page_render_emits_wikidot_rate_widget_structure() {
     let runner = TestRunner::setup().await;
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
@@ -2790,8 +3015,16 @@ async fn page_render_emits_wikidot_rate_widget_structure() {
         "<div style=\"text-align: center;\"><div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:\u{a0}<span class=\"number prw54353\">+396</span></span>",
     ), "rate widget must be a direct child of its alignment container:\n{html}");
     assert!(html.contains(
-        r#"<span class="rateup btn btn-default"><a href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)" title="I like it">+</a></span>"#,
+        r#"<span class="rateup btn btn-default"><a href="javascript:;" title="I like it">+</a></span>"#,
     ));
+    assert!(html.contains(
+        r#"<span class="ratedown btn btn-default"><a href="javascript:;" title="I don't like it">–</a></span>"#,
+    ));
+    assert!(html.contains(
+        r#"<span class="cancel btn btn-default"><a href="javascript:;" title="Cancel my vote">x</a></span>"#,
+    ));
+    assert!(!html.contains("onclick"));
+    assert!(!html.contains("data-wikijump"));
     assert!(!html.contains(r#"<div class="page-rate-widget-box"><p>"#));
     assert!(!html.contains(r#"<p><div class="page-rate-widget-box">"#));
     assert!(!html.contains(r#"<a href="javascript:;"><span class="rateup"#));

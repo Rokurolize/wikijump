@@ -27,6 +27,7 @@ use crate::models::site::Model as SiteModel;
 use crate::models::user::Model as WikijumpUserModel;
 use crate::services::DataFormEditor;
 use crate::services::relation::PageAttribution;
+use crate::services::render::LegacyBrowserAction;
 use crate::services::settings::{PageDiscussionSettings, PageRatingSettings};
 use crate::services::user::User;
 use crate::types::Reference;
@@ -116,6 +117,8 @@ pub enum GetPageViewOutput {
         page_discussion: PageDiscussionSettings,
         #[serde(default)]
         data_form: Option<DataFormEditor>,
+        #[serde(default)]
+        legacy_actions: Vec<LegacyBrowserAction>,
         redirect_page: Option<String>,
         #[serde(default)]
         redirect_kind: Option<PageRedirectKind>,
