@@ -20,9 +20,11 @@
 
 //! Fail-closed rendering for site utility modules with frozen anonymous output.
 
+use std::borrow::Cow;
 use std::sync::LazyLock;
 
 use ftml::settings::WikitextSettings;
+use ftml::tree::{AttributeMap, Container, ContainerType, Element, Module, SyntaxTree};
 use regex::Regex;
 
 use super::compat::CompatHtmlFragments;
@@ -49,6 +51,7 @@ const MANAGE_SITE_ANONYMOUS_HTML: &str = concat!(
     "\n\t\t</div>\n\t\t\t</div>\n</div>",
 );
 const PETITION_ADMIN_ANONYMOUS_HTML: &str = r#"<div class="error-block"><div class="title">Permission error</div>This tool is for use by the administrators of this site</div>"#;
+const SITE_GRID_EMPTY_MESSAGE: &str = "No sites provided.";
 const SITE_GRID_EMPTY_HTML: &str = r#"<div class="error-block">No sites provided.</div>"#;
 
 static SITE_UTILITY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -125,6 +128,31 @@ pub(super) fn expand_site_utility_modules(
     }
     output.push_str(&wikitext[cursor..]);
     output
+}
+
+pub(super) fn resolve_typed_root_site_grid_runtime_modules(tree: &mut SyntaxTree<'_>) {
+    for element in &mut tree.elements {
+        let Element::Module(Module::Runtime {
+            name,
+            arguments,
+            body,
+        }) = element
+        else {
+            continue;
+        };
+        if name.as_ref() != "SiteGrid" || !arguments.is_empty() || !body.trim().is_empty()
+        {
+            continue;
+        }
+
+        let mut attributes = AttributeMap::new();
+        debug_assert!(attributes.insert("class", Cow::Borrowed("error-block")));
+        *element = Element::Container(Container::new(
+            ContainerType::Div,
+            vec![Element::Text(Cow::Borrowed(SITE_GRID_EMPTY_MESSAGE))],
+            attributes,
+        ));
+    }
 }
 
 fn opens_module_body(wikitext: &str, opening_end: usize) -> bool {

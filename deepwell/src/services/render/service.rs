@@ -107,6 +107,7 @@ use super::render_options::{
 };
 use super::runtime::{IncludeSource, IncludeSourceCache, RenderRuntime};
 use super::runtime_modules::{RateModuleContext, SecondaryRuntimeModuleExpansionOptions};
+use super::site_utility_modules::resolve_typed_root_site_grid_runtime_modules;
 use super::structs::{RenderOutput, RenderPageOutput};
 use super::url_arguments::UrlArguments;
 use super::wikidot_hosts::{
@@ -2249,7 +2250,14 @@ impl RenderService {
                 trace.record_elapsed(scope, CorpusRenderStage::WorkerQueue, queued_at);
             }
             let prepared = Self::prepare_inner_render_wikitext(outer, &parse_settings);
-            ParsedFtmlRender::parse(prepared, &parse_page_info, &parse_settings, trace)
+            let mut parsed = ParsedFtmlRender::parse(
+                prepared,
+                &parse_page_info,
+                &parse_settings,
+                trace,
+            );
+            resolve_typed_root_site_grid_runtime_modules(&mut parsed.tree);
+            parsed
         });
         let parsed = timeout(render_timeout, parse_task)
             .await

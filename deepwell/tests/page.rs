@@ -7778,6 +7778,86 @@ async fn anonymous_page_and_site_utility_modules_match_frozen_safe_states() {
 }
 
 #[tokio::test]
+async fn typed_sitegrid_empty_body_matches_frozen_preview_and_saved_state() {
+    const EMPTY_HTML: &str = r#"<div class="error-block">No sites provided.</div>"#;
+    const SAVED_SOURCE: &str = "[[module SiteGrid]]\n \t\n[[/module]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (case_id, source) in [
+        ("typed-sitegrid-empty", "[[module SiteGrid]]\n[[/module]]"),
+        ("typed-sitegrid-whitespace", SAVED_SOURCE),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+
+        assert_eq!(
+            preview.body.trim(),
+            EMPTY_HTML,
+            "{case_id} should resolve the typed empty SiteGrid node",
+        );
+        assert!(
+            !preview.body.contains("No such module, please"),
+            "{case_id} should not reach FTML's generic runtime-module fallback:\n{}",
+            preview.body,
+        );
+    }
+
+    let saved_slug = "fixture-typed-sitegrid-empty";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        saved_slug,
+        "Fixture Typed SiteGrid Empty",
+        SAVED_SOURCE,
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": saved_slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved typed SiteGrid view, got {other:?}"),
+    };
+    assert_eq!(
+        body.trim(),
+        EMPTY_HTML,
+        "saved pages should resolve the same typed empty SiteGrid node",
+    );
+}
+
+#[tokio::test]
 async fn site_utility_modules_preserve_literal_and_reject_unsupported_shapes() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -7789,6 +7869,15 @@ async fn site_utility_modules_preserve_literal_and_reject_unsupported_shapes() {
         "BODY\n",
         "[[module SiteGrid]]\n",
         "private-site-name\n",
+        "[[/module]]\n",
+        "ARGUMENTED_EMPTY_BODY\n",
+        "[[module SiteGrid limit=\"0\"]]\n",
+        "[[/module]]\n",
+        "CASE_VARIANT\n",
+        "[[module sitegrid]]\n",
+        "[[/module]]\n",
+        "FOREIGN_RUNTIME\n",
+        "[[module RuntimeOwnershipProbe]]\n",
         "[[/module]]\n",
         "ARGUMENT\n",
         "[[module ManageSite unexpected=\"x\"]]\n",
@@ -7831,6 +7920,15 @@ async fn site_utility_modules_preserve_literal_and_reject_unsupported_shapes() {
         "unsupported utility arguments should retain the established fail-closed output:\n{}",
         preview.body,
     );
+    for unconsumed_name in ["SiteGrid", "sitegrid", "RuntimeOwnershipProbe"] {
+        assert!(
+            preview
+                .body
+                .contains(&format!("<em>{unconsumed_name}</em>")),
+            "unsupported typed runtime shape {unconsumed_name:?} should retain FTML's generic fail-closed output:\n{}",
+            preview.body,
+        );
+    }
 }
 
 #[tokio::test]
