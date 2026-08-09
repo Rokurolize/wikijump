@@ -1,12 +1,12 @@
 {
   "schema": "wikijump.open43_concurrency_ledger.v1",
   "campaign": "open43-pr2",
-  "updated_at": "2026-08-09T19:33:30+09:00",
+  "updated_at": "2026-08-09T19:43:14+09:00",
   "integration_branch": {
     "repository": "Rokurolize/wikijump",
     "branch": "fix/open87-pr2-modules-actions-media-settings",
     "worktree": "/home/roku/.devspace/worktrees/wikijump-3af0335e",
-    "reconciled_head": "25f19ee3ce76bed6c4b0a83723bda41209ffe3ed"
+    "reconciled_head": "a4d162165a2c369a1d4c6f7738afae21333dd718"
   },
   "limits": {
     "configured_threads": 13,
@@ -200,8 +200,12 @@
       "branch": "agent/open87-pr2/s-settings-browser-closure-g4",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/s-settings-browser-closure-g4",
       "base": "27e11850e80c532b90cc025e30196d2cadfaa5ea",
-      "head": null,
-      "status": "running",
+      "head": "5a300f8860967376af5c29a8ed45e5b7284e7fec",
+      "status": "integrated",
+      "integration_commits": [
+        "cec9526cf14ec0bd31c4fef8f93a20908e3364b0",
+        "a4d162165a2c369a1d4c6f7738afae21333dd718"
+      ],
       "may_run_cargo": false,
       "may_mutate_runtime": false
     },
@@ -224,6 +228,18 @@
       "branch": "agent/open87-pr2/a-set-tags-denial-g6",
       "worktree": "/home/roku/wjlab/worktrees/open87-pr2/a-set-tags-denial-g6",
       "base": "25f19ee3ce76bed6c4b0a83723bda41209ffe3ed",
+      "head": null,
+      "status": "running",
+      "may_run_cargo": false,
+      "may_mutate_runtime": false
+    },
+    {
+      "id": "s-settings-source-residual-g5",
+      "agent": "/root/s_browser",
+      "issue_numbers": [610, 754, 1046],
+      "branch": "agent/open87-pr2/s-settings-source-residual-g5",
+      "worktree": "/home/roku/wjlab/worktrees/open87-pr2/s-settings-source-residual-g5",
+      "base": "a4d162165a2c369a1d4c6f7738afae21333dd718",
       "head": null,
       "status": "running",
       "may_run_cargo": false,
