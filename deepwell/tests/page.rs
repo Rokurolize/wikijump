@@ -13879,6 +13879,7 @@ async fn listpages_plain_content_executes_selected_page_includes_only() {
                 "SECTION-BEGIN|%%content{{1}}%%|SECTION-END\n",
                 "[[/module]]",
             ),
+            TARGET_SLUG = TARGET_SLUG,
         ),
     )
     .await;
