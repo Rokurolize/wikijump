@@ -39,6 +39,15 @@ test("settings and browser closure audit is complete without promoting candidate
     await sha256(referentPath),
     audit.classification_contract.referent_table_sha256,
   );
+  assert.equal(
+    await sha256(audit.source_residual_lane.referent_table_path),
+    audit.source_residual_lane.referent_table_sha256,
+  );
+  assert.equal(
+    await sha256(audit.source_residual_lane.seam_map_path),
+    audit.source_residual_lane.seam_map_sha256,
+  );
+  assert.equal(audit.source_residual_lane.cargo_executed, false);
 
   const allowed = new Set([
     "source_ready",
@@ -55,14 +64,6 @@ test("settings and browser closure audit is complete without promoting candidate
   const caseIds = rows.map(({ case_id }) => case_id);
   assert.equal(new Set(caseIds).size, caseIds.length);
   assert.equal(rows.every(({ classification }) => allowed.has(classification)), true);
-  for (const classification of allowed) {
-    assert.equal(
-      rows.some((row) => row.classification === classification),
-      true,
-      `audit must retain at least one ${classification} row`,
-    );
-  }
-
   const commandIds = new Set(Object.keys(audit.central_commands));
   const evidenceIds = new Set(Object.keys(audit.evidence_registry));
   for (const row of rows) {
@@ -91,6 +92,36 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.equal(audit.reconciliation.subrow_count, rows.length);
   assert.equal(audit.reconciliation.issue_count, audit.issues.length);
   assert.deepEqual(audit.reconciliation.classification_counts, classificationCounts);
+  assert.equal(classificationCounts.needs_source, 0);
+  assert.equal(audit.reconciliation.issue_owned_needs_source_count, 0);
+  assert.equal(audit.candidate_harness_gap.outside_source_residual_scope, true);
+
+  const rowsByCaseId = new Map(rows.map((row) => [row.case_id, row]));
+  const fragmentHref = rowsByCaseId.get(
+    "B610_FRAGMENT_DOUBLE_HASH_PUBLIC_REGRESSION",
+  );
+  assert.ok(fragmentHref);
+  assert.equal(fragmentHref.classification, "source_ready");
+  assert.deepEqual(fragmentHref.implementation_commits, [
+    "e9c376428b00737b06a82a627f514fb26e36f51a",
+  ]);
+  assert.equal(audit.central_commands.C_DEEPWELL_FRAGMENT_HREF.exists_now, true);
+  assert.match(
+    audit.central_commands.C_DEEPWELL_FRAGMENT_HREF.command,
+    /wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page/u,
+  );
+  assert.equal("C_SETTINGS_IMPORT_EXPORT" in audit.central_commands, false);
+
+  for (const caseId of [
+    "S754_IMPORT_EXPORT_REPRESENTATION",
+    "S1046_IMPORT_EXPORT_REPRESENTATION",
+  ]) {
+    const row = rowsByCaseId.get(caseId);
+    assert.ok(row);
+    assert.equal(row.classification, "blocked_evidence");
+    assert.equal(row.blocker_kind, "missing_export_contract");
+    assert.deepEqual(row.next_command_ids, []);
+  }
 
   for (const pair of audit.temporal_evidence_contract.pairs) {
     const initial = rows.find(({ case_id }) => case_id === pair.initial_case_id);

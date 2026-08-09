@@ -25,6 +25,17 @@
     "final_source_freeze_reconciliation_required": true,
     "standing_is_acceptance_evidence": false
   },
+  "source_residual_lane": {
+    "base_commit": "a4d162165a2c369a1d4c6f7738afae21333dd718",
+    "base_tree": "e47c1d4da581c171147e411034878ef0e9c12725",
+    "source_commits": ["e9c376428b00737b06a82a627f514fb26e36f51a"],
+    "referent_table_path": "docs/development/referent-table-open43-s-settings-source-residual-g5.md",
+    "referent_table_sha256": "1783c9398f029816b1be878c7a92c19a6d0b2caff60c78bbe12a55025a92cb6d",
+    "seam_map_path": "docs/development/open43-s-settings-source-residual-seam-map.md",
+    "seam_map_sha256": "6a44489cee79ac93181e34b02ebc3f622bc52828de4cabdd47fc90b71d55d3b9",
+    "cargo_executed": false,
+    "standing_is_acceptance_evidence": false
+  },
   "diagnostic_standing": {
     "acceptance_authority": false,
     "wikijump_commit": "ed5c5b353b8f93ad6fc2c7b7c4ffd677717098cf",
@@ -313,12 +324,12 @@
         {
           "case_id": "B610_FRAGMENT_DOUBLE_HASH_PUBLIC_REGRESSION",
           "acceptance": "Render the evidenced sidebar closer as exact href=\"##\" through public preview and saved-page seams without color-marker rewriting.",
-          "classification": "needs_source",
-          "reason": "Current source has generic marker protection and a diagnostic artifact, but no focused public PagePreview/saved-page regression with the exact authored [[a href=\"##\"]] input was found. Source inspection cannot prove the old failure is gone.",
-          "source_paths": ["deepwell/src/services/render/service.rs", "deepwell/src/services/render/compat/wikidot_inline_markers.rs"],
-          "existing_tests": [],
-          "evidence_ids": ["E_610_FRAGMENT_METADATA"],
-          "missing_source": ["public exact href regression", "saved navigation dependency rerender assertion"],
+          "classification": "source_ready",
+          "reason": "One public integration test now renders the exact authored [[a href=\"##\"]] input through PagePreview, saves it as the latest nav:side revision, rerenders the dependent home page, and reads the exact href through page_view. Existing literal-region ownership is sufficient, so no production renderer rewrite was added. The lane did not run Cargo; source_ready remains subject to the exact central command.",
+          "source_paths": ["deepwell/src/services/render/service.rs", "deepwell/src/services/render/compat/wikidot_inline_markers.rs", "deepwell/tests/page.rs"],
+          "existing_tests": ["deepwell/tests/page.rs::wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page"],
+          "evidence_ids": ["E_610_FRAGMENT_METADATA", "E_BROWSER_LIVE_CORRECTIONS"],
+          "implementation_commits": ["e9c376428b00737b06a82a627f514fb26e36f51a"],
           "next_command_ids": ["C_DEEPWELL_FRAGMENT_HREF"]
         },
         {
@@ -545,13 +556,14 @@
         {
           "case_id": "S754_IMPORT_EXPORT_REPRESENTATION",
           "acceptance": "Round-trip analytics enabled/profile state with the same site identity through the repository's import and export representation.",
-          "classification": "needs_source",
-          "reason": "The database and API fields exist, but no seeder/import/export data representation for analytics settings was found.",
-          "source_paths": ["deepwell/src/database/seeder/data.rs", "deepwell/src/database/seeder/mod.rs"],
+          "classification": "blocked_evidence",
+          "reason": "The repository has no site export producer or restore format. ImportSite is a Deserialize-only initial Wikidot corpus input and the seeder is initial fixture configuration; neither can prove a round trip. The frozen backup specification covers page source and attached files only and does not define a settings schema, same-site identity, cross-site non-copy, or restore conflict policy. Extending either existing input would invent an export contract.",
+          "source_paths": ["deepwell/src/services/import/structs.rs", "deepwell/src/services/import/service.rs", "deepwell/src/database/seeder/data.rs", "deepwell/src/database/seeder/mod.rs", "docs/wikidot-specifications/specifications/platform/site-backups.md"],
           "existing_tests": [],
           "evidence_ids": ["E_ANALYTICS_PANEL"],
-          "missing_source": ["import/export fields", "same-site round-trip test", "cross-site non-copy control"],
-          "next_command_ids": ["C_SETTINGS_IMPORT_EXPORT"]
+          "blocker_kind": "missing_export_contract",
+          "missing_evidence": ["canonical settings export schema", "same-site identity rule", "cross-site non-copy rule", "restore conflict and revision policy"],
+          "next_command_ids": []
         },
         {
           "case_id": "S754_ANALYTICS_INITIAL",
@@ -895,13 +907,14 @@
         {
           "case_id": "S1046_IMPORT_EXPORT_REPRESENTATION",
           "acceptance": "Round-trip welcome_page and the settings revision with the same site identity through import and export representation.",
-          "classification": "needs_source",
-          "reason": "The database and public API fields exist, but no seeder/import/export data field or round-trip test was found for welcome_page or the new settings foundation.",
-          "source_paths": ["deepwell/src/database/seeder/data.rs", "deepwell/src/database/seeder/mod.rs"],
+          "classification": "blocked_evidence",
+          "reason": "The repository has no site export producer, canonical settings representation, or restore consumer. Existing public settings tests prove persistence and stale revision rejection, not export or restore. No frozen or live evidence defines whether settings_revision is preserved, regenerated, or conflict-checked during restore, so adding welcome_page to the seeder or corpus importer would invent the required policy.",
+          "source_paths": ["deepwell/src/services/import/structs.rs", "deepwell/src/services/import/service.rs", "deepwell/src/database/seeder/data.rs", "deepwell/src/database/seeder/mod.rs", "docs/wikidot-specifications/specifications/platform/site-backups.md"],
           "existing_tests": [],
           "evidence_ids": ["E_GENERAL_PANEL"],
-          "missing_source": ["welcome_page import/export field", "same-site round-trip test", "settings revision policy for imports"],
-          "next_command_ids": ["C_SETTINGS_IMPORT_EXPORT"]
+          "blocker_kind": "missing_export_contract",
+          "missing_evidence": ["canonical settings export schema", "same-site identity rule", "welcome_page restore behavior", "settings revision restore policy"],
+          "next_command_ids": []
         },
         {
           "case_id": "S1046_WELCOME_EFFECT",
@@ -975,8 +988,8 @@
     "C_DEEPWELL_FRAGMENT_HREF": {
       "command": "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page -- --exact --nocapture",
       "phase": "source_barrier",
-      "exists_now": false,
-      "required_before_run": "Add the exact public PagePreview and saved-page regression without a Deepwell post-render rewrite. If FTML does not preserve the authored attribute, amend FTML and pin it through the central barrier."
+      "exists_now": true,
+      "lane_execution": "not run because this source-residual lane prohibits Cargo; run once at the central Deepwell source barrier"
     },
     "C_DEEPWELL_TABVIEW": {
       "command": "cargo test --manifest-path deepwell/Cargo.toml tabview -- --nocapture",
@@ -1064,12 +1077,6 @@
       "exists_now": false,
       "required_before_run": "Add the identity-consuming candidate Playwright contract for administrator and denied actors. The /_admin source route already reuses the normal load/action boundary; the test must not substitute the ordinary seeded page, /-/admin, or a mock-only fixture."
     },
-    "C_SETTINGS_IMPORT_EXPORT": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test site site_settings_import_export_round_trip -- --exact --nocapture",
-      "phase": "source_barrier",
-      "exists_now": false,
-      "required_before_run": "Add the settings fields to the repository's import/export representation and prove same-site round trip without cross-site leakage."
-    },
     "C_BROWSER_PARITY_CANDIDATE": {
       "command": "node install/local/wikidot-verification/scripts/run-standing-browser-parity.mjs --mode candidate --output-dir /home/roku/wjlab/evidence/open43-final/settings-browser/browser --live-completion-policy /home/roku/wjlab/evidence/open43-final/settings-browser/sealed-live-completion-policy.json --candidate-identity /home/roku/wjlab/evidence/open43-final/settings-browser/sealed-candidate-parity-identity.json --live-reference-ledger /home/roku/wjlab/evidence/open43-final/settings-browser/standing-browser-live-reference.json --live-reference-sha256 <sealed-reference-sha256> --browser-root framerail --browser-executable /usr/bin/google-chrome",
       "phase": "final_candidate",
@@ -1091,6 +1098,7 @@
   },
   "candidate_harness_gap": {
     "classification": "needs_source",
+    "outside_source_residual_scope": true,
     "reason": "The existing generic browser-parity runner covers #610, #689, #690, and #822. No source-owned one-stack candidate controller currently covers authenticated settings writes, normal autonumbered page creation, migration identity, public SSR, browser intervals, and side-effect snapshots for #754, #755, #757, #758, and #1046.",
     "required_commands": ["C_SETTINGS_CANDIDATE", "C_SETTINGS_BROWSER_CANDIDATE"],
     "must_not_substitute": ["direct database assertions as pass", "the current standing runtime", "the mock-only default Framerail Playwright fixture", "a settled screenshot", "HTTP 200 without actor, cache, asset, and runtime identity"]
@@ -1119,7 +1127,25 @@
         "result": "failed on four existing Deepwell runtime-module method-name literals; this lane changes no Rust or renderer path",
         "finding_paths": ["deepwell/src/services/render/runtime_modules.rs:1846", "deepwell/src/services/render/runtime_modules.rs:1858", "deepwell/src/services/render/runtime_modules.rs:1894", "deepwell/src/services/render/runtime_modules.rs:1895"]
       }
-    ]
+    ],
+    "source_residual": {
+      "passed": [
+        "rustfmt --edition 2024 deepwell/tests/page.rs",
+        "node --check install/local/wikidot-verification/tests/open43-s-settings-browser-closure-audit.test.mjs",
+        "node --test install/local/wikidot-verification/tests/open43-s-settings-browser-closure-audit.test.mjs",
+        "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
+        "node scripts/generate-wikidot-specifications.mjs --check",
+        "cmp docs/wikidot-specifications/implementation-ledger.json scripts/data/wikidot-implementation-ledger.json",
+        "cd docs/development && sha256sum -c referent-table-open43-s-settings-source-residual-g5.md.sha256",
+        "git diff --check"
+      ],
+      "not_run_by_lane_policy": ["C_DEEPWELL_FRAGMENT_HREF", "runtime", "browser", "Wikidot mutation", "GitHub mutation", "push"],
+      "preexisting_barrier": {
+        "command": "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/focused-uncovered/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/live-references.jsonl",
+        "result": "failed on the same four existing runtime-module method-name literals recorded by the prior lane; this lane changes only a Deepwell integration test, audit documents, and the audit validator",
+        "finding_paths": ["deepwell/src/services/render/runtime_modules.rs:1846", "deepwell/src/services/render/runtime_modules.rs:1858", "deepwell/src/services/render/runtime_modules.rs:1894", "deepwell/src/services/render/runtime_modules.rs:1895"]
+      }
+    }
   },
   "renderer_epoch_coordination": {
     "current_epoch": 2,
@@ -1134,11 +1160,12 @@
   "reconciliation": {
     "issue_count": 9,
     "subrow_count": 60,
+    "issue_owned_needs_source_count": 0,
     "classification_counts": {
-      "source_ready": 22,
-      "needs_source": 3,
+      "source_ready": 23,
+      "needs_source": 0,
       "candidate_required": 25,
-      "blocked_evidence": 10
+      "blocked_evidence": 12
     },
     "duplicate_case_ids": 0,
     "unknown_classifications": 0,
