@@ -70,8 +70,8 @@ use deepwell::services::{
     SessionService, SettingsService, SiteService, TextService, ThemeSetting,
 };
 use deepwell::types::{
-    Action, ConnectionType, Maybe, PageId, PageLockType, PageRevisionType,
-    Permission, Reference, RerenderDepth, Resource, TextBlockType,
+    Action, ConnectionType, Maybe, PageId, PageLockType, PageRevisionType, Permission,
+    Reference, RerenderDepth, Resource, TextBlockType,
 };
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel,
@@ -13836,6 +13836,77 @@ async fn listpages_summary_aliases_cover_the_first_section_but_first_paragraph_d
     assert!(
         !html.contains("EXCLUDED-SECOND-SECTION"),
         "none of the summary-family variables may cross the first content-section separator:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_plain_content_executes_selected_page_includes_only() {
+    const COMPONENT_SLUG: &str = "component:listpages-plain-content-include";
+    const TARGET_SLUG: &str = "fixture-listpages-plain-content-target";
+    const INDEX_SLUG: &str = "fixture-listpages-plain-content-index";
+    const INCLUDE_MARKER: &str = "LISTPAGES_PLAIN_CONTENT_INCLUDE";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMPONENT_SLUG,
+        "Fixture ListPages Plain Content Include",
+        INCLUDE_MARKER,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Plain Content Target",
+        &format!("FIRST-SECTION\n[[include {COMPONENT_SLUG}]]\n=====\nSECOND-SECTION"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Plain Content Index",
+        &format!(
+            concat!(
+                "[[module ListPages fullname=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "PLAIN-BEGIN|%%content%%|PLAIN-END\n",
+                "SECTION-BEGIN|%%content{{1}}%%|SECTION-END\n",
+                "[[/module]]",
+            ),
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("ListPages plain-content index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled ListPages plain-content body should be available");
+
+    assert_eq!(
+        html.matches(INCLUDE_MARKER).count(),
+        1,
+        "plain content must execute the selected page include exactly once:\n{html}",
+    );
+    assert_eq!(
+        html.matches(&format!("[[include {COMPONENT_SLUG}]]"))
+            .count(),
+        1,
+        "numbered content must preserve the selected page include literally:\n{html}",
     );
 }
 
