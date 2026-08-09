@@ -118,7 +118,7 @@ test('standing descriptor backfill blocks all writes before materialization when
   const receipt = path.join(root, 'receipt.json');
   fs.mkdirSync(binRoot);
   const fakeDocker = path.join(binRoot, 'docker');
-  fs.writeFileSync(fakeDocker, `#!/usr/bin/node
+  fs.writeFileSync(fakeDocker, `#!/usr/bin/env node
 const fs = require('node:fs');
 const sql = fs.readFileSync(0, 'utf8');
 fs.appendFileSync(process.env.FAKE_SQL_LOG, sql + '\\n-- query boundary --\\n');
@@ -206,7 +206,7 @@ test('standing descriptor backfill blocks an active orphan before inventory or m
   const receipt = path.join(root, 'receipt.json');
   fs.mkdirSync(binRoot);
   const fakeDocker = path.join(binRoot, 'docker');
-  fs.writeFileSync(fakeDocker, `#!/usr/bin/node
+  fs.writeFileSync(fakeDocker, `#!/usr/bin/env node
 const fs = require('node:fs');
 const sql = fs.readFileSync(0, 'utf8');
 fs.appendFileSync(process.env.FAKE_SQL_LOG, sql + '\\n-- query boundary --\\n');

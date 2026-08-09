@@ -1499,7 +1499,7 @@ export async function main(argv) {
     const allRows = timePhaseSync(phaseTimingsMs, 'parse_manifest', () => parseRows(manifestText));
     const selectedRows = timePhaseSync(phaseTimingsMs, 'filter_rows', () => filterRows(args, allRows));
     const rpcAttachmentRow = !args.skipAttachments && args.attachmentCreateMode === 'rpc'
-      ? selectedRows.find((row) => row.attachments.length > 0)
+      ? selectedRows.find((row) => Array.isArray(row.attachments) && row.attachments.length > 0)
       : undefined;
     if (rpcAttachmentRow !== undefined) {
       throw new Error(`${rpcAttachmentRow.fullname}: corpus attachments require --attachment-create-mode direct so provenance descriptors commit atomically with file revisions; RPC mode can expose a host-derived descriptor before correction`);
