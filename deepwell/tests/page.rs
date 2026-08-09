@@ -7981,7 +7981,7 @@ async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
         json!({
             "site_id": site_id,
             "title": "front-forum-unobserved-arguments",
-            "wikitext": r#"[[module FrontForum category="1"]]"#,
+            "wikitext": r#"[[module FrontForum category="1" feed="news"]]"#,
         }),
     );
     assert!(
@@ -7990,6 +7990,23 @@ async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
             && !unsupported.body.contains("forum-recent-posts-box"),
         "an unobserved FrontForum query must fail closed: {}",
         unsupported.body,
+    );
+
+    let custom_body = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum-unobserved-custom-format",
+            "wikitext": "[[module FrontForum category=\"1\"]]\n%%linked_title%%\n[[/module]]",
+        }),
+    );
+    assert!(
+        custom_body.body.contains("[[module")
+            && custom_body.body.contains("%%linked_title%%")
+            && !custom_body.body.contains("front-forum-box"),
+        "an unobserved FrontForum custom format must fail closed: {}",
+        custom_body.body,
     );
 }
 
@@ -8202,6 +8219,22 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
     )
     .await
     .expect("empty forum read-model category should be created");
+    let pagination_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: visible_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model Pagination".to_owned(),
+            description: "First-page category fixture".to_owned(),
+            sort_index: Some(30),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("pagination forum read-model category should be created");
     let hidden_group = ForumService::create_group(
         runner.context(),
         CreateForumGroup {
@@ -8250,6 +8283,23 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
             && !empty_recent_posts.contains(r#"<div class="pager">"#),
         "{empty_recent_posts}",
     );
+
+    for number in 0..21 {
+        let thread = create_thread(
+            &runner,
+            pagination_category.forum_category_id,
+            &format!("Pagination Thread {number:02}"),
+            None,
+        )
+        .await;
+        create_post(
+            &runner,
+            thread,
+            None,
+            &format!("Pagination Post {number:02}"),
+        )
+        .await;
+    }
 
     let visible_thread = create_thread(
         &runner,
@@ -8392,6 +8442,245 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         )),
         "{forum_start}",
     );
+
+    let front_forum = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum permission-first fixture",
+            "wikitext": format!(
+                r#"[[module FrontForum category="{}" limit="2"]]"#,
+                primary_category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        front_forum.contains(r#"<div class="front-forum-box">"#)
+            && front_forum
+                .matches(r#"<h1><span><a href="/forum/t-"#)
+                .count()
+                == 2
+            && front_forum.contains("Public Page Discussion Marker")
+            && front_forum.contains("Public Page Comment body &lt;observable&gt;")
+            && front_forum.contains("Comments: 0")
+            && front_forum.contains("Read Model Visible Thread")
+            && front_forum.contains("Comments: 21")
+            && front_forum.contains("Read Model Visible Group / Read Model: Primary")
+            && !front_forum.contains("Private Page Discussion Marker")
+            && !front_forum.contains("Read Model Hidden Thread"),
+        "{front_forum}",
+    );
+    let front_forum_missing = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum missing category fixture",
+            "wikitext": r#"[[module FrontForum category="9223372036854775807" limit="1"]]"#,
+        }),
+    )
+    .body;
+    assert!(
+        front_forum_missing.contains("Requested forum category does not exist.")
+            && !front_forum_missing.contains(r#"<div class="front-forum-box">"#),
+        "{front_forum_missing}",
+    );
+
+    let forum_start_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumStartModule",
+            "parameters": {},
+        }),
+    );
+    assert_eq!(forum_start_ajax.status, "ok");
+    assert!(
+        forum_start_ajax
+            .body
+            .contains(r#"<div class="forum-start-box">"#)
+            && forum_start_ajax.body.contains("Read Model Visible Group")
+            && !forum_start_ajax.body.contains("Read Model Hidden Group"),
+        "{}",
+        forum_start_ajax.body,
+    );
+
+    let category_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": primary_category.forum_category_id.to_string(),
+                "p": "1",
+            },
+        }),
+    );
+    assert_eq!(category_ajax.status, "ok");
+    assert!(
+        category_ajax
+            .body
+            .contains(r#"<div class="forum-category-box">"#)
+            && category_ajax.body.contains("Read Model Visible Thread")
+            && category_ajax.body.contains("Public Page Discussion Marker")
+            && !category_ajax
+                .body
+                .contains("Private Page Discussion Marker")
+            && !category_ajax.body.contains("Create a new thread"),
+        "{}",
+        category_ajax.body,
+    );
+    let missing_category_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {"c": "9223372036854775807", "p": "1"},
+        }),
+    );
+    assert_eq!(missing_category_ajax.status, "no_category");
+    assert!(missing_category_ajax.body.is_empty());
+
+    let paginated_category_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": pagination_category.forum_category_id.to_string(),
+                "p": "1",
+            },
+        }),
+    );
+    assert_eq!(paginated_category_ajax.status, "ok");
+    assert!(
+        paginated_category_ajax
+            .body
+            .contains("Number of threads: 21")
+            && paginated_category_ajax.body.contains("Number of posts: 21")
+            && paginated_category_ajax
+                .body
+                .matches(r#"<td class="name"><div class="title"><a href="/forum/t-"#)
+                .count()
+                == 20
+            && paginated_category_ajax
+                .body
+                .contains("Pagination Thread 20")
+            && !paginated_category_ajax
+                .body
+                .contains("Pagination Thread 00"),
+        "{}",
+        paginated_category_ajax.body,
+    );
+    let unsupported_category_page = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": pagination_category.forum_category_id.to_string(),
+                "p": "2",
+            },
+        }),
+    );
+    assert_eq!(unsupported_category_page.status, "not_ok");
+
+    let thread_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadModule",
+            "parameters": {"t": visible_thread.to_string()},
+        }),
+    );
+    assert_eq!(thread_ajax.status, "ok");
+    assert!(
+        thread_ajax
+            .body
+            .contains(r#"<div class="forum-thread-box">"#)
+            && thread_ajax.body.contains("Read Model Visible Thread")
+            && thread_ajax.body.contains("Number of posts: 22")
+            && !thread_ajax.body.contains("New Post")
+            && !thread_ajax.body.contains("Edit Title"),
+        "{}",
+        thread_ajax.body,
+    );
+    let thread_posts_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadPostsModule",
+            "parameters": {"t": visible_thread.to_string(), "pageNo": "1"},
+        }),
+    );
+    assert_eq!(thread_posts_ajax.status, "ok");
+    assert!(
+        thread_posts_ajax
+            .body
+            .contains(r#"<div id="thread-container-posts" class="thread-container">"#)
+            && thread_posts_ajax.body.contains("Visible Post 00")
+            && thread_posts_ajax.body.contains("Visible Post 19")
+            && !thread_posts_ajax.body.contains("Visible Post 20")
+            && !thread_posts_ajax.body.contains("Private Newest Post")
+            && !thread_posts_ajax.body.contains("Edit")
+            && !thread_posts_ajax.body.contains("Delete"),
+        "{}",
+        thread_posts_ajax.body,
+    );
+    let private_thread_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadModule",
+            "parameters": {"t": private_thread.to_string()},
+        }),
+    );
+    assert_eq!(private_thread_ajax.status, "no_thread");
+
+    let recent_posts_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumRecentPostsListModule",
+            "parameters": {
+                "page": "1",
+                "categoryId": primary_category.forum_category_id.to_string(),
+            },
+        }),
+    );
+    assert_eq!(recent_posts_ajax.status, "ok");
+    assert!(
+        recent_posts_ajax
+            .body
+            .starts_with(r#"<div id="recent-posts-container">"#)
+            && recent_posts_ajax.body.contains("Visible Post 21")
+            && recent_posts_ajax.body.contains("Public Page Comment")
+            && !recent_posts_ajax.body.contains("Private Newest Post")
+            && !recent_posts_ajax.body.contains("Hidden Newest Post"),
+        "{}",
+        recent_posts_ajax.body,
+    );
+    let unsupported_recent_posts_page = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumRecentPostsListModule",
+            "parameters": {"page": "2", "categoryId": ""},
+        }),
+    );
+    assert_eq!(unsupported_recent_posts_page.status, "not_ok");
 
     let first_page = page_view_html(&runner, site_id, RECENT_POSTS_PAGE, "").await;
     assert!(

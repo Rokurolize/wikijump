@@ -36,8 +36,8 @@ use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::render::{
-    LegacyActionRegistry, LegacyBrowserAction, WikidotListPagesFeedInput,
-    WikidotListPagesFeedOutput,
+    LegacyActionRegistry, LegacyBrowserAction, WikidotForumModuleRequest,
+    WikidotForumModuleResponse, WikidotListPagesFeedInput, WikidotListPagesFeedOutput,
 };
 use crate::services::{MutationAuthorization, SettingsService, TextService};
 use crate::types::{
@@ -63,6 +63,13 @@ static WIKIDOT_LIST_PAGES_SET_PAIR_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 struct WikidotListPagesModuleInput {
     site_id: i64,
     module_body: String,
+    parameters: BTreeMap<String, String>,
+}
+
+#[derive(Deserialize)]
+struct WikidotForumModuleInput {
+    site_id: i64,
+    module_name: String,
     parameters: BTreeMap<String, String>,
 }
 
@@ -279,6 +286,31 @@ pub async fn wikidot_list_pages_module(
         body: normalize_wikidot_list_pages_set_spacing(
             &normalize_wikidot_list_pages_set_pairs(&output.html_output.body),
         ),
+    })
+}
+
+pub async fn wikidot_forum_module(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotForumModuleResponse> {
+    let input: WikidotForumModuleInput = parse!(params, Page);
+    RenderService::render_wikidot_forum_module(
+        ctx,
+        input.site_id,
+        WikidotForumModuleRequest {
+            module_name: input.module_name,
+            parameters: input.parameters,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            format!(
+                "failed to render Wikidot forum module in site ID {}",
+                input.site_id,
+            ),
+            ErrorType::Page,
+        )
     })
 }
 

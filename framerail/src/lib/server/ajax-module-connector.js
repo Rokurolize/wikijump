@@ -10,6 +10,13 @@ const CONTROL_FIELDS = new Set([
   "callbackIndex",
   "eventSource"
 ])
+const FORUM_READ_MODULE_PARAMETERS = new Map([
+  ["forum/ForumStartModule", new Set(["hidden"])],
+  ["forum/ForumViewCategoryModule", new Set(["c", "p"])],
+  ["forum/ForumViewThreadModule", new Set(["t"])],
+  ["forum/ForumViewThreadPostsModule", new Set(["t", "pageNo"])],
+  ["forum/ForumRecentPostsListModule", new Set(["page", "categoryId"])]
+])
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
 const PAGE_DISCUSSION_ACTION = "ForumAction"
@@ -41,12 +48,20 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *   parameters: Record<string, string>
  * }} ListPagesRenderInput
  *
+ * @typedef {{
+ *   siteId: number
+ *   moduleName: string
+ *   parameters: Record<string, string>
+ * }} ForumModuleRenderInput
  *
  * @typedef {{
  *   siteId: number
  *   renderListPages: (
  *     input: ListPagesRenderInput
  *   ) => Promise<{ body: string }>
+ *   renderForumModule?: (
+ *     input: ForumModuleRenderInput
+ *   ) => Promise<{ status: string; body: string }>
  *   createNewPage?: (input: NewPageCreateInput) => Promise<void>
  *   canCreateNewPage?: boolean | (() => boolean | Promise<boolean>)
  *   pageExists?: (slug: string) => boolean | Promise<boolean>
@@ -388,6 +403,7 @@ export const handleAjaxModuleConnectorRequest = async (
   {
     siteId,
     renderListPages,
+    renderForumModule,
     createNewPage,
     canCreateNewPage = true,
     pageExists,
@@ -490,6 +506,55 @@ export const handleAjaxModuleConnectorRequest = async (
   }
 
   const moduleName = fields.get("moduleName")
+  const forumParameters = moduleName
+    ? FORUM_READ_MODULE_PARAMETERS.get(moduleName)
+    : undefined
+  if (forumParameters) {
+    if (!renderForumModule) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module: ${moduleName}`
+      })
+    }
+
+    /** @type {Record<string, string>} */
+    const parameters = {}
+    for (const [key, value] of fields) {
+      if (CONTROL_FIELDS.has(key)) continue
+      if (!forumParameters.has(key)) {
+        return jsonResponse({
+          status: "not_ok",
+          message: `Unsupported AJAX module shape: ${moduleName}`
+        })
+      }
+      parameters[key] = value
+    }
+    const callbackIndex = fields.has("callbackIndex")
+      ? fieldValue(fields, "callbackIndex")
+      : null
+    const responseMetadata = () => ({
+      callbackIndex,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+      cssInclude: [],
+      jsInclude: []
+    })
+    try {
+      const output = await renderForumModule({ siteId, moduleName, parameters })
+      return jsonResponse({
+        status: output.status,
+        body: output.body,
+        ...responseMetadata()
+      })
+    } catch (error) {
+      console.error("AJAX forum rendering failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        body: "",
+        ...responseMetadata()
+      })
+    }
+  }
+
   if (moduleName !== "list/ListPagesModule") {
     return jsonResponse({
       status: "not_ok",

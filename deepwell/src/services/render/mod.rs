@@ -26,8 +26,10 @@ mod compat;
 mod corpus;
 mod diagnostics;
 mod file_modules;
+mod forum_front;
 mod forum_mini;
 mod forum_modules;
+mod forum_read_routes;
 mod forum_visibility;
 mod ftml_page_existence;
 mod ftml_user_info;
@@ -82,6 +84,9 @@ pub(crate) use self::diagnostics::{
     CORPUS_RENDER_BUDGET_US, CORPUS_RENDER_DIMENSIONS, CorpusRenderScope,
     CorpusRenderStage, CorpusRenderTrace, CorpusRenderTraceSnapshot, StageGuard,
     is_corpus_render_timing,
+};
+pub use self::forum_read_routes::{
+    WikidotForumModuleRequest, WikidotForumModuleResponse,
 };
 pub(crate) use self::generator::DEEPWELL_RENDERER_EPOCH;
 pub use self::legacy_actions::{

@@ -20,6 +20,7 @@ use regex::Regex;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 
 use super::compat::CompatHtmlFragments;
+use super::forum_front::{self, FrontForumLoad};
 use super::forum_visibility::ForumPageVisibility;
 use super::literal_regions::LiteralRegionIndex;
 use super::service::{
@@ -55,6 +56,10 @@ static MODULE_CLOSE_LINE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         .expect("module close expression is valid")
 });
 
+static MODULE_CLOSE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)\[\[/module\]\]").expect("module closing expression is valid")
+});
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ForumModuleKind {
     Comments,
@@ -68,7 +73,7 @@ enum ForumModuleKind {
 }
 
 #[derive(Clone, Debug)]
-struct ForumUserDisplay {
+pub(super) struct ForumUserDisplay {
     user_id: i64,
     name: String,
     slug: Option<String>,
@@ -76,15 +81,15 @@ struct ForumUserDisplay {
 }
 
 #[derive(Clone, Debug)]
-struct ForumLastPost {
-    forum_post_id: i64,
-    forum_thread_id: i64,
-    user: ForumUserDisplay,
-    created_at: time::OffsetDateTime,
+pub(super) struct ForumLastPost {
+    pub(super) forum_post_id: i64,
+    pub(super) forum_thread_id: i64,
+    pub(super) user: ForumUserDisplay,
+    pub(super) created_at: time::OffsetDateTime,
 }
 
 #[derive(Clone, Debug, Default)]
-struct ForumCategoryActivity {
+pub(super) struct ForumCategoryActivity {
     thread_count: i64,
     post_count: i64,
     last_post: Option<ForumLastPost>,
@@ -145,7 +150,7 @@ struct RecentPost {
 }
 
 #[derive(Debug)]
-struct RecentPostsPage {
+pub(super) struct RecentPostsPage {
     posts: Vec<RecentPost>,
     page: u32,
     known_page_count: u32,
@@ -178,7 +183,11 @@ fn recent_threads_replacement_end(wikitext: &str, opener_end: usize) -> usize {
         .map_or(opener_end, |closing| opener_end + closing.end())
 }
 
-fn forum_user(
+fn opens_module_body(wikitext: &str, opener_end: usize) -> bool {
+    MODULE_CLOSE_REGEX.is_match(&wikitext[opener_end..])
+}
+
+pub(super) fn forum_user(
     user_id: i64,
     wikidot_user_name: Option<String>,
     wikidot_user_slug: Option<String>,
@@ -209,7 +218,10 @@ fn forum_user(
     }
 }
 
-fn render_forum_user(user: &ForumUserDisplay, avatar_timestamp: i64) -> String {
+pub(super) fn render_forum_user(
+    user: &ForumUserDisplay,
+    avatar_timestamp: i64,
+) -> String {
     let name = escape_list_pages_html_text(&user.name);
     let Some(slug) = user.slug.as_deref().filter(|_| user.wikidot_profile) else {
         return format!(r#"<span class="printuser">{name}</span>"#);
@@ -220,8 +232,8 @@ fn render_forum_user(user: &ForumUserDisplay, avatar_timestamp: i64) -> String {
         concat!(
             r#"<span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/{slug}" "#,
             r#"onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;"  >"#,
-            r#"<img class="small" src="https://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
-            r#"alt="{name_attr}" style="background-image:url(https://www.wikidot.com/userkarma.php?u={user_id})"/></a>"#,
+            r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
+            r#"alt="{name_attr}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})"/></a>"#,
             r#"<a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;" >{name}</a></span>"#,
         ),
         slug = slug,
@@ -232,7 +244,7 @@ fn render_forum_user(user: &ForumUserDisplay, avatar_timestamp: i64) -> String {
     )
 }
 
-fn render_forum_date(
+pub(super) fn render_forum_date(
     created_at: time::OffsetDateTime,
     format_class: &str,
     display_format: &str,
@@ -246,7 +258,7 @@ fn render_forum_date(
     )
 }
 
-async fn load_forum_start_activity(
+pub(super) async fn load_forum_start_activity(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     viewer_user_id: Option<i64>,
@@ -265,7 +277,7 @@ async fn load_forum_start_activity(
                 "local_user.name AS local_user_name, local_user.slug AS local_user_slug ",
                 "FROM forum_thread t ",
                 "JOIN forum_group g ON g.forum_group_id = t.forum_group_id ",
-                " AND g.site_id = t.site_id AND g.deleted_at IS NULL AND g.visible = TRUE ",
+                " AND g.site_id = t.site_id AND g.deleted_at IS NULL ",
                 "JOIN forum_category c ON c.forum_category_id = t.forum_category_id ",
                 " AND c.site_id = t.site_id AND c.deleted_at IS NULL ",
                 "LEFT JOIN page p ON p.page_id = t.page_id ",
@@ -332,13 +344,17 @@ async fn load_forum_start_activity(
     Ok(activity)
 }
 
-fn render_forum_start(
+pub(super) fn render_forum_start(
     structure: &[ForumGroupStructure],
     activity: &BTreeMap<i64, ForumCategoryActivity>,
+    show_hidden: bool,
 ) -> String {
     let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut output = String::from("<div class=\"forum-start-box\">");
-    for group in structure.iter().filter(|group| group.group.visible) {
+    for group in structure
+        .iter()
+        .filter(|group| show_hidden || group.group.visible)
+    {
         output.push_str("<div class=\"forum-group\" style=\"width: 98%\"><div class=\"head\"><div class=\"title\">");
         output.push_str(&escape_list_pages_html_text(&group.group.name));
         output.push_str("</div><div class=\"description\">");
@@ -381,15 +397,21 @@ fn render_forum_start(
         }
         output.push_str("</table></div></div>");
     }
-    output.push_str("</div><p style=\"text-align: right\"><a href=\"/forum/start/hidden/show\">Show hidden</a></p><p style=\"text-align: right\"><span class=\"rss-icon\"><img src=\"http://www.wikidot.com/common--theme/base/images/feed/feed-icon-14x14.png\" alt=\"rss icon\"/></span> RSS: <a href=\"/feed/forum/threads.xml\">New threads</a> | <a href=\"/feed/forum/posts.xml\">New posts</a></p>");
+    if show_hidden {
+        output.push_str("</div><p style=\"text-align: right\"><a href=\"/forum/start\">Hide hidden</a></p>");
+    } else {
+        output.push_str("</div><p style=\"text-align: right\"><a href=\"/forum/start/hidden/show\">Show hidden</a></p>");
+    }
+    output.push_str("<p style=\"text-align: right\"><span class=\"rss-icon\"><img src=\"http://www.wikidot.com/common--theme/base/images/feed/feed-icon-14x14.png\" alt=\"rss icon\"/></span> RSS: <a href=\"/feed/forum/threads.xml\">New threads</a> | <a href=\"/feed/forum/posts.xml\">New posts</a></p>");
     output
 }
 
-async fn load_recent_posts_page(
+pub(super) async fn load_recent_posts_page(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     viewer_user_id: Option<i64>,
     page: u32,
+    category_id: Option<i64>,
 ) -> Result<Option<RecentPostsPage>> {
     if !(1..=MAX_RECENT_POSTS_PAGE).contains(&page) {
         return Ok(None);
@@ -421,6 +443,7 @@ async fn load_recent_posts_page(
          LEFT JOIN \"user\" local_user ON local_user.user_id = fp.user_id \
                                       AND local_user.deleted_at IS NULL \
          WHERE fp.site_id = $1 AND fp.deleted_at IS NULL \
+           AND ($2::BIGINT IS NULL OR fp.forum_category_id = $2) \
            AND (t.page_id IS NULL OR p.page_id IS NOT NULL) \
          ORDER BY fp.created_at DESC, fp.forum_post_id DESC \
          LIMIT {RECENT_POSTS_CANDIDATE_LIMIT}",
@@ -429,7 +452,7 @@ async fn load_recent_posts_page(
         RecentPostCandidate::find_by_statement(Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
             sql,
-            [Value::from(site_id)],
+            [Value::from(site_id), Value::BigInt(category_id)],
         ))
         .all(ctx.transaction())
         .await
@@ -547,7 +570,6 @@ fn render_recent_posts(
     structure: &[ForumGroupStructure],
     page: &RecentPostsPage,
 ) -> String {
-    let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut output = String::from(
         "<div class=\"forum-recent-posts-box\" ><form onsubmit=\"return false;\" action=\"dummy.html\" method=\"get\"><table class=\"form\"><tr><td>From categories: </td><td><select id=\"recent-posts-category\"><option value=\"\" selected=\"selected\">All categories</option>",
     );
@@ -563,7 +585,15 @@ fn render_recent_posts(
             .expect("writing to a String cannot fail");
         }
     }
-    output.push_str("</select><input class=\"buttons btn btn-primary\" type=\"button\" value=\"Update\" onclick=\"WIKIDOT.modules.ForumRecentPostsModule.listeners.updateList()\"/></td></tr></table></form><div id=\"forum-recent-posts-list\"><div id=\"recent-posts-container\">");
+    output.push_str("</select><input class=\"buttons btn btn-primary\" type=\"button\" value=\"Update\" onclick=\"WIKIDOT.modules.ForumRecentPostsModule.listeners.updateList()\"/></td></tr></table></form><div id=\"forum-recent-posts-list\">");
+    output.push_str(&render_recent_posts_list(page));
+    output.push_str("</div></div>");
+    output
+}
+
+pub(super) fn render_recent_posts_list(page: &RecentPostsPage) -> String {
+    let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
+    let mut output = String::from("<div id=\"recent-posts-container\">");
     push_recent_posts_pager(&mut output, page);
     output.push_str("<div class=\"thread-container\">");
     for post in &page.posts {
@@ -603,7 +633,7 @@ fn render_recent_posts(
     }
     output.push_str("</div>");
     push_recent_posts_pager(&mut output, page);
-    output.push_str("</div></div></div>");
+    output.push_str("</div>");
     output
 }
 
@@ -670,7 +700,21 @@ impl RenderService {
                 .as_str();
             let kind = module_kind(name);
             let head = captures.name("head").map_or("", |head| head.as_str());
-            if kind != ForumModuleKind::RecentThreads && !head.trim().is_empty() {
+            let front_forum = if kind == ForumModuleKind::FrontForum
+                && !head.trim().is_empty()
+                && !opens_module_body(&wikitext, matched.end())
+            {
+                let Some(arguments) = forum_front::parse_arguments(head) else {
+                    continue;
+                };
+                Some(arguments)
+            } else {
+                None
+            };
+            if kind != ForumModuleKind::RecentThreads
+                && kind != ForumModuleKind::FrontForum
+                && !head.trim().is_empty()
+            {
                 continue;
             }
             let replacement_end = if kind == ForumModuleKind::RecentThreads {
@@ -682,6 +726,23 @@ impl RenderService {
                 current_page_id
                     .is_none()
                     .then(|| COMMENTS_NO_CONTEXT.to_owned())
+            } else if let Some(arguments) = front_forum {
+                let Some(site_id) = current_site_id else {
+                    continue;
+                };
+                match forum_front::load(ctx, site_id, viewer_user_id, arguments).await? {
+                    FrontForumLoad::Items(items) => {
+                        Some(forum_front::render(&items, arguments.category_id))
+                    }
+                    FrontForumLoad::MissingCategory => Some(
+                        concat!(
+                            "<div class=\"error-block\">",
+                            "Requested forum category does not exist.</div>",
+                        )
+                        .to_owned(),
+                    ),
+                    FrontForumLoad::ScanLimit => None,
+                }
             } else if kind == ForumModuleKind::RecentThreads {
                 Some(RECENT_THREADS_PLACEHOLDER.to_owned())
             } else if let Some(html) = missing_context_html(kind) {
@@ -718,7 +779,7 @@ impl RenderService {
                                 load_forum_start_activity(ctx, site_id, viewer_user_id)
                                     .await?;
                             forum_start_cache =
-                                Some(render_forum_start(structure, &activity));
+                                Some(render_forum_start(structure, &activity, false));
                         }
                         forum_start_cache.clone()
                     }
@@ -730,6 +791,7 @@ impl RenderService {
                                 site_id,
                                 viewer_user_id,
                                 page,
+                                None,
                             )
                             .await?
                             .map(|page| render_recent_posts(structure, &page));

@@ -55,6 +55,88 @@ test("dispatches ListPages forms and returns the Wikidot JSON envelope", async (
   assert.equal(response.headers.get("cache-control"), "no-store")
 })
 
+test("dispatches the sealed read-only forum modules with Wikidot metadata", async () => {
+  const cases = [
+    ["forum/ForumStartModule", { hidden: "true" }],
+    ["forum/ForumViewCategoryModule", { c: "8503559", p: "1" }],
+    ["forum/ForumViewThreadModule", { t: "18029831" }],
+    ["forum/ForumViewThreadPostsModule", { t: "18029831", pageNo: "1" }],
+    ["forum/ForumRecentPostsListModule", { page: "1", categoryId: "8503559" }]
+  ]
+
+  for (const [moduleName, parameters] of cases) {
+    let received
+    const response = await handleAjaxModuleConnectorRequest(
+      request({
+        moduleName,
+        ...parameters,
+        callbackIndex: "3",
+        wikidot_token7: "client-token"
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderForumModule: async (input) => {
+          received = input
+          return { status: "ok", body: `<div>${moduleName}</div>` }
+        }
+      }
+    )
+
+    const body = await response.json()
+    assert.equal(body.status, "ok")
+    assert.equal(body.body, `<div>${moduleName}</div>`)
+    assert.equal(body.callbackIndex, "3")
+    assert.equal(typeof body.CURRENT_TIMESTAMP, "number")
+    assert.deepEqual(body.cssInclude, [])
+    assert.deepEqual(body.jsInclude, [])
+    assert.deepEqual(received, { siteId: 6000006, moduleName, parameters })
+  }
+})
+
+test("passes read-only forum missing states through and rejects unsealed shapes", async () => {
+  let calls = 0
+  const missing = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "forum/ForumViewCategoryModule",
+      c: "999999999",
+      p: "1"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderForumModule: async () => {
+        calls += 1
+        return { status: "no_category", body: "" }
+      }
+    }
+  )
+  const missingBody = await missing.json()
+  assert.equal(missingBody.status, "no_category")
+  assert.equal(missingBody.body, "")
+  assert.equal(missingBody.callbackIndex, null)
+  assert.equal(typeof missingBody.CURRENT_TIMESTAMP, "number")
+  assert.deepEqual(missingBody.cssInclude, [])
+  assert.deepEqual(missingBody.jsInclude, [])
+
+  for (const form of [
+    { moduleName: "forum/ForumCommentsListModule", t: "18029831" },
+    { moduleName: "forum/ForumNewThreadModule", c: "8503559" },
+    { moduleName: "forum/ForumViewThreadModule", t: "18029831", write: "1" }
+  ]) {
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderForumModule: async () => {
+        calls += 1
+        assert.fail("unsealed forum module shape must fail before Deepwell")
+      }
+    })
+    assert.equal((await response.json()).status, "not_ok")
+  }
+  assert.equal(calls, 1)
+})
+
 test("fails closed for unsupported modules and duplicate fields", async () => {
   const unsupported = await handleAjaxModuleConnectorRequest(
     request({ moduleName: "forum/ForumStartModule", module_body: "" }),

@@ -1,6 +1,7 @@
 import { handleAjaxModuleConnectorRequest } from "$lib/server/ajax-module-connector.js"
 import { authGetSession } from "$lib/server/auth/get-session"
 import { client } from "$lib/server/deepwell"
+import { wikidotForumModule } from "$lib/server/deepwell/forum"
 import {
   pageEdit,
   pageViewPermission,
@@ -122,6 +123,15 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
           },
           { siteId }
         )
-      ) as Promise<WikidotListPagesModuleOutput>
+      ) as Promise<WikidotListPagesModuleOutput>,
+    renderForumModule: ({
+      siteId,
+      moduleName,
+      parameters
+    }: {
+      siteId: number
+      moduleName: string
+      parameters: Record<string, string>
+    }) => wikidotForumModule(siteId, moduleName, parameters, requestContext)
   })
 }
