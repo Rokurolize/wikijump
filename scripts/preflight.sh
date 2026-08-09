@@ -66,7 +66,10 @@ if [[ ${#CHANGED_PATHS[@]} -eq 0 ]]; then
   exit 0
 fi
 
-SELECTED="$(printf '%s\0' "${CHANGED_PATHS[@]}" | node .github/scripts/classify-changes.mjs)"
+if ! SELECTED="$(printf '%s\0' "${CHANGED_PATHS[@]}" | node .github/scripts/classify-changes.mjs)"; then
+  echo "preflight: failed to classify changed paths" >&2
+  exit 2
+fi
 group_selected() { grep -qx "$1=true" <<<"${SELECTED}"; }
 
 echo "preflight: ${BASE}...HEAD"

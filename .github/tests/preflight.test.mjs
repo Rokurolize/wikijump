@@ -92,6 +92,10 @@ set -euo pipefail
   writeExecutable(path.join(bin, "node"), `#!/usr/bin/env bash
 set -euo pipefail
 if [[ "\${1:-}" == .github/scripts/classify-changes.mjs ]]; then
+  if [[ "$PREFLIGHT_CLASSIFIER_FAIL" == true ]]; then
+    cat >/dev/null
+    exit 6
+  fi
   tee "$PREFLIGHT_PATH_LOG" | "$PREFLIGHT_REAL_NODE" "$@"
 else
   exec "$PREFLIGHT_REAL_NODE" "$@"
@@ -101,6 +105,7 @@ fi
   const environment = (overrides = {}) => ({
     ...process.env,
     PATH: `${bin}:${process.env.PATH}`,
+    PREFLIGHT_CLASSIFIER_FAIL: "false",
     PREFLIGHT_COMMAND_LOG: commandLog,
     PREFLIGHT_FAKE_ROOT: root,
     PREFLIGHT_FALLBACK_SCOPE: "all",
@@ -173,6 +178,17 @@ test("preflight fails closed when changed path collection fails", (t) => {
 
   assert.equal(result.status, 2)
   assert.match(result.stderr, /failed to collect changed paths/)
+  assert.deepEqual(harness.commands(), [])
+})
+
+test("preflight fails closed when change classification fails", (t) => {
+  const harness = createHarness(t)
+  const result = harness.runPreflight(["--base", remoteOid], {
+    PREFLIGHT_CLASSIFIER_FAIL: "true"
+  })
+
+  assert.equal(result.status, 2)
+  assert.match(result.stderr, /failed to classify changed paths/)
   assert.deepEqual(harness.commands(), [])
 })
 
