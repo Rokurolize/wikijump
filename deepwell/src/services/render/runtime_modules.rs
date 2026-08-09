@@ -40,7 +40,7 @@ use super::service::{
 };
 use super::url_arguments::UrlArguments;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::services::membership::{JoinModuleState, MembershipService};
+use crate::services::membership::{JoinModuleState, MembershipPolicy, MembershipService};
 use crate::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DateSelector,
     FoundPageFields, IncludedCategories, OrderBySelector, OrderProperty,
@@ -1965,7 +1965,7 @@ impl RenderService {
             return Ok(None);
         };
         let site = SiteService::get(ctx, Reference::Id(current_site_id)).await?;
-        if matches!(site.slug.as_str(), "scp-wiki" | "scp-jp") {
+        if MembershipService::policy(&site) == MembershipPolicy::Closed {
             return Ok(Some(MEMBERSHIP_BY_PASSWORD_DISABLED_HTML));
         }
         let Some(viewer_user_id) = viewer_user_id else {
