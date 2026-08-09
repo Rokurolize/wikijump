@@ -482,7 +482,7 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams(valid).toString() + "&page=2"
+      body: `${new URLSearchParams(valid)}&page=2`
     }),
     {
       siteId: 6000006,
