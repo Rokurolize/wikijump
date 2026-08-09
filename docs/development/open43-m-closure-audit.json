@@ -190,6 +190,17 @@
       "phase": "source_barrier",
       "exists_now": true
     },
+    "C_DEEPWELL_UPLOAD_OWNERSHIP": {
+      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page file_create_commits_only_its_actor_and_route_owned_pending_blob -- --exact --nocapture",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_DEEPWELL_MIGRATION_CHAIN": {
+      "command": "cd deepwell && sqlx migrate run --source migrations && sqlx migrate info --source migrations",
+      "phase": "source_barrier",
+      "exists_now": true,
+      "required_environment": "An isolated task-owned PostgreSQL DATABASE_URL at the exact candidate revision."
+    },
     "C_RENDER_EPOCH": {
       "command": "cargo test --manifest-path deepwell/Cargo.toml renderer_epoch_invalidates_pre_freeze_compiled_artifacts -- --nocapture",
       "phase": "source_freeze",
@@ -212,7 +223,12 @@
       "exists_now": true
     },
     "C_FRAMERAIL_MEDIA_UNIT": {
-      "command": "node --test framerail/tests/site-icon-source.test.js framerail/tests/site-icons.test.js framerail/tests/page-file-client-ip.test.js framerail/tests/presigned-upload.test.js",
+      "command": "node --test framerail/tests/site-icon-source.test.js framerail/tests/site-icons.test.js framerail/tests/page-file-client-ip.test.js framerail/tests/presigned-upload.test.js framerail/tests/page-file-upload-lifecycle.test.js",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_CORPUS_ATTACHMENT_UNIT": {
+      "command": "node --test install/local/wikidot-verification/tests/corpus-import-attachments.test.mjs",
       "phase": "source_barrier",
       "exists_now": true
     },
@@ -958,40 +974,54 @@
         {
           "case_id": "M1062_PAGE_AND_BLOB_OWNERSHIP",
           "acceptance": "Require parent-page edit permission and exact site/page/blob ownership; reject client authority over another pending blob.",
-          "classification": "needs_source",
-          "reason": "Parent-page edit denial is covered and BlobService checks the pending creator, but no source-level integration test binds an authorized file_create request to its own pending blob while rejecting another user's or cross-site attachment attempt.",
+          "classification": "source_ready",
+          "reason": "blob_upload now derives page ownership from the trusted request context, the database enforces scoped-or-unscoped shape, and typed page finalization rejects another actor, page, site, or unscoped pending blob without exposing whether the token exists. The public endpoint case proves the successful file_create response and subsequent page_get_files/file_get bytes, with direct database access limited to supplemental ownership-persistence, fixture-setup, and cleanup assertions.",
           "source_paths": [
-            "deepwell/src/services/file",
+            "deepwell/migrations/20260809050000_blob_pending_page_scope.sql",
+            "deepwell/src/models/blob_pending.rs",
+            "deepwell/src/services/blob",
+            "deepwell/src/services/file/service.rs",
             "deepwell/src/endpoints/blob.rs",
-            "deepwell/src/endpoints/file.rs"
+            "deepwell/src/endpoints/file.rs",
+            "deepwell/tests/page.rs",
+            "framerail/src/lib/server/xmlrpc/resource-methods.ts",
+            "install/local/wikidot-verification/src/corpus-import-attachments.mjs"
           ],
           "existing_tests": [
-            "deepwell/tests/page.rs::file_mutations_require_parent_page_edit_permission"
+            "deepwell/tests/page.rs::file_mutations_require_parent_page_edit_permission",
+            "deepwell/tests/page.rs::file_create_commits_only_its_actor_and_route_owned_pending_blob",
+            "install/local/wikidot-verification/tests/corpus-import-attachments.test.mjs::materializeCorpusRowAttachments binds pending uploads to the trusted page context"
           ],
           "evidence_ids": ["E_UPLOAD_HISTORICAL_FAILURE"],
-          "missing_source": [
-            "file_create integration test for pending blob creator identity",
-            "cross-user and cross-site pending blob negative controls"
-          ],
-          "next_command_ids": ["C_DEEPWELL_FILE_ACL"]
+          "next_command_ids": [
+            "C_DEEPWELL_FILE_ACL",
+            "C_DEEPWELL_UPLOAD_OWNERSHIP",
+            "C_DEEPWELL_MIGRATION_CHAIN",
+            "C_CORPUS_ATTACHMENT_UNIT",
+            "C_MEDIA_RUNTIME_CANDIDATE"
+          ]
         },
         {
           "case_id": "M1062_FAILURE_CLEANUP",
           "acceptance": "On presign, PUT, timeout, or file_create failure, create no file relation, leave no public route, cancel pending state, and preserve list/cache state.",
-          "classification": "needs_source",
-          "reason": "cancelBlobUpload exists but the page file create/edit flows do not call it in failure paths and no atomic cleanup test exists.",
+          "classification": "source_ready",
+          "reason": "The real page file create and replacement flows now share a pending upload lifecycle that calls blob_cancel in a separate JSON-RPC request after PUT, file_create, or file_edit failure and preserves the original error. Focused Node cases prove call order, exactly one cleanup, trusted context forwarding, and no cancel after success; the Deepwell ownership case proves failed commits expose no file relation and owner cancellation removes pending state and its temporary object while permanent content-addressed objects retain their existing semantics. A task-owned runtime candidate still must prove transport timeout, cache, and object-store behavior.",
           "source_paths": [
             "framerail/src/lib/server/deepwell/file.ts",
-            "framerail/src/lib/server/deepwell/page-file.ts"
+            "framerail/src/lib/server/deepwell/page-file.ts",
+            "framerail/src/lib/server/deepwell/pending-blob-upload.ts",
+            "framerail/tests/page-file-upload-lifecycle.test.js",
+            "deepwell/tests/page.rs"
           ],
-          "existing_tests": ["framerail/tests/presigned-upload.test.js"],
+          "existing_tests": [
+            "framerail/tests/presigned-upload.test.js",
+            "framerail/tests/page-file-upload-lifecycle.test.js",
+            "deepwell/tests/page.rs::file_create_commits_only_its_actor_and_route_owned_pending_blob"
+          ],
           "evidence_ids": ["E_UPLOAD_HISTORICAL_FAILURE"],
-          "missing_source": [
-            "pending upload cleanup in create/edit failure paths",
-            "failure matrix test"
-          ],
           "next_command_ids": [
             "C_FRAMERAIL_MEDIA_UNIT",
+            "C_DEEPWELL_UPLOAD_OWNERSHIP",
             "C_MEDIA_RUNTIME_CANDIDATE"
           ]
         },
@@ -1151,8 +1181,8 @@
     "issue_count": 7,
     "subrow_count": 43,
     "classification_counts": {
-      "source_ready": 15,
-      "needs_source": 9,
+      "source_ready": 17,
+      "needs_source": 7,
       "candidate_required": 10,
       "blocked_evidence": 9
     },
