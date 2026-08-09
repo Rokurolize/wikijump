@@ -574,7 +574,7 @@ mod tests {
                 "\n<div class=\"gallery-item thumbnail\">",
                 "\n<table>\n<tr>\n<td>",
                 r#"<a href="https://site.wjfiles.test/local--files/page/image.png" class="with-lb">"#,
-                r#"<img src="https://site.wjfiles.test/local--files/page/image.png" alt="A &lt;caption&gt;" class="gallery-image-size-thumbnail" />"#,
+                r#"<img src="https://site.wjfiles.test/local--resized-images/page/image.png/thumbnail.jpg" alt="A &lt;caption&gt;" class="gallery-image-size-thumbnail" />"#,
                 "</a></td>\n</tr>\n</table>\n</div>\n</div>",
             ),
         );

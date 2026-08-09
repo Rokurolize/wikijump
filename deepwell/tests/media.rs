@@ -23,8 +23,11 @@ mod common;
 
 use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
+use deepwell::services::render::UrlArguments;
 use deepwell::services::{RenderService, RequestContext};
-use deepwell::types::Reference;
+use deepwell::types::{PageId, Reference};
+use ftml::data::{PageInfo, ScoreValue};
+use ftml::layout::Layout;
 use serde_json::json;
 use std::borrow::Cow;
 
@@ -331,6 +334,81 @@ async fn current_ftml_pin_preserves_promoted_image_dom() {
         .expect("promoted image syntax should render through the current FTML pin");
 
         assert_eq!(preview.html_output.body, expected, "{case_id}");
+    }
+}
+
+#[tokio::test]
+async fn source_less_local_images_keep_original_and_resized_asset_identities() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let page_info = PageInfo {
+        page: Cow::Borrowed("fixture-source-less-images"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Source-less image fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+
+    for (case_id, source, expected_class, expected_variant) in [
+        (
+            "issue-776-source-less-floating-image",
+            r#"[[f<image image-one.png size="small"]]"#,
+            "image-container floatleft",
+            "small.jpg",
+        ),
+        (
+            "issue-806-source-less-centered-image",
+            r#"[[=image image-two.png size="medium"]]"#,
+            "image-container aligncenter",
+            "medium.jpg",
+        ),
+    ] {
+        let rendered = RenderService::render_page_for_viewer(
+            runner.context(),
+            source.to_owned(),
+            &page_info,
+            Layout::Wikidot,
+            PageId {
+                site_id,
+                category_id: 1,
+                page_id: 1,
+            },
+            None,
+            UrlArguments::default(),
+        )
+        .await
+        .expect("source-less local image should render through typed FTML ownership")
+        .html_output
+        .body;
+
+        let filename = if case_id.contains("776") {
+            "image-one.png"
+        } else {
+            "image-two.png"
+        };
+        let original = format!(
+            "https://scp-wiki.wjfiles.com/local--files/fixture-source-less-images/{filename}"
+        );
+        let resized = format!(
+            "https://scp-wiki.wjfiles.com/local--resized-images/fixture-source-less-images/{filename}/{expected_variant}"
+        );
+        assert!(
+            rendered.contains(&format!(r#"<div class="{expected_class}">"#)),
+            "{case_id}: {rendered}",
+        );
+        assert!(
+            rendered.contains(&format!(r#"<a href="{original}">"#)),
+            "{case_id}: {rendered}",
+        );
+        assert!(
+            rendered.contains(&format!(r#"<img src="{resized}""#)),
+            "{case_id}: {rendered}",
+        );
     }
 }
 

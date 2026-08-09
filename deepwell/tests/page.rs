@@ -3889,7 +3889,13 @@ async fn wikidot_gallery_selects_authorized_current_page_images_after_page_acl()
         rendered.contains(
             "https://scp-wiki.wjfiles.com/local--files/fixture-gallery-current-page/image-a.png",
         ),
-        "Gallery URLs must retain local site/page/file ownership:\n{rendered}",
+        "Gallery links must retain the original local site/page/file identity:\n{rendered}",
+    );
+    assert!(
+        rendered.contains(
+            "https://scp-wiki.wjfiles.com/local--resized-images/fixture-gallery-current-page/image-a.png/thumbnail.jpg",
+        ),
+        "Gallery images must use the documented resized asset identity:\n{rendered}",
     );
     assert!(!rendered.contains("notes.txt"), "{rendered}");
     assert!(!rendered.contains("wj-gallery"), "{rendered}");
