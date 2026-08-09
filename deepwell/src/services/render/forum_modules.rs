@@ -210,7 +210,11 @@ fn render_forum_user(user: &ForumUserDisplay, avatar_timestamp: i64) -> String {
             r#"alt="{name_attr}" style="background-image:url(https://www.wikidot.com/userkarma.php?u={user_id})"/></a>"#,
             r#"<a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;" >{name}</a></span>"#,
         ),
+        slug = slug,
         user_id = user.user_id,
+        avatar_timestamp = avatar_timestamp,
+        name_attr = name_attr,
+        name = name,
     )
 }
 
