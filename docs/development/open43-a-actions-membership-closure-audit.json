@@ -140,7 +140,7 @@
       },
       {
         "path": "docs/development/open43-a-utilities-case-manifest.json",
-        "sha256": "57bcf3cdf87631b2a60ba562a2a0bb791ee18e0d479c683c84cf1a9b8e265f72"
+        "sha256": "c0edfa9901c087f9b9a28af833dc7ebde1e0a6edeeee185b55c071a1956b5683"
       },
       {
         "path": "docs/development/open43-a-forms-residual-case-manifest.json",
@@ -532,7 +532,7 @@
         },
         {
           "path": "docs/development/open43-a-utilities-case-manifest.json",
-          "sha256": "57bcf3cdf87631b2a60ba562a2a0bb791ee18e0d479c683c84cf1a9b8e265f72",
+          "sha256": "c0edfa9901c087f9b9a28af833dc7ebde1e0a6edeeee185b55c071a1956b5683",
           "case_inventory": false
         }
       ],
@@ -560,27 +560,54 @@
       "title": "Complete Wikidot site administration and cross-site utility modules",
       "authoritative_manifest": {
         "path": "docs/development/open43-a-utilities-case-manifest.json",
-        "sha256": "57bcf3cdf87631b2a60ba562a2a0bb791ee18e0d479c683c84cf1a9b8e265f72"
+        "sha256": "c0edfa9901c087f9b9a28af833dc7ebde1e0a6edeeee185b55c071a1956b5683"
       },
       "source_ready": [
         {"case_id": "A1038_ANONYMOUS_SAFE_STATES"},
-        {"case_id": "A1038_LITERAL_AND_BODY_OWNERSHIP"}
+        {"case_id": "A1038_LITERAL_AND_BODY_OWNERSHIP"},
+        {
+          "case_id": "A1038_AUTHENTICATED_NON_ADMIN_DENIAL",
+          "acceptance": "Use the request actor and current site's established site:edit authority to distinguish anonymous, authenticated non-admin, and administrator output for closer-free ManageSite and PetitionAdmin without adding a second grammar path.",
+          "owner": "deepwell-public-preview-and-page-view",
+          "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"],
+          "evidence": [
+            "deepwell/tests/page.rs::authenticated_site_utility_preview_denies_only_non_administrators",
+            "deepwell/tests/page.rs::saved_site_utility_modules_recheck_the_session_actor"
+          ],
+          "result": "Anonymous ManageSite retains the login-capable live DOM. Actor B/C exact login-free ManageSite and PetitionAdmin denial DOM is rendered for authenticated non-administrators. Site administrators remain on generic fail-closed output and are never misclassified as non-admins."
+        }
       ],
-      "needs_source": [],
+      "needs_source": [
+        {
+          "case_id": "A1038_ADMIN_POSITIVE_READ_MODELS",
+          "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"],
+          "result": "The legacy ManageSite panel, ManageSiteGeneral form, and PetitionAdmin administrator shell are captured, but no faithful public adapter connects those contracts to the existing Framerail administration owner. They remain fail closed until one owner supplies the complete local read model."
+        }
+      ],
       "candidate_required": [],
       "blocked_evidence": [
         {
-          "case_id": "A1038_AUTHENTICATED_ACTOR_MATRIX",
+          "case_id": "A1038_PETITION_ADMIN_ACTIONS",
           "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"],
-          "observed": "The existing administrator receives populated ManageSite, General Settings, Themes, and PetitionAdmin output while B and C receive administrator or permission errors.",
-          "missing": "Dashboard produced Not allowed for all three actors and Clone produced Site cannot be found for all three, so their positive actor states remain unavailable."
+          "observed": "The administrator receives an active petition campaign shell while authenticated non-admins receive an exact permission error.",
+          "missing": "Campaign persistence, identifier collisions, CSRF, rate limits, export privacy, mutation atomicity, replay, and browser transitions are not established."
+        },
+        {
+          "case_id": "A1038_OTHER_AUTHENTICATED_UTILITY_STATES",
+          "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"],
+          "observed": "Dashboard returned Not allowed and Clone returned Site cannot be found for all three captured actors.",
+          "missing": "No positive Dashboard or Clone actor state is available, so this slice does not infer one."
         },
         {"case_id": "A1038_CLONE_ACTION"},
         {"case_id": "A1038_SITEGRID_POPULATED"},
         {"case_id": "A1038_THEMEPREVIEWER_ACTIVE"},
         {"case_id": "A1038_BROWSER_LIFECYCLE"}
       ],
-      "exact_commands": []
+      "exact_commands": [
+        "cargo test --manifest-path deepwell/Cargo.toml --test page authenticated_site_utility_preview_denies_only_non_administrators -- --exact --nocapture",
+        "cargo test --manifest-path deepwell/Cargo.toml --test page saved_site_utility_modules_recheck_the_session_actor -- --exact --nocapture",
+        "node --test install/local/wikidot-verification/tests/local-administration-module-policy.test.mjs"
+      ]
     },
     {
       "number": 1041,
@@ -721,12 +748,12 @@
   ],
   "reconciliation": {
     "issue_count": 9,
-    "case_count": 61,
+    "case_count": 64,
     "classification_counts": {
-      "source_ready": 25,
-      "needs_source": 0,
+      "source_ready": 26,
+      "needs_source": 1,
       "candidate_required": 18,
-      "blocked_evidence": 18
+      "blocked_evidence": 19
     },
     "duplicate_issue_numbers": 0,
     "duplicate_case_ids": 0,
@@ -793,12 +820,31 @@
     {
       "command": "jq structural closure-audit assertions docs/development/open43-a-actions-membership-closure-audit.json",
       "status": "pass",
-      "result": "Exactly nine issues and 61 unique case IDs: source_ready 25, candidate_required 18, blocked_evidence 18, needs_source 0."
+      "result": "Exactly nine issues and 64 unique case IDs: source_ready 26, needs_source 1, candidate_required 18, blocked_evidence 19."
+    },
+    {
+      "command": "rustfmt --edition 2024 --check deepwell/src/services/render/site_utility_modules.rs deepwell/src/services/render/runtime_modules.rs deepwell/tests/page.rs",
+      "status": "pass"
+    },
+    {
+      "command": "node --test install/local/wikidot-verification/tests/local-administration-module-policy.test.mjs",
+      "status": "pass",
+      "result": "1 passed, 0 failed"
+    },
+    {
+      "command": "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/focused-uncovered/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl deepwell/src/services/render/site_utility_modules.rs",
+      "status": "pass",
+      "result": "One changed owner file scanned against 1867 captured pages; no blocking corpus-pinned literals. Existing short module-name notices remain tied to the documented closer-free deviation."
+    },
+    {
+      "command": "node scripts/generate-wikidot-specifications.mjs --check && node scripts/initialize-wikidot-implementation-ledger.mjs --check",
+      "status": "pass",
+      "result": "Validated 210 specifications, 1806 corpus pages, and 210 implementation ledger entries."
     },
     {
       "command": "cargo test",
       "status": "not_run_by_lane_contract",
-      "result": "The central Cargo broker owns the shared Deepwell target."
+      "result": "The central Cargo broker owns the shared Deepwell target, including the two A1038 public integration cases."
     }
   ],
   "central_shared_commands": [
