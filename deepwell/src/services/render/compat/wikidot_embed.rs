@@ -37,13 +37,13 @@ static WIKIDOT_NAME_ONLY_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static LISTPAGES_DYNAMIC_EMBED_OPENER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-            r#"(?im)^(?P<indent>[ \t>]*)\[\[%%content(?:\{[0-9]+\})?%%(?P<block>embed|embedaudio|embedvideo)\]\][ \t]*$"#,
+            r#"(?im)^(?P<indent>[ \t>]*)\[\[%%content(?:\{[0-9]+\})?%%(?P<block>embed|embedaudio)\]\][ \t]*$"#,
         )
         .unwrap()
 });
 static WIKIDOT_EMBED_BLOCK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)\[\[(?P<block>embed|embedaudio|embedvideo)\]\](?P<payload>.*?)\[\[/(?P<close>embed|embedaudio|embedvideo)\]\]"#,
+        r#"(?is)\[\[(?P<block>embed|embedaudio)\]\](?P<payload>.*?)\[\[/(?P<close>embed|embedaudio)\]\]"#,
     )
     .unwrap()
 });

@@ -74,6 +74,11 @@ const WIKIDOT_FONT_SOURCES = [
   "https://rsms.me",
   "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
 ]
+/** @type {CspSources} */
+const WIKIDOT_MEDIA_FRAME_SOURCES = [
+  "https://www.youtube.com",
+  "https://embed.acast.com"
+]
 
 const deploymentEnvironment = parseDeploymentEnvironment()
 
@@ -114,7 +119,7 @@ function scriptSources() {
 
 /** @returns {CspSources} */
 function frameSources() {
-  return ["self"]
+  return ["self", ...WIKIDOT_MEDIA_FRAME_SOURCES]
 }
 
 /** @type {import("@sveltejs/kit").Config} */

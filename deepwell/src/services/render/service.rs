@@ -2108,13 +2108,20 @@ impl RenderService {
                     backlinks,
                 )
             });
-            let html_output = HtmlOutput {
+            let mut html_output = HtmlOutput {
                 body,
                 meta: Vec::new(),
                 styles: wikidot_css_modules,
                 resource_requirements: Vec::new(),
                 backlinks,
             };
+            if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
+                return Err(Error::new(
+                    "failed to resolve typed Wikidot embedvideo requirements",
+                    ErrorType::Render,
+                )
+                .into());
+            }
             drop(fallback_render_stage);
             if let Some((trace, CorpusRenderScope::Body)) = trace {
                 trace.set_dimension(
@@ -2411,7 +2418,7 @@ impl RenderService {
         });
 
         let FtmlRenderOutput {
-            html_output,
+            mut html_output,
             errors,
             html_block_texts,
             code_blocks,
@@ -2421,6 +2428,14 @@ impl RenderService {
                 Error::new("failed to render due to timeout", ErrorType::RenderTimeout)
             })?
             .or_raise(|| Error::new("failed to join render task", ErrorType::Render))?;
+
+        if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
+            return Err(Error::new(
+                "failed to resolve typed Wikidot embedvideo requirements",
+                ErrorType::Render,
+            )
+            .into());
+        }
 
         if let Some((trace, CorpusRenderScope::Body)) = trace {
             trace.set_dimension(

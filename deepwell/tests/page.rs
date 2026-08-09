@@ -859,7 +859,7 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v1")
+            .ends_with("; deepwell-render/v2")
     );
 }
 

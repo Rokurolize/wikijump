@@ -74,6 +74,10 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
   assert(
     !directives["style-src"]?.some((source) => source === "https://*.wjfiles.localhost")
   )
-  assert.deepEqual(directives["frame-src"], ["self"])
+  assert.deepEqual(directives["frame-src"], [
+    "self",
+    "https://www.youtube.com",
+    "https://embed.acast.com"
+  ])
   assert(directives["script-src"]?.includes("self"))
 })

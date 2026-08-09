@@ -7762,7 +7762,6 @@ fn renders_wikidot_no_match_error_for_an_unsupported_embed_payload() {
         ("embed", ""),
         ("embedaudio", r#"<div id="probe">PAYLOAD</div>"#),
         ("embedaudio", ""),
-        ("embedvideo", r#"<div id="probe">PAYLOAD</div>"#),
     ] {
         let mut wikitext = format!("[[{block}]]\n{payload}\n[[/{block}]]");
 
@@ -7776,6 +7775,59 @@ fn renders_wikidot_no_match_error_for_an_unsupported_embed_payload() {
         );
         assert!(!wikitext.contains(payload) || payload.is_empty());
     }
+
+    let typed_source = concat!(
+        "[[embedvideo]]\n",
+        r#"<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>"#,
+        "\n[[/embedvideo]]",
+    );
+    let mut typed_wikitext = typed_source.to_owned();
+    assert!(RenderService::protect_wikidot_embed_iframes(&mut typed_wikitext).is_empty());
+    assert_eq!(typed_wikitext, typed_source);
+}
+
+#[test]
+fn typed_embedvideo_markers_must_match_requirements_exactly_once() {
+    let source = concat!(
+        "[[embedvideo]]\n",
+        r#"<iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allowfullscreen></iframe>"#,
+        "\n[[/embedvideo]]",
+    );
+    let page_info = fallback_test_page_info("embedvideo", "EmbedVideo");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let tokenization = ftml::tokenize(source);
+    let (tree, errors) = ftml::parse(&tokenization, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{errors:#?}");
+    let output = HtmlRender.render(&tree, &page_info, &settings);
+    let id = output
+        .resource_requirements
+        .iter()
+        .find_map(|requirement| requirement.embed_video_requirement())
+        .expect("typed embedvideo requirement")
+        .id()
+        .to_owned();
+    let marker = format!(r#"<div class="wj-embed-video" id="{id}"></div>"#);
+    assert_eq!(output.body, marker);
+
+    let mut missing = output.clone();
+    missing.body.clear();
+    assert!(!RenderService::resolve_wikidot_embed_video_requirements(
+        &mut missing
+    ));
+
+    let mut duplicate = output.clone();
+    duplicate.body.push_str(&marker);
+    assert!(!RenderService::resolve_wikidot_embed_video_requirements(
+        &mut duplicate
+    ));
+
+    let mut foreign = output;
+    foreign.body.push_str(
+        r#"<div class="wj-embed-video" id="wj-embed-video-ffffffffffffffffffffffffffffffff"></div>"#,
+    );
+    assert!(!RenderService::resolve_wikidot_embed_video_requirements(
+        &mut foreign
+    ));
 }
 
 #[test]
