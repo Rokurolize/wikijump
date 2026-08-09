@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import {execFileSync} from "node:child_process";
+import fsp from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
 import {
@@ -18,10 +22,13 @@ import {
   bindLocalHtmlBlockPayloads,
   sha1,
 } from "../src/runtime-html-blocks.mjs";
+import {sha256Hex, stableStringify} from "../src/canonical-json.mjs";
 import {parseArgs} from "../scripts/run-generic-runtime-differential.mjs";
 import {
+  bindCandidate,
   composeDocument,
   composeIdentityDocument,
+  main as runStack,
   parseArgs as parseStackArgs,
   runtimeIdentity as stackRuntimeIdentity,
 } from "../scripts/run-generic-runtime-differential-stack.mjs";
@@ -38,6 +45,106 @@ const runtimeIdentity = {
   executable_sha256: "4".repeat(64),
   runtime_config_sha256: "5".repeat(64),
 };
+
+const exactFtmlSha = "902e72a2ff261b7af42402734b2f8b659e6a294a";
+
+function git(repository, ...args) {
+  return execFileSync("git", args, {cwd: repository, encoding: "utf8"}).trim();
+}
+
+async function reusableCandidateFixture(t) {
+  const root = await fsp.mkdtemp(path.join(os.tmpdir(), "runtime-candidate-test-"));
+  t.after(() => fsp.rm(root, {recursive: true, force: true}));
+  const repository = path.join(root, "repository");
+  const binary = path.join(root, "candidate", "debug", "deepwell");
+  const candidateManifest = path.join(root, "candidate-manifest.json");
+  await fsp.mkdir(path.join(repository, "deepwell"), {recursive: true});
+  await fsp.mkdir(path.dirname(binary), {recursive: true});
+  await fsp.writeFile(path.join(repository, "deepwell", "Cargo.lock"), `version = 4
+
+[[package]]
+name = "ftml"
+version = "0.1.0"
+source = "git+https://github.com/Rokurolize/ftml?rev=${exactFtmlSha}#${exactFtmlSha}"
+`);
+  await fsp.writeFile(
+    path.join(repository, "deepwell", "Cargo.toml"),
+    `[dependencies]\nftml = { git = "https://github.com/Rokurolize/ftml", rev = "${exactFtmlSha}" }\n`,
+  );
+  await fsp.writeFile(binary, "candidate-binary");
+  await fsp.chmod(binary, 0o755);
+  git(repository, "init", "--quiet");
+  git(repository, "config", "user.email", "candidate-test@example.invalid");
+  git(repository, "config", "user.name", "Candidate Test");
+  git(repository, "add", ".");
+  git(repository, "commit", "--quiet", "-m", "candidate source");
+  const wikijumpSha = git(repository, "rev-parse", "HEAD");
+  const cargoLockSha256 = sha256(
+    await fsp.readFile(path.join(repository, "deepwell", "Cargo.lock")),
+  );
+  const binarySha256 = sha256(await fsp.readFile(binary));
+  const build = {
+    profile: "dev",
+    package: "deepwell",
+    artifact: "bin:deepwell",
+    target: "x86_64-unknown-linux-gnu",
+    default_features: true,
+    features: [],
+    cargo_lock_sha256: cargoLockSha256,
+    binary_sha256: binarySha256,
+    binary_path_at_build: binary,
+  };
+  const source = {
+    repository: "Rokurolize/wikijump",
+    wikijump_sha: wikijumpSha,
+    wikijump_source_id: "clean",
+    ftml_sha: exactFtmlSha,
+    ftml_source_id: "clean",
+  };
+  const artifactKeyInputs = {
+    schema: "roku-candidate-artifact-v3",
+    sources: {
+      repo: {sha: wikijumpSha, source_id: "clean"},
+      ftml: {sha: exactFtmlSha, source_id: "clean"},
+    },
+    rustc_identity: "fixture rustc",
+    cargo_identity: "fixture cargo",
+    linker_identity: "fixture linker",
+    build_environment: {},
+    rustflags: null,
+    cargo_encoded_rustflags: null,
+    profile: build.profile,
+    package: build.package,
+    artifact: build.artifact,
+    target: build.target,
+    default_features: build.default_features,
+    features: build.features,
+    recipe_digests: {"cargo-lock": cargoLockSha256},
+  };
+  const manifest = {
+    schema: "roku.candidate_build_manifest.v1",
+    artifact_key: {
+      key: `candidate-v3-${sha256Hex(stableStringify(artifactKeyInputs))}`,
+      inputs: artifactKeyInputs,
+    },
+    source,
+    build,
+  };
+  await fsp.writeFile(candidateManifest, `${JSON.stringify(manifest, null, 2)}\n`);
+  return {repository, binary, candidateManifest, manifest};
+}
+
+async function persistCandidateManifest(fixture, {bindArtifactKey = true} = {}) {
+  if (bindArtifactKey) {
+    fixture.manifest.artifact_key.key = `candidate-v3-${sha256Hex(
+      stableStringify(fixture.manifest.artifact_key.inputs),
+    )}`;
+  }
+  await fsp.writeFile(
+    fixture.candidateManifest,
+    `${JSON.stringify(fixture.manifest, null, 2)}\n`,
+  );
+}
 
 function runtimeCase(caseId, source = "alpha") {
   return {
@@ -1453,6 +1560,8 @@ test("CLI requires explicit artifacts and preserves repeated capture inputs", ()
 test("disposable stack controller binds resources and candidate identity", () => {
   const args = parseStackArgs([
     "--repository", "/tmp/repository",
+    "--candidate-manifest", "/tmp/candidate-manifest.json",
+    "--binary", "/tmp/candidate/deepwell",
     "--cases", "/tmp/cases.jsonl",
     "--captures", "/tmp/first.jsonl",
     "--captures", "/tmp/second.jsonl",
@@ -1461,6 +1570,28 @@ test("disposable stack controller binds resources and candidate identity", () =>
   ]);
   assert.deepEqual(args.captures, ["/tmp/first.jsonl", "/tmp/second.jsonl"]);
   assert.deepEqual(args.stateFixtures, ["/tmp/state.json"]);
+  assert.equal(args.candidateManifest, "/tmp/candidate-manifest.json");
+  assert.equal(args.binary, "/tmp/candidate/deepwell");
+  assert.throws(
+    () => parseStackArgs([
+      "--repository", "/tmp/repository",
+      "--cases", "/tmp/cases.jsonl",
+      "--captures", "/tmp/captures.jsonl",
+      "--output", "/tmp/report.json",
+    ]),
+    /--candidate-manifest is required/u,
+  );
+  assert.throws(
+    () => parseStackArgs([
+      "--repository", "/tmp/repository",
+      "--candidate-manifest", "/tmp/candidate-manifest.json",
+      "--binary", "candidate/debug/deepwell",
+      "--cases", "/tmp/cases.jsonl",
+      "--captures", "/tmp/captures.jsonl",
+      "--output", "/tmp/report.json",
+    ]),
+    /--binary must be an absolute path/u,
+  );
   const labels = {"example.owner": "runtime-diff"};
   const compose = composeDocument({
     project: "runtime-diff-test",
@@ -1506,4 +1637,190 @@ test("disposable stack controller binds resources and candidate identity", () =>
   }, identityCompose, "config");
   assert.equal(identity.wikijump_sha, "1".repeat(40));
   assert.equal(identity.runtime_config_sha256.length, 64);
+});
+
+test("stack controller binds an exact reusable dev candidate", async (t) => {
+  const fixture = await reusableCandidateFixture(t);
+  const candidate = await bindCandidate({
+    repository: fixture.repository,
+    candidateManifest: fixture.candidateManifest,
+    binary: null,
+  });
+
+  assert.equal(candidate.binary, fixture.binary);
+  assert.equal(candidate.manifest.schema, "roku.candidate_build_manifest.v1");
+});
+
+test("stack controller accepts an explicit matching binary path", async (t) => {
+  const fixture = await reusableCandidateFixture(t);
+  const binary = path.join(path.dirname(path.dirname(fixture.binary)), "relocated", "deepwell");
+  await fsp.mkdir(path.dirname(binary), {recursive: true});
+  await fsp.copyFile(fixture.binary, binary);
+  await fsp.chmod(binary, 0o755);
+
+  const candidate = await bindCandidate({
+    repository: fixture.repository,
+    candidateManifest: fixture.candidateManifest,
+    binary,
+  });
+
+  assert.equal(candidate.binary, binary);
+});
+
+test("candidate binding rejects an artifact key digest mismatch", async (t) => {
+  const fixture = await reusableCandidateFixture(t);
+  fixture.manifest.artifact_key.inputs.rustflags = "-Cdebuginfo=2";
+  await persistCandidateManifest(fixture, {bindArtifactKey: false});
+
+  await assert.rejects(
+    bindCandidate({
+      repository: fixture.repository,
+      candidateManifest: fixture.candidateManifest,
+      binary: null,
+    }),
+    /artifact key digest does not match/u,
+  );
+});
+
+test("candidate binding fails closed on identity mismatches", async (t) => {
+  const mismatches = [
+    {
+      name: "manifest schema",
+      change(fixture) {
+        fixture.manifest.schema = "roku.candidate_build_manifest.v0";
+      },
+      error: /unsupported schema/u,
+    },
+    {
+      name: "source commit",
+      change(fixture) {
+        fixture.manifest.source.wikijump_sha = "1".repeat(40);
+        fixture.manifest.artifact_key.inputs.sources.repo.sha = "1".repeat(40);
+      },
+      error: /repository commit/u,
+    },
+    {
+      name: "source tree",
+      async change(fixture) {
+        await fsp.appendFile(path.join(fixture.repository, "deepwell", "Cargo.toml"), "# dirty\n");
+      },
+      error: /repository must be clean/u,
+    },
+    {
+      name: "tool identity",
+      change(fixture) {
+        fixture.manifest.artifact_key.inputs.rustc_identity = "";
+      },
+      error: /no rustc_identity/u,
+    },
+    {
+      name: "build environment",
+      change(fixture) {
+        fixture.manifest.artifact_key.inputs.build_environment.RUSTFLAGS = 42;
+      },
+      error: /invalid build environment/u,
+    },
+    {
+      name: "feature set",
+      change(fixture) {
+        fixture.manifest.artifact_key.inputs.features = "none";
+      },
+      error: /inconsistent features/u,
+    },
+    {
+      name: "FTML pin",
+      change(fixture) {
+        fixture.manifest.source.ftml_sha = "2".repeat(40);
+        fixture.manifest.artifact_key.inputs.sources.ftml.sha = "2".repeat(40);
+      },
+      error: /Cargo\.lock FTML pin/u,
+    },
+    {
+      name: "Cargo.lock hash",
+      change(fixture) {
+        fixture.manifest.build.cargo_lock_sha256 = "3".repeat(64);
+        fixture.manifest.artifact_key.inputs.recipe_digests["cargo-lock"] = "3".repeat(64);
+      },
+      error: /does not match Cargo\.lock/u,
+    },
+    {
+      name: "build profile",
+      change(fixture) {
+        fixture.manifest.build.profile = "release";
+        fixture.manifest.artifact_key.inputs.profile = "release";
+      },
+      error: /not a dev profile build/u,
+    },
+    {
+      name: "binary path",
+      change(fixture) {
+        fixture.manifest.build.binary_path_at_build = "candidate/debug/deepwell";
+      },
+      error: /absolute binary path/u,
+    },
+    {
+      name: "binary hash",
+      change(fixture) {
+        fixture.manifest.build.binary_sha256 = "4".repeat(64);
+      },
+      error: /binary hash does not match/u,
+    },
+  ];
+
+  for (const mismatch of mismatches) {
+    await t.test(mismatch.name, async (subtest) => {
+      const fixture = await reusableCandidateFixture(subtest);
+      await mismatch.change(fixture);
+      await persistCandidateManifest(fixture);
+      await assert.rejects(
+        bindCandidate({
+          repository: fixture.repository,
+          candidateManifest: fixture.candidateManifest,
+          binary: null,
+        }),
+        mismatch.error,
+      );
+    });
+  }
+});
+
+test("stack controller has no candidate build path", async () => {
+  const source = await fsp.readFile(
+    new URL("../scripts/run-generic-runtime-differential-stack.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(source, /build-deepwell-candidate|CARGO_TARGET_DIR|cargo build/u);
+});
+
+test("stack cleanup does not remove reusable candidate assets", async (t) => {
+  const fixture = await reusableCandidateFixture(t);
+  await assert.rejects(
+    runStack([
+      "--repository", fixture.repository,
+      "--candidate-manifest", fixture.candidateManifest,
+      "--cases", path.join(path.dirname(fixture.repository), "cases.jsonl"),
+      "--captures", path.join(path.dirname(fixture.repository), "captures.jsonl"),
+      "--output", path.join(path.dirname(fixture.repository), "report.json"),
+    ]),
+    /install\/local\/deepwell\/config\.toml/u,
+  );
+
+  assert.equal((await fsp.stat(fixture.candidateManifest)).isFile(), true);
+  assert.equal((await fsp.stat(fixture.binary)).isFile(), true);
+});
+
+test("runtime identity rejects obsolete candidate manifest shapes", () => {
+  assert.throws(
+    () => stackRuntimeIdentity({
+      before: {
+        inputs: {
+          repository_sha: "1".repeat(40),
+          ftml_sha: "2".repeat(40),
+        },
+      },
+      cargo_lock_sha256: "3".repeat(64),
+      binary_sha256: "4".repeat(64),
+    }, "compose", "config"),
+    /valid Wikijump SHA/u,
+  );
 });

@@ -9,10 +9,13 @@ import path from "node:path";
 import {spawnSync} from "node:child_process";
 
 import {runCliIfMain} from "../src/cli-entry.mjs";
+import {sha256Hex, stableStringify} from "../src/canonical-json.mjs";
 import {sha256} from "../src/syntax-differential.mjs";
 
-const BUILD_CANDIDATE = "/home/roku/wjlab/scripts/build-deepwell-candidate.sh";
 const OWNER = "generic-runtime-differential";
+const CANDIDATE_SCHEMA = "roku.candidate_build_manifest.v1";
+const SHA1_RE = /^[0-9a-f]{40}$/u;
+const SHA256_RE = /^[0-9a-f]{64}$/u;
 
 function valueAfter(argv, index, option) {
   const value = argv[index + 1];
@@ -23,6 +26,8 @@ function valueAfter(argv, index, option) {
 export function parseArgs(argv) {
   const args = {
     repository: null,
+    candidateManifest: null,
+    binary: null,
     cases: null,
     captures: [],
     externalReferences: [],
@@ -33,19 +38,29 @@ export function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const option = argv[index];
     if (option === "--repository") args.repository = path.resolve(valueAfter(argv, index++, option));
-    else if (option === "--cases") args.cases = path.resolve(valueAfter(argv, index++, option));
+    else if (option === "--candidate-manifest") {
+      args.candidateManifest = path.resolve(valueAfter(argv, index++, option));
+    } else if (option === "--binary") {
+      const binary = valueAfter(argv, index++, option);
+      if (!path.isAbsolute(binary)) throw new Error("--binary must be an absolute path");
+      args.binary = binary;
+    } else if (option === "--cases") args.cases = path.resolve(valueAfter(argv, index++, option));
     else if (option === "--captures") args.captures.push(path.resolve(valueAfter(argv, index++, option)));
     else if (option === "--state-fixture") {
       args.stateFixtures.push(path.resolve(valueAfter(argv, index++, option)));
-    }
-    else if (option === "--external-reference") {
+    } else if (option === "--external-reference") {
       args.externalReferences.push(path.resolve(valueAfter(argv, index++, option)));
     } else if (option === "--output") args.output = path.resolve(valueAfter(argv, index++, option));
     else if (option === "--site") args.site = valueAfter(argv, index++, option);
     else throw new Error(`unknown option: ${option}`);
   }
-  for (const field of ["repository", "cases", "output"]) {
-    if (!args[field]) throw new Error(`--${field} is required`);
+  for (const [field, option] of [
+    ["repository", "repository"],
+    ["candidateManifest", "candidate-manifest"],
+    ["cases", "cases"],
+    ["output", "output"],
+  ]) {
+    if (!args[field]) throw new Error(`--${option} is required`);
   }
   if (args.captures.length === 0) throw new Error("--captures is required");
   if (args.site !== "sandbox-for-codex") throw new Error("--site must be sandbox-for-codex");
@@ -63,6 +78,135 @@ function run(command, args, options = {}) {
     throw new Error(`${command} ${args.join(" ")} failed: ${result.stderr || result.stdout}`);
   }
   return result.stdout.trim();
+}
+
+function exactFtmlSha(cargoLock) {
+  const matches = cargoLock
+    .split(/^\[\[package\]\]\s*$/mu)
+    .slice(1)
+    .filter((entry) => /^name = "ftml"$/mu.test(entry))
+    .map((entry) => /^source = "git\+https:\/\/github\.com\/Rokurolize\/ftml[^"#]*#([0-9a-f]{40})"$/mu.exec(entry)?.[1])
+    .filter(Boolean);
+  if (matches.length !== 1) {
+    throw new Error(`Cargo.lock must contain exactly one pinned Rokurolize/ftml package, found ${matches.length}`);
+  }
+  return matches[0];
+}
+
+function requireCandidate(condition, message) {
+  if (!condition) throw new Error(`candidate manifest ${message}`);
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+export async function bindCandidate({repository, candidateManifest, binary}) {
+  let manifest;
+  try {
+    manifest = JSON.parse(await fsp.readFile(candidateManifest, "utf8"));
+  } catch (error) {
+    throw new Error(`candidate manifest is unreadable: ${error.message}`);
+  }
+  const source = manifest?.source;
+  const build = manifest?.build;
+  const inputs = manifest?.artifact_key?.inputs;
+  requireCandidate(manifest?.schema === CANDIDATE_SCHEMA, "has an unsupported schema");
+  requireCandidate(source?.repository === "Rokurolize/wikijump", "has a different repository");
+  requireCandidate(SHA1_RE.test(source?.wikijump_sha), "has no valid Wikijump commit");
+  requireCandidate(source?.wikijump_source_id === "clean", "does not bind a clean Wikijump source");
+  requireCandidate(SHA1_RE.test(source?.ftml_sha), "has no valid FTML commit");
+  requireCandidate(source?.ftml_source_id === "clean", "does not bind a clean FTML source");
+  requireCandidate(build?.profile === "dev", "is not a dev profile build");
+  requireCandidate(build?.package === "deepwell", "does not bind the deepwell package");
+  requireCandidate(build?.artifact === "bin:deepwell", "does not bind the Deepwell binary");
+  requireCandidate(typeof build?.target === "string" && build.target.length > 0, "has no build target");
+  requireCandidate(build?.default_features === true, "does not use default features");
+  requireCandidate(Array.isArray(build?.features) && build.features.length === 0, "has unexpected features");
+  requireCandidate(SHA256_RE.test(build?.cargo_lock_sha256), "has no valid Cargo.lock hash");
+  requireCandidate(SHA256_RE.test(build?.binary_sha256), "has no valid binary hash");
+  requireCandidate(
+    typeof build?.binary_path_at_build === "string" && path.isAbsolute(build.binary_path_at_build),
+    "has no absolute binary path",
+  );
+  requireCandidate(
+    path.basename(path.dirname(build.binary_path_at_build)) === "debug",
+    "does not bind a debug binary",
+  );
+  requireCandidate(inputs?.schema === "roku-candidate-artifact-v3", "has an unsupported artifact key schema");
+  requireCandidate(
+    manifest?.artifact_key?.key === `candidate-v3-${sha256Hex(stableStringify(inputs))}`,
+    "artifact key digest does not match",
+  );
+  for (const name of ["rustc_identity", "cargo_identity", "linker_identity"]) {
+    requireCandidate(typeof inputs[name] === "string" && inputs[name].trim() !== "", `has no ${name}`);
+  }
+  requireCandidate(isRecord(inputs.build_environment), "has an invalid build environment");
+  requireCandidate(
+    Object.entries(inputs.build_environment).every(([key, value]) =>
+      typeof key === "string" && (value === null || typeof value === "string")
+    ),
+    "has an invalid build environment",
+  );
+  requireCandidate(isRecord(inputs.recipe_digests), "has invalid recipe digests");
+  requireCandidate(
+    Object.entries(inputs.recipe_digests).every(([key, value]) =>
+      typeof key === "string" && typeof value === "string"
+    ),
+    "has invalid recipe digests",
+  );
+  for (const name of ["rustflags", "cargo_encoded_rustflags"]) {
+    requireCandidate(
+      inputs[name] === null || typeof inputs[name] === "string",
+      `has invalid ${name}`,
+    );
+  }
+  for (const [actual, expected, name] of [
+    [inputs?.sources?.repo?.sha, source.wikijump_sha, "Wikijump commit"],
+    [inputs?.sources?.repo?.source_id, source.wikijump_source_id, "Wikijump source"],
+    [inputs?.sources?.ftml?.sha, source.ftml_sha, "FTML commit"],
+    [inputs?.sources?.ftml?.source_id, source.ftml_source_id, "FTML source"],
+    [inputs?.profile, build.profile, "profile"],
+    [inputs?.package, build.package, "package"],
+    [inputs?.artifact, build.artifact, "artifact"],
+    [inputs?.target, build.target, "target"],
+    [inputs?.default_features, build.default_features, "default features"],
+    [inputs?.recipe_digests?.["cargo-lock"], build.cargo_lock_sha256, "Cargo.lock hash"],
+  ]) {
+    requireCandidate(actual === expected, `has inconsistent ${name}`);
+  }
+  requireCandidate(
+    Array.isArray(inputs?.features) && JSON.stringify(inputs.features) === JSON.stringify(build.features),
+    "has inconsistent features",
+  );
+
+  if (run("git", ["status", "--porcelain"], {cwd: repository}) !== "") {
+    throw new Error("candidate repository must be clean");
+  }
+  const head = run("git", ["rev-parse", "--verify", "HEAD"], {cwd: repository});
+  const wikijumpTree = run("git", ["rev-parse", "--verify", "HEAD^{tree}"], {cwd: repository});
+  requireCandidate(head === source.wikijump_sha, "does not match the repository commit");
+  requireCandidate(SHA1_RE.test(wikijumpTree), "repository has no valid source tree");
+
+  const cargoLockPath = path.join(repository, "deepwell/Cargo.lock");
+  const cargoLock = await fsp.readFile(cargoLockPath);
+  requireCandidate(sha256(cargoLock) === build.cargo_lock_sha256, "does not match Cargo.lock");
+  const ftmlSha = exactFtmlSha(cargoLock.toString("utf8"));
+  requireCandidate(ftmlSha === source.ftml_sha, "does not match the Cargo.lock FTML pin");
+  const cargoToml = await fsp.readFile(path.join(repository, "deepwell/Cargo.toml"), "utf8");
+  const cargoTomlFtmlSha = /^ftml\s*=\s*\{[^\n]*\brev\s*=\s*"([0-9a-f]{40})"[^\n]*\}$/mu.exec(cargoToml)?.[1];
+  requireCandidate(cargoTomlFtmlSha === source.ftml_sha, "does not match the Cargo.toml FTML pin");
+
+  const selectedBinary = binary ?? build.binary_path_at_build;
+  requireCandidate(path.isAbsolute(selectedBinary), "binary path is not absolute");
+  const binaryStat = await fsp.stat(selectedBinary);
+  requireCandidate(binaryStat.isFile(), "binary path is not a file");
+  requireCandidate((binaryStat.mode & 0o111) !== 0, "binary is not executable");
+  requireCandidate(
+    sha256(await fsp.readFile(selectedBinary)) === build.binary_sha256,
+    "binary hash does not match",
+  );
+  return {manifest, binary: selectedBinary};
 }
 
 async function freePorts(count) {
@@ -257,12 +401,10 @@ export function composeIdentityDocument(options) {
 }
 
 export function runtimeIdentity(manifest, compose, config) {
-  const source = manifest.source ?? manifest.before?.inputs;
-  const build = manifest.build ?? manifest;
-  const wikijumpSha = source?.wikijump_sha ?? source?.repository_sha ?? source?.repo_sha;
-  const ftmlSha = source?.ftml_sha ?? manifest.ftml_sha;
-  const lockHash = build?.cargo_lock_sha256?.after ?? build?.cargo_lock_sha256;
-  const executableHash = build?.binary_sha256 ?? manifest.binary_sha256;
+  const wikijumpSha = manifest.source?.wikijump_sha;
+  const ftmlSha = manifest.source?.ftml_sha;
+  const lockHash = manifest.build?.cargo_lock_sha256;
+  const executableHash = manifest.build?.binary_sha256;
   for (const [name, value, length] of [
     ["Wikijump SHA", wikijumpSha, 40],
     ["FTML SHA", ftmlSha, 40],
@@ -285,19 +427,15 @@ export function runtimeIdentity(manifest, compose, config) {
 
 export async function main(argv) {
   const args = parseArgs(argv);
-  if (run("git", ["status", "--porcelain"], {cwd: args.repository}) !== "") {
-    throw new Error("candidate repository must be clean");
-  }
   if (fs.existsSync(args.output)) throw new Error(`output already exists: ${args.output}`);
+  const {manifest, binary} = await bindCandidate(args);
   const runId = `runtime-diff-${crypto.randomUUID().slice(0, 12)}`;
   const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
   const runRoot = await fsp.mkdtemp(path.join(os.tmpdir(), `${runId}-`));
   const project = runId;
   const composePath = path.join(runRoot, "compose.yaml");
   const configPath = path.join(runRoot, "config.toml");
-  const manifestPath = path.join(runRoot, "candidate-manifest.json");
   const identityPath = path.join(runRoot, "runtime-identity.json");
-  const targetPath = path.join(runRoot, "target");
   const [rpcPort, textBlockPort] = await freePorts(2);
   const labels = {
     "com.rokurolize.wikijump.owner": OWNER,
@@ -312,17 +450,6 @@ export async function main(argv) {
   };
   let composeStarted = false;
   try {
-    run(BUILD_CANDIDATE, [
-      "--repo", args.repository,
-      "--target-dir", targetPath,
-      "--profile", "dev",
-      "--manifest", manifestPath,
-    ]);
-    const manifest = JSON.parse(await fsp.readFile(manifestPath, "utf8"));
-    const binary = manifest.build?.binary_path_at_build;
-    if (!binary || sha256(await fsp.readFile(binary)) !== manifest.build?.binary_sha256) {
-      throw new Error("candidate binary does not match its manifest");
-    }
     const localConfig = await fsp.readFile(
       path.join(args.repository, "install/local/deepwell/config.toml"),
       "utf8",
