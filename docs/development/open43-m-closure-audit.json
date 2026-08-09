@@ -1,0 +1,1134 @@
+{
+  "schema": "wikijump.open43.m_closure_audit.v1",
+  "generated_on": "2026-08-09",
+  "scope": {
+    "issues": [756, 776, 806, 1039, 1042, 1043, 1062],
+    "issue_count": 7,
+    "purpose": "Classify every independently decidable media/files acceptance requirement without treating an unexecuted source test or candidate as a pass."
+  },
+  "classification_contract": {
+    "referent_table_path": "docs/development/referent-table-open43-m-closure-audit.md",
+    "referent_table_sha256": "674c462ae26951c2eedb7530098038a645ec7abce07c336918c070ab590469ee",
+    "allowed": [
+      "source_ready",
+      "needs_source",
+      "candidate_required",
+      "blocked_evidence"
+    ],
+    "source_ready_is_not_pass": true,
+    "candidate_required_is_not_pass": true,
+    "blocked_evidence_is_not_wontfix": true
+  },
+  "source_identity": {
+    "lane_base_commit": "99c946782936923ff902cf95045a4cab2dd16577",
+    "lane_base_tree": "c5528ab49da3e67baa01c99b01302ded5651cc53",
+    "ftml_revision": "62ebba4efda1f10e82363c23c925061fbe939e49",
+    "deepwell_cargo_lock_sha256": "a3c857b33911bd3420f773057fa08e8693170fd3047e6ea7ff3e127b77bb4dd9",
+    "wws_cargo_lock_sha256": "b08563c1fb7d21a82170ee7da499a52b8a8a703da466db60232e9212cca43521",
+    "framerail_pnpm_lock_sha256": "3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406",
+    "framerail_package_sha256": "930b902b4ebed09c4114f6b8db87311a639e612183a4371ca19884dac8349082",
+    "framerail_svelte_config_sha256": "52b02a44f682cd0bb12b8b968e4a0dc5f84eda1b76c2201aee9566bc236fbcbc",
+    "observed_integration_head": "e86d75fad1a39093c649c56177c040656fd5c133",
+    "observed_integration_head_is_dynamic": true,
+    "final_source_freeze_reconciliation_required": true,
+    "standing_is_acceptance_evidence": false
+  },
+  "github_issue_inputs": [
+    {
+      "issue": 756,
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:43:06Z",
+      "gh_json_sha256": "bd6c993f829083b68414649b1403e041faf9538e1b6bd1d495d993bac392ce26"
+    },
+    {
+      "issue": 776,
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:43:14Z",
+      "gh_json_sha256": "ebc1a9629de4f0d1d0e7af54e974f152488fe89493bce363e33d6eeb540f8b2e"
+    },
+    {
+      "issue": 806,
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:43:22Z",
+      "gh_json_sha256": "a590bb41be9c0059de026216230699f55f8143227252fd2128ce03b168d0b9e0"
+    },
+    {
+      "issue": 1039,
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:44:43Z",
+      "gh_json_sha256": "0475b600d984b27128758797f2819a9b8f4e3441af68e6eec826186385a3e21c"
+    },
+    {
+      "issue": 1042,
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:44:47Z",
+      "gh_json_sha256": "895759bc77aebb635ba45a2735dcf04401ad3b31a297a6e35c99f2f4f1c4235b"
+    },
+    {
+      "issue": 1043,
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:44:48Z",
+      "gh_json_sha256": "18c670ea541ef737b3046d918ccdf6eacb2d79648d97fd6eda8fb2532ba01692"
+    },
+    {
+      "issue": 1062,
+      "state": "OPEN",
+      "updated_at": "2026-08-06T01:44:59Z",
+      "gh_json_sha256": "c6762aa8182961f891e2ccb9265f58c02d7335a5fe7d49aaaef47cbe5872041a"
+    }
+  ],
+  "input_manifests": [
+    {
+      "path": "docs/development/open43-m-files-case-manifest.json",
+      "sha256": "8566a0c8ca8bd9ddf90c0d022f6d89f39dd3eb761e82226d162e9a778803f6fb"
+    },
+    {
+      "path": "install/local/wikidot-verification/fixtures/open43-m-media-case-manifest.json",
+      "sha256": "da4c682e4d034b09a00873c8676262281a1963af37d6455ba37a72c25f1700e4"
+    },
+    {
+      "path": "docs/wikidot-specifications/live-observations.json",
+      "sha256": "edf1a1773f1e436403fa9bb95ec7f11d72627ed044d0e21f0f9c92edd4106613",
+      "feature_specific_rows_for_scope": 0
+    }
+  ],
+  "evidence_registry": {
+    "E_ICON_SCOPE": {
+      "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/icon-setting-v1/scoping-verdict.json",
+      "sha256": "bb73af6a64011df8d87b0766032ae63c2cbdee4e0cb845b62bdb2e2bea38cd15"
+    },
+    "E_ICON_PANEL": {
+      "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/admin-panels-v3/sm-icons.html",
+      "sha256": "0ca59cf68a5179ccb8e655d345829a16cff7252ca22144319a2c9935b114507b"
+    },
+    "E_ICON_OBSERVATIONS": {
+      "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/admin-panels-v3/observations.json",
+      "sha256": "c1d5e0ccebe29384487a9d0c7a9fe0962d2a41a26569c5c084b65f23e7ef1299"
+    },
+    "E_MODULE_PREVIEW_CORPUS": {
+      "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
+      "sha256": "686f9fd383f51b5fe393b5f98b2a7e499010bfb691a39086309170a29982a783",
+      "embedded_fragment_sha256": {
+        "Files": "d46ed3c8ce6c203f322f7608b264100811f6eb4b84f5f6fe78756e1b49ddfdd8",
+        "FlickrGallery": "b63da96b39d3057e03f22ab85d048a6907d234e70a098685a6c47a2aca78714f"
+      }
+    },
+    "E_FILES_SAVED_EMPTY": {
+      "path": "/home/roku/wjlab/evidence/wikidot-gap-discovery-20260722/live-module-catalog-001/run/observations/files-fetch-account-a.rendered.html",
+      "sha256": "bbfdc02ad6e8aabaee29ea0f31acea4c2eafabb18c6b384d5ff73589ea3ece75"
+    },
+    "E_FLICKR_SAVED": {
+      "path": "/home/roku/wjlab/evidence/wikidot-gap-discovery-20260722/live-module-catalog-001/run/observations/flickrgallery-fetch-account-a.rendered.html",
+      "sha256": "758c7e0738dc58332318f8af1e9d1927b55b7f32870c5b822447dbac11384d2a"
+    },
+    "E_FOCUSED_CORPUS": {
+      "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/focused-uncovered/live-references.jsonl",
+      "sha256": "2ca951f55e212f2ec6125de9e6fa40bf561182ced3e489616cf57443940054a4"
+    },
+    "E_V7_CORPUS": {
+      "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/live-references.jsonl",
+      "sha256": "aa304cfd1a96ec82508fb75092eab2faf39e4f9c18a7b64d54466785e63de654"
+    },
+    "E_GALLERY_EMPTY": {
+      "path": "/home/roku/wjlab/evidence/wikidot-gap-discovery-20260722/live-queue-002/run/observations/g01-gallery-empty-fetch-account-a.rendered.html",
+      "sha256": "d2b733d2bab22ba2b1e2123f83c4d4e0a4843fd601ab048b37752a628ee8c60f"
+    },
+    "E_G06": {
+      "path": "/home/roku/wjlab/evidence/wikidot-gap-discovery-20260722/live-queue-002/run/observations/g06-f-equals-image-fetch-account-a.rendered.html",
+      "sha256": "f4e55f5d971fb1153b7fd033df7dcb18444f62ac996c8c03e1813a966dfe9c22"
+    },
+    "E_G06_PROVENANCE": {
+      "path": "/home/roku/wjlab/evidence/wikidot-gap-discovery-20260722/live-queue-002/run/observations/g06-f-equals-image__account-a.json",
+      "sha256": "cfefa31e0abcc7e2982266dc05167667bafbac03712c3617497f528bc90519ae"
+    },
+    "E_G61": {
+      "path": "/home/roku/wjlab/evidence/ftml-pin-8eee0a4b-parser-canary/browser-rendering-shard-1/EN_theme_magazine-1a4f270df6a6/live.dom.html",
+      "sha256": "d6e8c7b88a1b32e15db351a60cd9ed7cf687f145759852898b4e985fb49cba75"
+    },
+    "E_UPLOAD_HISTORICAL_FAILURE": {
+      "path": "/home/roku/codex-thread-workspaces/theme-localization-20260802-019fbe58/file-upload-observation.json",
+      "sha256": "efa1a3cb3aef276d23049aa9f2766a94ad9c786ec396f3c395e8801f40a9096c"
+    },
+    "E_EMBED_ANALYSIS": {
+      "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/focused-uncovered/analysis.json",
+      "sha256": "9f6fe58e296b5ba4fe02bf9e677569ea8d93391ace2c7c624d7715af3a726073"
+    },
+    "E_EMBED_STANDING_COMPARISON": {
+      "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/focused-uncovered/standing-comparison.json",
+      "sha256": "ddb76d7399f3caa4c3c51cd64ba9319240274c01584d7e1fce3000845ca109e8",
+      "acceptance_authority": false
+    }
+  },
+  "central_commands": {
+    "C_DEEPWELL_FMT": {
+      "command": "cargo fmt --manifest-path deepwell/Cargo.toml --check",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_DEEPWELL_MEDIA": {
+      "command": "cargo test --manifest-path deepwell/Cargo.toml --test media -- --nocapture",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_DEEPWELL_GALLERY": {
+      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_gallery -- --nocapture",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_DEEPWELL_FILES": {
+      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts -- --exact --nocapture",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_DEEPWELL_SITE_ICONS": {
+      "command": "cargo test --manifest-path deepwell/Cargo.toml --test site site_update_restricts_icon_sources_to_site_owned_routes -- --exact --nocapture",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_DEEPWELL_FILE_ACL": {
+      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page file_mutations_require_parent_page_edit_permission -- --exact --nocapture",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_RENDER_EPOCH": {
+      "command": "cargo test --manifest-path deepwell/Cargo.toml renderer_epoch_invalidates_pre_freeze_compiled_artifacts -- --nocapture",
+      "phase": "source_freeze",
+      "exists_now": false,
+      "required_before_run": "Add one public cache-identity test that proves an artifact compiled under deepwell-render/v2 is not reused after the final epoch bump."
+    },
+    "C_DEEPWELL_CLIPPY": {
+      "command": "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_WWS": {
+      "command": "cargo test --manifest-path wws/Cargo.toml -- --nocapture",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_WWS_CLIPPY": {
+      "command": "RUSTFLAGS='-D warnings' cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_FRAMERAIL_MEDIA_UNIT": {
+      "command": "node --test framerail/tests/site-icon-source.test.js framerail/tests/site-icons.test.js framerail/tests/page-file-client-ip.test.js framerail/tests/presigned-upload.test.js",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_FRAMERAIL_CSP_UNIT": {
+      "command": "node --test framerail/tests/wikidot-csp-config.test.js",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_FRAMERAIL_CHECK": {
+      "command": "pnpm --dir framerail check",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_FRAMERAIL_LINT": {
+      "command": "pnpm --dir framerail lint",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_FRAMERAIL_BUILD": {
+      "command": "pnpm --dir framerail build",
+      "phase": "final_candidate",
+      "exists_now": true
+    },
+    "C_CORPUS_PINNED": {
+      "command": "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/focused-uncovered/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/live-references.jsonl",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_IDENTIFIER_LEAKS": {
+      "command": "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scp-wiki --rpc-url http://127.0.0.1:2747/jsonrpc",
+      "phase": "final_candidate",
+      "exists_now": true
+    },
+    "C_MEDIA_RUNTIME_CANDIDATE": {
+      "command": "node install/local/wikidot-verification/scripts/run-open43-media-files-candidate.mjs --manifest docs/development/open43-m-closure-audit.json --runtime-identity /home/roku/wjlab/evidence/open43-final/media/runtime-identity.json --output /home/roku/wjlab/evidence/open43-final/media/runtime-verdict.json",
+      "phase": "final_candidate",
+      "exists_now": false,
+      "required_before_run": "Add the source-owned one-stack media/files candidate controller and unit tests; it must bind source, FTML, locks, images, DB, files, actor, browser, initial paint, settled state, and cleanup."
+    },
+    "C_MEDIA_BROWSER_CANDIDATE": {
+      "command": "pnpm --dir framerail exec playwright test --config playwright.candidate.config.ts tests/open43-media-files-candidate.spec.ts",
+      "phase": "final_candidate",
+      "exists_now": false,
+      "required_before_run": "Add the named candidate-only Playwright config and contract; they must consume the sealed candidate identity and must not start the mock-only Framerail fixture."
+    }
+  },
+  "candidate_harness_gap": {
+    "classification": "needs_source",
+    "reason": "No existing source-owned candidate runner covers file upload state, WWS bytes, media network policy, and every initial/settled browser interval in one identity-bound receipt.",
+    "required_commands": [
+      "C_MEDIA_RUNTIME_CANDIDATE",
+      "C_MEDIA_BROWSER_CANDIDATE"
+    ],
+    "must_not_substitute": [
+      "a settled screenshot",
+      "the current standing runtime",
+      "the mock-only default Framerail Playwright fixture",
+      "a successful HTTP status without blob and actor identity"
+    ]
+  },
+  "issues": [
+    {
+      "issue": 756,
+      "title": "Implement per-site Wikidot favicon and platform icon settings",
+      "subrows": [
+        {
+          "case_id": "M756_SAFE_ICON_SOURCE_POLICY",
+          "acceptance": "Accept only same-site local-file sources or exact site-owned imported HTTPS routes; reject arbitrary redirects and unsafe URL forms.",
+          "classification": "source_ready",
+          "reason": "Deepwell validates before commit and Framerail applies the same route projection policy.",
+          "source_paths": [
+            "deepwell/src/services/site/service.rs",
+            "framerail/src/lib/site-icon-source.ts",
+            "framerail/src/lib/server/site-icon-response.ts"
+          ],
+          "existing_tests": [
+            "deepwell/tests/site.rs::site_update_restricts_icon_sources_to_site_owned_routes",
+            "framerail/tests/site-icon-source.test.js::imported site icons redirect only to site-owned Wikidot resources",
+            "framerail/tests/site-icon-source.test.js::local site icons redirect only to same-origin file routes"
+          ],
+          "evidence_ids": ["E_ICON_SCOPE", "E_ICON_PANEL"],
+          "next_command_ids": [
+            "C_DEEPWELL_SITE_ICONS",
+            "C_FRAMERAIL_MEDIA_UNIT"
+          ]
+        },
+        {
+          "case_id": "M756_FAVICON_AND_IOS_HEAD_DECLARATIONS",
+          "acceptance": "Project the favicon and three iOS declarations in the evidenced order without an unconditional data URL icon.",
+          "classification": "source_ready",
+          "reason": "The favicon/iOS declaration helper and route handlers exist with focused Node coverage.",
+          "source_paths": [
+            "framerail/src/lib/site-icons.ts",
+            "framerail/src/routes/+layout.svelte",
+            "framerail/src/routes/local--favicon/[filename]/+server.ts",
+            "framerail/src/routes/local--iosicon/[filename]/+server.ts"
+          ],
+          "existing_tests": ["framerail/tests/site-icons.test.js"],
+          "evidence_ids": ["E_ICON_OBSERVATIONS"],
+          "next_command_ids": ["C_FRAMERAIL_MEDIA_UNIT"]
+        },
+        {
+          "case_id": "M756_WINDOWS_TILE_DECLARATION",
+          "acceptance": "Project the configured Windows 8 tile through the exact live head declaration and local route instead of storing an unused setting.",
+          "classification": "needs_source",
+          "reason": "The settings model and admin field exist, but +layout.svelte and site-icons.ts consume only favicon_source and ios_icon_source; no Windows tile head declaration, route, or focused test exists.",
+          "source_paths": [
+            "framerail/src/routes/+layout.svelte",
+            "framerail/src/lib/site-icons.ts",
+            "framerail/src/routes/[x+2d]/admin/SiteIconSettings.svelte"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_ICON_PANEL", "E_ICON_OBSERVATIONS"],
+          "missing_source": [
+            "Windows tile head projection",
+            "site-owned Windows tile route",
+            "focused declaration and route test"
+          ],
+          "next_command_ids": ["C_FRAMERAIL_MEDIA_UNIT"]
+        },
+        {
+          "case_id": "M756_UPLOAD_MATERIALIZATION",
+          "acceptance": "Upload or download icon bytes into local ownership, atomically bind one icon slot, and define replacement, deletion, MIME, size, SVG/script, and failure behavior.",
+          "classification": "blocked_evidence",
+          "reason": "The panel proves local upload and URL download controls but does not freeze the slot-to-blob transaction or its edge policies.",
+          "source_paths": [
+            "framerail/src/routes/[x+2d]/admin/SiteIconSettings.svelte",
+            "deepwell/src/services/site/service.rs"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_ICON_PANEL", "E_ICON_OBSERVATIONS"],
+          "missing_evidence": [
+            "slot-to-blob relation",
+            "same-slot replacement and deletion semantics",
+            "MIME and size limits",
+            "PUT and setting-commit failure cleanup",
+            "existing URL download redirect and content policy"
+          ],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M756_LOCAL_ROUTE_BYTES",
+          "acceptance": "Serve a locally owned icon with exact status, MIME, byte hash, missing state, and anonymous visibility from the exact merged candidate.",
+          "classification": "candidate_required",
+          "reason": "Route source exists, but local icon bytes and their ownership relation are runtime state.",
+          "source_paths": [
+            "framerail/src/lib/server/site-icon-response.ts",
+            "framerail/src/routes/local--favicon/[filename]/+server.ts",
+            "framerail/src/routes/local--iosicon/[filename]/+server.ts"
+          ],
+          "existing_tests": ["framerail/tests/site-icons.test.js"],
+          "evidence_ids": ["E_ICON_SCOPE"],
+          "depends_on": ["M756_UPLOAD_MATERIALIZATION"],
+          "next_command_ids": ["C_MEDIA_RUNTIME_CANDIDATE"]
+        },
+        {
+          "case_id": "M756_BROWSER_CACHE_TRANSITIONS",
+          "acceptance": "Observe the icon request and declaration before and after setting changes, reload, and client navigation without a stale initial or settled icon.",
+          "classification": "candidate_required",
+          "reason": "This is temporal browser and cache behavior and cannot be proved from source or a settled screenshot.",
+          "source_paths": ["framerail/src/routes/+layout.svelte"],
+          "existing_tests": [],
+          "evidence_ids": ["E_ICON_OBSERVATIONS"],
+          "depends_on": ["M756_UPLOAD_MATERIALIZATION"],
+          "next_command_ids": ["C_MEDIA_BROWSER_CANDIDATE"]
+        }
+      ]
+    },
+    {
+      "issue": 776,
+      "title": "Implement Wikidot f=image image container",
+      "subrows": [
+        {
+          "case_id": "M776_G06_STATIC_DOM",
+          "acceptance": "Render the frozen external f=image source as the exact Wikidot image-container, img.image, width, alt, and owned host projection.",
+          "classification": "source_ready",
+          "reason": "The current FTML pin and Deepwell public preview test exact-compare the frozen G06 case.",
+          "source_paths": [
+            "deepwell/Cargo.toml",
+            "deepwell/src/services/render/service.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/media.rs::current_ftml_pin_preserves_promoted_image_dom::issue-776-g06-f-equals-image"
+          ],
+          "evidence_ids": ["E_G06", "E_G06_PROVENANCE"],
+          "next_command_ids": ["C_DEEPWELL_MEDIA"]
+        },
+        {
+          "case_id": "M776_SOURCELESS_ATTACHMENT_AND_RESIZE",
+          "acceptance": "Resolve a source-less current-page attachment after ACL and serve its evidenced original/resized URL and exact blob revision.",
+          "classification": "needs_source",
+          "reason": "FTML exposes an implicit attachment descriptor, but Wikijump has no /local--resized-images WWS route or source test binding latest visible file revision to the served resize.",
+          "source_paths": [
+            "deepwell/src/services/render/service.rs",
+            "wws/src/route.rs"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_V7_CORPUS"],
+          "missing_source": [
+            "permission-first implicit attachment resolution matrix",
+            "revision-bound resized asset service and WWS route",
+            "source-level negative controls for missing, deleted, private, cross-site, and traversal targets"
+          ],
+          "next_command_ids": ["C_DEEPWELL_MEDIA", "C_WWS"]
+        },
+        {
+          "case_id": "M776_UNFROZEN_ARGUMENT_MATRIX",
+          "acceptance": "Extend spacing, tab, NBSP, unqualified width, size alias, quoted filename, and float spelling behavior beyond the frozen G06 case.",
+          "classification": "blocked_evidence",
+          "reason": "The issue comment proposes these red cases, but the required two positive and two negative live boundary observations are not frozen for each widened grammar rule.",
+          "source_paths": [],
+          "existing_tests": [],
+          "evidence_ids": ["E_G06", "E_V7_CORPUS"],
+          "missing_evidence": [
+            "live grammar boundary matrix for every widened token form"
+          ],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M776_BROWSER_GEOMETRY_AND_NETWORK",
+          "acceptance": "Verify initial and settled natural dimensions, computed float width/alignment, load/error state, click target, responsive behavior, and exact file request identity.",
+          "classification": "candidate_required",
+          "reason": "These claims depend on the exact image bytes, WWS response, CSS cascade, and browser intervals.",
+          "source_paths": ["framerail/src"],
+          "existing_tests": [],
+          "evidence_ids": ["E_G06"],
+          "depends_on": ["M776_SOURCELESS_ATTACHMENT_AND_RESIZE"],
+          "next_command_ids": [
+            "C_MEDIA_RUNTIME_CANDIDATE",
+            "C_MEDIA_BROWSER_CANDIDATE"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 806,
+      "title": "Match centered Wikidot =image width and whitespace forms",
+      "subrows": [
+        {
+          "case_id": "M806_G61_STATIC_DOM",
+          "acceptance": "Render the frozen one-space and multiple-space external centered image forms as exact aligncenter image-container DOM with width and owned host projection.",
+          "classification": "source_ready",
+          "reason": "The current FTML pin and Deepwell public preview test both exact G61 variants.",
+          "source_paths": [
+            "deepwell/Cargo.toml",
+            "deepwell/src/services/render/service.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/media.rs::current_ftml_pin_preserves_promoted_image_dom::issue-806-g61-centered-image-one-space",
+            "deepwell/tests/media.rs::current_ftml_pin_preserves_promoted_image_dom::issue-806-g61-centered-image-multi-space"
+          ],
+          "evidence_ids": ["E_G61"],
+          "next_command_ids": ["C_DEEPWELL_MEDIA"]
+        },
+        {
+          "case_id": "M806_SOURCELESS_ATTACHMENT_AND_RESIZE",
+          "acceptance": "Resolve a source-less centered current-page attachment after ACL and serve the evidenced original/resized blob revision.",
+          "classification": "needs_source",
+          "reason": "The same missing permission-bound resized asset route as #776 remains; centered static DOM alone cannot prove served attachment behavior.",
+          "source_paths": [
+            "deepwell/src/services/render/service.rs",
+            "wws/src/route.rs"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_V7_CORPUS"],
+          "missing_source": [
+            "permission-first implicit attachment resolution matrix",
+            "revision-bound resized asset service and WWS route"
+          ],
+          "next_command_ids": ["C_DEEPWELL_MEDIA", "C_WWS"]
+        },
+        {
+          "case_id": "M806_UNFROZEN_ARGUMENT_MATRIX",
+          "acceptance": "Extend centered-image handling to tab, NBSP, unqualified width, size aliases, quoted filename, and other proposed forms.",
+          "classification": "blocked_evidence",
+          "reason": "Only the one-space and multiple-space G61 source forms are sealed; the proposed wider grammar lacks the required live boundary controls.",
+          "source_paths": [],
+          "existing_tests": [],
+          "evidence_ids": ["E_G61", "E_V7_CORPUS"],
+          "missing_evidence": [
+            "live grammar boundary matrix for every widened token form"
+          ],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M806_BROWSER_GEOMETRY_AND_NETWORK",
+          "acceptance": "Verify initial and settled natural dimensions, computed center/width, load/error, click target, responsive behavior, and exact file request identity.",
+          "classification": "candidate_required",
+          "reason": "The exact bytes, WWS response, theme cascade, and visible intervals exist only in the final candidate.",
+          "source_paths": ["framerail/src"],
+          "existing_tests": [],
+          "evidence_ids": ["E_G61"],
+          "depends_on": ["M806_SOURCELESS_ATTACHMENT_AND_RESIZE"],
+          "next_command_ids": [
+            "C_MEDIA_RUNTIME_CANDIDATE",
+            "C_MEDIA_BROWSER_CANDIDATE"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 1039,
+      "title": "Complete Wikidot Files and FlickrGallery module contracts",
+      "ownership_boundary": {
+        "deviation_note": "docs/ftml-boundary-deviations/file-runtime-modules.md",
+        "current_ftml_fact": "Module::Runtime is typed only for closer-bearing unknown modules whose body starts on the next physical line.",
+        "frozen_case_fact": "Files and FlickrGallery are closer-less argument-free own-line heads, so the exact existing shim remains necessary and must not widen."
+      },
+      "subrows": [
+        {
+          "case_id": "M1039_FILES_PREVIEW_EMPTY",
+          "acceptance": "Match the frozen argument-free Files PagePreview empty wrapper, text, refresh script identity, and manage-attachments anchor.",
+          "classification": "source_ready",
+          "reason": "The exact closer-less source shape is expanded before FTML and public PagePreview coverage binds the frozen result.",
+          "source_paths": ["deepwell/src/services/render/file_modules.rs"],
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts"
+          ],
+          "evidence_ids": ["E_MODULE_PREVIEW_CORPUS"],
+          "next_command_ids": ["C_DEEPWELL_FILES"]
+        },
+        {
+          "case_id": "M1039_FILES_SAVED_EMPTY_AND_ACL",
+          "acceptance": "Bind the saved empty wrapper and refresh script to one page identity, while denied or missing pages reveal no page or file identity and query files only after Page:View.",
+          "classification": "source_ready",
+          "reason": "The renderer uses AuthorizedPageSelector before FileService::get_all and the integration test covers public saved and denied private states.",
+          "source_paths": ["deepwell/src/services/render/file_modules.rs"],
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts"
+          ],
+          "evidence_ids": ["E_FILES_SAVED_EMPTY"],
+          "next_command_ids": ["C_DEEPWELL_FILES"]
+        },
+        {
+          "case_id": "M1039_FILES_NONEMPTY_ROWS",
+          "acceptance": "Render 1/N file rows with exact name, href, size, type, date, user, order, pagination, duplicate-looking name, Unicode, deleted, and revision behavior.",
+          "classification": "blocked_evidence",
+          "reason": "No frozen nonempty Files row DOM or ordering/pagination contract was found. The current renderer deliberately leaves HasFiles unsupported instead of fabricating empty output.",
+          "source_paths": ["deepwell/src/services/render/file_modules.rs"],
+          "existing_tests": [],
+          "evidence_ids": ["E_MODULE_PREVIEW_CORPUS", "E_FILES_SAVED_EMPTY"],
+          "missing_evidence": [
+            "nonempty row DOM",
+            "row ordering",
+            "pagination",
+            "deleted and revision presentation"
+          ],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M1039_MANAGE_ATTACHMENTS_INTERACTION",
+          "acceptance": "Open and operate the live manage-attachments panel from the emitted link with correct actor and page context.",
+          "classification": "blocked_evidence",
+          "reason": "The frozen HTML proves the anchor but not panel transition, actor matrix, failure, or intermediate browser states; Framerail has no filesClick compatibility handler.",
+          "source_paths": ["framerail/src"],
+          "existing_tests": [],
+          "evidence_ids": ["E_FILES_SAVED_EMPTY"],
+          "missing_evidence": [
+            "panel DOM",
+            "actor matrix",
+            "navigation and intermediate state contract"
+          ],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M1039_FLICKR_PREVIEW_EMPTY",
+          "acceptance": "Match the argument-free PagePreview no-photo wrapper and escaped literal diagnostics without a provider request.",
+          "classification": "source_ready",
+          "reason": "The exact frozen source shape and title are rendered by the focused public PagePreview test.",
+          "source_paths": ["deepwell/src/services/render/file_modules.rs"],
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts"
+          ],
+          "evidence_ids": ["E_MODULE_PREVIEW_CORPUS"],
+          "next_command_ids": ["C_DEEPWELL_FILES"]
+        },
+        {
+          "case_id": "M1039_FLICKR_ARGUMENTS_AND_PROVIDER",
+          "acceptance": "Implement documented required arguments, provider no-photo/failure/results, sanitized URLs and HTML, SSRF, timeout, size, CSP, and browser states.",
+          "classification": "blocked_evidence",
+          "reason": "The saved capture is a client hybrid placeholder; no provider result, failure response, network boundary, or settled browser contract is frozen.",
+          "source_paths": ["deepwell/src/services/render/file_modules.rs"],
+          "existing_tests": [],
+          "evidence_ids": ["E_FLICKR_SAVED"],
+          "missing_evidence": [
+            "provider request contract",
+            "success and failure response DOM",
+            "URL and content allowlist",
+            "loading, error, and settled browser intervals"
+          ],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M1039_SERVED_FILE_ACL_AND_BLOB_IDENTITY",
+          "acceptance": "Apply page permission before file metadata and serve /local--files bytes, MIME, range, and ETag from the exact active blob identity without non-disclosing leaks.",
+          "classification": "source_ready",
+          "reason": "Deepwell file reads are parent-page authorized and WWS rechecks page and file metadata before streaming the s3_hash object.",
+          "source_paths": [
+            "deepwell/src/services/file",
+            "deepwell/src/services/file_revision",
+            "wws/src/state.rs",
+            "wws/src/fetch.rs",
+            "wws/src/handler/file.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::file_get_requires_parent_page_view_permission",
+            "deepwell/tests/page.rs::file_revision_reads_require_parent_page_view_permission_and_tuple_binding",
+            "deepwell/tests/page.rs::page_get_files_requires_parent_page_view_permission",
+            "wws/src/state.rs::permission_denied_file_metadata_uses_the_non_disclosing_not_found_response",
+            "wws/src/handler/file.rs"
+          ],
+          "evidence_ids": ["E_FILES_SAVED_EMPTY"],
+          "next_command_ids": ["C_DEEPWELL_FILE_ACL", "C_WWS"]
+        },
+        {
+          "case_id": "M1039_MUTATION_TO_NEXT_READ",
+          "acceptance": "Prove upload, delete, rename, and revision changes produce the next authorized file inventory and exact blob bytes without stale counts, rows, validators, or cache entries.",
+          "classification": "candidate_required",
+          "reason": "Mutation services and serving seams exist, but this stateful cross-process claim needs one exact DB/files/cache candidate.",
+          "source_paths": [
+            "deepwell/src/services/file",
+            "deepwell/src/services/file_revision",
+            "framerail/src/lib/server/deepwell/page-file.ts",
+            "wws/src/handler/file.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::file_mutations_require_parent_page_edit_permission"
+          ],
+          "evidence_ids": ["E_FILES_SAVED_EMPTY"],
+          "depends_on": ["M1039_FILES_NONEMPTY_ROWS"],
+          "next_command_ids": ["C_MEDIA_RUNTIME_CANDIDATE"]
+        },
+        {
+          "case_id": "M1039_RENDER_CACHE_IDENTITY",
+          "acceptance": "Invalidate compiled output from before the Files renderer landed and rerender it under the final source-frozen renderer identity.",
+          "classification": "needs_source",
+          "reason": "Files rendering landed after deepwell-render/v2, but the renderer epoch is still v2.",
+          "source_paths": [
+            "deepwell/src/services/render/generator.rs",
+            "deepwell/src/services/render/file_modules.rs"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_FILES_SAVED_EMPTY"],
+          "missing_source": [
+            "one final renderer epoch bump",
+            "observable old-artifact non-reuse test"
+          ],
+          "next_command_ids": ["C_RENDER_EPOCH"]
+        }
+      ]
+    },
+    {
+      "issue": 1042,
+      "title": "Match Wikidot EmbedVideo provider fallback, sanitization, and browser lifecycle",
+      "subrows": [
+        {
+          "case_id": "M1042_TYPED_OWNER_BOUNDARY",
+          "acceptance": "Consume only FTML typed EmbedVideo requirements; reject missing, duplicate, or foreign markers and keep code, raw, comment, HTML, and generated owners inert.",
+          "classification": "source_ready",
+          "reason": "The consumer reads the typed requirement sidecar and exact marker once; public tests cover marker forgery and inert owners without raw-source or final-HTML syntax recognition.",
+          "source_paths": [
+            "deepwell/src/services/render/compat/wikidot_embed_video.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/media.rs::authored_embedvideo_marker_cannot_forge_a_typed_requirement",
+            "deepwell/tests/media.rs::literal_and_generated_owners_never_activate_embedvideo"
+          ],
+          "evidence_ids": ["E_EMBED_ANALYSIS", "E_FOCUSED_CORPUS"],
+          "next_command_ids": ["C_DEEPWELL_MEDIA", "C_CORPUS_PINNED"]
+        },
+        {
+          "case_id": "M1042_PROVIDER_POLICY_AND_DOM",
+          "acceptance": "Render only frozen YouTube and Acast iframe descriptors with safe host, path, attributes, and dimensions; fail closed for unsupported or unsafe payloads.",
+          "classification": "source_ready",
+          "reason": "The typed provider consumer allowlists exact origins and paths and public tests cover allowed, unsupported, malformed, credentialed, port, javascript, data, and event-handler cases.",
+          "source_paths": [
+            "deepwell/src/services/render/compat/wikidot_embed_video.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/media.rs::embedvideo_preview_resolves_only_allowlisted_typed_media",
+            "deepwell/tests/media.rs::embedvideo_preview_fails_closed_for_unsupported_media"
+          ],
+          "evidence_ids": ["E_EMBED_ANALYSIS", "E_FOCUSED_CORPUS"],
+          "next_command_ids": ["C_DEEPWELL_MEDIA"]
+        },
+        {
+          "case_id": "M1042_CSP_ALLOWLIST",
+          "acceptance": "Permit only the two evidenced frame origins and grant no script authority to authored media payloads.",
+          "classification": "source_ready",
+          "reason": "The Framerail CSP source and focused Node test bind exactly YouTube and Acast frame-src origins.",
+          "source_paths": ["framerail/svelte.config.js"],
+          "existing_tests": ["framerail/tests/wikidot-csp-config.test.js"],
+          "evidence_ids": ["E_EMBED_ANALYSIS"],
+          "next_command_ids": ["C_FRAMERAIL_CSP_UNIT"]
+        },
+        {
+          "case_id": "M1042_RENDER_CACHE_IDENTITY",
+          "acceptance": "Bind saved output to the final provider policy and renderer semantics so pre-policy compiled output is not reused.",
+          "classification": "needs_source",
+          "reason": "The existing preview/saved test asserts deepwell-render/v2, while later provider and other renderer changes remain under the same epoch.",
+          "source_paths": [
+            "deepwell/src/services/render/generator.rs",
+            "deepwell/tests/media.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/media.rs::embedvideo_preview_and_saved_page_share_render_identity"
+          ],
+          "evidence_ids": ["E_EMBED_ANALYSIS"],
+          "missing_source": [
+            "one final renderer epoch bump",
+            "observable old-artifact non-reuse test",
+            "remove the hard-coded v2 expectation"
+          ],
+          "next_command_ids": ["C_RENDER_EPOCH", "C_DEEPWELL_MEDIA"]
+        },
+        {
+          "case_id": "M1042_BROWSER_LIFECYCLE",
+          "acceptance": "Verify PagePreview and saved initial response, iframe creation, request, load/error, resize, focus, navigation, cleanup, and fail-closed no-request intervals.",
+          "classification": "candidate_required",
+          "reason": "Network policy, CSP, browser focus, and temporal cleanup require the exact production candidate and cannot be inferred from final DOM.",
+          "source_paths": ["framerail/src", "framerail/svelte.config.js"],
+          "existing_tests": [],
+          "evidence_ids": ["E_EMBED_ANALYSIS", "E_EMBED_STANDING_COMPARISON"],
+          "depends_on": ["M1042_RENDER_CACHE_IDENTITY"],
+          "next_command_ids": [
+            "C_MEDIA_RUNTIME_CANDIDATE",
+            "C_MEDIA_BROWSER_CANDIDATE"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 1043,
+      "title": "Implement Wikidot Gallery file selection, viewer DOM, and browser behavior",
+      "subrows": [
+        {
+          "case_id": "M1043_NO_PAGE",
+          "acceptance": "Return the exact Error selecting page block for the frozen no-page Gallery while code and prose owners remain inert.",
+          "classification": "source_ready",
+          "reason": "Deepwell consumes only the typed Gallery requirement and public PagePreview coverage binds the exact no-page and owner boundary.",
+          "source_paths": [
+            "deepwell/src/services/render/compat/wikidot_gallery.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_gallery_preview_uses_the_typed_no_page_error_boundary"
+          ],
+          "evidence_ids": ["E_FOCUSED_CORPUS"],
+          "next_command_ids": ["C_DEEPWELL_GALLERY"]
+        },
+        {
+          "case_id": "M1043_CURRENT_PAGE_EMPTY",
+          "acceptance": "Return the exact no-images error for a visible saved page with no image attachments.",
+          "classification": "source_ready",
+          "reason": "The current-page integration test starts from an empty saved page and exact-checks the frozen error contract.",
+          "source_paths": [
+            "deepwell/src/services/render/compat/wikidot_gallery.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_gallery_selects_authorized_current_page_images_after_page_acl"
+          ],
+          "evidence_ids": ["E_GALLERY_EMPTY"],
+          "next_command_ids": ["C_DEEPWELL_GALLERY"]
+        },
+        {
+          "case_id": "M1043_SELECTION_OWNERSHIP_AND_ACL",
+          "acceptance": "Select visible current-page images or exact site/page/file-owned explicit entries only after page ACL; exclude non-image, arbitrary, cross-site, missing, and private entries.",
+          "classification": "source_ready",
+          "reason": "VisibleFileLoader checks the parent page before file and revision queries, and integration tests cover current, private, explicit owned, cross-site, arbitrary, and non-image cases.",
+          "source_paths": [
+            "deepwell/src/services/render/compat/wikidot_gallery.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_gallery_selects_authorized_current_page_images_after_page_acl",
+            "deepwell/tests/page.rs::wikidot_gallery_explicit_entries_resolve_only_owned_visible_files"
+          ],
+          "evidence_ids": ["E_FOCUSED_CORPUS", "E_GALLERY_EMPTY"],
+          "next_command_ids": ["C_DEEPWELL_GALLERY"]
+        },
+        {
+          "case_id": "M1043_OPTIONS_MATRIX",
+          "acceptance": "Bind size, order, viewer defaults, accepted values, aliases, invalid values, duplicates, and empty occurrences to evidence-backed source tests.",
+          "classification": "needs_source",
+          "reason": "The implementation accepts a documented option set, but existing tests exercise only thumbnail and do not source-bind the full matrix or last-occurrence behavior.",
+          "source_paths": [
+            "deepwell/src/services/render/compat/wikidot_gallery.rs"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_FOCUSED_CORPUS", "E_V7_CORPUS"],
+          "missing_source": ["table-driven Gallery option conformance test"],
+          "next_command_ids": ["C_DEEPWELL_GALLERY"]
+        },
+        {
+          "case_id": "M1043_STATIC_THUMBNAIL_DOM",
+          "acceptance": "Emit the evidenced gallery-box, gallery-item, table, optional with-lb anchor, img class, escaped alt, and no script or Wikijump identifier.",
+          "classification": "source_ready",
+          "reason": "The renderer unit test exact-compares the frozen static thumbnail shape and negative script/identifier conditions.",
+          "source_paths": [
+            "deepwell/src/services/render/compat/wikidot_gallery.rs"
+          ],
+          "existing_tests": [
+            "deepwell/src/services/render/compat/wikidot_gallery.rs::tests::gallery_dom_matches_the_frozen_static_thumbnail_shape_without_scripts"
+          ],
+          "evidence_ids": ["E_FOCUSED_CORPUS"],
+          "next_command_ids": ["C_DEEPWELL_GALLERY", "C_IDENTIFIER_LEAKS"]
+        },
+        {
+          "case_id": "M1043_RESIZED_BLOB_IDENTITY",
+          "acceptance": "Use exact revision-bound original and resized blob identities and invalidate both after upload, delete, rename, or revision.",
+          "classification": "needs_source",
+          "reason": "Gallery currently uses the original local-file URL for both link and image, and WWS exposes no resized-image route.",
+          "source_paths": [
+            "deepwell/src/services/render/compat/wikidot_gallery.rs",
+            "wws/src/route.rs"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_FOCUSED_CORPUS"],
+          "missing_source": [
+            "resized asset model",
+            "revision-bound WWS route",
+            "mutation invalidation tests"
+          ],
+          "next_command_ids": ["C_DEEPWELL_GALLERY", "C_WWS"]
+        },
+        {
+          "case_id": "M1043_VIEWER_INTERACTION_CONTRACT",
+          "acceptance": "Match viewer open, close, next, previous, keyboard, focus, overlay, loading, error, custom link, and every intermediate state.",
+          "classification": "blocked_evidence",
+          "reason": "The frozen corpus proves static with-lb markup but not the interaction timeline; no generic lightbox may substitute for Wikidot behavior.",
+          "source_paths": ["framerail/src"],
+          "existing_tests": [],
+          "evidence_ids": ["E_FOCUSED_CORPUS"],
+          "missing_evidence": [
+            "viewer DOM and event timeline",
+            "focus and keyboard order",
+            "loading and error states",
+            "custom link behavior"
+          ],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M1043_RENDER_CACHE_IDENTITY",
+          "acceptance": "Invalidate compiled output from before Gallery resolution landed and bind the next read to the final renderer epoch and exact file revision.",
+          "classification": "needs_source",
+          "reason": "Gallery rendering landed after deepwell-render/v2, but the epoch remains v2 and no test proves old compiled output is rejected.",
+          "source_paths": [
+            "deepwell/src/services/render/generator.rs",
+            "deepwell/src/services/render/compat/wikidot_gallery.rs"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_GALLERY_EMPTY"],
+          "missing_source": [
+            "one final renderer epoch bump",
+            "observable old-artifact non-reuse test"
+          ],
+          "next_command_ids": ["C_RENDER_EPOCH"]
+        },
+        {
+          "case_id": "M1043_BROWSER_RENDER_AND_VIEWER",
+          "acceptance": "Verify initial and settled thumbnail request, natural dimensions, load/error, viewer lifecycle, navigation, focus, and client navigation against exact candidate blobs.",
+          "classification": "candidate_required",
+          "reason": "This claim spans Deepwell, WWS, Framerail, bytes, CSS, and temporal browser behavior.",
+          "source_paths": ["framerail/src", "wws/src"],
+          "existing_tests": [],
+          "evidence_ids": ["E_FOCUSED_CORPUS"],
+          "depends_on": [
+            "M1043_RESIZED_BLOB_IDENTITY",
+            "M1043_VIEWER_INTERACTION_CONTRACT",
+            "M1043_RENDER_CACHE_IDENTITY"
+          ],
+          "next_command_ids": [
+            "C_MEDIA_RUNTIME_CANDIDATE",
+            "C_MEDIA_BROWSER_CANDIDATE"
+          ]
+        }
+      ]
+    },
+    {
+      "issue": 1062,
+      "title": "Page file upload fails before blob commit",
+      "subrows": [
+        {
+          "case_id": "M1062_SERIALIZABLE_ACTION_RESPONSE",
+          "acceptance": "Return successful and failed multipart actions without an arbitrary File object in SvelteKit's serialized payload.",
+          "classification": "candidate_required",
+          "reason": "Source now returns withFiles({ form, res }), which addresses the historical cause, but no current test drives the real action through SvelteKit serialization.",
+          "source_paths": [
+            "framerail/src/lib/server/load/page/page-file-actions.ts"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_UPLOAD_HISTORICAL_FAILURE"],
+          "next_command_ids": ["C_MEDIA_RUNTIME_CANDIDATE"]
+        },
+        {
+          "case_id": "M1062_UPLOAD_TRANSACTION_ORDER",
+          "acceptance": "Check Page:Edit, then blob_upload, presigned PUT, and file_create in order, and expose the created file only after relation commit.",
+          "classification": "candidate_required",
+          "reason": "The source order is present and presigned HTTP errors are covered, but only one exact task-owned DB/files candidate can prove the transaction and next read.",
+          "source_paths": [
+            "framerail/src/lib/server/deepwell/page-file.ts",
+            "framerail/src/lib/server/deepwell/file.ts",
+            "deepwell/src/endpoints/blob.rs",
+            "deepwell/src/endpoints/file.rs"
+          ],
+          "existing_tests": [
+            "framerail/tests/presigned-upload.test.js",
+            "framerail/tests/page-file-client-ip.test.js"
+          ],
+          "evidence_ids": ["E_UPLOAD_HISTORICAL_FAILURE"],
+          "next_command_ids": [
+            "C_FRAMERAIL_MEDIA_UNIT",
+            "C_MEDIA_RUNTIME_CANDIDATE"
+          ]
+        },
+        {
+          "case_id": "M1062_PAGE_AND_BLOB_OWNERSHIP",
+          "acceptance": "Require parent-page edit permission and exact site/page/blob ownership; reject client authority over another pending blob.",
+          "classification": "needs_source",
+          "reason": "Parent-page edit denial is covered and BlobService checks the pending creator, but no source-level integration test binds an authorized file_create request to its own pending blob while rejecting another user's or cross-site attachment attempt.",
+          "source_paths": [
+            "deepwell/src/services/file",
+            "deepwell/src/endpoints/blob.rs",
+            "deepwell/src/endpoints/file.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::file_mutations_require_parent_page_edit_permission"
+          ],
+          "evidence_ids": ["E_UPLOAD_HISTORICAL_FAILURE"],
+          "missing_source": [
+            "file_create integration test for pending blob creator identity",
+            "cross-user and cross-site pending blob negative controls"
+          ],
+          "next_command_ids": ["C_DEEPWELL_FILE_ACL"]
+        },
+        {
+          "case_id": "M1062_FAILURE_CLEANUP",
+          "acceptance": "On presign, PUT, timeout, or file_create failure, create no file relation, leave no public route, cancel pending state, and preserve list/cache state.",
+          "classification": "needs_source",
+          "reason": "cancelBlobUpload exists but the page file create/edit flows do not call it in failure paths and no atomic cleanup test exists.",
+          "source_paths": [
+            "framerail/src/lib/server/deepwell/file.ts",
+            "framerail/src/lib/server/deepwell/page-file.ts"
+          ],
+          "existing_tests": ["framerail/tests/presigned-upload.test.js"],
+          "evidence_ids": ["E_UPLOAD_HISTORICAL_FAILURE"],
+          "missing_source": [
+            "pending upload cleanup in create/edit failure paths",
+            "failure matrix test"
+          ],
+          "next_command_ids": [
+            "C_FRAMERAIL_MEDIA_UNIT",
+            "C_MEDIA_RUNTIME_CANDIDATE"
+          ]
+        },
+        {
+          "case_id": "M1062_DUPLICATE_AND_UNICODE_POLICY",
+          "acceptance": "Handle a second same-name upload, non-ASCII filename, empty name, and override name according to observed Wikidot policy.",
+          "classification": "blocked_evidence",
+          "reason": "The historical run failed before the first file existed, so it observed no duplicate, Unicode, or naming policy. The issue itself requires live evidence before fixing these expectations.",
+          "source_paths": [],
+          "existing_tests": [],
+          "evidence_ids": ["E_UPLOAD_HISTORICAL_FAILURE"],
+          "missing_evidence": [
+            "same-name policy",
+            "Unicode normalization and display",
+            "empty and override name behavior"
+          ],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M1062_BROWSER_UPLOAD_FLOW",
+          "acceptance": "Verify select, upload, loading, error, success, list refresh, reload, exact download bytes, double submit, and absence of HTTP 500 or blank action responses.",
+          "classification": "candidate_required",
+          "reason": "This is a stateful temporal workflow spanning SvelteKit, Deepwell, object storage, WWS, and browser UI.",
+          "source_paths": ["framerail/src", "deepwell/src", "wws/src"],
+          "existing_tests": [],
+          "evidence_ids": ["E_UPLOAD_HISTORICAL_FAILURE"],
+          "depends_on": [
+            "M1062_FAILURE_CLEANUP",
+            "M1062_DUPLICATE_AND_UNICODE_POLICY"
+          ],
+          "next_command_ids": [
+            "C_MEDIA_RUNTIME_CANDIDATE",
+            "C_MEDIA_BROWSER_CANDIDATE"
+          ]
+        }
+      ]
+    }
+  ],
+  "renderer_epoch_finalization": {
+    "classification": "needs_source",
+    "current_epoch": 2,
+    "epoch_source": "deepwell/src/services/render/generator.rs",
+    "owner": "root integration after all render-affecting lanes are source-frozen",
+    "required_bump_count": 1,
+    "lane_must_not_bump": true,
+    "epoch_v2_introduced_by": {
+      "commit": "e4e0db58c9828684d8bacf4d4020b19da6b8d180",
+      "subject": "feat(render): resolve typed Wikidot media embeds"
+    },
+    "production_renderer_commits_after_v2_through_observed_integration_head": [
+      {
+        "commit": "606adbd805df63a0412cad9306b6e5e37476de61",
+        "subject": "fix(render): scope embed marker rejection"
+      },
+      {
+        "commit": "4f6336c7c5727564ed1b8e52e89e250bff9657da",
+        "subject": "fix(deepwell): render legacy range errors in previews"
+      },
+      {
+        "commit": "6c657690b97fbdb9cf2c9a565371bcac9841d8c0",
+        "subject": "fix(deepwell): keep backlink provenance internal"
+      },
+      {
+        "commit": "803718b6d3b664b70231aea4b7a7945866ab9a5b",
+        "subject": "test(search): bind rendering to frozen live cases"
+      },
+      {
+        "commit": "9f613978a5dce2aaee842de90c3aba4035e42800",
+        "subject": "feat(deepwell): add actor-bound membership join"
+      },
+      {
+        "commit": "86ad95d6a6d9154f94ba349861cba27237b0ea24",
+        "subject": "fix(membership): generalize closed policy handling"
+      },
+      {
+        "commit": "4273705960cb421e470ae82d1b3e939776702a88",
+        "subject": "fix(rate): preserve exact inert legacy controls"
+      },
+      {
+        "commit": "475cf350d433d5f3d67ea58180966360d0084ac3",
+        "subject": "fix(render): preserve generated EmbedVideo provenance"
+      },
+      {
+        "commit": "3b2376abd91e05b98165f39f6b84fb59a02e98d8",
+        "subject": "query: render permission-aware forum read models"
+      },
+      {
+        "commit": "1398271cf09c8f515afe03df7a47622dfb7734d6",
+        "subject": "fix(forum): bind formatted user fields explicitly"
+      },
+      {
+        "commit": "eb05a3a73db1ad5ce4a743250a9d9dc67630bef5",
+        "subject": "render: resolve permission-checked file media"
+      },
+      {
+        "commit": "567c4457d401d8ea5b4de1473b9d5e9765b68a3c",
+        "subject": "fix(files): bind empty state identifiers explicitly"
+      },
+      {
+        "commit": "f4b16f232647f35ec1aab6b101139f813fa13968",
+        "subject": "feat(deepwell): add site-scoped user directory rendering"
+      },
+      {
+        "commit": "8a42291c7c7f5b977005da64910bbc447a3ddd5a",
+        "subject": "fix(deepwell): fail closed for FeaturedSite"
+      },
+      {
+        "commit": "24cf8c86a161cb74430064bc9b0737437e781b4e",
+        "subject": "fix(users): bind directory render fields explicitly"
+      },
+      {
+        "commit": "240752f4d773f869f2285138cc07b604ac5bec86",
+        "subject": "fix(users): bind numeric identity fixture explicitly"
+      },
+      {
+        "commit": "811abba849fc6c05f732895f2e8d8c08754df2d9",
+        "subject": "fix(query): require complete link scans before ACL filtering"
+      },
+      {
+        "commit": "eeab575696dea0d01b27fb5c2aca25ef95f0da79",
+        "subject": "render: add frozen site utility states"
+      },
+      {
+        "commit": "70a27706147edd457784e951506d2100c57761d3",
+        "subject": "feat(rate): bind Wikidot controls to trusted vote actions"
+      },
+      {
+        "commit": "2edfc82b19d6198b0a3173985bf0f315df863134",
+        "subject": "fix(listpages): execute includes in plain selected content"
+      },
+      {
+        "commit": "78d83cb920a7ea72626f2bcfc747f1493686900b",
+        "subject": "build(deepwell): pin merged FTML ownership boundary"
+      },
+      {
+        "commit": "4f08bf6adef436224c7207882d29534ab9b2fa6b",
+        "subject": "render: add actor-scoped page graph snapshots"
+      },
+      {
+        "commit": "1130665f886d6c0a423628cf5917656a8f79a84f",
+        "subject": "render: consume typed empty SiteGrid modules"
+      },
+      {
+        "commit": "a06583d25364de84c46d627f702a98cc8c99eb50",
+        "subject": "fix(deepwell): fail closed for unsupported MailForm actions"
+      }
+    ],
+    "source_freeze_actions": [
+      "Recompute the commit list from e4e0db58c9828684d8bacf4d4020b19da6b8d180 through the final integration head.",
+      "Bump DEEPWELL_RENDERER_EPOCH exactly once after every renderer lane is committed.",
+      "Replace tests that hard-code deepwell-render/v2 with the final identity.",
+      "Add and run C_RENDER_EPOCH before the expensive runtime candidate.",
+      "Require an observable cache miss or rerender: an old v2 compiled artifact or cache key must not be reused even when its final HTML happens to equal the new output."
+    ]
+  },
+  "reconciliation": {
+    "issue_count": 7,
+    "subrow_count": 43,
+    "classification_counts": {
+      "source_ready": 15,
+      "needs_source": 10,
+      "candidate_required": 10,
+      "blocked_evidence": 8
+    },
+    "duplicate_case_ids": 0,
+    "unknown_classifications": 0,
+    "closure_claims": 0
+  }
+}
