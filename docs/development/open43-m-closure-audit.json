@@ -63,6 +63,64 @@
     "public_boundary": "Deepwell emits original and resized typed identities; WWS freshly resolves page identity and actor-bound file_get before MIME, size, ETag, S3, or decode decisions.",
     "source_ready_is_not_pass": true
   },
+  "file_descriptor_lane_amendment": {
+    "scope_case_ids": [
+      "M1039_FILES_NONEMPTY_ROW_CORE",
+      "M1039_FILES_BYTE_DERIVED_TYPE"
+    ],
+    "base_commit": "71280483144a22ba113e6f247be20e50d5814116",
+    "public_boundary": "Anonymous PagePreview retains the identity-free empty Files contract; a saved article_view completes Page:View before one bounded active-file/latest-revision query and emits a row only when its persisted descriptor authority is complete.",
+    "descriptor_authority": {
+      "local_uploads": "The existing filemagic/libmagic dependency analyzes the immutable uploaded bytes once during finalization; retry state persists the paired label and description before a file revision can commit. This establishes a byte-derived local authority but does not claim exact Wikidot descriptor parity.",
+      "corpus_imports": "Descriptor-bearing direct staging is the canonical attachment import path. The importer byte-matches each attachment SHA-256 to corpus snapshot mime_description provenance, persists the exact description and its evidenced comma-prefix label in the same file-revision transaction, and rejects RPC attachment creation rather than transiently exposing a current-host descriptor.",
+      "metadata_revisions": "Rename, move, tombstone, resurrection, and rollback carry the descriptor paired with the selected immutable blob revision.",
+      "absent_authority": "A missing latest revision, descriptor, invalid descriptor, orphan file, moderated row-required field, unknown hidden field, sixteenth active row, or unobserved sub-1 KiB size leaves the Files module on the literal unsupported path."
+    },
+    "exact_live_corpus_hashes": {
+      "live_evidence_id": "E_OPEN43_FILES_ROWS_20260810",
+      "live_raw_sha256s": {
+        "m1039-files-scp-049": "16e3518edfe6d97e7e7483eeb295b139424e07b8d40b5bcbd8503bbf2a8c4c5d",
+        "m1039-files-scp-106": "cd65c46f4939a8d381c7a4015d9967701e1dc97da0ee6b63d23c3b2a309ea380",
+        "m1039-files-scp-682": "59858bed1745233054fbc3bbbb656c13c340ae0b0eca007b1f57aae1ae0b5208"
+      },
+      "corpus_root": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus",
+      "corpus_branch": "en",
+      "corpus_index_sha256": "0b5eb886895aa00b9aeed3046eb21ed6881c831102cb2762008e921a8c64646c",
+      "matched_record_set_sha256": "e9feec633cba998359b6d7d9192d12f3704d386420a4ffa33923a5eb5cb2c591",
+      "attachment_sha256_set_sha256": "7e16d7d56422ee6dff605d325767ca745b4138bcaa56b7c7da964a326fcf3cf5",
+      "corpus_snapshot_path_sha256_set_sha256": "98404da27f0214f728081e13c9b6dfc07b6d3e8557a7e8a5b429710d0809508d",
+      "matched_record_digest_shape": "Sort UTF-8 records by the complete NUL-delimited record, join fields case_id, fullname, filename, attachment_sha256, corpus_snapshot_path, corpus_snapshot_sha256, live_label, and HTML-decoded live_description with NUL, join records with LF, and append one final LF.",
+      "proof": {
+        "populated_live_rows": 30,
+        "byte_matched_corpus_rows": 30,
+        "corpus_description_equals_live_span_title": 30,
+        "description_prefix_before_first_comma_equals_live_span_text": 30
+      }
+    },
+    "migration_path": "deepwell/migrations/20260810010000_file_content_type_descriptor.sql",
+    "dependency_lock_mutation": "none; filemagic is already present and no Cargo or pnpm manifest changed",
+    "standing_backfill": {
+      "runbook": "install/local/wikidot-verification/README.md#standing-file-descriptor-backfill",
+      "script": "install/local/wikidot-verification/scripts/backfill-corpus-file-descriptors.mjs",
+      "target_identity": "Every inventory and completion transaction requires the exact active pair site_id 6000006 and site slug scp-wiki; site_id 6000005 is template-en and must fail the guard.",
+      "single_authority": "Every active target-site file requires exact fullname, filename, and stored-byte SHA-256 corpus mime_description provenance. The command has no system file fallback and does not interpret file.from_wikidot or revision comments as import authority.",
+      "legacy_fixture_fact": "The task-owned wj-open43-pr2-db clone has 31 active files and 36 revisions, all file.from_wikidot false and all revision comments empty; missing exact corpus provenance therefore blocks rather than selecting a local fallback.",
+      "predeploy_requirement": "Quiesce file mutations and require zero pre-migration blob_pending rows with s3_hash IS NOT NULL, because the old binary could not persist their descriptor authority.",
+      "phase_contract": "A metadata-only preflight seals baseline completion, deterministic keyset inventory batches, corpus denominator, and provenance_matched/provenance_missing before any S3 read. Any orphan latest revision, moved pending descriptor gap, inventory count mismatch, ambiguous candidate, or missing provenance blocks with staging and rerender counts both zero. Byte verification of every sealed batch precedes the first materialization batch.",
+      "current_preflight_observation": {
+        "status": "blocked_external_provenance",
+        "standing_active_latest_files": 50301,
+        "standing_active_latest_bytes": 23139838970,
+        "corpus_snapshots_total": 24464,
+        "corpus_snapshots_with_descriptor": 24454,
+        "corpus_descriptor_bytes": 8505207093,
+        "corpus_snapshot_file_set_sha256": "329988eba0e750d33e4ea7ac3556a6e152416089d753286495b20992c85b67f9",
+        "claim": "pre-run diagnostic only; standing materialization remains pending until the missing corpus provenance is acquired"
+      },
+      "completion_requirement": "The future resumable receipt must be done with zero provenance blockers, zero active missing or invalid descriptors, zero moved pending blobs missing descriptors, and metadata, byte-preflight, rows-completed, corpus-authority, and staging counts each equal to the final active-file count after every changed saved page has publicly rerendered."
+    },
+    "source_ready_is_not_pass": true
+  },
   "renderer_epoch_lane_amendment": {
     "scope_case_ids": [
       "M1039_RENDER_CACHE_IDENTITY",
@@ -279,6 +337,28 @@
       "command": "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
+    },
+    "C_DEEPWELL_FILES_ROWS": {
+      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_files_saved_view_renders_only_authoritative_bounded_rows -- --exact --nocapture",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_DEEPWELL_BLOB_DESCRIPTOR": {
+      "command": "cargo test --manifest-path deepwell/Cargo.toml mime_request -- --nocapture",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_CORPUS_FILE_DESCRIPTOR_UNIT": {
+      "command": "node --test install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs install/local/wikidot-verification/tests/corpus-attachment-direct.test.mjs install/local/wikidot-verification/tests/corpus-attachment-direct-upload.test.mjs install/local/wikidot-verification/tests/corpus-attachment-staging-sql.test.mjs install/local/wikidot-verification/tests/corpus-import-attachments.test.mjs install/local/wikidot-verification/tests/corpus-import-apply-safety.test.mjs install/local/wikidot-verification/tests/corpus-file-descriptor-backfill.test.mjs install/local/wikidot-verification/tests/corpus-file-descriptor-backfill-cli.test.mjs",
+      "phase": "source_barrier",
+      "exists_now": true
+    },
+    "C_STANDING_FILE_DESCRIPTOR_BACKFILL": {
+      "command": "node install/local/wikidot-verification/scripts/backfill-corpus-file-descriptors.mjs --corpus-root /home/roku/src/Rokurolize/scp-wiki-translation/corpus --branch en --site-id 6000006 --site-slug scp-wiki --db-container wikijump-standing-database-1 --api-url http://127.0.0.1:12747/jsonrpc --batch-size 200 --concurrency 16 --receipt /absolute/evidence/path/scp-wiki-file-descriptor-backfill.json",
+      "phase": "standing_cutover",
+      "exists_now": true,
+      "required_environment": "Quiesced file mutations, migrated exact wikijump-standing-database-1 target, and the site_id 6000006 plus scp-wiki slug guard. S3 credentials and the exact activated Deepwell plus DEEPWELL_RPC_TOKEN are required only after metadata coverage reaches 100 percent and byte_preflight begins.",
+      "current_blocker": "The pre-run denominator is 50,301 active latest standing files versus 24,454 descriptor-bearing corpus snapshots; metadata_preflight must return blocked with zero staging and zero rerenders until provenance is repaired."
     },
     "C_DEEPWELL_SITE_ICONS": {
       "command": "cargo test --manifest-path deepwell/Cargo.toml --test site site_update_restricts_icon_sources_to_site_owned_routes -- --exact --nocapture",
@@ -910,9 +990,9 @@
         },
         {
           "case_id": "M1039_FILES_SAVED_EMPTY_AND_ACL",
-          "acceptance": "Bind the saved empty wrapper and refresh script to one page identity, while denied or missing pages reveal no page or file identity and query files only after Page:View.",
+          "acceptance": "Render the saved empty text and an internally consistent refresh script with the saved page ID, while denied or missing pages reveal no page or file identity and query files only after Page:View; exact saved container suffix identity is tracked separately.",
           "classification": "source_ready",
-          "reason": "The renderer uses AuthorizedPageSelector before FileService::get_all and the integration test covers public saved and denied private states.",
+          "reason": "The renderer uses AuthorizedPageSelector before the bounded file query and the integration test covers public saved and denied private states. The saved test proves only that the local container ID, function suffix, and selector agree with each other and that p.page_id is the saved page ID; it does not claim the local suffix equals Wikidot's distinct module-instance suffix.",
           "source_paths": ["deepwell/src/services/render/file_modules.rs"],
           "existing_tests": [
             "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts"
@@ -922,71 +1002,119 @@
         },
         {
           "case_id": "M1039_FILES_NONEMPTY_ROW_CORE",
-          "acceptance": "After Page:View, render the observed PageFilesSimpleModule table header and active rows with exact escaped file name, owned /local--files/{page}/{file} href, human-readable byte size, file-ID Info action, wrapper, refresh script, and manage-attachments link; the observed table has no date or user columns.",
-          "classification": "needs_source",
-          "reason": "Three populated and three empty public controls establish the row structure, but FilesModuleState currently discards the authorized inventory and leaves every nonempty module on the unsupported path. A public PagePreview and saved page_view regression and an ACL-first bounded row service are absent.",
-          "public_seam": "Deepwell PagePreview and saved page_view after the complete actor-aware Page:View decision.",
+          "acceptance": "After Page:View, render the observed PageFilesSimpleModule table header and active rows with exact escaped file name, owned /local--files/{page}/{file} href, observed kB or MB size, file-ID Info action, internally consistent refresh script, and manage-attachments link; the observed table has no date or user columns, while exact container suffix identity is tracked separately.",
+          "classification": "source_ready",
+          "reason": "The saved article_view regression binds the observed escaped name, owned local-file href, exact descriptor span, kB size, file-ID Info action, header, refresh script, manage link, and absence of date/user columns. Its container assertion proves only local suffix self-consistency, not Wikidot suffix parity. The renderer completes Page:View before a single latest-revision lateral query bounded at fifteen plus one; missing authority, an orphan revision, a hidden name, s3_hash, MIME, or size field, an unknown hidden field, a sixteenth row, or an unobserved sub-1 KiB size leaves the module literal. Actor-specific moderated presentation remains unclaimed. PagePreview retains the identity-free frozen empty response.",
+          "public_seam": "Deepwell saved article_view after the complete actor-aware Page:View decision; PagePreview has no saved identity and is covered only by the separate empty contract.",
           "current_authority": {
             "available": [
               "file.file_id, file.name, file.page_id, and file.site_id",
-              "latest file_revision MIME, size, and blob identity",
+              "latest file_revision size, blob identity, and paired persisted content descriptor",
               "authorized page slug and site ownership for the local-file href"
             ],
-            "query_boundary": "Page:View must complete before active file or latest revision metadata is loaded."
+            "query_boundary": "Page:View completes before active file or latest revision metadata is loaded; the query returns at most fifteen rows and one overflow sentinel."
           },
           "must_not_approximate": [
             "Do not load file metadata before Page:View.",
             "Do not emit a partial row with a missing or inferred type cell.",
+            "Do not expose a row whose latest revision hides a row-required field or names an unknown hidden field.",
             "Do not fetch one blob per row during rendering."
           ],
-          "future_minimum": "Add one ACL-first, bounded visible_file_rows service that joins active files to their latest revisions in one paginated query and returns the persisted byte-derived type descriptor required by M1039_FILES_BYTE_DERIVED_TYPE.",
+          "implemented_boundary": "FileService::get_visible_rows joins active files to their latest revision in one bounded query and returns only complete persisted descriptors with no hidden row-required or unknown fields; expand_file_modules calls it only after AuthorizedPageSelector permits Page:View and emits only the evidenced kB/MB range.",
           "source_paths": [
             "deepwell/src/services/render/file_modules.rs",
             "deepwell/src/services/file",
-            "deepwell/src/services/file_revision"
+            "deepwell/src/services/file_revision",
+            "deepwell/tests/page.rs"
           ],
-          "existing_tests": [],
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts",
+            "deepwell/tests/page.rs::wikidot_files_saved_view_renders_only_authoritative_bounded_rows"
+          ],
           "evidence_ids": [
             "E_FILES_SAVED_EMPTY",
             "E_OPEN43_FILES_ROWS_20260810"
           ],
           "depends_on": ["M1039_FILES_BYTE_DERIVED_TYPE"],
-          "next_command_ids": []
+          "next_command_ids": [
+            "C_DEEPWELL_FILES",
+            "C_DEEPWELL_FILES_ROWS",
+            "C_DEEPWELL_FMT",
+            "C_DEEPWELL_CLIPPY",
+            "C_STANDING_FILE_DESCRIPTOR_BACKFILL"
+          ]
         },
         {
           "case_id": "M1039_FILES_BYTE_DERIVED_TYPE",
           "acceptance": "Render the exact observed file-type span label and title from persisted content analysis, including image dimensions and encoding, EXIF or JFIF distinctions, and audio ID3 and codec details when present.",
-          "classification": "needs_source",
-          "reason": "file_revision stores MIME and size but no byte-derived label or title. The live matrix proves that one MIME family has multiple titles and that titles contain dimensions, EXIF or JFIF, ID3, and codec data that cannot be derived from MIME or filename. MimeAnalyzer exposes only MagicFlags::MIME, and no bounded persisted descriptor service exists.",
-          "public_seam": "The file-type span inside each authorized Deepwell PagePreview and saved page_view Files row.",
+          "classification": "source_ready",
+          "reason": "The migration adds a paired immutable descriptor to file_revision and moved blob retry state. New local uploads analyze held bytes with the existing filemagic/libmagic dependency, which establishes byte-derived authority without claiming exact Wikidot descriptor parity; metadata-only revisions carry the selected blob descriptor. Canonical corpus import uses descriptor-bearing direct staging, and the standing scp-wiki backfill requires byte-matched mime_description provenance and persists its exact title plus the first-comma prefix only because all 30 populated live rows match that transformation. The backfill treats every active target row as corpus-owned regardless of unreliable legacy flags or comments, has no host-libmagic fallback, requires the exact active site_id 6000006 and scp-wiki slug pair, and blocks before S3 or mutation when exact metadata provenance is absent. Current standing coverage is only 24,454 descriptor-bearing corpus snapshots for 50,301 active latest files, so materialization remains pending and rendering fails closed where authority is absent.",
+          "public_seam": "The file-type span inside each authorized saved Deepwell article_view Files row; PagePreview has no saved file row.",
           "current_authority": {
-            "available": ["file_revision.mime", "file_revision.size", "file_revision.s3_hash"],
-            "missing": ["content_type_label", "content_type_description"],
-            "ingestion_fact": "BlobService::direct_upload already holds the complete bytes once before the file revision is committed; corpus import currently materializes only filename, path, hash, MIME, and size."
+            "available": [
+              "file_revision.mime, file_revision.size, and file_revision.s3_hash",
+              "file_revision.content_type_label and file_revision.content_type_description",
+              "blob_pending paired descriptor authority for idempotent moved-upload retry",
+              "byte-matched corpus snapshot mime_description provenance"
+            ],
+            "ingestion_fact": "BlobService finalization analyzes the complete immutable bytes before the revision commits; canonical corpus direct staging binds the exact attachment SHA-256 to the matching captured snapshot description and commits them together."
           },
           "must_not_approximate": [
             "Do not map extensions or MIME strings to Wikidot labels or titles.",
             "Do not substitute MIME for the byte-derived title.",
             "Do not fetch active S3 blobs per render or rely on the host's unpinned magic database at render time."
           ],
-          "future_minimum": "Persist immutable content_type_label and content_type_description fields on each file revision. Produce them once from already-held bytes in the bounded upload finalization worker, carry them unchanged through metadata-only revisions, materialize and backfill the same fields during corpus attachment import, and expose no fallback row until every active latest revision has the descriptor.",
+          "blocked_residual": {
+            "case_id": "M1039_FILES_LOCAL_UPLOAD_DESCRIPTOR_PARITY",
+            "classification": "blocked_evidence",
+            "reason": "The local producer is byte-derived, but current-host libmagic descriptions differ from byte-matched Wikidot corpus descriptions on 14 of 29 available comparison objects. No source-ready claim covers exact Wikidot descriptor text for new local uploads.",
+            "missing_evidence": "Live sandbox upload observations and boundary controls for each descriptor family, bound to exact uploaded bytes and Wikidot output."
+          },
+          "standing_prerequisite": "Before promotion, quiesce file mutations, require zero pre-migration moved blob_pending rows, apply the migration chain, run the metadata preflight against exact site_id 6000006, site slug scp-wiki, and standing database container identity, acquire the currently missing corpus provenance, require zero metadata and byte provenance blockers plus the terminal all-active-row completion proof, and verify the rerendered public page on the exact activated runtime. The observed 24,454-of-50,301 coverage is a blocker, not completion.",
           "source_paths": [
+            "deepwell/migrations/20260810010000_file_content_type_descriptor.sql",
             "deepwell/src/models/file_revision.rs",
+            "deepwell/src/models/blob_pending.rs",
             "deepwell/src/services/blob/mime.rs",
             "deepwell/src/services/blob/service.rs",
             "deepwell/src/services/file_revision",
             "install/local/wikidot-verification/src/corpus-import-manifest.mjs",
-            "install/local/wikidot-verification/src/corpus-attachment-staging-sql.mjs"
+            "install/local/wikidot-verification/src/corpus-attachment-staging-sql.mjs",
+            "install/local/wikidot-verification/scripts/apply-corpus-import-manifest.mjs",
+            "install/local/wikidot-verification/src/corpus-file-descriptor-backfill.mjs",
+            "install/local/wikidot-verification/scripts/backfill-corpus-file-descriptors.mjs",
+            "install/local/wikidot-verification/README.md"
           ],
-          "existing_tests": [],
+          "existing_tests": [
+            "deepwell/src/services/blob/mime.rs::mime_request",
+            "deepwell/tests/page.rs::file_create_commits_only_its_actor_and_route_owned_pending_blob",
+            "deepwell/tests/page.rs::wikidot_files_saved_view_renders_only_authoritative_bounded_rows",
+            "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs::buildCorpusImportManifest uses the byte-matched canonical file snapshot descriptor",
+            "install/local/wikidot-verification/tests/corpus-attachment-direct.test.mjs::planDirectAttachmentMaterialization fails closed on an absent content descriptor",
+            "install/local/wikidot-verification/tests/corpus-attachment-staging-sql.test.mjs::buildAttachmentStagingSql can require an existing byte-matched file",
+            "install/local/wikidot-verification/tests/corpus-import-apply-safety.test.mjs::apply-corpus-import-manifest rejects RPC corpus attachments before host descriptors can render",
+            "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill.test.mjs::standing descriptor backfill binds stored bytes to exact corpus provenance",
+            "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill.test.mjs::standing clone legacy flags do not authorize fallback for its 31 active files and 36 revisions",
+            "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill.test.mjs::standing descriptor inventory is a bounded public-page identity query",
+            "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill-cli.test.mjs::standing descriptor backfill blocks all writes before materialization when metadata provenance is incomplete",
+            "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill-cli.test.mjs::standing descriptor backfill blocks an active orphan before inventory or materialization"
+          ],
           "evidence_ids": ["E_OPEN43_FILES_ROWS_20260810"],
-          "next_command_ids": []
+          "next_command_ids": [
+            "C_DEEPWELL_BLOB_DESCRIPTOR",
+            "C_DEEPWELL_UPLOAD_OWNERSHIP",
+            "C_DEEPWELL_MIGRATION_CHAIN",
+            "C_CORPUS_FILE_DESCRIPTOR_UNIT",
+            "C_DEEPWELL_FMT",
+            "C_DEEPWELL_CLIPPY",
+            "C_STANDING_FILE_DESCRIPTOR_BACKFILL"
+          ]
         },
         {
           "case_id": "M1039_FILES_PAGINATION_AND_HISTORY",
-          "acceptance": "Define exact ordering and pagination beyond the observed row count, duplicate-looking and Unicode names, deleted-file presentation, and revision presentation.",
+          "acceptance": "Define exact ordering and pagination beyond the observed row count, duplicate-looking and Unicode names, sub-1 KiB and boundary byte-size formatting, deleted-file presentation, and revision presentation.",
           "classification": "blocked_evidence",
-          "reason": "The three populated controls contain at most fifteen active rows and do not exercise a pager, duplicate-looking or Unicode names, deletion, or historical revisions. Those behaviors cannot be inferred from the observed core table.",
+          "reason": "The three populated controls contain at most fifteen active rows, all sized in kB or MB, and do not exercise a pager, duplicate-looking or Unicode names, deletion, or historical revisions. Ordering, pagination, bytes-unit formatting, boundary rounding, and history cannot be inferred from the observed core table.",
           "public_seam": "Deepwell saved page_view and the page-number transition for Files on an authorized page.",
           "source_paths": [
             "deepwell/src/services/render/file_modules.rs",
@@ -998,7 +1126,33 @@
           "missing_evidence": [
             "ordering and pagination beyond fifteen rows",
             "duplicate-looking and Unicode names",
+            "sub-1 KiB bytes-unit formatting and unit-boundary rounding",
             "deleted-file and revision presentation"
+          ],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M1039_FILES_CONTAINER_SUFFIX_IDENTITY",
+          "acceptance": "Derive the exact saved Files container, function, and selector suffix while preserving the distinct p.page_id page identity for empty and populated modules.",
+          "classification": "blocked_evidence",
+          "reason": "Live saved responses prove the suffix is not the page ID: scp-682 uses files-325178 with p.page_id=1956155, and the saved empty control uses files-780892 with p.page_id=1469022289. The available runtime model has no evidenced authority for Wikidot's module-instance suffix, and repeated-module or lifecycle boundaries are not frozen. Current public tests intentionally prove only local suffix self-consistency.",
+          "public_seam": "Saved article_view for empty and populated Files modules; PagePreview remains the separately evidenced empty suffix.",
+          "source_paths": [
+            "deepwell/src/services/render/file_modules.rs",
+            "deepwell/tests/page.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts",
+            "deepwell/tests/page.rs::wikidot_files_saved_view_renders_only_authoritative_bounded_rows"
+          ],
+          "evidence_ids": [
+            "E_FILES_SAVED_EMPTY",
+            "E_OPEN43_FILES_ROWS_20260810"
+          ],
+          "missing_evidence": [
+            "the suffix source and lifecycle",
+            "multiple Files modules on one saved revision",
+            "stability across rerender and page revision"
           ],
           "next_command_ids": []
         },
@@ -1728,12 +1882,12 @@
   },
   "reconciliation": {
     "issue_count": 7,
-    "subrow_count": 47,
+    "subrow_count": 48,
     "classification_counts": {
-      "source_ready": 25,
-      "needs_source": 2,
+      "source_ready": 27,
+      "needs_source": 0,
       "candidate_required": 11,
-      "blocked_evidence": 9
+      "blocked_evidence": 10
     },
     "duplicate_case_ids": 0,
     "unknown_classifications": 0,

@@ -236,6 +236,12 @@ test('createHttpObjectStoreClient validates configuration and signs HEAD and PUT
       objects.set(pathKey(url), Buffer.from(options.body));
       return response(200);
     }
+    if (options.method === 'GET') {
+      const bytes = objects.get(pathKey(url));
+      return bytes === undefined
+        ? response(404)
+        : response(200, {'content-length': String(bytes.byteLength)}, bytes);
+    }
     return response(405);
   };
 
@@ -251,11 +257,13 @@ test('createHttpObjectStoreClient validates configuration and signs HEAD and PUT
   assert.deepEqual(await client.headObject(objectKey), { exists: false });
   await client.putObject(objectKey, objectBytes, {contentType: 'text/plain'});
   assert.deepEqual(await client.headObject(objectKey), { exists: true, size: objectBytes.byteLength, contentType: 'text/plain' });
+  assert.deepEqual(await client.getObject(objectKey), objectBytes);
 
   assert.deepEqual(calls.map((call) => [call.method, call.url]), [
     ['HEAD', `http://localhost:9000/wikijump/${objectKey}`],
     ['PUT', `http://localhost:9000/wikijump/${objectKey}`],
     ['HEAD', `http://localhost:9000/wikijump/${objectKey}`],
+    ['GET', `http://localhost:9000/wikijump/${objectKey}`],
   ]);
   assert.equal(calls[0].headers['x-amz-date'], '20260708T123456Z');
   assert.equal(calls[0].headers['x-amz-content-sha256'], sha256Hex(Buffer.from('')));
@@ -265,13 +273,16 @@ test('createHttpObjectStoreClient validates configuration and signs HEAD and PUT
   assert.match(calls[1].headers.authorization, /SignedHeaders=content-length;content-type;host;x-amz-content-sha256;x-amz-date/u);
 });
 
-function response(status, headers = {}) {
+function response(status, headers = {}, bytes = Buffer.alloc(0)) {
   return {
     status,
     headers: {
       get(name) {
         return headers[name.toLowerCase()] ?? null;
       },
+    },
+    async arrayBuffer() {
+      return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
     },
   };
 }

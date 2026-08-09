@@ -207,6 +207,17 @@ export function createHttpObjectStoreClient({
         contentType: responseHeader(response, 'content-type'),
       };
     },
+    async getObject(key) {
+      const response = await request('GET', key);
+      if (response.status === 404) return null;
+      if (response.status !== 200) throw s3Error(response, 'GET', key);
+      const expectedSize = responseSize(response, key);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      if (bytes.byteLength !== expectedSize) {
+        throw new Error(`GET size mismatch for ${key}: expected ${expectedSize}, got ${bytes.byteLength}`);
+      }
+      return bytes;
+    },
     async putObject(key, bytes, { contentType = 'application/octet-stream' } = {}) {
       const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
       const response = await request('PUT', key, { body, contentType });

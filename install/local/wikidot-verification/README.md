@@ -125,6 +125,52 @@ node install/local/wikidot-verification/scripts/apply-corpus-import-manifest.mjs
 
 After import, run the saved-page rerender command above for the same case IDs and exact runtime identity, then run the HTTPS differential.
 
+Corpus attachment rows use descriptor-bearing direct staging as their canonical import path. Run `apply-corpus-import-manifest.mjs` with `--attachment-create-mode direct`, or use `--skip-attachments` to defer them. The command rejects RPC attachment creation for selected corpus attachments because `file_create` would first commit the current host's libmagic descriptor and its post-commit outdate worker could make that approximation servable before corpus provenance replaced it.
+
+## Standing file descriptor backfill
+
+The file content descriptor migration is additive and nullable so the standing database can migrate without rewriting every file revision in one transaction. A normal standing refresh runs SQL migrations but does not reimport the corpus. The source change can land with descriptor-less Files modules failing closed, but the standing runtime cannot claim Files row completion until `backfill-corpus-file-descriptors.mjs` has a terminal receipt for every active latest revision and every affected public page has rerendered.
+
+Quiesce file mutations before the preflight and keep them quiesced through migration, activation of the new Deepwell binary, and backfill completion. The old binary can leave a finalized retry row in `blob_pending` without a descriptor. Wait for the normal `PrunePendingUploads` job to remove expired rows, then require this command to print exactly `0`; do not delete a live pending row by hand:
+
+```sh
+psql "$DEEPWELL_VERIFY_DB_URL" --no-psqlrc --tuples-only --no-align --command "SELECT count(*) FROM blob_pending WHERE s3_hash IS NOT NULL;"
+```
+
+Unmoved pending rows with `s3_hash IS NULL` may remain. The new Deepwell binary reads their temporary bytes, derives the descriptor, and persists it before completing the file revision. Apply the complete migration chain only after the moved-pending preflight passes:
+
+```sh
+DATABASE_URL="$DEEPWELL_VERIFY_DB_URL" sqlx migrate run --source deepwell/migrations
+```
+
+The current source-blind diagnostic is blocked before materialization. Standing `scp-wiki` at site ID 6000006 has 50,301 active latest files totaling 23,139,838,970 bytes. The current `en/by-uuid/*/files/*/snapshots` corpus has 24,464 snapshot JSON files, 24,454 with `mime_description`, totaling 8,505,207,093 descriptor-bearing bytes. The exact snapshot-file-set SHA-256 is `329988eba0e750d33e4ea7ac3556a6e152416089d753286495b20992c85b67f9`. These are pre-run observations, not a completion receipt. The missing corpus provenance must be acquired explicitly; the backfill must not infer the remaining descriptors.
+
+The command always begins with a metadata-only preflight. It seals the exact site pair, active-file baseline, missing-latest and moved-pending checks, deterministic inventory batch hashes, corpus index SHA-256, and corpus snapshot denominator and hash. It records `provenance_matched` and `provenance_missing` before creating an S3 client. Any orphan latest revision, moved pending row without its paired descriptor, inventory-count mismatch, ambiguous corpus candidate, or missing metadata provenance blocks the receipt with SQL staging and public rerenders both at zero. The current corpus therefore blocks in this first phase without reading 50,301 stored objects.
+
+Set the database connection before running the metadata preflight. The protected standing container is `wikijump-standing-database-1`; the local-development container is different. Keep the exact site ID and slug guard even when the container is explicit. This dry run makes no database change and does not rerender pages:
+
+```sh
+node install/local/wikidot-verification/scripts/backfill-corpus-file-descriptors.mjs --corpus-root /home/roku/src/Rokurolize/scp-wiki-translation/corpus --branch en --site-id 6000006 --site-slug scp-wiki --db-container wikijump-standing-database-1 --api-url http://127.0.0.1:12747/jsonrpc --batch-size 200 --concurrency 16 --dry-run
+```
+
+Run the receipt-bearing command even while coverage is incomplete to retain the source-blind preflight evidence. With the current corpus it exits nonzero after writing a `blocked` receipt whose staging and public-rerender counts are zero; it does not enter materialization:
+
+```sh
+node install/local/wikidot-verification/scripts/backfill-corpus-file-descriptors.mjs --corpus-root /home/roku/src/Rokurolize/scp-wiki-translation/corpus --branch en --site-id 6000006 --site-slug scp-wiki --db-container wikijump-standing-database-1 --api-url http://127.0.0.1:12747/jsonrpc --batch-size 200 --concurrency 16 --receipt /absolute/evidence/path/scp-wiki-file-descriptor-preflight-blocked.json
+```
+
+Do not attempt to bypass that receipt or invoke a separate materializer while metadata coverage is incomplete. After an explicit corpus repair, start with a new absolute receipt because the corpus denominator and hash changed. Once metadata coverage is 100 percent, set the 64-hex `DEEPWELL_RPC_TOKEN`, `S3_CUSTOM_ENDPOINT`, `S3_FILES_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION_NAME`, and `S3_PATH_STYLE` in the operator environment. Keep secrets out of process arguments. The same terminal command then byte-verifies every active stored object against its SHA-512 key and exact `(fullname, filename, stored-byte SHA-256)` provenance before it permits any materialization. Run it with the new retained evidence receipt:
+
+```sh
+node install/local/wikidot-verification/scripts/backfill-corpus-file-descriptors.mjs --corpus-root /home/roku/src/Rokurolize/scp-wiki-translation/corpus --branch en --site-id 6000006 --site-slug scp-wiki --db-container wikijump-standing-database-1 --api-url http://127.0.0.1:12747/jsonrpc --batch-size 200 --concurrency 16 --receipt /absolute/evidence/path/scp-wiki-file-descriptor-backfill.json
+```
+
+The three resumable phases are `metadata_preflight`, `byte_preflight`, and `materialize`. The inventory uses a deterministic `(page slug, file ID, latest revision ID)` keyset and holds at most one fixed batch plus the configured number of object bodies in memory. Every inventory and completion transaction first requires the exact active `(site_id, site slug)` pair, so `6000005` cannot silently process `template-en` in place of `scp-wiki`. Byte verification and materialization must reproduce every sealed metadata batch identity. Only after both complete preflights report zero missing provenance does each batch materialize descriptors in one SQL transaction, rerender every affected saved page, and atomically advance the receipt cursor. A SQL, object, rerender, or receipt failure is safely rerunnable with the identical command; already committed rows are classified as existing and the unadvanced batch is rerendered again.
+
+This standing `scp-wiki` command has one descriptor authority: it treats every active target-site file as corpus-owned and requires an exact `(fullname, filename, stored-byte SHA-256)` corpus `mime_description`. The task-owned `wj-open43-pr2-db` clone has 31 active files and 36 revisions, while every `file.from_wikidot` value is false and every revision comment is empty, so neither legacy field is an import authority. The command never invokes the host `file` program and never infers from MIME, extension, flags, or comments. Any missing or size-mismatched corpus record records a nonzero provenance blocker, blocks the receipt, and requires explicit corpus repair. Existing local uploads are not auto-rescued by this mirror command and remain render-fail-closed when their descriptor is absent; new uploads are owned by the activated Deepwell byte-analysis producer.
+
+A terminal receipt has `status: "done"`, zero `provenance_blockers`, `missing_latest_revision`, `missing_descriptor`, `invalid_descriptor`, and `moved_pending_missing_descriptor`. Metadata and byte preflight rows and matches, rows completed, singular corpus-provenance authority count, and staging total must each equal the final active-file count, and every sealed batch must be complete before the public rerender receipt advances. The command rechecks those counts and the site ID/slug pair when a completed receipt is presented again. The current 24,454-of-50,301 corpus coverage cannot produce this receipt. Do not promote the standing runtime while the receipt is blocked or while the served pages have not been verified against the exact activated runtime identity.
+
 ## Wikijump identifier leaks
 
 Imported content must carry Wikidot's own DOM names. The Wikidot stylesheet the page loads has no `.wj-` rules, so a leaked `wj-` class is an unstyled element as well as a tree difference.
