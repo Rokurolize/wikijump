@@ -28,7 +28,7 @@
     "framerail_pnpm_lock_sha256": "3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406",
     "framerail_package_sha256": "930b902b4ebed09c4114f6b8db87311a639e612183a4371ca19884dac8349082",
     "framerail_svelte_config_sha256": "52b02a44f682cd0bb12b8b968e4a0dc5f84eda1b76c2201aee9566bc236fbcbc",
-    "observed_integration_head": "f781226ff522c426149b11e2cdcec8f875696139",
+    "observed_integration_head": "00e37910649454043480fd6957327f7c11a95fd7",
     "observed_integration_head_is_dynamic": true,
     "final_source_freeze_reconciliation_required": true,
     "standing_is_acceptance_evidence": false
@@ -143,6 +143,24 @@
     "E_OPEN43_READONLY_LIVE_20260810": {
       "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
       "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410"
+    },
+    "E_OPEN43_FILES_ROWS_20260810": {
+      "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+      "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+      "selector": "general_rules[evidence_id=E_OPEN43_FILES_ROWS_20260810]",
+      "external_evidence_root": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809",
+      "external_sha256s": {
+        "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/SHA256SUMS",
+        "sha256": "225897681df10c1e8c307053056849990fc32ebe10e47f2ab9012685bda709ff"
+      },
+      "raw_case_sha256s": {
+        "m1039-files-scp-049": "16e3518edfe6d97e7e7483eeb295b139424e07b8d40b5bcbd8503bbf2a8c4c5d",
+        "m1039-files-scp-106": "cd65c46f4939a8d381c7a4015d9967701e1dc97da0ee6b63d23c3b2a309ea380",
+        "m1039-files-scp-682": "59858bed1745233054fbc3bbbb656c13c340ae0b0eca007b1f57aae1ae0b5208",
+        "m1039-files-scp-096": "26f30263f5b14928c19ce6c474fe4e434e4cb453a07a2da2f7ca998f8b7beb5b",
+        "m1039-files-scp-173": "652b56b3f52e16a371bfd98e658bd4d033a3c760afba7f9910623a1a99dc87bf",
+        "m1039-files-system-recent-changes": "46d4dbffaa8f392989e21462d0ee0637514506b7899f69ba250bbc97da1fc659"
+      }
     },
     "E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810": {
       "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
@@ -883,17 +901,84 @@
           "next_command_ids": ["C_DEEPWELL_FILES"]
         },
         {
-          "case_id": "M1039_FILES_NONEMPTY_ROWS",
-          "acceptance": "Render 1/N file rows with exact name, href, size, type, date, user, order, pagination, duplicate-looking name, Unicode, deleted, and revision behavior.",
-          "classification": "blocked_evidence",
-          "reason": "The new public matrix freezes nonempty and empty row DOM on three pages each, but it does not establish pagination, duplicate-looking or Unicode names, deletion, or revision presentation. The current renderer remains unsupported beyond the evidenced slice.",
-          "source_paths": ["deepwell/src/services/render/file_modules.rs"],
+          "case_id": "M1039_FILES_NONEMPTY_ROW_CORE",
+          "acceptance": "After Page:View, render the observed PageFilesSimpleModule table header and active rows with exact escaped file name, owned /local--files/{page}/{file} href, human-readable byte size, file-ID Info action, wrapper, refresh script, and manage-attachments link; the observed table has no date or user columns.",
+          "classification": "needs_source",
+          "reason": "Three populated and three empty public controls establish the row structure, but FilesModuleState currently discards the authorized inventory and leaves every nonempty module on the unsupported path. A public PagePreview and saved page_view regression and an ACL-first bounded row service are absent.",
+          "public_seam": "Deepwell PagePreview and saved page_view after the complete actor-aware Page:View decision.",
+          "current_authority": {
+            "available": [
+              "file.file_id, file.name, file.page_id, and file.site_id",
+              "latest file_revision MIME, size, and blob identity",
+              "authorized page slug and site ownership for the local-file href"
+            ],
+            "query_boundary": "Page:View must complete before active file or latest revision metadata is loaded."
+          },
+          "must_not_approximate": [
+            "Do not load file metadata before Page:View.",
+            "Do not emit a partial row with a missing or inferred type cell.",
+            "Do not fetch one blob per row during rendering."
+          ],
+          "future_minimum": "Add one ACL-first, bounded visible_file_rows service that joins active files to their latest revisions in one paginated query and returns the persisted byte-derived type descriptor required by M1039_FILES_BYTE_DERIVED_TYPE.",
+          "source_paths": [
+            "deepwell/src/services/render/file_modules.rs",
+            "deepwell/src/services/file",
+            "deepwell/src/services/file_revision"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_MODULE_PREVIEW_CORPUS", "E_FILES_SAVED_EMPTY", "E_OPEN43_READONLY_LIVE_20260810"],
+          "evidence_ids": [
+            "E_FILES_SAVED_EMPTY",
+            "E_OPEN43_FILES_ROWS_20260810"
+          ],
+          "depends_on": ["M1039_FILES_BYTE_DERIVED_TYPE"],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M1039_FILES_BYTE_DERIVED_TYPE",
+          "acceptance": "Render the exact observed file-type span label and title from persisted content analysis, including image dimensions and encoding, EXIF or JFIF distinctions, and audio ID3 and codec details when present.",
+          "classification": "needs_source",
+          "reason": "file_revision stores MIME and size but no byte-derived label or title. The live matrix proves that one MIME family has multiple titles and that titles contain dimensions, EXIF or JFIF, ID3, and codec data that cannot be derived from MIME or filename. MimeAnalyzer exposes only MagicFlags::MIME, and no bounded persisted descriptor service exists.",
+          "public_seam": "The file-type span inside each authorized Deepwell PagePreview and saved page_view Files row.",
+          "current_authority": {
+            "available": ["file_revision.mime", "file_revision.size", "file_revision.s3_hash"],
+            "missing": ["content_type_label", "content_type_description"],
+            "ingestion_fact": "BlobService::direct_upload already holds the complete bytes once before the file revision is committed; corpus import currently materializes only filename, path, hash, MIME, and size."
+          },
+          "must_not_approximate": [
+            "Do not map extensions or MIME strings to Wikidot labels or titles.",
+            "Do not substitute MIME for the byte-derived title.",
+            "Do not fetch active S3 blobs per render or rely on the host's unpinned magic database at render time."
+          ],
+          "future_minimum": "Persist immutable content_type_label and content_type_description fields on each file revision. Produce them once from already-held bytes in the bounded upload finalization worker, carry them unchanged through metadata-only revisions, materialize and backfill the same fields during corpus attachment import, and expose no fallback row until every active latest revision has the descriptor.",
+          "source_paths": [
+            "deepwell/src/models/file_revision.rs",
+            "deepwell/src/services/blob/mime.rs",
+            "deepwell/src/services/blob/service.rs",
+            "deepwell/src/services/file_revision",
+            "install/local/wikidot-verification/src/corpus-import-manifest.mjs",
+            "install/local/wikidot-verification/src/corpus-attachment-staging-sql.mjs"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_OPEN43_FILES_ROWS_20260810"],
+          "next_command_ids": []
+        },
+        {
+          "case_id": "M1039_FILES_PAGINATION_AND_HISTORY",
+          "acceptance": "Define exact ordering and pagination beyond the observed row count, duplicate-looking and Unicode names, deleted-file presentation, and revision presentation.",
+          "classification": "blocked_evidence",
+          "reason": "The three populated controls contain at most fifteen active rows and do not exercise a pager, duplicate-looking or Unicode names, deletion, or historical revisions. Those behaviors cannot be inferred from the observed core table.",
+          "public_seam": "Deepwell saved page_view and the page-number transition for Files on an authorized page.",
+          "source_paths": [
+            "deepwell/src/services/render/file_modules.rs",
+            "deepwell/src/services/file",
+            "deepwell/src/services/file_revision"
+          ],
+          "existing_tests": [],
+          "evidence_ids": ["E_OPEN43_FILES_ROWS_20260810"],
           "missing_evidence": [
-            "pagination",
+            "ordering and pagination beyond fifteen rows",
             "duplicate-looking and Unicode names",
-            "deleted and revision presentation"
+            "deleted-file and revision presentation"
           ],
           "next_command_ids": []
         },
@@ -978,7 +1063,10 @@
             "deepwell/tests/page.rs::file_mutations_require_parent_page_edit_permission"
           ],
           "evidence_ids": ["E_FILES_SAVED_EMPTY"],
-          "depends_on": ["M1039_FILES_NONEMPTY_ROWS"],
+          "depends_on": [
+            "M1039_FILES_NONEMPTY_ROW_CORE",
+            "M1039_FILES_BYTE_DERIVED_TYPE"
+          ],
           "next_command_ids": ["C_MEDIA_RUNTIME_CANDIDATE"]
         },
         {
@@ -1539,10 +1627,10 @@
   },
   "reconciliation": {
     "issue_count": 7,
-    "subrow_count": 45,
+    "subrow_count": 47,
     "classification_counts": {
       "source_ready": 25,
-      "needs_source": 0,
+      "needs_source": 2,
       "candidate_required": 11,
       "blocked_evidence": 9
     },
