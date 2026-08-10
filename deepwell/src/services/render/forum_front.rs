@@ -339,7 +339,7 @@ fn render_custom_variable(
     }
     let path = thread_path(item);
     match name {
-        "title" => compat_html.push_plain(&item.title),
+        "title" => compat_html.push_html(escape_list_pages_html_text(&item.title)),
         "linked_title" | "title_linked" => compat_html.push_html(format!(
             r#"<a href="{}">{}</a>"#,
             escape_list_pages_html_attr(&path),
@@ -478,14 +478,14 @@ mod tests {
     fn frontforum_custom_body_canonical_public_render() {
         let source = concat!(
             "[[module FrontForum category=\"8503559\" limit=\"1\"]]\n",
-            "[[div class=\"title\"]]%%title%%[[/div]]\n",
-            "[[div class=\"linked\"]]%%linked_title%%[[/div]]\n",
-            "[[div class=\"author\"]]%%author%%[[/div]]\n",
-            "[[div class=\"date\"]]%%date|%Y-%m-%d%%[[/div]]\n",
-            "[[div class=\"comments\"]]%%comments%%[[/div]]\n",
-            "[[div class=\"category\"]]%%category%%[[/div]]\n",
-            "[[div class=\"description\"]]%%description%%[[/div]]\n",
-            "[[div class=\"content\"]]%%content%%[[/div]]\n",
+            "[[div class=\"title\"]]\n%%title%%\n[[/div]]\n",
+            "[[div class=\"linked\"]]\n%%linked_title%%\n[[/div]]\n",
+            "[[div class=\"author\"]]\n%%author%%\n[[/div]]\n",
+            "[[div class=\"date\"]]\n%%date|%Y-%m-%d%%\n[[/div]]\n",
+            "[[div class=\"comments\"]]\n%%comments%%\n[[/div]]\n",
+            "[[div class=\"category\"]]\n%%category%%\n[[/div]]\n",
+            "[[div class=\"description\"]]\n%%description%%\n[[/div]]\n",
+            "[[div class=\"content\"]]\n%%content%%\n[[/div]]\n",
             "[[/module]]",
         );
         let rendered = render_owned_source(
@@ -498,7 +498,10 @@ mod tests {
         );
 
         assert!(rendered.contains(r#"<div class="front-forum-box">"#));
-        assert!(rendered.contains("Title &lt;unsafe&gt;"));
+        assert!(
+            rendered.contains("Title &lt;unsafe&gt;"),
+            "rendered FrontForum body:\n{rendered}",
+        );
         assert!(rendered.contains(
             r#"<a href="/forum/t-18029831/title-unsafe">Title &lt;unsafe&gt;</a>"#,
         ));
@@ -514,13 +517,13 @@ mod tests {
     fn frontforum_custom_body_alias_offset_multi_public_render() {
         let source = concat!(
             "[[module FrontForum category=\"8503561;8503559\" limit=\"1\" offset=\"1\"]]\n",
-            "[[div class=\"linked\"]]%%title_linked%%[[/div]]\n",
-            "[[div class=\"link\"]]%%link%%[[/div]]\n",
-            "[[div class=\"short\"]]%%short%%[[/div]]\n",
-            "[[div class=\"summary\"]]%%summary%%[[/div]]\n",
-            "[[div class=\"text\"]]%%text%%[[/div]]\n",
-            "[[div class=\"long\"]]%%long%%[[/div]]\n",
-            "[[div class=\"body\"]]%%body%%[[/div]]\n",
+            "[[div class=\"linked\"]]\n%%title_linked%%\n[[/div]]\n",
+            "[[div class=\"link\"]]\n%%link%%\n[[/div]]\n",
+            "[[div class=\"short\"]]\n%%short%%\n[[/div]]\n",
+            "[[div class=\"summary\"]]\n%%summary%%\n[[/div]]\n",
+            "[[div class=\"text\"]]\n%%text%%\n[[/div]]\n",
+            "[[div class=\"long\"]]\n%%long%%\n[[/div]]\n",
+            "[[div class=\"body\"]]\n%%body%%\n[[/div]]\n",
             "[[/module]]",
         );
         let rendered = render_owned_source(
@@ -528,7 +531,11 @@ mod tests {
             &[item("Alias title", "Alias summary", "<p>Alias body</p>")],
         );
 
-        assert_eq!(rendered.matches("Alias title").count(), 1);
+        assert_eq!(
+            rendered.matches("Alias title").count(),
+            1,
+            "rendered FrontForum body:\n{rendered}",
+        );
         assert!(rendered.contains("/forum/t-18029831/alias-title"));
         assert_eq!(rendered.matches("Alias summary").count(), 2);
         assert_eq!(rendered.matches("Alias body").count(), 3);
