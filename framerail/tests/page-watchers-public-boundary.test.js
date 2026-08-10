@@ -56,7 +56,7 @@ test("Watchers renders typed public identities without exposing an untyped ID", 
         }
       ]
     }
-  }).body.replaceAll(/<!--.*?-->/gu, "")
+  }).body.replaceAll(/<!--[\s\S]*?-->/gu, "")
 
   assert.match(
     body,

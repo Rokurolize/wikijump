@@ -59,6 +59,6 @@ test("History leaves a missing or deleted author identity neutral", () => {
     props: { author: null }
   }).body
 
-  assert.equal(body.replaceAll(/<!--.*?-->/gu, ""), "")
+  assert.equal(body.replaceAll(/<!--[\s\S]*?-->/gu, ""), "")
   assert.doesNotMatch(body, /undefined|null|user/u)
 })

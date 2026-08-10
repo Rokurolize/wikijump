@@ -365,9 +365,9 @@ async function createFakeCandidate({
       }
       response.writeHead(404, { "content-type": "text/html" });
       response.end("missing");
-    } catch (error) {
+    } catch {
       response.writeHead(500, { "content-type": "text/plain" });
-      response.end(error.stack);
+      response.end("internal test server error");
     }
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
