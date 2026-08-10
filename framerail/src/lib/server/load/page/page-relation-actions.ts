@@ -3,6 +3,7 @@ import {
   pageParentGet,
   pageParentUpdate,
   pageScore,
+  pageWatchers,
   pageVoteCast,
   pageVoteList,
   pageVoteRemove,
@@ -107,6 +108,18 @@ export async function pageVoteListAction(event: RequestEvent) {
   }
 }
 
+export async function pageWatchersAction(event: RequestEvent) {
+  const { request } = event
+  try {
+    const { pageId } = await readActionJson(request, pageWatchersSchema)
+    const context = await resolvePageActionRequestContext(event)
+    const res = await pageWatchers(context.siteId, pageId, context.requestContext)
+    return { res }
+  } catch (error) {
+    return failForActionError(error)
+  }
+}
+
 export async function pageVoteCastAction(event: RequestEvent) {
   const { request } = event
   return executePageAction(async () => {
@@ -146,6 +159,10 @@ export async function pageScoreAction(event: RequestEvent) {
 }
 
 const pageIdActionSchema = object(pageActionBaseSchema)
+
+const pageWatchersSchema = object({
+  pageId: number()
+})
 
 const pageVoteCastSchema = object({
   pageId: number(),

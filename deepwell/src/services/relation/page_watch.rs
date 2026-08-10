@@ -19,11 +19,56 @@
  */
 
 use super::RelationService;
-use super::structs::{RelationDirection, RelationObject, RelationReference};
+use super::structs::{
+    RelationDirection, RelationObject, RelationReference, relation_type_condition,
+};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::models::relation::Model as RelationModel;
+use crate::models::relation::{self, Entity as Relation, Model as RelationModel};
 use crate::services::ServiceContext;
-use crate::types::RelationType;
+use crate::types::{RelationObjectType, RelationType};
 use paste::paste;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
+use std::collections::BTreeSet;
+
+const MAX_PAGE_WATCHER_ROWS: usize = 500;
+const PAGE_WATCHER_QUERY_LIMIT: u64 = MAX_PAGE_WATCHER_ROWS as u64 + 1;
 
 impl_relation!(PageWatch, Page, page_id, User, user_id, ());
+
+impl RelationService {
+    pub async fn get_active_page_watcher_ids(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+    ) -> Result<Vec<i64>> {
+        let make_error = || {
+            Error::new(
+                format!("failed to list active watchers for page ID {page_id}"),
+                ErrorType::PageWatchRelation,
+            )
+        };
+        let rows = Relation::find()
+            .filter(relation_type_condition(RelationType::PageWatch))
+            .filter(relation::Column::DestType.eq(RelationObjectType::Page))
+            .filter(relation::Column::DestId.eq(page_id))
+            .filter(relation::Column::FromType.eq(RelationObjectType::User))
+            .filter(relation::Column::OverwrittenAt.is_null())
+            .filter(relation::Column::DeletedAt.is_null())
+            .order_by_asc(relation::Column::FromId)
+            .order_by_asc(relation::Column::RelationId)
+            .limit(PAGE_WATCHER_QUERY_LIMIT)
+            .all(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        if rows.len() > MAX_PAGE_WATCHER_ROWS {
+            return Err(make_error().into());
+        }
+
+        Ok(rows
+            .into_iter()
+            .map(|relation| relation.from_id)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect())
+    }
+}

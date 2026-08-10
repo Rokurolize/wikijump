@@ -33,6 +33,7 @@
   let ParentPane = $state<typeof import("./ParentPane.svelte").default>()
   let TagsPane = $state<typeof import("./TagsPane.svelte").default>()
   let VotePane = $state<typeof import("./VotePane.svelte").default>()
+  let WatchersPane = $state<typeof import("./WatchersPane.svelte").default>()
 
   async function ensurePagePane(pane: PagePane) {
     switch (pane) {
@@ -68,6 +69,9 @@
         break
       case PagePane.Vote:
         VotePane ??= (await import("./VotePane.svelte")).default
+        break
+      case PagePane.Watchers:
+        WatchersPane ??= (await import("./WatchersPane.svelte")).default
         break
     }
   }
@@ -123,6 +127,12 @@
   {:else if pagePaneState === PagePane.Vote}
     {#if VotePane}
       <VotePane {...props} />
+    {:else}
+      <p class="pane-loading" aria-live="polite">Loading…</p>
+    {/if}
+  {:else if pagePaneState === PagePane.Watchers}
+    {#if WatchersPane}
+      <WatchersPane {...props} />
     {:else}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}

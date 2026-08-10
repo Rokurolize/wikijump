@@ -165,6 +165,21 @@ export async function pageBacklinksView(
   )
 }
 
+export async function pageWatchers(
+  siteId: number,
+  pageId: number,
+  requestContext: RequestContext = {}
+): Promise<UserInfo[]> {
+  return client.request(
+    "page_watchers",
+    {
+      site_id: siteId,
+      page_id: pageId
+    },
+    requestContext
+  )
+}
+
 export interface WikidotSiteChangesModuleInput {
   pageId: string
   page: string

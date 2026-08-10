@@ -48,6 +48,7 @@ use crate::types::{
     Resource,
 };
 use crate::utils::get_category_name;
+use ftml::data::UserInfo;
 use futures::future::try_join_all;
 use regex::Regex;
 use std::borrow::Cow;
@@ -109,6 +110,13 @@ struct WikidotPagePreviewInput {
 
 #[derive(Deserialize)]
 struct WikidotPageDiscussionInput {
+    site_id: i64,
+    page_id: i64,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PageWatchersInput {
     site_id: i64,
     page_id: i64,
 }
@@ -641,6 +649,42 @@ pub async fn page_view_permission(
             ErrorType::Permission,
         )
     })
+}
+
+pub async fn page_watchers(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<UserInfo<'static>>> {
+    let PageWatchersInput { site_id, page_id } = parse!(params, Page);
+    let make_error = || {
+        Error::new(
+            format!("failed to list watchers for page ID {page_id} in site ID {site_id}"),
+            ErrorType::PageWatchRelation,
+        )
+    };
+
+    ensure_page_view_permission(ctx, site_id, page_id).await?;
+    let user_ids = RelationService::get_active_page_watcher_ids(ctx, page_id)
+        .await
+        .or_raise(make_error)?;
+    let mut watchers = Vec::with_capacity(user_ids.len());
+    for user_id in user_ids {
+        let user = UserService::get_optional(ctx, Reference::Id(user_id))
+            .await
+            .or_raise(make_error)?;
+        let Some(identity) = user.and_then(|user| user.into_public_identity()) else {
+            return Err(make_error().into());
+        };
+        watchers.push(identity);
+    }
+    watchers.sort_by_key(|identity| {
+        (
+            identity.user_name.to_lowercase(),
+            identity.user_slug.to_lowercase(),
+            identity.user_id,
+        )
+    });
+    Ok(watchers)
 }
 
 pub async fn page_get_direct(

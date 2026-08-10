@@ -423,6 +423,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("page_create", page_create);
     register!("page_get", page_get);
     register!("page_view_permission", page_view_permission);
+    register!("page_watchers", page_watchers);
     register!("page_get_direct", page_get_direct);
     register!("page_get_deleted", page_get_deleted);
     register!("page_get_score", page_get_score);

@@ -66,7 +66,8 @@ use deepwell::services::permission::{
     CheckPermissionContext, PermissionCache, PermissionService,
 };
 use deepwell::services::relation::{
-    CreateSiteMember, SiteMemberAccepted, SiteMemberData,
+    CreatePageWatch, CreateSiteMember, RemovePageWatch, SiteMemberAccepted,
+    SiteMemberData,
 };
 use deepwell::services::render::{LegacyActionRegistry, UrlArgumentPair, UrlArguments};
 use deepwell::services::role::{
@@ -22482,6 +22483,277 @@ async fn listpages_content_body_supports_bounded_ordered_child_results() {
             "content ListPages fixture should not contain {forbidden:?}:\n{html}"
         );
     }
+}
+
+#[tokio::test]
+async fn page_watchers_returns_active_typed_identities_in_deterministic_order() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const TARGET_SLUG: &str = "fixture-page-watchers-active";
+    const OTHER_SLUG: &str = "fixture-page-watchers-other";
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Fixture Page Watchers Active",
+        "page watcher target",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        OTHER_SLUG,
+        "Fixture Page Watchers Other",
+        "other page watcher target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": TARGET_SLUG}),
+    )
+    .expect("page watcher target should exist");
+    let other = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": OTHER_SLUG}),
+    )
+    .expect("other page watcher target should exist");
+
+    for user_id in [SAMPLE_USER_ID, ADMIN_USER_ID, ADMIN_USER_ID] {
+        RelationService::create_page_watch(
+            runner.context(),
+            CreatePageWatch {
+                page_id: target.page_id,
+                user_id,
+                metadata: (),
+                created_by: ADMIN_USER_ID,
+            },
+        )
+        .await
+        .expect("active page watcher fixture should insert");
+    }
+    RelationService::create_page_watch(
+        runner.context(),
+        CreatePageWatch {
+            page_id: target.page_id,
+            user_id: SYSTEM_USER_ID,
+            metadata: (),
+            created_by: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("removed page watcher fixture should insert");
+    RelationService::remove_page_watch(
+        runner.context(),
+        RemovePageWatch {
+            page_id: target.page_id,
+            user_id: SYSTEM_USER_ID,
+            removed_by: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("removed page watcher fixture should be deleted");
+    RelationService::create_page_watch(
+        runner.context(),
+        CreatePageWatch {
+            page_id: other.page_id,
+            user_id: UNKNOWN_USER_ID,
+            metadata: (),
+            created_by: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("other-page watcher fixture should insert");
+
+    runner.set_request_context(RequestContext::default());
+    let output = run_endpoint!(
+        runner,
+        page_watchers,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    let output = serde_json::to_value(output)
+        .expect("public page watcher identities should serialize");
+
+    assert_eq!(output.as_array().map(Vec::len), Some(2));
+    assert_eq!(output[0]["user-name"], "Administrator");
+    assert_eq!(output[0]["user-slug"], "administrator");
+    assert_eq!(output[1]["user-name"], "User");
+    assert_eq!(output[1]["user-slug"], "user");
+    assert!(output.to_string().find("Administrator") < output.to_string().find("User"));
+    assert!(!output.to_string().contains("Unknown"));
+    assert!(!output.to_string().contains("System"));
+}
+
+#[tokio::test]
+async fn page_watchers_requires_target_view_permission_and_site_ownership() {
+    let mut runner = TestRunner::setup().await;
+    const PAGE_SLUG: &str = "fixture-private-page-watchers";
+    const PRIVATE_CATEGORY: &str = "fixture-page-watchers-private-view";
+    let mirror = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded mirror site should exist")
+        .site;
+    let other_site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+
+    make_listpages_test_category_admin_only(&runner, mirror.site_id, PRIVATE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        mirror.site_id,
+        PAGE_SLUG,
+        "Fixture Private Page Watchers",
+        "private page watcher target",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        mirror.site_id,
+        PAGE_SLUG,
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": mirror.site_id, "page": PAGE_SLUG}),
+    )
+    .expect("admin should resolve the private page watcher target");
+    RelationService::create_page_watch(
+        runner.context(),
+        CreatePageWatch {
+            page_id: target.page_id,
+            user_id: ADMIN_USER_ID,
+            metadata: (),
+            created_by: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("private page watcher fixture should insert");
+
+    runner.set_request_context(RequestContext::default());
+    let denied = run_endpoint_err!(
+        runner,
+        page_watchers,
+        json!({"site_id": mirror.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(denied, ErrorType::PermissionDenied);
+
+    let wrong_site = run_endpoint_err!(
+        runner,
+        page_watchers,
+        json!({"site_id": other_site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(wrong_site, ErrorType::PageNotFound);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(mirror.site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let watchers = run_endpoint!(
+        runner,
+        page_watchers,
+        json!({"site_id": mirror.site_id, "page_id": target.page_id}),
+    );
+    assert_eq!(watchers.len(), 1);
+}
+
+#[tokio::test]
+async fn page_watchers_fails_closed_when_any_active_identity_is_incomplete() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const PAGE_SLUG: &str = "fixture-page-watchers-incomplete";
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        PAGE_SLUG,
+        "Fixture Page Watchers Incomplete",
+        "incomplete page watcher target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": PAGE_SLUG}),
+    )
+    .expect("incomplete page watcher target should exist");
+    for user_id in [ADMIN_USER_ID, 19_000_001] {
+        RelationService::create_page_watch(
+            runner.context(),
+            CreatePageWatch {
+                page_id: target.page_id,
+                user_id,
+                metadata: (),
+                created_by: ADMIN_USER_ID,
+            },
+        )
+        .await
+        .expect("incomplete page watcher fixture should insert");
+    }
+
+    runner.set_request_context(RequestContext::default());
+    let error = run_endpoint_err!(
+        runner,
+        page_watchers,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(error, ErrorType::PageWatchRelation);
+}
+
+#[tokio::test]
+async fn page_watchers_fails_closed_instead_of_returning_a_saturated_prefix() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const PAGE_SLUG: &str = "fixture-page-watchers-saturated";
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        PAGE_SLUG,
+        "Fixture Page Watchers Saturated",
+        "saturated page watcher target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": PAGE_SLUG}),
+    )
+    .expect("saturated page watcher target should exist");
+    runner
+        .context()
+        .transaction()
+        .execute(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            concat!(
+                "INSERT INTO relation ",
+                "(relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by) ",
+                "SELECT 'watch', 'page', $1, 'user', 19000000 + n, '{}'::jsonb, $2 ",
+                "FROM generate_series(1, 501) AS n",
+            ),
+            [Value::from(target.page_id), Value::from(ADMIN_USER_ID)],
+        ))
+        .await
+        .expect("saturated page watcher fixtures should insert");
+
+    runner.set_request_context(RequestContext::default());
+    let error = run_endpoint_err!(
+        runner,
+        page_watchers,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(error, ErrorType::PageWatchRelation);
 }
 
 #[tokio::test]

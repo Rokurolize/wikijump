@@ -535,6 +535,16 @@
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
+          id="watchers-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={() => activatePagePane(PagePane.Watchers)}
+          type="button"
+        >
+          Watchers
+        </a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
           id="backlinks-button"
           class="btn btn-default"
           href="javascript:;"

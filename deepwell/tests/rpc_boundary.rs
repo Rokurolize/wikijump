@@ -84,3 +84,12 @@ async fn production_rpc_stack_converts_endpoint_errors() {
             .is_some_and(|trace| trace.contains("always fails")),
     );
 }
+
+#[tokio::test]
+async fn production_rpc_stack_registers_page_watchers() {
+    let response =
+        rpc_request("page_watchers", json!({"site_id": 42, "page_id": 42})).await;
+
+    assert_eq!(response["error"]["code"], ErrorType::PageNotFound.code());
+    assert_ne!(response["error"]["code"], -32601);
+}

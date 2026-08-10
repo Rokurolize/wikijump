@@ -285,6 +285,7 @@ export enum PagePane {
   Layout = "layout",
   Move = "move",
   Parent = "parent",
+  Watchers = "watchers",
   Vote = "vote",
   Delete = "delete",
   Lock = "lock"
