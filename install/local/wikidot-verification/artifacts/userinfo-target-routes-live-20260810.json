@@ -1,0 +1,729 @@
+{
+  "schema": "wikijump.userinfo_target_routes.live_evidence.v1",
+  "captured_at": "2026-08-10T08:54:50.641Z",
+  "surface_ids": [
+    "catalog-feature:module-userinfo",
+    "open43-audit-case:Q1032_REMAINING_DIRECTORY_RUNTIME"
+  ],
+  "public_interface": "GET https://www.wikidot.com/user:info/<target>",
+  "cases_path": "install/local/wikidot-verification/fixtures/userinfo-target-routes/cases.json",
+  "cases_sha256": "9b0a25c77bab5fee3a67286b9efd89fe704f1225736d2a8d3904171628dd2422",
+  "capture_script_path": "install/local/wikidot-verification/scripts/capture-userinfo-target-routes.mjs",
+  "capture_script_sha256": "90f8b31a7bf4e15813f4121e45854ae7931c74b06e34f3bc7b7fc745aa09fa0a",
+  "mutated": false,
+  "authentication_session_created": true,
+  "capture_policy": {
+    "maximum_bounded_body_characters": 30000,
+    "external_request_minimum_interval_ms": 4000,
+    "account_cookie_sent_only_to": "https://www.wikidot.com",
+    "response_headers_retained": [
+      "content-type"
+    ],
+    "raw_full_body_retained": false,
+    "prior_no_target_preview_recaptured": false
+  },
+  "prior_no_target_negative_control": {
+    "case_ids": [
+      "anonymous-userinfo-no-user",
+      "account-a-userinfo-no-user"
+    ],
+    "artifact": "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json",
+    "artifact_sha256": "bde2f0e6ef4daf8fe9f52134aec967a24f9187503f066338b5365439b3dac628",
+    "exact_error": "No user specified.",
+    "classification": "negative-control-only",
+    "captured_in_this_lane": false
+  },
+  "controls": {
+    "positive_actor_cases": 4,
+    "negative_actor_cases": 4,
+    "prior_no_target_negative_cases": 2
+  },
+  "observations": [
+    {
+      "case_id": "userinfo-target-the-administrator-anonymous",
+      "actor_id": "anonymous",
+      "authenticated": false,
+      "target_id": "the-administrator",
+      "target_kind": "public-user",
+      "request": {
+        "method": "GET",
+        "url": "https://www.wikidot.com/user:info/the-administrator"
+      },
+      "redirect_chain": [],
+      "response": {
+        "status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "final_url": "https://www.wikidot.com/user:info/the-administrator",
+        "body_bytes": 13368,
+        "body_sha256": "4d232cb54889ad83cdfd1b73651b192ecabade1de1624e1136bf26749a395232",
+        "bounded_body": "\n\n    <div class=\"col-md-3\">\n        <ul id=\"ui-tabs\" class=\"nav nav-pills nav-stacked\">\n            <li class=\"active\"><a id=\"ui-profile-b\" href=\"javascript:;\">Profile</a></li>\n            <li><a id=\"ui-member-b\" href=\"javascript:;\">Member of</a></li>\n            <li><a id=\"ui-moderator-b\" href=\"javascript:;\">Moderator of</a></li>\n            <li><a id=\"ui-admin-b\" href=\"javascript:;\">Admin of</a></li>\n            <li><a id=\"ui-contrib-b\" href=\"javascript:;\">Recent contributions</a></li>\n            <li><a id=\"ui-posts-b\" href=\"javascript:;\">Recent posts and comments</a></li>\n        </ul>\n        \n    </div>\n    \n    <div class=\"col-md-9\">\n        <span data-redacted-control=\"private-message\">Write private message</span>\n        <a class=\"btn btn-default btn-xs\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.UserInfoModule.listeners.addContact(event,169306)\">\n            <i class=\"icon-book\"></i>\n            Add to contacts        </a>\n        <a class=\"btn btn-danger btn-xs pull-right\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.UserInfoModule.listeners.flagUser(event,169306)\">flag user as abusive</a>\n        \n        \n        <h1 class=\"profile-title\">\n            <img  src=\"https://www.wikidot.com/avatar.php?userid=169306&amp;timestamp=1786352062\" alt=\"\" style=\"padding: 5px;vertical-align: -50%;\"/>\n            The Administrator\n        </h1>\n        \n        <div id=\"user-info-area\"><div class=\"profile-box\">\n    \n    <dl class=\"dl-horizontal\">\n        \n        \n        \n        \n        \n        \n        <dt>Wikidot user since:</dt> <dd><span class=\"odate time_1216502770 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29\">19 Jul 2008 21:26</span></dd>\n        \n        <dt>Account type:</dt>\n        <dd>\n                            free\n                    </dd>\n    \n            <dt>Karma level:</dt>\n        <dd>\n            high                            <img src=\"//www.wikidot.com/userkarma.php?u=169306&amp;onlyKarma=true\" alt=\"karma level\"/>\n            (<a href=\"http://www.wikidot.com/doc:karma\" target=\"_blank\">what is this?</a>)\n        </dd>\n        \n    </dl>\n</div>\n\n</div>\n    </div>\n\n<script type=\"text/javascript\">\n    USERINFO = {};\n    USERINFO.userId = 169306;\n    </script></div>",
+        "bounded_body_redactions": {
+          "private_message_destination_links": 1
+        },
+        "bounded_body_sha256": "14e39df70b4884780ec900fb994aebfe754205efabe1575f7f22c0352b47f430",
+        "normalized_bounded_body_sha256": "ccefd743dbda17517d90c51e3370b9837427e2fff575c7602e1b70a96dbd9b2c"
+      },
+      "result": "populated-profile",
+      "dom": {
+        "class_tokens": [
+          "active",
+          "btn",
+          "btn-danger",
+          "btn-default",
+          "btn-xs",
+          "col-md-3",
+          "col-md-9",
+          "dl-horizontal",
+          "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29",
+          "icon-book",
+          "nav",
+          "nav-pills",
+          "nav-stacked",
+          "odate",
+          "profile-box",
+          "profile-title",
+          "pull-right",
+          "time_1216502770"
+        ],
+        "safe_links": [
+          {
+            "href": "javascript:;",
+            "text": "Profile",
+            "id": "ui-profile-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Member of",
+            "id": "ui-member-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Moderator of",
+            "id": "ui-moderator-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Admin of",
+            "id": "ui-admin-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Recent contributions",
+            "id": "ui-contrib-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Recent posts and comments",
+            "id": "ui-posts-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Add to contacts",
+            "class_tokens": [
+              "btn",
+              "btn-default",
+              "btn-xs"
+            ]
+          },
+          {
+            "href": "javascript:;",
+            "text": "flag user as abusive",
+            "class_tokens": [
+              "btn",
+              "btn-danger",
+              "btn-xs",
+              "pull-right"
+            ]
+          },
+          {
+            "href": "http://www.wikidot.com/doc:karma",
+            "text": "what is this?"
+          }
+        ],
+        "private_message_control_present": true,
+        "profile": {
+          "public_name": "The Administrator",
+          "public_user_id": 169306
+        },
+        "avatar": {
+          "src": "https://www.wikidot.com/avatar.php?userid=169306&timestamp=1786352062",
+          "alt": "",
+          "class_tokens": []
+        },
+        "public_fields": [
+          {
+            "label": "Wikidot user since:",
+            "value": "19 Jul 2008 21:26"
+          },
+          {
+            "label": "Account type:",
+            "value": "free"
+          },
+          {
+            "label": "Karma level:",
+            "value": "high ( what is this? )"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "case_id": "userinfo-target-dr-clef-anonymous",
+      "actor_id": "anonymous",
+      "authenticated": false,
+      "target_id": "dr-clef",
+      "target_kind": "public-user",
+      "request": {
+        "method": "GET",
+        "url": "https://www.wikidot.com/user:info/dr-clef"
+      },
+      "redirect_chain": [],
+      "response": {
+        "status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "final_url": "https://www.wikidot.com/user:info/dr-clef",
+        "body_bytes": 13354,
+        "body_sha256": "30f80daab23957db3e89525c9fdf9aed1ce29c25d481f8380b22f888a20e99b9",
+        "bounded_body": "\n\n    <div class=\"col-md-3\">\n        <ul id=\"ui-tabs\" class=\"nav nav-pills nav-stacked\">\n            <li class=\"active\"><a id=\"ui-profile-b\" href=\"javascript:;\">Profile</a></li>\n            <li><a id=\"ui-member-b\" href=\"javascript:;\">Member of</a></li>\n            <li><a id=\"ui-moderator-b\" href=\"javascript:;\">Moderator of</a></li>\n            <li><a id=\"ui-admin-b\" href=\"javascript:;\">Admin of</a></li>\n            <li><a id=\"ui-contrib-b\" href=\"javascript:;\">Recent contributions</a></li>\n            <li><a id=\"ui-posts-b\" href=\"javascript:;\">Recent posts and comments</a></li>\n        </ul>\n        \n    </div>\n    \n    <div class=\"col-md-9\">\n        <span data-redacted-control=\"private-message\">Write private message</span>\n        <a class=\"btn btn-default btn-xs\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.UserInfoModule.listeners.addContact(event,1698600)\">\n            <i class=\"icon-book\"></i>\n            Add to contacts        </a>\n        <a class=\"btn btn-danger btn-xs pull-right\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.UserInfoModule.listeners.flagUser(event,1698600)\">flag user as abusive</a>\n        \n        \n        <h1 class=\"profile-title\">\n            <img  src=\"https://www.wikidot.com/avatar.php?userid=1698600&amp;timestamp=1786352066\" alt=\"\" style=\"padding: 5px;vertical-align: -50%;\"/>\n            Dr Clef\n        </h1>\n        \n        <div id=\"user-info-area\"><div class=\"profile-box\">\n    \n    <dl class=\"dl-horizontal\">\n        \n        \n        \n        \n        \n        \n        <dt>Wikidot user since:</dt> <dd><span class=\"odate time_1376658420 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29\">16 Aug 2013 13:07</span></dd>\n        \n        <dt>Account type:</dt>\n        <dd>\n                            free\n                    </dd>\n    \n            <dt>Karma level:</dt>\n        <dd>\n            none                            <img src=\"//www.wikidot.com/userkarma.php?u=1698600&amp;onlyKarma=true\" alt=\"karma level\"/>\n            (<a href=\"http://www.wikidot.com/doc:karma\" target=\"_blank\">what is this?</a>)\n        </dd>\n        \n    </dl>\n</div>\n\n</div>\n    </div>\n\n<script type=\"text/javascript\">\n    USERINFO = {};\n    USERINFO.userId = 1698600;\n    </script></div>",
+        "bounded_body_redactions": {
+          "private_message_destination_links": 1
+        },
+        "bounded_body_sha256": "70ca8386b83acba5dbe193da8d2521ca07d64e1187fa69f694804f291f04ecf7",
+        "normalized_bounded_body_sha256": "c7fa17cf9ddb4795adc1e61719229f49912f13d5e4b891463659b1fa1d7871f7"
+      },
+      "result": "populated-profile",
+      "dom": {
+        "class_tokens": [
+          "active",
+          "btn",
+          "btn-danger",
+          "btn-default",
+          "btn-xs",
+          "col-md-3",
+          "col-md-9",
+          "dl-horizontal",
+          "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29",
+          "icon-book",
+          "nav",
+          "nav-pills",
+          "nav-stacked",
+          "odate",
+          "profile-box",
+          "profile-title",
+          "pull-right",
+          "time_1376658420"
+        ],
+        "safe_links": [
+          {
+            "href": "javascript:;",
+            "text": "Profile",
+            "id": "ui-profile-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Member of",
+            "id": "ui-member-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Moderator of",
+            "id": "ui-moderator-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Admin of",
+            "id": "ui-admin-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Recent contributions",
+            "id": "ui-contrib-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Recent posts and comments",
+            "id": "ui-posts-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Add to contacts",
+            "class_tokens": [
+              "btn",
+              "btn-default",
+              "btn-xs"
+            ]
+          },
+          {
+            "href": "javascript:;",
+            "text": "flag user as abusive",
+            "class_tokens": [
+              "btn",
+              "btn-danger",
+              "btn-xs",
+              "pull-right"
+            ]
+          },
+          {
+            "href": "http://www.wikidot.com/doc:karma",
+            "text": "what is this?"
+          }
+        ],
+        "private_message_control_present": true,
+        "profile": {
+          "public_name": "Dr Clef",
+          "public_user_id": 1698600
+        },
+        "avatar": {
+          "src": "https://www.wikidot.com/avatar.php?userid=1698600&timestamp=1786352066",
+          "alt": "",
+          "class_tokens": []
+        },
+        "public_fields": [
+          {
+            "label": "Wikidot user since:",
+            "value": "16 Aug 2013 13:07"
+          },
+          {
+            "label": "Account type:",
+            "value": "free"
+          },
+          {
+            "label": "Karma level:",
+            "value": "none ( what is this? )"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "case_id": "userinfo-target-missing-numeric-zero-anonymous",
+      "actor_id": "anonymous",
+      "authenticated": false,
+      "target_id": "missing-numeric-zero",
+      "target_kind": "missing-numeric-id",
+      "request": {
+        "method": "GET",
+        "url": "https://www.wikidot.com/user:info/0"
+      },
+      "redirect_chain": [],
+      "response": {
+        "status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "final_url": "https://www.wikidot.com/user:info/0",
+        "body_bytes": 10838,
+        "body_sha256": "a3e2b5ed82a1138b03741b572503da56b3a4077ba8bd0b1757a3ff057ab54a5f",
+        "bounded_body": "\n\n<div class=\"error-block\">User does not exist.</div></div>",
+        "bounded_body_redactions": {
+          "private_message_destination_links": 0
+        },
+        "bounded_body_sha256": "a9bc6a31571a329f6ccac303cb592626609c6cb82d8a67047f245745005a8574",
+        "normalized_bounded_body_sha256": "a9bc6a31571a329f6ccac303cb592626609c6cb82d8a67047f245745005a8574"
+      },
+      "result": "user-does-not-exist",
+      "dom": {
+        "class_tokens": [
+          "error-block"
+        ],
+        "safe_links": [],
+        "private_message_control_present": false,
+        "profile": null,
+        "avatar": null,
+        "public_fields": [],
+        "error": "User does not exist."
+      }
+    },
+    {
+      "case_id": "userinfo-target-missing-numeric-negative-one-anonymous",
+      "actor_id": "anonymous",
+      "authenticated": false,
+      "target_id": "missing-numeric-negative-one",
+      "target_kind": "missing-numeric-id",
+      "request": {
+        "method": "GET",
+        "url": "https://www.wikidot.com/user:info/-1"
+      },
+      "redirect_chain": [],
+      "response": {
+        "status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "final_url": "https://www.wikidot.com/user:info/-1",
+        "body_bytes": 10838,
+        "body_sha256": "2b19da8f227eb91802f71afaa7fc3d594db17cae2702766af25554c4afbdf2b4",
+        "bounded_body": "\n\n<div class=\"error-block\">User does not exist.</div></div>",
+        "bounded_body_redactions": {
+          "private_message_destination_links": 0
+        },
+        "bounded_body_sha256": "a9bc6a31571a329f6ccac303cb592626609c6cb82d8a67047f245745005a8574",
+        "normalized_bounded_body_sha256": "a9bc6a31571a329f6ccac303cb592626609c6cb82d8a67047f245745005a8574"
+      },
+      "result": "user-does-not-exist",
+      "dom": {
+        "class_tokens": [
+          "error-block"
+        ],
+        "safe_links": [],
+        "private_message_control_present": false,
+        "profile": null,
+        "avatar": null,
+        "public_fields": [],
+        "error": "User does not exist."
+      }
+    },
+    {
+      "case_id": "userinfo-target-the-administrator-account-a",
+      "actor_id": "account-a",
+      "authenticated": true,
+      "target_id": "the-administrator",
+      "target_kind": "public-user",
+      "request": {
+        "method": "GET",
+        "url": "https://www.wikidot.com/user:info/the-administrator"
+      },
+      "redirect_chain": [],
+      "response": {
+        "status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "final_url": "https://www.wikidot.com/user:info/the-administrator",
+        "body_bytes": 16196,
+        "body_sha256": "36c1cb2dd0b0dc7fcdb0142e1402351e85c7e0b526598d47798a63a08fcfb6aa",
+        "bounded_body": "\n\n    <div class=\"col-md-3\">\n        <ul id=\"ui-tabs\" class=\"nav nav-pills nav-stacked\">\n            <li class=\"active\"><a id=\"ui-profile-b\" href=\"javascript:;\">Profile</a></li>\n            <li><a id=\"ui-member-b\" href=\"javascript:;\">Member of</a></li>\n            <li><a id=\"ui-moderator-b\" href=\"javascript:;\">Moderator of</a></li>\n            <li><a id=\"ui-admin-b\" href=\"javascript:;\">Admin of</a></li>\n            <li><a id=\"ui-contrib-b\" href=\"javascript:;\">Recent contributions</a></li>\n            <li><a id=\"ui-posts-b\" href=\"javascript:;\">Recent posts and comments</a></li>\n        </ul>\n        \n    </div>\n    \n    <div class=\"col-md-9\">\n        <span data-redacted-control=\"private-message\">Write private message</span>\n        <a class=\"btn btn-default btn-xs\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.UserInfoModule.listeners.addContact(event,169306)\">\n            <i class=\"icon-book\"></i>\n            Add to contacts        </a>\n        <a class=\"btn btn-danger btn-xs pull-right\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.UserInfoModule.listeners.flagUser(event,169306)\">flag user as abusive</a>\n        \n        \n        <h1 class=\"profile-title\">\n            <img  src=\"https://www.wikidot.com/avatar.php?userid=169306&amp;timestamp=1786352078\" alt=\"\" style=\"padding: 5px;vertical-align: -50%;\"/>\n            The Administrator\n        </h1>\n        \n        <div id=\"user-info-area\"><div class=\"profile-box\">\n    \n    <dl class=\"dl-horizontal\">\n        \n        \n        \n        \n        \n        \n        <dt>Wikidot user since:</dt> <dd><span class=\"odate time_1216502770 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29\">19 Jul 2008 21:26</span></dd>\n        \n        <dt>Account type:</dt>\n        <dd>\n                            free\n                    </dd>\n    \n            <dt>Karma level:</dt>\n        <dd>\n            high                            <img src=\"//www.wikidot.com/userkarma.php?u=169306&amp;onlyKarma=true\" alt=\"karma level\"/>\n            (<a href=\"http://www.wikidot.com/doc:karma\" target=\"_blank\">what is this?</a>)\n        </dd>\n        \n    </dl>\n</div>\n\n</div>\n    </div>\n\n<script type=\"text/javascript\">\n    USERINFO = {};\n    USERINFO.userId = 169306;\n    </script></div>",
+        "bounded_body_redactions": {
+          "private_message_destination_links": 1
+        },
+        "bounded_body_sha256": "74fb6f68665631e9d1619dca56e423048ac030fc420710aceb607831b9dd68ab",
+        "normalized_bounded_body_sha256": "ccefd743dbda17517d90c51e3370b9837427e2fff575c7602e1b70a96dbd9b2c"
+      },
+      "result": "populated-profile",
+      "dom": {
+        "class_tokens": [
+          "active",
+          "btn",
+          "btn-danger",
+          "btn-default",
+          "btn-xs",
+          "col-md-3",
+          "col-md-9",
+          "dl-horizontal",
+          "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29",
+          "icon-book",
+          "nav",
+          "nav-pills",
+          "nav-stacked",
+          "odate",
+          "profile-box",
+          "profile-title",
+          "pull-right",
+          "time_1216502770"
+        ],
+        "safe_links": [
+          {
+            "href": "javascript:;",
+            "text": "Profile",
+            "id": "ui-profile-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Member of",
+            "id": "ui-member-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Moderator of",
+            "id": "ui-moderator-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Admin of",
+            "id": "ui-admin-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Recent contributions",
+            "id": "ui-contrib-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Recent posts and comments",
+            "id": "ui-posts-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Add to contacts",
+            "class_tokens": [
+              "btn",
+              "btn-default",
+              "btn-xs"
+            ]
+          },
+          {
+            "href": "javascript:;",
+            "text": "flag user as abusive",
+            "class_tokens": [
+              "btn",
+              "btn-danger",
+              "btn-xs",
+              "pull-right"
+            ]
+          },
+          {
+            "href": "http://www.wikidot.com/doc:karma",
+            "text": "what is this?"
+          }
+        ],
+        "private_message_control_present": true,
+        "profile": {
+          "public_name": "The Administrator",
+          "public_user_id": 169306
+        },
+        "avatar": {
+          "src": "https://www.wikidot.com/avatar.php?userid=169306&timestamp=1786352078",
+          "alt": "",
+          "class_tokens": []
+        },
+        "public_fields": [
+          {
+            "label": "Wikidot user since:",
+            "value": "19 Jul 2008 21:26"
+          },
+          {
+            "label": "Account type:",
+            "value": "free"
+          },
+          {
+            "label": "Karma level:",
+            "value": "high ( what is this? )"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "case_id": "userinfo-target-dr-clef-account-a",
+      "actor_id": "account-a",
+      "authenticated": true,
+      "target_id": "dr-clef",
+      "target_kind": "public-user",
+      "request": {
+        "method": "GET",
+        "url": "https://www.wikidot.com/user:info/dr-clef"
+      },
+      "redirect_chain": [],
+      "response": {
+        "status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "final_url": "https://www.wikidot.com/user:info/dr-clef",
+        "body_bytes": 16182,
+        "body_sha256": "1473af81ea437a35ae3648262f2870246e2a60da2437e77990990ed8e151d0b3",
+        "bounded_body": "\n\n    <div class=\"col-md-3\">\n        <ul id=\"ui-tabs\" class=\"nav nav-pills nav-stacked\">\n            <li class=\"active\"><a id=\"ui-profile-b\" href=\"javascript:;\">Profile</a></li>\n            <li><a id=\"ui-member-b\" href=\"javascript:;\">Member of</a></li>\n            <li><a id=\"ui-moderator-b\" href=\"javascript:;\">Moderator of</a></li>\n            <li><a id=\"ui-admin-b\" href=\"javascript:;\">Admin of</a></li>\n            <li><a id=\"ui-contrib-b\" href=\"javascript:;\">Recent contributions</a></li>\n            <li><a id=\"ui-posts-b\" href=\"javascript:;\">Recent posts and comments</a></li>\n        </ul>\n        \n    </div>\n    \n    <div class=\"col-md-9\">\n        <span data-redacted-control=\"private-message\">Write private message</span>\n        <a class=\"btn btn-default btn-xs\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.UserInfoModule.listeners.addContact(event,1698600)\">\n            <i class=\"icon-book\"></i>\n            Add to contacts        </a>\n        <a class=\"btn btn-danger btn-xs pull-right\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.UserInfoModule.listeners.flagUser(event,1698600)\">flag user as abusive</a>\n        \n        \n        <h1 class=\"profile-title\">\n            <img  src=\"https://www.wikidot.com/avatar.php?userid=1698600&amp;timestamp=1786352082\" alt=\"\" style=\"padding: 5px;vertical-align: -50%;\"/>\n            Dr Clef\n        </h1>\n        \n        <div id=\"user-info-area\"><div class=\"profile-box\">\n    \n    <dl class=\"dl-horizontal\">\n        \n        \n        \n        \n        \n        \n        <dt>Wikidot user since:</dt> <dd><span class=\"odate time_1376658420 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29\">16 Aug 2013 13:07</span></dd>\n        \n        <dt>Account type:</dt>\n        <dd>\n                            free\n                    </dd>\n    \n            <dt>Karma level:</dt>\n        <dd>\n            none                            <img src=\"//www.wikidot.com/userkarma.php?u=1698600&amp;onlyKarma=true\" alt=\"karma level\"/>\n            (<a href=\"http://www.wikidot.com/doc:karma\" target=\"_blank\">what is this?</a>)\n        </dd>\n        \n    </dl>\n</div>\n\n</div>\n    </div>\n\n<script type=\"text/javascript\">\n    USERINFO = {};\n    USERINFO.userId = 1698600;\n    </script></div>",
+        "bounded_body_redactions": {
+          "private_message_destination_links": 1
+        },
+        "bounded_body_sha256": "9b39418381accdcdb9993cf87d6799cb4f1bc6be7007b284b5fe7ce9d9850c6e",
+        "normalized_bounded_body_sha256": "c7fa17cf9ddb4795adc1e61719229f49912f13d5e4b891463659b1fa1d7871f7"
+      },
+      "result": "populated-profile",
+      "dom": {
+        "class_tokens": [
+          "active",
+          "btn",
+          "btn-danger",
+          "btn-default",
+          "btn-xs",
+          "col-md-3",
+          "col-md-9",
+          "dl-horizontal",
+          "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29",
+          "icon-book",
+          "nav",
+          "nav-pills",
+          "nav-stacked",
+          "odate",
+          "profile-box",
+          "profile-title",
+          "pull-right",
+          "time_1376658420"
+        ],
+        "safe_links": [
+          {
+            "href": "javascript:;",
+            "text": "Profile",
+            "id": "ui-profile-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Member of",
+            "id": "ui-member-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Moderator of",
+            "id": "ui-moderator-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Admin of",
+            "id": "ui-admin-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Recent contributions",
+            "id": "ui-contrib-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Recent posts and comments",
+            "id": "ui-posts-b"
+          },
+          {
+            "href": "javascript:;",
+            "text": "Add to contacts",
+            "class_tokens": [
+              "btn",
+              "btn-default",
+              "btn-xs"
+            ]
+          },
+          {
+            "href": "javascript:;",
+            "text": "flag user as abusive",
+            "class_tokens": [
+              "btn",
+              "btn-danger",
+              "btn-xs",
+              "pull-right"
+            ]
+          },
+          {
+            "href": "http://www.wikidot.com/doc:karma",
+            "text": "what is this?"
+          }
+        ],
+        "private_message_control_present": true,
+        "profile": {
+          "public_name": "Dr Clef",
+          "public_user_id": 1698600
+        },
+        "avatar": {
+          "src": "https://www.wikidot.com/avatar.php?userid=1698600&timestamp=1786352082",
+          "alt": "",
+          "class_tokens": []
+        },
+        "public_fields": [
+          {
+            "label": "Wikidot user since:",
+            "value": "16 Aug 2013 13:07"
+          },
+          {
+            "label": "Account type:",
+            "value": "free"
+          },
+          {
+            "label": "Karma level:",
+            "value": "none ( what is this? )"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "case_id": "userinfo-target-missing-numeric-zero-account-a",
+      "actor_id": "account-a",
+      "authenticated": true,
+      "target_id": "missing-numeric-zero",
+      "target_kind": "missing-numeric-id",
+      "request": {
+        "method": "GET",
+        "url": "https://www.wikidot.com/user:info/0"
+      },
+      "redirect_chain": [],
+      "response": {
+        "status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "final_url": "https://www.wikidot.com/user:info/0",
+        "body_bytes": 13666,
+        "body_sha256": "f284f680b3a267dce3692f1be053dd637a1be68dfbaed6729dbc6707b89e6225",
+        "bounded_body": "\n\n<div class=\"error-block\">User does not exist.</div></div>",
+        "bounded_body_redactions": {
+          "private_message_destination_links": 0
+        },
+        "bounded_body_sha256": "a9bc6a31571a329f6ccac303cb592626609c6cb82d8a67047f245745005a8574",
+        "normalized_bounded_body_sha256": "a9bc6a31571a329f6ccac303cb592626609c6cb82d8a67047f245745005a8574"
+      },
+      "result": "user-does-not-exist",
+      "dom": {
+        "class_tokens": [
+          "error-block"
+        ],
+        "safe_links": [],
+        "private_message_control_present": false,
+        "profile": null,
+        "avatar": null,
+        "public_fields": [],
+        "error": "User does not exist."
+      }
+    },
+    {
+      "case_id": "userinfo-target-missing-numeric-negative-one-account-a",
+      "actor_id": "account-a",
+      "authenticated": true,
+      "target_id": "missing-numeric-negative-one",
+      "target_kind": "missing-numeric-id",
+      "request": {
+        "method": "GET",
+        "url": "https://www.wikidot.com/user:info/-1"
+      },
+      "redirect_chain": [],
+      "response": {
+        "status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "final_url": "https://www.wikidot.com/user:info/-1",
+        "body_bytes": 13666,
+        "body_sha256": "850d39739d310f7c589d5f9786ddfeb16617e79550f5ef1b6e599586cf886855",
+        "bounded_body": "\n\n<div class=\"error-block\">User does not exist.</div></div>",
+        "bounded_body_redactions": {
+          "private_message_destination_links": 0
+        },
+        "bounded_body_sha256": "a9bc6a31571a329f6ccac303cb592626609c6cb82d8a67047f245745005a8574",
+        "normalized_bounded_body_sha256": "a9bc6a31571a329f6ccac303cb592626609c6cb82d8a67047f245745005a8574"
+      },
+      "result": "user-does-not-exist",
+      "dom": {
+        "class_tokens": [
+          "error-block"
+        ],
+        "safe_links": [],
+        "private_message_control_present": false,
+        "profile": null,
+        "avatar": null,
+        "public_fields": [],
+        "error": "User does not exist."
+      }
+    }
+  ],
+  "actor_differential": {
+    "compared_targets": 4,
+    "differing_normalized_bodies": 0,
+    "conclusion": "No anonymous versus Account A differential was observed in the bounded UserInfo content."
+  },
+  "privacy_review": {
+    "credentials_or_cookie_hits": 0,
+    "private_fields_captured": false,
+    "messages_captured": false,
+    "email_addresses_captured": false,
+    "account_a_identity": "redacted-sandbox-account-a",
+    "excluded": [
+      "credentials",
+      "cookies",
+      "response authentication headers",
+      "private message destination URLs",
+      "email addresses",
+      "message bodies",
+      "session state"
+    ]
+  },
+  "notes": [
+    "This artifact observes target binding only through the public user:info path suffix. It does not claim or send a UserInfo module parameter.",
+    "The no-target No user specified. preview is a prior negative control and is not a positive control or a recaptured case.",
+    "Non-positive numeric route targets 0 and -1 returned the same public missing-user result for both actors."
+  ]
+}
