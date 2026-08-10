@@ -98,7 +98,7 @@ function requestFixture({ activated = false, member = false, userId = 123456, de
     const url = request.url instanceof URL ? request.url : new URL(request.url);
     if (url.pathname === "/jsonrpc") {
       const rpc = JSON.parse(request.body);
-      const operatorMethod = ["user_activate_from_wikidot", "user_edit", "membership_set"].includes(rpc.method);
+      const operatorMethod = ["user_activate_from_wikidot", "user_edit", "member_set"].includes(rpc.method);
       if (operatorMethod) assert.equal(request.headers["x-deepwell-session-token"], "platform-staff-session-secret");
       calls.push({ kind: "rpc", method: rpc.method, params: rpc.params });
       let result;
@@ -139,10 +139,10 @@ function requestFixture({ activated = false, member = false, userId = 123456, de
           assert.deepEqual(rpc.params, { site: "scpaiueouiuiuiui" });
           result = { site_id: 7654321, slug: "scpaiueouiuiuiui" };
           break;
-        case "membership_get":
+        case "member_get":
           result = currentMember ? { from_id: userId, dest_id: 7654321, relation_type: "site-member" } : null;
           break;
-        case "membership_set":
+        case "member_set":
           assert.equal(currentMember, false);
           currentMember = true;
           result = null;
@@ -172,7 +172,7 @@ function requestFixture({ activated = false, member = false, userId = 123456, de
         "set-cookie": ["wikijump_token=candidate-login-session; Path=/; HttpOnly; Secure; SameSite=Lax"],
       });
     }
-    return response(500, '{"type":"failure","status":500}', {
+    return response(200, '{"type":"failure","status":500}', {
       "content-type": "application/json",
     });
   };
@@ -232,7 +232,7 @@ test("candidate account provisioning activates the exact Wikidot identity and pr
     "candidate-login-session",
   ]) assert.equal(serialized.includes(secret), false, secret);
   assert.equal(fixture.calls.some(({ method }) => method === "user_activate_from_wikidot"), true);
-  assert.equal(fixture.calls.some(({ method }) => method === "membership_set"), true);
+  assert.equal(fixture.calls.some(({ method }) => method === "member_set"), true);
 });
 
 test("repeat provisioning verifies the same activated identity and changes only its local password", async (t) => {
@@ -248,7 +248,7 @@ test("repeat provisioning verifies the same activated identity and changes only 
   assert.equal(receipt.editable_site.membership, "existing");
   assert.equal(fixture.calls.filter(({ method }) => method === "user_edit").length, 1);
   assert.equal(fixture.calls.some(({ method }) => method === "user_activate_from_wikidot"), false);
-  assert.equal(fixture.calls.some(({ method }) => method === "membership_set"), false);
+  assert.equal(fixture.calls.some(({ method }) => method === "member_set"), false);
   assert.equal(fixture.calls.some(({ method }) => method?.includes("role")), false);
 });
 
@@ -274,7 +274,7 @@ test("platform-staff rejection at the mutation seam aborts before membership or 
     "private-input": paths.privatePath,
     receipt: paths.receiptPath,
   }, { requestImpl: fixture.requestImpl }), /user_activate_from_wikidot failed/u);
-  assert.equal(fixture.calls.some(({ method }) => method === "membership_set"), false);
+  assert.equal(fixture.calls.some(({ method }) => method === "member_set"), false);
   assert.equal(fixture.calls.some(({ kind }) => kind === "login"), false);
   await assert.rejects(fs.access(paths.receiptPath));
 });

@@ -109,6 +109,19 @@ function sessionCookie(response) {
   return null;
 }
 
+function actionResult(response, name) {
+  let result;
+  try {
+    result = JSON.parse(response.body);
+  } catch {
+    throw new Error(`${name} did not return a serialized SvelteKit ActionResult`);
+  }
+  if (response.status !== 200 || !result || !["success", "failure"].includes(result.type) || !Number.isSafeInteger(result.status)) {
+    throw new Error(`${name} did not return a serialized SvelteKit ActionResult`);
+  }
+  return result;
+}
+
 class CandidateAccountProvisioner {
   #candidate;
   #input;
@@ -178,15 +191,15 @@ class CandidateAccountProvisioner {
     const site = requirePlainObject(await this.#rpc("site_get", { site: EDITABLE_SITE_SLUG }, { operator: true }), "editable candidate site");
     if (!Number.isSafeInteger(site.site_id) || site.slug !== EDITABLE_SITE_SLUG) throw new Error("editable candidate site identity is missing or malformed");
     const parameters = { site_id: site.site_id, user_id: account.userId };
-    let membership = await this.#rpc("membership_get", parameters, { operator: true });
+    let membership = await this.#rpc("member_get", parameters, { operator: true });
     let result = "existing";
     if (membership === null) {
-      await this.#rpc("membership_set", {
+      await this.#rpc("member_set", {
         ...parameters,
         metadata: { accepted: { cause: "accepted", user_id: this.#input.operator.userId } },
         created_by: this.#input.operator.userId,
       }, { operator: true });
-      membership = await this.#rpc("membership_get", parameters, { operator: true });
+      membership = await this.#rpc("member_get", parameters, { operator: true });
       result = "created";
     }
     if (membership?.from_id !== account.userId || membership.dest_id !== site.site_id) throw new Error("editable candidate membership identity is missing or malformed");
@@ -215,6 +228,7 @@ class CandidateAccountProvisioner {
 
   async #verifyLoginContract() {
     const successful = await this.#login(this.#input.account.password);
+    const successfulResult = actionResult(successful, "ordinary candidate login");
     const sessionToken = sessionCookie(successful);
     if (sessionToken === null) throw new Error("ordinary candidate login did not create a session");
     const sessionsToClose = [sessionToken];
@@ -222,13 +236,15 @@ class CandidateAccountProvisioner {
     let rejected;
     let operationError = null;
     try {
-      if (successful.status !== 200) throw new Error("ordinary candidate login did not create a session");
+      if (successfulResult.type !== "success") throw new Error("ordinary candidate login did not create a session");
       session = await this.#rpc("session_get", [sessionToken]);
       if (session?.user_id !== this.#input.account.userId) throw new Error("ordinary candidate login session has the wrong user identity");
       rejected = await this.#login(`wrong-${randomUUID()}`);
+      const rejectedResult = actionResult(rejected, "ordinary candidate wrong-password login");
       const rejectedSession = sessionCookie(rejected);
       if (rejectedSession !== null) sessionsToClose.push(rejectedSession);
-      if (rejected.status >= 200 && rejected.status < 300 || rejectedSession !== null) throw new Error("ordinary candidate login accepted a different password");
+      if (rejectedResult.type !== "failure" || rejectedSession !== null) throw new Error("ordinary candidate login accepted a different password");
+      rejected.action_status = rejectedResult.status;
     } catch (error) {
       operationError = error;
     }
@@ -247,7 +263,7 @@ class CandidateAccountProvisioner {
     return {
       correct_password_http_status: successful.status,
       correct_password_session_user_id: session.user_id,
-      wrong_password_http_status: rejected.status,
+      wrong_password_http_status: rejected.action_status,
       wrong_password_rejected: true,
       successful_probe_session_logged_out: true,
     };
