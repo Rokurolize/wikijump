@@ -11456,15 +11456,36 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
     assert!(post_21 < post_20, "{first_page}");
 
     let second_page = page_view_html(&runner, site_id, RECENT_POSTS_PAGE, "/p/2").await;
+    let expected_second_page_titles = [
+        "Visible Post 02".to_owned(),
+        "Visible Post 01".to_owned(),
+        "Visible Post 00".to_owned(),
+    ]
+    .into_iter()
+    .chain(
+        (4..=20)
+            .rev()
+            .map(|number| format!("Pagination Post {number:02}")),
+    )
+    .collect::<Vec<_>>();
+    let second_page_positions = expected_second_page_titles
+        .iter()
+        .map(|title| {
+            second_page
+                .find(title)
+                .unwrap_or_else(|| panic!("page 2 should contain {title}: {second_page}"))
+        })
+        .collect::<Vec<_>>();
     assert!(
         second_page
             .matches(r#"<div class="post" id="post-"#)
             .count()
-            == 3
-            && second_page.contains("Visible Post 02")
-            && second_page.contains("Visible Post 01")
-            && second_page.contains("Visible Post 00")
+            == 20
+            && second_page_positions
+                .windows(2)
+                .all(|pair| pair[0] < pair[1])
             && !second_page.contains("Visible Post 03")
+            && !second_page.contains("Pagination Post 03")
             && !second_page.contains("Hidden Newest Post")
             && !second_page.contains("Private Newest Post")
             && second_page.contains(r#"<span class="pager-no">page 2</span>"#)
