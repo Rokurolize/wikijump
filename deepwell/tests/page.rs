@@ -22980,9 +22980,9 @@ async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
                     "(from_wikidot, page_id, user_id, rating_system, value, deleted_at, disabled_at) VALUES ",
                     "(false, $1, $2, 'points', 1, NULL, NULL), ",
                     "(false, $1, $3, 'points', -1, NULL, NULL), ",
-                    "(false, $1, $4, 'points', 1, NOW(), NULL), ",
-                    "(false, $1, $5, 'points', -1, NULL, NOW()), ",
-                    "(false, $6, $4, 'points', 1, NULL, NULL)",
+                    "(true, $1, $4, 'points', 1, NOW(), NULL), ",
+                    "(true, $1, $5, 'points', -1, NULL, NOW()), ",
+                    "(true, $6, $4, 'points', 1, NULL, NULL)",
                 ),
                 [
                     Value::from(target.page_id),
