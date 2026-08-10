@@ -26386,7 +26386,7 @@ async fn file_create_commits_only_its_actor_and_route_owned_pending_blob() {
             ADMIN_USER_ID,
             site.site_id,
             page.page_id,
-            &other_actor_name,
+            other_actor_name,
         )
         .await;
         cancel_request_pending_blob_fixture(&mut runner, SAMPLE_USER_ID, &other_actor)
@@ -26472,7 +26472,7 @@ async fn file_create_commits_only_its_actor_and_route_owned_pending_blob() {
             ADMIN_USER_ID,
             site.site_id,
             page.page_id,
-            &generic_name,
+            generic_name,
         )
         .await;
         cancel_request_pending_blob_fixture(&mut runner, ADMIN_USER_ID, &generic).await;

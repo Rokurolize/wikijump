@@ -286,9 +286,7 @@ pub(super) fn owned_front_forum_body(
     opener_end: usize,
 ) -> Option<OwnedFrontForumBody<'_>> {
     let captures = MODULE_BOUNDARY_REGEX.captures(&wikitext[opener_end..])?;
-    if captures.name("close").is_none() {
-        return None;
-    }
+    captures.name("close")?;
     let boundary = captures.get(0)?;
     let boundary_start = opener_end + boundary.start();
     let tail = &wikitext[boundary_start..];
@@ -732,9 +730,11 @@ pub(super) async fn load_recent_posts_page(
 }
 
 fn recent_post_path(post: &RecentPost, anchor: bool) -> String {
-    let anchor = anchor
-        .then(|| format!("#post-{}", post.forum_post_id))
-        .unwrap_or_default();
+    let anchor = if anchor {
+        format!("#post-{}", post.forum_post_id)
+    } else {
+        String::new()
+    };
     match post.page_slug.as_deref() {
         Some(page_slug) => format!("/{page_slug}/comments/show{anchor}"),
         None => format!(
@@ -899,6 +899,7 @@ fn missing_context_html(kind: ForumModuleKind) -> Option<&'static str> {
 }
 
 impl RenderService {
+    #[allow(clippy::too_many_arguments)]
     pub(super) async fn expand_forum_modules(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -1080,7 +1081,9 @@ impl RenderService {
                     }
                     ForumModuleKind::RecentPosts => {
                         let page = url.page.unwrap_or(1);
-                        if !recent_posts_cache.contains_key(&page) {
+                        if let std::collections::btree_map::Entry::Vacant(entry) =
+                            recent_posts_cache.entry(page)
+                        {
                             let rendered = load_recent_posts_page(
                                 ctx,
                                 site_id,
@@ -1090,7 +1093,7 @@ impl RenderService {
                             )
                             .await?
                             .map(|page| render_recent_posts(structure, &page));
-                            recent_posts_cache.insert(page, rendered);
+                            entry.insert(rendered);
                         }
                         recent_posts_cache.get(&page).cloned().flatten()
                     }

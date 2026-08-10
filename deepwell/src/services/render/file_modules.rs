@@ -63,6 +63,7 @@ enum FilesModuleState {
     Unsupported,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn expand_file_modules(
     ctx: &ServiceContext<'_>,
     wikitext: String,

@@ -72,10 +72,10 @@ impl LegacyActionDescriptor {
         let mut output = current
             .iter()
             .filter(|tag| {
-                !(clear_visible && !tag.starts_with('_'))
-                    && !(clear_hidden && tag.starts_with('_'))
-                    && !removed.iter().any(|removed| *removed == tag.as_str())
-                    && !added.iter().any(|added| *added == tag.as_str())
+                !(removed.contains(&tag.as_str())
+                    || added.contains(&tag.as_str())
+                    || clear_visible && !tag.starts_with('_')
+                    || clear_hidden && tag.starts_with('_'))
             })
             .cloned()
             .collect::<Vec<_>>();
