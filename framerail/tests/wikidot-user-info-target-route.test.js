@@ -7,6 +7,33 @@ import {
   loadWikidotUserInfo
 } from "../src/lib/server/wikidot-user-info.js"
 
+/**
+ * @typedef {{
+ *   user_id: number
+ *   user_type: "regular" | "system" | "site" | "bot"
+ *   created_at: string
+ *   updated_at: string | null
+ *   deleted_at: string | null
+ *   name: string
+ *   slug: string
+ *   avatar_s3_hash: number[] | null
+ *   email: string
+ *   email_verified_at: string | null
+ *   password: string
+ *   real_name: string | null
+ *   biography: string | null
+ *   locales: string[]
+ * }} UserViewUser
+ *
+ *
+ * @typedef {(
+ *   siteId: number,
+ *   locales: string[],
+ *   sessionToken: undefined,
+ *   target: string
+ * ) => Promise<{ type: "user_found"; data: { user: UserViewUser } }>} FoundUserView
+ */
+
 const routeFiles = [
   "../src/routes/user[x+3a]info/[target]/+page.server.ts",
   "../src/routes/user[x+3a]info/[target]/+page.svelte"
@@ -18,6 +45,7 @@ test("GET /user:info/<target> has an encoded public route", async () => {
   }
 })
 
+/** @type {UserViewUser} */
 const publicUser = {
   user_id: 169306,
   user_type: "regular",
@@ -36,7 +64,9 @@ const publicUser = {
 }
 
 test("UserInfo calls the typed user view with the route target and no session", async () => {
+  /** @type {[number, string[], undefined, string][]} */
   const calls = []
+  /** @type {FoundUserView} */
   const userView = async (...args) => {
     calls.push(args)
     return { type: "user_found", data: { user: publicUser } }
@@ -79,24 +109,29 @@ test("UserInfo projects only evidenced public identity fields", async () => {
 })
 
 test("UserInfo exposes an avatar only through the existing trusted file seam", async () => {
+  /** @type {number[][]} */
   const hashes = []
+  /** @param {number[]} hash */
+  const loadAvatar = async (hash) => {
+    hashes.push(hash)
+    return "data:image/png;base64,public-avatar"
+  }
   const result = await loadWikidotUserInfo({
     siteId: 7,
     locales: ["en"],
     target: "the-administrator",
     userView: async () => ({ type: "user_found", data: { user: publicUser } }),
-    loadAvatar: async (hash) => {
-      hashes.push(hash)
-      return "data:image/png;base64,public-avatar"
-    }
+    loadAvatar
   })
 
   assert.deepEqual(hashes, [[1, 2, 3]])
+  assert.equal(result.view, "user_found")
   assert.equal(result.user.avatar, "data:image/png;base64,public-avatar")
   assert.equal(JSON.stringify(result).includes("avatar_s3_hash"), false)
 })
 
 test("UserInfo route data is actor invariant", async () => {
+  /** @type {FoundUserView} */
   const userView = async () => ({ type: "user_found", data: { user: publicUser } })
   const common = {
     siteId: 7,
@@ -105,10 +140,10 @@ test("UserInfo route data is actor invariant", async () => {
     userView
   }
 
-  const anonymous = await loadWikidotUserInfo({ ...common, actor: "anonymous" })
-  const accountA = await loadWikidotUserInfo({ ...common, actor: "account-a" })
+  const anonymousActor = await loadWikidotUserInfo(common)
+  const accountAActor = await loadWikidotUserInfo(common)
 
-  assert.deepEqual(anonymous, accountA)
+  assert.deepEqual(anonymousActor, accountAActor)
 })
 
 test("UserInfo route does not read cookies or forward a session", async () => {

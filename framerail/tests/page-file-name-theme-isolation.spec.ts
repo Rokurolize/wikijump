@@ -9,7 +9,7 @@ type Geometry = {
 }
 
 const geometry = async (locator: import("@playwright/test").Locator) =>
-  locator.evaluate<Geometry>((element) => {
+  locator.evaluate<Geometry, void, HTMLElement>((element) => {
     const parent = element.parentElement
     if (!parent) throw new Error("Files geometry target has no parent")
 
