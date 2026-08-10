@@ -1,10 +1,4 @@
-const BROWSER_FIELDS = new Set([
-  "page",
-  "perpage",
-  "pageId",
-  "categoryId",
-  "options"
-])
+const BROWSER_FIELDS = new Set(["page", "perpage", "pageId", "categoryId", "options"])
 const BROWSER_OPTIONS = new Set([
   "{}",
   '{"all":true}',
@@ -48,7 +42,13 @@ const normalizeWikidotPyPerPage = (value) => {
  * Classify and normalize the two evidenced SiteChanges request families.
  *
  * @param {Map<string, string>} fields
- * @returns {{ pageId?: string; page: string; perpage: string; categoryId?: string; options: string } | null}
+ * @returns {{
+ *   pageId?: string
+ *   page: string
+ *   perpage: string
+ *   categoryId?: string
+ *   options: string
+ * } | null}
  */
 export const classifyWikidotSiteChangesRequest = (fields) => {
   const parameters = new Map()
