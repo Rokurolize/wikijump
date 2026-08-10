@@ -21,10 +21,10 @@
     ]
   },
   "counts": {
-    "total": 890,
+    "total": 893,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 158,
+      "deepwell_jsonrpc_method": 161,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 18,
       "framerail_route": 27,
@@ -11245,6 +11245,105 @@
       "public_owner": "deepwell",
       "public_reference": [
         "deepwell/src/api.rs#register:page_lock_remove"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:page_meta_tag_delete",
+      "kind": "deepwell_jsonrpc_method",
+      "public_owner": "deepwell",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_meta_tag_delete"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:page_meta_tag_set",
+      "kind": "deepwell_jsonrpc_method",
+      "public_owner": "deepwell",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_meta_tag_set"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:page_meta_tags",
+      "kind": "deepwell_jsonrpc_method",
+      "public_owner": "deepwell",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_meta_tags"
       ],
       "existing_refs": {
         "issues": [],
@@ -29896,12 +29995,18 @@
       "public_owner": "framerail",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/EditMetaPane.svelte",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte",
+        "framerail/src/routes/ajax-module-connector.php/+server.ts"
       ],
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/ajax-module-connector-edit-meta.test.js",
+          "framerail/tests/page-edit-meta-public-boundary.test.js",
+          "framerail/tests/wikidot_edit_meta_client_contract_test.py"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -29910,9 +30015,11 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/EditMetaPane.svelte",
+          "framerail/src/routes/[slug]/[...extra]/page.svelte",
+          "framerail/src/routes/ajax-module-connector.php/+server.ts"
         ]
       },
       "candidate": {
@@ -30830,7 +30937,9 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -30839,7 +30948,7 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": []
       },
       "candidate": {
