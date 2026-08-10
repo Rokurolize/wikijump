@@ -334,12 +334,14 @@ async fn page_editor_cannot_mutate_site_wide_meta_tags() {
     });
 
     set_tag(&runner, site_id, page.page_id, "description", "page", false).await;
-    let read_error = run_endpoint_err!(
-        runner,
-        page_meta_tags,
-        json!({"site_id": site_id, "page_id": page.page_id}),
+    assert_eq!(
+        get_tags(&runner, site_id, page.page_id).await,
+        vec![PageMetaTag {
+            name: "description".into(),
+            content: "page".into(),
+            all_pages: false,
+        }],
     );
-    assert_contains_error!(read_error, ErrorType::PermissionDenied);
     let error = run_endpoint_err!(
         runner,
         page_meta_tag_set,
