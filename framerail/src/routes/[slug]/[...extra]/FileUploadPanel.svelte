@@ -78,7 +78,7 @@
       </label>
       <input
         name="name"
-        class="file-attribute name"
+        class="file-attribute file-name"
         placeholder={$uploadFile?.[0]?.name}
         type="text"
         bind:value={$uploadForm.name}

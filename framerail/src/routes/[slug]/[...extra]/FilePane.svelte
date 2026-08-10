@@ -252,7 +252,7 @@
         </label>
         <input
           name="name"
-          class="file-attribute name"
+          class="file-attribute file-name"
           placeholder={fileMap.get(fileEditId)?.name}
           type="text"
           bind:value={$editForm.name}
