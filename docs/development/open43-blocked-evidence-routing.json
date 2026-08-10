@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.open43.blocked_evidence_routing.v1",
-  "audited_at": "2026-08-10",
-  "integration_base": "489452b432eccdb2ebe2897d421ba5c6f456ed90",
+  "audited_at": "2026-08-11",
+  "integration_base": "cea9076fdfe49d697716a3e0acb5ccb0c21025b5",
   "source_audits": [
     "docs/development/open43-q-search-users-closure-audit.json",
     "docs/development/open43-q-forum-closure-audit.json",
@@ -28,9 +28,9 @@
     "local_candidate": 3,
     "live_browser_only": 11,
     "missing_public_producer": 12,
-    "missing_architecture_domain_authority": 8,
+    "missing_architecture_domain_authority": 11,
     "missing_security_policy": 6,
-    "total": 68
+    "total": 71
   },
   "rows": [
     {"case_id":"Q748_PERMISSION_FILTERED_RESULTS","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"Live Search has no successful result producer or public/private result pair."},
@@ -89,6 +89,9 @@
     {"case_id":"M776_UNFROZEN_ARGUMENT_MATRIX","route_class":"anonymous_read_only","status":"partial_evidence_acquired","reason":"ASCII spaces and tab, NBSP rejection, quoted source treatment, width copying, size arguments, and float spellings were captured; not every proposed argument family has two stopping controls."},
     {"case_id":"M806_UNFROZEN_ARGUMENT_MATRIX","route_class":"anonymous_read_only","status":"partial_evidence_acquired","reason":"ASCII spaces and tab, NBSP rejection, quoted source treatment, width copying, size arguments, and centered spelling were captured; not every proposed argument family has two stopping controls."},
     {"case_id":"M1039_FILES_PAGINATION_AND_HISTORY","route_class":"missing_public_producer","status":"partial_evidence_acquired","reason":"Three populated pages establish up to fifteen active rows, but no public fixture establishes later pages, duplicate-looking or Unicode names, deletion, or historical revisions."},
+    {"case_id":"M1039_FILES_SAVED_EMPTY_AND_ACL","route_class":"missing_architecture_domain_authority","status":"blocked_missing_domain_authority","reason":"Saved output needs Wikidot's module-instance identity; using the page ID would fabricate DOM and JavaScript identity, so the module remains literal."},
+    {"case_id":"M1039_FILES_NONEMPTY_ROW_CORE","route_class":"missing_architecture_domain_authority","status":"blocked_missing_domain_authority","reason":"Authoritative local file rows cannot be exposed through saved Files until the distinct module-instance identity and repeated-module lifecycle have a producer."},
+    {"case_id":"M1039_FILES_BYTE_DERIVED_TYPE","route_class":"missing_architecture_domain_authority","status":"blocked_missing_domain_authority","reason":"Saved descriptor presentation has no module-instance identity authority, and new local uploads use an unpinned host libmagic database that diverges from Wikidot evidence."},
     {"case_id":"M1039_FILES_CONTAINER_SUFFIX_IDENTITY","route_class":"missing_architecture_domain_authority","status":"blocked_missing_domain_authority","reason":"Live saved responses prove the suffix is not the page ID, while the local runtime has no evidenced module-instance identity authority."},
     {"case_id":"M1039_MANAGE_ATTACHMENTS_INTERACTION","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Panel transition, focus, actor behavior, failures, and intermediate states require a browser."},
     {"case_id":"M1039_FLICKR_ARGUMENTS_AND_PROVIDER","route_class":"anonymous_read_only","status":"blocked_no_provider_success","reason":"One PagePreview matrix captured argument acceptance and photoset failure, but no provider success, network boundary, or settled browser contract appeared."},

@@ -1,8 +1,8 @@
 {
   "schema": "wikijump.open43.closure_audit_ownership_reconciliation.v1",
   "source": {
-    "integration_base": "489452b432eccdb2ebe2897d421ba5c6f456ed90",
-    "integration_tree": "4b508ba16e32eab79d6362869a3960f0cdcf80d0",
+    "integration_base": "cea9076fdfe49d697716a3e0acb5ccb0c21025b5",
+    "integration_tree": "8fc8e768c906b9b306e46442bb580d24b686e8a1",
     "open_issue_snapshot_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr1-debug-80225efc3/open-issues-after-pr1.json",
     "open_issue_snapshot_sha256": "ade352ee99aa4094c2868458add052d3c114e40b75d0154de8f88bad3cf799b0",
     "tracking_issue": 1089,
@@ -46,15 +46,15 @@
     },
     {
       "path": "docs/development/open43-m-closure-audit.json",
-      "sha256": "743b4f02fefd8d3c867825401b368dd62f33c5aeb86c3d618914c599328947d3",
+      "sha256": "31225ba9a4a6194dbfd129d02421e7b92218cadd555e8c63e8bad1408cd5bda7",
       "issue_count": 7,
       "case_count": 48,
-      "classification_counts": {"source_ready": 27, "needs_source": 0, "candidate_required": 11, "blocked_evidence": 10},
+      "classification_counts": {"source_ready": 24, "needs_source": 0, "candidate_required": 11, "blocked_evidence": 13},
       "issue_summaries": [
         {"issue": 756, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 2}},
         {"issue": 776, "case_count": 5, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
         {"issue": 806, "case_count": 5, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1039, "case_count": 12, "classification_counts": {"source_ready": 7, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 4}},
+        {"issue": 1039, "case_count": 12, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 7}},
         {"issue": 1042, "case_count": 5, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 0}},
         {"issue": 1043, "case_count": 9, "classification_counts": {"source_ready": 6, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 1}},
         {"issue": 1062, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}}
@@ -104,7 +104,7 @@
     },
     {
       "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-      "sha256": "2bbf1557c5d38f2b3ad172cf4087e716ba1c2b263a4d05d0f42e7b2e21074943",
+      "sha256": "aaab7f9f7756ebfb05617550ce823785fc67a766488bbc9a565f91deee78abbf",
       "issue_count": 9,
       "case_count": 60,
       "classification_counts": {"source_ready": 23, "needs_source": 0, "candidate_required": 25, "blocked_evidence": 12},
@@ -132,13 +132,16 @@
     "duplicate_case_ids": [],
     "unknown_classifications": [],
     "closure_claims": 0,
-    "classification_counts": {"source_ready": 131, "needs_source": 2, "candidate_required": 84, "blocked_evidence": 68}
+    "classification_counts": {"source_ready": 128, "needs_source": 2, "candidate_required": 84, "blocked_evidence": 71}
   },
   "validation": {
     "jq_structural_assertions": "pass",
-    "one_off_node_reconciliation": {
+    "committed_inventory_verifier": {
       "status": "pass",
+      "command": "node install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs --root . --output docs/development/compatibility-surface-inventory.json",
       "audit_count": 7,
+      "case_count": 285,
+      "blocked_routing_count": 71,
       "authoritative_manifest_count": 3,
       "open_issue_snapshot_count": 43,
       "nontracking_open_issue_count": 42,
