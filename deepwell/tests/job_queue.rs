@@ -486,6 +486,7 @@ async fn component_css_save_dispatches_one_post_commit_dependent_rerender() {
     config.job_min_poll_delay = Duration::from_millis(10);
     config.job_max_poll_delay = Duration::from_millis(50);
     config.job_work_delay = Duration::from_millis(10);
+    config.rerender_skip = vec![(10, None)];
     let state = build_server_state_without_workers_with_job_queue_namespace(
         config,
         Secrets::load(),
@@ -516,7 +517,7 @@ async fn component_css_save_dispatches_one_post_commit_dependent_rerender() {
         json!({"site": site_slug}),
     )
     .await;
-    let site_id = site["site"]["site_id"]
+    let site_id = site["site_id"]
         .as_i64()
         .expect("editable site ID should be present");
     assert_eq!(site_id, fixture_site_id);
