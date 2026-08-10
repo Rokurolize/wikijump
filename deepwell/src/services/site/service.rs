@@ -479,12 +479,14 @@ impl SiteService {
         }
 
         if let Maybe::Set(new_slug) = input.slug {
-            Self::update_slug(ctx, &site, &new_slug, updating_user_id, ip_address)
-                .await
-                .or_raise(make_error)?;
+            if new_slug != site.slug {
+                Self::update_slug(ctx, &site, &new_slug, updating_user_id, ip_address)
+                    .await
+                    .or_raise(make_error)?;
 
-            site_user_body.name = Maybe::Set(format!("site:{new_slug}"));
-            model.slug = Set(new_slug);
+                site_user_body.name = Maybe::Set(format!("site:{new_slug}"));
+                model.slug = Set(new_slug);
+            }
         }
 
         if let Maybe::Set(tagline) = input.tagline {

@@ -247,6 +247,45 @@ async fn site_update_allows_users_with_site_edit_permission() {
 }
 
 #[tokio::test]
+async fn site_update_with_unchanged_slug_does_not_create_a_self_alias() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let site_id = create_site(&runner, n).await;
+    let user_id = create_user(&runner, n, "same-slug-editor").await;
+    grant_site_edit(&runner, site_id, user_id, n).await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+
+    let before = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("test site should exist");
+    assert!(before.aliases.is_empty());
+
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": before.settings.revision,
+            "slug": before.site.slug,
+            "description": "Saved without renaming the site",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let after = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("test site should still exist");
+    assert_eq!(after.site.slug, before.site.slug);
+    assert_eq!(after.site.description, "Saved without renaming the site");
+    assert!(
+        after.aliases.is_empty(),
+        "saving unchanged site settings must not create an alias for the canonical slug",
+    );
+}
+
+#[tokio::test]
 async fn site_settings_update_round_trips_and_rejects_stale_revision() {
     let mut runner = TestRunner::setup().await;
     let n = next_n();
