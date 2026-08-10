@@ -78,10 +78,7 @@ test("Append SSR exposes only new source while preserving the current revision f
   assert.match(body, /<textarea[^>]*id="page-append-input"/u)
   assert.doesNotMatch(body, /Existing source<\/textarea>/u)
   assert.match(body, /name="title" type="hidden" value="Fixture title"/u)
-  assert.match(
-    body,
-    /name="altTitle" type="hidden" value="Fixture alternate title"/u
-  )
+  assert.match(body, /name="altTitle" type="hidden" value="Fixture alternate title"/u)
   assert.match(body, /name="tags" type="hidden" value="alpha _hidden"/u)
   assert.match(body, /name="lastRevisionId" type="hidden" value="9"/u)
   assert.match(body, /name="wikitext" type="hidden" value="Existing source\n"/u)
