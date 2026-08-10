@@ -62,19 +62,24 @@ impl LegacyActionDescriptor {
                 _ => None,
             })
             .collect::<Vec<_>>();
+        let added = alterations
+            .iter()
+            .filter_map(|item| match item {
+                TagAlteration::Add(tag) => Some(tag.as_ref()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
         let mut output = current
             .iter()
             .filter(|tag| {
                 !(clear_visible && !tag.starts_with('_'))
                     && !(clear_hidden && tag.starts_with('_'))
                     && !removed.iter().any(|removed| *removed == tag.as_str())
+                    && !added.iter().any(|added| *added == tag.as_str())
             })
             .cloned()
             .collect::<Vec<_>>();
-        for tag in alterations.iter().filter_map(|item| match item {
-            TagAlteration::Add(tag) => Some(tag.as_ref()),
-            _ => None,
-        }) {
+        for tag in added {
             if !output.iter().any(|existing| existing == tag) {
                 output.push(tag.to_owned());
             }
@@ -246,19 +251,23 @@ mod tests {
             TagAlteration::Remove(Cow::Borrowed("_movie")),
         ]);
 
-        assert_eq!(
-            descriptor.apply_to_tags(&[
+        let tags = descriptor
+            .apply_to_tags(&[
                 "favorite".to_owned(),
                 "ordinary".to_owned(),
                 "_movie".to_owned(),
                 "_kept".to_owned(),
-            ]),
-            Some(vec![
+            ])
+            .expect("set-tags descriptor should apply");
+        assert_eq!(
+            tags,
+            vec![
                 "_kept".to_owned(),
                 "favorite".to_owned(),
                 "_book".to_owned(),
-            ]),
+            ],
         );
+        assert_eq!(descriptor.apply_to_tags(&tags), Some(tags.clone()));
     }
 
     #[test]
