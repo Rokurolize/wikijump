@@ -29,7 +29,8 @@
     "listpages-feed-endpoint": "node scripts/capture-listpages-feed-endpoint.mjs",
     "runtime-differential": "node scripts/run-generic-runtime-differential.mjs",
     "runtime-differential-stack": "node scripts/run-generic-runtime-differential-stack.mjs",
-    "candidate-cases": "node scripts/run-candidate-cases.mjs"
+    "candidate-cases": "node scripts/run-candidate-cases.mjs",
+    "candidate-account-provision": "node scripts/provision-candidate-account.mjs"
   },
   "dependencies": {
     "devalue": "5.9.0",

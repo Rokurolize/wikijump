@@ -267,6 +267,17 @@ For the settings run, use the same command with `--case-set open43-settings-brow
 
 The candidate identity must seal `scpaiueouiuiuiui.wikijump.localhost` and its matching files origin at one non-443 loopback endpoint. For the media run, the private JSON names `deepwell_rpc_url`, `deepwell_rpc_token`, `object_store_origin`, `presigned_origin`, `tls_ca_pem`, and `actors.editor.user_id` plus `actors.editor.session_token`. Its Deepwell and object-store URLs must be explicit loopback publications of the sealed candidate Compose services. The private input must be one regular file with no group or other permissions, and the output directory must not already exist. Receipts record the input file SHA-256 and hashes of its token, session, and CA values, never the raw values or a presigned URL.
 
+`scripts/provision-candidate-account.mjs` prepares an existing imported Wikidot identity only on that same disposable editable candidate. It verifies the mode-0600 private input is sealed to the exact candidate identity SHA-256, verifies its operator session resolves to platform user `-1`, and treats only the safe integer ID plus the exact imported public `user_get` name, slug, and user type as Account A identity authority. It calls `user_activate_from_wikidot` for the first activation or `user_edit` for an exact already activated identity, and uses `membership_get` and `membership_set` to add only missing `scpaiueouiuiuiui` membership. It does not grant a role, replace existing membership, call Wikidot, or accept a site selector.
+
+```sh
+pnpm --dir install/local/wikidot-verification candidate-account-provision -- \
+  --candidate-identity /absolute/evidence/path/candidate-parity-identity.json \
+  --private-input /absolute/private/path/candidate-account.json \
+  --receipt /absolute/evidence/path/candidate-account-receipt.json
+```
+
+The private JSON names `candidate_identity_sha256`, `deepwell_rpc_url`, `deepwell_rpc_token`, `tls_ca_pem`, `operator.user_id`, `operator.session_token`, `account.wikidot_user_id`, `account.public_name`, `account.public_slug`, `account.login_identifier`, `account.password`, and `account.locales`. The externally owned disposable candidate lifecycle is the operator-session generation owner: it creates a short-lived session for the seeded platform user `-1` through its private fixture setup and seals that session into this input; this command neither manufactures a platform session nor accepts one from an argument or environment variable. `operator.user_id` must be `-1`, Account A's ID must be a safe integer distinct from `-1`, and `account.login_identifier` must equal the exact imported public name or slug. The command proves the correct and different password behavior through the ordinary public `/-/login` action, logs out every probe session, and publishes a mode-0600 no-replace receipt containing only candidate and private-input hashes, the public numeric/name/slug identity, a login-identifier hash, site membership outcome, and login status observations.
+
 The 2026-07-26 benchmark streamed 10,000 frozen matching cases through one debug FTML renderer process and completed the local render and comparison in 1.72 seconds with 302,324 KiB maximum RSS. Treat this as a throughput baseline, not a fixed performance gate.
 
 ## Python environment
