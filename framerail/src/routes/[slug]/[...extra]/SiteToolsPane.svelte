@@ -11,7 +11,7 @@
     else report = result.body
   }
 
-  function selectReport(event: MouseEvent) {
+  function selectReport(event: Event) {
     const id = (event.target as Element | null)?.closest("a")?.id
     if (id === "st-wanted-pages-button") {
       void load("sitetools/WantedPagesModule", 2)
@@ -22,12 +22,23 @@
     }
   }
 
+  function selectReportFromKeyboard(event: KeyboardEvent) {
+    if (event.key !== " ") return
+    event.preventDefault()
+    selectReport(event)
+  }
+
   $effect(() => {
     void load("sitetools/SiteToolsModule", 1)
   })
 </script>
 
-<div onclick={selectReport}>
+<div
+  onclick={selectReport}
+  onkeydown={selectReportFromKeyboard}
+  role="toolbar"
+  tabindex="0"
+>
   {#if shell}
     {@html shell}
   {:else}

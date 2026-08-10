@@ -166,7 +166,10 @@ test("saved Wikidot Site tools action lazily activates the compatibility pane", 
 
   assert.match(pageSource, /site-tools-button[\s\S]*PagePane\.SiteTools/u)
   assert.match(pageSource, /action-area-close[\s\S]*close/u)
-  assert.match(paneSource, /PagePane\.SiteTools[\s\S]*import\("\.\/SiteToolsPane\.svelte"\)/u)
+  assert.match(
+    paneSource,
+    /PagePane\.SiteTools[\s\S]*import\("\.\/SiteToolsPane\.svelte"\)/u
+  )
   assert.match(siteToolsSource, /sitetools\/SiteToolsModule[\s\S]*,\s*1/u)
   assert.match(siteToolsSource, /st-wanted-pages-button/u)
   assert.match(siteToolsSource, /st-orphaned-pages-button/u)

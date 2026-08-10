@@ -5,11 +5,11 @@ const SITE_TOOLS_REQUESTS = new Map([
   ["list/ListDraftsModule", { callbackIndex: 4, location: "sitetools" }]
 ])
 
-export async function requestWikidotSiteToolsModule(
+export const requestWikidotSiteToolsModule = async (
   fetcher,
   moduleName,
   callbackIndex
-) {
+) => {
   const shape = SITE_TOOLS_REQUESTS.get(moduleName)
   if (!shape || shape.callbackIndex !== callbackIndex) {
     throw new TypeError("Unsupported Site Tools module request")
