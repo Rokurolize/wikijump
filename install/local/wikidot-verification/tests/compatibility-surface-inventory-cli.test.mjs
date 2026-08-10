@@ -68,11 +68,11 @@ async function writeRepositoryFixture(root) {
   await writeText(
     root,
     "framerail/src/lib/server/ajax-module-connector.js",
-    `const FORUM_READ_MODULE_PARAMETERS = new Map([
+    `import { classifyWikidotSiteChangesRequest } from "./wikidot-site-changes.js"
+const FORUM_READ_MODULE_PARAMETERS = new Map([
   ["forum/ForumStartModule", [new Set()]]
 ])
 const SITE_CHANGES_MODULE = "changes/SiteChangesListModule"
-const SITE_CHANGES_READ_FIELDS = new Set(["page", "perpage"])
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
 const MEMBERS_LIST_PARAMETERS = new Set(["group", "page"])
 const MEMBERS_LIST_DEFAULT_PARAMETERS = new Set(["group"])
@@ -85,6 +85,14 @@ const NEWPAGE_EVENT = "createNewPage"
 const PAGE_DISCUSSION_ACTION = "ForumAction"
 const PAGE_DISCUSSION_EVENT = "createPageDiscussionThread"
 if (moduleName !== "list/ListPagesModule") throw new Error()
+`
+  )
+  await writeText(
+    root,
+    "framerail/src/lib/server/wikidot-site-changes.js",
+    `const BROWSER_FIELDS = new Set(["page", "perpage", "pageId", "categoryId", "options"])
+const WIKIDOT_PY_FIELDS = new Set(["page", "perpage", "options"])
+export const classifyWikidotSiteChangesRequest = (fields) => fields
 `
   )
   await writeText(
@@ -167,16 +175,16 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const result = runCli(root, outputPath)
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout, "wrote 19 compatibility surfaces to inventory.json\n")
+  assert.equal(result.stdout, "wrote 20 compatibility surfaces to inventory.json\n")
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v1")
   assert.deepEqual(inventory.counts, {
-    total: 19,
+    total: 20,
     by_kind: {
       catalog_feature: 1,
       deepwell_jsonrpc_method: 1,
       framerail_amc_action_shape: 2,
-      framerail_amc_module_shape: 7,
+      framerail_amc_module_shape: 8,
       framerail_route: 1,
       framerail_server_action: 1,
       framerail_xmlrpc_method: 1,
@@ -186,6 +194,15 @@ test("CLI discovers declared public surfaces and writes deterministic completion
       wws_route: 1
     }
   })
+  assert.deepEqual(
+    inventory.surfaces
+      .filter(({ surface_id }) => surface_id.includes("SiteChangesListModule"))
+      .map(({ surface_id }) => surface_id),
+    [
+      "framerail-amc-module:changes/SiteChangesListModule:parameters=categoryId,options,page,pageId,perpage",
+      "framerail-amc-module:changes/SiteChangesListModule:parameters=options,page,perpage"
+    ]
+  )
   const caseSurface = inventory.surfaces.find(
     ({ surface_id }) => surface_id === "open43-audit-case:F123_PUBLIC_CASE"
   )

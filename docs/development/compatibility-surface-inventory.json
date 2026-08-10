@@ -21,13 +21,13 @@
     ]
   },
   "counts": {
-    "total": 893,
+    "total": 895,
     "by_kind": {
       "catalog_feature": 210,
       "deepwell_jsonrpc_method": 161,
       "framerail_amc_action_shape": 2,
-      "framerail_amc_module_shape": 18,
-      "framerail_route": 27,
+      "framerail_amc_module_shape": 19,
+      "framerail_route": 28,
       "framerail_server_action": 97,
       "framerail_xmlrpc_method": 17,
       "open43_audit_case": 285,
@@ -13554,7 +13554,40 @@
       "kind": "framerail_amc_module_shape",
       "public_owner": "framerail",
       "public_reference": [
-        "framerail/src/lib/server/ajax-module-connector.js#module:changes/SiteChangesListModule;parameters=categoryId,options,page,pageId,perpage"
+        "framerail/src/lib/server/wikidot-site-changes.js#module:changes/SiteChangesListModule;parameters=categoryId,options,page,pageId,perpage"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "framerail-amc-module:changes/SiteChangesListModule:parameters=options,page,perpage",
+      "kind": "framerail_amc_module_shape",
+      "public_owner": "framerail",
+      "public_reference": [
+        "framerail/src/lib/server/wikidot-site-changes.js#module:changes/SiteChangesListModule;parameters=options,page,perpage"
       ],
       "existing_refs": {
         "issues": [],
@@ -14989,6 +15022,40 @@
       "public_owner": "framerail",
       "public_reference": [
         "framerail/src/routes/local--iosicon/[filename]/+server.ts#methods:GET,HEAD"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "framerail-route:/user:info/{target}",
+      "kind": "framerail_route",
+      "public_owner": "framerail",
+      "public_reference": [
+        "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts#methods:GET",
+        "framerail/src/routes/user[x+3a]info/[target]/+page.svelte#methods:GET"
       ],
       "existing_refs": {
         "issues": [],

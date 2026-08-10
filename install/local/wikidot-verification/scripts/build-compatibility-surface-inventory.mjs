@@ -528,6 +528,9 @@ function amcModuleSurface(registryPath, moduleName, parameters, selector = "para
 async function discoverFramerailAmc(root) {
   const registryPath = "framerail/src/lib/server/ajax-module-connector.js"
   const sourceText = await readText(root, registryPath)
+  const siteChangesClassifierPath =
+    "framerail/src/lib/server/wikidot-site-changes.js"
+  const siteChangesClassifierText = await readText(root, siteChangesClassifierPath)
   const records = moduleMapShapes(
     sourceText,
     "FORUM_READ_MODULE_PARAMETERS",
@@ -541,13 +544,15 @@ async function discoverFramerailAmc(root) {
     records.push(amcModuleSurface(registryPath, moduleName, parameters))
   }
   const siteChangesModule = stringConstant(sourceText, "SITE_CHANGES_MODULE", registryPath)
-  records.push(
-    amcModuleSurface(
-      registryPath,
-      siteChangesModule,
-      stringSet(sourceText, "SITE_CHANGES_READ_FIELDS", registryPath).sort()
+  for (const fieldSet of ["BROWSER_FIELDS", "WIKIDOT_PY_FIELDS"]) {
+    records.push(
+      amcModuleSurface(
+        siteChangesClassifierPath,
+        siteChangesModule,
+        stringSet(siteChangesClassifierText, fieldSet, siteChangesClassifierPath).sort()
+      )
     )
-  )
+  }
   const membersListModule = stringConstant(sourceText, "MEMBERS_LIST_MODULE", registryPath)
   records.push(
     amcModuleSurface(
