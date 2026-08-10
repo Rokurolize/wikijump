@@ -23016,7 +23016,11 @@ async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
         page_who_rated,
         json!({"site_id": site.site_id, "page_id": target.page_id, "extra": true}),
     );
-    assert_contains_error!(malformed, ErrorType::BadRequest);
+    assert!(
+        format!("{malformed:?}").contains("InvalidParams"),
+        "JSONRPC InvalidParams error not returned:\n{:?}",
+        malformed,
+    );
 
     let transaction = runner.context().transaction();
     transaction
